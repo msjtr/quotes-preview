@@ -348,6 +348,13 @@
     };
     var ALL = ['login', 'otp', 'device', 'reg1', 'reg2', 'reg3', 'reg4', 'reg5', 'reg6', 'fg1', 'fg2', 'fg3', 'fg4', 'rc1', 'rc2', 'done'];
     var SESSION = 600, cur = { flow: 'login', i: 0 }, timerId, left = SESSION, humanOk = false, cdId, vId, tries = 5;
+    /* ---- live gateway: on the platform hosts (staging / quotes) the portal talks to the real server
+       (/api/auth/*) with the real human check; everywhere else (GitHub preview) it stays a demo ---- */
+    var LIVE = /(^|\.)tera-services\.com\.sa$/.test((function () { try { return parent.location.hostname || location.hostname; } catch (e) { return location.hostname; } })());
+    var S = { pending: '', factors: [], ch: {}, fg: '', tok: '', inn: false };
+    var F2V = { email: 'mail', whatsapp: 'wa', totp: 'app' }, V2F = { mail: 'email', wa: 'whatsapp', app: 'totp' };
+    if (LIVE) FLOWS.forgot = { steps: ['الجوال', 'البريد', 'كلمة جديدة'], forms: ['fg1', 'fg2', 'fg4'], ic: ['PiPhoneFill', 'PiEnvelopeFill', 'PiLockKeyFill'],
+      t: ['نسيت كلمة المرور', 'التحقق من البريد', 'كلمة مرور جديدة'], s: ['الخطوة الأولى: تحقق من رقم جوالك المسجّل عبر واتساب.', 'الخطوة الثانية: تحقق من بريدك المسجّل.', 'اختر كلمة مرور قوية وأكّدها.'] };
     function tile(ic) { var t = $('#pt-tiles'), s = t && t.content.querySelector('[data-ic="' + ic + '"]'); return s ? s.innerHTML : I(ic); }
     function go(flow, i) {
       if (flow !== cur.flow) startTimer();
@@ -360,6 +367,7 @@
       st.hidden = false; $('#pt-back').hidden = flow === 'login' && i === 0; $('#pt-timer').hidden = false;
       $('.pt').dataset.flow = flow;
       var card = $('.pt'); if (card && card.getBoundingClientRect().top < 0) card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (LIVE && (F.forms[i] === 'fg1' || F.forms[i] === 'fg2')) fgHuman(F.forms[i]);
       if (F.forms[i] === 'reg4') reg4Enter(); if (F.forms[i] === 'reg5') mcHint();
       if (F.forms[i] === 'device' || F.forms[i] === 'reg6') devName();
     }
@@ -379,20 +387,23 @@
     function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
     function tick() { var l = Math.max(left, 0); $('#timer-v').textContent = fmt(l); $('#timer-bar').style.width = (l / SESSION * 100) + '%'; $('#pt-timer').classList.toggle('is-low', l <= 60); }
     function startTimer() { clearInterval(timerId); left = SESSION; tick(); timerId = setInterval(function () { left--; tick(); if (left <= 0) { clearInterval(timerId); reset(); msg('lg-msg', 'bad', 'انتهت مدة الجلسة (10 دقائق) قبل اكتمال الخطوات. ابدأ من جديد.'); } }, 1000); }
-    function human() { humanOk = false; var h = $('#human'); h.classList.remove('ok'); $('#human-t').textContent = 'جارٍ التحقق البشري…'; setTimeout(function () { humanOk = true; h.classList.add('ok'); $('#human-t').textContent = 'تم التحقق بنجاح'; }, 1400); }
+    function human() { if (LIVE) { humanOk = true; return; } humanOk = false; var h = $('#human'); h.classList.remove('ok'); $('#human-t').textContent = 'جارٍ التحقق البشري…'; setTimeout(function () { humanOk = true; h.classList.add('ok'); $('#human-t').textContent = 'تم التحقق بنجاح'; }, 1400); }
     var boxes = $$('#otp-in input');
     function reset() {
       cur = { flow: '', i: 0 }; go('login', 0); human(); tries = 5; clearInterval(cdId); clearInterval(vId);
+      S.pending = ''; S.factors = []; S.ch = {}; S.fg = ''; S.tok = ''; S.inn = false; boxes.forEach(function (b) { b.hidden = false; });
       $('#otp-box').hidden = true; $('#otp-go').disabled = true; $('#otp-left').textContent = '5'; boxes.forEach(function (i) { i.value = ''; }); msg('otp-msg'); msg('lg-msg');
       $$('.vc').forEach(vcReset); $$('.pt-yn').forEach(function (y) { ynSet(y, ''); }); mfReset(); $('#done-exit-n').hidden = true;
       $$('.dv').forEach(function (d) { d.hidden = false; d.classList.remove('is-gone'); }); devCount();
     }
     $$('.ts-eye').forEach(function (b) { b.addEventListener('click', function () { var i = b.previousElementSibling, on = i.type === 'password'; i.type = on ? 'text' : 'password'; b.setAttribute('aria-label', on ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'); b.innerHTML = I(on ? 'PiEyeSlashFill' : 'PiEyeFill'); }); });
-    $$('.pt [data-flow]').forEach(function (b) { b.addEventListener('click', function () { go(b.dataset.flow, 0); }); });
+    $$('.pt [data-flow]').forEach(function (b) { b.addEventListener('click', function () {
+      if (LIVE && b.dataset.flow === 'register') { msg('lg-msg', 'ok', 'إنشاء الحساب يتم حاليًا من البوابة الحالية. ننقلك إليها الآن…'); setTimeout(function () { liveTop('/login'); }, 1500); return; }
+      go(b.dataset.flow, 0); }); });
     $('#pt-back').addEventListener('click', function () { if (cur.i > 0) go(cur.flow, cur.i - 1); else reset(); });
     $('#done-again').addEventListener('click', reset);
     $('#done-login').addEventListener('click', reset);
-    $('#done-go').addEventListener('click', function () { post({ tera: 'enter' }); });
+    $('#done-go').addEventListener('click', function () { if (LIVE && S.inn) return liveEnter(); post({ tera: 'enter' }); });
     $('#done-exit').addEventListener('click', function () { reset(); msg('lg-msg', 'ok', 'خرجت من البوابة. يمكنك الإكمال لاحقًا بالدخول من البوابة: تسجيل الدخول.'); });
     var reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, rePhone = /^(05\d{8}|\+?9665\d{8})$/, reLocal = /^5\d{8}$/;
     function idOk(v) { v = v.replace(/\s/g, ''); return reEmail.test(v) || rePhone.test(v); }
@@ -424,23 +435,30 @@
     }
     function vcInit(card) {
       var st = card._st = { ok: false, t: null }, ch = card.dataset.ch, send = $('.vc-send', card), ins = $$('.vc-in input', card), m = $('.vc-msg', card);
+      var fgLive = LIVE && !!card.closest('#f-fg1, #f-fg2');
+      function open(n, v, text) {
+        clearBoxes(ins); $('.vc-code', card).hidden = false; msg(m, 'ok', text); send.textContent = 'إعادة إرسال الرمز'; send.disabled = true;
+        var rs = $('.vc-rs', card); rs.hidden = false; $('.vc-cd', card).textContent = fmt(n); $('.vc-valid', card).textContent = fmt(v); clearInterval(st.t);
+        st.t = setInterval(function () { n = Math.max(n - 1, 0); v = Math.max(v - 1, 0); $('.vc-cd', card).textContent = fmt(n); $('.vc-valid', card).textContent = fmt(v);
+          if (!n) { rs.hidden = true; send.disabled = false; } if (!v) { clearInterval(st.t); msg(m, 'bad', 'انتهت صلاحية الرمز. أعد إرسال رمز جديد.'); } }, 1000);
+        setTimeout(function () { ins[0].focus({ preventScroll: true }); }, 30);
+      }
+      function done() {
+        clearInterval(st.t); st.ok = true; st.d = vcDest(card); card.classList.add('is-ok'); $('.vc-st', card).textContent = VCH[ch][1];
+        $('.vc-code', card).hidden = true; send.hidden = true; msg(m, 'ok', fgLive ? 'تم التحقق.' : VCH[ch][2]); vcChanged();
+      }
       send.addEventListener('click', function () {
         var d = vcDest(card); vcPaint(card);
         if (!d) { var el = $('#' + card.dataset.dest); if (el) bad(el, true); return msg(m, 'bad', ch === 'mail' ? 'اكتب بريدًا إلكترونيًا صحيحًا أولًا.' : 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).'); }
         send.disabled = true; send.textContent = 'جارٍ الإرسال…';
-        setTimeout(function () {
-          clearBoxes(ins); $('.vc-code', card).hidden = false; msg(m, 'ok', VCH[ch][0]); send.textContent = 'إعادة إرسال الرمز';
-          var n = 60, v = 300, rs = $('.vc-rs', card); rs.hidden = false; $('.vc-cd', card).textContent = fmt(n); $('.vc-valid', card).textContent = fmt(v); clearInterval(st.t);
-          st.t = setInterval(function () { n = Math.max(n - 1, 0); v = Math.max(v - 1, 0); $('.vc-cd', card).textContent = fmt(n); $('.vc-valid', card).textContent = fmt(v);
-            if (!n) { rs.hidden = true; send.disabled = false; } if (!v) { clearInterval(st.t); msg(m, 'bad', 'انتهت صلاحية الرمز. أعد إرسال رمز جديد.'); } }, 1000);
-          setTimeout(function () { ins[0].focus({ preventScroll: true }); }, 30);
-        }, 600);
+        if (fgLive) return liveFgSend(card, open, function (t) { send.disabled = false; send.textContent = 'أرسل رمز التحقق'; msg(m, 'bad', t); });
+        setTimeout(function () { open(60, 300, VCH[ch][0]); }, 600);
       });
       wireOtp(ins, function () {
         if (st.ok) return; var c = codeOf(ins);
+        if (fgLive) return liveFgVerify(c, done, function (t) { ins[0].parentNode.classList.add('bad'); msg(m, 'bad', t); });
         if (c === '000000') { ins[0].parentNode.classList.add('bad'); return msg(m, 'bad', 'الرمز غير صحيح أو انتهت مدته.'); }
-        clearInterval(st.t); st.ok = true; st.d = vcDest(card); card.classList.add('is-ok'); $('.vc-st', card).textContent = VCH[ch][1];
-        $('.vc-code', card).hidden = true; send.hidden = true; msg(m, 'ok', VCH[ch][2]); vcChanged();
+        done();
       });
       var el = $('#' + card.dataset.dest); if (el && card.closest('#f-fg1, #f-fg2')) el.addEventListener('input', function () { if (st.ok || !$('.vc-code', card).hidden) vcReset(card); else vcPaint(card); vcChanged(); });
     }
@@ -484,6 +502,7 @@
       if (!id.value.trim() || !pw.value) return msg('lg-msg', 'bad', 'أدخل البريد أو الجوال وكلمة المرور.');
       if (!idOk(id.value)) { bad(id, true); return msg('lg-msg', 'bad', 'اكتب بريدًا صحيحًا أو جوالًا يبدأ بـ 05 ومكوّنًا من 10 أرقام.'); }
       if (!humanOk) return msg('lg-msg', 'bad', 'لم يكتمل التحقق البشري. انتظر لحظة ثم أعد المحاولة.');
+      if (LIVE) return liveLogin();
       var b = $('#lg-go'); b.disabled = true; b.textContent = 'جارٍ الدخول…';
       setTimeout(function () { b.disabled = false; b.textContent = 'دخول'; msg('lg-msg'); go('login', 1); paintVia(); }, 700);
     });
@@ -492,18 +511,18 @@
                 sms: ['رمز إضافي من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiChatCircleTextFill', 'يُرسل برسالة نصية إلى', '+966 5• ••• ••74', 'أرسل الرمز برسالة نصية'],
                 mail: ['رمز إضافي من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiEnvelopeFill', 'يُرسل إلى البريد', 'n•••@example.com', 'أرسل الرمز إلى البريد'] };
     function paintVia() { var v = $('#otp-via').value, c = VIA[v]; $('#otp-hint').textContent = c[0]; $('#otp-dest-i').innerHTML = I(c[1]); $('#otp-dest-t').textContent = c[2]; $('#otp-dest-v').textContent = c[3]; $('#otp-spam').hidden = v !== 'mail'; var s = $('#otp-send'); s.hidden = v === 'app'; s.textContent = c[4]; s.disabled = false; msg('otp-msg'); if (v === 'app') openBox(false); else { $('#otp-box').hidden = true; $('#otp-go').disabled = true; } }
-    $('#otp-via').addEventListener('change', function () { clearInterval(cdId); clearInterval(vId); paintVia(); });
-    function openBox(withCd) {
+    $('#otp-via').addEventListener('change', function () { clearInterval(cdId); clearInterval(vId); if (LIVE) return livePaint(); paintVia(); });
+    function openBox(withCd, n0, v0) {
       $('#otp-box').hidden = false; $('#otp-go').disabled = false; $('#otp-resend').hidden = !withCd; $('#otp-valid-w').hidden = !withCd;
-      if (withCd) { var n = 60, v = 300; clearInterval(cdId); clearInterval(vId); $('#otp-cd').textContent = fmt(n); $('#otp-valid').textContent = fmt(v); var s = $('#otp-send'); s.disabled = true;
+      if (withCd) { var n = n0 || 60, v = v0 || 300; clearInterval(cdId); clearInterval(vId); $('#otp-cd').textContent = fmt(n); $('#otp-valid').textContent = fmt(v); var s = $('#otp-send'); s.disabled = true;
         cdId = setInterval(function () { n--; $('#otp-cd').textContent = fmt(n); if (n <= 0) { clearInterval(cdId); s.disabled = false; s.textContent = 'إعادة إرسال الرمز'; $('#otp-resend').hidden = true; } }, 1000);
         vId = setInterval(function () { v--; $('#otp-valid').textContent = fmt(Math.max(v, 0)); if (v <= 0) { clearInterval(vId); msg('otp-msg', 'bad', 'انتهت صلاحية الرمز. أعد إرسال رمز جديد.'); } }, 1000); }
       setTimeout(function () { boxes[0].focus({ preventScroll: true }); }, 30);
     }
-    $('#otp-send').addEventListener('click', function () { var b = this, v = $('#otp-via').value; b.disabled = true; b.textContent = 'جارٍ الإرسال…';
+    $('#otp-send').addEventListener('click', function () { if (LIVE) return liveSend(V2F[$('#otp-via').value]); var b = this, v = $('#otp-via').value; b.disabled = true; b.textContent = 'جارٍ الإرسال…';
       setTimeout(function () { clearBoxes(boxes); msg('otp-msg', 'ok', VCH[v === 'mail' ? 'mail' : v][0]); b.textContent = VIA[v][4]; openBox(true); }, 700); });
     wireOtp(boxes, function () { var f = $('#f-otp'); if (f.requestSubmit) f.requestSubmit(); else $('#otp-go').click(); });
-    $('#f-otp').addEventListener('submit', function (e) { e.preventDefault(); var code = codeOf(boxes);
+    $('#f-otp').addEventListener('submit', function (e) { e.preventDefault(); if (LIVE) return liveVerify(); var code = codeOf(boxes);
       if (code.length < 6) return msg('otp-msg', 'bad', 'أدخل رمز التحقق المكوّن من 6 أرقام.');
       if (code === '000000') { tries--; $('#otp-left').textContent = String(tries); $('#otp-in').classList.add('bad'); if (tries <= 0) { reset(); return msg('lg-msg', 'bad', 'استُنفدت المحاولات لهذا الرمز. ابدأ الدخول من جديد.'); } return msg('otp-msg', 'bad', 'الرمز غير صحيح أو انتهت مدته.'); }
       clearInterval(cdId); clearInterval(vId); msg('dev-msg'); go('login', 2); devCount(); });
@@ -614,15 +633,144 @@
     wireOtp(fg3In, function () { if (codeOf(fg3In) === '000000') { fg3In[0].parentNode.classList.add('bad'); return msg('fg3-msg', 'bad', 'الرمز غير صحيح أو انتهت مدته.'); } msg('fg3-msg'); go('forgot', 3); });
     $('#f-fg3').addEventListener('submit', function (e) { e.preventDefault(); });
     $('#f-fg4').addEventListener('submit', function (e) { e.preventDefault(); if (pwFail('fg', 'fg4-msg')) return;
+      if (LIVE) return livePassword('fg', 'fg4-msg', 'تم تعيين كلمة المرور', 'سجّل الدخول الآن بكلمة المرور الجديدة.');
       finish('تم تعيين كلمة المرور', 'سجّل الدخول الآن بكلمة المرور الجديدة. أنهينا الجلسات المفتوحة وألغينا تصاريح الأجهزة حفاظًا على أمان حسابك.', { login: true }); });
 
     /* ---- recovery code → new password ---- */
     $('#f-rc1').addEventListener('submit', function (e) { e.preventDefault(); var i = $('#rc-id'), c = $('#rc-code');
       var ik = bad(i, !idOk(i.value)), ck = bad(c, !/^\d{10}$/.test(c.value));
       if (!ik || !ck) return msg('rc1-msg', 'bad', 'أدخل البريد أو الجوال، ورمز الاستعادة المكوّن من 10 أرقام.');
-      msg('rc1-msg'); go('recover', 1); });
+      msg('rc1-msg'); if (LIVE) return liveRecovery(i.value, c.value); go('recover', 1); });
     $('#f-rc2').addEventListener('submit', function (e) { e.preventDefault(); if (pwFail('rc', 'rc2-msg')) return;
+      if (LIVE) return livePassword('rc', 'rc2-msg', 'استعدت الوصول إلى حسابك', 'تم تعيين كلمة المرور الجديدة. سجّل الدخول بها، وفعّل وسيلة تحقق جديدة بعد الدخول.');
       finish('استعدت الوصول إلى حسابك', 'تم تعيين كلمة المرور الجديدة، وأُلغي رمز الاستعادة الذي استخدمته. فعّل وسيلة تحقق جديدة بعد الدخول.', { login: true }); });
+
+    /* ---- live gateway functions (real server, same origin) ---- */
+    function api(path, body) {
+      return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}), credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) { return r.json().catch(function () { return null; }); }).catch(function () { return null; });
+    }
+    function ascii(v) { return String(v == null ? '' : v).replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }); }
+    function liveId(v) {
+      v = ascii(v).trim(); if (v.indexOf('@') >= 0) return v.toLowerCase();
+      var d = v.replace(/\D/g, '');
+      if (/^05\d{8}$/.test(d)) return '+966' + d.slice(1); if (/^5\d{8}$/.test(d)) return '+966' + d;
+      if (/^9665\d{8}$/.test(d)) return '+' + d; if (/^009665\d{8}$/.test(d)) return '+' + d.slice(2); return v;
+    }
+    /* one human-check slot for the forgot flow, moved into the active stage (as the current gateway does) */
+    function fgHuman(form, el) { el = el || $('#forgot-human'); var f = $('#f-' + form), vc = f && $('.vc', f); if (el && vc && el.nextSibling !== vc) vc.parentNode.insertBefore(el, vc); }
+    function liveTop(path) { try { top.location.href = path; } catch (e) { location.href = path; } }
+    function adopt(s) { if (!s || !s.access_token) return false; try { localStorage.setItem('tera.admin.session', JSON.stringify(s)); return true; } catch (e) { return false; } }
+    function liveEnter() { liveTop('/staff/'); }
+    function liveIn() { S.inn = true; finish('تم الدخول بنجاح', 'دخلت بحسابك الحقيقي. ننقلك الآن إلى حسابك…', { enter: true }); setTimeout(liveEnter, 1600); }
+    function liveLogin() {
+      var id = $('#lg-id'), pw = $('#lg-pw'), b = $('#lg-go'); b.disabled = true; b.textContent = 'جارٍ الدخول…'; msg('lg-msg');
+      api('/api/auth/login', { identifier: liveId(id.value), password: pw.value }).then(function (r) {
+        b.disabled = false; b.textContent = 'دخول'; pw.value = '';
+        if (!r) return msg('lg-msg', 'bad', 'تعذّر الاتصال بالخادم. حاول مرة أخرى.');
+        if (!r.ok) return msg('lg-msg', 'bad', r.error === 'human_check' ? (r.message || 'لم يكتمل التحقق البشري. أعد المحاولة.')
+          : (r.error === 'account_locked' || r.error === 'account_unavailable') ? (r.message || 'تعذّر إتمام الطلب الآن.')
+          : r.error === 'unavailable' ? 'تعذّر تسجيل الدخول حاليًا. حاول مرة أخرى.' : 'بيانات الدخول غير صحيحة.');
+        if (r.stage === 'password_change_required') return msg('lg-msg', 'bad', r.message || 'يلزم تعيين كلمة مرور جديدة. استخدم «نسيت كلمة المرور».');
+        if (r.stage === '2fa_required' || r.stage === 'two_factor' || r.stage === '2fa_enrollment_required') {
+          S.pending = r.pending_token || (r.totp && r.totp.pending_token) || ''; S.ch = {};
+          S.factors = (r.factors && r.factors.length) ? r.factors.slice() : [r.factor || 'email'];
+          go('login', 1); liveVia(); if (r.message) msg('otp-msg', 'ok', r.message); return;
+        }
+        if (adopt(r.session)) return liveIn();
+        msg('lg-msg', 'bad', 'تعذّر تسجيل الدخول حاليًا. حاول مرة أخرى.');
+      });
+    }
+    function liveLen(n) { boxes.forEach(function (b, i) { var off = i >= n; b.hidden = off; if (off) b.value = '0'; }); var lab = $('#otp-box .pt-lab'); if (lab) lab.textContent = 'أدخل الرمز المكوّن من ' + n + ' أرقام'; }
+    function liveCode() { return boxes.filter(function (b) { return !b.hidden; }).map(function (b) { return b.value; }).join(''); }
+    function liveVia() {
+      var sel = $('#otp-via'), first = '';
+      $$('option', sel).forEach(function (o) { var on = S.factors.indexOf(V2F[o.value]) >= 0; o.hidden = !on; o.disabled = !on; if (on && !first) first = o.value; });
+      if (first) sel.value = first; livePaint();
+    }
+    function livePaint() {
+      paintVia(); var ch = V2F[$('#otp-via').value], c = S.ch[ch];
+      $('#otp-dest-v').textContent = (c && c.dest) || (ch === 'totp' ? '' : 'وسيلتك المسجّلة'); liveLen((c && c.len) || 6);
+      if (ch === 'totp') { $('#otp-go').disabled = true; if (c && c.id) { openBox(false); $('#otp-go').disabled = false; } else liveSend('totp'); }
+    }
+    function liveSend(ch) {
+      var c = S.ch[ch], b = $('#otp-send'), label = VIA[F2V[ch]] ? VIA[F2V[ch]][4] : 'أرسل الرمز';
+      if (!S.pending && !(c && c.id)) return msg('otp-msg', 'bad', 'انتهت هذه الخطوة. سجّل الدخول من جديد.');
+      if (ch !== 'totp') { b.disabled = true; b.textContent = 'جارٍ الإرسال…'; }
+      var p = (c && c.id && ch !== 'totp') ? api('/api/auth/2fa/resend', { challenge_id: c.id, channel: ch }) : api('/api/auth/2fa/email', { pending_token: S.pending, channel: ch });
+      p.then(function (r) {
+        if (!r || r.ok !== true) {
+          if (ch !== 'totp') { b.disabled = false; b.textContent = label; }
+          return msg('otp-msg', 'bad', (r && r.message) || 'تعذّر إرسال الرمز الآن. اختر وسيلة أخرى أو أعد المحاولة.');
+        }
+        var len = (r.otp_length === 4 || r.otp_length === 6) ? r.otp_length : ((c && c.len) || 6);
+        S.ch[ch] = { id: r.challenge_id || (c && c.id) || '', dest: r.destination || (c && c.dest) || '', len: ch === 'totp' ? 6 : len };
+        var exp = Date.parse(String(r.expires_at || '')), vs = !isNaN(exp) ? Math.round((exp - Date.now()) / 1000) : (Number(r.expires_in_seconds) || 300);
+        clearBoxes(boxes); liveLen(S.ch[ch].len); if (S.ch[ch].dest) $('#otp-dest-v').textContent = S.ch[ch].dest;
+        if (ch === 'totp') { openBox(false); $('#otp-go').disabled = false; return; }
+        b.textContent = label; msg('otp-msg', 'ok', r.sent === false ? 'الرمز السابق ما زال صالحًا. لم يُرسل رمز جديد.' : (ch === 'whatsapp' ? 'أُرسل رمز التحقق إلى واتساب.' : 'أُرسل رمز التحقق إلى بريدك.'));
+        openBox(true, Number(r.retry_after_seconds) || 60, vs > 0 ? vs : 300);
+        if (r.attempts && r.attempts.max) $('#otp-left').textContent = String(Math.max(0, Number(r.attempts.max) - Number(r.attempts.used || 0)));
+      });
+    }
+    function liveVerify() {
+      var ch = V2F[$('#otp-via').value], c = S.ch[ch], code = liveCode();
+      if (!c || !c.id) return msg('otp-msg', 'bad', ch === 'totp' ? 'جارٍ تجهيز التحقق. أعد المحاولة بعد لحظة.' : 'أرسل الرمز أولًا.');
+      if (code.length < (c.len || 6) || /\D/.test(code)) return msg('otp-msg', 'bad', 'أدخل رمز التحقق كاملًا.');
+      var g = $('#otp-go'); g.disabled = true;
+      api('/api/auth/2fa/verify', { challenge_id: c.id, code: code, factor: ch }).then(function (r) {
+        g.disabled = false;
+        if (!r || !r.ok) { clearBoxes(boxes); liveLen(c.len); $('#otp-in').classList.add('bad'); return msg('otp-msg', 'bad', (r && r.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.'); }
+        clearInterval(cdId); clearInterval(vId); S.pending = '';
+        if (adopt(r.session)) return liveIn();
+        msg('otp-msg', 'bad', 'تعذّر إكمال الدخول. حاول مرة أخرى.');
+      });
+    }
+    function liveFgSend(card, onOpen, onFail) {
+      var one = !!card.closest('#f-fg1'), ch = one ? 'whatsapp' : 'email';
+      var ident = one ? '+' + $('#fg-ph-cc').value + ascii($('#fg-ph').value).replace(/\D/g, '').replace(/^0+/, '') : $('#fg-em').value.trim().toLowerCase();
+      api('/api/auth/forgot', { identifier: ident, channel: ch }).then(function (r) {
+        if (!r) return onFail('تعذّر الاتصال. أعد المحاولة.');
+        if (r.ok && r.stage === 'otp' && r.challenge_id) {
+          S.fg = r.challenge_id;
+          return onOpen(Number(r.retry_after_seconds) || 60, Number(r.expires_in_seconds) || 300,
+            r.sent === false ? 'الرمز السابق ما زال صالحًا. لم يُرسل رمز جديد.' : (one ? 'أُرسل الرمز إلى واتساب' : 'أُرسل الرمز إلى بريدك') + (r.destination ? ' ' + r.destination : '') + '.');
+        }
+        onFail(r.message || 'تعذّر إرسال رمز التحقق. راجع البيانات ثم أعد المحاولة.');
+      });
+    }
+    function liveFgVerify(code, onOk, onFail) {
+      if (!S.fg) return onFail('أرسل الرمز أولًا.');
+      api('/api/auth/forgot/verify', { challenge_id: S.fg, code: code }).then(function (r) {
+        if (!r || !r.ok || !r.recovery_token) return onFail((r && r.message) || 'الرمز غير صحيح أو انتهت مدته.');
+        S.fg = ''; S.tok = r.recovery_token; onOk();
+      });
+    }
+    function liveRecovery(ident, code) {
+      api('/api/auth/recovery/start', { identifier: liveId(ident), code: ascii(code).replace(/\D/g, '') }).then(function (r) {
+        $('#rc-code').value = '';
+        if (!r || !r.ok || !r.recovery_token) return msg('rc1-msg', 'bad', (r && r.message) || 'رمز الاستعادة غير صحيح. تأكد من الرمز المكوّن من 10 أرقام.');
+        S.tok = r.recovery_token; go('recover', 1);
+      });
+    }
+    function livePassword(p, m, h, t) {
+      if (!S.tok) return msg(m, 'bad', 'انتهت مدة هذه الخطوة. ابدأ من جديد.');
+      var btn = $('#' + p + '-go'); btn.disabled = true;
+      api('/api/auth/recovery/password', { recovery_token: S.tok, new_password: $('#' + p + '-pw').value }).then(function (r) {
+        btn.disabled = false;
+        if (!r || !r.ok) return msg(m, 'bad', (r && r.message) || 'تعذّر إتمام الطلب الآن. حاول مرة أخرى.');
+        S.tok = ''; $('#' + p + '-pw').value = ''; $('#' + p + '-pw2').value = ''; finish(h, t, { login: true });
+      });
+    }
+    if (LIVE) {
+      /* real human check (Cloudflare Turnstile) in the existing slots, attached to protected requests by /turnstile.js */
+      var hu = $('#human'); if (hu) { hu.innerHTML = '<div id="login-human"></div>'; hu.classList.add('ok'); }
+      var fh = document.createElement('div'); fh.className = 'ts-human ok'; fh.id = 'forgot-human'; fgHuman('fg1', fh);
+      var w1 = $('#f-fg1 .vc .vc-t b'); if (w1) w1.textContent = 'رمز عبر واتساب';
+      $$('.pt-demo').forEach(function (x) { x.hidden = true; });
+      var lg = $('.ts-legal'); if (lg) lg.textContent = 'باستخدامك البوابة توافق على سياسة الاستخدام وسياسة الخصوصية.';
+      if (!document.getElementById('tqc-turnstile-js')) { var sc = document.createElement('script'); sc.id = 'tqc-turnstile-js'; sc.src = '/turnstile.js'; document.head.appendChild(sc); }
+    }
 
     reset();
   })();
