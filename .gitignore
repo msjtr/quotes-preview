@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+node_modules/
+src/site/out/
+shots/
+*.log
+.DS_Store

@@ -1,0 +1,1015 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>رئيسية وبوابة تيرا</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a studio bar on top, then one stage that renders either the web width or a phone frame.
+   Inside the stage, container queries (not viewport queries) drive the layout, so the phone frame
+   shows the real app layout on any screen. Brand bands (hero, footer, portal panel) stay navy in both themes. */
+:root{
+  --bg:#F3F6FA; --surface:#FFFFFF; --surface-2:#EBF1F7; --line:#D6E0EA; --line-2:#C3D1DF;
+  --ink:#0A1F44; --muted:#56688A; --faint:#8596B0;
+  --teal:#0AA5AD; --teal-ink:#067A82; --teal-wash:rgba(10,165,173,.10);
+  --gold:#FFC861; --amber:#F0962A; --gold-ink:#9A5B06; --gold-wash:rgba(255,200,97,.18);
+  --navy:#0A1F44; --navy-2:#0D2B52; --navy-3:#050F24; --on-navy:#FFFFFF; --on-navy-2:#C9D6EC; --on-navy-3:#93A9C8;
+  --ok:#12795C; --ok-wash:rgba(18,121,92,.12); --bad:#B93A26; --bad-wash:rgba(185,58,38,.10);
+  --shadow:0 1px 2px rgba(10,31,68,.06),0 8px 24px rgba(10,31,68,.07);
+  --shadow-2:0 24px 60px -18px rgba(10,31,68,.35);
+  --f-head:"Alexandria","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Alexandria",Tahoma,sans-serif;
+  --r-s:10px; --r-m:16px; --r-l:24px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#06122B; --surface:#0C1D3D; --surface-2:#11274D; --line:#1D355F; --line-2:#28457A;
+  --ink:#EAF1FA; --muted:#A3B6D2; --faint:#7389AA;
+  --teal:#19C2C9; --teal-ink:#5FD8DD; --teal-wash:rgba(25,194,201,.12);
+  --gold-ink:#FFC861; --gold-wash:rgba(255,200,97,.12);
+  --navy:#081A3A; --navy-2:#0C2650; --navy-3:#030A1A;
+  --ok:#4ADE9B; --ok-wash:rgba(74,222,155,.12); --bad:#FF8A73; --bad-wash:rgba(255,138,115,.12);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
+  --shadow-2:0 30px 70px -20px rgba(0,0,0,.6);
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#06122B; --surface:#0C1D3D; --surface-2:#11274D; --line:#1D355F; --line-2:#28457A;
+  --ink:#EAF1FA; --muted:#A3B6D2; --faint:#7389AA;
+  --teal:#19C2C9; --teal-ink:#5FD8DD; --teal-wash:rgba(25,194,201,.12);
+  --gold-ink:#FFC861; --gold-wash:rgba(255,200,97,.12);
+  --navy:#081A3A; --navy-2:#0C2650; --navy-3:#030A1A;
+  --ok:#4ADE9B; --ok-wash:rgba(74,222,155,.12); --bad:#FF8A73; --bad-wash:rgba(255,138,115,.12);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
+  --shadow-2:0 30px 70px -20px rgba(0,0,0,.6);
+  color-scheme:dark;}
+
+*,*::before,*::after{box-sizing:border-box}
+html{direction:rtl}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.75 var(--f-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--f-head);margin:0;line-height:1.35;text-wrap:balance;color:inherit}
+p{margin:0}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+.num,[dir="ltr"]{font-variant-numeric:tabular-nums}
+.lt{direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+/* ---------- studio bar ---------- */
+.studio{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.studio-in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1320px;margin-inline:auto}
+.studio-t{display:flex;align-items:center;gap:10px;min-width:0}
+.studio-t img{width:30px;height:auto}
+.studio-t b{font:700 .95rem var(--f-head)}
+.studio-t small{display:block;color:var(--muted);font-size:.74rem;line-height:1.3}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:999px;font:600 .82rem var(--f-head);color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.studio-sp{flex:1}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:600 .8rem var(--f-head);color:var(--ink);text-decoration:none;cursor:pointer;white-space:nowrap}
+.chip-btn svg{width:16px;height:16px}
+.chip-btn.gold{background:linear-gradient(135deg,#FFE1A0,#FFC861 50%,#F0962A);border-color:transparent;color:#0A1F44}
+
+/* ---------- stage ---------- */
+.stage{padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.frame{container:site / inline-size;margin-inline:auto;max-width:1320px;background:var(--bg);border-radius:var(--r-l);overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+.stage.app .frame{max-width:400px;height:min(820px,calc(100dvh - 120px));overflow-y:auto;border-radius:38px;border:10px solid #0B1426;box-shadow:var(--shadow-2);scrollbar-width:none;position:relative}
+.stage.app .frame::-webkit-scrollbar{display:none}
+.notes{max-width:1320px;margin:0 auto 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:.82rem}
+.notes b{color:var(--ink);font:700 .82rem var(--f-head)}
+.notes span{padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.stage.app .notes{max-width:400px}
+
+/* shared */
+.wrap{max-width:1180px;margin-inline:auto;padding-inline:clamp(16px,4cqw,40px)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:999px;border:1px solid transparent;font:700 .92rem var(--f-head);cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .15s ease,box-shadow .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-gold{color:#0A1F44;background:linear-gradient(135deg,#FFE1A0,#FFC861 45%,#F0962A);box-shadow:0 10px 24px rgba(240,150,42,.28)}
+.btn-ghost-n{color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22)}
+.btn-teal{color:#fff;background:var(--teal-ink)}
+.btn-line{color:var(--ink);background:var(--surface);border-color:var(--line-2)}
+.btn-block{width:100%}
+.btn[disabled]{opacity:.55;cursor:not-allowed;transform:none}
+.eyebrow{font:600 .74rem var(--f-head);letter-spacing:.06em;color:var(--teal-ink)}
+.sec{padding-block:clamp(36px,6cqw,72px)}
+.sec-head{display:grid;gap:8px;margin-bottom:clamp(18px,3cqw,30px);max-width:62ch}
+.sec-head h2{font-size:clamp(1.35rem,3.2cqw,2rem);font-weight:800}
+.sec-head p{color:var(--muted)}
+.tile{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--teal-wash);color:var(--teal-ink)}
+.tile svg{width:22px;height:22px}
+.tile.g{background:var(--gold-wash);color:var(--gold-ink)}
+
+/* ---------- site header ---------- */
+.sh{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.sh-in{display:flex;align-items:center;gap:14px;min-height:68px}
+.logo-c{display:block;height:44px;width:auto}
+.logo-w{display:none;height:40px;width:auto}
+:root[data-theme="dark"] .sh .logo-c{display:none} :root[data-theme="dark"] .sh .logo-w{display:block}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sh .logo-c{display:none}:root:not([data-theme="light"]) .sh .logo-w{display:block}}
+.sh-nav{display:flex;gap:2px;margin-inline-start:8px}
+.sh-nav a{padding:8px 12px;border-radius:999px;text-decoration:none;font:600 .86rem var(--f-head);color:var(--muted)}
+.sh-nav a:hover,.sh-nav a.on{color:var(--ink);background:var(--surface-2)}
+.sh-act{margin-inline-start:auto;display:flex;gap:8px;align-items:center}
+.sh-act .btn{min-height:40px;padding:0 16px;font-size:.84rem}
+.icon-btn{width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.icon-btn svg{width:20px;height:20px}
+.sh-menu{display:none}
+#sh-acc{display:none}
+
+/* ---------- hero ---------- */
+.hero{position:relative;isolation:isolate;overflow:hidden;color:var(--on-navy);background:radial-gradient(60% 90% at 100% 0%,rgba(10,165,173,.42),transparent 60%),radial-gradient(50% 80% at 0% 100%,rgba(240,150,42,.22),transparent 62%),linear-gradient(150deg,var(--navy-3) 0%,var(--navy) 55%,var(--navy-2) 100%)}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;background-image:radial-gradient(rgba(255,214,140,.55) 1px,transparent 1px);background-size:28px 28px;opacity:.10;-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%);mask-image:linear-gradient(180deg,#000,transparent 85%)}
+.hero-in{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(24px,4cqw,56px);align-items:center;padding-block:clamp(40px,7cqw,88px)}
+.hero-kick{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid rgba(255,200,97,.45);background:rgba(255,200,97,.08);color:var(--gold);font:600 .8rem var(--f-head);width:fit-content}
+.hero-kick i{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(255,200,97,.18)}
+.hero h1{margin-top:16px;font-size:clamp(2.1rem,6.2cqw,3.9rem);font-weight:800;line-height:1.25;background:linear-gradient(100deg,#FFE7B0 0%,#FFC861 40%,#FFF4D8 70%,#FFC861 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-lead{margin-top:12px;font:600 clamp(1.05rem,2.2cqw,1.35rem)/1.6 var(--f-head);color:#fff}
+.hero-sub{margin-top:10px;color:var(--on-navy-2);max-width:52ch}
+.hero-cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;color:var(--on-navy-3);font-size:.82rem}
+.hero-meta span{display:inline-flex;align-items:center;gap:6px}
+.hero-meta svg{width:16px;height:16px;color:var(--teal)}
+
+/* the need→solution track (the one orchestrated moment) */
+.track{position:relative;border-radius:var(--r-l);padding:clamp(18px,3cqw,26px);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.track-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.track-h b{font:700 .95rem var(--f-head)}
+.track-h small{color:var(--on-navy-3);font-size:.75rem}
+.tsteps{position:relative;display:grid;gap:10px;list-style:none;margin:0;padding:0}
+.tsteps::before{content:"";position:absolute;inset-inline-start:21px;top:22px;bottom:22px;width:2px;background:rgba(255,255,255,.14)}
+.tsteps::after{content:"";position:absolute;inset-inline-start:21px;top:22px;width:2px;height:calc(100% - 44px);background:linear-gradient(180deg,var(--teal),var(--gold));transform-origin:top;animation:draw 2.4s cubic-bezier(.4,0,.2,1) .3s both;box-shadow:0 0 12px rgba(255,200,97,.6)}
+@keyframes draw{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.tstep{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;padding:10px 12px 10px 10px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.tstep .dot{position:relative;z-index:1;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#0B1D3D;border:2px solid rgba(255,255,255,.2);color:var(--teal)}
+.tstep .dot svg{width:20px;height:20px}
+.tstep b{display:block;font:700 .92rem var(--f-head);color:#fff}
+.tstep span{display:block;font-size:.8rem;color:var(--on-navy-2);line-height:1.6}
+.tstep.end{border-color:rgba(255,200,97,.5);background:rgba(255,200,97,.08)}
+.tstep.end .dot{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 5px rgba(255,200,97,.14),0 0 22px rgba(255,200,97,.4)}
+.tstep{animation:rise .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(.2s + var(--i)*.45s)}
+@keyframes rise{from{opacity:.25;transform:translateX(-8px)}to{opacity:1;transform:none}}
+
+/* ---------- numbers ---------- */
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden}
+.n{background:var(--surface);padding:clamp(16px,2.6cqw,24px);display:grid;gap:4px;align-content:start}
+.n b{direction:ltr;text-align:right;font:800 clamp(1.45rem,3.2cqw,2rem)/1.1 var(--f-head);font-variant-numeric:tabular-nums;color:var(--ink)}
+.n b em{font-style:normal;color:var(--teal-ink);margin-inline-end:2px}
+.n span{color:var(--muted);font-size:.86rem}
+.nums-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:12px;color:var(--muted);font-size:.82rem}
+.nums-foot b{color:var(--gold-ink);font:700 .86rem var(--f-head)}
+
+/* ---------- know tera ---------- */
+.know{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.kc{display:grid;gap:12px;align-content:start;padding:22px;border-radius:var(--r-l);background:var(--surface);border:1px solid var(--line)}
+.kc-h{display:flex;align-items:center;gap:12px}
+.kc h3{font-size:1.12rem}
+.kc p{color:var(--muted);font-size:.9rem}
+.kc ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.kc li a{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;text-decoration:none;font:600 .86rem var(--f-head)}
+.kc li a:hover{background:var(--surface-2)}
+.kc li a svg{width:16px;height:16px;color:var(--faint);transform:scaleX(1)}
+.kc-more{margin-top:auto;font:700 .84rem var(--f-head);color:var(--teal-ink);text-decoration:none}
+
+/* ---------- desk ---------- */
+.desk{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(18px,3cqw,32px);align-items:start;padding:clamp(20px,3.4cqw,32px);border-radius:var(--r-l);background:linear-gradient(135deg,var(--surface) 0%,var(--surface-2) 100%);border:1px solid var(--line)}
+.desk h2{font-size:clamp(1.25rem,2.8cqw,1.7rem)}
+.desk p{color:var(--muted);margin-top:8px}
+.desk-ref{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 12px;border-radius:999px;background:var(--gold-wash);color:var(--gold-ink);font:600 .8rem var(--f-head)}
+.desk-acts{display:grid;gap:10px}
+.da{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border-radius:var(--r-m);background:var(--surface);border:1px solid var(--line);text-decoration:none;cursor:pointer;text-align:start;width:100%}
+.da:hover{border-color:var(--teal)}
+.da b{display:block;font:700 .95rem var(--f-head)}
+.da small{display:block;color:var(--muted);font-size:.82rem;line-height:1.6}
+.da > svg{width:18px;height:18px;color:var(--faint)}
+
+/* ---------- faq ---------- */
+.faq-g{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(18px,3cqw,40px);align-items:start}
+.faq-side p{color:var(--muted);margin-top:10px}
+.faq-side .sig{margin-top:16px;font:700 1rem var(--f-head);color:var(--gold-ink)}
+.faq-filter{display:grid;gap:6px;margin-top:18px;max-width:320px}
+.faq-filter label{font:600 .8rem var(--f-head);color:var(--muted)}
+.sel{appearance:none;width:100%;min-height:46px;padding:0 14px 0 40px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356688A' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat left 12px center/18px;font:500 .92rem var(--f-body);color:var(--ink)}
+.faq-list{display:grid;gap:8px}
+.faq-list details{border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);padding-inline:16px}
+.faq-list summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;cursor:pointer;list-style:none;font:700 .94rem var(--f-head)}
+.faq-list summary::-webkit-details-marker{display:none}
+.faq-list summary svg{width:18px;height:18px;flex:none;color:var(--teal-ink);transition:transform .2s}
+.faq-list details[open] summary svg{transform:rotate(45deg)}
+.faq-list details p{padding-bottom:14px;color:var(--muted);font-size:.9rem}
+
+/* ---------- footer ---------- */
+.sf{color:var(--on-navy-2);background:linear-gradient(180deg,var(--navy) 0%,var(--navy-3) 100%)}
+.sf-in{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.9fr) minmax(0,1fr);gap:clamp(20px,3.6cqw,44px);padding-block:clamp(36px,5cqw,56px)}
+.sf h4{font-size:.95rem;color:#fff;margin-bottom:12px}
+.sf p{font-size:.88rem}
+.sf .logo-w{display:block;height:46px;margin-bottom:14px}
+.sf-motto{margin-top:12px;font:800 1.05rem var(--f-head);color:var(--gold)}
+.contact{display:grid;gap:8px}
+.ci{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.ci svg{width:18px;height:18px;color:var(--teal)}
+.ci small{display:block;font-size:.72rem;color:var(--on-navy-3)}
+.ci b{display:block;font:600 .86rem var(--f-body);color:#fff;direction:ltr;text-align:right;overflow-wrap:anywhere}
+.copy{border:1px solid rgba(255,255,255,.2);background:none;color:var(--on-navy-2);border-radius:8px;padding:4px 8px;font:600 .72rem var(--f-head);cursor:pointer}
+.pol{columns:2;column-gap:18px;list-style:none;margin:0;padding:0}
+.pol li{break-inside:avoid}
+.pol a{display:block;padding:5px 0;font-size:.84rem;text-decoration:none;color:var(--on-navy-2)}
+.pol a:hover{color:#fff}
+.pay{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:16px}
+.pay span{display:grid;place-items:center;height:34px;padding:0 10px;border-radius:8px;background:#fff}
+.pay img{height:20px;width:auto}
+.sf-bot{border-top:1px solid rgba(255,255,255,.1);padding-block:16px;font-size:.78rem;color:var(--on-navy-3);display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
+
+/* ---------- app dock ---------- */
+.dock{display:none}
+.dock a{display:grid;justify-items:center;gap:2px;padding:6px 4px;text-decoration:none;font:600 .66rem var(--f-head);color:var(--muted);border-radius:12px}
+.dock a svg{width:22px;height:22px}
+.dock a.on{color:var(--teal-ink)}
+.dock a.on svg{filter:drop-shadow(0 4px 8px rgba(10,165,173,.35))}
+.wa{position:sticky;bottom:18px;margin-inline-start:auto;margin-inline-end:18px;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:#1FAF5A;color:#fff;box-shadow:0 10px 24px rgba(31,175,90,.35);margin-top:-70px;z-index:15}
+.wa svg{width:26px;height:26px}
+</style>
+<style>
+/* ---------- portal ---------- */
+.ph{border-bottom:1px solid var(--line);background:var(--surface)}
+.ph-in{display:flex;align-items:center;gap:12px;min-height:64px}
+.ph .logo-c{height:40px}
+:root[data-theme="dark"] .ph .logo-c{display:none} :root[data-theme="dark"] .ph .logo-w{display:block}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ph .logo-c{display:none}:root:not([data-theme="light"]) .ph .logo-w{display:block}}
+.ph .logo-w{height:36px}
+.ph-back{margin-inline-start:auto}
+.portal{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);min-height:640px}
+.pp{position:relative;isolation:isolate;overflow:hidden;color:#fff;padding:clamp(28px,4.4cqw,56px);display:grid;align-content:space-between;gap:28px;background:radial-gradient(70% 70% at 0% 0%,rgba(10,165,173,.45),transparent 60%),radial-gradient(60% 60% at 100% 100%,rgba(255,200,97,.22),transparent 62%),linear-gradient(150deg,var(--navy-3),var(--navy) 55%,var(--navy-2))}
+.pp::before{content:"";position:absolute;inset:0;z-index:-1;background-image:radial-gradient(rgba(255,214,140,.5) 1px,transparent 1px);background-size:26px 26px;opacity:.1}
+.pp-ring{position:absolute;z-index:-1;width:420px;aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,200,97,.35);inset-inline-end:-140px;top:-120px}
+.pp .eyebrow{color:var(--gold)}
+.pp h1{margin-top:10px;font-size:clamp(1.6rem,3.6cqw,2.4rem);font-weight:800}
+.pp h1 em{font-style:normal;color:var(--gold)}
+.pp > div > p{margin-top:10px;color:var(--on-navy-2);max-width:44ch}
+.assure{display:grid;gap:10px;list-style:none;margin:0;padding:0}
+.assure li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.assure .tile{background:rgba(10,165,173,.18);color:#7EE6EA}
+.assure b{display:block;font:700 .92rem var(--f-head)}
+.assure span{display:block;font-size:.8rem;color:var(--on-navy-2);line-height:1.6}
+.pp-foot{display:flex;flex-wrap:wrap;gap:8px;font-size:.78rem;color:var(--on-navy-3)}
+.pp-foot span{padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
+
+.pc-wrap{display:grid;place-items:start center;padding:clamp(20px,4cqw,48px) clamp(16px,4cqw,48px)}
+.pc{width:100%;max-width:470px;display:grid;gap:18px}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;margin:0;padding:0;position:relative}
+.steps::before{content:"";position:absolute;top:13px;inset-inline:16.66%;height:2px;background:var(--line)}
+.steps .fill{position:absolute;top:13px;inset-inline-start:16.66%;height:2px;width:0;background:linear-gradient(270deg,var(--gold),var(--teal));transition:width .5s cubic-bezier(.4,0,.2,1)}
+.steps li{position:relative;z-index:1;display:grid;justify-items:center;gap:6px;text-align:center;font:600 .76rem var(--f-head);color:var(--faint)}
+.steps li i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:2px solid var(--line-2);font-style:normal;font:700 .74rem var(--f-head);color:var(--faint)}
+.steps li.on{color:var(--ink)}
+.steps li.on i{border-color:var(--teal);color:var(--teal-ink);box-shadow:0 0 0 4px var(--teal-wash)}
+.steps li.done i{background:var(--teal-ink);border-color:var(--teal-ink);color:#fff}
+.pc-h{display:flex;align-items:flex-start;gap:14px}
+.pc-h h2{font-size:1.45rem;font-weight:800}
+.pc-h p{color:var(--muted);font-size:.88rem;margin-top:2px}
+.timer{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:var(--gold-wash);border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);font-size:.82rem;color:var(--ink)}
+.timer svg{width:18px;height:18px;color:var(--gold-ink);flex:none}
+.timer b{margin-inline-start:auto;font:800 1.05rem var(--f-head);direction:ltr;font-variant-numeric:tabular-nums}
+.timer .bar{flex-basis:100%;height:4px;border-radius:4px;background:color-mix(in srgb,var(--gold) 25%,transparent);overflow:hidden;order:9}
+.timer .bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--amber),var(--gold));transition:width 1s linear;margin-inline-start:auto}
+.timer{flex-wrap:wrap}
+.card{padding:clamp(18px,3cqw,26px);border-radius:var(--r-l);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:grid;gap:16px}
+.fld{display:grid;gap:6px}
+.fld label{font:600 .84rem var(--f-head)}
+.fld .hint{font-size:.76rem;color:var(--faint)}
+.inp{width:100%;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);font:500 .95rem var(--f-body);color:var(--ink)}
+.inp::placeholder{color:var(--faint)}
+.inp:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 4px var(--teal-wash)}
+.inp.ltr{direction:ltr;text-align:right}
+.inp.bad{border-color:var(--bad);box-shadow:0 0 0 4px var(--bad-wash)}
+.pw{position:relative}
+.pw .inp{padding-inline-start:46px}
+.pw button{position:absolute;inset-inline-start:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:none;border-radius:10px;cursor:pointer;color:var(--muted);display:grid;place-items:center}
+.pw button svg{width:20px;height:20px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.link{border:0;background:none;padding:0;cursor:pointer;font:700 .84rem var(--f-head);color:var(--teal-ink);text-decoration:none}
+.human{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);font-size:.84rem}
+.human .sp{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line-2);border-top-color:var(--teal);animation:spin .8s linear infinite;flex:none}
+.human.ok .sp{animation:none;border-color:var(--ok);background:var(--ok);position:relative}
+.human.ok .sp::after{content:"";position:absolute;left:6px;top:3px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.human small{margin-inline-start:auto;color:var(--faint);font-size:.72rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg{display:none;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:.84rem}
+.msg.show{display:flex}
+.msg.bad{background:var(--bad-wash);color:var(--bad)}
+.msg.ok{background:var(--ok-wash);color:var(--ok)}
+.msg svg{width:18px;height:18px;flex:none;margin-top:2px}
+.sep{height:1px;background:var(--line)}
+.alt{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:.84rem;color:var(--muted)}
+.otp{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;direction:ltr}
+.otp input{width:100%;aspect-ratio:1/1.12;max-height:58px;text-align:center;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);font:800 1.3rem var(--f-head);color:var(--ink)}
+.otp input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 4px var(--teal-wash)}
+.otp.bad input{border-color:var(--bad)}
+.dest{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--teal-wash);font-size:.84rem}
+.dest svg{width:18px;height:18px;color:var(--teal-ink);flex:none}
+.dest b{direction:ltr;font-variant-numeric:tabular-nums}
+.meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.78rem;color:var(--muted)}
+.meta b{font-variant-numeric:tabular-nums;color:var(--ink)}
+.dev{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2)}
+.dev b{display:block;font:700 .92rem var(--f-head)}
+.dev small{display:block;color:var(--muted);font-size:.78rem}
+.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;list-style:none;margin:0;padding:0;font-size:.78rem;color:var(--faint)}
+.rules li{display:flex;align-items:center;gap:6px}
+.rules li::before{content:"";width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;flex:none}
+.rules li.ok{color:var(--ok)}
+.rules li.ok::before{background:currentColor}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:.84rem;color:var(--muted)}
+.chk input{width:18px;height:18px;margin-top:4px;accent-color:var(--teal-ink);flex:none}
+.done{text-align:center;justify-items:center}
+.seal{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:var(--ok-wash);color:var(--ok);position:relative}
+.seal svg{width:36px;height:36px}
+.seal::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--ok) 45%,transparent);animation:ripple 2.4s ease-out infinite}
+@keyframes ripple{from{transform:scale(.85);opacity:1}to{transform:scale(1.35);opacity:0}}
+.done h3{font-size:1.3rem}
+.done p{color:var(--muted);font-size:.9rem;max-width:40ch}
+.flow[hidden]{display:none!important}
+.legal{text-align:center;font-size:.74rem;color:var(--faint)}
+.legal a{color:var(--muted)}
+
+/* ---------- container: tablet ---------- */
+@container site (max-width: 980px){
+  .sh-nav{display:none}
+  .sh-menu{display:grid}
+  .hero-in{grid-template-columns:minmax(0,1fr)}
+  .know{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .know .kc:last-child{grid-column:1/-1}
+  .desk,.faq-g{grid-template-columns:minmax(0,1fr)}
+  .sf-in{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .sf-in > div:first-child{grid-column:1/-1}
+  .portal{grid-template-columns:minmax(0,1fr)}
+  .pp{gap:18px}
+  .pp .assure{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+/* ---------- container: phone / app ---------- */
+@container site (max-width: 640px){
+  .sh-act .btn-line,.sh-act .btn-teal{display:none}
+  #sh-acc{display:grid}
+  .sh-in{min-height:60px}
+  .logo-c{height:36px} .sh .logo-w{height:32px}
+  .hero-in{padding-block:30px 34px}
+  .hero-cta .btn{flex:1 1 100%}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .know{grid-template-columns:minmax(0,1fr)}
+  .sf-in{grid-template-columns:minmax(0,1fr)}
+  .pol{columns:1}
+  .dock{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;position:sticky;bottom:0;z-index:25;padding:6px 8px calc(8px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+  .pp{padding:22px 18px}
+  .pp .assure{grid-template-columns:minmax(0,1fr)}
+  .pp .assure li:nth-child(n+2){display:none}
+  .pp-foot{display:none}
+  .pp h1{font-size:1.45rem}
+  .pc-wrap{padding:18px 14px 28px}
+  .ph-back .t{display:none}
+  .rules{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<style>
+#sh-search{display:none}
+.tel{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px;direction:rtl}
+.tel .cc{direction:rtl}
+.sheet{position:sticky;bottom:64px;z-index:26;margin:0 10px;padding:14px;border-radius:22px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-2);display:grid;gap:12px}
+.sheet-h{display:flex;align-items:center;justify-content:space-between}
+.sheet-h b{font:700 1rem var(--f-head)}
+.sheet-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sheet-g a{display:grid;justify-items:center;gap:6px;padding:10px 4px;border-radius:14px;border:1px solid var(--line);text-decoration:none;font:600 .76rem var(--f-head);text-align:center}
+@container site (max-width: 640px){
+  #sh-search{display:grid}
+  .sh-menu{display:none}
+  .know,.nums{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:6px;scrollbar-width:none;background:none;border:0;border-radius:0}
+  .know::-webkit-scrollbar,.nums::-webkit-scrollbar{display:none}
+  .know .kc{flex:0 0 82%;scroll-snap-align:start}
+  .nums .n{flex:0 0 46%;scroll-snap-align:start;border:1px solid var(--line);border-radius:var(--r-m)}
+  .tel{grid-template-columns:minmax(0,1fr) 128px}
+}
+</style>
+<style>
+html.embed .studio,html.embed .notes{display:none!important}
+html.embed .stage{padding:0}
+html.embed .frame{border:0;border-radius:0;box-shadow:none;max-width:none}
+html.embed .stage.app{padding-block:18px}
+html.embed .stage.app .frame{max-width:400px;border:10px solid #0B1426;border-radius:38px;height:min(820px,calc(100dvh - 36px))}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.6-3.3 8.3-8 9-4.7-.7-8-4.4-8-9V6l8-3z"/><path d="M8.5 12l2.4 2.4L15.5 10"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6 8.5-6"/></symbol>
+<symbol id="i-wa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.3-3.9A8.5 8.5 0 1 1 8 19z"/><path d="M9 9.2c.3 2.4 2.3 4.6 5 5.4l1.2-1.3 2 1-.4 1.6c-3.6.4-8.4-3.6-8.4-7.6l1.5-.5 1 2z"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c.9-4 4.1-6 8-6s7.1 2 8 6"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5L12 3.5l8.5 7"/><path d="M5.5 9v11h13V9"/><path d="M10 20v-6h4v6"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l8.5 4.5v9L12 21l-8.5-4.5v-9z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></symbol>
+<symbol id="i-track" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5" stroke-linecap="round"/></symbol>
+<symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke-linecap="round"/></symbol>
+<symbol id="i-hands" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l4-4 4 3 2-1.5M21 12l-4-4-5 4 3 3"/><path d="M7 16l2 2M10 15l3 3M13 14l2 2"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-eyeoff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l18 18"/><path d="M10.6 5.6A9 9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-3 3.6M6.5 7.3A16 16 0 0 0 2.5 12s3.5 6.5 9.5 6.5c1.4 0 2.7-.3 3.8-.8"/><path d="M9.9 10a3 3 0 0 0 4.1 4.1"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l2.5 2.5M15 8l2 2"/></symbol>
+<symbol id="i-device" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="10.5" rx="1.5"/><path d="M6 19h8" stroke-linecap="round"/><rect x="16" y="9" width="5.5" height="11" rx="1.3"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15.5h6" stroke-linecap="round"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
+<symbol id="i-support" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 1.5-2 2.5-5 2.5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6L6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+<symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4" stroke-linecap="round"/></symbol>
+<symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5H5V6h5"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></symbol>
+</defs>
+</svg>
+
+<header class="studio">
+  <div class="studio-in">
+    <div class="studio-t"><img src="img/mark.png" alt=""><div><b>إعادة تصميم منصة تيرا</b><small>الرئيسية والبوابة بهوية العينة · معاينة تفاعلية</small></div></div>
+    <div class="seg" role="group" aria-label="الصفحة">
+      <button type="button" id="tab-home" aria-pressed="true" data-view="home">الرئيسية</button>
+      <button type="button" id="tab-portal" aria-pressed="false" data-view="portal">البوابة</button>
+    </div>
+    <div class="seg" role="group" aria-label="العرض">
+      <button type="button" id="dv-web" aria-pressed="true" data-dev="web"><svg width="14" height="14" style="vertical-align:-2px"><use href="#i-monitor"/></svg> ويب</button>
+      <button type="button" id="dv-app" aria-pressed="false" data-dev="app"><svg width="14" height="14" style="vertical-align:-2px"><use href="#i-phone"/></svg> تطبيق</button>
+    </div>
+    <span class="studio-sp"></span>
+    <button type="button" class="chip-btn" id="theme-btn" aria-label="تبديل الوضع"><svg><use href="#i-moon"/></svg><span>داكن</span></button>
+    <a class="chip-btn gold" href="https://claude.ai/artifact/Av1hwwPFnvgM7n5Mk1KPRw" target="_blank" rel="noopener"><svg><use href="#i-ext"/></svg>العينة</a>
+  </div>
+</header>
+
+<div class="stage" id="stage">
+  <div class="notes" id="notes-home">
+    <b>ما الذي تغيّر:</b>
+    <span>الافتتاحية تعرض نموذج تيرا الفعلي من الطلب إلى الحل</span>
+    <span>الأرقام في شبكة واحدة بدل الشرائح</span>
+    <span>مركز المراسلات بثلاثة مداخل مباشرة</span>
+    <span>الأسئلة الشائعة مع تصفية بالقائمة</span>
+    <span>التطبيق: شريط سفلي بثلاثة عناصر وبطاقات بالتمرير</span>
+  </div>
+  <div class="notes" id="notes-portal" hidden>
+    <b>ما الذي تغيّر:</b>
+    <span>لوحة هوية بجانب النموذج بدل صفحة بيضاء</span>
+    <span>مدة الدخول شريط مضغوط بدل صندوق كبير</span>
+    <span>وسيلة الرمز من قائمة منسدلة</span>
+    <span>الاسترداد والتسجيل داخل البطاقة نفسها</span><span>الجوال بمفتاح دولة · الرمز يتأكد تلقائيًا</span>
+  </div>
+
+  <div class="frame" id="frame">
+
+<!-- ======================= HOME ======================= -->
+<div id="v-home">
+  <header class="sh">
+    <div class="wrap sh-in">
+      <button type="button" class="icon-btn sh-menu" aria-label="القائمة"><svg><use href="#i-menu"/></svg></button>
+      <a href="#home" aria-label="منصة تيرا"><img class="logo-c" src="img/logo.png" alt="منصة تيرا"><img class="logo-w" src="img/logo-white.png" alt="منصة تيرا"></a>
+      <nav class="sh-nav" aria-label="الأقسام">
+        <a href="#home" class="on">الرئيسية</a><a href="#home">المنتجات</a><a href="#home">الخدمات</a><a href="#home">الشركاء</a><a href="#home">عن تيرا</a>
+      </nav>
+      <div class="sh-act">
+        <a class="btn btn-line" href="#home"><svg><use href="#i-track"/></svg>متابعة الطلب</a>
+        <button type="button" class="btn btn-teal" data-go="portal"><svg><use href="#i-user"/></svg>تسجيل الدخول</button>
+        <button type="button" class="icon-btn" aria-label="بحث" id="sh-search"><svg><use href="#i-search"/></svg></button>
+        <button type="button" class="icon-btn" data-go="portal" aria-label="حسابي" id="sh-acc"><svg><use href="#i-user"/></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap hero-in">
+      <div>
+        <span class="hero-kick"><i></i>منصة تيرا للخدمات المتكاملة</span>
+        <h1>من الاحتياج إلى الحل</h1>
+        <p class="hero-lead">لا نبدأ من المنتج، بل نبدأ من الاحتياج.</p>
+        <p class="hero-sub">قدّم احتياجك كما هو، ويتولى فريق تيرا الدراسة والبحث والتنسيق مع الموردين، ثم نعرض عليك الخيارات المناسبة لإمكاناتك.</p>
+        <div class="hero-cta">
+          <a class="btn btn-gold" href="https://claude.ai/artifact/Av1hwwPFnvgM7n5Mk1KPRw" target="_blank" rel="noopener"><svg><use href="#i-shield"/></svg>تحقق من أهليتك</a>
+          <a class="btn btn-ghost-n" href="#home"><svg><use href="#i-plus"/></svg>اطلب عرض سعر</a>
+        </div>
+        <div class="hero-meta">
+          <span><svg><use href="#i-check"/></svg>طلب واحد لكل الخدمات</span>
+          <span><svg><use href="#i-check"/></svg>رقم مرجعي لكل طلب</span>
+          <span><svg><use href="#i-check"/></svg>متابعة من الجوال</span>
+        </div>
+      </div>
+      <div class="track" aria-label="نموذج عمل تيرا">
+        <div class="track-h"><b>كيف يتحول احتياجك إلى حل</b><small>نموذج عمل تيرا</small></div>
+        <ol class="tsteps">
+          <li class="tstep" style="--i:0"><span class="dot"><svg><use href="#i-doc"/></svg></span><div><b>طلب العميل</b><span>تكتب احتياجك بكلماتك، دون أن تحصر نفسك في منتج محدد.</span></div></li>
+          <li class="tstep" style="--i:1"><span class="dot"><svg><use href="#i-search"/></svg></span><div><b>الدراسة والبحث</b><span>نفهم الاحتياج ونبحث في المنتجات والخدمات المتاحة.</span></div></li>
+          <li class="tstep" style="--i:2"><span class="dot"><svg><use href="#i-hands"/></svg></span><div><b>التنسيق وتقديم الخيارات</b><span>ننسق مع الموردين والشركاء ونرتب لك الخيارات.</span></div></li>
+          <li class="tstep end" style="--i:3"><span class="dot"><svg><use href="#i-check"/></svg></span><div><b>الحل المناسب</b><span>تختار ما يناسب إمكاناتك، وتتابع طلبك حتى الإغلاق.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head"><span class="eyebrow">أرقام تيرا</span><h2>أرقام تعكس مسيرتنا</h2><p>تجربة رقمية تجمع الخدمات والحلول والخيارات في مكان واحد، مع التركيز على سهولة الوصول والتنظيم وجودة تجربة العميل.</p></div>
+      <div class="nums">
+        <div class="n"><b><em>+</em>12,500</b><span>عميل مسجل</span></div>
+        <div class="n"><b><em>+</em>28,000</b><span>طلب مستلم</span></div>
+        <div class="n"><b><em>+</em>21,500</b><span>طلب مكتمل</span></div>
+        <div class="n"><b><em>+</em>65</b><span>خدمة ومنتج</span></div>
+        <div class="n"><b><em>+</em>35</b><span>شريك ومزود خدمة</span></div>
+        <div class="n"><b><em>+</em>24,000</b><span>عملية مكتملة</span></div>
+        <div class="n"><b><em>+</em>18,000</b><span>مراسلة تمت معالجتها</span></div>
+        <div class="n"><b><em>+</em>30,000</b><span>مستفيد</span></div>
+      </div>
+      <div class="nums-foot"><span>الأرقام كما تظهر في الموقع الحالي.</span><b>كل رقم يمثل تجربة وثقة ومسيرة مستمرة.</b></div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head"><span class="eyebrow">تعرّف أكثر</span><h2>تيرا وخدماتها وشركاؤها</h2></div>
+      <div class="know">
+        <article class="kc">
+          <div class="kc-h"><span class="tile"><svg><use href="#i-compass"/></svg></span><h3>تعرّف على تيرا</h3></div>
+          <p>منصة رقمية سعودية تنظم وتسهّل وصول العملاء إلى المنتجات والخدمات والحلول التي تناسب احتياجاتهم.</p>
+          <ul>
+            <li><a href="#home">من نحن<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">رؤيتنا<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">رسالتنا<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">فلسفة تيرا<svg><use href="#i-chev"/></svg></a></li>
+          </ul>
+        </article>
+        <article class="kc">
+          <div class="kc-h"><span class="tile g"><svg><use href="#i-layers"/></svg></span><h3>الخدمات</h3></div>
+          <p>نموذج مرن يتيح لك تقديم احتياجك بدلًا من حصره في منتجات محددة مسبقًا.</p>
+          <ul>
+            <li><a href="#home">نموذج عمل تيرا<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">المنتجات والخدمات والحلول<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">رحلة العميل وتجربته<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">الجودة والموثوقية<svg><use href="#i-chev"/></svg></a></li>
+          </ul>
+        </article>
+        <article class="kc">
+          <div class="kc-h"><span class="tile"><svg><use href="#i-hands"/></svg></span><h3>خدمات الشركاء</h3></div>
+          <p>الموردون ومقدمو الخدمات والشركاء أساس قدرة تيرا على توفير خيارات متنوعة للعملاء.</p>
+          <ul>
+            <li><a href="#home">منظومة الموردين والشركاء<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">منظومة الدفع<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">القيمة المقدمة للشركاء<svg><use href="#i-chev"/></svg></a></li>
+            <li><a href="#home">فرص الشراكة<svg><use href="#i-chev"/></svg></a></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap">
+      <div class="desk">
+        <div>
+          <span class="eyebrow">مركز المراسلات والدعم</span>
+          <h2 style="margin-top:6px">نحن هنا لخدمتك</h2>
+          <p>قناة تواصل مباشرة ومنظمة لتقديم طلب أو شكوى أو طلب دعم، ومتابعة الردود والتحديثات.</p>
+          <span class="desk-ref"><svg width="16" height="16"><use href="#i-doc"/></svg>كل مراسلة تُسجَّل برقم مرجعي مستقل</span>
+        </div>
+        <div class="desk-acts">
+          <a class="da" href="#home"><span class="tile"><svg><use href="#i-plus"/></svg></span><span><b>تقديم طلب</b><small>طلب جديد أو طلب خدمة أو طلب متعلق بخدمة قائمة.</small></span><svg><use href="#i-chev"/></svg></a>
+          <a class="da" href="#home"><span class="tile g"><svg><use href="#i-flag"/></svg></span><span><b>تقديم شكوى</b><small>ملاحظة أو شكوى مع إرفاق المستندات والإثباتات.</small></span><svg><use href="#i-chev"/></svg></a>
+          <a class="da" href="#home"><span class="tile"><svg><use href="#i-support"/></svg></span><span><b>طلب دعم</b><small>استفسار أو مساعدة فنية أو مشكلة في الحساب أو المنصة.</small></span><svg><use href="#i-chev"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap faq-g">
+      <div class="faq-side">
+        <span class="eyebrow">الأسئلة الشائعة</span>
+        <h2 style="margin-top:6px;font-size:clamp(1.3rem,3cqw,1.9rem)">إجابات مختصرة لأكثر ما يُسأل عنه</h2>
+        <p>مرجع واضح يساعدك على فهم خدمات المنصة وآلية الاستفادة منها: الطلبات، والدفع، والشحن، والاسترجاع، والاستبدال، والضمان، والخصوصية.</p>
+        <div class="faq-filter">
+          <label for="faq-cat">عرض أسئلة</label>
+          <select id="faq-cat" class="sel">
+            <option value="all">كل المواضيع</option>
+            <option value="start">البدء والطلبات</option>
+            <option value="pay">الدفع والقيمة</option>
+            <option value="after">الشحن والاسترجاع والضمان</option>
+          </select>
+        </div>
+        <p class="sig">تيرا… من الاحتياج إلى الحل.</p>
+      </div>
+      <div class="faq-list" id="faq-list">
+        <details name="faq" data-cat="start"><summary>ما هي منصة تيرا؟<svg><use href="#i-plus"/></svg></summary><p>منصة رقمية تقدّم مجموعة متنوعة من الخدمات والمنتجات والحلول، وتربط العملاء بالخدمات المتاحة من خلال المنصة أو من خلال الجهات والشركاء ذوي العلاقة.</p></details>
+        <details name="faq" data-cat="start"><summary>كيف أبدأ باستخدام منصة تيرا؟<svg><use href="#i-plus"/></svg></summary><p>تصفح الخدمات المتاحة واختر المناسبة لك، ثم اطّلع على متطلباتها وشروطها واتبع خطوات تقديم الطلب بحسب طبيعة الخدمة.</p></details>
+        <details name="faq" data-cat="start"><summary>كيف أقدّم طلبًا للحصول على خدمة؟<svg><use href="#i-plus"/></svg></summary><p>بعد الدخول اختر الخدمة المطلوبة، واطّلع على المعلومات والمتطلبات، ثم أدخل البيانات وأرفق المستندات المطلوبة وأرسل الطلب.</p></details>
+        <details name="faq" data-cat="pay"><summary>كيف أعرف قيمة الخدمة؟<svg><use href="#i-plus"/></svg></summary><p>تظهر قيمة الخدمة والرسوم ذات العلاقة وفق المعلومات المتاحة للخدمة قبل إتمام الإجراء أو الطلب.</p></details>
+        <details name="faq" data-cat="pay"><summary>هل يمكنني السداد على دفعات؟<svg><use href="#i-plus"/></svg></summary><p>قد تتوفر خيارات السداد على دفعات من خلال شركاء أو مزودي خدمات، بحسب الخدمة والأهلية والشروط المعتمدة.</p></details>
+        <details name="faq" data-cat="after"><summary>كم تستغرق عملية الشحن والتوصيل؟<svg><use href="#i-plus"/></svg></summary><p>تختلف المدة بحسب المنتج وشركة الشحن والوجهة وظروف الطلب، ووفق سياسة الشحن المعتمدة.</p></details>
+        <details name="faq" data-cat="after"><summary>هل يمكنني إلغاء الطلب واسترداد المبلغ؟<svg><use href="#i-plus"/></svg></summary><p>قد يتاح الإلغاء والاسترداد بحسب حالة الطلب ومرحلة المعالجة وطبيعة المنتج أو الخدمة والشروط المطبقة.</p></details>
+        <details name="faq" data-cat="after"><summary>هل المنتجات مشمولة بالضمان؟<svg><use href="#i-plus"/></svg></summary><p>قد تكون بعض المنتجات مشمولة بالضمان وفق طبيعة المنتج وشروط الوكيل أو المورد والمدة المحددة.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <footer class="sf">
+    <div class="wrap sf-in">
+      <div>
+        <img class="logo-w" src="img/logo-white.png" alt="منصة تيرا">
+        <p>نؤمن بأن أفضل الحلول تبدأ بفهم الاحتياج الحقيقي للعميل. لذلك بنينا نموذجًا يبدأ من طلبك، ويمر بالدراسة والبحث والتنسيق وتقديم الخيارات، وصولًا إلى الحل المناسب.</p>
+        <p class="sf-motto">من الاحتياج إلى الحل</p>
+        <div class="pay" aria-label="وسائل الدفع">
+          <span><img src="img/pay-mada.png" alt="مدى"></span>
+          <span><img src="img/pay-Apple_Pay.png" alt="Apple Pay"></span>
+          <span><img src="img/pay-STC_Pay.png" alt="STC Pay"></span>
+          <span><img src="img/pay-Google_Pay.png" alt="Google Pay"></span>
+          <span><img src="img/pay-Paymob.png" alt="Paymob"></span>
+        </div>
+      </div>
+      <div>
+        <h4>رعاية خدمة العملاء</h4>
+        <div class="contact">
+          <div class="ci"><svg><use href="#i-wa"/></svg><div><small>واتساب</small><b>0555698774</b></div><button type="button" class="copy" data-copy="0555698774">نسخ</button></div>
+          <div class="ci"><svg><use href="#i-mail"/></svg><div><small>البريد الإلكتروني</small><b>info@tera-ksa.sa.com</b></div><button type="button" class="copy" data-copy="info@tera-ksa.sa.com">نسخ</button></div>
+          <div class="ci"><svg><use href="#i-support"/></svg><div><small>بريد الدعم</small><b>support@tera-services.com.sa</b></div><button type="button" class="copy" data-copy="support@tera-services.com.sa">نسخ</button></div>
+        </div>
+      </div>
+      <div>
+        <h4>المعلومات والسياسات</h4>
+        <ul class="pol">
+          <li><a href="#home">الأسئلة الشائعة</a></li><li><a href="#home">مركز المراسلات</a></li><li><a href="#home">سياسة الاستخدام</a></li><li><a href="#home">سياسة الخصوصية</a></li><li><a href="#home">دليل المستخدم</a></li><li><a href="#home">سياسة الاسترجاع واسترداد المبالغ</a></li><li><a href="#home">سياسة الاستبدال</a></li><li><a href="#home">سياسة الشحن والتوصيل</a></li><li><a href="#home">سياسة الضمان</a></li><li><a href="#home">سياسة خدمات الشركاء</a></li><li><a href="#home">شروط تقديم الخدمات والطلبات</a></li><li><a href="#home">سياسة الشكاوى والاقتراحات</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="wrap sf-bot"><span>© <span class="lt">2026</span> منصة تيرا للخدمات المتكاملة — جميع الحقوق محفوظة</span><span>المملكة العربية السعودية</span></div>
+  </footer>
+
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheet-h"><b>الأقسام</b><button type="button" class="icon-btn" id="sheet-x" aria-label="إغلاق"><svg><use href="#i-plus" style="transform:rotate(45deg);transform-origin:center"/></svg></button></div>
+    <div class="sheet-g">
+      <a href="#home"><span class="tile"><svg><use href="#i-box"/></svg></span>المنتجات</a>
+      <a href="#home"><span class="tile g"><svg><use href="#i-layers"/></svg></span>الخدمات</a>
+      <a href="#home"><span class="tile"><svg><use href="#i-hands"/></svg></span>الشركاء</a>
+      <a href="#home"><span class="tile g"><svg><use href="#i-compass"/></svg></span>عن تيرا</a>
+      <a href="#home"><span class="tile"><svg><use href="#i-track"/></svg></span>متابعة الطلب</a>
+      <a href="#home"><span class="tile g"><svg><use href="#i-chat"/></svg></span>المراسلات</a>
+    </div>
+    <button type="button" class="da" id="sheet-theme"><span class="tile"><svg><use href="#i-moon"/></svg></span><span><b>الوضع الليلي</b><small id="sheet-theme-s">تبديل بين الفاتح والداكن</small></span><svg><use href="#i-chev"/></svg></button>
+  </div>
+
+  <nav class="dock" aria-label="التنقل في التطبيق">
+    <a href="#home" class="on"><svg><use href="#i-home"/></svg>الرئيسية</a>
+    <a href="#home" id="dock-sec"><svg><use href="#i-layers"/></svg>الأقسام</a>
+    <a href="#portal" data-go="portal"><svg><use href="#i-user"/></svg>تسجيل الدخول</a>
+  </nav>
+</div>
+
+<!-- ======================= PORTAL ======================= -->
+<div id="v-portal" hidden>
+  <header class="ph">
+    <div class="wrap ph-in">
+      <a href="#portal" aria-label="منصة تيرا"><img class="logo-c" src="img/logo.png" alt="منصة تيرا"><img class="logo-w" src="img/logo-white.png" alt="منصة تيرا"></a>
+      <button type="button" class="btn btn-line ph-back" data-go="home" style="min-height:40px;padding:0 14px;font-size:.84rem"><svg><use href="#i-arrow"/></svg><span class="t">العودة إلى منصة تيرا</span></button>
+    </div>
+  </header>
+
+  <div class="portal">
+    <aside class="pp">
+      <span class="pp-ring" aria-hidden="true"></span>
+      <div>
+        <span class="eyebrow">بوابة الدخول الموحدة</span>
+        <h1>حساب واحد <em>لكل خدماتك</em></h1>
+        <p>الدخول والرمز واسترداد الحساب من مكان واحد. يصلك الرمز عبر واتساب أو البريد أو تطبيق المصادقة.</p>
+      </div>
+      <ul class="assure">
+        <li><span class="tile"><svg><use href="#i-shield"/></svg></span><div><b>دخول آمن بخطوتين</b><span>كلمة المرور ثم رمز تحقق لا يُرسل إلا بطلبك.</span></div></li>
+        <li><span class="tile"><svg><use href="#i-device"/></svg></span><div><b>أجهزتك تحت نظرك</b><span>تؤكد كل جهاز جديد، وتحدد مدة الثقة به.</span></div></li>
+        <li><span class="tile"><svg><use href="#i-doc"/></svg></span><div><b>كل عملية موثّقة</b><span>سجل واضح لعمليات الدخول والتغييرات على حسابك.</span></div></li>
+      </ul>
+      <div class="pp-foot"><span>التحقق البشري عبر Cloudflare</span><span>مدة الدخول 10 دقائق</span><span>5 محاولات لكل رمز</span></div>
+    </aside>
+
+    <div class="pc-wrap">
+      <div class="pc">
+        <ol class="steps" id="steps" aria-label="مراحل الدخول">
+          <span class="fill" id="steps-fill"></span>
+          <li class="on" data-s="1"><i>1</i>بيانات الدخول</li>
+          <li data-s="2"><i>2</i>رمز التحقق</li>
+          <li data-s="3"><i>3</i>تأكيد الجهاز</li>
+        </ol>
+
+        <div class="timer" id="timer" role="timer" aria-live="off">
+          <svg><use href="#i-clock"/></svg><span>مدة الدخول المتبقية، بعدها تبدأ من جديد</span><b id="timer-v">10:00</b>
+          <span class="bar"><i id="timer-bar"></i></span>
+        </div>
+
+        <!-- 1. login -->
+        <form class="card flow" id="f-login" novalidate>
+          <div class="pc-h"><span class="tile"><svg><use href="#i-shield"/></svg></span><div><h2>الدخول الموحد</h2><p>البريد أو الجوال، ثم كلمة المرور.</p></div></div>
+          <div class="fld"><label for="lg-id">البريد الإلكتروني أو رقم الجوال</label><input class="inp ltr" id="lg-id" autocomplete="off" inputmode="email" placeholder="name@example.com أو 05XXXXXXXX"></div>
+          <div class="fld">
+            <div class="row"><label for="lg-pw">كلمة المرور</label><button type="button" class="link" data-flow="forgot">نسيت كلمة المرور؟</button></div>
+            <div class="pw"><input class="inp ltr" id="lg-pw" type="password" autocomplete="off" placeholder="••••••••"><button type="button" class="eye" aria-label="إظهار كلمة المرور"><svg><use href="#i-eye"/></svg></button></div>
+          </div>
+          <div class="human" id="human"><span class="sp"></span><span id="human-t">جارٍ التحقق البشري…</span><small>Cloudflare</small></div>
+          <div class="msg bad" id="lg-msg"><svg><use href="#i-alert"/></svg><span></span></div>
+          <button class="btn btn-gold btn-block" type="submit" id="lg-go">دخول</button>
+          <div class="sep"></div>
+          <div class="alt"><span>ليس لديك حساب؟</span><button type="button" class="link" data-flow="register">إنشاء حساب جديد</button><span aria-hidden="true">·</span><button type="button" class="link" data-flow="recover">لدي رمز استعادة</button></div>
+        </form>
+
+        <!-- 2. otp -->
+        <form class="card flow" id="f-otp" hidden novalidate>
+          <div class="pc-h"><span class="tile g"><svg><use href="#i-key"/></svg></span><div><h2>رمز التحقق</h2><p>اختر الوسيلة. لن يُرسل أي رمز قبل الضغط على الإرسال.</p></div></div>
+          <div class="fld">
+            <label for="otp-via">أرسل الرمز عبر</label>
+            <select id="otp-via" class="sel">
+              <option value="wa">واتساب</option>
+              <option value="mail">البريد الإلكتروني</option>
+              <option value="app">تطبيق المصادقة</option>
+            </select>
+            <span class="hint" id="otp-hint">6 خانات على واتساب · صالح لخمس دقائق · خمس محاولات كحد أقصى</span>
+          </div>
+          <div class="dest" id="otp-dest"><svg><use href="#i-wa"/></svg><span id="otp-dest-t">يُرسل إلى الرقم</span><b id="otp-dest-v">+966 5• ••• ••74</b></div>
+          <button class="btn btn-line btn-block" type="button" id="otp-send">أرسل رمز واتساب</button>
+          <div class="fld" id="otp-box" hidden>
+            <label>أدخل الرمز المكوّن من 6 أرقام</label>
+            <div class="otp" id="otp-in">
+              <input id="o1" inputmode="numeric" maxlength="1" aria-label="الخانة 1"><input id="o2" inputmode="numeric" maxlength="1" aria-label="الخانة 2"><input id="o3" inputmode="numeric" maxlength="1" aria-label="الخانة 3"><input id="o4" inputmode="numeric" maxlength="1" aria-label="الخانة 4"><input id="o5" inputmode="numeric" maxlength="1" aria-label="الخانة 5"><input id="o6" inputmode="numeric" maxlength="1" aria-label="الخانة 6">
+            </div>
+            <div class="meta"><span>المحاولات المتبقية: <b id="otp-left">5</b> من <b>5</b></span><span id="otp-resend">إعادة الإرسال بعد <b class="lt" id="otp-cd">0:60</b></span></div>
+          </div>
+          <div class="msg" id="otp-msg"><svg><use href="#i-alert"/></svg><span></span></div>
+          <button class="btn btn-gold btn-block" type="submit" id="otp-go" disabled>تحقق ومتابعة</button>
+          <div class="alt"><button type="button" class="link" data-back="login">رجوع إلى بيانات الدخول</button></div>
+        </form>
+
+        <!-- 3. device -->
+        <form class="card flow" id="f-device" hidden novalidate>
+          <div class="pc-h"><span class="tile"><svg><use href="#i-device"/></svg></span><div><h2>تأكيد الجهاز</h2><p>هذا أول دخول من هذا الجهاز. أكّده لإكمال الدخول.</p></div></div>
+          <div class="dev"><span class="tile"><svg><use href="#i-monitor"/></svg></span><div><b id="dev-name">متصفح على جهاز كمبيوتر</b><small id="dev-meta">الرياض، المملكة العربية السعودية · الآن</small></div></div>
+          <div class="fld">
+            <label for="dev-trust">الثقة بهذا الجهاز</label>
+            <select id="dev-trust" class="sel">
+              <option value="once">هذه المرة فقط</option>
+              <option value="30" selected>30 يومًا</option>
+              <option value="90">90 يومًا</option>
+            </select>
+            <span class="hint">خلال المدة لن نطلب رمز التحقق من هذا الجهاز. يمكنك إلغاء الثقة من إعدادات حسابك.</span>
+          </div>
+          <label class="chk"><input type="checkbox" id="dev-mine" checked><span>هذا جهازي الشخصي، ولا يستخدمه غيري.</span></label>
+          <button class="btn btn-gold btn-block" type="submit">تأكيد الجهاز والدخول</button>
+          <div class="alt"><button type="button" class="link" data-back="login">ليس جهازي؟ إلغاء الدخول</button></div>
+        </form>
+
+        <!-- done -->
+        <div class="card flow done" id="f-done" hidden>
+          <span class="seal"><svg><use href="#i-check"/></svg></span>
+          <h3 id="done-h">تم الدخول بنجاح</h3>
+          <p id="done-p">مرحبًا بك في منصة تيرا. يمكنك الآن متابعة طلباتك والتحقق من أهليتك.</p>
+          <a class="btn btn-gold" href="https://claude.ai/artifact/Av1hwwPFnvgM7n5Mk1KPRw" target="_blank" rel="noopener" id="done-go"><svg><use href="#i-ext"/></svg>المتابعة إلى حسابك</a>
+          <button type="button" class="link" id="done-again">إعادة التجربة من البداية</button>
+        </div>
+
+        <!-- forgot -->
+        <form class="card flow" id="f-forgot" hidden novalidate>
+          <div class="pc-h"><span class="tile g"><svg><use href="#i-key"/></svg></span><div><h2>نسيت كلمة المرور</h2><p>أدخل الجوال، ثم البريد المسجّل في حسابك.</p></div></div>
+          <div class="fld"><label for="fg-ph">رقم الجوال</label><div class="tel"><select class="sel cc" id="fg-ph-cc" aria-label="مفتاح الدولة"><option value="966">+966 السعودية</option><option value="971">+971 الإمارات</option><option value="965">+965 الكويت</option><option value="973">+973 البحرين</option><option value="974">+974 قطر</option><option value="968">+968 عُمان</option><option value="20">+20 مصر</option></select><input class="inp ltr" id="fg-ph" inputmode="tel" placeholder="5XXXXXXXX"></div><span class="hint">اكتب الرقم بدون صفر في أوله.</span></div>
+          <div class="fld"><label for="fg-em">البريد الإلكتروني</label><input class="inp ltr" id="fg-em" inputmode="email" placeholder="name@example.com"></div>
+          <div class="msg" id="fg-msg"><svg><use href="#i-alert"/></svg><span></span></div>
+          <button class="btn btn-gold btn-block" type="submit">إرسال طلب الاسترداد</button>
+          <div class="alt"><button type="button" class="link" data-back="login">رجوع إلى الدخول</button></div>
+        </form>
+
+        <!-- recover -->
+        <form class="card flow" id="f-recover" hidden novalidate>
+          <div class="pc-h"><span class="tile"><svg><use href="#i-shield"/></svg></span><div><h2>استعادة الوصول</h2><p>معرّف الدخول ورمز الاستعادة. يُستعمل الرمز مرة واحدة.</p></div></div>
+          <div class="fld"><label for="rc-id">معرّف الدخول</label><input class="inp ltr" id="rc-id" placeholder="name@example.com أو 05XXXXXXXX"></div>
+          <div class="fld"><label for="rc-code">رمز الاستعادة</label><input class="inp ltr" id="rc-code" inputmode="numeric" maxlength="10" placeholder="10 أرقام"><span class="hint">الرمز المكوّن من 10 أرقام الذي حفظته عند إنشاء الحساب.</span></div>
+          <div class="msg" id="rc-msg"><svg><use href="#i-alert"/></svg><span></span></div>
+          <button class="btn btn-gold btn-block" type="submit">تحقق من الرمز</button>
+          <div class="alt"><button type="button" class="link" data-back="login">رجوع إلى الدخول</button></div>
+        </form>
+
+        <!-- register -->
+        <form class="card flow" id="f-register" hidden novalidate>
+          <div class="pc-h"><span class="tile g"><svg><use href="#i-user"/></svg></span><div><h2>إنشاء حساب جديد</h2><p>أكّد بياناتك وأنشئ الحساب، ثم أكمل الملف الشخصي.</p></div></div>
+          <div class="fld"><label for="rg-name">الاسم كما في الهوية</label><input class="inp" id="rg-name" placeholder="الاسم الثلاثي"></div>
+          <div class="fld"><label for="rg-ph">رقم الجوال</label><div class="tel"><select class="sel cc" id="rg-ph-cc" aria-label="مفتاح الدولة"><option value="966">+966 السعودية</option><option value="971">+971 الإمارات</option><option value="965">+965 الكويت</option><option value="973">+973 البحرين</option><option value="974">+974 قطر</option><option value="968">+968 عُمان</option><option value="20">+20 مصر</option></select><input class="inp ltr" id="rg-ph" inputmode="tel" placeholder="5XXXXXXXX"></div><span class="hint">اكتب الرقم بدون صفر في أوله.</span></div>
+          <div class="fld"><label for="rg-em">البريد الإلكتروني</label><input class="inp ltr" id="rg-em" inputmode="email" placeholder="name@example.com"></div>
+          <div class="fld">
+            <label for="rg-pw">كلمة المرور</label>
+            <div class="pw"><input class="inp ltr" id="rg-pw" type="password" placeholder="••••••••"><button type="button" class="eye" aria-label="إظهار كلمة المرور"><svg><use href="#i-eye"/></svg></button></div>
+            <ul class="rules" id="pw-rules">
+              <li data-r="len">8 أحرف على الأقل</li><li data-r="up">حرف لاتيني كبير</li><li data-r="num">رقم واحد على الأقل</li><li data-r="sym">رمز مثل ! أو @</li>
+            </ul>
+          </div>
+          <label class="chk"><input type="checkbox" id="rg-terms"><span>أوافق على <a href="#portal">سياسة الاستخدام</a> و<a href="#portal">سياسة الخصوصية</a>.</span></label>
+          <div class="msg" id="rg-msg"><svg><use href="#i-alert"/></svg><span></span></div>
+          <button class="btn btn-gold btn-block" type="submit">إنشاء الحساب</button>
+          <div class="alt"><span>لديك حساب؟</span><button type="button" class="link" data-back="login">تسجيل الدخول</button></div>
+        </form>
+
+        <p class="legal">بالدخول توافق على <a href="#portal">سياسة الاستخدام</a> و<a href="#portal">سياسة الخصوصية</a>. هذه معاينة: لا تُرسل أي بيانات.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /frame -->
+</div><!-- /stage -->
+
+<script>
+(function(){
+  var $ = function(s,r){return (r||document).querySelector(s)}, $$ = function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+  var store = {get:function(k){try{return localStorage.getItem(k)}catch(e){return null}}, set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  var root = document.documentElement, stage = $('#stage'), frame = $('#frame');
+
+  /* ---- theme ---- */
+  function isDark(){var t=root.getAttribute('data-theme'); if(t) return t==='dark'; return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches}
+  function paintThemeBtn(){var d=isDark(); $('#theme-btn').innerHTML='<svg><use href="#i-'+(d?'sun':'moon')+'"/></svg><span>'+(d?'فاتح':'داكن')+'</span>'}
+  var savedTheme=store.get('tera-rd-theme'); if(savedTheme) root.setAttribute('data-theme',savedTheme);
+  paintThemeBtn();
+  $('#theme-btn').addEventListener('click',function(){var n=isDark()?'light':'dark'; root.setAttribute('data-theme',n); store.set('tera-rd-theme',n); paintThemeBtn()});
+  if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',paintThemeBtn);
+
+  /* ---- view + device ---- */
+  function setView(v){
+    $('#v-home').hidden = v!=='home'; $('#v-portal').hidden = v!=='portal';
+    $('#notes-home').hidden = v!=='home'; $('#notes-portal').hidden = v!=='portal';
+    $$('[data-view]').forEach(function(b){b.setAttribute('aria-pressed', String(b.dataset.view===v))});
+    store.set('tera-rd-view',v); frame.scrollTop=0;
+    if(v==='portal') startPortal();
+  }
+  function setDev(d){
+    stage.classList.toggle('app', d==='app');
+    $$('[data-dev]').forEach(function(b){b.setAttribute('aria-pressed', String(b.dataset.dev===d))});
+    store.set('tera-rd-dev',d);
+  }
+  $$('[data-view]').forEach(function(b){b.addEventListener('click',function(){setView(b.dataset.view)})});
+  $$('[data-dev]').forEach(function(b){b.addEventListener('click',function(){setDev(b.dataset.dev)})});
+  document.addEventListener('click',function(e){
+    var g=e.target.closest('[data-go]'); if(g){e.preventDefault(); setView(g.dataset.go); return}
+    var a=e.target.closest('a[href="#home"],a[href="#portal"]'); if(a){e.preventDefault()}
+  });
+
+  /* ---- home: faq filter + copy ---- */
+  $('#faq-cat').addEventListener('change',function(){var c=this.value; $$('#faq-list details').forEach(function(d){d.hidden = c!=='all' && d.dataset.cat!==c})});
+  $$('.copy').forEach(function(b){b.addEventListener('click',function(){
+    var t=b.dataset.copy, done=function(){b.textContent='نُسخ'; setTimeout(function(){b.textContent='نسخ'},1500)};
+    try{navigator.clipboard.writeText(t).then(done,function(){sel(b)})}catch(e){sel(b)}
+  })});
+  function sel(b){var el=b.previousElementSibling.querySelector('b'); var r=document.createRange(); r.selectNodeContents(el); var s=getSelection(); s.removeAllRanges(); s.addRange(r)}
+
+  var sheet=$('#sheet');
+  $('#dock-sec').addEventListener('click',function(e){e.preventDefault(); sheet.hidden=!sheet.hidden});
+  $('#sheet-x').addEventListener('click',function(){sheet.hidden=true});
+  $('#sheet-theme').addEventListener('click',function(){$('#theme-btn').click()});
+  $$('#faq-list details').forEach(function(d){d.addEventListener('toggle',function(){ if(d.open) $$('#faq-list details').forEach(function(o){ if(o!==d) o.open=false }) })});
+
+  /* ---- portal ---- */
+  var flows=['login','otp','device','done','forgot','recover','register'], cur='login', timerId=null, left=600, humanOk=false, cdId=null, tries=5, sent=false;
+  function show(f){
+    cur=f; flows.forEach(function(x){$('#f-'+x).hidden = x!==f});
+    var step = f==='otp'?2 : (f==='device'?3 : (f==='done'?4:1));
+    $$('#steps li').forEach(function(li){var s=+li.dataset.s; li.classList.toggle('on', s===step); li.classList.toggle('done', s<step)});
+    $('#steps-fill').style.width = (step>=3?66.66:(step===2?33.33:0))+'%';
+    $('#steps').style.visibility = (f==='forgot'||f==='recover'||f==='register')?'hidden':'visible';
+    $('#timer').hidden = !(f==='login'||f==='otp'||f==='device');
+    var first=$('#f-'+f+' input:not([type=checkbox])'); if(first && !matchMedia('(pointer:coarse)').matches) setTimeout(function(){first.focus({preventScroll:true})},30);
+  }
+  function msg(id,kind,text){var m=$('#'+id); m.className='msg '+(kind||'')+(text?' show':''); m.querySelector('span').textContent=text||''; if(kind==='ok') m.querySelector('use').setAttribute('href','#i-check'); else m.querySelector('use').setAttribute('href','#i-alert')}
+  function fmt(s){var m=Math.floor(s/60), r=s%60; return m+':'+(r<10?'0':'')+r}
+  function startTimer(){
+    clearInterval(timerId); left=600; tick();
+    timerId=setInterval(function(){left--; tick(); if(left<=0){clearInterval(timerId); reset(); msg('lg-msg','bad','انتهت مدة هذه الخطوة. سجّل الدخول من جديد.')}},1000);
+  }
+  function tick(){$('#timer-v').textContent=fmt(Math.max(left,0)); $('#timer-bar').style.width=(Math.max(left,0)/600*100)+'%'}
+  function human(){
+    humanOk=false; var h=$('#human'); h.classList.remove('ok'); $('#human-t').textContent='جارٍ التحقق البشري…';
+    setTimeout(function(){humanOk=true; h.classList.add('ok'); $('#human-t').textContent='تم التحقق بنجاح'},1400);
+  }
+  var started=false;
+  function startPortal(){ if(started) return; started=true; reset(); }
+  function reset(){ show('login'); startTimer(); human(); sent=false; tries=5; $('#otp-box').hidden=true; $('#otp-go').disabled=true; $('#otp-left').textContent='5'; $$('#otp-in input').forEach(function(i){i.value=''}); msg('otp-msg'); }
+
+  // eye toggles
+  $$('.eye').forEach(function(b){b.addEventListener('click',function(){var i=b.previousElementSibling, on=i.type==='password'; i.type=on?'text':'password'; b.setAttribute('aria-label',on?'إخفاء كلمة المرور':'إظهار كلمة المرور'); b.querySelector('use').setAttribute('href',on?'#i-eyeoff':'#i-eye')})});
+
+  // flow links
+  $$('[data-flow]').forEach(function(b){b.addEventListener('click',function(){show(b.dataset.flow)})});
+  $$('[data-back]').forEach(function(b){b.addEventListener('click',function(){reset()})});
+
+  var reEmail=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, rePhone=/^(05\d{8}|\+?9665\d{8})$/, reLocal=/^[1-9]\d{6,11}$/;
+  function idOk(v){v=v.replace(/\s/g,''); return reEmail.test(v)||rePhone.test(v)}
+
+  // 1 login
+  $('#f-login').addEventListener('submit',function(e){
+    e.preventDefault(); var id=$('#lg-id'), pw=$('#lg-pw'); id.classList.remove('bad'); pw.classList.remove('bad');
+    if(!id.value.trim()||!pw.value){ if(!id.value.trim()) id.classList.add('bad'); if(!pw.value) pw.classList.add('bad'); return msg('lg-msg','bad','أدخل المُعرّف وكلمة المرور.') }
+    if(!idOk(id.value)){ id.classList.add('bad'); return msg('lg-msg','bad','اكتب بريدًا صحيحًا أو جوالًا يبدأ بـ 05 ومكوّنًا من 10 أرقام.') }
+    if(!humanOk) return msg('lg-msg','bad','لم يكتمل التحقق البشري. انتظر لحظة ثم أعد المحاولة.');
+    var b=$('#lg-go'); b.disabled=true; b.textContent='جارٍ الدخول…';
+    setTimeout(function(){b.disabled=false; b.textContent='دخول'; msg('lg-msg'); show('otp'); paintVia()},700);
+  });
+
+  // 2 otp
+  var VIA={wa:{hint:'6 خانات على واتساب · صالح لخمس دقائق · خمس محاولات كحد أقصى',icon:'#i-wa',t:'يُرسل إلى الرقم',v:'+966 5• ••• ••74',btn:'أرسل رمز واتساب'},
+           mail:{hint:'6 خانات في البريد · صالح لخمس دقائق · خمس محاولات كحد أقصى',icon:'#i-mail',t:'يُرسل إلى البريد',v:'n•••@example.com',btn:'أرسل رمز البريد'},
+           app:{hint:'6 أرقام من تطبيق المصادقة · الرمز يتغيّر كل 30 ثانية',icon:'#i-phone',t:'افتح تطبيق المصادقة وأدخل الرمز الظاهر الآن',v:'',btn:''}};
+  function paintVia(){
+    var v=$('#otp-via').value, c=VIA[v]; $('#otp-hint').textContent=c.hint; $('#otp-dest use').setAttribute('href',c.icon); $('#otp-dest-t').textContent=c.t; $('#otp-dest-v').textContent=c.v;
+    var s=$('#otp-send'); s.hidden = v==='app'; s.textContent=c.btn; msg('otp-msg');
+    if(v==='app'){ openBox(false) } else if(!sent){ $('#otp-box').hidden=true; $('#otp-go').disabled=true }
+  }
+  $('#otp-via').addEventListener('change',function(){sent=false; clearInterval(cdId); paintVia()});
+  function openBox(withCd){
+    $('#otp-box').hidden=false; $('#otp-go').disabled=false; $('#otp-resend').hidden=!withCd;
+    if(withCd){ var n=60; clearInterval(cdId); $('#otp-cd').textContent=fmt(n); var s=$('#otp-send'); s.disabled=true;
+      cdId=setInterval(function(){n--; $('#otp-cd').textContent=fmt(n); if(n<=0){clearInterval(cdId); s.disabled=false; s.textContent='إعادة إرسال الرمز'; $('#otp-resend').hidden=true}},1000) }
+    setTimeout(function(){$('#o1').focus({preventScroll:true})},30);
+  }
+  $('#otp-send').addEventListener('click',function(){
+    var b=this, v=$('#otp-via').value; b.disabled=true; b.textContent= v==='wa'?'جارٍ إرسال الرمز إلى واتساب…':'جارٍ إرسال الرمز إلى بريدك…';
+    setTimeout(function(){ sent=true; msg('otp-msg','ok', v==='wa'?'أُرسل رمز التحقق إلى واتساب. (معاينة: أي 6 أرقام عدا 000000)':'أُرسل رمز التحقق إلى بريدك. (معاينة: أي 6 أرقام عدا 000000)'); b.textContent=VIA[v].btn; openBox(true) },900);
+  });
+  var boxes=$$('#otp-in input');
+  boxes.forEach(function(inp,i){
+    inp.addEventListener('input',function(){ inp.value=inp.value.replace(/\D/g,'').slice(-1); $('#otp-in').classList.remove('bad'); if(inp.value && boxes[i+1]) boxes[i+1].focus(); autoGo() });
+    inp.addEventListener('keydown',function(e){ if(e.key==='Backspace' && !inp.value && boxes[i-1]) boxes[i-1].focus() });
+    inp.addEventListener('paste',function(e){ var t=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6); if(t.length){ e.preventDefault(); boxes.forEach(function(b,j){b.value=t[j]||''}); (boxes[Math.min(t.length,5)]).focus(); autoGo() } });
+  });
+  function autoGo(){ if(boxes.every(function(b){return b.value})) setTimeout(function(){ $('#f-otp').requestSubmit ? $('#f-otp').requestSubmit() : $('#otp-go').click() },150) }
+  $('#f-otp').addEventListener('submit',function(e){
+    e.preventDefault(); var code=boxes.map(function(b){return b.value}).join('');
+    if(code.length<6) return msg('otp-msg','bad','أدخل رمز التحقق المكوّن من 6 أرقام.');
+    if(code==='000000'){ tries--; $('#otp-left').textContent=String(tries); $('#otp-in').classList.add('bad');
+      if(tries<=0){ reset(); return msg('lg-msg','bad','استُنفدت المحاولات لهذا الرمز. ابدأ الدخول من جديد.') }
+      return msg('otp-msg','bad','الرمز غير صحيح أو انتهت مدته.') }
+    clearInterval(cdId); show('device'); paintDevice();
+  });
+
+  // 3 device
+  function paintDevice(){
+    var ua=navigator.userAgent, br=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)?'Safari':'متصفح';
+    var os=/iPhone|iPad/.test(ua)?'iOS':/Android/.test(ua)?'Android':/Mac OS X/.test(ua)?'macOS':/Windows/.test(ua)?'Windows':'جهاز';
+    $('#dev-name').textContent=br+' على '+os;
+  }
+  $('#f-device').addEventListener('submit',function(e){
+    e.preventDefault(); clearInterval(timerId);
+    var t=$('#dev-trust').value;
+    $('#done-h').textContent='تم الدخول بنجاح';
+    $('#done-p').textContent = t==='once' ? 'سنطلب رمز التحقق في الدخول القادم من هذا الجهاز.' : 'هذا الجهاز موثوق لمدة '+t+' يومًا. يمكنك الآن متابعة طلباتك والتحقق من أهليتك.';
+    $('#done-go').hidden=false; show('done');
+  });
+  $('#done-again').addEventListener('click',function(){reset()});
+
+  // forgot
+  $('#f-forgot').addEventListener('submit',function(e){
+    e.preventDefault(); var p=$('#fg-ph'), m=$('#fg-em'); p.classList.toggle('bad',!reLocal.test(p.value.replace(/\s/g,''))); m.classList.toggle('bad',!reEmail.test(m.value.trim()));
+    if(!reLocal.test(p.value.replace(/\s/g,''))) return msg('fg-msg','bad','أدخل الجوال بدون صفر في أوله، ثم أعد الإرسال.');
+    if(!reEmail.test(m.value.trim())) return msg('fg-msg','bad','أدخل البريد، ثم أعد الإرسال.');
+    msg('fg-msg','ok','تم تسجيل طلبك. إذا تطابقت البيانات يصلك رابط تعيين كلمة المرور خلال دقائق.');
+  });
+  // recover
+  $('#f-recover').addEventListener('submit',function(e){
+    e.preventDefault(); var i=$('#rc-id'), c=$('#rc-code'); i.classList.toggle('bad',!idOk(i.value)); var okc=/^\d{10}$/.test(c.value); c.classList.toggle('bad',!okc);
+    if(!idOk(i.value)||!okc) return msg('rc-msg','bad','أدخل معرّف الدخول ورمز الاسترداد المكوّن من 10 أرقام.');
+    $('#done-h').textContent='تم التحقق من رمز الاستعادة'; $('#done-p').textContent='الخطوة التالية: تعيين كلمة مرور جديدة. هذا الرمز لم يعد صالحًا للاستخدام.'; $('#done-go').hidden=true; show('done');
+  });
+  // register
+  var R={len:function(v){return v.length>=8},up:function(v){return /[A-Z]/.test(v)},num:function(v){return /\d/.test(v)},sym:function(v){return /[^A-Za-z0-9]/.test(v)}};
+  $('#rg-pw').addEventListener('input',function(){var v=this.value; $$('#pw-rules li').forEach(function(li){li.classList.toggle('ok',R[li.dataset.r](v))})});
+  $('#f-register').addEventListener('submit',function(e){
+    e.preventDefault(); var n=$('#rg-name'), p=$('#rg-ph'), m=$('#rg-em'), w=$('#rg-pw');
+    var bad=[[n,n.value.trim().split(/\s+/).length>=3],[p,reLocal.test(p.value.replace(/\s/g,''))],[m,reEmail.test(m.value.trim())]];
+    bad.forEach(function(x){x[0].classList.toggle('bad',!x[1])});
+    if(bad.some(function(x){return !x[1]})) return msg('rg-msg','bad','راجع الحقول المظللة: الاسم ثلاثي، والجوال بدون صفر في أوله، والبريد صحيح.');
+    if(!Object.keys(R).every(function(k){return R[k](w.value)})){ w.classList.add('bad'); return msg('rg-msg','bad','كلمة المرور لا تحقق الشروط الظاهرة.') }
+    w.classList.remove('bad');
+    if(!$('#rg-terms').checked) return msg('rg-msg','bad','وافق على سياسة الاستخدام والخصوصية للمتابعة.');
+    $('#done-h').textContent='حسابك قيد المراجعة'; $('#done-p').textContent='أنشأنا حسابك. أكمل الملف الشخصي: المعلومات الشخصية، والمرفقات، والتواصل، والطوارئ.'; $('#done-go').hidden=true; show('done');
+  });
+
+  /* ---- boot ---- */
+  var SAMPLE='https://claude.ai/artifact/Av1hwwPFnvgM7n5Mk1KPRw';
+  function embedFromHash(){
+    var em=(location.hash||'').match(/^#e-(home|portal)-(web|app)-(l|d)$/); if(!em) return false;
+    root.classList.add('embed'); root.setAttribute('data-theme', em[3]==='d'?'dark':'light'); paintThemeBtn();
+    setDev(em[2]); setView(em[1]); return true;
+  }
+  if(embedFromHash()){
+    $$('a[href="'+SAMPLE+'"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault(); try{parent.postMessage({tera: a.id==='done-go'?'enter':'elig'},'*')}catch(err){}})});
+    window.addEventListener('hashchange',embedFromHash);
+  } else {
+    var h=(location.hash||'').replace('#','');
+    setDev(store.get('tera-rd-dev')||'web');
+    setView(h==='portal'||h==='home' ? h : (store.get('tera-rd-view')||'home'));
+  }
+})();
+</script>
+</body></html>

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /clients/
+Disallow: /staff/
+Sitemap: https://msjtr.github.io/quotes-preview/sitemap.xml
