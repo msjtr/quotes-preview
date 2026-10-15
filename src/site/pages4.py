@@ -6,8 +6,10 @@ def _pw(i, ph='••••••••'):
     return (f'<span class="ts-pw"><input class="ts-in" id="{i}" type="password" dir="ltr" autocomplete="new-password" placeholder="{ph}">'
             f'<button type="button" class="ts-eye" aria-label="إظهار كلمة المرور">{I("PiEyeFill")}</button></span>')
 
-PW_RULES = [('let', 'أربعة أحرف لاتينية على الأقل، منها حرف كبير'),
-            ('dig', 'أربعة أرقام على الأقل'),
+PW_RULES = [('len', 'من 11 إلى 128 خانة'),
+            ('let', 'خمسة أحرف على الأقل'),
+            ('dig', 'خمسة أرقام على الأقل'),
+            ('sym', 'رمز واحد على الأقل مثل ! أو @'),
             ('seq', 'لا أحرف ولا أرقام متسلسلة أو مكررة'),
             ('old', 'لم تُستخدم من قبل في حسابك')]
 
@@ -19,7 +21,7 @@ def pwkit(p, old=True):
             f'<div class="ts-fld"><label for="{p}-pw">كلمة المرور</label>{_pw(p + "-pw")}'
             f'<div class="pk-meter" aria-live="polite"><span class="pk-bars"><i></i><i></i><i></i><i></i></span><b class="pk-lv">أدخل كلمة مرور</b></div>'
             f'<ul class="pk-rules">{rules}</ul>'
-            f'<p class="pt-tip">{I("PiLightbulbFill")}<span>يُرفض التسلسل والتكرار مثل abc و cba و 123 و 321 و 111. اجعلها سهلة التذكّر صعبة التخمين، وأضف رمزًا مثل ! أو @ لقوة أعلى.</span></p></div>'
+            f'<p class="pt-tip">{I("PiLightbulbFill")}<span>يُرفض التسلسل والتكرار مثل abc و cba و 123 و 321 و 111. اجعلها سهلة التذكّر صعبة التخمين.</span></p></div>'
             f'<div class="ts-fld"><label for="{p}-pw2">تأكيد كلمة المرور</label>{_pw(p + "-pw2", "أعد كتابة كلمة المرور")}'
             f'<p class="pk-match" hidden></p></div>'
             + ('<p class="pt-demo">معاينة: كلمة المرور Tera2468 تُعدّ مستخدمة سابقًا.</p>' if old else '') + '</div>')
@@ -155,7 +157,7 @@ def portal2():
              + '</div></form>')
 
     otp = (f'<form class="pt-f" id="f-otp" hidden novalidate>'
-           '<div class="ts-fld"><label for="otp-via">وسيلة التحقق</label><select class="ts-in" id="otp-via"><option value="app">تطبيق المصادقة</option><option value="wa">رمز إضافي عبر واتساب</option><option value="sms">رمز إضافي برسالة نصية</option><option value="mail">رمز إضافي عبر البريد الإلكتروني</option></select><span class="hint" id="otp-hint"></span></div>'
+           '<div class="ts-fld"><label for="otp-via">وسيلة التحقق</label><select class="ts-in" id="otp-via"><option value="app">تطبيق المصادقة</option><option value="wa">رمز التحقق عبر واتساب</option><option value="sms">رمز التحقق برسالة نصية</option><option value="mail">رمز التحقق عبر البريد الإلكتروني</option></select><span class="hint" id="otp-hint"></span></div>'
            f'<div class="ts-dest"><span id="otp-dest-i">{I("PiDeviceMobileFill")}</span><span id="otp-dest-t"></span><b id="otp-dest-v" dir="ltr"></b></div>'
            f'<div id="otp-spam" hidden>{spam_note(SPAM)}</div>'
            '<button class="t2-btn" type="button" id="otp-send">أرسل الرمز</button>'

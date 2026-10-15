@@ -334,7 +334,7 @@
     var FLOWS = {
       login: { steps: ['بيانات الدخول', 'التحقق', 'الجهاز'], forms: ['login', 'otp', 'device'], ic: ['PiLockKeyFill', 'PiKeyFill', 'PiDesktopFill'],
         t: ['تسجيل الدخول', 'التحقق الثنائي', 'توثيق الجهاز'],
-        s: ['حساب واحد لكل خدماتك في منصة تيرا.', 'أدخل رمز تطبيق المصادقة أو الرمز الإضافي.', 'هذا أول دخول من هذا الجهاز. قرّر هل تصرّح له.'] },
+        s: ['حساب واحد لكل خدماتك في منصة تيرا.', 'اختر وسيلة التحقق، ثم أدخل الرمز الذي يصلك.', 'هذا أول دخول من هذا الجهاز. قرّر هل تصرّح له.'] },
       register: { steps: ['بياناتك', 'التواصل', 'كلمة المرور', 'التحقق', 'المصادقة', 'الجهاز'], forms: ['reg1', 'reg2', 'reg3', 'reg4', 'reg5', 'reg6'],
         ic: ['PiUserPlusFill', 'PiPhoneFill', 'PiLockKeyFill', 'PiSealCheckFill', 'PiShieldCheckFill', 'PiDesktopFill'],
         t: ['إنشاء حساب جديد', 'بيانات التواصل', 'كلمة المرور', 'التحقق من البريد والجوال', 'المصادقة الثنائية', 'توثيق الجهاز'],
@@ -507,9 +507,9 @@
       setTimeout(function () { b.disabled = false; b.textContent = 'دخول'; msg('lg-msg'); go('login', 1); paintVia(); }, 700);
     });
     var VIA = { app: ['تطبيق المصادقة · رمز يتجدد كل 30 ثانية', 'PiDeviceMobileFill', 'افتح تطبيق المصادقة وأدخل الرمز الظاهر لحساب Tera', '', ''],
-                wa: ['رمز إضافي من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiWhatsappLogoFill', 'يُرسل إلى واتساب', '+966 5• ••• ••74', 'أرسل الرمز عبر واتساب'],
-                sms: ['رمز إضافي من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiChatCircleTextFill', 'يُرسل برسالة نصية إلى', '+966 5• ••• ••74', 'أرسل الرمز برسالة نصية'],
-                mail: ['رمز إضافي من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiEnvelopeFill', 'يُرسل إلى البريد', 'n•••@example.com', 'أرسل الرمز إلى البريد'] };
+                wa: ['رمز تحقق من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiWhatsappLogoFill', 'يُرسل إلى واتساب', '+966 5• ••• ••74', 'أرسل الرمز عبر واتساب'],
+                sms: ['رمز تحقق من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiChatCircleTextFill', 'يُرسل برسالة نصية إلى', '+966 5• ••• ••74', 'أرسل الرمز برسالة نصية'],
+                mail: ['رمز تحقق من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiEnvelopeFill', 'يُرسل إلى البريد', 'n•••@example.com', 'أرسل الرمز إلى البريد'] };
     function paintVia() { var v = $('#otp-via').value, c = VIA[v]; $('#otp-hint').textContent = c[0]; $('#otp-dest-i').innerHTML = I(c[1]); $('#otp-dest-t').textContent = c[2]; $('#otp-dest-v').textContent = c[3]; $('#otp-spam').hidden = v !== 'mail'; var s = $('#otp-send'); s.hidden = v === 'app'; s.textContent = c[4]; s.disabled = false; msg('otp-msg'); if (v === 'app') openBox(false); else { $('#otp-box').hidden = true; $('#otp-go').disabled = true; } }
     $('#otp-via').addEventListener('change', function () { clearInterval(cdId); clearInterval(vId); if (LIVE) return livePaint(); paintVia(); });
     function openBox(withCd, n0, v0) {
@@ -536,8 +536,17 @@
     function cls(c) { return c >= 48 && c <= 57 ? 'd' : c >= 97 && c <= 122 ? 'a' : ''; }
     function hasSeq(v) { var s = v.toLowerCase(); for (var i = 0; i + 2 < s.length; i++) { var a = s.charCodeAt(i), b = s.charCodeAt(i + 1), c = s.charCodeAt(i + 2), k = cls(a);
       if (!k || cls(b) !== k || cls(c) !== k) continue; if ((b - a === 1 && c - b === 1) || (a - b === 1 && b - c === 1) || (a === b && b === c)) return true; } return false; }
-    var R = { let: function (v) { return (v.match(/[A-Za-z]/g) || []).length >= 4 && /[A-Z]/.test(v); }, dig: function (v) { return (v.match(/\d/g) || []).length >= 4; },
-              seq: function (v) { return !!v && !hasSeq(v); }, old: function (v) { return !!v && USED.indexOf(v.toLowerCase()) < 0; } };
+    /* نفس سياسة الخادم (passwordPolicyError): 11–128 حرفًا، 5 أحرف و5 أرقام ورمز واحد على الأقل، وبلا تتابع أو تكرار ثلاثي */
+    var AR_AB = 'ابتثجحخدذرزسشصضطظعغفقكلمنهوي';
+    function fold(v) { return ascii(v).toLowerCase(); }
+    function seqIn(s, ab) { for (var i = 0; i + 2 < s.length; i++) { var a = ab.indexOf(s.charAt(i)), b = ab.indexOf(s.charAt(i + 1)), c = ab.indexOf(s.charAt(i + 2));
+      if (a < 0 || b < 0 || c < 0) continue; if ((a === b && b === c) || (b === a + 1 && c === b + 1) || (b === a - 1 && c === b - 1)) return true; } return false; }
+    var R = { len: function (v) { return v.length >= 11 && v.length <= 128; },
+              let: function (v) { return (v.match(/[A-Za-z\u0621-\u064A]/g) || []).length >= 5; },
+              dig: function (v) { return (ascii(v).match(/[0-9]/g) || []).length >= 5; },
+              sym: function (v) { return (v.match(/[^0-9A-Za-z\u0621-\u064A\u0660-\u0669\u06F0-\u06F9\s]/g) || []).length >= 1; },
+              seq: function (v) { var f = fold(v); return !!v && !seqIn(f, 'abcdefghijklmnopqrstuvwxyz') && !seqIn(f, AR_AB) && !seqIn(f, '0123456789'); },
+              old: function (v) { return !!v && (LIVE || USED.indexOf(v.toLowerCase()) < 0); } };
     var LV = [['ضعيفة جدًا', 'w0'], ['ضعيفة', 'w1'], ['مقبولة', 'w2'], ['جيدة', 'w3'], ['قوية', 'w4']];
     function pkState(p) {
       var kit = $('.pk[data-pk="' + p + '"]'), a = $('#' + p + '-pw').value, b = $('#' + p + '-pw2').value;
