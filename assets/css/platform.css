@@ -7717,3 +7717,31 @@ html,body{height:auto;min-height:100%}
 /* v263: تنبيه الصفر في حقول الجوال، وشريط تمرير ظاهر للمسار الجانبي */
 .tq-zero{display:block;margin-top:6px;color:#B42318;font:600 .76rem/1.5 "IBM Plex Sans Arabic",sans-serif}
 .tq-zero[hidden]{display:none}
+/* ---------- v268: منصة الموظف من الخادم — بهوية تيرا ---------- */
+.adm-live .adm-hero{display:flex;gap:14px;align-items:center;padding:16px 18px;border-radius:18px;background:linear-gradient(135deg,var(--t2-brand-wash),var(--t2-surface));border:1px solid var(--t2-line)}
+.adm-live .adm-hero b{display:block;font:800 1.05rem/1.4 var(--t2-ff-display);color:var(--t2-ink)}
+.adm-live .adm-hero small{display:block;margin-top:4px;font-size:.85rem;line-height:1.7;color:var(--t2-muted)}
+.adm-hero-ic{flex:none;display:grid;place-items:center}
+.cu-kpis.adm-kpis{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.adm-kpis .cu-kpi.is-ok .cu-kpi-ic{color:var(--t2-ok)}.adm-kpis .cu-kpi.is-warn .cu-kpi-ic{color:var(--t2-warn)}.adm-kpis .cu-kpi.is-danger .cu-kpi-ic{color:var(--t2-danger)}
+.adm-kpis .cu-kpi.is-danger{border-color:color-mix(in srgb,var(--t2-danger) 35%,var(--t2-line))}
+.adm-tools{display:grid;gap:10px;margin-bottom:12px}
+.adm-chips{display:flex;flex-wrap:wrap;gap:6px}
+.adm-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--t2-line);background:var(--t2-surface);color:var(--t2-ink-2);font:600 .82rem/1.2 var(--t2-ff-text);cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.adm-chip b{font-weight:800;color:var(--t2-muted)}
+.adm-chip:hover{border-color:var(--t2-brand);color:var(--t2-brand)}
+.adm-chip.is-on{background:var(--t2-brand);border-color:var(--t2-brand);color:#fff}.adm-chip.is-on b{color:#fff}
+.adm-chip:focus-visible{outline:2px solid var(--t2-brand);outline-offset:2px}
+.adm-nm{display:grid;gap:2px}.adm-nm small{font-size:.76rem;color:var(--t2-muted)}
+.adm-cnt{display:flex;flex-wrap:wrap;gap:4px}
+.adm-doc-a{display:inline-flex;gap:8px;align-items:center;flex:none}
+.adm-live tr[hidden]{display:none}
+.adm-hub{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.adm-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1px solid var(--t2-line);background:var(--t2-surface);text-align:start;cursor:pointer;color:inherit;font:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
+.adm-card:hover{border-color:var(--t2-brand);box-shadow:var(--t2-sh-1);transform:translateY(-1px)}
+.adm-card:focus-visible{outline:2px solid var(--t2-brand);outline-offset:2px}
+.adm-card-ic{flex:none;display:grid;place-items:center}
+.adm-card-t{flex:1;min-width:0;display:grid;gap:3px}.adm-card-t b{font:700 .95rem/1.35 var(--t2-ff-display);color:var(--t2-ink)}.adm-card-t small{font-size:.8rem;line-height:1.5;color:var(--t2-muted)}
+.adm-card-go{flex:none;font-size:1.3rem;color:var(--t2-brand)}
+@media (max-width:40rem){.adm-live .adm-hero{align-items:flex-start;padding:14px}.cu-kpis.adm-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.adm-hero-ic .t2-tile{width:48px;height:52px;display:block}.adm-card-ic .t2-tile{width:40px;height:44px;display:block}
