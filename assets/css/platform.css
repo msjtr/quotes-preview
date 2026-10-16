@@ -7748,3 +7748,8 @@ html,body{height:auto;min-height:100%}
 /* v269: لا معاينات داخلية في النسخة الحقيقية */
 .tq-live .nh-team{display:none!important}
 .tq-live .ck-prev{display:none!important}
+/* v282: صفحات تقرير PDF — العناوين والأرقام ورقم الصفحة لا تلتف ولا تُقصّ */
+#axp-root .axp-sh b,#axp-root .axp-box-h b,#axp-root .axp-tt,#axp-root .axp-ht b,#axp-root .axp-hm span,#axp-root .axp-f>span:last-child,#axp-root .axp-nw{white-space:nowrap}
+#axp-root .axp-sh b,#axp-root .axp-box-h b,#axp-root .axp-f>span:last-child{flex:none}
+#axp-root .axp-box-h small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#axp-root .axp-k b{overflow-wrap:anywhere}
