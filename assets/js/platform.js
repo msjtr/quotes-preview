@@ -7593,7 +7593,7 @@ function cuBdEdit(id) {
     cuSec('سجل التعديلات', 'clock-counter-clockwise', [e('ol', { class: 'cu-log' }, b.log.slice().reverse().map(function (x) { return e('li', {}, [e('b', {}, x[1]), e('small', {}, [x[2], ' · '].concat(cuNowT(x[0])))]); }))])],
     foot: [can ? DS.button('حفظ التعديل', { tone: 'primary', ui: 'check', onClick: save }) : null, DS.button(can ? 'إلغاء' : 'العودة إلى القائمة', { onClick: back })], onClose: function () { delete CUD[key]; draw(); } });
 }
-const cuBdInt = (sm) => e('div', { class: 'cu-bd-int' + (sm ? ' is-sm' : ''), role: 'note' }, [e('span', { class: 'cu-bd-int-ic' }, frag(ui('eye-slash', sm ? 16 : 20))), e('span', {}, [e('b', {}, 'هذا المحتوى لا يظهر للعميل نهائيًا'), sm ? null : e('small', {}, 'السندات التنفيذية وما يتصل بها للإدارة فقط: لا تظهر في حساب العميل ولا في إشعاراته ولا رسائله ولا سجلّه.')])]);
+const cuBdInt = (sm) => S.tab === 'other' && S.other !== 'cu-admx' ? null : e('div', { class: 'cu-bd-int' + (sm ? ' is-sm' : ''), role: 'note' }, [e('span', { class: 'cu-bd-int-ic' }, frag(ui('eye-slash', sm ? 16 : 20))), e('span', {}, [e('b', {}, 'هذا المحتوى لا يظهر للعميل نهائيًا'), sm ? null : e('small', {}, 'السندات التنفيذية وما يتصل بها للإدارة فقط: لا تظهر في حساب العميل ولا في إشعاراته ولا رسائله ولا سجلّه.')])]);
 function cuAdmxRegister() {
   CU_PEND['contracts.bonds'] = ['تسجيل السندات التنفيذية وتعديلها', 'quotes.approve', 'إجراءات الإدارة'];
   CU_MAP.push(['تسجيل السند التنفيذي وتعديله (إجراءات الإدارة)', 'contracts.bonds']);
@@ -9546,7 +9546,8 @@ function cuDrCrumbs(title, close) {
   if (P.length) ol.appendChild(e('li', { class: 't2-crumb-s', 'aria-hidden': 'true' }));
   ol.appendChild(e('li', { class: 't2-crumb-li' }, e('span', { class: 't2-crumb-c', 'aria-current': 'page' }, title)));
   const nav = e('nav', { class: 't2-crumbs', 'aria-label': 'المسار' }, ol);
-  requestAnimationFrame(function () { try { const last = ol.lastChild; if (last && last.scrollIntoView) nav.scrollLeft = nav.scrollWidth * (getComputedStyle(nav).direction === 'rtl' ? -1 : 1); } catch (err) { void err; } });
+  const toEnd = function () { try { [nav, ol].forEach(function (x) { const rtl = getComputedStyle(x).direction === 'rtl'; x.scrollLeft = rtl ? -(x.scrollWidth) : x.scrollWidth; }); } catch (err) { void err; } };
+  requestAnimationFrame(toEnd); setTimeout(toEnd, 120); setTimeout(toEnd, 400);
   return e('div', { class: 'cu-dr-nav' }, [e('button', { type: 'button', class: 't2-back', 'data-live-ok': '', onClick: close }, [frag(ui('caret-right', 16)), e('span', {}, cur ? 'رجوع إلى ' + cur : 'رجوع')]), nav]);
 }
 /* لبنة إعدادات: الترويسة */
@@ -15490,6 +15491,7 @@ if (LIVE.on) {
   const cuDrawer8 = cuDrawer;
   cuDrawer = function (o) {
     try {
+      if (o.sub) o = Object.assign({}, o, { sub: String(o.sub).replace(/\s*·?\s*داخلي\s*[—-]\s*لا يظهر للعميل/g, '').replace(/^\s*·\s*|\s*·\s*$/g, '') });
       const t = String(o.title || ''), i = t.indexOf(' · '), m = /^سندات (.+)$/.exec(t);
       if (i > 0 && t.length > 22) o = Object.assign({}, o, { title: t.slice(0, i), sub: t.slice(i + 3) + (o.sub ? ' · ' + o.sub : '') });
       else if (m && t.length > 22) o = Object.assign({}, o, { title: 'سندات العميل', sub: m[1] + (o.sub ? ' · ' + o.sub : '') });
@@ -15589,15 +15591,42 @@ function lvRealSplit(c) {
   const prod = qr2(Number(g('product').a) || 0), tax = qr2(sum(I, function (x) { return x.tax; })), rev = qr2(sum(I.filter(function (x) { return x.k !== 'product'; }), function (x) { return x.a; }));
   const total = Number(F.total) || qr2(sum(I, function (x) { return Number(x.a) + Number(x.tax); }));
   return { u: 0, prod: prod, proc: qr2(Number(g('admin').a) || 0), margin: qr2(Number(g('markup').a) || 0), bond: qr2(Number(g('bond').a) || 0), vat: tax, fees: rev, chg: qr2(total - prod), vr: (Number((LIVE_FEE.st || {}).vat_rate) || 15) / 100,
-    items: F.items, real: true, total: total, months: F.months, tamt: F.transfer_amount };
+    items: F.items, real: true, total: total, months: F.months, tamt: F.transfer_amount, ptax: qr2(Number(g('product').tax) || 0), stax: qr2(tax - (Number(g('product').tax) || 0)) };
 }
 /* بنود العقد في درج الرسوم */
 function lvFeeItemsSec(f) {
   if (!f.real) return cuSec('بنود العقد', 'receipt', [DS.note('info', 'لا بنود مسجّلة لهذا العقد', 'القيم مفكَّكة بقالب التسعير إلى أن تُسجَّل بنوده.'),
     DS.fields([['قيمة العقد', sar(f.total)], ['قيمة المنتج', sar(f.prod)], ['ضريبة القيمة المضافة', sar(f.vat)], ['الرسوم', sar(f.fees)], ['المحمَّل على العميل', e('b', {}, sar(f.chg))]])]);
-  const I = f.items.filter(function (x) { return !x.x && (Number(x.a) > 0 || Number(x.tax) > 0); });
-  return cuSec('بنود العقد', 'receipt', [DS.fields(I.map(function (x) { return [x.t, Number(x.tax) > 0 ? e('span', {}, [sar(Number(x.a)), e('small', { class: 'lv-fee-tax' }, ' + ضريبة ' + sar(Number(x.tax)))]) : sar(Number(x.a))]; })
-    .concat([['إجمالي الضريبة', sar(f.vat)], ['قيمة العقد', e('b', {}, sar(f.total))], ['المحمَّل على العميل', e('b', {}, sar(f.chg))]]))]);
+  const I = f.items.filter(function (x) { return !x.x && x.k !== 'product' && (Number(x.a) > 0 || Number(x.tax) > 0); }), P = f.items.filter(function (x) { return x.k === 'product'; })[0] || { a: 0, tax: 0 };
+  const X = f.items.filter(function (x) { return x.x && Number(x.a) > 0; });
+  const r = function (t, v, cls) { return e('div', { class: 'fee-r' + (cls ? ' ' + cls : '') }, [e('span', {}, t), e('b', {}, v)]); };
+  return cuSec('رسوم العقد وضرائبه', 'receipt', [e('div', { class: 'fee-tb' }, [
+    e('div', { class: 'fee-gh' }, 'قيمة المنتج'), r(P.t || 'قيمة المنتج', sar(Number(P.a))),
+    e('div', { class: 'fee-gh' }, 'الرسوم'), I.map(function (x) { return r([x.t, Number(x.tax) > 0 ? e('small', {}, 'ضريبتها ' + sar(Number(x.tax))) : null], sar(Number(x.a))); }),
+    r('إجمالي الرسوم', sar(f.fees), 'is-tot'),
+    e('div', { class: 'fee-gh' }, 'الضرائب'), r('ضريبة المنتج', sar(f.ptax)), r('ضريبة الخدمات', sar(f.stax)), r('إجمالي الضريبة', sar(f.vat), 'is-tot'),
+    e('div', { class: 'fee-gh' }, 'الإجمالي'), r('قيمة العقد', sar(f.total), 'is-tot'), r(['المحمَّل على العميل', e('small', {}, 'قيمة العقد − قيمة المنتج')], sar(f.chg), 'is-tot'),
+    X.length ? e('div', { class: 'fee-gh' }, 'مصاريف داخلية من العقد') : null, X.map(function (x) { return r(x.t.replace(/\s*\(مصروف داخلي\)/, ''), sar(Number(x.a)), 'is-out'); })])]);
+}
+/* تقرير الرسوم لمجموعة عقود: الضرائب ثم الرسوم بندًا بندًا ثم الداخلي ثم الصافي */
+function lvFeeReport(FL, title) {
+  const s = feeSum(FL), A = {}, K = [];
+  FL.forEach(function (f) { (f.items || []).forEach(function (x) { if (x.k === 'product') return; const k = (x.x ? 'x:' : '') + x.k; if (!A[k]) { A[k] = { t: String(x.t).replace(/\s*\(مصروف داخلي\)/, ''), a: 0, tax: 0, x: !!x.x }; K.push(k); } A[k].a += Number(x.a) || 0; A[k].tax += Number(x.tax) || 0; }); });
+  const ptax = qr2(FL.reduce(function (a, f) { return a + (f.ptax || 0); }, 0)), stax = qr2(FL.reduce(function (a, f) { return a + (f.stax || 0); }, 0));
+  const est = FL.filter(function (f) { return !f.real; }).length;
+  const r = function (t, sub, v, cls) { return e('div', { class: 'fee-r' + (cls ? ' ' + cls : '') }, [e('span', {}, [t, sub ? e('small', {}, sub) : null]), e('b', {}, sar(qr2(v)))]); };
+  const C = K.filter(function (k) { return !A[k].x && (A[k].a > 0 || A[k].tax > 0); }), X = K.filter(function (k) { return A[k].x && A[k].a > 0; });
+  const comm = qr2(s.mkt + s.emp), gen = qr2(s.exp - comm - X.reduce(function (a, k) { return a + A[k].a; }, 0));
+  return e('section', { class: 'ax-card fee-tot' }, [e('b', { class: 'ax-mt-t' }, (title || 'تقرير الرسوم') + ' — ' + fmtNum(FL.length) + (FL.length === 1 ? ' عقد' : FL.length === 2 ? ' عقدان' : FL.length <= 10 ? ' عقود' : ' عقدًا')),
+    e('div', { class: 'fee-tb' }, [
+      e('div', { class: 'fee-gh' }, 'القيمة'), r('إجمالي قيمة العقود', null, s.total), r('إجمالي قيمة المنتجات', null, s.prod),
+      e('div', { class: 'fee-gh' }, 'الضرائب'), r('ضريبة المنتج', null, ptax), r('ضريبة الخدمات', 'على الرسوم الخاضعة للضريبة', stax), r('إجمالي الضرائب', 'تُورَّد للهيئة ولا تدخل في الإيراد', s.vat, 'is-tot'),
+      e('div', { class: 'fee-gh' }, 'الرسوم')].concat(C.map(function (k) { return r(A[k].t, A[k].tax > 0 ? 'ضريبتها ' + sar(qr2(A[k].tax)) : null, A[k].a); }))
+      .concat([r('إجمالي الرسوم', 'دون الضريبة', s.fees, 'is-tot'), r('إجمالي المحمَّل على العملاء', 'قيمة العقود − قيمة المنتجات', s.chg, 'is-tot'),
+        e('div', { class: 'fee-gh' }, 'داخلي — لا يظهر للعميل')]).concat(X.map(function (k) { return r(A[k].t, null, A[k].a, 'is-out'); }))
+      .concat([comm > 0 ? r('العمولات', 'المسوّق والموظف', comm, 'is-out') : null, gen > 0.009 ? r('المصاريف العامة والخاصة', null, gen, 'is-out') : null, r('إجمالي الداخلي', null, s.exp, 'is-tot is-out'),
+        e('div', { class: 'fee-gh' }, 'الصافي'), r('صافي إيراد الرسوم', 'إجمالي الرسوم − الداخلي', s.net, 'is-net is-' + feeTone(s.net)),
+        est ? e('small', { class: 'cu-dr-hint' }, fmtNum(est) + ' من العقود بلا بنود مسجّلة — قيمها مفكَّكة بقالب التسعير.') : null]))]);
 }
 /* حمولة حفظ الإعدادات من الحالة المحفوظة مع تعديل واحد */
 function lvFeePayload(mod) {
@@ -15651,15 +15680,14 @@ function lvFeePage() {
   const FL = [].concat.apply([], R.filter(function (r) { return !cq || r.cid === cq; }).map(function (r) { return r.FE.map(function (f) { f.cid = r.cid; f.name = r.name; return f; }); })).filter(function (f) { return !f.def; });
   const s = feeSum(FL), can = LIVE_FEE.can;
   const agg = {}; FL.forEach(function (f) { (f.items || []).forEach(function (x) { if (x.k === 'product') return; const k = x.x ? 'x:' + x.k : x.k; const o = agg[k] || (agg[k] = { t: x.t, a: 0, tax: 0, x: !!x.x }); o.a += Number(x.a) || 0; o.tax += Number(x.tax) || 0; }); });
-  const AG = Object.keys(agg).map(function (k) { return agg[k]; }).filter(function (o) { return o.a > 0 || o.tax > 0; });
+  void agg;
   const rows = FL.slice().sort(function (a, b) { return a.net - b.net; }).map(function (f) { return axRow({ ic: 'coins:gold', t: f.name, sub: 'العقد ' + f.c.no + ' — الرسوم ' + sar(f.fees) + ' · الضريبة ' + sar(f.vat) + ' · الصافي ' + sar(f.net), tone: f.net < 0 ? 'danger' : '', go: function () { feeOpen(f.cid, f.c.no); } }); });
   return [cuBdInt(true),
     LIVE_FEE.err ? DS.note('warn', 'تعذّر تحميل الإعدادات', LIVE_FEE.err) : null,
     axKpis([['المحمَّل على العملاء', sar(s.chg), 'warn', 'coins'], ['منه الضريبة', sar(s.vat), '', 'receipt'], ['العمولات والمصاريف', sar(s.exp), 'danger', 'users-three'], ['صافي إيراد الرسوم', sar(s.net), feeTone(s.net), 'trend-up']]),
     e('div', { class: 'm3-tools ax-tools' }, [e('div', { class: 'cu-bd-cf' }, [DS.editField('اسم العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(R.map(function (r) { return [r.cid, r.name]; })), onChange: function (x) { ADM.feC = x === '*' ? '' : x; draw(); } }))]),
       can ? e('div', { class: 't2-row-wrap lv-fee-acts' }, [liveOk(DS.button('إضافة نسبة', { size: 'sm', ui: 'plus', onClick: lvAddRate })), liveOk(DS.button('إضافة مصروف', { size: 'sm', ui: 'plus', onClick: lvAddExp })), liveOk(DS.button('الإعدادات', { size: 'sm', ui: 'gear-six', onClick: function () { go('other', 'sys-fees'); } }))]) : null]),
-    e('div', { class: 'ax-card fee-sum' }, [e('b', { class: 'ax-mt-t' }, 'الرسوم والضرائب — ' + fmtNum(FL.length) + ' عقد'), axKV(AG.filter(function (o) { return !o.x; }).map(function (o) { return [o.t, sar(qr2(o.a)) + (o.tax > 0 ? ' + ضريبة ' + sar(qr2(o.tax)) : '')]; })
-      .concat([['إجمالي الضريبة', sar(s.vat), 'warn'], ['إجمالي قيمة المنتجات', sar(s.prod)], ['إجمالي قيمة العقود', sar(s.total)], ['المحمَّل على العملاء', sar(s.chg), 'warn'], ['العمولات والمصاريف', sar(s.exp), 'danger'], ['صافي إيراد الرسوم', sar(s.net), feeTone(s.net)]]))]),
+    lvFeeReport(FL, 'تقرير الرسوم'),
     e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'الرسوم لكل عقد'), e('small', {}, fmtNum(rows.length) + ' عقد')])]),
     axList(rows, 'لا عقود هنا')];
 }
@@ -15755,6 +15783,37 @@ if (LIVE.on) {
   if (LP['cu-admx-fee']) LP['cu-admx-fee'].run = lvFeePage;
   try { Object.assign(ICON, { 'sys-fees': ['coins', 'gold'] }); } catch (err) { void err; }
   lp('sys-fees', 'الرسوم والضرائب والعمولات', 'sys', 'sys', lvFeeCfgPage);
+}
+/* ---------- v295: تقرير الرسوم الموحّد (الضرائب · الرسوم بندًا بندًا · الداخلي · الصافي) في كل مكان، وتفاصيل رسوم العقد داخله، وبنود عرض السعر من الإعدادات ---------- */
+if (LIVE.on) {
+  feePage = lvFeePage;
+  feeTab = function (r) {
+    const FL = r.FE.filter(function (f) { return !f.def; }), s = feeSum(FL);
+    return [axKpis([['المحمَّل على العميل', sar(s.chg), 'warn', 'coins'], ['منه الضريبة', sar(s.vat), '', 'receipt'], ['الداخلي', sar(s.exp), 'danger', 'users-three'], ['صافي إيراد الرسوم', sar(s.net), feeTone(s.net), 'trend-up']]),
+      lvFeeReport(FL, 'تقرير الرسوم — ' + r.name),
+      axList(FL.map(function (f) { return axRow({ ic: 'coins:gold', t: 'العقد ' + f.c.no, sub: 'الرسوم ' + sar(f.fees) + ' · الضريبة ' + sar(f.vat) + ' · الصافي ' + sar(f.net), tone: f.net < 0 ? 'danger' : '', go: function () { feeOpen(r.cid, f.c.no); } }); }), 'لا عقود')];
+  };
+  /* درج العقد: رسومه وضرائبه بالتفصيل، وزر العمولات والمصاريف */
+  const admCtOpen10 = admCtOpen;
+  admCtOpen = function (x) {
+    admCtOpen10(x);
+    try {
+      const cid = x.r.user_id, c = axCts(cid).filter(function (k) { return k.no === x.c.no; })[0]; if (!c) return;
+      const dr = [].slice.call(document.querySelectorAll('.cu-dr')).pop(), b = dr && (dr.querySelector('.cu-dr-b .cu-secs') || dr.querySelector('.cu-dr-b')); if (!b) return;
+      b.appendChild(lvFeeItemsSec(axFee(c)));
+      b.appendChild(e('div', { class: 't2-pb-actions' }, liveOk(DS.button('العمولات والمصاريف لهذا العقد', { ui: 'coins', onClick: function () { feeOpen(cid, x.c.no); } }))));
+    } catch (err) { void err; }
+  };
+  /* بنود عرض سعر الشركاء = بنود الرسوم المفعّلة في الإعدادات، والضريبة من الإعدادات — حتى لا يختلف العرض عن العقد */
+  const lvFeeApply10 = lvFeeApply;
+  lvFeeApply = function () {
+    lvFeeApply10();
+    try {
+      const S0 = LIVE_FEE.st || {}; if (S0.vat_rate != null) QCFG.vatRate = (Number(S0.vat_rate) || 0) / 100;
+      const it = LIVE_FEE.ch.filter(function (x) { return x.active && x.k !== 'profit'; }).map(function (x) { return { id: x.k, t: x.name, calc: x.kind === 'pct' ? 'pct' : 'fixed', v: Number(x.value) || 0, mode: x.kind === 'manual' ? 'manual' : 'fixed', vis: 'show', def: 'show', vat: x.taxable !== false }; });
+      if (it.length) QT.items = it;
+    } catch (err) { void err; }
+  };
 }
 /* ---------- v290: سرعة جلب البيانات — لا طلب مكرر في الوقت نفسه، والتحميلات المستقلة معًا ---------- */
 if (LIVE.on) {
