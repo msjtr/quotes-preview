@@ -13905,6 +13905,26 @@ function livePayRow(p, cfg) {
   return e('div', { class: 'fx-lockc' }, [e('span', { class: 'fx-card-ic' }, frag(tile('card'))),
     e('div', { class: 'fx-card-t' }, [e('b', {}, 'الدفعة ' + p.i + ' من ' + (p.c.n || '—')), e('span', {}, [e('bdi', { dir: 'ltr' }, p.c.no), ' · تستحق ' , isoT(p.due), ' · المتبقي منها ' + SR(amt)]), out]), btn]);
 }
+/* بطاقات العميل المحفوظة واشتراكاته (تظهر عند وجودها أو تشغيل الخدمة) */
+async function livePayExtras(box, cfg) {
+  const [cards, subs] = await Promise.all([cfg.saved_cards ? clApi('/api/account/pay/cards').catch(function () { return null; }) : null, clApi('/api/account/pay/subs').catch(function () { return null; })]);
+  box.innerHTML = '';
+  const C = (cards && cards.cards) || [], SB = ((subs && subs.subs) || []);
+  if (cfg.saved_cards) box.appendChild(DS.panel('بطاقاتي المحفوظة', 'تظهر لك في صفحة Paymob لتختارها دون إعادة إدخالها', [
+    C.length ? null : e('small', { class: 'cu-dr-hint' }, 'لا بطاقات محفوظة. عند الدفع يمكنك اختيار حفظ بطاقتك في صفحة Paymob الآمنة — لا تُحفظ بيانات بطاقتك لدى المنصة.')
+  ].filter(Boolean).concat(C.map(function (c) {
+    const del = liveOk(DS.button('حذف', { size: 'sm', onClick: async function () { del.disabled = true; const j = await clPost('/api/account/pay/cards/' + c.id + '/delete', {}); if (j.ok) { snack('حُذفت البطاقة.'); livePayExtras(box, cfg); } else { snack('تعذّر الحذف.'); del.disabled = false; } } }));
+    return e('div', { class: 'fx-lockc' }, [e('span', { class: 'fx-card-ic' }, frag(tile('card'))), e('div', { class: 'fx-card-t' }, [e('b', {}, c.card_subtype || 'بطاقة'), e('span', {}, [e('bdi', { dir: 'ltr' }, c.masked_pan || ''), c.expiry_month ? ' · تنتهي ' : '', c.expiry_month ? e('bdi', { dir: 'ltr' }, c.expiry_month + '/' + c.expiry_year) : ''])]), del]);
+  }))));
+  if (SB.length) box.appendChild(DS.panel('اشتراكاتي', 'الخصم الدوري من بطاقتك عبر Paymob', SB.map(function (x) {
+    const st = String(x.state || '').toLowerCase(), live = st !== 'canceled' && st !== 'cancelled';
+    const cancel = live ? liveOk(DS.button('إلغاء الاشتراك', { size: 'sm', tone: 'danger', onClick: async function () {
+      if (!cancel.dataset.armed) { cancel.dataset.armed = '1'; cancel.lastChild.nodeValue = 'تأكيد الإلغاء'; return; }
+      cancel.disabled = true; const j = await clPost('/api/account/pay/subs/' + x.paymob_sub_id + '/cancel', {}); snack(j.ok ? 'أُلغي الاشتراك.' : (j.message || 'تعذّر الإلغاء.')); livePayExtras(box, cfg); } })) : null;
+    return e('div', { class: 'fx-lockc' }, [e('span', { class: 'fx-card-ic' }, frag(tile('clock'))), e('div', { class: 'fx-card-t' }, [e('b', {}, (x.payment_plans && x.payment_plans.name) || 'اشتراك'),
+      e('span', {}, [SR(Number(x.amount) || 0), x.next_billing ? ' · الخصم القادم ' : '', x.next_billing ? isoT(parseIso(x.next_billing)) : '', ' · ', (PAY_SS[st] || [x.state || '—'])[0]])]), cancel].filter(Boolean));
+  })));
+}
 function livePayPage() {
   const box = e('div', { class: 't2-stack-tight' }, [DS.note('info', 'جارٍ التحميل…', 'نقرأ إعداد الدفع من الخادم.')]);
   const paint = function (cfg) {
@@ -13916,7 +13936,9 @@ function livePayPage() {
       L.length ? null : DS.note('ok', 'لا مستحقات', 'لا توجد دفعات مستحقة عليك الآن.')
     ].filter(Boolean).concat(L.map(function (p) { return livePayRow(p, cfg); }))));
     box.appendChild(DS.note('info', 'طرق السداد الأخرى', 'السداد الجزئي والتحويل البنكي يُفعَّلان قريبًا. الدفع الإلكتروني يسدّد المتبقي من الدفعة كاملًا.'));
+    const extra = e('div', { class: 't2-stack-tight' }); box.appendChild(extra);
     box.appendChild(e('div', { class: 't2-pb-actions' }, [DS.button('رجوع', { onClick: function () { go('pay'); } })]));
+    livePayExtras(extra, cfg);
   };
   (LIVE_PAY.cfg ? Promise.resolve(LIVE_PAY.cfg) : clApi('/api/account/pay/config').then(function (c) { return (LIVE_PAY.cfg = c); }))
     .then(paint).catch(function () { paint({ enabled: false, mode: 'test' }); });
@@ -13966,7 +13988,7 @@ function payMethodsPanel(D, refetch) {
     admTable(['الوسيلة', 'الرقم', 'الوضع', 'الحالة', ''], rows, M.length, 'لا وسائل مضافة', true)]), add];
 }
 function payLinkForm(D, refetch) {
-  const f = PAYC.f, C = (D.clients || []);
+  const f = PAYC.f, C = (D.clients || []), PL = (D.settings && D.settings.subscriptions) ? (D.plans || []).filter(function (x) { return x.active && x.mode === D.gateway.mode; }) : [];
   const pays = f.uid ? (PAYC.pays[f.uid] || null) : [];
   if (f.uid && !pays) liveSb('client_contract_payments?select=id,seq,amount,paid_amount,paid,review_state,due_date,client_contracts(contract_no,legacy_no,closed)&paid=eq.false&user_id=eq.' + encodeURIComponent(f.uid) + '&order=due_date.asc')
     .then(function (L) { PAYC.pays[f.uid] = (L || []).filter(function (p) { return p.review_state === 'ok' && !(p.client_contracts && p.client_contracts.closed) && (Number(p.amount) || 0) - (Number(p.paid_amount) || 0) > 0; }); refetch(true); }).catch(function () { PAYC.pays[f.uid] = []; refetch(true); });
@@ -13975,7 +13997,9 @@ function payLinkForm(D, refetch) {
   const fields = [
     DS.editField('العميل (اختياري)', DS.select({ value: f.uid, options: [['-', 'بلا عميل — دافع آخر']].concat(C.map(function (c) { return [c.id, (c.name || '—') + (c.no ? ' · ' + c.no : '')]; })),
       onChange: function (v) { f.uid = v === '-' ? '' : v; f.pid = ''; refetch(true); } })),
-    f.uid ? DS.editField('الدفعة (اختياري)', DS.select({ value: f.pid || '-', options: [['-', pays ? (pays.length ? 'مبلغ حر — بلا دفعة' : 'لا دفعات مستحقة قابلة للدفع') : 'جارٍ التحميل…']].concat((pays || []).map(function (p) {
+    PL.length ? DS.editField('نوع الرابط', DS.select({ value: f.plan || '-', options: [['-', 'دفعة واحدة']].concat(PL.map(function (x) { return [x.id, 'اشتراك: ' + x.name + ' · ' + SR(x.amount) + ' كل ' + (PAY_FREQ[x.frequency] || x.frequency + ' يومًا')]; })),
+      onChange: function (v) { f.plan = v === '-' ? '' : v; f.pid = ''; const x = PL.filter(function (y) { return y.id === f.plan; })[0]; if (x) { f.amount = String(x.amount); f.desc = 'اشتراك: ' + x.name; } refetch(true); } })) : null,
+    f.uid && !f.plan ? DS.editField('الدفعة (اختياري)', DS.select({ value: f.pid || '-', options: [['-', pays ? (pays.length ? 'مبلغ حر — بلا دفعة' : 'لا دفعات مستحقة قابلة للدفع') : 'جارٍ التحميل…']].concat((pays || []).map(function (p) {
       const c = p.client_contracts || {}; return [p.id, 'الدفعة ' + p.seq + ' · ' + (c.contract_no || c.legacy_no || '—') + ' · ' + SR(due(p))]; })),
       onChange: function (v) { f.pid = v === '-' ? '' : v; const p = (pays || []).filter(function (x) { return x.id === f.pid; })[0]; if (p) { f.amount = String(due(p)); if (!f.desc) f.desc = 'سداد الدفعة ' + p.seq; } refetch(true); } })) : null,
     DS.editField('المبلغ (ريال)', DS.input({ value: f.amount, numeric: true, placeholder: '0.00', onInput: function (v) { f.amount = v; } })),
@@ -13991,7 +14015,7 @@ function payLinkForm(D, refetch) {
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إنشاء الرابط', { tone: 'primary', ui: 'plus', onClick: async function (ev) {
       const b = ev.currentTarget; b.disabled = true; out.innerHTML = '';
       try {
-        const j = await clPost('/admin/api/pay/links', { user_id: f.uid || null, payment_id: f.pid || null, amount: f.amount === '' ? null : Number(f.amount), description: f.desc, name: f.name, phone: f.phone, email: f.email, hours: Number(f.hours) });
+        const j = await clPost('/admin/api/pay/links', { plan_id: f.plan || null, user_id: f.uid || null, payment_id: f.plan ? null : (f.pid || null), amount: f.amount === '' ? null : Number(f.amount), description: f.desc, name: f.name, phone: f.phone, email: f.email, hours: Number(f.hours) });
         if (!j.ok) throw new Error(j.message || 'تعذّر إنشاء الرابط.');
         PAYC.made = j; PAYC.f = { uid: '', pid: '', amount: '', desc: '', name: '', phone: '', email: '', hours: '72' }; PAYC.pays = {}; refetch();
       } catch (err) { if (err && err.message === 'auth') return; out.appendChild(DS.note('warn', 'لم يُنشأ الرابط', err.message)); b.disabled = false; }
@@ -14012,27 +14036,107 @@ function payLinksPanel(D, st, paint, refetch) {
 }
 const PAY_RS = { none: null, partial: ['مسترد جزئيًا', 'warn'], full: ['مسترد كاملًا', 'danger'], void: ['ملغاة (Void)', 'danger'] };
 function payTxnsPanel(D, refetch) {
-  const L = D.txns || [], can = D.can.methods && D.gateway.keys;
+  const L = D.txns || [], can = D.can.methods && D.gateway.keys, S2 = D.settings || {};
   const rows = L.map(function (t) {
     const child = t.class_label === 'online_refund', left = Math.round(((Number(t.amount) || 0) - (Number(t.refunded_amount) || 0)) * 100) / 100;
-    const kind = child ? (t.status === 'void' ? ['إلغاء', 'danger'] : t.status === 'failed' ? ['فشل الاسترداد', 'danger'] : ['استرداد', 'warn'])
+    const kind = child ? (t.status === 'void' ? ['إلغاء', 'danger'] : t.status === 'capture' ? ['تحصيل', 'ok'] : t.status === 'unknown' ? ['فرعية — للمراجعة', 'warn'] : t.status === 'failed' ? ['فشل العملية', 'danger'] : ['استرداد', 'warn'])
       : (t.status === 'success' ? ['ناجحة', 'ok'] : t.status === 'pending' ? ['معلّقة', 'warn'] : ['فاشلة', 'danger']);
     let acts = '—';
-    if (can && !child && t.status === 'success' && left > 0 && ['online', 'online_test'].indexOf(t.class_label) >= 0) {
+    if (can && !child && t.status === 'success' && t.auth_state === 'authorized' && S2.capture) {
+      acts = e('div', { class: 't2-pb-actions' }, [admTwoStep('تحصيل المبلغ (Capture)', 'primary', async function () { const j = await clPost('/admin/api/pay/txns/' + t.trx + '/capture', {}); snack(j.ok ? (j.pending ? j.message : 'تم التحصيل.') : (j.message || 'تعذّر التحصيل.')); if (j.ok) refetch(); }),
+        S2.voids ? admTwoStep('إلغاء التفويض', null, async function () { const j = await clPost('/admin/api/pay/txns/' + t.trx + '/void', {}); snack(j.ok ? 'أُلغي التفويض.' : (j.message || 'تعذّر الإلغاء.')); if (j.ok) refetch(); }) : null]);
+    } else if (can && !child && t.status === 'success' && left > 0 && ['online', 'online_test'].indexOf(t.class_label) >= 0 && (S2.refunds || S2.voids)) {
       const amt = e('input', { class: 't2-input is-num', inputmode: 'decimal', dir: 'ltr', placeholder: 'كامل ' + left, 'aria-label': 'مبلغ الاسترداد', style: 'max-width:110px' });
       const run = async function (act) {
         const j = await clPost('/admin/api/pay/txns/' + t.trx + '/' + act, act === 'refund' && amt.value ? { amount: Number(amt.value) } : {});
         snack(j.ok ? (j.pending ? j.message : act === 'void' ? 'أُلغيت العملية.' : 'تم الاسترداد.') : (j.message || 'تعذّر التنفيذ.')); if (j.ok) refetch();
       };
-      acts = e('div', { class: 't2-pb-actions' }, [amt, admTwoStep('استرداد', 'danger', function () { return run('refund'); }), admTwoStep('إلغاء (Void)', null, function () { return run('void'); })]);
+      acts = e('div', { class: 't2-pb-actions' }, [S2.refunds ? amt : null, S2.refunds ? admTwoStep('استرداد', 'danger', function () { return run('refund'); }) : null, S2.voids ? admTwoStep('إلغاء (Void)', null, function () { return run('void'); }) : null]);
     }
     return admRow([admName(ltr(String(t.trx)), child ? 'من العملية ' + t.parent_trx : (t.class_label === 'online_test' ? 'اختبار' : 'حي')), admName(t.users ? t.users.full_name : '—', t.client_contracts ? 'عقد ' + (t.client_contracts.contract_no || '—') : null),
-      admMoney(t.amount), DS.badge(kind[0], kind[1]), PAY_RS[t.refund_state] ? DS.badge(PAY_RS[t.refund_state][0], PAY_RS[t.refund_state][1]) : (child ? '—' : 'لا يوجد'),
+      admMoney(t.amount), DS.badge(kind[0], kind[1]), PAY_RS[t.refund_state] ? DS.badge(PAY_RS[t.refund_state][0], PAY_RS[t.refund_state][1]) : t.auth_state === 'authorized' ? DS.badge('مفوَّضة — بانتظار التحصيل', 'warn') : (child ? '—' : 'لا يوجد'),
       bdiD(String(t.txn_at || t.created_at || '').slice(0, 16).replace('T', ' ')), acts], null, [t.trx, t.users && t.users.full_name, t.parent_trx].join(' '));
   });
   return DS.panel('عمليات المنصة الجديدة', 'الدفع والاسترداد والإلغاء — لا تظهر هنا عمليات النظام السابق ولا الموقع الآخر', [
     can ? DS.note('info', 'الاسترداد والإلغاء', 'الإلغاء (Void) يعمل عادةً قبل التسوية في اليوم نفسه، والاسترداد بعده (كليًا أو جزئيًا). في الوضع الحي تُخفَّض الدفعة في العقد تلقائيًا بالمبلغ المسترد.') : null,
     admTable(['العملية', 'الدافع', 'المبلغ', 'النوع', 'الاسترداد', 'التاريخ', ''], rows, L.length, 'لا عمليات بعد', true)]);
+}
+const PAY_FREQ = { 7: 'أسبوع', 15: 'أسبوعين', 30: 'شهر', 90: '3 أشهر', 180: '6 أشهر', 365: 'سنة' };
+const PAY_SVC = [['client_pay', 'السداد الإلكتروني للعملاء', 'زر «الدفع الإلكتروني» لدفعات العقود في منصة العميل.'],
+  ['pay_links', 'روابط الدفع', 'إنشاء الروابط وفتحها. عند الإيقاف لا تفتح الروابط القائمة أيضًا.'],
+  ['link_email', 'إرسال الروابط بالبريد', 'زر الإرسال بالبريد الرسمي للعميل. موقوف افتراضيًا (لا رسائل للعملاء أثناء الترحيل).'],
+  ['saved_cards', 'البطاقات المحفوظة', 'يحفظ العميل بطاقته في صفحة Paymob ويختارها لاحقًا دون إعادة إدخالها.'],
+  ['subscriptions', 'الاشتراكات (الخصم المتكرر)', 'خطط خصم دوري يديرها Paymob، وروابط اشتراك للعملاء. تحتاج مفتاح API ووسيلة MOTO.'],
+  ['refunds', 'الاسترداد', 'استرداد كلي أو جزئي لعمليات المنصة الجديدة.'],
+  ['voids', 'الإلغاء (Void)', 'إلغاء العملية قبل التسوية في اليوم نفسه، أو إلغاء تفويض.'],
+  ['capture', 'التحصيل (Capture)', 'تحصيل المبالغ المفوَّضة عند استخدام وسيلة Auth.'],
+  ['inquiry', 'الاستعلام عن العمليات', 'سؤال Paymob مباشرة عن نتيجة محاولة لم يصل إشعارها. يحتاج مفتاح API.']];
+function payServicesPanel(D, refetch) {
+  const S2 = D.settings || {}, can = D.can.methods;
+  const rows = PAY_SVC.map(function (x) {
+    const v = !!S2[x[0]];
+    return admRow([admName(x[1], x[2]), DS.badge(v ? 'مفعّلة' : 'موقوفة', v ? 'ok' : null),
+      can ? liveOk(DS.button(v ? 'إيقاف' : 'تشغيل', { size: 'sm', tone: v ? null : 'primary', onClick: async function () { const j = await clPost('/admin/api/pay/settings', { key: x[0], enabled: !v }); if (!j.ok) snack(j.message || 'تعذّر الحفظ.'); refetch(); } })) : '—'], null, x[1]);
+  });
+  return DS.panel('خدمات الدفع', can ? 'تشغيل وإيقاف كل خدمة — يُسجَّل في سجل التدقيق' : 'للاطلاع — التعديل لصلاحية إعدادات النظام', [
+    D.gateway.api_key ? null : DS.note('info', 'مفتاح API غير مضاف', 'الاشتراكات والاستعلام يحتاجان PAYMOB_API_KEY في ملف بيئة الخادم (API key من لوحة Paymob). بقية الخدمات تعمل بدونه.'),
+    admTable(['الخدمة', 'الحالة', ''], rows, rows.length, 'لا خدمات', true)]);
+}
+function payPlansPanel(D, refetch) {
+  const S2 = D.settings || {}, P = D.plans || [], can = D.can.methods;
+  if (!S2.subscriptions) return DS.note('info', 'الاشتراكات موقوفة', 'شغّلها من «الخدمات ووسائل الدفع» لإنشاء الخطط وروابط الاشتراك.');
+  const rows = P.map(function (x) {
+    return admRow([admName(x.name, 'رقم الخطة في Paymob ' + x.paymob_plan_id), admMoney(x.amount), 'كل ' + (PAY_FREQ[x.frequency] || x.frequency + ' يومًا'), x.deductions ? fmtNum(x.deductions) + ' خصم' : 'مفتوح',
+      DS.badge(x.mode === 'live' ? 'حي' : 'اختبار', x.mode === 'live' ? 'ok' : 'warn'), DS.badge(x.active ? 'مفعّلة' : 'موقوفة', x.active ? 'ok' : null),
+      can ? admTwoStep(x.active ? 'إيقاف الخطة' : 'استئناف الخطة', x.active ? 'danger' : 'primary', async function () { const j = await clPost('/admin/api/pay/plans/' + x.id + '/' + (x.active ? 'suspend' : 'resume'), {}); snack(j.ok ? 'تم.' : (j.message || 'تعذّر التنفيذ.')); if (j.ok) refetch(); }) : '—'], null, x.name);
+  });
+  const f = PAYC.pl || (PAYC.pl = { name: '', frequency: '30', amount: '', deductions: '', iid: '', reminder: '3', retrial: '3' });
+  const add = can ? DS.panel('خطة اشتراك جديدة', 'تُنشأ في Paymob ثم تظهر هنا', [lvFields([
+      DS.editField('اسم الخطة', DS.input({ value: f.name, placeholder: 'مثال: قسط شهري 400', onInput: function (v) { f.name = v; } })),
+      DS.editField('الدورية', DS.select({ value: f.frequency, options: Object.keys(PAY_FREQ).map(function (k) { return [k, 'كل ' + PAY_FREQ[k]]; }), onChange: function (v) { f.frequency = v; } })),
+      DS.editField('مبلغ الخصم (ريال)', DS.input({ value: f.amount, numeric: true, onInput: function (v) { f.amount = v; } })),
+      DS.editField('عدد مرات الخصم (فارغ = مفتوح)', DS.input({ value: f.deductions, numeric: true, onInput: function (v) { f.deductions = v; } })),
+      DS.editField('رقم وسيلة الخصم المتكرر (MOTO)', DS.input({ value: f.iid, numeric: true, onInput: function (v) { f.iid = v; } })),
+      DS.editField('التذكير قبل الخصم (أيام)', DS.input({ value: f.reminder, numeric: true, onInput: function (v) { f.reminder = v; } })),
+      DS.editField('إعادة المحاولة عند الفشل (أيام)', DS.input({ value: f.retrial, numeric: true, onInput: function (v) { f.retrial = v; } }))]),
+    e('small', { class: 'cu-dr-hint' }, 'وسيلة MOTO تُفعَّل لك من Paymob، وتظهر في Payment Integrations. إشعارات الاشتراك تصل إلى ' + D.gateway.sub_hook),
+    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إنشاء الخطة', { tone: 'primary', ui: 'plus', onClick: async function (ev) {
+      const b = ev.currentTarget; b.disabled = true;
+      const j = await clPost('/admin/api/pay/plans', { name: f.name, frequency: Number(f.frequency), amount: Number(f.amount), deductions: f.deductions ? Number(f.deductions) : null, integration_id: f.iid, reminder_days: Number(f.reminder), retrial_days: Number(f.retrial) });
+      b.disabled = false; if (!j.ok) { snack(j.message || 'تعذّر إنشاء الخطة.'); return; } PAYC.pl = null; snack('أُنشئت الخطة.'); refetch(); } }))])]) : null;
+  return [DS.panel('خطط الاشتراك', 'الخصم الدوري يتم من Paymob حسب الخطة', [admTable(['الخطة', 'المبلغ', 'الدورية', 'المدة', 'الوضع', 'الحالة', ''], rows, P.length, 'لا خطط بعد', true)]), add];
+}
+const PAY_SS = { active: ['نشط', 'ok'], suspended: ['موقوف', 'warn'], canceled: ['ملغى', 'danger'], cancelled: ['ملغى', 'danger'] };
+function paySubsPanel(D, refetch) {
+  const L = D.subs || [], can = D.can.links && D.gateway.api_key;
+  const rows = L.map(function (x) {
+    const stt = String(x.state || '').toLowerCase(), b = PAY_SS[stt] || [x.state || '—', null];
+    const acts = can && stt !== 'canceled' && stt !== 'cancelled' ? e('div', { class: 't2-pb-actions' }, [
+      admTwoStep(stt === 'suspended' ? 'استئناف' : 'إيقاف مؤقت', null, async function () { const j = await clPost('/admin/api/pay/subs/' + x.paymob_sub_id + '/' + (stt === 'suspended' ? 'resume' : 'suspend'), {}); snack(j.ok ? 'تم.' : (j.message || 'تعذّر التنفيذ.')); if (j.ok) refetch(); }),
+      admTwoStep('إلغاء الاشتراك', 'danger', async function () { const j = await clPost('/admin/api/pay/subs/' + x.paymob_sub_id + '/cancel', {}); snack(j.ok ? 'أُلغي الاشتراك.' : (j.message || 'تعذّر الإلغاء.')); if (j.ok) refetch(); })]) : '—';
+    return admRow([admName(ltr(String(x.paymob_sub_id)), x.payment_plans ? x.payment_plans.name : null), admName(x.users ? x.users.full_name : '—', x.users ? x.users.tera_id : null), admMoney(x.amount),
+      DS.badge(b[0], b[1]), x.next_billing ? bdiD(x.next_billing) : '—', e('small', {}, x.last_trigger || '—'), acts], null, [x.paymob_sub_id, x.users && x.users.full_name].join(' '));
+  });
+  return DS.panel('اشتراكات العملاء', 'تُنشأ عند دفع العميل لرابط اشتراك، وتُحدَّث من إشعارات Paymob', [admTable(['الاشتراك', 'العميل', 'المبلغ', 'الحالة', 'الخصم القادم', 'آخر حدث', ''], rows, L.length, 'لا اشتراكات بعد', true)]);
+}
+function payCardsPanel(D, refetch) {
+  const L = D.cards || [];
+  const rows = L.map(function (x) {
+    return admRow([admName(ltr(x.masked_pan || '—'), x.card_subtype || null), admName(x.users ? x.users.full_name : '—', x.users ? x.users.tera_id : null), x.expiry_month ? bdiD(x.expiry_month + '/' + x.expiry_year) : '—',
+      DS.badge(x.mode === 'live' ? 'حي' : 'اختبار', x.mode === 'live' ? 'ok' : 'warn'), DS.badge(x.disabled_at ? 'محذوفة' : 'فعّالة', x.disabled_at ? null : 'ok'),
+      x.disabled_at ? '—' : admTwoStep('حذف البطاقة', 'danger', async function () { const j = await clPost('/admin/api/pay/cards/' + x.id + '/disable', {}); snack(j.ok ? 'حُذفت البطاقة.' : 'تعذّر الحذف.'); if (j.ok) refetch(); })], null, [x.masked_pan, x.users && x.users.full_name].join(' '));
+  });
+  return DS.panel('البطاقات المحفوظة', 'تُعرض مقنّعة فقط — رمز البطاقة لا يظهر لأحد', [(D.settings || {}).saved_cards ? null : DS.note('info', 'الخدمة موقوفة', 'لا تُحفظ بطاقات جديدة ولا تُعرض المحفوظة في صفحة الدفع حتى تُشغَّل.'),
+    admTable(['البطاقة', 'العميل', 'الانتهاء', 'الوضع', 'الحالة', ''], rows, L.length, 'لا بطاقات محفوظة', true)]);
+}
+function payIntentsPanel(D, refetch) {
+  const L = D.intents || [], can = (D.settings || {}).inquiry && D.gateway.api_key;
+  if (!L.length) return null;
+  const rows = L.map(function (x) {
+    return admRow([ltr(x.ref), admName(x.users ? x.users.full_name : '—', x.link_id ? 'رابط دفع' : 'سداد دفعة'), admMoney(x.amount), bdiD(String(x.created_at).slice(0, 16).replace('T', ' ')),
+      can ? liveOk(DS.button('استعلام من Paymob', { size: 'sm', onClick: async function () { const j = await clPost('/admin/api/pay/intents/' + encodeURIComponent(x.ref) + '/inquiry', {}); snack(j.ok ? (j.found ? 'وُجدت العملية: ' + (j.status || '') : j.message) : (j.message || 'تعذّر الاستعلام.')); if (j.ok && j.found) refetch(); } })) : '—'], null, x.ref);
+  });
+  return DS.panel('محاولات لم يصل إشعارها', 'فُتحت صفحة الدفع ولم تصل نتيجة بعد', [admTable(['المرجع', 'الدافع', 'المبلغ', 'وقت الفتح', ''], rows, L.length, 'لا شيء', true)]);
 }
 function admPayPage() {
   const box = admMount('paycenter', 'مركز الدفع', async function () {
@@ -14048,7 +14152,16 @@ function admPayPage() {
         ['رابط مدفوع', L.filter(function (x) { return x.status === 'paid'; }).length, 'ok', 'check-circle'], ['وسيلة موقوفة', M.filter(function (m) { return !m.enabled; }).length, '', 'x-circle']]),
       g.keys ? null : DS.note('warn', 'مفاتيح Paymob غير مضافة على الخادم', 'الناقص: ' + g.missing.join('، ') + '. تُضاف في ملف بيئة الخادم، ولا تُكتب هنا ولا في المستودع.'),
       g.keys && g.mode === 'test' ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي، ولا تتغير دفعات العقود. للتحويل إلى الحي تُستبدل المفاتيح على الخادم.') : null,
-      D.can.links ? payLinkForm(D, refetch) : null, D.can.links ? payLinksPanel(D, st, paint, refetch) : null, payTxnsPanel(D, refetch)].concat(payMethodsPanel(D, refetch));
+      e('div', { class: 'adm-chips', role: 'tablist', 'aria-label': 'أقسام مركز الدفع' }, [['links', 'روابط الدفع'], ['txns', 'العمليات'], ['subs', 'الاشتراكات'], ['cards', 'البطاقات المحفوظة'], ['svc', 'الخدمات ووسائل الدفع']].filter(function (t) { return t[0] !== 'links' || D.can.links; }).map(function (t) {
+        const cur = (st.tab || (D.can.links ? 'links' : 'txns')) === t[0];
+        return e('button', { type: 'button', role: 'tab', class: 'adm-chip' + (cur ? ' is-on' : ''), 'aria-selected': String(cur), onClick: function () { st.tab = t[0]; paint(); } }, t[1]); }))]
+      .concat((function (tab) {
+        if (tab === 'links' && D.can.links) return [payLinkForm(D, refetch), payLinksPanel(D, st, paint, refetch)];
+        if (tab === 'subs') return [].concat(paySubsPanel(D, refetch), payPlansPanel(D, refetch));
+        if (tab === 'cards') return [payCardsPanel(D, refetch)];
+        if (tab === 'svc') return [payServicesPanel(D, refetch)].concat(payMethodsPanel(D, refetch));
+        return [payIntentsPanel(D, refetch), payTxnsPanel(D, refetch)];
+      })(st.tab || (D.can.links ? 'links' : 'txns')));
   });
   return box;
 }
