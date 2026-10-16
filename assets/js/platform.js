@@ -14899,7 +14899,7 @@ function livePayoutMap(x, i) {
   const a = AX_ACCTS.filter(function (q) { return q[2] === String(x.from_last4 || ''); })[0];
   return { id: 'TR-' + String(x.legacy_order_id || (i + 1)), cid: x.user_id, ct: x.contract_no || '', toT: 'bank', toBank: 'other', toBankO: x.to_iban ? 'حساب آخر' : 'حساب العميل', own: x.to_iban ? 'no' : 'yes', holder: x.to_holder || '', toAcct: x.to_iban || '',
     frT: 'bank', frBank: /راجحي/.test(x.from_bank || '') ? 'مصرف الراجحي' : 'other', frBankO: x.from_bank || '', frAcct: a ? a[0] : 'other', frAcctO: a ? '' : (x.from_last4 ? '•••• ' + x.from_last4 : ''),
-    amt: Number(x.amount) || 0, date: iso(at), at: at, by: x.source === 'legacy' ? 'النظام السابق' : 'الموظف', st: x.status === 'void' ? 'void' : 'done',
+    amt: Number(x.amount) || 0, date: iso(at), at: at, by: x.source === 'legacy' ? 'النظام السابق' : 'الموظف', st: x.status === 'void' ? 'void' : 'done', voidWhy: x.void_reason || '',
     f: x.file_id ? { name: 'إيصال الحوالة', size: 0, fid: x.file_id } : null, note: x.reason || (x.source === 'legacy' ? 'نُقلت من النظام السابق مع إيصالها.' : ''),
     log: [[at, x.source === 'legacy' ? 'نُقلت الحوالة من النظام السابق' : 'سُجّلت الحوالة', x.source === 'legacy' ? 'الترحيل' : 'الموظف']], live: x };
 }
@@ -14966,6 +14966,82 @@ if (LIVE.on) {
       foot: [DS.button('إغلاق', { onClick: cuBdClose })], onClose: function () { draw(); } });
     const dr = [].slice.call(document.querySelectorAll('.cu-dr')).pop(); if (dr) (dr.closest('.cu-dh') || dr).setAttribute('data-live-ok', '');
   };
+}
+/* ---------- v284: تسجيل سند تنفيذي جديد بملفه، وحوالة صادرة جديدة بإيصالها، وإلغاء الحوالة بسبب — عبر الخادم ---------- */
+async function liveStaffUpload(kind, uid, f) {
+  const u = await clPost('/admin/api/staff-files/sign', { kind: kind, user_id: uid, type: f.type, size: f.size });
+  if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز رفع الملف.');
+  let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
+  let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': f.type, 'x-upsert': 'false' }, body: f }).catch(function () { return null; });
+  if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': f.type, 'x-upsert': 'false' }, body: f }).catch(function () { return null; });
+  if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن.');
+  return { path: u.path, file_name: f.name, mime: f.type, size: f.size };
+}
+const LV_NEW = { bd: null, tr: null };
+const lvFileOk = (f) => f && /^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type) && f.size > 0 && f.size <= 10 * 1024 * 1024;
+function lvNewForm(kind) {
+  const isB = kind === 'bd', D = LV_NEW[kind] || (LV_NEW[kind] = isB ? { cid: '', ct: '', no: '', val: '', date: iso(T0), note: '', file: null, err: '', busy: false } : { cid: '', ct: '', amt: '', date: iso(T0), acct: AX_ACCTS[0][0], own: 'yes', iban: '', holder: '', note: '', file: null, err: '', busy: false });
+  const rerun = function () { lvNewForm(kind); };
+  const C = cuList(), cts = D.cid ? (LIVE_ADM.ct[D.cid] || []) : [];
+  const fld = function (t, el) { return DS.editField(t, el); };
+  const body = [cuBdInt(true),
+    e('div', { class: 'cu-fg' }, [
+      fld('العميل', DS.select({ value: D.cid, options: [['', 'اختر العميل']].concat(C.map(function (c) { return [c.id, c.name]; })), onChange: function (v) { D.cid = v; D.ct = ''; D.err = ''; rerun(); } })),
+      fld(isB ? 'العقد المرتبط (اختياري)' : 'العقد المرتبط', DS.select({ value: D.ct, options: [['', D.cid ? (isB ? 'بلا عقد مرتبط' : 'اختر العقد') : 'اختر العميل أولًا']].concat(cts.map(function (c) { return [c.rid, c.no + ' — ' + sar(cInfo(c).total)]; })), onChange: function (v) { D.ct = v; D.err = ''; } }))].concat(isB ? [
+      fld('رقم السند', DS.input({ value: D.no, dir: 'ltr', placeholder: 'كما في منصة نافذ', onInput: function (v) { D.no = v; D.err = ''; } })),
+      fld('قيمة السند (ر.س)', DS.input({ value: D.val, numeric: true, placeholder: '0.00', onInput: function (v) { D.val = v; D.err = ''; } })),
+      fld('تاريخ السند', datePick({ value: D.date, max: iso(T0), onChange: function (v) { D.date = v; } }))] : [
+      fld('المبلغ المحوَّل (ر.س)', DS.input({ value: D.amt, numeric: true, placeholder: '0.00', onInput: function (v) { D.amt = v; D.err = ''; } })),
+      fld('تاريخ التحويل', datePick({ value: D.date, max: iso(T0), onChange: function (v) { D.date = v; } })),
+      fld('من حساب المنصة', DS.select({ value: D.acct, options: AX_ACCTS.map(function (a) { return [a[0], 'مصرف الراجحي · •••• ' + a[2]]; }), onChange: function (v) { D.acct = v; } })),
+      fld('إلى', DS.select({ value: D.own, options: [['yes', 'حساب العميل المسجّل'], ['no', 'حساب آخر نيابةً عن العميل']], onChange: function (v) { D.own = v; D.err = ''; rerun(); } }))].concat(D.own === 'no' ? [
+      fld('آيبان الحساب المستفيد', DS.input({ value: D.iban, dir: 'ltr', placeholder: 'SA0000000000000000000000', onInput: function (v) { D.iban = v; D.err = ''; } })),
+      fld('اسم صاحب الحساب', DS.input({ value: D.holder, placeholder: 'كما في البنك', onInput: function (v) { D.holder = v; D.err = ''; } }))] : []))),
+    fld(isB ? 'ملاحظات' : 'سبب التحويل أو ملاحظة', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { D.note = ev.target.value; } }, D.note || '')),
+    fld(isB ? 'ملف السند (PDF أو صورة، حتى 10 م.ب)' : 'إيصال التحويل (PDF أو صورة، حتى 10 م.ب)', e('div', { class: 't2-row-wrap' }, [e('input', { type: 'file', accept: 'application/pdf,image/jpeg,image/png,image/webp', onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; D.file = f || null; D.err = f && !lvFileOk(f) ? 'الملف PDF أو صورة، حتى 10 ميغابايت.' : ''; rerun(); } }), D.file ? e('small', {}, D.file.name + ' · ' + sizeOf(D.file.size)) : null])),
+    D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
+  const save = async function () {
+    if (D.busy) return;
+    if (!D.cid) { D.err = 'اختر العميل.'; rerun(); return; }
+    if (isB) { if (!String(D.no).trim()) { D.err = 'أدخل رقم السند.'; rerun(); return; } if (!(Number(D.val) > 0)) { D.err = 'أدخل قيمة السند.'; rerun(); return; } if (!D.file) { D.err = 'أرفق ملف السند.'; rerun(); return; } }
+    else { if (!D.ct) { D.err = 'اختر العقد المرتبط.'; rerun(); return; } if (!(Number(D.amt) > 0)) { D.err = 'أدخل المبلغ المحوَّل.'; rerun(); return; } if (D.own === 'no' && (!/^SA\d{22}$/.test(String(D.iban).replace(/\s+/g, '').toUpperCase()) || !String(D.holder).trim())) { D.err = 'أدخل آيبانًا صحيحًا واسم صاحب الحساب.'; rerun(); return; } if (!D.file) { D.err = 'أرفق إيصال التحويل.'; rerun(); return; } }
+    if (D.file && !lvFileOk(D.file)) { D.err = 'الملف PDF أو صورة، حتى 10 ميغابايت.'; rerun(); return; }
+    D.busy = true; D.err = ''; rerun();
+    try {
+      const up = D.file ? await liveStaffUpload(isB ? 'bond' : 'payout', D.cid, D.file) : {};
+      const acct = AX_ACCTS.filter(function (a) { return a[0] === D.acct; })[0];
+      const j = isB ? await clPost('/admin/api/bonds', Object.assign({ user_id: D.cid, contract_id: D.ct, bond_no: String(D.no).trim(), value: D.val, bond_date: D.date, note: D.note }, up))
+        : await clPost('/admin/api/payouts', Object.assign({ user_id: D.cid, contract_id: D.ct, amount: D.amt, date: D.date, from_bank: 'مصرف الراجحي', from_last4: acct ? acct[2] : '', to_iban: D.own === 'no' ? String(D.iban).replace(/\s+/g, '').toUpperCase() : '', to_holder: D.own === 'no' ? D.holder : '', reason: D.note }, up));
+      if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر الحفظ.');
+      LV_NEW[kind] = null; admClose(); snack(isB ? 'سُجّل السند ورُفع ملفه.' : 'سُجّلت الحوالة ورُفع إيصالها.');
+      await liveAdmLoad().catch(function () { /* */ }); draw();
+    } catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; rerun(); }
+  };
+  const dr = cuBdDraw({ key: 'new:' + kind, ic: isB ? 'gavel:navy' : 'paper-plane-tilt:sky', title: isB ? 'تسجيل سند تنفيذي' : 'تسجيل حوالة صادرة', sub: 'داخلي — لا يظهر للعميل', body: body,
+    foot: [e('div', { class: 'cu-dr-fa' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : (isB ? 'تسجيل السند' : 'تسجيل الحوالة'), { tone: 'primary', ui: 'check', onClick: save })), DS.button('إلغاء', { onClick: function (ev) { LV_NEW[kind] = null; cuBdClose(ev); } })])], onClose: function () { draw(); } });
+  if (dr) (dr.closest('.cu-dh') || dr).setAttribute('data-live-ok', '');
+}
+if (LIVE.on) {
+  const axRegOpen2 = axRegOpen;
+  axRegOpen = function (kind) { if (kind === 'bd' || kind === 'tr') { lvNewForm(kind); return; } if (kind === 'dd' || kind === 'ck') { snack('لا أوامر استقطاع ولا شيكات في السجلات الحالية — تسجيلها الجديد يُفعَّل لاحقًا.'); return; } return axRegOpen2(kind); };
+  /* إلغاء الحوالة بسبب يُحفظ في الخادم */
+  const axTrOpen1 = axTrOpen;
+  axTrOpen = function (id) {
+    axTrOpen1(id);
+    const r = axFind('tr', id); if (!r || !r.live || r.st === 'void') return;
+    const dr = [].slice.call(document.querySelectorAll('.cu-dr')).pop(); if (!dr) return;
+    const fa = dr.querySelector('.cu-dr-f .cu-dr-fa') || dr.querySelector('.cu-dr-fa'); if (!fa) return;
+    fa.insertBefore(liveOk(DS.button('إلغاء الحوالة', { tone: 'danger', ui: 'x-circle', onClick: async function () {
+      const w = String(window.prompt('سبب إلغاء الحوالة (يُسجَّل في التدقيق):', '') || '').trim(); if (w.length < 6) { if (w) snack('اكتب السبب بوضوح.'); return; }
+      const j = await clPost('/admin/api/payouts/' + encodeURIComponent(r.live.id) + '/void', { reason: w });
+      if (!j || j.ok !== true) { snack((j && j.message) || 'تعذّر الإلغاء.'); return; }
+      admClose(); snack('أُلغيت الحوالة وسُجّل السبب.'); await liveAdmLoad().catch(function () { /* */ }); draw(); } })), fa.firstChild);
+  };
+}
+if (LIVE.on) {
+  /* زر «تسجيل…» في صفحات الإجراءات يعمل في الحقيقية للسندات والحوالات */
+  const axPage0 = axPage;
+  axPage = function (o) { const out = axPage0(o); try { [].concat(out).filter(Boolean).forEach(function (n) { if (!n.querySelectorAll) return; n.querySelectorAll('button').forEach(function (b) { if (o && o.reg && (b.innerText || '').trim() === o.reg) b.setAttribute('data-live-ok', ''); }); }); } catch (err) { void err; } return out; };
 }
 const LIVE_PAGES = { client: {},
   admin: {  'pay-center': admPayPage, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
