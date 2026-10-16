@@ -16073,7 +16073,7 @@ function lvWaPinsPage() {
   });
 }
 /* الأجهزة: للعرض والمتابعة فقط */
-const LV_DEV = { pending: ['بانتظار التصريح', 'warn'], authorized: ['مُصرَّح', 'ok'], active: ['مُصرَّح', 'ok'], trusted: ['مُصرَّح', 'ok'], blocked: ['محجوب', 'danger'], deauthorized: ['سُحب التصريح', null], revoked: ['سُحب التصريح', null], replaced: ['استُبدل', null] };
+const LV_DEV = { pending_verification: ['بانتظار التصريح', 'warn'], unknown: ['بانتظار التصريح', 'warn'], pending: ['بانتظار التصريح', 'warn'], authorized: ['مُصرَّح', 'ok'], active: ['مُصرَّح', 'ok'], trusted: ['مُصرَّح', 'ok'], blocked: ['محجوب', 'danger'], deauthorized: ['سُحب التصريح', null], revoked: ['سُحب التصريح', null], replaced: ['استُبدل', null] };
 const lvDevNm = (d) => d.label || [d.browser_name, d.os_name].filter(Boolean).join(' · ') || 'جهاز';
 async function lvDevGet(q) {
   const t = await liveToken(); const r = await fetch('/admin/api/devices' + (q || ''), { cache: 'no-store', headers: { Authorization: 'Bearer ' + t, Accept: 'application/json' } });
@@ -16101,7 +16101,7 @@ function lvDevPage() {
     const cnt = function (s) { return L.filter(function (d) { return (LV_DEV[d.status] || [])[0] === s; }).length; };
     return [admKpis([['جهازًا', L.length, '', 'device-mobile'], ['مُصرَّح', cnt('مُصرَّح'), 'ok', 'check-circle'], ['بانتظار التصريح', cnt('بانتظار التصريح'), cnt('بانتظار التصريح') ? 'warn' : '', 'hourglass-medium'], ['محجوب', cnt('محجوب'), cnt('محجوب') ? 'danger' : '', 'x-circle']]),
       admTools(st, null, paint, refetch, 'ابحث بالاسم أو رقم تيرا'),
-      C.length ? e('div', { class: 'cu-cards' }, C.map(function (g) { const w = g.D.filter(function (d) { return d.status === 'pending'; }).length;
+      C.length ? e('div', { class: 'cu-cards' }, C.map(function (g) { const w = g.D.filter(function (d) { return (LV_DEV[d.status] || [])[0] === 'بانتظار التصريح'; }).length;
         return e('button', { type: 'button', class: 'cu-card', 'data-s': [g.name, g.tera].join(' ').toLowerCase(), onClick: function () { lvDevOpen(g.uid, g.name, g.D); } }, [e('span', { class: 'cu-av' }, String(g.name || '؟').slice(0, 1)),
           e('span', { class: 'cu-card-t' }, [e('b', {}, g.name), e('small', {}, [fmtNum(g.D.length) + (g.D.length === 1 ? ' جهاز' : ' أجهزة'), ' · آخر ظهور ', bdiD(iso(new Date(g.D[0].last_seen_at || g.D[0].first_seen_at)))])]),
           e('span', { class: 'cu-card-m' }, [w ? DS.badge(fmtNum(w) + ' بانتظار التصريح', 'warn') : DS.badge('لا انتظار', 'ok')]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); })) : e('div', { class: 'tm-empty' }, 'لا أجهزة مسجّلة بعد')];
