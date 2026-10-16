@@ -7914,7 +7914,9 @@ function axForm(items) {
   return e('div', { class: 'ax-form' }, G.filter(function (g) { return g.k.length; }).map(function (g, i) { const s0 = formSec(fmtNum(i + 1) + '. ' + g.t, null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, g.k)], kp ? { key: kp + ':' + g.t } : undefined); if (kp && s0.querySelector('.is-missing, .cu-bd-err')) { s0.classList.remove('is-closed'); const h = s0.querySelector(':scope > .t2-sec-h'); if (h) h.setAttribute('aria-expanded', 'true'); } return s0; }));
 }
 /* خيارات القوائم بنمط المنصة: أيقونة + سطر فرعي + شارة */
-const axCliOpts = () => cuList().map(function (c) { const n = cuBdCts(c.id).length; return [c.id, c.name, 'user-circle', { sub: fmtNum(n) + (n === 1 ? ' عقد' : ' عقود') }]; });
+/* عدد العقود بصيغته العربية: عقد، عقدان، 3 عقود، 11 عقدًا */
+function ctW(n) { n = Number(n) || 0; return n === 0 ? 'لا عقود' : n === 1 ? 'عقد واحد' : n === 2 ? 'عقدان' : fmtNum(n) + (n >= 3 && n <= 10 ? ' عقود' : ' عقدًا'); }
+const axCliOpts = () => cuList().map(function (c) { const n = cuBdCts(c.id).length; return [c.id, c.name, 'user-circle', { sub: ctW(n) }]; });
 const axCtOpts = (cid) => cid ? axCts(cid).map(function (c) { return [c.no, c.no, 'contract', { sub: c.product + ' · المتبقي ' + sar(c.rem), badge: [c.stT, c.tone] }]; }) : [];
 /* الصف المختصر: اسم العميل والإجراء فقط — التفاصيل في الداخل */
 const axRow = (o) => e('article', { class: 'nr cu-row cu-bd-r ax-r' + (o.tone ? ' is-' + o.tone : '') }, [e('button', { type: 'button', class: 'nr-main', 'aria-label': 'عرض ' + o.t + ' — ' + o.sub, onClick: o.go }, [
@@ -9120,7 +9122,7 @@ function dcPcPage() {
   const cards = G.map(function (g) {
     const by = function (k) { return g.L.filter(function (x) { return x.c.k === k; }).length; }, nl = by('late'), nd = by('def'), nc = by('done');
     return e('button', { type: 'button', class: 'cu-card', 'data-s': g.name, onClick: function () { ADM.dcPcC = g.cid; window.scrollTo(0, 0); draw(); } }, [e('span', { class: 'cu-av' }, String(g.name || '؟').slice(0, 1)),
-      e('span', { class: 'cu-card-t' }, [e('b', {}, g.name), e('small', {}, [fmtNum(g.L.length) + (g.L.length === 1 ? ' عقد' : ' عقود') + ' · المتبقي ' + sar(rem(g.L))])]),
+      e('span', { class: 'cu-card-t' }, [e('b', {}, g.name), e('small', {}, [ctW(g.L.length) + ' · المتبقي ' + sar(rem(g.L))])]),
       e('span', { class: 'cu-card-m' }, [nd ? DS.badge(fmtNum(nd) + ' متعثر', 'danger') : null, nl ? DS.badge(fmtNum(nl) + ' متأخر', 'warn') : null, nc ? DS.badge(fmtNum(nc) + ' مسدد', 'ok') : null, !nd && !nl && !nc ? DS.badge('منتظم', 'info') : null]),
       e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); });
   return [dcTop('عقود الشركاء', 'اختر العميل لعرض ملخص عقوده وأقسامها', [dcTplBtn('pc')]),
@@ -9145,7 +9147,7 @@ function dcPcClient(cid, L) {
   const row = function (x) { return e('button', { type: 'button', class: 'tm-r' + (x.c.k === 'def' ? ' is-danger' : x.c.k === 'late' ? ' is-warn' : ''), onClick: function () { dcPcOpen(cid, x.c.no); }, 'aria-label': 'فتح ' + x.c.no }, [
     e('span', { class: 'tm-no', dir: 'ltr' }, x.c.no), e('span', { class: 'tm-sub' }, x.c.product + (x.c.rem > 0 ? ' · المتبقي ' + sar(x.c.rem) : '') + (x.c.odAmt > 0 ? ' · متأخر ' + sar(x.c.odAmt) : '')), e('span', { class: 'tm-amt' }, sar(x.c.total)), DS.badge(x.c.stT, x.c.tone), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); };
   const sec = function (k, t, A, note) { return A.length ? formSec(t + ' (' + fmtNum(A.length) + ')', note, [e('div', { class: 'tm-rows' }, A.map(row))], { key: 'dcpc:' + cid + ':' + k }) : null; };
-  return [lvCliHead(cid, name, 'ملخص العقود — ' + fmtNum(L.length) + (L.length === 1 ? ' عقد' : ' عقود'), function () { ADM.dcPcC = ''; }),
+  return [lvCliHead(cid, name, 'ملخص العقود — ' + ctW(L.length), function () { ADM.dcPcC = ''; }),
     axKpis([['إجمالي قيمة العقود', sar(S(R, 'total')), '', 'files'], ['المدفوع', sar(S(R, 'paid')), 'ok', 'check-circle'], ['المتبقي', sar(S(R, 'rem')), 'warn', 'coins'], ['المتأخر', sar(S(L, 'odAmt')), S(L, 'odAmt') > 0 ? 'danger' : '', 'warning']]),
     (function () { const rr = function (t, sub, v, cls) { return e('div', { class: 'fee-r' + (cls ? ' ' + cls : '') }, [e('span', {}, [t, sub ? e('small', {}, sub) : null]), e('b', {}, v)]); };
       return e('section', { class: 'ax-card fee-tot' }, [e('b', { class: 'ax-mt-t' }, 'ملخص العقود — ' + fmtNum(L.length)), e('div', { class: 'fee-tb' }, [
@@ -15695,14 +15697,14 @@ function lvFeePage() {
   const r0 = cq ? R.filter(function (r) { return r.cid === cq; })[0] : null;
   if (r0) {
     const FL = flOf(r0), s = feeSum(FL);
-    return [lvCliHead(r0.cid, r0.name, 'الرسوم والضرائب — ' + fmtNum(FL.length) + (FL.length === 1 ? ' عقد' : ' عقود'), function () { ADM.feC = ''; }),
+    return [lvCliHead(r0.cid, r0.name, 'الرسوم والضرائب — ' + ctW(FL.length), function () { ADM.feC = ''; }),
       kp(s), lvFeeReport(FL, 'تقرير الرسوم'),
       e('div', { class: 'ax-form' }, [formSec('عقود العميل (' + fmtNum(FL.length) + ')', 'اضغط العقد لتفاصيل رسومه وعمولاته', [axList(FL.map(function (f) { return axRow({ ic: 'coins:gold', t: 'العقد ' + f.c.no, sub: 'الرسوم ' + sar(f.fees) + ' · الضريبة ' + sar(f.vat) + ' · الصافي ' + sar(f.net), tone: f.net < 0 ? 'danger' : '', go: function () { feeOpen(r0.cid, f.c.no); } }); }), 'لا عقود')], { key: 'fee:' + r0.cid })])];
   }
   const ALL = [].concat.apply([], R.map(flOf)), sA = feeSum(ALL);
   const cards = R.map(function (r) { const FL = flOf(r), s = feeSum(FL); return { r: r, n: FL.length, s: s }; }).filter(function (x) { return x.n; }).sort(function (a, b) { return b.s.fees - a.s.fees; }).map(function (x) {
     return e('button', { type: 'button', class: 'cu-card', 'data-s': x.r.name, onClick: function () { ADM.feC = x.r.cid; window.scrollTo(0, 0); draw(); } }, [e('span', { class: 'cu-av' }, String(x.r.name || '؟').slice(0, 1)),
-      e('span', { class: 'cu-card-t' }, [e('b', {}, x.r.name), e('small', {}, fmtNum(x.n) + (x.n === 1 ? ' عقد' : ' عقود') + ' · الرسوم ' + sar(x.s.fees) + ' · الضريبة ' + sar(x.s.vat))]),
+      e('span', { class: 'cu-card-t' }, [e('b', {}, x.r.name), e('small', {}, ctW(x.n) + ' · الرسوم ' + sar(x.s.fees) + ' · الضريبة ' + sar(x.s.vat))]),
       e('span', { class: 'cu-card-m' }, [DS.badge('الصافي ' + sar(x.s.net), feeTone(x.s.net))]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); });
   return [LIVE_FEE.err ? DS.note('warn', 'تعذّر تحميل الإعدادات', LIVE_FEE.err) : null, kp(sA), e('div', { class: 'm3-tools ax-tools' }, [acts]),
     lvFeeReport(ALL, 'تقرير الرسوم'),
