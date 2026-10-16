@@ -7713,3 +7713,7 @@ html,body{height:auto;min-height:100%}
 
 /* v260: ملاحظة «متطلب تحديث» بجانب الخانة */
 .cu-mgr-fv{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px}
+
+/* v263: تنبيه الصفر في حقول الجوال، وشريط تمرير ظاهر للمسار الجانبي */
+.tq-zero{display:block;margin-top:6px;color:#B42318;font:600 .76rem/1.5 "IBM Plex Sans Arabic",sans-serif}
+.tq-zero[hidden]{display:none}

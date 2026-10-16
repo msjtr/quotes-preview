@@ -12948,3 +12948,19 @@ NARROW.addEventListener('change', function () { appify(); });
 loadNav();
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
 })();
+  /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
+  (function () {
+    if (window.__tqZero) return; window.__tqZero = true;
+    function isCC(el) { return !!(el && el.tagName === 'INPUT' && (el.closest('.ts-tel') || /^5X{6,}$/.test(el.getAttribute('placeholder') || ''))); }
+    function note(el) {
+      var host = el.closest('.ts-tel') || el, n = host.nextElementSibling;
+      if (!n || !n.classList.contains('tq-zero')) { n = document.createElement('small'); n.className = 'tq-zero'; n.setAttribute('role', 'status'); n.textContent = 'اكتب الرقم بدون صفر في أوله؛ مفتاح الدولة محدد.'; host.insertAdjacentElement('afterend', n); }
+      n.hidden = false; clearTimeout(n._t); n._t = setTimeout(function () { n.hidden = true; }, 3500);
+    }
+    document.addEventListener('input', function (ev) {
+      var el = ev.target; if (!isCC(el)) return;
+      var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
+      if (z !== v) { el.value = z; if (z !== a) note(el); }
+    }, true);
+  })();
+
