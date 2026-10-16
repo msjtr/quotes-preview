@@ -9112,12 +9112,48 @@ function dcCqOpen(no) {
 }
 /* عقود الشركاء */
 function dcPcPage() {
-  const L = dcCts(), f = ADM.dcPcF || 'all', cq = ADM.dcPcC || '', fit = function (x, k) { return (!cq || x.cid === cq) && (k === 'all' || x.c.k === k || (k === 'late' && x.c.k === 'def')); };
-  return [dcTop('عقود الشركاء', 'بقالب «' + TQ_NAME.pc + '» — مستند PDF لكل عقد', [dcTplBtn('pc')]),
-    axKpis([['العقود', fmtNum(L.length), '', 'contract'], ['قائمة', fmtNum(L.filter(function (x) { return x.c.k === 'act'; }).length), 'info', 'clock'], ['متأخرة أو متعثرة', fmtNum(L.filter(function (x) { return x.c.k === 'late' || x.c.k === 'def'; }).length), 'danger', 'warning'], ['إجمالي قيمة العقود', sar(axSum(L.filter(function (x) { return !x.c.from; }), function (x) { return x.c.total; })), '', 'files']]),
+  /* عقود العملاء: قائمة العملاء أولًا بملخص كل عميل، والدخول على العميل يعرض ملخصه الكامل وأقسام عقوده المطوية */
+  const L = dcCts(), f = ADM.dcPcF || 'all', cq = ADM.dcPcC || '', fit = function (x, k) { return k === 'all' || x.c.k === k || (k === 'late' && x.c.k === 'def'); };
+  if (cq && L.some(function (x) { return x.cid === cq; })) return dcPcClient(cq, L.filter(function (x) { return x.cid === cq; }));
+  const G = []; L.filter(function (x) { return fit(x, f); }).forEach(function (x) { let g = G.filter(function (y) { return y.cid === x.cid; })[0]; if (!g) G.push(g = { cid: x.cid, name: x.name, L: [] }); g.L.push(x); });
+  const rem = function (A) { return axSum(A.filter(function (x) { return !x.c.from; }), function (x) { return x.c.rem; }); };
+  const cards = G.map(function (g) {
+    const by = function (k) { return g.L.filter(function (x) { return x.c.k === k; }).length; }, nl = by('late'), nd = by('def'), nc = by('done');
+    return e('button', { type: 'button', class: 'cu-card', 'data-s': g.name, onClick: function () { ADM.dcPcC = g.cid; window.scrollTo(0, 0); draw(); } }, [e('span', { class: 'cu-av' }, String(g.name || '؟').slice(0, 1)),
+      e('span', { class: 'cu-card-t' }, [e('b', {}, g.name), e('small', {}, [fmtNum(g.L.length) + (g.L.length === 1 ? ' عقد' : ' عقود') + ' · المتبقي ' + sar(rem(g.L))])]),
+      e('span', { class: 'cu-card-m' }, [nd ? DS.badge(fmtNum(nd) + ' متعثر', 'danger') : null, nl ? DS.badge(fmtNum(nl) + ' متأخر', 'warn') : null, nc ? DS.badge(fmtNum(nc) + ' مسدد', 'ok') : null, !nd && !nl && !nc ? DS.badge('منتظم', 'info') : null]),
+      e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); });
+  return [dcTop('عقود الشركاء', 'اختر العميل لعرض ملخص عقوده وأقسامها', [dcTplBtn('pc')]),
+    axKpis([['العقود', fmtNum(L.length), '', 'contract'], ['العملاء', fmtNum(new Set(L.map(function (x) { return x.cid; })).size), '', 'users-three'], ['متأخرة أو متعثرة', fmtNum(L.filter(function (x) { return x.c.k === 'late' || x.c.k === 'def'; }).length), 'danger', 'warning'], ['إجمالي المتبقي', sar(rem(L)), 'warn', 'coins']]),
     e('div', { class: 'm3-tools ax-tools' }, [chipRow([['all', 'الكل', 'list:navy'], ['act', 'منتظمة', 'check-circle:teal'], ['late', 'متأخرة أو متعثرة', 'warning:gold'], ['done', 'مسددة', 'seal-check:teal']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), f, function (v) { ADM.dcPcF = v; draw(); }, 'تصفية العقود'),
-      e('div', { class: 'cu-bd-cf' }, [DS.editField('اسم العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(cuList().map(function (c) { return [c.id, c.name]; })), onChange: function (v) { ADM.dcPcC = v === '*' ? '' : v; draw(); } }))])]),
-    tmCList(L.filter(function (x) { return fit(x, f); }).map(function (x) { return { name: x.name, unit: 'عقود', no: x.c.no, sub: x.c.product + ' · ' + pcTplOf(x.c.no).name, amt: sar(x.c.total), v: x.c.total, st: [x.c.stT, x.c.tone], tone: x.c.k === 'def' ? 'danger' : x.c.k === 'late' ? 'warn' : '', go: function () { dcPcOpen(x.cid, x.c.no); } }; }), 'لا عقود هنا')];
+      e('div', { class: 'cu-bd-cf' }, [DS.editField('اسم العميل', DS.select({ value: '*', options: [['*', 'كل العملاء']].concat(G.map(function (g) { return [g.cid, g.name]; })), onChange: function (v) { ADM.dcPcC = v === '*' ? '' : v; draw(); } }))])]),
+    cards.length ? e('div', { class: 'cu-cards' }, cards) : e('div', { class: 'tm-empty' }, 'لا عقود هنا')];
+}
+/* ملخص عقود العميل الكامل، وعقوده في أقسام مطوية يفتحها المستخدم ويغلقها */
+function dcPcClient(cid, L) {
+  const name = (L[0] || {}).name || cuBdName(cid), R = L.filter(function (x) { return !x.c.from; });
+  const by = function (k) { return L.filter(function (x) { return x.c.k === k; }); }, act = by('act'), late = by('late'), def = by('def'), done = by('done');
+  const S = function (A, k) { return axSum(A, function (x) { return x.c[k]; }); }, odN = function (A) { return A.reduce(function (a, x) { return a + (x.c.odN || 0); }, 0); };
+  const pw = function (n) { return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتين' : fmtNum(n) + (n <= 10 ? ' دفعات' : ' دفعة'); };
+  const row = function (x) { return e('button', { type: 'button', class: 'tm-r' + (x.c.k === 'def' ? ' is-danger' : x.c.k === 'late' ? ' is-warn' : ''), onClick: function () { dcPcOpen(cid, x.c.no); }, 'aria-label': 'فتح ' + x.c.no }, [
+    e('span', { class: 'tm-no', dir: 'ltr' }, x.c.no), e('span', { class: 'tm-sub' }, x.c.product + (x.c.rem > 0 ? ' · المتبقي ' + sar(x.c.rem) : '') + (x.c.odAmt > 0 ? ' · متأخر ' + sar(x.c.odAmt) : '')), e('span', { class: 'tm-amt' }, sar(x.c.total)), DS.badge(x.c.stT, x.c.tone), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); };
+  const sec = function (k, t, A, note) { return A.length ? formSec(t + ' (' + fmtNum(A.length) + ')', note, [e('div', { class: 'tm-rows' }, A.map(row))], { key: 'dcpc:' + cid + ':' + k }) : null; };
+  return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, name), e('small', {}, 'ملخص العقود — ' + fmtNum(L.length) + (L.length === 1 ? ' عقد' : ' عقود'))]),
+      DS.button('كل العملاء', { ui: 'caret-right', onClick: function () { ADM.dcPcC = ''; window.scrollTo(0, 0); draw(); } })]),
+    axKpis([['إجمالي قيمة العقود', sar(S(R, 'total')), '', 'files'], ['المدفوع', sar(S(R, 'paid')), 'ok', 'check-circle'], ['المتبقي', sar(S(R, 'rem')), 'warn', 'coins'], ['المتأخر', sar(S(L, 'odAmt')), S(L, 'odAmt') > 0 ? 'danger' : '', 'warning']]),
+    e('div', { class: 'ax-card fee-sum' }, [e('b', { class: 'ax-mt-t' }, 'الملخص'), axKV([
+      ['العقود', fmtNum(L.length)],
+      ['منتظمة', fmtNum(act.length) + (act.length ? ' · المتبقي ' + sar(S(act, 'rem')) : '')],
+      ['متأخرة', fmtNum(late.length) + (late.length ? ' · متأخر ' + sar(S(late, 'odAmt')) + ' في ' + pw(odN(late)) : ''), late.length ? 'warn' : ''],
+      ['متعثرة', fmtNum(def.length) + (def.length ? ' · متأخر ' + sar(S(def, 'odAmt')) + ' في ' + pw(odN(def)) : ''), def.length ? 'danger' : ''],
+      ['مسددة بالكامل', fmtNum(done.length) + (done.length ? ' · ' + sar(S(done, 'total')) : ''), done.length ? 'ok' : ''],
+      ['إجمالي المسدَّد', sar(S(R, 'paid')), 'ok'], ['إجمالي المتبقي', sar(S(R, 'rem')), 'warn'], ['إجمالي المتأخر', sar(S(L, 'odAmt')), S(L, 'odAmt') > 0 ? 'danger' : '']])]),
+    e('div', { class: 'ax-form' }, [
+      sec('def', 'العقود المتعثرة', def, 'متأخر ' + sar(S(def, 'odAmt'))),
+      sec('late', 'العقود المتأخرة', late, 'متأخر ' + sar(S(late, 'odAmt'))),
+      sec('act', 'العقود المنتظمة', act, 'المتبقي ' + sar(S(act, 'rem'))),
+      sec('done', 'العقود المسددة', done, sar(S(done, 'total'))),
+      sec('oth', 'عقود أخرى', L.filter(function (x) { return ['act', 'late', 'def', 'done'].indexOf(x.c.k) < 0; }), null)])];
 }
 function dcPcOpen(cid, no) {
   const c = axCts(cid).filter(function (x) { return x.no === no; })[0]; if (!c) return; const key = 'dcp:' + no, S = c.from ? null : feeSplitOf(c), q = QUOTES.filter(function (x) { return x.contract === no; })[0];
