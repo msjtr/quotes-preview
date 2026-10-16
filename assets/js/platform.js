@@ -15188,6 +15188,50 @@ if (LIVE.on) {
     'cu-secc': lvSecHubPage, 'cu-mon-activity': function () { return lvAuditPage('cu-mon-activity'); }, 'cu-mon-alerts': function () { return lvAuditPage('cu-mon-alerts'); }, 'cu-mon-sens': function () { return lvAuditPage('cu-mon-sens'); },
     'cu-mon-sec': function () { return lvAuditPage('cu-mon-sec'); }, 'cu-audit': function () { return lvAuditPage('cu-audit'); }, 'cu-pf-req': lvPfReqPage });
 }
+/* ---------- v285: العروض والفواتير من القاعدة — عروض الشركاء (admin_quotations_list) · عروض المتجر · فواتير المتجر (الطلبات المدفوعة) ---------- */
+const LV_QT = { draft: ['مسودة', null], issued: ['صادر — بانتظار العميل', 'warn'], sent: ['صادر — بانتظار العميل', 'warn'], accepted: ['مقبول', 'ok'], approved: ['معتمد', 'ok'], rejected: ['مرفوض', 'danger'], expired: ['منتهٍ', null], cancelled: ['ملغى', null] };
+function lvPqPage() {
+  return admMount('pq', 'عروض أسعار الشركاء', function () { return admRpc('admin_quotations_list', {}); }, function (j, st, paint, refetch) {
+    const L = (j && j.rows) || [], stOf = function (q) { return q.is_expired && ['draft', 'issued', 'sent'].indexOf(q.status) >= 0 ? 'expired' : q.status; };
+    const keys = Object.keys(L.reduce(function (o, q) { o[stOf(q)] = 1; return o; }, {}));
+    const chips = [['all', 'الكل', L.length]].concat(keys.map(function (k) { return [k, (LV_QT[k] || [k])[0], L.filter(function (q) { return stOf(q) === k; }).length]; }));
+    const R = L.filter(function (q) { return st.f === 'all' || stOf(q) === st.f; });
+    return [admKpis([['عرضًا', L.length, '', 'letter'], ['بانتظار العميل', L.filter(function (q) { return ['issued', 'sent'].indexOf(stOf(q)) >= 0; }).length, 'warn', 'hourglass-medium'], ['مقبولة', L.filter(function (q) { return ['accepted', 'approved'].indexOf(stOf(q)) >= 0; }).length, 'ok', 'check-circle'], ['مسودات', L.filter(function (q) { return stOf(q) === 'draft'; }).length, '', 'note-pencil']]),
+      DS.note('info', 'رقم العرض مرتبط بطلب الشريك', 'تُعَدّ العروض وتُعتمد من «طلبات العملاء»، وتظهر هنا بحالتها وصلاحيتها.', DS.button('طلبات العملاء', { size: 'sm', onClick: function () { go('other', 'cs-requests'); } })),
+      admTools(st, chips, paint, refetch, 'ابحث برقم العرض أو اسم العميل'),
+      admTable(['العرض', 'العميل', 'الطلب', 'الإجمالي', 'صالح حتى', 'أعدّه', 'الحالة'], R.map(function (q) {
+        return admRow([ltr(q.quotation_number || '—'), q.customer_name || '—', ltr(q.quote_number || '—'), Number(q.total) ? sar(Number(q.total)) : '—', q.valid_until ? ltr(String(q.valid_until).slice(0, 10)) : '—', q.prepared_by_name || '—', admB(LV_QT, stOf(q))], null,
+          [q.quotation_number, q.quote_number, q.customer_name].join(' ')); }), L.length, 'لا عروض بهذه الحالة', true)];
+  });
+}
+/* عروض أسعار المتجر وفواتيره من طلبات المتجر الحقيقية (store_orders) */
+function lvStoreDocs(kind) {
+  liveSoSync();
+  const L = SO_PAY.filter(function (o) { return o.live; });
+  if (kind === 'sq') {
+    const Q = L.filter(function (o) { return o.live.kind === 'quote' || o.live.offer_until || /عرض السعر/.test(JSON.stringify(o.live.log || [])); });
+    const f = ADM.dcSqF || 'all', fit = function (o, k) { return k === 'all' || (k === 'wait' ? o.st === 'quote' : k === 'offer' ? o.st === 'offer' : k === 'ok' ? o.st === 'new' || o.st === 'done' : o.st === 'cancel'); };
+    const rows = Q.filter(function (o) { return fit(o, f); }).map(function (o) { const S0 = SO_ST[o.st] || ['—', null];
+      return admRow([ltr(o.no), admName(o.custN || '—', o.recv), o.st === 'quote' ? 'عند الطلب' : sar(soTotal(o)), o.qt && o.qt.until ? ltr(String(o.qt.until)) : '—', DS.badge(S0[0], S0[1])], function () { cuStoreOpen('o:' + o.no); }, [o.no, o.custN].join(' ')); });
+    return [DS.panel('عروض أسعار المتجر', 'من طلبات المتجر — الإصدار والقبول من درج الطلب', [
+      admKpis([['طلب عرض', Q.length, '', 'storefront'], ['بانتظار الإصدار', Q.filter(function (o) { return o.st === 'quote'; }).length, 'warn', 'hourglass-medium'], ['بانتظار رد العميل', Q.filter(function (o) { return o.st === 'offer'; }).length, 'info', 'clock'], ['قُبلت', Q.filter(function (o) { return o.st === 'new' || o.st === 'done'; }).length, 'ok', 'check-circle']]),
+      chipRow([['all', 'الكل', 'list:navy'], ['wait', 'بانتظار الإصدار', 'hourglass-medium:saffron'], ['offer', 'بانتظار الرد', 'clock:sky'], ['ok', 'مقبولة', 'check-circle:teal'], ['cancel', 'ملغاة', 'x-circle:gold']].map(function (x) { return [x[0], x[1], x[2], Q.filter(function (o) { return fit(o, x[0]); }).length]; }), f, function (v) { ADM.dcSqF = v; draw(); }, 'تصفية العروض'),
+      admTable(['الطلب', 'العميل', 'الإجمالي', 'صالح حتى', 'الحالة'], rows, Q.length, 'لا عروض أسعار من المتجر بعد')])];
+  }
+  const P = L.filter(function (o) { return o.live.kind === 'buy' && (o.live.pay_status === 'paid' || o.live.pay_status === 'refunded'); });
+  const tot = P.reduce(function (a, o) { return a + (Number(o.live.total) || 0); }, 0);
+  return [DS.panel('فواتير المتاجر', 'الطلبات المدفوعة من المتجر', [
+    admKpis([['طلبًا مدفوعًا', P.length, '', 'receipt'], ['ر.س الإجمالي شامل الضريبة', Math.round(tot * 100) / 100, 'ok', 'coins'], ['مستردة', P.filter(function (o) { return o.live.pay_status === 'refunded'; }).length, '', 'arrow-u-up-left']]),
+    DS.note('warn', 'الفاتورة الضريبية الإلكترونية', 'لا تصدر من هنا فاتورة ضريبية برمز QR إلى أن تُربط المنصة بالفوترة الإلكترونية (فاتورة). المعروض إيصال الدفع لكل طلب مدفوع من بياناته الفعلية.'),
+    admTable(['الطلب', 'العميل', 'تاريخ الدفع', 'طريقة الدفع', 'الإجمالي', 'الحالة'], P.map(function (o) { return admRow([ltr(o.no), o.custN || '—', o.live.paid_at ? ltr(String(o.live.paid_at).slice(0, 10)) : '—', o.pay, sar(Number(o.live.total) || 0), o.live.pay_status === 'refunded' ? DS.badge('مستردة', 'info') : DS.badge('مدفوعة', 'ok')], function () { soReceipt(o); }, [o.no, o.custN].join(' ')); }), P.length, 'لا طلبات مدفوعة بعد')])];
+}
+function lvCqPage() {
+  return [DS.panel('عروض حسب الطلب', null, [LDS.emptyState({ icon: 'note-pencil', title: 'لا طلبات «حسب الطلب» بعد', body: 'تظهر هنا طلبات العملاء الخاصة (كميات كبيرة أو خدمة مخصصة) وعروض أسعارها عند وصولها من المتجر.', compact: true })])];
+}
+if (LIVE.on) {
+  const lvBox = (L) => e('div', { class: 't2-stack adm-live' }, [].concat(L).filter(Boolean));
+  Object.assign(LIVE_PAGES.admin, { 'cu-docs-pq': lvPqPage, 'cu-docs-sq': function () { return lvBox(lvStoreDocs('sq')); }, 'cu-docs-si': function () { return lvBox(lvStoreDocs('si')); }, 'cu-docs-cq': function () { return lvBox(lvCqPage()); } });
+}
 if (LIVE.on) {
   const draw0 = draw, setRole0 = setRole, overlay0 = showOverlay;
   draw = function () {
