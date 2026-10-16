@@ -13165,9 +13165,8 @@ function admFilter(root, q) {
 function admKpis(list) { return e('div', { class: 'cu-kpis adm-kpis' }, list.map(function (x) { return e('div', { class: 'cu-kpi' + (x[2] ? ' is-' + x[2] : '') }, [e('span', { class: 'cu-kpi-ic' }, frag(ui(x[3], 18))), e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })); }
 function admTools(st, chips, paint, refetch, ph) {
   const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: ph, value: st.q, 'aria-label': ph, onInput: function (ev) { st.q = ev.target.value; admFilter(ev.target.closest('.adm-live') || document, st.q); } });
-  const ch = chips && chips.length > 1 ? e('div', { class: 'adm-chips', role: 'group', 'aria-label': 'تصفية' }, chips.map(function (c) {
-    return e('button', { type: 'button', class: 'adm-chip' + (st.f === c[0] ? ' is-on' : ''), 'aria-pressed': String(st.f === c[0]), onClick: function () { st.f = c[0]; paint(); } }, [c[1], e('b', {}, fmtNum(c[2]))]); })) : null;
-  return e('div', { class: 'adm-tools' }, [e('div', { class: 'm3-q' }, [qi, DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: refetch })]), ch]);
+  const ch = chips && chips.length > 1 ? chipRow(chips.map(function (c) { return [c[0], c[1], c[3] || null, c[2]]; }), st.f, function (v) { st.f = v; paint(); }, 'تصفية') : null;
+  return e('div', { class: 'adm-tools' }, [ch, e('div', { class: 'm3-q' }, [qi, DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: refetch })])]);
 }
 function admRow(cells, open, s) {
   return e('tr', { class: 'sys-tr', tabindex: open ? '0' : null, 'data-s': String(s || '').toLowerCase(), onClick: open || null, onKeydown: open ? function (ev) { if (ev.key === 'Enter') open(); } : null }, cells.map(function (c) { return e('td', {}, c); }));
@@ -13246,7 +13245,7 @@ function admClientsPage() {
   return admMount('cl', 'ملفات العملاء', function () { return admClients(''); }, function (j, st, paint, refetch) {
     const can = j.can || {}, R = j.reg || [], M = j.mig || [];
     if (st.f === 'all') st.f = can.reg ? 'reg' : 'mig';
-    const chips = [].concat(can.reg ? [['reg', 'المسجّلون في المنصة', R.length]] : [], can.mig ? [['mig', 'المرحّلون من النظام السابق', M.length]] : []);
+    const chips = [].concat(can.reg ? [['reg', 'المسجّلون في المنصة', R.length, 'users:teal']] : [], can.mig ? [['mig', 'المرحّلون من النظام السابق', M.length, 'arrows-clockwise:teal']] : []);
     if (!chips.length) return [DS.panel('ملفات العملاء', null, [DS.note('warn', 'لا تملك صلاحية الاطلاع على ملفات العملاء', '')])];
     const active = R.filter(function (r) { return r.status === 'active'; }).length, mig = M.filter(function (m) { return m.state === 'promoted'; }).length;
     let rows, heads;
@@ -13262,16 +13261,16 @@ function admPfFilesPage() {
   return admMount('cl', 'ملفات العملاء', function () { return admClients(''); }, function (j, st, paint, refetch) {
     const can = j.can || {}, R = j.reg || [], M = j.mig || [];
     if (st.f === 'all') st.f = can.reg ? 'reg' : 'mig';
-    const chips = [].concat(can.reg ? [['reg', 'المسجّلون في المنصة', R.length]] : [], can.mig ? [['mig', 'المرحّلون من النظام السابق', M.length]] : []);
+    const chips = [].concat(can.reg ? [['reg', 'المسجّلون في المنصة', R.length, 'users:teal']] : [], can.mig ? [['mig', 'المرحّلون من النظام السابق', M.length, 'arrows-clockwise:teal']] : []);
     if (!chips.length) return [DS.panel('ملفات العملاء', null, [DS.note('warn', 'لا تملك صلاحية الاطلاع على ملفات العملاء', '')])];
     const card = function (nm, sub, badges, s0, go1) { return e('button', { type: 'button', class: 'cu-card', 'data-s': String(s0 || '').toLowerCase(), onClick: go1 }, [e('span', { class: 'cu-av' }, String(nm || '؟').slice(0, 1)),
       e('span', { class: 'cu-card-t' }, [e('b', {}, nm || '—'), e('small', {}, sub)]), e('span', { class: 'cu-card-m' }, badges), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); };
     const cards = st.f === 'mig'
       ? M.map(function (r) { const gn = mgrGapsN(r.gaps); return card(r.name, ['الملف السابق ', ltr(admMigNo(r)), ' · ', fmtNum(Number(r.files_ready) || 0), ' مرفقًا'], [admB(ADM_MIG_ST, r.state), gn ? DS.badge(fmtNum(gn) + ' ناقص', 'warn') : DS.badge('مكتمل', 'ok')], [r.name, admMigNo(r)].join(' '), function () { if (r.target && r.state === 'promoted') { ADM.pfc = r.target; FX.pfc = r.target; (ADM.pfN || (ADM.pfN = {}))[r.target] = r.name; go('other', 'cu-pf-file'); } else admMigOpen(r, M); }); })
-      : R.map(function (r) { return card(r.name, ['رقم تيرا ', ltr(r.no || '—'), ' · عميل منذ ', bdiD(String(r.at || '').slice(0, 10))], [admB(ADM_USER_ST, r.status)], [r.name, r.email, r.phone, r.no].join(' '), function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name; go('other', 'cu-pf-file'); }); });
+      : R.map(function (r) { return card(r.name, ['رقم تيرا ', ltr(r.no || '—'), ' · عميل منذ ', bdiD(String(r.at || '').slice(0, 10))], [(function () { const v = (LIVE_DATA.ver || []).filter(function (x) { return x.user_id === r.id; })[0]; return v && v.status === 'approved' ? DS.badge('موثَّق', 'ok') : DS.badge(v ? 'قيد التوثيق' : 'غير موثَّق', 'warn'); })(), admB(ADM_USER_ST, r.status)], [r.name, r.email, r.phone, r.no].join(' '), function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name; go('other', 'cu-pf-file'); }); });
     const active = R.filter(function (r) { return r.status === 'active'; }).length;
-    return [admKpis([['عميلًا مسجّلًا', R.length, '', 'users'], ['حسابًا نشطًا', active, 'ok', 'seal-check'], ['ملفًا مرحّلًا', M.length, '', 'arrows-clockwise'], ['مرحّلًا إلى حساب', M.filter(function (m) { return m.state === 'promoted'; }).length, '', 'user-circle']]),
-      admTools(st, chips, paint, refetch, 'ابحث بالاسم أو البريد أو الجوال أو رقم تيرا'),
+    void active;
+    return [admTools(st, chips, paint, refetch, 'ابحث بالاسم أو البريد أو الجوال أو رقم تيرا'),
       cards.length ? e('div', { class: 'cu-cards' }, cards) : LDS.emptyState({ icon: 'users-three', title: 'لا ملفات هنا', compact: true }),
       e('small', { class: 'cu-dr-hint' }, ['المعروض ', e('b', { class: 'adm-shown' }, fmtNum(cards.length)), ' — اضغط البطاقة لفتح ملف العميل.'])];
   });
@@ -13373,7 +13372,7 @@ function admContractsPage() {
 const ADM_LINKS = [['cu-pf-files', 'ملفات العملاء', 'المسجّلون في المنصة والمرحّلون — الملف الشخصي والمرفقات', 'users:teal'], ['cu-pf-mig', 'توثيق ملف العملاء المرحّلين', 'المنقولون من النظام السابق: الحالة والمرفقات والنواقص', 'arrows-clockwise:teal'],
   ['cu-pf-ver', 'طلبات توثيق الملف', 'الطلبات المرسلة للمراجعة وبنودها', 'seal-check:teal'], ['cs-requests', 'طلبات العملاء', 'الطلبات وعروض الأسعار وحالاتها', 'receipt:saffron'],
   ['cu-pf', 'الملف الشخصي للعملاء', 'ملفات العملاء والمرحّلون وطلبات التوثيق', 'user:teal'], ['cu-admx', 'إجراءات الإدارة', 'السندات وعمليات بوابة الدفع ومركز الدفع', 'briefcase:teal'],
-  ['cu-admx-bd', 'السندات', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'عمليات بوابة الدفع', 'عمليات Paymob وتفاصيلها ومطابقتها', 'receipt:teal'], ['cu-admx-tr', 'التحويلات البنكية', 'إيصالات التحويل من العملاء: مراجعة ثم اعتماد أو رفض', 'bank:teal'], ['pay-center', 'مركز الدفع', 'روابط الدفع ووسائل الدفع وتشغيلها وإيقافها', 'card:teal']];
+  ['cu-admx-bd', 'السندات التنفيذية', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'عمليات بوابة الدفع', 'عمليات Paymob وتفاصيلها ومطابقتها', 'receipt:teal'], ['cu-admx-tr', 'التحويلات البنكية', 'إيصالات التحويل من العملاء: مراجعة ثم اعتماد أو رفض', 'bank:teal'], ['pay-center', 'مركز الدفع', 'روابط الدفع ووسائل الدفع وتشغيلها وإيقافها', 'card:teal']];
 /* كل محور يعرض أقسامه فقط — العقود في «العقود» وحدها، فلا تكرار بين الأقسام */
 const ADM_HUBS = { cu: ['cu-pf', 'cs-requests', 'cu-admx'], 'cu-pf': ['cu-pf-files', 'cu-pf-mig', 'cu-pf-ver'], 'cu-admx': ['cu-admx-bd', 'cu-admx-tr', 'cu-admx-fee', 'pay-center'] };
 function admHubPage(title, hub) {
@@ -13524,7 +13523,7 @@ try {
   LP['me-verify'].run = liveVerifyPage;
   if (LP['sec-twofa']) LP['sec-twofa'].run = liveTotpPage; if (LP['sec-extracode']) LP['sec-extracode'].run = liveRecPage;
   if (LP['sec-password']) LP['sec-password'].run = livePwPage; if (LP['sec-sessions']) LP['sec-sessions'].run = liveSessPage;
-  if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (!LP['pay-center']) lp('pay-center', 'مركز الدفع', 'cu-admx', 'cu-admx-fee', admPayPage); if (!LP['sys-org']) lp('sys-org', 'بيانات المنشأة', 'sys', 'sys', admOrgPage); if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'عمليات بوابة الدفع'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات';
+  if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (!LP['pay-center']) lp('pay-center', 'مركز الدفع', 'cu-admx', 'cu-admx-fee', admPayPage); if (!LP['sys-org']) lp('sys-org', 'بيانات المنشأة', 'sys', 'sys', admOrgPage); if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'عمليات بوابة الدفع'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات التنفيذية';
   LP['prof-account'].run = function () { const me = LIVE.me || {}; return [PH('idcard', 'بياناتُ الحساب', [['نوع الحساب', LIVE_ROLE_AR[me.user_type] || me.user_type || '—', 'user'], ['الأدوار', LIVE.roles.map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ') || '—', 'shield-check'], ['رقم تيرا', me.tera_id || '—', 'hash']], me.status === 'active' ? ['نشِط', 'ok'] : ['غير مفعّل', 'warn'])].concat(profAccount()); };
   if (LP['my-docs']) LP['my-docs'].run = function () { const up = LVD.filter(function (d) { return d[3]; }).length; return [lvHero({ ic: 'files', eye: 'خدماتي', t: 'مرفقاتي', tiles: [['المرفوعة', fmtNum(up) + ' / ' + fmtNum(LVD.length), 'files'], ['المقبولة', fmtNum(LVD.filter(function (d) { return d[2]; }).length), 'seal-check']] })].concat(liveDocsList()); };
   LP['me-notes'].run = liveNotesPage;
