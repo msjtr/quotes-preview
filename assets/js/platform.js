@@ -13147,15 +13147,15 @@ function admMount(key, title, load, render) {
   const refetch = function () {
     box.innerHTML = ''; box.appendChild(clWait(title));
     load().then(function (d) { st.data = d; st.at = Date.now(); paint(); })
-      .catch(function (err) { if (err && err.message === 'auth') return; box.innerHTML = ''; box.appendChild(clFail(title, err && err.message, refetch)); });
+      .catch(function (err) { if (err && err.message === 'auth') return; try { console.error('[adm]', key, err && err.stack || err); } catch (x) { void x; } box.innerHTML = ''; box.appendChild(clFail(title, err && err.message, refetch)); });
   };
   if (st.data && Date.now() - st.at < 60000) paint(); else refetch();
   return box;
 }
 function admFilter(root, q) {
   q = String(q || '').trim().toLowerCase(); let n = 0;
-  root.querySelectorAll('tr[data-s]').forEach(function (tr) { const hide = !!q && tr.getAttribute('data-s').indexOf(q) < 0; tr.hidden = hide; if (!hide) n++; });
-  root.querySelectorAll('.adm-shown').forEach(function (s) { const w = s.closest('small') && s.closest('small').parentNode; s.textContent = fmtNum(w ? w.querySelectorAll('tr[data-s]:not([hidden])').length : n); });
+  root.querySelectorAll('tr[data-s], .cu-card[data-s]').forEach(function (tr) { const hide = !!q && tr.getAttribute('data-s').indexOf(q) < 0; tr.hidden = hide; if (!hide) n++; });
+  root.querySelectorAll('.adm-shown').forEach(function (s) { const w = s.closest('small') && s.closest('small').parentNode; s.textContent = fmtNum(w ? w.querySelectorAll('tr[data-s]:not([hidden]), .cu-card[data-s]:not([hidden])').length : n); });
 }
 function admKpis(list) { return e('div', { class: 'cu-kpis adm-kpis' }, list.map(function (x) { return e('div', { class: 'cu-kpi' + (x[2] ? ' is-' + x[2] : '') }, [e('span', { class: 'cu-kpi-ic' }, frag(ui(x[3], 18))), e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })); }
 function admTools(st, chips, paint, refetch, ph) {
@@ -13249,6 +13249,62 @@ function admClientsPage() {
     else { heads = ['العميل', 'رقم تيرا', 'الجوال', 'الحالة', 'التسجيل']; rows = R.map(function (r) { return admRow([admName(r.name, ltr(r.email || '')), ltr(r.no || '—'), admPhone(r.phone), admB(ADM_USER_ST, r.status), bdiD(String(r.at || '').slice(0, 10))], function () { admRegOpen(r); }, [r.name, r.email, r.phone, r.no].join(' ')); }); }
     return [admKpis([['عميلًا مسجّلًا', R.length, '', 'users'], ['حسابًا نشطًا', active, 'ok', 'seal-check'], ['ملفًا مرحّلًا', M.length, '', 'arrows-clockwise'], ['مرحّلًا إلى حساب', mig, '', 'user-circle']]),
       DS.panel('ملفات العملاء', 'من الخادم مباشرة · للاطلاع', [admTools(st, chips, paint, refetch, 'ابحث بالاسم أو البريد أو الجوال أو رقم تيرا'), admTable(heads, rows, st.f === 'mig' ? M.length : R.length, 'لا عملاء هنا')])];
+  });
+}
+
+/* ===== ملفات العملاء بتصميم العيّنة: بطاقات ← صفحة ملف العميل (cu-pf-files ← cu-pf-file) ===== */
+function admPfFilesPage() {
+  return admMount('cl', 'ملفات العملاء', function () { return admClients(''); }, function (j, st, paint, refetch) {
+    const can = j.can || {}, R = j.reg || [], M = j.mig || [];
+    if (st.f === 'all') st.f = can.reg ? 'reg' : 'mig';
+    const chips = [].concat(can.reg ? [['reg', 'المسجّلون في المنصة', R.length]] : [], can.mig ? [['mig', 'المرحّلون من النظام السابق', M.length]] : []);
+    if (!chips.length) return [DS.panel('ملفات العملاء', null, [DS.note('warn', 'لا تملك صلاحية الاطلاع على ملفات العملاء', '')])];
+    const card = function (nm, sub, badges, s0, go1) { return e('button', { type: 'button', class: 'cu-card', 'data-s': String(s0 || '').toLowerCase(), onClick: go1 }, [e('span', { class: 'cu-av' }, String(nm || '؟').slice(0, 1)),
+      e('span', { class: 'cu-card-t' }, [e('b', {}, nm || '—'), e('small', {}, sub)]), e('span', { class: 'cu-card-m' }, badges), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); };
+    const cards = st.f === 'mig'
+      ? M.map(function (r) { const gn = mgrGapsN(r.gaps); return card(r.name, ['الملف السابق ', ltr(admMigNo(r)), ' · ', fmtNum(Number(r.files_ready) || 0), ' مرفقًا'], [admB(ADM_MIG_ST, r.state), gn ? DS.badge(fmtNum(gn) + ' ناقص', 'warn') : DS.badge('مكتمل', 'ok')], [r.name, admMigNo(r)].join(' '), function () { admMigOpen(r, M); }); })
+      : R.map(function (r) { return card(r.name, ['رقم تيرا ', ltr(r.no || '—'), ' · عميل منذ ', bdiD(String(r.at || '').slice(0, 10))], [admB(ADM_USER_ST, r.status)], [r.name, r.email, r.phone, r.no].join(' '), function () { ADM.pfc = r.id; go('other', 'cu-pf-file'); }); });
+    const active = R.filter(function (r) { return r.status === 'active'; }).length;
+    return [admKpis([['عميلًا مسجّلًا', R.length, '', 'users'], ['حسابًا نشطًا', active, 'ok', 'seal-check'], ['ملفًا مرحّلًا', M.length, '', 'arrows-clockwise'], ['مرحّلًا إلى حساب', M.filter(function (m) { return m.state === 'promoted'; }).length, '', 'user-circle']]),
+      admTools(st, chips, paint, refetch, 'ابحث بالاسم أو البريد أو الجوال أو رقم تيرا'),
+      cards.length ? e('div', { class: 'cu-cards' }, cards) : LDS.emptyState({ icon: 'users-three', title: 'لا ملفات هنا', compact: true }),
+      e('small', { class: 'cu-dr-hint' }, ['المعروض ', e('b', { class: 'adm-shown' }, fmtNum(cards.length)), ' — اضغط البطاقة لفتح ملف العميل.'])];
+  });
+}
+function admPfFilePage() {
+  const id = ADM.pfc;
+  if (!id || !/^[0-9a-f-]{36}$/i.test(String(id))) return admPfFilesPage();
+  return admMount('pf:' + id, 'ملف العميل', async function () {
+    const j = await admClients('/reg/' + encodeURIComponent(id));
+    const sel = 'client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name)),client_contract_files(id,kind,file_name)&kind=eq.contract&user_id=eq.' + encodeURIComponent(id) + '&order=order_date.desc';
+    const C = await liveSb(sel).catch(function () { return []; }), B = await liveSb('client_bonds?select=*,client_contracts(id,contract_no,legacy_no),client_contract_files(id,kind,file_name)&user_id=eq.' + encodeURIComponent(id) + '&order=bond_date.desc.nullslast').catch(function () { return []; });
+    const V = (LIVE_DATA.ver || []).filter(function (v) { return v.user_id === id; })[0] || null;
+    return { P: j.profile || {}, C: Array.isArray(C) ? C : [], B: Array.isArray(B) ? B : [], V: V };
+  }, function (D) {
+    const P = D.P, Bk = P.blocks || {}, F = P.files || [];
+    const secs = CL_BLOCKS.filter(function (b) { return Array.isArray(Bk[b[0]]) && Bk[b[0]].length; });
+    let all = 0, ok = 0; secs.forEach(function (b) { Bk[b[0]].forEach(function (f) { all++; if (clVal(f) !== null) ok++; }); });
+    const up = F.filter(function (f) { return f.fid; }).length, acc = F.filter(function (f) { return f.status === 'accepted'; }).length, pct = all ? Math.round(ok / all * 100) : 0;
+    try { if (LP['cu-pf-file']) LP['cu-pf-file'].t = P.name || 'ملف العميل'; } catch (err) { void err; }
+    const VS = { approved: ['موثَّق', 'ok'], submitted: ['بانتظار المراجعة', 'warn'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['مُعاد للتعديل', 'info'], rejected: ['مرفوض', 'danger'] };
+    const vs = D.V ? (VS[D.V.status] || [D.V.status, null]) : ['غير موثَّق', 'warn'];
+    const hero = lvHero({ avatar: String(P.name || '؟').slice(0, 1), eye: 'ملف العميل', t: P.name || '—', sub: 'رقم تيرا ' + (P.no || '—') + ' · عميل منذ ' + String(P.at || '').slice(0, 10), pill: vs, ring: [pct, 'اكتمال الملف'],
+      tiles: [['الحقول المكتملة', fmtNum(ok) + ' / ' + fmtNum(all), 'check-circle', pct === 100 ? 'ok' : null], ['المستندات', fmtNum(up) + ' مرفوعة · ' + fmtNum(acc) + ' مقبولة', 'files'], ['التوثيق', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn'], ['حالة الحساب', (ADM_USER_ST[P.status] || [P.status || '—'])[0], 'shield-check', P.status === 'active' ? 'ok' : 'warn'], P.upd ? ['آخر تحديث', String(P.upd).slice(0, 10), 'calendar-blank'] : null] });
+    const out = [hero, DS.note('info', 'عرض فقط', 'هذه الصفحة تعرض بيانات الملف كما أدخلها العميل. التعديل يتم عبر طلبات الملف الشخصي، والقرار في «طلبات توثيق الملف». فتح الملف وكل مرفق يُسجَّل في سجل التدقيق باسمك.'),
+      DS.panel('بيانات الحساب', null, [DS.fields([['الاسم', P.name || '—'], ['البريد', P.email ? ltr(P.email) : '—'], ['الجوال', admPhone(P.phone)], ['رقم تيرا', ltr(P.no || '—')]])])];
+    secs.forEach(function (b) { const fs = Bk[b[0]], n = fs.filter(function (f) { return clVal(f) !== null; }).length;
+      out.push(DS.panel(b[1], fmtNum(n) + ' من ' + fmtNum(fs.length), [DS.fields(fs.map(function (f) { const v = clVal(f); return [(f.label || f.key) + (f.required ? '' : ' (اختياري)'), v === null ? DS.badge(f.required ? 'مطلوب — غير مكتمل' : 'غير مُدخل', f.required ? 'warn' : null) : ltrIf(v)]; }))])); });
+    if (!secs.length) out.push(DS.note('info', 'لم يُدخل العميل بيانات ملفه بعد', ''));
+    out.push(DS.panel('المستندات', fmtNum(up) + ' مرفوعة', [F.length ? e('div', { class: 'cu-mgr-docs' }, F.map(function (f) {
+      const st = CL_DOC[f.status] || (f.status === 'missing' ? [f.required ? 'مطلوب — لم يُرفع' : 'لم يُرفع', f.required ? 'warn' : null] : [f.status || '—', null]);
+      return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, f.label || f.kind || 'مرفق'), e('small', {}, [f.name ? ltr(f.name) : null, f.at ? [' · ', bdiD(String(f.at).slice(0, 10))] : null, f.note ? ' · ' + f.note : null])]),
+        e('span', { class: 'adm-doc-a' }, [DS.badge(st[0], st[1]), f.fid ? liveOk(DS.button('فتح', { size: 'sm', tone: 'primary', ui: 'files', onClick: function () { admRegDoc(P.id || id, f.fid); } })) : null])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا مستندات.')]));
+    const nm = P.name || '—', X = D.C.map(function (r) { const c = liveContract(r); return { r: r, c: c, f: c.n ? cInfo(c) : { status: 'بلا دفعات', tone: null, paid: 0, total: 0, remain: 0, leftN: 0 }, name: nm }; });
+    out.push(DS.panel('العقود', fmtNum(X.length) + ' عقد', [X.length ? e('div', { class: 'cu-mgr-docs' }, X.map(function (x) { return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, ltr(x.r.contract_no || x.r.legacy_no || '—')), e('small', {}, [fmtNum(x.c.payments.filter(settled).length) + ' / ' + fmtNum(x.c.n) + ' مسدّدة · المتبقي ' + admMoney(x.f.remain)])]),
+      e('span', { class: 'adm-doc-a' }, [DS.badge(x.f.status, x.f.tone === 'ok' ? 'ok' : x.f.tone === 'danger' ? 'danger' : x.f.tone ? 'warn' : null), liveOk(DS.button('فتح', { size: 'sm', onClick: function () { admCtOpen(x); } }))])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا عقود.')]));
+    if (D.B.length) out.push(DS.panel('السندات', fmtNum(D.B.length) + ' سند', [e('div', { class: 'cu-mgr-docs' }, D.B.map(function (b) { b.name = nm; return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, ltr(b.bond_no || '—')), e('small', {}, [admMoney(b.value), b.bond_date ? [' · ', bdiD(b.bond_date)] : null])]),
+      e('span', { class: 'adm-doc-a' }, [admB(BD_ST, b.status || 'active'), liveOk(DS.button('فتح', { size: 'sm', onClick: function () { admBdOpen(b, null); } }))])]); }))]));
+    return out;
   });
 }
 
@@ -14417,7 +14473,7 @@ function admPayPage() {
   return box;
 }
 const LIVE_PAGES = { client: {},
-  admin: { 'pay-center': admPayPage, 'cu-docs-pc': admCtPage, 'cu-admx-bd': admBondsPage, 'cu-admx-fee': admGwPage, 'cs-customer': admClientsPage, 'cu-file': admClientsPage, 'cu-pf-file': admClientsPage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admClientsPage, 'cu-list': admClientsPage, 'cs-customers': admClientsPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
+  admin: { 'pay-center': admPayPage, 'cu-docs-pc': admCtPage, 'cu-admx-bd': admBondsPage, 'cu-admx-fee': admGwPage, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     ctr: admCtPage, 'cu-docs': admCtPage, sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
     'sys-pay': function () { (ADMS.paycenter || (ADMS.paycenter = { q: '', f: 'all', data: null, at: 0 })).tab = 'svc'; return admPayPage(); }, 'cu-admx': function () { return admHubPage('إجراءات الإدارة', 'cu-admx'); }, cu: function () { return admHubPage('قسم العملاء', 'cu'); }, 'cu-pf': function () { return admHubPage('الملف الشخصي للعملاء', 'cu-pf'); } } };
 if (LIVE.on) {
