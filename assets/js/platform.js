@@ -10553,6 +10553,7 @@ const LDS2 = {
 };
 /* بيانات عضوية تجريبية — نفس شكل استجابة my_membership في المنصة (بلا بيانات شخصية حقيقية) */
 const LV_MEM = function () {
+  if (window.__LIVE_MEM) return window.__LIVE_MEM;
   const W = window.__TMWAL || (window.__TMWAL = { apple: false, google: false, gift: false, at: '' });
   const at = actAt(), exp = addMonths(at, 12);
   const CM = window.__CUMEM || {}, CP = window.__CUPTS || [], plus = CP.reduce(function (a, x) { return a + (x.n > 0 ? x.n : 0); }, 0), minus = CP.reduce(function (a, x) { return a + (x.n < 0 ? -x.n : 0); }, 0);
@@ -12952,7 +12953,7 @@ loadNav();
    • التبديل بين «العميل» و«الموظف» فقط حسب أدوار الحساب الحقيقية.
    • أي قسم لم يُربط بالخادم بعد يظهر فارغًا بعبارة واضحة بدل البيانات التجريبية. */
 const LIVE = { on: tqLiveHost(), me: null, roles: [], allow: [], err: '' };
-const LIVE_WIRED = { admin: [], client: [] };
+const LIVE_WIRED = { admin: [], client: ['contracts', 'contract', 'payrec', 'reqs', 'req', 'notif'] }; /* v269: صفحات التصميم نفسها ببيانات حقيقية */
 const LIVE_ROLE_AR = { client: 'عميل', staff: 'موظف', marketer: 'مسوّق', investor: 'مستثمر' };
 function liveSess() { try { return JSON.parse(localStorage.getItem('tera.admin.session') || 'null'); } catch (err) { return null; } }
 function liveSub(tok) { try { const p = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(decodeURIComponent(escape(atob(p + '==='.slice((p.length + 3) % 4))))).sub || ''; } catch (err) { return ''; } }
@@ -13300,7 +13301,124 @@ function admHubPage(title) {
   return DS.panel(title, 'الأقسام المربوطة بالخادم', [e('div', { class: 'adm-hub' }, ADM_LINKS.map(function (l) {
     return e('button', { type: 'button', class: 'adm-card', onClick: function () { go('other', l[0]); } }, [e('span', { class: 'adm-card-ic' }, frag(tile(l[3]))), e('span', { class: 'adm-card-t' }, [e('b', {}, l[1]), e('small', {}, l[2])]), e('span', { class: 'adm-card-go', 'aria-hidden': 'true' }, '‹')]); }))]);
 }
-const LIVE_PAGES = { client: { profile: clProfile, 'my-docs': clDocs, reqs: clReqs, shield: clShield },
+/* ---------- v269: واجهة المنصة نفسها بالبيانات الحقيقية ----------
+   الرئيسية وأقسامها تُرسم بتصميمنا كما هو، لكن مصادر بياناتها تُستبدل:
+   • تُفرَّغ مخازن العيّنة (العقود والطلبات والتذاكر والنقاط…) فلا يظهر أي رقم تجريبي.
+   • تُملأ من الخادم والقاعدة بجلسة المستخدم نفسها: العضوية (my_membership)، العقود ودفعاتها (client_contracts — RLS)،
+     طلبات الخدمات (/api/account/my-requests)، وللموظف: العملاء وطلبات التوثيق. */
+const LIVE_DATA = { mem: null, clients: null, ver: null, quotes: null };
+function liveSb(path, opt) {
+  return liveToken().then(function (t) {
+    const cfg = LIVE.cfg; const o = opt || {};
+    return fetch(cfg.supabaseUrl + '/rest/v1/' + path, { method: o.body ? 'POST' : 'GET', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + t, Accept: 'application/json', 'Content-Type': 'application/json' }, body: o.body ? JSON.stringify(o.body) : undefined })
+      .then(function (r) { if (r.status === 401) throw new Error('auth'); return r.ok ? r.json() : null; });
+  });
+}
+function liveWipe() {
+  [THREADS, OTHERS, REQS, CONTRACTS, LV.reqs].forEach(function (a) { a.length = 0; });
+  try { LOY.acc.length = 0; LOY.red.length = 0; LOY.ver.length = 0; LOY.carry = 0; } catch (err) { void err; }
+  window.__CUPTS = []; window.__TMWAL = { apple: false, google: false, gift: false, at: '' };
+  M2_DONE = true; M3_DONE = true; CUS_INIT = true; CU_SEEDED = true; /* لا بذر لبيانات العيّنة */
+  try { CU_NOTES.length = 0; } catch (err) { void err; }
+  try { LVS.mail = true; LVS.app = false; LVS.wa = ''; } catch (err) { void err; } /* التحقق بالبريد مفروض عند كل دخول للمنصة */
+}
+const LIVE_PM = { paymob: 'سداد إلكتروني', bank_transfer: 'تحويل بنكي', mixed: 'تحويل بنكي وسداد إلكتروني' };
+function liveContract(r) {
+  const no = r.contract_no || r.legacy_no || '—';
+  const c = { no: no, product: r.card_qty ? 'بطاقات مسبقة الدفع × ' + r.card_qty : 'عقد ' + no, icon: 'contract', req: parseIso(r.order_date) || T0, amount: 0, n: 0, from: '', quote: '', payments: [], legacy: r.legacy_no || '', live: true };
+  (r.client_contract_payments || []).slice().sort(function (a, b) { return (a.seq || 0) - (b.seq || 0); }).forEach(function (p, i) {
+    const amt = Number(p.amount) || 0, paid = p.paid ? Number(p.paid_amount != null ? p.paid_amount : amt) || 0 : 0, due = parseIso(p.due_date) || T0;
+    c.payments.push({ c: c, i: p.seq || i + 1, due: due, amount: amt, paid: paid, at: paid ? (parseIso(p.paid_date) || due) : null, method: LIVE_PM[p.method] || (paid ? 'سداد' : ''),
+      txn: (p.gateway_trx || [])[0] ? String(p.gateway_trx[0]) : '', file: '', admin: paid ? 'معتمد' : '', deferTo: '' });
+  });
+  c.n = c.payments.length; c.amount = c.n ? c.payments[0].amount : 0; c.start = c.n ? c.payments[0].due : c.req;
+  return c;
+}
+function liveReq(q) {
+  const at = q.created_at ? new Date(q.created_at) : T0, s = String(q.status || '');
+  const st = /reject|declin|cancel/.test(s) ? 'rejected' : (!q.is_active && /done|complet|execut|approv|closed/.test(s)) ? 'done' : 'review';
+  return mkR({ no: q.quote_number, type: 'elig', at: at, status: st, live: true, statusLabel: q.status_label || '',
+    fields: [['المنتج', q.product_type || '—'], ['قيمة المنتج', q.product_value ? SR(q.product_value) : '—'], ['مدة السداد', q.payment_duration_months ? q.payment_duration_months + ' شهرًا' : '—'], ['الحالة', q.status_label || '—']],
+    path: [['تم إرسال الطلب', at], [q.status_label || 'قيد المراجعة', null]] });
+}
+async function liveData() {
+  liveWipe();
+  const uid = LIVE.me.id, jobs = [];
+  if (LIVE.allow.indexOf('client') >= 0) {
+    jobs.push(liveSb('rpc/my_membership', { body: {} }).then(function (m) { LIVE_DATA.mem = m; }).catch(function () { LIVE_DATA.mem = null; }));
+    jobs.push(liveSb('client_contracts?select=*,client_contract_payments(*)&kind=eq.contract&user_id=eq.' + encodeURIComponent(uid) + '&order=order_date.desc')
+      .then(function (L) { (L || []).forEach(function (r) { CONTRACTS.push(liveContract(r)); }); }).catch(function () { /* القسم يبقى فارغًا */ }));
+    jobs.push(clApi('/api/account/my-requests').then(function (j) { (j.requests || []).forEach(function (q) { REQS.push(liveReq(q)); }); }).catch(function () { /* فارغ */ }));
+  }
+  if (LIVE.allow.indexOf('admin') >= 0) {
+    jobs.push(admClients('').then(function (j) { LIVE_DATA.clients = j; ADMS.cl = ADMS.cl || { q: '', f: 'all' }; ADMS.cl.data = j; ADMS.cl.at = Date.now(); }).catch(function () { LIVE_DATA.clients = null; }));
+    jobs.push(admRpc('admin_quotes_list', { p_status: null, p_search: null, p_sort: null, p_limit: 100, p_offset: 0 }).then(function (j) { LIVE_DATA.quotes = j; ADMS.quotes = { q: '', f: 'all', data: j, at: Date.now() }; }).catch(function () { LIVE_DATA.quotes = null; }));
+    jobs.push(admRpc('admin_verification_list', { p: { status: 'all' } }).then(function (j) { LIVE_DATA.ver = j.rows || []; ADMS.ver = { q: '', f: 'all', data: j, at: Date.now() }; }).catch(function () { LIVE_DATA.ver = null; }));
+  }
+  jobs.push(clApi('/api/security/overview').then(liveSec).catch(function () { LVS.devs = []; LVS.sess = []; }));
+  await Promise.all(jobs);
+  window.__LIVE_MEM = liveMem();
+}
+/* مركز الأمان: الأجهزة والجلسات الحقيقية — والتحقق بالبريد مفروض عند كل دخول */
+function liveSec(o) {
+  const D = function (v) { const d = v ? new Date(v) : null; return d && !isNaN(d) ? d : T0; };
+  LVS.devs = (o.devices || []).map(function (d, i) { return { id: d.id || 'd' + i, n: d.label || d.device_label || 'جهاز', type: d.type || d.device_type || '', os: d.os || '', br: d.browser || '', st: d.status === 'authorized' ? 'ok' : d.status === 'blocked' ? 'block' : 'wait',
+    first: D(d.first_seen_at || d.created_at), last: D(d.last_seen_at || d.updated_at), uses: Number(d.uses || d.login_count) || 0, why: d.status === 'authorized' ? '' : 'جهاز جديد', cur: !!(d.current || d.is_current) }; });
+  LVS.sess = (o.sessions || []).map(function (x, i) { return { id: String(x.id || 'S' + i).slice(0, 8).toUpperCase(), in: D(x.started_at || x.created_at), last: D(x.last_seen_at || x.started_at), st: x.ended_at ? 'انتهت' : 'نشطة', role: S.role === 'admin' ? 'الموظف' : 'العميل', dev: [x.browser, x.os].filter(Boolean).join(' · ') || x.device_label || x.label || 'جهاز', cur: !!(x.current || x.is_current) }; });
+  LVS.mail = true;
+}
+/* العضوية: من my_membership؛ وإن لم تُدشَّن بعد تظهر البطاقة نفسها بحالة «بانتظار التدشين» وبلا نقاط */
+function liveMem() {
+  const m = LIVE_DATA.mem, me = LIVE.me || {};
+  if (m && m.exists !== false && m.ok !== false && m.member_no) return Object.assign({ points: { balance: 0, earned: 0, redeemed: 0, expiring_30: 0 }, ledger: [] }, m, { name_ar: m.name_ar || me.full_name || '' });
+  const now = iso(T0);
+  return { ok: true, exists: false, pending: true, tier: 'plus', status: 'active', member_no: '—', name_ar: me.full_name || '', name_en: (m && m.name_en) || '', issued_at: now, expires_at: now, launch_pending: true,
+    points: { balance: 0, earned: 0, redeemed: 0, expiring_30: 0 }, ledger: [] };
+}
+/* النقاط: من سجل العضوية الحقيقي فقط */
+if (LIVE.on) {
+/* الإشعارات التجريبية الثابتة لا تظهر؛ تبقى إشعارات الدفعات المحسوبة من العقود الحقيقية */
+extraNotifs = function () { return []; };
+docsExpired = function () { return []; };
+cuSeedStore = function () {}; cuSeedVer = function () {}; cuSeedDrafts = function () {}; cuSeedInv = function () {}; cuSeedPf = function () {};
+/* بطاقات «خدمات العملاء» بالأرقام الفعلية: لا نظام تذاكر بعد (صفر)، والعملاء والطلبات من الخادم */
+csHubCards = function () {
+  const nC = cuList().length, nQ = LIVE_DATA.quotes ? (LIVE_DATA.quotes.total || (LIVE_DATA.quotes.rows || []).length) : 0;
+  return lvHub([['headset', 'التذاكر والمراسلات', 'لا تذاكر', 'ok', function () { go('other', 'cs-tickets'); }],
+    ['warn', 'الشكاوى', 'لا شكاوى مفتوحة', 'ok', function () { go('other', 'cs-complaints'); }],
+    ['note', 'طلبات تحديث الملف', 'لا طلبات معلّقة', 'ok', function () { go('other', 'cs-updates'); }],
+    ['seal-check', 'طلبات توثيق الملف', cuInbox().length ? fmtNum(cuInbox().length) + ' بانتظار إجراء' : 'لا طلبات معلّقة', cuInbox().length ? 'warn' : 'ok', function () { go('other', 'cu-pf-ver'); }, cuInbox().length || null],
+    ['people', 'العملاء', fmtNum(nC) + ' عملاء', null, function () { go('other', 'cs-customers'); }],
+    ['orders', 'طلبات العملاء', fmtNum(nQ) + ' طلبات', null, function () { go('other', 'cs-requests'); }]]);
+};
+adminNotifs = function () { return []; };
+if (typeof quoteNotifs === 'function') quoteNotifs = function () { return []; };
+ptsHist = function () { const m = window.__LIVE_MEM; return ((m && m.ledger) || []).map(function (x) { return { at: x.created_at ? new Date(x.created_at) : T0, n: Number(x.points) || 0, t: x.note || '' }; }); };
+/* قسم العملاء عند الموظف: العملاء الحقيقيون وما ينتظر إجراءً فعليًا */
+cuList = function () {
+  const R = (LIVE_DATA.clients && LIVE_DATA.clients.reg) || [];
+  return R.map(function (r) { return { id: r.id, name: r.name, tier: 'Terra Plus', since: r.at ? new Date(r.at) : T0, verified: false, city: '', st: r.status === 'active' ? ['نشِط', 'ok'] : ['غير مفعّل', 'warn'] }; });
+};
+cuInbox = function () {
+  const out = [];
+  (LIVE_DATA.ver || []).filter(function (v) { return v.status === 'submitted' || v.status === 'received' || v.status === 'in_review'; }).forEach(function (v) {
+    const at = v.submitted_at ? new Date(v.submitted_at) : T0;
+    out.push({ grp: 'ver', ic: 'seal-check:teal', t: 'طلب توثيق الملف — ' + (v.name || ''), act: v.status === 'submitted' ? 'استلام الطلب' : 'مراجعة الطلب', cust: v.user_id, custN: v.name || '', no: String(v.id).slice(0, 8).toUpperCase(), at: at,
+      due: new Date(at.getTime() + 2 * CU_DAY), st: (ADM_VER_ST[v.status] || [v.status, 'info']), open: function () { go('other', 'cu-pf-ver'); } });
+  });
+  out.forEach(function (x) { x.sla = cuSla(x.due); });
+  return out.sort(function (a, b) { return a.due - b.due; });
+};
+}
+/* بعد رسم الرئيسية: بطاقة العضوية قبل التدشين */
+function livePolish() {
+  const m = window.__LIVE_MEM; if (!m || !m.pending || !ROOT) return;
+  ROOT.querySelectorAll('.mc-st').forEach(function (x) { x.textContent = 'بانتظار التدشين'; x.classList.add('off'); });
+  ROOT.querySelectorAll('.hs-pill').forEach(function (x) { x.textContent = 'بانتظار التدشين'; x.classList.add('is-off'); });
+  ROOT.querySelectorAll('.mcard small').forEach(function (k) { if (/SINCE|VALID/.test(k.textContent) && k.nextElementSibling) k.nextElementSibling.textContent = '—'; });
+  ROOT.querySelectorAll('.hs-v').forEach(function (x) { x.innerHTML = '<div class="hs-vt"><span>تُفعَّل عضويتك بعد اعتماد ملفك وتدشين حسابك من الإدارة.</span></div>'; });
+}
+const LIVE_PAGES = { client: { profile: clProfile, 'my-docs': clDocs, shield: clShield },
   admin: { 'cu-pf-mig': admMigPage, 'cu-pf-files': admClientsPage, 'cu-list': admClientsPage, 'cs-customers': admClientsPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     ctr: admContractsPage, 'cu-docs': admContractsPage, cu: function () { return admHubPage('قسم العملاء'); }, 'cu-pf': function () { return admHubPage('الملف الشخصي'); } } };
 if (LIVE.on) {
@@ -13315,7 +13433,7 @@ if (LIVE.on) {
     draw0(); liveHeader();
     const k = liveKey(), home = S.role === 'admin' ? k === 'adm-home' : k === 'dash';
     if (!ROOT) return;
-    if (home) { ROOT.innerHTML = ''; ROOT.appendChild(liveHome()); return; }
+    if (home) { livePolish(); return; }
     const pg = (LIVE_PAGES[S.role] || {})[k];
     if (pg) { ROOT.innerHTML = ''; ROOT.appendChild(pg()); return; }
     if ((LIVE_WIRED[S.role] || []).indexOf(k) < 0) { ROOT.innerHTML = ''; ROOT.appendChild(liveEmpty()); }
@@ -13348,7 +13466,7 @@ if (LIVE.on) {
     ME.name = x.me.full_name || ME.name; ME.email = x.me.email || ''; ME.phone = x.me.phone ? '+' + String(x.me.phone).replace(/^\+/, '') : ''; ME.region = ''; ME.city = '';
     if (LIVE.allow.indexOf(S.role) < 0) { S.role = LIVE.allow[0]; S.tab = S.role === 'admin' ? 'other' : 'dash'; S.other = S.role === 'admin' ? 'adm-home' : ''; }
     try { localStorage.setItem('tera-preview-role', S.role); } catch (err) { void err; }
-    boot(S.dev || 'web');
+    liveData().catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () { boot(S.dev || 'web'); });
   }).catch(function (err) {
     if (err && err.message === 'auth') { location.replace('/portal/'); return; }
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();

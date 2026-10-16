@@ -7745,3 +7745,5 @@ html,body{height:auto;min-height:100%}
 .adm-card-go{flex:none;font-size:1.3rem;color:var(--t2-brand)}
 @media (max-width:40rem){.adm-live .adm-hero{align-items:flex-start;padding:14px}.cu-kpis.adm-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .adm-hero-ic .t2-tile{width:48px;height:52px;display:block}.adm-card-ic .t2-tile{width:40px;height:44px;display:block}
+/* v269: لا معاينات داخلية في النسخة الحقيقية */
+.tq-live .nh-team{display:none!important}
