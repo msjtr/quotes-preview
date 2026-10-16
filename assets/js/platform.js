@@ -13043,7 +13043,7 @@ function clMount(title, loader) {
     .catch(function (err) { if (err && err.message === 'auth') return; box.innerHTML = ''; box.appendChild(clFail(title, err && err.message, run)); }); };
   run(); return box;
 }
-const CL_DOC = { uploaded: ['مرفوع — بانتظار المراجعة', 'info'], pending: ['بانتظار المراجعة', 'info'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض', 'warn'], needs_changes: ['يحتاج تعديلًا', 'warn'], replaced: ['مستبدل', 'info'], not_required: ['غير مطلوب', 'info'] };
+const CL_DOC = { uploaded: ['مرفوع — بانتظار المراجعة', 'info'], pending: ['بانتظار المراجعة', 'info'], submitted: ['بانتظار المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض', 'warn'], needs_changes: ['يحتاج تعديلًا', 'warn'], replaced: ['مستبدل', 'info'], not_required: ['غير مطلوب', 'info'] };
 const CL_BLOCKS = [['personal', 'المعلومات الشخصية'], ['contact', 'التواصل'], ['address', 'العنوان'], ['emergency', 'جهة اتصال للطوارئ'], ['bank', 'الحساب البنكي']];
 function clVal(f) {
   let v = f.value;
@@ -13371,8 +13371,8 @@ function admContractsPage() {
 /* ===== محاور الأقسام — بطاقات إلى الصفحات المربوطة فقط ===== */
 const ADM_LINKS = [['cu-pf-files', 'ملفات العملاء', 'المسجّلون في المنصة والمرحّلون — الملف الشخصي والمرفقات', 'users:teal'], ['cu-pf-mig', 'توثيق ملف العملاء المرحّلين', 'المنقولون من النظام السابق: الحالة والمرفقات والنواقص', 'arrows-clockwise:teal'],
   ['cu-pf-ver', 'طلبات توثيق الملف', 'الطلبات المرسلة للمراجعة وبنودها', 'seal-check:teal'], ['cs-requests', 'طلبات العملاء', 'الطلبات وعروض الأسعار وحالاتها', 'receipt:saffron'],
-  ['cu-pf', 'الملف الشخصي للعملاء', 'ملفات العملاء والمرحّلون وطلبات التوثيق', 'user:teal'], ['cu-admx', 'إجراءات الإدارة', 'السندات وعمليات بوابة الدفع ومركز الدفع', 'briefcase:teal'],
-  ['cu-admx-bd', 'السندات التنفيذية', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'عمليات بوابة الدفع', 'عمليات Paymob وتفاصيلها ومطابقتها', 'receipt:teal'], ['cu-admx-tr', 'التحويلات البنكية', 'إيصالات التحويل من العملاء: مراجعة ثم اعتماد أو رفض', 'bank:teal'], ['pay-center', 'مركز الدفع', 'روابط الدفع ووسائل الدفع وتشغيلها وإيقافها', 'card:teal']];
+  ['cu-pf', 'الملف الشخصي للعملاء', 'ملفات العملاء والمرحّلون وطلبات التوثيق', 'user:teal'], ['cu-admx', 'إجراءات الإدارة', 'السندات والحوالات والتحويلات والرسوم ومركز الدفع', 'briefcase:teal'],
+  ['cu-admx-bd', 'السندات التنفيذية', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'التحويلات والرسوم', 'لكل عقد: المحوَّل وقيمة العقد والمحمَّل على العميل والرسوم', 'coins:gold'], ['cu-admx-tr', 'التحويلات البنكية', 'إيصالات التحويل من العملاء: مراجعة ثم اعتماد أو رفض', 'bank:teal'], ['pay-center', 'مركز الدفع', 'روابط الدفع ووسائل الدفع وتشغيلها وإيقافها', 'card:teal']];
 /* كل محور يعرض أقسامه فقط — العقود في «العقود» وحدها، فلا تكرار بين الأقسام */
 const ADM_HUBS = { cu: ['cu-pf', 'cs-requests', 'cu-admx'], 'cu-pf': ['cu-pf-files', 'cu-pf-mig', 'cu-pf-ver'], 'cu-admx': ['cu-admx-bd', 'cu-admx-tr', 'cu-admx-fee', 'pay-center'] };
 function admHubPage(title, hub) {
@@ -13523,7 +13523,7 @@ try {
   LP['me-verify'].run = liveVerifyPage;
   if (LP['sec-twofa']) LP['sec-twofa'].run = liveTotpPage; if (LP['sec-extracode']) LP['sec-extracode'].run = liveRecPage;
   if (LP['sec-password']) LP['sec-password'].run = livePwPage; if (LP['sec-sessions']) LP['sec-sessions'].run = liveSessPage;
-  if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (!LP['pay-center']) lp('pay-center', 'مركز الدفع', 'cu-admx', 'cu-admx-fee', admPayPage); if (!LP['sys-org']) lp('sys-org', 'بيانات المنشأة', 'sys', 'sys', admOrgPage); if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'عمليات بوابة الدفع'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات التنفيذية';
+  if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (!LP['pay-center']) lp('pay-center', 'مركز الدفع', 'cu-admx', 'cu-admx-fee', admPayPage); if (!LP['sys-org']) lp('sys-org', 'بيانات المنشأة', 'sys', 'sys', admOrgPage); if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'التحويلات والرسوم'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات التنفيذية';
   LP['prof-account'].run = function () { const me = LIVE.me || {}; return [PH('idcard', 'بياناتُ الحساب', [['نوع الحساب', LIVE_ROLE_AR[me.user_type] || me.user_type || '—', 'user'], ['الأدوار', LIVE.roles.map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ') || '—', 'shield-check'], ['رقم تيرا', me.tera_id || '—', 'hash']], me.status === 'active' ? ['نشِط', 'ok'] : ['غير مفعّل', 'warn'])].concat(profAccount()); };
   if (LP['my-docs']) LP['my-docs'].run = function () { const up = LVD.filter(function (d) { return d[3]; }).length; return [lvHero({ ic: 'files', eye: 'خدماتي', t: 'مرفقاتي', tiles: [['المرفوعة', fmtNum(up) + ' / ' + fmtNum(LVD.length), 'files'], ['المقبولة', fmtNum(LVD.filter(function (d) { return d[2]; }).length), 'seal-check']] })].concat(liveDocsList()); };
   LP['me-notes'].run = liveNotesPage;
@@ -15401,6 +15401,57 @@ if (LIVE.on) {
     if (err && err.message === 'auth') { location.replace('/portal/'); return; }
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();
   });
+}
+/* ---------- v288: هوية العيّنة على الجوال — عناوين الأدراج القصيرة، والسند المنقول للعرض بنمط العيّنة، ولا حفظ محلي للعمولات ---------- */
+if (LIVE.on) {
+  /* عنوان الدرج: الوصف قبل « · » عنوانًا، والاسم والرقم في السطر الفرعي — حتى لا يلتف العنوان على الجوال */
+  const cuDrawer8 = cuDrawer;
+  cuDrawer = function (o) {
+    try {
+      const t = String(o.title || ''), i = t.indexOf(' · '), m = /^سندات (.+)$/.exec(t);
+      if (i > 0 && t.length > 22) o = Object.assign({}, o, { title: t.slice(0, i), sub: t.slice(i + 3) + (o.sub ? ' · ' + o.sub : '') });
+      else if (m && t.length > 22) o = Object.assign({}, o, { title: 'سندات العميل', sub: m[1] + (o.sub ? ' · ' + o.sub : '') });
+    } catch (err) { void err; }
+    return cuDrawer8(o);
+  };
+  /* التحويل والرسوم: العمولات والمصاريف للعرض — لا تُحفظ محليًا ثم تضيع بعد التحديث */
+  const lvFeeRo = function (dr) {
+    if (!dr) return;
+    dr.querySelectorAll('.cu-dr-b > .ax-form').forEach(function (x) { x.remove(); });
+    dr.querySelectorAll('.cu-dr-b .cu-dr-hint').forEach(function (x) { if (/تتحدّث النتيجة/.test(x.textContent)) x.remove(); });
+    dr.querySelectorAll('.cu-dr-b .cu-ds-h').forEach(function (h) { if (h.lastChild && h.lastChild.nodeType === 3 && h.lastChild.nodeValue === 'النتيجة') h.lastChild.nodeValue = 'العمولات والمصاريف'; });
+    const f = dr.querySelector('.cu-dr-f');
+    if (f) f.replaceChildren(e('div', { class: 'cu-dr-fa' }, DS.button('إغلاق', { onClick: cuBdClose })));
+  };
+  const feeOpen8 = feeOpen;
+  feeOpen = function (cid, no) { feeOpen8(cid, no); lvFeeRo(document.querySelector('.cu-dr[data-r="' + CSS.escape('fee:' + no) + '"]')); };
+  const feeCfgOpen8 = feeCfgOpen;
+  feeCfgOpen = function () {
+    feeCfgOpen8();
+    const dr = document.querySelector('.cu-dr[data-r="feecfg"]'); if (!dr) return;
+    const b = dr.querySelector('.cu-dr-b'), F0 = FEE;
+    if (b) b.replaceChildren(
+      cuSec('العمولات الافتراضية', 'users-three', [DS.fields([['نسبة المسوّق', fmtNum(F0.mkt) + '% من قيمة المنتج'], ['نسبة الموظف', fmtNum(F0.emp) + '% من قيمة المنتج']])]),
+      cuSec('المصاريف العامة', 'coins', [DS.fields(F0.other.map(function (x) { return [x[0], x[1] === 'pct' ? fmtNum(x[2]) + '% من قيمة المنتج' : sar(x[2]) + (x[1] === 'tr' ? ' لكل حوالة' : ' لكل عقد')]; }))]));
+    const f = dr.querySelector('.cu-dr-f'); if (f) f.replaceChildren(e('div', { class: 'cu-dr-fa' }, DS.button('إغلاق', { onClick: cuBdClose })));
+  };
+  /* السند المنقول: رقمه وتاريخه وقيمته وعقده ومرفقه للعرض بحقل العيّنة للقراءة فقط — بدل حقول معطّلة باهتة */
+  const cuBdEdit8 = cuBdEdit;
+  cuBdEdit = function (id) {
+    cuBdEdit8(id);
+    const dr = document.querySelector('.cu-dr[data-r="' + CSS.escape('bd:' + id) + '"]'); if (!dr) return;
+    dr.querySelectorAll('.t2-field.is-ro').forEach(function (f) {
+      f.style.opacity = ''; f.style.pointerEvents = '';
+      const k = f.querySelector('.t2-field-k'); if (!k) return;
+      const isFile = /^إرفاق السند/.test(k.textContent.trim());
+      const inp = f.querySelector('input:not([type=file])');
+      let v = isFile ? '' : (inp && inp.value) || '';
+      if (!v) { const c = [].slice.call(f.children).filter(function (x) { return x !== k; })[0]; v = c ? (c.innerText || '').trim().split('\n')[0] : ''; }
+      if (isFile) v = (dr.querySelector('.cu-bd-fn b') || {}).textContent || 'انظر «مرفقات السند» أدناه';
+      [].slice.call(f.children).forEach(function (x) { if (x !== k && !x.classList.contains('cu-bd-err')) x.remove(); });
+      f.appendChild(e('div', { class: 't2-input cu-bd-ro', dir: /^[\x00-\x7F]+$/.test(v) ? 'ltr' : null }, v || '—'));
+    });
+  };
 }
 if (LIVE.on) { const draw2 = draw; draw = function () { try { liveSoSync(); livePfTitle(); } catch (err) { void err; } const out = draw2.apply(this, arguments); try { if (ROOT && S.role === 'client' && ['settle', 'merge', 'defer'].indexOf(S.tab) >= 0) ROOT.querySelectorAll('button').forEach(function (x) { if (/^إرسال طلب/.test((x.innerText || '').trim())) x.setAttribute('data-live-ok', ''); }); } catch (err) { void err; } return out; }; }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
