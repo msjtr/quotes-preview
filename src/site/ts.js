@@ -896,6 +896,8 @@
         return Array.prototype.slice.call(new Uint8Array(buf)).map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
       }).catch(function () { return null; });
     }
+    var LV_BOX = [], LV_T = null;
+    var FX_HINT = { email_code: ['PiEnvelopeSimpleFill', 'يصل رمز من 6 أرقام إلى بريد الحساب.'], whatsapp_code: ['PiWhatsappLogoFill', 'يصل رمز من 6 أرقام عبر واتساب إلى جوالك الموثّق.'], totp: ['PiDeviceMobileFill', 'افتح تطبيق المصادقة وأدخل الرمز الظاهر.'], extra_code: ['PiKeyFill', 'أدخل رمز الاستعادة الذي حفظته.'] };
     var FX_AR = { email_code: 'رمز التحقق عبر البريد الإلكتروني', whatsapp_code: 'رمز التحقق عبر واتساب', totp: 'تطبيق المصادقة', extra_code: 'رمز الاستعادة' };
     function liveDevice() {
       devFingerprint().then(function (fp) {
@@ -936,20 +938,22 @@
       var f = $('#lv-fx').value, send = $('#lv-send'), deliver = f === 'email_code' || f === 'whatsapp_code';
       send.hidden = !deliver; send.disabled = false; send.textContent = f === 'whatsapp_code' ? 'أرسل الرمز عبر واتساب' : 'أرسل الرمز إلى البريد';
       $('#lv-code-w').hidden = deliver && !S.dev.sent[f]; msg('lv-msg');
+      var h = FX_HINT[f] || ['PiShieldCheckFill', '']; $('#lv-hint').textContent = h[1]; $('#lv-dest-i').innerHTML = I(h[0]); $('#lv-dest-t').textContent = FX_AR[f] || '';
+      var lab = $('#lv-code-w .pt-lab'); if (lab) lab.textContent = f === 'extra_code' ? 'أدخل رمز الاستعادة' : 'أدخل الرمز المكوّن من 6 أرقام';
     }
     function liveDeviceSubmit() {
       var D = S.dev, v = ynVal('lg-trust');
       if (!v) return msg('dev-msg', 'bad', 'اختر هل تصرّح لهذا الجهاز.');
       if (v === 'no') return liveIn();
-      var pw = $('#lv-pw').value, f = $('#lv-fx').value, code = ascii($('#lv-code').value).replace(/\D/g, '');
+      var pw = $('#lv-pw').value, f = $('#lv-fx').value, code = ascii(codeOf(LV_BOX)).replace(/\D/g, '');
       if (!pw) return msg('dev-msg', 'bad', 'أدخل كلمة المرور لتأكيد هويتك.');
       if (!code) return msg('dev-msg', 'bad', (f === 'email_code' || f === 'whatsapp_code') && !D.sent[f] ? 'أرسل رمز التحقق أولًا.' : 'أدخل رمز التحقق.');
       var b = $('#dev-go'); b.disabled = true; msg('dev-msg');
       authApi('POST', '/api/security/gateway/verify', { purpose: 'device_authorize', factor: f, code: code }).then(function (g) {
-        if (!g || g.ok !== true || !g.grant_id) { b.disabled = false; $('#lv-code').value = ''; return msg('dev-msg', 'bad', (g && g.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.'); }
+        if (!g || g.ok !== true || !g.grant_id) { b.disabled = false; clearBoxes(LV_BOX); return msg('dev-msg', 'bad', (g && g.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.'); }
         var pay = { device_id: D.id, grant_id: g.grant_id, current_password: pw }; if (D.rep) pay.replace_id = D.rep;
         return authApi('POST', '/api/security/devices/authorize', pay).then(function (a) {
-          b.disabled = false; $('#lv-pw').value = ''; $('#lv-code').value = '';
+          b.disabled = false; $('#lv-pw').value = ''; clearBoxes(LV_BOX);
           if (a && a.ok === true) { finish('تم التصريح لهذا الجهاز', 'رُبطت جلستك بهذا الجهاز. ننقلك الآن إلى حسابك…', { enter: true }); S.inn = true; return setTimeout(liveEnter, 1600); }
           if (a && a.must_replace === true) { D.rep = null; liveDevPaint(); return msg('dev-msg', 'bad', 'بلغ حسابك الحد الأقصى (3 أجهزة). اختر جهازًا يُستبدل.'); }
           msg('dev-msg', 'bad', (a && a.message) || 'تعذّر اعتماد الجهاز.');
@@ -967,22 +971,40 @@
       /* توثيق الجهاز: بلا مدة (الخادم يعتمد الجهاز حتى يُلغى)، وكلمة المرور + عامل أمني للاعتماد */
       var dw = $('#f-device .pt-why'); if (dw) dw.hidden = true;
       var ynT = $('#f-device .pt-yn'); if (ynT && !$('#lv-dev')) {
+        /* نفس هوية شاشة رمز التحقق: كلمة المرور بزر الإظهار، الوسيلة ووجهتها، خانات الرمز الست، والعدّاد */
+        var why = function (ic, t, x) { return '<li>' + I(ic) + '<div><b>' + t + '</b><span>' + x + '</span></div></li>'; };
         var box = document.createElement('div'); box.id = 'lv-dev'; box.className = 'pt-f'; box.hidden = true;
-        box.innerHTML = '<div class="ts-fld"><label for="lv-pw">كلمة المرور</label><span class="ts-pw"><input class="ts-in" id="lv-pw" type="password" dir="ltr" autocomplete="current-password" placeholder="••••••••"></span><span class="hint">لتأكيد هويتك قبل التصريح للجهاز.</span></div>' +
-          '<div class="ts-fld"><label for="lv-fx">وسيلة التحقق</label><select class="ts-in" id="lv-fx"></select></div>' +
+        box.innerHTML = '<div class="ts-fld"><label for="lv-pw">كلمة المرور</label><span class="ts-pw"><input class="ts-in" id="lv-pw" type="password" dir="ltr" autocomplete="current-password" placeholder="••••••••">' +
+            '<button type="button" class="ts-eye" id="lv-eye" aria-label="إظهار كلمة المرور">' + I('PiEyeFill') + '</button></span><span class="hint">لتأكيد هويتك قبل التصريح للجهاز.</span></div>' +
+          '<div class="ts-fld"><label for="lv-fx">وسيلة التحقق</label><select class="ts-in" id="lv-fx"></select><span class="hint" id="lv-hint"></span></div>' +
+          '<div class="ts-dest" id="lv-dest"><span id="lv-dest-i">' + I('PiEnvelopeSimpleFill') + '</span><span id="lv-dest-t"></span></div>' +
           '<button type="button" class="t2-btn" id="lv-send">أرسل الرمز</button>' +
-          '<div class="ts-fld" id="lv-code-w" hidden><label for="lv-code">رمز التحقق</label><input class="ts-in" id="lv-code" dir="ltr" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="000000"></div><p class="ts-msg" id="lv-msg" hidden></p>';
+          '<div id="lv-code-w" hidden class="pt-f"><span class="pt-lab">أدخل الرمز المكوّن من 6 أرقام</span><div class="ts-otp" id="lv-otp">' +
+            [1, 2, 3, 4, 5, 6].map(function (k) { return '<input inputmode="numeric" maxlength="1" aria-label="الخانة ' + k + '">'; }).join('') + '</div>' +
+            '<p class="ts-meta"><span>صلاحية الرمز <b dir="ltr">5:00</b></span><span id="lv-rs" hidden>إعادة الإرسال بعد <b id="lv-cd" dir="ltr">0:60</b></span></p></div>' +
+          '<p class="ts-msg" id="lv-msg" hidden></p>' +
+          '<div class="pt-why"><p class="pt-why-h">' + I('PiInfoFill') + '<b>ما معنى التصريح للجهاز؟</b></p><ul>' +
+            why('PiTargetFill', 'لماذا التصريح؟', 'الجهاز المصرّح له يُعرف عند دخولك القادم، فلا تتكرر خطوات التوثيق مع بقاء حسابك محميًا.') +
+            why('PiDevicesFill', 'حد الأجهزة', 'يحق لك التصريح لثلاثة أجهزة كحد أقصى. لإضافة جهاز رابع اختر جهازًا يُستبدل من القائمة أعلاه.') +
+            why('PiShieldCheckFill', 'إلى متى؟', 'يبقى التصريح حتى تلغيه من مركز الأمان أو تغيّر كلمة المرور.') +
+            why('PiWarningCircleFill', 'متى لا تصرّح؟', 'لا تصرّح لجهاز عام أو مشترك — اختر «هذه المرة فقط».') + '</ul></div>';
         ynT.insertAdjacentElement('afterend', box);
+        LV_BOX = [].slice.call(box.querySelectorAll('#lv-otp input'));
+        wireOtp(LV_BOX, function () { var g = $('#dev-go'); if (g && !g.disabled) g.click(); });
+        $('#lv-eye').addEventListener('click', function () { var i = $('#lv-pw'), on = i.type === 'password'; i.type = on ? 'text' : 'password'; this.setAttribute('aria-label', on ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'); this.innerHTML = I(on ? 'PiEyeSlashFill' : 'PiEyeFill'); });
         $('#lv-fx').addEventListener('change', liveFxPaint);
         $('#lv-send').addEventListener('click', function () {
           var f = $('#lv-fx').value, b = this; b.disabled = true; b.textContent = 'جارٍ الإرسال…';
           authApi('POST', f === 'whatsapp_code' ? '/api/security/gateway/whatsapp' : '/api/security/gateway/email', { purpose: 'device_authorize' }).then(function (d) {
             if (!d || d.ok !== true) { b.disabled = false; b.textContent = 'أعد الإرسال'; return msg('lv-msg', 'bad', (d && d.message) || 'تعذّر إرسال الرمز.'); }
             S.dev.sent[f] = true; $('#lv-code-w').hidden = false; b.textContent = 'إعادة الإرسال'; msg('lv-msg', 'ok', d.sent === false ? 'الرمز السابق ما زال صالحًا.' : (f === 'whatsapp_code' ? 'أُرسل الرمز إلى واتساب.' : 'أُرسل الرمز إلى بريدك.'));
-            setTimeout(function () { b.disabled = false; }, (Number(d.retry_after_seconds) || 60) * 1000); try { $('#lv-code').focus(); } catch (e) {}
+            var left = Number(d.retry_after_seconds) || 60, rs = $('#lv-rs'), cd = $('#lv-cd'); rs.hidden = false;
+            clearInterval(LV_T); LV_T = setInterval(function () { left--; cd.textContent = '0:' + ('0' + Math.max(left, 0)).slice(-2); if (left <= 0) { clearInterval(LV_T); rs.hidden = true; b.disabled = false; } }, 1000);
+            try { LV_BOX[0].focus(); } catch (e) {}
           });
         });
       }
+      $$('small, span, p').forEach(function (x) { if (!x.children.length && /تختار مدة التصريح/.test(x.textContent)) x.textContent = 'يبقى التصريح حتى تلغيه من مركز الأمان، وتلغيه متى شئت.'; });
       var w1 = $('#f-fg1 .vc .vc-t b'); if (w1) w1.textContent = 'رمز عبر واتساب';
       $$('.pt-demo').forEach(function (x) { x.hidden = true; });
       var lg = $('.ts-legal'); if (lg) lg.textContent = 'باستخدامك البوابة توافق على سياسة الاستخدام وسياسة الخصوصية.';

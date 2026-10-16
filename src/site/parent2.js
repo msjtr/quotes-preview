@@ -94,7 +94,7 @@
   function script(src){return new Promise(function(ok,no){var s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=no; document.head.appendChild(s)})}
   function load(){
     if(loading) return loading;
-    loading=new Promise(function(ok,no){ window.__TS_READY=function(){ b64gz(window.__TS_GZ).then(function(c){C=c; window.__TS_GZ=''; ok(c)},no) }; script('site/core.js').catch(no) });
+    loading=new Promise(function(ok,no){ window.__TS_READY=function(){ b64gz(window.__TS_GZ).then(function(c){C=c; window.__TS_GZ=''; ok(c)},no) }; script('site/core.js?v=' + encodeURIComponent((window.TQ_VERSION && window.TQ_VERSION.v) || '')).catch(no) });
     return loading;
   }
   var RAW={}, CH={};
