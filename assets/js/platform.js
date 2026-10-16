@@ -12998,6 +12998,9 @@ function liveHome() {
       e('p', {}, [e('b', {}, 'الجوال: '), e('bdi', { dir: 'ltr' }, me.phone ? ('+' + String(me.phone).replace(/^\+/, '')) : '—')]),
       e('p', {}, [e('b', {}, 'رقم تيرا: '), e('bdi', { dir: 'ltr' }, me.tera_id || '—')]),
       e('p', {}, [e('b', {}, 'أدوار الحساب: '), roles])])];
+  if (S.role === 'client') kids.push(DS.note('info', 'المربوط الآن', 'ملفي الشخصي · مرفقاتي · طلبات خدماتي · مركز الأمان — من الخادم مباشرة.', e('div', { class: 't2-pb-actions' }, [
+    DS.button('ملفي الشخصي', { tone: 'primary', onClick: function () { go('other', 'profile'); } }), DS.button('مرفقاتي', { onClick: function () { go('other', 'my-docs'); } }),
+    DS.button('طلبات خدماتي', { onClick: function () { go('reqs'); } }), DS.button('مركز الأمان', { onClick: function () { go('other', 'shield'); } })])));
   if (S.role === 'admin') kids.push(DS.note('info', 'المربوط الآن', 'قسم العملاء › الملف الشخصي › توثيق ملف العملاء المرحّلين: الملفات الحقيقية ومرفقاتها، وكل فتح يُسجَّل في سجل التدقيق.',
     DS.button('فتح ملفات العملاء المرحّلين', { tone: 'primary', onClick: function () { go('other', 'cu-pf-mig'); } })));
   kids.push(DS.note('warn', 'بقية الأقسام قيد الربط', 'تظهر فارغة إلى أن تُربط بالخادم، ولا تُعرض فيها بيانات تجريبية.'));
@@ -13007,6 +13010,98 @@ function liveEmpty() {
   return DS.panel(null, null, [DS.note('info', 'هذا القسم قيد الربط بالخادم', 'لا تُعرض هنا بيانات تجريبية في النسخة الحقيقية. سيظهر محتواه الفعلي من الخادم وقاعدة البيانات عند ربطه.',
     DS.button('العودة إلى الرئيسية', { onClick: function () { if (S.role === 'admin') go('other', 'adm-home'); else go('dash'); } }))]);
 }
+/* ---------- v267: منصة العميل من الخادم — الملف الشخصي، المرفقات، الطلبات، مركز الأمان (قراءة) ---------- */
+const CL = { cache: {} };
+async function clApi(path) {
+  const t = tqToken(); if (!t) { location.replace('/portal/'); throw new Error('auth'); }
+  const r = await fetch(path, { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' });
+  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  const j = await r.json().catch(function () { return null; });
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.message) || 'تعذّر التحميل من الخادم.');
+  return j;
+}
+function clWait(title) { return DS.panel(title, null, [DS.note('info', 'جارٍ التحميل من الخادم…', '')]); }
+function clFail(title, msg, retry) { return DS.panel(title, null, [DS.note('warn', 'تعذّر التحميل', msg || '', DS.button('إعادة المحاولة', { tone: 'primary', onClick: retry }))]); }
+function clMount(title, loader) {
+  const box = e('div', { class: 't2-stack' }, [clWait(title)]);
+  const run = function () { box.innerHTML = ''; box.appendChild(clWait(title)); loader().then(function (nodes) { box.innerHTML = ''; (nodes || []).filter(Boolean).forEach(function (n) { box.appendChild(n); }); })
+    .catch(function (err) { if (err && err.message === 'auth') return; box.innerHTML = ''; box.appendChild(clFail(title, err && err.message, run)); }); };
+  run(); return box;
+}
+const CL_DOC = { uploaded: ['مرفوع — بانتظار المراجعة', 'info'], pending: ['بانتظار المراجعة', 'info'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض', 'warn'], needs_changes: ['يحتاج تعديلًا', 'warn'], replaced: ['مستبدل', 'info'], not_required: ['غير مطلوب', 'info'] };
+const CL_BLOCKS = [['personal', 'المعلومات الشخصية'], ['contact', 'التواصل'], ['address', 'العنوان'], ['emergency', 'جهة اتصال للطوارئ'], ['bank', 'الحساب البنكي']];
+function clVal(f) {
+  let v = f.value;
+  if (v === null || v === undefined || v === '') return null;
+  if (Array.isArray(f.options)) { const o = f.options.filter(function (x) { return (Array.isArray(x) ? x[0] : (x && x.value)) === v; })[0]; if (o) v = Array.isArray(o) ? o[1] : (o.label || v); }
+  if (typeof v === 'boolean') return v ? 'نعم' : 'لا';
+  if (typeof v === 'object') return Array.isArray(v) ? v.join('، ') : Object.keys(v).map(function (k) { return v[k]; }).filter(Boolean).join(' · ');
+  return String(v);
+}
+function clDate(s) { if (!s) return '—'; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { year: 'numeric', month: 'short', day: 'numeric' }); }
+async function clOpenDoc(id) {
+  const w = window.open('', '_blank'); try { const j = await clApi('/api/account/profile/doc?id=' + encodeURIComponent(id)); if (w) w.location = j.url; else location.href = j.url; }
+  catch (err) { if (w) w.close(); snack((err && err.message) || 'تعذّر فتح المرفق.'); }
+}
+function clProfile() {
+  return clMount('ملفي الشخصي', async function () {
+    const card = await clApi('/api/account/profile/card'), u = card.user || {};
+    const out = [DS.panel('بيانات الحساب', card.type_pending ? 'طلب الانضمام قيد المراجعة' : null, [DS.fields([['الاسم', u.full_name || '—'], ['البريد', e('bdi', { dir: 'ltr' }, u.email || '—')],
+      ['الجوال', e('bdi', { dir: 'ltr' }, u.phone ? '+' + String(u.phone).replace(/^\+/, '') : '—')], ['رقم تيرا', e('bdi', { dir: 'ltr' }, u.tera_id || '—')],
+      ['رقم الطلب', e('bdi', { dir: 'ltr' }, card.request_no || '—')], ['الأدوار', (card.roles || []).map(function (r) { const k = r.role || r; return LIVE_ROLE_AR[k] || k; }).join('، ') || '—']])])];
+    const blocks = await Promise.all(CL_BLOCKS.map(function (b) { return clApi('/api/account/profile/block/' + b[0]).catch(function () { return null; }); }));
+    blocks.forEach(function (d, i) {
+      if (!d || !Array.isArray(d.fields)) return;
+      const fs = d.fields.filter(function (f) { return f && f.active !== false && f.kind !== 'file'; });
+      if (!fs.length) return;
+      const miss = fs.filter(function (f) { return f.required && clVal(f) === null; }).length;
+      out.push(DS.panel(CL_BLOCKS[i][1], miss ? miss + ' حقل مطلوب ناقص' : 'مكتمل', [DS.fields(fs.map(function (f) { const v = clVal(f); return [f.label || f.key, v === null ? DS.badge(f.required ? 'مطلوب — غير مكتمل' : 'غير مُدخل', f.required ? 'warn' : 'info') : v]; }))]));
+    });
+    out.push(DS.note('info', 'تعديل الملف', 'التعديل من هذه الواجهة يُربط في الخطوة التالية؛ البيانات المعروضة هنا من الخادم مباشرة.'));
+    return out;
+  });
+}
+function clDocs() {
+  return clMount('مرفقاتي', async function () {
+    const d = await clApi('/api/account/profile/block/docs');
+    const fs = (d.fields || []).filter(function (f) { return f && f.active !== false && f.kind === 'file'; });
+    if (!fs.length) return [DS.panel('مرفقاتي', null, [DS.note('info', 'لا توجد مرفقات مطلوبة لحسابك الآن.', '')])];
+    const bySec = {}; fs.forEach(function (f) { const s = f.section || 'المرفقات'; (bySec[s] = bySec[s] || []).push(f); });
+    return Object.keys(bySec).map(function (s) {
+      return DS.panel(s, null, bySec[s].map(function (f) {
+        const doc = f.doc, st = doc ? (CL_DOC[doc.status] || [doc.status, 'info']) : null;
+        return e('div', { class: 't2-row', style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--t2-line)' }, [
+          e('div', {}, [e('b', {}, f.label || f.key), e('div', { class: 't2-muted', style: 'font-size:.8rem' }, doc ? ('رُفع ' + clDate(doc.uploaded_at) + (doc.reject_reason ? ' — ' + doc.reject_reason : '')) : (f.required ? 'مطلوب — لم يُرفع بعد' : 'لم يُرفع'))]),
+          e('div', { style: 'display:flex;gap:8px;align-items:center' }, [doc ? DS.badge(st[0], st[1]) : DS.badge(f.required ? 'مطلوب' : 'اختياري', f.required ? 'warn' : 'info'),
+            doc ? DS.button('فتح', { size: 'sm', onClick: function () { clOpenDoc(doc.id); } }) : null])]);
+      }));
+    });
+  });
+}
+function clReqs() {
+  return clMount('طلبات خدماتي', async function () {
+    const j = await clApi('/api/account/my-requests'), L = j.requests || [];
+    if (!L.length) return [DS.panel('طلبات خدماتي', null, [DS.note('info', 'لا توجد طلبات في حسابك بعد.', '')])];
+    return [DS.panel('طلبات خدماتي', L.length + ' طلب', L.map(function (q) {
+      return e('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--t2-line)' }, [
+        e('div', {}, [e('b', {}, e('bdi', { dir: 'ltr' }, q.quote_number || '—')), e('div', { style: 'font-size:.82rem;color:var(--t2-muted)' }, [q.product_type || '', q.product_value ? ' · ' + fmtNum(q.product_value) + ' ر.س' : '', q.payment_duration_months ? ' · ' + q.payment_duration_months + ' شهرًا' : '', ' · ' + clDate(q.created_at)].join(''))]),
+        e('div', { style: 'display:flex;gap:8px;align-items:center' }, [DS.badge(q.status_label || q.status || '—', q.is_active ? 'info' : 'ok'),
+          q.has_pdf ? DS.button('PDF', { size: 'sm', onClick: async function () { try { const t = tqToken(); const r = await fetch('/api/account/my-requests/' + encodeURIComponent(q.quote_number) + '/pdf', { headers: { Authorization: 'Bearer ' + t } }); if (!r.ok) throw 0; const u = URL.createObjectURL(await r.blob()); window.open(u, '_blank'); } catch (err) { snack('تعذّر فتح الملف.'); } } }) : null])]);
+    }))];
+  });
+}
+function clShield() {
+  return clMount('مركز الأمان', async function () {
+    const o = await clApi('/api/security/overview');
+    const dv = (o.devices || []).map(function (d) { return [[d.label, d.os, d.browser].filter(Boolean).join(' · ') || 'جهاز', DS.badge(d.status === 'authorized' ? 'مصرّح له' : d.status === 'blocked' ? 'محظور' : (d.status || '—'), d.status === 'authorized' ? 'ok' : d.status === 'blocked' ? 'warn' : 'info')]; });
+    const ss = (o.sessions || []).slice(0, 10).map(function (s) { return [[s.device_label || s.label || s.browser || 'جلسة', s.ip ? ' · ' + s.ip : ''].join(''), clDate(s.last_seen_at || s.started_at || s.created_at)]; });
+    const ev = (o.events || []).slice(0, 12).map(function (x) { return [x.label_ar || x.arabic_label || x.action_label || x.action_key || 'حدث', clDate(x.created_at || x.at)]; });
+    return [DS.panel('الأجهزة', dv.length + ' جهاز', [dv.length ? DS.fields(dv) : DS.note('info', 'لا أجهزة مسجّلة.', '')]),
+      DS.panel('الجلسات', null, [ss.length ? DS.fields(ss) : DS.note('info', 'لا جلسات أخرى.', '')]),
+      DS.panel('سجل الأمان', 'آخر الأحداث', [ev.length ? DS.fields(ev) : DS.note('info', 'لا أحداث بعد.', '')])];
+  });
+}
+const LIVE_PAGES = { client: { profile: clProfile, 'my-docs': clDocs, reqs: clReqs, shield: clShield }, admin: {} };
 if (LIVE.on) {
   const draw0 = draw, setRole0 = setRole, overlay0 = showOverlay;
   draw = function () {
@@ -13020,6 +13115,8 @@ if (LIVE.on) {
     const k = liveKey(), home = S.role === 'admin' ? k === 'adm-home' : k === 'dash';
     if (!ROOT) return;
     if (home) { ROOT.innerHTML = ''; ROOT.appendChild(liveHome()); return; }
+    const pg = (LIVE_PAGES[S.role] || {})[k];
+    if (pg) { ROOT.innerHTML = ''; ROOT.appendChild(pg()); return; }
     if ((LIVE_WIRED[S.role] || []).indexOf(k) < 0) { ROOT.innerHTML = ''; ROOT.appendChild(liveEmpty()); }
   };
   setRole = function (r) { if (LIVE.allow.indexOf(r) < 0) { snack(r === 'admin' ? 'حسابك لا يملك دور الموظف.' : 'حسابك لا يملك دور العميل.'); return; } setRole0(r); };
