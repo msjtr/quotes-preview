@@ -15043,6 +15043,120 @@ if (LIVE.on) {
   const axPage0 = axPage;
   axPage = function (o) { const out = axPage0(o); try { [].concat(out).filter(Boolean).forEach(function (n) { if (!n.querySelectorAll) return; n.querySelectorAll('button').forEach(function (b) { if (o && o.reg && (b.innerText || '').trim() === o.reg) b.setAttribute('data-live-ok', ''); }); }); } catch (err) { void err; } return out; };
 }
+/* ---------- v286: طلبات العميل على عقوده (سداد كامل · تأجيل دفعة · توحيد) — من الخادم، وقرار الموظف بسبب ---------- */
+const LV_SR = { mine: [], all: [] };
+const LV_SR_ST = { submitted: 'sent', in_review: 'review', approved: 'done', rejected: 'rejected', cancelled: 'rejected' };
+const LV_SR_T = { settle: 'سداد عقد كامل', defer: 'تأجيل دفعة', merge: 'توحيد العقود' };
+function lvSrReq(x) {
+  const at = new Date(x.created_at), D = function (v) { return v ? new Date(v) : null; };
+  const f = (Array.isArray(x.fields) ? x.fields : []).map(function (p) { return [p[0], p[1]]; });
+  if (x.status === 'approved' && x.amount) f.push(['مبلغ المخالصة المعتمد', SR(Number(x.amount))]);
+  if (x.decision_note) f.push([x.status === 'rejected' ? 'سبب الرفض' : 'ملاحظة الإدارة', x.decision_note]);
+  if (x.status === 'cancelled') f.push(['الحالة', 'ألغيتَ الطلب']);
+  const path = (x.log || []).map(function (l) { return [l.t, D(l.at)]; });
+  if (x.status === 'submitted' || x.status === 'in_review') path.push([x.kind === 'settle' ? 'تحديد مبلغ المخالصة' : 'قرار الإدارة', null]);
+  return mkR({ no: x.req_no, type: x.kind, at: at, status: LV_SR_ST[x.status] || 'sent', contract: (x.contract_nos || [])[0] || '', fields: f, path: path, live: true, sr: x });
+}
+async function lvSrLoad() {
+  const uid = LIVE.me.id;
+  if (LIVE.allow.indexOf('client') >= 0) { const L = await liveSb('client_service_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').catch(function () { return null; }); LV_SR.mine = Array.isArray(L) ? L : []; }
+  if (LIVE.allow.indexOf('admin') >= 0) { const L = await liveSb('client_service_requests?select=*&order=created_at.desc&limit=300').catch(function () { return null; }); LV_SR.all = Array.isArray(L) ? L : []; }
+  for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr) REQS.splice(i, 1);
+  LV_SR.mine.forEach(function (x) { REQS.push(lvSrReq(x)); });
+  REQS.sort(function (a, b) { return b.at - a.at; });
+}
+/* إرسال الطلب: تُعرض صفحة «أُرسل الطلب» فورًا، ويُستبدل الرقم المؤقت برقم الخادم — أو يُلغى الطلب المحلي إن رفضه الخادم */
+function lvSrPayload(type, fields, contract) {
+  const fv = function (k) { const x = (fields || []).filter(function (f) { return f && f[0] === k; })[0]; return x ? String(x[1]) : ''; };
+  let nos = [contract], pid = '';
+  if (type === 'merge') nos = fv('العقود').split('+').map(function (s) { return s.trim(); }).filter(Boolean);
+  if (type === 'defer') { const c = CONTRACTS.filter(function (x) { return x.no === contract; })[0], i = parseInt(fv('الدفعة'), 10); const p = c && c.payments.filter(function (y) { return y.i === i; })[0]; pid = p && p.pid ? p.pid : ''; }
+  return { kind: type, contract_nos: nos.filter(Boolean), payment_id: pid, fields: (fields || []).filter(Boolean).map(function (f) { return [String(f[0]), typeof f[1] === 'string' ? f[1] : (f[1] && f[1].textContent) || String(f[1])]; }) };
+}
+if (LIVE.on) {
+  ['merge', 'settle', 'defer'].forEach(function (k) { delete LIVE_HOLD.client[k]; });
+  const addReq0 = addReq;
+  addReq = function (type, fields, path, contract) {
+    const r = addReq0(type, fields, path, contract);
+    if (S.role !== 'client' || ['settle', 'defer', 'merge'].indexOf(type) < 0) return r;
+    const tmp = r.no; r.live = true; r.pending = true;
+    clPost('/api/account/service-requests', lvSrPayload(type, fields, contract)).then(async function (j) {
+      if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر إرسال الطلب.');
+      r.no = j.req_no; r.pending = false;
+      if (FX.done) { if (FX.done[2] === tmp) FX.done[2] = j.req_no; if (Array.isArray(FX.done[3])) FX.done[3] = FX.done[3].map(function (n) { return n === tmp ? j.req_no : n; }); }
+      const k = REQS.indexOf(r); if (k >= 0) REQS.splice(k, 1);
+      await lvSrLoad().catch(function () { REQS.unshift(r); }); draw();
+    }).catch(function (err) {
+      const i = REQS.indexOf(r); if (i >= 0) REQS.splice(i, 1);
+      if (FX.done && (FX.done[2] === tmp || (Array.isArray(FX.done[3]) && FX.done[3].indexOf(tmp) >= 0))) FX.done = null;
+      draw(); snack((err && err.message) || 'تعذّر إرسال الطلب.');
+    });
+    return r;
+  };
+  const liveData2 = liveData;
+  liveData = async function () { await liveData2(); await lvSrLoad().catch(function () { /* */ }); };
+  /* إلغاء طلب لم يستلمه الفريق بعد */
+  const liveReqCancel0 = liveReqCancel;
+  liveReqCancel = function () {
+    const r = REQS.filter(function (x) { return x.no === FX.rid; })[0];
+    if (!r || !r.sr) return liveReqCancel0();
+    if (r.sr.status !== 'submitted' || !ROOT) return;
+    const b = liveOk(DS.button('إلغاء الطلب', { onClick: async function () {
+      if (!window.confirm('إلغاء الطلب ' + r.no + '؟ لا يمكن التراجع.')) return;
+      const j = await clPost('/api/account/service-requests/' + encodeURIComponent(r.sr.id) + '/cancel', {});
+      if (!j || j.ok !== true) { snack((j && j.message) || 'تعذّر الإلغاء.'); return; }
+      snack('أُلغي الطلب.'); await lvSrLoad().catch(function () { /* */ }); draw(); } }));
+    ROOT.appendChild(DS.panel(null, null, [DS.note('info', 'لم يستلم الفريق طلبك بعد', 'يمكنك إلغاؤه الآن، ويتعذّر ذلك بعد بدء المراجعة.', b)]));
+  };
+  /* الموظف: الطلبات في «بانتظار إجراء» ودرج القرار */
+  const liveAdmLoad2 = liveAdmLoad;
+  liveAdmLoad = async function () { await liveAdmLoad2(); await lvSrLoad().catch(function () { /* */ }); };
+  const cuInbox1 = cuInbox;
+  cuInbox = function () {
+    const out = cuInbox1(), N = {}; ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).forEach(function (c) { N[c.id] = c.name; });
+    LV_SR.all.filter(function (x) { return x.status === 'submitted' || x.status === 'in_review'; }).forEach(function (x) {
+      const at = new Date(x.created_at), due = new Date(at.getTime() + (x.kind === 'defer' ? 1 : 2) * CU_DAY);
+      out.push({ grp: 'svc', ic: rType(x.kind)[2], t: LV_SR_T[x.kind] + ' — ' + (x.contract_nos || []).join(' + '), act: x.status === 'submitted' ? 'استلام الطلب' : (CU_REQ_ACT[x.kind] || 'قرار الطلب'), cust: x.user_id, custN: N[x.user_id] || '—', no: x.req_no, at: at, due: due,
+        st: x.status === 'submitted' ? ['تم الإرسال', 'info'] : ['قيد المراجعة', 'warn'], sla: cuSla(due), open: function () { lvSrOpen(x.id); } });
+    });
+    return out.sort(function (a, b) { return a.due - b.due; });
+  };
+  const cuRow1 = cuRow;
+  cuRow = function (x) { const el = cuRow1.apply(this, arguments); try { if (x && x.grp === 'svc' && /^SR-/.test(String(x.no || '')) && el) el.setAttribute('data-live-ok', ''); } catch (err) { void err; } return el; };
+}
+const LV_SRD = {};
+function lvSrOpen(id) {
+  const x = LV_SR.all.filter(function (y) { return y.id === id; })[0]; if (!x) { snack('الطلب غير موجود.'); return; }
+  const W = LV_SRD[id] || (LV_SRD[id] = { amt: '', note: '', err: '', busy: false }), rerun = function () { lvSrOpen(id); };
+  const N = {}; ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).forEach(function (c) { N[c.id] = c.name; });
+  const open = x.status === 'submitted' || x.status === 'in_review';
+  const cts = (x.contract_nos || []).map(function (no) { const R = LIVE_ADM.rows[no]; return R ? [no, R.f.total, R.f.paid, R.f.remain, R.f.status] : [no, null, null, null, '—']; });
+  const act = async function (a) {
+    if (W.busy) return;
+    if (a === 'reject' && String(W.note).trim().length < 6) { W.err = 'اكتب سبب الرفض بوضوح — يصل العميل كما هو.'; rerun(); return; }
+    if (a === 'approve' && x.kind === 'settle' && !(Number(W.amt) > 0)) { W.err = 'أدخل مبلغ المخالصة.'; rerun(); return; }
+    W.busy = true; W.err = ''; rerun();
+    const j = await clPost('/admin/api/service-requests/' + encodeURIComponent(id) + '/' + a, { note: W.note, amount: W.amt });
+    W.busy = false;
+    if (!j || j.ok !== true) { W.err = (j && j.message) || 'تعذّر حفظ القرار.'; rerun(); return; }
+    delete LV_SRD[id]; snack(a === 'review' ? 'استُلم الطلب.' : a === 'approve' ? 'اعتُمد الطلب ووصل العميل القرار.' : 'رُفض الطلب ووصل العميل السبب.');
+    await lvSrLoad().catch(function () { /* */ }); if (a === 'review') rerun(); else { admClose(); draw(); }
+  };
+  const body = [e('div', { class: 'cu-dr-st' }, [DS.badge(rStat(LV_SR_ST[x.status])[1], rStat(LV_SR_ST[x.status])[2]), e('span', { class: 'cu-nw' }, [bdiD(iso(new Date(x.created_at)))])]),
+    cuSec('الطلب', 'clipboard-text', [DS.fields([['العميل', N[x.user_id] || '—'], ['رقم الطلب', ltr(x.req_no)], ['النوع', LV_SR_T[x.kind]]].concat((x.fields || []).map(function (f) { return [f[0], f[1]]; })))]),
+    cuSec('العقود المعنية', 'contract', [cuTbl(['العقد', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة'], cts.map(function (c) { return e('tr', {}, [e('td', {}, e('button', { type: 'button', class: 'fx-link', 'data-live-ok': '', onClick: function () { const R = LIVE_ADM.rows[c[0]]; if (R) admCtOpen(R); } }, ltr(c[0]))), e('td', {}, c[1] == null ? '—' : sar(c[1])), e('td', {}, c[2] == null ? '—' : sar(c[2])), e('td', {}, c[3] == null ? '—' : sar(c[3])), e('td', {}, c[4])]); }))]),
+    open ? cuSec('القرار', 'list-checks', [
+      x.kind === 'settle' ? DS.editField('مبلغ المخالصة (ر.س) — يصل العميل', DS.input({ value: W.amt, numeric: true, placeholder: cts[0] && cts[0][3] != null ? String(cts[0][3]) : '0.00', onInput: function (v) { W.amt = v; W.err = ''; } })) : null,
+      DS.editField('ملاحظة للعميل (إلزامية عند الرفض)', e('textarea', { class: 't2-input cu-why', rows: '3', onInput: function (ev) { W.note = ev.target.value; } }, W.note || '')),
+      DS.note('info', 'القرار لا يعدّل العقد تلقائيًا', x.kind === 'defer' ? 'بعد الاعتماد يُنشأ عقد التأجيل أو يُعدَّل الجدول من صفحة العقد.' : x.kind === 'merge' ? 'بعد الاعتماد يُنشأ العقد الموحّد وتُغلق العقود السابقة من صفحات العقود.' : 'بعد الاعتماد يسدد العميل مبلغ المخالصة، ثم يُغلق العقد.'),
+      W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null]) : null,
+    cuSec('المسار والسجل', 'clock-counter-clockwise', [e('ol', { class: 'cu-log' }, (x.log || []).slice().reverse().map(function (l) { return e('li', {}, [e('b', {}, l.t), e('small', {}, [l.by === x.user_id ? 'العميل' : 'فريق تيرا', ' · ', bdiD(iso(new Date(l.at))), ' ', ltr(hm(new Date(l.at)))])]); }))])];
+  const foot = [e('div', { class: 'cu-dr-fa' }, open ? [x.status === 'submitted' ? liveOk(DS.button('استلام الطلب', { ui: 'tray', onClick: function () { act('review'); } })) : null,
+    liveOk(DS.button(x.kind === 'settle' ? 'اعتماد وإرسال المخالصة' : 'اعتماد الطلب', { tone: 'primary', ui: 'check', onClick: function () { act('approve'); } })),
+    liveOk(DS.button('رفض بسبب', { tone: 'danger', ui: 'x-circle', onClick: function () { act('reject'); } }))] : [DS.button('إغلاق', { onClick: cuBdClose })])];
+  const dr = cuBdDraw({ key: 'sr:' + id, ic: rType(x.kind)[2], title: LV_SR_T[x.kind] + ' · ' + x.req_no, sub: (N[x.user_id] || '') + ' · ' + (x.contract_nos || []).join(' + '), body: body, foot: foot, onClose: function () { draw(); } });
+  if (dr) (dr.closest('.cu-dh') || dr).setAttribute('data-live-ok', '');
+}
 const LIVE_PAGES = { client: {},
   admin: {  'pay-center': admPayPage, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
@@ -15289,7 +15403,7 @@ if (LIVE.on) {
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();
   });
 }
-if (LIVE.on) { const draw2 = draw; draw = function () { try { liveSoSync(); livePfTitle(); } catch (err) { void err; } return draw2.apply(this, arguments); }; }
+if (LIVE.on) { const draw2 = draw; draw = function () { try { liveSoSync(); livePfTitle(); } catch (err) { void err; } const out = draw2.apply(this, arguments); try { if (ROOT && S.role === 'client' && ['settle', 'merge', 'defer'].indexOf(S.tab) >= 0) ROOT.querySelectorAll('button').forEach(function (x) { if (/^إرسال طلب/.test((x.innerText || '').trim())) x.setAttribute('data-live-ok', ''); }); } catch (err) { void err; } return out; }; }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
 })();
   /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
