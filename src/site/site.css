@@ -1178,3 +1178,53 @@ article.pc[data-sku]{cursor:pointer}
 .t2.is-dark .tf-tags li:nth-child(2){color:#7FE3D8}.t2.is-dark .tf-tags li:nth-child(3){color:#FFC861}
 .ts-foot.tf .tf-card ul.tf-tags{display:flex!important;flex-direction:row;flex-wrap:wrap;gap:8px;grid-template-columns:none}
 .ts-foot.tf .tf-card ul.tf-tags li{display:inline-flex!important;width:auto!important;flex:0 0 auto;margin:0}
+
+/* ===== v262 — شريط تقدّم التمرير، والإصدار في التذييل، وشريط التنقل الجانبي ===== */
+/* شريط التقدّم: يتحرك مع النزول والصعود بشكل شريط مدة الجلسة */
+.t2-head::before{background:rgba(10,165,173,.10)!important;height:4px!important}
+.t2-head .tq-prog{position:absolute;inset-inline-start:0;top:0;height:4px;width:0;border-radius:0 0 4px 4px;background:linear-gradient(90deg,#FFC861,#19C2AE);box-shadow:0 0 10px rgba(25,194,174,.45);transition:width .12s linear;z-index:3;pointer-events:none}
+.t2.is-dark .t2-head::before{background:rgba(255,255,255,.08)!important}
+/* بوابة الدخول: لا زر «تسجيل الدخول» وأنت فيها */
+html.is-login .t2-head .t2-hbtn.is-in{display:none!important}
+/* الإصدار: ثابت يسار سطر الحقوق في التذييل */
+.tf-copy{position:relative;display:flex;align-items:center;justify-content:center;min-height:30px;margin-bottom:0!important;padding-bottom:16px!important}
+.tf-copy .tf-ver{position:absolute;inset-inline-end:18px;top:calc(50% + 0px);transform:translateY(-50%);display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#9FB0CC;font:600 .68rem/1.5 Alexandria,sans-serif;letter-spacing:.2px;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.tf-copy .tf-ver bdi{opacity:.8}
+@media (max-width:52rem){.tf-copy{flex-direction:column;gap:8px}.tf-copy .tf-ver{position:static;transform:none}}
+.ts-foot.tf{margin-bottom:18px}
+/* شريط التنقل الجانبي: ارتفاع الشاشة تمامًا، القائمة تتمرر بلا شريط ظاهر، والمساعدة ثابتة أسفله */
+.t2 .t2-side{display:flex!important;flex-direction:column;overflow:hidden!important;padding:12px 10px 12px!important;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F5F9FC 55%,#EDF6F8 100%)!important;border-inline-end:0!important;
+  box-shadow:inset 1px 0 0 rgba(10,31,68,.08),-14px 0 34px -30px rgba(10,31,68,.55)}
+.t2 .t2-side-top{flex:none;margin:0 0 10px!important;padding:0 0 10px!important;border-bottom:1px solid rgba(10,31,68,.07)!important}
+.t2 .t2-side-t{min-height:46px;border-radius:15px!important;border:1px solid rgba(10,165,173,.22)!important;background:linear-gradient(135deg,#FFFFFF,#EFF8F9)!important;box-shadow:0 6px 16px -12px rgba(10,31,68,.35);transition:box-shadow .2s,transform .2s,border-color .2s}
+.t2 .t2-side-t:hover{transform:translateY(-1px);border-color:rgba(10,165,173,.5)!important;box-shadow:0 12px 22px -14px rgba(10,165,173,.65)}
+.t2 .t2-side-n{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:2px 0 10px;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 8px,#000 calc(100% - 16px),transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 8px,#000 calc(100% - 16px),transparent 100%)}
+.t2 .t2-side-n::-webkit-scrollbar{display:none}
+.t2 .t2-side-g+.t2-side-g{border-top:0!important;margin-top:8px!important;padding-top:8px!important;position:relative}
+.t2 .t2-side-g+.t2-side-g::before{content:"";position:absolute;top:0;inset-inline:14%;height:1px;background:linear-gradient(90deg,transparent,rgba(10,31,68,.14),transparent)}
+.t2 .t2-side-i,.t2 .t2-side-gh{position:relative;min-height:50px;border-radius:15px!important;transition:background .2s,box-shadow .2s,transform .2s}
+.t2 .t2-side-i .t2-tile,.t2 .t2-side-gh .t2-tile{transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.t2 .t2-side-i:hover,.t2 .t2-side-gh:hover{background:#FFFFFF!important;box-shadow:0 10px 20px -14px rgba(10,31,68,.45),0 0 0 1px rgba(10,165,173,.16);transform:translateY(-1px)}
+.t2 .t2-side-i:hover .t2-tile,.t2 .t2-side-gh:hover .t2-tile{transform:scale(1.08)}
+.t2 .t2-side-i.is-on{background:linear-gradient(135deg,#DFF4F5,#F1FAFA)!important;box-shadow:0 0 0 1px rgba(10,165,173,.38),0 12px 22px -18px rgba(10,165,173,.9)!important}
+.t2 .t2-side-g.has-on>.t2-side-gh{background:rgba(10,165,173,.07)}
+.t2 .t2-side-foot{flex:none;margin-top:6px!important;padding-top:10px!important;border-top:1px solid rgba(10,31,68,.07)}
+.t2 .t2-side-help{border-radius:16px!important;box-shadow:0 8px 18px -14px rgba(185,105,15,.55)}
+/* القائمة الموسّعة */
+.t2:not(.is-side-min) .t2-side-gh .t2-side-gt{font:800 .86rem/1.4 Alexandria,sans-serif;color:#0A1F44}
+.t2:not(.is-side-min) .t2-side-g.has-on>.t2-side-gh .t2-side-gt{color:#06707A}
+.t2:not(.is-side-min) .t2-side-gb{margin-inline-start:18px!important;padding-inline-start:10px!important;border-inline-start:2px solid transparent!important;border-image:linear-gradient(180deg,#19C2AE,rgba(255,200,97,.6)) 1!important}
+.t2:not(.is-side-min) .t2-side-i{min-height:44px;justify-content:flex-start}
+.t2:not(.is-side-min) .t2-side-l{font:700 .86rem/1.45 Alexandria,sans-serif;color:#33465F}
+.t2:not(.is-side-min) .t2-side-i.is-on .t2-side-l{color:#06707A}
+/* الوضع الليلي */
+.t2.is-dark .t2-side{background:linear-gradient(180deg,#0C2042 0%,#0A1A36 100%)!important;box-shadow:inset 1px 0 0 rgba(255,255,255,.06),-14px 0 34px -30px rgba(0,0,0,.8)}
+.t2.is-dark .t2-side-top,.t2.is-dark .t2-side-foot{border-color:rgba(255,255,255,.07)!important}
+.t2.is-dark .t2-side-t{background:linear-gradient(135deg,#10284F,#0D213F)!important;border-color:rgba(127,227,216,.22)!important}
+.t2.is-dark .t2-side-g+.t2-side-g::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+.t2.is-dark .t2-side-i:hover,.t2.is-dark .t2-side-gh:hover{background:rgba(255,255,255,.07)!important;box-shadow:0 0 0 1px rgba(127,227,216,.18)}
+.t2.is-dark .t2-side-i.is-on{background:rgba(25,194,174,.16)!important}
+.t2.is-dark:not(.is-side-min) .t2-side-gh .t2-side-gt{color:#E8EEF8}
+.t2.is-dark:not(.is-side-min) .t2-side-l{color:#C9D6EC}

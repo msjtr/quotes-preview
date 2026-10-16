@@ -329,6 +329,30 @@
   })();
 
   if ($('#dk-form') && window.__HASH) setTimeout(function () { var kb = $('.t2-mp-i[data-kind="' + window.__HASH + '"]'); if (kb) { kb.click(); scrollToEl(kb); } }, 350);
+  /* ---------- v262: شريط تقدّم التمرير، والإصدار في التذييل، وزر الدخول ---------- */
+  (function () {
+    var head = $('.t2-head');
+    if (head && !$('.tq-prog', head)) {
+      var bar = document.createElement('i'); bar.className = 'tq-prog'; bar.setAttribute('aria-hidden', 'true'); head.appendChild(bar);
+      var se = document.scrollingElement || document.documentElement, raf = 0;
+      var upd = function () { raf = 0; var max = se.scrollHeight - se.clientHeight; bar.style.width = (max > 0 ? Math.min(100, Math.max(0, se.scrollTop / max * 100)) : 0) + '%'; };
+      window.addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(upd); }, { passive: true });
+      window.addEventListener('resize', upd); setTimeout(upd, 300); upd();
+    }
+    if (window.__PATH === '/login') document.documentElement.classList.add('is-login');
+    var cp = $('.tf-copy'), pv = null; try { pv = parent.document.querySelector('.tq-ver'); } catch (e) {}
+    if (cp && pv && !$('.tf-ver', cp)) { var v = document.createElement('span'); v.className = 'tf-ver'; v.innerHTML = pv.innerHTML; cp.appendChild(v); }
+    var live = false; try { live = /(^|\.)tera-services\.com\.sa$/.test(parent.location.hostname || location.hostname); } catch (e) {}
+    if (live) {
+      var tok = ''; try { var s0 = JSON.parse(localStorage.getItem('tera.admin.session') || 'null'); if (s0 && s0.access_token && (!s0.expires_at || s0.expires_at * 1000 > Date.now())) tok = s0.access_token; } catch (e) {}
+      var inb = $('.t2-hbtn.is-in');
+      if (tok && inb) {
+        var tt = $('.t2-hbtn-t', inb); if (tt) tt.textContent = 'حسابي'; inb.setAttribute('aria-label', 'حسابي');
+        inb.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopImmediatePropagation(); try { top.location.href = '/staff/'; } catch (e) { location.href = '/staff/'; } }, true);
+      }
+    }
+  })();
+
   /* ---------- portal (v232): one identity, 10-minute session on every flow ---------- */
   if ($('#f-login')) (function () {
     var FLOWS = {

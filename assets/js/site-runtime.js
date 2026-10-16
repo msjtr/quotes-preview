@@ -148,7 +148,7 @@
   function size(){ var v=(bar?bar.offsetHeight:44)+'px'; if(box.style.getPropertyValue('--pvh')!==v) box.style.setProperty('--pvh',v); var ph=phone(); if(box.classList.contains('is-phone')!==ph) box.classList.toggle('is-phone',ph) }
   function paint(opening){
     setBtn(page);
-    var hh=page!=='app'; if(host.hidden!==hh) host.hidden=hh; if(box.hidden!==!hh) box.hidden=!hh;
+    var hh=page!=='app'; document.documentElement.classList.toggle('pv-on-site',hh); if(host.hidden!==hh) host.hidden=hh; if(box.hidden!==!hh) box.hidden=!hh;
     if(page!=='app'){ size(); var target=page==='portal'?'/login':(cur.path==='/login'?'/':(cur.sku?'/product/'+cur.sku:cur.path)+(cur.hash?'#'+cur.hash:'')); if(window.scrollY) window.scrollTo(0,0); render(target,opening) }
     else { waitShow(); waitDone() }
   }
