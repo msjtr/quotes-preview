@@ -13853,9 +13853,11 @@ function liveBondMap(b, N) {
     note: b.note || '', at: at, by: 'الترحيل', log: log, cno: b.court_no || '', cdate: b.court_date || '', gFrom: b.grace_from || '', gTo: b.grace_to || '', live: b, name: N[b.user_id] || '' };
 }
 async function liveAdmLoad() {
-  const N = await liveNames();
-  const C = await liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name)),client_contract_files(id,kind,file_name)&kind=eq.contract&order=order_date.desc').catch(function () { return null; });
-  const B = await liveSb('client_bonds?select=*,client_contracts(id,contract_no,legacy_no),client_contract_files(id,kind,file_name)&order=bond_date.desc.nullslast').catch(function () { return null; });
+  /* الأسماء والعقود والسندات معًا لا واحدًا بعد الآخر */
+  const AB = await Promise.all([liveNames(),
+    liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name)),client_contract_files(id,kind,file_name)&kind=eq.contract&order=order_date.desc').catch(function () { return null; }),
+    liveSb('client_bonds?select=*,client_contracts(id,contract_no,legacy_no),client_contract_files(id,kind,file_name)&order=bond_date.desc.nullslast').catch(function () { return null; })]);
+  const N = AB[0], C = AB[1], B = AB[2];
   LIVE_ADM.ct = {}; LIVE_ADM.rows = {};
   (Array.isArray(C) ? C : []).forEach(function (r) { const c = liveContract(r); (LIVE_ADM.ct[r.user_id] || (LIVE_ADM.ct[r.user_id] = [])).push(c); LIVE_ADM.rows[c.no] = { r: r, c: c, f: c.n ? cInfo(c) : { status: 'بلا دفعات', tone: null, paid: 0, total: 0, remain: 0, leftN: 0 }, name: N[r.user_id] || '—' }; });
   CU_BONDS.length = 0; (Array.isArray(B) ? B : []).forEach(function (b) { CU_BONDS.push(liveBondMap(b, N)); });
@@ -14887,7 +14889,7 @@ if (LIVE.on) {
       if (/^عرض (الطلب )?كما يراه العميل/.test(t)) b.remove(); });
   };
   const liveData1 = liveData;
-  liveData = async function () { await liveData1(); await liveSoLoad().catch(function () { /* الطلبات تبقى فارغة */ }); };
+  liveData = async function () { await Promise.all([liveData1(), liveSoLoad().catch(function () { /* الطلبات تبقى فارغة */ })]); };
   /* صفحة إتمام الطلب: انتظار الخادم، ثم الدفع أو بيانات التحويل */
   const ckRun0 = LP.checkout.run;
   LP.checkout.run = function () {
@@ -14958,7 +14960,7 @@ if (LIVE.on) {
   /* لا أرقام حسابات تقديرية: الحساب المسجّل للعميل يظهر بوصفه */
   axRegAcct = function (cid, t) { return t === 'wallet' ? 'رقم الجوال المسجّل' : 'حسابه البنكي المسجّل في ملفه'; };
   const liveAdmLoad1 = liveAdmLoad;
-  liveAdmLoad = async function () { await liveAdmLoad1(); await livePayoutsLoad(); };
+  liveAdmLoad = async function () { await Promise.all([liveAdmLoad1(), livePayoutsLoad()]); };
   /* الحوالة المنقولة: عرض الإيصال من القاعدة، ولا تعديل لسجل النظام السابق */
   const axTrOpen0 = axTrOpen;
   axTrOpen = function (id) {
@@ -15083,8 +15085,10 @@ function lvSrReq(x) {
 }
 async function lvSrLoad() {
   const uid = LIVE.me.id;
-  if (LIVE.allow.indexOf('client') >= 0) { const L = await liveSb('client_service_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').catch(function () { return null; }); LV_SR.mine = Array.isArray(L) ? L : []; }
-  if (LIVE.allow.indexOf('admin') >= 0) { const L = await liveSb('client_service_requests?select=*&order=created_at.desc&limit=300').catch(function () { return null; }); LV_SR.all = Array.isArray(L) ? L : []; }
+  const P2 = await Promise.all([LIVE.allow.indexOf('client') >= 0 ? liveSb('client_service_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').catch(function () { return null; }) : null,
+    LIVE.allow.indexOf('admin') >= 0 ? liveSb('client_service_requests?select=*&order=created_at.desc&limit=300').catch(function () { return null; }) : null]);
+  if (LIVE.allow.indexOf('client') >= 0) LV_SR.mine = Array.isArray(P2[0]) ? P2[0] : [];
+  if (LIVE.allow.indexOf('admin') >= 0) LV_SR.all = Array.isArray(P2[1]) ? P2[1] : [];
   for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr) REQS.splice(i, 1);
   LV_SR.mine.forEach(function (x) { REQS.push(lvSrReq(x)); });
   REQS.sort(function (a, b) { return b.at - a.at; });
@@ -15118,7 +15122,7 @@ if (LIVE.on) {
     return r;
   };
   const liveData2 = liveData;
-  liveData = async function () { await liveData2(); await lvSrLoad().catch(function () { /* */ }); };
+  liveData = async function () { await Promise.all([liveData2(), lvSrLoad().catch(function () { /* */ })]); REQS.sort(function (a, b) { return b.at - a.at; }); };
   /* إلغاء طلب لم يستلمه الفريق بعد */
   const liveReqCancel0 = liveReqCancel;
   liveReqCancel = function () {
@@ -15134,7 +15138,7 @@ if (LIVE.on) {
   };
   /* الموظف: الطلبات في «بانتظار إجراء» ودرج القرار */
   const liveAdmLoad2 = liveAdmLoad;
-  liveAdmLoad = async function () { await liveAdmLoad2(); await lvSrLoad().catch(function () { /* */ }); };
+  liveAdmLoad = async function () { await Promise.all([liveAdmLoad2(), lvSrLoad().catch(function () { /* */ })]); };
   const cuInbox1 = cuInbox;
   cuInbox = function () {
     const out = cuInbox1(), N = {}; ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).forEach(function (c) { N[c.id] = c.name; });
@@ -15485,7 +15489,7 @@ if (LIVE.on) {
   axFee = function (c, Ao) { const r = axFee9(c, Ao); if (!r.def) { const A = Ao || feeA(c); r.empN = A.emp ? lvFeeEmpN(A.emp) || 'موظف' : ''; } return r; };
   lvFeeApply();
   const liveAdmLoad9 = liveAdmLoad;
-  liveAdmLoad = async function () { const out = await liveAdmLoad9.apply(this, arguments); await lvFeeLoad(); return out; };
+  liveAdmLoad = async function () { const out = await Promise.all([liveAdmLoad9.apply(this, arguments), lvFeeLoad()]); return out[0]; };
   /* درج الرسوم لكل عقد: القيمة والرسوم المحمَّلة، والعمولات والمصاريف تُحفظ في الخادم */
   feeOpen = function (cid, no) {
     const c = axCts(cid).filter(function (x) { return x.no === no; })[0]; if (!c) return;
@@ -15582,6 +15586,18 @@ if (LIVE.on) {
   };
   /* صفحة الرسوم: تحميل الإعدادات أول مرة */
   if (LP['cu-admx-fee']) { const fr9 = LP['cu-admx-fee'].run; LP['cu-admx-fee'].run = function () { if (!LIVE_FEE.at) { LIVE_FEE.at = 1; lvFeeLoad().then(draw); } return fr9.apply(this, arguments); }; }
+}
+/* ---------- v290: سرعة جلب البيانات — لا طلب مكرر في الوقت نفسه، والتحميلات المستقلة معًا ---------- */
+if (LIVE.on) {
+  /* قائمة العملاء: طلب واحد يُشارك بين كل من يطلبها في اللحظة نفسها (الأسماء، الصفحات، المتجر) */
+  const admClients10 = admClients; let admCP = null;
+  admClients = function (path, raw) { if (path || raw) return admClients10(path, raw); if (admCP) return admCP; admCP = admClients10('').then(function (j) { admCP = null; return j; }, function (err) { admCP = null; throw err; }); return admCP; };
+  /* طلبات العملاء: تحميل واحد مشترك بين بدء الجلسة وتحديث بيانات الموظف */
+  const lvSrLoad10 = lvSrLoad; let lvSrP = null;
+  lvSrLoad = function () { if (lvSrP) return lvSrP; lvSrP = lvSrLoad10().then(function (x) { lvSrP = null; return x; }, function (err) { lvSrP = null; throw err; }); return lvSrP; };
+  /* بيانات الموظف: تحديث واحد في الوقت نفسه */
+  const liveAdmLoad10 = liveAdmLoad; let admLP = null;
+  liveAdmLoad = function () { if (admLP) return admLP; admLP = liveAdmLoad10().then(function (x) { admLP = null; return x; }, function (err) { admLP = null; throw err; }); return admLP; };
 }
 if (LIVE.on) { const draw2 = draw; draw = function () { try { liveSoSync(); livePfTitle(); } catch (err) { void err; } const out = draw2.apply(this, arguments); try { if (ROOT && S.role === 'client' && ['settle', 'merge', 'defer'].indexOf(S.tab) >= 0) ROOT.querySelectorAll('button').forEach(function (x) { if (/^إرسال طلب/.test((x.innerText || '').trim())) x.setAttribute('data-live-ok', ''); }); } catch (err) { void err; } return out; }; }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
