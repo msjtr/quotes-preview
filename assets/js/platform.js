@@ -13000,8 +13000,9 @@ async function liveLoad() {
   const uid = (s0.user && s0.user.id) || liveSub(s0.access_token); if (!uid) return null;
   const H = { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + s0.access_token, Accept: 'application/json' };
   const q = function (path) { return fetch(cfg.supabaseUrl + '/rest/v1/' + path, { headers: H, cache: 'no-store' }).then(function (r) { if (r.status === 401) throw new Error('auth'); return r.json(); }); };
-  const u = await q('users?select=id,full_name,email,phone,user_type,status,tera_id,created_at&id=eq.' + encodeURIComponent(uid));
-  const r = await q('user_roles?select=role,is_primary&user_id=eq.' + encodeURIComponent(uid));
+  /* الحساب والأدوار معًا */
+  const ur = await Promise.all([q('users?select=id,full_name,email,phone,user_type,status,tera_id,created_at&id=eq.' + encodeURIComponent(uid)), q('user_roles?select=role,is_primary&user_id=eq.' + encodeURIComponent(uid))]);
+  const u = ur[0], r = ur[1];
   const me = Array.isArray(u) ? u[0] : null; if (!me) return null;
   return { me: me, roles: (Array.isArray(r) ? r : []).map(function (x) { return x.role; }) };
 }
