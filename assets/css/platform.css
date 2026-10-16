@@ -7784,3 +7784,21 @@ html,body{height:auto;min-height:100%}
 .lv-fv-b{flex:1;min-height:0;margin:0;border-radius:0}
 .lv-fv-b iframe,.lv-fv-b img{width:100%;height:100%;border:0;object-fit:contain;background:#fff}
 @media (max-width:40rem){.lv-fv{padding:0}.lv-fv-p{width:100%;height:100%;border-radius:0}}
+/* v295: الدرج بهوية الصفحة — المسار على خلفية الصفحة بلا شريط أبيض، والعنوان بطاقة كترويسة الصفحة، والقوائم المنسدلة لا تُقص */
+.cu-dr.cu-dr.is-page .cu-dr-nav{background:transparent;border-bottom:0;padding-block:12px 4px}
+.cu-dr.cu-dr.is-page .cu-dr-h.cu-dr-h{margin:6px max(24px,calc((100% - 1180px) / 2)) 0;padding:14px 16px;border:1px solid var(--t2-line);border-radius:20px;background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--t2-brand) 18%,transparent),transparent 60%),var(--t2-surface)}
+@media (max-width:40rem){.cu-dr.cu-dr.is-page .cu-dr-h.cu-dr-h{margin-inline:14px;padding:12px 14px}}
+.cu-dr.cu-dr.is-page .cu-dr-h>div>b{font-size:1.15rem}
+.cu-dh .t2-sec,.cu-dh .t2-sec-b,.cu-dh .ax-form,.cu-dh .cu-ds{overflow:visible}
+.cu-dh .t2-cb.is-open{z-index:80;position:relative}
+.fee-tb .fee-r>span small{display:block}
+/* v296 — رأس العميل بهوية البطاقة */
+.t2 .lv-ch{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--t2-line);border-radius:20px;background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--t2-brand) 18%,transparent),transparent 60%),var(--t2-surface);margin-top:4px}
+.t2 .lv-ch-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 220px}
+.t2 .lv-ch .cu-av{flex:none}
+.t2 .lv-ch-t{display:grid;gap:2px;min-width:0}
+.t2 .lv-ch-t b{font:800 1.02rem/1.4 var(--t2-ff-display);color:var(--t2-ink);overflow-wrap:anywhere}
+.t2 .lv-ch-t small{font-size:.76rem;color:var(--t2-muted);justify-self:start}
+.t2 .lv-ch-s{justify-self:start;font-size:.76rem;font-weight:700;color:var(--t2-brand);background:color-mix(in srgb,var(--t2-brand) 10%,transparent);border-radius:999px;padding:2px 10px}
+.t2 .lv-ch-a{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:40rem){.t2 .lv-ch-a{width:100%}.t2 .lv-ch-a>*{flex:1 1 0}}
