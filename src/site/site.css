@@ -1228,3 +1228,18 @@ html.is-login .t2-head .t2-hbtn.is-in{display:none!important}
 .t2.is-dark .t2-side-i.is-on{background:rgba(25,194,174,.16)!important}
 .t2.is-dark:not(.is-side-min) .t2-side-gh .t2-side-gt{color:#E8EEF8}
 .t2.is-dark:not(.is-side-min) .t2-side-l{color:#C9D6EC}
+
+/* v263: تنبيه الصفر في حقول الجوال، وشريط تمرير ظاهر للمسار الجانبي */
+.tq-zero{display:block;margin-top:6px;color:#B42318;font:600 .76rem/1.5 "IBM Plex Sans Arabic",sans-serif}
+.tq-zero[hidden]{display:none}
+.t2 .t2-side-n{scrollbar-width:thin!important;scrollbar-color:rgba(10,165,173,.6) rgba(10,31,68,.05)!important;padding-inline-end:4px}
+.t2 .t2-side-n::-webkit-scrollbar{display:block!important;width:5px}
+.t2 .t2-side-n::-webkit-scrollbar-track{background:rgba(10,31,68,.05);border-radius:5px;margin-block:8px}
+.t2 .t2-side-n::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#19C2AE,#FFC861);border-radius:5px}
+.t2 .t2-side-n:hover::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#0AA5AD,#F2B64A)}
+.t2.is-dark .t2-side-n{scrollbar-color:rgba(127,227,216,.55) rgba(255,255,255,.05)!important}
+.t2.is-dark .t2-side-n::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+.t2 .t2-side .tq-rail{position:absolute;inset-inline-end:3px;width:4px;border-radius:4px;background:rgba(10,31,68,.07);pointer-events:none;z-index:2}
+.t2 .t2-side .tq-rail[hidden]{display:none}
+.t2 .t2-side .tq-rail b{display:block;width:100%;border-radius:4px;background:linear-gradient(180deg,#19C2AE,#FFC861);transition:transform .08s linear}
+.t2.is-dark .t2-side .tq-rail{background:rgba(255,255,255,.07)}

@@ -353,6 +353,37 @@
     }
   })();
 
+  /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
+  (function () {
+    if (window.__tqZero) return; window.__tqZero = true;
+    function isCC(el) { return !!(el && el.tagName === 'INPUT' && (el.closest('.ts-tel') || /^5X{6,}$/.test(el.getAttribute('placeholder') || ''))); }
+    function note(el) {
+      var host = el.closest('.ts-tel') || el, n = host.nextElementSibling;
+      if (!n || !n.classList.contains('tq-zero')) { n = document.createElement('small'); n.className = 'tq-zero'; n.setAttribute('role', 'status'); n.textContent = 'اكتب الرقم بدون صفر في أوله؛ مفتاح الدولة محدد.'; host.insertAdjacentElement('afterend', n); }
+      n.hidden = false; clearTimeout(n._t); n._t = setTimeout(function () { n.hidden = true; }, 3500);
+    }
+    document.addEventListener('input', function (ev) {
+      var el = ev.target; if (!isCC(el)) return;
+      var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
+      if (z !== v) { el.value = z; if (z !== a) note(el); }
+    }, true);
+  })();
+
+  /* ---------- v263: مؤشر تمرير المسار الجانبي حين يخفي الجهاز شريط التمرير (جوال/ماك) ---------- */
+  (function () {
+    var side = $('.t2-side'), nav = $('.t2-side-n'); if (!side || !nav || $('.tq-rail', side)) return;
+    var tr = document.createElement('i'), th = document.createElement('b'); tr.className = 'tq-rail'; tr.setAttribute('aria-hidden', 'true'); tr.appendChild(th); side.appendChild(tr);
+    function upd() {
+      var sh = nav.scrollHeight, ch = nav.clientHeight, overlay = nav.offsetWidth === nav.clientWidth;
+      tr.hidden = !(overlay && sh > ch + 2); if (tr.hidden) return;
+      tr.style.top = nav.offsetTop + 'px'; tr.style.height = ch + 'px';
+      var h = Math.max(28, ch * ch / sh); th.style.height = h + 'px'; th.style.transform = 'translateY(' + Math.round((ch - h) * nav.scrollTop / (sh - ch)) + 'px)';
+    }
+    nav.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd);
+    try { new MutationObserver(upd).observe(side, { subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] }); } catch (e) {}
+    setTimeout(upd, 300); upd();
+  })();
+
   /* ---------- portal (v232): one identity, 10-minute session on every flow ---------- */
   if ($('#f-login')) (function () {
     var FLOWS = {
