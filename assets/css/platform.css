@@ -7760,3 +7760,6 @@ html,body{height:auto;min-height:100%}
 .cu-dr.cu-dr .cu-dr-h>div>b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:1.05rem}
 .cu-dr.cu-dr .cu-dr-h>div>span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
 .cu-dr .t2-field.is-ro .cu-bd-ro{min-height:44px}
+/* v289: أقسام الدرج داخل «cu-secs» بطاقات كاملة كأقسام الدرج المباشرة — لا شريط أبيض ممتد بلا إطار */
+.cu-dr.cu-dr.is-page .cu-secs>.cu-ds{padding:16px 18px;border:1px solid var(--t2-line);border-radius:18px;box-shadow:0 1px 2px rgba(15,29,54,.04)}
+@media (max-width:40rem){.cu-dr.cu-dr.is-page .cu-secs>.cu-ds,.cu-dr.cu-dr.is-page .cu-dr-b>.cu-ds{padding:14px}}
