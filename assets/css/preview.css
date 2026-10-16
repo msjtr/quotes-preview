@@ -27,3 +27,8 @@ html.pv-dark #pv-site{background:#06122B}
 .tq-live .pv-bar{display:none!important}
 .tq-live .tq-ver{display:block;position:fixed;left:10px;bottom:8px;z-index:60;padding:2px 9px;border-radius:999px;background:rgba(10,31,68,.62);color:#fff;font:600 10px/1.7 Alexandria,sans-serif;letter-spacing:.2px;pointer-events:none;opacity:.85;font-variant-numeric:lining-nums tabular-nums}
 .pv-on-site .tq-ver{display:none!important}
+
+/* v266: المنفذ الحقيقي في منصتي العملاء والموظفين — بلا مساحة شريط العيّنة، وبلا عدّادات تنبيهات تجريبية */
+.tq-live #pv-host>.t2-app>.t2-head{top:0!important}
+.tq-live #pv-host>.t2-app>.t2-side{top:var(--t2-hh)!important;height:calc(100dvh - var(--t2-hh))!important}
+.tq-live #pv-host .t2-nbadge,.tq-live #pv-host [data-nsc]{display:none!important}

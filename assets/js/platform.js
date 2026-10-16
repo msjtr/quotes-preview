@@ -6663,7 +6663,7 @@ function cuPfMigPage() {
   const R = cuFilt(L, 'mig');
   return [DS.note('info', 'العملاء المنقولون من النظام السابق', 'نُقلت بياناتهم ومرفقاتهم كما هي، والتوثيق يُعاد في المنصة. كلمات المرور لا تُنقل؛ يدخل العميل أول مرة من «نسيت كلمة المرور»، ثم يكمل نواقصه ويرسل التحديث إلى «طلبات توثيق الملف».'),
     mgrPanel(),
-    DS.panel('حالة الترحيل الفعلي — المرحلة الأولى', 'في القاعدة الحالية · تجهيز محمي', [DS.fields([['ملفات العملاء', '33 ملفًا — 30 جاهزًا · 3 تعارض هوية'], ['المستندات', '134 — 99 ملفي الشخصي · 13 خدماتي › مرفقاتي · 22 أرشيف للفريق'], ['حسابات الدخول', DS.badge('تُنشأ من خادم المنصة عند النشر', 'info')], ['مرفقات الملف الشخصي', DS.badge('99 نُسخت ومطابقة البصمة', 'ok')], ['مرفقات خدماتي والأرشيف', DS.badge('عند النشر', 'info')]]),
+    tqLive() ? null : DS.panel('حالة الترحيل الفعلي — المرحلة الأولى', 'في القاعدة الحالية · تجهيز محمي', [DS.fields([['ملفات العملاء', '33 ملفًا — 30 جاهزًا · 3 تعارض هوية'], ['المستندات', '134 — 99 ملفي الشخصي · 13 خدماتي › مرفقاتي · 22 أرشيف للفريق'], ['حسابات الدخول', DS.badge('تُنشأ من خادم المنصة عند النشر', 'info')], ['مرفقات الملف الشخصي', DS.badge('99 نُسخت ومطابقة البصمة', 'ok')], ['مرفقات خدماتي والأرشيف', DS.badge('عند النشر', 'info')]]),
       e('small', { class: 'cu-dr-hint' }, tqLive() ? 'الصفوف أدناه من القاعدة مباشرة — للاطلاع. الإرسال الفعلي يُفعَّل بعد اعتماد النشر.' : 'البيانات الحقيقية محفوظة في منطقة تجهيز لا يصل إليها أحد من الواجهة، وتظهر هنا بعد النشر. الصفوف أدناه تجريبية.')]),
     e('div', { class: 'cu-kpis' }, K.map(function (x) { return e('div', { class: 'cu-kpi' + (x[2] ? ' is-' + x[2] : '') }, [e('span', { class: 'cu-kpi-ic' }, frag(ui(x[3], 18))), e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })), bulk, R.tools,
     R.rows.length ? e('div', { class: 'nr-gl cu-list' }, R.rows.map(cuPfRow)) : LDS.emptyState({ icon: 'ok', title: 'لا ملفات هنا', body: 'غيّر الفلتر لعرض ملفات أخرى.', compact: true })];
@@ -12946,6 +12946,116 @@ document.querySelectorAll('.pv-bar button[data-role]').forEach(function (b) { b.
 dockMin(window);
 NARROW.addEventListener('change', function () { appify(); });
 loadNav();
+/* ---------- v266: المنفذ الحقيقي (الاختبار والرئيسي) — لا بيانات تجريبية، والهوية والأدوار من الخادم ----------
+   • بلا جلسة صالحة: إلى بوابة الدخول.
+   • الهوية والأدوار تُقرأ بجلسة المستخدم نفسها عبر الخادم (/sb — سياسات RLS)، ولا مفاتيح في المستودع (الإعداد العام من /admin/api/config).
+   • التبديل بين «العميل» و«الموظف» فقط حسب أدوار الحساب الحقيقية.
+   • أي قسم لم يُربط بالخادم بعد يظهر فارغًا بعبارة واضحة بدل البيانات التجريبية. */
+const LIVE = { on: tqLiveHost(), me: null, roles: [], allow: [], err: '' };
+const LIVE_WIRED = { admin: ['cu-pf-mig'], client: [] };
+const LIVE_ROLE_AR = { client: 'عميل', staff: 'موظف', marketer: 'مسوّق', investor: 'مستثمر' };
+function liveSess() { try { return JSON.parse(localStorage.getItem('tera.admin.session') || 'null'); } catch (err) { return null; } }
+function liveSub(tok) { try { const p = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(decodeURIComponent(escape(atob(p + '==='.slice((p.length + 3) % 4))))).sub || ''; } catch (err) { return ''; } }
+async function liveCfg() { const r = await fetch('/admin/api/config', { cache: 'no-store' }); const j = await r.json(); if (!j || !j.supabaseUrl || !j.supabaseAnonKey) throw new Error('config'); return j; }
+async function liveRefresh(cfg, s0) {
+  if (!s0 || !s0.refresh_token) return null;
+  const r = await fetch(cfg.supabaseUrl + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s0.refresh_token }) });
+  const j = await r.json().catch(function () { return null; });
+  if (!r.ok || !j || !j.access_token) return null;
+  try { localStorage.setItem('tera.admin.session', JSON.stringify(j)); } catch (err) { void err; }
+  return j;
+}
+async function liveLoad() {
+  const cfg = await liveCfg(); let s0 = liveSess();
+  if (!s0 || !s0.access_token) return null;
+  if (s0.expires_at && s0.expires_at * 1000 < Date.now() + 30000) s0 = await liveRefresh(cfg, s0);
+  if (!s0) return null;
+  const uid = (s0.user && s0.user.id) || liveSub(s0.access_token); if (!uid) return null;
+  const H = { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + s0.access_token, Accept: 'application/json' };
+  const q = function (path) { return fetch(cfg.supabaseUrl + '/rest/v1/' + path, { headers: H, cache: 'no-store' }).then(function (r) { if (r.status === 401) throw new Error('auth'); return r.json(); }); };
+  const u = await q('users?select=id,full_name,email,phone,user_type,status,tera_id&id=eq.' + encodeURIComponent(uid));
+  const r = await q('user_roles?select=role,is_primary&user_id=eq.' + encodeURIComponent(uid));
+  const me = Array.isArray(u) ? u[0] : null; if (!me) return null;
+  return { me: me, roles: (Array.isArray(r) ? r : []).map(function (x) { return x.role; }) };
+}
+function liveAllowed() {
+  const a = []; if (LIVE.roles.indexOf('client') >= 0 || (LIVE.me && LIVE.me.user_type === 'client')) a.push('client');
+  if (LIVE.roles.indexOf('staff') >= 0 || (LIVE.me && LIVE.me.user_type === 'staff')) a.push('admin');
+  return a;
+}
+function liveHeader() {
+  const me = LIVE.me; if (!me) return; const nm = me.full_name || '';
+  document.querySelectorAll('#pv-host .t2-hwho .t2-avatar').forEach(function (a) { a.textContent = nm.charAt(0) || '؟'; });
+  document.querySelectorAll('#pv-host .t2-hwho-n').forEach(function (n) { const t = Array.prototype.filter.call(n.childNodes, function (c) { return c.nodeType === 3; })[0]; if (t) t.nodeValue = nm; else n.insertBefore(document.createTextNode(nm), n.firstChild); });
+}
+function liveKey() { return S.tab === 'other' ? (S.other || '') : S.tab; }
+function liveHome() {
+  const me = LIVE.me || {}, roles = LIVE.roles.map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ') || '—';
+  const kids = [
+    DS.note('ok', 'أهلًا ' + (me.full_name || ''), 'هذه نسخة الاختبار الحقيقية: البيانات هنا من الخادم وقاعدة البيانات مباشرة، ولا توجد أي بيانات تجريبية.'),
+    e('div', { class: 't2-stack-tight' }, [
+      e('p', {}, [e('b', {}, 'البريد: '), e('bdi', { dir: 'ltr' }, me.email || '—')]),
+      e('p', {}, [e('b', {}, 'الجوال: '), e('bdi', { dir: 'ltr' }, me.phone ? ('+' + String(me.phone).replace(/^\+/, '')) : '—')]),
+      e('p', {}, [e('b', {}, 'رقم تيرا: '), e('bdi', { dir: 'ltr' }, me.tera_id || '—')]),
+      e('p', {}, [e('b', {}, 'أدوار الحساب: '), roles])])];
+  if (S.role === 'admin') kids.push(DS.note('info', 'المربوط الآن', 'قسم العملاء › الملف الشخصي › توثيق ملف العملاء المرحّلين: الملفات الحقيقية ومرفقاتها، وكل فتح يُسجَّل في سجل التدقيق.',
+    DS.button('فتح ملفات العملاء المرحّلين', { tone: 'primary', onClick: function () { go('other', 'cu-pf-mig'); } })));
+  kids.push(DS.note('warn', 'بقية الأقسام قيد الربط', 'تظهر فارغة إلى أن تُربط بالخادم، ولا تُعرض فيها بيانات تجريبية.'));
+  return DS.panel(S.role === 'admin' ? 'لوحة الموظف' : 'لوحتي', null, kids);
+}
+function liveEmpty() {
+  return DS.panel(null, null, [DS.note('info', 'هذا القسم قيد الربط بالخادم', 'لا تُعرض هنا بيانات تجريبية في النسخة الحقيقية. سيظهر محتواه الفعلي من الخادم وقاعدة البيانات عند ربطه.',
+    DS.button('العودة إلى الرئيسية', { onClick: function () { if (S.role === 'admin') go('other', 'adm-home'); else go('dash'); } }))]);
+}
+if (LIVE.on) {
+  const draw0 = draw, setRole0 = setRole, overlay0 = showOverlay;
+  draw = function () {
+    if (!LIVE.me) {
+      if (!ROOT) return;
+      ROOT.innerHTML = ''; ROOT.appendChild(DS.panel(null, null, [DS.note('info', LIVE.err ? 'تعذّر تحميل الحساب' : 'جارٍ تحميل حسابك…', LIVE.err || 'نقرأ بياناتك من الخادم.',
+        LIVE.err ? DS.button('إعادة المحاولة', { tone: 'primary', onClick: function () { location.reload(); } }) : null)]));
+      return;
+    }
+    draw0(); liveHeader();
+    const k = liveKey(), home = S.role === 'admin' ? k === 'adm-home' : k === 'dash';
+    if (!ROOT) return;
+    if (home) { ROOT.innerHTML = ''; ROOT.appendChild(liveHome()); return; }
+    if ((LIVE_WIRED[S.role] || []).indexOf(k) < 0) { ROOT.innerHTML = ''; ROOT.appendChild(liveEmpty()); }
+  };
+  setRole = function (r) { if (LIVE.allow.indexOf(r) < 0) { snack(r === 'admin' ? 'حسابك لا يملك دور الموظف.' : 'حسابك لا يملك دور العميل.'); return; } setRole0(r); };
+  showOverlay = function () {
+    if (S.out === 'done') { try { localStorage.removeItem('tera.admin.session'); } catch (err) { void err; } location.replace('/portal/'); return; }
+    return overlay0.apply(this, arguments);
+  };
+  try { ADM.as = 'sup'; } catch (err) { void err; }
+  /* قائمة الحساب: بيانات الحساب الحقيقية، والتبديل بين أدواره الفعلية فقط، والخروج — بلا حسابات تجريبية */
+  whoMenu = function () {
+    document.querySelectorAll('.lv-whom').forEach(function (x) { x.remove(); });
+    document.querySelectorAll('.lv-who').forEach(function (b) { b.setAttribute('aria-expanded', String(!!S.whoOpen)); });
+    if (!S.whoOpen || !LIVE.me) return;
+    const b = document.querySelector('#pv-host .lv-who'); if (!b) return;
+    const me = LIVE.me, nm = me.full_name || '';
+    const roles = LIVE.allow.length > 1 ? e('div', { class: 't2-pb-actions' }, LIVE.allow.map(function (r) {
+      return DS.button(r === 'admin' ? 'منصة الموظف' : 'منصة العميل', { size: 'sm', tone: S.role === r ? 'primary' : null, onClick: function () { S.whoOpen = false; whoMenu(); if (S.role !== r) setRole(r); } }); })) : null;
+    b.parentNode.appendChild(e('div', { class: 'lv-whom', role: 'dialog', 'aria-label': 'معلومات الحساب' }, [
+      e('div', { class: 'lv-whom-h' }, [e('span', { class: 't2-avatar' }, nm.charAt(0) || '؟'), e('div', {}, [e('b', {}, nm), e('small', {}, e('bdi', { dir: 'ltr' }, me.email || ''))])]),
+      e('dl', { class: 'lv-whom-l' }, [e('div', {}, [e('dt', {}, 'أدوار الحساب'), e('dd', {}, LIVE.roles.map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ') || '—')]),
+        e('div', {}, [e('dt', {}, 'رقم تيرا'), e('dd', {}, e('bdi', { dir: 'ltr' }, me.tera_id || '—'))])]),
+      roles, DS.button('تسجيل الخروج', { size: 'sm', onClick: function () { S.whoOpen = false; whoMenu(); askOut(); } })]));
+  };
+  liveLoad().then(function (x) {
+    if (!x) { location.replace('/portal/'); return; }
+    LIVE.me = x.me; LIVE.roles = x.roles; LIVE.allow = liveAllowed();
+    if (!LIVE.allow.length) { LIVE.me = null; LIVE.err = 'حسابك لا يملك دور العميل ولا دور الموظف في هذه المنصة.'; draw(); return; }
+    ME.name = x.me.full_name || ME.name; ME.email = x.me.email || ''; ME.phone = x.me.phone ? '+' + String(x.me.phone).replace(/^\+/, '') : ''; ME.region = ''; ME.city = '';
+    if (LIVE.allow.indexOf(S.role) < 0) { S.role = LIVE.allow[0]; S.tab = S.role === 'admin' ? 'other' : 'dash'; S.other = S.role === 'admin' ? 'adm-home' : ''; }
+    try { localStorage.setItem('tera-preview-role', S.role); } catch (err) { void err; }
+    boot(S.dev || 'web');
+  }).catch(function (err) {
+    if (err && err.message === 'auth') { location.replace('/portal/'); return; }
+    LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();
+  });
+}
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
 })();
   /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
