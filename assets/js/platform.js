@@ -13346,7 +13346,7 @@ function liveContract(r) {
 function liveReq(q) {
   const at = q.created_at ? new Date(q.created_at) : T0, s = String(q.status || '');
   const st = /reject|declin|cancel/.test(s) ? 'rejected' : (!q.is_active && /done|complet|execut|approv|closed/.test(s)) ? 'done' : 'review';
-  return mkR({ no: q.quote_number, type: 'elig', at: at, status: st, live: true, statusLabel: q.status_label || '',
+  return mkR({ no: q.quote_number, type: 'elig', at: at, status: st, live: true, q: q, statusLabel: q.status_label || '',
     fields: [['المنتج', q.product_type || '—'], ['قيمة المنتج', q.product_value ? SR(q.product_value) : '—'], ['مدة السداد', q.payment_duration_months ? q.payment_duration_months + ' شهرًا' : '—'], ['الحالة', q.status_label || '—']],
     path: [['تم إرسال الطلب', at], [q.status_label || 'قيد المراجعة', null]] });
 }
@@ -13406,6 +13406,7 @@ try {
   LP['me-docs'].run = function () { const up = LVD.filter(function (d) { return d[3]; }).length, ok = LVD.filter(function (d) { return d[2]; }).length, miss = LVD.filter(function (d) { return d[4] && d[4].required && !d[3]; }).length;
     return [PH('files', 'المستندات', [['المرفوعة', fmtNum(up) + ' / ' + fmtNum(LVD.length), 'files'], ['المقبولة', fmtNum(ok), 'seal-check', ok ? 'ok' : null], ['المطلوبة الناقصة', fmtNum(miss), 'list-checks', miss ? 'warn' : null]], miss ? ['مستندات مطلوبة', 'warn'] : ['مكتملة', 'ok'])].concat(liveDocsList()); };
   LP['me-verify'].run = liveVerifyPage;
+  if (LP['sec-password']) LP['sec-password'].run = livePwPage; if (LP['sec-sessions']) LP['sec-sessions'].run = liveSessPage;
   if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'عمليات بوابة الدفع'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات';
   LP['prof-account'].run = function () { const me = LIVE.me || {}; return [PH('idcard', 'بياناتُ الحساب', [['نوع الحساب', LIVE_ROLE_AR[me.user_type] || me.user_type || '—', 'user'], ['الأدوار', LIVE.roles.map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ') || '—', 'shield-check'], ['رقم تيرا', me.tera_id || '—', 'hash']], me.status === 'active' ? ['نشِط', 'ok'] : ['غير مفعّل', 'warn'])].concat(profAccount()); };
   if (LP['my-docs']) LP['my-docs'].run = function () { const up = LVD.filter(function (d) { return d[3]; }).length; return [lvHero({ ic: 'files', eye: 'خدماتي', t: 'مرفقاتي', tiles: [['المرفوعة', fmtNum(up) + ' / ' + fmtNum(LVD.length), 'files'], ['المقبولة', fmtNum(LVD.filter(function (d) { return d[2]; }).length), 'seal-check']] })].concat(liveDocsList()); };
@@ -13451,6 +13452,17 @@ cuInbox = function () {
   out.forEach(function (x) { x.sla = cuSla(x.due); });
   return out.sort(function (a, b) { return a.due - b.due; });
 };
+}
+/* إلغاء طلب لم يستلمه الفريق بعد — الخادم يقرر إن كان قابلًا للإلغاء */
+function liveReqCancel() {
+  const r = REQS.filter(function (x) { return x.no === FX.rid; })[0]; if (!r || !r.live || !r.q || !r.q.is_active || !ROOT) return;
+  const out = e('div', { role: 'status' }); let armed = false;
+  const b = liveOk(DS.button('إلغاء الطلب', { onClick: async function () {
+    if (!armed) { armed = true; b.lastChild.nodeValue = 'تأكيد إلغاء الطلب'; b.classList.add('is-danger'); out.innerHTML = ''; out.appendChild(DS.note('warn', 'هل تريد إلغاء الطلب؟', 'لا يمكن التراجع عن الإلغاء. يُلغى الطلب فقط إن لم يستلمه فريق تيرا بعد.')); return; }
+    b.disabled = true; const j = await clPost('/api/account/my-requests/' + encodeURIComponent(r.no) + '/cancel', {}).catch(function () { return null; });
+    out.innerHTML = ''; if (j && j.ok) { r.status = 'rejected'; r.q.is_active = false; r.statusLabel = 'ملغى'; out.appendChild(DS.note('ok', 'أُلغي الطلب', '')); setTimeout(draw, 900); } else { b.disabled = false; out.appendChild(DS.note('warn', 'لم يُلغَ الطلب', (j && j.message) || 'تعذّر الإلغاء.')); }
+  } }));
+  ROOT.appendChild(e('div', { class: 't2-stack' }, [DS.panel('إلغاء الطلب', null, [e('small', { class: 'cu-dr-hint' }, 'متاح قبل استلام فريق تيرا لطلبك.'), e('div', { class: 't2-pb-actions' }, [b]), out])]));
 }
 /* بعد رسم الرئيسية: بطاقة العضوية قبل التدشين */
 function livePolish() {
@@ -13629,6 +13641,71 @@ if (LIVE.on) document.addEventListener('click', function (ev) {
   ev.preventDefault(); ev.stopImmediatePropagation();
   snack('لم يُنفَّذ شيء — هذا الإجراء يُفعَّل عند ربطه بالخادم.');
 }, true);
+/* ---------- v271: إجراءات حقيقية في مركز الأمان والطلبات ----------
+   تغيير كلمة المرور (البوابة الأمنية + كلمة المرور الحالية)، إنهاء الجلسات الأخرى، إلغاء طلب لم يُستلم بعد — كلها عبر مسارات الخادم نفسها. */
+async function clPost(path, body) {
+  const t = await liveToken();
+  const r = await fetch(path, { method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body || {}) });
+  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  return (await r.json().catch(function () { return null; })) || { ok: false, message: 'تعذّر الاتصال بالخادم.' };
+}
+const liveOk = (b) => { b.setAttribute('data-live-ok', ''); return b; };
+const LIVE_FX = { email_code: 'رمز إلى البريد الإلكتروني', whatsapp_code: 'رمز عبر واتساب', totp: 'تطبيق المصادقة', recovery_code: 'رمز التحقق الإضافي' };
+/* خطوة التحقق الأمني الموحّدة (نفس بوابة الخادم): اختيار الوسيلة ← إرسال الرمز ← إدخاله ← منحة صالحة للعملية */
+function liveGate(purpose, st) {
+  const box = e('div', { class: 't2-stack-tight' }), msg = e('small', { class: 'cu-dr-hint', role: 'status' }, '');
+  const sel = e('select', { class: 't2-input', 'aria-label': 'وسيلة التحقق' }), code = e('input', { class: 't2-input', dir: 'ltr', inputmode: 'numeric', maxlength: '8', autocomplete: 'one-time-code', placeholder: '000000', 'aria-label': 'رمز التحقق' });
+  const fill = function (L) { sel.innerHTML = ''; (L.length ? L : ['email_code']).forEach(function (f) { sel.appendChild(e('option', { value: f }, LIVE_FX[f] || f)); }); };
+  fill(['email_code']);
+  clApi('/api/security/gateway/factors').then(function (j) { const L = (j.factors || j.available || []).map(function (f) { return typeof f === 'string' ? f : (f.key || f.factor); }).filter(Boolean); if (L.length) fill(L); }).catch(function () { /* البريد افتراضيًا */ });
+  const send = liveOk(DS.button('أرسل الرمز', { size: 'sm', onClick: async function () {
+    const f = sel.value; if (f !== 'email_code' && f !== 'whatsapp_code') { msg.textContent = 'أدخل الرمز من ' + (LIVE_FX[f] || 'الوسيلة المختارة') + '.'; return; }
+    send.disabled = true; msg.textContent = 'جارٍ الإرسال…';
+    const d = await clPost(f === 'whatsapp_code' ? '/api/security/gateway/whatsapp' : '/api/security/gateway/email', { purpose: purpose }).catch(function () { return null; });
+    msg.textContent = d && d.ok ? (d.sent === false ? 'الرمز السابق ما زال صالحًا.' : 'أُرسل الرمز.') : ((d && d.message) || 'تعذّر إرسال الرمز.');
+    setTimeout(function () { send.disabled = false; }, ((d && Number(d.retry_after_seconds)) || 30) * 1000);
+  } }));
+  st.grant = async function () {
+    const c = String(code.value || '').replace(/[٠-٩]/g, function (x) { return String(x.charCodeAt(0) - 0x660); }).replace(/\D/g, '');
+    if (!c) throw new Error('أدخل رمز التحقق.');
+    const g = await clPost('/api/security/gateway/verify', { purpose: purpose, factor: sel.value, code: c });
+    if (!g || g.ok !== true || !g.grant_id) { code.value = ''; throw new Error((g && g.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.'); }
+    return g.grant_id;
+  };
+  box.appendChild(DS.editField('وسيلة التحقق', sel)); box.appendChild(lvRow([send])); box.appendChild(DS.editField('رمز التحقق', code)); box.appendChild(msg);
+  return box;
+}
+function livePwPage() {
+  const st = {}, cur = e('input', { class: 't2-input', type: 'password', dir: 'ltr', autocomplete: 'current-password', 'aria-label': 'كلمة المرور الحالية' }),
+    nw = e('input', { class: 't2-input', type: 'password', dir: 'ltr', autocomplete: 'new-password', 'aria-label': 'كلمة المرور الجديدة' }),
+    nw2 = e('input', { class: 't2-input', type: 'password', dir: 'ltr', autocomplete: 'new-password', 'aria-label': 'تأكيد كلمة المرور' }), out = e('div', { role: 'status' });
+  const go1 = liveOk(DS.button('تغيير كلمة المرور', { tone: 'primary', onClick: async function () {
+    out.innerHTML = '';
+    if (!cur.value || !nw.value) { out.appendChild(DS.note('warn', 'أكمل الحقول', 'أدخل كلمة المرور الحالية والجديدة.')); return; }
+    if (nw.value !== nw2.value) { out.appendChild(DS.note('warn', 'لا تطابق', 'تأكيد كلمة المرور لا يطابق الجديدة.')); return; }
+    go1.disabled = true;
+    try {
+      const grant = await st.grant();
+      const r = await clPost('/api/account/password', { current_password: cur.value, new_password: nw.value, grant_id: grant });
+      if (!r.ok) throw new Error(r.message || 'تعذّر تغيير كلمة المرور.');
+      cur.value = nw.value = nw2.value = ''; out.appendChild(DS.note('ok', 'تم تغيير كلمة المرور', 'أُنهيت جلساتك على الأجهزة الأخرى، وبقيت جلستك الحالية.'));
+    } catch (err) { if (err && err.message === 'auth') return; out.appendChild(DS.note('warn', 'لم يتم التغيير', (err && err.message) || 'تعذّر تغيير كلمة المرور.')); }
+    go1.disabled = false;
+  } }));
+  return [SH('lock', 'كلمة المرور', [['الحماية', 'كلمة المرور + تحقق أمني', 'shield-check'], ['عند التغيير', 'تُنهى الجلسات الأخرى', 'devices']], ['محمية', 'ok']),
+    lvPanel('تغييرُ كلمةِ المرور', null, [lvFields([DS.editField('كلمة المرور الحالية', cur), DS.editField('كلمة المرور الجديدة', nw), DS.editField('تأكيد كلمة المرور الجديدة', nw2)]),
+      e('small', { class: 'cu-dr-hint' }, 'من 11 إلى 128 خانة: 5 حروف على الأقل و5 أرقام ورمز واحد، بلا تسلسل أو تكرار لثلاث خانات.')]),
+    lvPanel('التحقق الأمني', null, [liveGate('change_password', st)]), e('div', { class: 't2-pb-actions' }, [go1]), out];
+}
+function liveSessPage() {
+  const L = ((LIVE_DATA.sec && LIVE_DATA.sec.sessions) || []), others = L.filter(function (x) { return !(x.current || x.is_current) && !x.ended_at; }), out = e('div', { role: 'status' });
+  const D = function (v) { return v ? bdiD(String(v).replace('T', ' ').slice(0, 16)) : '—'; };
+  const rows = L.map(function (x) { const cur = !!(x.current || x.is_current); return lvField([x.browser, x.os].filter(Boolean).join(' · ') || x.device_label || x.label || 'جلسة',
+    lvRow([D(x.last_seen_at || x.started_at), DS.badge(cur ? 'الحالية' : x.ended_at ? 'منتهية' : 'نشطة', cur ? 'ok' : x.ended_at ? null : 'info'),
+      !cur && !x.ended_at && x.id ? liveOk(DS.button('إنهاء', { size: 'sm', onClick: async function () { this.disabled = true; const r = await clPost('/api/account/sessions/revoke', { session_id: x.id }).catch(function () { return null; }); out.innerHTML = ''; out.appendChild(r && r.ok ? DS.note('ok', 'أُنهيت الجلسة', '') : DS.note('warn', 'تعذّر الإنهاء', (r && r.message) || '')); if (r && r.ok) { x.ended_at = new Date().toISOString(); draw(); } } })) : null])); });
+  return [SH('devices', 'الجلسات', [['النشطة', fmtNum(L.filter(function (x) { return !x.ended_at; }).length), 'check-circle'], ['الأخرى النشطة', fmtNum(others.length), 'devices', others.length ? 'warn' : null]], ['جلستك محمية', 'ok']),
+    lvPanel('جلساتك', null, L.length ? [lvFields(rows)] : [DS.note('info', 'جلستك الحالية فقط.', '')]), out];
+}
 const LIVE_PAGES = { client: {},
   admin: { 'cu-docs-pc': admCtPage, 'cu-admx-bd': admBondsPage, 'cu-admx-fee': admGwPage, 'cs-customer': admClientsPage, 'cu-file': admClientsPage, 'cu-pf-file': admClientsPage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admClientsPage, 'cu-list': admClientsPage, 'cs-customers': admClientsPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     ctr: admCtPage, 'cu-docs': admCtPage, 'cu-admx': function () { return admHubPage('إجراءات الإدارة'); }, cu: function () { return admHubPage('قسم العملاء'); }, 'cu-pf': function () { return admHubPage('الملف الشخصي'); } } };
@@ -13647,6 +13724,7 @@ if (LIVE.on) {
     liveHeader();
     if (!ROOT) return;
     if (home && !bad) { livePolish(); return; }
+    if (k === 'req' && !bad) liveReqCancel();
     if (pg) { ROOT.innerHTML = ''; ROOT.appendChild(pg()); return; }
     /* v270: كل صفحة تُرسم بتصميمها؛ لا يُحجب إلا ما يحتاج ربطًا لم يكتمل (كالسداد) أو ما تعذّر رسمه */
     if (hold || bad) { ROOT.innerHTML = ''; ROOT.appendChild(liveHold(hold)); }
