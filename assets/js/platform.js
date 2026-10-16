@@ -13938,7 +13938,7 @@ async function livePayReturn() {
 /* ---------- v273: مركز الدفع للإدارة — روابط الدفع ووسائل الدفع (Paymob) ----------
    روابط الدفع: customers.manage · وسائل الدفع: system.settings — يتحقق الخادم من الصلاحيتين. كل إجراء في سجل التدقيق. */
 const PAYC = { f: { uid: '', pid: '', amount: '', desc: '', name: '', phone: '', email: '', hours: '72' }, made: null, pays: {}, m: { label: '', kind: 'card', iid: '', mode: '' } };
-const PAY_KIND = { card: 'بطاقات (فيزا/ماستركارد)', mada: 'مدى', visa: 'فيزا', mastercard: 'ماستركارد', applepay: 'Apple Pay', stcpay: 'STC Pay', tabby: 'تابي', tamara: 'تمارا', other: 'أخرى' };
+const PAY_KIND = { card: 'بطاقات (فيزا/ماستركارد/مدى)', mada: 'مدى', visa: 'فيزا', mastercard: 'ماستركارد', amex: 'أمريكان إكسبريس', applepay: 'Apple Pay', googlepay: 'Google Pay', stcpay: 'STC Pay', wallet: 'محفظة إلكترونية أخرى', tabby: 'تابي (اشترِ الآن وادفع لاحقًا)', tamara: 'تمارا (اشترِ الآن وادفع لاحقًا)', valu: 'ValU', other: 'أخرى' };
 const PAY_LS = { open: ['مفتوح', 'info'], paid: ['مدفوع', 'ok'], expired: ['منتهٍ', null], cancelled: ['ملغى', 'danger'] };
 async function payCopy(u) { try { await navigator.clipboard.writeText(u); snack('نُسخ الرابط.'); } catch (err) { window.prompt('انسخ الرابط:', u); } }
 function payMethodsPanel(D, refetch) {
@@ -13962,7 +13962,7 @@ function payMethodsPanel(D, refetch) {
       if (!j.ok) { snack(j.message || 'تعذّر الحفظ.'); return; } PAYC.m = { label: '', kind: 'card', iid: '', mode: '' }; snack('أُضيفت الوسيلة.'); refetch(); } }))])]) : null;
   return [DS.panel('وسائل الدفع', 'ما يظهر للدافع في صفحة Paymob — الموقوفة لا تظهر', [
     M.some(function (m) { return m.mode === g.mode; }) ? null : DS.note('warn', 'لا وسائل لوضع ' + (g.mode === 'live' ? 'الحي' : 'الاختبار'), g.env_ids ? 'تُستعمل الأرقام المضبوطة على الخادم احتياطًا إلى أن تضيف الوسائل هنا.' : 'أضف وسيلة واحدة على الأقل ليعمل الدفع.'),
-    DS.note('info', 'إيقاف فيزا أو ماستركارد كلٌّ على حدة', 'يجمع Paymob البطاقات عادةً في وسيلة واحدة. لإيقاف علامة دون أخرى اطلب من دعم Paymob فصلها في وسيلتين، ثم أضف كلًّا منهما هنا بزرها.'),
+    DS.note('info', 'كل وسيلة دفع = رقم مستقل في Paymob', 'البطاقات (فيزا، ماستركارد، أمريكان إكسبريس، مدى) والمحافظ (STC Pay) والدفع السريع (Apple Pay، Google Pay) واشترِ الآن وادفع لاحقًا (تابي، تمارا) — كلٌّ منها يُفعَّل في حساب Paymob برقم (Integration ID)، ثم يُضاف هنا ويُشغَّل أو يوقف بزره. لإيقاف علامة بطاقة دون أخرى اطلب من Paymob فصلها برقم مستقل. الدفع الحضوري (Tap to Pay) يتم من تطبيق Paymob ولا يمر بهذه الصفحة.'),
     admTable(['الوسيلة', 'الرقم', 'الوضع', 'الحالة', ''], rows, M.length, 'لا وسائل مضافة', true)]), add];
 }
 function payLinkForm(D, refetch) {
@@ -14010,6 +14010,30 @@ function payLinksPanel(D, st, paint, refetch) {
   });
   return DS.panel('روابط الدفع', 'آخر 300 رابط', [admTools(st, chips, paint, refetch, 'ابحث برقم الرابط أو الاسم أو الوصف'), admTable(['الرابط', 'الدافع', 'المبلغ', 'الحالة', 'الدفع / الانتهاء', ''], rows, L.length, 'لا روابط بعد', true)]);
 }
+const PAY_RS = { none: null, partial: ['مسترد جزئيًا', 'warn'], full: ['مسترد كاملًا', 'danger'], void: ['ملغاة (Void)', 'danger'] };
+function payTxnsPanel(D, refetch) {
+  const L = D.txns || [], can = D.can.methods && D.gateway.keys;
+  const rows = L.map(function (t) {
+    const child = t.class_label === 'online_refund', left = Math.round(((Number(t.amount) || 0) - (Number(t.refunded_amount) || 0)) * 100) / 100;
+    const kind = child ? (t.status === 'void' ? ['إلغاء', 'danger'] : t.status === 'failed' ? ['فشل الاسترداد', 'danger'] : ['استرداد', 'warn'])
+      : (t.status === 'success' ? ['ناجحة', 'ok'] : t.status === 'pending' ? ['معلّقة', 'warn'] : ['فاشلة', 'danger']);
+    let acts = '—';
+    if (can && !child && t.status === 'success' && left > 0 && ['online', 'online_test'].indexOf(t.class_label) >= 0) {
+      const amt = e('input', { class: 't2-input is-num', inputmode: 'decimal', dir: 'ltr', placeholder: 'كامل ' + left, 'aria-label': 'مبلغ الاسترداد', style: 'max-width:110px' });
+      const run = async function (act) {
+        const j = await clPost('/admin/api/pay/txns/' + t.trx + '/' + act, act === 'refund' && amt.value ? { amount: Number(amt.value) } : {});
+        snack(j.ok ? (j.pending ? j.message : act === 'void' ? 'أُلغيت العملية.' : 'تم الاسترداد.') : (j.message || 'تعذّر التنفيذ.')); if (j.ok) refetch();
+      };
+      acts = e('div', { class: 't2-pb-actions' }, [amt, admTwoStep('استرداد', 'danger', function () { return run('refund'); }), admTwoStep('إلغاء (Void)', null, function () { return run('void'); })]);
+    }
+    return admRow([admName(ltr(String(t.trx)), child ? 'من العملية ' + t.parent_trx : (t.class_label === 'online_test' ? 'اختبار' : 'حي')), admName(t.users ? t.users.full_name : '—', t.client_contracts ? 'عقد ' + (t.client_contracts.contract_no || '—') : null),
+      admMoney(t.amount), DS.badge(kind[0], kind[1]), PAY_RS[t.refund_state] ? DS.badge(PAY_RS[t.refund_state][0], PAY_RS[t.refund_state][1]) : (child ? '—' : 'لا يوجد'),
+      bdiD(String(t.txn_at || t.created_at || '').slice(0, 16).replace('T', ' ')), acts], null, [t.trx, t.users && t.users.full_name, t.parent_trx].join(' '));
+  });
+  return DS.panel('عمليات المنصة الجديدة', 'الدفع والاسترداد والإلغاء — لا تظهر هنا عمليات النظام السابق ولا الموقع الآخر', [
+    can ? DS.note('info', 'الاسترداد والإلغاء', 'الإلغاء (Void) يعمل عادةً قبل التسوية في اليوم نفسه، والاسترداد بعده (كليًا أو جزئيًا). في الوضع الحي تُخفَّض الدفعة في العقد تلقائيًا بالمبلغ المسترد.') : null,
+    admTable(['العملية', 'الدافع', 'المبلغ', 'النوع', 'الاسترداد', 'التاريخ', ''], rows, L.length, 'لا عمليات بعد', true)]);
+}
 function admPayPage() {
   const box = admMount('paycenter', 'مركز الدفع', async function () {
     const D = await clApi('/admin/api/pay/overview');
@@ -14024,7 +14048,7 @@ function admPayPage() {
         ['رابط مدفوع', L.filter(function (x) { return x.status === 'paid'; }).length, 'ok', 'check-circle'], ['وسيلة موقوفة', M.filter(function (m) { return !m.enabled; }).length, '', 'x-circle']]),
       g.keys ? null : DS.note('warn', 'مفاتيح Paymob غير مضافة على الخادم', 'الناقص: ' + g.missing.join('، ') + '. تُضاف في ملف بيئة الخادم، ولا تُكتب هنا ولا في المستودع.'),
       g.keys && g.mode === 'test' ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي، ولا تتغير دفعات العقود. للتحويل إلى الحي تُستبدل المفاتيح على الخادم.') : null,
-      D.can.links ? payLinkForm(D, refetch) : null, D.can.links ? payLinksPanel(D, st, paint, refetch) : null].concat(payMethodsPanel(D, refetch));
+      D.can.links ? payLinkForm(D, refetch) : null, D.can.links ? payLinksPanel(D, st, paint, refetch) : null, payTxnsPanel(D, refetch)].concat(payMethodsPanel(D, refetch));
   });
   return box;
 }
