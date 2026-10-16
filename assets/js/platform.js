@@ -9129,7 +9129,7 @@ function dcPcPage() {
     axKpis([['العقود', fmtNum(L.length), '', 'contract'], ['العملاء', fmtNum(new Set(L.map(function (x) { return x.cid; })).size), '', 'users-three'], ['متأخرة أو متعثرة', fmtNum(L.filter(function (x) { return x.c.k === 'late' || x.c.k === 'def'; }).length), 'danger', 'warning'], ['إجمالي المتبقي', sar(rem(L)), 'warn', 'coins']]),
     e('div', { class: 'm3-tools ax-tools' }, [chipRow([['all', 'الكل', 'list:navy'], ['act', 'منتظمة', 'check-circle:teal'], ['late', 'متأخرة أو متعثرة', 'warning:gold'], ['done', 'مسددة', 'seal-check:teal']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), f, function (v) { ADM.dcPcF = v; draw(); }, 'تصفية العقود'),
       e('div', { class: 'cu-bd-cf' }, [DS.editField('اسم العميل', DS.select({ value: '*', options: [['*', 'كل العملاء']].concat(G.map(function (g) { return [g.cid, g.name]; })), onChange: function (v) { ADM.dcPcC = v === '*' ? '' : v; draw(); } }))])]),
-    cards.length ? e('div', { class: 'cu-cards' }, cards) : e('div', { class: 'tm-empty' }, 'لا عقود هنا')];
+    cards.length ? e('div', { class: 'cu-cards' }, cards) : e('div', { class: 'tm-empty' }, 'لا عقود هنا')].concat(dcPaySecs('', L, ':all'));
 }
 /* رأس العميل بهوية البطاقة: الصورة الرمزية والاسم والرقم ووصف القسم، ثم أزرار الرجوع والإجراء */
 function lvCliHead(cid, name, sub, back, extra) {
@@ -9137,6 +9137,39 @@ function lvCliHead(cid, name, sub, back, extra) {
   return e('section', { class: 'lv-ch' }, [e('div', { class: 'lv-ch-id' }, [e('span', { class: 'cu-av' }, String(name || '؟').slice(0, 1)),
       e('span', { class: 'lv-ch-t' }, [e('b', {}, name || '—'), no ? e('small', { dir: 'ltr' }, no) : null, sub ? e('span', { class: 'lv-ch-s' }, sub) : null])]),
     e('div', { class: 'lv-ch-a' }, [DS.button('كل العملاء', { ui: 'caret-right', size: 'sm', onClick: function () { back(); window.scrollTo(0, 0); draw(); } }), extra || null])]);
+}
+/* الدفعات من عقود مجموعة: القادمة والمتأخرة حسب المدة، وسجل المدفوعات حسب الطريقة (بوابة · تحويل · تسوية) */
+function dcPays(L) {
+  const T = iso(T0), D = function (s) { return Math.round((parseIso(s) - parseIso(T)) / 864e5); }, out = { due: [], rec: [] };
+  L.forEach(function (x) { const c = (x.c && x.c.live) || cByNo(x.c.no); if (!c || !c.payments) return;
+    c.payments.forEach(function (p) {
+      const left = p.deferTo ? 0 : Math.max(0, qr2(p.amount - p.paid)), d = D(iso(p.due));
+      if (left > 0) out.due.push({ x: x, c: c, p: p, left: left, d: d, k: d < 0 ? 'late' : d === 0 ? 'today' : d <= 7 ? 'in7' : d <= 30 ? 'in30' : 'later' });
+      if (p.deferTo) out.rec.push({ x: x, c: c, p: p, amt: p.amount, at: p.at || p.due, k: 'settle', how: p.method === 'توحيد' ? 'توحيد العقود' : 'تأجيل', ref: p.settleNote || ('إلى العقد ' + p.deferTo) });
+      else if (p.paid > 0) { const gw = !!p.gw || p.method === 'سداد إلكتروني'; out.rec.push({ x: x, c: c, p: p, amt: Math.min(p.paid, p.amount), at: p.at || p.due, k: gw ? 'gw' : 'tr', how: gw ? 'بوابة الدفع' : (p.method || 'تحويل بنكي'), ref: gw ? 'رقم العملية ' + ((p.gw && p.gw.txn) || p.txn || '—') : (p.file ? 'إثبات التحويل مرفق' : 'بلا مرفق') }); }
+    }); });
+  out.due.sort(function (a, b) { return a.d - b.d; }); out.rec.sort(function (a, b) { return b.at - a.at; });
+  return out;
+}
+const DC_DUEF = [['late', 'المتأخرة', 'warning:gold'], ['today', 'مستحقة اليوم', 'alarm:saffron'], ['in7', 'خلال 7 أيام', 'calendar-blank:teal'], ['in30', 'خلال 30 يومًا', 'calendar-blank:navy'], ['all', 'كل القادمة', 'list:navy']];
+const dcDueFit = (r, f) => f === 'all' ? true : f === 'late' ? r.k === 'late' : f === 'today' ? r.k === 'today' : f === 'in7' ? (r.k === 'today' || r.k === 'in7') : (r.k === 'today' || r.k === 'in7' || r.k === 'in30');
+const DC_RECF = [['all', 'الكل', 'list:navy'], ['gw', 'بوابة الدفع', 'credit-card:teal'], ['tr', 'تحويل بنكي', 'bank:navy'], ['settle', 'توحيد أو تأجيل', 'stack:gold']];
+function dcPaySecs(cid, L, keyP) {
+  const P = dcPays(L), df = ADM['dcDue' + keyP] || 'late', rf = ADM['dcRec' + keyP] || 'all', multi = !cid;
+  const sumOf = function (A, k) { return qr2(A.reduce(function (a, r) { return a + (r[k] || 0); }, 0)); };
+  const dueRow = function (r) { const s = r.d < 0 ? ['متأخرة ' + dayWord(-r.d), r.d < -30 ? 'danger' : 'warn'] : r.d === 0 ? ['تستحق اليوم', 'warn'] : ['بعد ' + dayWord(r.d), r.d <= 7 ? 'warn' : 'info'];
+    return e('button', { type: 'button', class: 'tm-r' + (r.d < -30 ? ' is-danger' : r.d < 0 ? ' is-warn' : ''), onClick: function () { dcPcOpen(r.x.cid, r.c.no); } }, [e('span', { class: 'tm-no', dir: 'ltr' }, r.c.no),
+      e('span', { class: 'tm-sub' }, (multi ? r.x.name + ' · ' : '') + 'الدفعة ' + r.p.i + ' من ' + r.c.n + ' · ' + iso(r.p.due) + (r.p.paid > 0 ? ' · مدفوعة جزئيًا' : '')), e('span', { class: 'tm-amt' }, sar(r.left)), DS.badge(s[0], s[1]), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); };
+  const recRow = function (r) { return e('button', { type: 'button', class: 'tm-r', onClick: function () { dcPcOpen(r.x.cid, r.c.no); } }, [e('span', { class: 'tm-no', dir: 'ltr' }, r.c.no),
+      e('span', { class: 'tm-sub' }, (multi ? r.x.name + ' · ' : '') + 'الدفعة ' + r.p.i + ' · ' + iso(r.at) + ' · ' + r.ref), e('span', { class: 'tm-amt' }, sar(r.amt)), DS.badge(r.how, r.k === 'gw' ? 'info' : r.k === 'settle' ? 'warn' : 'ok'), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); };
+  const D = P.due.filter(function (r) { return dcDueFit(r, df); }), R = P.rec.filter(function (r) { return rf === 'all' || r.k === rf; });
+  const late = P.due.filter(function (r) { return r.k === 'late'; }), t0 = P.due.filter(function (r) { return r.k === 'today'; }), d7 = P.due.filter(function (r) { return dcDueFit(r, 'in7'); }), d30 = P.due.filter(function (r) { return dcDueFit(r, 'in30'); });
+  return [axKpis([['المتأخر', sar(sumOf(late, 'left')), late.length ? 'danger' : '', 'warning'], ['مستحق اليوم', sar(sumOf(t0, 'left')), t0.length ? 'warn' : '', 'alarm'], ['خلال 7 أيام', sar(sumOf(d7, 'left')), '', 'calendar-blank'], ['خلال 30 يومًا', sar(sumOf(d30, 'left')), '', 'calendar-blank']]),
+    e('div', { class: 'ax-form' }, [
+      formSec('الدفعات المستحقة والقادمة (' + fmtNum(P.due.length) + ')', 'المتأخر ' + sar(sumOf(late, 'left')), [chipRow(DC_DUEF.map(function (x) { return [x[0], x[1], x[2], P.due.filter(function (r) { return dcDueFit(r, x[0]); }).length]; }), df, function (v) { ADM['dcDue' + keyP] = v; draw(); }, 'تصفية الدفعات'),
+        D.length ? e('div', { class: 'tm-rows' }, D.slice(0, 200).map(dueRow)) : LDS.emptyState({ icon: 'calendar-blank', title: 'لا دفعات في هذه المدة', compact: true })], { key: 'dcdue:' + (cid || 'all') }),
+      formSec('سجل المدفوعات (' + fmtNum(P.rec.length) + ')', 'إجمالي المدفوع ' + sar(sumOf(P.rec.filter(function (r) { return r.k !== 'settle'; }), 'amt')), [chipRow(DC_RECF.map(function (x) { return [x[0], x[1], x[2], P.rec.filter(function (r) { return x[0] === 'all' || r.k === x[0]; }).length]; }), rf, function (v) { ADM['dcRec' + keyP] = v; draw(); }, 'تصفية السجل'),
+        R.length ? e('div', { class: 'tm-rows' }, R.slice(0, 300).map(recRow)) : LDS.emptyState({ icon: 'receipt', title: 'لا مدفوعات بهذه الطريقة', compact: true })], { key: 'dcrec:' + (cid || 'all') })])];
 }
 /* ملخص عقود العميل الكامل، وعقوده في أقسام مطوية يفتحها المستخدم ويغلقها */
 function dcPcClient(cid, L) {
@@ -9163,7 +9196,7 @@ function dcPcClient(cid, L) {
       sec('late', 'العقود المتأخرة', late, 'متأخر ' + sar(S(late, 'odAmt'))),
       sec('act', 'العقود المنتظمة', act, 'المتبقي ' + sar(S(act, 'rem'))),
       sec('done', 'العقود المسددة', done, sar(S(done, 'total'))),
-      sec('oth', 'عقود أخرى', L.filter(function (x) { return ['act', 'late', 'def', 'done'].indexOf(x.c.k) < 0; }), null)])];
+      sec('oth', 'عقود أخرى', L.filter(function (x) { return ['act', 'late', 'def', 'done'].indexOf(x.c.k) < 0; }), null)])].concat(dcPaySecs(cid, L, ':' + cid));
 }
 function dcPcOpen(cid, no) {
   const c = axCts(cid).filter(function (x) { return x.no === no; })[0]; if (!c) return; const key = 'dcp:' + no, S = c.from ? null : feeSplitOf(c), q = QUOTES.filter(function (x) { return x.contract === no; })[0];
@@ -14052,6 +14085,8 @@ if (LIVE.on) document.addEventListener('click', function (ev) {
   const b = ev.target && ev.target.closest && ev.target.closest('button, [role=button], a.t2-btn'); if (!b) return;
   if (!b.closest('#pv-root, .cu-dh, .t2-shost, .t2-dpw, .t2-cb, .lv-sheet, .t2-modal')) return;
   if (b.closest('.adm-live, [data-live-ok]') || b.hasAttribute('data-live-ok') || b.hasAttribute('aria-haspopup')) return;
+  /* رؤوس الأقسام المطوية وشرائح التصفية ليست إجراءات */
+  if (b.classList.contains('t2-sec-h') || b.classList.contains('t2-group-h') || b.classList.contains('st-chip')) return;
   const t = (b.innerText || b.getAttribute('aria-label') || '').replace(LIVE_DIA, '').replace(/\s+/g, ' ').trim(); if (!t || LIVE_PASS.test(t) || !LIVE_ACT.test(t)) return;
   ev.preventDefault(); ev.stopImmediatePropagation();
   snack('لم يُنفَّذ شيء — هذا الإجراء يُفعَّل عند ربطه بالخادم.');
