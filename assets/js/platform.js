@@ -2387,7 +2387,7 @@ function paynowPage() {
       part1.push(contractPick('العقد', 'cid', open, 'تظهر دفعته المستحقة.'));
     }
     if (pays[0]) {
-      part1.push(fxReq('كيف تريد السداد؟', 'amtMode', DS.select({ value: FX.amtMode || 'full', options: [['full', 'سداد الدفعة كاملة — ' + SR(total)]].concat(PAY_GO ? [] : [['part', 'سداد جزء من الدفعة']]), onChange: function (v) { FX.amtMode = v; FX.miss = []; draw(); } }), PAY_GO ? 'يُسدَّد المتبقي من الدفعة كاملًا عبر بوابة الدفع.' : 'السداد الجزئي يُسجَّل في العقد، ويبقى الباقي مستحقًا بنفس الموعد.', false));
+      part1.push(fxReq('كيف تريد السداد؟', 'amtMode', DS.select({ value: FX.amtMode || 'full', options: [['full', 'سداد الدفعة كاملة — ' + SR(total)], ['part', 'سداد جزء من الدفعة']], onChange: function (v) { FX.amtMode = v; FX.miss = []; draw(); } }), 'السداد الجزئي يُسجَّل في العقد، ويبقى الباقي مستحقًا بنفس الموعد.', false));
       if (FX.amtMode === 'part') part1.push(fxReq('المبلغ المراد سداده الآن (ريال)', 'part', DS.input({ value: FX.part, numeric: 'decimal', placeholder: 'أقل من ' + SAR(total), onInput: function (v) { FX.part = v; const n0 = Number(v || 0), n = isFinite(n0) && n0 > 0 ? Math.min(n0, total) : 0; document.querySelectorAll('[data-live=left]').forEach(function (x) { x.textContent = SR(Math.max(0, total - n)); }); document.querySelectorAll('[data-live=now]').forEach(function (x) { x.textContent = SR(n); }); document.querySelectorAll('[data-live=nowv]').forEach(function (x) { x.textContent = SAR(n); }); } }), 'من 1 ريال حتى أقل من ' + SR(total) + '.'));
       if (FX.amtMode === 'part') part1.push(e('div', { class: 'fx-split' }, [e('div', { class: 'is-now' }, [e('span', {}, 'ستدفع الآن'), e('b', { 'data-live': 'now' }, SR(payNow))]), e('div', {}, [e('span', {}, 'يتبقى من الدفعة'), e('b', { 'data-live': 'left' }, SR(Math.max(0, total - payNow)))])]));
     }
@@ -2400,7 +2400,7 @@ function paynowPage() {
     part2.push(fxReq('تاريخ التحويل (تاريخ الدفع الفعلي)', 'tdate', datePick({ value: FX.tdate, min: iso(addMonths(T0, -3)), max: iso(T0), onChange: function (v) { FX.tdate = v; } })));
     part2.push(fxReq('رقم العملية / المرجع البنكي', 'ref', DS.input({ value: FX.ref, dir: 'ltr', placeholder: 'كما يظهر في إيصال البنك', onInput: function (v) { FX.ref = v; } })));
     part2.push(e('div', { class: 'fx-calc' }, [e('div', {}, [e('span', {}, 'المبلغ المحوَّل'), e('b', {}, SR(payNow))]), e('div', {}, [e('span', {}, 'حالة الطلب (الإدارة)'), DS.badge('قيد المراجعة بعد الإرسال', 'warn')])]));
-    const inp = e('input', { type: 'file', accept: DOC_ACCEPT, onChange: function (ev) { const f = (ev.target.files || [])[0]; if (!f) return; FX.ferr = !DOC_EXT.test(f.name) ? 'نوع الملف غير مقبول — يُقبل PDF أو صورة.' : f.size > MAX ? 'الحد 2 ميجابايت.' : ''; FX.file = FX.ferr ? null : { name: f.name, size: f.size }; FX.miss = FX.miss.filter(function (x) { return x !== 'file'; }); draw(); } });
+    const inp = e('input', { type: 'file', accept: DOC_ACCEPT, onChange: function (ev) { const f = (ev.target.files || [])[0]; if (!f) return; FX.ferr = !DOC_EXT.test(f.name) ? 'نوع الملف غير مقبول — يُقبل PDF أو صورة.' : f.size > MAX ? 'الحد 2 ميجابايت.' : ''; FX.file = FX.ferr ? null : { name: f.name, size: f.size, obj: f, type: f.type }; FX.miss = FX.miss.filter(function (x) { return x !== 'file'; }); draw(); } });
     part2.push(fxReq('المرفق (إيصال التحويل البنكي)', 'file', FX.file ? DS.fileGrid([DS.fileCard({ name: FX.file.name, note: sizeOf(FX.file.size), status: DS.button('إزالة', { size: 'sm', onClick: function () { FX.file = null; draw(); } }) })]) :
       e('div', { class: 't2-drop' }, [e('span', { class: 't2-drop-ic', 'aria-hidden': 'true' }, frag(ui('upload-simple', 20))), e('span', { class: 't2-drop-b' }, [e('span', { class: 't2-drop-t' }, 'اسحبِ الإيصالَ هنا أو اخترْه'), e('span', { class: 't2-drop-h' }, 'PDF أو صورة · حتى 2 ميجابايت')]), e('span', { class: 't2-drop-btn', 'aria-hidden': 'true' }, 'اختيارُ ملفّ'), inp]), FX.ferr || null, true));
   } else if (isCardEntry()) part2.push(cardFields());
@@ -2410,9 +2410,9 @@ function paynowPage() {
       const m = []; if (FX.mode !== 'bulk' && !pays.length) m.push('cid'); if (FX.mode === 'bulk' && !pays.length) m.push('pick'); if (!FX.mth) m.push('mth');
       if (FX.mode !== 'bulk' && FX.amtMode === 'part') { const v = Number(FX.part); if (!(v > 0) || v >= total) m.push('part'); }
       gwCheck(m);
-      if (PAY_GO) { FX.miss = m; if (m.length) { draw(); return; } PAY_GO(pays, payNow, isBank, partial); return; }
       if (isBank) { if (!FX.acct) m.push('acct'); if (!FX.tdate) m.push('tdate'); if (!String(FX.ref).trim()) m.push('ref'); if (!FX.file) m.push('file'); }
       FX.miss = m; if (m.length) { draw(); const f = document.querySelector('.t2-field.is-missing'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+      if (PAY_GO) { PAY_GO(pays, payNow, isBank, partial); return; }
       if (isBank) runPay(); else { FX.stage = 'auth'; draw(); toTop(); setTimeout(function () { if (FX.stage === 'auth') runPay(); }, 1800); }
   };
   const payBtn = DS.button(isWallet() ? 'ادفع عبر ' + (FX.mth === 'apple' ? 'Apple Pay' : 'Google Pay') : isBank ? 'إرسال إيصال التحويل' : 'تأكيد ودفع', { tone: 'primary', ui: isWallet() ? null : isBank ? 'upload-simple' : 'credit-card', onClick: goConfirm });
@@ -13365,9 +13365,9 @@ function admContractsPage() {
 const ADM_LINKS = [['cu-pf-files', 'ملفات العملاء', 'المسجّلون في المنصة والمرحّلون — الملف الشخصي والمرفقات', 'users:teal'], ['cu-pf-mig', 'توثيق ملف العملاء المرحّلين', 'المنقولون من النظام السابق: الحالة والمرفقات والنواقص', 'arrows-clockwise:teal'],
   ['cu-pf-ver', 'طلبات توثيق الملف', 'الطلبات المرسلة للمراجعة وبنودها', 'seal-check:teal'], ['cs-requests', 'طلبات العملاء', 'الطلبات وعروض الأسعار وحالاتها', 'receipt:saffron'],
   ['cu-pf', 'الملف الشخصي للعملاء', 'ملفات العملاء والمرحّلون وطلبات التوثيق', 'user:teal'], ['cu-admx', 'إجراءات الإدارة', 'السندات وعمليات بوابة الدفع ومركز الدفع', 'briefcase:teal'],
-  ['cu-admx-bd', 'السندات', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'عمليات بوابة الدفع', 'عمليات Paymob وتفاصيلها ومطابقتها', 'receipt:teal'], ['pay-center', 'مركز الدفع', 'روابط الدفع ووسائل الدفع وتشغيلها وإيقافها', 'card:teal']];
+  ['cu-admx-bd', 'السندات', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'عمليات بوابة الدفع', 'عمليات Paymob وتفاصيلها ومطابقتها', 'receipt:teal'], ['cu-admx-tr', 'التحويلات البنكية', 'إيصالات التحويل من العملاء: مراجعة ثم اعتماد أو رفض', 'bank:teal'], ['pay-center', 'مركز الدفع', 'روابط الدفع ووسائل الدفع وتشغيلها وإيقافها', 'card:teal']];
 /* كل محور يعرض أقسامه فقط — العقود في «العقود» وحدها، فلا تكرار بين الأقسام */
-const ADM_HUBS = { cu: ['cu-pf', 'cs-requests', 'cu-admx'], 'cu-pf': ['cu-pf-files', 'cu-pf-mig', 'cu-pf-ver'], 'cu-admx': ['cu-admx-bd', 'cu-admx-fee', 'pay-center'] };
+const ADM_HUBS = { cu: ['cu-pf', 'cs-requests', 'cu-admx'], 'cu-pf': ['cu-pf-files', 'cu-pf-mig', 'cu-pf-ver'], 'cu-admx': ['cu-admx-bd', 'cu-admx-tr', 'cu-admx-fee', 'pay-center'] };
 function admHubPage(title, hub) {
   const keys = ADM_HUBS[hub] || null, L = keys ? keys.map(function (k) { return ADM_LINKS.filter(function (l) { return l[0] === k; })[0]; }).filter(Boolean) : ADM_LINKS.filter(function (l) { return ADM_HUBS.cu.concat(ADM_HUBS['cu-pf'], ADM_HUBS['cu-admx']).indexOf(l[0]) >= 0 && !ADM_HUBS[l[0]]; });
   return DS.panel(title, keys ? null : 'الأقسام المربوطة بالخادم', [e('div', { class: 'adm-hub' }, L.map(function (l) {
@@ -13449,6 +13449,8 @@ async function liveData() {
     jobs.push(liveSb('rpc/my_membership', { body: {} }).then(function (m) { LIVE_DATA.mem = m; }).catch(function () { LIVE_DATA.mem = null; }));
     jobs.push(liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name))&kind=eq.contract&user_id=eq.' + encodeURIComponent(uid) + '&order=order_date.desc')
       .then(function (L) { (L || []).forEach(function (r) { CONTRACTS.push(liveContract(r)); }); }).catch(function () { /* القسم يبقى فارغًا */ }));
+    jobs.push(clApi('/api/account/pay/config').then(livePayCfgApply).catch(function () { /* الدفع غير متاح */ }));
+    jobs.push(liveSb('payment_transfers?select=id,payment_id,amount,status,review_note,transfer_date,created_at&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').then(function (L) { LIVE_DATA.transfers = Array.isArray(L) ? L : []; }).catch(function () { LIVE_DATA.transfers = []; }));
     jobs.push(liveSb('payment_gateway_txns?select=trx,gateway_order,amount,status,txn_at,card_last4,class_label,payment_id,refunded_amount,refund_state,parent_trx,details&user_id=eq.' + encodeURIComponent(uid) + '&order=txn_at.desc.nullslast')
       .then(function (L) { LIVE_DATA.txns = Array.isArray(L) ? L : []; }).catch(function () { LIVE_DATA.txns = []; }));
     LIVE_DATA.blocks = {};
@@ -13467,6 +13469,7 @@ async function liveData() {
   await Promise.all(jobs);
   liveFactorFlags();
   try { liveAttachGw(LIVE_DATA.txns || []); } catch (err) { void err; }
+  try { (LIVE_DATA.transfers || []).forEach(function (t) { CONTRACTS.forEach(function (c) { c.payments.forEach(function (p) { if (p.pid === t.payment_id) { if (t.status === 'submitted' && !p.trPend) p.trPend = { no: 'TR-' + String(t.id).replace(/-/g, '').slice(0, 8).toUpperCase(), amount: Number(t.amount) || 0, at: new Date(t.created_at) }; if (t.status === 'rejected' && !p.trRej) p.trRej = t; } }); }); }); } catch (err) { void err; }
   window.__LIVE_MEM = liveMem();
   try { liveProfileApply(); } catch (err) { void err; }
   liveSecFill();
@@ -13511,7 +13514,7 @@ try {
   LP['me-verify'].run = liveVerifyPage;
   if (LP['sec-twofa']) LP['sec-twofa'].run = liveTotpPage; if (LP['sec-extracode']) LP['sec-extracode'].run = liveRecPage;
   if (LP['sec-password']) LP['sec-password'].run = livePwPage; if (LP['sec-sessions']) LP['sec-sessions'].run = liveSessPage;
-  if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (!LP['pay-center']) lp('pay-center', 'مركز الدفع', 'cu-admx', 'cu-admx-fee', admPayPage); if (!LP['sys-org']) lp('sys-org', 'بيانات المنشأة', 'sys', 'sys', admOrgPage); if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'عمليات بوابة الدفع'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات';
+  if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (LP['cu-admx-tr']) LP['cu-admx-tr'].t = 'التحويلات البنكية'; if (!LP['pay-center']) lp('pay-center', 'مركز الدفع', 'cu-admx', 'cu-admx-fee', admPayPage); if (!LP['sys-org']) lp('sys-org', 'بيانات المنشأة', 'sys', 'sys', admOrgPage); if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'عمليات بوابة الدفع'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات';
   LP['prof-account'].run = function () { const me = LIVE.me || {}; return [PH('idcard', 'بياناتُ الحساب', [['نوع الحساب', LIVE_ROLE_AR[me.user_type] || me.user_type || '—', 'user'], ['الأدوار', LIVE.roles.map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ') || '—', 'shield-check'], ['رقم تيرا', me.tera_id || '—', 'hash']], me.status === 'active' ? ['نشِط', 'ok'] : ['غير مفعّل', 'warn'])].concat(profAccount()); };
   if (LP['my-docs']) LP['my-docs'].run = function () { const up = LVD.filter(function (d) { return d[3]; }).length; return [lvHero({ ic: 'files', eye: 'خدماتي', t: 'مرفقاتي', tiles: [['المرفوعة', fmtNum(up) + ' / ' + fmtNum(LVD.length), 'files'], ['المقبولة', fmtNum(LVD.filter(function (d) { return d[2]; }).length), 'seal-check']] })].concat(liveDocsList()); };
   LP['me-notes'].run = liveNotesPage;
@@ -13749,6 +13752,44 @@ function admGwOpen(t) {
       cuSec('الربط', 'file-text', [DS.fields([['العميل', t.name || '—'], ['العقد', t.client_contracts ? ltr(t.client_contracts.contract_no || '—') : '—'], ['التصنيف', t.class_label || '—'], t.parent_trx ? ['العملية الأصل', ltr(String(t.parent_trx))] : null,
         Number(t.refunded_amount) > 0 ? ['المسترد', admMoney(t.refunded_amount)] : null, t.review_note ? ['ملاحظة', t.review_note] : null].filter(Boolean))]),
       e('small', { class: 'cu-dr-hint' }, 'الاسترداد والتحصيل والاستعلام من «مركز الدفع». البيانات كما وردت من بوابة الدفع.')])] });
+}
+/* ===== التحويلات البنكية (cu-admx-tr): مراجعة إيصالات العملاء ثم الاعتماد أو الرفض ===== */
+const TR_ST = { submitted: ['بانتظار المراجعة', 'warn'], approved: ['معتمد', 'ok'], rejected: ['مرفوض', 'danger'] };
+function admTrPage() {
+  return admMount('tr', 'التحويلات البنكية', async function () {
+    const N = await liveNames(), L = await liveSb('payment_transfers?select=*,client_contracts(contract_no,legacy_no),client_contract_payments(seq,amount,paid_amount)&order=created_at.desc');
+    if (!Array.isArray(L)) throw new Error('لا تملك صلاحية الاطلاع على التحويلات.');
+    return L.map(function (t) { return Object.assign({ name: N[t.user_id] || '—' }, t); });
+  }, function (L, st, paint, refetch) {
+    const by = function (s) { return L.filter(function (t) { return t.status === s; }).length; };
+    if (st.f === 'all' && by('submitted')) st.f = 'submitted';
+    const chips = [['all', 'الكل', L.length], ['submitted', 'بانتظار المراجعة', by('submitted')], ['approved', 'معتمد', by('approved')], ['rejected', 'مرفوض', by('rejected')]];
+    const rows = L.filter(function (t) { return st.f === 'all' || t.status === st.f; }).map(function (t) { const ct = t.client_contracts || {}, pp = t.client_contract_payments || {};
+      return admRow([admName(t.name), ltr(ct.contract_no || ct.legacy_no || '—'), pp.seq ? 'الدفعة ' + pp.seq : '—', admMoney(t.amount), bdiD(String(t.transfer_date || '')), ltr(t.bank_ref || '—'), admB(TR_ST, t.status)], function () { admTrOpen(t, refetch); }, [t.name, ct.contract_no, ct.legacy_no, t.bank_ref].join(' ')); });
+    return [admKpis([['تحويلًا', L.length, '', 'bank'], ['بانتظار المراجعة', by('submitted'), by('submitted') ? 'warn' : '', 'clock'], ['معتمد', by('approved'), 'ok', 'check-circle'], ['مرفوض', by('rejected'), '', 'x-circle']]),
+      DS.panel('التحويلات البنكية', 'إيصالات التحويل التي رفعها العملاء', [admTools(st, chips, paint, refetch, 'ابحث باسم العميل أو رقم العقد أو رقم العملية'), admTable(['العميل', 'العقد', 'الدفعة', 'المبلغ', 'تاريخ التحويل', 'رقم العملية', 'الحالة'], rows, L.length, 'لا تحويلات بهذه الحالة')]),
+      DS.note('info', 'الاعتماد', 'افتح الإيصال وطابقه مع كشف الحساب. الاعتماد يضيف المبلغ إلى الدفعة ويحفظ الإيصال في مرفقات العقد، والرفض يحتاج سببًا يراه العميل.')];
+  });
+}
+function admTrOpen(t, refetch) {
+  const ct = t.client_contracts || {}, pp = t.client_contract_payments || {}, note = e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة (مطلوبة عند الرفض)', 'aria-label': 'ملاحظة القرار' }), out = e('div', { role: 'status' });
+  const act = async function (a) {
+    out.innerHTML = ''; const n = String(note.value || '').trim();
+    if (a === 'reject' && !n) { out.appendChild(DS.note('warn', 'اكتب سبب الرفض', 'يصل السبب للعميل في صفحة الدفعة.')); return; }
+    const r = await clPost('/admin/api/pay/transfers/' + encodeURIComponent(t.id) + '/' + a, { note: n });
+    if (!r || r.ok !== true) { out.appendChild(DS.note('warn', 'لم يُسجَّل القرار', (r && r.message) || '')); return; }
+    out.appendChild(DS.note('ok', a === 'approve' ? 'اعتُمد التحويل' : 'رُفض التحويل', a === 'approve' ? 'أُضيف المبلغ إلى الدفعة وحُفظ الإيصال في مرفقات العقد.' : 'يرى العميل السبب في صفحة الدفعة.'));
+    if (ADMS.tr) ADMS.tr.at = 0; if (ADMS.ct) ADMS.ct.at = 0; setTimeout(function () { admClose(); if (refetch) refetch(); }, 900);
+  };
+  const open = liveOk(DS.button('فتح الإيصال', { size: 'sm', tone: 'primary', ui: 'files', onClick: async function () { const w = window.open('', '_blank'); try { const j = await clApi('/admin/api/pay/transfers/' + encodeURIComponent(t.id) + '/file'); if (w) w.location = j.url; else location.href = j.url; } catch (err) { if (w) w.close(); snack((err && err.message) || 'تعذّر فتح الإيصال.'); } } }));
+  const live = t.status === 'submitted';
+  cuDrawer({ key: 'tr:' + t.id, ic: 'bank:teal', title: 'تحويل بنكي · ' + admMoney(t.amount), sub: (t.name || '') + ' · من القاعدة مباشرة', foot: admFoot(), body: [
+    e('div', { class: 'cu-dr-st' }, [admB(TR_ST, t.status), e('span', { class: 'cu-dr-at' }, ['أُرسل ', bdiD(String(t.created_at || '').slice(0, 10))])]),
+    e('div', { class: 'cu-secs' }, [
+      cuSec('بيانات التحويل', 'bank', [DS.fields([['العميل', t.name || '—'], ['العقد', ltr(ct.contract_no || ct.legacy_no || '—')], ['الدفعة', pp.seq ? 'الدفعة ' + pp.seq + ' · ' + admMoney(pp.amount) + ' · المسدَّد ' + admMoney(pp.paid_amount || 0) : '—'], ['المبلغ المحوَّل', admMoney(t.amount)],
+        ['تاريخ التحويل', bdiD(String(t.transfer_date || ''))], ['رقم العملية البنكي', ltr(t.bank_ref || '—')], ['من حساب', t.from_iban ? ltr(t.from_iban) : '—'], ['إلى حساب', t.to_account || '—'], t.review_note ? ['ملاحظة القرار', t.review_note] : null].filter(Boolean))]),
+      cuSec('الإيصال', 'files', [e('div', { class: 'cu-mgr-docs' }, [e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, 'إيصال التحويل'), e('small', {}, ltr(t.file_name || ''))]), open])]), e('small', { class: 'cu-dr-hint' }, 'يُفتح برابط مؤقت 5 دقائق ويُسجَّل الفتح في سجل التدقيق.')]),
+      live ? cuSec('القرار', 'seal-check', [note, e('div', { class: 't2-pb-actions' }, [admTwoStep('اعتماد التحويل', 'primary', function () { return act('approve'); }), admTwoStep('رفض', 'danger', function () { return act('reject'); })]), e('small', { class: 'cu-dr-hint' }, 'الضغطة الأولى للتأكيد والثانية للتنفيذ.'), out]) : null])] });
 }
 function admGwPage() {
   return admMount('gw', 'عمليات بوابة الدفع', async function () {
@@ -14093,8 +14134,8 @@ function livePayRow(p, cfg) {
 /* ---------- v277: إطار الدفع بتصميم العينة نفسه، وخطوة الدفع عبر Paymob ----------
    المبلغ ووسيلة الدفع والملخص كما في العينة؛ «تأكيد ودفع» يفتح صفحة Paymob الآمنة (بيانات البطاقة لا تمر بالمنصة)،
    والعودة تعرض إيصال العينة نفسه من بيانات الدفعة الحقيقية. التحويل البنكي والسداد الجزئي يُفعَّلان عند ربطهما. */
-async function livePayGo(p) {
-  const j = await clPost('/api/account/pay/' + encodeURIComponent(p.pid), {});
+async function livePayGo(p, amount) {
+  const j = await clPost('/api/account/pay/' + encodeURIComponent(p.pid), amount ? { amount: amount } : {});
   if (!j || !j.ok || !j.url || !/^https:\/\/[a-z0-9.-]*paymob\.com\//i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
   try { sessionStorage.setItem('tera.pay.last', p.pid); } catch (err) { void err; }
   location.href = j.url;
@@ -14111,15 +14152,17 @@ if (LIVE.on) {
       e('span', {}, ['تُدخل بيانات بطاقتك في صفحة Paymob مباشرة، وقد يطلب بنكك رمز تحقق (', ltr('3-D Secure'), ').']), e('small', {}, 'بعد الدفع تعود إلى المنصة تلقائيًا ويظهر إيصال السداد.'), provider(true)]);
   };
   PAY_GO = function (pays, payNow, isBank, partial) {
-    if (isBank || partial) { snack('التحويل البنكي والسداد الجزئي يُفعَّلان قريبًا — اختر الدفع الإلكتروني للمتبقي كاملًا.'); return; }
-    const cfg = LIVE_PAY.cfg;
-    if (cfg && !cfg.enabled) { snack('الدفع الإلكتروني غير مفعّل الآن.'); return; }
+    const cfg = LIVE_PAY.cfg || {};
+    /* المبلغ يُقرأ من الحقل الآن (لا من قيمة الرسم السابق) */
+    if (FX.mode !== 'bulk' && FX.amtMode === 'part') { const v = Math.round(Number(FX.part) * 100) / 100; if (v > 0) { payNow = v; partial = true; } } else { partial = false; }
     const p = pays.filter(function (q) { return q.pid && dueAmt(q) > 0; })[0];
-    if (!p) { snack('لا دفعة مستحقة للسداد الإلكتروني.'); return; }
-    if (p.closed || p.rv !== 'ok') { snack(p.closed ? 'العقد مغلق.' : 'الدفعة قيد المراجعة لدى الإدارة — لا يمكن سدادها إلكترونيًا الآن.'); return; }
+    if (!p) { snack('لا دفعة مستحقة للسداد.'); return; }
+    if (p.closed || p.rv !== 'ok') { snack(p.closed ? 'العقد مغلق.' : 'الدفعة قيد المراجعة لدى الإدارة — لا يمكن سدادها الآن.'); return; }
+    if (isBank) { if (pays.length > 1) { snack('إيصال التحويل يُرسل لدفعة واحدة — اختر الدفعة من تفاصيلها.'); return; } liveTransferGo(p, payNow, partial); return; }
+    if (!cfg.enabled) { snack('الدفع الإلكتروني غير مفعّل الآن.'); return; }
     if (pays.length > 1) snack('تُسدَّد الدفعات واحدة واحدة عبر بوابة الدفع — نبدأ بالدفعة ' + p.i + ' · ' + p.c.no + '.');
     FX.stage = 'auth'; draw(); toTop();
-    livePayGo(p).catch(function (err) { if (err && err.message === 'auth') return; FX.stage = 'form'; draw(); snack((err && err.message) || 'تعذّر بدء الدفع.'); });
+    livePayGo(p, partial ? payNow : null).catch(function (err) { if (err && err.message === 'auth') return; FX.stage = 'form'; draw(); snack((err && err.message) || 'تعذّر بدء الدفع.'); });
   };
   /* العودة من Paymob: إيصال العينة للدفعة نفسها */
   livePayReturn = async function () {
@@ -14144,6 +14187,46 @@ if (LIVE.on) {
       rows: [ok && p.rc ? ['رقم إيصال السداد', ltr(p.rc.no)] : null, ['المرجع', ltr(ref || '—')], ['التاريخ', isoT(t && t.txn_at ? new Date(t.txn_at) : T0)], ['طريقة الدفع', 'الدفع الإلكتروني عبر بوابة الدفع'], ['الحالة', DS.badge(s === 'paid' ? (test ? 'تجريبية' : 'معتمدة') : 'قيد التأكيد', s === 'paid' ? 'ok' : 'warn')]].filter(Boolean),
       pays: s === 'paid' && !test ? [[p, amt]] : [] };
     S.tab = 'paynow';
+  };
+}
+/* التحويل البنكي: رفع الإيصال إلى المخزن برابط موقّع ← تسجيله «بانتظار المراجعة» ← إيصال العيّنة بحالة قيد المراجعة */
+async function liveTransferGo(p, amount, partial) {
+  const f = FX.file && FX.file.obj; if (!f) { snack('أرفق إيصال التحويل.'); return; }
+  FX.stage = 'auth'; draw(); toTop();
+  try {
+    const u = await clPost('/api/account/transfers/upload-url', { type: f.type, size: f.size });
+    if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز رفع الإيصال.');
+    let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
+    let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': f.type, 'x-upsert': 'false' }, body: f }).catch(function () { return null; });
+    if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': f.type, 'x-upsert': 'false' }, body: f }).catch(function () { return null; });
+    if (!put || !put.ok) throw new Error('تعذّر رفع الإيصال إلى المخزن.');
+    const r = await clPost('/api/account/transfers', { payment_id: p.pid, amount: amount, date: FX.tdate, ref: String(FX.ref || '').trim(), from_iban: FX.fromIban || '', path: u.path, name: f.name, mime: f.type, size: f.size });
+    if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر إرسال الإيصال.');
+    const a = acctOf(FX.acct || 'main');
+    p.trPend = { no: r.no, amount: amount, at: new Date() };
+    FX.rcpt = { gw: null, rc: null, pid: p.c.no + ':' + p.i, pending: true, title: 'أُرسل إيصال التحويل', sub: 'حالة الطلب: قيد المراجعة — تُعتمد بعد مطابقة التحويل', amount: amount, cid: p.c.no, req: '',
+      rows: [['رقم الطلب', ltr(r.no)], ['طريقة الدفع', 'تحويل بنكي'], ['تاريخ التحويل', isoT(parseIso(FX.tdate))], ['المبلغ المحوَّل', SR(amount)], ['رقم العملية البنكي', ltr(String(FX.ref || '').trim())], ['الحساب المحوَّل إليه', a ? a[1] + ' · ' + String(a[2]).replace(/\s/g, '').slice(-4) : '—'], ['إيصال التحويل', ltr(f.name)], ['الحالة', DS.badge('قيد المراجعة', 'warn')], ['إيصال السداد', 'يصدر بعد اعتماد التحويل']].concat(partial ? [['المتبقي من الدفعة', SR(Math.max(0, dueAmt(p) - amount))]] : []),
+      pays: [] };
+    FX.stage = 'done'; draw(); toTop();
+  } catch (err) { if (err && err.message === 'auth') return; FX.stage = 'form'; draw(); snack((err && err.message) || 'تعذّر إرسال الإيصال.'); }
+}
+/* إعداد الدفع من الخادم: الدفع الإلكتروني، والتحويل البنكي بحساب الشركة الحقيقي */
+function livePayCfgApply(cfg) {
+  LIVE_PAY.cfg = cfg || {};
+  try {
+    if (cfg && cfg.transfer && cfg.bank && !PAY_M_.some(function (m) { return m[0] === 'bank'; })) PAY_M_.push(['bank', 'تحويل بنكي', null]);
+    if (cfg && cfg.bank) ACCTS.splice(0, ACCTS.length, ['main', cfg.bank.name || 'الحساب البنكي', String(cfg.bank.iban).replace(/(.{4})(?=.)/g, '$1 ')]);
+  } catch (err) { void err; }
+}
+if (LIVE.on) {
+  bankInfo = function (k) {
+    const a = acctOf(k); if (!a) return DS.note('info', 'حساب الشركة البنكي يُضاف من إعدادات المنشأة', '');
+    const holder = (LIVE_PAY.cfg && LIVE_PAY.cfg.bank && LIVE_PAY.cfg.bank.holder) || 'منصة تيرا للخدمات المتكاملة';
+    const copy = liveOk(e('button', { type: 'button', class: 'fx-copy', onClick: function () { try { navigator.clipboard.writeText(a[2].replace(/\s/g, '')); copy.textContent = 'نُسخ'; } catch (err) { void err; } } }, 'نسخ الآيبان'));
+    return e('div', { class: 'fx-bankinfo' }, [e('div', { class: 'fx-bankinfo-h' }, [frag(ui('bank', 18)), e('b', {}, 'حوّل إلى: ' + a[1])]),
+      e('div', { class: 'fx-bankinfo-r' }, [e('span', {}, 'اسم المستفيد'), e('b', {}, holder)]),
+      e('div', { class: 'fx-bankinfo-r' }, [e('span', {}, 'رقم الحساب (الآيبان)'), e('b', { dir: 'ltr' }, a[2]), copy]),
+      e('p', {}, 'بعد التحويل أرفق الإيصال هنا، وتُعتمد الدفعة بعد مطابقة الإدارة.')]);
   };
 }
 /* إعداد الدفع وبطاقات العميل واشتراكاته تحت إطار الدفع */
@@ -14433,6 +14516,18 @@ function admTitlesPage() {
     return [DS.panel('المسمّيات الوظيفية', fmtNum(L.length) + ' مسمّى في ' + fmtNum(cats.length) + ' تصنيفات', [admTools(st, chips, paint, refetch, 'ابحث بالمسمّى'), admTable(['المسمّى', 'التصنيف', 'الحالة'], rows, L.length, 'لا مسمّيات', true)])];
   });
 }
+/* حساب الشركة البنكي — يظهر للعميل في خطوة التحويل البنكي (صلاحية إعدادات النظام) */
+function admBankForm(o) {
+  const bank = e('input', { class: 't2-input', type: 'text', value: o.bank_name || '', placeholder: 'مثال: مصرف الراجحي', 'aria-label': 'اسم البنك' });
+  const iban = e('input', { class: 't2-input', type: 'text', dir: 'ltr', value: o.bank_iban || '', placeholder: 'SA00 0000 0000 0000 0000 0000', 'aria-label': 'رقم الآيبان' }), out = e('div', { role: 'status' });
+  const save = admTwoStep('حفظ الحساب البنكي', 'primary', async function () {
+    out.innerHTML = ''; const r = await clPost('/admin/api/org/bank', { bank: bank.value, iban: iban.value });
+    if (!r || r.ok !== true) { out.appendChild(DS.note('warn', 'لم يُحفظ', (r && r.message) || '')); return; }
+    out.appendChild(DS.note('ok', 'حُفظ الحساب البنكي', 'يظهر الآن للعملاء في خطوة التحويل البنكي.')); if (ADMS.org) ADMS.org.at = 0;
+  });
+  return e('div', { class: 'adm-live' }, [DS.panel('حساب الشركة للتحويلات البنكية', o.bank_iban ? 'مُضاف' : 'غير مُضاف', [DS.note(o.bank_iban ? 'info' : 'warn', o.bank_iban ? 'يظهر هذا الحساب للعملاء عند اختيار التحويل البنكي' : 'التحويل البنكي لا يظهر للعملاء حتى يُضاف حساب الشركة', ''),
+    DS.editField('اسم البنك', bank), DS.editField('رقم الآيبان', iban), e('div', { class: 't2-pb-actions' }, [save]), out])]);
+}
 function admOrgPage() {
   return admMount('org', 'بيانات المنشأة', async function () {
     const L = await liveSb('org_settings?select=*&limit=1'); if (!Array.isArray(L) || !L[0]) throw new Error('لا بيانات منشأة.'); return L[0];
@@ -14442,7 +14537,7 @@ function admOrgPage() {
       cuSec('الهوية النظامية', 'buildings', [DS.fields([['الاسم النظامي', v(o.legal_name)], ['الاسم التجاري', v(o.brand_name)], ['الكيان', v(o.legal_entity || o.org_kind)], ['السجل التجاري', L(o.cr_number)], ['الرقم الموحّد', L(o.unified_number || o.national_unified_number)], ['الرقم الضريبي', L(o.vat_number)], ['النشاط الرئيسي', v(o.main_activity)]])]),
       cuSec('العنوان والتواصل', 'map-pin', [DS.fields([['المدينة', v(o.city)], ['الحي', v(o.district)], ['الشارع', v(o.street || o.address_line)], ['الرمز البريدي', L(o.postal_code)], ['الهاتف', L(o.phone || o.mobile)], ['واتساب', L(o.whatsapp)], ['البريد', L(o.email)], ['الموقع', L(o.website)]])]),
       cuSec('الحساب البنكي والتوقيع', 'bank', [DS.fields([['البنك', v(o.bank_name)], ['الآيبان', o.bank_iban ? ltr('•••• ' + String(o.bank_iban).replace(/\s+/g, '').slice(-4)) : '—'], ['المفوّض بالتوقيع', v(o.signatory_name)], ['صفته', v(o.signatory_title)]])]),
-      e('small', { class: 'cu-dr-hint' }, ['آخر تحديث ', o.updated_at ? bdiD(String(o.updated_at).slice(0, 10)) : '—', ' — التعديل يُفعَّل مع صلاحية إعدادات المنشأة.'])])])];
+      e('small', { class: 'cu-dr-hint' }, ['آخر تحديث ', o.updated_at ? bdiD(String(o.updated_at).slice(0, 10)) : '—', ' — التعديل يُفعَّل مع صلاحية إعدادات المنشأة.'])])]), admBankForm(o)];
   });
 }
 function admPayPage() {
@@ -14474,7 +14569,7 @@ function admPayPage() {
 }
 const LIVE_PAGES = { client: {},
   admin: { 'pay-center': admPayPage, 'cu-docs-pc': admCtPage, 'cu-admx-bd': admBondsPage, 'cu-admx-fee': admGwPage, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
-    ctr: admCtPage, 'cu-docs': admCtPage, sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
+    ctr: admCtPage, 'cu-docs': admCtPage, 'cu-admx-tr': admTrPage, sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
     'sys-pay': function () { (ADMS.paycenter || (ADMS.paycenter = { q: '', f: 'all', data: null, at: 0 })).tab = 'svc'; return admPayPage(); }, 'cu-admx': function () { return admHubPage('إجراءات الإدارة', 'cu-admx'); }, cu: function () { return admHubPage('قسم العملاء', 'cu'); }, 'cu-pf': function () { return admHubPage('الملف الشخصي للعملاء', 'cu-pf'); } } };
 if (LIVE.on) {
   const draw0 = draw, setRole0 = setRole, overlay0 = showOverlay;
@@ -14494,6 +14589,7 @@ if (LIVE.on) {
     if (k === 'req' && !bad) liveReqCancel();
     if (S.tab === 'contract' && !bad) liveClientCtFiles();
     if (S.tab === 'paynow' && !bad && !pg) livePayNowExtras();
+    if (S.tab === 'payment' && !bad && !pg) { const pp = payById(FX.pid); if (pp && (pp.trPend || pp.trRej)) ROOT.insertBefore(pp.trPend ? DS.note('warn', 'إيصال تحويل بانتظار المراجعة', ['الطلب ', ltr(pp.trPend.no), ' — ', SR(pp.trPend.amount), '. تُعتمد الدفعة بعد مطابقة التحويل، ويصدر إيصال السداد.']) : DS.note('danger', 'رُفض إيصال التحويل السابق', (pp.trRej.review_note || '') + ' — يمكنك إرسال إيصال جديد.'), ROOT.firstChild); }
     if (S.tab === 'pay' && LIVE_PAY.ret && !bad) { const r = LIVE_PAY.ret; LIVE_PAY.ret = null; ROOT.insertBefore(DS.note(r[0], r[1], r[2]), ROOT.firstChild); }
     if (pg) { ROOT.innerHTML = ''; ROOT.appendChild(pg()); return; }
     /* v270: كل صفحة تُرسم بتصميمها؛ لا يُحجب إلا ما يحتاج ربطًا لم يكتمل (كالسداد) أو ما تعذّر رسمه */
