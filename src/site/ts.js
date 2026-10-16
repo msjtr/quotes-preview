@@ -63,7 +63,7 @@
   function sidePeek(on) { SIDE_APP.classList.toggle('is-side-peek', !!on && sideMin()); tipHide(); }
   function sideSet(open) { SIDE_APP.classList.toggle('is-side-min', !open); SIDE_APP.classList.remove('is-side-peek');
     if (SIDE_BTN) { SIDE_BTN.setAttribute('aria-expanded', String(open)); var l = $('.t2-side-tl', SIDE_BTN); if (l) l.textContent = open ? 'طيّ القائمة' : 'توسيع القائمة'; SIDE_BTN.dataset.tip = open ? 'طيّ القائمة' : 'توسيع القائمة'; }
-    try { localStorage.setItem('tera-side', open ? 'open' : 'min'); } catch (e) {} }
+    try { localStorage.removeItem('tera-side'); } catch (e) {} }
   if (SIDE_BTN) { sideSet(!sideMin()); SIDE_BTN.addEventListener('click', function () { sideSet(sideMin()); }); }
   function groupOpen(g, open) { var b = $('.t2-side-gb', g), h = $('.t2-side-gh', g); if (!b || !h) return; b.hidden = !open; h.setAttribute('aria-expanded', String(open)); g.classList.toggle('is-open', open); }
   $$('.t2-side-g').forEach(function (g) {
@@ -373,14 +373,18 @@
   (function () {
     var side = $('.t2-side'), nav = $('.t2-side-n'); if (!side || !nav || $('.tq-rail', side)) return;
     var tr = document.createElement('i'), th = document.createElement('b'); tr.className = 'tq-rail'; tr.setAttribute('aria-hidden', 'true'); tr.appendChild(th); side.appendChild(tr);
+    /* بلا MutationObserver: كان يراقب الشريط وهو يغيّره فيدخل في حلقة لا تنتهي (v263) */
+    var last = '';
     function upd() {
-      var sh = nav.scrollHeight, ch = nav.clientHeight, overlay = nav.offsetWidth === nav.clientWidth;
-      tr.hidden = !(overlay && sh > ch + 2); if (tr.hidden) return;
-      tr.style.top = nav.offsetTop + 'px'; tr.style.height = ch + 'px';
-      var h = Math.max(28, ch * ch / sh); th.style.height = h + 'px'; th.style.transform = 'translateY(' + Math.round((ch - h) * nav.scrollTop / (sh - ch)) + 'px)';
+      var sh = nav.scrollHeight, ch = nav.clientHeight, overlay = nav.offsetWidth === nav.clientWidth, on = overlay && sh > ch + 2;
+      if (tr.hidden === on) tr.hidden = !on; if (!on) return;
+      var h = Math.max(28, ch * ch / sh), key = nav.offsetTop + '|' + ch + '|' + Math.round(h) + '|' + Math.round((ch - h) * nav.scrollTop / (sh - ch));
+      if (key === last) return; last = key; var k = key.split('|');
+      tr.style.top = k[0] + 'px'; tr.style.height = k[1] + 'px'; th.style.height = k[2] + 'px'; th.style.transform = 'translateY(' + k[3] + 'px)';
     }
     nav.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd);
-    try { new MutationObserver(upd).observe(side, { subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] }); } catch (e) {}
+    try { new ResizeObserver(upd).observe(nav); } catch (e) {}
+    side.addEventListener('click', function () { setTimeout(upd, 320); });
     setTimeout(upd, 300); upd();
   })();
 

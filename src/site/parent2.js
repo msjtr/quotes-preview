@@ -123,7 +123,7 @@
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">'+
       '<style>'+C.css+'</style><script>window.__PATH='+js(r.path)+';window.__HASH='+js(r.hash)+';window.__FOCUS='+js(r.focus)+';window.__GROUP='+js(pg.g||'')+';window.__DARK='+d+';window.__ICON='+js(C.icons)+';window.__FIND='+js(C.find)+';window.__OPT='+js(C.opt)+';<\/script></head><body>';
     var shell=C.shell.replace('@@ROOT@@',function(){return pg.h});
-    var sideOpen=false; try{ sideOpen=localStorage.getItem('tera-side')==='open' }catch(e){}
+    var sideOpen=false; /* القائمة تبدأ مغلقة دائمًا، والمستخدم يفتحها */
     var cls='t2 t2-app is-guest'+(sideOpen?'':' is-side-min')+(d?' is-dark':'');
     shell=shell.replace('class="t2 t2-app is-guest is-side-min"',function(){return 'class="'+cls+'"'});
     return head+(opening?C.opening:'')+shell+'<script>'+esc(C.run)+'<\/script><script>try{parent.postMessage({tera:"ready"},"*")}catch(e){}<\/script></body></html>';

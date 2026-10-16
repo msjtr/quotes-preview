@@ -1243,3 +1243,6 @@ html.is-login .t2-head .t2-hbtn.is-in{display:none!important}
 .t2 .t2-side .tq-rail[hidden]{display:none}
 .t2 .t2-side .tq-rail b{display:block;width:100%;border-radius:4px;background:linear-gradient(180deg,#19C2AE,#FFC861);transition:transform .08s linear}
 .t2.is-dark .t2-side .tq-rail{background:rgba(255,255,255,.07)}
+
+/* v264: على الجوال (≤64rem) يبقى المسار الجانبي مخفيًا ويحل محله الشريط السفلي — كما كان قبل v262 */
+@media (max-width:64rem){.t2.t2-app>.t2-side{display:none!important}}
