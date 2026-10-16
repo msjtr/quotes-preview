@@ -4827,7 +4827,7 @@ function moreIndex(dark, row) {
     { ic: 'dash', t: 'لوحتي الرئيسية', d: 'ملخص عقودك ومدفوعاتك وطلباتك', go: function () { go('dash'); } },
     { ic: 'profile', t: 'ملفي الشخصي', d: 'بياناتك ومستنداتك وطلبات التحديث', n: 'اكتمال الملف ⁦' + fmtNum(lvProfPct()) + '%⁩', go: function () { go('other', 'profile'); } },
     { ic: 'shield', t: 'مركزُ الأمان', d: 'الدخول والتحقق والأجهزة والجلسات', n: f === 3 ? 'محمي بالكامل' : null, badge: f === 3 ? null : [f ? fmtNum(f) + ' من 3 عوامل تحقّق' : 'لا عامل تحقّق مُفعّل', 'warn'], go: function () { go('other', 'shield'); } },
-    { ic: 'store', t: 'المتجر', d: 'سوق الأجهزة والحلول الرقمية وطلبات متجري', n: window.__LIVE_ACT ? 'يُفتح قريبًا' : nP(ALLP.length), go: function () { go('other', 'store'); } },
+    { ic: 'store', t: 'المتجر', d: 'سوق الأجهزة والحلول الرقمية وطلبات متجري', n: nP(ALLP.length), go: function () { go('other', 'store'); } },
     { ic: 'services', t: 'خدماتي', d: 'عقودي ومدفوعاتي وطلبات خدماتي والشركاء', n: fmtNum(CONTRACTS.length) + ' عقود', go: function () { go('svc'); } },
     { ic: 'picks', t: 'مختاراتي', d: 'سلتي ومفضلتي', n: cartN() ? 'في السلة ' + nP(cartN()) : 'السلة فارغة', go: function () { go('other', 'my-picks'); } },
     { ic: 'mail', t: 'التواصل', d: 'مركز المراسلات ومركز الإشعارات', badge: unread ? [unread === 1 ? 'رد جديد واحد' : fmtNum(unread) + ' ردود جديدة', 'warn'] : null, go: function () { go('other', 'contact'); } },
@@ -13595,7 +13595,7 @@ function liveFieldTuple(f) { const v = clVal(f); return [f.key, f.label || f.key
 function liveProfileApply() {
   const B = LIVE_DATA.blocks || {};
   LIVE_BLK.forEach(function (k) {
-    const d = B[k]; if (!d || !Array.isArray(d.fields) || !LVP[k]) return;
+    const d = B[k]; if (!LVP[k]) return; if (!d || !Array.isArray(d.fields)) { LVP[k].groups = []; return; } /* لا قيم من العيّنة إن لم يُرجع الخادم القسم */
     const fs = d.fields.filter(function (f) { return f && f.active !== false && f.kind !== 'file'; }), G = {}, order = [];
     fs.forEach(function (f) { const s = f.section || LVP[k].t; if (!G[s]) { G[s] = []; order.push(s); } G[s].push(liveFieldTuple(f)); });
     LVP[k].groups = order.map(function (s) { return [s, G[s]]; });
@@ -13927,7 +13927,7 @@ if (LIVE.on) secDevices = function () {
 /* ===== الصفحات المحجوبة مؤقتًا — لكل مجموعة سببها ===== */
 (function () {
   const H = function (role, keys, t, b) { keys.forEach(function (k) { LIVE_HOLD[role][k] = [t, b]; }); };
-  H('client', ['store', 'devices', 'digital', 'pr-dept', 'pr-item', 'pr-cmp', 'picks', 'pr-fav', 'my-picks', 'checkout', 'my-orders', 'st-orders'], 'المتجر يُفتح قريبًا', 'تُعرض المنتجات وطلبات المتجر ومدفوعاتها هنا عند ربط الكتالوج والطلبات بالخادم.');
+  /* v281: المتجر مفعّل — الكتالوج والطلبات والدفع من الخادم */
   H('client', ['quote'], 'لا عرض سعر لعرضه', 'تصلك عروض الأسعار في «طلبات خدماتي» عند إصدارها.');
   H('client', ['merge', 'settle', 'defer'], 'هذه الطلبات تُفعَّل قريبًا', 'طلبات سداد العقد كاملًا وتأجيل الدفعة وتوحيد العقود تُرسل من هنا عند ربطها بالخادم.');
   H('admin', ['sys-team', 'sys-staff', 'sys-acct'], 'حسابات الفريق في قسم الموظفين', 'يُبنى قسم الموظفين في المرحلة التالية، وتُعرض الحسابات هنا من الخادم.');
@@ -14702,6 +14702,179 @@ function admPayPage() {
   });
   return box;
 }
+/* ---------- v281: المتجر الحقيقي — الطلب من السلة، والدفع عبر Paymob أو التحويل البنكي، ومسار التنفيذ لدى الموظف ----------
+   الأسعار يحسبها الخادم من كتالوج المتجر (لا يُقبل سعر من المتصفح). العميل يرى طلباته، والموظف يرى كل الطلبات ويحرّكها في مسارها. */
+const LIVE_SO = { mine: [], all: [], N: {}, role: '', q: null, cart: null, busy: false };
+const LIVE_SO_RECV = { ship: 'الشحن إلى عنواني', pickup: 'الاستلام من مقر المنصة', digital: 'تسليم إلكتروني' };
+const LIVE_SO_STEP = { preparing: 1, shipped: 2, transit: 3, delivered: 4 };
+function liveSoPay(r) {
+  const paid = r.pay_status === 'paid';
+  if (r.pay_method === 'bank') return paid ? 'تحويل بنكي' : 'تحويل بنكي — بانتظار وصول التحويل';
+  if (r.pay_method === 'paymob') return paid ? 'سداد إلكتروني' : 'سداد إلكتروني — بانتظار الدفع';
+  return '—';
+}
+function liveSoPush(r, N) {
+  const D = function (v) { const d = v ? new Date(v) : null; return d && !isNaN(d) ? d : T0; };
+  const at = iso(D(r.created_at)), who = N ? (N[r.user_id] || 'العميل') : ME.name;
+  const st = r.status === 'cancel' ? 'cancel' : (r.status === 'refund' || r.pay_status === 'refunded') ? 'refund' : r.status === 'quote' ? 'quote' : r.status === 'offer' ? 'offer' : r.status === 'new' ? 'new' : 'done';
+  const M = {}, K = [];
+  const XL = [];
+  (r.items || []).forEach(function (i) { if (i && (i.sku === '_x' || i.sku === '_d')) { XL.push([i.t || (i.sku === '_d' ? 'الخصم' : 'بند'), Number(i.total) || 0]); return; } if (!i || !prodOf(i.sku)) return; if (!M[i.sku]) { M[i.sku] = { q: 0, t: 0 }; K.push(i.sku); } M[i.sku].q += Number(i.q) || 1; M[i.sku].t += Number(i.total) || 0; });
+  if (!K.length) return;
+  const o = { no: r.order_no, at: at, st: st, pay: liveSoPay(r), items: K.map(function (k) { return [k, M[k].q]; }), recv: LIVE_SO_RECV[r.recv] || '—', live: r, why: r.reason || '', custN: who, uid: r.user_id,
+    log: (r.log || []).map(function (x) { return [D(x.at), x.t || '', x.by && x.by === r.user_id ? who : x.by ? 'فريق تيرا' : 'النظام']; }) };
+  if (r.kind === 'buy' || r.status === 'offer' || Number(r.total) > 0) {
+    o.qt = { p: {}, live: true };
+    K.forEach(function (k) { o.qt.p[k] = M[k].q ? Math.round(M[k].t / M[k].q * 100) / 100 : 0; });
+    if (XL.length) o.qt.x = XL;
+    if (r.status === 'offer') { o.qt.until = r.offer_until || iso(addDays(D(r.updated_at), 7)); o.qt.no = r.order_no; o.qt.at = iso(D(r.updated_at)); }
+  }
+  SO_PAY.push(o);
+  if (r.kind !== 'buy' || st === 'cancel' || st === 'refund') return;
+  const phys = K.filter(function (k) { return !isDg(k); }), dg = K.filter(function (k) { return isDg(k); });
+  if (phys.length && r.recv !== 'digital') {
+    const steps = [at, '', '', '', '']; (r.log || []).forEach(function (x) { const i = LIVE_SO_STEP[x.to]; if (i) steps[i] = iso(D(x.at)); });
+    const sh = r.ship || {};
+    SO_SHIP.push({ no: r.order_no, carrier: sh.carrier || (r.recv === 'pickup' ? 'استلام من مقر المنصة' : 'تُحدَّد عند الشحن'), trk: sh.tracking || '', st: LIVE_SO_STEP[r.status] || 0, steps: steps, eta: sh.eta || '', ord: o });
+  }
+  dg.forEach(function (k) { SO_DIG.push({ no: r.order_no, sku: k, st: r.status === 'delivered' ? 3 : ['preparing', 'shipped', 'transit'].indexOf(r.status) >= 0 ? 1 : 0, at: at, ord: o }); });
+}
+function liveSoSync(force) {
+  if (!LIVE.me || (!force && LIVE_SO.role === S.role)) return;
+  LIVE_SO.role = S.role;
+  const adm = S.role === 'admin';
+  [SO_PAY, SO_SHIP, SO_DIG].forEach(function (a) { a.length = 0; });
+  (adm ? LIVE_SO.all : LIVE_SO.mine).forEach(function (r) { try { liveSoPush(r, adm ? LIVE_SO.N : null); } catch (err) { void err; } });
+}
+async function liveSoLoad() {
+  const uid = LIVE.me.id, jobs = [];
+  if (LIVE.allow.indexOf('client') >= 0) jobs.push(liveSb('store_orders?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc&limit=200').then(function (L) { LIVE_SO.mine = Array.isArray(L) ? L : []; }).catch(function () { LIVE_SO.mine = []; }));
+  if (LIVE.allow.indexOf('admin') >= 0) jobs.push(liveSb('store_orders?select=*&order=created_at.desc&limit=500').then(async function (L) { LIVE_SO.all = Array.isArray(L) ? L : []; if (LIVE_SO.all.length) LIVE_SO.N = await liveNames().catch(function () { return {}; }); }).catch(function () { LIVE_SO.all = []; }));
+  await Promise.all(jobs);
+  liveSoSync(true);
+}
+/* نص بديل داخل عنصر مرسوم (لتصويب عبارات المعاينة في اللوحات المشتركة) */
+function liveTxt(root, from, to) {
+  if (!root) return; const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { if (n.nodeValue.indexOf(from) >= 0) n.nodeValue = n.nodeValue.split(from).join(to); }
+}
+async function liveSoGoPay(id, accept) {
+  const j = await clPost('/api/store/orders/' + encodeURIComponent(id) + '/' + (accept ? 'accept' : 'pay'), {});
+  if (j && j.ok && j.pay_url) { location.href = j.pay_url; return; }
+  snack((j && j.message) || 'تعذّر بدء الدفع.');
+  await liveSoLoad().catch(function () { /* */ }); draw();
+}
+function liveBankBox(total, no) {
+  const b = LIVE_PAY.cfg && LIVE_PAY.cfg.bank;
+  if (!b) return DS.note('info', 'الدفع بالتحويل البنكي', 'يتواصل معك فريقنا ببيانات الحساب البنكي للشركة لإتمام التحويل، ثم نؤكد طلبك.');
+  return DS.note('info', 'حوّل ' + sar(total) + ' إلى حساب الشركة', [e('span', { class: 'lv-two' }, [e('b', {}, b.name || 'الحساب البنكي'), e('bdi', { dir: 'ltr' }, String(b.iban).replace(/(.{4})(?=.)/g, '$1 ')), b.holder ? e('small', {}, b.holder) : null]),
+    e('small', {}, ['اذكر رقم الطلب ', e('bdi', { dir: 'ltr' }, no), ' في وصف التحويل. يؤكد فريقنا الطلب بعد وصول التحويل.'])]);
+}
+async function liveSoSubmit() {
+  const Q = LIVE_SO.q, K = FX.ck || {}; LIVE_SO.q = null; if (!Q) return;
+  const a = (LIVE_DATA.blocks && LIVE_DATA.blocks.address) ? profAddr() : {}, pay = K.pay === 'bank' ? 'bank' : 'paymob';
+  let j = null;
+  try { j = await clPost('/api/store/orders', { buy: Q.buy, ask: Q.ask, recv: K.recv || 'ship', pay: pay, note: K.note || '', address: { city: a.city || '', dist: a.dist || '', street: a.street || '', text: [a.region, a.city, a.dist, a.street, a.bno, a.zip].filter(Boolean).join('، ') } }); }
+  catch (err) { j = { ok: false, message: 'تعذّر الاتصال بالخادم.' }; }
+  LIVE_SO.busy = false;
+  if (!j || !j.ok) {
+    CART.splice.apply(CART, [0, CART.length].concat(LIVE_SO.cart || [])); cartSave(); FX.ckDone = null; LIVE_SO.cart = null;
+    draw(); snack((j && j.message) || 'تعذّر إرسال الطلب — سلتك كما هي.'); return;
+  }
+  LIVE_SO.cart = null;
+  FX.ckDone = { order: j.order || '', quote: j.quote || '', pay_url: j.pay_url || '', pay: pay, total: Number(j.total) || 0, live: true };
+  await liveSoLoad().catch(function () { /* */ });
+  draw();
+}
+if (LIVE.on) {
+  /* السلة ← الخادم: soAdd يجمع بنود الطلب، ثم يُرسلها مرة واحدة بعد أن تُكمل صفحة الإتمام عملها */
+  soAdd = function (st, payT, L) {
+    if (!LIVE_SO.q) { LIVE_SO.q = { buy: [], ask: [] }; LIVE_SO.cart = CART.map(function (l) { return { sku: l.sku, o: Object.assign({}, l.o), q: l.q }; }); LIVE_SO.busy = true; setTimeout(liveSoSubmit, 0); }
+    (st === 'quote' ? LIVE_SO.q.ask : LIVE_SO.q.buy).push.apply(st === 'quote' ? LIVE_SO.q.ask : LIVE_SO.q.buy, L.map(function (l) { return { sku: l.sku, o: Object.assign({}, l.o), q: Number(l.q) || 1 }; }));
+    return '…';
+  };
+  soAccept = function (o) { if (!o || !o.live) return; liveSoGoPay(o.live.id, true); };
+  const soRc0 = soReceipt;
+  soReceipt = function (o) {
+    soRc0(o);
+    if (!o || !o.live) return;
+    const all = document.querySelectorAll('.st-modal'), sh = all[all.length - 1]; if (!sh) return;
+    sh.setAttribute('data-live-ok', '');
+    sh.querySelectorAll('.sorc-dl > div').forEach(function (d) { const t = d.querySelector('dt'), v = d.querySelector('dd'); if (t && v && t.textContent === 'العميل') v.textContent = o.custN || ME.name; });
+    const r = o.live, box = sh.querySelector('.sorc'); if (!box) return;
+    const add = [];
+    if (S.role !== 'admin' && r.kind === 'buy' && r.status === 'new' && r.pay_status === 'unpaid') {
+      if (r.pay_method === 'bank') add.push(liveBankBox(Number(r.total) || 0, r.order_no));
+      else add.push(e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('ادفع الآن · ' + sar(Number(r.total) || 0), { tone: 'primary', ui: 'credit-card', onClick: function () { liveSoGoPay(r.id, false); } }))]));
+    }
+    if (o.log.length) add.push(e('ol', { class: 'cu-log' }, o.log.slice().reverse().map(function (x) { return e('li', {}, [e('b', {}, x[1]), e('small', {}, [x[2], ' · ', bdiD(iso(x[0]))])]); })));
+    add.forEach(function (n) { box.appendChild(n); });
+    if (o.st !== 'done') sh.querySelectorAll('button').forEach(function (x) { if (/الفاتورة الضريبية/.test(x.innerText || '')) x.remove(); });
+  };
+  /* إجراءات الموظف على طلبات المتجر الحقيقية — تُنفَّذ في الخادم ثم يُعاد تحميل الطلبات */
+  const liveSoAct = async function (o, act, data) {
+    const j = await clPost('/admin/api/store/orders/' + encodeURIComponent(o.live.id) + '/' + act, data || {});
+    if (!j || !j.ok) snack((j && j.message) || 'تعذّر تنفيذ الإجراء.'); else snack('حُفظ في الخادم — ' + o.no);
+    await liveSoLoad().catch(function () { /* */ }); draw();
+  };
+  const cuOC0 = cuOrdConfirm, cuOX0 = cuOrdCancel, cuSN0 = cuShipNext, cuLO0 = cuLogO;
+  cuOrdConfirm = function (o) { if (!o || !o.live) return cuOC0(o); liveSoAct(o, 'confirm'); return 'جارٍ تأكيد الطلب…'; };
+  cuOrdCancel = function (o, why) { if (!o || !o.live) return cuOX0(o, why); liveSoAct(o, 'cancel', { reason: why }); return 'جارٍ إلغاء الطلب…'; };
+  cuShipNext = function (s, D, onDone) {
+    const o = s && (s.ord || soOf(s.no)); if (!o || !o.live) return cuSN0(s, D, onDone);
+    const act = ['prepare', 'ship', 'transit', 'deliver'][s.st]; if (!act) return SO_SHIP_STEPS[s.st];
+    liveSoAct(o, act, act === 'ship' ? { carrier: D.car || '', tracking: String(D.trk || '').trim(), eta: D.eta || '' } : {});
+    return SO_SHIP_STEPS[s.st + 1];
+  };
+  cuLogO = function (x, t, who) {
+    const o = x && x.live ? x : x && x.ord && x.ord.live ? x.ord : null;
+    if (o && /^أصدر عرض السعر/.test(t) && x.qt && x.qt.p) { liveSoAct(o, 'offer', { prices: Object.assign({}, x.qt.p), until: x.qt.until || '', extras: (x.qt.x || []).filter(function (z) { return z && Number(z[1]) > 0; }).map(function (z) { return [String(z[0]), Number(z[1])]; }), disc: x.qt.disc ? Number(x.qt.disc.amt) || 0 : 0, disc_label: x.qt.disc ? dsLbl(x.qt.disc) : '' }); return; }
+    if (o && x.ord && /^استلم المتطلبات/.test(t)) { if (o.live.recv === 'digital' && o.live.status === 'confirmed') liveSoAct(o, 'prepare'); else snack('تتقدّم الخدمة الرقمية مع مسار الطلب ' + o.no + '.'); return; }
+    if (o && x.ord && /^سلّم العمل/.test(t)) { if (o.live.recv === 'digital' && o.live.status === 'preparing') liveSoAct(o, 'deliver'); else snack('تتقدّم الخدمة الرقمية مع مسار الطلب ' + o.no + '.'); return; }
+    return cuLO0(x, t, who);
+  };
+  const cuSI0 = cuStoreInbox;
+  cuStoreInbox = function (out) {
+    const n0 = out.length; cuSI0(out);
+    for (let i = n0; i < out.length; i++) { const o = soOf(String(out[i].no || '').split(' · ')[0]); if (o && o.live) { out[i].custN = o.custN; out[i].cust = o.uid; if (o.live.pay_status !== 'paid') out[i].bulk = null; } }
+  };
+  const cuRow0 = cuRow;
+  cuRow = function (x) { const el = cuRow0.apply(this, arguments); try { if (x && x.grp === 'store' && el) { const o = soOf(String(x.no || '').split(' · ')[0]); if (o && o.live) el.setAttribute('data-live-ok', ''); } } catch (err) { void err; } return el; };
+  const cuIb0 = cuInbox;
+  cuInbox = function () { const out = cuIb0(); try { liveSoSync(); const n0 = out.length; cuStoreInbox(out); out.slice(n0).forEach(function (x) { x.sla = cuSla(x.due); }); } catch (err) { void err; } return out.sort(function (a, b) { return a.due - b.due; }); };
+  const cuSO0 = cuStoreOpen;
+  cuStoreOpen = function (key) {
+    cuSO0(key);
+    const k = String(key).split(':'), o = soOf(k[1]); if (!o || !o.live) return;
+    const dr = document.querySelector('.cu-dr[data-r="' + key + '"]'); if (!dr) return;
+    const host = dr.closest('.cu-dh') || dr; host.setAttribute('data-live-ok', '');
+    liveTxt(dr, ME.name, o.custN || 'العميل');
+    dr.querySelectorAll('.cu-av').forEach(function (x) { x.textContent = String(o.custN || 'ع').slice(0, 1); }); liveTxt(dr, 'Terra Plus · موثَّق', 'عميل المنصة');
+    if (o.live.pay_method === 'paymob' && o.live.pay_status !== 'paid') liveTxt(dr, 'المبلغ مدفوع عبر بوابة الدفع — أكّد التوفر لبدء التجهيز.', 'لم يُسدَّد الطلب بعد عبر بوابة الدفع — يُؤكَّد بعد السداد.');
+    dr.querySelectorAll('button').forEach(function (b) { const t = (b.innerText || '').trim();
+      if (t === 'ملف العميل' && o.uid) { const nb = b.cloneNode(true); nb.addEventListener('click', function () { document.querySelectorAll('.cu-dh').forEach(function (m) { m.remove(); }); FX.pfc = o.uid; ADM.pfc = o.uid; go('other', 'cu-file'); }); b.replaceWith(nb); }
+      if (/^عرض (الطلب )?كما يراه العميل/.test(t)) b.remove(); });
+  };
+  const liveData1 = liveData;
+  liveData = async function () { await liveData1(); await liveSoLoad().catch(function () { /* الطلبات تبقى فارغة */ }); };
+  /* صفحة إتمام الطلب: انتظار الخادم، ثم الدفع أو بيانات التحويل */
+  const ckRun0 = LP.checkout.run;
+  LP.checkout.run = function () {
+    if (LIVE_SO.busy) return [DS.panel(null, null, [DS.note('info', 'جارٍ إرسال طلبك…', 'نسجّل الطلب في الخادم ونحسب المبلغ من أسعار المتجر.')])];
+    const out = [].concat(ckRun0()).filter(Boolean), D = FX.ckDone;
+    if (D && D.live && out[0]) {
+      const acts = out[0].querySelector('.t2-row-wrap'), add = [];
+      if (D.order && D.pay_url) add.push(e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('إتمام الدفع · ' + sar(D.total), { tone: 'primary', ui: 'credit-card', onClick: function () { location.href = D.pay_url; } }))]), e('small', { class: 'cu-dr-hint' }, 'تنتقل إلى صفحة الدفع الآمنة (Paymob)، ويتحول طلبك إلى «مدفوع» فور نجاح العملية.'));
+      else if (D.order && D.pay === 'bank') add.push(liveBankBox(D.total, D.order));
+      else if (D.order) add.push(DS.note('warn', 'الدفع الإلكتروني غير متاح الآن', 'طلبك مسجّل — ادفعه لاحقًا من «طلبات متجري» عند إتاحة الدفع، أو يتواصل معك فريقنا لإتمامه.'));
+      add.forEach(function (n) { if (acts) acts.parentNode.insertBefore(n, acts); else out[0].appendChild(n); });
+    }
+    out.forEach(function (n) { if (n.setAttribute) n.setAttribute('data-live-ok', ''); });
+    return out;
+  };
+  const soRun0 = LP['st-orders'].run;
+  LP['st-orders'].run = function () { liveSoSync(); const out = [].concat(soRun0()).filter(Boolean); out.forEach(function (n) { if (n.setAttribute) n.setAttribute('data-live-ok', ''); }); return out; };
+}
 const LIVE_PAGES = { client: {},
   admin: {  'pay-center': admPayPage, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
@@ -14763,6 +14936,7 @@ if (LIVE.on) {
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();
   });
 }
+if (LIVE.on) { const draw2 = draw; draw = function () { try { liveSoSync(); } catch (err) { void err; } return draw2.apply(this, arguments); }; }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
 })();
   /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
