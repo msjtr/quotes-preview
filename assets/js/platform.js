@@ -13575,10 +13575,8 @@ function admPfFilePage() {
   if (!id || !/^[0-9a-f-]{36}$/i.test(String(id))) return admPfFilesPage();
   return admMount('pf:' + id, 'ملف العميل', async function () {
     const j = await admClients('/reg/' + encodeURIComponent(id));
-    const sel = 'client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name)),client_contract_files(id,kind,file_name)&kind=eq.contract&user_id=eq.' + encodeURIComponent(id) + '&order=order_date.desc';
-    const C = await liveSb(sel).catch(function () { return []; }), B = await liveSb('client_bonds?select=*,client_contracts(id,contract_no,legacy_no),client_contract_files(id,kind,file_name)&user_id=eq.' + encodeURIComponent(id) + '&order=bond_date.desc.nullslast').catch(function () { return []; });
     const V = (LIVE_DATA.ver || []).filter(function (v) { return v.user_id === id; })[0] || null;
-    return { P: j.profile || {}, C: Array.isArray(C) ? C : [], B: Array.isArray(B) ? B : [], V: V };
+    return { P: j.profile || {}, V: V };
   }, function (D) {
     const P = D.P, Bk = P.blocks || {}, F = P.files || [];
     const secs = CL_BLOCKS.filter(function (b) { return Array.isArray(Bk[b[0]]) && Bk[b[0]].length; });
@@ -13589,11 +13587,8 @@ function admPfFilePage() {
     const vs = D.V ? (VS[D.V.status] || [D.V.status, null]) : ['غير موثَّق', 'warn'];
     const hero = lvHero({ avatar: String(P.name || '؟').slice(0, 1), eye: 'ملف العميل', t: P.name || '—', sub: 'رقم تيرا ' + (P.no || '—') + ' · عميل منذ ' + String(P.at || '').slice(0, 10), pill: vs, ring: [pct, 'اكتمال الملف'],
       tiles: [['الحقول المكتملة', fmtNum(ok) + ' / ' + fmtNum(all), 'check-circle', pct === 100 ? 'ok' : null], ['المستندات', fmtNum(up) + ' مرفوعة · ' + fmtNum(acc) + ' مقبولة', 'files'], ['التوثيق', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn'], ['حالة الحساب', (ADM_USER_ST[P.status] || [P.status || '—'])[0], 'shield-check', P.status === 'active' ? 'ok' : 'warn'], P.upd ? ['آخر تحديث', String(P.upd).slice(0, 10), 'calendar-blank'] : null] });
-    const out = [hero, DS.note('info', 'عرض فقط', 'هذه الصفحة تعرض بيانات الملف كما أدخلها العميل. التعديل يتم عبر طلبات الملف الشخصي، والقرار في «طلبات توثيق الملف». فتح الملف وكل مرفق يُسجَّل في سجل التدقيق باسمك.'),
-      DS.panel('بيانات الحساب', null, [DS.fields([['الاسم', P.name || '—'], ['البريد', P.email ? ltr(P.email) : '—'], ['الجوال', admPhone(P.phone)], ['رقم تيرا', ltr(P.no || '—')]])])];
-    try { const MG = ((LIVE_DATA.clients && LIVE_DATA.clients.mig) || []).filter(function (m) { return m.target === id; });
-      MG.forEach(function (m) { out.push(DS.panel('الملف في النظام السابق', null, [DS.fields([['رقم الملف السابق', ltr(admMigNo(m))], ['الحالة', admB(ADM_MIG_ST, m.state)], ['المرفقات المنقولة', fmtNum(Number(m.files_ready) || 0)]]),
-        e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('عرض الملف السابق', { ui: 'arrows-clockwise', onClick: function () { admMigOpen(m, MG); } }))])])); }); } catch (err) { void err; }
+    /* v313: ملف العميل يعرض بيانات الملف فقط (كما في العيّنة) — الحساب في «إدارة الحساب»، والملف السابق وملاحظاته في «توثيق ملف العملاء المرحّلين»، والعقود والسندات في أقسامها */
+    const out = [hero, DS.note('info', 'عرض فقط', 'هذه الصفحة تعرض بيانات الملف كما هي. التعديل يتم عبر «طلبات الملف الشخصي»، والإجراءات في «الأمان» و«إدارة الحساب». فتح الملف وكل مرفق يُسجَّل في سجل التدقيق باسمك.')];
     secs.forEach(function (b) { const fs = Bk[b[0]], n = fs.filter(function (f) { return clVal(f) !== null; }).length;
       out.push(DS.panel(b[1], fmtNum(n) + ' من ' + fmtNum(fs.length), [DS.fields(fs.map(function (f) { const v = clVal(f); return [(f.label || f.key) + (f.required ? '' : ' (اختياري)'), v === null ? DS.badge(f.required ? 'مطلوب — غير مكتمل' : 'غير مُدخل', f.required ? 'warn' : null) : ltrIf(v)]; }))])); });
     if (!secs.length) out.push(DS.note('info', 'لم يُدخل العميل بيانات ملفه بعد', ''));
@@ -13601,11 +13596,6 @@ function admPfFilePage() {
       const st = CL_DOC[f.status] || (f.status === 'missing' ? [f.required ? 'مطلوب — لم يُرفع' : 'لم يُرفع', f.required ? 'warn' : null] : [f.status || '—', null]);
       return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, f.label || f.kind || 'مرفق'), e('small', {}, [f.name ? ltr(f.name) : null, f.at ? [' · ', bdiD(String(f.at).slice(0, 10))] : null, f.note ? ' · ' + f.note : null])]),
         e('span', { class: 'adm-doc-a' }, [DS.badge(st[0], st[1]), f.fid ? liveOk(DS.button('فتح', { size: 'sm', tone: 'primary', ui: 'files', onClick: function () { admRegDoc(P.id || id, f.fid); } })) : null])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا مستندات.')]));
-    const nm = P.name || '—', X = D.C.map(function (r) { const c = liveContract(r); return { r: r, c: c, f: c.n ? cInfo(c) : { status: 'بلا دفعات', tone: null, paid: 0, total: 0, remain: 0, leftN: 0 }, name: nm }; });
-    out.push(DS.panel('العقود', fmtNum(X.length) + ' عقد', [X.length ? e('div', { class: 'cu-mgr-docs' }, X.map(function (x) { return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, ltr(x.r.contract_no || x.r.legacy_no || '—')), e('small', {}, [fmtNum(x.c.payments.filter(settled).length) + ' / ' + fmtNum(x.c.n) + ' مسدّدة · المتبقي ' + admMoney(x.f.remain)])]),
-      e('span', { class: 'adm-doc-a' }, [DS.badge(x.f.status, x.f.tone === 'ok' ? 'ok' : x.f.tone === 'danger' ? 'danger' : x.f.tone ? 'warn' : null), liveOk(DS.button('فتح', { size: 'sm', onClick: function () { admCtOpen(x); } }))])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا عقود.')]));
-    if (D.B.length) out.push(DS.panel('السندات', fmtNum(D.B.length) + ' سند', [e('div', { class: 'cu-mgr-docs' }, D.B.map(function (b) { b.name = nm; return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, ltr(b.bond_no || '—')), e('small', {}, [admMoney(b.value), b.bond_date ? [' · ', bdiD(b.bond_date)] : null])]),
-      e('span', { class: 'adm-doc-a' }, [admB(BD_ST, b.status || 'active'), liveOk(DS.button('فتح', { size: 'sm', onClick: function () { admBdOpen(b, null); } }))])]); }))]));
     return out;
   });
 }
@@ -15539,48 +15529,96 @@ function lvAccHubPage() {
           { ic: 'envelope-simple:sky', t: 'تعطيلُ التحقُّقِ بالبريد', d: 'إيقاف التحقق بالبريد للحساب', n: fmtNum(A.filter(function (a) { return !!a.email_2fa; }).length) + ' مفعّل', go: function () { go('other', 'cu-sx-mail'); } },
           { ic: 'whatsapp-logo:teal', t: 'رموزُ واتساب للعملاء', d: 'الربط والرمز والقفل — فك القفل أو إلغاء الرمز', go: function () { go('other', 'cu-wa-pins'); } }]]]; });
 }
-/* حسابات العملاء: جدول بالحالة، ودرج الحساب بالتفاصيل والجلسات وآخر الأحداث */
+/* v313: «حسابات العملاء» بنمط الحوالات الصادرة، ودرج «إدارة الحساب» بهوية العيّنة نفسها — بيانات القاعدة تُوضع في حقولها، والإجراءات حقيقية (stf_27) */
+const LV_ACF = [['all', 'الكل', 'list:navy'], ['lock', 'مقفل', 'lock-key:gold'], ['dis', 'معطَّل', 'x-circle:gold'], ['pw', 'يلزمه تغيير كلمة المرور', 'key:navy'], ['fail', 'محاولات فاشلة', 'warning:gold'], ['sess', 'جلسات نشطة', 'sign-out:teal'], ['f2a', 'تحقق ثنائي مفعّل', 'shield-check:teal']];
+const lvAcFit = (a, k) => { const f = lvAccFlags(a); return k === 'all' || (k === 'dis' ? a.business_status && a.business_status !== 'active' : f[k]); };
 function lvAcctPage(preset) {
   const key = preset === 'sess' ? 'accs' : 'acc';
-  return admMount(key, preset === 'sess' ? 'جلسات الحسابات' : 'حسابات العملاء', lvAccounts, function (L, st, paint, refetch) {
-    if (preset === 'sess' && st.f === 'all') st.f = 'sess';
-    const fit = function (a, k) { const f = lvAccFlags(a); return k === 'all' || f[k]; };
-    const chips = [['all', 'الكل'], ['lock', 'مقفل'], ['pw', 'يلزمه تغيير كلمة المرور'], ['fail', 'محاولات فاشلة'], ['sess', 'جلسات نشطة'], ['f2a', 'تحقق ثنائي مفعّل']].map(function (c) { return [c[0], c[1], L.filter(function (a) { return fit(a, c[0]); }).length]; });
-    const R = L.filter(function (a) { return fit(a, st.f); });
-    const rows = R.map(function (a) { const f = lvAccFlags(a);
-      return admRow([admName(a.full_name, a.tera_id), ltr(a.email || '—'), f.lock ? DS.badge('مقفل', 'danger') : admB(LIVE_SEC.st, a.security_state || 'none'), f.pw ? DS.badge('نعم', 'warn') : '—', fmtNum(Number(a.failed_password_count) || 0), fmtNum(Number(a.active_sessions) || 0), f.f2a ? DS.badge('مفعّل', 'ok') : DS.badge('غير مفعّل', null), lvDt(a.last_sign_in_at)],
-        function () { lvAcctOpen(a.user_id, a.full_name); }, [a.full_name, a.email, a.tera_id].join(' ')); });
-    return [admKpis([['حسابًا', L.length, '', 'users'], ['مقفلًا', chips[1][2], chips[1][2] ? 'danger' : '', 'lock'], ['لها جلسات نشطة', chips[4][2], '', 'sign-out'], ['تحقق ثنائي مفعّل', chips[5][2], 'ok', 'shield-check']]),
-      admTools(st, chips, paint, refetch, 'ابحث بالاسم أو البريد أو رقم تيرا'),
-      admTable(['العميل', 'البريد', 'الحالة الأمنية', 'تغيير كلمة المرور', 'محاولات فاشلة', 'الجلسات', 'التحقق الثنائي', 'آخر دخول'], rows, L.length, 'لا حسابات بهذه الحالة')];
+  return admMount(key, preset === 'sess' ? 'جلسات الحسابات' : 'حسابات العملاء', lvAccounts, function (L, st) {
+    const fk = 'acF' + key; if (preset === 'sess' && !ADM[fk]) ADM[fk] = 'sess';
+    const f = ADM[fk] || 'all', q = String(ADM['acQ' + key] || '').trim().toLowerCase();
+    const R = L.filter(function (a) { return lvAcFit(a, f) && (!q || [a.full_name, a.email, a.tera_id].join(' ').toLowerCase().indexOf(q) >= 0); });
+    const n = function (k) { return L.filter(function (a) { return lvAcFit(a, k); }).length; };
+    const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث بالاسم أو البريد أو رقم تيرا', value: ADM['acQ' + key] || '', 'aria-label': 'بحث في الحسابات', onKeydown: function (ev) { if (ev.key === 'Enter') { ADM['acQ' + key] = ev.target.value; draw(); } } });
+    return axPage({ title: preset === 'sess' ? 'جلسات الحسابات' : 'حسابات العملاء', hint: 'حالة كل حساب وإجراءاته: القفل والتعطيل والجلسات والتحقق — كل إجراء بسببٍ يُسجَّل في التدقيق', can: false, perm: null,
+      K: [['الحسابات', fmtNum(L.length), '', 'users-three'], ['مقفلة', fmtNum(n('lock')), n('lock') ? 'danger' : '', 'lock-key'], ['معطَّلة', fmtNum(n('dis')), n('dis') ? 'warn' : '', 'x-circle'], ['لها جلسات نشطة', fmtNum(n('sess')), '', 'sign-out']],
+      chips: chipRow(LV_ACF.map(function (x) { return [x[0], x[1], x[2], n(x[0])]; }), f, function (v) { ADM[fk] = v; draw(); }, 'حالة الحساب'),
+      filter: e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { ADM['acQ' + key] = qi.value; draw(); } }), ADM['acQ' + key] ? DS.button('مسح', { size: 'sm', onClick: function () { ADM['acQ' + key] = ''; draw(); } }) : null]),
+      list: axList(R.map(function (a) { const fl = lvAccFlags(a), dis = a.business_status && a.business_status !== 'active';
+        const stt = dis ? 'معطَّل' : fl.lock ? 'مقفل' : 'نشِط';
+        return axRow({ ic: dis ? 'x-circle:gold' : fl.lock ? 'lock-key:gold' : 'shield-check:teal', t: a.full_name || '—', sub: stt + ' — ' + (a.tera_id || '—') + (a.email ? ' — ' + a.email : '') + (Number(a.active_sessions) ? ' — ' + fmtNum(Number(a.active_sessions)) + ' جلسة نشطة' : '') + (Number(a.failed_password_count) ? ' — ' + fmtNum(Number(a.failed_password_count)) + ' محاولة فاشلة' : ''),
+          tone: dis ? 'danger' : fl.lock ? 'warn' : '', go: function () { lvAcctOpen(a.user_id, a.full_name); } }); }), 'لا حسابات بهذه الحالة') });
   });
 }
 const LV_CLOSE = {};
+const LV_AC_ERR = { forbidden: 'لا تملك صلاحية هذا الإجراء.', reason_required: 'السبب إلزامي — يُسجَّل في سجل التدقيق.', self_forbidden: 'لا يمكن تنفيذ الإجراء على حسابك.', staff_account: 'حسابات الموظفين تُدار من قسم الموظفين.', already_in_state: 'الحساب بهذه الحالة أصلًا.', not_found: 'الحساب غير موجود.' };
 function lvAcctOpen(uid, name) {
-  const key = 'acct:' + uid, W = LV_CLOSE[uid] || (LV_CLOSE[uid] = { sid: '', why: '', err: '' });
-  const draw1 = function (body) { const dr = cuBdDraw({ key: key, ic: 'shield', title: name || 'الحساب', sub: 'إدارة الحساب · داخلي', body: body, foot: [e('div', { class: 'cu-dr-fa' }, [DS.button('ملف العميل', { ui: 'user', onClick: function () { admClose(); ADM.pfc = uid; FX.pfc = uid; (ADM.pfN || (ADM.pfN = {}))[uid] = name; go('other', 'cu-pf-file'); } }), DS.button('إغلاق', { onClick: cuBdClose })])], onClose: function () { draw(); } }); if (dr) (dr.closest('.cu-dh') || dr).setAttribute('data-live-ok', ''); };
-  draw1([clWait('الحساب')]);
-  Promise.all([admRpc('admin_account_detail', { p_user_id: uid }), admRpc('admin_session_log', { p_user_id: uid, p_limit: 20 }).catch(function () { return { sessions: [] }; })]).then(function (R) {
+  const key = 'acct:' + uid, W = LV_CLOSE[uid] || (LV_CLOSE[uid] = { sid: '', why: '', err: '', act: '', awhy: '', aerr: '', busy: false, open: { sum: true, sec: true, act: true, ses: false, log: false } });
+  const rerun = function () { lvAcctOpen(uid, name); };
+  const draw1 = function (title, sub, body) { const dr = cuBdDraw({ key: key, ic: 'shield', title: title, sub: sub, body: body, onClose: function () { draw(); }, foot: [e('div', { class: 'cu-dr-fa' }, [DS.button('ملف العميل', { ui: 'user', onClick: function () { admClose(); ADM.pfc = uid; FX.pfc = uid; (ADM.pfN || (ADM.pfN = {}))[uid] = name; go('other', 'cu-pf-file'); } }), DS.button('إغلاق', { onClick: function () { admClose(); draw(); } })])] });
+    /* الدرج قائم: يُحدَّث رأسه بالاسم والحالة بعد التحميل أو الإجراء */
+    try { const h = dr && dr.querySelector('.cu-dr-h > div'); if (h) { h.querySelector('b').textContent = 'إدارة الحساب'; h.querySelector('span').textContent = String(title).replace(/^إدارة الحساب · /, '') + ' · ' + sub; } } catch (err) { void err; } };
+  if (!W.D) draw1('إدارة الحساب · ' + (name || ''), 'جارٍ التحميل…', [clWait('الحساب')]);
+  const load = W.D ? Promise.resolve(W.D) : Promise.all([admRpc('admin_account_detail', { p_user_id: uid }), admRpc('admin_session_log', { p_user_id: uid, p_limit: 20 }).catch(function () { return { sessions: [] }; })]).then(function (R) { W.D = R; return R; });
+  load.then(function (R) {
     const D = R[0] || {}, S0 = D.state || {}, SS = (R[1] && R[1].sessions) || [], EV = (D.events || []).slice(0, 25);
+    const nm = D.full_name || name || '—', tid = D.tera_id || S0.tera_id || '—';
+    const lock = !!S0.locked, dis = S0.business_status && S0.business_status !== 'active';
+    const V = ((LIVE_DATA.ver || []).filter(function (v) { return v.user_id === uid; })[0] || {}).status === 'approved';
+    const reg = ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).filter(function (r) { return r.id === uid; })[0] || {};
     const on = function (b) { return DS.badge(b ? 'مُفعَّل' : 'غيرُ مُفعَّل', b ? 'ok' : null); };
+    const f2a = { mail: !!S0.email_2fa_enabled, app: S0.totp_status === 'active' || S0.totp_status === 'confirmed', extra: S0.recovery_code_status === 'active' || S0.recovery_code_status === 'issued' };
     const act = SS.filter(function (x) { return x.status === 'active' && !x.revoked; });
+    const evOf = function (re) { return EV.filter(function (x) { return re.test(String(x.action || '') + ' ' + String(x.label || '')); })[0]; };
+    const who = function (x) { return x ? (x.actor_name || (x.by_admin ? 'الإدارة' : x.by_system ? 'النظام (تلقائي)' : 'العميل')) : '—'; };
+    const acc = function (k, t, sub, kids) { const op = W.open[k] !== false;
+      return e('section', { class: 'cu-acc' + (op ? ' is-open' : '') }, [e('button', { type: 'button', class: 'cu-acc-h', 'aria-expanded': op ? 'true' : 'false', 'data-live-ok': '', onClick: function () { W.open[k] = !op; rerun(); } }, [e('span', { class: 'cu-acc-t' }, [e('b', {}, t), e('small', {}, sub)]), e('span', { class: 'cu-acc-c', 'aria-hidden': 'true' }, frag(ui('caret-down', 16)))]), op ? e('div', { class: 'cu-acc-b' }, kids) : null]); };
+    /* الإجراءات الحقيقية: قفل · رفع القفل · تعطيل · تفعيل — بسبب إلزامي */
+    const can = { lock: !lock, unlock: lock, disable: !dis, enable: dis };
+    const runAct = async function (k) {
+      const w = String(W.awhy || '').trim(); if (w.length < 6) { W.aerr = LV_AC_ERR.reason_required; rerun(); return; }
+      W.busy = true; rerun();
+      try { const j = await admRpc('admin_account_action', { p_user: uid, p_action: k, p_reason: w });
+        if (j && j.ok === false) throw new Error(LV_AC_ERR[j.error] || j.error || 'تعذّر تنفيذ الإجراء.');
+        const T = CU_AC_ACT.filter(function (x) { return x[0] === k; })[0][1].replace(/[ً-ْ]/g, '');
+        W.act = ''; W.awhy = ''; W.aerr = ''; W.busy = false; W.D = null; ADMS.acc = Object.assign(ADMS.acc || {}, { at: 0 }); try { if (ADMS.accs) ADMS.accs.at = 0; } catch (err) { void err; }
+        snack(T + ' — سُجّل في سجل التدقيق', null, nm); rerun(); }
+      catch (err) { W.busy = false; W.aerr = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; rerun(); }
+    };
+    const actRows = e('div', { class: 'cu-acx' }, CU_AC_ACT.map(function (x) {
+      const b = liveOk(DS.button(x[1], { size: 'sm', tone: x[3] === 'ok' ? 'primary' : null, disabled: !can[x[0]] || W.busy, onClick: function () { W.act = x[0]; W.awhy = ''; W.aerr = ''; rerun(); } })); if (x[3] === 'no') b.classList.add('cu-acx-no');
+      const row = e('div', { class: 'cu-acx-r' + (x[3] === 'no' ? ' is-no' : '') + (W.act === x[0] ? ' is-on' : '') }, [e('span', { class: 'cu-acx-t' }, [e('b', {}, x[1]), e('small', {}, x[2])]), b]);
+      if (W.act !== x[0]) return row;
+      const ta = e('textarea', { class: 't2-input cu-why', rows: '2', placeholder: 'سبب الإجراء — يُسجَّل في سجل التدقيق', onInput: function (ev) { W.awhy = ev.target.value; } }, W.awhy || '');
+      return e('div', { class: 'cu-acx-f' }, [row, ta, W.aerr ? e('span', { class: 'cu-err', role: 'alert' }, W.aerr) : null, e('div', { class: 'cu-dr-fa' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'تأكيد ' + x[1].replace(/[ً-ْ]/g, ''), { size: 'sm', tone: 'primary', ui: 'check', disabled: W.busy, onClick: function () { runAct(x[0]); } })), DS.button('إلغاء', { size: 'sm', onClick: function () { W.act = ''; W.aerr = ''; rerun(); } })])]);
+    }));
+    /* إنهاء جلسة نشطة — كما كان، داخل قسم الجلسات */
     if (act.length === 1 && !W.sid) W.sid = act[0].session_id_short;
     const closeBox = act.length ? e('div', { class: 'cu-why-b' + (W.err ? ' is-miss' : '') }, [e('b', {}, 'إنهاء جلسة نشطة — السبب يُسجَّل في التدقيق'),
       DS.select({ value: W.sid, options: [['', 'اختر الجلسة']].concat(act.map(function (x) { return [x.session_id_short, (x.device_label || [x.browser, x.os].filter(Boolean).join(' · ') || 'جلسة') + ' — ' + x.session_id_short]; })), onChange: function (v) { W.sid = v; W.err = ''; } }),
       e('textarea', { class: 't2-input cu-why', rows: '2', placeholder: 'سبب إنهاء الجلسة (إلزامي)', onInput: function (ev) { W.why = ev.target.value; } }, W.why || ''),
       W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
       e('div', { class: 'cu-dr-fa' }, [liveOk(DS.button('إنهاء الجلسة', { tone: 'danger', ui: 'sign-out', onClick: async function () {
-        if (!W.sid) { W.err = 'اختر الجلسة.'; lvAcctOpen(uid, name); return; }
-        if (String(W.why || '').trim().length < 6) { W.err = 'اكتب السبب بوضوح.'; lvAcctOpen(uid, name); return; }
-        try { await admRpc('admin_session_close', { p_user_id: uid, p_session_short: W.sid, p_reason: String(W.why).trim() }); W.sid = ''; W.why = ''; W.err = ''; snack('أُنهيت الجلسة وسُجّل السبب.'); lvAcctOpen(uid, name); }
-        catch (err) { W.err = (err && err.message) || 'تعذّر إنهاء الجلسة.'; lvAcctOpen(uid, name); } } }))])]) : e('small', { class: 'cu-dr-hint' }, 'لا جلسات نشطة لهذا الحساب.');
-    draw1([
-      e('div', { class: 'cu-dr-st' }, [S0.locked ? DS.badge('مقفل', 'danger') : admB(LIVE_SEC.st, S0.security_state || 'none'), DS.badge(S0.business_status === 'active' ? 'نشِط' : (S0.business_status || '—'), S0.business_status === 'active' ? 'ok' : 'warn')]),
-      cuSec('الحساب', 'user-circle', [DS.fields([['الاسم', D.full_name || name || '—'], ['رقم تيرا', ltr(D.tera_id || S0.tera_id || '—')], ['البريد', ltr(D.email || '—')], ['آخر تغيير لكلمة المرور', lvDt(S0.password_changed_at)], ['يلزمه تغيير كلمة المرور', S0.password_change_required ? DS.badge('نعم' + (S0.password_change_reason ? ' — ' + S0.password_change_reason : ''), 'warn') : 'لا'], ['محاولات فاشلة', fmtNum(Number(S0.failed_password_count) || 0) + (S0.last_failed_at ? ' · آخرها ' + iso(new Date(S0.last_failed_at)) : '')], S0.locked ? ['سبب القفل', (S0.lock_reason || '—') + (S0.locked_until ? ' · حتى ' + iso(new Date(S0.locked_until)) : '')] : null].filter(Boolean))]),
-      cuSec('وسائل التحقق', 'shield-check', [DS.fields([['التحقق بالبريد', on(S0.email_2fa_enabled)], ['تطبيق المصادقة', on(S0.totp_status === 'active' || S0.totp_status === 'confirmed')], ['رمز الاسترداد', on(S0.recovery_code_status === 'active' || S0.recovery_code_status === 'issued')]])]),
-      cuSec('الجلسات', 'sign-out', [SS.length ? cuTbl(['الجهاز', 'الدخول', 'آخر نشاط', 'الحالة'], SS.slice(0, 12).map(function (x) { return e('tr', {}, [e('td', {}, admName(x.device_label || [x.browser, x.os].filter(Boolean).join(' · ') || 'جلسة', x.session_id_short)), e('td', {}, lvDt(x.login_at)), e('td', {}, lvDt(x.last_activity_at || x.closed_at)), e('td', {}, x.status === 'active' && !x.revoked ? DS.badge('نشطة', 'ok') : DS.badge(x.close_kind === 'idle' ? 'انتهت بالخمول' : x.revoked ? 'أُنهيت' : 'منتهية', null))]); })) : e('small', { class: 'cu-dr-hint' }, 'لا جلسات مسجّلة.'), closeBox]),
-      cuSec('آخر الأحداث', 'clock-counter-clockwise', [EV.length ? e('ol', { class: 'cu-log' }, EV.map(function (x) { return e('li', {}, [e('b', {}, x.label || x.action), e('small', {}, [x.by_admin ? 'الإدارة' : x.by_system ? 'النظام' : 'العميل', ' · ', bdiD(iso(new Date(x.at))), ' ', ltr(hm(new Date(x.at)))])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا أحداث.')])]);
-  }).catch(function (err) { draw1([clFail('الحساب', err && err.message, function () { lvAcctOpen(uid, name); })]); });
+        if (!W.sid) { W.err = 'اختر الجلسة.'; rerun(); return; }
+        if (String(W.why || '').trim().length < 6) { W.err = 'اكتب السبب بوضوح.'; rerun(); return; }
+        try { await admRpc('admin_session_close', { p_user_id: uid, p_session_short: W.sid, p_reason: String(W.why).trim() }); W.sid = ''; W.why = ''; W.err = ''; W.D = null; snack('أُنهيت الجلسة وسُجّل السبب.'); rerun(); }
+        catch (err) { W.err = (err && err.message) || 'تعذّر إنهاء الجلسة.'; rerun(); } } }))])]) : e('small', { class: 'cu-dr-hint' }, 'لا جلسات نشطة لهذا الحساب.');
+    const mt = function (v, ok) { return e('span', { class: 'cu-mt' }, [v, ok === null ? null : V ? DS.badge('مطابق', 'ok') : DS.badge('بانتظار التوثيق', 'warn')]); };
+    const lk = evOf(/lock|قفل/i), dz = evOf(/disabl|تعطيل/i);
+    const body = [
+      e('div', { class: 'cu-ac-h' }, [e('span', { class: 'cu-av' }, String(nm).slice(0, 1)), e('span', { class: 'cu-card-t' }, [e('b', {}, nm), e('small', {}, ltr(D.email || '—'))]),
+        e('span', { class: 'cu-card-m' }, [DS.badge('عميل', 'info'), DS.badge(dis ? 'معطَّل' : 'نشِط', dis ? 'danger' : 'ok'), DS.badge(lock ? 'مقفل' : 'لا قيود', lock ? 'danger' : 'ok')])]),
+      e('div', { class: 'cu-ac-tiles' }, [['المُعرِّف', ltr(tid)], ['العاملُ الثاني', f2a.mail || f2a.app ? 'مُفعَّل' : 'غيرُ مُفعَّل'], ['محاولاتٌ فاشلة', fmtNum(Number(S0.failed_password_count) || 0)], ['الجلساتُ النشطة', fmtNum(act.length || Number(S0.active_sessions) || 0)]].map(function (t) { return e('div', {}, [e('small', {}, t[0]), e('b', {}, t[1])]); })),
+      acc('sum', 'ملخّصُ الحساب', 'بياناتُ الحسابِ الأساسية', [DS.note('info', 'تُقرأ من الحساب نفسه', 'هذه البيانات من الحساب في المنصة' + (V ? ' وملفه الموثّق' : '') + ' — لا تُعدَّل من هنا. تعديل بيانات الملف عبر «طلبات الملف الشخصي».'),
+        DS.fields([['الاسم', mt(nm)], ['البريد', mt(ltr(D.email || '—'))], ['رقم الهاتف', reg.phone ? mt(admPhone(reg.phone)) : '—'], ['المُعرِّف', mt(ltr(tid), null)], ['النوع', 'عميل'], ['حالةُ العمل', DS.badge(dis ? 'معطَّل' : 'نشِط', dis ? 'danger' : 'ok')], ['آخر تغيير لكلمة المرور', lvDt(S0.password_changed_at)], ['يلزمه تغيير كلمة المرور', S0.password_change_required ? DS.badge('نعم' + (S0.password_change_reason ? ' — ' + S0.password_change_reason : ''), 'warn') : 'لا']])]),
+      acc('sec', 'الأمانُ والدخول', 'وسائلُ التحقُّقِ وحالةُ القفل', [DS.fields([['الحالةُ الأمنية', lock ? DS.badge('مقفل', 'danger') : admB(LIVE_SEC.st, S0.security_state || 'none')], ['التحقُّقُ بالبريد', on(f2a.mail)], ['تطبيقُ المصادقة', on(f2a.app)], ['رمزُ التحقُّقِ الإضافي', on(f2a.extra)], ['محاولاتُ كلمةِ مرورٍ فاشلة', fmtNum(Number(S0.failed_password_count) || 0) + (S0.last_failed_at ? ' · آخرها ' + iso(new Date(S0.last_failed_at)) : '')]]),
+        lock ? e('div', { class: 'cu-why-x is-lock' }, [e('b', {}, 'الحساب مقفل'), DS.fields([['سبب القفل', S0.lock_reason || '—'], ['قام بالقفل', who(lk)], ['وقت القفل', lvDt(S0.locked_at)], ['ينتهي القفل', S0.locked_until ? lvDt(S0.locked_until) : 'حتى يُرفع']])]) : null,
+        dis ? e('div', { class: 'cu-why-x is-dis' }, [e('b', {}, 'الحساب معطَّل'), DS.fields([['سبب التعطيل', (dz && (dz.reason || (dz.details && dz.details.reason))) || '—'], ['قام بالتعطيل', who(dz)], ['وقت التعطيل', dz ? lvDt(dz.at) : '—']])]) : null]),
+      acc('act', 'إجراءاتُ الحساب', 'كلُّ إجراءٍ يُسجَّلُ في سجلِّ التدقيق', [actRows]),
+      acc('ses', 'الجلسات', fmtNum(act.length) + ' نشطة من ' + fmtNum(SS.length), [SS.length ? cuTbl(['الجهاز', 'الدخول', 'آخر نشاط', 'الحالة'], SS.slice(0, 12).map(function (x) { return e('tr', {}, [e('td', {}, admName(x.device_label || [x.browser, x.os].filter(Boolean).join(' · ') || 'جلسة', x.session_id_short)), e('td', {}, lvDt(x.login_at)), e('td', {}, lvDt(x.last_activity_at || x.closed_at)), e('td', {}, x.status === 'active' && !x.revoked ? DS.badge('نشطة', 'ok') : DS.badge(x.close_kind === 'idle' ? 'انتهت بالخمول' : x.revoked ? 'أُنهيت' : 'منتهية', null))]); })) : e('small', { class: 'cu-dr-hint' }, 'لا جلسات مسجّلة.'), closeBox]),
+      acc('log', 'سجلُّ التدقيق', 'آخر الأحداث على هذا الحساب', [EV.length ? e('ol', { class: 'cu-log' }, EV.map(function (x) { const why = x.reason || (x.details && x.details.reason); return e('li', {}, [e('b', {}, (x.label || x.action) + (why ? ' — ' + why : '')), e('small', {}, [who(x), ' · ', bdiD(iso(new Date(x.at))), ' ', ltr(hm(new Date(x.at)))])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')])];
+    draw1('إدارة الحساب · ' + nm, (dis ? 'معطَّل' : lock ? 'مقفل' : 'نشِط') + ' · ' + tid, body);
+  }).catch(function (err) { W.D = null; draw1('إدارة الحساب · ' + (name || ''), 'تعذّر التحميل', [clFail('الحساب', err && err.message, rerun)]); });
 }
 function lv2faPage() {
   return admMount('2fa', 'المصادقة الثنائية', function () { return admRpc('admin_2fa_accounts', { p_q: null }); }, function (L, st, paint, refetch) {
