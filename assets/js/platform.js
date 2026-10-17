@@ -12688,6 +12688,9 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
     if (DTL.indexOf(S.tab) >= 0 && pre.length) { const pb = pre[pre.length - 1]; nav = { back: ['رجوع إلى ' + pb[0], pb[1]] }; }
   }
   else { title = 'خدماتي'; sub = 'اختر الخدمة. كلُّ بطاقةٍ تفتح صفحتها.'; path = [[title]]; }
+  /* v310: كل صفحة غير الرئيسية يبدأ مسارها بـ«الرئيسية» — طريق ثابت للعودة إلى القائمة في الجوال والويب */
+  const homeK = S.role === 'admin' ? 'other:adm-home' : 'dash', curK = S.tab === 'other' ? 'other:' + S.other : S.tab;
+  if (curK !== homeK && path.length && path[0][3] !== homeK && path[0][0] !== 'الرئيسية') path.unshift(['الرئيسية', function () { if (S.role === 'admin') go('other', 'adm-home'); else go('dash'); }, 'home', homeK]);
   document.getElementById('pv-title').textContent = title;
   document.getElementById('pv-sub').textContent = sub;
   path[path.length - 1] = [path[path.length - 1][0], null, path[path.length - 1][2], S.tab === 'reqs' && FX.rs ? 'reqs:' + FX.rs : S.tab === 'contracts' && FX.cf ? 'contracts:' + FX.cf : S.tab === 'pay' && FX.qv ? 'pay:' + FX.qv : S.tab === 'payrec' && FX.rk ? 'payrec:' + FX.rk : pageKey()];
