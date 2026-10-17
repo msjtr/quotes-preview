@@ -14244,6 +14244,8 @@ if (LIVE.on) document.addEventListener('click', function (ev) {
   if (b.closest('.adm-live, [data-live-ok]') || b.hasAttribute('data-live-ok') || b.hasAttribute('aria-haspopup')) return;
   /* رؤوس الأقسام المطوية وشرائح التصفية ليست إجراءات */
   if (b.classList.contains('t2-sec-h') || b.classList.contains('t2-group-h') || b.classList.contains('st-chip')) return;
+  /* v309: بطاقات الأقسام وصفوف القوائم وروابط المسار تفتح صفحة أو درجًا للعرض — ليست إجراءات (مثل «سجل توثيق الوصول» و«سجل السداد») */
+  if (b.matches('.hc, .hf-c, .nr-main, .cu-card, .tm-r, .t2-crumb-a, .t2-side-i, .t2-dock-i, .st-sa')) return;
   const t = (b.innerText || b.getAttribute('aria-label') || '').replace(LIVE_DIA, '').replace(/\s+/g, ' ').trim(); if (!t || LIVE_PASS.test(t) || !LIVE_ACT.test(t)) return;
   ev.preventDefault(); ev.stopImmediatePropagation();
   snack('لم يُنفَّذ شيء — هذا الإجراء يُفعَّل عند ربطه بالخادم.');
@@ -16663,6 +16665,7 @@ const cpgDur = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); return m
 function cpgPageLabel() { const k = S.tab === 'other' ? S.other : S.tab; return [k || 'dash', (S.tab === 'other' && LP[S.other] && LP[S.other].t) || PAGES[S.tab] || ({ contracts: 'عقودي', pay: 'السداد', payrec: 'سجلات السداد', reqs: 'طلبات خدماتي', svc: 'خدماتي', contract: 'تفاصيل العقد', payment: 'تفاصيل الدفعة', req: 'تفاصيل الطلب', quote: 'عروض الأسعار', msg: 'مركز المراسلات', notif: 'الإشعارات' })[S.tab] || k]; }
 /* ---------- الصفحات ---------- */
 function cpgHubPage() {
+  if (LIVE.on && !CPG.logAt) { CPG.logAt = -1; cpgLogLoad().then(draw); }
   const C = cpgClients(), L = CPG.log || [], ss = {}; L.forEach(function (r) { ss[r.session] = 1; });
   return secHub('cpg', { t: 'صفحة العميل', s: 'ادخل صفحة أي عميل كما يراها هو، وكل دخول وتصفح وإجراء يُوثَّق باسمك في سجل خاص.', ic: 'cpg' }, [
     ['acc', 'الوصول', 'user-circle:teal', [{ ic: 'cpg-access', t: 'الوصول لصفحات العملاء', d: 'اختر العميل واكتب سبب الدخول، ثم تصفّح صفحته كما يراها واتخذ الإجراء من «إجراءات الموظف»', n: fmtNum(C.length) + ' عميل', big: true, go: function () { go('other', 'cpg-access'); } }]],
