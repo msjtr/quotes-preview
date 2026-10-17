@@ -9243,7 +9243,7 @@ function dcPcClient(cid, L) {
   /* ترتيب ثابت: هوية العميل ← ملخص واحد ← العقود ← المدفوعات (المستحقة ثم سجل السداد) */
   return [lvCliHead(cid, name, 'ملف العقود والمدفوعات — ' + ctW(L.length), function () { ADM.dcPcC = ''; }),
     dcSumCard(L, 'ملخص العميل'),
-    dcHead('العقود', 'مجمّعة حسب الحالة — اضغط المجموعة لفتحها', 'contract'),
+    dcHead('العقود', 'مجمّعة حسب الحالة — اضغط المجموعة لفتحها', 'files'),
     e('div', { class: 'ax-form' }, [
       sec('def', 'العقود المتعثرة', def, 'متأخر ' + sar(S(def, 'odAmt'))),
       sec('late', 'العقود المتأخرة', late, 'متأخر ' + sar(S(late, 'odAmt')) + ' في ' + pw(odN(late))),
@@ -16814,7 +16814,7 @@ if (LIVE.on) {
 /* ===================== v305: «التواصل المباشر» — دليل هواتف وبريد الشركاء · المراسلة · تقرير الإرسال · القوالب الجاهزة =====================
    الإرسال الفعلي موقوف بقرار الإدارة: الرسالة تُحفظ «محجوزة» في التقرير ولا تخرج لأي أحد. */
 const COMM = { ct: null, ctAt: 0, ctErr: '', tpl: null, tplAt: 0, can: false, msgs: null, msgAt: 0, q: '', f: '', rf: '', rr: '', rs: 'new', W: null };
-const COMM_ROLE = { client: ['عميل', 'users-three:teal'], staff: ['موظف', 'briefcase:navy'], marketer: ['مسوّق', 'megaphone-simple:sky'], investor: ['مستثمر', 'chart-line-up:gold'] };
+const COMM_ROLE = { client: ['عميل', 'users-three:teal'], staff: ['موظف', 'briefcase:navy'], marketer: ['مسوّق', 'megaphone-simple:sky'], investor: ['مستثمر', 'trend-up:gold'] };
 const COMM_CH = { email: ['البريد الإلكتروني', 'envelope-simple'], whatsapp: ['واتساب', 'whatsapp-logo'] };
 const COMM_ST = { held: ['محجوزة — الإرسال موقوف', 'warn'], queued: ['في الانتظار', 'info'], sent: ['أُرسلت', 'ok'], partial: ['أُرسلت جزئيًا', 'warn'], failed: ['فشلت', 'danger'], cancelled: ['أُلغيت', ''], skipped: ['بلا عنوان — تُخطّيت', ''] };
 const COMM_ERR = { name_required: 'اكتب الاسم.', phone_or_email_required: 'أدخل الجوال أو البريد.', bad_phone: 'رقم الجوال غير صحيح.', bad_email: 'البريد غير صحيح.', duplicate: 'جهة الاتصال موجودة مسبقًا بالجوال أو البريد نفسه.', forbidden: 'لا تملك الصلاحية.', channel_required: 'اختر وسيلة الإرسال.', body_required: 'اكتب محتوى الرسالة.', subject_required: 'اكتب عنوان البريد.', audience_required: 'حدّد المستلمين.', no_recipients: 'لا مستلمين بهذا التحديد.', bad_channel: 'اختر الوسيلة.' };
@@ -16863,7 +16863,7 @@ function commDirPage() {
       pick ? liveOk(DS.button('من جهات اتصال الجوال', { ui: 'device-mobile', onClick: commPickDevice })) : null,
       liveOk(DS.button('استيراد ملف جهات (vCard)', { ui: 'upload-simple', onClick: function () { vin.click(); } })), vin]),
     pick ? null : e('small', { class: 'cu-dr-hint' }, 'الاستيراد المباشر من جهات اتصال الجوال متاح في متصفح أندرويد. على آيفون: شارك جهة الاتصال من تطبيق «جهات الاتصال» كملف vCard ثم استورده من الزر أعلاه.'),
-    e('div', { class: 'm3-tools' }, [chipRow([['', 'الكل', 'users-three:navy', A.length], ['client', 'العملاء', 'users-three:teal', n('client')], ['staff', 'الموظفون', 'briefcase:navy', n('staff')], ['marketer', 'المسوّقون', 'megaphone-simple:sky', n('marketer')], ['investor', 'المستثمرون', 'chart-line-up:gold', n('investor')], ['fav', 'المفضلة', 'star:gold', A.filter(function (c) { return c.favorite; }).length], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron', A.filter(function (c) { return c.source !== 'auto'; }).length], ['arch', 'المؤرشفة', 'tray:navy', (COMM.ct || []).filter(function (c) { return c.archived; }).length]], f, function (v) { COMM.f = v; draw(); }, 'تصفية الدليل'),
+    e('div', { class: 'm3-tools' }, [chipRow([['', 'الكل', 'users-three:navy', A.length], ['client', 'العملاء', 'users-three:teal', n('client')], ['staff', 'الموظفون', 'briefcase:navy', n('staff')], ['marketer', 'المسوّقون', 'megaphone-simple:sky', n('marketer')], ['investor', 'المستثمرون', 'trend-up:gold', n('investor')], ['fav', 'المفضلة', 'star:gold', A.filter(function (c) { return c.favorite; }).length], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron', A.filter(function (c) { return c.source !== 'auto'; }).length], ['arch', 'المؤرشفة', 'tray:navy', (COMM.ct || []).filter(function (c) { return c.archived; }).length]], f, function (v) { COMM.f = v; draw(); }, 'تصفية الدليل'),
       e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { COMM.q = qi.value; draw(); } }), COMM.q ? DS.button('مسح', { size: 'sm', onClick: function () { COMM.q = ''; draw(); } }) : null])]),
     L.length ? e('div', { class: 'tm-rows comm-dir' }, L.slice(0, 400).map(function (c) {
       return e('div', { class: 'tm-r tm-wrap comm-ct' + (c.archived ? ' is-arch' : '') }, [
@@ -17027,7 +17027,7 @@ function commTplOpen(t) {
     foot: [e('div', { class: 'cu-dr-fa is-wrap' }, ro ? [DS.button('إغلاق', { onClick: admClose })] : [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ القالب', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(); } })), t ? liveOk(DS.button(t.archived ? 'إعادة من الأرشيف' : 'أرشفة', { ui: 'tray', onClick: function () { save(!t.archived); } })) : null, DS.button('إغلاق', { onClick: admClose })])] });
 }
 function commRegister() {
-  try { Object.assign(ICON, { comm: ['chats-circle', 'sky'], 'comm-dir': ['users-three', 'teal'], 'comm-send': ['paper-plane-tilt', 'sky'], 'comm-rep': ['chart-bar', 'navy'], 'comm-tpl': ['file-text', 'gold'] }); } catch (err) { void err; }
+  try { Object.assign(ICON, { comm: ['chat-circle-dots', 'sky'], 'comm-dir': ['users-three', 'teal'], 'comm-send': ['paper-plane-tilt', 'sky'], 'comm-rep': ['chart-bar', 'navy'], 'comm-tpl': ['file-text', 'gold'] }); } catch (err) { void err; }
   lp('comm', 'التواصل المباشر', null, 'comm', commHubPage);
   lp('comm-dir', 'دليل هواتف وبريد الشركاء', 'comm', 'comm-dir', commDirPage);
   lp('comm-send', 'مراسلة', 'comm', 'comm-send', commSendPage);
