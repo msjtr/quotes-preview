@@ -10791,7 +10791,7 @@ function cuRegister() {
   lp('soon-par', 'الشركاء', null, 'soon-par', cuSoon('الشركاء', 'handshake', 'قسم مستقل للشركاء وعروضهم وتسوياتهم — مرحلة قادمة.'));
   lp('soon-mkt', 'المسوّقون', null, 'soon-mkt', cuSoon('المسوّقون', 'megaphone-simple', 'قسم مستقل للمسوّقين وعمولاتهم وروابطهم — مرحلة قادمة.'));
 }
-const cuNavOf = (o) => o === 'fin' || /^fin-/.test(o || '') || o === 'pay-center' || o === 'sys-pay' || /^cu-admx/.test(o || '') ? 'fin' : o === 'cpg' || /^cpg-/.test(o || '') ? 'cpg' : o === 'comm' || /^comm-/.test(o || '') ? 'comm' : o === 'ctr' || /^cu-docs/.test(o || '') ? 'cu' : /^(cu|cu-.*|cs.*)$/.test(o || '') ? 'cu' : /^sys/.test(o || '') ? 'sys' : o === 'adm-more' ? 'adm-more' : /^soon-/.test(o || '') ? o : null; const cuNavOfOld = (o) => o === 'cu-inbox' ? 'cu-inbox' : o === 'cu-mem' || o === 'cu-comms' ? o : (o === 'cu-list' || o === 'cu-file' || o === 'cs-customers' || o === 'cs-customer') ? 'cu-list' : o === 'cu' ? 'cu' : /^soon-/.test(o) ? o : (o === 'cs-tickets' || o === 'cs-ticket' || o === 'cs-complaints') ? 'cs-tickets' : (o === 'cs' || o === 'cs-updates' || o === 'cs-devices' || o === 'cs-requests') ? 'cu' : null;
+const cuNavOf = (o) => o === 'comm-tpl' || o === 'sys-pay' ? 'sys' : o === 'fin' || /^fin-/.test(o || '') || o === 'pay-center' || /^cu-admx/.test(o || '') ? 'fin' : o === 'cpg' || /^cpg-/.test(o || '') ? 'cpg' : o === 'comm' || /^comm-/.test(o || '') ? 'comm' : o === 'ctr' || /^cu-docs/.test(o || '') ? 'cu' : /^(cu|cu-.*|cs.*)$/.test(o || '') ? 'cu' : /^sys/.test(o || '') ? 'sys' : o === 'adm-more' ? 'adm-more' : /^soon-/.test(o || '') ? o : null; const cuNavOfOld = (o) => o === 'cu-inbox' ? 'cu-inbox' : o === 'cu-mem' || o === 'cu-comms' ? o : (o === 'cu-list' || o === 'cu-file' || o === 'cs-customers' || o === 'cs-customer') ? 'cu-list' : o === 'cu' ? 'cu' : /^soon-/.test(o) ? o : (o === 'cs-tickets' || o === 'cs-ticket' || o === 'cs-complaints') ? 'cs-tickets' : (o === 'cs' || o === 'cs-updates' || o === 'cs-devices' || o === 'cs-requests') ? 'cu' : null;
 function cuHomeBlock() {
   const IB = cuInbox(), late = IB.filter(function (x) { return x.sla[1] === 'danger'; }).length;
   return sec('قسم العملاء', null, [lvHub([['cu-inbox', 'بانتظار إجراء', fmtNum(IB.length) + ' عنصر' + (late ? ' · ' + fmtNum(late) + ' متأخر' : ''), late ? 'danger' : IB.length ? 'warn' : 'ok', function () { ADM.cuf = ''; go('other', 'cu-inbox'); }, IB.length || null], ['cu-list', 'ملفات العملاء', fmtNum(cuList().length) + ' عملاء', 'ok', function () { go('other', 'cu-list'); }], ['cu', 'قسم العملاء', 'الأدوات والطلبات والإجراءات', 'ok', function () { go('other', 'cu'); }]])], true, 'adm:cu');
@@ -13905,6 +13905,7 @@ try {
   LP['me-verify'].run = liveVerifyPage;
   if (LP['sec-twofa']) LP['sec-twofa'].run = liveTotpPage; if (LP['sec-extracode']) LP['sec-extracode'].run = liveRecPage;
   if (LP['sec-password']) LP['sec-password'].run = livePwPage; if (LP['sec-sessions']) LP['sec-sessions'].run = liveSessPage;
+  if (LP['sys-pay']) LP['sys-pay'].t = 'إعدادات الدفع الإلكتروني'; if (LP['cu-2fa']) LP['cu-2fa'].t = 'المصادقة الثنائية';
   if (LP['cu-docs-pc']) LP['cu-docs-pc'].t = 'عقود العملاء'; if (!LP['pay-center']) lp('pay-center', 'مركز الدفع', 'cu-admx', 'cu-admx-fee', admPayPage); if (!LP['sys-org']) lp('sys-org', 'بيانات المنشأة', 'sys', 'sys', admOrgPage); if (LP['cu-admx-fee']) LP['cu-admx-fee'].t = 'الرسوم والمصاريف والضرائب'; if (LP['cu-admx-bd']) LP['cu-admx-bd'].t = 'السندات التنفيذية';
   LP['prof-account'].run = function () { const me = LIVE.me || {}; return [PH('idcard', 'بياناتُ الحساب', [['نوع الحساب', LIVE_ROLE_AR[me.user_type] || me.user_type || '—', 'user'], ['الأدوار', LIVE.roles.map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ') || '—', 'shield-check'], ['رقم تيرا', me.tera_id || '—', 'hash']], me.status === 'active' ? ['نشِط', 'ok'] : ['غير مفعّل', 'warn'])].concat(profAccount()); };
   if (LP['my-docs']) LP['my-docs'].run = function () { const up = LVD.filter(function (d) { return d[3]; }).length; return [lvHero({ ic: 'files', eye: 'خدماتي', t: 'مرفقاتي', tiles: [['المرفوعة', fmtNum(up) + ' / ' + fmtNum(LVD.length), 'files'], ['المقبولة', fmtNum(LVD.filter(function (d) { return d[2]; }).length), 'seal-check']] })].concat(liveDocsList()); };
@@ -15067,8 +15068,10 @@ function admSysPage() {
   return e('div', { class: 't2-stack' }, secHub('sys', { t: 'إعدادات النظام', s: 'الأدوار والصلاحيات والمسمّيات وبيانات المنشأة وإعدادات الدفع — من القاعدة مباشرة.', ic: 'gear-six:navy' }, [
     ['acc', 'الوصول والصلاحيات', 'key:navy', [c('key:navy', 'الأدوار والصلاحيات', 'الأدوار وصلاحيات كل دور كما في القاعدة', 'sys-roles'), c('identification-badge:teal', 'المسمّيات الوظيفية', 'المسمّيات وتصنيفاتها', 'sys-titles'),
       c('users-three:teal', 'دليل الحسابات', 'الهويات وأدوارها — مع قسم الموظفين', null), c('paper-plane-tilt:teal', 'دعوات الحسابات', 'الدعوات وحالتها', 'sys-invites')]],
-    ['fin', 'المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم على العقود والعمولات والمسوّقون والمصاريف — تفعيل وإيقاف', 'sys-fees')]],
-    ['org', 'المنشأة والدفع', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والرقم الضريبي والعنوان والتواصل والحساب البنكي', 'sys-org'), c('card:teal', 'إعدادات الدفع الإلكتروني', 'تشغيل خدمات Paymob وإيقافها ووسائل الدفع', 'sys-pay')]],
+    /* v315: إعدادات كل قسم في مجموعة باسمه — ولا إعدادات داخل الأقسام نفسها */
+    ['fin', 'قسم المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم والنسب والمصاريف والعمولات — إضافة وتفعيل وإيقاف', 'sys-fees'), c('credit-card:teal', 'إعدادات الدفع الإلكتروني', 'تشغيل خدمات الدفع وإيقافها ووسائل الدفع', 'sys-pay')]],
+    ['comm', 'التواصل المباشر', 'chat-circle-dots:sky', [c('file-text:gold', 'القوالب الجاهزة للمراسلة', 'قوالب البريد وواتساب بالهوية — إنشاء وتعديل، وتظهر مباشرة في «المراسلة»', 'comm-tpl')]],
+    ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والرقم الضريبي والعنوان والتواصل والحساب البنكي', 'sys-org')]],
     ['ops', 'التشغيل', 'sliders-horizontal:teal', [c('timer:saffron', 'مدد الإنجاز', 'المدة المسموحة لكل نوع عمل', 'sys-sla'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'), c('megaphone-simple:sky', 'قوالب الإشعارات', 'عنوان الإشعار ونصه ورابطه', 'sys-ntpl'), c('clock-counter-clockwise:navy', 'سجل الإعدادات', 'ماذا تغيّر ومن غيّره ومتى', 'sys-log')]],
     ['tpl', 'القوالب والمستندات', 'seal-check:navy', (function () { try { return tmTplCards('p').concat(tmTplCards('s'), tmShared().filter(function (x) { return x.t !== 'سياسة التسعير والسداد'; })); } catch (err) { return [c('contract', 'قوالب العروض والعقود والفواتير', 'قوالب الشركاء والمتاجر والمستندات المشتركة', 'sys-qt')]; } })()],
     ['loy', 'نقاط ومكافآت تيرا', 'star:gold', [c('star:gold', 'إعدادات النقاط', 'معدلات الاكتساب وقيمة النقاط والحدود', 'sys-loy'), c('check-circle:teal', 'اعتماد النقاط', 'النقاط المعلّقة بانتظار الاعتماد', 'sys-loy-appr')]]]));
@@ -15143,7 +15146,8 @@ function admPayPage() {
         ['رابط مدفوع', L.filter(function (x) { return x.status === 'paid'; }).length, 'ok', 'check-circle'], ['وسيلة موقوفة', M.filter(function (m) { return !m.enabled; }).length, '', 'x-circle']]),
       g.keys ? null : DS.note('warn', 'مفاتيح Paymob غير مضافة على الخادم', 'الناقص: ' + ((g.missing || []).join('، ') || 'غير محدد') + '. تُضاف في ملف بيئة الخادم، ولا تُكتب هنا ولا في المستودع.'),
       g.keys && g.mode === 'test' ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي، ولا تتغير دفعات العقود. للتحويل إلى الحي تُستبدل المفاتيح على الخادم.') : null,
-      e('div', { class: 'adm-chips', role: 'tablist', 'aria-label': 'أقسام مركز الدفع' }, [['links', 'روابط الدفع'], ['txns', 'العمليات'], ['trin', 'إيصالات التحويل'], ['gw', 'سجل عمليات البوابة'], ['subs', 'الاشتراكات'], ['cards', 'البطاقات المحفوظة'], ['svc', 'الخدمات ووسائل الدفع']].filter(function (t) { return t[0] !== 'links' || D.can.links; }).map(function (t) {
+      ADM.payMode === 'set' ? null : e('div', { class: 'adm-chips', role: 'tablist', 'aria-label': 'أقسام مركز الدفع' }, [['links', 'روابط الدفع'], ['txns', 'العمليات'], ['trin', 'إيصالات التحويل'], ['gw', 'سجل عمليات البوابة'], ['subs', 'الاشتراكات'], ['cards', 'البطاقات المحفوظة']].filter(function (t) { return t[0] !== 'links' || D.can.links; }).map(function (t) {
+        if (st.tab === 'svc') st.tab = '';
         const cur = (st.tab || (D.can.links ? 'links' : 'txns')) === t[0];
         return e('button', { type: 'button', role: 'tab', class: 'adm-chip' + (cur ? ' is-on' : ''), 'aria-selected': String(cur), onClick: function () { st.tab = t[0]; paint(); } }, t[1]); }))]
       .concat((function (tab) {
@@ -15152,9 +15156,9 @@ function admPayPage() {
         if (tab === 'cards') return [payCardsPanel(D, refetch)];
         if (tab === 'trin') return [admTrPage()];
         if (tab === 'gw') return [admGwPage()];
-        if (tab === 'svc') return [payServicesPanel(D, refetch)].concat(payMethodsPanel(D, refetch));
+        if (tab === 'svc' && ADM.payMode === 'set') return [payServicesPanel(D, refetch)].concat(payMethodsPanel(D, refetch));
         return [payIntentsPanel(D, refetch), payTxnsPanel(D, refetch)];
-      })(st.tab || (D.can.links ? 'links' : 'txns')));
+      })(ADM.payMode === 'set' ? 'svc' : (st.tab || (D.can.links ? 'links' : 'txns'))));
   });
   return box;
 }
@@ -15649,9 +15653,9 @@ function lvSvcPage() {
       return axRow({ ic: rType(x.kind)[2], t: y.x.name, sub: LV_SR_T[x.kind] + ' — ' + x.req_no + ' — ' + st[1] + (x.action_note ? ' — ' + lvSrShort(x) : ''), tone: lvSrOpenSt(x) ? 'warn' : x.status === 'rejected' ? 'danger' : '', go: function () { lvSrOpen(x.id); } }); }), 'لا طلبات هنا') });
 }
 const LIVE_PAGES = { client: {},
-  admin: {  'pay-center': admPayPage, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
+  admin: {  'pay-center': function () { ADM.payMode = 'ops'; return admPayPage(); }, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
-    'sys-pay': function () { (ADMS.paycenter || (ADMS.paycenter = { q: '', f: 'all', data: null, at: 0 })).tab = 'svc'; return admPayPage(); } } };
+    'sys-pay': function () { ADM.payMode = 'set'; return admPayPage(); } } };
 /* ---------- v283: قسم العملاء — إدارة الحساب ومركز الأمن وطلبات الملف والتدشين من القاعدة مباشرة ----------
    المصادر: admin_accounts_list · admin_account_detail · admin_session_log · admin_session_close · admin_2fa_accounts · admin_audit_list
             admin_profile_update_requests · admin_profile_update_decide · admin_launch_list — كلها تتحقق من صلاحية الموظف في القاعدة. */
@@ -16144,7 +16148,8 @@ function lvFeePage() {
   if (!LIVE_FEE.at) { LIVE_FEE.at = 1; lvFeeLoad().then(draw); }
   const R = cuList().map(function (c) { return axRep(c.id); }).filter(function (r) { return r.any; }), cq = ADM.feC || '', can = LIVE_FEE.can;
   const flOf = function (r) { return r.FE.map(function (f) { f.cid = r.cid; f.name = r.name; return f; }).filter(function (f) { return !f.def; }); };
-  const acts = can ? e('div', { class: 't2-row-wrap lv-fee-acts' }, [liveOk(DS.button('إضافة نسبة', { size: 'sm', ui: 'plus', onClick: lvAddRate })), liveOk(DS.button('إضافة مصروف', { size: 'sm', ui: 'plus', onClick: lvAddExp })), liveOk(DS.button('الإعدادات', { size: 'sm', ui: 'gear-six', onClick: function () { go('other', 'sys-fees'); } }))]) : null;
+  /* v315: إضافة النسب والمصاريف وتفعيلها من «إعدادات النظام › قسم المالية» — هذه الصفحة للتقرير فقط */
+  const acts = e('small', { class: 'cu-dr-hint lv-fee-acts' }, 'النسب والمصاريف وتفعيلها تُدار من «إعدادات النظام › قسم المالية › الرسوم والضرائب والعمولات».');
   const kp = function (s) { return axKpis([['المحمَّل على العملاء', sar(s.chg), 'warn', 'coins'], ['منه الضريبة', sar(s.vat), '', 'receipt'], ['الداخلي', sar(s.exp), 'danger', 'users-three'], ['صافي إيراد الرسوم', sar(s.net), feeTone(s.net), 'trend-up']]); };
   const r0 = cq ? R.filter(function (r) { return r.cid === cq; })[0] : null;
   if (r0) {
@@ -17103,8 +17108,167 @@ function commHubPage() {
   return secHub('comm', { t: 'التواصل المباشر', s: 'دليل الشركاء، والمراسلة بالبريد وواتساب بقوالب الهوية، وتقرير الإرسال — الإرسال الفعلي موقوف الآن بقرار الإدارة.', ic: 'comm' }, [
     ['dir', 'الدليل', 'users-three:teal', [{ ic: 'comm-dir', t: 'دليل هواتف وبريد الشركاء', d: 'العملاء والموظفون والمسوّقون والمستثمرون — تلقائيًا من الحسابات، ويدويًا أو من جهات اتصال الجوال', n: COMM.ct ? fmtNum(C.length) + ' جهة اتصال' : 'الدليل', go: function () { go('other', 'comm-dir'); } }]],
     ['snd', 'المراسلة', 'paper-plane-tilt:sky', [{ ic: 'comm-send', t: 'المراسلة', d: 'الكل أو المفضلة أو حسب الدور أو أشخاص محددون · البريد بالقالب المعتمد · واتساب بالشعار واسم العميل', badge: ['الإرسال موقوف', 'warn'], go: function () { go('other', 'comm-send'); } },
-      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'الرسائل ومستلموها حسب نوع المستلم والوسيلة — بالتصفية والفرز', n: COMM.msgs ? fmtNum(M.length) + ' رسالة' : 'التقرير', go: function () { go('other', 'comm-rep'); } },
-      { ic: 'comm-tpl', t: 'القوالب الجاهزة', d: 'قوالب معتمدة جاهزة، وإنشاء قالب جديد يظهر مباشرة في المراسلة', n: COMM.tpl ? fmtNum(T.length) + ' قالب' : 'القوالب', go: function () { go('other', 'comm-tpl'); } }]]]);
+      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'الرسائل ومستلموها حسب نوع المستلم والوسيلة — بالتصفية والفرز', n: COMM.msgs ? fmtNum(M.length) + ' رسالة' : 'التقرير', go: function () { go('other', 'comm-rep'); } }]]]);
+}
+/* ---------- v315: نموذج استيراد جهات الاتصال — تنزيل النموذج (Excel/CSV) ← الكتابة فيه ← رفعه ← مطابقة الأعمدة والتحقق ← القبول ← حفظ الملف للتنزيل ---------- */
+const CI_COLS = [['name', 'الاسم', 1, ['الاسم', 'الاسمالكامل', 'اسمالعميل', 'name', 'fullname']], ['phone', 'رقم الجوال', 0, ['رقمالجوال', 'الجوال', 'الهاتف', 'رقمالهاتف', 'phone', 'mobile']], ['email', 'البريد الإلكتروني', 0, ['البريدالالكتروني', 'البريد', 'الايميل', 'email', 'mail']],
+  ['ident', 'المعرّف', 0, ['المعرف', 'رقمتيرا', 'ident', 'id']], ['partner_type', 'نوع الشريك', 0, ['نوعالشريك', 'النوع', 'partnertype', 'type']], ['roles', 'الدور', 0, ['الدور', 'الادوار', 'role', 'roles']], ['note', 'ملاحظة', 0, ['ملاحظه', 'ملاحظات', 'note', 'notes']]];
+const CI_ROLE = { 'عميل': 'client', 'موظف': 'staff', 'مسوق': 'marketer', 'مستثمر': 'investor', client: 'client', staff: 'staff', marketer: 'marketer', investor: 'investor' };
+const CI_ERR = { name_required: 'الاسم ناقص', phone_or_email_required: 'لا جوال ولا بريد', bad_phone: 'رقم الجوال غير صحيح', bad_email: 'البريد غير صحيح', duplicate: 'موجودة في الدليل (مكررة)', bad_role: 'الدور غير معروف' };
+const ciN = (t) => String(t || '').replace(/[ً-ْـ*]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\s_\-()]/g, '').toLowerCase();
+const ciX = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/* ZIP بلا ضغط (stored) — يكفي لملف xlsx صغير */
+const CI_CRC = (function () { const T = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; T.push(c >>> 0); } return T; })();
+function ciCrc(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CI_CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function ciZip(files) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const u16 = (v) => [v & 255, (v >>> 8) & 255], u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  files.forEach(function (f) {
+    const nm = enc.encode(f[0]), data = enc.encode(f[1]), crc = ciCrc(data);
+    const loc = new Uint8Array([].concat(u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nm.length), u16(0)));
+    parts.push(loc, nm, data);
+    cen.push(new Uint8Array([].concat(u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nm.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(off))), nm);
+    off += loc.length + nm.length + data.length;
+  });
+  const csz = cen.reduce(function (s, x) { return s + x.length; }, 0);
+  return new Blob(parts.concat(cen, [new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(csz), u32(off), u16(0)))]), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+function ciSheet(rows, widths) {
+  const col = (i) => String.fromCharCode(65 + i);
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView rightToLeft="1" workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+    + '<cols>' + widths.map(function (w, i) { return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>'; }).join('') + '</cols><sheetData>'
+    + rows.map(function (r, ri) { return '<row r="' + (ri + 1) + '">' + r.map(function (v, ci) { return '<c r="' + col(ci) + (ri + 1) + '" t="inlineStr"' + (ri === 0 ? ' s="1"' : ' s="2"') + '><is><t xml:space="preserve">' + ciX(v) + '</t></is></c>'; }).join('') + '</row>'; }).join('') + '</sheetData></worksheet>';
+}
+function ciTemplate(kind) {
+  const head = CI_COLS.map(function (c) { return c[1] + (c[2] ? ' *' : ''); });
+  if (kind === 'csv') { const b = new Blob(['﻿' + head.join(',') + '\r\n'], { type: 'text/csv;charset=utf-8' }); return ciSave(b, 'TERA-contacts-import-template.csv'); }
+  const help = [['التعليمات', ''], ['الاسم *', 'إلزامي — حرفان على الأقل'], ['رقم الجوال', 'مثل 05XXXXXXXX أو 9665XXXXXXXX — يلزم الجوال أو البريد'], ['البريد الإلكتروني', 'مثل name@example.com'], ['المعرّف', 'اختياري — رقم تيرا أو معرّف داخلي'], ['نوع الشريك', 'اختياري — فرد · منشأة · جهة'], ['الدور', 'عميل · موظف · مسوّق · مستثمر — أكثر من دور بفاصلة، وإن تُرك يُعدّ عميلًا'], ['ملاحظة', 'اختياري'], ['', ''], ['تنبيه', 'لا تغيّر أسماء الأعمدة في الصف الأول، واكتب كل جهة في صف. حتى 500 جهة في الملف.']];
+  const ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>';
+  const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets><sheet name="جهات الاتصال" sheetId="1" r:id="rId1"/><sheet name="التعليمات" sheetId="2" r:id="rId2"/></sheets></workbook>';
+  const wrels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  const st = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="12"/><name val="Arial"/></font><font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0A8F97"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>';
+  return ciSave(ciZip([['[Content_Types].xml', ct], ['_rels/.rels', rels], ['xl/workbook.xml', wb], ['xl/_rels/workbook.xml.rels', wrels], ['xl/styles.xml', st],
+    ['xl/worksheets/sheet1.xml', ciSheet([head], [26, 18, 28, 16, 16, 18, 26])], ['xl/worksheets/sheet2.xml', ciSheet(help, [22, 70])]]), 'TERA-contacts-import-template.xlsx');
+}
+/* اسم الملف المحفوظ: بعض المتصفحات تُسقط الأسماء العربية في التنزيل — يُستعمل اسم لاتيني بالتاريخ مع الامتداد نفسه */
+function ciSave(blob, name) { if (/[^\x20-\x7E]/.test(String(name || ''))) name = 'TERA-import-' + iso(new Date()) + ((String(name).match(/\.[a-z0-9]{2,5}$/i) || ['.bin'])[0]); const u = URL.createObjectURL(blob), a = e('a', { href: u, download: name, hidden: '' }); document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 4000); }
+/* قراءة xlsx: فك ZIP (stored/deflate) بأداة المتصفح ثم أول ورقة */
+async function ciUnzip(buf) {
+  const v = new DataView(buf), u8 = new Uint8Array(buf), dec = new TextDecoder(); let eo = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) if (v.getUint32(i, true) === 0x06054b50) { eo = i; break; }
+  if (eo < 0) throw new Error('zip');
+  const n = v.getUint16(eo + 10, true); let p = v.getUint32(eo + 16, true); const out = {};
+  for (let k = 0; k < n; k++) {
+    const meth = v.getUint16(p + 10, true), csz = v.getUint32(p + 20, true), nl = v.getUint16(p + 28, true), xl = v.getUint16(p + 30, true), cl = v.getUint16(p + 32, true), lo = v.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
+    if (!/^(xl\/worksheets\/sheet1\.xml|xl\/sharedStrings\.xml|xl\/workbook\.xml|xl\/_rels\/workbook\.xml\.rels|xl\/worksheets\/sheet\d+\.xml)$/.test(name)) continue;
+    const ds = lo + 30 + v.getUint16(lo + 26, true) + v.getUint16(lo + 28, true), raw = u8.subarray(ds, ds + csz);
+    if (meth === 0) out[name] = dec.decode(raw);
+    else if (meth === 8) { if (typeof DecompressionStream === 'undefined') throw new Error('nodecomp'); out[name] = await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text(); }
+  }
+  return out;
+}
+async function ciReadXlsx(buf) {
+  const Z = await ciUnzip(buf), P = new DOMParser();
+  let sheet = 'xl/worksheets/sheet1.xml';
+  try { const wb = P.parseFromString(Z['xl/workbook.xml'], 'application/xml'), rid = wb.getElementsByTagName('sheet')[0].getAttribute('r:id'), rl = P.parseFromString(Z['xl/_rels/workbook.xml.rels'], 'application/xml');
+    [].slice.call(rl.getElementsByTagName('Relationship')).forEach(function (r) { if (r.getAttribute('Id') === rid) sheet = 'xl/' + r.getAttribute('Target').replace(/^\/?xl\//, '').replace(/^\//, ''); }); } catch (err) { void err; }
+  if (!Z[sheet]) throw new Error('sheet');
+  const SS = Z['xl/sharedStrings.xml'] ? [].slice.call(P.parseFromString(Z['xl/sharedStrings.xml'], 'application/xml').getElementsByTagName('si')).map(function (si) { return [].slice.call(si.getElementsByTagName('t')).map(function (t) { return t.textContent; }).join(''); }) : [];
+  const doc = P.parseFromString(Z[sheet], 'application/xml'), rows = [];
+  [].slice.call(doc.getElementsByTagName('row')).forEach(function (r) {
+    const row = [];
+    [].slice.call(r.getElementsByTagName('c')).forEach(function (c) {
+      const ref = c.getAttribute('r') || '', L = (ref.match(/^[A-Z]+/) || ['A'])[0]; let ci = 0; for (let i = 0; i < L.length; i++) ci = ci * 26 + (L.charCodeAt(i) - 64); ci -= 1;
+      const t = c.getAttribute('t'), vEl = c.getElementsByTagName('v')[0], isEl = c.getElementsByTagName('is')[0];
+      row[ci] = t === 's' ? (SS[Number(vEl && vEl.textContent)] || '') : t === 'inlineStr' ? (isEl ? [].slice.call(isEl.getElementsByTagName('t')).map(function (x) { return x.textContent; }).join('') : '') : (vEl ? vEl.textContent : '');
+    });
+    rows.push(row.map(function (x) { return x == null ? '' : String(x); }));
+  });
+  return rows;
+}
+function ciReadCsv(t) {
+  t = String(t || '').replace(/^﻿/, ''); const first = t.split(/\r?\n/)[0] || '', d = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ';' : (first.indexOf('\t') >= 0 ? '\t' : ',');
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < t.length; i++) { const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true; else if (ch === d) { row.push(cur); cur = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; } else cur += ch; }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+/* مطابقة الأعمدة مع حقول الدليل والتحقق من كل صف */
+function ciMap(rows) {
+  const head = (rows[0] || []).map(ciN), idx = {};
+  CI_COLS.forEach(function (c) { const i = head.findIndex(function (h) { return c[3].indexOf(h) >= 0; }); if (i >= 0) idx[c[0]] = i; });
+  const miss = []; if (idx.name === undefined) miss.push('الاسم'); if (idx.phone === undefined && idx.email === undefined) miss.push('رقم الجوال أو البريد الإلكتروني');
+  if (miss.length) return { err: 'الملف لا يطابق النموذج — ينقصه عمود: ' + miss.join('، ') + '. نزّل النموذج واكتب فيه دون تغيير الصف الأول.' };
+  const out = [];
+  rows.slice(1).forEach(function (r, i) {
+    const g = function (k) { return idx[k] === undefined ? '' : String(r[idx[k]] || '').trim(); };
+    if (!CI_COLS.some(function (c) { return g(c[0]); })) return;
+    const x = { row: i + 2, name: g('name'), phone: g('phone').replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }).replace(/[\s\-()+]/g, ''), email: g('email').toLowerCase(), ident: g('ident'), partner_type: g('partner_type'), note: g('note'), roles: [], errs: [] };
+    if (/^5\d{8}$/.test(x.phone)) x.phone = '0' + x.phone;
+    String(g('roles')).split(/[،,;/|]+/).map(function (s) { return ciN(s); }).filter(Boolean).forEach(function (s) { const k = CI_ROLE[s]; if (k) { if (x.roles.indexOf(k) < 0) x.roles.push(k); } else x.errs.push('bad_role'); });
+    if (!x.roles.length) x.roles = ['client'];
+    if (x.name.length < 2) x.errs.push('name_required');
+    if (!x.phone && !x.email) x.errs.push('phone_or_email_required');
+    if (x.phone && !/^(05\d{8}|9665\d{8}|00\d{8,15}|\d{8,15})$/.test(x.phone)) x.errs.push('bad_phone');
+    if (x.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x.email)) x.errs.push('bad_email');
+    out.push(x);
+  });
+  if (!out.length) return { err: 'لا صفوف في الملف — اكتب جهة واحدة على الأقل تحت صف العناوين.' };
+  if (out.length > 500) return { err: 'الملف فيه ' + fmtNum(out.length) + ' صفًا — الحد 500 في الملف الواحد.' };
+  return { rows: out };
+}
+function ciB64(buf) { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+async function ciFile(fl) {
+  const nm = String(fl.name || ''), ext = (nm.match(/\.([a-z0-9]+)$/i) || ['', ''])[1].toLowerCase();
+  if (fl.size > 2 * 1024 * 1024) { snack('الملف أكبر من 2 ميغابايت.'); return; }
+  try {
+    const buf = await fl.arrayBuffer(), file = { name: nm, mime: fl.type || '', kind: ext === 'vcf' ? 'vcf' : ext === 'csv' ? 'csv' : 'xlsx', b64: ciB64(buf) };
+    if (ext === 'vcf') { const R = commVcf(new TextDecoder().decode(buf)); commImportOpen(R, file); return; }
+    if (ext !== 'xlsx' && ext !== 'csv') { snack('الملف المقبول: نموذج الاستيراد (xlsx أو csv) أو vCard.'); return; }
+    const rows = ext === 'csv' ? ciReadCsv(new TextDecoder().decode(buf)) : await ciReadXlsx(buf);
+    const M = ciMap(rows); ciPreview(M, file);
+  } catch (err) { ciPreview({ err: 'تعذّرت قراءة الملف — احفظه بصيغة Excel (xlsx) أو CSV من النموذج نفسه.' }, { name: nm }); }
+}
+function ciPreview(M, file) {
+  const D = { busy: false, err: '', res: null }, ok = (M.rows || []).filter(function (x) { return !x.errs.length; }), bad = (M.rows || []).filter(function (x) { return x.errs.length; });
+  const draw2 = function () {
+    const body = [cuSec('الملف', 'file-text', [DS.fields([['اسم الملف', ltr(file.name || '—')], ['الصفوف', fmtNum((M.rows || []).length)], ['مطابقة للحقول', fmtNum(ok.length)], ['فيها ملاحظات', bad.length ? DS.badge(fmtNum(bad.length), 'warn') : '0']])]),
+      M.err ? DS.note('warn', 'لم يُقبل الملف', M.err) : null,
+      D.res ? DS.note('ok', 'تم الاستيراد وحُفظ الملف', 'أُضيف ' + fmtNum(D.res.added || 0) + ' وتُخطّي ' + fmtNum(D.res.skipped || 0) + ' — والملف محفوظ في «الملفات المرفوعة» ويمكن تنزيله.') : null,
+      ok.length && !D.res ? cuSec('الجهات المطابقة', 'check-circle', [DS.fields(ok.slice(0, 200).map(function (x) { return [x.name, e('span', {}, [commRoleT(x.roles), ' · ', x.phone ? ltr(x.phone) : '', x.phone && x.email ? ' · ' : '', x.email ? ltr(x.email) : ''])]; }))]) : null,
+      bad.length && !D.res ? cuSec('صفوف لن تُستورد', 'warning', [DS.fields(bad.slice(0, 200).map(function (x) { return ['الصف ' + fmtNum(x.row) + (x.name ? ' — ' + x.name : ''), DS.badge(x.errs.map(function (k) { return CI_ERR[k] || k; }).join('، '), 'warn')]; })), e('small', { class: 'cu-dr-hint' }, 'صحّحها في الملف وارفعه مرة أخرى — المكررة تُتخطّى تلقائيًا.')]) : null,
+      D.res && (D.res.results || []).some(function (r) { return !r.ok; }) ? cuSec('تُخطّيت عند الحفظ', 'warning', [DS.fields(D.res.results.filter(function (r) { return !r.ok; }).slice(0, 200).map(function (r) { const x = ok[r.row - 1] || {}; return [(x.name || 'صف') + ' — الصف ' + fmtNum(x.row || r.row), DS.badge(CI_ERR[r.error] || r.error, 'warn')]; }))]) : null,
+      D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
+    const foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [!M.err && ok.length && !D.res ? liveOk(DS.button(D.busy ? 'جارٍ الاستيراد…' : 'قبول واستيراد ' + fmtNum(ok.length) + ' جهة', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: async function () {
+        D.busy = true; D.err = ''; draw2();
+        try { const j = await admRpc('admin_contacts_import_file', { p_rows: ok.map(function (x) { return { name: x.name, phone: x.phone, email: x.email, ident: x.ident, partner_type: x.partner_type, note: x.note, roles: x.roles }; }), p_file: file });
+          if (j && j.ok === false) throw new Error(j.error === 'forbidden' ? 'لا تملك صلاحية الاستيراد.' : j.error === 'file_size' ? 'الملف أكبر من 2 ميغابايت.' : 'تعذّر الاستيراد.');
+          D.res = j; D.busy = false; COMM.imp = null; await commLoad('ct'); draw2(); draw(); }
+        catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الاستيراد.'; draw2(); } } })) : null,
+      DS.button('نموذج الاستيراد', { ui: 'download-simple', onClick: function () { ciTemplate('xlsx'); } }), DS.button('إغلاق', { onClick: function () { admClose(); draw(); } })])];
+    cuBdDraw({ key: 'ciprev', ic: 'file-text:teal', title: 'استيراد من ملف', sub: file.name || '', body: body, foot: foot, onClose: function () { draw(); } });
+  };
+  draw2();
+}
+/* الملفات المرفوعة: تُحفظ بعد القبول وتُنزَّل كما رُفعت */
+function ciFilesOpen() {
+  const draw2 = function () {
+    const L = COMM.imp || [];
+    const sub = COMM.imp ? fmtNum(L.length) + ' ملف · محفوظة بعد قبولها' : 'جارٍ التحميل…';
+    const dr = cuBdDraw({ key: 'cifiles', ic: 'files:teal', title: 'الملفات المرفوعة', sub: sub, onClose: function () { draw(); }, body: [COMM.imp === null || COMM.imp === undefined ? clWait('الملفات') : L.length ? e('div', { class: 'cu-mgr-docs' }, L.map(function (f) {
+        return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, ltr(f.name)), e('small', {}, [bdiD(iso(new Date(f.at))), ' ', ltr(hm(new Date(f.at))), ' · ', f.by || '—', ' · أُضيف ', fmtNum(f.added), ' وتُخطّي ', fmtNum(f.skipped), ' من ', fmtNum(f.total)])]),
+          e('span', { class: 'adm-doc-a' }, [DS.badge(f.kind === 'vcf' ? 'vCard' : f.kind.toUpperCase(), 'info'), liveOk(DS.button('تنزيل', { size: 'sm', tone: 'primary', ui: 'download-simple', onClick: async function () {
+            try { const j = await admRpc('admin_contacts_import_file_get', { p_id: f.id }); if (!j || j.ok === false) throw new Error(); const b = Uint8Array.from(atob(j.b64), function (c) { return c.charCodeAt(0); }); ciSave(new Blob([b], { type: j.mime || 'application/octet-stream' }), j.name || 'file'); }
+            catch (err) { snack('تعذّر تنزيل الملف.'); } } }))])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا ملفات مرفوعة بعد.')],
+      foot: [e('div', { class: 'cu-dr-fa' }, [DS.button('إغلاق', { onClick: function () { admClose(); draw(); } })])] });
+    try { const hs = dr && dr.querySelector('.cu-dr-h > div > span'); if (hs) hs.textContent = sub; } catch (err) { void err; }
+  };
+  if (!COMM.imp) admRpc('admin_contacts_import_files', {}).then(function (j) { COMM.imp = (j && j.rows) || []; draw2(); }).catch(function () { COMM.imp = []; draw2(); });
+  draw2();
 }
 /* ---------- البطاقة الأولى: الدليل ---------- */
 function commDirPage() {
@@ -17115,17 +17279,24 @@ function commDirPage() {
   const R = all.filter(function (c) { return fit(c, f) && (!q || [c.name, c.phone, c.email, c.ident, c.partner_type].join(' ').toLowerCase().indexOf(q) >= 0); });
   const n = function (r) { return A.filter(function (c) { return (c.roles || []).indexOf(r) >= 0; }).length; };
   const pick = typeof navigator !== 'undefined' && navigator.contacts && typeof navigator.contacts.select === 'function';
-  const vin = e('input', { type: 'file', accept: '.vcf,text/vcard,text/x-vcard', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) fl.text().then(function (t) { commImportOpen(commVcf(t)); }); ev.target.value = ''; } });
+  const vin = e('input', { type: 'file', accept: '.xlsx,.csv,.vcf,text/csv,text/vcard,text/x-vcard,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) ciFile(fl); ev.target.value = ''; } });
   const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث بالاسم أو الجوال أو البريد أو المعرّف', value: COMM.q || '', 'aria-label': 'بحث في الدليل', onKeydown: function (ev) { if (ev.key === 'Enter') { COMM.q = ev.target.value; draw(); } } });
+  /* v315: الاستيراد بطريقتين — جهات الجوال مباشرة، أو نموذج الاستيراد (تنزيل ← كتابة ← رفع) — والملف المرفوع يُحفظ بعد قبوله */
+  const mob = (navigator.maxTouchPoints || 0) > 0 && /Mobi|Android|iPhone|iPad/.test(navigator.userAgent || '');
   const imp = e('section', { class: 'ax-alerts comm-imp' }, [e('header', {}, [e('span', { class: 'ax-al-ic' }, frag(ui('upload-simple', 18))), e('b', {}, 'استيراد جهات الاتصال')]),
-    e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('من جهات اتصال الجوال', { size: 'sm', ui: 'device-mobile', onClick: function () { if (pick) commPickDevice(); else commPhoneHelp(vin); } })), liveOk(DS.button('ملف جهات اتصال (vCard)', { size: 'sm', ui: 'upload-simple', onClick: function () { vin.click(); } })), vin]),
-    e('small', { class: 'cu-dr-hint' }, pick ? 'تختار الجهات من جوالك وتُضاف بعد المعاينة، وتُتخطّى المكررة تلقائيًا.' : 'متصفحك لا يفتح جهات الجوال مباشرة بعد — اضغط «من جهات اتصال الجوال» لطريقتين سهلتين على آيفون.')]);
+    e('div', { class: 'comm-imp-g' }, [
+      e('div', { class: 'comm-imp-c' }, [e('b', {}, '١ · من جهات اتصال الجوال'), e('small', {}, mob ? (pick ? 'تختار جهة أو أكثر من قائمة جهات جوالك مباشرة، وتُعرض قبل الإضافة.' : 'متصفح جوالك لا يفتح الجهات مباشرة بعد — الزر يشرح طريقتين سهلتين.') : 'يعمل عند فتح المنصة من متصفح الجوال.'),
+        liveOk(DS.button('من جهات اتصال الجوال', { size: 'sm', tone: mob ? 'primary' : null, ui: 'device-mobile', onClick: function () { if (pick) commPickDevice(); else commPhoneHelp(vin); } }))]),
+      e('div', { class: 'comm-imp-c' }, [e('b', {}, '٢ · من ملف نموذج الاستيراد'), e('small', {}, 'نزّل النموذج، اكتب الجهات في أعمدته، ثم ارفعه — تُطابق الأعمدة مع الحقول وتُعرض قبل القبول، ويُحفظ الملف بعد قبوله ويمكن تنزيله.'),
+        e('div', { class: 't2-row-wrap' }, [DS.button('تنزيل النموذج (Excel)', { size: 'sm', ui: 'download-simple', onClick: function () { ciTemplate('xlsx'); } }), DS.button('CSV', { size: 'sm', ui: 'download-simple', onClick: function () { ciTemplate('csv'); } }),
+          liveOk(DS.button('رفع الملف', { size: 'sm', tone: 'primary', ui: 'upload-simple', onClick: function () { vin.click(); } })), vin])])]),
+    e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('الملفات المرفوعة', { size: 'sm', ui: 'files', onClick: function () { COMM.imp = null; ciFilesOpen(); } })), e('small', { class: 'cu-dr-hint' }, 'يقبل الرفع أيضًا ملف vCard المصدَّر من جهات الجوال.')])]);
   return axPage({ title: 'دليل هواتف وبريد الشركاء', hint: 'الحسابات تُضاف تلقائيًا بحالة ملفها — وتُضاف الجهات الأخرى يدويًا أو من الجوال', reg: 'إضافة جهة اتصال', can: true, onReg: function () { commCtOpen(null, 'edit'); },
     K: [['جهات الاتصال', fmtNum(A.length), '', 'users-three'], ['العملاء', fmtNum(n('client')), '', 'users-three'], ['الموظفون', fmtNum(n('staff')), '', 'briefcase'], ['المسوّقون والمستثمرون', fmtNum(n('marketer') + n('investor')), '', 'megaphone-simple']],
     chips: commChips('cdF', [['all', 'الكل', 'list:navy'], ['client', 'العملاء', 'users-three:teal'], ['staff', 'الموظفون', 'briefcase:navy'], ['marketer', 'المسوّقون', 'megaphone-simple:sky'], ['investor', 'المستثمرون', 'trend-up:gold'], ['fav', 'المفضلة', 'star:gold'], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron'], ['arch', 'المؤرشفة', 'tray:navy']], all, fit),
     filter: e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { COMM.q = qi.value; draw(); } }), COMM.q ? DS.button('مسح', { size: 'sm', onClick: function () { COMM.q = ''; draw(); } }) : null]),
     list: [axList(R.slice(0, 400).map(function (c) {
-      return axRow({ ic: (COMM_ROLE[(c.roles || [])[0]] || COMM_ROLE.client)[1], t: c.name + (c.favorite ? ' ★' : ''), sub: commRoleT(c.roles) + ' — ' + (c.phone ? '+' + c.phone : 'بلا جوال') + (c.email ? ' — ' + c.email : '') + ' — ' + (c.source === 'auto' ? (c.file_status === 'suspended' ? 'ملف موقوف' : 'ملف نشط') : c.source === 'device' ? 'من الجوال' : 'يدوي'), tone: c.archived ? '' : c.file_status === 'suspended' ? 'warn' : '', go: function () { commCtOpen(c); } }); }), 'لا جهات اتصال هنا'), imp] });
+      return axRow({ ic: (COMM_ROLE[(c.roles || [])[0]] || COMM_ROLE.client)[1], t: c.name + (c.favorite ? ' ★' : ''), sub: commRoleT(c.roles) + ' — ' + (c.phone ? '+' + c.phone : 'بلا جوال') + (c.email ? ' — ' + c.email : '') + ' — ' + (c.source === 'auto' ? (c.file_status === 'suspended' ? 'ملف موقوف' : 'ملف نشط') : c.source === 'device' ? 'من الجوال' : c.source === 'file' ? 'من ملف' : 'يدوي'), tone: c.archived ? '' : c.file_status === 'suspended' ? 'warn' : '', go: function () { commCtOpen(c); } }); }), 'لا جهات اتصال هنا'), imp] });
 }
 const COMMD = {};
 function commCtOpen(c, mode) {
@@ -17140,7 +17311,7 @@ function commCtOpen(c, mode) {
   let body, foot;
   if (D.mode === 'view' && c) {
     body = [cuSec('البيانات', 'identification-card', [DS.fields([['الاسم', c.name], ['الدور', commRoleT(c.roles)], ['رقم الجوال', c.phone ? ltr('+' + c.phone) : '—'], ['البريد الإلكتروني', c.email ? ltr(c.email) : '—'], ['المعرّف', c.ident ? ltr(c.ident) : '—'], ['نوع الشريك', c.partner_type || '—'],
-        ['المصدر', c.source === 'auto' ? 'حسابه في المنصة' : c.source === 'device' ? 'جهات اتصال الجوال' : 'إضافة يدوية'], ['حالة الملف', c.source === 'auto' ? DS.badge(c.file_status === 'suspended' ? 'موقوف' : 'نشط', c.file_status === 'suspended' ? 'warn' : 'ok') : '—'], ['المفضلة', c.favorite ? DS.badge('في المفضلة', 'warn') : 'لا'], ['ملاحظة', c.note || '—']])]),
+        ['المصدر', c.source === 'auto' ? 'حسابه في المنصة' : c.source === 'device' ? 'جهات اتصال الجوال' : c.source === 'file' ? 'نموذج الاستيراد' : 'إضافة يدوية'], ['حالة الملف', c.source === 'auto' ? DS.badge(c.file_status === 'suspended' ? 'موقوف' : 'نشط', c.file_status === 'suspended' ? 'warn' : 'ok') : '—'], ['المفضلة', c.favorite ? DS.badge('في المفضلة', 'warn') : 'لا'], ['ملاحظة', c.note || '—']])]),
       auto ? DS.note('info', 'مرتبطة بحساب في المنصة', 'الاسم والجوال والبريد والمعرّف والدور تُحدَّث تلقائيًا من الحساب نفسه.') : null, D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
     foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('تعديل', { tone: 'primary', ui: 'pencil-simple', onClick: function () { D.mode = 'edit'; rerun(); } })),
       liveOk(DS.button(c.favorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة', { ui: 'star', onClick: function () { flag('favorite', !c.favorite, c.favorite ? 'أُزيلت من المفضلة.' : 'أُضيفت إلى المفضلة.'); } })),
@@ -17163,7 +17334,7 @@ function commCtOpen(c, mode) {
 function commIOS() { const u = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1); }
 function commPhoneHelp(vin) {
   void vin;
-  const fin = e('input', { type: 'file', accept: '.vcf,text/vcard,text/x-vcard', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) fl.text().then(function (t) { admClose(); commImportOpen(commVcf(t)); }); ev.target.value = ''; } });
+  const fin = e('input', { type: 'file', accept: '.vcf,.xlsx,.csv,text/vcard,text/x-vcard,text/csv', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) { admClose(); ciFile(fl); } ev.target.value = ''; } });
   const ios = commIOS(), step = function (n, t) { return e('div', { class: 'comm-st' }, [e('b', { class: 'comm-st-n' }, String(n)), e('span', {}, t)]); };
   cuBdDraw({ key: 'commhelp', ic: 'device-mobile:teal', title: 'الاستيراد من جهات اتصال الجوال', sub: ios ? 'آيفون — طريقتان' : 'متصفحك لا يدعم الاختيار المباشر', onClose: function () { draw(); }, body: ios ? [
     cuSec('الطريقة الأولى: الاختيار المباشر من الجهات', 'cursor-click', [
@@ -17185,14 +17356,14 @@ function commVcf(t) {
     out.push({ name: n.replace(/\\([,;])/g, '$1').replace(/\s+/g, ' ').trim(), phone: g(/^(?:[\w-]+\.)?TEL[^:]*:(.+)$/im).replace(/^tel:/i, ''), email: g(/^(?:[\w-]+\.)?EMAIL[^:]*:(.+)$/im) }); });
   return out.filter(function (x) { return x.name && (x.phone || x.email); }).slice(0, 500);
 }
-function commImportOpen(rows) {
+function commImportOpen(rows, file) {
   if (!rows || !rows.length) { snack('لم يُعثر على جهات اتصال بالاسم والجوال أو البريد.'); return; }
   const D = { role: 'client', busy: false, err: '' };
   const draw2 = function () { cuBdDraw({ key: 'commimp', ic: 'upload-simple:teal', title: 'استيراد جهات اتصال', sub: fmtNum(rows.length) + ' جهة · تُتخطّى المكررة تلقائيًا', onClose: function () { draw(); }, body: [
     cuSec('الدور للجهات المستوردة', 'users-three', [e('div', { class: 'sys-form cu-bd-form' }, [commFld('الدور', DS.select({ value: D.role, options: Object.keys(COMM_ROLE).map(function (r) { return [r, COMM_ROLE[r][0]]; }), onChange: function (v) { D.role = v; draw2(); } }))])]),
     cuSec('الجهات', 'list', [DS.fields(rows.slice(0, 200).map(function (x) { return [x.name, e('span', {}, [x.phone ? ltr(x.phone) : '', x.phone && x.email ? ' · ' : '', x.email ? ltr(x.email) : ''])]; }))]),
     D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
-    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الإضافة…' : 'إضافة إلى الدليل', { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: async function () { D.busy = true; draw2(); try { const j = await admRpc('admin_contacts_import', { p_rows: rows.map(function (x) { return Object.assign({ roles: [D.role] }, x); }) }); await commLoad('ct'); admClose(); snack('أُضيف ' + fmtNum(j.added || 0) + ' وتُخطّي ' + fmtNum(j.skipped || 0) + ' (مكرر أو ناقص).'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); draw2(); } } })), DS.button('إلغاء', { onClick: cuBdClose })])] }); };
+    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الإضافة…' : 'إضافة إلى الدليل', { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: async function () { D.busy = true; draw2(); try { const P = rows.map(function (x) { return Object.assign({ roles: [D.role] }, x); }); const j = file ? await admRpc('admin_contacts_import_file', { p_rows: P, p_file: file }) : await admRpc('admin_contacts_import', { p_rows: P }); if (j && j.ok === false) throw new Error(j.error === 'forbidden' ? 'لا تملك صلاحية الاستيراد.' : 'تعذّر الاستيراد.'); COMM.imp = null; await commLoad('ct'); admClose(); snack('أُضيف ' + fmtNum(j.added || 0) + ' وتُخطّي ' + fmtNum(j.skipped || 0) + ' (مكرر أو ناقص).'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); draw2(); } } })), DS.button('إلغاء', { onClick: cuBdClose })])] }); };
   draw2();
 }
 /* ---------- البطاقة الثانية: المراسلة — الصفحة بمهمتها: رسالة جديدة أو البدء من قالب جاهز ---------- */
@@ -17204,7 +17375,7 @@ function commSendPage() {
     K: [['لهم بريد', fmtNum(C.filter(function (c) { return c.email; }).length), '', 'envelope-simple'], ['لهم جوال', fmtNum(C.filter(function (c) { return c.phone; }).length), '', 'device-mobile'], ['القوالب الجاهزة', fmtNum(T.length), '', 'file-text'], ['رسائل محجوزة', fmtNum((COMM.msgs || []).filter(function (m) { return m.status === 'held'; }).length), 'warn', 'lock-key']],
     chips: commChips('csF', [['all', 'كل القوالب', 'list:navy'], ['email', 'للبريد', 'envelope-simple:sky'], ['whatsapp', 'لواتساب', 'whatsapp-logo:teal']], T, fit),
     filter: null,
-    list: axList(T.filter(function (t) { return fit(t, f); }).map(function (t) { return axRow({ ic: COMM_CH[t.channel][1], t: t.name, sub: 'ابدأ من القالب — ' + COMM_CH[t.channel][0] + (t.subject ? ' — ' + t.subject : ''), go: function () { commCompose(t); } }); }), 'لا قوالب — أنشئ قالبًا من «القوالب الجاهزة»') });
+    list: axList(T.filter(function (t) { return fit(t, f); }).map(function (t) { return axRow({ ic: COMM_CH[t.channel][1], t: t.name, sub: 'ابدأ من القالب — ' + COMM_CH[t.channel][0] + (t.subject ? ' — ' + t.subject : ''), go: function () { commCompose(t); } }); }), 'لا قوالب — تُنشأ من «إعدادات النظام › التواصل المباشر › القوالب الجاهزة للمراسلة»') });
 }
 function commAud(W) { const A = (COMM.ct || []).filter(function (c) { return !c.archived; }); return W.mode === 'all' ? A : W.mode === 'fav' ? A.filter(function (c) { return c.favorite; }) : W.mode === 'role' ? A.filter(function (c) { return (c.roles || []).some(function (r) { return W.roles.indexOf(r) >= 0; }); }) : A.filter(function (c) { return W.ids.indexOf(c.id) >= 0; }); }
 function commCompose(tpl, ids) {
@@ -17323,7 +17494,7 @@ function commRegister() {
   lp('comm-dir', 'دليل هواتف وبريد الشركاء', 'comm', 'comm-dir', commDirPage);
   lp('comm-send', 'المراسلة', 'comm', 'comm-send', commSendPage);
   lp('comm-rep', 'تقرير الإرسال', 'comm', 'comm-rep', commRepPage);
-  lp('comm-tpl', 'القوالب الجاهزة', 'comm', 'comm-tpl', commTplPage);
+  lp('comm-tpl', 'القوالب الجاهزة للمراسلة', 'sys', 'comm-tpl', commTplPage);
 }
 commRegister();
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
