@@ -6977,7 +6977,7 @@ function cuHubPage() {
     ['sc', 'مركز الأمن', 'shield-check:teal', [{ ic: 'shield-check:teal', t: 'مركز الأمن', d: 'النشاط والدخول · التنبيهات · العمليات الحساسة · التنبيهات الأمنية · الأجهزة · سجل التدقيق', n: secN ? fmtNum(secN) + ' تنبيهًا أمنيًا هذا الأسبوع' : 'لا تنبيهات أمنية', big: true, go: function () { go('other', 'cu-secc'); } }]],
     ['pf', 'الملف الشخصي', 'identification-card:teal', [{ ic: 'identification-card:teal', t: 'الملف الشخصي', d: 'ملفات العملاء · طلبات الملف الشخصي · طلبات التوثيق · العملاء المرحّلون · التدشين', n: w(pfOpen), big: true, go: function () { go('other', 'cu-pf'); } }]],
     ['ct', 'العقود وعروض الأسعار', 'contract', CC.p],
-    ['wk', 'الطلبات والإجراءات', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: 'سداد كامل · تأجيل · توحيد · تحويل بنكي · استرداد · أهلية', n: w(n('svc')), go: function () { if (LIVE.on) go('other', 'cu-svc'); else { ADM.cuf = 'svc'; go('other', 'cu-inbox'); } } }, { ic: 'gavel:navy', t: 'إجراءات الإدارة', d: 'داخلي — لا يظهر للعميل · السندات · الاستقطاع · الحوالات · الشيكات · التقرير', n: (function () { const B = cuBdSeed(), A = axSeed(), lv = function (x) { return x.st !== 'void'; }, t = B.length + A.dd.filter(lv).length + A.tr.filter(lv).length + A.ck.filter(lv).length; return fmtNum(t) + ' إجراءً مسجّلًا'; })(), badge: cuBdAlerts().length ? ['تنبيه إمهال: ' + fmtNum(cuBdAlerts().length), 'warn'] : null, go: function () { go('other', 'cu-admx'); } }]],
+    ['wk', 'الطلبات والإجراءات', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: 'سداد كامل · تأجيل · توحيد · تحويل بنكي · استرداد · أهلية', n: w(n('svc')), go: function () { if (LIVE.on) go('other', 'cu-svc'); else { ADM.cuf = 'svc'; go('other', 'cu-inbox'); } } }]],
     ['st', 'المتجر', 'store', [{ ic: 'store', t: 'طلبات المتجر', d: 'الطلبات والشحن · حسب الطلب · الخدمات الرقمية', n: w(n('store')), go: function () { ADM.cuf = 'store'; go('other', 'cu-inbox'); } }].concat(CC.s)],
     ['co', 'التواصل', 'mail', [{ ic: 'ticket', t: 'التذاكر والمراسلات', d: 'الشكاوى والدعم الفني والاستفسارات', n: w(n('tk')), go: function () { ADM.tst = ''; go('other', 'cs-tickets'); } }, { ic: 'megaphone-simple:sky', t: 'الإشعارات والإعلانات', d: 'إشعار لعميل أو لمجموعة', n: LIVE.on ? 'ما وصل العملاء — الإرسال موقوف' : CU_SENT.length ? fmtNum(CU_SENT.length) + ' مرسلة' : 'إرسال جديد', go: function () { go('other', 'cu-comms'); } }]],
     ['mm', 'العضوية', 'crown:gold', [{ ic: 'crown-simple:gold', t: 'العضويات والنقاط', d: 'المستوى والنقاط وحالة العضوية', n: LIVE.on ? (LIVE_LOY.mem ? fmtNum(LIVE_LOY.mem.length) + ' أعضاء' : 'الأعضاء والنقاط') : fmtNum(C.length) + ' أعضاء', go: function () { go('other', 'cu-mem'); } }]]]);
@@ -7646,7 +7646,7 @@ function cuAdmxRegister() {
   CU_MAP.push(['تسجيل السند التنفيذي وتعديله (إجراءات الإدارة)', 'contracts.bonds']);
   CU_GATE['bonds.manage'] = 'contracts.bonds';
   try { Object.assign(ICON, { 'cu-admx': ['gavel', 'navy'] }); } catch (err) { void err; }
-  lp('cu-admx', 'إجراءات الإدارة', 'cu', 'cu-admx', axHubPage);
+  lp('cu-admx', 'إجراءات الإدارة', 'fin', 'cu-admx', axHubPage);
   axRegister();
 }
 /* ===================== v181 — إجراءات الإدارة: الاستقطاع البنكي (أمر مستديم) · الحوالات الصادرة · الشيكات ===================== */
@@ -9194,7 +9194,8 @@ function dcPays(L) {
       const left = p.deferTo ? 0 : Math.max(0, qr2(p.amount - p.paid)), d = D(iso(p.due));
       if (left > 0) out.due.push({ x: x, c: c, p: p, left: left, d: d, k: d < 0 ? 'late' : d === 0 ? 'today' : d <= 7 ? 'in7' : d <= 30 ? 'in30' : 'later' });
       if (p.deferTo) out.rec.push({ x: x, c: c, p: p, amt: p.amount, at: p.at || p.due, k: p.method === 'توحيد' ? 'merge' : 'defer', how: p.method === 'توحيد' ? 'توحيد العقود' : 'تأجيل دفعة', ref: p.settleNote || ('إلى العقد ' + p.deferTo), sreq: p.sreq || '' });
-      else if (p.paid > 0) { const gw = !!p.gw || p.method === 'سداد إلكتروني'; out.rec.push({ x: x, c: c, p: p, amt: Math.min(p.paid, p.amount), at: p.at || p.due, k: gw ? 'gw' : 'tr', how: gw ? 'بوابة الدفع' : (p.method || 'تحويل بنكي'), ref: gw ? 'رقم العملية ' + ((p.gw && p.gw.txn) || p.txn || '—') : (p.file ? 'إثبات التحويل مرفق' : 'بلا مرفق') }); }
+      else if (p.paid > 0) { const m = p.method || '', tr = /تحويل/.test(m), gw = !tr && (!!p.gw || m === 'سداد إلكتروني' || !!p.txn), k = gw ? 'gw' : tr ? 'tr' : 'oth';
+        out.rec.push({ x: x, c: c, p: p, amt: Math.min(p.paid, p.amount), at: p.at || p.due, k: k, how: gw ? 'بوابة الدفع' : tr ? m : 'بلا طريقة مسجّلة', ref: gw ? 'رقم العملية ' + ((p.gw && p.gw.txn) || p.txn || '—') : tr ? (p.file ? 'إثبات التحويل مرفق' : 'بلا مرفق') : 'من النظام السابق' }); }
     }); });
   out.due.sort(function (a, b) { return a.d - b.d; }); out.rec.sort(function (a, b) { return b.at - a.at; });
   return out;
@@ -9202,8 +9203,9 @@ function dcPays(L) {
 const DC_DUEF = [['late', 'المتأخرة', 'warning:gold'], ['today', 'مستحقة اليوم', 'alarm:saffron'], ['in7', 'خلال 7 أيام', 'calendar-blank:teal'], ['in30', 'خلال 30 يومًا', 'calendar-blank:navy'], ['all', 'كل القادمة', 'list:navy']];
 const dcDueFit = (r, f) => f === 'all' ? true : f === 'late' ? r.k === 'late' : f === 'today' ? r.k === 'today' : f === 'in7' ? (r.k === 'today' || r.k === 'in7') : (r.k === 'today' || r.k === 'in7' || r.k === 'in30');
 /* بطاقات المدفوعات: كل عملية مستقلة بسجلها — لا جمع بين الطرق */
-const DC_RECK = [['gw', 'السداد عبر بوابة الدفع', 'credit-card', 'رقم العملية والإيصال لكل دفعة'], ['tr', 'التحويل البنكي', 'bank', 'إثبات التحويل والاعتماد لكل دفعة'], ['merge', 'توحيد العقود', 'stack', 'الدفعات المنقولة إلى العقد الموحّد'], ['defer', 'تأجيل الدفعات', 'clock', 'الدفعات المؤجَّلة وعقود تأجيلها']];
-function dcRecOpen(k, A, who) {
+const DC_RECK = [['gw', 'السداد عبر بوابة الدفع', 'credit-card', 'رقم العملية والإيصال لكل دفعة'], ['tr', 'التحويل البنكي', 'bank', 'إثبات التحويل والاعتماد لكل دفعة'], ['merge', 'توحيد العقود', 'stack', 'الدفعات المنقولة إلى العقد الموحّد'], ['defer', 'تأجيل الدفعات', 'clock', 'الدفعات المؤجَّلة وعقود تأجيلها'], ['oth', 'سداد بلا طريقة مسجّلة', 'receipt', 'دفعات مسدَّدة من النظام السابق دون تحديد الطريقة']];
+function dcRecOpen(k, A, who, cid) {
+  if (LP['fin-rec-' + k]) { ADM['frC' + k] = cid || ''; ADM['frF' + k] = 'all'; go('other', 'fin-rec-' + k); return; }
   const K = DC_RECK.filter(function (x) { return x[0] === k; })[0], tot = qr2(A.reduce(function (a, r) { return a + r.amt; }, 0));
   const SRQ = function (r) { return r.sreq && typeof LV_SR !== 'undefined' ? LV_SR.all.filter(function (y) { return y.id === r.sreq; })[0] : null; };
   const row = function (r) { const q = SRQ(r); return e('button', { type: 'button', class: 'tm-r' + (q ? ' tm-wrap' : ''), 'data-live-ok': '', onClick: function () { admClose(); if (q) lvSrOpen(q.id); else dcPcOpen(r.x.cid, r.c.no); } }, [e('span', { class: 'tm-no', dir: 'ltr' }, r.c.no),
@@ -9226,8 +9228,8 @@ function dcPaySecs(cid, L, keyP, parts) {
         D.length ? e('div', { class: 'tm-rows' }, D.slice(0, 200).map(dueRow)) : LDS.emptyState({ icon: 'calendar-blank', title: 'لا دفعات في هذه المدة', compact: true })], { key: 'dcdue:' + (cid || 'all') }),
       ]),
     want('rec') && want('due') ? e('small', { class: 'dc-sub-h' }, 'سجل السداد — كل طريقة سداد بطاقة مستقلة بسجلها') : null,
-    !want('rec') ? null : e('div', { class: 'cu-cards dc-rec-cards' }, DC_RECK.map(function (K) { const A = P.rec.filter(function (r) { return r.k === K[0]; }), tot = sumOf(A, 'amt');
-      return e('button', { type: 'button', class: 'cu-card', 'data-live-ok': '', onClick: function () { dcRecOpen(K[0], A, multi ? '' : (L[0] || {}).name); } }, [e('span', { class: 'cu-av dc-rec-ic' }, frag(ui(K[2], 20))),
+    !want('rec') ? null : e('div', { class: 'cu-cards dc-rec-cards' }, DC_RECK.filter(function (K) { return K[0] !== 'oth' || P.rec.some(function (r) { return r.k === 'oth'; }); }).map(function (K) { const A = P.rec.filter(function (r) { return r.k === K[0]; }), tot = sumOf(A, 'amt');
+      return e('button', { type: 'button', class: 'cu-card', 'data-live-ok': '', onClick: function () { dcRecOpen(K[0], A, multi ? '' : (L[0] || {}).name, cid || ''); } }, [e('span', { class: 'cu-av dc-rec-ic' }, frag(ui(K[2], 20))),
         e('span', { class: 'cu-card-t' }, [e('b', {}, K[1]), e('small', {}, K[3])]),
         e('span', { class: 'cu-card-m' }, [DS.badge(fmtNum(A.length) + ' عملية', A.length ? (K[0] === 'gw' || K[0] === 'tr' ? 'ok' : 'warn') : null), A.length ? DS.badge(sar(tot), 'info') : null]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); }))];
 }
@@ -9252,37 +9254,78 @@ function dcPcClient(cid, L) {
       sec('oth', 'عقود أخرى', L.filter(function (x) { return ['act', 'late', 'def', 'done'].indexOf(x.c.k) < 0; }), null)]),
     dcHead('المدفوعات', 'المستحقة والقادمة، ثم سجل كل طريقة سداد', 'wallet')].concat(dcPaySecs(cid, L, ':' + cid));
 }
-/* ===== v305: قسم المالية — الدفعات المستحقة والقادمة لكل العملاء، وسجل السداد بطرقه الأربع، ومركز المدفوعات ===== */
+/* ===== v307: قسم المالية — كل صفحة بمهمتها وحدها، بنمط «الحوالات الصادرة»: العنوان · المؤشرات · الاختيار السريع وفلتر العميل · قائمة العمليات · درج التفاصيل ===== */
+const finCts = () => { try { return dcCts(); } catch (err) { return []; } };
+const FIN_PER = [['all', 'كل الفترات', 'list:navy'], ['m0', 'هذا الشهر', 'calendar-blank:teal'], ['m1', 'الشهر الماضي', 'calendar-blank:navy'], ['y0', 'هذه السنة', 'calendar-check:teal']];
+function finPerFit(at, k) { if (k === 'all') return true; const d = at instanceof Date ? at : parseIso(at); if (!d) return false; const y = T0.getFullYear(), m = T0.getMonth(); if (k === 'y0') return d.getFullYear() === y; const pm = k === 'm0' ? m : (m + 11) % 12, py = k === 'm1' && m === 0 ? y - 1 : y; return d.getFullYear() === py && d.getMonth() === pm; }
+const finCliFilter = (key, L) => { const seen = {}, opts = []; L.forEach(function (r) { if (!seen[r.x.cid]) { seen[r.x.cid] = 1; opts.push([r.x.cid, r.x.name]); } }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
+  const cq = ADM[key] || ''; return e('div', { class: 'cu-bd-cf' }, [DS.editField('اسم العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM[key] = v === '*' ? '' : v; draw(); } })), cq ? DS.button('مسح الفلتر', { size: 'sm', onClick: function () { ADM[key] = ''; draw(); } }) : null]); };
+const finChips = (key, items, L, fit, cq) => chipRow(items.map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]) && (!cq || y.x.cid === cq); }).length]; }), ADM[key] || 'all', function (v) { ADM[key] = v; draw(); }, 'اختيار سريع');
 function finHubPage() {
-  let L = []; try { L = dcCts(); } catch (err) { void err; }
-  const P = dcPays(L), late = P.due.filter(function (r) { return r.k === 'late'; }), t0 = P.due.filter(function (r) { return r.k === 'today'; }), d7 = P.due.filter(function (r) { return dcDueFit(r, 'in7'); });
-  const lf = function (A) { return qr2(A.reduce(function (a, r) { return a + (r.left || 0); }, 0)); };
+  const P = dcPays(finCts()), late = P.due.filter(function (r) { return r.k === 'late'; }), t0 = P.due.filter(function (r) { return r.k === 'today'; });
   const rc = function (k) { return P.rec.filter(function (r) { return r.k === k; }); };
-  const H = secHub('fin', { t: 'قسم المالية', s: 'الدفعات والمدفوعات لكل العملاء في مكان واحد — كل مجموعة بطاقة مستقلة.', ic: 'fin' }, [
-    ['due', 'الاستحقاق', 'calendar-blank:saffron', [{ ic: 'fin-due', t: 'الدفعات المستحقة والقادمة', d: 'المتأخرة · المستحقة اليوم · خلال 7 أيام · خلال 30 يومًا · كل القادمة', n: fmtNum(P.due.length) + ' دفعة · المتأخر ' + sar(lf(late)), badge: late.length ? [fmtNum(late.length) + ' متأخرة', 'danger'] : t0.length ? [fmtNum(t0.length) + ' تستحق اليوم', 'warn'] : d7.length ? [fmtNum(d7.length) + ' خلال 7 أيام', 'info'] : null, big: true, go: function () { go('other', 'fin-due'); } }]],
-    ['rec', 'سجل السداد', 'receipt:teal', DC_RECK.map(function (K) { const A = rc(K[0]); return { ic: { gw: 'credit-card:teal', tr: 'bank:navy', merge: 'stack:gold', defer: 'clock:sky' }[K[0]] || 'receipt', t: K[1], d: K[3], n: fmtNum(A.length) + ' عملية · ' + sar(qr2(A.reduce(function (a, r) { return a + r.amt; }, 0))), go: function () { ADM.finRec = K[0]; go('other', 'fin-rec'); } }; })],
-    ['ctr', 'المدفوعات والإجراءات', 'wallet:gold', [{ ic: 'wallet:gold', t: 'مركز المدفوعات', d: 'عمليات بوابة الدفع · الاستردادات · التحويلات البنكية بانتظار الاعتماد', go: function () { go('other', 'pay-center'); } },
-      { ic: 'gavel:navy', t: 'إجراءات الإدارة', d: 'داخلي — السندات التنفيذية · الاستقطاع · الحوالات · الشيكات', go: function () { go('other', 'cu-admx'); } }]]]);
-  return H;
+  return secHub('fin', { t: 'قسم المالية', s: 'الدفعات والمدفوعات وإجراءات الإدارة المالية — كل بطاقة صفحة مستقلة بمهمتها.', ic: 'fin' }, [
+    ['due', 'الاستحقاق', 'calendar-blank:saffron', [{ ic: 'fin-due', t: 'الدفعات المستحقة والقادمة', d: 'الدفعات غير المسددة حسب موعد استحقاقها: المتأخرة · اليوم · خلال 7 أيام · خلال 30 يومًا', n: fmtNum(P.due.length) + ' دفعة', badge: late.length ? [fmtNum(late.length) + ' متأخرة', 'danger'] : t0.length ? [fmtNum(t0.length) + ' تستحق اليوم', 'warn'] : null, go: function () { go('other', 'fin-due'); } }]],
+    ['rec', 'سجل السداد', 'receipt:teal', DC_RECK.filter(function (K) { return K[0] !== 'oth' || rc('oth').length; }).map(function (K) { const A = rc(K[0]); return { ic: 'fin-rec-' + K[0], t: K[1], d: K[3], n: fmtNum(A.length) + ' عملية · ' + sar(qr2(A.reduce(function (a, r) { return a + r.amt; }, 0))), go: function () { ADM['frC' + K[0]] = ''; go('other', 'fin-rec-' + K[0]); } }; })],
+    ['ops', 'المدفوعات والإجراءات المالية', 'wallet:gold', [{ ic: 'wallet:gold', t: 'مركز المدفوعات', d: 'عمليات بوابة الدفع · الاستردادات · التحويلات البنكية بانتظار الاعتماد', go: function () { go('other', 'pay-center'); } },
+      { ic: 'gavel:navy', t: 'إجراءات الإدارة', d: 'داخلي — السندات التنفيذية · الاستقطاع · الحوالات الصادرة · الشيكات · الرسوم', go: function () { go('other', 'cu-admx'); } }]]]);
 }
+/* الدفعات المستحقة والقادمة — صف لكل دفعة، والتفاصيل في درج */
 function finDuePage() {
-  let L = []; try { L = dcCts(); } catch (err) { void err; }
-  S.fsOpen = S.fsOpen || {}; if (S.fsOpen['dcdue:all'] === undefined) S.fsOpen['dcdue:all'] = true;
-  return [dcSumCard(L, 'ملخص الاستحقاق — كل العملاء'), dcHead('الدفعات المستحقة والقادمة', 'اختر المدة، واضغط الدفعة لفتح عقدها', 'calendar-blank')].concat(dcPaySecs('', L, ':all', ['due']));
+  const P = dcPays(finCts()), L = P.due, f = ADM.fdF || 'late', cq = ADM.fdC || '';
+  const fit = function (r, k) { return dcDueFit(r, k); }, lf = function (A) { return qr2(A.reduce(function (a, r) { return a + (r.left || 0); }, 0)); };
+  const R = L.filter(function (r) { return fit(r, f) && (!cq || r.x.cid === cq); });
+  const st = function (r) { return r.d < 0 ? 'متأخرة ' + dayWord(-r.d) : r.d === 0 ? 'تستحق اليوم' : 'تستحق بعد ' + dayWord(r.d); };
+  return axPage({ title: 'الدفعات المستحقة والقادمة', hint: 'الدفعات غير المسددة لكل العملاء حسب موعد استحقاقها', can: false, perm: null,
+    K: [['المتأخر', sar(lf(L.filter(function (r) { return r.k === 'late'; }))), L.some(function (r) { return r.k === 'late'; }) ? 'danger' : '', 'warning'], ['مستحق اليوم', sar(lf(L.filter(function (r) { return r.k === 'today'; }))), '', 'alarm'], ['خلال 7 أيام', sar(lf(L.filter(function (r) { return dcDueFit(r, 'in7'); }))), '', 'calendar-blank'], ['خلال 30 يومًا', sar(lf(L.filter(function (r) { return dcDueFit(r, 'in30'); }))), '', 'calendar-blank']],
+    chips: finChips('fdF', DC_DUEF, L, fit, cq), filter: finCliFilter('fdC', L),
+    list: axList(R.slice(0, 300).map(function (r) { return axRow({ ic: r.d < 0 ? 'warning:gold' : 'calendar-blank:saffron', t: r.x.name, sub: 'الدفعة ' + r.p.i + ' من ' + r.c.n + ' — ' + sar(r.left) + ' — ' + st(r), tone: r.d < -30 ? 'danger' : r.d <= 0 ? 'warn' : '', go: function () { finDueOpen(r); } }); }), 'لا دفعات في هذه المدة') });
 }
-function finRecPage() {
-  let L = []; try { L = dcCts(); } catch (err) { void err; }
-  const P = dcPays(L), k = ADM.finRec || '';
-  if (k && DC_RECK.some(function (x) { return x[0] === k; })) { ADM.finRec = ''; setTimeout(function () { dcRecOpen(k, P.rec.filter(function (r) { return r.k === k; }), ''); }, 0); }
-  const sumK = function (kk) { return qr2(P.rec.filter(function (r) { return r.k === kk; }).reduce(function (a, r) { return a + r.amt; }, 0)); };
-  return [axKpis([['عبر بوابة الدفع', sar(sumK('gw')), 'ok', 'credit-card'], ['بالتحويل البنكي', sar(sumK('tr')), 'ok', 'bank'], ['المنقول بالتوحيد', sar(sumK('merge')), 'warn', 'stack'], ['المؤجَّل', sar(sumK('defer')), 'info', 'clock']]),
-    dcHead('سجل السداد', 'كل طريقة سداد بطاقة مستقلة بسجلها — لا جمع بين الطرق', 'receipt')].concat(dcPaySecs('', L, ':all', ['rec']));
+function finDueOpen(r) {
+  const p = r.p, F = [['اسم العميل', r.x.name], ['العقد', ltr(r.c.no)], ['الدفعة', fmtNum(p.i) + ' من ' + fmtNum(r.c.n)], ['تاريخ الاستحقاق', bdiD(iso(p.due))], ['قيمة الدفعة', sar(p.amount)], ['المدفوع منها', sar(p.paid || 0)], ['المتبقي', sar(r.left)],
+    ['الحالة', DS.badge(r.d < 0 ? 'متأخرة ' + dayWord(-r.d) : r.d === 0 ? 'تستحق اليوم' : 'بعد ' + dayWord(r.d), r.d < -30 ? 'danger' : r.d <= 0 ? 'warn' : 'info')]];
+  cuBdDraw({ key: 'fdue:' + (p.pid || r.c.no + ':' + p.i), ic: 'calendar-blank:saffron', title: 'دفعة مستحقة · ' + r.x.name, sub: sar(r.left) + ' · الدفعة ' + p.i + ' — ' + r.c.no, body: [cuSec('البيانات', 'file-text', [DS.fields(F)])],
+    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [DS.button('فتح العقد', { tone: 'primary', ui: 'file-text', onClick: function () { admClose(); dcPcOpen(r.x.cid, r.c.no); } }), DS.button('إغلاق', { onClick: cuBdClose })])], onClose: function () { draw(); } });
+}
+/* سجل السداد — صفحة مستقلة لكل طريقة، صف لكل عملية، والتفاصيل في درج */
+const FIN_RK = { gw: { tt: 'السداد عبر بوابة الدفع', hint: 'دفعات سُدّدت إلكترونيًا عبر بوابة الدفع — رقم العملية لكل دفعة', ic: 'credit-card:teal', amt: 'المبلغ المسدَّد' },
+  tr: { tt: 'التحويل البنكي', hint: 'دفعات سُدّدت بتحويل بنكي — إثبات التحويل واعتماده لكل دفعة', ic: 'bank:navy', amt: 'المبلغ المحوَّل' },
+  merge: { tt: 'توحيد العقود', hint: 'دفعات نُقلت إلى عقد موحّد — بطلبها والإجراء الذي تم', ic: 'stack:gold', amt: 'المبلغ المنقول' },
+  defer: { tt: 'تأجيل الدفعات', hint: 'دفعات أُجّلت إلى عقد تأجيل — بطلبها والإجراء الذي تم', ic: 'clock:sky', amt: 'المبلغ المؤجَّل' },
+  oth: { tt: 'سداد بلا طريقة مسجّلة', hint: 'دفعات سُجّلت مسددة في النظام السابق دون تحديد طريقة السداد', ic: 'receipt:teal', amt: 'المبلغ المسدَّد' } };
+const finSrq = (r) => r.sreq && typeof LV_SR !== 'undefined' ? LV_SR.all.filter(function (y) { return y.id === r.sreq; })[0] : null;
+function finRecPage(k) {
+  const K = FIN_RK[k], A = dcPays(finCts()).rec.filter(function (r) { return r.k === k; }), f = ADM['frF' + k] || 'all', cq = ADM['frC' + k] || '';
+  const fit = function (r, x) { return finPerFit(r.at, x); }, R = A.filter(function (r) { return fit(r, f) && (!cq || r.x.cid === cq); });
+  const tot = function (L) { return sar(qr2(L.reduce(function (a, r) { return a + r.amt; }, 0))); }, cl = {}; A.forEach(function (r) { cl[r.x.cid] = 1; });
+  const extra = k === 'tr' ? ['بلا إثبات مرفق', fmtNum(A.filter(function (r) { return !r.p.file; }).length), A.some(function (r) { return !r.p.file; }) ? 'warn' : '', 'paperclip'] : k === 'merge' || k === 'defer' ? ['بطلب مسجّل', fmtNum(A.filter(function (r) { return finSrq(r); }).length), 'ok', 'clipboard-text'] : ['العملاء', fmtNum(Object.keys(cl).length), '', 'users-three'];
+  return axPage({ title: K.tt, hint: K.hint, can: false, perm: null,
+    K: [['العمليات', fmtNum(A.length), '', K.ic.split(':')[0]], [K.amt, tot(A), 'ok', 'coins'], ['هذا الشهر', tot(A.filter(function (r) { return finPerFit(r.at, 'm0'); })), '', 'calendar-blank'], extra],
+    chips: finChips('frF' + k, FIN_PER, A, fit, cq), filter: finCliFilter('frC' + k, A),
+    list: axList(R.slice(0, 400).map(function (r) { const q = finSrq(r);
+      return axRow({ ic: K.ic, t: r.x.name, sub: (k === 'merge' || k === 'defer' ? 'الدفعة ' + r.p.i + ' من ' + r.c.no + ' إلى ' + r.p.deferTo : 'الدفعة ' + r.p.i + ' — ' + r.c.no) + ' — ' + sar(r.amt) + ' — ' + iso(r.at) + (q ? ' — الطلب ' + q.req_no : ''), tone: k === 'tr' && !r.p.file ? 'warn' : '', go: function () { finRecOpen(r); } }); }), 'لا عمليات في هذه الفترة') });
+}
+function finRecOpen(r) {
+  const K = FIN_RK[r.k], p = r.p, q = finSrq(r);
+  let F = [['اسم العميل', r.x.name], [r.k === 'merge' || r.k === 'defer' ? 'العقد الأصلي' : 'العقد', ltr(r.c.no)], ['الدفعة', fmtNum(p.i) + ' من ' + fmtNum(r.c.n)], [K.amt, sar(r.amt)]];
+  if (r.k === 'gw') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['رقم العملية', (p.gw && p.gw.txn) || p.txn ? ltr((p.gw && p.gw.txn) || p.txn) : '—'], ['الطريقة', 'بوابة الدفع — سداد إلكتروني']]);
+  else if (r.k === 'tr') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['الطريقة', p.method || 'تحويل بنكي'], ['إثبات التحويل', p.file ? e('bdi', {}, p.file) : DS.badge('لا يوجد مرفق', 'warn')], ['الاعتماد', p.admin || '—']]);
+  else if (r.k === 'oth') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['الطريقة', 'غير مسجّلة — من النظام السابق']]);
+  else F = F.concat([['الإجراء', r.k === 'merge' ? 'توحيد العقود' : 'تأجيل دفعة'], [r.k === 'merge' ? 'العقد الموحّد' : 'عقد التأجيل', ltr(p.deferTo)], ['رقم الطلب', q ? ltr(q.req_no) : '—'], ['ما يظهر للعميل', p.settleNote || '—']]);
+  const act = q && q.action_note ? cuSec('الإجراء الذي تم', 'check-circle', [DS.note('ok', 'تم الإجراء', lvBidi(q.action_note))]) : null;
+  cuBdDraw({ key: 'frec:' + (p.pid || r.c.no + ':' + p.i), ic: K.ic, title: K.tt + ' · ' + r.x.name, sub: sar(r.amt) + ' · الدفعة ' + p.i + ' — ' + r.c.no, body: [cuSec('البيانات', 'file-text', [DS.fields(F)]), act],
+    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [DS.button('فتح العقد', { tone: 'primary', ui: 'file-text', onClick: function () { admClose(); dcPcOpen(r.x.cid, r.c.no); } }),
+      r.k === 'tr' && p.fid ? liveOk(DS.button('إثبات التحويل', { ui: 'file-pdf', onClick: function () { liveOpenCtFile(p.fid, true); } })) : null,
+      q ? liveOk(DS.button('فتح الطلب', { ui: 'clipboard-text', onClick: function () { admClose(); lvSrOpen(q.id); } })) : null, DS.button('إغلاق', { onClick: cuBdClose })])], onClose: function () { draw(); } });
 }
 function finRegister() {
-  try { Object.assign(ICON, { fin: ['wallet', 'gold'], 'fin-due': ['calendar-blank', 'saffron'], 'fin-rec': ['receipt', 'teal'] }); } catch (err) { void err; }
+  try { Object.assign(ICON, { fin: ['wallet', 'gold'], 'fin-due': ['calendar-blank', 'saffron'], 'fin-rec': ['receipt', 'teal'], 'fin-rec-gw': ['credit-card', 'teal'], 'fin-rec-tr': ['bank', 'navy'], 'fin-rec-merge': ['stack', 'gold'], 'fin-rec-defer': ['clock', 'sky'], 'fin-rec-oth': ['receipt', 'teal'] }); } catch (err) { void err; }
   lp('fin', 'قسم المالية', null, 'fin', finHubPage);
   lp('fin-due', 'الدفعات المستحقة والقادمة', 'fin', 'fin-due', finDuePage);
-  lp('fin-rec', 'سجل السداد', 'fin', 'fin-rec', finRecPage);
+  lp('fin-rec', 'سجل السداد', 'fin', 'fin-rec', finHubPage);
+  Object.keys(FIN_RK).forEach(function (k) { lp('fin-rec-' + k, FIN_RK[k].tt, 'fin', 'fin-rec-' + k, function () { return finRecPage(k); }); });
+  /* إجراءات الإدارة ومركز المدفوعات صارت في قسم المالية — المسار والقائمة الجانبية تتبعانه */
+  try { if (LP['cu-admx']) LP['cu-admx'].up = 'fin'; } catch (err) { void err; }
 }
 /* عنوان قسم داخل الصفحة */
 const dcHead = (t, sub, ic) => e('div', { class: 'ax-top dc-h' }, [ic ? e('span', { class: 'dc-h-ic' }, frag(ui(ic, 16))) : null, e('div', { class: 'ax-top-t' }, [e('b', {}, t), sub ? e('small', {}, sub) : null])]);
@@ -10748,7 +10791,7 @@ function cuRegister() {
   lp('soon-par', 'الشركاء', null, 'soon-par', cuSoon('الشركاء', 'handshake', 'قسم مستقل للشركاء وعروضهم وتسوياتهم — مرحلة قادمة.'));
   lp('soon-mkt', 'المسوّقون', null, 'soon-mkt', cuSoon('المسوّقون', 'megaphone-simple', 'قسم مستقل للمسوّقين وعمولاتهم وروابطهم — مرحلة قادمة.'));
 }
-const cuNavOf = (o) => o === 'fin' || /^fin-/.test(o || '') || o === 'pay-center' || o === 'sys-pay' ? 'fin' : o === 'cpg' || /^cpg-/.test(o || '') ? 'cpg' : o === 'comm' || /^comm-/.test(o || '') ? 'comm' : o === 'ctr' || /^cu-docs/.test(o || '') ? 'cu' : /^(cu|cu-.*|cs.*)$/.test(o || '') ? 'cu' : /^sys/.test(o || '') ? 'sys' : o === 'adm-more' ? 'adm-more' : /^soon-/.test(o || '') ? o : null; const cuNavOfOld = (o) => o === 'cu-inbox' ? 'cu-inbox' : o === 'cu-mem' || o === 'cu-comms' ? o : (o === 'cu-list' || o === 'cu-file' || o === 'cs-customers' || o === 'cs-customer') ? 'cu-list' : o === 'cu' ? 'cu' : /^soon-/.test(o) ? o : (o === 'cs-tickets' || o === 'cs-ticket' || o === 'cs-complaints') ? 'cs-tickets' : (o === 'cs' || o === 'cs-updates' || o === 'cs-devices' || o === 'cs-requests') ? 'cu' : null;
+const cuNavOf = (o) => o === 'fin' || /^fin-/.test(o || '') || o === 'pay-center' || o === 'sys-pay' || /^cu-admx/.test(o || '') ? 'fin' : o === 'cpg' || /^cpg-/.test(o || '') ? 'cpg' : o === 'comm' || /^comm-/.test(o || '') ? 'comm' : o === 'ctr' || /^cu-docs/.test(o || '') ? 'cu' : /^(cu|cu-.*|cs.*)$/.test(o || '') ? 'cu' : /^sys/.test(o || '') ? 'sys' : o === 'adm-more' ? 'adm-more' : /^soon-/.test(o || '') ? o : null; const cuNavOfOld = (o) => o === 'cu-inbox' ? 'cu-inbox' : o === 'cu-mem' || o === 'cu-comms' ? o : (o === 'cu-list' || o === 'cu-file' || o === 'cs-customers' || o === 'cs-customer') ? 'cu-list' : o === 'cu' ? 'cu' : /^soon-/.test(o) ? o : (o === 'cs-tickets' || o === 'cs-ticket' || o === 'cs-complaints') ? 'cs-tickets' : (o === 'cs' || o === 'cs-updates' || o === 'cs-devices' || o === 'cs-requests') ? 'cu' : null;
 function cuHomeBlock() {
   const IB = cuInbox(), late = IB.filter(function (x) { return x.sla[1] === 'danger'; }).length;
   return sec('قسم العملاء', null, [lvHub([['cu-inbox', 'بانتظار إجراء', fmtNum(IB.length) + ' عنصر' + (late ? ' · ' + fmtNum(late) + ' متأخر' : ''), late ? 'danger' : IB.length ? 'warn' : 'ok', function () { ADM.cuf = ''; go('other', 'cu-inbox'); }, IB.length || null], ['cu-list', 'ملفات العملاء', fmtNum(cuList().length) + ' عملاء', 'ok', function () { go('other', 'cu-list'); }], ['cu', 'قسم العملاء', 'الأدوات والطلبات والإجراءات', 'ok', function () { go('other', 'cu'); }]])], true, 'adm:cu');
@@ -14690,7 +14733,7 @@ function payMethodsPanel(D, refetch) {
     const acts = can ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(m.enabled ? 'إيقاف' : 'تشغيل', { size: 'sm', tone: m.enabled ? null : 'primary', onClick: async function (ev) {
       ev.stopPropagation(); const j = await clPost('/admin/api/pay/methods/' + m.id + '/toggle', { enabled: !m.enabled }); if (!j.ok) snack(j.message || 'تعذّر التنفيذ.'); refetch(); } })),
       admTwoStep('حذف', null, async function () { const j = await clPost('/admin/api/pay/methods/' + m.id + '/delete', {}); if (!j.ok) snack(j.message || 'تعذّر الحذف.'); refetch(); })]) : '—';
-    return admRow([admName(m.label, PAY_KIND[m.kind] || m.kind), ltr(String(m.integration_id)), DS.badge(m.mode === 'live' ? 'حي' : 'اختبار', m.mode === 'live' ? 'ok' : 'warn'),
+    return admRow([admName(m.label, PAY_KIND[m.kind] || m.kind), (m.integration_id != null ? ltr(String(m.integration_id)) : '—'), DS.badge(m.mode === 'live' ? 'حي' : 'اختبار', m.mode === 'live' ? 'ok' : 'warn'),
       DS.badge(m.enabled ? 'مفعّلة' : 'موقوفة', m.enabled ? 'ok' : null), acts], null, [m.label, m.integration_id, m.kind].join(' '));
   });
   const f = PAYC.m; if (!f.mode) f.mode = g.mode;
@@ -14931,6 +14974,8 @@ function admPayPage() {
   const box = admMount('paycenter', 'مركز الدفع', async function () {
     const D = await clApi('/admin/api/pay/overview');
     if (!D || !D.ok) throw new Error((D && D.message) || 'تعذّر تحميل مركز الدفع.');
+    /* ردّ ناقص من الخادم لا يُسقط الصفحة: كل قسم يظهر فارغًا بدل الخطأ */
+    D.can = D.can || {}; D.gateway = D.gateway || {}; ['links', 'methods', 'subs', 'txns', 'transfers', 'refunds'].forEach(function (k) { if (!Array.isArray(D[k])) D[k] = D[k] == null ? [] : D[k]; });
     if (D.can.links) { try { const c = await admClients(''); D.clients = (c && c.reg) || []; } catch (err) { D.clients = []; } }
     return D;
   }, function (D, st, paint, refetch0) {
@@ -14939,7 +14984,7 @@ function admPayPage() {
     const on = M.filter(function (m) { return m.enabled && m.mode === g.mode; }).length;
     return [admKpis([['وسيلة مفعّلة · الوضع ' + (g.mode === 'live' ? 'الحي' : 'الاختبار'), on, g.mode === 'live' ? 'ok' : 'warn', 'credit-card'], ['رابط مفتوح', L.filter(function (x) { return x.status === 'open'; }).length, '', 'wallet'],
         ['رابط مدفوع', L.filter(function (x) { return x.status === 'paid'; }).length, 'ok', 'check-circle'], ['وسيلة موقوفة', M.filter(function (m) { return !m.enabled; }).length, '', 'x-circle']]),
-      g.keys ? null : DS.note('warn', 'مفاتيح Paymob غير مضافة على الخادم', 'الناقص: ' + g.missing.join('، ') + '. تُضاف في ملف بيئة الخادم، ولا تُكتب هنا ولا في المستودع.'),
+      g.keys ? null : DS.note('warn', 'مفاتيح Paymob غير مضافة على الخادم', 'الناقص: ' + ((g.missing || []).join('، ') || 'غير محدد') + '. تُضاف في ملف بيئة الخادم، ولا تُكتب هنا ولا في المستودع.'),
       g.keys && g.mode === 'test' ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي، ولا تتغير دفعات العقود. للتحويل إلى الحي تُستبدل المفاتيح على الخادم.') : null,
       e('div', { class: 'adm-chips', role: 'tablist', 'aria-label': 'أقسام مركز الدفع' }, [['links', 'روابط الدفع'], ['txns', 'العمليات'], ['trin', 'إيصالات التحويل'], ['gw', 'سجل عمليات البوابة'], ['subs', 'الاشتراكات'], ['cards', 'البطاقات المحفوظة'], ['svc', 'الخدمات ووسائل الدفع']].filter(function (t) { return t[0] !== 'links' || D.can.links; }).map(function (t) {
         const cur = (st.tab || (D.can.links ? 'links' : 'txns')) === t[0];
@@ -15434,13 +15479,17 @@ function lvSvcPage() {
   if (!LV_SR.ok && !LV_SR.busy) { LV_SR.busy = true; lvSrLoad().catch(function (err) { LV_SR.err = (err && err.message) || 'تعذّر التحميل.'; }).then(function () { LV_SR.busy = false; draw(); }); }
   if (!LV_SR.ok && LV_SR.busy) return [clWait('طلبات الخدمات')];
   if (!LV_SR.ok) return [clFail('طلبات الخدمات', LV_SR.err, function () { LV_SR.err = ''; draw(); })];
-  const A = LV_SR.all, op = A.filter(lvSrOpenSt).length, done = A.filter(function (x) { return x.status === 'approved'; }).length, rej = A.length - op - done;
-  return [axKpis([['بانتظار إجراء', fmtNum(op), op ? 'warn' : '', 'tray'], ['منجزة', fmtNum(done), done ? 'ok' : '', 'check-circle'], ['مرفوضة أو ملغاة', fmtNum(rej), '', 'x-circle']]),
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'أنواع الطلبات'), e('small', {}, 'كل نوع بطاقة مستقلة بسجله — الطلب ونوعه وحالته والإجراء الذي تم')])]),
-    e('div', { class: 'cu-cards dc-rec-cards' }, LV_SRK.map(function (K) { const L = A.filter(function (x) { return x.kind === K[0]; }), o = L.filter(lvSrOpenSt).length;
-      return e('button', { type: 'button', class: 'cu-card', 'data-live-ok': '', onClick: function () { lvSvcOpen(K[0]); } }, [e('span', { class: 'cu-av dc-rec-ic' }, frag(ui(K[2], 20))),
-        e('span', { class: 'cu-card-t' }, [e('b', {}, K[1]), e('small', {}, K[3])]),
-        e('span', { class: 'cu-card-m' }, [DS.badge(fmtNum(L.length) + ' طلب', L.length ? 'info' : null), o ? DS.badge(fmtNum(o) + ' بانتظار إجراء', 'warn') : null]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); }))];
+  /* بنمط «الحوالات الصادرة»: المؤشرات · الاختيار السريع بالنوع وفلتر العميل · صف لكل طلب · درج القرار */
+  const N = lvSrNames(), A = LV_SR.all.map(function (x) { return { x: { cid: x.user_id, name: N[x.user_id] || '—' }, r: x }; }), f = ADM.svF || 'all', cq = ADM.svC || '';
+  const fit = function (y, k) { return k === 'all' || (k === 'open' ? lvSrOpenSt(y.r) : y.r.kind === k); };
+  const R = A.filter(function (y) { return fit(y, f) && (!cq || y.x.cid === cq); });
+  const op = A.filter(function (y) { return lvSrOpenSt(y.r); }).length, done = A.filter(function (y) { return y.r.status === 'approved'; }).length;
+  return axPage({ title: 'طلبات الخدمات', hint: 'سداد عقد كامل · تأجيل دفعة · توحيد العقود — الطلب ونوعه وحالته والإجراء الذي تم', can: false, perm: null,
+    K: [['الطلبات', fmtNum(A.length), '', 'clipboard-text'], ['بانتظار إجراء', fmtNum(op), op ? 'warn' : '', 'tray'], ['منجزة', fmtNum(done), 'ok', 'check-circle'], ['مرفوضة أو ملغاة', fmtNum(A.length - op - done), '', 'x-circle']],
+    chips: finChips('svF', [['all', 'الكل', 'list:navy'], ['open', 'بانتظار إجراء', 'tray:saffron'], ['settle', 'سداد عقد كامل', 'handshake:teal'], ['defer', 'تأجيل دفعة', 'clock:sky'], ['merge', 'توحيد العقود', 'stack:gold']], A, fit, cq),
+    filter: finCliFilter('svC', A),
+    list: axList(R.map(function (y) { const x = y.r, st = rStat(LV_SR_ST[x.status] || 'sent');
+      return axRow({ ic: rType(x.kind)[2], t: y.x.name, sub: LV_SR_T[x.kind] + ' — ' + x.req_no + ' — ' + st[1] + (x.action_note ? ' — ' + lvSrShort(x) : ''), tone: lvSrOpenSt(x) ? 'warn' : x.status === 'rejected' ? 'danger' : '', go: function () { lvSrOpen(x.id); } }); }), 'لا طلبات هنا') });
 }
 const LIVE_PAGES = { client: {},
   admin: {  'pay-center': admPayPage, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': admMigPage, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
@@ -16621,18 +16670,19 @@ function cpgHubPage() {
 }
 function cpgAccessPage() {
   if (!LIVE.on) return [liveEmptyNote('الوصول لصفحات العملاء')];
-  const C = cpgClients(), q = String(CPG.q || '').trim(), f = CPG.f || '';
-  const L = C.filter(function (c) { return (!q || String(c.name || '').indexOf(q) >= 0 || String(c.no || '').indexOf(q) >= 0) && (!f || (f === 'act' ? c.status === 'active' : c.status !== 'active')); });
+  /* بنمط «الحوالات الصادرة»: المؤشرات · الاختيار السريع والبحث · صف لكل عميل · درج الدخول بالسبب */
+  if (!CPG.logAt) { CPG.logAt = -1; cpgLogLoad().then(draw); }
+  const C = cpgClients(), q = String(CPG.q || '').trim(), f = ADM.cpF || 'all';
+  const fit = function (c, k) { return k === 'all' || (k === 'act' ? c.status === 'active' : c.status !== 'active'); };
+  const L = C.filter(function (c) { return fit(c, f) && (!q || String(c.name || '').indexOf(q) >= 0 || String(c.no || '').indexOf(q) >= 0); });
+  const last = {}; (CPG.log || []).forEach(function (r) { if (r.event === 'enter' && (!last[r.user_id] || last[r.user_id] < r.at)) last[r.user_id] = r.at; });
   const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث باسم العميل أو رقمه في تيرا', value: CPG.q || '', 'aria-label': 'بحث في العملاء', onKeydown: function (ev) { if (ev.key === 'Enter') { CPG.q = ev.target.value; draw(); } } });
-  return [axKpis([['العملاء', fmtNum(C.length), '', 'users-three'], ['نشطون', fmtNum(C.filter(function (c) { return c.status === 'active'; }).length), 'ok', 'check-circle'], ['موقوفون', fmtNum(C.filter(function (c) { return c.status !== 'active'; }).length), C.some(function (c) { return c.status !== 'active'; }) ? 'warn' : '', 'lock-key']]),
-    DS.note('info', 'كل دخول يُوثَّق', 'تدخل صفحة العميل كما يراها هو ببياناته الفعلية. كل صفحة تفتحها وكل إجراء تتخذه يُسجَّل باسمك مع سبب الدخول ووقته في «سجل توثيق الوصول». إجراءات العميل نفسه (السداد وإرسال الطلبات وبياناته الأمنية) لا تُنفَّذ باسمه.'),
-    e('div', { class: 'm3-tools' }, [chipRow([['', 'كل العملاء', 'users-three:navy', C.length], ['act', 'النشطون', 'check-circle:teal', C.filter(function (c) { return c.status === 'active'; }).length], ['off', 'الموقوفون', 'lock-key:gold', C.filter(function (c) { return c.status !== 'active'; }).length]], f, function (v) { CPG.f = v; draw(); }, 'تصفية العملاء'),
-      e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { CPG.q = qi.value; draw(); } }), CPG.q ? DS.button('مسح', { size: 'sm', onClick: function () { CPG.q = ''; draw(); } }) : null])]),
-    L.length ? e('div', { class: 'cu-cards' }, L.map(function (c) {
-      return e('button', { type: 'button', class: 'cu-card', 'data-live-ok': '', onClick: function () { cpgOpen(c); } }, [e('span', { class: 'cu-av' }, String(c.name || '؟').slice(0, 1)),
-        e('span', { class: 'cu-card-t' }, [e('b', {}, c.name || '—'), e('small', {}, [c.no ? ltr(c.no) : '', c.at ? [' · عميل منذ ', bdiD(iso(new Date(c.at)))] : null])]),
-        e('span', { class: 'cu-card-m' }, [DS.badge(c.status === 'active' ? 'نشط' : 'موقوف', c.status === 'active' ? 'ok' : 'warn'), DS.badge('دخول الصفحة', 'info')]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); }))
-      : LDS.emptyState({ icon: 'users-three', title: 'لا عملاء بهذا البحث', compact: true })];
+  return axPage({ title: 'الوصول لصفحات العملاء', hint: 'ادخل صفحة العميل كما يراها هو — بسبب يُوثَّق، وكل تصفح وإجراء يُسجَّل باسمك', can: false, perm: null,
+    alerts: DS.note('info', 'كل دخول يُوثَّق', 'إجراءات العميل نفسه (السداد وإرسال الطلبات وبياناته الأمنية) لا تُنفَّذ باسمه، وتُنفَّذ إجراءات الموظف من «إجراءات الموظف» داخل الزيارة.'),
+    K: [['العملاء', fmtNum(C.length), '', 'users-three'], ['نشطون', fmtNum(C.filter(function (c) { return c.status === 'active'; }).length), 'ok', 'check-circle'], ['موقوفون', fmtNum(C.filter(function (c) { return c.status !== 'active'; }).length), '', 'lock-key'], ['زيارات مسجّلة', fmtNum((CPG.log || []).filter(function (r) { return r.event === 'enter'; }).length), '', 'clock-counter-clockwise']],
+    chips: commChips('cpF', [['all', 'كل العملاء', 'users-three:navy'], ['act', 'النشطون', 'check-circle:teal'], ['off', 'الموقوفون', 'lock-key:gold']], C, fit),
+    filter: e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { CPG.q = qi.value; draw(); } }), CPG.q ? DS.button('مسح', { size: 'sm', onClick: function () { CPG.q = ''; draw(); } }) : null]),
+    list: axList(L.map(function (c) { return axRow({ ic: 'user-circle:teal', t: c.name || '—', sub: (c.no || '') + ' — ' + (c.status === 'active' ? 'حساب نشط' : 'حساب موقوف') + (last[c.id] ? ' — آخر زيارة ' + iso(new Date(last[c.id])) : ''), tone: c.status !== 'active' ? 'warn' : '', go: function () { cpgOpen(c); } }); }), 'لا عملاء بهذا البحث') });
 }
 const liveEmptyNote = (t) => DS.panel(t, null, [DS.note('info', 'تعمل في النسخة الحقيقية', 'هذه الصفحة تقرأ من الخادم مباشرة — لا بيانات تجريبية هنا.')]);
 const CPGD = {};
@@ -16651,8 +16701,8 @@ function cpgOpen(c) {
     try { await cpgEnter(c, String(W.why).trim()); delete CPGD[c.id]; }
     catch (err) { W.busy = false; W.err = (err && err.message) || 'تعذّر الدخول.'; rerun(); }
   };
-  cuDrawer({ key: 'cpg:' + c.id, ic: 'user-circle:teal', title: 'دخول صفحة العميل', sub: (c.name || '') + (c.no ? ' · ' + c.no : ''), onClose: function () { draw(); }, body: body,
-    foot: [e('div', { class: 'cu-dr-fa' }, [liveOk(DS.button(W.busy ? 'جارٍ فتح الصفحة…' : 'دخول صفحة العميل', { tone: 'primary', ui: 'user-circle', onClick: go1, disabled: W.busy })), DS.button('إغلاق', { onClick: admClose })])] });
+  cuBdDraw({ key: 'cpg:' + c.id, ic: 'user-circle:teal', title: 'دخول صفحة العميل', sub: (c.name || '') + (c.no ? ' · ' + c.no : ''), onClose: function () { draw(); }, body: body,
+    foot: [e('div', { class: 'cu-dr-fa' }, [liveOk(DS.button(W.busy ? 'جارٍ فتح الصفحة…' : 'دخول صفحة العميل', { tone: 'primary', ui: 'user-circle', onClick: go1, disabled: W.busy })), DS.button('إغلاق', { onClick: cuBdClose })])] });
 }
 async function cpgEnter(c, why) {
   if (CPV.on) throw new Error('أنت داخل صفحة عميل الآن — اخرج منها أولًا.');
@@ -16702,7 +16752,7 @@ function cpgActions() {
   const uid = CPV.uid, act = function (t, fn) { return function () { cpgLog('action', cpgPageLabel()[0], t); try { fn(); } catch (err) { snack('تعذّر فتح الإجراء.'); } }; };
   const cts = (LIVE_ADM.ct && LIVE_ADM.ct[uid]) || [], srs = (LV_SR.all || []).filter(function (x) { return x.user_id === uid; });
   const row = function (ic, t, sub, fn) { return e('button', { type: 'button', class: 'tm-r', 'data-live-ok': '', onClick: fn }, [e('span', { class: 'tm-no' }, [frag(ui(ic, 16)), ' ', t]), e('span', { class: 'tm-sub' }, sub || ''), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); };
-  cuDrawer({ key: 'cpg-act', ic: 'gavel:navy', title: 'إجراءات الموظف', sub: CPV.name + ' · تُنفَّذ باسمك وتُوثَّق', onClose: function () { draw(); }, foot: admFoot(), body: [
+  cuBdDraw({ key: 'cpg-act', ic: 'gavel:navy', title: 'إجراءات الموظف', sub: CPV.name + ' · تُنفَّذ باسمك وتُوثَّق', onClose: function () { draw(); }, foot: admFoot(), body: [
     cuSec('الحساب', 'user-circle', [e('div', { class: 'tm-rows' }, [
       row('shield-check', 'أمان الحساب والجلسات', 'القفل والتحقق والأجهزة — بسبب إلزامي', act('فتح أمان الحساب', function () { admClose(); lvAcctOpen(uid, CPV.name); })),
       row('crown-simple', 'العضوية والنقاط', 'المستوى والإيقاف والتصحيح', act('فتح العضوية والنقاط', function () { admClose(); lvMemOpen(uid); }))])]),
@@ -16727,24 +16777,22 @@ function cpgLogPage() {
   if (!CPG.logAt) { CPG.logAt = -1; cpgLogLoad().then(draw); }
   if (CPG.logAt < 0) return [clWait('سجل توثيق الوصول')];
   if (CPG.logErr && !(CPG.log || []).length) return [clFail('سجل توثيق الوصول', CPG.logErr, function () { CPG.logAt = 0; draw(); })];
-  const all = cpgSessions(CPG.log || []), f = CPG.lf || '', lc = CPG.lc || '', ls = CPG.ls || '';
-  const L = all.filter(function (s) { return (!f || s.cnt[f]) && (!lc || s.uid === lc) && (!ls || s.sid === ls); });
+  const all = cpgSessions(CPG.log || []), f = ADM.clF || 'all', lc = CPG.lc || '', ls = CPG.ls || '';
+  const fit = function (s, k) { return k === 'all' || (k === 'open' ? !s.end : !!s.cnt[k]); };
+  const L = all.filter(function (s) { return fit(s, f) && (!lc || s.uid === lc) && (!ls || s.sid === ls); });
   const nEd = (CPG.log || []).filter(function (r) { return r.event === 'edit'; }).length, nBl = (CPG.log || []).filter(function (r) { return r.event === 'blocked'; }).length;
   const users = {}, staff = {}; all.forEach(function (s) { users[s.uid] = s.user; staff[s.sid] = s.staff; });
-  return [axKpis([['الزيارات', fmtNum(all.length), '', 'user-circle'], ['عملاء زيرت صفحاتهم', fmtNum(Object.keys(users).length), '', 'users-three'], ['التعديلات', fmtNum(nEd), nEd ? 'warn' : '', 'pencil-simple'], ['محاولات محجوبة', fmtNum(nBl), nBl ? 'danger' : '', 'lock-key']]),
-    e('div', { class: 'm3-tools ax-tools' }, [chipRow([['', 'كل الزيارات', 'list:navy', all.length]].concat(['view', 'action', 'edit', 'blocked'].map(function (k) { return [k, 'فيها ' + CPG_EV[k][0], (k === 'blocked' ? 'lock-key:gold' : k === 'edit' ? 'pencil-simple:saffron' : k === 'action' ? 'gavel:navy' : 'list:teal'), all.filter(function (s) { return s.cnt[k]; }).length]; })), f, function (v) { CPG.lf = v; draw(); }, 'تصفية الزيارات'),
-      e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: lc || '*', options: [['*', 'كل العملاء']].concat(Object.keys(users).map(function (k) { return [k, users[k]]; })), onChange: function (v) { CPG.lc = v === '*' ? '' : v; draw(); } })),
-        DS.editField('الموظف', DS.select({ value: ls || '*', options: [['*', 'كل الموظفين']].concat(Object.keys(staff).map(function (k) { return [k, staff[k]]; })), onChange: function (v) { CPG.ls = v === '*' ? '' : v; draw(); } })),
-        DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { CPG.logAt = 0; draw(); } })])]),
-    L.length ? e('div', { class: 'tm-rows cpg-ss' }, L.map(function (s) {
-      const dur = (s.end || s.lastAt || s.start) - s.start;
-      return e('button', { type: 'button', class: 'tm-r tm-wrap', 'data-live-ok': '', onClick: function () { cpgSessOpen(s); } }, [e('span', { class: 'tm-no' }, s.user || '—'),
-        e('span', { class: 'tm-sub' }, [s.staff || '—', ' · ', bdiD(iso(s.start)), ' ', ltr(hm(s.start)), ' · ', s.end ? 'المدة ' + cpgDur(dur) : 'لم يُسجَّل الخروج', s.reason ? ' · ' + s.reason : '']),
-        e('span', { class: 'tm-amt' }, fmtNum(s.cnt.view || 0) + ' صفحة'), DS.badge(s.cnt.blocked ? fmtNum(s.cnt.blocked) + ' محجوبة' : s.cnt.edit ? fmtNum(s.cnt.edit) + ' تعديل' : s.end ? 'مكتملة' : 'مفتوحة', s.cnt.blocked ? 'danger' : s.cnt.edit ? 'warn' : s.end ? 'ok' : 'info'), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); }))
-      : LDS.emptyState({ icon: 'clock-counter-clockwise', title: 'لا زيارات مسجّلة بعد', body: 'كل دخول إلى صفحة عميل يظهر هنا بأحداثه كاملة.', compact: true })];
+  return axPage({ title: 'سجل توثيق الوصول', hint: 'من دخل؟ صفحة أي عميل؟ ماذا تصفّح وماذا عدّل؟ ومتى دخل وخرج', can: false, perm: null,
+    K: [['الزيارات', fmtNum(all.length), '', 'user-circle'], ['عملاء زيرت صفحاتهم', fmtNum(Object.keys(users).length), '', 'users-three'], ['التعديلات', fmtNum(nEd), nEd ? 'warn' : '', 'pencil-simple'], ['محاولات محجوبة', fmtNum(nBl), nBl ? 'danger' : '', 'lock-key']],
+    chips: commChips('clF', [['all', 'كل الزيارات', 'list:navy'], ['edit', 'فيها تعديل', 'pencil-simple:saffron'], ['action', 'فيها إجراء', 'gavel:navy'], ['blocked', 'فيها محاولة محجوبة', 'lock-key:gold'], ['open', 'بلا خروج مسجّل', 'clock:sky']], all, fit),
+    filter: e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: lc || '*', options: [['*', 'كل العملاء']].concat(Object.keys(users).map(function (k) { return [k, users[k]]; })), onChange: function (v) { CPG.lc = v === '*' ? '' : v; draw(); } })),
+      DS.editField('الموظف', DS.select({ value: ls || '*', options: [['*', 'كل الموظفين']].concat(Object.keys(staff).map(function (k) { return [k, staff[k]]; })), onChange: function (v) { CPG.ls = v === '*' ? '' : v; draw(); } })),
+      DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { CPG.logAt = 0; draw(); } })]),
+    list: axList(L.map(function (s) { const dur = (s.end || s.lastAt || s.start) - s.start;
+      return axRow({ ic: s.cnt.blocked ? 'lock-key:gold' : s.cnt.edit ? 'pencil-simple:saffron' : 'user-circle:teal', t: (s.user || '—') + ' — ' + (s.staff || '—'), sub: iso(s.start) + ' ' + hm(s.start) + ' — ' + (s.end ? 'المدة ' + cpgDur(dur) : 'لم يُسجَّل الخروج') + ' — ' + fmtNum(s.cnt.view || 0) + ' صفحة' + (s.cnt.edit ? ' — ' + fmtNum(s.cnt.edit) + ' تعديل' : '') + (s.cnt.blocked ? ' — ' + fmtNum(s.cnt.blocked) + ' محجوبة' : '') + (s.reason ? ' — ' + s.reason : ''), tone: s.cnt.blocked ? 'danger' : s.cnt.edit ? 'warn' : '', go: function () { cpgSessOpen(s); } }); }), 'لا زيارات مسجّلة بعد') });
 }
 function cpgSessOpen(s) {
-  cuDrawer({ key: 'cpgs:' + s.id, ic: 'clock-counter-clockwise:navy', title: 'زيارة صفحة العميل', sub: (s.user || '') + ' · ' + (s.staff || ''), onClose: function () { draw(); }, foot: admFoot(), body: [
+  cuBdDraw({ key: 'cpgs:' + s.id, ic: 'clock-counter-clockwise:navy', title: 'زيارة صفحة العميل', sub: (s.user || '') + ' · ' + (s.staff || ''), onClose: function () { draw(); }, foot: [e('div', { class: 'cu-dr-fa' }, [DS.button('إغلاق', { onClick: cuBdClose })])], body: [
     cuSec('الزيارة', 'user-circle', [DS.fields([['العميل', s.user || '—'], ['رقم تيرا', s.no ? ltr(s.no) : '—'], ['الموظف', s.staff || '—'], ['سبب الدخول', s.reason || '—'], ['الدخول', [bdiD(iso(s.start)), ' ', ltr(hm(s.start))]], ['الخروج', s.end ? [bdiD(iso(s.end)), ' ', ltr(hm(s.end))] : 'لم يُسجَّل'], ['رقم الجلسة', ltr(s.id)]])]),
     cuSec('الأحداث (' + fmtNum(s.ev.length) + ')', 'list-checks', [e('ol', { class: 'cu-log cpg-tl' }, s.ev.slice().reverse().map(function (r) { const K = CPG_EV[r.event] || [r.event, 'info', '']; return e('li', { class: 'is-' + r.event }, [e('b', {}, [DS.badge(K[0], K[2] || null), ' ', r.detail || r.page || '']), e('small', {}, [bdiD(iso(new Date(r.at))), ' ', ltr(hm(new Date(r.at))), r.page && r.detail ? ' · ' + r.page : ''])]); }))])] });
 }
@@ -16811,16 +16859,21 @@ if (LIVE.on) {
   const go0 = go;
   go = function () { const r = go0.apply(this, arguments); if (CPV.on) { const L = cpgPageLabel(); if (L[0] !== CPV.last) { CPV.last = L[0]; cpgLog('view', L[0], L[1]); } } return r; };
 }
-/* ===================== v305: «التواصل المباشر» — دليل هواتف وبريد الشركاء · المراسلة · تقرير الإرسال · القوالب الجاهزة =====================
+/* ===================== v307: «التواصل المباشر» بهوية المنصة ونمط «الحوالات الصادرة» =====================
+   كل صفحة بمهمتها: الدليل · المراسلة · تقرير الإرسال · القوالب الجاهزة — العنوان والمؤشرات والاختيار السريع والقائمة، والتفاصيل في درج.
    الإرسال الفعلي موقوف بقرار الإدارة: الرسالة تُحفظ «محجوزة» في التقرير ولا تخرج لأي أحد. */
-const COMM = { ct: null, ctAt: 0, ctErr: '', tpl: null, tplAt: 0, can: false, msgs: null, msgAt: 0, q: '', f: '', rf: '', rr: '', rs: 'new', W: null };
+const COMM = { ct: null, ctAt: 0, ctErr: '', tpl: null, tplAt: 0, can: false, msgs: null, msgAt: 0, q: '', W: null };
 const COMM_ROLE = { client: ['عميل', 'users-three:teal'], staff: ['موظف', 'briefcase:navy'], marketer: ['مسوّق', 'megaphone-simple:sky'], investor: ['مستثمر', 'trend-up:gold'] };
-const COMM_CH = { email: ['البريد الإلكتروني', 'envelope-simple'], whatsapp: ['واتساب', 'whatsapp-logo'] };
+const COMM_CH = { email: ['البريد الإلكتروني', 'envelope-simple:sky'], whatsapp: ['واتساب', 'whatsapp-logo:teal'], both: ['البريد وواتساب', 'paper-plane-tilt:sky'] };
 const COMM_ST = { held: ['محجوزة — الإرسال موقوف', 'warn'], queued: ['في الانتظار', 'info'], sent: ['أُرسلت', 'ok'], partial: ['أُرسلت جزئيًا', 'warn'], failed: ['فشلت', 'danger'], cancelled: ['أُلغيت', ''], skipped: ['بلا عنوان — تُخطّيت', ''] };
 const COMM_ERR = { name_required: 'اكتب الاسم.', phone_or_email_required: 'أدخل الجوال أو البريد.', bad_phone: 'رقم الجوال غير صحيح.', bad_email: 'البريد غير صحيح.', duplicate: 'جهة الاتصال موجودة مسبقًا بالجوال أو البريد نفسه.', forbidden: 'لا تملك الصلاحية.', channel_required: 'اختر وسيلة الإرسال.', body_required: 'اكتب محتوى الرسالة.', subject_required: 'اكتب عنوان البريد.', audience_required: 'حدّد المستلمين.', no_recipients: 'لا مستلمين بهذا التحديد.', bad_channel: 'اختر الوسيلة.' };
 const commErr = (err) => { const m = String((err && err.message) || err || ''), k = /\(([a-z_]+)\)/.exec(m); return (k && COMM_ERR[k[1]]) || m || 'تعذّر الحفظ.'; };
 const COMM_VARS = [['{الاسم}', 'اسم المستلم'], ['{رقم_تيرا}', 'رقم تيرا'], ['{التاريخ}', 'تاريخ اليوم']];
 const commFill = (t, c) => String(t || '').replace(/\{الاسم\}/g, (c && c.name) || 'اسم العميل').replace(/\{رقم_تيرا\}/g, (c && c.ident) || 'USR-XXXXXX').replace(/\{التاريخ\}/g, iso(T0));
+const commIn = (o) => { const x = DS.input(o); if (o.disabled) x.disabled = true; if (o.type === 'tel' || o.type === 'email') x.setAttribute('dir', 'ltr'); return x; };
+const commChips = (key, items, L, fit, def) => chipRow(items.map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), ADM[key] || def || 'all', function (v) { ADM[key] = v; draw(); }, 'اختيار سريع');
+const commRoleT = (roles) => (roles || []).map(function (r) { return (COMM_ROLE[r] || [r])[0]; }).join('، ');
+const commFld = (label, input) => DS.editField(label, input);
 async function commLoad(what) {
   const J = [];
   if (!what || what === 'ct') J.push(admRpc('admin_contacts_list', {}).then(function (j) { COMM.ct = j.rows || []; COMM.ctErr = ''; }).catch(function (err) { COMM.ct = COMM.ct || []; COMM.ctErr = (err && err.message) || 'تعذّر التحميل.'; }).then(function () { COMM.ctAt = Date.now(); }));
@@ -16830,71 +16883,75 @@ async function commLoad(what) {
 }
 function commReady(title, what) {
   if (!LIVE.on) return [liveEmptyNote(title)];
-  const need = (what || ['ct', 'tpl', 'msg']).filter(function (k) { return !COMM[k + 'At']; });
+  const W = what || ['ct', 'tpl', 'msg'], need = W.filter(function (k) { return !COMM[k + 'At']; });
   if (need.length) { need.forEach(function (k) { COMM[k + 'At'] = -1; }); Promise.all(need.map(commLoad)).then(draw); }
-  if ((what || ['ct', 'tpl', 'msg']).some(function (k) { return COMM[k + 'At'] < 0; })) return [clWait(title)];
+  if (W.some(function (k) { return COMM[k + 'At'] < 0; })) return [clWait(title)];
   return null;
 }
-const commIn = (o) => { const x = DS.input(o); if (o.disabled) x.disabled = true; if (o.type === 'tel' || o.type === 'email') x.setAttribute('dir', 'ltr'); return x; };
-const commRoleB = (roles) => (roles || []).map(function (r) { return DS.badge((COMM_ROLE[r] || [r])[0], r === 'client' ? 'info' : r === 'staff' ? 'ok' : 'warn'); });
+const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف بقرار الإدارة', 'تُكتب الرسالة وتُعايَن وتُحفظ في «تقرير الإرسال» بحالة «محجوزة» — لا يخرج بريد ولا واتساب لأي أحد حتى يُفعَّل الإرسال.');
 function commHubPage() {
-  const C = COMM.ct || [], M = COMM.msgs || [], T = COMM.tpl || [];
-  if (LIVE.on && !COMM.ctAt) { commReady('التواصل المباشر'); }
-  return secHub('comm', { t: 'التواصل المباشر', s: 'دليل الشركاء، والمراسلة بالبريد وواتساب، وتقرير الإرسال، والقوالب — الإرسال الفعلي موقوف الآن بقرار الإدارة.', ic: 'comm' }, [
-    ['dir', 'الدليل', 'users-three:teal', [{ ic: 'comm-dir', t: 'دليل هواتف وبريد الشركاء', d: 'العملاء والموظفون والمسوّقون والمستثمرون — تلقائيًا من الحسابات، ويدويًا أو من جهات اتصال الجوال', n: COMM.ct ? fmtNum(C.filter(function (c) { return !c.archived; }).length) + ' جهة اتصال' : 'الدليل', big: true, go: function () { go('other', 'comm-dir'); } }]],
-    ['snd', 'المراسلة', 'paper-plane-tilt:sky', [{ ic: 'comm-send', t: 'مراسلة', d: 'اختيار الكل أو المفضلة أو حسب الدور أو أشخاص محددين · البريد بالقالب المعتمد · واتساب بالشعار واسم العميل', badge: ['الإرسال موقوف', 'warn'], go: function () { go('other', 'comm-send'); } },
-      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'ملخص الرسائل ومستلميها حسب نوع المستلم والوسيلة — بالتصفية والفرز', n: COMM.msgs ? fmtNum(M.length) + ' رسالة' : 'التقرير', go: function () { go('other', 'comm-rep'); } },
-      { ic: 'comm-tpl', t: 'قوالب جاهزة', d: 'أنشئ القالب واحفظه ليظهر في المراسلة', n: COMM.tpl ? fmtNum(T.filter(function (t) { return !t.archived; }).length) + ' قالب' : 'القوالب', go: function () { go('other', 'comm-tpl'); } }]]]);
+  if (LIVE.on && !COMM.ctAt) commReady('التواصل المباشر');
+  const C = (COMM.ct || []).filter(function (c) { return !c.archived; }), M = COMM.msgs || [], T = (COMM.tpl || []).filter(function (t) { return !t.archived; });
+  return secHub('comm', { t: 'التواصل المباشر', s: 'دليل الشركاء، والمراسلة بالبريد وواتساب بقوالب الهوية، وتقرير الإرسال — الإرسال الفعلي موقوف الآن بقرار الإدارة.', ic: 'comm' }, [
+    ['dir', 'الدليل', 'users-three:teal', [{ ic: 'comm-dir', t: 'دليل هواتف وبريد الشركاء', d: 'العملاء والموظفون والمسوّقون والمستثمرون — تلقائيًا من الحسابات، ويدويًا أو من جهات اتصال الجوال', n: COMM.ct ? fmtNum(C.length) + ' جهة اتصال' : 'الدليل', go: function () { go('other', 'comm-dir'); } }]],
+    ['snd', 'المراسلة', 'paper-plane-tilt:sky', [{ ic: 'comm-send', t: 'المراسلة', d: 'الكل أو المفضلة أو حسب الدور أو أشخاص محددون · البريد بالقالب المعتمد · واتساب بالشعار واسم العميل', badge: ['الإرسال موقوف', 'warn'], go: function () { go('other', 'comm-send'); } },
+      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'الرسائل ومستلموها حسب نوع المستلم والوسيلة — بالتصفية والفرز', n: COMM.msgs ? fmtNum(M.length) + ' رسالة' : 'التقرير', go: function () { go('other', 'comm-rep'); } },
+      { ic: 'comm-tpl', t: 'القوالب الجاهزة', d: 'قوالب معتمدة جاهزة، وإنشاء قالب جديد يظهر مباشرة في المراسلة', n: COMM.tpl ? fmtNum(T.length) + ' قالب' : 'القوالب', go: function () { go('other', 'comm-tpl'); } }]]]);
 }
 /* ---------- البطاقة الأولى: الدليل ---------- */
 function commDirPage() {
   const w = commReady('دليل هواتف وبريد الشركاء', ['ct']); if (w) return w;
   if (COMM.ctErr && !(COMM.ct || []).length) return [clFail('دليل هواتف وبريد الشركاء', COMM.ctErr, function () { COMM.ctAt = 0; draw(); })];
-  const A = (COMM.ct || []).filter(function (c) { return !c.archived; }), q = String(COMM.q || '').trim().toLowerCase(), f = COMM.f || '';
-  const fit = function (c) { return f === 'fav' ? c.favorite : f === 'manual' ? c.source !== 'auto' : f === 'arch' ? true : f ? (c.roles || []).indexOf(f) >= 0 : true; };
-  const base = f === 'arch' ? (COMM.ct || []).filter(function (c) { return c.archived; }) : A;
-  const L = base.filter(function (c) { return fit(c) && (!q || [c.name, c.phone, c.email, c.ident, c.partner_type].join(' ').toLowerCase().indexOf(q) >= 0); });
+  const all = COMM.ct || [], A = all.filter(function (c) { return !c.archived; }), f = ADM.cdF || 'all', q = String(COMM.q || '').trim().toLowerCase();
+  const fit = function (c, k) { return k === 'all' ? !c.archived : k === 'arch' ? c.archived : c.archived ? false : k === 'fav' ? c.favorite : k === 'manual' ? c.source !== 'auto' : (c.roles || []).indexOf(k) >= 0; };
+  const R = all.filter(function (c) { return fit(c, f) && (!q || [c.name, c.phone, c.email, c.ident, c.partner_type].join(' ').toLowerCase().indexOf(q) >= 0); });
   const n = function (r) { return A.filter(function (c) { return (c.roles || []).indexOf(r) >= 0; }).length; };
-  const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث بالاسم أو الجوال أو البريد أو المعرف', value: COMM.q || '', 'aria-label': 'بحث في الدليل', onKeydown: function (ev) { if (ev.key === 'Enter') { COMM.q = ev.target.value; draw(); } } });
   const pick = typeof navigator !== 'undefined' && navigator.contacts && typeof navigator.contacts.select === 'function';
   const vin = e('input', { type: 'file', accept: '.vcf,text/vcard,text/x-vcard', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) fl.text().then(function (t) { commImportOpen(commVcf(t)); }); ev.target.value = ''; } });
-  return [axKpis([['جهات الاتصال', fmtNum(A.length), '', 'users-three'], ['عملاء', fmtNum(n('client')), '', 'users-three'], ['موظفون', fmtNum(n('staff')), '', 'briefcase'], ['مسوّقون ومستثمرون', fmtNum(n('marketer') + n('investor')), '', 'megaphone-simple'], ['المفضلة', fmtNum(A.filter(function (c) { return c.favorite; }).length), 'warn', 'star']]),
-    e('div', { class: 't2-row-wrap cu-acts' }, [liveOk(DS.button('إضافة جهة اتصال', { tone: 'primary', ui: 'plus', onClick: function () { commCtOpen(null); } })),
-      pick ? liveOk(DS.button('من جهات اتصال الجوال', { ui: 'device-mobile', onClick: commPickDevice })) : null,
-      liveOk(DS.button('استيراد ملف جهات (vCard)', { ui: 'upload-simple', onClick: function () { vin.click(); } })), vin]),
-    pick ? null : e('small', { class: 'cu-dr-hint' }, 'الاستيراد المباشر من جهات اتصال الجوال متاح في متصفح أندرويد. على آيفون: شارك جهة الاتصال من تطبيق «جهات الاتصال» كملف vCard ثم استورده من الزر أعلاه.'),
-    e('div', { class: 'm3-tools' }, [chipRow([['', 'الكل', 'users-three:navy', A.length], ['client', 'العملاء', 'users-three:teal', n('client')], ['staff', 'الموظفون', 'briefcase:navy', n('staff')], ['marketer', 'المسوّقون', 'megaphone-simple:sky', n('marketer')], ['investor', 'المستثمرون', 'trend-up:gold', n('investor')], ['fav', 'المفضلة', 'star:gold', A.filter(function (c) { return c.favorite; }).length], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron', A.filter(function (c) { return c.source !== 'auto'; }).length], ['arch', 'المؤرشفة', 'tray:navy', (COMM.ct || []).filter(function (c) { return c.archived; }).length]], f, function (v) { COMM.f = v; draw(); }, 'تصفية الدليل'),
-      e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { COMM.q = qi.value; draw(); } }), COMM.q ? DS.button('مسح', { size: 'sm', onClick: function () { COMM.q = ''; draw(); } }) : null])]),
-    L.length ? e('div', { class: 'tm-rows comm-dir' }, L.slice(0, 400).map(function (c) {
-      return e('div', { class: 'tm-r tm-wrap comm-ct' + (c.archived ? ' is-arch' : '') }, [
-        e('button', { type: 'button', class: 'comm-ct-b', 'data-live-ok': '', onClick: function () { commCtOpen(c); } }, [e('span', { class: 'cu-av' }, String(c.name || '؟').slice(0, 1)), e('span', { class: 'comm-ct-t' }, [e('b', {}, c.name), e('small', {}, [c.phone ? ltr('+' + c.phone) : null, c.phone && c.email ? ' · ' : null, c.email ? ltr(c.email) : null, !c.phone && !c.email ? 'بلا جوال أو بريد' : null])])]),
-        e('span', { class: 'comm-ct-m' }, commRoleB(c.roles).concat([c.source === 'auto' ? DS.badge(c.file_status === 'active' ? 'ملف نشط' : c.file_status === 'suspended' ? 'ملف موقوف' : 'من الحساب', c.file_status === 'suspended' ? 'warn' : 'ok') : DS.badge(c.source === 'device' ? 'من الجوال' : 'يدوي', null)])),
-        e('button', { type: 'button', class: 'comm-fav' + (c.favorite ? ' is-on' : ''), 'aria-label': c.favorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة', 'aria-pressed': c.favorite ? 'true' : 'false', 'data-live-ok': '', onClick: function () { commFav(c); } }, frag(ui(c.favorite ? 'star-fill' : 'star', 18)))]); }))
-      : LDS.emptyState({ icon: 'users-three', title: 'لا جهات اتصال هنا', body: 'الحسابات تُضاف تلقائيًا، ويمكنك إضافة جهة يدويًا أو من جهات اتصال الجوال.', compact: true }),
-    L.length > 400 ? e('small', { class: 'cu-dr-hint' }, 'يُعرض أول 400 — استخدم البحث لتضييق النتائج.') : null];
+  const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث بالاسم أو الجوال أو البريد أو المعرّف', value: COMM.q || '', 'aria-label': 'بحث في الدليل', onKeydown: function (ev) { if (ev.key === 'Enter') { COMM.q = ev.target.value; draw(); } } });
+  const imp = e('section', { class: 'ax-alerts comm-imp' }, [e('header', {}, [e('span', { class: 'ax-al-ic' }, frag(ui('upload-simple', 18))), e('b', {}, 'استيراد جهات الاتصال')]),
+    e('div', { class: 't2-row-wrap' }, [pick ? liveOk(DS.button('من جهات اتصال الجوال', { size: 'sm', ui: 'device-mobile', onClick: commPickDevice })) : null, liveOk(DS.button('ملف جهات اتصال (vCard)', { size: 'sm', ui: 'upload-simple', onClick: function () { vin.click(); } })), vin]),
+    e('small', { class: 'cu-dr-hint' }, pick ? 'تختار الجهات من جوالك وتُضاف بعد المعاينة، وتُتخطّى المكررة تلقائيًا.' : 'الاختيار المباشر من جهات الجوال يعمل في متصفح أندرويد. على آيفون: شارك جهة الاتصال من تطبيق «جهات الاتصال» كملف vCard ثم استورده.')]);
+  return axPage({ title: 'دليل هواتف وبريد الشركاء', hint: 'الحسابات تُضاف تلقائيًا بحالة ملفها — وتُضاف الجهات الأخرى يدويًا أو من الجوال', reg: 'إضافة جهة اتصال', can: true, onReg: function () { commCtOpen(null, 'edit'); },
+    K: [['جهات الاتصال', fmtNum(A.length), '', 'users-three'], ['العملاء', fmtNum(n('client')), '', 'users-three'], ['الموظفون', fmtNum(n('staff')), '', 'briefcase'], ['المسوّقون والمستثمرون', fmtNum(n('marketer') + n('investor')), '', 'megaphone-simple']],
+    chips: commChips('cdF', [['all', 'الكل', 'list:navy'], ['client', 'العملاء', 'users-three:teal'], ['staff', 'الموظفون', 'briefcase:navy'], ['marketer', 'المسوّقون', 'megaphone-simple:sky'], ['investor', 'المستثمرون', 'trend-up:gold'], ['fav', 'المفضلة', 'star:gold'], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron'], ['arch', 'المؤرشفة', 'tray:navy']], all, fit),
+    filter: e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { COMM.q = qi.value; draw(); } }), COMM.q ? DS.button('مسح', { size: 'sm', onClick: function () { COMM.q = ''; draw(); } }) : null]),
+    list: [axList(R.slice(0, 400).map(function (c) {
+      return axRow({ ic: (COMM_ROLE[(c.roles || [])[0]] || COMM_ROLE.client)[1], t: c.name + (c.favorite ? ' ★' : ''), sub: commRoleT(c.roles) + ' — ' + (c.phone ? '+' + c.phone : 'بلا جوال') + (c.email ? ' — ' + c.email : '') + ' — ' + (c.source === 'auto' ? (c.file_status === 'suspended' ? 'ملف موقوف' : 'ملف نشط') : c.source === 'device' ? 'من الجوال' : 'يدوي'), tone: c.archived ? '' : c.file_status === 'suspended' ? 'warn' : '', go: function () { commCtOpen(c); } }); }), 'لا جهات اتصال هنا'), imp] });
 }
-async function commFav(c) { const on = !c.favorite; c.favorite = on; draw(); try { await admRpc('admin_contact_flag', { p_id: c.id, p_flag: 'favorite', p_on: on }); } catch (err) { c.favorite = !on; draw(); snack(commErr(err)); } }
 const COMMD = {};
-function commCtOpen(c) {
-  const key = c ? c.id : 'new', D = COMMD[key] || (COMMD[key] = c ? { name: c.name, phone: c.phone ? '+' + c.phone : '', email: c.email || '', ident: c.ident || '', partner_type: c.partner_type || '', roles: (c.roles || ['client']).slice(), note: c.note || '', favorite: !!c.favorite, err: '', busy: false } : { name: '', phone: '', email: '', ident: '', partner_type: '', roles: ['client'], note: '', favorite: false, err: '', busy: false });
-  const auto = c && c.source === 'auto', rerun = function () { commCtOpen(c); };
-  const inp = function (k, ph, ro, type) { return commIn({ value: D[k], placeholder: ph || '', type: type || 'text', onInput: function (v) { D[k] = v; D.err = ''; }, disabled: !!ro }); };
+function commCtOpen(c, mode) {
+  const key = c ? c.id : 'new', D = COMMD[key] || (COMMD[key] = c ? { mode: mode || 'view', name: c.name, phone: c.phone ? '+' + c.phone : '', email: c.email || '', ident: c.ident || '', partner_type: c.partner_type || '', roles: (c.roles || ['client']).slice(), note: c.note || '', favorite: !!c.favorite, err: '', busy: false } : { mode: 'edit', name: '', phone: '', email: '', ident: '', partner_type: '', roles: ['client'], note: '', favorite: false, err: '', busy: false });
+  const auto = c && c.source === 'auto', rerun = function () { commCtOpen(c); }, close = function () { delete COMMD[key]; admClose(); };
   const save = async function () {
     if (D.busy) return; D.busy = true; D.err = ''; rerun();
     try { await admRpc('admin_contact_save', { p_id: c ? c.id : null, p_data: { name: D.name, phone: D.phone, email: D.email, ident: D.ident, partner_type: D.partner_type, roles: D.roles, note: D.note, favorite: D.favorite } }); delete COMMD[key]; await commLoad('ct'); admClose(); snack(c ? 'حُفظت جهة الاتصال.' : 'أُضيفت جهة الاتصال إلى الدليل.'); draw(); }
     catch (err) { D.busy = false; D.err = commErr(err); rerun(); }
   };
-  const arch = async function () { try { await admRpc('admin_contact_flag', { p_id: c.id, p_flag: 'archived', p_on: !c.archived }); await commLoad('ct'); admClose(); snack(c.archived ? 'أُعيدت جهة الاتصال.' : 'أُرشفت جهة الاتصال — لا حذف.'); draw(); } catch (err) { D.err = commErr(err); rerun(); } };
-  cuDrawer({ key: 'commct:' + key, ic: 'users-three:teal', title: c ? 'جهة اتصال' : 'جهة اتصال جديدة', sub: c ? c.name + (auto ? ' · من حسابه في المنصة' : '') : 'تُضاف يدويًا إلى الدليل', onClose: function () { draw(); }, body: [
-    auto ? DS.note('info', 'مرتبطة بحساب في المنصة', 'الاسم والجوال والبريد والمعرّف تُحدَّث تلقائيًا من الحساب — يُعدَّل هنا نوع الشريك والملاحظة والمفضلة.') : null,
-    cuSec('البيانات', 'identification-card', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('اسم العميل / الشريك', inp('name', 'الاسم الكامل', auto)), DS.editField('رقم الجوال', inp('phone', '+9665XXXXXXXX', auto, 'tel')), DS.editField('البريد الإلكتروني', inp('email', 'name@example.com', auto, 'email')), DS.editField('المعرّف', inp('ident', 'رقم تيرا أو معرّف داخلي', auto)), DS.editField('نوع الشريك', inp('partner_type', 'فرد · منشأة · جهة حكومية …', false))])]),
-    cuSec('الدور', 'users-three', [e('div', { class: 'cu-chips-w' }, Object.keys(COMM_ROLE).map(function (r) { const on = D.roles.indexOf(r) >= 0; return e('button', { type: 'button', class: 'st-chip' + (on ? ' is-on' : ''), disabled: auto ? '' : null, 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { if (auto) return; D.roles = on ? D.roles.filter(function (x) { return x !== r; }) : D.roles.concat([r]); if (!D.roles.length) D.roles = [r]; rerun(); } }, [e('span', { class: 'st-chip-ic' }, frag(tile(COMM_ROLE[r][1]))), e('span', {}, COMM_ROLE[r][0])]); })), auto ? e('small', { class: 'cu-dr-hint' }, 'الأدوار من الحساب نفسه.') : null]),
-    cuSec('ملاحظة', 'note-pencil', [e('textarea', { class: 't2-input cu-why', rows: '2', onInput: function (ev) { D.note = ev.target.value; } }, D.note || ''), DS.editField('في المفضلة', e('input', { type: 'checkbox', checked: D.favorite ? '' : null, onChange: function (ev) { D.favorite = !!ev.target.checked; } }))]),
-    c && c.phone ? e('div', { class: 't2-row-wrap' }, [e('a', { class: 't2-btn is-sm', href: 'tel:+' + c.phone }, [frag(ui('phone', 14)), 'اتصال']), c.email ? e('a', { class: 't2-btn is-sm', href: 'mailto:' + c.email }, [frag(ui('envelope-simple', 14)), 'بريد']) : null, liveOk(DS.button('مراسلة', { size: 'sm', ui: 'paper-plane-tilt', onClick: function () { admClose(); commW().mode = 'pick'; commW().ids = [c.id]; go('other', 'comm-send'); } }))]) : null,
-    D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
-    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ', { tone: 'primary', ui: 'check', onClick: save, disabled: D.busy })), c && !auto ? liveOk(DS.button(c.archived ? 'إعادة من الأرشيف' : 'أرشفة', { ui: 'tray', onClick: arch })) : null, DS.button('إغلاق', { onClick: admClose })])] });
+  const flag = async function (fl, on, msg) { try { await admRpc('admin_contact_flag', { p_id: c.id, p_flag: fl, p_on: on }); await commLoad('ct'); delete COMMD[key]; admClose(); snack(msg); draw(); } catch (err) { D.err = commErr(err); rerun(); } };
+  let body, foot;
+  if (D.mode === 'view' && c) {
+    body = [cuSec('البيانات', 'identification-card', [DS.fields([['الاسم', c.name], ['الدور', commRoleT(c.roles)], ['رقم الجوال', c.phone ? ltr('+' + c.phone) : '—'], ['البريد الإلكتروني', c.email ? ltr(c.email) : '—'], ['المعرّف', c.ident ? ltr(c.ident) : '—'], ['نوع الشريك', c.partner_type || '—'],
+        ['المصدر', c.source === 'auto' ? 'حسابه في المنصة' : c.source === 'device' ? 'جهات اتصال الجوال' : 'إضافة يدوية'], ['حالة الملف', c.source === 'auto' ? DS.badge(c.file_status === 'suspended' ? 'موقوف' : 'نشط', c.file_status === 'suspended' ? 'warn' : 'ok') : '—'], ['المفضلة', c.favorite ? DS.badge('في المفضلة', 'warn') : 'لا'], ['ملاحظة', c.note || '—']])]),
+      auto ? DS.note('info', 'مرتبطة بحساب في المنصة', 'الاسم والجوال والبريد والمعرّف والدور تُحدَّث تلقائيًا من الحساب نفسه.') : null, D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
+    foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('تعديل', { tone: 'primary', ui: 'pencil-simple', onClick: function () { D.mode = 'edit'; rerun(); } })),
+      liveOk(DS.button(c.favorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة', { ui: 'star', onClick: function () { flag('favorite', !c.favorite, c.favorite ? 'أُزيلت من المفضلة.' : 'أُضيفت إلى المفضلة.'); } })),
+      liveOk(DS.button('مراسلة', { ui: 'paper-plane-tilt', onClick: function () { close(); commCompose(null, [c.id]); } })),
+      c.phone ? e('a', { class: 't2-btn', href: 'tel:+' + c.phone }, [frag(ui('phone', 16)), 'اتصال']) : null,
+      !auto ? liveOk(DS.button(c.archived ? 'إعادة من الأرشيف' : 'أرشفة', { ui: 'tray', onClick: function () { flag('archived', !c.archived, c.archived ? 'أُعيدت جهة الاتصال.' : 'أُرشفت جهة الاتصال — لا حذف.'); } })) : null,
+      DS.button('إغلاق', { onClick: close })])];
+  } else {
+    const inp = function (k, ph, ro, type) { return commIn({ value: D[k], placeholder: ph || '', type: type || 'text', onInput: function (v) { D[k] = v; D.err = ''; }, disabled: !!ro }); };
+    body = [auto ? DS.note('info', 'مرتبطة بحساب في المنصة', 'الاسم والجوال والبريد والمعرّف من الحساب — يُعدَّل هنا نوع الشريك والملاحظة والمفضلة.') : null,
+      cuSec('البيانات', 'identification-card', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [commFld('اسم العميل أو الشريك', inp('name', 'الاسم الكامل', auto)), commFld('رقم الجوال', inp('phone', '+9665XXXXXXXX', auto, 'tel')), commFld('البريد الإلكتروني', inp('email', 'name@example.com', auto, 'email')), commFld('المعرّف', inp('ident', 'رقم تيرا أو معرّف داخلي', auto)), commFld('نوع الشريك', inp('partner_type', 'فرد · منشأة · جهة …'))])]),
+      cuSec('الدور', 'users-three', [chipRow(Object.keys(COMM_ROLE).map(function (r) { return [r, COMM_ROLE[r][0], COMM_ROLE[r][1]]; }), D.roles[0], function (v) { if (auto) return; D.roles = D.roles.indexOf(v) >= 0 && D.roles.length > 1 ? D.roles.filter(function (x) { return x !== v; }) : D.roles.indexOf(v) >= 0 ? D.roles : D.roles.concat([v]); rerun(); }, 'الدور'),
+        e('small', { class: 'cu-dr-hint' }, auto ? 'الأدوار من الحساب نفسه.' : 'الأدوار المختارة: ' + commRoleT(D.roles) + ' — اضغط الدور لإضافته أو إزالته.')]),
+      cuSec('ملاحظة', 'note-pencil', [e('textarea', { class: 't2-input cu-why', rows: '2', onInput: function (ev) { D.note = ev.target.value; } }, D.note || ''), commFld('في المفضلة', e('input', { type: 'checkbox', checked: D.favorite ? '' : null, onChange: function (ev) { D.favorite = !!ev.target.checked; } }))]),
+      D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
+    foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ', { tone: 'primary', ui: 'check', onClick: save, disabled: D.busy })), c ? DS.button('رجوع للعرض', { onClick: function () { D.mode = 'view'; rerun(); } }) : null, DS.button('إغلاق', { onClick: close })])];
+  }
+  cuBdDraw({ key: 'commct:' + key, ic: (COMM_ROLE[((c && c.roles) || ['client'])[0]] || COMM_ROLE.client)[1], title: c ? 'جهة اتصال · ' + c.name : 'إضافة جهة اتصال', sub: c ? commRoleT(c.roles) + (auto ? ' · من حسابه في المنصة' : '') : 'تُضاف يدويًا إلى الدليل', body: body, foot: foot, onClose: function () { delete COMMD[key]; draw(); } });
 }
-/* استيراد: جهات الجوال (Contact Picker) أو ملف vCard — معاينة ثم إضافة */
 async function commPickDevice() {
   try { const L = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: true }); commImportOpen((L || []).map(function (x) { return { name: ((x.name || [])[0] || '').trim(), phone: ((x.tel || [])[0] || '').trim(), email: ((x.email || [])[0] || '').trim() }; })); }
   catch (err) { snack('لم يُمنح الوصول إلى جهات الاتصال.'); }
@@ -16908,131 +16965,143 @@ function commVcf(t) {
 }
 function commImportOpen(rows) {
   if (!rows || !rows.length) { snack('لم يُعثر على جهات اتصال بالاسم والجوال أو البريد.'); return; }
-  const D = { role: 'client', busy: false, err: '' }, rerun = function () { draw2(); };
-  const draw2 = function () { cuDrawer({ key: 'commimp', ic: 'upload-simple:teal', title: 'استيراد جهات اتصال', sub: fmtNum(rows.length) + ' جهة · تُتخطّى المكررة تلقائيًا', onClose: function () { draw(); }, body: [
-    cuSec('الدور للجهات المستوردة', 'users-three', [e('div', { class: 'cu-chips-w' }, Object.keys(COMM_ROLE).map(function (r) { return e('button', { type: 'button', class: 'st-chip' + (D.role === r ? ' is-on' : ''), 'data-live-ok': '', onClick: function () { D.role = r; rerun(); } }, e('span', {}, COMM_ROLE[r][0])); }))]),
-    cuSec('الجهات', 'list', [e('div', { class: 'tm-rows' }, rows.slice(0, 200).map(function (x) { return e('div', { class: 'tm-r' }, [e('span', { class: 'tm-no' }, x.name), e('span', { class: 'tm-sub' }, [x.phone ? ltr(x.phone) : '', x.phone && x.email ? ' · ' : '', x.email ? ltr(x.email) : ''])]); }))]),
+  const D = { role: 'client', busy: false, err: '' };
+  const draw2 = function () { cuBdDraw({ key: 'commimp', ic: 'upload-simple:teal', title: 'استيراد جهات اتصال', sub: fmtNum(rows.length) + ' جهة · تُتخطّى المكررة تلقائيًا', onClose: function () { draw(); }, body: [
+    cuSec('الدور للجهات المستوردة', 'users-three', [chipRow(Object.keys(COMM_ROLE).map(function (r) { return [r, COMM_ROLE[r][0], COMM_ROLE[r][1]]; }), D.role, function (v) { D.role = v; draw2(); }, 'الدور')]),
+    cuSec('الجهات', 'list', [DS.fields(rows.slice(0, 200).map(function (x) { return [x.name, e('span', {}, [x.phone ? ltr(x.phone) : '', x.phone && x.email ? ' · ' : '', x.email ? ltr(x.email) : ''])]; }))]),
     D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
-    foot: [e('div', { class: 'cu-dr-fa' }, [liveOk(DS.button(D.busy ? 'جارٍ الإضافة…' : 'إضافة إلى الدليل', { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: async function () { D.busy = true; rerun(); try { const j = await admRpc('admin_contacts_import', { p_rows: rows.map(function (x) { return Object.assign({ roles: [D.role] }, x); }) }); await commLoad('ct'); admClose(); snack('أُضيف ' + fmtNum(j.added || 0) + ' وتُخطّي ' + fmtNum(j.skipped || 0) + ' (مكرر أو ناقص).'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); rerun(); } } })), DS.button('إلغاء', { onClick: admClose })])] }); };
+    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الإضافة…' : 'إضافة إلى الدليل', { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: async function () { D.busy = true; draw2(); try { const j = await admRpc('admin_contacts_import', { p_rows: rows.map(function (x) { return Object.assign({ roles: [D.role] }, x); }) }); await commLoad('ct'); admClose(); snack('أُضيف ' + fmtNum(j.added || 0) + ' وتُخطّي ' + fmtNum(j.skipped || 0) + ' (مكرر أو ناقص).'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); draw2(); } } })), DS.button('إلغاء', { onClick: cuBdClose })])] }); };
   draw2();
 }
-/* ---------- البطاقة الثانية: المراسلة ---------- */
-const commW = () => COMM.W || (COMM.W = { mode: 'all', roles: ['client'], ids: [], q: '', ch: ['email'], tpl: '', subject: '', body: '', pv: 'email', html: '', hErr: '', hAt: '', busy: false, err: '', done: null });
-function commAud(W) { const A = (COMM.ct || []).filter(function (c) { return !c.archived; }); return W.mode === 'all' ? A : W.mode === 'fav' ? A.filter(function (c) { return c.favorite; }) : W.mode === 'role' ? A.filter(function (c) { return (c.roles || []).some(function (r) { return W.roles.indexOf(r) >= 0; }); }) : A.filter(function (c) { return W.ids.indexOf(c.id) >= 0; }); }
+/* ---------- البطاقة الثانية: المراسلة — الصفحة بمهمتها: رسالة جديدة أو البدء من قالب جاهز ---------- */
 function commSendPage() {
-  const w = commReady('مراسلة', ['ct', 'tpl']); if (w) return w;
-  const W = commW(), aud = commAud(W), T = (COMM.tpl || []).filter(function (t) { return !t.archived && (t.channel === 'both' || W.ch.indexOf(t.channel) >= 0); });
-  const nE = aud.filter(function (c) { return c.email; }).length, nW = aud.filter(function (c) { return c.phone; }).length;
+  const w = commReady('المراسلة', ['ct', 'tpl', 'msg']); if (w) return w;
+  const C = (COMM.ct || []).filter(function (c) { return !c.archived; }), T = (COMM.tpl || []).filter(function (t) { return !t.archived; }), f = ADM.csF || 'all';
+  const fit = function (t, k) { return k === 'all' || t.channel === k || (k !== 'both' && t.channel === 'both'); };
+  return axPage({ title: 'المراسلة', hint: 'اختر المستلمين والوسيلة، وابدأ من قالب جاهز أو اكتب رسالتك', reg: 'رسالة جديدة', can: true, onReg: function () { commCompose(null); }, alerts: commStop(),
+    K: [['لهم بريد', fmtNum(C.filter(function (c) { return c.email; }).length), '', 'envelope-simple'], ['لهم جوال', fmtNum(C.filter(function (c) { return c.phone; }).length), '', 'device-mobile'], ['القوالب الجاهزة', fmtNum(T.length), '', 'file-text'], ['رسائل محجوزة', fmtNum((COMM.msgs || []).filter(function (m) { return m.status === 'held'; }).length), 'warn', 'lock-key']],
+    chips: commChips('csF', [['all', 'كل القوالب', 'list:navy'], ['email', 'للبريد', 'envelope-simple:sky'], ['whatsapp', 'لواتساب', 'whatsapp-logo:teal']], T, fit),
+    filter: null,
+    list: axList(T.filter(function (t) { return fit(t, f); }).map(function (t) { return axRow({ ic: COMM_CH[t.channel][1], t: t.name, sub: 'ابدأ من القالب — ' + COMM_CH[t.channel][0] + (t.subject ? ' — ' + t.subject : ''), go: function () { commCompose(t); } }); }), 'لا قوالب — أنشئ قالبًا من «القوالب الجاهزة»') });
+}
+function commAud(W) { const A = (COMM.ct || []).filter(function (c) { return !c.archived; }); return W.mode === 'all' ? A : W.mode === 'fav' ? A.filter(function (c) { return c.favorite; }) : W.mode === 'role' ? A.filter(function (c) { return (c.roles || []).some(function (r) { return W.roles.indexOf(r) >= 0; }); }) : A.filter(function (c) { return W.ids.indexOf(c.id) >= 0; }); }
+function commCompose(tpl, ids) {
+  if (tpl !== undefined || ids) COMM.W = { mode: ids ? 'pick' : 'all', roles: ['client'], ids: ids || [], q: '', ch: tpl ? (tpl.channel === 'both' ? ['email', 'whatsapp'] : [tpl.channel]) : ['email'], tpl: tpl ? tpl.id : '', subject: tpl ? tpl.subject || '' : '', body: tpl ? tpl.body || '' : '', pv: tpl && tpl.channel === 'whatsapp' ? 'whatsapp' : 'email', html: '', hAt: '', hErr: '', busy: false, err: '' };
+  const W = COMM.W || (COMM.W = { mode: 'all', roles: ['client'], ids: [], q: '', ch: ['email'], tpl: '', subject: '', body: '', pv: 'email', html: '', hAt: '', hErr: '', busy: false, err: '' });
+  const rerun = function () { commCompose(); }, aud = commAud(W), T = (COMM.tpl || []).filter(function (t) { return !t.archived; });
   const sample = aud[0] || { name: 'اسم العميل', ident: 'USR-XXXXXX' };
-  const chip = function (on, label, ic, fn) { return e('button', { type: 'button', class: 'st-chip' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: fn }, [ic ? e('span', { class: 'st-chip-ic' }, frag(tile(ic))) : null, e('span', {}, label)]); };
   const ta = e('textarea', { class: 't2-input comm-body', rows: '7', placeholder: 'اكتب الرسالة… استخدم المتغيرات لإدراج اسم كل مستلم.', onInput: function (ev) { W.body = ev.target.value; W.html = ''; } }, W.body || '');
-  const ins = function (t) { const s0 = ta.selectionStart || ta.value.length, s1 = ta.selectionEnd || s0; ta.value = ta.value.slice(0, s0) + t + ta.value.slice(s1); W.body = ta.value; W.html = ''; ta.focus(); try { ta.selectionStart = ta.selectionEnd = s0 + t.length; } catch (err) { void err; } };
-  const pick = W.mode === 'pick' ? (function () { const q = String(W.q || '').trim(), A = (COMM.ct || []).filter(function (c) { return !c.archived && (!q || [c.name, c.phone, c.email].join(' ').indexOf(q) >= 0); }).slice(0, 80);
-    return e('div', { class: 'comm-pick' }, [commIn({ value: W.q, placeholder: 'ابحث لتعيين مستلم', onInput: function (v) { W.q = v; clearTimeout(W.qt); W.qt = setTimeout(draw, 250); } }),
-      e('div', { class: 'tm-rows' }, A.map(function (c) { const on = W.ids.indexOf(c.id) >= 0; return e('label', { class: 'tm-r comm-pk' + (on ? ' is-on' : '') }, [e('input', { type: 'checkbox', checked: on ? '' : null, onChange: function () { W.ids = on ? W.ids.filter(function (x) { return x !== c.id; }) : W.ids.concat([c.id]); draw(); } }), e('span', { class: 'tm-no' }, c.name), e('span', { class: 'tm-sub' }, commRoleB(c.roles))]); }))]); })() : null;
-  const prev = W.pv === 'whatsapp' ? commWaPreview(sample, W) : commMailPreview(sample, W);
+  const ins = function (t) { const s0 = ta.selectionStart || ta.value.length, s1 = ta.selectionEnd || s0; ta.value = ta.value.slice(0, s0) + t + ta.value.slice(s1); W.body = ta.value; W.html = ''; ta.focus(); };
+  const pickList = W.mode === 'pick' ? (function () { const q = String(W.q || '').trim(), A = (COMM.ct || []).filter(function (c) { return !c.archived && (!q || [c.name, c.phone, c.email].join(' ').indexOf(q) >= 0); }).slice(0, 80);
+    return [commFld('ابحث لتعيين مستلم', commIn({ value: W.q, placeholder: 'الاسم أو الجوال أو البريد', onInput: function (v) { W.q = v; clearTimeout(W.qt); W.qt = setTimeout(rerun, 300); } })),
+      e('div', { class: 'comm-pick' }, A.map(function (c) { const on = W.ids.indexOf(c.id) >= 0; return e('label', { class: 'comm-pk' + (on ? ' is-on' : '') }, [e('input', { type: 'checkbox', checked: on ? '' : null, onChange: function () { W.ids = on ? W.ids.filter(function (x) { return x !== c.id; }) : W.ids.concat([c.id]); rerun(); } }), e('span', {}, [e('b', {}, c.name), e('small', {}, commRoleT(c.roles))])]); }))]; })() : [];
   const save = async function () {
     if (W.busy) return; W.err = '';
-    if (!W.ch.length) { W.err = COMM_ERR.channel_required; draw(); return; }
-    if (!aud.length) { W.err = COMM_ERR.no_recipients; draw(); return; }
-    W.busy = true; draw();
-    try { const j = await admRpc('admin_comm_message_create', { p_data: { channels: W.ch, template_id: W.tpl || null, subject: W.subject, body: W.body, audience: { mode: W.mode, roles: W.roles, ids: W.ids } } }); W.busy = false; W.done = j; COMM.msgAt = 0; draw(); }
-    catch (err) { W.busy = false; W.err = commErr(err); draw(); }
+    if (!W.ch.length) { W.err = COMM_ERR.channel_required; rerun(); return; }
+    if (!aud.length) { W.err = COMM_ERR.no_recipients; rerun(); return; }
+    W.busy = true; rerun();
+    try { const j = await admRpc('admin_comm_message_create', { p_data: { channels: W.ch, template_id: W.tpl || null, subject: W.subject, body: W.body, audience: { mode: W.mode, roles: W.roles, ids: W.ids } } }); COMM.W = null; COMM.msgAt = 0; admClose(); snack('حُفظت الرسالة ' + j.msg_no + ' محجوزة — لم تُرسل لأحد. تجدها في «تقرير الإرسال».'); go('other', 'comm-rep'); }
+    catch (err) { W.busy = false; W.err = commErr(err); rerun(); }
   };
-  if (W.done) return [DS.note('ok', 'حُفظت الرسالة ' + W.done.msg_no + ' — محجوزة', 'الإرسال الفعلي موقوف بقرار الإدارة، فلم تصل الرسالة لأي أحد. تجدها في «تقرير الإرسال» بمستلميها (' + fmtNum(W.done.total) + ' عنوانًا).'),
-    e('div', { class: 't2-row-wrap' }, [DS.button('تقرير الإرسال', { tone: 'primary', ui: 'chart-bar', onClick: function () { go('other', 'comm-rep'); } }), DS.button('رسالة جديدة', { ui: 'plus', onClick: function () { COMM.W = null; draw(); } })])];
-  return [DS.note('warn', 'الإرسال الفعلي موقوف بقرار الإدارة', 'تُكتب الرسالة وتُعايَن وتُحفظ في التقرير بحالة «محجوزة» — لا يخرج بريد ولا واتساب لأي أحد حتى يُفعَّل الإرسال.'),
-    e('div', { class: 'ax-form' }, [
-      formSec('1 · المستلمون', fmtNum(aud.length) + ' مستلم', [e('div', { class: 'cu-chips-w' }, [chip(W.mode === 'all', 'الكل', 'users-three:navy', function () { W.mode = 'all'; draw(); }), chip(W.mode === 'fav', 'المفضلة', 'star:gold', function () { W.mode = 'fav'; draw(); }), chip(W.mode === 'role', 'حسب الدور', 'list:teal', function () { W.mode = 'role'; draw(); }), chip(W.mode === 'pick', 'تعيين أحد', 'user-circle:teal', function () { W.mode = 'pick'; draw(); })]),
-        W.mode === 'role' ? e('div', { class: 'cu-chips-w' }, Object.keys(COMM_ROLE).map(function (r) { const on = W.roles.indexOf(r) >= 0; return chip(on, COMM_ROLE[r][0], COMM_ROLE[r][1], function () { W.roles = on ? W.roles.filter(function (x) { return x !== r; }) : W.roles.concat([r]); draw(); }); })) : null, pick,
-        e('small', { class: 'cu-dr-hint' }, 'لهم بريد: ' + fmtNum(nE) + ' · لهم جوال: ' + fmtNum(nW) + ' — من لا يملك عنوان الوسيلة يُتخطّى ويظهر في التقرير.')]),
-      formSec('2 · الوسيلة', W.ch.map(function (k) { return COMM_CH[k][0]; }).join(' + ') || 'اختر', [e('div', { class: 'cu-chips-w' }, Object.keys(COMM_CH).map(function (k) { const on = W.ch.indexOf(k) >= 0; return chip(on, COMM_CH[k][0], k === 'email' ? 'envelope-simple:sky' : 'whatsapp-logo:teal', function () { W.ch = on ? W.ch.filter(function (x) { return x !== k; }) : W.ch.concat([k]); if (W.ch.length === 1) W.pv = W.ch[0]; draw(); }); }))]),
-      formSec('3 · القالب والمحتوى', T.length ? fmtNum(T.length) + ' قالب جاهز' : 'بلا قالب', [
-        DS.editField('قالب جاهز', DS.select({ value: W.tpl || '', options: [['', 'بدون قالب — أكتب الرسالة']].concat(T.map(function (t) { return [t.id, t.name + ' · ' + (t.channel === 'both' ? 'بريد وواتساب' : COMM_CH[t.channel][0])]; })), onChange: function (v) { W.tpl = v; const t = T.filter(function (x) { return x.id === v; })[0]; if (t) { W.subject = t.subject || ''; W.body = t.body || ''; W.html = ''; } draw(); } })),
-        W.ch.indexOf('email') >= 0 ? DS.editField('عنوان البريد', commIn({ value: W.subject, placeholder: 'مثال: تذكير بموعد دفعتك', onInput: function (v) { W.subject = v; W.html = ''; } })) : null,
-        e('div', { class: 'comm-help' }, [e('small', {}, 'أداة مساعدة:'), COMM_VARS.map(function (v) { return e('button', { type: 'button', class: 'st-chip', 'data-live-ok': '', onClick: function () { ins(v[0]); } }, e('span', {}, v[1])); }),
-          e('button', { type: 'button', class: 'st-chip', 'data-live-ok': '', onClick: function () { ins('مرحبًا {الاسم}،\n'); } }, e('span', {}, 'تحية')), e('button', { type: 'button', class: 'st-chip', 'data-live-ok': '', onClick: function () { ins('\nمع تحيات فريق تيرا.'); } }, e('span', {}, 'ختام'))]),
-        ta]),
-      formSec('4 · المعاينة', 'كما تصل ' + (W.pv === 'whatsapp' ? 'في واتساب' : 'في البريد'), [W.ch.length > 1 ? e('div', { class: 'cu-chips-w' }, W.ch.map(function (k) { return chip(W.pv === k, COMM_CH[k][0], null, function () { W.pv = k; draw(); }); })) : null, prev])]),
-    W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
-    e('div', { class: 't2-row-wrap' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ الرسالة (الإرسال موقوف)', { tone: 'primary', ui: 'paper-plane-tilt', disabled: W.busy, onClick: save })), DS.button('تفريغ', { onClick: function () { COMM.W = null; draw(); } })])];
+  const nE = aud.filter(function (c) { return c.email; }).length, nW = aud.filter(function (c) { return c.phone; }).length;
+  cuBdDraw({ key: 'commsend', ic: 'paper-plane-tilt:sky', title: 'رسالة جديدة', sub: fmtNum(aud.length) + ' مستلم · الإرسال موقوف — تُحفظ محجوزة', onClose: function () { draw(); }, body: [commStop(),
+    cuSec('المستلمون', 'users-three', [chipRow([['all', 'الكل', 'users-three:navy'], ['fav', 'المفضلة', 'star:gold'], ['role', 'حسب الدور', 'list:teal'], ['pick', 'تعيين أحد', 'user-circle:teal']], W.mode, function (v) { W.mode = v; rerun(); }, 'المستلمون'),
+      W.mode === 'role' ? chipRow(Object.keys(COMM_ROLE).map(function (r) { return [r, COMM_ROLE[r][0] + (W.roles.indexOf(r) >= 0 ? ' ✓' : ''), COMM_ROLE[r][1]]; }), '', function (v) { W.roles = W.roles.indexOf(v) >= 0 ? W.roles.filter(function (x) { return x !== v; }) : W.roles.concat([v]); rerun(); }, 'الأدوار') : null].concat(pickList).concat([
+      DS.fields([['عدد المستلمين', fmtNum(aud.length)], ['لهم بريد', fmtNum(nE)], ['لهم جوال', fmtNum(nW)]]), e('small', { class: 'cu-dr-hint' }, 'من لا يملك عنوان الوسيلة يُتخطّى ويظهر في التقرير.')])),
+    cuSec('الوسيلة', 'paper-plane-tilt', [chipRow([['email', 'البريد الإلكتروني' + (W.ch.indexOf('email') >= 0 ? ' ✓' : ''), 'envelope-simple:sky'], ['whatsapp', 'واتساب' + (W.ch.indexOf('whatsapp') >= 0 ? ' ✓' : ''), 'whatsapp-logo:teal']], '', function (v) { W.ch = W.ch.indexOf(v) >= 0 ? W.ch.filter(function (x) { return x !== v; }) : W.ch.concat([v]); if (W.ch.length === 1) W.pv = W.ch[0]; rerun(); }, 'الوسيلة')]),
+    cuSec('القالب والمحتوى', 'file-text', [e('div', { class: 'sys-form cu-bd-form' }, [commFld('قالب جاهز', DS.select({ value: W.tpl || '', options: [['', 'بدون قالب — أكتب الرسالة']].concat(T.map(function (t) { return [t.id, t.name + ' · ' + COMM_CH[t.channel][0]]; })), onChange: function (v) { W.tpl = v; const t = T.filter(function (x) { return x.id === v; })[0]; if (t) { W.subject = t.subject || ''; W.body = t.body || ''; W.html = ''; } rerun(); } })),
+        W.ch.indexOf('email') >= 0 ? commFld('عنوان البريد', commIn({ value: W.subject, placeholder: 'مثال: تذكير بموعد دفعتك', onInput: function (v) { W.subject = v; W.html = ''; } })) : null]),
+      e('div', { class: 'comm-help' }, [e('small', {}, 'أداة مساعدة:')].concat(COMM_VARS.map(function (v) { return DS.button(v[1], { size: 'sm', onClick: function () { ins(v[0]); } }); })).concat([DS.button('تحية', { size: 'sm', onClick: function () { ins('مرحبًا {الاسم}،\n'); } }), DS.button('ختام', { size: 'sm', onClick: function () { ins('\nمع تحيات فريق تيرا.'); } }), DS.button('تحديث المعاينة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { W.html = ''; rerun(); } })])), ta]),
+    cuSec('المعاينة', 'monitor', [W.ch.length > 1 ? chipRow(W.ch.map(function (k) { return [k, COMM_CH[k][0], COMM_CH[k][1]]; }), W.pv, function (v) { W.pv = v; rerun(); }, 'المعاينة') : null, W.pv === 'whatsapp' ? commWaPreview(sample, W) : commMailPreview(sample, W, rerun)]),
+    W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null],
+    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ الرسالة (الإرسال موقوف)', { tone: 'primary', ui: 'paper-plane-tilt', disabled: W.busy, onClick: save })), DS.button('تفريغ', { onClick: function () { COMM.W = null; commCompose(); } }), DS.button('إغلاق', { onClick: cuBdClose })])] });
 }
 /* معاينة البريد: القالب الرسمي نفسه من الخادم — يتغير المحتوى فقط */
-function commMailPreview(c, W) {
+function commMailPreview(c, W, rerun) {
   const sub = commFill(W.subject, c), body = commFill(W.body, c), sig = sub + '|' + body + '|' + c.name;
   const box = e('div', { class: 'comm-mail' });
-  if (sub.trim().length < 2 || body.trim().length < 2) { box.appendChild(e('small', { class: 'cu-dr-hint' }, 'اكتب العنوان والمحتوى لتظهر المعاينة بالقالب الرسمي.')); return box; }
-  if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: '' }); f.srcdoc = W.html; box.appendChild(e('div', { class: 'comm-mail-h' }, [e('small', {}, 'إلى: '), e('b', {}, c.name), e('small', {}, ' · الموضوع: '), e('b', {}, sub)])); box.appendChild(f); return box; }
-  box.appendChild(e('small', { class: 'cu-dr-hint' }, W.hErr || 'جارٍ تجهيز المعاينة بالقالب الرسمي…'));
-  if (!W.hBusy) { W.hBusy = true; clPost('/admin/api/comm/preview', { subject: sub, body: body, name: c.name }).then(function (j) { W.hBusy = false; if (j && j.ok) { W.html = j.html; W.hAt = sig; W.hErr = ''; } else { W.hErr = (j && j.message) || 'تعذّرت المعاينة.'; W.hAt = sig; } draw(); }); }
+  if (sub.trim().length < 2 || body.trim().length < 2) { box.appendChild(e('small', { class: 'cu-dr-hint' }, 'اكتب العنوان والمحتوى لتظهر المعاينة بالقالب الرسمي للبريد.')); return box; }
+  if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: '' }); f.srcdoc = W.html; box.appendChild(DS.fields([['إلى', c.name], ['الموضوع', sub]])); box.appendChild(f); return box; }
+  box.appendChild(e('small', { class: 'cu-dr-hint' }, W.hErr && W.hAt === sig ? W.hErr : 'جارٍ تجهيز المعاينة بالقالب الرسمي…'));
+  if (!W.hBusy && W.hAt !== sig) { W.hBusy = true; clPost('/admin/api/comm/preview', { subject: sub, body: body, name: c.name }).then(function (j) { W.hBusy = false; W.hAt = sig; if (j && j.ok) { W.html = j.html; W.hErr = ''; } else W.hErr = (j && j.message) || 'تعذّرت المعاينة.'; if (rerun) rerun(); else draw(); }); }
   return box;
 }
-/* معاينة واتساب: قالب جديد بالشعار واسم المستلم */
+/* قالب واتساب بهوية تيرا: ترويسة الهوية بالشعار، ثم التحية باسم العميل، ثم النص، ثم تذييل المنصة */
 function commWaPreview(c, W) {
   const body = commFill(W.body, c);
-  return e('div', { class: 'comm-wa' }, [e('div', { class: 'comm-wa-top' }, [e('img', { src: IMG.logo, alt: 'تيرا' }), e('span', {}, [e('b', {}, 'منصة تيرا'), e('small', {}, 'حساب أعمال')])]),
-    e('div', { class: 'comm-wa-bub' }, [e('div', { class: 'comm-wa-hd' }, [e('img', { src: IMG.logo, alt: '' })]), e('b', { class: 'comm-wa-hi' }, 'مرحبًا ' + c.name), e('p', {}, body || 'نص الرسالة يظهر هنا…'), e('small', { class: 'comm-wa-ft' }, ['منصة تيرا للخدمات المتكاملة · ', ltr(hm(new Date()))])])]);
+  return e('div', { class: 'comm-wa' }, [e('div', { class: 'comm-wa-chip' }, [frag(ui('whatsapp-logo', 14)), 'رسالة واتساب من منصة تيرا']),
+    e('article', { class: 'comm-wa-card' }, [e('header', { class: 'comm-wa-hd' }, [e('img', { src: IMG.logo, alt: 'تيرا' }), e('span', {}, [e('b', {}, 'منصة تيرا للخدمات المتكاملة'), e('small', {}, 'رسالة رسمية')])]),
+      e('div', { class: 'comm-wa-c' }, [e('b', { class: 'comm-wa-hi' }, 'مرحبًا ' + (c.name || 'اسم العميل')), e('p', {}, body || 'نص الرسالة يظهر هنا…')]),
+      e('footer', { class: 'comm-wa-ft' }, [e('span', {}, 'منصة تيرا · عالمك بلا حدود'), ltr(hm(new Date()))])])]);
 }
 /* ---------- البطاقة الثالثة: تقرير الإرسال ---------- */
 function commRepPage() {
   const w = commReady('تقرير الإرسال', ['msg']); if (w) return w;
-  const M = COMM.msgs || [], rf = COMM.rf || '', rr = COMM.rr || '', rs = COMM.rs || 'new';
+  const M = COMM.msgs || [], f = ADM.crF || 'all', rr = ADM.crR || '', rs = ADM.crS || 'new';
+  const fit = function (m, k) { return k === 'all' || (m.channels || []).indexOf(k) >= 0 || m.status === k; };
   const R = []; M.forEach(function (m) { (m.recipients || []).forEach(function (r) { R.push(r); }); });
-  const L = M.filter(function (m) { return (!rf || (m.channels || []).indexOf(rf) >= 0) && (!rr || (m.recipients || []).some(function (r) { return (r.roles || []).indexOf(rr) >= 0; })); })
+  const L = M.filter(function (m) { return fit(m, f) && (!rr || (m.recipients || []).some(function (r) { return (r.roles || []).indexOf(rr) >= 0; })); })
     .sort(function (a, b) { return rs === 'old' ? new Date(a.created_at) - new Date(b.created_at) : rs === 'big' ? b.total - a.total : new Date(b.created_at) - new Date(a.created_at); });
-  const cnt = function (fn) { return R.filter(fn).length; };
-  return [axKpis([['الرسائل', fmtNum(M.length), '', 'paper-plane-tilt'], ['المستلمون', fmtNum(R.length), '', 'users-three'], ['بالبريد', fmtNum(cnt(function (r) { return r.channel === 'email'; })), '', 'envelope-simple'], ['بواتساب', fmtNum(cnt(function (r) { return r.channel === 'whatsapp'; })), '', 'whatsapp-logo'], ['محجوزة', fmtNum(cnt(function (r) { return r.status === 'held'; })), 'warn', 'lock-key'], ['تُخطّيت بلا عنوان', fmtNum(cnt(function (r) { return r.status === 'skipped'; })), '', 'x-circle']]),
-    e('div', { class: 'm3-tools ax-tools' }, [chipRow([['', 'كل الوسائل', 'list:navy', M.length], ['email', 'البريد', 'envelope-simple:sky', M.filter(function (m) { return (m.channels || []).indexOf('email') >= 0; }).length], ['whatsapp', 'واتساب', 'whatsapp-logo:teal', M.filter(function (m) { return (m.channels || []).indexOf('whatsapp') >= 0; }).length]], rf, function (v) { COMM.rf = v; draw(); }, 'تصفية حسب الوسيلة'),
-      e('div', { class: 'cu-bd-cf' }, [DS.editField('نوع المرسل له', DS.select({ value: rr || '*', options: [['*', 'كل الأنواع']].concat(Object.keys(COMM_ROLE).map(function (k) { return [k, COMM_ROLE[k][0]]; })), onChange: function (v) { COMM.rr = v === '*' ? '' : v; draw(); } })),
-        DS.editField('الفرز', DS.select({ value: rs, options: [['new', 'الأحدث أولًا'], ['old', 'الأقدم أولًا'], ['big', 'الأكثر مستلمين']], onChange: function (v) { COMM.rs = v; draw(); } })),
-        DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { COMM.msgAt = 0; draw(); } })])]),
-    L.length ? e('div', { class: 'tm-rows' }, L.map(function (m) { const st = COMM_ST[m.status] || [m.status, ''];
-      return e('button', { type: 'button', class: 'tm-r tm-wrap', 'data-live-ok': '', onClick: function () { commMsgOpen(m); } }, [e('span', { class: 'tm-no', dir: 'ltr' }, m.msg_no),
-        e('span', { class: 'tm-sub' }, [(m.channels || []).map(function (k) { return COMM_CH[k][0]; }).join(' + '), ' · ', m.subject || String(m.body || '').slice(0, 60), ' · ', bdiD(iso(new Date(m.created_at))), m.by ? ' · ' + m.by : '']),
-        e('span', { class: 'tm-amt' }, fmtNum(m.total) + ' عنوان'), DS.badge(st[0], st[1] || null), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); }))
-      : LDS.emptyState({ icon: 'paper-plane-tilt', title: 'لا رسائل بعد', body: 'كل رسالة تُحفظ من «مراسلة» تظهر هنا بمستلميها.', compact: true })];
+  return axPage({ title: 'تقرير الإرسال', hint: 'كل رسالة ومستلموها حسب الوسيلة ونوع المستلم — بالتصفية والفرز', can: false, perm: null,
+    K: [['الرسائل', fmtNum(M.length), '', 'paper-plane-tilt'], ['المستلمون', fmtNum(R.length), '', 'users-three'], ['محجوزة', fmtNum(R.filter(function (r) { return r.status === 'held'; }).length), 'warn', 'lock-key'], ['تُخطّيت بلا عنوان', fmtNum(R.filter(function (r) { return r.status === 'skipped'; }).length), '', 'x-circle']],
+    chips: commChips('crF', [['all', 'الكل', 'list:navy'], ['email', 'البريد', 'envelope-simple:sky'], ['whatsapp', 'واتساب', 'whatsapp-logo:teal'], ['held', 'محجوزة', 'lock-key:gold']], M, fit),
+    filter: e('div', { class: 'cu-bd-cf' }, [commFld('نوع المرسل له', DS.select({ value: rr || '*', options: [['*', 'كل الأنواع']].concat(Object.keys(COMM_ROLE).map(function (k) { return [k, COMM_ROLE[k][0]]; })), onChange: function (v) { ADM.crR = v === '*' ? '' : v; draw(); } })),
+      commFld('الفرز', DS.select({ value: rs, options: [['new', 'الأحدث أولًا'], ['old', 'الأقدم أولًا'], ['big', 'الأكثر مستلمين']], onChange: function (v) { ADM.crS = v; draw(); } }))]),
+    list: axList(L.map(function (m) { const st = COMM_ST[m.status] || [m.status, ''];
+      return axRow({ ic: (m.channels || []).length > 1 ? COMM_CH.both[1] : COMM_CH[(m.channels || ['email'])[0]][1], t: m.subject || String(m.body || '').slice(0, 50), sub: m.msg_no + ' — ' + (m.channels || []).map(function (k) { return COMM_CH[k][0]; }).join(' + ') + ' — ' + fmtNum(m.total) + ' عنوان — ' + st[0] + ' — ' + iso(new Date(m.created_at)), tone: m.status === 'held' ? 'warn' : m.status === 'failed' ? 'danger' : '', go: function () { commMsgOpen(m); } }); }), 'لا رسائل بعد') });
 }
 function commMsgOpen(m) {
-  const R = m.recipients || [], D = COMMD['m:' + m.id] || (COMMD['m:' + m.id] = { f: '', s: 'name' });
-  const L = R.filter(function (r) { return !D.f || r.channel === D.f || r.status === D.f || (r.roles || []).indexOf(D.f) >= 0; }).sort(function (a, b) { return D.s === 'st' ? String(a.status).localeCompare(String(b.status)) : String(a.name || '').localeCompare(String(b.name || ''), 'ar'); });
-  const rerun = function () { commMsgOpen(m); };
-  cuDrawer({ key: 'commm:' + m.id, ic: 'paper-plane-tilt:sky', title: 'الرسالة ' + m.msg_no, sub: (COMM_ST[m.status] || [m.status])[0], onClose: function () { draw(); }, foot: admFoot(), body: [
-    cuSec('الرسالة', 'envelope-simple', [DS.fields([['الوسائل', (m.channels || []).map(function (k) { return COMM_CH[k][0]; }).join(' + ')], ['القالب', m.template || 'بدون قالب'], ['العنوان', m.subject || '—'], ['أنشأها', m.by || '—'], ['التاريخ', [bdiD(iso(new Date(m.created_at))), ' ', ltr(hm(new Date(m.created_at)))]], ['الحالة', DS.badge((COMM_ST[m.status] || [m.status])[0], (COMM_ST[m.status] || [])[1] || null)]]), e('p', { class: 'comm-body-v' }, m.body), m.hold_reason ? DS.note('warn', 'لم تُرسل', m.hold_reason) : null]),
-    cuSec('المستلمون (' + fmtNum(R.length) + ')', 'users-three', [chipRow([['', 'الكل', 'list:navy', R.length], ['email', 'البريد', 'envelope-simple:sky', R.filter(function (r) { return r.channel === 'email'; }).length], ['whatsapp', 'واتساب', 'whatsapp-logo:teal', R.filter(function (r) { return r.channel === 'whatsapp'; }).length], ['held', 'محجوزة', 'lock-key:gold', R.filter(function (r) { return r.status === 'held'; }).length], ['skipped', 'تُخطّيت', 'x-circle:navy', R.filter(function (r) { return r.status === 'skipped'; }).length]].concat(Object.keys(COMM_ROLE).map(function (k) { return [k, COMM_ROLE[k][0], COMM_ROLE[k][1], R.filter(function (r) { return (r.roles || []).indexOf(k) >= 0; }).length]; })), D.f, function (v) { D.f = v; rerun(); }, 'تصفية المستلمين'),
-      DS.editField('الفرز', DS.select({ value: D.s, options: [['name', 'بالاسم'], ['st', 'بالحالة']], onChange: function (v) { D.s = v; rerun(); } })),
-      e('div', { class: 'tm-rows' }, L.slice(0, 500).map(function (r) { const st = COMM_ST[r.status] || [r.status, '']; return e('div', { class: 'tm-r tm-wrap' }, [e('span', { class: 'tm-no' }, r.name || '—'), e('span', { class: 'tm-sub' }, [COMM_CH[r.channel][0], ' · ', r.address ? ltr(r.channel === 'whatsapp' ? '+' + r.address : r.address) : 'بلا عنوان', ' · '].concat((r.roles || []).map(function (k) { return (COMM_ROLE[k] || [k])[0]; }).join('، '))), DS.badge(st[0], st[1] || null)]); }))])] });
+  const R = m.recipients || [], D = COMMD['m:' + m.id] || (COMMD['m:' + m.id] = { f: 'all' }), rerun = function () { commMsgOpen(m); };
+  const fit = function (r, k) { return k === 'all' || r.channel === k || r.status === k || (r.roles || []).indexOf(k) >= 0; };
+  const L = R.filter(function (r) { return fit(r, D.f); });
+  cuBdDraw({ key: 'commm:' + m.id, ic: 'paper-plane-tilt:sky', title: 'رسالة · ' + m.msg_no, sub: (COMM_ST[m.status] || [m.status])[0], onClose: function () { draw(); }, body: [
+    cuSec('البيانات', 'file-text', [DS.fields([['رقم الرسالة', ltr(m.msg_no)], ['الوسائل', (m.channels || []).map(function (k) { return COMM_CH[k][0]; }).join(' + ')], ['القالب', m.template || 'بدون قالب'], ['العنوان', m.subject || '—'], ['أنشأها', m.by || '—'], ['التاريخ', [bdiD(iso(new Date(m.created_at))), ' ', ltr(hm(new Date(m.created_at)))]], ['الحالة', DS.badge((COMM_ST[m.status] || [m.status])[0], (COMM_ST[m.status] || [])[1] || null)], ['المستلمون', fmtNum(R.length)]]), m.hold_reason ? DS.note('warn', 'لم تُرسل', m.hold_reason) : null]),
+    cuSec('المحتوى', 'note-pencil', [e('p', { class: 'comm-body-v' }, m.body)]),
+    cuSec('المستلمون', 'users-three', [chipRow([['all', 'الكل', 'list:navy', R.length], ['email', 'البريد', 'envelope-simple:sky', R.filter(function (r) { return r.channel === 'email'; }).length], ['whatsapp', 'واتساب', 'whatsapp-logo:teal', R.filter(function (r) { return r.channel === 'whatsapp'; }).length], ['skipped', 'تُخطّيت', 'x-circle:navy', R.filter(function (r) { return r.status === 'skipped'; }).length]].concat(Object.keys(COMM_ROLE).map(function (k) { return [k, COMM_ROLE[k][0], COMM_ROLE[k][1], R.filter(function (r) { return (r.roles || []).indexOf(k) >= 0; }).length]; })), D.f, function (v) { D.f = v; rerun(); }, 'تصفية المستلمين'),
+      DS.fields(L.slice(0, 500).map(function (r) { const st = COMM_ST[r.status] || [r.status, '']; return [r.name || '—', e('span', {}, [(COMM_CH[r.channel] || [r.channel])[0], ' · ', r.address ? ltr(r.channel === 'whatsapp' ? '+' + r.address : r.address) : 'بلا عنوان', ' · ', commRoleT(r.roles), ' ', DS.badge(st[0], st[1] || null)])]; }))])],
+    foot: [e('div', { class: 'cu-dr-fa' }, [DS.button('إغلاق', { onClick: cuBdClose })])] });
 }
 /* ---------- البطاقة الرابعة: القوالب الجاهزة ---------- */
 function commTplPage() {
-  const w = commReady('قوالب جاهزة', ['tpl']); if (w) return w;
-  const T = COMM.tpl || [];
-  return [COMM.can ? e('div', { class: 't2-row-wrap cu-acts' }, [liveOk(DS.button('قالب جديد', { tone: 'primary', ui: 'plus', onClick: function () { commTplOpen(null); } }))]) : DS.note('info', 'للاطلاع', 'إنشاء القوالب وتعديلها لمن يملك صلاحية الإشعارات.'),
-    T.length ? e('div', { class: 'cu-cards' }, T.map(function (t) { return e('button', { type: 'button', class: 'cu-card' + (t.archived ? ' is-arch' : ''), 'data-live-ok': '', onClick: function () { commTplOpen(t); } }, [e('span', { class: 'cu-av dc-rec-ic' }, frag(ui(t.channel === 'whatsapp' ? 'whatsapp-logo' : 'envelope-simple', 20))),
-      e('span', { class: 'cu-card-t' }, [e('b', {}, t.name), e('small', {}, (t.subject ? t.subject + ' · ' : '') + String(t.body || '').slice(0, 70))]),
-      e('span', { class: 'cu-card-m' }, [DS.badge(t.channel === 'both' ? 'بريد وواتساب' : COMM_CH[t.channel][0], 'info'), t.archived ? DS.badge('مؤرشف', null) : null, t.by ? e('small', {}, t.by) : null]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); }))
-      : LDS.emptyState({ icon: 'file-text', title: 'لا قوالب بعد', body: 'القالب المحفوظ يظهر في «مراسلة» لاختياره مباشرة.', compact: true })];
+  const w = commReady('القوالب الجاهزة', ['tpl']); if (w) return w;
+  const T = COMM.tpl || [], f = ADM.ctF || 'all';
+  const fit = function (t, k) { return k === 'arch' ? t.archived : !t.archived && (k === 'all' || t.channel === k); };
+  return axPage({ title: 'القوالب الجاهزة', hint: 'قوالب معتمدة بالهوية للبريد وواتساب — والقالب المحفوظ يظهر مباشرة في المراسلة', reg: 'قالب جديد', can: COMM.can, onReg: function () { commTplOpen(null, 'edit'); }, perm: DS.note('info', 'للاطلاع', 'إنشاء القوالب وتعديلها لمن يملك صلاحية الإشعارات.'),
+    K: [['القوالب', fmtNum(T.filter(function (t) { return !t.archived; }).length), '', 'file-text'], ['للبريد وواتساب', fmtNum(T.filter(function (t) { return !t.archived && t.channel === 'both'; }).length), '', 'paper-plane-tilt'], ['للبريد فقط', fmtNum(T.filter(function (t) { return !t.archived && t.channel === 'email'; }).length), '', 'envelope-simple'], ['لواتساب فقط', fmtNum(T.filter(function (t) { return !t.archived && t.channel === 'whatsapp'; }).length), '', 'whatsapp-logo']],
+    chips: commChips('ctF', [['all', 'الكل', 'list:navy'], ['both', 'البريد وواتساب', 'paper-plane-tilt:sky'], ['email', 'البريد', 'envelope-simple:sky'], ['whatsapp', 'واتساب', 'whatsapp-logo:teal'], ['arch', 'المؤرشفة', 'tray:navy']], T, fit),
+    filter: null,
+    list: axList(T.filter(function (t) { return fit(t, f); }).map(function (t) { return axRow({ ic: COMM_CH[t.channel][1], t: t.name, sub: COMM_CH[t.channel][0] + (t.subject ? ' — ' + t.subject : '') + (t.by ? ' — ' + t.by : ''), go: function () { commTplOpen(t); } }); }), 'لا قوالب هنا') });
 }
-function commTplOpen(t) {
-  const key = t ? t.id : 'new', D = COMMD['t:' + key] || (COMMD['t:' + key] = t ? { name: t.name, channel: t.channel, subject: t.subject || '', body: t.body || '', err: '', busy: false } : { name: '', channel: 'both', subject: '', body: '', err: '', busy: false });
-  const ro = !COMM.can, rerun = function () { commTplOpen(t); };
+function commTplOpen(t, mode) {
+  const key = t ? t.id : 'new', D = COMMD['t:' + key] || (COMMD['t:' + key] = t ? { mode: mode || 'view', name: t.name, channel: t.channel, subject: t.subject || '', body: t.body || '', err: '', busy: false } : { mode: 'edit', name: '', channel: 'both', subject: '', body: '', err: '', busy: false });
+  const rerun = function () { commTplOpen(t); }, close = function () { delete COMMD['t:' + key]; admClose(); };
   const save = async function (arch) { if (D.busy) return; D.busy = true; D.err = ''; rerun(); try { await admRpc('admin_comm_template_save', { p_id: t ? t.id : null, p_data: { name: D.name, channel: D.channel, subject: D.subject, body: D.body, archived: arch === undefined ? null : arch } }); delete COMMD['t:' + key]; await commLoad('tpl'); admClose(); snack(arch === true ? 'أُرشف القالب.' : arch === false ? 'أُعيد القالب.' : 'حُفظ القالب — يظهر الآن في المراسلة.'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); rerun(); } };
-  const ta = e('textarea', { class: 't2-input comm-body', rows: '7', disabled: ro ? '' : null, onInput: function (ev) { D.body = ev.target.value; } }, D.body || '');
-  cuDrawer({ key: 'commt:' + key, ic: 'file-text:navy', title: t ? 'قالب · ' + t.name : 'قالب جديد', sub: 'يُحفظ ويظهر في المراسلة', onClose: function () { draw(); }, body: [
-    cuSec('القالب', 'file-text', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('اسم القالب', commIn({ value: D.name, disabled: ro, onInput: function (v) { D.name = v; } })),
-      DS.editField('الوسيلة', DS.select({ value: D.channel, options: [['both', 'بريد وواتساب'], ['email', 'البريد فقط'], ['whatsapp', 'واتساب فقط']], onChange: function (v) { D.channel = v; rerun(); } })),
-      D.channel !== 'whatsapp' ? DS.editField('عنوان البريد', commIn({ value: D.subject, disabled: ro, onInput: function (v) { D.subject = v; } })) : null]),
-      e('div', { class: 'comm-help' }, [e('small', {}, 'المتغيرات:')].concat(COMM_VARS.map(function (v) { return e('button', { type: 'button', class: 'st-chip', 'data-live-ok': '', disabled: ro ? '' : null, onClick: function () { ta.value += v[0]; D.body = ta.value; } }, e('span', {}, v[1])); }))), ta]),
-    D.channel !== 'email' ? cuSec('معاينة واتساب', 'whatsapp-logo', [commWaPreview({ name: 'اسم العميل' }, { body: D.body })]) : null,
-    D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
-    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, ro ? [DS.button('إغلاق', { onClick: admClose })] : [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ القالب', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(); } })), t ? liveOk(DS.button(t.archived ? 'إعادة من الأرشيف' : 'أرشفة', { ui: 'tray', onClick: function () { save(!t.archived); } })) : null, DS.button('إغلاق', { onClick: admClose })])] });
+  const pv = { body: D.body, subject: D.subject }, sample = { name: 'اسم العميل', ident: 'USR-XXXXXX' };
+  let body, foot;
+  if (D.mode === 'view' && t) {
+    body = [cuSec('البيانات', 'file-text', [DS.fields([['اسم القالب', t.name], ['الوسيلة', COMM_CH[t.channel][0]], ['عنوان البريد', t.subject || '—'], ['آخر تعديل', t.updated_at ? bdiD(iso(new Date(t.updated_at))) : '—'], ['بواسطة', t.by || 'قالب معتمد من المنصة'], ['الحالة', DS.badge(t.archived ? 'مؤرشف' : 'نشط', t.archived ? null : 'ok')]])]),
+      t.channel !== 'whatsapp' ? cuSec('معاينة البريد — القالب الرسمي', 'envelope-simple', [commMailPreview(sample, D.pvW || (D.pvW = { subject: t.subject, body: t.body }), rerun)]) : null,
+      t.channel !== 'email' ? cuSec('معاينة واتساب', 'whatsapp-logo', [commWaPreview(sample, pv)]) : null];
+    foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('استخدام في رسالة', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { close(); commCompose(t); } })), COMM.can ? liveOk(DS.button('تعديل', { ui: 'pencil-simple', onClick: function () { D.mode = 'edit'; rerun(); } })) : null,
+      COMM.can ? liveOk(DS.button(t.archived ? 'إعادة من الأرشيف' : 'أرشفة', { ui: 'tray', onClick: function () { save(!t.archived); } })) : null, DS.button('إغلاق', { onClick: close })])];
+  } else {
+    const ta = e('textarea', { class: 't2-input comm-body', rows: '8', onInput: function (ev) { D.body = ev.target.value; } }, D.body || '');
+    body = [cuSec('القالب', 'file-text', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [commFld('اسم القالب', commIn({ value: D.name, placeholder: 'مثال: تذكير بموعد الدفعة', onInput: function (v) { D.name = v; } })),
+      commFld('الوسيلة', DS.select({ value: D.channel, options: [['both', 'البريد وواتساب'], ['email', 'البريد فقط'], ['whatsapp', 'واتساب فقط']], onChange: function (v) { D.channel = v; rerun(); } })),
+      D.channel !== 'whatsapp' ? commFld('عنوان البريد', commIn({ value: D.subject, placeholder: 'عنوان الرسالة', onInput: function (v) { D.subject = v; } })) : null]),
+      e('div', { class: 'comm-help' }, [e('small', {}, 'المتغيرات:')].concat(COMM_VARS.map(function (v) { return DS.button(v[1], { size: 'sm', onClick: function () { ta.value += v[0]; D.body = ta.value; } }); }))), ta]),
+      D.channel !== 'email' ? cuSec('معاينة واتساب', 'whatsapp-logo', [commWaPreview(sample, { body: D.body })]) : null, D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
+    foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ القالب', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(); } })), t ? DS.button('رجوع للعرض', { onClick: function () { D.mode = 'view'; D.pvW = null; rerun(); } }) : null, DS.button('إغلاق', { onClick: close })])];
+  }
+  cuBdDraw({ key: 'commt:' + key, ic: COMM_CH[(t && t.channel) || D.channel][1], title: t ? 'قالب · ' + t.name : 'قالب جديد', sub: t ? COMM_CH[t.channel][0] : 'يُحفظ ويظهر في المراسلة', body: body, foot: foot, onClose: function () { delete COMMD['t:' + key]; draw(); } });
 }
 function commRegister() {
   try { Object.assign(ICON, { comm: ['chat-circle-dots', 'sky'], 'comm-dir': ['users-three', 'teal'], 'comm-send': ['paper-plane-tilt', 'sky'], 'comm-rep': ['chart-bar', 'navy'], 'comm-tpl': ['file-text', 'gold'] }); } catch (err) { void err; }
   lp('comm', 'التواصل المباشر', null, 'comm', commHubPage);
   lp('comm-dir', 'دليل هواتف وبريد الشركاء', 'comm', 'comm-dir', commDirPage);
-  lp('comm-send', 'مراسلة', 'comm', 'comm-send', commSendPage);
+  lp('comm-send', 'المراسلة', 'comm', 'comm-send', commSendPage);
   lp('comm-rep', 'تقرير الإرسال', 'comm', 'comm-rep', commRepPage);
-  lp('comm-tpl', 'قوالب جاهزة', 'comm', 'comm-tpl', commTplPage);
+  lp('comm-tpl', 'القوالب الجاهزة', 'comm', 'comm-tpl', commTplPage);
 }
 commRegister();
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
