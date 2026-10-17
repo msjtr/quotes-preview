@@ -7983,7 +7983,7 @@ const axList = (rows, empty) => rows.length ? e('div', { class: 'ax-list' }, row
 /* هيكل صفحة الإجراء: زر التسجيل · المؤشرات · الاختيار السريع والفلتر · القائمة */
 function axPage(o) {
   return [cuBdInt(true), o.alerts || null,
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, o.title), e('small', {}, o.hint)]), o.can ? DS.button(o.reg, { tone: 'primary', ui: 'plus', onClick: o.onReg }) : null]),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, o.title), e('small', {}, o.hint)]), o.tools && o.tools.length ? e('div', { class: 'ax-top-a' }, [].concat(o.tools, o.can ? [DS.button(o.reg, { tone: 'primary', ui: 'plus', onClick: o.onReg })] : [])) : o.can ? DS.button(o.reg, { tone: 'primary', ui: 'plus', onClick: o.onReg }) : null]),
     o.can ? null : o.perm, axKpis(o.K), e('div', { class: 'm3-tools ax-tools' }, [o.chips, o.filter]), o.list];
 }
 const axRegDone = (key) => { const d = document.querySelector('.cu-dr[data-r="' + key + '"]'); if (d && d.__close) d.__close(); else draw(); };
@@ -13593,7 +13593,7 @@ function admMount(key, title, load, render) {
 function admFilter(root, q) {
   q = String(q || '').trim().toLowerCase(); let n = 0;
   root.querySelectorAll('tr[data-s], .cu-card[data-s], .nr[data-s]').forEach(function (tr) { const hide = !!q && tr.getAttribute('data-s').indexOf(q) < 0; tr.hidden = hide; if (!hide) n++; });
-  root.querySelectorAll('.adm-shown').forEach(function (s) { const w = s.closest('small') && s.closest('small').parentNode; s.textContent = fmtNum(w ? w.querySelectorAll('tr[data-s]:not([hidden]), .cu-card[data-s]:not([hidden])').length : n); });
+  root.querySelectorAll('.adm-shown').forEach(function (s) { const w = s.closest('small') && s.closest('small').parentNode; s.textContent = fmtNum(w ? w.querySelectorAll('tr[data-s]:not([hidden]), .cu-card[data-s]:not([hidden]), .nr[data-s]:not([hidden])').length : n); });
 }
 function admKpis(list) { return e('div', { class: 'cu-kpis adm-kpis' }, list.map(function (x) { return e('div', { class: 'cu-kpi' + (x[2] ? ' is-' + x[2] : '') }, [e('span', { class: 'cu-kpi-ic' }, frag(ui(x[3], 18))), e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })); }
 function admTools(st, chips, paint, refetch, ph) {
@@ -13602,11 +13602,21 @@ function admTools(st, chips, paint, refetch, ph) {
   return e('div', { class: 'adm-tools' }, [ch, e('div', { class: 'm3-q' }, [qi, DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: refetch })])]);
 }
 function admRow(cells, open, s) {
-  return e('tr', { class: 'sys-tr', tabindex: open ? '0' : null, 'data-s': String(s || '').toLowerCase(), onClick: open || null, onKeydown: open ? function (ev) { if (ev.key === 'Enter') open(); } : null }, cells.map(function (c) { return e('td', {}, c); }));
+  /* v317: يُحفظ محتوى الصف ليُعرض بطاقةً موحّدة (نمط الحوالات الصادرة) في admTable */
+  const tr = e('tr', { class: 'sys-tr', tabindex: open ? '0' : null, 'data-s': String(s || '').toLowerCase(), onClick: open || null, onKeydown: open ? function (ev) { if (ev.key === 'Enter') open(); } : null }, cells.map(function (c) { return e('td', {}, c); }));
+  tr.__open = open || null; tr.__cells = cells; return tr;
+}
+/* v317: كل جداول الإدارة تُعرض بطاقات صفّية بهوية واحدة: العنوان من العمود الأول، وبقية الأعمدة «اسم: قيمة» — بنفس البحث والفتح */
+function admCard(heads, tr) {
+  const C = tr.__cells || [].slice.call(tr.children).map(function (td) { return [].slice.call(td.childNodes); }), open = tr.__open, s = tr.getAttribute('data-s') || '';
+  const val = function (c) { return c === null || c === undefined || c === '' ? '—' : c; };
+  const meta = e('span', { class: 'adm-cm' }, C.slice(1).map(function (c, i) { return heads[i + 1] ? e('span', { class: 'adm-cm-i' }, [e('small', {}, heads[i + 1]), e('span', {}, val(c))]) : null; }));
+  const inner = [e('span', { class: 'ax-r-b' }, [e('b', { class: 'adm-ct' }, val(C[0])), meta]), open ? e('span', { class: 'cu-bd-go' }, ['عرض', frag(ui('caret-left', 14))]) : null];
+  return e('article', { class: 'nr cu-row cu-bd-r ax-r adm-card', 'data-s': s }, [open ? e('button', { type: 'button', class: 'nr-main', onClick: open }, inner) : e('div', { class: 'nr-main' }, inner)]);
 }
 function admTable(heads, rows, total, empty, noOpen) {
   if (!rows.length) return LDS.emptyState({ icon: 'ok', title: empty || 'لا شيء هنا', body: 'غيّر التصفية أو حدّث القائمة.', compact: true });
-  return e('div', {}, [cuTbl(heads, rows), e('small', { class: 'cu-dr-hint' }, ['المعروض ', e('b', { class: 'adm-shown' }, fmtNum(rows.length)), ' من ', fmtNum(total), noOpen ? '.' : ' — اضغط السطر لفتح التفاصيل.'])]);
+  return e('div', {}, [e('div', { class: 'ax-list adm-list' }, rows.map(function (tr) { return admCard(heads, tr); })), e('small', { class: 'cu-dr-hint' }, ['المعروض ', e('b', { class: 'adm-shown' }, fmtNum(rows.length)), ' من ', fmtNum(total), noOpen ? '.' : ' — اضغط البطاقة لفتح التفاصيل.'])]);
 }
 const admB = (m, k, d) => { const x = m[k] || [k || d || '—', null]; return DS.badge(x[0], x[1]); };
 const admPhone = (p) => p ? ltr('+' + String(p).replace(/^\+/, '')) : '—';
@@ -17438,24 +17448,45 @@ async function ciFile(fl) {
     const M = ciMap(rows); ciPreview(M, file);
   } catch (err) { ciPreview({ err: 'تعذّرت قراءة الملف — احفظه بصيغة Excel (xlsx) أو CSV من النموذج نفسه.' }, { name: nm }); }
 }
+/* v317: قائمة المعاينة — بحث بالاسم أو الجوال أو البريد، وتحديد الجهات المراد إضافتها (قائمة جهات آيفون نفسها لا تقبل بحثًا من الصفحة) */
+function ciPick(L, D, onSel) {
+  if (!D.sel) D.sel = new Set(L.map(function (x, i) { return i; }));
+  const cnt = e('b', { class: 'ci-pk-n' }), all = e('input', { type: 'checkbox', 'aria-label': 'تحديد الكل' });
+  const rows = L.map(function (x, i) {
+    const cb = e('input', { type: 'checkbox', 'aria-label': 'تحديد ' + (x.name || ''), onChange: function (ev) { if (ev.target.checked) D.sel.add(i); else D.sel.delete(i); sync(); } }); cb.checked = D.sel.has(i);
+    const r = e('label', { class: 'ci-pk-r', 'data-q': [x.name, x.phone, x.email].join(' ').toLowerCase() }, [cb, e('span', { class: 'ci-pk-av' }, String(x.name || '؟').trim().charAt(0) || '؟'), e('span', { class: 'ci-pk-t' }, [e('b', {}, x.name || '—'), e('small', {}, [x.phone ? ltr(x.phone) : '', x.phone && x.email ? ' · ' : '', x.email ? ltr(x.email) : '', x.sub ? ' · ' + x.sub : ''])])]);
+    r.__cb = cb; r.__i = i; return r; });
+  const vis = function () { return rows.filter(function (r) { return !r.hidden; }); };
+  const sync = function () { const V = vis(); cnt.textContent = 'المحدد ' + fmtNum(D.sel.size) + ' من ' + fmtNum(L.length); all.checked = V.length > 0 && V.every(function (r) { return D.sel.has(r.__i); }); all.indeterminate = !all.checked && V.some(function (r) { return D.sel.has(r.__i); }); if (onSel) onSel(D.sel.size); };
+  all.addEventListener('change', function () { vis().forEach(function (r) { r.__cb.checked = all.checked; if (all.checked) D.sel.add(r.__i); else D.sel.delete(r.__i); }); sync(); });
+  const none = e('small', { class: 'cu-dr-hint', hidden: '' }, 'لا نتائج مطابقة للبحث.');
+  const q = e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث في الأسماء أو الجوال أو البريد', 'aria-label': 'بحث في الجهات', value: D.q || '', onInput: function (ev) { D.q = ev.target.value; flt(); } });
+  const flt = function () { const t = String(D.q || '').trim().toLowerCase(); rows.forEach(function (r) { r.hidden = !!t && r.getAttribute('data-q').indexOf(t) < 0; }); none.hidden = vis().length > 0; sync(); };
+  const box = e('div', { class: 'ci-pk' }, [e('div', { class: 'ci-pk-q' }, [frag(ui('magnifying-glass', 18)), q]), e('div', { class: 'ci-pk-bar' }, [e('label', { class: 'ci-pk-all' }, [all, e('span', {}, 'تحديد الكل')]), cnt]), e('div', { class: 'ci-pk-l' }, rows), none]);
+  flt(); return box;
+}
 function ciPreview(M, file) {
   const D = { busy: false, err: '', res: null }, ok = (M.rows || []).filter(function (x) { return !x.errs.length; }), bad = (M.rows || []).filter(function (x) { return x.errs.length; });
+  let setN = null;
   const draw2 = function () {
     const body = [cuSec('الملف', 'file-text', [DS.fields([['اسم الملف', ltr(file.name || '—')], ['الصفوف', fmtNum((M.rows || []).length)], ['مطابقة للحقول', fmtNum(ok.length)], ['فيها ملاحظات', bad.length ? DS.badge(fmtNum(bad.length), 'warn') : '0']])]),
       M.err ? DS.note('warn', 'لم يُقبل الملف', M.err) : null,
       D.res ? DS.note('ok', 'تم الاستيراد وحُفظ الملف', 'أُضيف ' + fmtNum(D.res.added || 0) + ' وتُخطّي ' + fmtNum(D.res.skipped || 0) + ' — والملف محفوظ في «الملفات المرفوعة» ويمكن تنزيله.') : null,
-      ok.length && !D.res ? cuSec('الجهات المطابقة', 'check-circle', [DS.fields(ok.slice(0, 200).map(function (x) { return [x.name, e('span', {}, [commRoleT(x.roles), ' · ', x.phone ? ltr(x.phone) : '', x.phone && x.email ? ' · ' : '', x.email ? ltr(x.email) : ''])]; }))]) : null,
+      ok.length && !D.res ? cuSec('الجهات المطابقة — ابحث وحدّد ما تستورده', 'check-circle', [ciPick(ok.map(function (x) { return { name: x.name, phone: x.phone, email: x.email, sub: commRoleT(x.roles) }; }), D, function (n) { if (setN) setN(n); })]) : null,
       bad.length && !D.res ? cuSec('صفوف لن تُستورد', 'warning', [DS.fields(bad.slice(0, 200).map(function (x) { return ['الصف ' + fmtNum(x.row) + (x.name ? ' — ' + x.name : ''), DS.badge(x.errs.map(function (k) { return CI_ERR[k] || k; }).join('، '), 'warn')]; })), e('small', { class: 'cu-dr-hint' }, 'صحّحها في الملف وارفعه مرة أخرى — المكررة تُتخطّى تلقائيًا.')]) : null,
-      D.res && (D.res.results || []).some(function (r) { return !r.ok; }) ? cuSec('تُخطّيت عند الحفظ', 'warning', [DS.fields(D.res.results.filter(function (r) { return !r.ok; }).slice(0, 200).map(function (r) { const x = ok[r.row - 1] || {}; return [(x.name || 'صف') + ' — الصف ' + fmtNum(x.row || r.row), DS.badge(CI_ERR[r.error] || r.error, 'warn')]; }))]) : null,
+      D.res && (D.res.results || []).some(function (r) { return !r.ok; }) ? cuSec('تُخطّيت عند الحفظ', 'warning', [DS.fields(D.res.results.filter(function (r) { return !r.ok; }).slice(0, 200).map(function (r) { const x = (D.pk || ok)[r.row - 1] || {}; return [(x.name || 'صف') + ' — الصف ' + fmtNum(x.row || r.row), DS.badge(CI_ERR[r.error] || r.error, 'warn')]; }))]) : null,
       D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
-    const foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [!M.err && ok.length && !D.res ? liveOk(DS.button(D.busy ? 'جارٍ الاستيراد…' : 'قبول واستيراد ' + fmtNum(ok.length) + ' جهة', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: async function () {
-        D.busy = true; D.err = ''; draw2();
-        try { const j = await admRpc('admin_contacts_import_file', { p_rows: ok.map(function (x) { return { name: x.name, phone: x.phone, email: x.email, ident: x.ident, partner_type: x.partner_type, note: x.note, roles: x.roles }; }), p_file: file });
+    const goB = !M.err && ok.length && !D.res ? liveOk(DS.button(D.busy ? 'جارٍ الاستيراد…' : 'قبول واستيراد المحدد', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: async function () {
+        const S = ok.filter(function (x, i) { return !D.sel || D.sel.has(i); }); if (!S.length) { snack('حدّد جهة واحدة على الأقل.'); return; }
+        D.busy = true; D.err = ''; D.pk = S; draw2();
+        try { const j = await admRpc('admin_contacts_import_file', { p_rows: S.map(function (x) { return { name: x.name, phone: x.phone, email: x.email, ident: x.ident, partner_type: x.partner_type, note: x.note, roles: x.roles }; }), p_file: file });
           if (j && j.ok === false) throw new Error(j.error === 'forbidden' ? 'لا تملك صلاحية الاستيراد.' : j.error === 'file_size' ? 'الملف أكبر من 2 ميغابايت.' : 'تعذّر الاستيراد.');
           D.res = j; D.busy = false; COMM.imp = null; await commLoad('ct'); draw2(); draw(); }
-        catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الاستيراد.'; draw2(); } } })) : null,
+        catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الاستيراد.'; draw2(); } } })) : null;
+    const foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [goB,
       DS.button('نموذج الاستيراد', { ui: 'download-simple', onClick: function () { ciTemplate('xlsx'); } }), DS.button('إغلاق', { onClick: function () { admClose(); draw(); } })])];
     cuBdDraw({ key: 'ciprev', ic: 'file-text:teal', title: 'استيراد من ملف', sub: file.name || '', body: body, foot: foot, onClose: function () { draw(); } });
+    if (goB) { setN = function (n) { goB.disabled = D.busy || !n; if (!D.busy) goB.lastChild.textContent = 'قبول واستيراد ' + fmtNum(n) + ' جهة'; }; setN(D.sel ? D.sel.size : ok.length); }
   };
   draw2();
 }
@@ -17483,25 +17514,31 @@ function commDirPage() {
   const fit = function (c, k) { return k === 'all' ? !c.archived : k === 'arch' ? c.archived : c.archived ? false : k === 'fav' ? c.favorite : k === 'manual' ? c.source !== 'auto' : (c.roles || []).indexOf(k) >= 0; };
   const R = all.filter(function (c) { return fit(c, f) && (!q || [c.name, c.phone, c.email, c.ident, c.partner_type].join(' ').toLowerCase().indexOf(q) >= 0); });
   const n = function (r) { return A.filter(function (c) { return (c.roles || []).indexOf(r) >= 0; }).length; };
-  const pick = typeof navigator !== 'undefined' && navigator.contacts && typeof navigator.contacts.select === 'function';
-  const vin = e('input', { type: 'file', accept: '.xlsx,.csv,.vcf,text/csv,text/vcard,text/x-vcard,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) ciFile(fl); ev.target.value = ''; } });
   const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث بالاسم أو الجوال أو البريد أو المعرّف', value: COMM.q || '', 'aria-label': 'بحث في الدليل', onKeydown: function (ev) { if (ev.key === 'Enter') { COMM.q = ev.target.value; draw(); } } });
-  /* v315: الاستيراد بطريقتين — جهات الجوال مباشرة، أو نموذج الاستيراد (تنزيل ← كتابة ← رفع) — والملف المرفوع يُحفظ بعد قبوله */
-  const mob = (navigator.maxTouchPoints || 0) > 0 && /Mobi|Android|iPhone|iPad/.test(navigator.userAgent || '');
-  const imp = e('section', { class: 'ax-alerts comm-imp' }, [e('header', {}, [e('span', { class: 'ax-al-ic' }, frag(ui('upload-simple', 18))), e('b', {}, 'استيراد جهات الاتصال')]),
-    e('div', { class: 'comm-imp-g' }, [
-      e('div', { class: 'comm-imp-c' }, [e('b', {}, '١ · من جهات اتصال الجوال'), e('small', {}, mob ? (pick ? 'تختار جهة أو أكثر من قائمة جهات جوالك مباشرة، وتُعرض قبل الإضافة.' : 'متصفح جوالك لا يفتح الجهات مباشرة بعد — الزر يشرح طريقتين سهلتين.') : 'يعمل عند فتح المنصة من متصفح الجوال.'),
-        liveOk(DS.button('من جهات اتصال الجوال', { size: 'sm', tone: mob ? 'primary' : null, ui: 'device-mobile', onClick: function () { if (pick) commPickDevice(); else commPhoneHelp(vin); } }))]),
-      e('div', { class: 'comm-imp-c' }, [e('b', {}, '٢ · من ملف نموذج الاستيراد'), e('small', {}, 'نزّل النموذج، اكتب الجهات في أعمدته، ثم ارفعه — تُطابق الأعمدة مع الحقول وتُعرض قبل القبول، ويُحفظ الملف بعد قبوله ويمكن تنزيله.'),
-        e('div', { class: 't2-row-wrap' }, [DS.button('تنزيل النموذج (Excel)', { size: 'sm', ui: 'download-simple', onClick: function () { ciTemplate('xlsx'); } }), DS.button('CSV', { size: 'sm', ui: 'download-simple', onClick: function () { ciTemplate('csv'); } }),
-          liveOk(DS.button('رفع الملف', { size: 'sm', tone: 'primary', ui: 'upload-simple', onClick: function () { vin.click(); } })), vin])])]),
-    e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('الملفات المرفوعة', { size: 'sm', ui: 'files', onClick: function () { COMM.imp = null; ciFilesOpen(); } })), e('small', { class: 'cu-dr-hint' }, 'يقبل الرفع أيضًا ملف vCard المصدَّر من جهات الجوال.')])]);
-  return axPage({ title: 'دليل هواتف وبريد الشركاء', hint: 'الحسابات تُضاف تلقائيًا بحالة ملفها — وتُضاف الجهات الأخرى يدويًا أو من الجوال', reg: 'إضافة جهة اتصال', can: true, onReg: function () { commCtOpen(null, 'edit'); },
+  /* v317: الاستيراد أيقونة أعلى الدليل بجوار «إضافة جهة اتصال» — تفتح لوحة الاستيراد بطريقتيها والملفات المرفوعة */
+  const impB = liveOk(e('button', { type: 'button', class: 'ax-ic-btn', title: 'استيراد جهات الاتصال', 'aria-label': 'استيراد جهات الاتصال', onClick: function () { commImpHub(); } }, [frag(ui('upload-simple', 18)), e('span', {}, 'استيراد')]));
+  return axPage({ title: 'دليل هواتف وبريد الشركاء', hint: 'الحسابات تُضاف تلقائيًا بحالة ملفها — وتُضاف الجهات الأخرى يدويًا أو من الجوال', reg: 'إضافة جهة اتصال', can: true, onReg: function () { commCtOpen(null, 'edit'); }, tools: [impB],
     K: [['جهات الاتصال', fmtNum(A.length), '', 'users-three'], ['العملاء', fmtNum(n('client')), '', 'users-three'], ['الموظفون', fmtNum(n('staff')), '', 'briefcase'], ['المسوّقون والمستثمرون', fmtNum(n('marketer') + n('investor')), '', 'megaphone-simple']],
     chips: commChips('cdF', [['all', 'الكل', 'list:navy'], ['client', 'العملاء', 'users-three:teal'], ['staff', 'الموظفون', 'briefcase:navy'], ['marketer', 'المسوّقون', 'megaphone-simple:sky'], ['investor', 'المستثمرون', 'trend-up:gold'], ['fav', 'المفضلة', 'star:gold'], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron'], ['arch', 'المؤرشفة', 'tray:navy']], all, fit),
     filter: e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { COMM.q = qi.value; draw(); } }), COMM.q ? DS.button('مسح', { size: 'sm', onClick: function () { COMM.q = ''; draw(); } }) : null]),
     list: [axList(R.slice(0, 400).map(function (c) {
-      return axRow({ ic: (COMM_ROLE[(c.roles || [])[0]] || COMM_ROLE.client)[1], t: c.name + (c.favorite ? ' ★' : ''), sub: commRoleT(c.roles) + ' — ' + (c.phone ? '+' + c.phone : 'بلا جوال') + (c.email ? ' — ' + c.email : '') + ' — ' + (c.source === 'auto' ? (c.file_status === 'suspended' ? 'ملف موقوف' : 'ملف نشط') : c.source === 'device' ? 'من الجوال' : c.source === 'file' ? 'من ملف' : 'يدوي'), tone: c.archived ? '' : c.file_status === 'suspended' ? 'warn' : '', go: function () { commCtOpen(c); } }); }), 'لا جهات اتصال هنا'), imp] });
+      return axRow({ ic: (COMM_ROLE[(c.roles || [])[0]] || COMM_ROLE.client)[1], t: c.name + (c.favorite ? ' ★' : ''), sub: commRoleT(c.roles) + ' — ' + (c.phone ? '+' + c.phone : 'بلا جوال') + (c.email ? ' — ' + c.email : '') + ' — ' + (c.source === 'auto' ? (c.file_status === 'suspended' ? 'ملف موقوف' : 'ملف نشط') : c.source === 'device' ? 'من الجوال' : c.source === 'file' ? 'من ملف' : 'يدوي'), tone: c.archived ? '' : c.file_status === 'suspended' ? 'warn' : '', go: function () { commCtOpen(c); } }); }), 'لا جهات اتصال هنا')] });
+}
+/* v317: لوحة الاستيراد — ١ من جهات الجوال · ٢ من ملف نموذج الاستيراد · والملفات المرفوعة */
+function commImpHub() {
+  const pick = typeof navigator !== 'undefined' && navigator.contacts && typeof navigator.contacts.select === 'function';
+  const mob = (navigator.maxTouchPoints || 0) > 0 && /Mobi|Android|iPhone|iPad/.test(navigator.userAgent || '');
+  const vin = e('input', { type: 'file', accept: '.xlsx,.csv,.vcf,text/csv,text/vcard,text/x-vcard,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) { admClose(); ciFile(fl); } ev.target.value = ''; } });
+  const card = function (ic, t, d, acts) { return e('div', { class: 'comm-imp-c' }, [e('header', {}, [e('span', { class: 'comm-imp-ic' }, frag(ui(ic, 20))), e('b', {}, t)]), e('small', {}, d), e('div', { class: 't2-row-wrap' }, acts)]); };
+  cuBdDraw({ key: 'commimphub', ic: 'upload-simple:teal', title: 'استيراد جهات الاتصال', sub: 'طريقتان — تُعرض الجهات للمعاينة والاختيار قبل الإضافة', onClose: function () { draw(); }, body: [
+    e('div', { class: 'comm-imp-g' }, [
+      card('device-mobile', '١ · من جهات اتصال الجوال', mob ? (pick ? 'تختار جهة أو أكثر من قائمة جهات جوالك، ثم تبحث وتحدد ما تضيفه في المعاينة.' : 'متصفح جوالك لا يفتح الجهات مباشرة بعد — الزر يشرح طريقتين سهلتين.') : 'يعمل عند فتح المنصة من متصفح الجوال.',
+        [liveOk(DS.button('من جهات اتصال الجوال', { size: 'sm', tone: mob ? 'primary' : null, ui: 'device-mobile', onClick: function () { if (pick) { admClose(); commPickDevice(); } else commPhoneHelp(vin); } }))]),
+      card('file-text', '٢ · من ملف نموذج الاستيراد', 'نزّل النموذج، اكتب الجهات في أعمدته، ثم ارفعه — تُطابق الأعمدة مع الحقول وتُعرض قبل القبول، ويُحفظ الملف بعد قبوله ويمكن تنزيله. يقبل أيضًا ملف vCard.',
+        [DS.button('النموذج (Excel)', { size: 'sm', ui: 'download-simple', onClick: function () { ciTemplate('xlsx'); } }), DS.button('CSV', { size: 'sm', ui: 'download-simple', onClick: function () { ciTemplate('csv'); } }),
+          liveOk(DS.button('رفع الملف', { size: 'sm', tone: 'primary', ui: 'upload-simple', onClick: function () { vin.click(); } })), vin])]),
+    cuSec('الملفات المرفوعة', 'files', [e('small', { class: 'cu-dr-hint' }, 'كل ملف قُبل يُحفظ كما رُفع مع نتيجة الاستيراد، ويمكن تنزيله.'), liveOk(DS.button('عرض الملفات المرفوعة', { size: 'sm', ui: 'files', onClick: function () { admClose(); COMM.imp = null; ciFilesOpen(); } }))])],
+    foot: [] });
 }
 const COMMD = {};
 function commCtOpen(c, mode) {
@@ -17566,9 +17603,10 @@ function commImportOpen(rows, file) {
   const D = { role: 'client', busy: false, err: '' };
   const draw2 = function () { cuBdDraw({ key: 'commimp', ic: 'upload-simple:teal', title: 'استيراد جهات اتصال', sub: fmtNum(rows.length) + ' جهة · تُتخطّى المكررة تلقائيًا', onClose: function () { draw(); }, body: [
     cuSec('الدور للجهات المستوردة', 'users-three', [e('div', { class: 'sys-form cu-bd-form' }, [commFld('الدور', DS.select({ value: D.role, options: Object.keys(COMM_ROLE).map(function (r) { return [r, COMM_ROLE[r][0]]; }), onChange: function (v) { D.role = v; draw2(); } }))])]),
-    cuSec('الجهات', 'list', [DS.fields(rows.slice(0, 200).map(function (x) { return [x.name, e('span', {}, [x.phone ? ltr(x.phone) : '', x.phone && x.email ? ' · ' : '', x.email ? ltr(x.email) : ''])]; }))]),
+    cuSec('الجهات — ابحث وحدّد ما تضيفه', 'list', [ciPick(rows, D, function (n) { if (D.setN) D.setN(n); })]),
     D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
-    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الإضافة…' : 'إضافة إلى الدليل', { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: async function () { D.busy = true; draw2(); try { const P = rows.map(function (x) { return Object.assign({ roles: [D.role] }, x); }); const j = file ? await admRpc('admin_contacts_import_file', { p_rows: P, p_file: file }) : await admRpc('admin_contacts_import', { p_rows: P }); if (j && j.ok === false) throw new Error(j.error === 'forbidden' ? 'لا تملك صلاحية الاستيراد.' : 'تعذّر الاستيراد.'); COMM.imp = null; await commLoad('ct'); admClose(); snack('أُضيف ' + fmtNum(j.added || 0) + ' وتُخطّي ' + fmtNum(j.skipped || 0) + ' (مكرر أو ناقص).'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); draw2(); } } })), DS.button('إلغاء', { onClick: cuBdClose })])] }); };
+    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [D.goB = liveOk(DS.button(D.busy ? 'جارٍ الإضافة…' : 'إضافة المحدد إلى الدليل', { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: async function () { const S = rows.filter(function (x, i) { return D.sel.has(i); }); if (!S.length) { snack('حدّد جهة واحدة على الأقل.'); return; } D.busy = true; draw2(); try { const P = S.map(function (x) { return Object.assign({ roles: [D.role] }, x); }); const j = file ? await admRpc('admin_contacts_import_file', { p_rows: P, p_file: file }) : await admRpc('admin_contacts_import', { p_rows: P }); if (j && j.ok === false) throw new Error(j.error === 'forbidden' ? 'لا تملك صلاحية الاستيراد.' : 'تعذّر الاستيراد.'); COMM.imp = null; await commLoad('ct'); admClose(); snack('أُضيف ' + fmtNum(j.added || 0) + ' وتُخطّي ' + fmtNum(j.skipped || 0) + ' (مكرر أو ناقص).'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); draw2(); } } })), DS.button('إلغاء', { onClick: cuBdClose })])] });
+    D.setN = function (n) { if (!D.goB) return; D.goB.disabled = D.busy || !n; if (!D.busy) D.goB.lastChild.textContent = 'إضافة ' + fmtNum(n) + ' إلى الدليل'; }; D.setN(D.sel ? D.sel.size : rows.length); };
   draw2();
 }
 /* ---------- البطاقة الثانية: المراسلة — الصفحة بمهمتها: رسالة جديدة أو البدء من قالب جاهز ---------- */
@@ -17718,5 +17756,17 @@ boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
       var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
       if (z !== v) { el.value = z; if (z !== a) note(el); }
     }, true);
-  })();
+  /* v317: تنبيه «إصدار جديد» — التطبيق المفتوح على الجوال لا يعيد التحميل وحده، فيُفحص رقم الإصدار عند العودة للتطبيق وكل عشر دقائق */
+(function () { try {
+  if (typeof window === 'undefined' || !window.fetch) return; let shown = false, last = 0;
+  const cur = function () { return String((window.TQ_VERSION && window.TQ_VERSION.v) || ''); };
+  const show = function (v) { if (shown || document.querySelector('.tq-upd')) return; shown = true;
+    const b = e('div', { class: 'tq-upd', role: 'status' }, [frag(ui('arrows-clockwise', 18)), e('span', {}, 'إصدار جديد ' + v + ' متاح — حدّث الصفحة لتظهر آخر التعديلات.'), e('button', { type: 'button', onClick: function () { location.reload(); } }, 'تحديث الآن'), e('button', { type: 'button', class: 'is-x', 'aria-label': 'إغلاق', onClick: function () { b.remove(); } }, frag(ui('x', 16)))]);
+    document.body.appendChild(b); };
+  const check = function () { const n = Date.now(); if (n - last < 60000 || !cur()) return; last = n;
+    fetch('/assets/js/version.js?chk=' + n, { cache: 'no-store', credentials: 'omit' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) { const m = /v:'(\d+)'/.exec(t || ''); if (m && Number(m[1]) > Number(cur())) show(m[1]); }).catch(function () {}); };
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('focus', check); setInterval(check, 600000); setTimeout(check, 15000);
+} catch (err) { void err; } })();
+})();
 
