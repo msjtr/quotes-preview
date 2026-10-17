@@ -7813,3 +7813,196 @@ body>.lv-fv.lv-fv .lv-fv-open{flex:none}
 body>.lv-fv.lv-fv .lv-fv-b{overflow:auto;-webkit-overflow-scrolling:touch;background:#fff}
 body>.lv-fv.lv-fv .lv-fv-b img{height:auto;min-height:100%}
 @media (max-width:40rem){body>.lv-fv.lv-fv.lv-fv{padding:0}body>.lv-fv.lv-fv .lv-fv-p{width:100%;height:100%;height:100dvh;border-radius:0;padding-bottom:env(safe-area-inset-bottom)}}
+
+/* v304: صفوف الطلبات والتسويات — النص يلتف بدل القطع */
+.t2.t2 .tm-r.tm-wrap .tm-sub{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.6}
+/* v304: عمود الصفحة لا يتّسع بمحتوى شريط التنقل الطويل — كان يزيح الصفحة أفقيًا على الجوال */
+.t2-stack{grid-template-columns:minmax(0,1fr)}
+.t2-stack>*{min-width:0}
+/* v304: رأس الطلب على الجوال — الحالة تنزل سطرًا بدل أن تغطي رقم الطلب */
+.fx-rhead>.fx-card-t{min-width:0}.fx-rhead>.t2-pill{flex:none}
+@media (max-width:40rem){.fx-rhead{flex-wrap:wrap}.fx-rhead>.fx-card-t{flex:1 1 calc(100% - 70px)}.fx-rhead>.t2-pill{margin-inline-start:60px}}
+/* v304: قيم تفاصيل الطلب الطويلة (الإجراء الذي تم · ملاحظة الإدارة) تُقرأ كاملة */
+.t2 .rq-f.is-long .rq-f-b b,.rq-f.is-long .rq-f-b b{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.7;font-weight:600}
+/* ===== v305: عارض المرفقات — فوق الأدراج دائمًا · ملء الشاشة داخل المنصة · صفحات PDF بعرض الشاشة ===== */
+body>.lv-fv.lv-fv.lv-fv{z-index:2147483090}
+body>.lv-fv.lv-fv .lv-fv-p{display:flex;flex-direction:column;min-height:0}
+body>.lv-fv.lv-fv .cu-dr-h{flex:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+body>.lv-fv.lv-fv .cu-dr-h>div:not(.lv-fv-tools){flex:1 1 9rem;min-width:0}
+body>.lv-fv.lv-fv .cu-dr-h>div>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lv-fv-tools{display:flex;align-items:center;gap:6px;flex:none}
+.lv-fv-z{display:inline-flex;align-items:center;gap:4px;padding:2px;border:1px solid var(--t2-line);border-radius:999px;background:var(--t2-surface)}
+.lv-fv-z[hidden]{display:none}
+.lv-fv-z .lv-fv-zb{min-width:32px;min-height:32px;padding:0;border-radius:50%;border:0;justify-content:center}
+.lv-fv-zl{min-width:3.2em;text-align:center;font:600 .78rem/1 var(--t2-ff-text);color:var(--t2-ink-2);font-variant-numeric:tabular-nums}
+body>.lv-fv.lv-fv .lv-fv-b{flex:1 1 auto;min-height:0}
+body>.lv-fv.lv-fv .lv-fv-b.is-pdf{background:#E9EDF3;padding:10px 0}
+.lv-pdf{display:grid;justify-items:center;gap:12px;min-width:min-content;padding:0 10px}
+.lv-pdf-p{position:relative;background:#fff;box-shadow:0 2px 10px rgba(10,31,68,.12);border-radius:4px;max-width:none}
+.lv-pdf-p .lv-pdf-c{display:block}
+.lv-pdf-n{position:absolute;inset-inline-end:8px;bottom:6px;padding:2px 8px;border-radius:999px;background:rgba(10,31,68,.55);color:#fff;font:600 .7rem/1.4 var(--t2-ff-text);font-variant-numeric:tabular-nums}
+body>.lv-fv.lv-fv .lv-fv-b.is-img{display:block;text-align:center;background:#E9EDF3}
+body>.lv-fv.lv-fv .lv-fv-b.is-img img{display:inline-block;max-width:none;width:100%;height:auto;min-height:0}
+/* ملء الشاشة داخل المنصة */
+body>.lv-fv.lv-fv.lv-fv.is-max{padding:0}
+body>.lv-fv.lv-fv.is-max .lv-fv-p{width:100%!important;height:100%!important;height:100dvh!important;max-height:none;border-radius:0}
+body>.lv-fv.lv-fv.is-max .lv-fv-b{border-radius:0}
+body>.lv-fv.lv-fv:fullscreen{padding:0;background:#0b1424}
+@media (max-width:40rem){.lv-fv-tools .t2-btn{padding-inline:10px}body>.lv-fv.lv-fv .cu-dr-h{padding:10px 12px;gap:8px}.lv-fv-z .lv-fv-zb{min-width:36px;min-height:36px}}
+body>.lv-fv.lv-fv .cu-dr-h{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center}
+body>.lv-fv.lv-fv .cu-dr-h>.lv-fv-tools{grid-column:1/-1;grid-row:2;justify-content:space-between}
+body>.lv-fv.lv-fv .cu-dr-h>.st-sheet-x{grid-column:3;grid-row:1}
+@media (min-width:48rem){body>.lv-fv.lv-fv .cu-dr-h{grid-template-columns:auto minmax(0,1fr) auto auto}body>.lv-fv.lv-fv .cu-dr-h>.lv-fv-tools{grid-column:3;grid-row:1;justify-content:flex-end}body>.lv-fv.lv-fv .cu-dr-h>.st-sheet-x{grid-column:4}}
+body>.lv-fv.lv-fv .cu-dr-h>.lv-fv-tools{display:flex!important;flex-direction:row!important;flex-wrap:nowrap;align-items:center;gap:8px;width:auto}
+/* v305: الصفوف الأفقية — السحب بالفأرة */
+@media (hover:hover) and (pointer:fine){.hx-w>*:first-child,.st-chips-w>.st-chips{cursor:grab}.is-drag{cursor:grabbing!important;user-select:none;scroll-snap-type:none!important;scroll-behavior:auto!important}.is-drag *{pointer-events:none}}
+.hx-w.hx-w{display:block}
+/* ===== v305: الملخصات — لوحة ملخص واحدة احترافية في كل النظام (ويب وجوال) =====
+   بطاقة واحدة بفواصل رفيعة بدل مربعات منفصلة: العنوان مع أيقونة صغيرة، ثم القيمة بأرقام جدولية، وشريط لوني للحالة */
+.cu-kpis.cu-kpis.cu-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));gap:0;padding:0;background:var(--t2-surface);border:1px solid var(--t2-line);border-radius:16px;overflow:hidden;box-shadow:var(--t2-sh-1)}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"ic lab" "val val";align-items:center;justify-items:start;column-gap:8px;row-gap:8px;min-width:0;padding:14px 16px 15px;border:0;border-radius:0;background:transparent;box-shadow:-1px 0 0 var(--t2-line),0 -1px 0 var(--t2-line)}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi>.cu-kpi-ic{grid-area:ic;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--t2-brand-wash);color:var(--t2-brand-3,#067A82)}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi>.cu-kpi-ic svg{width:15px;height:15px}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi>small{grid-area:lab;min-width:0;font:600 .8rem/1.35 var(--t2-ff-text);color:var(--t2-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi>b{grid-area:val;max-width:100%;font:800 1.3rem/1.15 var(--t2-ff-display);font-variant-numeric:tabular-nums;color:var(--t2-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi[class*=" is-"]::before{content:"";position:absolute;inset-block:14px;inset-inline-start:0;width:3px;border-start-end-radius:3px;border-end-end-radius:3px;background:var(--kp-c)}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-danger{--kp-c:#C8443A}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-warn{--kp-c:#C98316}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-ok{--kp-c:#1E9E6A}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-info{--kp-c:#2F74C0}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-danger>b{color:#A12B22}.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-danger>.cu-kpi-ic{background:#FCEBE9;color:#A12B22}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-warn>b{color:#8A4E08}.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-warn>.cu-kpi-ic{background:#FDF2DF;color:#8A4E08}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-ok>.cu-kpi-ic{background:#E5F6EE;color:#13734C}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-info>.cu-kpi-ic{background:#E7F0FB;color:#245C9A}
+.t2.is-dark .cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-danger>b{color:#FFA39B}.t2.is-dark .cu-kpis.cu-kpis.cu-kpis>.cu-kpi.is-warn>b{color:#F5C26B}
+.t2.is-dark .cu-kpis.cu-kpis.cu-kpis>.cu-kpi>.cu-kpi-ic{background:var(--t2-surface-2)}
+@media (max-width:40rem){
+  .cu-kpis.cu-kpis.cu-kpis{grid-template-columns:repeat(2,minmax(0,1fr));border-radius:14px}
+  .cu-kpis.cu-kpis.cu-kpis>.cu-kpi{padding:12px 13px 13px;row-gap:6px}
+  .cu-kpis.cu-kpis.cu-kpis>.cu-kpi>b{font-size:1.12rem}
+  .cu-kpis.cu-kpis.cu-kpis>.cu-kpi:last-child:nth-child(odd){grid-column:1/-1}
+}
+.pv-dev.pv-dev .cu-kpis.cu-kpis.cu-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pv-dev.pv-dev .cu-kpis.cu-kpis.cu-kpis>.cu-kpi:last-child:nth-child(odd){grid-column:1/-1}
+.t2.t2 .cu-dr .cu-kpis.cu-kpis.cu-kpis,.t2-shost.t2-shost .cu-dr .cu-kpis.cu-kpis.cu-kpis{grid-template-columns:repeat(auto-fit,minmax(min(100%,9.5rem),1fr))}
+@media (max-width:40rem){.t2.t2 .cu-dr .cu-kpis.cu-kpis.cu-kpis,.t2-shost.t2-shost .cu-dr .cu-kpis.cu-kpis.cu-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* قوائم الملخص (حالة العقود · المبالغ · الاحتساب) — صفوف بفواصل داخل البطاقة بدل الكتل الرمادية */
+.t2.t2 .fee-tb{gap:0;border:1px solid var(--t2-line);border-radius:14px;overflow:hidden;background:var(--t2-surface)}
+.t2.t2 .fee-tb>.fee-gh{padding:10px 14px 6px;background:var(--t2-surface-2);border-bottom:1px solid var(--t2-line);font-size:.76rem;letter-spacing:.01em}
+.t2.t2 .fee-tb>.fee-gh~.fee-gh{border-top:1px solid var(--t2-line)}
+.t2.t2 .fee-tb>.fee-r{border-radius:0;background:transparent;padding:11px 14px;border-bottom:1px solid var(--t2-line)}
+.t2.t2 .fee-tb>.fee-r:last-child{border-bottom:0}
+.t2.t2 .fee-tb>.fee-r.is-tot{background:color-mix(in srgb,var(--t2-brand-wash) 55%,transparent)}
+.t2.t2 .fee-tb>.fee-r.is-net{border:0;border-bottom:1px solid var(--t2-line);background:var(--t2-surface-2)}
+.t2.t2 .fee-tb>.fee-r.is-out>b{color:#A12B22}
+.t2.t2 .fee-tb>.fee-r>b{font-size:.95rem}
+/* v305: الملخص الموحّد للعميل وقسم المالية */
+.t2.t2 .dc-sum{display:grid;gap:14px;padding:18px;border:1px solid var(--t2-line);border-radius:18px;background:var(--t2-surface);color:var(--t2-ink);box-shadow:var(--t2-sh-1)}
+.t2.t2 .dc-sum-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.t2.t2 .dc-sum-ht{display:grid;gap:2px;min-width:0}
+.t2.t2 .dc-sum-ht>b{font:800 1.05rem/1.3 var(--t2-ff-display);color:var(--t2-ink)}
+.t2.t2 .dc-sum-ht>small{color:var(--t2-muted);font-size:.8rem}
+.t2.t2 .dc-sum-pc{display:grid;justify-items:end;gap:0;flex:none}
+.t2.t2 .dc-sum-pc>b{font:800 1.5rem/1.1 var(--t2-ff-display);color:var(--t2-brand-3,#067A82);font-variant-numeric:tabular-nums}
+.t2.t2 .dc-sum-pc>small{color:var(--t2-muted);font-size:.74rem}
+.t2.t2 .dc-sum-bar{height:8px;border-radius:999px;background:var(--t2-surface-2);overflow:hidden}
+.t2.t2 .dc-sum-bar>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0AA5AD,#067A82)}
+.t2.t2 .dc-sum-g{display:grid;gap:8px;min-width:0}
+.t2.t2 .dc-sum-gt{font:700 .76rem/1.2 var(--t2-ff-text);color:var(--t2-muted)}
+.t2.t2 .dc-sum .cu-kpis.cu-kpis.cu-kpis{box-shadow:none}
+.t2.t2 .dc-sum-st{display:flex;flex-wrap:wrap;gap:8px}
+.t2.t2 .dc-sum-s{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--t2-line);border-radius:999px;background:var(--t2-surface-2);font-size:.84rem;color:var(--t2-ink-2)}
+.t2.t2 .dc-sum-s>i{width:8px;height:8px;border-radius:50%;background:var(--sc,#8A97AB)}
+.t2.t2 .dc-sum-s>b{font-variant-numeric:tabular-nums;color:var(--t2-ink)}
+.t2.t2 .dc-sum-s.is-ok{--sc:#1E9E6A}.t2.t2 .dc-sum-s.is-warn{--sc:#C98316}.t2.t2 .dc-sum-s.is-danger{--sc:#C8443A}.t2.t2 .dc-sum-s.is-info{--sc:#2F74C0}
+.t2.t2 .dc-sum-s.is-0{opacity:.62}
+.t2.t2 .dc-h{display:flex;align-items:center;gap:10px;margin-top:6px}
+.t2.t2 .dc-h>.dc-h-ic{display:inline-grid;place-items:center;flex:none;width:34px;height:34px;border-radius:10px;background:var(--t2-brand-wash);color:var(--t2-brand-3,#067A82)}
+.t2.t2 .dc-h>.ax-top-t{display:grid;gap:2px;min-width:0}
+.t2.t2 .dc-sub-h{display:block;margin-top:4px;color:var(--t2-muted);font:700 .8rem/1.4 var(--t2-ff-text)}
+@media (max-width:40rem){.t2.t2 .dc-sum{padding:14px;border-radius:16px;gap:12px}.t2.t2 .dc-sum-pc>b{font-size:1.3rem}}
+.t2.t2 .dc-sum-s>span{font:600 .84rem/1.3 var(--t2-ff-text);color:var(--t2-ink-2);opacity:1}
+.t2.t2 .dc-sum-s>b{font:800 .95rem/1 var(--t2-ff-display)}
+.t2.t2 .dc-sum-s{padding:6px 12px 6px 10px}
+.t2.t2 .dc-sum-s.is-0{opacity:.75}
+.t2.t2 .dc-h.dc-h{justify-content:flex-start}
+.cu-kpis.cu-kpis.cu-kpis>.cu-kpi[class*=" is-"]::before{content:none}
+/* ===== v305: لون كل حالة دفعة (مفتاح موحّد في كل النظام) =====
+   مسدَّدة أخضر · قيد المراجعة كهرماني · جزئية برتقالي · موحَّدة بنفسجي · مؤجَّلة أزرق · متأخرة أحمر · متعثرة أحمر داكن · قادمة رمادي */
+[data-pt="ok"]{--pt:#19A88F;--pt-w:#E6F7F3}
+[data-pt="rev"]{--pt:#D99A1E;--pt-w:#FDF4E1}
+[data-pt="part"]{--pt:#E07F1F;--pt-w:#FDEEDF}
+[data-pt="mrg"]{--pt:#7A5BD6;--pt-w:#F0ECFB}
+[data-pt="def"]{--pt:#4F78D6;--pt-w:#EAF0FC}
+[data-pt="late"]{--pt:#E25546;--pt-w:#FDECEA}
+[data-pt="dflt"]{--pt:#A12B22;--pt-w:#F9E2DF}
+[data-pt="up"]{--pt:#98A5B9;--pt-w:#F3F5F8}
+.t2.t2 .fx-row[data-pt],.t2.t2 .cu-mgr-doc[data-pt],.t2.t2 .tm-r.pay-r[data-pt]{box-shadow:inset -4px 0 0 var(--pt)}
+.t2.t2 [dir="ltr"] .fx-row[data-pt]{box-shadow:inset 4px 0 0 var(--pt)}
+.t2.t2 .fx-row[data-pt="mrg"],.t2.t2 .cu-mgr-doc[data-pt="mrg"],.t2.t2 .tm-r.pay-r[data-pt="mrg"]{background:var(--pt-w)}
+.t2.t2 .fx-row[data-pt="def"],.t2.t2 .cu-mgr-doc[data-pt="def"],.t2.t2 .tm-r.pay-r[data-pt="def"]{background:var(--pt-w)}
+.t2.t2 .fx-row[data-pt="ok"],.t2.t2 .cu-mgr-doc[data-pt="ok"],.t2.t2 .tm-r.pay-r[data-pt="ok"]{background:color-mix(in srgb,var(--pt-w) 70%,var(--t2-surface))}
+.t2.t2 .fx-row[data-pt="late"],.t2.t2 .fx-row[data-pt="dflt"],.t2.t2 .cu-mgr-doc[data-pt="late"],.t2.t2 .cu-mgr-doc[data-pt="dflt"],.t2.t2 .tm-r.pay-r[data-pt="late"],.t2.t2 .tm-r.pay-r[data-pt="dflt"]{background:var(--pt-w)}
+.t2.t2 .tm-r.pay-r{cursor:default;padding-inline-start:16px}
+.t2.is-dark [data-pt]{--pt-w:color-mix(in srgb,var(--pt) 14%,var(--t2-surface))}
+/* المسار الزمني ومفتاحه — موحَّدة بنفسجي ومؤجَّلة أزرق */
+.tl-bar i.is-mrg{background:#7A5BD6}.tl-leg .is-mrg i{background:#7A5BD6}
+.tl-i.is-mrg .tl-n{background:#7A5BD6;border-color:#7A5BD6;color:#fff}
+.tl-i.is-mrg .tl-b{border-color:rgba(122,91,214,.35);background:linear-gradient(90deg,var(--t2-surface),color-mix(in srgb,#7A5BD6 6%,var(--t2-surface)))}
+.tl-i.is-def .tl-b{border-color:rgba(79,120,214,.35);background:linear-gradient(90deg,var(--t2-surface),color-mix(in srgb,#4F78D6 6%,var(--t2-surface)))}
+.tl-bar i.is-def,.tl-leg .is-def i{background:#4F78D6}.tl-i.is-def .tl-n{background:#4F78D6;border-color:#4F78D6}
+.tl-bar i.is-rev,.tl-leg .is-rev i{background:#D99A1E}.tl-bar i.is-part,.tl-leg .is-part i{background:#E07F1F}
+.tl-bar i.is-dflt,.tl-leg .is-dflt i{background:#A12B22}.tl-bar i.is-up,.tl-leg .is-up i{background:#C3CBD7}
+.t2.t2 .pay-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:8px}
+.t2.t2 .pay-leg>span{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--t2-ink-2)}
+.t2.t2 .pay-leg>span>i{width:10px;height:10px;border-radius:3px;background:var(--t2-muted)}
+.t2.t2 .pay-leg>span>b{color:var(--t2-ink);font-variant-numeric:tabular-nums}
+.pay-leg .is-ok i{background:#19A88F!important}.pay-leg .is-rev i{background:#D99A1E!important}.pay-leg .is-part i{background:#E07F1F!important}.pay-leg .is-mrg i{background:#7A5BD6!important}.pay-leg .is-def i{background:#4F78D6!important}.pay-leg .is-late i{background:#E25546!important}.pay-leg .is-dflt i{background:#A12B22!important}.pay-leg .is-up i{background:#C3CBD7!important}
+/* ===== v305: شريط جلسة «صفحة العميل» — ظاهر دائمًا أثناء الزيارة ===== */
+.cpv-bar{position:fixed;top:0;inset-inline:0;z-index:2147482990;display:flex;align-items:center;gap:10px;min-height:48px;padding:6px max(12px,env(safe-area-inset-right)) 6px max(12px,env(safe-area-inset-left));background:linear-gradient(90deg,#0A1F44,#123A6B);color:#fff;font-family:"IBM Plex Sans Arabic",Tahoma,sans-serif;direction:rtl;box-shadow:0 2px 10px rgba(4,18,43,.25)}
+.cpv-bar.is-busy{opacity:.7;pointer-events:none}
+.cpv-av{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#0AA5AD;color:#fff;font-weight:800}
+.cpv-t{display:grid;gap:1px;flex:1 1 auto;min-width:0}
+.cpv-t>b{font-size:.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpv-t>small{font-size:.72rem;color:#C9D6EA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpv-btn{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font:600 .82rem/1 inherit;cursor:pointer}
+.cpv-btn:hover{background:rgba(255,255,255,.2)}
+.cpv-btn.is-exit{background:#fff;color:#0A1F44;border-color:#fff}
+html.cpv-on body{padding-top:48px}
+html.cpv-on .t2-head{top:48px}
+@media (max-width:40rem){.cpv-btn>span{display:none}.cpv-btn{width:38px;justify-content:center;padding:0}.cpv-btn.is-exit>span{display:inline}.cpv-btn.is-exit{width:auto;padding:0 12px}}
+.t2.t2 .cpg-tl>li.is-blocked>b{color:#A12B22}.t2.t2 .cpg-tl>li.is-edit>b{color:#8A4E08}
+.t2.t2 .cu-chips-w{display:flex;flex-wrap:wrap;gap:6px}
+/* ===== v305: التواصل المباشر ===== */
+.t2.t2 .comm-ct{grid-template-columns:minmax(0,1fr) auto 40px!important;grid-template-areas:none!important;align-items:center;gap:10px;cursor:default}
+.t2.t2 .comm-ct.is-arch{opacity:.6}
+.t2.t2 .comm-ct-b{display:flex;align-items:center;gap:10px;min-width:0;padding:0;border:0;background:none;text-align:start;font:inherit;color:inherit;cursor:pointer}
+.t2.t2 .comm-ct-t{display:grid;gap:2px;min-width:0}
+.t2.t2 .comm-ct-t>b{font-weight:700;color:var(--t2-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t2.t2 .comm-ct-t>small{color:var(--t2-muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t2.t2 .comm-ct-m{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.t2.t2 .comm-fav{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1px solid var(--t2-line);background:var(--t2-surface);color:#9AA6B8;cursor:pointer}
+.t2.t2 .comm-fav.is-on{color:#D99A1E;border-color:#F3D7A6;background:#FDF4E1}
+@media (max-width:40rem){.t2.t2 .comm-ct{grid-template-columns:minmax(0,1fr) 40px!important}.t2.t2 .comm-ct-m{grid-column:1/-1;grid-row:2;justify-content:flex-start}}
+.t2.t2 .comm-body{width:100%;min-height:9rem;resize:vertical;line-height:1.8}
+.t2.t2 .comm-help{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.t2.t2 .comm-help>small{color:var(--t2-muted);font-weight:700}
+.t2.t2 .comm-pick .tm-rows{max-height:18rem;overflow:auto;border:1px solid var(--t2-line);border-radius:12px;margin-top:8px}
+.t2.t2 .comm-pk{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-areas:none!important;cursor:pointer}
+.t2.t2 .comm-pk.is-on{background:var(--t2-brand-wash)}
+.t2.t2 .comm-mail{display:grid;gap:8px}
+.t2.t2 .comm-mail-h{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline;font-size:.84rem;color:var(--t2-ink-2)}
+.t2.t2 .comm-mail-f{width:100%;height:34rem;border:1px solid var(--t2-line);border-radius:12px;background:#fff}
+.t2.t2 .comm-wa{max-width:26rem;padding:0 0 14px;border-radius:18px;background:#E9E2D8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23d7cfc3'/%3E%3C/svg%3E");overflow:hidden;border:1px solid var(--t2-line)}
+.t2.t2 .comm-wa-top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#075E54;color:#fff}
+.t2.t2 .comm-wa-top img{width:34px;height:34px;border-radius:50%;background:#fff;object-fit:contain;padding:3px}
+.t2.t2 .comm-wa-top span{display:grid}.t2.t2 .comm-wa-top small{color:#CFE8E3;font-size:.72rem}
+.t2.t2 .comm-wa-bub{position:relative;margin:14px 14px 0;padding:10px 12px 8px;border-radius:12px;border-start-start-radius:4px;background:#fff;box-shadow:0 1px 1px rgba(0,0,0,.12);color:#111B21;display:grid;gap:6px}
+.t2.t2 .comm-wa-hd{display:grid;place-items:center;padding:12px;border-radius:8px;background:linear-gradient(135deg,#0A1F44,#0AA5AD)}
+.t2.t2 .comm-wa-hd img{height:38px;width:auto;filter:brightness(0) invert(1)}
+.t2.t2 .comm-wa-hi{font-weight:800;font-size:.95rem}
+.t2.t2 .comm-wa-bub p{margin:0;white-space:pre-wrap;line-height:1.7;font-size:.9rem}
+.t2.t2 .comm-wa-ft{color:#667781;font-size:.7rem;justify-self:end}
+.t2.t2 .comm-body-v{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:var(--t2-surface-2);white-space:pre-wrap;line-height:1.8}
+.t2.t2 .cu-card.is-arch{opacity:.6}
+.t2.t2 .comm-wa-hd img{filter:none;background:#fff;border-radius:10px;padding:6px 14px;height:46px}
