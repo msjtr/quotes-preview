@@ -7457,7 +7457,7 @@ function sysLogPage() {
 function admMorePage() {
   return secHub('adm-more', { t: 'الأقسام', s: 'كل أقسام لوحة المشرف.', ic: 'squares-four:navy' }, [
     ['main', 'الأساسي', 'squares-four:navy', [{ ic: 'adm-home', t: admHomeT(), d: 'نظرة عامة على العمل', go: function () { go('other', 'adm-home'); } }]],
-    ['sec', 'الأقسام', 'users-three:navy', [{ ic: 'cu', t: 'قسم العملاء', d: 'الملف الشخصي · العقود وعروض الأسعار · الطلبات والإجراءات · المتجر · العضوية', go: function () { go('other', 'cu'); } }, { ic: 'fin', t: 'قسم المالية', d: 'الدفعات المستحقة والقادمة · سجل السداد · مركز المدفوعات', go: function () { go('other', 'fin'); } }, { ic: 'cpg', t: 'صفحة العميل', d: 'الدخول إلى صفحة العميل كما يراها · سجل توثيق الوصول', go: function () { go('other', 'cpg'); } }, { ic: 'comm', t: 'التواصل المباشر', d: 'دليل الهواتف والبريد · المراسلة · تقرير الإرسال · القوالب', go: function () { go('other', 'comm'); } }, { ic: 'soon-emp', t: 'الموظفون', d: 'مرحلة قادمة', go: function () { go('other', 'soon-emp'); } }, { ic: 'soon-par', t: 'الشركاء', d: 'مرحلة قادمة', go: function () { go('other', 'soon-par'); } }, { ic: 'soon-mkt', t: 'المسوّقون', d: 'مرحلة قادمة', go: function () { go('other', 'soon-mkt'); } }]],
+    ['sec', 'الأقسام', 'users-three:navy', [{ ic: 'cu', t: 'قسم العملاء', d: 'الملف الشخصي · العقود وعروض الأسعار · الطلبات والإجراءات · المتجر · العضوية', go: function () { go('other', 'cu'); } }, { ic: 'fin', t: 'قسم المالية', d: 'الدفعات المستحقة والقادمة · سجل السداد · مركز المدفوعات', go: function () { go('other', 'fin'); } }, { ic: 'cpg', t: 'صفحة العميل', d: 'الدخول إلى صفحة العميل كما يراها · سجل توثيق الوصول', go: function () { go('other', 'cpg'); } }, { ic: 'comm', t: 'التواصل المباشر', d: 'دليل الهواتف والبريد · المراسلة · تقرير الإرسال · القوالب', go: function () { go('other', 'comm'); } }, { ic: 'star:gold', t: 'تجربة العملاء والجودة', d: 'المؤشرات · مراجعة التقييمات ونشرها · الاستبانات', go: function () { go('other', 'cx'); } }, { ic: 'soon-emp', t: 'الموظفون', d: 'مرحلة قادمة', go: function () { go('other', 'soon-emp'); } }, { ic: 'soon-par', t: 'الشركاء', d: 'مرحلة قادمة', go: function () { go('other', 'soon-par'); } }, { ic: 'soon-mkt', t: 'المسوّقون', d: 'مرحلة قادمة', go: function () { go('other', 'soon-mkt'); } }]],
     ['set', 'الإعدادات', 'gear-six:navy', [{ ic: 'gear-six:navy', t: 'إعدادات النظام', d: 'الأدوار والصلاحيات · مدد الإنجاز · الردود · القوالب', go: function () { go('other', 'sys'); } }]]]);
 }
 function sysRegister() {
@@ -10836,7 +10836,7 @@ function cuRegister() {
   lp('soon-par', 'الشركاء', null, 'soon-par', cuSoon('الشركاء', 'handshake', 'قسم مستقل للشركاء وعروضهم وتسوياتهم — مرحلة قادمة.'));
   lp('soon-mkt', 'المسوّقون', null, 'soon-mkt', cuSoon('المسوّقون', 'megaphone-simple', 'قسم مستقل للمسوّقين وعمولاتهم وروابطهم — مرحلة قادمة.'));
 }
-const cuNavOf = (o) => o === 'comm-tpl' || o === 'sys-pay' ? 'sys' : o === 'fin' || /^fin-/.test(o || '') || o === 'pay-center' || /^cu-admx/.test(o || '') ? 'fin' : o === 'cpg' || /^cpg-/.test(o || '') ? 'cpg' : o === 'comm' || /^comm-/.test(o || '') ? 'comm' : o === 'ctr' || /^cu-docs/.test(o || '') ? 'cu' : /^(cu|cu-.*|cs.*)$/.test(o || '') ? 'cu' : /^sys/.test(o || '') ? 'sys' : o === 'adm-more' ? 'adm-more' : /^soon-/.test(o || '') ? o : null; const cuNavOfOld = (o) => o === 'cu-inbox' ? 'cu-inbox' : o === 'cu-mem' || o === 'cu-comms' ? o : (o === 'cu-list' || o === 'cu-file' || o === 'cs-customers' || o === 'cs-customer') ? 'cu-list' : o === 'cu' ? 'cu' : /^soon-/.test(o) ? o : (o === 'cs-tickets' || o === 'cs-ticket' || o === 'cs-complaints') ? 'cs-tickets' : (o === 'cs' || o === 'cs-updates' || o === 'cs-devices' || o === 'cs-requests') ? 'cu' : null;
+const cuNavOf = (o) => o === 'comm-tpl' || o === 'sys-pay' || o === 'sys-cx' || o === 'sys-cx-tpl' ? 'sys' : o === 'cx' || /^cx-/.test(o || '') ? 'cx' : o === 'fin' || /^fin-/.test(o || '') || o === 'pay-center' || /^cu-admx/.test(o || '') ? 'fin' : o === 'cpg' || /^cpg-/.test(o || '') ? 'cpg' : o === 'comm' || /^comm-/.test(o || '') ? 'comm' : o === 'ctr' || /^cu-docs/.test(o || '') ? 'cu' : /^(cu|cu-.*|cs.*)$/.test(o || '') ? 'cu' : /^sys/.test(o || '') ? 'sys' : o === 'adm-more' ? 'adm-more' : /^soon-/.test(o || '') ? o : null; const cuNavOfOld = (o) => o === 'cu-inbox' ? 'cu-inbox' : o === 'cu-mem' || o === 'cu-comms' ? o : (o === 'cu-list' || o === 'cu-file' || o === 'cs-customers' || o === 'cs-customer') ? 'cu-list' : o === 'cu' ? 'cu' : /^soon-/.test(o) ? o : (o === 'cs-tickets' || o === 'cs-ticket' || o === 'cs-complaints') ? 'cs-tickets' : (o === 'cs' || o === 'cs-updates' || o === 'cs-devices' || o === 'cs-requests') ? 'cu' : null;
 function cuHomeBlock() {
   const IB = cuInbox(), late = IB.filter(function (x) { return x.sla[1] === 'danger'; }).length;
   return sec('قسم العملاء', null, [lvHub([['cu-inbox', 'بانتظار إجراء', fmtNum(IB.length) + ' عنصر' + (late ? ' · ' + fmtNum(late) + ' متأخر' : ''), late ? 'danger' : IB.length ? 'warn' : 'ok', function () { ADM.cuf = ''; go('other', 'cu-inbox'); }, IB.length || null], ['cu-list', 'ملفات العملاء', fmtNum(cuList().length) + ' عملاء', 'ok', function () { go('other', 'cu-list'); }], ['cu', 'قسم العملاء', 'الأدوات والطلبات والإجراءات', 'ok', function () { go('other', 'cu'); }]])], true, 'adm:cu');
@@ -12806,7 +12806,7 @@ const MSTL = { reply: 'بانتظار الرد', open: 'المفتوحة', done:
 function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(); }
   profSeed();
   LAST = S.tab === 'qreq' ? 1 : 2;
-  if (S.role === 'admin' && (S.tab !== 'other' || !/^(adm-|cs|cu$|cu-|ctr$|soon-|sys|pay-center$|fin$|fin-|cpg$|cpg-|comm$|comm-)/.test(S.other || ''))) { S.tab = 'other'; S.other = 'adm-home'; }
+  if (S.role === 'admin' && (S.tab !== 'other' || !/^(adm-|cs|cu$|cu-|ctr$|soon-|sys|pay-center$|fin$|fin-|cpg$|cpg-|comm$|comm-|cx$|cx-)/.test(S.other || ''))) { S.tab = 'other'; S.other = 'adm-home'; }
   if (S.role !== 'admin' && S.tab === 'other' && /^(adm-|cs|cu$|cu-|soon-|sys)/.test(S.other || '')) { S.tab = 'dash'; S.other = ''; }
   const toSvc = function () { go('svc'); }, toMsg = function () { go('msg'); };
   let title, sub, path, nav = null;
@@ -13906,6 +13906,8 @@ async function liveData() {
     LIVE_DATA.blocks = {};
     LIVE_BLK.concat(['docs']).forEach(function (b) { jobs.push(clApi('/api/account/profile/block/' + b).then(function (d) { LIVE_DATA.blocks[b] = d; }).catch(function () { /* القسم فارغ */ })); });
     jobs.push(liveSb('rpc/my_profile_verification', { body: {} }).then(function (v) { LIVE_DATA.ver0 = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.ver0 = null; }));
+    jobs.push(liveSb('rpc/my_surveys', { body: {} }).then(function (v) { LIVE_DATA.surveys = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.surveys = null; }));
+    jobs.push(liveSb('rpc/my_verification_security', { body: {} }).then(function (v) { LIVE_DATA.vsec = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.vsec = null; }));
     jobs.push(liveSb('rpc/profile_notes', { body: {} }).then(function (n) { LIVE_DATA.notes = n && n.ok !== false ? n : null; }).catch(function () { LIVE_DATA.notes = null; }));
     jobs.push(clApi('/api/account/my-requests').then(function (j) { (j.requests || []).forEach(function (q) { REQS.push(liveReq(q)); }); }).catch(function () { /* فارغ */ }));
   }
@@ -13928,8 +13930,9 @@ async function liveData() {
 /* وسائل التحقق المفعّلة فعلًا في الخادم ← حالة مركز الأمان (التطبيق، واتساب، الرمز الإضافي) */
 function liveFactorKeys(j) { return ((j && (j.factors || j.available)) || []).map(function (f) { return typeof f === 'string' ? f : (f.key || f.factor); }).filter(Boolean); }
 function liveFactorFlags() {
-  const L = LIVE_DATA.factors; if (!Array.isArray(L)) return;
-  try { LVS.mail = true; LVS.app = L.indexOf('totp') >= 0; LVS.xc = (L.indexOf('extra_code') >= 0 || L.indexOf('recovery_code') >= 0) ? 'on' : ''; } catch (err) { void err; }
+  const L = LIVE_DATA.factors;
+  if (Array.isArray(L)) try { LVS.mail = true; LVS.app = L.indexOf('totp') >= 0; LVS.xc = (L.indexOf('extra_code') >= 0 || L.indexOf('recovery_code') >= 0) ? 'on' : ''; } catch (err) { void err; }
+  try { const v = LIVE_DATA.vsec; if (v && v.ok !== false) { if (v.wa) LVS.wa = 'on'; else if (LVS.wa === 'on') LVS.wa = ''; if (v.totp) LVS.app = true; if (v.extra && !LVS.xc) LVS.xc = 'on'; } } catch (err) { void err; }
 }
 /* مركز الأمان: الأجهزة والجلسات الحقيقية — والتحقق بالبريد مفروض عند كل دخول */
 function liveSec(o) {
@@ -13997,7 +14000,7 @@ function jrTrack(J) {
       e('span', { class: 'jr-st-t' }, [e('b', {}, x.t), e('small', {}, x.s === 'now' ? 'المرحلة الحالية' : x.at ? iso(new Date(x.at)) : x.s === 'done' ? 'تمت' : x.s === 'bad' ? 'تحتاج إجراء' : 'لاحقًا')])]); }));
 }
 function jrSec() {
-  const F = [['التحقق بالبريد', !!LVS.mail, 'sec-twofa'], ['تطبيق المصادقة', !!LVS.app, 'sec-twofa'], ['ربط واتساب ورمزه', LVS.wa === 'on', 'sec-whatsapp']], n = F.filter(function (x) { return x[1]; }).length;
+  const V = liveVsec(), F = [['ربط رقم الواتساب — شرط للتوثيق', V.wa, 'sec-whatsapp'], ['وسيلة مصادقة واحدة على الأقل — شرط للتوثيق', V.auth, V.extra && !V.totp ? 'sec-extracode' : 'sec-twofa'], ['التحقق بالبريد عند كل دخول', true, 'sec-twofa']], n = F.filter(function (x) { return x[1]; }).length;
   return e('article', { class: 'jr-card' }, [e('header', {}, [frag(tile('shield-check:teal')), e('span', {}, [e('b', {}, 'مركز الأمان'), e('small', {}, n === F.length ? 'حسابك محمي بكل وسائل التحقق' : 'وسائل أمان ناقصة: ' + fmtNum(F.length - n) + ' من ' + fmtNum(F.length))]), DS.badge(n === F.length ? 'مكتمل' : 'ناقص', n === F.length ? 'ok' : 'warn')]),
     e('ul', { class: 'jr-chk' }, F.map(function (x) { return e('li', { class: x[1] ? 'is-ok' : '' }, [frag(ui(x[1] ? 'check-circle' : 'warning', 16)), e('span', {}, x[0]), x[1] ? e('small', {}, 'مفعّل') : liveOk(DS.button('تفعيل', { size: 'sm', onClick: function () { go('other', x[2]); } }))]); })),
     DS.button('مركز الأمان', { size: 'sm', ui: 'shield-check', onClick: function () { go('other', 'shield'); } })]);
@@ -14011,14 +14014,17 @@ function jrProf(J) {
 function jrCount(el) { requestAnimationFrame(function () { el.querySelectorAll('[data-jr-n]').forEach(function (n) { const to = Number(n.getAttribute('data-jr-n')) || 0, t0 = performance.now(), D = 1400; (function f(t) { const k = Math.min(1, (t - t0) / D), ez = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; n.textContent = fmtNum(Math.round(to * ez)); if (k < 1) requestAnimationFrame(f); })(t0); }); }); }
 function journeyPage(J) {
   const me = LIVE.me || {}, first = String(me.full_name || ME.name || '').split(' ')[0], pct = Number(J.v.progress) || livePct();
-  const next = (J.v.steps || []).filter(function (x) { return !x.done; })[0];
+  const next0 = (J.v.steps || []).filter(function (x) { return !x.done; })[0], VS = liveVsec();
+  /* v318: الملف لا يُرسَل قبل ربط الواتساب ووسيلة مصادقة — فإن اكتملت البيانات يكون الإجراء التالي مركز الأمان */
+  const next = next0 && (next0.key === 'agreed' || next0.key === 'submitted') && !VS.ready ? { key: '_sec', label: !VS.wa ? 'ربط الواتساب' : 'تفعيل وسيلة مصادقة' } : next0;
   const out = function () { const b = document.querySelector('.t2-hbtn.is-out'); if (b) b.click(); };
   let hero;
   if (J.stage === 'start') {
     hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, J.mig ? 'WELCOME BACK · TERA' : 'WELCOME TO TERA'), e('h2', {}, (J.mig ? 'حدّث بياناتك' : 'استكمل ملفك') + '، ' + first),
         e('p', {}, J.mig ? 'نُقل ملفك من النظام السابق — راجع بياناتك وحدّث الناقص منها، ثم أرسل الملف للاعتماد ليُدشَّن حسابك.' : 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
+        !VS.ready ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تربط رقم الواتساب وتفعّل وسيلة مصادقة واحدة على الأقل من مركز الأمان.')]) : null,
         J.returned ? DS.note('warn', 'أُعيد ملفك للتعديل', ((J.v.returned_items || []).map(function (x) { return x.label + (x.reason ? ' — ' + x.reason : ''); }).join('، ')) || 'راجع الملاحظات وعدّل ثم أعد الإرسال.') : null,
-        e('div', { class: 'jr-acts' }, [liveOk(DS.button(next ? (J.mig ? 'حدّث: ' : 'أكمل: ') + next.label : 'إرسال الملف للاعتماد', { tone: 'primary', ui: 'caret-left', onClick: function () { go('other', next ? (JR_PG[next.key] || 'profile') : 'me-verify'); } })), DS.button('الخروج والعودة لاحقًا', { ui: 'sign-out', onClick: out })])]),
+        e('div', { class: 'jr-acts' }, [liveOk(DS.button(next ? (J.mig ? 'حدّث: ' : 'أكمل: ') + next.label : 'إرسال الملف للاعتماد', { tone: 'primary', ui: 'caret-left', onClick: function () { go('other', next ? (next.key === '_sec' ? (!VS.wa ? 'sec-whatsapp' : 'sec-twofa') : (JR_PG[next.key] || 'profile')) : (VS.ready ? 'me-verify' : 'shield')); } })), DS.button('الخروج والعودة لاحقًا', { ui: 'sign-out', onClick: out })])]),
       e('div', { class: 'jr-ring', style: '--jr-r:' + pct }, [e('b', { 'data-jr-n': String(pct) }, '0'), e('small', {}, '٪ اكتمال الملف')])]);
   } else if (J.stage === 'review') {
     hero = e('section', { class: 'jr-hero is-review' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'FILE UNDER REVIEW'), e('h2', {}, 'ملفك قيد المراجعة'),
@@ -15220,6 +15226,7 @@ function admSysPage() {
     ['fin', 'قسم المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم والنسب والمصاريف والعمولات — إضافة وتفعيل وإيقاف', 'sys-fees'), c('credit-card:teal', 'إعدادات الدفع الإلكتروني', 'تشغيل خدمات الدفع وإيقافها ووسائل الدفع', 'sys-pay')]],
     ['cu', 'قسم العملاء', 'users-three:teal', [c('rocket-launch:teal', 'إعدادات تدشين الحساب', 'المستوى الافتراضي ونقاط التدشين لكل مستوى وفيلم التدشين', 'sys-launch')]],
     ['comm', 'التواصل المباشر', 'chat-circle-dots:sky', [c('file-text:gold', 'القوالب الجاهزة للمراسلة', 'قوالب البريد وواتساب بالهوية — إنشاء وتعديل، وتظهر مباشرة في «المراسلة»', 'comm-tpl')]],
+    ['cx', 'تجربة العملاء والجودة', 'star:gold', [c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة', 'sys-cx'), c('file-text:gold', 'قوالب الاستبانات', 'خمسة قوالب: أسئلتها ونص واتساب بالشعار ونص البريد الرسمي', 'sys-cx-tpl')]],
     ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والرقم الضريبي والعنوان والتواصل والحساب البنكي', 'sys-org')]],
     ['ops', 'التشغيل', 'sliders-horizontal:teal', [c('timer:saffron', 'مدد الإنجاز', 'المدة المسموحة لكل نوع عمل', 'sys-sla'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'), c('megaphone-simple:sky', 'قوالب الإشعارات', 'عنوان الإشعار ونصه ورابطه', 'sys-ntpl'), c('clock-counter-clockwise:navy', 'سجل الإعدادات', 'ماذا تغيّر ومن غيّره ومتى', 'sys-log')]],
     ['tpl', 'القوالب والمستندات', 'seal-check:navy', (function () { try { return tmTplCards('p').concat(tmTplCards('s'), tmShared().filter(function (x) { return x.t !== 'سياسة التسعير والسداد'; })); } catch (err) { return [c('contract', 'قوالب العروض والعقود والفواتير', 'قوالب الشركاء والمتاجر والمستندات المشتركة', 'sys-qt')]; } })()],
@@ -17740,6 +17747,401 @@ function commRegister() {
   lp('comm-tpl', 'القوالب الجاهزة للمراسلة', 'sys', 'comm-tpl', commTplPage);
 }
 commRegister();
+/* ================= v318: «تجربة العملاء والجودة» — الاستبانات والتقييمات =================
+ * للمشرف: المؤشرات والتحليل السريع · مراجعة التقييمات ونشرها على الرئيسية · إرسال استبانة (محجوز) · سجل الدعوات
+ * وفي «إعدادات النظام» تحت بطاقة القسم: الإعدادات العامة والنشر · قوالب الاستبانات الخمسة (واتساب بالشعار + البريد بالقالب الرسمي)
+ * للعميل: «استبانة بانتظارك» في لوحته ← الإجابة بالنجوم من المنصة، مع موافقة النشر وإظهار الاسم الأول والأخير والمدينة.
+ * الإرسال الفعلي موقوف بقرار الإدارة: الدعوة تُحفظ «محجوزة» ولا يخرج بريد ولا واتساب لأحد. */
+const CX = { set: null, setAt: 0, stats: null, statsAt: 0, statsK: '', resp: null, respK: '', inv: null, invAt: 0, cl: null };
+const CX_TPL_IC = { service: 'star:gold', launch: 'rocket-launch:teal', nps: 'trend-up:navy', support: 'headset:sky', settle: 'handshake:teal' };
+const CX_ST = { new: ['جديدة', 'info'], approved: ['معتمدة', 'ok'], rejected: ['مرفوضة', 'danger'] };
+const CX_INV = { held: ['محجوزة — الإرسال موقوف', 'warn'], sent: ['أُرسلت', 'info'], answered: ['أُجيبت', 'ok'], expired: ['انتهت', null], cancelled: ['ملغاة', null] };
+const CX_REC = { promoter: ['مروّج', 'ok'], passive: ['محايد', 'info'], detractor: ['منتقد', 'danger'] };
+const CX_SCALE = { 5: 'ممتاز', 4: 'جيد جداً', 3: 'جيد', 2: 'مقبول', 1: 'يحتاج إلى تحسين' };
+const CX_CH = { whatsapp: ['واتساب', 'whatsapp-logo:teal'], email: ['البريد', 'envelope-simple:sky'] };
+const cxTpl = (k) => ((CX.set && CX.set.templates) || []).filter(function (t) { return t.key === k; })[0] || { key: k, name: k, questions: [] };
+const cxTeam = () => (CX.set && CX.set.settings && CX.set.settings.team_title) || 'إدارة تجربة العملاء والجودة';
+const cxNum = (v, d) => v === null || v === undefined || v === '' || isNaN(Number(v)) ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d === undefined ? 1 : d });
+function cxStars(v, big) { const n = Number(v) || 0; return e('span', { class: 'cx-stars' + (big ? ' is-big' : ''), role: 'img', 'aria-label': cxNum(n, 1) + ' من 5' }, [e('span', { class: 'cx-stars-b' }, '★★★★★'), e('span', { class: 'cx-stars-f', style: 'width:' + Math.max(0, Math.min(100, n / 5 * 100)) + '%' }, '★★★★★')]); }
+function cxErr(err) { const m = (err && err.message) || ''; return /forbidden/.test(m) ? 'لا تملك صلاحية هذا الإجراء.' : m || 'تعذّر الإجراء.'; }
+function cxLoad(what, p) {
+  if (what === 'set') return admRpc('admin_survey_settings', {}).then(function (j) { if (j && j.ok === false) throw new Error(j.error); CX.set = j; CX.setAt = Date.now(); });
+  if (what === 'stats') { const k = (ADM.cxDays || '0') + '|' + (ADM.cxTpl || ''); return admRpc('admin_survey_stats', { p: { days: Number(ADM.cxDays || 0), tpl: ADM.cxTpl || '' } }).then(function (j) { if (j && j.ok === false) throw new Error(j.error); CX.stats = j; CX.statsAt = Date.now(); CX.statsK = k; }); }
+  if (what === 'inv') return admRpc('admin_survey_invites', { p: p || { limit: 300 } }).then(function (j) { if (j && j.ok === false) throw new Error(j.error); CX.inv = j; CX.invAt = Date.now(); });
+  return Promise.resolve();
+}
+function cxReady(title, keys) {
+  if (!LIVE.on) return [liveEmptyNote(title)];
+  const need = keys.filter(function (k) { return !CX[k + 'At']; });
+  if (need.length) { need.forEach(function (k) { CX[k + 'At'] = -1; }); Promise.all(need.map(function (k) { return cxLoad(k); })).then(draw).catch(function (err) { CX.err = cxErr(err); need.forEach(function (k) { CX[k + 'At'] = 0; }); draw(); }); }
+  if (CX.err) { const m = CX.err; CX.err = ''; return [clFail(title, m, function () { draw(); })]; }
+  if (keys.some(function (k) { return CX[k + 'At'] < 0; })) return [clWait(title)];
+  return null;
+}
+/* ---------- القسم ---------- */
+function cxHubPage() {
+  if (LIVE.on && !CX.statsAt) cxReady('تجربة العملاء والجودة', ['set', 'stats']);
+  const K = (CX.stats && CX.stats.kpi) || {};
+  return secHub('cx', { t: 'تجربة العملاء والجودة', s: 'استبانات التقييم بعد كل خدمة وبعد التدشين، ومراجعة التقييمات ونشرها على الصفحة الرئيسية، ومؤشرات رضا العملاء — الإرسال الفعلي موقوف الآن بقرار الإدارة.', ic: 'star:gold' }, [
+    ['ins', 'المؤشرات', 'chart-bar:navy', [{ ic: 'chart-bar:navy', t: 'المؤشرات والتحليل السريع', d: 'رضا العملاء CSAT · صافي الترويج NPS · معدل الاستجابة · محاور الأسئلة · الاتجاه الشهري', n: CX.stats ? 'رضا ' + cxNum(K.csat) + '٪ · NPS ' + cxNum(K.nps) : 'المؤشرات', go: function () { go('other', 'cx-dash'); } }]],
+    ['rev', 'التقييمات', 'star:gold', [{ ic: 'star:gold', t: 'مراجعة التقييمات', d: 'كل تقييم باسم العميل كاملًا · اعتماد ورفض · النشر على الرئيسية بموافقته · متابعة التقييمات المنخفضة', n: CX.stats ? fmtNum(K.responses || 0) + ' تقييم' : 'التقييمات', badge: K.pending ? [fmtNum(K.pending) + ' بانتظار المراجعة', 'warn'] : null, go: function () { go('other', 'cx-review'); } }]],
+    ['snd', 'الاستبانات', 'paper-plane-tilt:sky', [{ ic: 'paper-plane-tilt:sky', t: 'إرسال استبانة', d: 'اختر القالب والعملاء والوسيلة: واتساب أو البريد أو كليهما — مع معاينة القالب', badge: ['الإرسال موقوف', 'warn'], go: function () { go('other', 'cx-send'); } },
+      { ic: 'clock-counter-clockwise:navy', t: 'سجل الدعوات', d: 'الدعوات الآلية واليدوية وحالتها — محجوزة · أُجيبت · انتهت', n: CX.stats ? fmtNum(K.invites || 0) + ' دعوة' : 'السجل', go: function () { go('other', 'cx-log'); } }]]]);
+}
+/* ---------- المؤشرات والتحليل السريع ---------- */
+function cxBar(label, val, max, tone, right) { const w = max > 0 && Number(val) > 0 ? Math.max(2, Math.round(Number(val || 0) / max * 100)) : 0; return e('div', { class: 'cx-bar' + (tone ? ' is-' + tone : '') }, [e('span', { class: 'cx-bar-l' }, label), e('span', { class: 'cx-bar-t' }, e('i', { style: 'width:' + w + '%' })), e('b', { class: 'cx-bar-v' }, right !== undefined ? right : cxNum(val))]); }
+function cxInsights(S) {
+  const K = S.kpi || {}, Q = (S.questions || []).filter(function (q) { return q.avg !== null && q.type === 'scale5'; }).sort(function (a, b) { return a.avg - b.avg; }), T = S.trend || [], L = [];
+  if (!K.responses) return [DS.note('info', 'لا تقييمات بعد', 'تظهر المؤشرات والتحليل هنا فور وصول أول تقييم.')];
+  L.push(['star', 'متوسط التقييم ' + cxNum(K.avg, 2) + ' من 5', 'من ' + fmtNum(K.responses) + ' تقييم — ورضا العملاء (4 فأعلى) ' + cxNum(K.csat) + '٪.']);
+  if (K.nps !== null && K.nps !== undefined) L.push(['trend-up', 'صافي الترويج ' + cxNum(K.nps), Number(K.nps) >= 50 ? 'ممتاز — المروّجون يتفوقون بفارق كبير.' : Number(K.nps) >= 0 ? 'إيجابي — ويمكن رفعه بمعالجة أسباب المنتقدين.' : 'سلبي — المنتقدون أكثر من المروّجين، ويحتاج خطة تحسين.']);
+  if (Q.length) L.push(['warning', 'أضعف محور: ' + Q[0].t, 'متوسطه ' + cxNum(Q[0].avg, 2) + ' — ' + (Q.length > 1 ? 'وأقوى محور: ' + Q[Q.length - 1].t + ' (' + cxNum(Q[Q.length - 1].avg, 2) + ').' : '')]);
+  if (T.length >= 2) { const a = T[T.length - 1], b = T[T.length - 2], dv = Number(a.csat || 0) - Number(b.csat || 0); L.push([dv >= 0 ? 'trend-up' : 'warning', 'رضا هذا الشهر ' + cxNum(a.csat) + '٪', (dv >= 0 ? 'ارتفع ' : 'انخفض ') + cxNum(Math.abs(dv)) + ' نقطة عن الشهر السابق (' + cxNum(b.csat) + '٪).']); }
+  if (K.low) L.push(['flag', fmtNum(K.low) + ' تقييم منخفض بانتظار المتابعة', 'أقل من ' + cxNum(S.follow_below, 1) + ' — تواصل مع أصحابها وسجّل المتابعة.']);
+  if (K.rate !== null && K.rate !== undefined) L.push(['paper-plane-tilt', 'معدل الاستجابة ' + cxNum(K.rate) + '٪', fmtNum(K.answered || 0) + ' إجابة من ' + fmtNum(K.invites || 0) + ' دعوة' + (K.avg_hours ? ' — ومتوسط وقت الإجابة ' + cxNum(K.avg_hours) + ' ساعة.' : '.')]);
+  return [e('ul', { class: 'cx-ins' }, L.map(function (x) { return e('li', {}, [e('span', { class: 'cx-ins-ic' }, frag(ui(x[0], 18))), e('span', {}, [e('b', {}, x[1]), e('small', {}, x[2])])]); }))];
+}
+function cxDashPage() {
+  const fk = (ADM.cxDays || '0') + '|' + (ADM.cxTpl || '');
+  if (CX.statsAt > 0 && CX.statsK !== fk) CX.statsAt = 0;
+  const w = cxReady('المؤشرات والتحليل السريع', ['set', 'stats']); if (w) return w;
+  const S = CX.stats || {}, K = S.kpi || {}, D = S.dist || [], maxD = Math.max.apply(null, D.map(function (x) { return x.n; }).concat([1]));
+  const P = Number(K.promoters || 0), N0 = Number(K.passives || 0), Dt = Number(K.detractors || 0), RT = Math.max(1, P + N0 + Dt);
+  const per = chipRow([['0', 'كل الفترات'], ['30', 'آخر 30 يومًا'], ['90', 'آخر 90 يومًا'], ['365', 'آخر سنة']], ADM.cxDays || '0', function (v) { ADM.cxDays = v; draw(); }, 'الفترة');
+  const tpl = DS.select({ value: ADM.cxTpl || 'all', options: [['all', 'كل القوالب']].concat(((CX.set && CX.set.templates) || []).map(function (t) { return [t.key, t.name]; })), onChange: function (v) { ADM.cxTpl = v === 'all' ? '' : v; draw(); } });
+  const Qs = (S.questions || []).filter(function (q) { return !ADM.cxTpl || q.tpl === ADM.cxTpl; });
+  return [cuBdInt(true), e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'المؤشرات والتحليل السريع'), e('small', {}, 'من إجابات العملاء مباشرة — ' + cxTeam())]), DS.button('تحديث', { ui: 'arrows-clockwise', onClick: function () { CX.statsAt = 0; draw(); } })]),
+    axKpis([['رضا العملاء CSAT', cxNum(K.csat) + '٪', Number(K.csat) >= 80 ? 'ok' : Number(K.csat) >= 60 ? '' : 'warn', 'star'], ['صافي الترويج NPS', cxNum(K.nps), Number(K.nps) >= 30 ? 'ok' : Number(K.nps) >= 0 ? '' : 'warn', 'trend-up'], ['متوسط التقييم', cxNum(K.avg, 2) + ' / 5', '', 'chart-bar'], ['معدل الاستجابة', cxNum(K.rate) + '٪', '', 'paper-plane-tilt']]),
+    axKpis([['التقييمات', fmtNum(K.responses || 0), '', 'files'], ['بانتظار المراجعة', fmtNum(K.pending || 0), K.pending ? 'warn' : '', 'clock'], ['تحتاج متابعة', fmtNum(K.low || 0), K.low ? 'warn' : '', 'flag'], ['منشورة على الرئيسية', fmtNum(K.published || 0), 'ok', 'megaphone-simple']]),
+    e('div', { class: 'm3-tools ax-tools' }, [per, e('div', { class: 'cx-sel' }, tpl)]),
+    e('div', { class: 'cx-grid' }, [
+      e('section', { class: 'cx-card is-wide' }, [e('header', {}, [frag(tile('sparkle:gold')), e('b', {}, 'تحليل سريع')]), e('div', {}, cxInsights(S))]),
+      e('section', { class: 'cx-card' }, [e('header', {}, [frag(tile('star:gold')), e('b', {}, 'توزيع التقييمات')]), e('div', { class: 'cx-bars' }, [5, 4, 3, 2, 1].map(function (b) { const x = D.filter(function (y) { return y.b === b; })[0] || { n: 0 }; return cxBar(b + ' ★ ' + CX_SCALE[b], x.n, maxD, b >= 4 ? 'ok' : b === 3 ? '' : 'warn', fmtNum(x.n)); }))]),
+      e('section', { class: 'cx-card' }, [e('header', {}, [frag(tile('users-three:teal')), e('b', {}, 'الولاء: المروّجون والمنتقدون')]), e('div', { class: 'cx-nps' }, [e('div', { class: 'cx-nps-bar' }, [e('i', { class: 'is-p', style: 'width:' + P / RT * 100 + '%' }), e('i', { class: 'is-n', style: 'width:' + N0 / RT * 100 + '%' }), e('i', { class: 'is-d', style: 'width:' + Dt / RT * 100 + '%' })]),
+        e('ul', {}, [['is-p', 'المروّجون', P], ['is-n', 'المحايدون', N0], ['is-d', 'المنتقدون', Dt]].map(function (x) { return e('li', {}, [e('i', { class: x[0] }), e('span', {}, x[1]), e('b', {}, fmtNum(x[2]) + ' · ' + cxNum(x[2] / RT * 100) + '٪')]); })), e('small', { class: 'cu-dr-hint' }, 'صافي الترويج = نسبة المروّجين − نسبة المنتقدين. في أسئلة 1–5: 5 مروّج، 4 محايد، 3 فأقل منتقد؛ وفي 0–10: 9–10 مروّج، 7–8 محايد.')])]),
+      e('section', { class: 'cx-card is-wide' }, [e('header', {}, [frag(tile('list-checks:navy')), e('b', {}, 'محاور الأسئلة'), e('small', {}, 'متوسط كل سؤال — الأضعف أولًا')]), Qs.length ? e('div', { class: 'cx-bars' }, Qs.slice().sort(function (a, b) { return (a.type === 'yesno' ? Number(a.yes) / 20 : Number(a.avg)) - (b.type === 'yesno' ? Number(b.yes) / 20 : Number(b.avg)); }).map(function (q) {
+        return q.type === 'yesno' ? cxBar(q.t, q.yes, 100, Number(q.yes) >= 80 ? 'ok' : 'warn', cxNum(q.yes) + '٪ نعم') : cxBar(q.t, q.avg, q.type === 'nps10' ? 10 : 5, Number(q.avg) >= (q.type === 'nps10' ? 8 : 4) ? 'ok' : Number(q.avg) >= (q.type === 'nps10' ? 6 : 3) ? '' : 'warn', cxNum(q.avg, 2) + (q.type === 'nps10' ? ' / 10' : ' / 5')); })) : DS.note('info', 'لا إجابات بعد', '')]),
+      e('section', { class: 'cx-card' }, [e('header', {}, [frag(tile('calendar-blank:sky')), e('b', {}, 'الاتجاه الشهري')]), (S.trend || []).length ? e('div', { class: 'cx-trend' }, (S.trend || []).map(function (t) { return e('div', { class: 'cx-tr', title: t.m + ' · ' + fmtNum(t.n) + ' تقييم' }, [e('span', { class: 'cx-tr-c' }, e('i', { style: 'height:' + Math.max(4, Number(t.csat || 0)) + '%' })), e('b', {}, cxNum(t.csat, 0) + '٪'), e('small', { dir: 'ltr' }, t.m.slice(2))]); })) : DS.note('info', 'لا بيانات بعد', ''), e('small', { class: 'cu-dr-hint' }, 'ارتفاع العمود = رضا العملاء في الشهر.')]),
+      e('section', { class: 'cx-card' }, [e('header', {}, [frag(tile('file-text:gold')), e('b', {}, 'حسب القالب')]), e('div', { class: 'cx-bars' }, (S.by_tpl || []).map(function (x) { return cxBar(cxTpl(x.tpl).name, x.n, Math.max.apply(null, (S.by_tpl || []).map(function (y) { return y.n; })), '', fmtNum(x.n) + ' · ' + cxNum(x.avg, 2) + '★'); }))]),
+      e('section', { class: 'cx-card is-wide' }, [e('header', {}, [frag(tile('flag:saffron')), e('b', {}, 'تحتاج متابعة'), e('small', {}, 'أحدث التقييمات المنخفضة')]), (S.recent_low || []).length ? axList((S.recent_low || []).map(function (r) { return axRow({ ic: 'warning', t: r.name || '—', sub: cxTpl(r.tpl).name + ' — ★ ' + cxNum(r.avg, 2) + (r.comment ? ' — ' + r.comment : ''), tone: 'warn', go: function () { cxOpenById(r.id); } }); }), '') : DS.note('ok', 'لا تقييمات منخفضة بانتظار المتابعة', '')])])];
+}
+/* ---------- مراجعة التقييمات ---------- */
+function cxRespLoad(more) {
+  const p = { f: ADM.cxF || 'all', tpl: ADM.cxRT || '', q: ADM.cxQ || '', limit: 50, offset: more && CX.resp ? CX.resp.rows.length : 0 }, k = JSON.stringify([p.f, p.tpl, p.q]);
+  CX.respBusy = true;
+  return admRpc('admin_survey_responses', { p: p }).then(function (j) { if (j && j.ok === false) throw new Error(j.error); CX.respK = k; CX.resp = more && CX.resp ? Object.assign({}, j, { rows: CX.resp.rows.concat(j.rows || []) }) : j; CX.respBusy = false; draw(); })
+    .catch(function (err) { CX.respBusy = false; CX.respErr = cxErr(err); draw(); });
+}
+function cxReviewPage() {
+  const w = cxReady('مراجعة التقييمات', ['set', 'stats']); if (w) return w;
+  const k = JSON.stringify([ADM.cxF || 'all', ADM.cxRT || '', ADM.cxQ || '']);
+  if (CX.respK !== k && !CX.respBusy) { if (CX.respErr) { const m = CX.respErr; CX.respErr = ''; return [clFail('مراجعة التقييمات', m, function () { draw(); })]; } cxRespLoad(false); }
+  const R = CX.resp && CX.respK === k ? CX.resp : null, K = (CX.stats && CX.stats.kpi) || {};
+  const ch = chipRow([['all', 'الكل', 'list:navy'], ['new', 'جديدة', 'clock:sky'], ['consent', 'يوافق على النشر', 'megaphone-simple:teal'], ['published', 'منشورة', 'seal-check:teal'], ['low', 'تحتاج متابعة', 'flag:saffron'], ['comment', 'بتعليق', 'chat-circle-dots:sky'], ['promoter', 'المروّجون', 'trend-up:teal'], ['detractor', 'المنتقدون', 'warning:gold'], ['rejected', 'المرفوضة', 'x-circle:navy']],
+    ADM.cxF || 'all', function (v) { ADM.cxF = v; draw(); }, 'اختيار سريع');
+  const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث باسم العميل أو رقم تيرا أو نص التعليق', value: ADM.cxQ || '', 'aria-label': 'بحث في التقييمات', onKeydown: function (ev) { if (ev.key === 'Enter') { ADM.cxQ = ev.target.value; draw(); } } });
+  const tsel = DS.select({ value: ADM.cxRT || 'all', options: [['all', 'كل القوالب']].concat(((CX.set && CX.set.templates) || []).map(function (t) { return [t.key, t.name]; })), onChange: function (v) { ADM.cxRT = v === 'all' ? '' : v; draw(); } });
+  return axPage({ title: 'مراجعة التقييمات', hint: 'اسم العميل كاملًا كما في ملفه — والنشر على الرئيسية بموافقته فقط', can: false, perm: null,
+    K: [['التقييمات', fmtNum(K.responses || 0), '', 'files'], ['بانتظار المراجعة', fmtNum(K.pending || 0), K.pending ? 'warn' : '', 'clock'], ['منشورة', fmtNum(K.published || 0), 'ok', 'megaphone-simple'], ['متوسط التقييم', cxNum(K.avg, 2) + ' / 5', '', 'star']],
+    chips: ch, filter: e('div', { class: 'm3-q cx-filter' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { ADM.cxQ = qi.value; draw(); } }), ADM.cxQ ? DS.button('مسح', { size: 'sm', onClick: function () { ADM.cxQ = ''; draw(); } }) : null, e('div', { class: 'cx-sel' }, tsel)]),
+    list: R ? [axList(R.rows.map(function (r) { const P = r.person || {};
+      return e('article', { class: 'nr cu-row cu-bd-r ax-r cx-row' + (r.avg !== null && Number(r.avg) < Number(R.follow_below) && !r.followed_up ? ' is-warn' : '') }, [e('button', { type: 'button', class: 'nr-main', onClick: function () { cxOpen(r); } }, [
+        e('span', { class: 'cx-av' }, String(P.display || '؟').trim().charAt(0)), e('span', { class: 'ax-r-b' }, [e('b', {}, P.display || '—'), e('span', { class: 'cx-row-m' }, [cxStars(r.avg), e('small', {}, cxNum(r.avg, 2)), e('small', {}, '· ' + cxTpl(r.tpl).name + ' · ' + iso(new Date(r.at))), r.comment ? e('small', { class: 'cx-row-c' }, '«' + String(r.comment).slice(0, 90) + '»') : null]),
+          e('span', { class: 'cx-row-b' }, [DS.badge(CX_ST[r.status][0], CX_ST[r.status][1]), r.published ? DS.badge('منشور', 'ok') : r.consent_publish ? DS.badge('يوافق على النشر', 'info') : null, r.featured ? DS.badge('مميّز', 'warn') : null, r.rec ? DS.badge(CX_REC[r.rec][0], CX_REC[r.rec][1]) : null])]),
+        e('span', { class: 'cu-bd-go' }, ['عرض', frag(ui('caret-left', 14))])])]); }), 'لا تقييمات بهذه التصفية'),
+      e('div', { class: 'cx-more' }, [e('small', { class: 'cu-dr-hint' }, 'المعروض ' + fmtNum(R.rows.length) + ' من ' + fmtNum(R.total)), R.rows.length < R.total ? DS.button(CX.respBusy ? 'جارٍ التحميل…' : 'عرض المزيد', { size: 'sm', disabled: !!CX.respBusy, onClick: function () { cxRespLoad(true); } }) : null])] : clWait('التقييمات') });
+}
+function cxOpenById(id) { admRpc('admin_survey_responses', { p: { f: 'all', limit: 200 } }).then(function (j) { const r = ((j && j.rows) || []).filter(function (x) { return x.id === id; })[0]; if (r) cxOpen(r); else snack('افتح «مراجعة التقييمات» للوصول إلى هذا التقييم.'); }).catch(function () { snack('تعذّر فتح التقييم.'); }); }
+function cxOpen(r) {
+  const D = { note: '', busy: false, err: '' }, P = r.person || {}, T = cxTpl(r.tpl), can = !!(CX.resp && CX.resp.can);
+  const act = async function (a, needNote) {
+    if (needNote && String(D.note || '').trim().length < 4) { D.err = 'اكتب السبب أو ملاحظة المتابعة (4 أحرف على الأقل).'; draw2(); return; }
+    D.busy = true; D.err = ''; draw2();
+    try { const j = await admRpc('admin_survey_review', { p_id: r.id, p_action: a, p_note: D.note || null }); if (j && j.ok === false) throw new Error(j.error === 'no_consent' ? 'العميل لم يوافق على النشر.' : j.error === 'reason_required' ? 'اكتب السبب.' : j.error === 'not_published' ? 'التمييز للمنشور فقط.' : j.error);
+      CX.statsAt = 0; CX.respK = ''; admClose(); snack({ approve: 'اعتُمد التقييم.', reject: 'رُفض التقييم — لن يُنشر.', publish: 'نُشر التقييم على الصفحة الرئيسية.', unpublish: 'أُلغي نشر التقييم.', feature: 'حُدّث التمييز.', follow: 'سُجّلت المتابعة.' }[a]); draw(); }
+    catch (err) { D.busy = false; D.err = cxErr(err); draw2(); }
+  };
+  const ans = (T.questions || []).map(function (q) { const v = (r.answers || {})[q.k];
+    return [q.t, v === undefined || v === '' ? '—' : q.type === 'scale5' ? e('span', { class: 'cx-ans' }, [cxStars(Number(v)), e('small', {}, v + ' · ' + CX_SCALE[Number(v)])]) : q.type === 'nps10' ? e('b', {}, v + ' / 10') : q.type === 'yesno' ? DS.badge(v === 'yes' ? 'نعم' : 'لا', v === 'yes' ? 'ok' : 'warn') : e('span', { class: 'cx-txt' }, v)]; });
+  const pubPrev = e('figure', { class: 'cx-quote is-prev' }, [cxStars(r.avg), e('blockquote', {}, r.comment || '—'), e('figcaption', {}, [e('b', {}, r.consent_name ? (P.first_last || '—') : 'عميل منصة تيرا'), r.consent_name && r.city ? e('small', {}, r.city) : null])]);
+  const draw2 = function () {
+    cuBdDraw({ key: 'cx:' + r.id, ic: CX_TPL_IC[r.tpl] || 'star:gold', title: 'تقييم · ' + (P.display || '—'), sub: T.name + ' · ' + iso(new Date(r.at)) + ' ' + hm(new Date(r.at)), onClose: function () { draw(); }, body: [
+      e('div', { class: 'cx-hero' }, [cxStars(r.avg, true), e('b', {}, cxNum(r.avg, 2) + ' من 5'), r.rec ? DS.badge(CX_REC[r.rec][0], CX_REC[r.rec][1]) : null, r.nps !== null && r.nps !== undefined ? DS.badge('NPS ' + r.nps + ' / 10', 'info') : null]),
+      cuSec('العميل', 'identification-card', [DS.fields([['الاسم الكامل (عربي)', P.ar || '—'], ['الاسم الكامل (إنجليزي)', P.en ? ltr(P.en) : '—'], ['رقم تيرا', r.tera_id ? ltr(r.tera_id) : '—'], ['المدينة', r.city || P.city || '—'], ['الدعوة', r.inv_no ? e('span', {}, [ltr(r.inv_no), r.ref_label ? ' · ' + r.ref_label : '']) : '—']])]),
+      cuSec('الإجابات', 'list-checks', [DS.fields(ans)]),
+      cuSec('الملاحظات والاقتراحات', 'chat-circle-dots', [r.comment ? e('p', { class: 'cx-cmt' }, r.comment) : e('small', { class: 'cu-dr-hint' }, 'لم يكتب العميل ملاحظات.')]),
+      cuSec('الموافقات والنشر', 'megaphone-simple', [DS.fields([['الموافقة على نشر التقييم', DS.badge(r.consent_publish ? 'يوافق' : 'لا يوافق', r.consent_publish ? 'ok' : null)], ['إظهار الاسم الأول والأخير والمدينة', DS.badge(r.consent_name ? 'يوافق' : 'لا يوافق — يظهر «عميل منصة تيرا»', r.consent_name ? 'ok' : null)],
+        ['حالة المراجعة', DS.badge(CX_ST[r.status][0], CX_ST[r.status][1])], ['على الصفحة الرئيسية', DS.badge(r.published ? (r.featured ? 'منشور ومميّز' : 'منشور') : 'غير منشور', r.published ? 'ok' : null)], ['المتابعة', r.followed_up ? DS.badge('تمت المتابعة', 'ok') : '—'], ['ملاحظة المراجعة', r.note || '—'], ['راجعه', r.reviewed_by ? r.reviewed_by + ' · ' + iso(new Date(r.reviewed_at)) : '—']]),
+        r.consent_publish ? e('div', {}, [e('small', { class: 'cu-dr-hint' }, 'كيف يظهر على الصفحة الرئيسية:'), pubPrev]) : DS.note('info', 'لا يُنشر', 'لم يوافق العميل على نشر تقييمه — يبقى للتحليل الداخلي فقط.')]),
+      can ? cuSec('ملاحظة / سبب', 'note-pencil', [e('textarea', { class: 't2-input cu-why', rows: '2', placeholder: 'سبب الرفض أو ما تم في المتابعة مع العميل', onInput: function (ev) { D.note = ev.target.value; D.err = ''; } }, D.note)]) : null,
+      D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
+      foot: can ? [e('div', { class: 'cu-dr-fa is-wrap' }, [
+        r.consent_publish && !r.published && r.status !== 'rejected' ? liveOk(DS.button('نشر على الرئيسية', { tone: 'primary', ui: 'megaphone-simple', disabled: D.busy, onClick: function () { act('publish'); } })) : null,
+        r.published ? liveOk(DS.button(r.featured ? 'إلغاء التمييز' : 'تمييز في المقدمة', { ui: 'star', disabled: D.busy, onClick: function () { act('feature'); } })) : null,
+        r.published ? liveOk(DS.button('إلغاء النشر', { ui: 'eye-slash', disabled: D.busy, onClick: function () { act('unpublish'); } })) : null,
+        r.status === 'new' ? liveOk(DS.button('اعتماد', { ui: 'check', disabled: D.busy, onClick: function () { act('approve'); } })) : null,
+        r.status !== 'rejected' ? liveOk(DS.button('رفض بسبب', { tone: 'danger', ui: 'x-circle', disabled: D.busy, onClick: function () { act('reject', true); } })) : null,
+        !r.followed_up ? liveOk(DS.button('تسجيل المتابعة', { ui: 'flag', disabled: D.busy, onClick: function () { act('follow', true); } })) : null])] : [] });
+  };
+  draw2();
+}
+/* ---------- قوالب الرسائل: واتساب بالشعار والبريد بالقالب الرسمي ---------- */
+function cxFill(t, nm) { return String(t || '').replace(/\{name\}/g, nm || 'اسم العميل').replace(/\{first\}/g, String(nm || 'العميل').split(' ')[0]).replace(/\{service\}/g, 'خدمتك').replace(/\{link\}/g, 'tera-services.com.sa/clients/?survey=SRV-…').replace(/\{team\}/g, cxTeam() + ' · منصة تيرا'); }
+function cxWaPreview(text, nm) {
+  return e('div', { class: 'cx-wa' }, [e('div', { class: 'cx-wa-top' }, [e('span', { class: 'cx-wa-av' }, e('img', { src: IMG.logo, alt: '' })), e('span', {}, [e('b', {}, 'منصة تيرا'), e('small', {}, 'حساب أعمال رسمي ✓')])]),
+    e('div', { class: 'cx-wa-chat' }, [e('article', { class: 'cx-wa-msg' }, [
+      e('header', { class: 'cx-wa-hd' }, [e('img', { src: (typeof TM_IMG !== 'undefined' && TM_IMG.logoWhite) || IMG.logo, alt: 'تيرا' }), e('span', {}, [e('b', {}, cxTeam()), e('small', {}, (CX.set && CX.set.settings && CX.set.settings.team_title_en) || 'Customer Experience & Quality')])]),
+      e('p', { class: 'cx-wa-tx' }, cxFill(text, nm)), e('footer', {}, [e('span', {}, 'منصة تيرا · عالمك بلا حدود'), e('small', { dir: 'ltr' }, hm(new Date()))]),
+      e('div', { class: 'cx-wa-cta' }, [e('span', {}, [frag(ui('star', 14)), 'قيّم الآن']), e('span', {}, [frag(ui('chat-circle-dots', 14)), 'تواصل معنا'])])])])]);
+}
+function cxMailPreview(W, nm) {
+  const sub = cxFill(W.subject, nm), body = cxFill(W.body, nm) + '\n\n⭐ قيّم الآن: ' + cxFill('{link}') + '\n\n' + cxTeam() + ' · منصة تيرا', sig = sub + '|' + body;
+  const box = e('div', { class: 'comm-mail' });
+  if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: '' }); f.srcdoc = W.html; box.appendChild(DS.fields([['إلى', nm], ['الموضوع', sub], ['من', cxTeam()]])); box.appendChild(f); return box; }
+  box.appendChild(e('small', { class: 'cu-dr-hint' }, W.hErr && W.hAt === sig ? W.hErr : 'جارٍ تجهيز المعاينة بالقالب الرسمي للبريد…'));
+  if (!W.hBusy && W.hAt !== sig) { W.hBusy = true; clPost('/admin/api/comm/preview', { subject: sub, body: body, name: nm }).then(function (j) { W.hBusy = false; W.hAt = sig; if (j && j.ok) { W.html = j.html; W.hErr = ''; } else W.hErr = (j && j.message) || 'تعذّرت المعاينة.'; if (W.rerun) W.rerun(); }).catch(function () { W.hBusy = false; W.hAt = sig; W.hErr = 'تعذّرت المعاينة.'; if (W.rerun) W.rerun(); }); }
+  return box;
+}
+/* ---------- إرسال استبانة (محجوز) ---------- */
+function cxSendPage() {
+  const w = cxReady('إرسال استبانة', ['set']); if (w) return w;
+  const W = ADM.cxS || (ADM.cxS = { tpl: 'service', ch: ['whatsapp'], aud: 'pick', ids: [], q: '', pv: 'whatsapp', busy: false, err: '', mail: {} });
+  if (!CX.cl && !CX.clBusy) { CX.clBusy = true; admClients('').then(function (j) { CX.cl = ((j && j.reg) || []).filter(function (r) { return r.id; }); CX.clBusy = false; draw(); }).catch(function () { CX.cl = []; CX.clBusy = false; draw(); }); }
+  const T = cxTpl(W.tpl), TS = ((CX.set && CX.set.templates) || []).filter(function (t) { return t.active; });
+  const L = (CX.cl || []).filter(function (c) { const q = String(W.q || '').trim().toLowerCase(); return !q || [c.name, c.tera_id, c.phone, c.email].join(' ').toLowerCase().indexOf(q) >= 0; });
+  const nm = W.ids.length === 1 ? ((CX.cl || []).filter(function (c) { return c.id === W.ids[0]; })[0] || {}).name : 'اسم العميل';
+  W.mail.rerun = draw;
+  return [cuBdInt(true), DS.note('warn', 'الإرسال الفعلي موقوف بقرار الإدارة', 'تُنشأ الدعوة وتُحفظ «محجوزة» في سجل الدعوات، ويرى العميل الاستبانة في حسابه ويجيب عنها — ولا يخرج بريد ولا واتساب لأحد.'),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'إرسال استبانة'), e('small', {}, 'القالب ← العملاء ← الوسيلة ← المعاينة')])]),
+    e('section', { class: 'cx-step' }, [e('h3', {}, [e('i', {}, '1'), 'اختر القالب']), e('div', { class: 'cx-tpls' }, TS.map(function (t) { return e('button', { type: 'button', class: 'cx-tpl' + (W.tpl === t.key ? ' is-on' : ''), onClick: function () { W.tpl = t.key; W.ch = (t.channels || ['whatsapp']).slice(); draw(); } }, [frag(tile(CX_TPL_IC[t.key] || 'star:gold')), e('span', {}, [e('b', {}, t.name), e('small', {}, t.purpose || ''), e('small', { class: 'cx-tpl-q' }, fmtNum((t.questions || []).length) + ' أسئلة · ' + (t.auto ? 'آلي: ' + (t.trigger_note || '') : 'يدوي'))])]); }))]),
+    e('section', { class: 'cx-step' }, [e('h3', {}, [e('i', {}, '2'), 'العملاء']), chipRow([['pick', 'عملاء محددون', 'users-three:teal'], ['active', 'كل العملاء النشطين', 'list:navy']], W.aud, function (v) { W.aud = v; draw(); }, 'المستلمون'),
+      W.aud === 'pick' ? e('div', { class: 'cx-pick' }, [e('div', { class: 'ci-pk-q' }, [frag(ui('magnifying-glass', 18)), e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث بالاسم أو رقم تيرا أو الجوال', value: W.q, onKeydown: function (ev) { if (ev.key === 'Enter') { W.q = ev.target.value; draw(); } }, onChange: function (ev) { W.q = ev.target.value; draw(); } })]),
+        e('small', { class: 'ci-pk-n' }, 'المحدد ' + fmtNum(W.ids.length)), CX.cl ? e('div', { class: 'ci-pk-l' }, L.slice(0, 200).map(function (c) { const cb = e('input', { type: 'checkbox', onChange: function (ev) { if (ev.target.checked) { if (W.ids.indexOf(c.id) < 0) W.ids.push(c.id); } else W.ids = W.ids.filter(function (x) { return x !== c.id; }); draw(); } }); cb.checked = W.ids.indexOf(c.id) >= 0;
+          return e('label', { class: 'ci-pk-r' }, [cb, e('span', { class: 'ci-pk-av' }, String(c.name || '؟').charAt(0)), e('span', { class: 'ci-pk-t' }, [e('b', {}, c.name || '—'), e('small', {}, [c.tera_id ? ltr(c.tera_id) : '', c.phone ? ' · ' : '', c.phone ? ltr(c.phone) : ''])])]); })) : clWait('العملاء')])
+        : DS.note('info', 'كل العملاء النشطين', 'تُنشأ دعوة لكل عميل نشط ليس لديه دعوة مفتوحة من القالب نفسه — مناسب لمؤشر الولاء الدوري.')]),
+    e('section', { class: 'cx-step' }, [e('h3', {}, [e('i', {}, '3'), 'الوسيلة']), chipRow([['whatsapp', 'واتساب', 'whatsapp-logo:teal'], ['email', 'البريد', 'envelope-simple:sky'], ['both', 'كلاهما', 'paper-plane-tilt:navy']], W.ch.length > 1 ? 'both' : W.ch[0], function (v) { W.ch = v === 'both' ? ['whatsapp', 'email'] : [v]; W.pv = W.ch[0]; draw(); }, 'الوسيلة')]),
+    e('section', { class: 'cx-step' }, [e('h3', {}, [e('i', {}, '4'), 'المعاينة']), W.ch.length > 1 ? chipRow([['whatsapp', 'واتساب', 'whatsapp-logo:teal'], ['email', 'البريد', 'envelope-simple:sky']], W.pv, function (v) { W.pv = v; draw(); }, 'المعاينة') : null,
+      (W.ch.length > 1 ? W.pv : W.ch[0]) === 'email' ? cxMailPreview(Object.assign(W.mail, { subject: T.email_subject, body: T.email_body }), nm) : cxWaPreview(T.wa_body, nm)]),
+    W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
+    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ الدعوات (الإرسال موقوف)', { tone: 'primary', ui: 'paper-plane-tilt', disabled: W.busy || (W.aud === 'pick' && !W.ids.length), onClick: async function () {
+      W.busy = true; W.err = ''; draw();
+      try { const j = await admRpc('admin_survey_send', { p: { template: W.tpl, channels: W.ch, audience: W.aud, users: W.ids } }); if (j && j.ok === false) throw new Error(j.error === 'audience_required' ? 'اختر عميلًا واحدًا على الأقل.' : j.error === 'forbidden' ? 'لا تملك صلاحية الإرسال.' : j.error);
+        W.busy = false; W.ids = []; CX.invAt = 0; CX.statsAt = 0; snack('حُفظت ' + fmtNum(j.created || 0) + ' دعوة محجوزة' + (j.skipped ? ' وتُخطّي ' + fmtNum(j.skipped) + ' (لديه دعوة مفتوحة)' : '') + '.'); go('other', 'cx-log'); }
+      catch (err) { W.busy = false; W.err = cxErr(err); draw(); } } }))])];
+}
+/* ---------- سجل الدعوات ---------- */
+function cxLogPage() {
+  const w = cxReady('سجل الدعوات', ['set', 'inv']); if (w) return w;
+  const L = (CX.inv && CX.inv.rows) || [], C = (CX.inv && CX.inv.counts) || {}, f = ADM.cxLF || 'all';
+  const R = L.filter(function (x) { return f === 'all' || (f === 'auto' ? x.auto : x.status === f); });
+  return axPage({ title: 'سجل الدعوات', hint: 'كل دعوة تقييم — آلية بعد الحدث أو يدوية — وحالتها', reg: 'إرسال استبانة', can: true, onReg: function () { go('other', 'cx-send'); },
+    alerts: DS.note('warn', 'الإرسال الفعلي موقوف بقرار الإدارة', 'الدعوات محفوظة «محجوزة» ولم يخرج بريد ولا واتساب لأحد — ويرى العميل الاستبانة في حسابه.'),
+    K: [['الدعوات', fmtNum(C.all || 0), '', 'paper-plane-tilt'], ['محجوزة', fmtNum(C.held || 0), 'warn', 'clock'], ['أُجيبت', fmtNum(C.answered || 0), 'ok', 'check-circle'], ['آلية', fmtNum(C.auto || 0), '', 'arrows-clockwise']],
+    chips: chipRow([['all', 'الكل', 'list:navy'], ['held', 'محجوزة', 'clock:saffron'], ['answered', 'أُجيبت', 'check-circle:teal'], ['expired', 'انتهت', 'x-circle:navy'], ['auto', 'آلية', 'arrows-clockwise:sky']], f, function (v) { ADM.cxLF = v; draw(); }, 'اختيار سريع'),
+    list: axList(R.map(function (x) { const st = CX_INV[x.status] || [x.status, null]; return axRow({ ic: (CX_TPL_IC[x.tpl] || 'star').split(':')[0], t: x.name || '—', sub: cxTpl(x.tpl).name + ' — ' + x.no + ' — ' + x.channels.map(function (c) { return CX_CH[c][0]; }).join(' + ') + ' — ' + st[0] + (x.auto ? ' — آلية' : ''), tone: x.status === 'answered' ? '' : x.status === 'held' ? 'warn' : '', go: function () { cxInvOpen(x); } }); }), 'لا دعوات بعد') });
+}
+function cxInvOpen(x) {
+  const W = { pv: x.channels[0], mail: {} }, st = CX_INV[x.status] || [x.status, null];
+  const draw2 = function () {
+    W.mail.rerun = draw2;
+    cuBdDraw({ key: 'cxi:' + x.id, ic: CX_TPL_IC[x.tpl] || 'star:gold', title: 'دعوة ' + x.no, sub: (x.name || '') + ' · ' + cxTpl(x.tpl).name, onClose: function () { draw(); }, body: [
+      cuSec('الدعوة', 'paper-plane-tilt', [DS.fields([['العميل', x.name || '—'], ['القالب', cxTpl(x.tpl).name], ['السبب', x.label || (x.auto ? 'آلي' : 'يدوي')], ['الوسيلة', x.channels.map(function (c) { return CX_CH[c][0]; }).join(' + ')], ['الحالة', DS.badge(st[0], st[1])],
+        ['أُنشئت', iso(new Date(x.at)) + ' ' + hm(new Date(x.at))], ['تظهر للعميل من', iso(new Date(x.send_after))], ['صالحة حتى', iso(new Date(x.expires))], ['أُجيبت', x.answered_at ? iso(new Date(x.answered_at)) : '—'], ['أنشأها', x.by || 'آليًا']])]),
+      cuSec('نص الرسالة كما يصل العميل', 'chat-circle-dots', [x.channels.length > 1 ? chipRow(x.channels.map(function (c) { return [c, CX_CH[c][0], CX_CH[c][1]]; }), W.pv, function (v) { W.pv = v; draw2(); }, 'المعاينة') : null,
+        W.pv === 'email' ? cxMailPreview(Object.assign(W.mail, { subject: x.subject, body: x.email }), x.name) : cxWaPreview(x.wa, x.name)])], foot: [] });
+  };
+  draw2();
+}
+/* ---------- إعدادات النظام: الإعدادات العامة والنشر ---------- */
+function cxSetPage() {
+  const w = cxReady('إعدادات تجربة العملاء والجودة', ['set']); if (w) return w;
+  const s = (CX.set && CX.set.settings) || {}, can = !!(CX.set && CX.set.can), D = ADM.cxSet || (ADM.cxSet = Object.assign({}, s)), err = ADM.cxSetErr || '';
+  const num = function (k, ph) { return commIn({ value: D[k] === undefined || D[k] === null ? '' : String(D[k]), placeholder: ph || '', onInput: function (v) { D[k] = v; } }); };
+  return [cuBdInt(true), e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'إعدادات تجربة العملاء والجودة'), e('small', {}, 'مسمّى الفريق في الرسائل · النشر على الصفحة الرئيسية · مدد الدعوات والمتابعة')])]),
+    cuSec('مسمّى الفريق في رسائل التقييم', 'identification-badge', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [commFld('بالعربي', commIn({ value: D.team_title || '', onInput: function (v) { D.team_title = v; } })), commFld('بالإنجليزي', commIn({ value: D.team_title_en || '', onInput: function (v) { D.team_title_en = v; } }))]), e('small', { class: 'cu-dr-hint' }, 'يظهر في ترويسة قالب واتساب وتوقيع البريد.')]),
+    cuSec('النشر على الصفحة الرئيسية', 'megaphone-simple', [commSw('تفعيل قسم «آراء عملائنا» في الصفحة الرئيسية', !!D.home_on, function (on) { D.home_on = on; }), e('div', { class: 'sys-form is-2 cu-bd-form' }, [commFld('أقل متوسط يُنشر (1–5)', num('home_min_avg', '4')), commFld('أقصى عدد يظهر (1–60)', num('home_max', '12'))]),
+      commSw('لا يُنشر إلا بعد مراجعة واعتماد', D.require_review !== false, function (on) { D.require_review = on; }), e('small', { class: 'cu-dr-hint' }, 'لا يُنشر أي تقييم إلا بموافقة صاحبه، ويظهر الاسم الأول والأخير والمدينة فقط إن وافق على ذلك — وإلا يظهر «عميل منصة تيرا».')]),
+    cuSec('الدعوات والمتابعة', 'clock', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [commFld('صلاحية الدعوة (أيام)', num('expiry_days', '14')), commFld('استبانة المنصة بعد التدشين بـ (أيام)', num('launch_delay_days', '3')), commFld('مؤشر الولاء الدوري كل (أيام)', num('nps_every_days', '90')), commFld('التقييم المنخفض أقل من (1–5)', num('follow_below', '3'))])]),
+    s.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر تحديث ' + iso(new Date(s.updated_at)) + (s.updated_by ? ' · ' + s.updated_by : '')) : null,
+    err ? e('span', { class: 'cu-err', role: 'alert' }, err) : null,
+    can ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('حفظ الإعدادات', { tone: 'primary', ui: 'check', onClick: async function () {
+      try { const j = await admRpc('admin_survey_settings_save', { p: { team_title: D.team_title, team_title_en: D.team_title_en, home_on: !!D.home_on, home_min_avg: Number(D.home_min_avg), home_max: Number(D.home_max), require_review: D.require_review !== false, expiry_days: Number(D.expiry_days), launch_delay_days: Number(D.launch_delay_days), nps_every_days: Number(D.nps_every_days), follow_below: Number(D.follow_below) } });
+        if (j && j.ok === false) throw new Error(j.error === 'bad_value' ? 'قيمة خارج الحدود المسموحة.' : j.error === 'bad_title' ? 'المسمّى قصير.' : j.error); ADM.cxSetErr = ''; ADM.cxSet = null; CX.setAt = 0; snack('حُفظت الإعدادات.'); draw(); }
+      catch (e2) { ADM.cxSetErr = cxErr(e2); draw(); } } }))]) : DS.note('info', 'للاطلاع', 'لا تملك صلاحية تعديل هذه الإعدادات.')];
+}
+/* ---------- إعدادات النظام: قوالب الاستبانات ---------- */
+function cxTplPage() {
+  const w = cxReady('قوالب الاستبانات', ['set']); if (w) return w;
+  const L = (CX.set && CX.set.templates) || [];
+  return axPage({ title: 'قوالب الاستبانات', hint: 'خمسة قوالب — لكل قالب أسئلته ونص واتساب بالشعار ونص البريد بالقالب الرسمي', can: false, perm: null,
+    K: [['القوالب', fmtNum(L.length), '', 'file-text'], ['مفعّلة', fmtNum(L.filter(function (t) { return t.active; }).length), 'ok', 'check-circle'], ['آلية', fmtNum(L.filter(function (t) { return t.auto; }).length), '', 'arrows-clockwise'], ['الأسئلة', fmtNum(L.reduce(function (a, t) { return a + (t.questions || []).length; }, 0)), '', 'list-checks']],
+    list: axList(L.map(function (t) { return axRow({ ic: (CX_TPL_IC[t.key] || 'star').split(':')[0], t: t.name, sub: fmtNum((t.questions || []).length) + ' أسئلة — ' + t.channels.map(function (c) { return CX_CH[c][0]; }).join(' + ') + ' — ' + (t.auto ? 'آلي: ' + (t.trigger_note || '') : 'يدوي') + (t.active ? '' : ' — موقوف'), tone: t.active ? '' : 'warn', go: function () { cxTplOpen(t); } }); }), 'لا قوالب') });
+}
+function cxTplOpen(t) {
+  const D = { name: t.name, ch: t.channels.slice(), active: !!t.active, auto: !!t.auto, wa: t.wa_body, sub: t.email_subject, mail: t.email_body, q: JSON.parse(JSON.stringify(t.questions || [])), pv: 'whatsapp', W: {}, busy: false, err: '' }, can = !!(CX.set && CX.set.can);
+  const QT = [['scale5', 'تقييم من 1 إلى 5'], ['nps10', 'من 0 إلى 10 (NPS)'], ['yesno', 'نعم / لا'], ['text', 'نص حر']];
+  const draw2 = function () {
+    D.W.rerun = draw2;
+    cuBdDraw({ key: 'cxt:' + t.key, ic: CX_TPL_IC[t.key] || 'star:gold', title: 'قالب · ' + t.name, sub: t.purpose || '', onClose: function () { draw(); }, body: [
+      cuSec('القالب', 'file-text', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [commFld('اسم القالب', commIn({ value: D.name, onInput: function (v) { D.name = v; } })), commFld('متى يُرسل', commIn({ value: t.trigger_note || '', disabled: true }))]),
+        commSw('القالب مفعّل', D.active, function (on) { D.active = on; }), t.key !== 'nps' ? commSw('إنشاء الدعوة آليًا بعد الحدث', D.auto, function (on) { D.auto = on; }) : null,
+        chipRow([['whatsapp', 'واتساب', 'whatsapp-logo:teal'], ['email', 'البريد', 'envelope-simple:sky'], ['both', 'كلاهما', 'paper-plane-tilt:navy']], D.ch.length > 1 ? 'both' : D.ch[0], function (v) { D.ch = v === 'both' ? ['whatsapp', 'email'] : [v]; draw2(); }, 'الوسيلة الافتراضية')]),
+      cuSec('الأسئلة', 'list-checks', D.q.map(function (q, i) { return e('div', { class: 'cx-qe' }, [e('i', {}, String(i + 1)), commIn({ value: q.t, onInput: function (v) { q.t = v; } }), DS.select({ value: q.type, options: QT, onChange: function (v) { q.type = v; draw2(); } }),
+        e('label', { class: 'cx-qe-rec', title: 'يُحتسب في صافي الترويج' }, [e('input', { type: 'checkbox', checked: q.rec ? '' : null, disabled: q.type === 'text' || q.type === 'yesno' ? '' : null, onChange: function (ev) { q.rec = !!ev.target.checked; } }), 'سؤال التوصية']),
+        can && D.q.length > 1 ? e('button', { type: 'button', class: 'cx-qe-x', 'aria-label': 'حذف السؤال', onClick: function () { D.q.splice(i, 1); draw2(); } }, frag(ui('x', 14))) : null]); }).concat([can && D.q.length < 12 ? DS.button('إضافة سؤال', { size: 'sm', ui: 'plus', onClick: function () { let k = 'x' + (D.q.length + 1); while (D.q.some(function (y) { return y.k === k; })) k += '1'; D.q.push({ k: k, t: '', type: 'scale5' }); draw2(); } }) : null,
+        e('small', { class: 'cu-dr-hint' }, 'تُضاف للعميل تلقائيًا: خانة الملاحظات والاقتراحات، وسؤالا الموافقة على النشر وإظهار الاسم الأول والأخير والمدينة.')])),
+      cuSec('نص واتساب', 'whatsapp-logo', [e('textarea', { class: 't2-input cx-ta', rows: '10', onInput: function (ev) { D.wa = ev.target.value; } }, D.wa), e('small', { class: 'cu-dr-hint' }, 'المتغيّرات: {name} الاسم الكامل · {first} الاسم الأول · {service} الخدمة · {link} رابط الاستبانة · {team} مسمّى الفريق')]),
+      cuSec('البريد الإلكتروني', 'envelope-simple', [commFld('الموضوع', commIn({ value: D.sub, onInput: function (v) { D.sub = v; } })), e('textarea', { class: 't2-input cx-ta', rows: '7', onInput: function (ev) { D.mail = ev.target.value; } }, D.mail), e('small', { class: 'cu-dr-hint' }, 'يُضاف للبريد زر «قيّم الآن» وتوقيع الفريق تلقائيًا بالقالب الرسمي للبريد.')]),
+      cuSec('المعاينة', 'monitor', [chipRow([['whatsapp', 'واتساب', 'whatsapp-logo:teal'], ['email', 'البريد', 'envelope-simple:sky']], D.pv, function (v) { D.pv = v; draw2(); }, 'المعاينة'), D.pv === 'email' ? cxMailPreview(Object.assign(D.W, { subject: D.sub, body: D.mail }), 'احمد عبدالهادي الشمري') : cxWaPreview(D.wa, 'احمد عبدالهادي الشمري'), DS.button('تحديث المعاينة', { size: 'sm', ui: 'arrows-clockwise', onClick: draw2 })]),
+      D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
+      foot: can ? [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ القالب', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: async function () {
+        D.busy = true; D.err = ''; draw2();
+        try { const j = await admRpc('admin_survey_template_save', { p_key: t.key, p: { name: D.name, channels: D.ch, active: D.active, auto: D.auto, wa_body: D.wa, email_subject: D.sub, email_body: D.mail, questions: D.q.map(function (q) { return Object.assign({ k: q.k, t: String(q.t || '').trim(), type: q.type }, q.rec && (q.type === 'scale5' || q.type === 'nps10') ? { rec: true } : {}); }) } });
+          if (j && j.ok === false) throw new Error(j.error === 'bad_questions' ? 'راجع الأسئلة: كل سؤال 4 أحرف على الأقل.' : j.error === 'body_required' ? 'النص قصير.' : j.error === 'subject_required' ? 'اكتب موضوع البريد.' : j.error === 'channel_required' ? 'اختر وسيلة.' : j.error);
+          CX.setAt = 0; admClose(); snack('حُفظ القالب.'); draw(); }
+        catch (err) { D.busy = false; D.err = cxErr(err); draw2(); } } }))])] : [] });
+  };
+  draw2();
+}
+/* ---------- العميل: استبانة بانتظارك ---------- */
+const CXC = {};
+function cxMine() { const s = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA) ? LIVE_DATA.surveys : null; return s && s.ok !== false ? s : { open: [], done: [] }; }
+function cxClientBanner() {
+  const O = cxMine().open || []; if (!O.length) return null; const x = O[0];
+  return e('section', { class: 'cx-ban' }, [e('span', { class: 'cx-ban-ic' }, frag(ui('star', 22))), e('span', { class: 'cx-ban-t' }, [e('b', {}, O.length > 1 ? fmtNum(O.length) + ' استبانات بانتظار رأيك' : 'استبانة بانتظار رأيك'), e('small', {}, x.name + (x.label ? ' · ' + x.label : '') + ' — أقل من دقيقة، ورأيك يُعامل بسرية تامة.')]),
+    liveOk(DS.button('قيّم الآن', { tone: 'primary', ui: 'star', onClick: function () { cxAnswer(x); } }))]);
+}
+function cxAnswer(x) {
+  const D = CXC[x.id] || (CXC[x.id] = { a: {}, c: '', pub: false, nm: false, busy: false, err: '', bad: '' }), Q = x.questions || [];
+  const scale = function (q) { return e('div', { class: 'cx-sc', role: 'radiogroup', 'aria-label': q.t }, [5, 4, 3, 2, 1].map(function (v) { const on = String(D.a[q.k]) === String(v); return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), class: 'cx-sc-b' + (on ? ' is-on' : ''), onClick: function () { D.a[q.k] = String(v); D.bad = ''; draw2(); } }, [e('b', {}, '★ ' + v), e('small', {}, CX_SCALE[v])]); })); };
+  const nps = function (q) { return e('div', { class: 'cx-nps10', role: 'radiogroup', 'aria-label': q.t }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (v) { const on = String(D.a[q.k]) === String(v); return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), class: 'cx-n-b' + (on ? ' is-on' : '') + (v >= 9 ? ' is-p' : v >= 7 ? ' is-n' : ' is-d'), onClick: function () { D.a[q.k] = String(v); D.bad = ''; draw2(); } }, String(v)); }).concat([e('span', { class: 'cx-n-l' }, [e('small', {}, 'غير محتمل'), e('small', {}, 'محتمل جدًا')])])); };
+  const yn = function (q) { return e('div', { class: 'cx-yn' }, [['yes', 'نعم'], ['no', 'لا']].map(function (o) { const on = D.a[q.k] === o[0]; return e('button', { type: 'button', class: 'cx-sc-b' + (on ? ' is-on' : ''), 'aria-pressed': String(on), onClick: function () { D.a[q.k] = o[0]; D.bad = ''; draw2(); } }, e('b', {}, o[1])); })); };
+  const draw2 = function () {
+    cuBdDraw({ key: 'cxa:' + x.id, ic: CX_TPL_IC[x.tpl] || 'star:gold', title: x.name, sub: (x.label ? x.label + ' · ' : '') + 'من ' + ((cxMine().team) || 'إدارة تجربة العملاء والجودة'), onClose: function () { draw(); }, body: [
+      e('div', { class: 'cx-intro' }, [e('b', {}, 'نسعد بتقييمكم لتجربتكم مع منصة تيرا'), e('small', {}, 'اختر تقييمًا لكل سؤال: 5 ممتاز · 4 جيد جداً · 3 جيد · 2 مقبول · 1 يحتاج إلى تحسين')]),
+      e('ol', { class: 'cx-qs' }, Q.map(function (q, i) { return e('li', { class: D.bad === q.k ? 'is-bad' : '' }, [e('b', {}, (i + 1) + '. ' + q.t), q.type === 'scale5' ? scale(q) : q.type === 'nps10' ? nps(q) : q.type === 'yesno' ? yn(q) : e('textarea', { class: 't2-input cu-why', rows: '2', placeholder: 'اكتب رأيك (اختياري)', onInput: function (ev) { D.a[q.k] = ev.target.value; } }, D.a[q.k] || '')]); })),
+      cuSec('ملاحظات أو اقتراحات تساعدنا على تطوير خدماتنا', 'note-pencil', [e('textarea', { class: 't2-input cu-why', rows: '3', placeholder: 'يسعدنا مشاركتها (اختياري)', onInput: function (ev) { D.c = ev.target.value; } }, D.c)]),
+      e('div', { class: 'cx-consent' }, [frag(ui('lock-key', 18)), e('span', {}, 'جميع التقييمات والملاحظات تُعامل بسرية تامة، وتهدف إلى تطوير خدمات منصة تيرا وتحسين تجربة عملائنا.')]),
+      e('label', { class: 'ts-chk cx-chk' }, [e('input', { type: 'checkbox', checked: D.pub ? '' : null, onChange: function (ev) { D.pub = !!ev.target.checked; if (!D.pub) D.nm = false; draw2(); } }), e('span', {}, 'أوافق على نشر تقييمي وملاحظتي في الصفحة الرئيسية لمنصة تيرا.')]),
+      D.pub ? e('label', { class: 'ts-chk cx-chk' }, [e('input', { type: 'checkbox', checked: D.nm ? '' : null, onChange: function (ev) { D.nm = !!ev.target.checked; } }), e('span', {}, 'أوافق على ظهور اسمي الأول والأخير ومدينتي مع التقييم — وإلا يظهر «عميل منصة تيرا».')]) : null,
+      D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null],
+      foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الإرسال…' : 'إرسال التقييم', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: async function () {
+        const miss = Q.filter(function (q) { return q.type !== 'text' && (D.a[q.k] === undefined || D.a[q.k] === ''); })[0];
+        if (miss) { D.bad = miss.k; D.err = 'أجب عن السؤال: ' + miss.t; draw2(); return; }
+        D.busy = true; D.err = ''; draw2();
+        try { const j = await liveSb('rpc/my_survey_submit', { body: { p_invite: x.id, p: { answers: D.a, comment: D.c, consent_publish: D.pub, consent_name: D.pub && D.nm } } });
+          if (j && j.ok === false) throw new Error(j.error === 'already_answered' ? 'أجبت عن هذه الاستبانة من قبل.' : j.error === 'expired' ? 'انتهت صلاحية الاستبانة.' : j.error === 'answer_required' ? 'أجب عن كل الأسئلة.' : 'تعذّر الإرسال.');
+          delete CXC[x.id]; const S = cxMine(); S.open = (S.open || []).filter(function (y) { return y.id !== x.id; }); admClose(); snack('شكراً لكم على وقتكم وثقتكم 💙'); draw(); }
+        catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الإرسال.'; draw2(); } } }))])] });
+  };
+  draw2();
+}
+(function () { try {
+  Object.assign(ICON, { cx: ['star', 'gold'], 'cx-dash': ['chart-bar', 'navy'], 'cx-review': ['star', 'gold'], 'cx-send': ['paper-plane-tilt', 'sky'], 'cx-log': ['clock-counter-clockwise', 'navy'], 'sys-cx': ['star', 'gold'], 'sys-cx-tpl': ['file-text', 'gold'] });
+  lp('cx', 'تجربة العملاء والجودة', null, 'cx', cxHubPage);
+  lp('cx-dash', 'المؤشرات والتحليل السريع', 'cx', 'cx-dash', cxDashPage);
+  lp('cx-review', 'مراجعة التقييمات', 'cx', 'cx-review', cxReviewPage);
+  lp('cx-send', 'إرسال استبانة', 'cx', 'cx-send', cxSendPage);
+  lp('cx-log', 'سجل الدعوات', 'cx', 'cx-log', cxLogPage);
+  lp('sys-cx', 'إعدادات تجربة العملاء والجودة', 'sys', 'sys-cx', cxSetPage);
+  lp('sys-cx-tpl', 'قوالب الاستبانات', 'sys', 'sys-cx-tpl', cxTplPage);
+  /* القائمة الجانبية وقائمة «الأقسام» */
+  NAV_ADM.forEach(function (g) { if (g[0] === 'الأقسام' && !g[1].some(function (x) { return x[0] === 'cx'; })) { const i = g[1].findIndex(function (x) { return x[0] === 'comm'; }); g[1].splice(i + 1, 0, ['cx', 'تجربة العملاء والجودة']); } });
+  /* لوحة العميل: «استبانة بانتظارك» أعلى اللوحة، ورابط الدعوة ?survey=… يفتحها مباشرة */
+  const dash1 = dashPage; let urlDone = false;
+  dashPage = function () { const out = [].concat(dash1.apply(this, arguments) || []); try { if (S.role === 'client' && LIVE.me) { const b = cxClientBanner(); if (b) out.unshift(b);
+    if (!urlDone) { urlDone = true; const m = /[?&]survey=([A-Z0-9-]+)/i.exec(location.search || ''); if (m) { const x = (cxMine().open || []).filter(function (y) { return y.no === m[1].toUpperCase(); })[0]; if (x) setTimeout(function () { cxAnswer(x); }, 400); else if ((cxMine().done || []).length) setTimeout(function () { snack('أجبت عن هذه الاستبانة من قبل — شكرًا لك.'); }, 400); } } } } catch (err) { void err; } return out; };
+} catch (err) { void err; } })();
+
+/* ================= v318: شرط إرسال التوثيق + شروح مركز الأمان =================
+ * لا يُرسَل ملف التوثيق حتى يُربط رقم الواتساب وتُفعَّل وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو رمز التحقق الإضافي)
+ * — والشرط نفسه في القاعدة (my_verification_submit) فلا يتجاوزه أي مسار. والشروح كما في العيّنة: الهدف والاستخدام والفيديو والخطوات بالصور. */
+function liveVsec() {
+  const v = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA) ? LIVE_DATA.vsec : null;
+  if (v && v.ok !== false && v.wa !== undefined) return { known: true, wa: !!v.wa, totp: !!v.totp, extra: !!v.extra, auth: !!(v.totp || v.extra), ready: !!v.ready };
+  const wa = LVS.wa === 'on', auth = !!LVS.app || !!LVS.xc;
+  return { known: false, wa: wa, totp: !!LVS.app, extra: !!LVS.xc, auth: auth, ready: wa && auth };
+}
+function vsecGate(o) {
+  const V = liveVsec(), op = o || {};
+  const row = function (ok, t, d, k, b) { return e('li', { class: ok ? 'is-ok' : '' }, [e('span', { class: 'vg-ic' }, frag(ui(ok ? 'check-circle' : 'warning', 20))), e('span', { class: 'vg-t' }, [e('b', {}, t), e('small', {}, ok ? 'مكتمل' : d)]), ok ? DS.badge('مكتمل', 'ok') : liveOk(DS.button(b, { size: 'sm', tone: 'primary', onClick: function () { go('other', k); } }))]); };
+  return e('section', { class: 'vg' + (V.ready ? ' is-ready' : '') }, [
+    e('header', {}, [e('span', { class: 'vg-hic' }, frag(ui(V.ready ? 'seal-check' : 'lock-key', 22))), e('span', {}, [e('b', {}, op.title || 'شرط إرسال الملف للتوثيق'), e('small', {}, V.ready ? 'مكتمل — يمكنك إرسال ملفك للتوثيق متى اكتملت بياناته.' : 'لن يُرسَل ملفك للتوثيق حتى يكتمل الشرطان التاليان.')]), DS.badge(V.ready ? 'جاهز' : 'غير مكتمل', V.ready ? 'ok' : 'warn')]),
+    e('ul', { class: 'vg-l' }, [row(V.wa, 'ربط رقم الواتساب', 'اربط رقم جوالك في واتساب بحسابك — تصلك عليه رموز التحقق وتنبيهات طلباتك.', 'sec-whatsapp', 'ربط الواتساب'),
+      row(V.auth, 'وسيلة مصادقة واحدة على الأقل', 'فعّل تطبيق المصادقة أو رمز التحقق الإضافي — ويمكنك تفعيل الاثنتين لحماية أعلى.', V.totp || !V.extra ? 'sec-twofa' : 'sec-extracode', 'تفعيل وسيلة'),
+      e('li', { class: 'is-ok is-base' }, [e('span', { class: 'vg-ic' }, frag(ui('envelope-simple', 20))), e('span', { class: 'vg-t' }, [e('b', {}, 'التحقق بالبريد الإلكتروني'), e('small', {}, 'مفعّل لكل حساب عند كل دخول — لا يحتاج إجراء.')]), DS.badge('أساسي', 'info')])])]);
+}
+/* صندوق «ما الهدف وكيف تستخدمها؟» كما في العيّنة */
+function sgWhy(items, title) { return e('div', { class: 'sg-why' }, [e('p', { class: 'sg-why-h' }, [frag(ui('info', 18)), e('b', {}, title || 'ما الهدف وكيف تستخدمها؟')]), e('ul', {}, items.map(function (x) { return e('li', {}, [frag(ui(x[0], 18)), e('div', {}, [e('b', {}, x[1]), e('span', {}, x[2])])]); }))]); }
+function sgSteps(L) { return e('ol', { class: 'sg-steps' }, L.map(function (x, i) { return e('li', {}, [e('i', {}, String(i + 1)), e('div', {}, [e('b', {}, x[0]), e('span', {}, x[1])])]); })); }
+const SG_STORES = [['آيفون', 'App Store', [['Google Authenticator', 'https://apps.apple.com/app/id388497605'], ['Microsoft Authenticator', 'https://apps.apple.com/app/id983156458']]],
+  ['أندرويد', 'Google Play', [['Google Authenticator', 'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2'], ['Microsoft Authenticator', 'https://play.google.com/store/apps/details?id=com.azure.authenticator']]],
+  ['هواوي', 'AppGallery', [['ابحث عن Authenticator', 'https://appgallery.huawei.com/search/Microsoft%20Authenticator']]]];
+const SG_GUIDES = [['Google Authenticator', [['vid/ga-icon.webp', 'حمّل التطبيق', 'ثبّت Google Authenticator من متجر جهازك، ثم افتحه من أيقونته.'], ['vid/ga-add.webp', 'أضف حسابًا', 'اضغط زر الإضافة (+) أسفل الشاشة، ثم اختر «مسح ضوئي لرمز استجابة سريعة». إن كنت تتصفح من الجوال نفسه فاختر «إدخال مفتاح الإعداد» والصق المفتاح.'],
+    ['', 'امسح الرمز', 'تفتح الكاميرا؛ وجّهها إلى رمز QR الظاهر عند التهيئة حتى يُقرأ تلقائيًا.'], ['vid/ga-code.webp', 'اقرأ الرمز', 'يظهر حساب TERA برمز من 6 أرقام يتجدد كل 30 ثانية، والدائرة بجانبه تُظهر الوقت المتبقي.'], ['', 'أكّد هنا', 'اكتب الرمز الظاهر الآن في خانة التأكيد، فيتفعّل التطبيق لحسابك فورًا.']]],
+  ['Microsoft Authenticator', [['vid/ms-icon.webp', 'حمّل التطبيق', 'ثبّت Microsoft Authenticator من متجر جهازك، ثم افتحه من أيقونته.'], ['vid/ms-home.webp', 'أضف حسابًا', 'اضغط زر الإضافة (+) أعلى الشاشة.'],
+    ['vid/ms-add.webp', 'اختر نوع الحساب', 'اختر «آخر (Google، Facebook، إلخ)» — النوع المناسب لحساب تيرا — ثم تفتح الكاميرا. وإن كنت تتصفح من الجوال نفسه فاختر الإدخال اليدوي والصق المفتاح.'], ['', 'امسح الرمز', 'وجّه الكاميرا إلى رمز QR الظاهر عند التهيئة.'], ['', 'أكّد هنا', 'اكتب الرمز المكوّن من 6 أرقام في خانة التأكيد فيتفعّل فورًا.']]]];
+function sgVideo(k) {
+  const m = typeof matchMedia === 'function' && matchMedia('(max-width: 640px)').matches;
+  return e('div', { class: 'sg-vid' }, [e('video', { src: 'vid/' + k + (m ? '-m' : '') + '.mp4', poster: 'vid/' + k + (m ? '-m' : '') + '.jpg', controls: '', playsinline: '', preload: 'none', 'aria-label': 'فيديو الشرح' })]);
+}
+function sgAuthGuide() {
+  let on = 0; const box = e('div', { class: 'sg-gd' });
+  const paint = function () {
+    box.replaceChildren(e('div', { class: 'sg-tabs', role: 'tablist' }, SG_GUIDES.map(function (g, i) { return e('button', { type: 'button', role: 'tab', 'aria-selected': String(i === on), class: i === on ? 'is-on' : '', dir: 'ltr', onClick: function () { on = i; paint(); } }, g[0]); })),
+      e('ol', { class: 'sg-gl' }, SG_GUIDES[on][1].map(function (x, i) { return e('li', { class: x[0] ? 'has-shot' : '' }, [x[0] ? e('span', { class: 'sg-shot' }, e('img', { src: x[0], alt: x[1] + ' — ' + SG_GUIDES[on][0], loading: 'lazy', decoding: 'async' })) : e('span', { class: 'sg-mk' }, frag(ui(i === 2 ? 'qr-code' : 'check-circle', 30))), e('div', {}, [e('i', {}, String(i + 1)), e('b', {}, x[1]), e('span', {}, x[2])])]); })),
+      e('p', { class: 'sg-n' }, 'الصور من التطبيقين على آيفون، وقد يختلف الشكل قليلًا في أندرويد أو مع تحديثات التطبيق.'));
+  };
+  paint(); return box;
+}
+function secGuide(kind) {
+  const H = function (ic, t, sub, kids) { return e('section', { class: 'sg' }, [e('header', { class: 'sg-h' }, [frag(tile(ic)), e('span', {}, [e('b', {}, t), e('small', {}, sub)])]), e('div', { class: 'sg-b' }, kids)]); };
+  if (kind === 'hub') return H('shield-check:teal', 'كيف تفعّل مركز الأمان؟', 'أربع خطوات — والأولى والثانية شرط لإرسال ملفك للتوثيق', [
+    sgSteps([['اربط رقم الواتساب', 'من «إعدادات تطبيق الواتس اب» — تصلك عليه رموز التحقق وتنبيهات طلباتك. شرط لإرسال ملفك.'], ['فعّل وسيلة مصادقة واحدة على الأقل', 'تطبيق المصادقة (الأقوى، يعمل دون إنترنت) أو رمز التحقق الإضافي — ويمكنك تفعيل الاثنتين. شرط لإرسال ملفك.'],
+      ['احفظ رموز الاستعادة', 'رموز لمرة واحدة تستعيد بها حسابك إذا فقدت جوالك أو تطبيق المصادقة — احفظها خارج جوالك.'], ['راجع الأجهزة والجلسات', 'صرّح لأجهزتك فقط (حتى 3 أجهزة)، وأنهِ أي جلسة لا تعرفها من «الجلسات».']]),
+    sgWhy([['shield-check', 'ما المصادقة الثنائية؟', 'طبقة حماية ثانية بعد كلمة المرور: حتى لو عرف أحد كلمة مرورك لا يستطيع الدخول دون الرمز الذي يصلك أنت.'], ['list-checks', 'متى تُطلب؟', 'عند الدخول من جهاز غير مصرّح له، وعند استرداد كلمة المرور، وعند تغيير بيانات الأمان أو تنفيذ عملية حساسة.']], 'لماذا مركز الأمان؟')]);
+  if (kind === 'totp') return H('device-mobile:navy', 'شرح تفعيل تطبيق المصادقة', 'رمز يتجدد كل 30 ثانية من جوالك — الأقوى والأنسب', [
+    sgWhy([['flag', 'الهدف', 'يولّد تطبيق على جوالك رمزًا جديدًا كل 30 ثانية مرتبطًا بحسابك وحده، فلا يمكن اعتراضه برسالة أو بريد.'], ['list-checks', 'الاستخدام', 'عند الدخول افتح التطبيق واكتب الرمز الظاهر لحساب TERA. لا يحتاج إلى شبكة ولا إلى رصيد رسائل.']]),
+    e('h4', { class: 'sg-sub' }, 'شاهد الشرح'), sgVideo('totp'),
+    e('h4', { class: 'sg-sub' }, '1. حمّل التطبيق من متجر جهازك'),
+    e('div', { class: 'sg-st' }, SG_STORES.map(function (x) { return e('div', { class: 'sg-sti' }, [e('span', { class: 'sg-sti-h' }, [e('b', {}, x[0]), e('small', { dir: 'ltr' }, x[1])])].concat(x[2].map(function (l) { return e('a', { href: l[1], target: '_blank', rel: 'noopener', dir: 'auto' }, l[0]); }))); })),
+    e('h4', { class: 'sg-sub' }, '2. خطوات التفعيل بالصور'), sgAuthGuide(),
+    DS.note('info', 'ثم اضغط «تهيئة تطبيق المصادقة» أعلى الصفحة', 'يظهر رمز QR ومفتاح الإعداد لحسابك، وبعد إدخال الرمز من التطبيق يتفعّل فورًا. سرّ التطبيق لا يُعرض ولا يُسجَّل بعد التأكيد.')]);
+  if (kind === 'extra') return H('key:saffron', 'شرح رمز التحقق الإضافي', 'رمز لمرة واحدة عند الدخول أو الاسترداد', [
+    sgWhy([['flag', 'الهدف', 'رمز من 6 أرقام يُرسل إليك عند الدخول أو الاسترداد، صالح خمس دقائق ولمرة واحدة، يثبت أن من يدخل هو أنت صاحب الجوال أو البريد.'], ['list-checks', 'الاستخدام', 'اختر القناة التي تفضّلها، ثم أرسل رمز تجربة وأدخله لتأكيد أن الرموز تصلك فعلًا.'], ['sparkle', 'متى تختاره؟', 'إذا لم ترغب بتثبيت تطبيق، أو وسيلةً احتياطية بجانب تطبيق المصادقة.']]),
+    sgSteps([['اختر القناة', 'رسالة نصية أو واتساب أو البريد الإلكتروني.'], ['أرسل رمز تجربة', 'يصلك رمز من 6 أرقام صالح خمس دقائق.'], ['أدخل الرمز', 'يتأكد تلقائيًا عند اكتماله وتُفعَّل الوسيلة.'], ['احفظ رموز الاستعادة', 'تظهر مرة واحدة فقط — احفظها في مكان آمن خارج جوالك.']])]);
+  if (kind === 'wa') return H('whatsapp-logo:teal', 'شرح ربط الواتساب', 'رموز التحقق وتنبيهات طلباتك على واتساب', [
+    sgWhy([['flag', 'الهدف', 'ربط رقم جوالك في واتساب بحسابك لتصلك رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا عند تواصلك.'], ['shield-check', 'لماذا يربطه فريقنا؟', 'لا يُربط رقم بحساب آليًا أبدًا — يتحقق الفريق من أن الرقم رقمك المسجّل حتى لا تصل بياناتك إلى غيرك.'], ['list-checks', 'شرط', 'ربط الواتساب شرط لإرسال ملفك للتوثيق.']]),
+    sgSteps([['اضغط «ابدأ الربط»', 'تفتح محادثة واتساب منصة تيرا الرسمي برسالة طلب الربط جاهزة.'], ['أرسل الرسالة من رقمك المسجّل', 'يجب أن يكون الرقم نفسه المسجّل في ملفك.'], ['يتحقق الفريق ويربط الرقم', 'تظهر الحالة «مربوط» هنا بعد الربط، ويمكنك إلغاء الربط من مركز الأمان.']]),
+    DS.note('warn', 'لا تشارك رموزك', 'فريق تيرا لا يطلب كلمة مرورك ولا رموز التحقق في أي محادثة.')]);
+  return null;
+}
+/* صفحة واتساب في الوضع الحي: الحالة الحقيقية من القاعدة + الشرح + بدء الربط من محادثة الواتساب الرسمية */
+function liveWaPage() {
+  const V = liveVsec(), me = LIVE.me || {};
+  const msg = 'أرغب بربط رقم واتساب هذا بحسابي في منصة تيرا' + (me.tera_id ? ' — رقم تيرا: ' + me.tera_id : '') + (me.full_name ? ' — ' + me.full_name : '');
+  return [SH('wa', 'واتساب منصة تيرا', [['ربطُ الرقم', V.wa ? 'مربوط' : 'غير مربوط', 'phone', V.wa ? 'ok' : 'warn'], ['الرقم المسجّل', me.phone ? '+' + String(me.phone).replace(/^\+/, '') : '—', 'device-mobile'], ['شرط التوثيق', V.wa ? 'مكتمل' : 'مطلوب', 'seal-check', V.wa ? 'ok' : 'warn']], [V.wa ? 'مربوط' : 'غير مربوط', V.wa ? 'ok' : 'warn']),
+    V.wa ? DS.note('ok', 'رقمك مربوط بحسابك', 'تصلك رموز التحقق وتنبيهات طلباتك على واتساب.') : e('div', { class: 't2-pb-actions' }, e('a', { class: 't2-btn is-primary', href: 'https://wa.me/966555698774?text=' + encodeURIComponent(msg), target: '_blank', rel: 'noopener' }, [frag(ui('whatsapp-logo', 16)), 'ابدأ الربط من واتساب'])),
+    secGuide('wa')];
+}
+(function () { try {
+  const wrap = function (k, kind, top) { const P = LP[k]; if (!P || P.__sg) return; const r0 = P.run; P.__sg = true; P.run = function () { const out = [].concat(r0.apply(this, arguments) || []); if (top) out.splice(1, 0, vsecGate()); out.push(secGuide(kind)); return out; }; };
+  if (LIVE.on && LP['sec-whatsapp']) LP['sec-whatsapp'].run = liveWaPage; else wrap('sec-whatsapp', 'wa');
+  wrap('shield', 'hub', true); wrap('sec-twofa', 'totp'); wrap('sec-extracode', 'extra');
+  if (LP['me-verify']) { const v0 = LP['me-verify'].run; LP['me-verify'].run = function () { const out = [].concat(v0.apply(this, arguments) || []); out.splice(1, 0, vsecGate({ title: 'قبل إرسال الملف للتوثيق' })); return out; }; }
+} catch (err) { void err; } })();
+/* v317: تنبيه «إصدار جديد» — التطبيق المفتوح على الجوال لا يعيد التحميل وحده، فيُفحص رقم الإصدار عند العودة للتطبيق وكل عشر دقائق */
+(function () { try {
+  if (typeof window === 'undefined' || !window.fetch) return; let shown = false, last = 0;
+  const cur = function () { return String((window.TQ_VERSION && window.TQ_VERSION.v) || ''); };
+  const show = function (v) { if (shown || document.querySelector('.tq-upd')) return; shown = true;
+    const b = e('div', { class: 'tq-upd', role: 'status' }, [frag(ui('arrows-clockwise', 18)), e('span', {}, 'إصدار جديد ' + v + ' متاح — حدّث الصفحة لتظهر آخر التعديلات.'), e('button', { type: 'button', onClick: function () { location.reload(); } }, 'تحديث الآن'), e('button', { type: 'button', class: 'is-x', 'aria-label': 'إغلاق', onClick: function () { b.remove(); } }, frag(ui('x', 16)))]);
+    document.body.appendChild(b); };
+  const check = function () { const n = Date.now(); if (n - last < 60000 || !cur()) return; last = n;
+    fetch('/assets/js/version.js?chk=' + n, { cache: 'no-store', credentials: 'omit' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) { const m = /v:'(\d+)'/.exec(t || ''); if (m && Number(m[1]) > Number(cur())) show(m[1]); }).catch(function () {}); };
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('focus', check); setInterval(check, 600000); setTimeout(check, 15000);
+} catch (err) { void err; } })();
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
 })();
   /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
@@ -17756,17 +18158,5 @@ boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
       var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
       if (z !== v) { el.value = z; if (z !== a) note(el); }
     }, true);
-  /* v317: تنبيه «إصدار جديد» — التطبيق المفتوح على الجوال لا يعيد التحميل وحده، فيُفحص رقم الإصدار عند العودة للتطبيق وكل عشر دقائق */
-(function () { try {
-  if (typeof window === 'undefined' || !window.fetch) return; let shown = false, last = 0;
-  const cur = function () { return String((window.TQ_VERSION && window.TQ_VERSION.v) || ''); };
-  const show = function (v) { if (shown || document.querySelector('.tq-upd')) return; shown = true;
-    const b = e('div', { class: 'tq-upd', role: 'status' }, [frag(ui('arrows-clockwise', 18)), e('span', {}, 'إصدار جديد ' + v + ' متاح — حدّث الصفحة لتظهر آخر التعديلات.'), e('button', { type: 'button', onClick: function () { location.reload(); } }, 'تحديث الآن'), e('button', { type: 'button', class: 'is-x', 'aria-label': 'إغلاق', onClick: function () { b.remove(); } }, frag(ui('x', 16)))]);
-    document.body.appendChild(b); };
-  const check = function () { const n = Date.now(); if (n - last < 60000 || !cur()) return; last = n;
-    fetch('/assets/js/version.js?chk=' + n, { cache: 'no-store', credentials: 'omit' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) { const m = /v:'(\d+)'/.exec(t || ''); if (m && Number(m[1]) > Number(cur())) show(m[1]); }).catch(function () {}); };
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
-  window.addEventListener('focus', check); setInterval(check, 600000); setTimeout(check, 15000);
-} catch (err) { void err; } })();
-})();
+  })();
 

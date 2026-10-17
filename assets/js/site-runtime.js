@@ -97,6 +97,24 @@
     loading=new Promise(function(ok,no){ window.__TS_READY=function(){ b64gz(window.__TS_GZ).then(function(c){C=c; window.__TS_GZ=''; ok(c)},no) }; script('site/core.js?v=' + encodeURIComponent((window.TQ_VERSION && window.TQ_VERSION.v) || '')).catch(no) });
     return loading;
   }
+  /* v318: آراء العملاء المنشورة (بموافقتهم) من القاعدة — تظهر في الصفحة الرئيسية بعد قسم الفيلم */
+  var TESTI=null, testiP=null;
+  function testi(){
+    if(testiP) return testiP;
+    testiP=fetch('/admin/api/config',{cache:'no-store'}).then(function(r){return r.json()}).then(function(c){
+      if(!c||!c.supabaseUrl||!c.supabaseAnonKey) return null;
+      return fetch(c.supabaseUrl.replace(/\/+$/,'')+'/rest/v1/rpc/public_testimonials',{method:'POST',headers:{'Content-Type':'application/json',apikey:c.supabaseAnonKey,Authorization:'Bearer '+c.supabaseAnonKey},body:JSON.stringify({p_limit:12})}).then(function(r){return r.ok?r.json():null});
+    }).then(function(j){ TESTI=(j&&j.on&&j.rows&&j.rows.length)?j:null; return TESTI }).catch(function(){ TESTI=null; return null });
+    return testiP;
+  }
+  var TESTI_RUN="(function(){try{var T=window.__TESTI;if(!T||window.__PATH!=='/')return;var f=document.querySelector('.ts-film')||document.querySelector('.ts-mem');if(!f)return;"+
+    "var x=function(s){return String(s==null?'':s).replace(/[&<>\"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})};"+
+    "var st=function(v){var w=Math.max(0,Math.min(100,(Number(v)||0)/5*100));return '<span class=\"tq-st\" aria-label=\"'+x(v)+' من 5\"><span>★★★★★</span><i style=\"width:'+w+'%\">★★★★★</i></span>'};"+
+    "var sec=document.createElement('section');sec.className='tq-tm';sec.setAttribute('aria-label','آراء عملائنا');"+
+    "sec.innerHTML='<div class=\"tq-tm-h\"><div><small>آراء عملائنا · CUSTOMER VOICES</small><h2>ثقة عملائنا هي ما يميّزنا</h2><p>تقييمات حقيقية نشرناها بموافقة أصحابها — من '+x(T.team||'إدارة تجربة العملاء والجودة')+'.</p></div>'+(T.stats&&T.stats.n?'<div class=\"tq-tm-s\"><b>'+x(T.stats.avg)+'</b>'+st(T.stats.avg)+'<small>من '+Number(T.stats.n).toLocaleString('en-US')+' تقييم</small></div>':'')+'</div>'+"+
+    "'<div class=\"tq-tm-r\" role=\"region\" tabindex=\"0\" aria-label=\"التقييمات\">'+T.rows.map(function(r){return '<figure class=\"tq-tm-c\">'+st(r.avg)+'<blockquote>'+x(r.text||'تجربة مميزة مع منصة تيرا.')+'</blockquote><figcaption><span class=\"tq-av\">'+x(String(r.name||'ت').trim().charAt(0))+'</span><span><b>'+x(r.name)+'</b><small>'+x([r.city,r.tpl].filter(Boolean).join(' · '))+'</small></span></figcaption></figure>'}).join('')+'</div>';"+
+    "f.parentNode.insertBefore(sec,f.nextSibling);"+
+    "var css=document.createElement('style');css.textContent='.tq-tm{display:grid;gap:18px;margin:28px 0;padding:28px clamp(16px,3vw,32px);border-radius:28px;background:linear-gradient(125deg,#0B2552 0%,#0F3B78 48%,#0A7F8C 100%);color:#fff;overflow:hidden}.tq-tm-h{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}.tq-tm-h small{letter-spacing:.12em;color:#FFC861;font-weight:700;font-size:.75rem}.tq-tm-h h2{margin:6px 0;font-size:clamp(1.3rem,3vw,1.9rem)}.tq-tm-h p{margin:0;opacity:.85;font-size:.92rem}.tq-tm-s{display:grid;justify-items:center;gap:2px;padding:12px 18px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15)}.tq-tm-s b{font-size:2rem;line-height:1}.tq-tm-s small{opacity:.8}.tq-st{position:relative;display:inline-block;direction:ltr;letter-spacing:2px;color:rgba(255,255,255,.25);white-space:nowrap}.tq-st i{position:absolute;inset-block:0;left:0;overflow:hidden;font-style:normal;color:#FFC861}.tq-tm-r{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,320px);gap:14px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}.tq-tm-c{margin:0;display:grid;gap:10px;align-content:space-between;padding:18px;border-radius:20px;background:rgba(255,255,255,.96);color:#0B1F3A;scroll-snap-align:start;box-shadow:0 14px 30px rgba(0,0,0,.18)}.tq-tm-c .tq-st{color:#E3E8EF}.tq-tm-c .tq-st i{color:#F2B33D}.tq-tm-c blockquote{margin:0;line-height:1.9;font-size:.95rem}.tq-tm-c figcaption{display:flex;align-items:center;gap:10px}.tq-av{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0B2552,#0AA5AD);color:#fff;font-weight:800}.tq-tm-c figcaption span:last-child{display:grid}.tq-tm-c small{color:#5B6B85;font-size:.78rem}';document.head.appendChild(css)}catch(e){}})();";
   var RAW={}, CH={};
   window.__TS_PPS=function(d){ for(var k in d) RAW[k]=d[k] };
   function product(sku){
@@ -126,14 +144,15 @@
     var sideOpen=false; /* القائمة تبدأ مغلقة دائمًا، والمستخدم يفتحها */
     var cls='t2 t2-app is-guest'+(sideOpen?'':' is-side-min')+(d?' is-dark':'');
     shell=shell.replace('class="t2 t2-app is-guest is-side-min"',function(){return 'class="'+cls+'"'});
-    return head+(opening?C.opening:'')+shell+'<script>'+esc(C.run)+'<\/script><script>try{parent.postMessage({tera:"ready"},"*")}catch(e){}<\/script></body></html>';
+    var tq=TESTI&&r.path==='/'?'<script>window.__TESTI='+js(TESTI)+';'+esc(TESTI_RUN)+'<\/script>':'';
+    return head+(opening?C.opening:'')+shell+'<script>'+esc(C.run)+'<\/script>'+tq+'<script>try{parent.postMessage({tera:"ready"},"*")}catch(e){}<\/script></body></html>';
   }
   function render(href,opening){
     opening=false; first=false;
     waitShow();
     load().then(function(){
       var r=norm(href);
-      var pr=r.sku?product(r.sku):Promise.resolve(C.pages[r.path]);
+      var pr=(r.sku?product(r.sku):Promise.resolve(C.pages[r.path])).then(function(pg){ if(r.path!=='/'||TESTI||testiP&&testiP.done) return pg; return Promise.race([testi(),new Promise(function(ok){setTimeout(ok,2500)})]).then(function(){ if(testiP) testiP.done=true; return pg }) });
       return pr.then(function(pg){
         if(!pg){ r=norm('/p/products'); pg=C.pages['/p/products'] }
         cur=r; setBtn(r.path==='/login'?'portal':'home');
