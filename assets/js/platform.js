@@ -16930,8 +16930,8 @@ function commDirPage() {
   const vin = e('input', { type: 'file', accept: '.vcf,text/vcard,text/x-vcard', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) fl.text().then(function (t) { commImportOpen(commVcf(t)); }); ev.target.value = ''; } });
   const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث بالاسم أو الجوال أو البريد أو المعرّف', value: COMM.q || '', 'aria-label': 'بحث في الدليل', onKeydown: function (ev) { if (ev.key === 'Enter') { COMM.q = ev.target.value; draw(); } } });
   const imp = e('section', { class: 'ax-alerts comm-imp' }, [e('header', {}, [e('span', { class: 'ax-al-ic' }, frag(ui('upload-simple', 18))), e('b', {}, 'استيراد جهات الاتصال')]),
-    e('div', { class: 't2-row-wrap' }, [pick ? liveOk(DS.button('من جهات اتصال الجوال', { size: 'sm', ui: 'device-mobile', onClick: commPickDevice })) : null, liveOk(DS.button('ملف جهات اتصال (vCard)', { size: 'sm', ui: 'upload-simple', onClick: function () { vin.click(); } })), vin]),
-    e('small', { class: 'cu-dr-hint' }, pick ? 'تختار الجهات من جوالك وتُضاف بعد المعاينة، وتُتخطّى المكررة تلقائيًا.' : 'الاختيار المباشر من جهات الجوال يعمل في متصفح أندرويد. على آيفون: شارك جهة الاتصال من تطبيق «جهات الاتصال» كملف vCard ثم استورده.')]);
+    e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('من جهات اتصال الجوال', { size: 'sm', ui: 'device-mobile', onClick: function () { if (pick) commPickDevice(); else commPhoneHelp(vin); } })), liveOk(DS.button('ملف جهات اتصال (vCard)', { size: 'sm', ui: 'upload-simple', onClick: function () { vin.click(); } })), vin]),
+    e('small', { class: 'cu-dr-hint' }, pick ? 'تختار الجهات من جوالك وتُضاف بعد المعاينة، وتُتخطّى المكررة تلقائيًا.' : 'متصفحك لا يفتح جهات الجوال مباشرة بعد — اضغط «من جهات اتصال الجوال» لطريقتين سهلتين على آيفون.')]);
   return axPage({ title: 'دليل هواتف وبريد الشركاء', hint: 'الحسابات تُضاف تلقائيًا بحالة ملفها — وتُضاف الجهات الأخرى يدويًا أو من الجوال', reg: 'إضافة جهة اتصال', can: true, onReg: function () { commCtOpen(null, 'edit'); },
     K: [['جهات الاتصال', fmtNum(A.length), '', 'users-three'], ['العملاء', fmtNum(n('client')), '', 'users-three'], ['الموظفون', fmtNum(n('staff')), '', 'briefcase'], ['المسوّقون والمستثمرون', fmtNum(n('marketer') + n('investor')), '', 'megaphone-simple']],
     chips: commChips('cdF', [['all', 'الكل', 'list:navy'], ['client', 'العملاء', 'users-three:teal'], ['staff', 'الموظفون', 'briefcase:navy'], ['marketer', 'المسوّقون', 'megaphone-simple:sky'], ['investor', 'المستثمرون', 'trend-up:gold'], ['fav', 'المفضلة', 'star:gold'], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron'], ['arch', 'المؤرشفة', 'tray:navy']], all, fit),
@@ -16971,15 +16971,30 @@ function commCtOpen(c, mode) {
   }
   cuBdDraw({ key: 'commct:' + key, ic: (COMM_ROLE[((c && c.roles) || ['client'])[0]] || COMM_ROLE.client)[1], title: c ? 'جهة اتصال · ' + c.name : 'إضافة جهة اتصال', sub: c ? commRoleT(c.roles) + (auto ? ' · من حسابه في المنصة' : '') : 'تُضاف يدويًا إلى الدليل', body: body, foot: foot, onClose: function () { delete COMMD[key]; draw(); } });
 }
+/* v312: آيفون لا يتيح جهات الاتصال للمتصفح افتراضيًا — دليل بطريقتين: تفعيل «Contact Picker API» في Safari، أو تصدير جهات/قائمة كاملة كملف vCard */
+function commIOS() { const u = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1); }
+function commPhoneHelp(vin) {
+  void vin;
+  const fin = e('input', { type: 'file', accept: '.vcf,text/vcard,text/x-vcard', hidden: '', onChange: function (ev) { const fl = ev.target.files && ev.target.files[0]; if (fl) fl.text().then(function (t) { admClose(); commImportOpen(commVcf(t)); }); ev.target.value = ''; } });
+  const ios = commIOS(), step = function (n, t) { return e('div', { class: 'comm-st' }, [e('b', { class: 'comm-st-n' }, String(n)), e('span', {}, t)]); };
+  cuBdDraw({ key: 'commhelp', ic: 'device-mobile:teal', title: 'الاستيراد من جهات اتصال الجوال', sub: ios ? 'آيفون — طريقتان' : 'متصفحك لا يدعم الاختيار المباشر', onClose: function () { draw(); }, body: ios ? [
+    cuSec('الطريقة الأولى: الاختيار المباشر من الجهات', 'cursor-click', [
+      step(1, 'افتح «الإعدادات» في الآيفون ثم «التطبيقات» ثم «Safari».'), step(2, 'اضغط «متقدم» ثم «Feature Flags» (الميزات التجريبية).'), step(3, 'فعّل «Contact Picker API».'), step(4, 'أغلق المنصة وافتحها من جديد — يفتح زر «من جهات اتصال الجوال» قائمة جهاتك مباشرة وتختار منها واحدة أو أكثر.'),
+      e('small', { class: 'cu-dr-hint' }, 'في الإصدارات الأقدم من iOS: «الإعدادات › Safari › متقدم › Experimental Features».')]),
+    cuSec('الطريقة الثانية: ملف جهات (vCard)', 'upload-simple', [
+      step(1, 'افتح تطبيق «جهات الاتصال» واختر جهة ثم «مشاركة جهة الاتصال» — أو لعدة جهات: اضغط مطولًا على «القوائم» ثم «تصدير».'), step(2, 'اختر «حفظ في الملفات».'), step(3, 'ارجع هنا واضغط «اختيار الملف» ثم اختر الملف من «الملفات» — تُعرض الجهات للمعاينة قبل الإضافة، وتُتخطّى المكررة.')])]
+    : [cuSec('ملف جهات (vCard)', 'upload-simple', [step(1, 'صدّر جهات الاتصال من جوالك أو بريدك كملف vCard (‎.vcf).'), step(2, 'اضغط «اختيار الملف» — تُعرض الجهات للمعاينة قبل الإضافة، وتُتخطّى المكررة.'), e('small', { class: 'cu-dr-hint' }, 'الاختيار المباشر من جهات الجوال متاح في Chrome على أندرويد.')])],
+    foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('اختيار الملف', { tone: 'primary', ui: 'upload-simple', onClick: function () { fin.click(); } })), fin, DS.button('إغلاق', { onClick: function () { admClose(); draw(); } })])] });
+}
 async function commPickDevice() {
   try { const L = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: true }); commImportOpen((L || []).map(function (x) { return { name: ((x.name || [])[0] || '').trim(), phone: ((x.tel || [])[0] || '').trim(), email: ((x.email || [])[0] || '').trim() }; })); }
   catch (err) { snack('لم يُمنح الوصول إلى جهات الاتصال.'); }
 }
 function commVcf(t) {
-  const out = []; String(t || '').replace(/\r\n[ \t]/g, '').split(/BEGIN:VCARD/i).slice(1).forEach(function (blk) {
+  const out = []; String(t || '').replace(/\r?\n[ \t]/g, '').split(/BEGIN:VCARD/i).slice(1).forEach(function (blk) {
     const g = function (re) { const m = re.exec(blk); return m ? m[1].trim() : ''; };
-    const n = g(/^FN[^:]*:(.+)$/im) || g(/^N[^:]*:(.+)$/im).split(';').filter(Boolean).reverse().join(' ');
-    out.push({ name: n.replace(/\\,/g, ','), phone: g(/^TEL[^:]*:(.+)$/im), email: g(/^EMAIL[^:]*:(.+)$/im) }); });
+    const n = g(/^(?:[\w-]+\.)?FN[^:]*:(.+)$/im) || g(/^(?:[\w-]+\.)?N(?:;[^:]*)?:(.+)$/im).split(';').filter(Boolean).reverse().join(' ');
+    out.push({ name: n.replace(/\\([,;])/g, '$1').replace(/\s+/g, ' ').trim(), phone: g(/^(?:[\w-]+\.)?TEL[^:]*:(.+)$/im).replace(/^tel:/i, ''), email: g(/^(?:[\w-]+\.)?EMAIL[^:]*:(.+)$/im) }); });
   return out.filter(function (x) { return x.name && (x.phone || x.email); }).slice(0, 500);
 }
 function commImportOpen(rows) {

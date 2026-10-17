@@ -8028,3 +8028,7 @@ html.cpv-on .t2-head{top:48px}
 #pv-host.is-app .t2-head .t2-hbtn{flex-shrink:1;min-width:30px}
 @media (max-width:26rem){#pv-host.is-app.is-app .t2-app>.t2-head{gap:6px!important;padding-inline:12px!important}}
 .t2.t2 a.t2-btn{text-decoration:none}.t2.t2 .comm-imp{margin-top:6px}
+/* v312: خطوات دليل الاستيراد من جهات الجوال */
+.comm-st{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--t2-line);font:500 .9rem/1.7 var(--t2-ff-text);color:var(--t2-ink)}
+.comm-st:last-of-type{border-bottom:0}
+.comm-st-n{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#0AA5AD 0%,#06707A 100%);color:#fff;font:700 .85rem/1 var(--t2-ff-display);box-shadow:0 2px 6px color-mix(in srgb,#0AA5AD 30%,transparent)}
