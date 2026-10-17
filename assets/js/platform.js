@@ -11714,6 +11714,102 @@ function newReqPage() {
 }
 /* طلب تحديث قسم — مسار الاكتمال · ما الذي تريد تحديثه؟ · مراجعة التعديل · إرسال */
 function lvUpdStart(s) { const dr = typeof cuDraftOf === 'function' ? cuDraftOf(s) : null; if (dr) { cuDraftResume(dr); return; } LV.upd = { sec: s, pick: '', vals: {}, stage: 'form', miss: false, file: '' }; go('other', 'upd-' + s); }
+/* ---------- v314: خريطة تحديد العنوان — Leaflet محلية (BSD-2) وخرائط OpenStreetMap: بحث · موقعي الآن · تحريك الدبوس ← تعبئة حقول العنوان ---------- */
+const GEO = { lib: null, el: null, map: null, pin: null, at: null, busy: false, err: '', res: null, list: [], q: '', onUse: null, ccode: 'sa' };
+function geoLib() {
+  if (GEO.lib) return GEO.lib;
+  GEO.lib = new Promise(function (ok, no) {
+    if (window.L && window.L.map) { ok(window.L); return; }
+    if (!document.querySelector('link[data-geo-css]')) document.head.appendChild(e('link', { rel: 'stylesheet', href: '/assets/css/leaflet-1.9.4.css', 'data-geo-css': '' }));
+    const s = document.createElement('script'); s.src = '/assets/js/leaflet-1.9.4.min.js'; s.async = true;
+    s.onload = function () { window.L ? ok(window.L) : no(new Error('map')); }; s.onerror = function () { GEO.lib = null; no(new Error('تعذّر تحميل الخريطة.')); };
+    document.head.appendChild(s);
+  });
+  return GEO.lib;
+}
+const geoN = (t) => String(t || '').replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/^(منطقه|محافظه|امانه)\s+/, '').replace(/\bال/g, '').replace(/\s+/g, '').toLowerCase();
+/* تحويل رد OSM إلى حقول العنوان */
+function geoAddr(j) {
+  const a = (j && j.address) || {};
+  return { lat: Number(j.lat), lng: Number(j.lon), label: j.display_name || '', cc: String(a.country_code || '').toLowerCase(), country: a.country || '', state: a.state || a.region || a.province || '',
+    city: a.city || a.town || a.village || a.municipality || a.county || '', district: String(a.suburb || a.neighbourhood || a.quarter || a.city_district || a.residential || '').replace(/^حي\s+/, ''), street: a.road || a.pedestrian || a.street || '', building: a.house_number || '', postal: a.postcode || '' };
+}
+function geoFetch(path) { return fetch('https://nominatim.openstreetmap.org/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'format=jsonv2&addressdetails=1&accept-language=ar', { headers: { Accept: 'application/json' } }).then(function (r) { if (!r.ok) throw new Error('geo'); return r.json(); }); }
+function geoRev(lat, lng) {
+  GEO.busy = true; GEO.err = ''; geoPaint();
+  return geoFetch('reverse?lat=' + lat.toFixed(6) + '&lon=' + lng.toFixed(6) + '&zoom=18').then(function (j) { GEO.res = Object.assign(geoAddr(j), { lat: lat, lng: lng }); })
+    .catch(function () { GEO.err = 'تعذّر جلب العنوان لهذا الموقع — حرّك الدبوس قليلًا أو أدخل الحقول يدويًا.'; GEO.res = null; })
+    .then(function () { GEO.busy = false; geoPaint(); });
+}
+function geoMove(lat, lng, z) { GEO.at = [lat, lng]; if (GEO.map) { GEO.map.setView([lat, lng], z || Math.max(GEO.map.getZoom(), 16)); GEO.pin.setLatLng([lat, lng]); } geoRev(lat, lng); }
+function geoSearch() {
+  const q = String(GEO.q || '').trim(); if (q.length < 2) { GEO.err = 'اكتب اسم الحي أو الشارع أو المعلم.'; geoPaint(); return; }
+  GEO.busy = true; GEO.err = ''; GEO.list = []; geoPaint();
+  geoFetch('search?q=' + encodeURIComponent(q) + '&limit=5' + (GEO.ccode ? '&countrycodes=' + GEO.ccode : '')).then(function (L) { GEO.list = (L || []).map(geoAddr); if (!GEO.list.length) GEO.err = 'لا نتائج — جرّب اسمًا آخر أو حرّك الدبوس على الخريطة.'; })
+    .catch(function () { GEO.err = 'تعذّر البحث الآن — حرّك الدبوس على الخريطة.'; }).then(function () { GEO.busy = false; geoPaint(); });
+}
+function geoMe() {
+  if (!navigator.geolocation) { GEO.err = 'جهازك لا يتيح تحديد الموقع.'; geoPaint(); return; }
+  GEO.busy = true; GEO.err = ''; geoPaint();
+  navigator.geolocation.getCurrentPosition(function (p) { GEO.busy = false; geoMove(p.coords.latitude, p.coords.longitude, 17); },
+    function (er) { GEO.busy = false; GEO.err = er && er.code === 1 ? 'لم يُسمح بالوصول إلى موقعك — فعّل إذن الموقع للمتصفح أو حرّك الدبوس.' : 'تعذّر تحديد موقعك الآن — حرّك الدبوس على الخريطة.'; geoPaint(); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+}
+/* لوحة النتيجة تُرسم داخل العنصر الدائم نفسه — فلا تُعاد الخريطة مع كل رسم للصفحة */
+function geoPaint() {
+  if (!GEO.el) return; const box = GEO.el.querySelector('.geo-res'); if (!box) return; box.innerHTML = '';
+  if (GEO.busy) box.appendChild(e('small', { class: 'cu-dr-hint' }, 'جارٍ جلب العنوان…'));
+  if (GEO.err) box.appendChild(e('span', { class: 't2-field-h is-bad' }, GEO.err));
+  if (GEO.list.length) box.appendChild(e('div', { class: 'geo-list' }, GEO.list.map(function (r) { return e('button', { type: 'button', class: 'geo-li', 'data-live-ok': '', onClick: function () { GEO.list = []; GEO.res = r; geoMove(r.lat, r.lng, 17); } }, [frag(ui('map-pin', 16)), e('span', {}, r.label)]); })));
+  const R = GEO.res; if (!R || GEO.busy) return;
+  box.appendChild(e('div', { class: 'geo-card' }, [e('b', {}, 'العنوان في هذا الموقع'),
+    DS.fields([['الدولة', R.country || '—'], ['المنطقة', R.state || '—'], ['المدينة', R.city || '—'], ['الحي', R.district || '—'], ['الشارع', R.street || '—'], ['رقم المبنى', R.building || '—'], ['الرمز البريدي', R.postal ? ltr(R.postal) : '—']]),
+    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('استخدام هذا العنوان', { tone: 'primary', ui: 'check', onClick: function () { if (GEO.onUse) GEO.onUse(R); } }))]),
+    e('small', { class: 'cu-dr-hint' }, 'راجع الحقول بعد التعبئة وأكمل الناقص (مثل رقم المبنى) — قد لا تتوفر كل التفاصيل لكل موقع.')]));
+}
+/* o: { key, center:[lat,lng], ccode, onUse(addr) } */
+function geoPick(o) {
+  GEO.onUse = o.onUse; GEO.ccode = o.ccode === undefined ? 'sa' : o.ccode;
+  if (GEO.el && GEO.key === o.key) { setTimeout(function () { try { GEO.map && GEO.map.invalidateSize(); } catch (err) { void err; } }, 60); return GEO.el; }
+  GEO.key = o.key; GEO.res = null; GEO.list = []; GEO.err = ''; GEO.q = ''; GEO.map = null;
+  const mapEl = e('div', { class: 'geo-map', role: 'application', 'aria-label': 'خريطة تحديد الموقع — حرّك الدبوس أو اضغط على مكانك' }, [e('small', { class: 'cu-dr-hint geo-wait' }, 'جارٍ تحميل الخريطة…')]);
+  const qi = e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث بالحي أو الشارع أو المعلم', 'aria-label': 'البحث عن العنوان', onInput: function (ev) { GEO.q = ev.target.value; }, onKeydown: function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); geoSearch(); } } });
+  GEO.el = e('div', { class: 'geo t2-stack-tight' }, [
+    e('div', { class: 'geo-bar' }, [qi, liveOk(DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: geoSearch })), liveOk(DS.button('موقعي الآن', { size: 'sm', tone: 'primary', ui: 'map-pin', onClick: geoMe }))]),
+    mapEl, e('div', { class: 'geo-res', 'aria-live': 'polite' }),
+    e('small', { class: 'cu-dr-hint' }, 'اضغط على مكانك في الخريطة أو اسحب الدبوس، أو ابحث باسم الحي، أو استخدم «موقعي الآن». أسماء الأماكن من خرائط OpenStreetMap.')]);
+  geoLib().then(function (L) {
+    mapEl.innerHTML = '';
+    const c = o.center || [24.7136, 46.6753];
+    const m = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView(c, o.center ? 16 : 11);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(m);
+    const icon = L.divIcon({ className: 'geo-pin', html: '<span>' + ui('map-pin', 26) + '</span>', iconSize: [40, 40], iconAnchor: [20, 38] });
+    const pin = L.marker(c, { draggable: true, icon: icon, keyboard: true, title: 'موقعك' }).addTo(m);
+    pin.on('dragend', function () { const p = pin.getLatLng(); geoMove(p.lat, p.lng); });
+    m.on('click', function (ev) { geoMove(ev.latlng.lat, ev.latlng.lng); });
+    GEO.map = m; GEO.pin = pin; setTimeout(function () { m.invalidateSize(); }, 80);
+    try { new ResizeObserver(function () { m.invalidateSize(); }).observe(mapEl); } catch (err) { void err; }
+  }).catch(function (err) { mapEl.innerHTML = ''; mapEl.appendChild(DS.note('warn', 'تعذّر تحميل الخريطة', (err && err.message) || 'أدخل حقول العنوان يدويًا.')); });
+  return GEO.el;
+}
+/* تعبئة الحقول من نتيجة الخريطة — كل حقل باسمه، والقوائم بأقرب خيار مطابق */
+const GEO_KEYS = { country: ['country'], state: ['state', 'region'], city: ['city'], district: ['district', 'dist'], street: ['street'], building: ['building_number', 'bno'], postal: ['postal_code', 'zip'] };
+function geoFill(R, fields, set) {
+  let n = 0;
+  Object.keys(GEO_KEYS).forEach(function (k) {
+    const v = R[k]; if (!v) return;
+    fields.forEach(function (f) {
+      if (GEO_KEYS[k].indexOf(f.key) < 0) return;
+      let val = String(v);
+      if (f.options && f.options.length) {
+        const nv = geoN(v), hit = f.options.filter(function (op) { const a = geoN(op[1]), b = geoN(op[0]); return a === nv || b === nv || (nv && (a.indexOf(nv) >= 0 || nv.indexOf(a) >= 0)); })[0]
+          || (k === 'country' && R.cc === 'sa' ? f.options.filter(function (op) { return /السعود/.test(op[1]); })[0] : null);
+        if (!hit) return; val = hit[0];
+      }
+      set(f.key, val); n++;
+    });
+  });
+  return n;
+}
 function updPage(s) {
   const U = LV.upd && LV.upd.sec === s ? LV.upd : (LV.upd = { sec: s, pick: '', vals: {}, stage: 'form' });
   if (s === 'docs') return updDocs(U);
@@ -11745,9 +11841,8 @@ function updPage(s) {
   return [e('div', { class: 't2-stack t2-pb-page' }, [comp,
     e('section', { class: 't2-panel' }, e('div', { class: 't2-stack-tight' }, [
       e('div', { class: 't2-pb-cell' }, DS.editField('ما الذي تريد تحديثه؟', DS.select({ value: U.pick, options: [['', '— اختر ما تريد تحديثه —'], ['all', 'كل بيانات هذا القسم']].concat(F.map(function (f) { return [f[0], f[1]]; })), onChange: function (x) { U.pick = x; U.miss = false; draw(); } }))),
-      s === 'address' ? lvSec('تحديد الموقع', null, [e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, DS.button('تحديد الموقع على الخريطة', { tone: 'primary', ui: 'map-trifold', onClick: function () { U.map = !U.map; draw(); } })),
-        U.map ? e('div', { class: 'lv-map', role: 'img', 'aria-label': 'خريطة تحديد الموقع' }, [e('span', { class: 'lv-map-pin' }, frag(ui('map-pin', 30))), e('span', { class: 'lv-map-tx' }, 'حرّك الدبوس حتى يقف على مكانك بالضبط')]) : null,
-        DS.note('info', 'لم يُضبَط موقعك بدقّة؟', 'أمامك خياران، وكلاهما داخل الخريطة: أدخل العنوان المختصر فيها ليُجلب موقعك مباشرة، أو حرّك الدبوس حتى يقف على مكانك بالضبط. وفي الخريطة أدوات مساعدة: العنوان المختصر · موقعي الآن · أقرب العناوين · أماكن قريبة.')])], 'lv:geo') : null,
+      s === 'address' ? e('div', { class: 'geo-sec' }, [e('div', { class: 'geo-sec-h' }, [frag(tile('map-trifold:teal')), e('span', {}, [e('b', {}, 'تحديد الموقع على الخريطة'), e('small', {}, 'يجلب العنوان ويعبّئ الحقول — ثم تراجعها')])]), e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, DS.button(U.map ? 'إخفاء الخريطة' : 'فتح الخريطة', { tone: 'primary', ui: 'map-trifold', onClick: function () { U.map = !U.map; draw(); } })),
+        U.map ? geoPick({ key: 'upd:' + s, onUse: function (R) { const FF = F.map(function (f) { return { key: f[0], options: Array.isArray(f[4]) ? f[4].map(function (x) { return [x, x]; }) : null }; }); const n = geoFill(R, FF, function (k, v) { U.vals[k] = v; }); U.pick = 'all'; U.miss = false; snack(n ? 'عُبّئت ' + fmtNum(n) + ' حقول من الخريطة — راجعها ثم «مراجعة التعديل».' : 'لم تتطابق بيانات الموقع مع الحقول — أدخلها يدويًا.'); draw(); } }) : null])]) : null,
       e('div', { class: 't2-pb-grid' }, show.map(function (f) { return e('div', { class: 't2-pb-cell', 'data-key': f[0] }, DS.editField([f[1], f[2] ? ' *' : ''].join(''), ctl(f))); })),
       U.miss ? e('span', { class: 't2-field-h is-bad' }, U.pick ? 'لم تُغيّر أي قيمة بعد.' : 'اختر ما تريد تحديثه أولًا.') : null,
       e('div', { class: 't2-pb-actions' }, [DS.button('مراجعة التعديل', { tone: 'primary', onClick: function () { const ch = F.filter(function (f) { return f[0] in U.vals && String(U.vals[f[0]]).trim() !== String(f[3]).trim(); }); if (!ch.length) { U.miss = true; draw(); return; } U.stage = 'review'; draw(); toTop(); } }),
@@ -13816,6 +13911,7 @@ try {
   LP['me-notes'].run = liveNotesPage;
 } catch (err) { void err; }
 lvSecPage = function (k) { return liveSecPage(k); };
+try { ['personal', 'address', 'contact', 'emergency', 'bank'].forEach(function (s) { if (LP['upd-' + s]) { LP['upd-' + s].run = function () { return liveUpdPage(s); }; LP['upd-' + s].up = LVP[s].k; LP['upd-' + s].t = 'تحديث ' + String(LVP[s].t).replace(/[ً-ْ]/g, ''); } }); } catch (err) { void err; }
 docsPage = function () { return liveDocsList(); };
 /* إيصال التحويل المرفوع من النظام السابق يفتح من الخادم برابط مؤقت */
 const trView0 = trView;
@@ -13941,7 +14037,7 @@ function liveSecPage(s) {
       tiles: [['الحقول المكتملة', fmtNum(nOk) + ' / ' + fmtNum(all.length), 'check-circle'], ['المطلوبة الناقصة', fmtNum(miss), 'list-checks', miss ? 'warn' : null], ['التحديث', 'بعد الاعتماد بتحقق أمني', 'note-pencil']] }),
     LIVE_EDIT[s] ? liveEditPanel(s) : P.groups.map(function (g) { const n = g[1].filter(function (f) { return f[3]; }).length; return lvSec(g[0], fmtNum(n) + ' من ' + fmtNum(g[1].length) + ' مكتمل', [e('div', { class: 'lx-fs' }, g[1].map(lvFieldLux))], 'lv:' + s + ':' + g[0]); }),
     all.length || LIVE_EDIT[s] ? null : DS.note('info', 'لا بيانات في هذا القسم بعد', 'تظهر هنا بياناتك كما أدخلتها في المنصة.'),
-    LIVE_EDIT[s] ? null : e('div', { class: 't2-pb-actions' }, liveOk(DS.button('تحديث بيانات هذا القسم', { tone: 'primary', ui: 'note-pencil', onClick: function () { LIVE_EDIT[s] = true; draw(); } })))])];
+    LIVE_EDIT[s] ? null : e('div', { class: 't2-pb-actions' }, liveOk(DS.button(all.length ? 'تحديث بيانات هذا القسم' : 'إضافة بيانات هذا القسم', { tone: 'primary', ui: 'note-pencil', onClick: function () { delete LIVE_UPD[s]; go('other', 'upd-' + s); } })))])];
 }
 /* سجل الأمان الحقيقي */
 function liveEvents() {
@@ -14391,6 +14487,60 @@ function liveInput(f) {
   }
   const type = f.kind === 'date' ? 'date' : f.kind === 'email' ? 'email' : f.kind === 'number' ? 'text' : 'text';
   return e('input', { class: 't2-input', type: type, value: typeof v === 'object' ? '' : String(v), dir: /phone|email|iban|number|date/.test(f.kind || f.key) ? 'ltr' : null, inputmode: /phone|number/.test(f.kind || '') ? 'numeric' : null, 'aria-label': f.label || f.key });
+}
+/* v314: صفحة «طلب تحديث» للقسم بهوية العيّنة نفسها (updPage): مسار الاكتمال · ما الذي تريد تحديثه · الخريطة للعنوان · مراجعة التعديل · التحقق ثم الإرسال — بحقول القاعدة وقيمها */
+const LIVE_UPD = {};
+function liveUpdFields(s) {
+  const d = LIVE_DATA.blocks && LIVE_DATA.blocks[s];
+  return (d && Array.isArray(d.fields) ? d.fields : []).filter(function (f) { return f && f.active !== false && f.kind !== 'file' && !f.readonly && !f.locked && !f.hidden; }).map(function (f) {
+    const ops = Array.isArray(f.options) ? f.options.map(function (op) { return Array.isArray(op) ? [String(op[0]), String(op[1])] : op && op.value !== undefined ? [String(op.value), String(op.label || op.value)] : [String(op), String(op)]; }) : null;
+    return { key: f.key, label: f.label || f.key, required: !!f.required, kind: f.kind || 'text', options: ops && ops.length ? ops : null, value: f.value === null || f.value === undefined || typeof f.value === 'object' ? '' : String(f.value) };
+  });
+}
+function liveUpdPage(s) {
+  const U = LIVE_UPD[s] || (LIVE_UPD[s] = { pick: '', vals: {}, stage: 'form', miss: false, st: {}, gate: e('div'), err: '', busy: false, map: s === 'address' });
+  const F = liveUpdFields(s), reqF = F.filter(function (f) { return f.required; });
+  const cur = function (f) { return f.key in U.vals ? U.vals[f.key] : f.value; };
+  const nameOf = function (f, v) { if (!f.options) return v; const o = f.options.filter(function (x) { return x[0] === String(v); })[0]; return o ? o[1] : v; };
+  const filled = reqF.filter(function (f) { return String(cur(f) || '').trim(); }).length, pct = reqF.length ? Math.round(filled / reqF.length * 100) : 100;
+  const comp = e('section', { class: 't2-pb-upd' }, [e('div', { class: 't2-pb-upd-top' }, [e('div', { class: 't2-pb-upd-pct' }, [e('b', {}, String(pct)), e('span', {}, '٪')]),
+    e('div', { class: 't2-pb-upd-meta' }, [e('div', { class: 't2-pb-upd-t' }, 'مسار الاكتمال'), e('div', { class: 't2-pb-upd-n' }, fmtNum(filled) + ' من ' + fmtNum(reqF.length) + ' حقل مطلوب مكتمل')]),
+    e('div', { class: 't2-pb-upd-st' }, DS.badge(pct === 100 ? 'مكتمل' : 'غير مكتمل', pct === 100 ? 'ok' : 'warn'))]),
+    e('div', { class: 't2-pb-prog' }, e('span', { class: 't2-pb-prog-i', style: 'width:' + pct + '%' })), e('p', { class: 't2-pb-upd-note' }, pct === 100 ? 'اكتملت بيانات هذا القسم.' : 'أكمل الحقول المطلوبة في هذا القسم.')]);
+  if (!F.length) return [e('div', { class: 't2-stack t2-pb-page' }, [DS.note('info', 'لا حقول قابلة للتحديث في هذا القسم.', ''), e('div', { class: 't2-pb-actions' }, [DS.button('رجوع', { onClick: goP(LVP[s].k) })])])];
+  const changes = F.filter(function (f) { return f.key in U.vals && String(U.vals[f.key]).trim() !== String(f.value).trim(); }).map(function (f) { return [f.key, f.label, nameOf(f, f.value), nameOf(f, U.vals[f.key])]; });
+  if (U.stage === 'sent') return [e('div', { class: 't2-stack t2-pb-page' }, [DS.note('ok', U.res && (U.res.pending || U.res.request_no) ? 'أُرسل طلب التحديث' : 'حُفظ التحديث', (U.res && U.res.request_no ? 'رقم الطلب ' + U.res.request_no + ' — ' : '') + ((U.res && U.res.message) || 'يظهر في «متابعة الطلبات» حتى يعتمده فريق إدارة الحسابات.')),
+    e('div', { class: 't2-pb-actions' }, [DS.button(LVP[s].t, { tone: 'primary', onClick: function () { delete LIVE_UPD[s]; go('other', LVP[s].k); } }), DS.button('ملفي الشخصي', { onClick: function () { delete LIVE_UPD[s]; go('other', 'profile'); } })])])];
+  if (U.stage === 'review') {
+    const send = liveOk(DS.button(U.busy ? 'جارٍ الإرسال…' : 'إرسال طلب التحديث', { tone: 'primary', disabled: U.busy, onClick: async function () {
+      const values = {}; F.forEach(function (f) { values[f.key] = cur(f); });
+      try { ((LIVE_DATA.blocks[s] || {}).fields || []).forEach(function (f) { if (f && f.hidden && !(f.key in values) && f.value !== null && f.value !== undefined && typeof f.value !== 'object') values[f.key] = f.value; }); } catch (err) { void err; }
+      U.busy = true; U.err = ''; draw();
+      try { U.res = await liveSaveBlock(s, values, U.st, U.gate); U.stage = 'sent'; U.busy = false; draw(); toTop(); }
+      catch (err) { U.busy = false; if (err && err.message === 'auth') return; U.err = (err && err.message) || 'تعذّر الإرسال.'; draw(); }
+    } }));
+    return [e('div', { class: 't2-stack t2-pb-page' }, [comp, lvPanel('مراجعة التعديل', DS.badge(fmtNum(changes.length) + ' تعديل', 'info'), [
+      lvTable({ id: 'lupd-rev', search: false, pager: false, columns: [{ label: 'الحقل', cell: function (c) { return c[1]; } }, { label: 'القيمة الحالية', cell: function (c) { return c[2] || 'غيرُ مُدخَل'; } }, { label: 'القيمة الجديدة', cell: function (c) { return e('b', {}, c[3] || '—'); } }], rows: changes }), U.gate,
+      U.err ? e('span', { class: 't2-field-h is-bad', role: 'alert' }, U.err) : null]),
+      e('div', { class: 't2-pb-actions' }, [send, DS.button('تعديل', { onClick: function () { U.stage = 'form'; U.err = ''; draw(); } })])])];
+  }
+  const ctl = function (f) {
+    const v = cur(f), set = function (x) { U.vals[f.key] = x; U.miss = false; };
+    if (f.options) return DS.select({ value: v, options: [['', 'اختر']].concat(f.options), onChange: function (x) { set(x); draw(); } });
+    if (f.kind === 'date') return DS.input({ type: 'date', value: v, title: f.label, onInput: function (x) { set(x); draw(); } });
+    return DS.input({ value: v, dir: /phone|email|iban|number|postal|building/.test(f.kind + ' ' + f.key) ? 'ltr' : null, onInput: set });
+  };
+  const show = U.pick === 'all' ? F : F.filter(function (f) { return f.key === U.pick; });
+  const geo = s === 'address' ? e('div', { class: 'geo-sec' }, [e('div', { class: 'geo-sec-h' }, [frag(tile('map-trifold:teal')), e('span', {}, [e('b', {}, 'تحديد الموقع على الخريطة'), e('small', {}, 'يجلب العنوان ويعبّئ الحقول — ثم تراجعها')])]), e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, liveOk(DS.button(U.map ? 'إخفاء الخريطة' : 'فتح الخريطة', { tone: 'primary', ui: 'map-trifold', onClick: function () { U.map = !U.map; draw(); } }))),
+    U.map ? geoPick({ key: 'lupd:' + s, onUse: function (R) { const n = geoFill(R, F, function (k, v) { U.vals[k] = v; }); U.pick = 'all'; U.miss = false; snack(n ? 'عُبّئت ' + fmtNum(n) + ' حقول من الخريطة — راجعها ثم «مراجعة التعديل».' : 'لم تتطابق بيانات الموقع مع الحقول — أدخلها يدويًا.'); draw(); } }) : null])]) : null;
+  return [e('div', { class: 't2-stack t2-pb-page' }, [comp,
+    e('section', { class: 't2-panel' }, e('div', { class: 't2-stack-tight' }, [
+      e('div', { class: 't2-pb-cell' }, DS.editField('ما الذي تريد تحديثه؟', DS.select({ value: U.pick, options: [['', '— اختر ما تريد تحديثه —'], ['all', 'كل بيانات هذا القسم']].concat(F.map(function (f) { return [f.key, f.label]; })), onChange: function (x) { U.pick = x; U.miss = false; draw(); } }))),
+      geo,
+      e('div', { class: 't2-pb-grid' }, show.map(function (f) { return e('div', { class: 't2-pb-cell', 'data-key': f.key }, DS.editField([f.label, f.required ? ' *' : ''].join(''), ctl(f))); })),
+      U.miss ? e('span', { class: 't2-field-h is-bad' }, U.pick ? 'لم تُغيّر أي قيمة بعد.' : 'اختر ما تريد تحديثه أولًا.') : null,
+      e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('مراجعة التعديل', { tone: 'primary', onClick: function () { if (!changes.length) { U.miss = true; draw(); return; } U.stage = 'review'; draw(); toTop(); } })),
+        DS.button('تراجع', { onClick: function () { delete LIVE_UPD[s]; go('other', LVP[s].k); } })])]))])];
 }
 function liveEditPanel(k) {
   const d = LIVE_DATA.blocks && LIVE_DATA.blocks[k], F = d && Array.isArray(d.fields) ? d.fields.filter(function (f) { return f && f.active !== false && f.kind !== 'file' && !f.readonly && !f.locked; }) : [];
