@@ -11008,7 +11008,10 @@ function tcards(m) {
 /* بطاقة العضوية في المحفظة الرقمية — هدية 500 نقطة مرّة واحدة عند أوّل إضافة */
 const WAL = window.__TMWAL || (window.__TMWAL = { apple: false, google: false, gift: false, at: '' });
 const WNAME = { apple: 'Apple Wallet', google: 'Google Wallet' };
+/* v319: إيقاف مؤقت لإضافة البطاقة إلى محافظ الجوال بقرار المشرف العام — إخفاء من الواجهة فقط، بلا حذف بيانات؛ تُعاد بتغيير القيمة إلى true */
+const WAL_ON = false;
 function walletRow() {
+  if (!WAL_ON) return '';
   const btn = function (k) { const on = WAL[k]; return '<button type="button" class="wl-b' + (on ? ' is-on' : '') + '" data-wl="' + k + '"' + (on ? ' aria-disabled="true"' : '') + '>' + tile(on ? 'check-circle' : 'wallet', on ? 'teal' : (k === 'apple' ? 'navy' : 'sky'), 'wl-t') + '<span><small>' + (on ? 'أُضيفت إلى' : 'أضفها إلى') + '</small><b dir="ltr">' + WNAME[k] + '</b></span></button>'; };
   return '<div class="wl"><div class="wl-h">' + tile('gift', 'gold') + '<div><b>' + (WAL.gift ? 'حصلت على 500 نقطة هدية' : 'أضف بطاقتك إلى محفظتك واحصل على 500 نقطة هدية') + '</b><span>' + (WAL.gift ? 'أُضيفت إلى رصيدك في ' + WAL.at + '.' : 'تُمنح مرّة واحدة فقط ولمحفظة واحدة — Apple Wallet أو Google Wallet.') + '</span></div></div><div class="wl-bs">' + btn('apple') + btn('google') + '</div></div>';
 }
@@ -11108,7 +11111,7 @@ function wire(node, ctx, m) {
       return;
     }
     const wl = ev.target.closest('[data-wl]');
-    if (wl) { const wk = wl.getAttribute('data-wl'); if (WAL[wk]) return; walletSheet(m, wk, function (gift) { if (window.__TMWALDONE) window.__TMWALDONE(WNAME[wk], gift); }); return; }
+    if (wl && WAL_ON) { const wk = wl.getAttribute('data-wl'); if (WAL[wk]) return; walletSheet(m, wk, function (gift) { if (window.__TMWALDONE) window.__TMWALDONE(WNAME[wk], gift); }); return; }
     const b = ev.target.closest('[data-tm]');
     if (!b) return;
     const k = b.getAttribute('data-tm');
