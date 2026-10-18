@@ -13148,7 +13148,9 @@ function v1FromMap(R, get, put) {
   const pick = function (list, v) { const nv = geoN(v); return (list || []).filter(function (x) { const a = geoN(x); return a === nv || (nv && (a.indexOf(nv) >= 0 || nv.indexOf(a) >= 0)); })[0]; };
   const st = pick(V1_STATES[C || get('address.country')], R.state); if (st) { put('address.state', st); n++; }
   if (R.city) { put('address.city', R.city); n++; }
-  if (sec === 'national') { [['district', R.district], ['street', R.street], ['building_number', /^\d{4}$/.test(R.building) ? R.building : ''], ['postal_code', /^\d{5}$/.test(R.postal) ? R.postal : ''], ['short_address', R.short]].forEach(function (p) { if (p[1]) { put('address.' + p[0], p[1]); n++; } }); }
+  const zip5 = (String(R.postal || '').match(/^\d{5}/) || [''])[0];
+  /* موقع جديد: ما لا تجلبه الخريطة من حقول العنوان الوطني يُفرَّغ ليكمله العميل بدل بقاء قيم الموقع السابق */
+  if (sec === 'national') { [['district', R.district], ['street', R.street], ['building_number', /^\d{4}$/.test(R.building) ? R.building : ''], ['postal_code', zip5], ['additional_number', ''], ['short_address', R.short]].forEach(function (p) { put('address.' + p[0], p[1] || ''); if (p[1]) n++; }); }
   else { const l1 = [R.street, R.building].filter(Boolean).join(' '), l2 = R.district; if (l1) { put('address.line1', l1); n++; } if (l2) { put('address.line2', l2); n++; } if (R.postal) { put('address.zip', R.postal); n++; } }
   return n;
 }
