@@ -1,5 +1,6 @@
-# فيلم التدشين باسم العميل — يُطلب من المنصة (my_launch_film_request ← pg_net) ويُولَّد هنا لا على السيرفر،
-# ثم يُرفع إلى Cloudflare R2 (المسار clients/ يُحذف تلقائيًا بعد 31 يومًا) وتصل العميل رسالة «جُهِّز فيلمك».
+# فيلم التدشين باسم العميل — يُطلب من المنصة (عند التدشين تلقائيًا أو بطلب العميل ← pg_net) ويُولَّد هنا لا على السيرفر،
+# ثم يُرفع إلى Cloudflare R2 (المسار clients/ يُحذف تلقائيًا بعد 31 يومًا).
+# v326: تصوير متوازٍ — 3 أجزاء × مقاسين على 6 أجهزة في وقت واحد، ثم وصلها بلا إعادة ترميز (الدقة 1080 والجودة كما هي).
 name: film-render
 run-name: "فيلم تدشين — ${{ inputs.id }}"
 on:
@@ -13,37 +14,86 @@ permissions:
 concurrency:
   group: film-render-${{ inputs.id }}
   cancel-in-progress: false
+env:
+  FILM_ID: ${{ inputs.id }}
 jobs:
-  render:
+  claim:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
-    env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      FILM_ID: ${{ inputs.id }}
-      CDN: https://media.tera-services.com.sa
+    timeout-minutes: 5
+    outputs:
+      client: ${{ steps.c.outputs.client }}
+      tok: ${{ steps.c.outputs.tok }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          sparse-checkout: film
+      - id: c
+        name: حجز الطلب وبيانات البطاقة
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node film/job.js claim "$FILM_ID" "$RUNNER_TEMP/client.json"
+          echo "client=$(base64 -w0 "$RUNNER_TEMP/client.json")" >> "$GITHUB_OUTPUT"
+          TOK=$(cat "$RUNNER_TEMP/client.json.token"); case "$TOK" in (*[!0-9a-f]*|'') echo "bad token"; exit 1;; esac
+          echo "tok=$TOK" >> "$GITHUB_OUTPUT"
+
+  render:
+    needs: claim
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix:
+        ori: [l, p]
+        part: [{ a: 0, b: 525 }, { a: 525, b: 760 }, { a: 760, b: 975 }]
+    steps:
+      - uses: actions/checkout@v4
       - name: الأدوات
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
-          cd film && npm install --no-audit --no-fund --silent && npx playwright install --with-deps chromium >/dev/null
-      - name: حجز الطلب وبيانات البطاقة
-        run: node film/job.js claim "$FILM_ID" "$RUNNER_TEMP/client.json"
-      - name: التصوير (أفقي وطولي معًا)
+          cd film && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --no-audit --no-fund --silent
+          if google-chrome --version; then echo "PW_CHANNEL=chrome" >> "$GITHUB_ENV"; else npx playwright install --with-deps chromium >/dev/null; fi
+          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null; }
+      - name: التصوير (الجزء ${{ matrix.part.a }}–${{ matrix.part.b }} · ${{ matrix.ori }})
+        env:
+          CLIENT_B64: ${{ needs.claim.outputs.client }}
         run: |
-          cd film
-          CLIENT=$RUNNER_TEMP/client.json ORI=l OUT=$RUNNER_TEMP/fl node render.js & P1=$!
-          CLIENT=$RUNNER_TEMP/client.json ORI=p OUT=$RUNNER_TEMP/fp node render.js & P2=$!
-          wait $P1 && wait $P2
-      - name: الترميز 1080
+          printf %s "$CLIENT_B64" | base64 -d > "$RUNNER_TEMP/client.json"
+          cd film && CLIENT="$RUNNER_TEMP/client.json" ORI=${{ matrix.ori }} OUT="$RUNNER_TEMP/f" A=${{ matrix.part.a }} B=${{ matrix.part.b }} node render.js
+      - name: ترميز الجزء 1080
+        run: bash film/seg.sh "$RUNNER_TEMP/f" ${{ matrix.part.a }} "$RUNNER_TEMP/seg-${{ matrix.ori }}-${{ matrix.part.a }}.mp4"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: seg-${{ matrix.ori }}-${{ matrix.part.a }}
+          path: ${{ runner.temp }}/seg-${{ matrix.ori }}-${{ matrix.part.a }}.mp4
+          retention-days: 1
+          compression-level: 0
+
+  merge:
+    needs: [claim, render]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CDN: https://media.tera-services.com.sa
+      TOK: ${{ needs.claim.outputs.tok }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: film
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: seg-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/seg
+      - name: وصل الأجزاء + الصوت
         run: |
-          mkdir -p $RUNNER_TEMP/out
-          bash film/encode.sh $RUNNER_TEMP/fl $RUNNER_TEMP/out/landscape.mp4 $RUNNER_TEMP/out/landscape.jpg
-          bash film/encode.sh $RUNNER_TEMP/fp $RUNNER_TEMP/out/portrait.mp4 $RUNNER_TEMP/out/portrait.jpg
+          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null; }
+          S="$RUNNER_TEMP/seg"; mkdir -p "$RUNNER_TEMP/out"
+          for o in l p; do k=landscape; [ $o = p ] && k=portrait
+            bash film/join.sh "$RUNNER_TEMP/out/$k.mp4" "$RUNNER_TEMP/out/$k.jpg" "$S/seg-$o-0.mp4" "$S/seg-$o-525.mp4" "$S/seg-$o-760.mp4"
+            n=$(ffprobe -v error -count_packets -select_streams v:0 -show_entries stream=nb_read_packets,width,height -of csv=p=0 "$RUNNER_TEMP/out/$k.mp4"); echo "$k $n"
+            case "$n" in (1920,1080,975|1080,1920,975) ;; (*) echo "فيلم غير مكتمل: $k $n"; exit 1;; esac
+          done
       - name: الرفع إلى Cloudflare R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -53,7 +103,7 @@ jobs:
           AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
         run: |
-          TOK=$(cat "$RUNNER_TEMP/client.json.token"); case "$TOK" in (*[!0-9a-f]*|'') echo "bad token"; exit 1;; esac
+          case "$TOK" in (*[!0-9a-f]*|'') echo "bad token"; exit 1;; esac
           t() { printf %s "$1" | tr -d '[:space:]'; }  # الأسرار قد تُحفظ بسطر زائد
           export AWS_ACCESS_KEY_ID="$(t "$AWS_ACCESS_KEY_ID")" AWS_SECRET_ACCESS_KEY="$(t "$AWS_SECRET_ACCESS_KEY")"
           R2ID="$(t "$R2_ACCOUNT_ID" | grep -oiE '[0-9a-f]{32}' | head -n 1)"  # يقبل الرقم وحده أو رابط S3 كاملًا
@@ -64,8 +114,23 @@ jobs:
             aws s3 cp "$RUNNER_TEMP/out/$k.jpg" "s3://tera-films/clients/$TOK/$k.jpg" --endpoint-url "$EP" --content-type image/jpeg --only-show-errors
           done
           printf '{"landscape":"%s","portrait":"%s","landscape_poster":"%s","portrait_poster":"%s"}' "$CDN/clients/$TOK/landscape.mp4" "$CDN/clients/$TOK/portrait.mp4" "$CDN/clients/$TOK/landscape.jpg" "$CDN/clients/$TOK/portrait.jpg" > "$RUNNER_TEMP/files.json"
-      - name: الإتمام ورسالة «جُهِّز فيلمك»
+      - name: الإتمام
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node film/job.js done "$FILM_ID" "$RUNNER_TEMP/files.json"
+
+  failed:
+    needs: [claim, render, merge]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: film
       - name: تسجيل التعذّر
-        if: failure()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node film/job.js fail "$FILM_ID" "render_failed" || true

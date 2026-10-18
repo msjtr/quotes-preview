@@ -7,6 +7,8 @@ const fs = require('fs'); const path = require('path'); const { chromium } = req
 const DIR = __dirname, REPO = process.env.REPO || path.join(DIR, '..');
 const C = JSON.parse(fs.readFileSync(process.env.CLIENT, 'utf8'));
 const ORI = process.env.ORI === 'p' ? 'p' : 'l', OUT = process.env.OUT, FRAMES = +(process.env.FRAMES || 975), FPS = 30, Q = +(process.env.Q || 95);
+// جزء من الفيلم (للتصوير المتوازي): A أول لقطة، B ما بعد آخر لقطة — أسماء الملفات بالرقم العام للّقطة
+const A = Math.max(0, +(process.env.A || 0)), B = Math.min(FRAMES, +(process.env.B || FRAMES));
 const VP = ORI === 'p' ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 };
 const HOST = 'staging.tera-services.com.sa', SITE = 'https://' + HOST;
 const U = '11111111-2222-3333-4444-555555555555';
@@ -19,7 +21,7 @@ const MEMBERSHIP = { ok: true, exists: true, tier: C.tier || 'plus', status: 'ac
 const jwt = () => { const b = s => Buffer.from(JSON.stringify(s)).toString('base64url'); return b({ alg: 'HS256' }) + '.' + b({ sub: U }) + '.x'; };
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const b = await chromium.launch({ args: ['--disable-gpu-vsync', '--force-color-profile=srgb', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--font-render-hinting=none'] });
+  const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined, args: ['--disable-gpu-vsync', '--force-color-profile=srgb', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--font-render-hinting=none'] });
   const ctx = await b.newContext({ viewport: VP, deviceScaleFactor: 1, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' });
   await ctx.route(/.*/, r => { const u = new URL(r.request().url()); const p = decodeURIComponent(u.pathname); const J = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify(o) });
     if (u.host === 'fonts.googleapis.com') return r.fulfill({ contentType: 'text/css', body: fs.readFileSync(path.join(DIR, 'fonts2', 'fonts.css'), 'utf8').replace(/url\(\/__fonts\//g, 'url(' + SITE + '/__fonts/') });
@@ -45,9 +47,15 @@ const jwt = () => { const b = s => Buffer.from(JSON.stringify(s)).toString('base
   await pg.evaluate(() => window.liveInit()); for (let i = 0; i < 18; i++) { await adv(250); await pg.waitForTimeout(30); }
   await pg.evaluate(() => window.liveReady());
   const cdp = await ctx.newCDPSession(pg); const t1 = Date.now(); const ONLY = process.env.ONLY ? process.env.ONLY.split(',').map(Number) : null;
-  for (let f = 0; f < FRAMES; f++) { if (ONLY && !ONLY.includes(f)) continue; await pg.evaluate(t => window.render(t, {}), f / FPS);
+  /* حركات CSS في صفحات المنصة (لمعة الذهب على البطاقات وغيرها) تُثبَّت على زمن الفيلم لا على ساعة الجهاز —
+     فتتطابق كل لقطة أيًّا كان الجهاز أو الجزء الذي صوّرها (التصوير المتوازي بلا قفزات عند الوصل) */
+  const pinCss = (t) => Promise.all(siteFrames().map(fr => fr.evaluate(ms => { document.getAnimations().forEach(a => { try { a.pause(); a.currentTime = ms; } catch (e) { void e; } }); }, 60000 + t * 1000 * 0.06).catch(() => 0)));
+  /* التهيئة: مشاهد الفيلم تحفظ حالتها بين اللقطات (الحفر بالليزر وتكبير البطاقة…) — فيُمرَّر كل ما قبل الجزء بلا تصوير */
+  const W0 = Date.now(); for (let f = 0; f < A; f++) await pg.evaluate(t => window.render(t, {}), f / FPS);
+  if (A > 0) console.log('warm', A, ((Date.now() - W0) / 1000).toFixed(1) + 's');
+  for (let f = A; f < B; f++) { if (ONLY && !ONLY.includes(f)) { await pg.evaluate(t => window.render(t, {}), f / FPS); continue; } await pg.evaluate(t => window.render(t, {}), f / FPS); await pinCss(f / FPS);
     const sh = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: Q }); fs.writeFileSync(path.join(OUT, 'f_' + String(f).padStart(5, '0') + '.jpg'), Buffer.from(sh.data, 'base64'));
     if (f % 150 === 0) console.log(ORI, f, ((Date.now() - t1) / 1000).toFixed(1) + 's'); }
-  console.log('done', ORI, FRAMES, ((Date.now() - t1) / 1000).toFixed(1) + 's', errs.length ? 'page errors: ' + [...new Set(errs)].slice(0, 5).join(' | ') : '');
+  console.log('done', ORI, A + '-' + B, ((Date.now() - t1) / 1000).toFixed(1) + 's', errs.length ? 'page errors: ' + [...new Set(errs)].slice(0, 5).join(' | ') : '');
   await b.close();
 })().catch(e => { console.error(e); process.exit(1); });
