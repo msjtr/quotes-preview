@@ -12896,7 +12896,7 @@ const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخ
 const RV_ON = !document.documentElement.classList.contains('tq-live');
 const RV = { tab: 'upd', toast: '', dlg: null };
 try { RV.tab = sessionStorage.getItem('tera-rv-tab') || 'upd'; } catch (err) { void err; }
-const RV_TABS = [['upd', 'نموذج التحديث', 'newq'], ['addr', 'الملف الشخصي والعنوان', 'pin'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film']];
+const RV_TABS = [['upd', 'نموذج التحديث', 'newq'], ['addr', 'ملفي الشخصي', 'profile'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film']];
 function rvGo(t) { RV.tab = t; RV.toast = ''; try { sessionStorage.setItem('tera-rv-tab', t); } catch (err) { void err; } draw(); toTop(); }
 function rvToast(t) { RV.toast = t; draw(); }
 const rvBadge = (t, tone) => DS.badge(t, tone);
@@ -13075,6 +13075,8 @@ function v1Options(f, get) {
   let o = f.o === 'states' ? (V1_STATES[get('address.country')] || []) : f.o === 'banks' ? (V1_BANKS[v1BankCountry(get)] || []) : f.o === 'wallets' ? (V1_WALLETS[v1BankCountry(get)] || [])
     : f.o === 'cash' ? (V1_CASH[get('personal.nationality')] || []).concat(V1_CASH['*']) : (f.o || []);
   o = o.map(function (x) { return Array.isArray(x) ? x : [x, x]; });
+  /* options_from document_requirements: وثائق الإقامة الحالية بتسميتها وأوجهها (optionsOf) */
+  if (f.id === 'personal.id_doc') { const res = v1Get(get, 'personal', 'residency_type'), dr = PF_DR.filter(function (r) { return r[0] === res; }); if (dr.length) o = dr.map(function (r) { return [r[1], r[4] + (Number(r[3]) === 2 ? ' — بوجهين' : ' — صفحة البيانات')]; }); }
   /* allowOpts: كل قاعدة allow_if متحققة تحصر القائمة — تقاطع لا اتحاد */
   v1Rules(f, 'allow_if', get).forEach(function (r) { o = o.filter(function (x) { return r.values.indexOf(x[0]) >= 0; }); });
   return o;
@@ -13431,28 +13433,321 @@ function rvaField(f) {
   return e('div', { class: 'rv-f is-edit' + (err ? ' is-back' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), req ? null : rvBadge('اختياري', null)]), ctl,
     hint ? e('small', { class: 'rv-sm' }, hint) : null, err ? e('p', { class: 'rv-note' }, [frag(ui('warning', 14)), err]) : null]);
 }
-function rvAddr() {
-  rvaInit();
-  if (!/^rva-/.test(String(S.fsOne || ''))) S.fsOne = 'rva-personal';
-  const sec = v1Get(rvaGet, 'profile', 'address_section'), res = v1Get(rvaGet, 'personal', 'residency_type'), doc = rvaGet('personal.id_doc');
-  const RES_AR = { saudi: 'سعودي', gcc: 'خليجي', resident: 'مقيم', non_resident: 'غير مقيم' };
-  const forms = V1_FORMS.map(function (F) {
-    const body = v1Grouped(F[0], rvaGet, rvaField);
-    if (F[0] === 'address') { const lc = v1Loc('rva-map', rvaGet, function (id, v) { RVA.v[id] = v; delete RVA.err[id]; }, function () { v1Settle(RVA.v, function (k, v) { RVA.v[k] = v; }, true); }); if (lc) body.unshift(lc); }
-    const vis = v1Vis(F[0], rvaGet), req = vis.filter(function (f) { return v1Required(f, rvaGet); }), ok = req.filter(function (f) { return String(rvaGet(f.id) || '').trim(); }).length;
-    return rvSec(F[0] === 'address' && sec !== 'national' ? 'عنوان خارج المملكة' : F[1], body, { one: 'rva-' + F[0], ic: F[2] }, fmtNum(ok) + ' من ' + fmtNum(req.length) + ' مطلوب مكتمل', null);
+/* ---------- ٢) ملفي الشخصي — محاكاة حيّة لمسار النظام (profbasic · profblocks · requests) ----------
+   المستوى الأول بطاقات الأقسام وحالتها ← القسم: عرض البيانات ← تعديل (مسودة) أو «طلب تحديث» (ملف معتمد)
+   ← ما الذي تريد تحديثه؟ ← قبل وبعد ← مراجعة التعديل ← التحقّق الأمني ← التنفيذ ← النتيجة ← طلبات التحديث: الاستلام · الردود · القرار · الإغلاق.
+   الحقول والشروط والمسميات من المحرّك نفسه (V1_FIELDS)، والمرفقات من document_requirements كما في القاعدة. */
+/* document_requirements (النشطة) كما في القاعدة: [الإقامة، الوثيقة، مجموعة الاختيار، الأوجه، التسمية] */
+const PF_DR = [['gcc', 'gcc_id', 'foreign_id', 2, 'الهوية الخليجية'], ['gcc', 'passport', 'foreign_id', 1, 'جواز السفر'], ['saudi', 'national_id', 'national_id', 1, 'الهوية الوطنية'],
+  ['resident', 'residency', 'foreign_id', 1, 'هوية مقيم'], ['non_resident', 'passport', 'foreign_id', 1, 'جواز السفر'], ['non_resident', 'arab_id', 'foreign_id', 2, 'إثبات الهوية الوطنية']];
+const PF_FLOW = ['بدءُ العملية', 'إدخالُ البيانات', 'المراجعة', 'التحقُّقُ الأمني', 'التنفيذ', 'النتيجة'];
+const PF_GATE = 'للتأكُّدِ من أنَّك صاحبُ الحسابِ قبلَ حفظِ القسم. والإرسالُ لا يكونُ إلَّا بزرِّ «إرسال الطلب» مع تأكيدِه.';
+const PF_DOC_ST = { pending: ['بانتظار المراجعة', 'warn'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض', 'danger'], needs_changes: ['مطلوب تعديل', 'danger'] };
+const PF_STATE = { new: ['طلب جديد', 'danger'], processing: ['قيد المعالجة', 'warn'], decided: ['صدر القرار', 'ok'], cancelled: ['ملغي', null] };
+const PF_RESULT = { approved: ['مقبول', 'ok'], rejected: ['مرفوض', 'danger'], returned: ['أعيد لاستكمال', 'warn'] };
+const PF_STAGE = { review: 'قيد المراجعة', awaiting_owner: 'بانتظار بياناتك', decided: 'صدر القرار', closed: 'مغلق' };
+const PF_EVENT = { submitted: 'أُرسل الطلب', received: 'استُلم الطلب', info_request: 'طُلبت بيانات إضافية', reply: 'رد', file: 'أُرفق ملف', approved: 'اعتُمد الطلب', rejected: 'رُفض الطلب', returned: 'أعيد لاستكمال', cancelled: 'أُلغي الطلب' };
+const PF_SIDE = { front: 'الوجه الأمامي', back: 'الوجه الخلفي' };
+const pfSides = (n) => (Number(n) === 2 ? ['front', 'back'] : ['']);
+const pfSideL = (s) => (s ? PF_SIDE[s] : 'الوثيقة');
+const PF = { ok: false, st: 'draft', v: {}, docs: {}, reqs: [], sec: '', mode: 'view', upd: false, type: '', u: {}, err: {}, msg: null, gate: null, det: null, done: null, seq: 0, pw: '' };
+const pfStamp = (d) => (d ? iso(d) + ' · ' + hm(d) : '—');
+function pfInit() {
+  if (PF.ok) return; PF.ok = true; PF.v = Object.assign({}, V1_SEED);
+  const t = new Date(Date.now() - 864e5 * 21);
+  PF.docs = { 'national_id|': { st: 'accepted', name: 'الهوية-الوطنية.pdf', at: t, hist: [] }, 'iban|': { st: 'accepted', name: 'شهادة-الآيبان.pdf', at: t, hist: [] } };
+}
+const pfS = (id) => (PF.v[id] === undefined || PF.v[id] === null ? '' : PF.v[id]);
+const pfG = (id) => (Object.prototype.hasOwnProperty.call(PF.u, id) ? PF.u[id] : pfS(id));
+const pfLocked = () => PF.st === 'approved';
+const pfForm = (k) => V1_FIELDS.filter(function (f) { return f.f === k && f.t !== 'file'; });
+const pfAddrT = (get) => (v1Get(get, 'profile', 'address_section') === 'national' ? 'العنوان الوطني' : 'العنوان الآخر');
+const PF_SECS = [['personal', 'المعلومات الشخصية', 'profile'], ['contact', 'بيانات التواصل', 'phone'], ['address', '', 'pin'], ['bank', 'الحساب البنكي', 'bank']];
+const pfTitle = (k) => (k === 'address' ? pfAddrT(pfS) : k === 'att' ? 'المرفقات' : k === 'reqs' ? 'طلبات التحديث' : (PF_SECS.filter(function (s) { return s[0] === k; })[0] || [0, k])[1]);
+const pfOpenReq = (k) => PF.reqs.filter(function (r) { return r.kind === k && !r.closed; })[0] || null;
+/* عرض القيمة: القوائم بتسميتها الحالية، والقيمة المسجّلة خارج القائمة تبقى بتسميتها */
+function pfLabel(f, v, get) {
+  if (v === '' || v === null || v === undefined) return '';
+  if (f.t === 'select') { const o = v1Options(f, get).concat((Array.isArray(f.o) ? f.o : []).map(function (x) { return Array.isArray(x) ? x : [x, x]; })).filter(function (x) { return x[0] === v; })[0]; return o ? o[1] : (V1_DOC_AR[v] || v); }
+  if (f.t === 'phone') { const cc = get((f.x.ccForm || f.f) + '.' + (f.x.cc || 'country_code')); return (cc ? cc + ' ' : '') + v; }
+  return String(v);
+}
+function pfMiss(k, get) { return pfForm(k).filter(function (f) { return v1Visible(f, get) && v1Required(f, get) && !String(get(f.id) || '').trim(); }); }
+/* المرفقات المطلوبة (requiredAttachments): مجموعة الاختيار تتبع الوثيقة المختارة، ثم الثابتة */
+function pfAtt(get) {
+  const res = v1Get(get, 'personal', 'residency_type'), chosen = get('personal.id_doc'), out = [], seen = {};
+  PF_DR.filter(function (r) { return r[0] === res; }).forEach(function (r) {
+    if (seen[r[2]]) return; seen[r[2]] = 1;
+    const hit = PF_DR.filter(function (x) { return x[0] === res && x[2] === r[2] && x[1] === chosen; })[0];
+    out.push(hit ? { doc: hit[1], label: hit[4], sides: hit[3], req: true } : { doc: '', label: 'اختر الوثيقةَ المقدَّمة أولًا', req: true });
   });
-  return [rvIns('addr', 'تعليمات الملف الشخصي', [['محاكاة حقيقية', 'غيّر أي قيمة وتتغيّر الحقول والخيارات وطول الأرقام فورًا بشروط النظام نفسها.', 'arrows-clockwise'],
-      ['الجنسية أولًا', 'السعودي هويته الوطنية، والخليجي هويته الخليجية أو جوازه، ولغيرهما «نوع الإقامة»: مقيم أو غير مقيم.', 'identification-card'],
-      ['العنوان', 'الهوية الوطنية أو هوية مقيم ← العنوان الوطني؛ وغيرهما ← عنوان خارج المملكة. والخريطة تجلب العنوان وتعبّئه.', 'map-pin'],
-      ['الحساب البنكي', 'طريقة الاستلام والبنوك والمحافظ وطول الآيبان حسب الجنسية والإقامة.', 'bank']]),
-    DS.panel('ما يحدّده النظام الآن', null, [DS.fields([['الجنسية', rvaGet('personal.nationality') || '—'], ['نوع الإقامة', RES_AR[res] || '—'], ['نوع الوثيقة', V1_DOC_AR[doc] || '—'], ['نوع العنوان', sec === 'national' ? 'العنوان الوطني (داخل المملكة)' : 'عنوان خارج المملكة'], ['دولة البنك', v1BankCountry(rvaGet) || '—']])],
-      [DS.button('إعادة القيم التجريبية', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVA.v = null; RVA.err = {}; draw(); } })]),
-    e('div', { class: 'rv-acc' }, forms),
-    DS.actionBar({ buttons: [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: function () {
-      RVA.err = {}; let first = null; V1_FORMS.forEach(function (F) { v1Vis(F[0], rvaGet).forEach(function (f) { if (f.t === 'file') return; const er = v1Check(f, rvaGet(f.id), rvaGet); if (er) { RVA.err[f.id] = er; if (!first) first = F[0]; } }); });
-      const n = Object.keys(RVA.err).length; if (n) { RV.one = 'rva-' + first; rvToast('راجع ' + fmtNum(n) + ' حقول — الأخطاء تحت كل حقل'); return; }
-      rvToast('تم الحفظ — شكرًا لك، حُدّثت بياناتك في مسودة طلبك'); } })] })];
+  out.push({ doc: 'address_proof', label: 'وثيقة العنوان الوطني', sides: 1, req: true });
+  if (get('bank.payout_method') === 'bank') out.push({ doc: 'iban', label: 'شهادة الآيبان البنكي', sides: 1, req: true });
+  out.push({ doc: 'cv', label: 'السيرة الذاتية', sides: 1, req: false }, { doc: 'qualification', label: 'المؤهل العلمي', sides: 1, req: false });
+  return out;
+}
+function pfAttMiss(get) {
+  let n = 0; if (!get('personal.id_doc')) n++;
+  pfAtt(get).forEach(function (it) { if (!it.req) return; if (!it.doc) { n++; return; } pfSides(it.sides).forEach(function (s) { const c = PF.docs[it.doc + '|' + s]; if (!c || c.st === 'rejected' || c.st === 'needs_changes') n++; }); });
+  return n;
+}
+function pfSecState(k) {
+  if (k === 'reqs') { const o = PF.reqs.filter(function (r) { return !r.closed; }).length; return [o ? 'مفتوحة:\u00a0' + fmtNum(o) : (PF.reqs.length ? 'لا طلبات مفتوحة' : 'لا طلبات'), o ? 'warn' : null]; }
+  if (pfOpenReq(k)) return ['قيد المراجعة', 'warn'];
+  const m = k === 'att' ? pfAttMiss(pfS) : pfMiss(k, pfS).length;
+  return m ? ['ناقصة:\u00a0' + fmtNum(m), 'warn'] : ['مكتملة', 'ok'];
+}
+/* الحقول المرتبطة (R.related): ما تذكره قواعدُه في شروطها */
+function pfRelated(id) {
+  const fm = id.split('.')[0], out = [], walk = function (src, d) { V1_FIELDS.forEach(function (f) { if (f.t === 'file' || f.f !== fm || out.indexOf(f.id) >= 0 || f.id === id) return; if (f.u.some(function (r) { return (r.when || []).some(function (c) { return c.form + '.' + c.field === src; }); })) { out.push(f.id); if (d < 2) walk(f.id, d + 1); } }); };
+  walk(id, 0);
+  return out;
+}
+function pfTypeOpts(k) {
+  const ed = pfForm(k).filter(function (f) { return v1Visible(f, pfG); }), out = [['', '— اختر ما تريد تحديثه —']];
+  if (ed.length > 1) out.push(['__all', 'كل بيانات هذا القسم']);
+  const gs = []; ed.forEach(function (f) { if (f.g && gs.indexOf(f.g) < 0) gs.push(f.g); }); if (gs.length > 1) gs.forEach(function (g) { out.push(['__sec:' + g, g]); });
+  ed.forEach(function (f) { out.push([f.id, f.l]); });
+  return out;
+}
+function pfKeys(k) {
+  const all = pfForm(k).filter(function (f) { return v1Visible(f, pfG); }).map(function (f) { return f.id; }), t = PF.type;
+  if (!t) return []; if (t === '__all') return all;
+  if (t.indexOf('__sec:') === 0) { const g = t.slice(6); return pfForm(k).filter(function (f) { return f.g === g && v1Visible(f, pfG); }).map(function (f) { return f.id; }); }
+  const rel = pfRelated(t); return [t].concat(V1_FIELDS.filter(function (f) { return rel.indexOf(f.id) >= 0 && v1Visible(f, pfG); }).map(function (f) { return f.id; }));
+}
+/* بعد أي تغيير: القيمة المعلّقة لحقلٍ اختفى تُطرح، والخيار غير المسموح يُطرح (كما في inputFor) */
+function pfSettle() {
+  const fm = PF.sec;
+  for (let p = 0; p < 3; p++) V1_FIELDS.forEach(function (f) {
+    if (f.t === 'file' || f.f !== fm) return; const own = Object.prototype.hasOwnProperty.call(PF.u, f.id), vis = v1Visible(f, pfG), cur = pfG(f.id);
+    if (!vis) { if (own && PF.u[f.id] !== '') PF.u[f.id] = ''; return; }
+    if (f.t === 'select' && cur && f.o && !v1Options(f, pfG).some(function (x) { return x[0] === cur; })) PF.u[f.id] = '';
+  });
+}
+function pfChanges() {
+  const ids = []; V1_FIELDS.forEach(function (f) { if (f.t !== 'file' && f.f === PF.sec && Object.prototype.hasOwnProperty.call(PF.u, f.id)) ids.push(f.id); });
+  return ids.map(function (id) { const f = V1_BY[id], b = String(pfS(id) || '').trim(), a = String(pfG(id) || '').trim(); if (a === b) return null; if (!v1Visible(f, pfG) && !a && !v1Visible(f, pfS)) return null;
+    return { id: id, k: f.l, b: b, a: a, bl: pfLabel(f, b, pfS) || '—', al: pfLabel(f, a, pfG) || '—', wa: f.t === 'phone' && f.f === 'contact' }; }).filter(Boolean);
+}
+function pfDiff(rows) {
+  return e('div', { class: 'pf-diff', role: 'table' }, [e('div', { class: 'pf-diff-h', role: 'row' }, [e('span', {}, 'البند'), e('span', {}, 'قبل التعديل'), e('span', {}, 'التعديلُ المطلوب')])].concat(rows.map(function (r) {
+    return e('div', { class: 'pf-diff-r', role: 'row' }, [e('span', { class: 'pf-diff-k' }, r.k + (r.wa ? ' (يُوثَّق عبر واتساب)' : '')), e('span', { class: 'pf-diff-b' }, r.bl), e('span', { class: 'pf-diff-a' }, r.al)]); })));
+}
+const pfSteps = (i, fail) => DS.stepper(PF_FLOW.map(function (l, k) { return { label: l, state: k < i ? 'done' : k === i ? (fail ? 'fail' : 'now') : '' }; }), 'مراحل التحديث');
+function pfGo(sec) { PF.sec = sec; PF.mode = 'view'; PF.u = {}; PF.err = {}; PF.msg = null; PF.gate = null; PF.det = null; PF.done = null; PF.type = ''; draw(); toTop(); }
+function pfEdit(upd, keepU) { PF.mode = 'edit'; PF.upd = upd; if (!keepU) PF.u = {}; PF.err = {}; PF.msg = null; PF.type = upd ? (keepU ? '__all' : '') : '__all'; draw(); }
+/* التحقّق المسبق (precheck): البنود المعدّلة وحدها، والإلزام لا يُفرض على ما لم يُدخل من قبل */
+function pfPrecheck() {
+  PF.err = {}; let bad = 0;
+  pfChanges().forEach(function (r) { const f = V1_BY[r.id]; if (!v1Visible(f, pfG)) return;
+    if (!r.a) { if (v1Required(f, pfG) && r.b) { PF.err[r.id] = 'هذا الحقل مطلوب.'; bad++; } return; }
+    const er = v1Check(f, r.a, pfG); if (er) { PF.err[r.id] = er; bad++; } });
+  return !bad;
+}
+/* البوابة الأمنية (guarded · change_security): كلمة المرور ثم الرمز، ثم التنفيذ */
+function pfGateOpen(o) { PF.gate = Object.assign({ step: 0 }, o); PF.pw = ''; S.otpAt = null; PF.mode = 'gate'; draw(); toTop(); }
+function pfGateView() {
+  const g = PF.gate; if (!g) return null;
+  const cancel = function () { const m = g.back || 'edit'; PF.gate = null; PF.mode = m; PF.msg = DS.note('info', 'أُلغي الإرسال', 'لم يُرسل شيء.'); draw(); };
+  const run = function () { PF.gate = null; const out = g.exec(); PF.mode = 'done'; PF.done = out; draw(); toTop(); };
+  let body;
+  if (g.step === 0) { const pw = e('input', { class: 't2-input', type: 'password', autocomplete: 'current-password', placeholder: 'كلمة المرور الحالية', onInput: function (ev) { PF.pw = ev.target.value; } });
+    body = [DS.editField('كلمة المرور الحالية', pw), e('small', { class: 'rv-sm' }, 'في العيّنة تُقبل أي كلمة — في النظام يتحقّق منها الخادم.'),
+      rvRow([DS.button('متابعة', { tone: 'primary', ui: 'lock-key', onClick: function () { if (!String(PF.pw || '').trim()) { rvToast('أدخل كلمة المرور الحالية.'); return; } g.step = 1; S.otpAt = null; draw(); } }), DS.button('إلغاء', { onClick: cancel })])];
+  } else if (g.step === 1) body = [otpBox('email', function () { g.step = g.wa ? 2 : 3; S.otpAt = null; draw(); }, cancel), e('small', { class: 'rv-sm' }, 'رمز العيّنة: أي ستة أرقام.')];
+  else if (g.step === 2) body = [e('p', { class: 'rv-sm' }, 'الرقم الجديد يُوثَّق عبر ربط WhatsApp قبل إرسال الطلب.'), otpBox('wa', function () { g.step = 3; draw(); }, cancel)];
+  else body = [DS.note('ok', 'تم التحقّق', 'اضغط «' + (g.confirm || 'إرسال الطلب') + '» لإتمام العملية.'), rvRow([DS.button(g.confirm || 'إرسال الطلب', { tone: 'primary', ui: 'check', onClick: run }), DS.button('إلغاء', { onClick: cancel })])];
+  return DS.panel(g.title, g.intro || PF_GATE, [DS.stepper(['كلمة المرور', 'رمز التحقّق'].concat(g.wa ? ['توثيق واتساب'] : []).concat(['التأكيد']).map(function (l, i) { const at = g.step === 3 ? (g.wa ? 3 : 2) : g.step; return { label: l, state: i < at ? 'done' : i === at ? 'now' : '' }; }), 'التحقّق الأمني')].concat(body));
+}
+function pfNewReq(kind, title, rows, apply, files) {
+  PF.seq++; const now = new Date();
+  const r = { id: 'UR-' + String(Date.now()).slice(-6), kind: kind, title: 'طلب تحديث — ' + title, state: 'new', stage: 'review', result: null, at: now, last: now, closed: null, received: false,
+    changes: rows.map(function (x) { return { k: x.k, bl: x.bl, al: x.al, wa: x.wa }; }), apply: apply || {}, files: files || [], tl: [{ ev: 'submitted', by: 'owner', at: now }], notes: [] };
+  PF.reqs.unshift(r); return r;
+}
+/* الإرسال: مسودة ← حفظ مباشر؛ ملف معتمد ← طلب تحديث بعد التحقّق */
+function pfSubmit(k) {
+  const rows = pfChanges(), title = pfTitle(k), apply = {}; rows.forEach(function (r) { apply[r.id] = r.a; });
+  Object.keys(PF.u).forEach(function (id) { if (id.split('.')[0] === k && apply[id] === undefined && PF.u[id] !== pfS(id)) apply[id] = PF.u[id]; });
+  if (!pfLocked()) { Object.assign(PF.v, apply); PF.u = {}; PF.mode = 'done'; PF.done = { saved: true, n: rows.length }; draw(); toTop(); return; }
+  const back = PF.det && PF.det.result === 'returned' ? PF.det : null;
+  pfGateOpen({ title: 'حفظُ قسمِ ' + title, confirm: 'حفظُ القسم', back: 'review', wa: rows.some(function (r) { return r.wa; }), exec: function () {
+    let r; if (back) { r = back; r.changes = rows.map(function (x) { return { k: x.k, bl: x.bl, al: x.al, wa: x.wa }; }); r.apply = apply; r.result = null; r.state = 'processing'; r.stage = 'review'; r.last = new Date(); r.tl.push({ ev: 'submitted', by: 'owner', at: r.last }); }
+    else r = pfNewReq(k, title, rows, apply);
+    PF.u = {}; PF.det = null; return { req: r };
+  } });
+}
+function pfField(f, edit) {
+  const get = edit ? pfG : pfS, val = get(f.id), req = v1Required(f, get), err = PF.err[f.id];
+  if (!edit) { const lb = pfLabel(f, val, get); return [f.l + (req ? ' *' : ''), lb ? (f.x.ltr || f.t === 'email' || f.t === 'phone' ? ltr(lb) : lb) : DS.badge(req ? 'غيرُ مكتمل' : 'غيرُ مُدخَل', req ? 'warn' : null)]; }
+  const ctl = v1Ctl(f, val, function (x) { PF.u[f.id] = x; delete PF.err[f.id]; if (f.t === 'select') { pfSettle(); draw(); } }, pfG), hint = v1Hint(f, pfG), chg = String(pfG(f.id) || '') !== String(pfS(f.id) || '');
+  return e('div', { class: 'rv-f is-edit' + (err ? ' is-back' : '') + (chg ? ' is-draft' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), chg ? rvBadge('معدَّل', 'info') : (req ? null : rvBadge('اختياري', null))]),
+    ctl, hint ? e('small', { class: 'rv-sm' }, hint) : null, err ? e('p', { class: 'rv-note', role: 'alert' }, [frag(ui('warning', 14)), err]) : null]);
+}
+function pfHead(title, st) {
+  return e('div', { class: 'pf-head' }, [e('button', { type: 'button', class: 'pf-back', onClick: function () { pfGo(''); } }, [frag(ui('caret-right', 16)), 'رجوع إلى ملفي الشخصي']),
+    e('div', { class: 'pf-head-m' }, [e('h2', {}, title), st ? DS.badge(st[0], st[1]) : null])]);
+}
+function pfProgress(k) {
+  const fl = pfForm(k).filter(function (f) { return v1Visible(f, pfS) && v1Required(f, pfS); }), miss = fl.filter(function (f) { return !String(pfS(f.id) || '').trim(); }), done = fl.length - miss.length, pct = fl.length ? Math.round(done / fl.length * 100) : 100, ur = pfOpenReq(k) || PF.reqs.filter(function (r) { return r.kind === k && r.result === 'returned' && !r.closed; })[0];
+  let st, note;
+  if (ur && ur.result === 'returned') { st = DS.badge('أعيد لاستكمال', 'danger'); note = 'أعادت الإدارة طلبك لاستكماله أو لإرفاق ما هو مطلوب. أكمل المطلوب ثم أعد إرساله حتى يصدر القرار.'; }
+  else if (ur && ur.received) { st = DS.badge('قيد المراجعة', 'warn'); note = 'تم استلام الطلب وهو قيد المراجعة لدى الإدارة — لا يمكنك التعديل، انتظر صدور القرار.'; }
+  else if (ur) { st = DS.badge(PF_STATE[ur.state][0], PF_STATE[ur.state][1]); note = 'طلبك لم يُستلم بعد — يمكنك إلغاؤه إن أردت تعديله ثم تقديمه من جديد.'; }
+  else if (miss.length) { st = DS.badge('بيانات ناقصة', 'warn'); note = 'بيانات هذا القسم ناقصة — استكمالها يتم بتقديم طلب تحديث، وهو المصدر الوحيد لأي إجراء على الملف.'; }
+  else { st = DS.badge('مكتمل', 'ok'); note = 'اكتملت بيانات هذا القسم.'; }
+  return e('section', { class: 't2-pb-upd' + ((ur && ur.result === 'returned') || (!ur && miss.length) ? ' is-alert' : '') }, [
+    e('div', { class: 't2-pb-upd-top' }, [e('div', { class: 't2-pb-upd-pct' }, [e('b', {}, String(pct)), e('span', {}, '٪')]), e('div', { class: 't2-pb-upd-meta' }, [e('div', { class: 't2-pb-upd-t' }, 'مسار الاكتمال'), e('div', { class: 't2-pb-upd-n' }, fmtNum(done) + ' من ' + fmtNum(fl.length) + ' حقل مطلوب مكتمل')]), e('div', { class: 't2-pb-upd-st' }, st)]),
+    e('div', { class: 't2-pb-prog' }, e('span', { class: 't2-pb-prog-i', style: 'width:' + pct + '%' })),
+    miss.length ? e('div', { class: 'pf-chips' }, [e('small', {}, 'المتبقّي لاكتمال القسم')].concat(miss.map(function (f) { return e('span', { class: 'pf-chip' }, f.l); }))) : null,
+    e('p', { class: 't2-pb-upd-note' }, note),
+    ur && ur.result === 'returned' ? rvRow([DS.button('استكمال الطلب وإعادة إرساله', { tone: 'primary', ui: 'list-checks', onClick: function () { PF.det = ur; Object.keys(ur.apply).forEach(function (id) { PF.u[id] = ur.apply[id]; }); pfEdit(true, true); } })]) : null,
+    ur && !ur.received && !ur.result ? rvRow([DS.button('إلغاء الطلب', { tone: 'danger', size: 'sm', onClick: function () { pfCancel(ur); } })]) : null]);
+}
+function pfCancel(r) { RV.dlg = { ic: 'warn', title: 'إلغاء طلب التحديث؟', body: r.title, yes: 'نعم، ألغِ الطلب', no: 'تراجع', onYes: function () { r.state = 'cancelled'; r.stage = 'closed'; r.closed = new Date(); r.last = r.closed; r.tl.push({ ev: 'cancelled', by: 'owner', at: r.closed }); draw(); return 'أُلغي الطلب.'; } }; draw(); }
+/* القسم */
+function pfSection(k) {
+  const title = pfTitle(k), st = pfSecState(k), kids = [pfHead(title, st)], open = pfOpenReq(k);
+  if (PF.msg) kids.push(PF.msg);
+  if (PF.mode === 'gate') { kids.push(pfSteps(3)); kids.push(pfGateView()); return kids; }
+  if (PF.mode === 'done') {
+    const d = PF.done || {}; kids.push(pfSteps(5));
+    if (d.saved) kids.push(e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, 'حُفظ التعديل'), e('p', {}, d.n ? 'حُفظ ' + fmtNum(d.n) + ' بند في ملفك — الملف لم يُرسل بعد، فالحفظ مباشر بلا طلب.' : 'لا تغيير.'), rvRow([DS.button('العودة إلى القسم', { tone: 'primary', size: 'sm', onClick: function () { pfGo(k); } })])]));
+    else if (d.req) kids.push(e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, 'أُرسل طلب التحديث'), e('p', {}, 'أُرسل طلب التحديث، ويظهر في «طلبات التحديث». يُعتمد بعد مراجعة الإدارة.'),
+      DS.fields([['رقم الطلب', ltr(d.req.id)], ['تاريخ الإرسال', ltr(pfStamp(d.req.at))], ['عدد البنود', fmtNum(d.req.changes.length)], ['الحالة', DS.badge(PF_STATE[d.req.state][0], PF_STATE[d.req.state][1])]]),
+      rvRow([DS.button('متابعة الطلب', { tone: 'primary', size: 'sm', ui: 'list-checks', onClick: function () { PF.sec = 'reqs'; PF.mode = 'view'; PF.det = d.req; PF.done = null; draw(); toTop(); } }), DS.button('العودة إلى القسم', { size: 'sm', onClick: function () { pfGo(k); } })])]));
+    return kids;
+  }
+  if (PF.mode === 'review') {
+    const rows = pfChanges(); kids.push(pfSteps(2));
+    kids.push(DS.panel('مراجعة التعديل', 'راجع التغيير قبل الإرسال. يُعتمد بعد مراجعة الإدارة.', [pfDiff(rows), rows.some(function (r) { return /id_doc|residency_type|nationality|payout_method/.test(r.id); }) ? DS.note('warn', 'تتغيّر المرفقاتُ المطلوبة', 'بعد الاعتماد راجع «المرفقات» وارفع ما يطلبه نوع الوثيقة الجديد.') : null,
+      rvRow([DS.button('إرسال طلب التحديث', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { pfSubmit(k); } }), DS.button('رجوع للتعديل', { onClick: function () { PF.mode = 'edit'; PF.msg = null; draw(); } })])]));
+    return kids;
+  }
+  if (PF.mode === 'edit') {
+    kids.push(pfSteps(1));
+    if (PF.upd) kids.push(pfProgress(k));
+    const body = [];
+    if (PF.upd) body.push(DS.editField('ما الذي تريد تحديثه؟', DS.select({ value: PF.type, options: pfTypeOpts(k), onChange: function (v) { PF.type = v; PF.err = {}; PF.msg = null; draw(); } })));
+    if (k === 'address') { const lc = v1Loc('pf-map', pfG, function (id, v) { PF.u[id] = v; delete PF.err[id]; }, pfSettle); if (lc) body.push(lc); }
+    const keys = pfKeys(k); let g = null; const grid = [];
+    pfForm(k).forEach(function (f) { if (keys.indexOf(f.id) < 0) return; if (f.g && f.g !== g) { g = f.g; grid.push(e('div', { class: 'rv-grp' }, g)); } grid.push(pfField(f, true)); });
+    const gridEl = e('div', { class: 't2-stack-tight' }, grid); gridEl.addEventListener('change', function (ev) { if (ev.target && ev.target.tagName === 'INPUT') draw(); });
+    body.push(gridEl);
+    if (PF.type) { const rows = pfChanges(); body.push(rows.length ? e('div', { class: 't2-stack-tight' }, [e('div', { class: 'rv-grp' }, 'قبل وبعد'), pfDiff(rows)]) : e('p', { class: 'rv-sm' }, 'لا تغييرات بعد.')); }
+    body.push(rvRow([DS.button(PF.upd ? 'مراجعة التعديل' : 'حفظ', { tone: 'primary', ui: 'check', disabled: PF.upd && !PF.type, onClick: function () {
+      PF.msg = null; if (!pfPrecheck()) { PF.msg = DS.note('warn', 'راجِعِ الحقولَ المعلَّمة', fmtNum(Object.keys(PF.err).length) + ' بند يحتاج تصحيحًا.'); draw(); return; }
+      if (!pfChanges().length) { PF.msg = DS.note('info', 'لا تغيير', 'لم تُعدَّل أي قيمة.'); draw(); return; }
+      if (PF.upd) { PF.mode = 'review'; draw(); toTop(); } else pfSubmit(k); } }),
+      DS.button('تراجع', { onClick: function () { pfGo(k); } })]));
+    kids.push(DS.panel(PF.upd ? 'طلب تحديث — ' + title : 'تعديل ' + title, PF.upd ? 'يُرسَل طلبًا للإدارة' : 'الملف لم يُرسل بعد — الحفظ مباشر', body));
+    return kids;
+  }
+  /* العرض */
+  const miss = pfMiss(k, pfS).length;
+  kids.push(DS.panel(null, null, [DS.fields([['حالة القسم', DS.badge(open ? 'قيد المراجعة' : miss ? 'ناقصة' : 'مكتملة', open || miss ? 'warn' : 'ok')], miss && !open ? ['الحقول الناقصة', fmtNum(miss)] : null, ['حالة الملف', pfLocked() ? 'معتمد — التعديل بطلب تحديث' : 'مسودة — لم يُرسل بعد']])]));
+  if (open) kids.push(DS.note('info', 'لديك طلب تحديث قيد المراجعة', 'أُرسل ' + pfStamp(open.at) + '. تابعه من «طلبات التحديث».', DS.button('طلبات التحديث', { size: 'sm', ui: 'list-checks', onClick: function () { PF.sec = 'reqs'; PF.det = open; draw(); toTop(); } })));
+  if (!/^rva-pf-/.test(String(S.fsOne || ''))) S.fsOne = 'rva-pf-' + k + '-0';
+  const groups = []; pfForm(k).filter(function (f) { return v1Visible(f, pfS); }).forEach(function (f) { const n = f.g || ''; let G = groups.filter(function (x) { return x.n === n; })[0]; if (!G) { G = { n: n, f: [] }; groups.push(G); } G.f.push(f); });
+  if (groups.length > 1) kids.push(e('div', { class: 'rv-acc' }, groups.map(function (G, i) { const done = G.f.filter(function (f) { return String(pfS(f.id) || '').trim(); }).length;
+    return rvSec(G.n || title, [DS.fields(G.f.map(function (f) { return pfField(f, false); }))], { one: 'rva-pf-' + k + '-' + i }, fmtNum(done) + ' من ' + fmtNum(G.f.length) + ' مكتمل', null); })));
+  else kids.push(DS.panel(null, null, [DS.fields(groups.length ? groups[0].f.map(function (f) { return pfField(f, false); }) : [])]));
+    if (!open) {
+    if (!pfLocked()) kids.push(rvRow([DS.button('تعديل', { tone: 'primary', ui: 'pencil-simple', onClick: function () { pfEdit(false); } })]));
+    else kids.push(DS.note('danger', 'لا يتم التعديل من هذه الصفحة', 'أي تعديل أو إضافة أو استكمال لبيانات هذا القسم يتم من خلال طلب تحديث.', DS.button('طلب تحديث لهذا القسم', { tone: 'primary', size: 'sm', ui: 'note-pencil', onClick: function () { pfEdit(true); } })));
+  }
+  return kids;
+}
+/* المرفقات */
+function pfUpload(it, side, file) {
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { rvToast('الملفُّ أكبرُ من ١٠ ميغابايت — ' + file.name); return; }
+  if (!/^image\//.test(file.type || '') && file.type !== 'application/pdf') { rvToast('الصيغةُ المقبولة: صورةٌ أو PDF — ' + file.name); return; }
+  const key = it.doc + '|' + side, prev = PF.docs[key], put = function () { PF.docs[key] = { st: 'pending', name: file.name, at: new Date(), url: URL.createObjectURL(file), hist: prev ? [prev].concat(prev.hist || []) : [] }; };
+  if (!pfLocked()) { put(); rvToast('رُفع المرفق.'); return; }
+  PF.sec = 'att'; pfGateOpen({ title: 'التحقّق قبل رفع المرفق', confirm: 'رفع المرفق', back: 'view', exec: function () { put(); const r = pfNewReq('att', 'المرفقات', [{ k: 'مرفق: ' + it.label + (side ? ' — ' + PF_SIDE[side] : ''), bl: prev ? (PF_DOC_ST[prev.st] || [prev.st])[0] + ' · ' + prev.name : 'لا يوجد', al: file.name }], {}, [file.name]); r.doc = key; return { req: r }; } });
+}
+function pfAttView() {
+  const kids = [pfHead('المرفقات', pfSecState('att'))]; if (PF.msg) kids.push(PF.msg);
+  if (PF.mode === 'gate') { kids.push(pfGateView()); return kids; }
+  if (PF.mode === 'done' && PF.done && PF.done.req) { kids.push(DS.note('ok', 'رُفع المرفقُ وأُنشئ طلبُ تحديثه بانتظار مراجعة المستند.', 'رقم الطلب ' + PF.done.req.id, DS.button('متابعة الطلب', { size: 'sm', onClick: function () { PF.sec = 'reqs'; PF.det = PF.done.req; PF.mode = 'view'; PF.done = null; draw(); } }))); PF.mode = 'view'; }
+  const items = pfAtt(pfS), need = {};
+  kids.push(DS.panel('المرفقات المطلوبة', 'تتبع نوع الإقامة ونوع الوثيقة وطريقة الاستلام', [e('ul', { class: 'pf-attl' }, items.map(function (it) { return e('li', {}, it.doc ? it.label + ' — ' + pfSides(it.sides).map(pfSideL).join(' + ') + (it.req ? '' : ' (اختياري)') : it.label); }))]));
+  items.forEach(function (it) {
+    if (!it.doc) { kids.push(DS.note('warn', 'اختر الوثيقةَ المقدَّمة', 'حدّد «نوع الوثيقة» في المعلومات الشخصية لتظهر مرفقاتها.', DS.button('المعلومات الشخصية', { size: 'sm', onClick: function () { pfGo('personal'); } }))); return; }
+    need[it.doc] = 1;
+    kids.push(DS.panel(it.label, (it.req ? 'مطلوب' : 'اختياري') + ' · ' + pfSides(it.sides).map(pfSideL).join(' + '), pfSides(it.sides).map(function (side) {
+      const c = PF.docs[it.doc + '|' + side], inp = e('input', { type: 'file', accept: 'image/*,application/pdf', class: 'pf-file', 'aria-label': 'رفع ' + it.label + ' — ' + pfSideL(side), onChange: function (ev) { pfUpload(it, side, ev.target.files && ev.target.files[0]); } });
+      return e('div', { class: 'pf-attr' }, [e('b', { class: 'pf-attk' }, pfSideL(side)),
+        e('div', { class: 'pf-attv' }, [c ? DS.badge((PF_DOC_ST[c.st] || [c.st])[0], (PF_DOC_ST[c.st] || [])[1]) : DS.badge(it.req ? 'لم يُرفع بعد' : 'غيرُ مرفوع', it.req ? 'warn' : null), c ? e('small', {}, c.name + ' · ' + pfStamp(c.at)) : null, c && c.reason ? e('small', { class: 'pf-err' }, c.reason) : null]),
+        e('div', { class: 'pf-atta' }, [e('label', { class: 't2-btn is-sm' + (c ? '' : ' is-primary') }, [frag(ui('upload-simple', 14)), c ? 'استبدال' : 'رفع', inp]), c && c.url ? DS.button('عرض الحالي', { size: 'sm', onClick: function () { window.open(c.url, '_blank', 'noopener'); } }) : null, c && c.hist && c.hist.length ? e('small', {}, 'نسخٌ سابقة: ' + fmtNum(c.hist.length)) : null])]);
+    })));
+  });
+  const other = Object.keys(PF.docs).filter(function (k) { const d = k.split('|')[0]; return ['national_id', 'residency', 'passport', 'gcc_id', 'arab_id'].indexOf(d) >= 0 && !need[d]; });
+  if (other.length) kids.push(DS.panel('مرفقاتٌ سابقة', 'لم تعد مطلوبة لنوع الوثيقة الحالي', other.map(function (k) { const c = PF.docs[k], p = k.split('|'); return e('div', { class: 'pf-attr' }, [e('b', { class: 'pf-attk' }, (V1_DOC_AR[p[0]] || p[0]) + (p[1] ? ' — ' + PF_SIDE[p[1]] : '')), e('div', { class: 'pf-attv' }, [DS.badge((PF_DOC_ST[c.st] || [c.st])[0], (PF_DOC_ST[c.st] || [])[1]), e('small', {}, c.name)])]); })));
+  kids.push(e('small', { class: 'rv-sm' }, 'صورةٌ أو PDF حتى ١٠ ميغابايت. ' + (pfLocked() ? 'الملف معتمد: الرفع يمرّ بالتحقّق الأمني ويُنشئ طلبًا بانتظار مراجعة المستند.' : 'الملف مسودة: يُرفع مباشرة.')));
+  return kids;
+}
+/* طلبات التحديث: القائمة ← التفاصيل (المعلومات العامة · القيم · المرفقات · مسار المتابعة · الردود) */
+function pfReqDetail(r) {
+  const st = r.result ? PF_RESULT[r.result] : PF_STATE[r.state], kids = [];
+  kids.push(e('div', { class: 'pf-head' }, [e('button', { type: 'button', class: 'pf-back', onClick: function () { PF.det = null; draw(); } }, [frag(ui('caret-right', 16)), 'رجوعٌ إلى القائمة']),
+    e('div', { class: 'pf-head-m' }, [e('h2', {}, r.title), DS.badge(st[0], st[1]), e('small', {}, ['رقمُ الطلب ', ltr(r.id), ' · فُتِح ', ltr(pfStamp(r.at))])])]));
+  const idx = r.closed ? 4 : r.result === 'returned' || r.stage === 'awaiting_owner' ? 2 : r.received ? 2 : 0;
+  kids.push(DS.stepper(['أُرسل الطلب', 'الاستلام', 'المراجعة', 'صدر القرار', 'مغلق'].map(function (l, i) { return { label: l, state: i < idx ? 'done' : i === idx ? (r.closed ? 'done' : 'now') : '' }; }), 'مسار الطلب'));
+  kids.push(DS.panel('المعلومات العامة', null, [DS.fields([['النوع', r.title], ['الحالة', DS.badge(PF_STATE[r.state][0], PF_STATE[r.state][1])], ['المرحلة', PF_STAGE[r.stage] || r.stage], r.result ? ['النتيجة', DS.badge(PF_RESULT[r.result][0], PF_RESULT[r.result][1])] : null, ['تاريخ الفتح', ltr(pfStamp(r.at))], ['آخر تحديث', ltr(pfStamp(r.last))], ['تاريخ الإغلاق', r.closed ? ltr(pfStamp(r.closed)) : '—']])]));
+  kids.push(DS.panel('القيمة السابقة والقيمة الجديدة', null, [pfDiff(r.changes)]));
+  kids.push(DS.panel('المرفقات', null, [r.files.length ? e('div', { class: 't2-stack-tight' }, r.files.map(function (n) { return DS.fileCard({ name: n, note: 'مرفق من صاحب الطلب' }); })) : e('p', { class: 'rv-sm' }, 'لا مرفقات.')]));
+  kids.push(DS.panel('مسار المتابعة', null, [e('ol', { class: 'pf-tl' }, r.tl.map(function (t) { const tone = t.ev === 'approved' ? 'ok' : t.ev === 'rejected' ? 'danger' : t.ev === 'info_request' || t.ev === 'returned' ? 'warn' : ''; return e('li', { class: tone ? 'is-' + tone : '' }, [e('b', {}, PF_EVENT[t.ev] || t.ev), e('small', {}, (t.by === 'owner' ? 'أنت' : 'الإدارة') + ' · ' + pfStamp(t.at)), t.body ? e('p', {}, t.body) : null]); }))]));
+  const conv = [];
+  if (!r.notes.length) conv.push(e('p', { class: 'rv-sm' }, 'لا ردود بعد.'));
+  r.notes.forEach(function (n) { conv.push(DS.note(n.kind === 'info_request' ? 'warn' : 'info', (n.kind === 'info_request' ? 'طلب بيانات · ' : '') + (n.by === 'owner' ? 'أنت' : 'الإدارة') + ' · ' + pfStamp(n.at), n.body)); });
+  if (!r.closed) { const ta = e('textarea', { class: 't2-input', rows: 3, placeholder: 'اكتب ردك', onInput: function (ev) { r.draft = ev.target.value; } }, r.draft || '');
+    conv.push(DS.editField('ردك', ta), rvRow([DS.button('إرسال الرد', { tone: 'primary', size: 'sm', ui: 'paper-plane-tilt', onClick: function () { const b = String(r.draft || '').trim(); if (!b) { rvToast('اكتب الرد أولًا.'); return; } const t = new Date(); r.notes.push({ kind: 'reply', by: 'owner', body: b, at: t }); r.tl.push({ ev: 'reply', by: 'owner', at: t, body: b }); r.draft = ''; r.last = t; if (r.stage === 'awaiting_owner') r.stage = 'review'; rvToast('أُرسل الرد'); } }),
+      !r.received ? DS.button('إلغاء الطلب', { tone: 'danger', size: 'sm', onClick: function () { pfCancel(r); } }) : null])); }
+  kids.push(DS.panel('الردود وتبادل البيانات', null, conv));
+  /* محاكاة الإدارة في العيّنة وحدها — في النظام يقرّرها فريق إدارة الحسابات من «طلبات تحديث البيانات» */
+  if (!r.closed) {
+    const ev = function (name, f) { return function () { const t = new Date(); f(t); r.last = t; draw(); rvToast(PF_EVENT[name]); }; };
+    kids.push(e('section', { class: 'pf-admin' }, [e('b', {}, [frag(ui('info', 16)), 'محاكاة قرار الإدارة — للعيّنة فقط']), e('small', {}, 'في النظام تتّخذ الإدارة هذه الإجراءات، وتظهر لك هنا في مسار المتابعة.'),
+      rvRow([!r.received ? DS.button('استلام الطلب', { size: 'sm', onClick: ev('received', function (t) { r.received = true; r.state = 'processing'; r.tl.push({ ev: 'received', by: 'admin', at: t }); }) }) : null,
+        DS.button('طلب بيانات إضافية', { size: 'sm', onClick: ev('info_request', function (t) { r.received = true; r.state = 'processing'; r.stage = 'awaiting_owner'; const b = 'فضلًا أرفق صورة واضحة للوثيقة أو وضّح سبب التعديل.'; r.notes.push({ kind: 'info_request', by: 'admin', body: b, at: t }); r.tl.push({ ev: 'info_request', by: 'admin', at: t, body: b }); }) }),
+        DS.button('اعتماد', { size: 'sm', tone: 'primary', onClick: ev('approved', function (t) { Object.assign(PF.v, r.apply); if (r.doc && PF.docs[r.doc]) PF.docs[r.doc].st = 'accepted'; r.received = true; r.result = 'approved'; r.state = 'decided'; r.stage = 'closed'; r.closed = t; r.tl.push({ ev: 'approved', by: 'admin', at: t }); }) }),
+        r.kind !== 'att' ? DS.button('إعادة لاستكمال', { size: 'sm', onClick: ev('returned', function (t) { r.received = true; r.result = 'returned'; r.state = 'processing'; r.stage = 'awaiting_owner'; const b = 'أكمل البنود المطلوبة وأعد الإرسال.'; r.notes.push({ kind: 'info_request', by: 'admin', body: b, at: t }); r.tl.push({ ev: 'returned', by: 'admin', at: t, body: b }); }) }) : null,
+        DS.button('رفض', { size: 'sm', tone: 'danger', onClick: ev('rejected', function (t) { if (r.doc && PF.docs[r.doc]) { PF.docs[r.doc].st = 'rejected'; PF.docs[r.doc].reason = 'الصورة غير واضحة.'; } r.received = true; r.result = 'rejected'; r.state = 'decided'; r.stage = 'closed'; r.closed = t; r.tl.push({ ev: 'rejected', by: 'admin', at: t, body: 'البيانات لا تطابق الوثيقة المرفقة.' }); }) })])]));
+  } else kids.push(DS.note(r.result === 'approved' ? 'ok' : 'info', 'الطلب مغلق', r.result === 'approved' ? 'اعتُمدت القيم الجديدة وظهرت في ملفك.' : r.result === 'rejected' ? 'بقيت القيم السابقة كما هي.' : 'أُلغي الطلب ويبقى في السجلّ.'));
+  return kids;
+}
+function pfReqs() {
+  if (PF.det) return pfReqDetail(PF.det);
+  const kids = [pfHead('طلبات التحديث', pfSecState('reqs'))];
+  if (!PF.reqs.length) { kids.push(DS.note('info', 'لا طلبات', 'اعتمد الملف من «حالة الملف» أعلاه ثم افتح أي قسم واضغط «طلب تحديث لهذا القسم».')); return kids; }
+  kids.push(DS.panel(null, 'مفتوحة ' + fmtNum(PF.reqs.filter(function (r) { return !r.closed; }).length) + ' · مغلقة ' + fmtNum(PF.reqs.filter(function (r) { return r.closed; }).length), PF.reqs.map(function (r) {
+    const st = r.result ? PF_RESULT[r.result] : PF_STATE[r.state];
+    return e('button', { type: 'button', class: 'pf-req', onClick: function () { PF.det = r; draw(); toTop(); } }, [e('span', { class: 'pf-req-m' }, [e('b', {}, r.title), e('small', {}, [ltr(r.id), ' · ', ltr(pfStamp(r.at)), ' · ', PF_STAGE[r.stage] || ''])]), DS.badge(st[0], st[1]), frag(ui('caret-left', 16))]);
+  })));
+  return kids;
+}
+function pfHome() {
+  const cards = PF_SECS.concat([['att', 'المرفقات', 'files'], ['reqs', 'طلبات التحديث', 'list-checks']]).map(function (s) {
+    const st = pfSecState(s[0]); return DS.card({ title: s[0] === 'address' ? pfAddrT(pfS) : s[1], note: st[0], icon: s[2], onClick: function () { pfGo(s[0]); } });
+  });
+  return [DS.cardGrid(cards)];
+}
+function rvAddr() {
+  rvaInit(); pfInit();
+  const res = v1Get(pfS, 'personal', 'residency_type'), doc = pfS('personal.id_doc');
+  const RES_AR = { saudi: 'سعودي', gcc: 'خليجي', resident: 'مقيم', non_resident: 'غير مقيم' };
+  const top = [rvIns('addr', 'تعليمات ملفي الشخصي', [['محاكاة حقيقية', 'كل قسم: عرض ← تعديل أو طلب تحديث ← قبل وبعد ← مراجعة ← تحقّق أمني ← تنفيذ ← نتيجة، بشروط النظام نفسها.', 'arrows-clockwise'],
+      ['حالة الملف', 'المسودة تُحفظ مباشرة؛ والملف المعتمد يُعدَّل بطلب تحديث تقرّره الإدارة، وتتابعه في «طلبات التحديث».', 'shield-check'],
+      ['الجنسية أولًا', 'السعودي هويته الوطنية، والخليجي هويته الخليجية أو جوازه، ولغيرهما «نوع الإقامة»: مقيم أو غير مقيم — ومنها تتحدّد المرفقات ونوع العنوان والبنك.', 'identification-card'],
+      ['العنوان', 'العنوان الوطني فيه «تحديد الموقع» بالخريطة والعنوان المختصر؛ وغيره «العنوان الآخر».', 'map-pin']]),
+    DS.panel('ما يحدّده النظام الآن', 'من بيانات الملف المحفوظة', [DS.fields([['الجنسية', pfS('personal.nationality') || '—'], ['نوع الإقامة', RES_AR[res] || '—'], ['نوع الوثيقة', V1_DOC_AR[doc] || '—'], ['نوع العنوان', pfAddrT(pfS)], ['دولة البنك', v1BankCountry(pfS) || '—']]),
+      DS.editField('حالة الملف (للعيّنة)', DS.select({ value: PF.st, options: [['draft', 'مسودة — لم يُرسل بعد'], ['approved', 'معتمد — التعديل بطلب تحديث']], onChange: function (v) { PF.st = v; PF.mode = 'view'; PF.u = {}; PF.gate = null; draw(); } }))],
+      [DS.button('إعادة القيم التجريبية', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { PF.ok = false; PF.reqs = []; PF.sec = ''; PF.mode = 'view'; PF.u = {}; PF.det = null; PF.gate = null; draw(); } })])];
+  const body = !PF.sec ? pfHome() : PF.sec === 'att' ? pfAttView() : PF.sec === 'reqs' ? pfReqs() : pfSection(PF.sec);
+  return top.concat([e('div', { class: 't2-stack pf' }, body)]);
 }
 
 /* ---------- ٣) ربط الواتساب الجديد ---------- */
