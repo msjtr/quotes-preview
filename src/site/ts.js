@@ -246,8 +246,8 @@
     if (modal) modal.remove(); filmKey = fm;
     modal = document.createElement('div'); modal.className = 'ts-modal ts-fm' + (fm ? ' is-m' : ''); modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-label', 'فيلم تدشين منصة تيرا');
     modal.innerHTML = '<div class="ts-fm-bar"><span class="ts-fm-t">' + I('PiFilmSlateFill') + '<b>فيلم تدشين منصة تيرا</b></span><button type="button" class="ts-modal-x" aria-label="إغلاق">' + I('PiXBold') + '</button></div>' +
-      '<div class="ts-fm-box"><video controls playsinline preload="metadata" poster="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.jpg"><source src="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.mp4" type="video/mp4"></video>' +
-      '<span class="ts-fm-load"><i></i><b>جارٍ تحميل الفيلم…</b></span><p class="ts-fm-err" hidden>تعذّر تشغيل الفيلم على هذا الجهاز. <a href="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.mp4" target="_blank" rel="noopener">افتحه مباشرة</a></p></div>';
+      '<div class="ts-fm-box"><video controls playsinline preload="metadata" poster="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.jpg?v=2"><source src="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.mp4?v=2" type="video/mp4"></video>' +
+      '<span class="ts-fm-load"><i></i><b>جارٍ تحميل الفيلم…</b></span><p class="ts-fm-err" hidden>تعذّر تشغيل الفيلم على هذا الجهاز. <a href="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.mp4?v=2" target="_blank" rel="noopener">افتحه مباشرة</a></p></div>';
     app.appendChild(modal);
     var v = $('video', modal), ld = $('.ts-fm-load', modal);
     ['playing', 'canplay'].forEach(function (k) { v.addEventListener(k, function () { ld.hidden = true; }); });

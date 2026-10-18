@@ -10896,6 +10896,7 @@ window.__TMWALDONE = function (name, gift) { S.toast = gift ? 'أُضيفت ال
  * المقاس يُختار تلقائيًا: جوال/شاشة طولية ← 1080×1920، وغير ذلك ← 1920×1080. عند أول تدشين: التخطّي بعد 10 ثوانٍ، وعند الإعادة: إغلاق متاح.
  * الفيلم باسم العميل يُجهَّز عند طلبه فقط (GitHub Actions) ويبقى 30 يومًا في R2 ثم يُحذف تلقائيًا. */
 const FILM_CDN = 'https://media.tera-services.com.sa/';
+const FILM_V = '?v=2'; /* رقم نسخة أفلام المكتبة — يُرفع عند استبدال أي فيلم حتى لا تبقى نسخة مخزّنة قديمة */
 const FILM_LIB = [
   { k: 'launch-l', t: 'فيلم التدشين الجديد — أفقي', d: '«صُنعت لك» · 32 ثانية · 1920×1080 · للويب والشاشات', l: 'library/launch-landscape', tag: ['المعتمد', 'ok'] },
   { k: 'launch-p', t: 'فيلم التدشين الجديد — طولي', d: '«صُنعت لك» · 32 ثانية · 1080×1920 · للجوال والتواصل الاجتماعي', l: 'library/launch-portrait', por: true, tag: ['المعتمد', 'ok'] },
@@ -10908,8 +10909,9 @@ function filmDur(s) { s = Math.max(0, Math.ceil(s)); return s + ' ث'; }
 /* المشغّل: o = { l, p, poster:{l,p}, skipAfter, title, onDone, onError } — l/p مسار بلا امتداد في R2 أو رابط كامل */
 function filmPlayer(o) {
   const por = filmPortrait() && !!o.p, base = por ? o.p : o.l;
-  const src = /\.mp4$/.test(base) ? filmUrl(base) : filmUrl(base) + '.mp4';
-  const poster = o.poster ? filmUrl(por ? o.poster.p : o.poster.l) : filmUrl(base.replace(/\.mp4$/, '')) + '.jpg';
+  const FV = /^https?:/.test(base) ? '' : FILM_V;
+  const src = (/\.mp4$/.test(base) ? filmUrl(base) : filmUrl(base) + '.mp4') + FV;
+  const poster = o.poster ? filmUrl(por ? o.poster.p : o.poster.l) : filmUrl(base.replace(/\.mp4$/, '')) + '.jpg' + FV;
   const skipAfter = Number(o.skipAfter || 0);
   const root = document.createElement('div');
   root.className = 'tfp' + (por ? ' is-p' : '');
@@ -11421,7 +11423,7 @@ const MEM_FILM = {
     try { m = await loadMem(true); } catch (err) { failed(host, err, function () { MEM_FILM.run(host, ctx); }); return; }
     if (!m || m.ok === false || !m.exists) { mount(host, DS.emptyState({ icon: 'clock', title: 'لم يُدشَّنْ حسابُك بعد', body: 'يظهرُ فيلمُ التدشينِ هنا بعدَ تدشينِ حسابِك من الإدارة.' })); return; }
     const box = frag('<section class="lux"><div class="lux-grid"><div>' + mcard(m) + '</div><div style="display:grid;gap:14px"><span class="eyebrow">TERA LAUNCH</span><h2>فيلمُ تدشينِ حسابِك</h2><p>دُشِّنَ حسابُك في <bdi dir="ltr">' + day(m.issued_at) + '</bdi>. شاهدِ الفيلمَ متى شئت؛ يُعرَضُ تلقائيًا بالمقاسِ المناسبِ لجهازك.</p><div class="lux-acts"><button type="button" class="lux-btn gold" data-tm="film">' + tile('rocket-launch', 'navy') + 'تشغيل فيلم التدشين</button></div>' +
-      '<div class="tfm-dls">' + fmDl(FILM_CDN + FILM_LAUNCH.l + '.mp4', 'تنزيل أفقي', '1920×1080') + fmDl(FILM_CDN + FILM_LAUNCH.p + '.mp4', 'تنزيل طولي', '1080×1920') + '</div></div></div></section>' +
+      '<div class="tfm-dls">' + fmDl(FILM_CDN + FILM_LAUNCH.l + '.mp4' + FILM_V, 'تنزيل أفقي', '1920×1080') + fmDl(FILM_CDN + FILM_LAUNCH.p + '.mp4' + FILM_V, 'تنزيل طولي', '1080×1920') + '</div></div></div></section>' +
       '<section class="tfm-own" aria-live="polite"><p class="tfm-wait">جارٍ التحقق من فيلمك…</p></section>');
     mount(host, wire(box, ctx, m));
     const own = box.querySelector('.tfm-own');
@@ -16194,9 +16196,9 @@ function lvFilmLib() {
   const card = function (f) {
     const b = FILM_CDN + f.l;
     return e('article', { class: 'flib-c' + (f.por ? ' is-p' : '') }, [
-      e('button', { type: 'button', class: 'flib-th', 'aria-label': 'تشغيل ' + f.t, onClick: function () { filmPlayer({ l: f.l, p: f.p, skipAfter: 0, title: f.t }); } }, [e('img', { src: b + '.jpg', alt: '', loading: 'lazy' }), e('i', { 'aria-hidden': 'true' }, '▶')]),
+      e('button', { type: 'button', class: 'flib-th', 'aria-label': 'تشغيل ' + f.t, onClick: function () { filmPlayer({ l: f.l, p: f.p, skipAfter: 0, title: f.t }); } }, [e('img', { src: b + '.jpg' + FILM_V, alt: '', loading: 'lazy' }), e('i', { 'aria-hidden': 'true' }, '▶')]),
       e('div', { class: 'flib-b' }, [e('div', { class: 'flib-t' }, [e('b', {}, f.t), f.tag ? DS.badge(f.tag[0], f.tag[1]) : null]), e('small', {}, f.d),
-        e('div', { class: 'flib-a' }, [e('a', { href: b + '.mp4', download: true, rel: 'noopener' }, f.p ? 'تنزيل أفقي' : 'تنزيل'), f.p ? e('a', { href: FILM_CDN + f.p + '.mp4', download: true, rel: 'noopener' }, 'تنزيل طولي') : null])])]);
+        e('div', { class: 'flib-a' }, [e('a', { href: b + '.mp4' + FILM_V, download: true, rel: 'noopener' }, f.p ? 'تنزيل أفقي' : 'تنزيل'), f.p ? e('a', { href: FILM_CDN + f.p + '.mp4' + FILM_V, download: true, rel: 'noopener' }, 'تنزيل طولي') : null])])]);
   };
   return e('div', { class: 'flib' }, FILM_LIB.map(card));
 }
