@@ -1,0 +1,67 @@
+# فيلم التدشين باسم العميل — يُطلب من المنصة (my_launch_film_request ← pg_net) ويُولَّد هنا لا على السيرفر،
+# ثم يُرفع إلى Cloudflare R2 (المسار clients/ يُحذف تلقائيًا بعد 31 يومًا) وتصل العميل رسالة «جُهِّز فيلمك».
+name: film-render
+run-name: "فيلم تدشين — ${{ inputs.id }}"
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: "معرّف طلب الفيلم (launch_films.id)"
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: film-render-${{ inputs.id }}
+  cancel-in-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      FILM_ID: ${{ inputs.id }}
+      CDN: https://media.tera-services.com.sa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: الأدوات
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          cd film && npm install --no-audit --no-fund --silent && npx playwright install --with-deps chromium >/dev/null
+      - name: حجز الطلب وبيانات البطاقة
+        run: node film/job.js claim "$FILM_ID" "$RUNNER_TEMP/client.json"
+      - name: التصوير (أفقي وطولي معًا)
+        run: |
+          cd film
+          CLIENT=$RUNNER_TEMP/client.json ORI=l OUT=$RUNNER_TEMP/fl node render.js & P1=$!
+          CLIENT=$RUNNER_TEMP/client.json ORI=p OUT=$RUNNER_TEMP/fp node render.js & P2=$!
+          wait $P1 && wait $P2
+      - name: الترميز 1080
+        run: |
+          mkdir -p $RUNNER_TEMP/out
+          bash film/encode.sh $RUNNER_TEMP/fl $RUNNER_TEMP/out/landscape.mp4 $RUNNER_TEMP/out/landscape.jpg
+          bash film/encode.sh $RUNNER_TEMP/fp $RUNNER_TEMP/out/portrait.mp4 $RUNNER_TEMP/out/portrait.jpg
+      - name: الرفع إلى Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          TOK=$(cat "$RUNNER_TEMP/client.json.token"); case "$TOK" in (*[!0-9a-f]*|'') echo "bad token"; exit 1;; esac
+          EP="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          for k in landscape portrait; do
+            aws s3 cp "$RUNNER_TEMP/out/$k.mp4" "s3://tera-films/clients/$TOK/$k.mp4" --endpoint-url "$EP" --content-type video/mp4 --content-disposition "attachment; filename=\"TERA-launch-film-$k.mp4\"" --only-show-errors
+            aws s3 cp "$RUNNER_TEMP/out/$k.jpg" "s3://tera-films/clients/$TOK/$k.jpg" --endpoint-url "$EP" --content-type image/jpeg --only-show-errors
+          done
+          printf '{"landscape":"%s","portrait":"%s","landscape_poster":"%s","portrait_poster":"%s"}' "$CDN/clients/$TOK/landscape.mp4" "$CDN/clients/$TOK/portrait.mp4" "$CDN/clients/$TOK/landscape.jpg" "$CDN/clients/$TOK/portrait.jpg" > "$RUNNER_TEMP/files.json"
+      - name: الإتمام ورسالة «جُهِّز فيلمك»
+        run: node film/job.js done "$FILM_ID" "$RUNNER_TEMP/files.json"
+      - name: تسجيل التعذّر
+        if: failure()
+        run: node film/job.js fail "$FILM_ID" "render_failed" || true

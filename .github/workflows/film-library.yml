@@ -1,0 +1,41 @@
+# مكتبة أفلام التدشين في «إعدادات تدشين الحساب» — تُرفع مرة واحدة إلى Cloudflare R2 (المسار library/ بلا مدة):
+# الفيلم الجديد أفقي وطولي · الفيلم المرجعي (3 دقائق) · فيلم الصفحة الرئيسية القديم بنسختيه.
+# المصدر: إصدار مؤقت باسم film-library (أجزاء + manifest.sha256)، ويُحذف بعد الرفع — لا شيء من الفيديو في شجرة المستودع.
+name: film-library
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: جلب الملفات من الإصدار المؤقت
+        run: mkdir -p "$RUNNER_TEMP/src" && gh release download film-library -R "$GITHUB_REPOSITORY" -D "$RUNNER_TEMP/src"
+      - name: تجميع الأجزاء والتحقق من سلامتها
+        run: |
+          cd "$RUNNER_TEMP/src"
+          for b in $(ls *.part* | sed 's/\.part[0-9]*$//' | sort -u); do cat $(ls "$b".part* | sort -V) > "$b"; rm "$b".part*; done
+          sha256sum -c manifest.sha256
+      - name: فيلم الصفحة الرئيسية القديم (من المستودع)
+        run: |
+          cp assets/vid/film.mp4 "$RUNNER_TEMP/src/home-old-landscape.mp4"; cp assets/vid/film-m.mp4 "$RUNNER_TEMP/src/home-old-portrait.mp4"
+          cp assets/vid/film-poster.jpg "$RUNNER_TEMP/src/home-old-landscape.jpg"; cp assets/vid/film-poster-m.jpg "$RUNNER_TEMP/src/home-old-portrait.jpg"
+      - name: الرفع إلى Cloudflare R2
+        run: |
+          EP="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          for f in "$RUNNER_TEMP"/src/*.mp4 "$RUNNER_TEMP"/src/*.jpg; do n=$(basename "$f")
+            case "$n" in (*.mp4) T=video/mp4;; (*) T=image/jpeg;; esac
+            aws s3 cp "$f" "s3://tera-films/library/$n" --endpoint-url "$EP" --content-type "$T" --content-disposition "attachment; filename=\"TERA-$n\"" --cache-control "public, max-age=604800" --only-show-errors; echo "uploaded library/$n"; done
+      - name: حذف الإصدار المؤقت
+        run: gh release delete film-library -R "$GITHUB_REPOSITORY" --yes --cleanup-tag
