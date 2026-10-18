@@ -98,8 +98,8 @@ def home():
             '<video muted loop playsinline preload="none" poster="https://media.tera-services.com.sa/library/launch-landscape.jpg?v=2" data-w="https://media.tera-services.com.sa/library/launch-landscape.mp4?v=2" data-m="https://media.tera-services.com.sa/library/launch-portrait.mp4?v=2" data-pw="https://media.tera-services.com.sa/library/launch-landscape.jpg?v=2" data-pm="https://media.tera-services.com.sa/library/launch-portrait.jpg?v=2" aria-label="فيلم تدشين منصة تيرا يعمل بدون صوت"></video>'
             f'<div class="ts-film-ctl"><button type="button" class="ts-film-snd" aria-pressed="false">{I("PiSpeakerSlashFill")}<span>تشغيل الصوت</span></button>'
             f'<button type="button" class="ts-film-fs" data-film aria-label="عرض الفيلم بملء الشاشة">{I("PiFilmSlateFill")}<span>ملء الشاشة</span></button></div></div>'
-            '<div class="ts-film-b"><small>فيلم التدشين</small><h2>صُنعت لك — فيلم تدشين منصة تيرا</h2><p>ترحيبٌ يُحفَر بالليزر، وبطاقات العضوية الثلاث، وعالمٌ بلا حدود — في 32 ثانية.</p>'
-            f'<div><button type="button" class="t2-btn is-primary" data-film>{I("PiPlayFill")} شاهد الفيلم</button></div></div></section>')
+            '<div class="ts-film-b"><small>أول لحظة في تيرا</small><h2>هكذا نستقبل عملاءنا</h2><p>لكل عميل بداية تليق به. شاهد كيف يبدأ حسابك في منصة تيرا للخدمات المتكاملة.</p>'
+            f'<div><button type="button" class="t2-btn is-primary" data-film>{I("PiPlayFill")} شاهد الاستقبال</button></div></div></section>')
     _sp = [q for c in FAQ for q in c[2] if q[0] == 'q-spam']
     fq = ''.join(qsec(a, b, c2) for a, b, c2 in (FAQ[0][2][:3] + _sp + FAQ[3][2][:1]))
     faqb = (f'<section class="ts-feat ts-faqf"><div class="ts-feat-v ts-vid" data-vid="faq">{vmedia("faq")}</div>'
