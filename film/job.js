@@ -4,7 +4,7 @@
 //   node job.js fail  <id> <reason>
 'use strict';
 const fs = require('fs');
-const URL_ = String(process.env.SUPABASE_URL || '').replace(/\/+$/, ''), KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const URL_ = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, ''), KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 const [cmd, id, arg] = process.argv.slice(2);
 if (!URL_ || !KEY) { console.error('missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY'); process.exit(2); }
 if (!/^[0-9a-f-]{36}$/i.test(id || '')) { console.error('bad id'); process.exit(2); }

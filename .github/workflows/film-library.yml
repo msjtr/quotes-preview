@@ -33,7 +33,9 @@ jobs:
           cp assets/vid/film-poster.jpg "$RUNNER_TEMP/src/home-old-landscape.jpg"; cp assets/vid/film-poster-m.jpg "$RUNNER_TEMP/src/home-old-portrait.jpg"
       - name: الرفع إلى Cloudflare R2
         run: |
-          EP="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          t() { printf %s "$1" | tr -d '[:space:]'; }  # الأسرار قد تُحفظ بسطر زائد
+          export AWS_ACCESS_KEY_ID="$(t "$AWS_ACCESS_KEY_ID")" AWS_SECRET_ACCESS_KEY="$(t "$AWS_SECRET_ACCESS_KEY")"
+          EP="https://$(t "$R2_ACCOUNT_ID").r2.cloudflarestorage.com"
           for f in "$RUNNER_TEMP"/src/*.mp4 "$RUNNER_TEMP"/src/*.jpg; do n=$(basename "$f")
             case "$n" in (*.mp4) T=video/mp4;; (*) T=image/jpeg;; esac
             aws s3 cp "$f" "s3://tera-films/library/$n" --endpoint-url "$EP" --content-type "$T" --content-disposition "attachment; filename=\"TERA-$n\"" --cache-control "public, max-age=604800" --only-show-errors; echo "uploaded library/$n"; done

@@ -54,7 +54,9 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
         run: |
           TOK=$(cat "$RUNNER_TEMP/client.json.token"); case "$TOK" in (*[!0-9a-f]*|'') echo "bad token"; exit 1;; esac
-          EP="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          t() { printf %s "$1" | tr -d '[:space:]'; }  # الأسرار قد تُحفظ بسطر زائد
+          export AWS_ACCESS_KEY_ID="$(t "$AWS_ACCESS_KEY_ID")" AWS_SECRET_ACCESS_KEY="$(t "$AWS_SECRET_ACCESS_KEY")"
+          EP="https://$(t "$R2_ACCOUNT_ID").r2.cloudflarestorage.com"
           for k in landscape portrait; do
             aws s3 cp "$RUNNER_TEMP/out/$k.mp4" "s3://tera-films/clients/$TOK/$k.mp4" --endpoint-url "$EP" --content-type video/mp4 --content-disposition "attachment; filename=\"TERA-launch-film-$k.mp4\"" --only-show-errors
             aws s3 cp "$RUNNER_TEMP/out/$k.jpg" "s3://tera-films/clients/$TOK/$k.jpg" --endpoint-url "$EP" --content-type image/jpeg --only-show-errors
