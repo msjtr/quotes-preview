@@ -4605,6 +4605,14 @@ function soPage() {
 /* ===== صفحة القسم: عنوان ← فلتر جانبي عريض ← بطاقات مصممة مجمّعة ===== */
 let HUB_INLINE = false;
 function secHub(key, head, groups) {
+  /* حالة الحساب في العيّنة (حالات الحساب): قبل الاعتماد لا «خدماتي»، والعضوية بعد التدشين */
+  if (typeof accOn === 'function' && accOn()) {
+    const A = window.__ACC, pre = accPre(), unl = A.stage !== 'launched'; setTimeout(accMark, 0);
+    if (key === 'svc' && pre) return [DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تظهر «خدماتي» بمحتواها.', DS.button('ملفي الشخصي', { size: 'sm', onClick: function () { go('other', 'profile'); } }))];
+    if (key === 'more') groups = groups.map(function (g) { return [g[0], g[1], g[2], g[3].filter(function (it) { return !((pre && (it.t === 'خدماتي' || it.t === 'مختاراتي')) || (unl && it.t === 'العضوية')); })
+      .map(function (it) { return it.t === 'خدماتي' && !A.full ? Object.assign({}, it, { d: 'طلباتي وبياناتي الوظيفية وطلب عرض سعر', n: 'لا عقود' }) : it; })]; });
+    if (key === 'base' && unl) groups = groups.map(function (g) { return [g[0], g[1], g[2], g[3].map(function (it) { return it.t === 'لوحتي الرئيسية' ? Object.assign({}, it, { d: 'رحلة حسابك ومراحل اعتماد ملفك' }) : it; })]; });
+  }
   const fk = 'hf_' + key, f = !HUB_INLINE && groups.some(function (g) { return g[0] === FX[fk]; }) ? FX[fk] : '';
   const total = groups.reduce(function (a, g) { return a + g[3].length; }, 0);
   const fc = function (gk, label, ic, n) { const on = gk === f; return e('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', class: 'hf-c' + (on ? ' is-on' : ''), onClick: function () { FX[fk] = gk; draw(); } }, [e('span', { class: 'hf-ic' }, frag(tile(ic))), e('span', { class: 'hf-tx' }, [e('b', {}, label), e('small', {}, n === 1 ? 'عنصر واحد' : n === 2 ? 'عنصران' : fmtNum(n) + (n <= 10 ? ' عناصر' : ' عنصرًا'))])]); };
@@ -12896,7 +12904,7 @@ const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخ
 const RV_ON = !document.documentElement.classList.contains('tq-live');
 const RV = { tab: 'upd', toast: '', dlg: null };
 try { RV.tab = sessionStorage.getItem('tera-rv-tab') || 'upd'; } catch (err) { void err; }
-const RV_TABS = [['upd', 'نموذج التحديث', 'newq'], ['addr', 'ملفي الشخصي', 'profile'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film']];
+const RV_TABS = [['new', 'استكمال تسجيل جديد', 'profile'], ['upd', 'نموذج التحديث', 'newq'], ['addr', 'ملفي الشخصي', 'profile'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film'], ['acc', 'حالات الحساب', 'squares-four']];
 function rvGo(t) { RV.tab = t; RV.toast = ''; try { sessionStorage.setItem('tera-rv-tab', t); } catch (err) { void err; } draw(); toTop(); }
 function rvToast(t) { RV.toast = t; draw(); }
 const rvBadge = (t, tone) => DS.badge(t, tone);
@@ -13037,7 +13045,7 @@ const V1_SEED = { 'personal.full_name': 'عميل تجريبي', 'personal.full_
   'docs.national_id': 'id.pdf', 'docs.address_proof': '', 'docs.iban': 'iban.pdf' };
 /* المتغيّرات المشتقة: نوع العنوان من الوثيقة، ودولة البنك من الجنسية والإقامة */
 function v1Get(get, form, field) {
-  if (form === 'profile' && field === 'address_section') { const fd = V1_BY['personal.id_doc'], d = fd && v1Visible(fd, get) ? get('personal.id_doc') : '', r = v1Get(get, 'personal', 'residency_type'); if (d) return d === 'national_id' || d === 'residency' ? 'national' : 'international'; return r === 'saudi' || r === 'resident' ? 'national' : 'international'; }
+  if (form === 'profile' && field === 'address_section') { const fd = V1_BY['personal.id_doc'], d = fd && v1Visible(fd, get) ? get('personal.id_doc') : '', r = v1Get(get, 'personal', 'residency_type'); if (d) return d === 'national_id' || d === 'residency' ? 'national' : 'international'; if (!r) return ''; return r === 'saudi' || r === 'resident' ? 'national' : 'international'; }
   /* نوع الإقامة يحسبه الخادم: السعودي «saudi» والخليجي «gcc»، ولغيرهما ما اختاره */
   if (form === 'personal' && field === 'residency_type') { const n = get('personal.nationality'); if (n === V1_KSA) return 'saudi'; if (V1_GCC_N.indexOf(n) >= 0) return 'gcc'; }
   return get(form + '.' + field);
@@ -13102,7 +13110,7 @@ function v1Check(f, val, get) {
   for (const r of v1Rules(f, 'length', get)) { if (r.min && v.length < r.min) return r.msg_min; if (r.max && v.length > r.max) return r.msg_max; }
   for (const r of v1Rules(f, 'age', get)) { const d = new Date(v), a = (Date.now() - d) / 31557600000; if (isNaN(a)) return r.msg_max; if (a < r.min) return r.msg_min; if (a > r.max) return r.msg_max; }
   for (const r of v1Rules(f, 'date_min', get)) { if (new Date(v) < today0()) return r.msg; }
-  for (const r of v1Rules(f, 'address_country', get)) { const sec = v1Get(get, 'profile', 'address_section'); if (sec === 'national' && v !== V1_KSA) return r.msg_national; if (sec !== 'national' && v === V1_KSA) return r.msg_international; }
+  for (const r of v1Rules(f, 'address_country', get)) { const sec = v1Get(get, 'profile', 'address_section'); if (!sec) continue; if (sec === 'national' && v !== V1_KSA) return r.msg_national; if (sec !== 'national' && v === V1_KSA) return r.msg_international; }
   if (f.t === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'البريد الإلكتروني غير صحيح.';
   return '';
 }
@@ -13131,12 +13139,21 @@ const v1Vis = (form, get) => V1_FIELDS.filter(function (f) { return f.f === form
 
 /* ---------- ١) نموذج التحديث / التسجيل الجديد — بالمحرّك نفسه ---------- */
 const RVU = { st: 'draft', view: 'form', f: {}, sec: { wa: false, auth: false, mail: true }, ack: false, no: '', at: null, back: {} };
-function rvuInit() { if (RVU.ok) return; RVU.ok = true; V1_FIELDS.forEach(function (f) { RVU.f[f.id] = { v: V1_SEED[f.id] || '', d: undefined, ed: false, nv: '' }; }); }
+/* تسجيل جديد: لا يُعرف من العميل إلا ما أدخله عند إنشاء الحساب (الاسم والبريد والجوال) */
+const V1_NEWSEED = { 'personal.full_name': 'عميل جديد', 'contact.email': 'new.client@example.com', 'contact.country_code': '+966', 'contact.phone': '551234200' };
+function rvuInit() { if (RVU.ok) return; RVU.ok = true; const SD = RVU.mode === 'new' ? V1_NEWSEED : V1_SEED; V1_FIELDS.forEach(function (f) { RVU.f[f.id] = { v: SD[f.id] || '', d: undefined, ed: false, nv: '' }; }); }
+/* تبويبا «نموذج التحديث» و«استكمال تسجيل جديد»: المحرّك نفسه، ولكلٍّ حالته المستقلة */
+const RVU_KEEP = {};
+function rvuMode(m) {
+  const cur = RVU.mode || 'upd'; if (cur === m && RVU.mode) return;
+  RVU_KEEP[cur] = { f: RVU.f, st: RVU.st, view: RVU.view, no: RVU.no, at: RVU.at, back: RVU.back, ok: RVU.ok, ack: RVU.ack, secPg: RVU.secPg };
+  Object.assign(RVU, RVU_KEEP[m] || { f: {}, st: 'draft', view: 'form', no: '', at: null, back: {}, ok: false, ack: false, secPg: '' }); RVU.mode = m;
+}
 const rvuVal = (id) => { const s = RVU.f[id]; return s ? (s.d !== undefined ? s.d : s.v) : ''; };
 const rvuGet = (id) => rvuVal(id);
 function rvuSettle() { v1Settle(new Proxy({}, { get: function (t, id) { return rvuVal(id); } }), function (id, v) { const s = RVU.f[id]; if (!s) return; if (v === s.v) s.d = undefined; else s.d = v; }); }
 function rvuStats(form) { const fl = v1Vis(form, rvuGet), req = fl.filter(function (f) { return v1Required(f, rvuGet); }), done = req.filter(function (f) { return String(rvuVal(f.id) || '').trim(); }).length, dr = fl.filter(function (f) { return RVU.f[f.id].d !== undefined; }).length; return { n: req.length, done: done, dr: dr }; }
-function rvuPct() { let n = 0, d = 0; V1_FORMS.forEach(function (F) { const t = rvuStats(F[0]); n += t.n; d += t.done; }); ['wa', 'auth', 'mail'].forEach(function (k) { n++; if (RVU.sec[k]) d++; }); return { pct: n ? Math.round(d / n * 100) : 100, n: n, d: d }; }
+function rvuPct() { rvuSecSync(); let n = 0, d = 0; V1_FORMS.forEach(function (F) { const t = rvuStats(F[0]); n += t.n; d += t.done; }); ['wa', 'auth', 'mail'].forEach(function (k) { n++; if (RVU.sec[k]) d++; }); return { pct: n ? Math.round(d / n * 100) : 100, n: n, d: d }; }
 const rvuLocked = (id) => RVU.st === 'recv' || RVU.st === 'sent' || (RVU.st === 'back' && !RVU.back[id]);
 const rvuLabelOf = (f, v) => { if (f.t === 'select') { const o = v1Options(f, rvuGet).concat((Array.isArray(f.o) ? f.o : []).map(function (x) { return Array.isArray(x) ? x : [x, x]; })).filter(function (x) { return x[0] === v; })[0]; return o ? o[1] : v; } return v; };
 function rvuApply(f, nv) {
@@ -13161,12 +13178,12 @@ function rvuField(f) {
   const id = f.id, s = RVU.f[id], val = rvuVal(id), has = String(val || '').trim() !== '', req = v1Required(f, rvuGet);
   const lock = rvuLocked(id), note = RVU.st === 'back' && RVU.back[id];
   if (f.t === 'file') {
-    return e('div', { class: 'rv-f' + (note ? ' is-back' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب إرفاقه', 'danger') : has ? rvBadge(s.d !== undefined ? 'مرفق جديد' : 'مرفق', s.d !== undefined ? 'info' : 'ok') : rvBadge(req ? 'ناقص' : 'اختياري', req ? 'warn' : null)]),
+    return e('div', { class: 'rv-f' + (note ? ' is-back' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب إرفاقه', 'danger') : has ? rvBadge(s.d !== undefined ? 'بانتظار اعتماد' : 'يحتاج مراجعة', s.d !== undefined ? 'pend' : 'info') : rvBadge(req ? 'ناقص' : 'اختياري', req ? 'warn' : null)]),
       note ? e('p', { class: 'rv-note' }, [frag(ui('chat-circle-dots', 14)), 'ملاحظة الفريق: ' + note]) : null, has && !note ? DS.fileCard({ name: val, note: 'PDF · ' + (s.d !== undefined ? 'في مسودتك' : 'معتمد') }) : null,
       lock ? null : rvRow([DS.button(has && !note ? 'استبدال' : 'إرفاق ملف', { size: 'sm', ui: 'upload-simple', onClick: function () { s.d = f.k + '-new.pdf'; if (note) delete RVU.back[id]; rvToast('تم الرفع — شكرًا، سيُراجع مع طلبك'); } })])]);
   }
   const bad = !lock && has ? v1Check(f, val, rvuGet) : '';
-  const tag = lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب تعديله', 'danger') : bad ? rvBadge('لا يطابق الشروط الجديدة', 'danger') : !has ? rvBadge(req ? 'ناقص' : 'اختياري', req ? 'warn' : null) : s.d !== undefined ? rvBadge('مسودة محفوظة', 'info') : rvBadge('معتمد', 'ok');
+  const tag = lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب تعديله', 'danger') : bad ? rvBadge('لا يطابق الشروط الجديدة', 'danger') : !has ? rvBadge(req ? 'ناقص' : 'اختياري', req ? 'warn' : null) : s.d !== undefined ? rvBadge('بانتظار اعتماد', 'pend') : rvBadge('يحتاج مراجعة', 'info');
   const head = e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), tag]);
   const hint = v1Hint(f, rvuGet);
   if (!lock && (s.ed || !has || note || bad)) {
@@ -13191,78 +13208,113 @@ const V1_ADDR_MAP = { building_number: 'house_number', street: 'road', district:
 const v1MatchOpt = (list, v) => { const n = geoN(v); if (!n) return null; return list.filter(function (o) { return geoN(o) === n; })[0] || list.filter(function (o) { const a = geoN(o); return a && (a.indexOf(n) >= 0 || n.indexOf(a) >= 0); })[0] || null; };
 const v1GeoSrc = (k) => (k === 'short' ? 'العنوان المختصر' : k === 'gps' ? 'موقعك الحالي' : k === 'map' ? 'الخريطة' : '');
 const v1GeoAcc = (p) => (p && p.house_number_type === 'exact' ? 'مطابقة دقيقة' : p && p.house_number_type === 'interpolated' ? 'مطابقة تقديريّة' : '');
+/* رموز أدوات الخريطة (تُرسم بقاعدة evenodd) — تُضاف لمعجم الرموز المشترك */
+[GL, window.__PGL].forEach(function (G) { if (!G) return; G.crosshair = G.crosshair || 'M120,32a8,8,0,0,1,16,0V49A80,80,0,0,1,207,120h17a8,8,0,0,1,0,16H207a80,80,0,0,1-71,71v17a8,8,0,0,1-16,0V207a80,80,0,0,1-71-71H32a8,8,0,0,1,0-16H49a80,80,0,0,1,71-71ZM128,64a64,64,0,1,0,64,64A64,64,0,0,0,128,64Zm0,36a28,28,0,1,1-28,28A28,28,0,0,1,128,100Z'; G.mountains = G.mountains || 'M24,208a8,8,0,0,1-6.9-12L89.1,72a8,8,0,0,1,13.8,0L140,135.6l17.1-29.6a8,8,0,0,1,13.8,0L238.9,196a8,8,0,0,1-6.9,12ZM96,92.1,38,192H154Zm68,30-15,26L173.7,192H218Z'; G.car = G.car || 'M48,128,68,76a16,16,0,0,1,15-12H173a16,16,0,0,1,15,12l20,52h16a8,8,0,0,1,0,16h-8v56a8,8,0,0,1-8,8H184a8,8,0,0,1-8-8V184H80v16a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V144H32a8,8,0,0,1,0-16ZM83,80l-17,48H190L173,80ZM56,144v24H200V144Zm20,4a8,8,0,1,1-8,8A8,8,0,0,1,76,148Zm104,0a8,8,0,1,1-8,8A8,8,0,0,1,180,148Z'; });
 function v1Place(p, get, put) {
   let n = 0, cc = get('address.country');
-  ['country', 'state', 'city', 'district', 'street', 'building_number', 'postal_code'].forEach(function (k) {
+  const nat = v1Get(get, 'profile', 'address_section') === 'national';
+  const pc = String(p.postcode || '').trim(), road = String(p.road || '').trim(), hn = String(p.house_number || '').trim(), qt = String(p.quarter || p.district || p.subdistrict || '').trim();
+  /* العنوان الوطني بحقوله؛ والعنوان الآخر: السطر الأول من الشارع ورقم المبنى، والسطر الثاني من الحي */
+  const map = nat ? { country: p.country, state: p.state, city: p.city, district: qt, street: road, building_number: hn, postal_code: (pc.match(/^\d{5}/) || [pc])[0] }
+    : { country: p.country, state: p.state, city: p.city, line1: [hn, road].filter(Boolean).join(' '), line2: qt, zip: pc };
+  Object.keys(map).forEach(function (k) {
     const f = V1_BY['address.' + k]; if (!f || !v1Visible(f, get)) return;
-    const key = V1_ADDR_MAP[k]; let v = key === 'quarter' ? (p.quarter || p.district || p.subdistrict) : p[key];
-    v = v == null ? '' : String(v).trim(); if (!v) return;
-    if (k === 'postal_code') v = (v.match(/^\d{5}/) || [v])[0];
+    let v = map[k] == null ? '' : String(map[k]).trim(); if (!v) return;
     /* التعبئة التلقائية لا تكتب في قائمةٍ ما لا ينتمي إليها */
     if (f.t === 'select') { const m = v1MatchOpt(k === 'state' ? (V1_STATES[cc] || []) : V1_ADR_L, v); if (!m) return; v = m; if (k === 'country') cc = m; }
     put(f.id, v); n++;
   });
   return n;
 }
+/* دولة الخريطة الافتراضية: دولة العنوان، وإلا دولة الجنسية، وإلا المملكة */
+function v1MapCountry(get) {
+  const c = get('address.country'); if (V1_ADR_L.indexOf(c) >= 0) return c;
+  const n = get('personal.nationality'), m = v1MatchOpt(V1_ADR_L, n); return m || V1_ADR_L[0];
+}
 function v1Loc(key, get, put, after) {
-  if (v1Get(get, 'profile', 'address_section') !== 'national') return null;
+  if (!v1Get(get, 'profile', 'address_section')) return null;
+  const nat = v1Get(get, 'profile', 'address_section') === 'national';
   const geo = RVL[key] || null, rows = [];
   rows.push(e('div', { class: 'rvm-bar' }, DS.button('تحديد الموقع على الخريطة', { tone: 'primary', ui: 'map-pin', onClick: function () {
-    rvPick({ title: 'تحديد موقع العنوان', lat: geo ? geo.lat : undefined, lon: geo ? geo.lon : undefined, country: get('address.country'), shortAddr: true,
+    rvPick({ title: nat ? 'تحديد موقع العنوان الوطني' : 'تحديد موقع العنوان', lat: geo ? geo.lat : undefined, lon: geo ? geo.lon : undefined, country: v1MapCountry(get), shortAddr: nat,
       onPick: function (out) {
         const p = out.place || {}; p.latitude = out.lat; p.longitude = out.lon;
         if (!out.place) { RVL[key] = { err: true, lat: out.lat, lon: out.lon }; draw(); return; }
         const n = v1Place(p, get, put); if (after) after();
-        RVL[key] = { label: p.display_name || '', lat: out.lat, lon: out.lon, src: 'map', acc: v1GeoAcc(p), n: n }; draw();
+        RVL[key] = { label: p.display_name || '', lat: out.lat, lon: out.lon, src: out.source === 'short_address' ? 'short' : 'map', acc: v1GeoAcc(p), n: n }; draw();
       } });
   } })));
   if (geo && geo.err) rows.push(DS.note('danger', 'تعذّر تحديد العنوان', 'لم تصل نتيجة من مزوّد الخرائط، جرّب مرّة أخرى أو أدخل البيانات يدويًا.'));
   if (geo && geo.label) rows.push(e('div', { class: 'rvm-geo' }, [frag(ui('map-pin', 18)), e('div', {}, [e('p', { class: 'rvm-geo-l' }, geo.label),
     e('p', { class: 'rvm-geo-m' }, [v1GeoSrc(geo.src), geo.acc, geo.n ? (fmtNum(geo.n) + ' حقول مُعبّأة') : ''].filter(Boolean).join(' · '))])]));
-  rows.push(DS.note('info', 'لم يُضبَط موقعك بدقّة؟', 'أمامك خياران، وكلاهما داخل الخريطة: أدخل العنوان المختصر فيها ليُجلب موقعك مباشرة، أو حرّك الدبوس حتى يقف على مكانك بالضبط. وفي الخريطة أدوات مساعدة: العنوان المختصر · موقعي الآن · أقرب العناوين · أماكن قريبة.'));
-  return e('section', { class: 'geo-sec rvm-sec' }, [e('div', { class: 'geo-sec-h' }, [frag(tile('map-trifold:teal')), e('span', {}, [e('b', {}, 'تحديد الموقع'), e('small', {}, 'للعنوان داخل المملكة — يجلب العنوان ويعبّئ حقوله، ثم تراجعها')])]), e('div', { class: 't2-stack-tight' }, rows)]);
+  rows.push(DS.note('info', 'لم يُضبَط موقعك بدقّة؟', nat
+    ? 'أمامك خياران، وكلاهما داخل الخريطة: أدخل العنوان المختصر فيها ليُجلب موقعك مباشرة، أو حرّك الدبوس حتى يقف على مكانك بالضبط. وفي الخريطة أدوات مساعدة: العنوان المختصر · موقعي الآن · أقرب العناوين · أماكن قريبة.'
+    : 'حرّك الدبوس حتى يقف على مكانك بالضبط، أو ابحث باسم المدينة أو الحي أو الشارع. وفي الخريطة أدوات مساعدة: موقعي الآن · أقرب العناوين · أماكن قريبة.'));
+  return e('section', { class: 'geo-sec rvm-sec' }, [e('div', { class: 'geo-sec-h' }, [frag(tile('map-trifold:teal')), e('span', {}, [e('b', {}, 'تحديد الموقع'),
+    e('small', {}, nat ? 'للعنوان داخل المملكة — بالخريطة أو العنوان المختصر، ثم تراجع الحقول' : 'للعنوان خارج المملكة — حدّد مكانك على الخريطة ويُعبّأ العنوان، ثم تراجعه')])]), e('div', { class: 't2-stack-tight' }, rows)]);
 }
-/* نافذة الخريطة — تُبنى مرة واحدة خارج دورة الرسم فلا تُعاد الخريطة مع كل تحديث */
+/* طبقات الخريطة: من المزوّد عند توفّرها (map-token.layers)، وإلا طبقات العيّنة المفتوحة */
+const GEO_LAYERS = [['map', 'الخريطة', 'map-trifold'], ['sat', 'قمر صناعي', 'globe-hemisphere-east'], ['topo', 'التضاريس', 'mountains']];
+function geoLayerSet(j) {
+  const L = (j && j.layers) || {};
+  const tpl = j && j.template && /\{z\}/.test(j.template) ? j.template : (j && j.token ? '/api/geo/tile/{z}/{x}/{y}.png?t=' + encodeURIComponent(j.token) : '');
+  if (GEO_SAMPLE() && !L.map) return { map: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max: 19, attr: '© OpenStreetMap' },
+    sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', max: 19, attr: '© Esri' },
+    topo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', max: 17, attr: '© OpenTopoMap · © OpenStreetMap' }, traffic: null, prov: 'osm' };
+  const one = function (u) { return u ? { url: u, max: 20, attr: '© HERE' } : null; };
+  return { map: one(L.map || tpl), sat: one(L.sat), topo: one(L.topo), traffic: one(L.traffic), prov: 'here' };
+}
+/* نافذة الخريطة — تُبنى مرة واحدة خارج دورة الرسم فلا تُعاد الخريطة مع كل تحديث.
+   الجوال وتطبيق الجوال: شاشة كاملة، والأدوات عائمة فوق الخريطة، والعنوان والتأكيد في لوحة سفلية. */
 function rvPick(o) {
   document.querySelectorAll('.rvm-mask').forEach(function (x) { x.remove(); });
-  let last = null, busy = false, map = null, pin = null, short = null, locBusy = false;
-  const host = document.querySelector('#pv-host .t2') || document.querySelector('.t2') || document.body;
-  const btn = (t, cls, ic) => e('button', { type: 'button', class: cls || 'rvm-tb' }, [ic ? frag(ui(ic, 16)) : null, e('span', {}, t)]);
-  const q = e('input', { class: 't2-input', type: 'search', autocomplete: 'off', placeholder: 'ابحث: مدينة أو حي أو شارع أو معلم', 'aria-label': 'البحث في الخريطة' });
-  const selC = e('select', { class: 't2-input rvm-sel', 'aria-label': 'الدولة' }), selR = e('select', { class: 't2-input rvm-sel', 'aria-label': 'المنطقة' });
-  const freeR = e('input', { class: 't2-input rvm-free', type: 'text', placeholder: 'اكتب المنطقة ثم Enter', style: 'display:none' });
-  const sInp = e('input', { class: 't2-input rvm-sinp', type: 'text', maxlength: '9', dir: 'ltr', autocomplete: 'off', placeholder: 'العنوان المختصر', 'aria-label': 'العنوان المختصر' });
-  const sBtn = btn('جلب العنوان', 'rvm-tb is-pri', 'magnifying-glass');
-  const bMe = btn('موقعي الآن', null, 'map-pin'), bAddr = btn('أقرب العناوين', null, 'signpost'), bPoi = btn('أماكن قريبة', null, 'storefront');
+  let last = null, busy = false, map = null, pin = null, short = null, locBusy = false, LS = null, base = null, trf = null;
+  const dev = document.querySelector('#pv-host .pv-dev'), host = dev || document.querySelector('#pv-host .t2') || document.querySelector('.t2') || document.body, app = !!dev || window.innerWidth <= 640;
+  const fab = (ic, label, cls) => e('button', { type: 'button', class: 'rvm-fb' + (cls ? ' ' + cls : ''), title: label, 'aria-label': label }, frag(ui(ic, 20)));
+  const chip = (t, ic) => e('button', { type: 'button', class: 'rvm-chip' }, [frag(ui(ic, 16)), e('span', {}, t)]);
+  const q = e('input', { class: 'rvm-q', type: 'search', autocomplete: 'off', enterkeyhint: 'search', placeholder: 'ابحث: مدينة أو حي أو شارع أو معلم', 'aria-label': 'البحث في الخريطة' });
+  const qBtn = e('button', { type: 'button', class: 'rvm-qb', 'aria-label': 'بحث' }, frag(ui('magnifying-glass', 18)));
+  const selC = e('select', { class: 'rvm-sel', 'aria-label': 'الدولة' }), selR = e('select', { class: 'rvm-sel', 'aria-label': 'المنطقة' });
+  const freeR = e('input', { class: 'rvm-sel rvm-free', type: 'text', placeholder: 'اكتب المنطقة ثم Enter', style: 'display:none' });
+  const sInp = e('input', { class: 'rvm-sinp', type: 'text', maxlength: '9', dir: 'ltr', autocomplete: 'off', placeholder: 'RIYD2929', 'aria-label': 'العنوان المختصر' });
+  const sBtn = e('button', { type: 'button', class: 'rvm-sbtn' }, [frag(ui('magnifying-glass', 16)), e('span', {}, 'جلب العنوان')]);
+  const bIn = fab('plus', 'تكبير'), bOut = fab('minus', 'تصغير'), bLay = fab('stack', 'طبقات الخريطة'), bMe = fab('crosshair', 'موقعي الآن', 'is-me');
+  const bAddr = chip('أقرب العناوين', 'signpost'), bPoi = chip('أماكن قريبة', 'storefront');
   const list = e('div', { class: 'rvm-list', role: 'listbox', style: 'display:none' });
-  const note = e('div', { class: 'rvm-note ok', 'aria-live': 'polite' }, 'حرّك الدبوس إلى مكانك بالضبط، أو ابحث عنه، أو استعن بالأدوات أعلاه.');
-  const addr = e('div', { class: 'rvm-addr', 'aria-live': 'polite' });
-  const stage = e('div', { class: 'rvm-map', role: 'application', 'aria-label': 'الخريطة — اسحب الدبوس أو اضغط على مكانك' }, e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل الخريطة…'));
-  const bOk = e('button', { type: 'button', class: 't2-btn is-primary' }, 'تأكيد الموقع'), bNo = e('button', { type: 'button', class: 't2-btn' }, 'إلغاء');
-  const xBtn = e('button', { type: 'button', class: 'rvm-x', title: 'إغلاق', 'aria-label': 'إغلاق' }, frag(ui('x', 18)));
+  const lay = e('div', { class: 'rvm-lay', role: 'dialog', 'aria-label': 'طبقات الخريطة', style: 'display:none' });
+  const note = e('div', { class: 'rvm-note ok', 'aria-live': 'polite' }, 'حرّك الدبوس إلى مكانك بالضبط، أو ابحث عنه، أو استعن بالأدوات.');
+  const addr = e('div', { class: 'rvm-addr', 'aria-live': 'polite' }, e('span', {}, 'اضغط على مكانك في الخريطة أو اسحب الدبوس.'));
+  const mapEl = e('div', { class: 'rvm-map', role: 'application', 'aria-label': 'الخريطة — اسحب الدبوس أو اضغط على مكانك' }, e('small', { class: 'rvm-wait' }, 'جارٍ تحميل الخريطة…'));
+  const attr = e('div', { class: 'rvm-attr', dir: 'ltr' });
+  const bOk = e('button', { type: 'button', class: 'rvm-ok' }, [frag(ui('check', 18)), e('span', {}, 'تأكيد الموقع')]), bNo = e('button', { type: 'button', class: 'rvm-no' }, 'إلغاء');
+  const xBtn = e('button', { type: 'button', class: 'rvm-x', title: 'إغلاق', 'aria-label': 'إغلاق' }, frag(ui(app ? 'caret-right' : 'x', 20)));
   const box = e('div', { class: 'rvm-box', role: 'dialog', 'aria-modal': 'true', 'aria-label': o.title || 'تحديد موقع العنوان' }, [
-    e('div', { class: 'rvm-head' }, [frag(tile('map-trifold:teal')), e('b', {}, o.title || 'تحديد موقع العنوان'), xBtn]),
-    e('div', { class: 'rvm-tools' }, [e('div', { class: 'rvm-find' }, [frag(ui('magnifying-glass', 16)), q]), selC, selR, freeR]),
-    o.shortAddr ? e('div', { class: 'rvm-short' }, [sInp, sBtn, e('span', { class: 'rvm-shint' }, 'أربعة أحرف إنجليزية ثم أربعة أرقام')]) : null,
-    list, stage, e('div', { class: 'rvm-help' }, [bMe, bAddr, bPoi]),
-    e('div', { class: 'rvm-foot' }, [note, addr, e('div', { class: 'rvm-btns' }, [bOk, bNo])])]);
-  const mask = e('div', { class: 'rvm-mask' }, box); host.appendChild(mask);
-  const close = function () { mask.remove(); };
+    e('div', { class: 'rvm-head' }, [xBtn, e('div', { class: 'rvm-head-t' }, [e('b', {}, o.title || 'تحديد موقع العنوان'), e('small', {}, o.shortAddr ? 'العنوان الوطني — بالخريطة أو العنوان المختصر' : 'حدّد مكانك ويُعبّأ العنوان')]), frag(tile('map-trifold:teal'))]),
+    e('div', { class: 'rvm-stage' }, [mapEl,
+      e('div', { class: 'rvm-top' }, [e('div', { class: 'rvm-find' }, [q, qBtn]), e('div', { class: 'rvm-sels' }, [selC, selR, freeR, bAddr, bPoi]), list]),
+      e('div', { class: 'rvm-fabs' }, [bIn, bOut, bLay, bMe]), lay, attr]),
+    e('div', { class: 'rvm-sheet' }, [e('span', { class: 'rvm-grab', 'aria-hidden': 'true' }), note, addr,
+      o.shortAddr ? e('div', { class: 'rvm-short' }, [e('label', {}, [e('b', {}, 'العنوان المختصر'), e('small', {}, 'أربعة أحرف إنجليزية ثم أربعة أرقام')]), e('div', { class: 'rvm-short-r' }, [sInp, sBtn])]) : null,
+      e('div', { class: 'rvm-btns' }, [bOk, bNo])])]);
+  const mask = e('div', { class: 'rvm-mask' + (app ? ' is-app' : '') + (dev ? ' is-dev' : '') }, box); host.appendChild(mask);
+  const close = function () { mask.remove(); document.removeEventListener('keydown', onKey, true); };
+  const onKey = function (ev) { if (ev.key === 'Escape') { ev.stopPropagation(); if (lay.style.display !== 'none') { lay.style.display = 'none'; return; } close(); } };
+  document.addEventListener('keydown', onKey, true);
   xBtn.addEventListener('click', close); bNo.addEventListener('click', close);
   mask.addEventListener('mousedown', function (ev) { if (ev.target === mask) close(); });
   const setNote = function (k, t) { note.className = 'rvm-note ' + k; note.textContent = t; };
   const hideList = function () { list.style.display = 'none'; list.innerHTML = ''; };
   const fmt = (p) => ({ title: (p && (p.name || p.display_name)) || '—', sub: (p && p.name && p.display_name !== p.name) ? p.display_name : '', lat: p ? Number(p.latitude) : null, lon: p ? Number(p.longitude) : null });
-  const setPin = function (la, lo, z) { if (!map) return; pin.setLatLng([la, lo]); if (z) map.setView([la, lo], z); };
+  const setPin = function (la, lo, z) { if (!map) return; pin.setLatLng([la, lo]); map.setView([la, lo], z || map.getZoom()); };
   function resolve(la, lo) {
-    if (busy) return; busy = true; addr.textContent = 'جارٍ قراءة العنوان…';
+    if (busy) return; busy = true; addr.innerHTML = ''; addr.appendChild(e('span', {}, 'جارٍ قراءة العنوان…'));
     geoFetch('reverse', { lat: Number(Number(la).toFixed(6)), lon: Number(Number(lo).toFixed(6)) }).then(function (r) {
-      busy = false;
-      if (!r || !r.place) { last = { lat: la, lon: lo, place: null, alternatives: [] }; addr.textContent = 'تعذّر قراءة العنوان لهذا الموقع، ومع ذلك يمكنك تأكيده.'; return; }
-      last = { lat: la, lon: lo, place: r.place, alternatives: r.alternatives || [] }; addr.innerHTML = '';
+      busy = false; addr.innerHTML = '';
+      if (!r || !r.place) { last = { lat: la, lon: lo, place: null, alternatives: [] }; addr.appendChild(e('span', {}, 'تعذّر قراءة العنوان لهذا الموقع، ومع ذلك يمكنك تأكيده.')); return; }
+      last = { lat: la, lon: lo, place: r.place, alternatives: r.alternatives || [] };
       const bits = []; if (r.place.match_level) bits.push('مطابقة: ' + r.place.match_level); if (r.place.postcode) bits.push('الرمز البريدي ' + r.place.postcode); bits.push(Number(la).toFixed(5) + ' · ' + Number(lo).toFixed(5));
-      addr.appendChild(e('b', {}, r.place.display_name || '—')); addr.appendChild(e('span', {}, bits.join(' · ')));
-    }).catch(function () { busy = false; last = { lat: la, lon: lo, place: null, alternatives: [] }; addr.textContent = 'تعذّر الاتصال بخدمة العناوين.'; });
+      addr.appendChild(e('span', { class: 'rvm-addr-i' }, frag(ui('map-pin', 18)))); addr.appendChild(e('div', {}, [e('b', {}, r.place.display_name || '—'), e('small', {}, bits.join(' · '))]));
+    }).catch(function () { busy = false; last = { lat: la, lon: lo, place: null, alternatives: [] }; addr.innerHTML = ''; addr.appendChild(e('span', {}, 'تعذّر الاتصال بخدمة العناوين.')); });
   }
   function showList(rows) {
     list.innerHTML = ''; if (!rows || !rows.length) { hideList(); return; }
@@ -13273,13 +13325,14 @@ function rvPick(o) {
   }
   const isHome = () => (V1_ISO[selC.value] || '') === 'SA';
   function suggest() {
-    const t = String(q.value || '').trim(); if (t.length < 3) { hideList(); return; }
+    const t = String(q.value || '').trim(); if (t.length < 3) { hideList(); setNote('warn', 'اكتب ثلاثة أحرف على الأقل.'); return; }
     const c = map ? map.getCenter() : { lat: 24.7136, lng: 46.6753 };
     geoFetch('autocomplete', { q: t, lat: c.lat, lon: c.lng, limit: 7, country: isHome() ? undefined : '*' }).then(function (r) {
       const rows = (r && r.results) || []; if (rows.length) { showList(rows.map(fmt)); return; } setNote('warn', 'لا نتائج لهذا البحث — جرّب اسمًا آخر أو حرّك الدبوس.'); hideList();
     }).catch(function () { setNote('warn', 'تعذّر الاتصال بخدمة البحث.'); });
   }
   q.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); suggest(); } });
+  qBtn.addEventListener('click', suggest);
   q.addEventListener('blur', function () { setTimeout(hideList, 220); });
   function goTo(text, z) {
     hideList(); if (!text) return;
@@ -13308,6 +13361,7 @@ function rvPick(o) {
     }).catch(function () { sBtn.disabled = false; setNote('warn', 'تعذّر الاتصال بخدمة العناوين، أعد المحاولة.'); });
   }
   sBtn.addEventListener('click', shortGo); sInp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); shortGo(); } });
+  sInp.addEventListener('input', function () { sInp.value = String(sInp.value || '').toUpperCase(); });
   bAddr.addEventListener('click', function () {
     const rows = []; if (last && last.place) rows.push(fmt(last.place)); ((last && last.alternatives) || []).forEach(function (a) { rows.push(fmt(a)); });
     if (!rows.length) { setNote('warn', 'لا توجد عناوين قريبة بعد — حرّك الدبوس أولًا.'); return; } setNote('ok', 'اختر أقرب عنوان لمكانك من القائمة.'); showList(rows);
@@ -13318,38 +13372,67 @@ function rvPick(o) {
       if (!rows.length) { setNote('warn', 'لا توجد أماكن معروفة قريبة من الدبوس.'); return; } setNote('ok', 'اختر معلمًا قريبًا لينتقل الدبوس إليه، ثم اضبطه بدقّة.'); showList(rows); })
       .catch(function () { setNote('warn', 'تعذّر جلب الأماكن القريبة.'); });
   });
+  bIn.addEventListener('click', function () { if (map) map.zoomIn(); }); bOut.addEventListener('click', function () { if (map) map.zoomOut(); });
+  /* الطبقات: الخريطة · قمر صناعي · التضاريس، وحركة المرور فوقها — ما لا يتيحه المزوّد يظهر معطّلًا */
+  function paintLayers() {
+    lay.innerHTML = ''; if (!LS) return;
+    lay.appendChild(e('b', { class: 'rvm-lay-t' }, 'طبقات الخريطة'));
+    lay.appendChild(e('div', { class: 'rvm-lay-g' }, GEO_LAYERS.map(function (g) {
+      const ok = !!LS[g[0]], on = (RVL.layer || 'map') === g[0];
+      const b = e('button', { type: 'button', class: 'rvm-lay-i' + (on ? ' is-on' : ''), disabled: !ok, 'aria-pressed': on ? 'true' : 'false' }, [e('span', { class: 'rvm-lay-ic is-' + g[0] }, frag(ui(g[2], 22))), e('span', {}, g[1])]);
+      b.addEventListener('click', function () { RVL.layer = g[0]; setBase(); paintLayers(); }); return b; })));
+    const tOn = !!RVL.traffic && !!LS.traffic, tb = e('button', { type: 'button', class: 'rvm-lay-tg' + (tOn ? ' is-on' : ''), disabled: !LS.traffic, 'aria-pressed': tOn ? 'true' : 'false' }, [frag(ui('car', 18)), e('span', {}, 'حركة المرور'), e('i', { 'aria-hidden': 'true' })]);
+    tb.addEventListener('click', function () { RVL.traffic = !RVL.traffic; setTraffic(); paintLayers(); }); lay.appendChild(tb);
+    if (LS.prov === 'osm') lay.appendChild(e('small', {}, 'العيّنة على طبقات مفتوحة مؤقّتًا — حركة المرور متاحة مع HERE.'));
+  }
+  bLay.addEventListener('click', function () { const s = lay.style.display === 'none'; lay.style.display = s ? 'grid' : 'none'; bLay.classList.toggle('is-on', s); if (s) paintLayers(); });
+  function setBase() {
+    if (!map || !LS) return; const k = LS[RVL.layer || 'map'] ? (RVL.layer || 'map') : 'map', d = LS[k];
+    if (base) map.removeLayer(base); base = window.L.tileLayer(d.url, { maxZoom: d.max, subdomains: 'abc', attribution: '' }).addTo(map); base.bringToBack();
+    if (map.getZoom() > d.max) map.setZoom(d.max); map.options.maxZoom = d.max; attr.textContent = d.attr + (LS.prov === 'osm' ? ' — للعيّنة' : '');
+    mask.classList.toggle('is-sat', k === 'sat');
+  }
+  function setTraffic() { if (!map || !LS) return; if (trf) { map.removeLayer(trf); trf = null; } if (RVL.traffic && LS.traffic) trf = window.L.tileLayer(LS.traffic.url, { maxZoom: 20, opacity: .9 }).addTo(map); }
   const fmtAcc = (m) => (m >= 1000 ? (Math.round(m / 100) / 10) + ' كم' : m + ' متر');
   function locate(auto) {
-    if (!navigator.geolocation) { if (!auto) setNote('warn', 'المتصفّح لا يدعم قراءة الموقع — حدّد موقعك على الخريطة أو أدخل العنوان المختصر.'); return; }
-    if (locBusy) return; locBusy = true; bMe.disabled = true; setNote('ok', 'جارٍ قراءة موقعك…');
+    if (!navigator.geolocation) { if (!auto) setNote('warn', 'المتصفّح لا يدعم قراءة الموقع — حدّد موقعك على الخريطة' + (o.shortAddr ? ' أو أدخل العنوان المختصر.' : '.')); return; }
+    if (locBusy) return; locBusy = true; bMe.classList.add('is-busy'); setNote('ok', 'جارٍ قراءة موقعك…');
     navigator.geolocation.getCurrentPosition(function (g) {
-      locBusy = false; bMe.disabled = false; const c = g.coords, m = Math.round(c.accuracy || 1e9);
-      if (m > 5000) { if (map) map.setView([c.latitude, c.longitude], m > 100000 ? 6 : (m > 20000 ? 8 : 10)); setNote('warn', 'تعذّر تحديد موقعك بدقّة — أقرب تقدير من المتصفّح يغطي نحو ' + fmtAcc(m) + '، ولم يوضع دبوس. حرّك الدبوس إلى مكانك أو أدخل العنوان المختصر.'); return; }
+      locBusy = false; bMe.classList.remove('is-busy'); const c = g.coords, m = Math.round(c.accuracy || 1e9);
+      if (m > 5000) { if (map) map.setView([c.latitude, c.longitude], m > 100000 ? 6 : (m > 20000 ? 8 : 10)); setNote('warn', 'تعذّر تحديد موقعك بدقّة — أقرب تقدير من المتصفّح يغطي نحو ' + fmtAcc(m) + '، ولم يوضع دبوس. حرّك الدبوس إلى مكانك.'); return; }
       short = null; setPin(c.latitude, c.longitude, m <= 50 ? 18 : (m <= 300 ? 16 : 14)); resolve(c.latitude, c.longitude);
-      setNote(m > 300 ? 'warn' : 'ok', m > 300 ? 'أدق قراءة متاحة من المتصفّح ' + fmtAcc(m) + ' تقريبًا — حرّك الدبوس إلى مكانك بالضبط أو أدخل العنوان المختصر.' : 'تم تحديد موقعك بدقّة ' + fmtAcc(m) + ' تقريبًا — عدّل الدبوس إن لزم ثم أكّد.');
-    }, function () { locBusy = false; bMe.disabled = false; if (!auto) setNote('warn', 'تعذّرت قراءة موقعك من المتصفّح — حرّك الدبوس إلى مكانك أو أدخل العنوان المختصر.'); else setNote('ok', 'حرّك الدبوس إلى مكانك بالضبط، أو ابحث عنه، أو استعن بالأدوات أعلاه.'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+      setNote(m > 300 ? 'warn' : 'ok', m > 300 ? 'أدق قراءة متاحة من المتصفّح ' + fmtAcc(m) + ' تقريبًا — حرّك الدبوس إلى مكانك بالضبط.' : 'تم تحديد موقعك بدقّة ' + fmtAcc(m) + ' تقريبًا — عدّل الدبوس إن لزم ثم أكّد.');
+    }, function () { locBusy = false; bMe.classList.remove('is-busy'); if (!auto) setNote('warn', 'تعذّرت قراءة موقعك من المتصفّح — حرّك الدبوس إلى مكانك.'); else setNote('ok', 'حرّك الدبوس إلى مكانك بالضبط، أو ابحث عنه، أو استعن بالأدوات.'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   }
   bMe.addEventListener('click', function () { locate(false); });
   bOk.addEventListener('click', function () {
     const p = map ? pin.getLatLng() : { lat: o.lat, lng: o.lon };
-    const out = { lat: p.lat, lon: p.lng, place: (last && last.place) || null, source: short ? 'short_address' : 'map_pin', provider: GEO_SAMPLE() ? 'osm' : 'here', short_address: short };
+    const out = { lat: p.lat, lon: p.lng, place: (last && last.place) || null, source: short ? 'short_address' : 'map_pin', provider: LS ? LS.prov : '', short_address: short };
     close(); if (typeof o.onPick === 'function') o.onPick(out);
   });
   const seed = isFinite(Number(o.lat)) && o.lat !== undefined && isFinite(Number(o.lon)) && o.lon !== undefined;
   geoLib().then(function (L) {
-    stage.innerHTML = '';
+    mapEl.innerHTML = '';
     const c = seed ? [Number(o.lat), Number(o.lon)] : [24.7136, 46.6753];
-    map = L.map(stage, { zoomControl: true, attributionControl: true }).setView(c, seed ? 16 : 5);
-    const tl = L.tileLayer('', { maxZoom: 19, attribution: GEO_SAMPLE() ? '© OpenStreetMap — للعيّنة؛ النظام يستخدم HERE' : '© HERE' }).addTo(map);
-    geoFetch('map-token', { minutes: 30 }).then(function (j) { tl.setUrl(j.template && /\{z\}/.test(j.template) ? j.template : '/api/geo/tile/{z}/{x}/{y}.png?t=' + encodeURIComponent(j.token || '')); }).catch(function () { setNote('warn', 'تعذّر تحميل صور الخريطة الآن — يمكنك البحث أو استخدام «موقعي الآن».'); });
-    const icon = L.divIcon({ className: 'geo-pin', html: '<span>' + ui('map-pin', 26) + '</span>', iconSize: [40, 40], iconAnchor: [20, 38] });
+    map = L.map(mapEl, { zoomControl: false, attributionControl: false }).setView(c, seed ? 16 : 5);
+    geoFetch('map-token', { minutes: 30, layers: true }).then(function (j) { LS = geoLayerSet(j); setBase(); setTraffic(); })
+      .catch(function () { LS = geoLayerSet(null); setBase(); setNote('warn', 'تعذّر تحميل صور الخريطة من المزوّد — يمكنك البحث أو استخدام «موقعي الآن».'); });
+    const icon = L.divIcon({ className: 'geo-pin rvm-pin', html: '<span>' + ui('map-pin', 26) + '</span>', iconSize: [44, 44], iconAnchor: [22, 42] });
     pin = L.marker(c, { draggable: true, icon: icon, keyboard: true, title: 'موقعك' }).addTo(map);
     pin.on('dragend', function () { const p = pin.getLatLng(); short = null; resolve(p.lat, p.lng); });
-    map.on('click', function (ev) { short = null; pin.setLatLng(ev.latlng); resolve(ev.latlng.lat, ev.latlng.lng); });
+    map.on('click', function (ev) { short = null; pin.setLatLng(ev.latlng); resolve(ev.latlng.lat, ev.latlng.lng); lay.style.display = 'none'; bLay.classList.remove('is-on'); });
     setTimeout(function () { map.invalidateSize(); }, 80);
+    try { new ResizeObserver(function () { map.invalidateSize(); }).observe(mapEl); } catch (err) { void err; }
     setTimeout(function () { if (seed) { resolve(c[0], c[1]); return; } locate(true); }, 520);
-  }).catch(function (err) { stage.innerHTML = ''; stage.appendChild(DS.note('warn', 'تعذّر تحميل الخريطة', (err && err.message) || 'أدخل حقول العنوان يدويًا.')); });
-  setTimeout(function () { q.focus(); }, 60);
+  }).catch(function (err) { mapEl.innerHTML = ''; mapEl.appendChild(DS.note('warn', 'تعذّر تحميل الخريطة', (err && err.message) || 'أدخل حقول العنوان يدويًا.')); });
+  if (!app) setTimeout(function () { q.focus(); }, 60);
+}
+/* حالة القسم في التحديث: ناقص (حقل مطلوب فارغ) · بانتظار اعتماد (عُدّل أو استُكمل) · يحتاج مراجعة (مكتمل ولم يُعدَّل — راجعه وأكّده) */
+function rvuSecTag(need, t) {
+  if (need) return rvBadge('مطلوب تعديله', 'danger');
+  if (t.done < t.n) return rvBadge('ناقص', 'warn');
+  if (t.dr) return rvBadge('بانتظار اعتماد', 'pend');
+  return rvBadge('يحتاج مراجعة', 'info');
 }
 function rvuForm() {
   rvuInit();
@@ -13357,17 +13440,19 @@ function rvuForm() {
   const P = rvuPct(), done = function (k) { const t = rvuStats(k); return t.done === t.n; }, profDone = V1_FORMS.every(function (F) { return done(F[0]); });
   const secDone = RVU.sec.wa && RVU.sec.auth && RVU.sec.mail, back = RVU.st === 'back';
   const lvl = [{ label: 'ملفي الشخصي', state: profDone ? 'done' : 'now' }, { label: 'مركز الأمان', state: secDone ? 'done' : profDone ? 'now' : '' }, { label: 'المراجعة', state: profDone && secDone ? 'now' : '' }, { label: 'الإرسال', state: '' }];
-  const head = DS.panel(back ? 'استكمل طلبك المُعاد' : 'حدّث ملفك', null, [
+  const NEW = RVU.mode === 'new', head = DS.panel(back ? 'استكمل طلبك المُعاد' : NEW ? 'استكمل تسجيلك' : 'حدّث ملفك', NEW && !back ? 'أنشأت حسابك — أكمل ملفك ووسائل أمانك ثم أرسله للاعتماد ليُدشَّن حسابك' : null, [
     e('div', { class: 'rv-prog' }, [e('div', { class: 'rv-ring', style: '--p:' + P.pct, role: 'img', 'aria-label': 'اكتمال الملف ' + P.pct + '%' }, e('span', {}, [e('b', {}, ltr(P.pct + '%')), e('small', {}, 'اكتمال')])),
       e('div', { class: 'rv-lv' }, [DS.stepper(lvl, 'مستويات التقدّم'), e('div', { class: 'rv-bar', 'aria-hidden': 'true' }, e('b', { style: 'width:' + P.pct + '%' })), e('small', { class: 'rv-sm' }, fmtNum(P.d) + ' من ' + fmtNum(P.n) + ' بندًا مطلوبًا')])])],
-    [rvBadge(back ? 'مُعاد للاستكمال' : 'مسودة', back ? 'danger' : 'info'), DS.button('راجع الطلب', { size: 'sm', ui: 'magnifying-glass', onClick: function () { RVU.view = 'review'; draw(); toTop(); } }),
+    [rvBadge(back ? 'مُعاد للاستكمال' : NEW ? 'تسجيل جديد' : 'مسودة', back ? 'danger' : 'info'), DS.button('راجع الطلب', { size: 'sm', ui: 'magnifying-glass', onClick: function () { RVU.view = 'review'; draw(); toTop(); } }),
       DS.button(back ? 'أعد الإرسال' : 'تأكيد وأرسل', { tone: 'primary', size: 'sm', ui: 'paper-plane-tilt', onClick: function () { RVU.view = 'review'; draw(); toTop(); } })]);
   const secs = V1_FORMS.map(function (F) {
     const t = rvuStats(F[0]), need = RVU.st === 'back' && v1Vis(F[0], rvuGet).some(function (f) { return RVU.back[f.id]; });
-    const title = F[0] === 'address' && v1Get(rvuGet, 'profile', 'address_section') !== 'national' ? 'عنوان خارج المملكة' : F[1];
+    const asec = v1Get(rvuGet, 'profile', 'address_section'), title = F[0] === 'address' ? (!asec ? 'العنوان' : asec !== 'national' ? 'عنوان خارج المملكة' : F[1]) : F[1];
     const body = v1Grouped(F[0], rvuGet, rvuField);
+    /* نوع العنوان لا يتحدّد قبل الجنسية والوثيقة (كما في النظام) */
+    if (F[0] === 'address' && !asec) body.unshift(DS.note('warn', 'لا يمكن تحديد نوع العنوان حاليًا', 'أكمل الجنسية ونوع الوثيقة في «المعلومات الشخصية» أولًا، ثم يظهر نموذج العنوان المناسب: العنوان الوطني أو العنوان خارج المملكة.'));
     if (F[0] === 'address' && !rvuLocked('address.city')) { const lc = v1Loc('rvu-map', rvuGet, function (id, v) { const s = RVU.f[id]; if (s) { s.d = v === s.v ? undefined : v; s.ed = false; s.err = ''; } }, rvuSettle); if (lc) body.unshift(lc); }
-    return rvSec(title, body, { one: 'rv-' + F[0], ic: F[2] }, fmtNum(t.done) + ' من ' + fmtNum(t.n) + ' مكتمل', rvBadge(need ? 'مطلوب' : t.dr ? 'مسودة' : t.done === t.n ? 'مكتمل' : 'ناقص', need ? 'danger' : t.dr ? 'info' : t.done === t.n ? 'ok' : 'warn'));
+    return rvSec(title, body, { one: 'rv-' + F[0], ic: F[2] }, fmtNum(t.done) + ' من ' + fmtNum(t.n) + ' مكتمل', rvuSecTag(need, t));
   });
   const shieldItem = function (k, t, d, ic, act) {
     const on = RVU.sec[k];
@@ -13376,10 +13461,56 @@ function rvuForm() {
   };
   return [head,
     e('div', { class: 'rv-sech' }, [frag(tile('profile')), e('div', {}, [e('b', {}, 'القسم 1 · ملفي الشخصي'), e('small', {}, 'المعلومات الشخصية والتواصل والعنوان والحساب البنكي والمستندات')])]),
+    e('div', { class: 'rv-legend', role: 'note', 'aria-label': 'دليل حالات الأقسام' }, [['ناقص', 'warn', 'حقل مطلوب فارغ'], ['بانتظار اعتماد', 'pend', 'عدّلته أو أكملته'], ['يحتاج مراجعة', 'info', 'مكتمل — راجعه وتأكّد منه']].map(function (x) { return e('span', { class: 'rv-lg-i' }, [rvBadge(x[0], x[1]), e('small', {}, x[2])]); })),
     e('div', { class: 'rv-acc' }, secs),
-    e('div', { class: 'rv-sech' }, [frag(tile('shield')), e('div', {}, [e('b', {}, 'القسم 2 · مركز الأمان'), e('small', {}, 'ربط الواتساب ووسائل المصادقة والتحقق عند الدخول')])]),
-    e('div', { class: 'rv-acc' }, [shieldItem('wa', 'ربط رقم الواتساب', 'شرط لإرسال ملفك للتوثيق', 'wa', 'ابدأ الربط'), shieldItem('auth', 'وسيلة مصادقة واحدة على الأقل', 'تطبيق المصادقة أو الرقم الإضافي', 'key', 'تفعيل'), shieldItem('mail', 'التحقق بالبريد عند كل دخول', 'يصلك رمز على بريدك عند كل دخول', 'email', 'تفعيل')]),
+    rvuSecCard(),
     DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
+}
+/* ---------- القسم ٢ · مركز الأمان — زرّ واحد يفتح المركز، وكل وسيلة بطاقة تفتح مسارها الحقيقي ----------
+   الشروط: ربط رقم الواتساب · وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو رمز التحقق الإضافي) · التحقق بالبريد عند كل دخول.
+   المسارات نفسها في مركز الأمان بالعيّنة: التحقق الأمني ← الرمز ← التفعيل ← «تم». */
+function rvuSecSync() { RVU.sec.wa = RVW.st === 3 || LVS.wa === 'on'; RVU.sec.auth = !!LVS.app || !!LVS.xc; RVU.sec.mail = !!LVS.mail; }
+const RVU_SECP = [['wa', 'ربط رقم الواتساب', 'wa', 'شرط للتوثيق — تصلك عليه رموز التحقق وتنبيهات طلباتك'], ['app', 'تطبيق المصادقة', 'key', 'رمز متغيّر كل ثلاثين ثانية — يحقّق شرط «وسيلة مصادقة»'],
+  ['extra', 'رمز التحقق الإضافي', 'lock', 'رمز احتياطي يُعرض مرة واحدة — يحقّق شرط «وسيلة مصادقة»'], ['mail', 'التحقق بالبريد عند كل دخول', 'email', 'رمز على بريدك مع كل دخول'], ['pw', 'كلمة المرور', 'shield', 'تغييرها بالتحقق الأمني']];
+function rvuSecState(k) {
+  if (k === 'wa') return RVU.sec.wa ? ['مربوط', 'ok'] : (RVW.st > 0 || LVS.wa) ? ['قيد الربط', 'warn'] : ['غير مربوط', 'warn'];
+  if (k === 'app') return LVS.app ? ['مفعّل', 'ok'] : ['غير مفعّل', null];
+  if (k === 'extra') return LVS.xc ? ['مُصدَر', 'ok'] : ['غير مُصدَر', null];
+  if (k === 'mail') return LVS.mail ? ['مفعّل', 'ok'] : ['غير مفعّل', 'warn'];
+  return [LVS.pwAt ? 'غُيّرت ' + iso(LVS.pwAt) : 'سارية', 'ok'];
+}
+const rvuSecReq = () => [['ربط رقم الواتساب', RVU.sec.wa, 'wa'], ['وسيلة مصادقة واحدة على الأقل', RVU.sec.auth, LVS.xc && !LVS.app ? 'extra' : 'app'], ['التحقق بالبريد عند كل دخول', RVU.sec.mail, 'mail']];
+/* البطاقة في النموذج: ملخّص الحالة وزرّ واحد */
+function rvuSecCard() {
+  rvuSecSync();
+  const R = rvuSecReq(), n = R.filter(function (r) { return r[1]; }).length, lock = RVU.st === 'recv' || RVU.st === 'sent';
+  return e('section', { class: 'rvs-card' + (n === R.length ? ' is-ok' : '') }, [
+    e('div', { class: 'rvs-card-h' }, [frag(tile('shield')), e('div', {}, [e('b', {}, 'القسم 2 · مركز الأمان'), e('small', {}, n === R.length ? 'اكتملت شروط الأمان — جاهز للإرسال' : 'أكمل ' + fmtNum(R.length - n) + ' من ' + fmtNum(R.length) + ' شروط لتتمكّن من إرسال ملفك')]),
+      e('span', { class: 'rvs-n', dir: 'ltr' }, fmtNum(n) + '/' + fmtNum(R.length))]),
+    e('div', { class: 'rvs-bar', 'aria-hidden': 'true' }, e('i', { style: 'width:' + Math.round(n / R.length * 100) + '%' })),
+    e('ul', { class: 'rvs-req' }, R.map(function (r) { return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'warning', 16)), e('span', {}, r[0]), rvBadge(r[1] ? 'مكتمل' : 'ناقص', r[1] ? 'ok' : 'warn')]); })),
+    rvRow([DS.button(lock ? 'عرض مركز الأمان' : n === R.length ? 'فتح مركز الأمان' : 'أكمل الأمان الآن', { tone: 'primary', ui: 'shield-check', onClick: function () { RVU.view = 'sec'; RVU.secPg = ''; LVS.flow = ''; draw(); toTop(); } })])]);
+}
+/* صفحة مركز الأمان داخل التحديث */
+function rvuSecPage() {
+  rvuSecSync();
+  if (S.toast) { RV.toast = S.toast; S.toast = null; }
+  const pg = RVU.secPg || '', R = rvuSecReq(), n = R.filter(function (r) { return r[1]; }).length;
+  const back = e('button', { type: 'button', class: 'pf-back', onClick: function () { if (pg) { RVU.secPg = ''; LVS.flow = ''; } else RVU.view = 'form'; draw(); toTop(); } }, [frag(ui('caret-right', 16)), pg ? 'رجوع إلى مركز الأمان' : 'رجوع إلى نموذج التحديث']);
+  if (pg) {
+    const P = RVU_SECP.filter(function (x) { return x[0] === pg; })[0], st = rvuSecState(pg);
+    let body;
+    if (pg === 'wa') { const W = rvWa(); body = [W[1]]; if (RVW.st === 3) body.push(rvRow([DS.button('رجوع إلى مركز الأمان', { tone: 'primary', size: 'sm', onClick: function () { RVU.secPg = ''; draw(); toTop(); } })])); }
+    else if (pg === 'app' || pg === 'mail') { const T = secTwofa(); body = T; }
+    else if (pg === 'extra') body = secExtra();
+    else body = secPassword();
+    return [e('div', { class: 'pf-head' }, [back, e('div', { class: 'pf-head-m' }, [e('h2', {}, P[1]), DS.badge(st[0], st[1]), e('small', {}, P[3])])])].concat(body.filter(Boolean));
+  }
+  return [e('div', { class: 'pf-head' }, [back, e('div', { class: 'pf-head-m' }, [e('h2', {}, 'مركز الأمان'), DS.badge(n === R.length ? 'مكتمل' : 'ناقص: ' + fmtNum(R.length - n), n === R.length ? 'ok' : 'warn'), e('small', {}, 'اختر الوسيلة لتفعيلها — كل وسيلة تمرّ بالتحقق الأمني ثم الرمز ثم التفعيل.')])]),
+    DS.panel('شروط إرسال الملف', fmtNum(n) + ' من ' + fmtNum(R.length) + ' مكتملة', [e('ul', { class: 'rvs-req' }, R.map(function (r) {
+      return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'warning', 16)), e('span', {}, r[0]), r[1] ? rvBadge('مكتمل', 'ok') : DS.button('فعّل الآن', { size: 'sm', tone: 'primary', onClick: function () { RVU.secPg = r[2]; LVS.flow = r[2] === 'mail' ? 'mail' : r[2] === 'app' ? 'app' : ''; S.otpAt = null; draw(); toTop(); } })]); }))]),
+    DS.cardGrid(RVU_SECP.map(function (p) { const st = rvuSecState(p[0]); return DS.card({ title: p[1], note: st[0] + ' · ' + p[3], icon: p[2], onClick: function () { RVU.secPg = p[0]; LVS.flow = ''; S.otpAt = null; draw(); toTop(); } }); })),
+    n === R.length ? rvRow([DS.button('العودة إلى نموذج التحديث', { tone: 'primary', ui: 'files', onClick: function () { RVU.view = 'form'; draw(); toTop(); } })]) : null].filter(Boolean);
 }
 function rvuChanges() {
   const out = [];
@@ -13402,20 +13533,26 @@ function rvuReview() {
 function rvuSent() {
   const recv = RVU.st === 'recv', at = RVU.at || new Date();
   const step = function (t, m, st) { return e('li', { class: 't2-tl-i' }, [e('span', { class: 't2-tl-dot is-' + (st === 'done' ? 'ok' : st === 'now' ? 'warn' : 'info') + (st ? '' : ' is-off') }), e('div', { class: 't2-tl-b' }, [e('div', { class: 't2-tl-t' }, t), e('div', { class: 't2-tl-m' }, m)])]); };
-  return [e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, recv ? 'طلبك قيد المراجعة' : 'أُرسل طلبك بنجاح'), e('p', {}, recv ? 'استلم الفريق طلبك — لا يمكن التعديل بعد الاستلام، وسنبلغك بالنتيجة بالبريد وواتساب.' : 'شكرًا لك — سنراجع طلبك ونبلغك بالنتيجة بالبريد وواتساب.'),
+  return [e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, recv ? 'طلبك قيد المراجعة' : RVU.mode === 'new' ? 'أُرسل ملفك للاعتماد' : 'أُرسل طلبك بنجاح'), e('p', {}, recv ? 'استلم الفريق طلبك — لا يمكن التعديل بعد الاستلام، وسنبلغك بالنتيجة بالبريد وواتساب.' : 'شكرًا لك — سنراجع طلبك ونبلغك بالنتيجة بالبريد وواتساب.'),
       DS.fields([['رقم الطلب', ltr(RVU.no)], ['التاريخ', ltr(iso(at) + ' · ' + hm(at))], ['الحالة', recv ? rvBadge('قيد المراجعة · مقفل', null) : rvBadge('بانتظار الاستلام', 'warn')]])]),
     DS.panel('مسار الطلب', null, [e('ul', { class: 't2-tl rv-tl' }, [step('أُرسل الطلب', iso(at) + ' · ' + hm(at), 'done'), step('استلام الفريق', recv ? 'استُلم — أُقفل الطلب للتعديل' : 'يمكنك تعديل الطلب حتى يُستلم', recv ? 'done' : 'now'),
       step('المراجعة والتوثيق', 'مطابقة البيانات والمرفقات', recv ? 'now' : ''), step('الاعتماد أو الإعادة للاستكمال', 'تصلك النتيجة فورًا', '')])],
       recv ? [rvBadge('مقفل', null)] : [DS.button('تعديل الطلب قبل الاستلام', { size: 'sm', ui: 'pencil-simple', onClick: function () { RVU.st = 'draft'; draw(); } })]),
     DS.panel('محاكاة للمراجعة', 'أزرار للمعاينة فقط — لا تظهر للعميل', [rvRow([DS.button('استلام الفريق', { size: 'sm', onClick: function () { RVU.st = 'recv'; draw(); } }),
       DS.button('إعادة الطلب للاستكمال', { size: 'sm', onClick: function () { RVU.st = 'back'; RVU.back = { 'personal.id_expiry': 'التاريخ لا يطابق صورة الوثيقة المرفقة.', 'docs.address_proof': 'أرفق وثيقة العنوان الوطني من «سبل».' }; RV.one = 'rv-personal'; draw(); toTop(); } }),
-      DS.button('بدء التجربة من جديد', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVU.ok = false; RVU.f = {}; RVU.st = 'draft'; RVU.view = 'form'; RVU.no = ''; RVU.back = {}; RVU.sec = { wa: false, auth: false, mail: true }; draw(); toTop(); } })])])];
+      DS.button('بدء التجربة من جديد', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVU.ok = false; RVU.f = {}; RVU.st = 'draft'; RVU.view = 'form'; RVU.no = ''; RVU.back = {}; RVW.st = 0; Object.assign(LVS, { wa: '', app: false, xc: '', mail: false, flow: '' }); RVU.view = 'form'; RVU.sec = { wa: false, auth: false, mail: true }; draw(); toTop(); } })])])];
 }
 function rvUpd() {
-  const ins = rvIns('upd', 'تعليمات التحديث', [['الهدف', 'تحديث ملفك ليُوثَّق وتُفعَّل خدماتك.', 'flag'], ['كيف؟', 'أكمل كل قسم واحفظه، ثم «راجع الطلب» ← «تأكيد وأرسل».', 'list-checks'],
+  rvuSecSync();
+  const ins = RVU.mode === 'new' ? rvIns('new', 'تعليمات التسجيل الجديد', [['الهدف', 'أكمل ملفك وأرسله للاعتماد ليُدشَّن حسابك وتُصدَر عضويتك.', 'flag'],
+    ['ما لديك الآن', 'الاسم والبريد والجوال من إنشاء الحساب — وبقية الأقسام فارغة تكملها أنت.', 'user-circle'],
+    ['كيف؟', 'ابدأ بالجنسية: منها يتحدّد نوع الإقامة والوثيقة ثم العنوان والبنك والمرفقات. احفظ كل حقل، ثم مركز الأمان، ثم «راجع الطلب» ← «تأكيد وأرسل».', 'list-checks'],
+    ['الحالات', 'ناقص: حقل مطلوب فارغ · بانتظار اعتماد: أدخلته ويعتمده الفريق بعد الإرسال.', 'tag'], ['الشروط', 'ربط الواتساب ووسيلة مصادقة واحدة على الأقل.', 'shield-check'],
+    ['بعد الاعتماد', 'يُدشَّن حسابك ويظهر فيلم التدشين، وتظهر «خدماتي».', 'seal-check']]) : rvIns('upd', 'تعليمات التحديث', [['الهدف', 'تحديث ملفك ليُوثَّق وتُفعَّل خدماتك.', 'flag'], ['كيف؟', 'أكمل كل قسم واحفظه، ثم «راجع الطلب» ← «تأكيد وأرسل».', 'list-checks'],
     ['الحقول تتغيّر معك', 'الجنسية تحدّد نوع الإقامة والوثيقة، والوثيقة تحدّد نوع العنوان، وطريقة الاستلام تحدّد حقول البنك — كما في النظام.', 'arrows-clockwise'],
-    ['المسودة', 'تعديلاتك محفوظة ويمكنك تغييرها حتى يستلم الفريق طلبك، ثم يُقفل.', 'note-pencil'], ['الشروط', 'ربط الواتساب ووسيلة مصادقة واحدة على الأقل.', 'shield-check'], ['تنبيه', 'فريق تيرا لا يطلب كلمة مرورك ولا رموز التحقق.', 'warning']]);
+    ['المسودة', 'تعديلاتك محفوظة ويمكنك تغييرها حتى يستلم الفريق طلبك، ثم يُقفل.', 'note-pencil'], ['حالات الأقسام', 'ناقص: فيه حقل مطلوب فارغ · بانتظار اعتماد: عدّلته أو أكملته ويعتمده الفريق · يحتاج مراجعة: مكتمل ولم يتغيّر — راجعه وتأكّد من صحته · مطلوب تعديله: أعاده الفريق بملاحظة.', 'tag'], ['الشروط', 'ربط الواتساب ووسيلة مصادقة واحدة على الأقل.', 'shield-check'], ['تنبيه', 'فريق تيرا لا يطلب كلمة مرورك ولا رموز التحقق.', 'warning']]);
   if (RVU.st === 'sent' || RVU.st === 'recv') return [ins].concat(rvuSent());
+  if (RVU.view === 'sec') return rvuSecPage();
   if (RVU.view === 'review') return [ins].concat(rvuReview());
   return [ins, RVU.st === 'back' ? DS.note('warn', 'أُعيد طلبك لاستكمال ' + fmtNum(Object.keys(RVU.back).length) + ' بنود', 'البنود المطلوبة مفتوحة للتعديل وعليها ملاحظة الفريق، وبقية الأقسام معتمدة ومقفلة.') : null].concat(rvuForm());
 }
@@ -13776,7 +13913,7 @@ function rvWa() {
   } else body = e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, 'شكرًا لك يا يزيد'),
     e('p', {}, 'رُبط رقمك بحسابك بنجاح. ستصلك تنبيهات طلباتك ورموز التحقق على واتساب، ويتعرّف عليك فريقنا برمز التعريف.'),
     DS.fields([['الرقم', ltr(RVW.cc + ' ' + RVW.num)], ['تاريخ الربط', ltr(iso(RVW.at) + ' · ' + hm(RVW.at))], ['رمز التعريف', '•••• محفوظ']]), steps,
-    rvRow([DS.button('العودة لطلب التحديث', { tone: 'primary', size: 'sm', ui: 'files', onClick: function () { rvGo('upd'); } }), DS.button('إعادة التجربة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVW.st = 0; RVW.num = ''; RVW.pin = ''; RVW.pin2 = ''; RVU.sec.wa = false; draw(); } })])]);
+    rvRow([DS.button('العودة لطلب التحديث', { tone: 'primary', size: 'sm', ui: 'files', onClick: function () { RVU.secPg = ''; RVU.view = 'form'; rvGo('upd'); } }), DS.button('إعادة التجربة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVW.st = 0; RVW.num = ''; RVW.pin = ''; RVW.pin2 = ''; RVU.sec.wa = false; draw(); } })])]);
   const rule = DS.panel('القاعدة نفسها لكل عمل يقوم به العميل', 'إدخال ← تحقق عند الحاجة ← حفظ ← «تم الحفظ» ← رسالة شكر بملخص ما تم', [DS.fields([['تحديث العنوان', 'تم الحفظ ← شكرًا، عنوانك محدَّث'], ['إضافة حساب بنكي', 'رمز تحقق ← تم الحفظ ← شكرًا'], ['رفع مستند', 'تم الرفع ← شكرًا، سنراجعه'], ['تغيير البريد', 'رمز على البريد الجديد ← تم الحفظ ← شكرًا'], ['طلب «فيلمك باسمك»', 'استلمنا طلبك ← متابعة حيّة ← جُهِّز فيلمك']])]);
   return [ins, body, rule];
 }
@@ -13798,9 +13935,124 @@ function rvFilm() {
   return [rvIns('film', 'عن هذا التصوّر', [['الحالة', 'بانتظار اعتمادك — لا تُرسل أي رسالة من المعاينة.', 'info'], ['يشمل', 'الأفلام التي يطلبها العميل بنفسه؛ والتلقائية عند التدشين حسب قرارك.', 'film-strip']]), mail, wa, page];
 }
 
+/* ---------- ٥) حالات الحساب — ما يظهر للعميل في كل مرحلة، والعيّنة كلها تعمل بالحالة المختارة ----------
+   قبل الاعتماد: أقسام الملف ومركز الأمان فقط (ولوحتي تعرض رحلة الحساب). بعد القبول تظهر «خدماتي»:
+   بلا عقود ولا شراكة: طلباتي وبياناتي الوظيفية وطلب عرض السعر — ومع العقود أو الشراكة: العقود والمدفوعات والسداد والتأجيل والتوحيد.
+   القاعدة نفسها في المنصة (liveJourney · liveFull)؛ هنا تُختار الحالة بدل بيانات الحساب. */
+const ACC_STATES = [['start', false, 'تسجيل جديد أو تحديث', 'الملف لم يُرسل بعد', 'note-pencil'], ['review', false, 'قيد المراجعة', 'أُرسل الملف وينتظر الاعتماد', 'clock'],
+  ['approved', false, 'معتمد — بانتظار التدشين', 'قُبل الملف ولم يُدشَّن الحساب بعد', 'seal-check'], ['launched', false, 'مدشّن — بلا عقود', 'لا عقد ولا شراكة', 'user-circle'],
+  ['launched', true, 'مدشّن — لديه عقود أو شراكة', 'عقد قائم أو دور شريك أو مستثمر أو مسوّق', 'contract']];
+const ACC_CT = ['عقودي', 'مدفوعاتي', 'سجلات مدفوعاتي', 'سداد عقد كامل', 'طلب تأجيل دفعة', 'توحيد عقودي في عقد واحد', 'توحيد عقودي', 'سداد دفعة', 'معلوماتي المالية'];
+function accOn() { return !!window.__ACC && S.role === 'client'; }
+function accPre() { const A = window.__ACC; return !!A && (A.stage === 'start' || A.stage === 'review'); }
+/* إخفاء ما لا يظهر في الحالة: في القائمة الجانبية وشريط الجوال، وبطاقات العقود في اللوحة */
+function accMark() {
+  const A = window.__ACC, r = document.querySelector('#pv-host .t2'); if (!r) return;
+  r.classList.toggle('acc-pre', accOn() && accPre()); r.classList.toggle('acc-unl', accOn() && A.stage !== 'launched'); r.classList.toggle('acc-noct', accOn() && !A.full);
+}
+document.addEventListener('click', function () { setTimeout(accMark, 60); });
+function accStrip(nodes) {
+  (nodes || []).forEach(function (n) { if (!n || !n.querySelectorAll) return; n.querySelectorAll('.t2-card, .qk-i, .hc').forEach(function (c) { const t = c.querySelector('.t2-card-t, b'); if (t && ACC_CT.indexOf(String(t.textContent).trim()) >= 0) c.remove(); }); });
+  return nodes;
+}
+function accJourney() {
+  const A = window.__ACC; rvuInit(); rvuSecSync();
+  const P = rvuPct(), now = new Date(), sub = A.stage !== 'start' ? addDays(now, -2).toISOString() : null;
+  const steps = V1_FORMS.map(function (F) { const t = rvuStats(F[0]); return { key: F[0] === 'docs' ? 'docs' : F[0], label: F[1], done: A.stage !== 'start' || t.done === t.n }; })
+    .concat([{ key: '_wa', label: 'ربط رقم الواتساب', done: A.stage !== 'start' || RVU.sec.wa }, { key: '_auth', label: 'وسيلة مصادقة واحدة على الأقل', done: A.stage !== 'start' || RVU.sec.auth }]);
+  return { v: { progress: A.stage === 'start' ? P.pct : 100, steps: steps, submitted_at: sub, approved_at: A.stage === 'approved' ? now.toISOString() : null, timeline: [], stage: A.stage === 'review' ? { label: 'المطابقة والمراجعة' } : null },
+    m: { tier: 'plus' }, st: A.stage === 'start' ? 'draft' : A.stage === 'review' ? 'in_review' : 'approved', stage: A.stage, mig: false, full: !!A.full, returned: false };
+}
+/* ما يظهر في كل حالة — جدول المراجعة */
+function accRows(A) {
+  const pre = A.stage === 'start' || A.stage === 'review', unl = A.stage !== 'launched';
+  return [['لوحتي الرئيسية', true, pre || unl ? 'رحلة الحساب: ' + (A.stage === 'start' ? 'استكمل ملفك وأرسله' : A.stage === 'review' ? 'ملفك قيد المراجعة ومسارها' : 'تمّت الموافقة — بانتظار التدشين') : A.full ? 'اللوحة الكاملة بالعقود والمدفوعات' : 'اللوحة بلا كتل العقود والمدفوعات'],
+    ['ملفي الشخصي', true, A.stage === 'start' ? 'تعديل مباشر — الملف مسودة' : A.stage === 'review' ? 'للاطلاع — مقفل حتى القرار' : 'التعديل بطلب تحديث'],
+    ['مركز الأمان', true, 'الواتساب ووسائل المصادقة والبريد وكلمة المرور'],
+    ['خدماتي', !pre, pre ? 'تظهر بعد قبول الملف' : A.full ? 'كل الخدمات' : 'طلباتي · بياناتي الوظيفية · طلب عرض سعر من الشركاء'],
+    ['عقودي · مدفوعاتي · سجلات المدفوعات', !pre && A.full, A.full && !pre ? 'ظاهرة' : 'لمن لديه عقد أو شراكة'],
+    ['سداد عقد كامل · تأجيل دفعة · توحيد العقود', !pre && A.full, A.full && !pre ? 'ظاهرة' : 'لمن لديه عقد أو شراكة'],
+    ['المتجر', true, 'متاح للجميع'], ['مختاراتي', !pre, pre ? 'بعد قبول الملف' : 'السلة والمفضلة'], ['التواصل', true, 'المراسلات والإشعارات'],
+    ['العضوية ونقاطي', !unl, unl ? 'تُصدَر عند تدشين الحساب' : 'Terra Plus والنقاط']];
+}
+function rvAcc() {
+  const A = window.__ACC, cur = A ? ACC_STATES.findIndex(function (s) { return s[0] === A.stage && s[1] === !!A.full; }) : -1;
+  setTimeout(accMark, 0);
+  const pick = function (i) { const s = ACC_STATES[i]; window.__ACC = { stage: s[0], full: s[1] }; if (s[0] === 'start') { RVU.st = 'draft'; PF.st = 'draft'; } else if (s[0] === 'review') { RVU.st = 'recv'; PF.st = 'approved'; } else { PF.st = 'approved'; } rvToast('العيّنة الآن بحالة: ' + s[2]); };
+  const ins = rvIns('acc', 'تعليمات حالات الحساب', [['الهدف', 'مراجعة ما يظهر للعميل في كل مرحلة من حسابه.', 'flag'], ['اختر الحالة', 'تُطبَّق على العيّنة كلها: لوحتي والأقسام وخدماتي والقائمة الجانبية وشريط الجوال.', 'cursor-click'],
+    ['قبل الاعتماد', 'أقسام الملف ومركز الأمان فقط، ولوحتي تعرض رحلة الحساب.', 'lock-key'], ['بعد القبول', 'تظهر «خدماتي»، ومع العقود أو الشراكة تظهر وظائف العقود والمدفوعات.', 'contract']]);
+  const cards = e('div', { class: 'acc-st', role: 'radiogroup', 'aria-label': 'حالة الحساب' }, ACC_STATES.map(function (s, i) {
+    return e('button', { type: 'button', class: 'acc-i' + (i === cur ? ' is-on' : ''), role: 'radio', 'aria-checked': i === cur ? 'true' : 'false', onClick: function () { pick(i); } }, [e('span', { class: 'acc-n' }, fmtNum(i + 1)), frag(tile(s[4])), e('span', { class: 'acc-t' }, [e('b', {}, s[2]), e('small', {}, s[3])])]); }));
+  const out = [ins, DS.panel('اختر حالة الحساب', A ? 'مفعّلة في العيّنة: ' + ACC_STATES[cur][2] : 'العيّنة الآن بعرضها الكامل (لديه عقود) — اختر حالة لتطبيقها', [cards],
+    A ? [DS.button('إلغاء المحاكاة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { window.__ACC = null; accMark(); rvToast('عادت العيّنة لعرضها الكامل'); } })] : null)];
+  if (!A) return out;
+  const R = accRows(A);
+  out.push(DS.panel('ما يظهر للعميل في هذه الحالة', fmtNum(R.filter(function (r) { return r[1]; }).length) + ' ظاهر · ' + fmtNum(R.filter(function (r) { return !r[1]; }).length) + ' مخفي', [e('ul', { class: 'acc-l' }, R.map(function (r) {
+    return e('li', { class: r[1] ? 'is-on' : 'is-off' }, [frag(ui(r[1] ? 'check-circle' : 'lock-key', 16)), e('b', {}, r[0]), e('span', {}, r[2]), rvBadge(r[1] ? 'ظاهر' : 'مخفي', r[1] ? 'ok' : null)]); }))]));
+  out.push(DS.panel('افتح الشاشة الحقيقية بهذه الحالة', 'تفتح الصفحة نفسها في العيّنة — وزر «للمراجعة» يعيدك هنا', [rvRow([
+    DS.button('لوحتي الرئيسية', { tone: 'primary', size: 'sm', ui: 'house', onClick: function () { go('dash'); } }), DS.button('الأقسام', { size: 'sm', ui: 'squares-four', onClick: function () { go('other', 'more'); } }),
+    DS.button('خدماتي', { size: 'sm', ui: 'briefcase', onClick: function () { go('svc'); } }), DS.button('ملفي الشخصي', { size: 'sm', ui: 'user-circle', onClick: function () { go('other', 'profile'); } })])]));
+  return out;
+}
+/* رحلة الحساب في العيّنة — بقالب «لوحتي الرئيسية» نفسه في المنصة قبل التدشين (jr-*) */
+function accTrack(J) {
+  const k = J.stage === 'approved' ? 4 : J.stage === 'review' ? 2 : 0;
+  const T = ['إرسال الملف', 'استلام الطلب', 'المطابقة والمراجعة', 'اعتماد الملف', 'تدشين الحساب'].map(function (t, i) { return { t: t, s: i < k ? 'done' : i === k ? 'now' : '' }; });
+  const pct = Math.round(k / (T.length - 1) * 100);
+  return e('ol', { class: 'jr-track', style: '--jr-p:' + pct + '%', 'aria-label': 'مسار طلبك' }, T.map(function (x, i) {
+    return e('li', { class: 'jr-st is-' + (x.s || 'wait'), style: '--jr-i:' + i }, [e('span', { class: 'jr-dot', 'aria-hidden': 'true' }, x.s === 'done' ? frag(ui('check', 14)) : String(i + 1)),
+      e('span', { class: 'jr-st-t' }, [e('b', {}, x.t), e('small', {}, x.s === 'now' ? 'المرحلة الحالية' : x.s === 'done' ? 'تمت' : 'لاحقًا')])]); }));
+}
+function accJourneyPage(J) {
+  const first = String(ME.name || '').split(' ')[0], pct = J.v.progress, R = rvuSecReq(), ready = R[0][1] && R[1][1];
+  const toUpd = function () { RV.tab = 'upd'; RVU.view = 'form'; go('other', 'rv-hub'); toTop(); }, toSec = function () { RV.tab = 'upd'; RVU.view = 'sec'; RVU.secPg = ''; go('other', 'rv-hub'); toTop(); };
+  let hero;
+  if (J.stage === 'start') hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'WELCOME TO TERA'), e('h2', {}, 'استكمل ملفك، ' + first),
+      e('p', {}, 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
+      !ready ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تربط رقم الواتساب وتفعّل وسيلة مصادقة واحدة على الأقل من مركز الأمان.')]) : null,
+      e('div', { class: 'jr-acts' }, [DS.button(ready ? 'أكمل ملفي وأرسله' : 'أكمل مركز الأمان', { tone: 'primary', ui: 'caret-left', onClick: ready ? toUpd : toSec })])]),
+    e('div', { class: 'jr-ring', style: '--jr-r:' + pct }, [e('b', {}, String(pct)), e('small', {}, '٪ اكتمال الملف')])]);
+  else if (J.stage === 'review') hero = e('section', { class: 'jr-hero is-review' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'FILE UNDER REVIEW'), e('h2', {}, 'ملفك قيد المراجعة'),
+    e('p', {}, 'وصل ملفك في ' + iso(new Date(J.v.submitted_at)) + '، وفريق تيرا يطابق بياناتك ومستنداتك. المرحلة الآن: المطابقة والمراجعة.'), accTrack(J)])]);
+  else hero = e('section', { class: 'jr-hero is-approved' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye is-gold' }, 'ACCOUNT APPROVED'), e('h2', {}, 'تمّت الموافقة على ملفك'),
+    e('p', {}, 'حسابك الآن بانتظار التدشين من إدارة منصة تيرا. عند التدشين تُصدَر عضويتك Terra Plus — تيرا بلس ونقاطك الترحيبية، ويظهر لك فيلم التدشين.'), accTrack(J)]), e('div', { class: 'jr-crown', 'aria-hidden': 'true' }, frag(tile('crown-simple:gold')))]);
+  const PS = J.v.steps.filter(function (x) { return x.key.charAt(0) !== '_'; }), pn = PS.filter(function (x) { return x.done; }).length, sn = R.filter(function (r) { return r[1]; }).length;
+  const prof = e('article', { class: 'jr-card' }, [e('header', {}, [frag(tile('user-circle:navy')), e('span', {}, [e('b', {}, 'ملفي الشخصي'), e('small', {}, fmtNum(pn) + ' من ' + fmtNum(PS.length) + ' أقسام مكتملة')]), DS.badge(pn === PS.length ? 'مكتمل' : 'ناقص', pn === PS.length ? 'ok' : 'warn')]),
+    e('ul', { class: 'jr-chk' }, PS.map(function (x) { return e('li', { class: x.done ? 'is-ok' : '' }, [frag(ui(x.done ? 'check-circle' : 'warning', 16)), e('span', {}, x.label), x.done ? e('small', {}, 'مكتمل') : DS.button('استكمال', { size: 'sm', onClick: toUpd })]); })),
+    DS.button('ملفي الشخصي', { size: 'sm', ui: 'user-circle', onClick: function () { go('other', 'profile'); } })]);
+  const secC = e('article', { class: 'jr-card' }, [e('header', {}, [frag(tile('shield-check:teal')), e('span', {}, [e('b', {}, 'مركز الأمان'), e('small', {}, sn === R.length ? 'حسابك محمي بكل وسائل التحقق' : 'وسائل أمان ناقصة: ' + fmtNum(R.length - sn) + ' من ' + fmtNum(R.length))]), DS.badge(sn === R.length ? 'مكتمل' : 'ناقص', sn === R.length ? 'ok' : 'warn')]),
+    e('ul', { class: 'jr-chk' }, R.map(function (r) { return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'warning', 16)), e('span', {}, r[0]), r[1] ? e('small', {}, 'مكتمل') : DS.button('تفعيل', { size: 'sm', onClick: function () { toSec(); RVU.secPg = r[2]; } })]); })),
+    DS.button('مركز الأمان', { size: 'sm', ui: 'shield-check', onClick: toSec })]);
+  const kids = [hero, e('div', { class: 'jr-grid' }, [prof, secC])];
+  /* بعد القبول تظهر «خدماتي»: بلا عقد الطلبات والبيانات الوظيفية وطلب عرض السعر */
+  if (J.stage === 'approved') kids.push(sec(J.full ? 'خدماتي' : 'الخدمات المتاحة لك', J.full ? null : 'تظهر بقية الخدمات بعد توقيع عقدك وتنفيذه.', [DS.cardGrid((J.full ? [['contract', 'عقودي', function () { go('contracts'); }], ['wallet', 'مدفوعاتي', function () { go('pay'); }]] : [])
+    .concat([['orders', 'طلباتي', function () { go('reqs'); }], ['briefcase:navy', 'بياناتي الوظيفية', function () { go('other', 'job-info'); }], ['people', 'طلب عرض سعر من الشركاء', function () { go('other', 'cl-partners'); }]])
+    .map(function (x) { return DS.card({ icon: x[0], title: x[1], onClick: x[2] }); }))], true, 'jr:svc'));
+  return [e('div', { class: 't2-dash jr' }, kids)];
+}
+/* العيّنة: اللوحة وخدماتي تتبعان حالة الحساب المختارة (وفي المنصة تتبعان بيانات الحساب) */
+const accDash0 = dashPage;
+dashPage = function () {
+  if (!accOn()) return accDash0();
+  setTimeout(accMark, 0); const J = accJourney();
+  if (J.stage !== 'launched') return accJourneyPage(J);
+  if (J.full) return accDash0();
+  const f0 = dashFin, p0 = payBlock; dashFin = function () { return [null, null]; }; payBlock = function () { return null; };
+  try { return accStrip(accDash0()); } finally { dashFin = f0; payBlock = p0; }
+};
+const accSvc0 = svcHubPage;
+svcHubPage = function () {
+  if (!accOn() || accPre() || window.__ACC.full) return accSvc0();
+  const n = REQS.filter(function (r) { return ['settle', 'defer', 'merge', 'pay'].indexOf(r.kind || r.type) < 0; }).length;
+  return secHub('svc', { t: 'خدماتي', s: 'تظهر خدمات العقود والمدفوعات بعد توقيع عقدك وتنفيذه.', ic: 'services' }, [
+    ['rq', 'طلباتي', 'orders', [{ ic: 'orders', t: 'طلباتي', d: 'طلباتك ومراحلها', n: fmtNum(n) + (n <= 10 ? ' طلبات' : ' طلبًا'), go: function () { go('reqs'); } }]],
+    ['pt', 'الشركاء', 'people', [{ ic: 'people', t: 'طلب عرض سعر من الشركاء', d: 'عروض أسعار من شركائنا', go: function () { go('other', 'cl-partners'); } }]],
+    ['me', 'بياناتي', 'files', [{ ic: 'briefcase:navy', t: 'بياناتي الوظيفية', go: function () { go('other', 'job-info'); } }]]]);
+};
 function rvPage() {
   if (!/^rva?-/.test(String(S.fsOne || ''))) RV.prev = S.fsOne; if (RV.one) S.fsOne = RV.one;
-  const body = RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
+  if (RV.tab === 'upd' || RV.tab === 'new') rvuMode(RV.tab);
+  const body = RV.tab === 'acc' ? rvAcc() : RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
   rvKeepOne(); setTimeout(rvOverlay, 0); rvBarOn();
   return [e('div', { class: 'rv-tabs' }, DS.tabs({ items: RV_TABS, value: RV.tab, onChange: rvGo })),
     RV.toast ? e('div', { class: 'mb-toast', role: 'status' }, [frag(ui(/^(تم|أُرسل)/.test(RV.toast) ? 'check' : 'info', 16)), RV.toast]) : null].concat(body).filter(Boolean);
