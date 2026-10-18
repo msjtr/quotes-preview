@@ -16218,7 +16218,7 @@ function lvFilmReqs() {
     const s = FLR_ST[r.status] || [r.status, null], x = r.files || {};
     return e('div', { class: 'flib-r' }, [
       e('div', { class: 'flib-rn' }, [e('b', {}, r.name || '—'), e('small', { dir: 'ltr' }, [r.tera_id || '', r.requested_at ? ' · ' + String(r.requested_at).slice(0, 10) : '', r.expires_at && r.status === 'ready' ? ' → ' + String(r.expires_at).slice(0, 10) : ''].join(''))]),
-      DS.badge(s[0], s[1]),
+      DS.badge(s[0], s[1]), r.test ? DS.badge('تجريبي', 'info') : null,
       r.status === 'ready' && x.landscape ? e('button', { type: 'button', class: 'flib-mini', onClick: function () { filmPlayer({ l: x.landscape, p: x.portrait, poster: { l: x.landscape_poster, p: x.portrait_poster }, skipAfter: 0, title: 'فيلم ' + (r.name || '') }); } }, 'مشاهدة') : null,
       r.status === 'failed' && r.error ? e('small', { class: 'flib-er' }, String(r.error).slice(0, 90)) : null]);
   }));
@@ -16227,8 +16227,79 @@ function lvFilmPanel() {
   return lvPanel('أفلام التدشين', null, [
     e('p', { class: 'cu-dr-hint' }, 'تُبثّ وتُنزَّل من Cloudflare R2 بمدة مفتوحة (لا شيء على موارد الخادم). يُعرض للعميل تلقائيًا الأفقي على الشاشات والطولي على الجوال.'),
     lvFilmLib(),
+    lvFilmTest(),
     e('div', { class: 'flib-h' }, [e('b', {}, 'طلبات «فيلمك باسمك»'), e('button', { type: 'button', class: 'flib-mini', onClick: function () { LCHS.fl = null; draw(); } }, 'تحديث')]),
     lvFilmReqs()]);
+}
+/* v324: «اختبار فيلم التدشين» (مؤقت · المشرف العام فقط) — بيانات تجريبية لا عميل حقيقي، بلا بريد ولا واتساب ولا تنبيه،
+ * مع متابعة حيّة لزمن الانتظار والتوليد، ثم المشاهدة والتنزيل، و«إنهاء الاختبار» يُبطل الرابط فورًا. (stf_33) */
+const FLT_ERR = { forbidden: 'للمشرف العام فقط.', bad_name_ar: 'اكتب الاسم بالعربي (حتى 40 حرفًا).', bad_name_en: 'الاسم بالإنجليزي بحروف لاتينية فقط (حتى 32 حرفًا).', bad_tier: 'اختر المستوى.',
+  bad_member_no: 'رقم العضوية بحروف لاتينية وأرقام وشرطة فقط (حتى 16).', limit: 'وصلت إلى حد 10 اختبارات في اليوم.', busy: 'يوجد اختبار قيد التجهيز — انتظر انتهاءه.' };
+const FLT_ST = { queued: ['بالانتظار', 'warn'], rendering: ['قيد التوليد', 'info'], ready: ['جاهز', 'ok'], failed: ['تعذّر', 'danger'], expired: ['انتهى الاختبار', null] };
+const FLT = { f: { name_ar: 'عميل تجريبي', name_en: 'TEST MEMBER', tier: 'elite', member_no: 'TP-TEST0001' }, film: null, id: null, skew: 0, busy: false, err: '', loaded: false, poll: 0 };
+function fltNow() { return Date.now() + (FLT.skew || 0); }
+function fltSec(a, b) { if (!a) return null; return Math.max(0, Math.round(((b ? Date.parse(b) : fltNow()) - Date.parse(a)) / 1000)); }
+function fltFmt(s) { if (s == null) return '—'; const m = Math.floor(s / 60), x = s % 60; return (m ? m + ' د ' : '') + x + ' ث'; }
+function fltErr(err) { const m = String((err && err.message) || ''); const k = (m.match(/\(([a-z_]+)\)/) || [])[1]; return FLT_ERR[k] || m || 'تعذّر الاتصال بالخادم.'; }
+async function fltLoad() {
+  try {
+    const j = await admRpc('admin_launch_film_test_status', FLT.id ? { p_id: FLT.id } : {});
+    FLT.film = (j && j.film) || null; FLT.id = FLT.film ? FLT.film.id : null; FLT.skew = j && j.now ? Date.parse(j.now) - Date.now() : 0;
+  } catch (err) { FLT.err = fltErr(err); }
+  clearTimeout(FLT.poll);
+  const st = FLT.film && FLT.film.status;
+  if (st === 'queued' || st === 'rendering') FLT.poll = setTimeout(function () { if (document.querySelector('.flt')) fltLoad().then(draw); else FLT.loaded = false; }, 10000);
+}
+function fltClock(a, b) { return e('b', { class: 'flt-clock', 'data-from': a || '', 'data-to': b || '', dir: 'rtl' }, fltFmt(fltSec(a, b))); }
+if (LIVE.on) setInterval(function () { document.querySelectorAll('.flt-clock[data-from]').forEach(function (n) { const a = n.getAttribute('data-from'); if (!a || n.getAttribute('data-to')) return; n.textContent = fltFmt(fltSec(a, null)); }); }, 1000);
+function lvFilmTest() {
+  if (LIVE.sup === false) return null;
+  if (!FLT.loaded) { FLT.loaded = true; fltLoad().then(draw); }
+  const F = FLT.f, f = FLT.film, st = f ? f.status : 'none', run = st === 'queued' || st === 'rendering', lock = run || FLT.busy;
+  const inp = function (k, dir) { const i = DS.input({ value: F[k], onInput: function (v) { F[k] = v; } }); const x = i.tagName === 'INPUT' ? i : i.querySelector('input'); if (x) { if (dir) x.setAttribute('dir', dir); if (lock) x.disabled = true; } return i; };
+  const tierSel = DS.select({ value: F.tier, options: [['plus', 'تيرا بلس — Terra Plus'], ['premium', 'تيرا بريميوم — Terra Premium'], ['elite', 'تيرا إيليت — Terra Elite']], onChange: function (v) { F.tier = v; } });
+  if (lock) { const s = tierSel.tagName === 'SELECT' ? tierSel : tierSel.querySelector('select'); if (s) s.disabled = true; }
+  const gen = async function () {
+    FLT.busy = true; FLT.err = ''; draw();
+    try {
+      const j = await admRpc('admin_launch_film_test', { p: { name_ar: F.name_ar, name_en: F.name_en, tier: F.tier, member_no: F.member_no } });
+      if (j && j.dispatch && j.dispatch !== 'dispatched') FLT.err = j.dispatch === 'no_token' ? 'لم يُعثر على السر github_film_token في Vault.' : 'تعذّر طلب التشغيل من GitHub الآن — يُعاد تلقائيًا خلال 45 دقيقة.';
+      FLT.id = j && j.id; await fltLoad();
+    } catch (err) { FLT.err = fltErr(err); }
+    FLT.busy = false; draw();
+  };
+  const end = async function () {
+    FLT.busy = true; draw();
+    try { await admRpc('admin_launch_film_test_end', { p_id: f.id }); await fltLoad(); snack('انتهى الاختبار وأُبطل رابط الفيلم.'); } catch (err) { FLT.err = fltErr(err); }
+    FLT.busy = false; draw();
+  };
+  const x = (f && f.files) || {}, t = (f && f.test) || {};
+  const times = f ? e('div', { class: 'flt-times' }, [
+    e('div', {}, [e('small', {}, 'الانتظار حتى بدء التوليد'), f.started_at ? fltClock(f.requested_at, f.started_at) : fltClock(f.requested_at, st === 'queued' ? null : f.requested_at)]),
+    e('div', {}, [e('small', {}, 'مدة التوليد'), f.started_at ? fltClock(f.started_at, st === 'rendering' ? null : (f.ready_at || f.started_at)) : e('b', {}, '—')]),
+    e('div', {}, [e('small', {}, 'الزمن الكلي'), st === 'ready' || st === 'expired' ? fltClock(f.requested_at, f.ready_at || f.requested_at) : run ? fltClock(f.requested_at, null) : e('b', {}, '—')])]) : null;
+  const s = FLT_ST[st];
+  return e('div', { class: 'flt' }, [
+    e('div', { class: 'flib-h' }, [e('b', {}, 'اختبار التوليد (مؤقت)'), e('span', { class: 'flt-only' }, 'للمشرف العام فقط · بلا رسائل لأي أحد')]),
+    e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+      DS.editField('الاسم بالعربي', inp('name_ar')), DS.editField('الاسم بالإنجليزي', inp('name_en', 'ltr')),
+      DS.editField('المستوى', tierSel), DS.editField('رقم العضوية', inp('member_no', 'ltr'))]),
+    e('small', { class: 'cu-dr-hint' }, 'يُولَّد في GitHub Actions بالمقاسين 1920×1080 و1080×1920، ويستغرق عادةً بين 10 و20 دقيقة. الحالة تتحدّث تلقائيًا.'),
+    FLT.err ? e('span', { class: 'cu-err', role: 'alert' }, FLT.err) : null,
+    e('div', { class: 't2-pb-actions' }, [
+      DS.button(FLT.busy ? 'جارٍ الإرسال…' : run ? 'قيد التوليد…' : 'ولّد فيلمًا تجريبيًا', { tone: 'primary', ui: 'film-strip', disabled: lock, onClick: gen }),
+      e('a', { class: 'flib-mini', href: 'https://github.com/msjtr/quotes.tera-services/actions/workflows/film-render.yml', target: '_blank', rel: 'noopener' }, 'متابعة التشغيل في GitHub')]),
+    f ? e('div', { class: 'flt-card' }, [
+      e('div', { class: 'flt-top' }, [e('div', { class: 'flib-rn' }, [e('b', {}, t.name_ar || '—'), e('small', { dir: 'ltr' }, [t.name_en, t.member_no, String(t.tier || '').toUpperCase()].filter(Boolean).join(' · '))]),
+        s ? DS.badge(s[0], s[1]) : null, run ? e('span', { class: 'flt-run', 'aria-hidden': 'true' }, e('i')) : null]),
+      times,
+      st === 'failed' && f.error ? e('small', { class: 'flib-er' }, f.error === 'ended' ? 'أُنهي قبل اكتماله.' : String(f.error).slice(0, 160)) : null,
+      st === 'ready' && x.landscape ? e('div', { class: 'flib-a' }, [
+        e('button', { type: 'button', class: 'flib-mini', onClick: function () { filmPlayer({ l: x.landscape, p: x.portrait, poster: { l: x.landscape_poster, p: x.portrait_poster }, skipAfter: 0, title: 'فيلم تجريبي' }); } }, 'مشاهدة'),
+        e('a', { href: x.landscape, download: true, rel: 'noopener' }, 'تنزيل أفقي 1920×1080'), e('a', { href: x.portrait, download: true, rel: 'noopener' }, 'تنزيل طولي 1080×1920'),
+        e('button', { type: 'button', class: 'flib-mini flt-end', disabled: FLT.busy ? 'disabled' : null, onClick: end }, 'إنهاء الاختبار وإبطال الرابط')]) : null,
+      run ? e('div', { class: 'flib-a' }, [e('button', { type: 'button', class: 'flib-mini flt-end', disabled: FLT.busy ? 'disabled' : null, onClick: end }, 'إيقاف الاختبار')]) : null,
+      st === 'expired' ? e('small', { class: 'cu-dr-hint' }, 'أُبطل الرابط، وتُحذف الملفات من R2 تلقائيًا خلال 31 يومًا.') : null]) : null]);
 }
 /* مركز الأمن: سجل التدقيق الرسمي بفلاتر جاهزة لكل بطاقة */
 const LV_MON = {
