@@ -8692,3 +8692,23 @@ html.cpv-on .t2-head{top:48px}
 @media (max-width:40rem){.t2 .rvs-ex{grid-template-columns:1fr}}@container app (max-width:40rem){.t2 .rvs-ex{grid-template-columns:1fr}}
 .t2 .rvs-card.is-open{padding-bottom:12px}
 .t2 .rv-live{display:grid;gap:16px;padding:12px;border:2px dashed color-mix(in srgb,#0AA5AD 35%,var(--t2-line));border-radius:22px}
+/* v342 — عيّنة Google المستقلة (تبويب «خريطة Google») */
+.gm{display:grid;gap:12px}
+.gm-top{position:relative;display:grid;gap:6px;z-index:3}
+.gm-top .rvm-find{display:flex;align-items:center;gap:6px;padding:0 6px 0 14px;border-radius:18px;background:var(--t2-surface,#fff);box-shadow:0 10px 24px -14px rgba(10,31,68,.5),0 0 0 1px var(--t2-line)}
+.gm-top .gm-list{position:absolute;inset-inline:0;top:calc(100% + 4px)}
+.gm-tools{display:flex;flex-wrap:wrap;gap:8px}
+.gm-tools .rvm-chip.is-on{border-color:#0AA5AD;background:color-mix(in srgb,#0AA5AD 12%,var(--t2-surface));color:#06707A}
+.gm-tools .rvm-chip.is-busy svg{animation:rvm-spin 1s linear infinite}
+.gm-map{position:relative;block-size:min(460px,62vh);border-radius:22px;overflow:hidden;background:#E8EEF5;box-shadow:0 0 0 1px var(--t2-line);display:grid;place-items:center}
+.pv-dev .gm-map{block-size:56vh}
+.gm-map .rvm-wait{color:var(--t2-ink-2)}
+.gm-res{display:grid;gap:12px}
+.gm-full{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,#0AA5AD 8%,var(--t2-surface));font-weight:600;line-height:1.6}
+.gm-full svg{flex:none;color:#0AA5AD;margin-top:3px}
+.gm-tbl{display:grid;border:1px solid var(--t2-line);border-radius:14px;overflow:hidden}
+.gm-tr{display:grid;grid-template-columns:minmax(96px,1fr) 1.2fr 1.2fr;gap:8px;padding:9px 12px;font-size:.86rem;border-top:1px solid var(--t2-line)}
+.gm-tr:first-child{border-top:0}.gm-tr.is-h{background:var(--t2-surface-2,#F3F6FA);font-weight:800;color:var(--t2-ink-2);font-size:.78rem}
+.gm-tr b{font-weight:700}.gm-tr .is-ok{color:#06707A;font-weight:700}.gm-no{color:var(--t2-ink-3,#9AA6B6)}
+.gm-near{display:grid;gap:2px;max-height:280px;overflow:auto}
+.gm-steps{display:grid;gap:10px;margin:0;padding-inline-start:20px;line-height:1.8}

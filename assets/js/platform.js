@@ -12927,7 +12927,7 @@ const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخ
 const RV_ON = !document.documentElement.classList.contains('tq-live');
 const RV = { tab: 'upd', toast: '', dlg: null };
 try { RV.tab = sessionStorage.getItem('tera-rv-tab') || 'upd'; } catch (err) { void err; }
-const RV_TABS = [['new', 'استكمال تسجيل جديد', 'profile'], ['upd', 'نموذج التحديث', 'newq'], ['addr', 'ملفي الشخصي', 'profile'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film'], ['live', 'بعد التفعيل', 'seal-check'], ['ctr', 'بعد إصدار العقد', 'contract'], ['acc', 'حالات الحساب', 'squares-four']];
+const RV_TABS = [['new', 'استكمال تسجيل جديد', 'profile'], ['upd', 'نموذج التحديث', 'newq'], ['addr', 'ملفي الشخصي', 'profile'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film'], ['live', 'بعد التفعيل', 'seal-check'], ['ctr', 'بعد إصدار العقد', 'contract'], ['acc', 'حالات الحساب', 'squares-four'], ['gmap', 'خريطة Google', 'map-trifold']];
 function rvGo(t) { RV.tab = t; RV.toast = ''; try { sessionStorage.setItem('tera-rv-tab', t); } catch (err) { void err; } draw(); toTop(); }
 function rvToast(t) { RV.toast = t; draw(); }
 const rvBadge = (t, tone) => DS.badge(t, tone);
@@ -14121,10 +14121,163 @@ function rvAfter(full) {
       full ? 'كما تظهر للعميل بعد توقيع عقده وتنفيذه: العقود والمدفوعات والسداد والتأجيل والتوحيد ظاهرة.' : 'كما تظهر للعميل بعد تدشين حسابه ولا عقد لديه: تظهر «خدماتي» بطلباته وبياناته الوظيفية وطلب عرض السعر، وتُخفى كتل العقود والمدفوعات.'),
     tabs, e('div', { class: 'rv-live' }, [].concat(body).filter(Boolean))];
 }
+/* ============================================================================
+ * عيّنة Google المستقلة (v342) — تبويب «خريطة Google» في «للمراجعة».
+ *   • خريطة Google نفسها بكل أدواتها: الأنواع (خريطة/قمر صناعي/تضاريس)، التكبير، التجوّل الافتراضي (Street View)،
+ *     ملء الشاشة، الزحام، النقل العام، موقعي، البحث (Places New)، الأماكن القريبة، وجلب العنوان من الإحداثية (Geocoding).
+ *   • نتائج Google تُعرض على خريطة Google وحدها (شروط Google)، ويُقارن نصّها بما يجلبه HERE للنقطة نفسها.
+ *   • المفتاح لا يُحفظ في المستودع: يُطلب من خادم نسخة الاختبار (/api/catalog/geo/google-config) لمصدر العيّنة وحده.
+ * ========================================================================== */
+const GM = { el: null, cfg: null, map: null, pin: null, res: null, here: null, busy: false, err: '', list: [], near: [], nearPins: [], trf: null, trn: null, tok: null, auth: false };
+const GM_LT = { ROOFTOP: ['دقيق على المبنى', 'ok'], RANGE_INTERPOLATED: ['تقديري بين أرقام الشارع', 'warn'], GEOMETRIC_CENTER: ['مركز الشارع أو المنطقة', 'warn'], APPROXIMATE: ['تقريبي', 'warn'] };
+window.gm_authFailure = function () { GM.auth = true; GM.err = 'رفض Google المفتاح — تأكّد من تفعيل الخدمات الثلاث ومن تقييد المفتاح بنطاق العيّنة.'; gmPaint(); };
+function gmCfg() {
+  if (GM.cfg) return Promise.resolve(GM.cfg);
+  return fetch(GEO_HERE + '/api/catalog/geo/google-config', { credentials: 'omit', cache: 'no-store' }).then(function (r) { return r.json(); })
+    .then(function (j) { GM.cfg = j && j.key ? { key: j.key } : { none: true }; return GM.cfg; })
+    .catch(function () { GM.cfg = { none: true }; return GM.cfg; });
+}
+function gmLoad(key) {
+  if (window.google && google.maps && google.maps.importLibrary) return Promise.resolve();
+  if (GM.loading) return GM.loading;
+  GM.loading = new Promise(function (ok, no) {
+    window.__tqGm = function () { ok(); };
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&v=weekly&language=ar&region=SA&libraries=places,geocoding&loading=async&callback=__tqGm';
+    s.async = true; s.onerror = function () { no(new Error('load')); }; document.head.appendChild(s);
+  });
+  return GM.loading;
+}
+/* تفكيك نتيجة Google إلى حقول العنوان الوطني */
+function gmParse(r, lat, lng) {
+  const C = {}; (r.address_components || []).forEach(function (c) { (c.types || []).forEach(function (t) { if (!C[t]) C[t] = c; }); });
+  const g = function (k, sh) { return C[k] ? (sh ? C[k].short_name : C[k].long_name) : ''; };
+  const fa = r.formatted_address || '', m = /\b([A-Z]{4}\d{4})\b/.exec(fa);
+  return { full: fa, building: g('street_number'), street: g('route'), district: g('neighborhood') || g('sublocality_level_1') || g('sublocality'),
+    city: g('locality') || g('postal_town') || g('administrative_area_level_2'), gov: g('administrative_area_level_2'), state: g('administrative_area_level_1'),
+    country: g('country'), cc: g('country', true), postal: g('postal_code'), suffix: g('postal_code_suffix'), short: m ? m[1] : '',
+    plus: (r.plus_code && (r.plus_code.compound_code || r.plus_code.global_code)) || '', lt: (r.geometry && r.geometry.location_type) || '', pid: r.place_id || '', lat: lat, lng: lng };
+}
+function gmRev(lat, lng) {
+  GM.busy = true; GM.err = ''; GM.res = null; GM.here = null; gmPaint();
+  const geo = new google.maps.Geocoder();
+  const gp = geo.geocode({ location: { lat: lat, lng: lng }, language: 'ar' }).then(function (o) {
+    const L = (o && o.results) || [], best = L.find(function (x) { return (x.types || []).indexOf('street_address') >= 0 || (x.types || []).indexOf('premise') >= 0; }) || L[0];
+    if (!best) throw new Error('none');
+    GM.res = gmParse(best, lat, lng); GM.res.n = L.length; if (o.plus_code && !GM.res.plus) GM.res.plus = o.plus_code.compound_code || o.plus_code.global_code || '';
+  }).catch(function () { GM.err = 'لم يجد Google عنوانًا لهذه النقطة — حرّك الدبوس قليلًا.'; });
+  const hp = geoHereFetch('reverse', { lat: Number(lat.toFixed(6)), lon: Number(lng.toFixed(6)) }).then(function (j) {
+    const p = j && j.place; if (!p) return; const m = /\b([A-Z]{4}\d{4})\b/.exec(p.display_name || '');
+    GM.here = { building: p.house_number || '', street: p.road || '', district: p.quarter || p.district || '', city: p.city || '', postal: p.postcode || '', short: m ? m[1] : '', full: p.display_name || '' };
+  }).catch(function () { GM.here = { off: true }; });
+  return Promise.all([gp, hp]).then(function () { GM.busy = false; gmPaint(); });
+}
+function gmMove(lat, lng, z) { if (!GM.map) return; GM.map.panTo({ lat: lat, lng: lng }); if (z) GM.map.setZoom(z); GM.pin.setPosition({ lat: lat, lng: lng }); gmRev(lat, lng); }
+function gmSearch(q) {
+  q = String(q || '').trim(); if (q.length < 2) { GM.list = []; gmPaint(); return; }
+  /* عنوان مختصر سعودي: يُجرَّب عبر Geocoding نفسه */
+  if (/^[A-Za-z]{4}\d{4}$/.test(q)) {
+    new google.maps.Geocoder().geocode({ address: q.toUpperCase(), region: 'SA', language: 'ar' }).then(function (o) {
+      const r = o.results && o.results[0]; if (!r) throw new Error('none'); const L = r.geometry.location; GM.list = []; gmMove(L.lat(), L.lng(), 18);
+    }).catch(function () { GM.err = 'Google لم يتعرّف على العنوان المختصر ' + q.toUpperCase() + ' — هذه البيانات عند العنوان الوطني (SPL).'; GM.list = []; gmPaint(); });
+    return;
+  }
+  if (!GM.tok) GM.tok = new google.maps.places.AutocompleteSessionToken();
+  const c = GM.map.getCenter();
+  google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: GM.tok, language: 'ar', region: 'sa', locationBias: { center: { lat: c.lat(), lng: c.lng() }, radius: 50000 } })
+    .then(function (o) { GM.list = ((o && o.suggestions) || []).filter(function (s) { return s.placePrediction; }).map(function (s) { const p = s.placePrediction; return { p: p, main: p.mainText ? p.mainText.text : p.text.text, sub: p.secondaryText ? p.secondaryText.text : '' }; }); GM.err = GM.list.length ? '' : 'لا نتائج — جرّب اسمًا آخر.'; gmPaint(); })
+    .catch(function (err) { GM.err = 'تعذّر البحث — تأكّد من تفعيل Places API (New). ' + String(err && err.message || ''); gmPaint(); });
+}
+function gmPickSug(s) {
+  const pl = s.p.toPlace(); GM.list = []; GM.tok = null; gmPaint();
+  pl.fetchFields({ fields: ['location', 'viewport', 'displayName', 'formattedAddress'] }).then(function () { if (pl.viewport) GM.map.fitBounds(pl.viewport); const L = pl.location; gmMove(L.lat(), L.lng(), pl.viewport ? 0 : 17); })
+    .catch(function () { GM.err = 'تعذّر فتح المكان المختار.'; gmPaint(); });
+}
+function gmNearby() {
+  const c = GM.pin.getPosition(); GM.near = []; GM.nearPins.forEach(function (m) { m.setMap(null); }); GM.nearPins = []; GM.busy = true; gmPaint();
+  google.maps.places.Place.searchNearby({ fields: ['displayName', 'location', 'formattedAddress', 'primaryTypeDisplayName'], locationRestriction: { center: c, radius: 600 }, maxResultCount: 10, language: 'ar', region: 'sa' })
+    .then(function (o) { GM.near = (o && o.places) || []; GM.nearPins = GM.near.map(function (p) { return new google.maps.Marker({ map: GM.map, position: p.location, title: p.displayName || '', icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#0AA5AD', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } }); }); if (!GM.near.length) GM.err = 'لا أماكن مسجّلة قريبة من الدبوس.'; })
+    .catch(function (err) { GM.err = 'تعذّر جلب الأماكن القريبة — ' + String(err && err.message || ''); })
+    .then(function () { GM.busy = false; gmPaint(); });
+}
+function gmMe(btn) {
+  if (!navigator.geolocation) { GM.err = 'جهازك لا يتيح تحديد الموقع.'; gmPaint(); return; }
+  btn.classList.add('is-busy');
+  navigator.geolocation.getCurrentPosition(function (p) { btn.classList.remove('is-busy'); gmMove(p.coords.latitude, p.coords.longitude, 18); },
+    function (er) { btn.classList.remove('is-busy'); GM.err = er && er.code === 1 ? 'لم يُسمح بالوصول إلى موقعك — فعّل إذن الموقع للمتصفح.' : 'تعذّر تحديد موقعك الآن.'; gmPaint(); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+}
+function gmInit(mapEl) {
+  const C = { lat: 27.5236, lng: 41.6907 };
+  GM.map = new google.maps.Map(mapEl, { center: C, zoom: 15, mapTypeControl: true, mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.DROPDOWN_MENU, mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain'] },
+    streetViewControl: true, fullscreenControl: true, zoomControl: true, scaleControl: true, rotateControl: true, gestureHandling: 'cooperative', clickableIcons: true });
+  GM.pin = new google.maps.Marker({ map: GM.map, position: C, draggable: true, title: 'اسحبني إلى المبنى' });
+  GM.pin.addListener('dragend', function () { const p = GM.pin.getPosition(); gmRev(p.lat(), p.lng()); });
+  GM.map.addListener('click', function (ev) { if (ev.placeId) ev.stop(); gmMove(ev.latLng.lat(), ev.latLng.lng()); });
+  GM.trf = new google.maps.TrafficLayer(); GM.trn = new google.maps.TransitLayer();
+  gmRev(C.lat, C.lng);
+}
+/* لوحة النتائج تُرسم داخل العنصر الدائم — فلا تُعاد الخريطة مع كل رسم للصفحة */
+function gmPaint() {
+  if (!GM.el) return; const L = GM.el.querySelector('.gm-list'), B = GM.el.querySelector('.gm-res'); if (!L || !B) return;
+  L.innerHTML = ''; L.style.display = GM.list.length ? '' : 'none';
+  GM.list.forEach(function (s) { L.appendChild(e('button', { type: 'button', class: 'rvm-li', onClick: function () { gmPickSug(s); } }, [frag(ui('map-pin', 16)), e('span', {}, [e('b', {}, s.main), s.sub ? e('small', {}, s.sub) : null])])); });
+  B.innerHTML = '';
+  if (GM.err) B.appendChild(DS.note('warn', 'تنبيه', GM.err));
+  if (GM.busy) { B.appendChild(e('small', { class: 'cu-dr-hint' }, 'جارٍ الجلب من Google و HERE…')); return; }
+  if (GM.near.length) B.appendChild(DS.panel('أماكن قريبة من الدبوس (Google Places)', fmtNum(GM.near.length) + ' مكان', [e('div', { class: 'gm-near' }, GM.near.map(function (p) {
+    return e('button', { type: 'button', class: 'rvm-li', onClick: function () { gmMove(p.location.lat(), p.location.lng(), 18); } }, [frag(ui('storefront', 16)), e('span', {}, [e('b', {}, p.displayName || '—'), e('small', {}, [p.primaryTypeDisplayName, p.formattedAddress].filter(Boolean).join(' · '))])]); }))]));
+  const R = GM.res; if (!R) return; const H = GM.here || {};
+  const cell = function (v, ltrv) { return v ? (ltrv ? ltr(v) : v) : e('span', { class: 'gm-no' }, '—'); };
+  const rows = [['رقم المبنى', R.building, H.building, 1], ['الشارع', R.street, H.street], ['الحي', R.district, H.district], ['المدينة', R.city, H.city], ['المنطقة', R.state, ''], ['الدولة', R.country, ''],
+    ['الرمز البريدي', R.postal, H.postal, 1], ['الرقم الإضافي', R.suffix, '', 1], ['العنوان المختصر', R.short, H.short, 1], ['Plus Code', R.plus, '', 1]];
+  const lt = GM_LT[R.lt];
+  B.appendChild(DS.panel('العنوان في هذه النقطة', lt ? 'دقة Google: ' + lt[0] : 'نتائج Google: ' + fmtNum(R.n || 1), [
+    e('div', { class: 'gm-full' }, [frag(ui('map-pin', 18)), e('span', {}, R.full || '—')]),
+    e('div', { class: 'gm-tbl', role: 'table', 'aria-label': 'مقارنة Google و HERE' }, [e('div', { class: 'gm-tr is-h', role: 'row' }, [e('span', {}, 'الحقل'), e('span', {}, 'Google'), e('span', {}, 'HERE')])].concat(rows.map(function (r) {
+      return e('div', { class: 'gm-tr', role: 'row' }, [e('b', {}, r[0]), e('span', { class: r[1] ? 'is-ok' : '' }, cell(r[1], r[3])), e('span', { class: r[2] ? 'is-ok' : '' }, H.off ? e('span', { class: 'gm-no' }, 'غير متاح') : cell(r[2], r[3]))]); }))),
+    DS.fields([['الإحداثيات', ltr(R.lat.toFixed(6) + ', ' + R.lng.toFixed(6))], ['الدقة', lt ? DS.badge(lt[0], lt[1]) : '—']]),
+    e('small', { class: 'cu-dr-hint' }, 'ما لا يجلبه Google يُدخله العميل (الرقم الإضافي غالبًا، والعنوان المختصر) — والإحداثيات تُحفظ من الدبوس.')]));
+  const got = rows.filter(function (r) { return r[1]; }).length;
+  B.appendChild(DS.note(got >= 6 ? 'ok' : 'info', 'الحصيلة', 'جلب Google ' + fmtNum(got) + ' من ' + fmtNum(rows.length) + ' حقول' + (GM.here && !H.off ? '، وجلب HERE ' + fmtNum(rows.filter(function (r) { return r[2]; }).length) : '') + ' — مع الإحداثيات.'));
+}
+function gmSetup() {
+  return DS.panel('تشغيل خريطة Google', 'العيّنة جاهزة — تنتظر مفتاحك في الخادم', [e('ol', { class: 'gm-steps' }, [
+    e('li', {}, [e('b', {}, 'المشروع والفوترة: '), 'في Google Cloud Console أنشئ مشروعًا واربطه بحساب فوترة (بطاقة).']),
+    e('li', {}, [e('b', {}, 'فعّل ثلاث خدمات: '), ltr('Maps JavaScript API · Geocoding API · Places API (New)')]),
+    e('li', {}, [e('b', {}, 'أنشئ مفتاحًا وقيّده: '), 'Website restrictions: ', ltr('https://msjtr.github.io/*'), ' و ', ltr('https://staging.tera-services.com.sa/*'), ' — وAPI restrictions على الخدمات الثلاث فقط.']),
+    e('li', {}, [e('b', {}, 'حدّ يومي يبقيك في المجاني: '), 'من Quotas ضع لكل خدمة قرابة ٣٠٠ طلب يوميًا (≈ ٩٬٠٠٠ شهريًا تحت حدّ ١٠٬٠٠٠).']),
+    e('li', {}, [e('b', {}, 'ضعه في الخادم بنفسك: '), 'في ', ltr('/etc/tera-quote-center/tqc-staging.env'), ' أضف سطر ', ltr('GOOGLE_MAPS_KEY=…'), ' ثم أبلغني لإعادة تشغيل نسخة الاختبار.'])]),
+    e('small', { class: 'cu-dr-hint' }, 'المفتاح لا يدخل المستودع ولا المحادثة. مفتاح خرائط المتصفح يظهر لـGoogle في طلبات الصفحة بطبيعته — لذلك تقييده بالنطاق هو الحماية.')],
+    [DS.button('إعادة المحاولة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { GM.cfg = null; GM.el = null; draw(); } })]);
+}
+function rvGmap() {
+  const ins = rvIns('gm', 'تعليمات عيّنة Google', [['الهدف', 'تجربة خريطة Google بكل خدماتها ومقارنة ما تجلبه بـHERE للنقطة نفسها.', 'flag'],
+    ['جرّب', 'اسحب الدبوس أو اضغط على المبنى، أو ابحث، أو اكتب عنوانًا مختصرًا مثل HASB4384، أو «موقعي».', 'cursor-click'],
+    ['الأدوات', 'نوع الخريطة والتضاريس، التجوّل الافتراضي (الرجل الأصفر)، ملء الشاشة، الزحام، النقل العام، الأماكن القريبة.', 'stack'],
+    ['الشروط', 'نتائج Google تُعرض على خريطة Google وحدها، والإحداثيات من الدبوس تُحفظ دائمًا.', 'shield-check']]);
+  if (GM.cfg && GM.cfg.none) return [ins, gmSetup()];
+  if (GM.el) { setTimeout(function () { if (GM.map) google.maps.event.trigger(GM.map, 'resize'); }, 60); return [ins, GM.el]; }
+  const q = e('input', { class: 'rvm-q', type: 'search', autocomplete: 'off', enterkeyhint: 'search', placeholder: 'ابحث في Google: حي أو شارع أو معلم أو عنوان مختصر', 'aria-label': 'البحث في خريطة Google' });
+  let t = 0; q.addEventListener('input', function () { clearTimeout(t); t = setTimeout(function () { if (GM.map) gmSearch(q.value); }, 280); });
+  q.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); if (GM.map) gmSearch(q.value); } });
+  const tg = function (ic, label, fn) { const b = e('button', { type: 'button', class: 'rvm-chip', 'aria-pressed': 'false' }, [frag(ui(ic, 16)), e('span', {}, label)]); b.addEventListener('click', function () { if (GM.map) fn(b); }); return b; };
+  const lay = function (k) { return function (b) { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.classList.toggle('is-on', on); GM[k].setMap(on ? GM.map : null); }; };
+  const mapEl = e('div', { class: 'gm-map', role: 'application', 'aria-label': 'خريطة Google — اسحب الدبوس أو اضغط على مكانك' }, e('small', { class: 'rvm-wait' }, 'جارٍ تحميل خريطة Google…'));
+  GM.el = e('div', { class: 'gm' }, [
+    e('div', { class: 'gm-top' }, [e('div', { class: 'rvm-find' }, [q, e('button', { type: 'button', class: 'rvm-qb', 'aria-label': 'بحث', onClick: function () { if (GM.map) gmSearch(q.value); } }, frag(ui('magnifying-glass', 18)))]), e('div', { class: 'rvm-list gm-list', role: 'listbox', style: 'display:none' })]),
+    e('div', { class: 'gm-tools' }, [tg('crosshair', 'موقعي', gmMe), tg('car', 'الزحام', lay('trf')), tg('signpost', 'النقل العام', lay('trn')), tg('storefront', 'أماكن قريبة', gmNearby)]),
+    mapEl, e('div', { class: 'gm-res', 'aria-live': 'polite' })]);
+  gmCfg().then(function (c) {
+    if (c.none) { GM.el = null; draw(); return; }
+    return gmLoad(c.key).then(function () { return Promise.all([google.maps.importLibrary('maps'), google.maps.importLibrary('places'), google.maps.importLibrary('geocoding')]); })
+      .then(function () { mapEl.innerHTML = ''; gmInit(mapEl); });
+  }).catch(function () { mapEl.innerHTML = ''; mapEl.appendChild(DS.note('warn', 'تعذّر تحميل خريطة Google', 'تحقّق من المفتاح وتفعيل Maps JavaScript API.')); });
+  return [ins, GM.el];
+}
 function rvPage() {
   if (!/^rva?-/.test(String(S.fsOne || ''))) RV.prev = S.fsOne; if (RV.one) S.fsOne = RV.one;
   if (RV.tab === 'upd' || RV.tab === 'new') rvuMode(RV.tab);
-  const body = RV.tab === 'live' ? rvAfter(false) : RV.tab === 'ctr' ? rvAfter(true) : RV.tab === 'acc' ? rvAcc() : RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
+  const body = RV.tab === 'live' ? rvAfter(false) : RV.tab === 'ctr' ? rvAfter(true) : RV.tab === 'acc' ? rvAcc() : RV.tab === 'gmap' ? rvGmap() : RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
   rvKeepOne(); setTimeout(rvOverlay, 0); rvBarOn();
   return [e('div', { class: 'rv-tabs' }, DS.tabs({ items: RV_TABS, value: RV.tab, onChange: rvGo })),
     RV.toast ? e('div', { class: 'mb-toast', role: 'status' }, [frag(ui(/^(تم|أُرسل)/.test(RV.toast) ? 'check' : 'info', 16)), RV.toast]) : null].concat(body).filter(Boolean);
