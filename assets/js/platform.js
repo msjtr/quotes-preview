@@ -10892,6 +10892,87 @@ window.__TMPROG = function () {
 window.__TMWALDONE = function (name, gift) { S.toast = gift ? 'أُضيفت البطاقة إلى ' + name + ' — وأُضيفت 500 نقطة هدية إلى رصيدك' : 'أُضيفت البطاقة إلى ' + name; draw(); };
 
 /* ===== وحدة العضوية الحيّة (member.js من المنصة) — مُضمَّنة كما هي، ببيانات تجريبية بدل الخادم ===== */
+/* ================= v320: فيلم التدشين المُصوَّر «صُنعت لك» — يُبثّ ويُنزَّل من Cloudflare R2 (لا شيء على موارد الخادم) =================
+ * المقاس يُختار تلقائيًا: جوال/شاشة طولية ← 1080×1920، وغير ذلك ← 1920×1080. عند أول تدشين: التخطّي بعد 10 ثوانٍ، وعند الإعادة: إغلاق متاح.
+ * الفيلم باسم العميل يُجهَّز عند طلبه فقط (GitHub Actions) ويبقى 30 يومًا في R2 ثم يُحذف تلقائيًا. */
+const FILM_CDN = 'https://media.tera-services.com.sa/';
+const FILM_LIB = [
+  { k: 'launch-l', t: 'فيلم التدشين الجديد — أفقي', d: '«صُنعت لك» · 32 ثانية · 1920×1080 · للويب والشاشات', l: 'library/launch-landscape', tag: ['المعتمد', 'ok'] },
+  { k: 'launch-p', t: 'فيلم التدشين الجديد — طولي', d: '«صُنعت لك» · 32 ثانية · 1080×1920 · للجوال والتواصل الاجتماعي', l: 'library/launch-portrait', por: true, tag: ['المعتمد', 'ok'] },
+  { k: 'home-old', t: 'فيلم الصفحة الرئيسية السابق', d: 'محفوظ للأرشيف · أفقي وطولي', l: 'library/home-old-landscape', p: 'library/home-old-portrait', tag: ['أرشيف', null] },
+  { k: 'ref', t: 'الفيلم المرجعي v12', d: 'عيّنة مرجعية لأي فيلم قادم · 3 دقائق · 1920×1080', l: 'library/reference-v12', tag: ['مرجع', 'info'] }];
+const FILM_LAUNCH = { l: 'library/launch-landscape', p: 'library/launch-portrait' };
+function filmPortrait() { try { return window.innerHeight > window.innerWidth * 1.05; } catch (err) { return false; } }
+function filmUrl(base) { return /^https?:/.test(base) ? base : FILM_CDN + base; }
+function filmDur(s) { s = Math.max(0, Math.ceil(s)); return s + ' ث'; }
+/* المشغّل: o = { l, p, poster:{l,p}, skipAfter, title, onDone, onError } — l/p مسار بلا امتداد في R2 أو رابط كامل */
+function filmPlayer(o) {
+  const por = filmPortrait() && !!o.p, base = por ? o.p : o.l;
+  const src = /\.mp4$/.test(base) ? filmUrl(base) : filmUrl(base) + '.mp4';
+  const poster = o.poster ? filmUrl(por ? o.poster.p : o.poster.l) : filmUrl(base.replace(/\.mp4$/, '')) + '.jpg';
+  const skipAfter = Number(o.skipAfter || 0);
+  const root = document.createElement('div');
+  root.className = 'tfp' + (por ? ' is-p' : '');
+  root.setAttribute('dir', 'rtl'); root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', o.title || 'فيلم التدشين');
+  root.innerHTML = '<video class="tfp-v" playsinline webkit-playsinline preload="auto"></video>' +
+    '<div class="tfp-load" aria-hidden="true"><i></i></div>' +
+    '<div class="tfp-bar"><button type="button" class="tfp-snd" hidden>تشغيل الصوت</button><button type="button" class="tfp-skip"></button></div>' +
+    '<div class="tfp-prog" aria-hidden="true"><i></i></div>' +
+    '<div class="tfp-end" hidden><div class="tfp-end-in"><span class="tfp-eye">TERA</span><h3>أهلًا بك في عالم تيرا</h3><p>عالمك بلا حدود — ابدأ الآن من لوحتك.</p>' +
+    '<div class="tfp-acts"><button type="button" class="tfp-go">ابدأ الآن</button><button type="button" class="tfp-re">إعادة المشاهدة</button></div></div></div>';
+  const v = root.querySelector('video'), skip = root.querySelector('.tfp-skip'), snd = root.querySelector('.tfp-snd'), end = root.querySelector('.tfp-end'), bar = root.querySelector('.tfp-prog i');
+  v.poster = poster; v.src = src;
+  const prevOverflow = document.documentElement.style.overflow;
+  document.documentElement.style.overflow = 'hidden';
+  let closed = false, ready = false, canSkip = skipAfter <= 0;
+  const close = function (failed) {
+    if (closed) return; closed = true;
+    try { v.pause(); v.removeAttribute('src'); v.load(); } catch (err) { void err; }
+    document.removeEventListener('keydown', onKey);
+    document.documentElement.style.overflow = prevOverflow;
+    root.remove();
+    if (failed) { if (typeof o.onError === 'function') o.onError(); else if (typeof o.onDone === 'function') o.onDone(); }
+    else if (typeof o.onDone === 'function') o.onDone();
+  };
+  const t0 = Date.now();
+  const paintSkip = function () {
+    if (canSkip) { skip.disabled = false; skip.textContent = skipAfter > 0 ? 'تخطٍّ' : 'إغلاق'; return; }
+    /* المحسوب: زمن المشاهدة الفعلي؛ وإن تعثّرت الشبكة يُتاح التخطّي بعد مهلةٍ إضافية من فتح المشغّل */
+    const left = Math.min(skipAfter - (v.currentTime || 0), skipAfter + 12 - (Date.now() - t0) / 1000);
+    if (left <= 0) { canSkip = true; return paintSkip(); }
+    skip.disabled = true; skip.textContent = 'التخطّي بعد ' + filmDur(left);
+  };
+  const onKey = function (ev) { if (ev.key === 'Escape' && canSkip) close(false); };
+  const play = function () {
+    const p = v.play();
+    if (p && p.catch) p.catch(function () { v.muted = true; snd.hidden = false; const q = v.play(); if (q && q.catch) q.catch(function () { /* ينتظر لمسة */ }); });
+  };
+  v.addEventListener('canplay', function () { if (ready) return; ready = true; root.classList.add('is-ready'); play(); });
+  v.addEventListener('timeupdate', function () { paintSkip(); if (v.duration) bar.style.width = (v.currentTime / v.duration * 100).toFixed(2) + '%'; });
+  v.addEventListener('ended', function () { canSkip = true; paintSkip(); end.hidden = false; root.classList.add('is-end'); setTimeout(function () { const g = root.querySelector('.tfp-go'); if (g) g.focus({ preventScroll: true }); }, 60); });
+  v.addEventListener('error', function () { if (!closed) close(true); });
+  v.addEventListener('click', function () { if (v.paused && !v.ended) play(); else if (v.muted) { v.muted = false; snd.hidden = true; } });
+  snd.addEventListener('click', function () { v.muted = false; snd.hidden = true; play(); });
+  skip.addEventListener('click', function () { if (canSkip) close(false); });
+  root.querySelector('.tfp-go').addEventListener('click', function () { close(false); });
+  root.querySelector('.tfp-re').addEventListener('click', function () { end.hidden = true; root.classList.remove('is-end'); v.currentTime = 0; play(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(root);
+  paintSkip();
+  const tick = setInterval(function () { if (closed) { clearInterval(tick); return; } paintSkip(); if (canSkip) clearInterval(tick); }, 250);
+  /* لا يصل الفيلم خلال 15 ثانية (شبكة أو حجب) ← البديل المبني في المنصة */
+  setTimeout(function () { if (!ready && !closed) close(true); }, 15000);
+  setTimeout(function () { skip.focus({ preventScroll: true }); }, 200);
+  return { close: close };
+}
+window.__TFP = filmPlayer;
+/* استدعاءات فيلم العميل — في المنصة الحيّة من القاعدة، وفي العيّنة بيانات توضيحية */
+window.__FILMRPC = function (name) {
+  if (name === 'my_launch_film') return Promise.resolve({ ok: true, launched: true, film: window.__FILMDEMO || null, left: 4, film_on: true });
+  if (name === 'my_launch_film_request') { window.__FILMDEMO = { status: 'queued', requested_at: new Date().toISOString() }; return Promise.resolve({ ok: true, film: window.__FILMDEMO }); }
+  if (name === 'admin_launch_films') return Promise.resolve({ ok: true, rows: [] });
+  return Promise.resolve({ ok: true });
+};
 const TM = (function () {
   const e = function (tag, attrs) { const kids = Array.prototype.slice.call(arguments, 2); return window.__E(tag, attrs, kids.length === 1 ? kids[0] : kids); };
   const mount = function (host, node) { host.textContent = ''; [].concat(node).forEach(function (n) { if (n) host.appendChild(n); }); };
@@ -11327,17 +11408,65 @@ const CL_WAIT = {
   },
 };
 
-/* فيلمُ التدشين في «ملفي الشخصي» — يعودُ إليه العميلُ متى شاء */
+/* فيلمُ التدشين في «ملفي الشخصي» — الفيلم العام من R2 بالمقاسين، و«فيلمك باسمك» عند الطلب (30 يومًا) */
+const FM_ST = { limit: 'وصلتَ إلى الحد: 4 طلبات خلال 30 يومًا. يمكنك الطلب لاحقًا.', not_launched: 'يُتاح بعد تدشين حسابك.', cpv: 'هذا إجراء يخص العميل نفسه ولا يُنفَّذ باسمه.' };
+function fmDl(href, label, dim) { return '<a class="tfm-dl" href="' + esc(href) + '" download rel="noopener">' + glyph('download-simple') + '<span><b>' + label + '</b><small dir="ltr">' + dim + '</small></span></a>'; }
+function fmPlayOwn(f) { const x = f.files || {}; filmPlayer({ l: x.landscape, p: x.portrait, poster: { l: x.landscape_poster, p: x.portrait_poster }, skipAfter: 0, title: 'فيلمك باسمك' }); }
 const MEM_FILM = {
   title: 'فيلم التدشين',
-  subtitle: 'شاهدْ فيلمَ تدشينِ حسابِك مرّةً أخرى.',
+  subtitle: 'شاهدْ فيلمَ تدشينِ حسابِك وحمّله، أو احصل على نسخةٍ باسمك.',
   async run(host, ctx) {
     ensureDefs();
     let m;
     try { m = await loadMem(true); } catch (err) { failed(host, err, function () { MEM_FILM.run(host, ctx); }); return; }
     if (!m || m.ok === false || !m.exists) { mount(host, DS.emptyState({ icon: 'clock', title: 'لم يُدشَّنْ حسابُك بعد', body: 'يظهرُ فيلمُ التدشينِ هنا بعدَ تدشينِ حسابِك من الإدارة.' })); return; }
-    const box = frag('<section class="lux"><div class="lux-grid"><div>' + mcard(m) + '</div><div style="display:grid;gap:14px"><span class="eyebrow">TERA LAUNCH</span><h2>فيلمُ تدشينِ حسابِك</h2><p>دُشِّنَ حسابُك في <bdi dir="ltr">' + day(m.issued_at) + '</bdi>. شاهدِ الفيلمَ مرّةً أخرى متى شئت.</p><div class="lux-acts"><button type="button" class="lux-btn gold" data-tm="film">' + tile('rocket-launch', 'navy') + 'تشغيل فيلم التدشين</button></div></div></div></section>');
+    const box = frag('<section class="lux"><div class="lux-grid"><div>' + mcard(m) + '</div><div style="display:grid;gap:14px"><span class="eyebrow">TERA LAUNCH</span><h2>فيلمُ تدشينِ حسابِك</h2><p>دُشِّنَ حسابُك في <bdi dir="ltr">' + day(m.issued_at) + '</bdi>. شاهدِ الفيلمَ متى شئت؛ يُعرَضُ تلقائيًا بالمقاسِ المناسبِ لجهازك.</p><div class="lux-acts"><button type="button" class="lux-btn gold" data-tm="film">' + tile('rocket-launch', 'navy') + 'تشغيل فيلم التدشين</button></div>' +
+      '<div class="tfm-dls">' + fmDl(FILM_CDN + FILM_LAUNCH.l + '.mp4', 'تنزيل أفقي', '1920×1080') + fmDl(FILM_CDN + FILM_LAUNCH.p + '.mp4', 'تنزيل طولي', '1080×1920') + '</div></div></div></section>' +
+      '<section class="tfm-own" aria-live="polite"><p class="tfm-wait">جارٍ التحقق من فيلمك…</p></section>');
     mount(host, wire(box, ctx, m));
+    const own = box.querySelector('.tfm-own');
+    let J = null, busy = false, msg = '', poll = 0;
+    const paint = function () {
+      if (!own.isConnected) return;
+      if (!J || J.ok === false) { own.innerHTML = '<div class="tfm-h"><span class="eyebrow">فيلمك باسمك</span><h3>تعذّر جلب حالة فيلمك</h3><p>تحقّق من اتصالك ثم أعد المحاولة.</p></div><div class="tfm-acts"><button type="button" class="lux-btn" data-fm="ref">إعادة المحاولة</button></div>'; return; }
+      const f = J.film, st = f ? f.status : 'none', left = Number(J.left == null ? 4 : J.left);
+      let h = '', p = '', acts = '', side = '';
+      if (st === 'queued' || st === 'rendering') {
+        h = 'فيلمك قيد التجهيز'; p = 'طلبتَه في <bdi dir="ltr">' + day(f.requested_at) + '</bdi>. يستغرقُ التجهيزُ عادةً دقائق، وتصلك رسالة «جُهِّز فيلمك» بالبريد وواتساب فور جاهزيته.';
+        side = '<div class="tfm-run" aria-hidden="true"><i></i></div>';
+        acts = '<button type="button" class="lux-btn" data-fm="ref">' + glyph('arrows-clockwise') + 'تحديث الحالة</button>';
+      } else if (st === 'ready' && f.files && f.files.landscape) {
+        h = 'جُهِّز فيلمك'; p = 'يحملُ اسمَك على بطاقتك. متاحٌ حتى <bdi dir="ltr">' + day(f.expires_at) + '</bdi> ثم يُحذفُ تلقائيًا، ويمكنك طلبه من جديد.';
+        side = '<button type="button" class="tfm-th" data-fm="play" aria-label="شاهد فيلمك"><img src="' + esc(f.files.landscape_poster || '') + '" alt="" loading="lazy"><i>' + glyph('play') + '</i></button>';
+        acts = '<button type="button" class="lux-btn gold" data-fm="play">' + glyph('play') + 'شاهد فيلمك</button>' + fmDl(f.files.landscape, 'تنزيل أفقي', '1920×1080') + fmDl(f.files.portrait, 'تنزيل طولي', '1080×1920');
+      } else {
+        const failedSt = st === 'failed', expired = st === 'expired';
+        h = failedSt ? 'تعذّر تجهيز فيلمك' : 'احصل على فيلمك باسمك';
+        p = failedSt ? 'نعتذر، حدث خطأ أثناء التجهيز. يمكنك إعادة الطلب الآن.' : 'نُجهِّزُ نسخةً من الفيلم يُحفَرُ فيها اسمُك على بطاقتك، بالمقاسين الأفقي والطولي، ونرسل لك «جُهِّز فيلمك» بالبريد وواتساب عند جاهزيته. يبقى متاحًا 30 يومًا ثم يُحذف تلقائيًا، ويمكنك طلبه من جديد.' + (expired ? ' انتهت مدة فيلمك السابق.' : '');
+        acts = '<button type="button" class="lux-btn gold" data-fm="req"' + (busy || left <= 0 ? ' disabled' : '') + '>' + tile('film-strip', 'navy') + (busy ? 'جارٍ إرسال الطلب…' : failedSt ? 'إعادة الطلب' : 'احصل على فيلمك باسمك') + '</button>' +
+          '<small class="tfm-left">' + (left <= 0 ? FM_ST.limit : 'المتاح لك: ' + left + ' من 4 طلبات خلال 30 يومًا') + '</small>';
+      }
+      own.innerHTML = '<div class="tfm-row"><div class="tfm-h"><span class="eyebrow">فيلمك باسمك</span><h3>' + h + '</h3><p>' + p + '</p>' + (msg ? '<p class="tfm-msg" role="status">' + esc(msg) + '</p>' : '') + '<div class="tfm-acts">' + acts + '</div></div>' + side + '</div>';
+      clearTimeout(poll);
+      if (st === 'queued' || st === 'rendering') poll = setTimeout(load, 30000);
+    };
+    const load = function () { if (!own.isConnected) return; window.__FILMRPC('my_launch_film').then(function (j) { J = j || { ok: false }; paint(); }).catch(function () { J = { ok: false }; paint(); }); };
+    own.addEventListener('click', function (ev) {
+      const b = ev.target.closest('[data-fm]'); if (!b || b.disabled) return;
+      const k = b.getAttribute('data-fm');
+      if (k === 'ref') { msg = ''; load(); return; }
+      if (k === 'play' && J && J.film) { fmPlayOwn(J.film); return; }
+      if (k === 'req' && !busy) {
+        busy = true; msg = ''; paint();
+        window.__FILMRPC('my_launch_film_request').then(function (r) {
+          busy = false;
+          if (!r || r.ok === false) { msg = FM_ST[r && r.error] || 'تعذّر إرسال الطلب. أعد المحاولة.'; paint(); return; }
+          msg = r.already ? '' : 'استلمنا طلبك، وسنرسل لك «جُهِّز فيلمك» عند جاهزيته.';
+          J = Object.assign({}, J, { film: r.film, left: r.already ? J.left : Math.max(0, Number(J.left || 4) - 1) }); paint();
+        }).catch(function () { busy = false; msg = 'تعذّر إرسال الطلب. أعد المحاولة.'; paint(); });
+      }
+    });
+    load();
   },
 };
 
@@ -11425,7 +11554,16 @@ async function maybeLaunch(ctx) {
   launchFilm(m, function () { if (ctx && ctx.go) ctx.go('home'); });
 }
 
+/* v320: الفيلم المُصوَّر من R2 أولًا؛ وإن تعذّر تحميله يُعرض الفيلم المبني في المنصة بديلًا */
 function launchFilm(m, onDone, opt) {
+  const replay = !!(opt && opt.replay);
+  let marked = false;
+  const mark = function () { if (replay || marked) return; marked = true; rpc('my_launch_done').catch(function () { /* */ }); };
+  filmPlayer({ l: FILM_LAUNCH.l, p: FILM_LAUNCH.p, skipAfter: replay ? 0 : 10, title: 'فيلم التدشين',
+    onDone: function () { mark(); CACHE = null; if (typeof onDone === 'function') onDone(); },
+    onError: function () { launchFilmCode(m, onDone, opt); } });
+}
+function launchFilmCode(m, onDone, opt) {
   ensureDefs();
   const first = String(m.name_ar || '').trim().split(/\s+/)[0] || '';
   let html = FILM.split('{FIRST}').join(esc(first));
@@ -16013,7 +16151,82 @@ function lvLaunchSetPage() {
       e('small', { class: 'cu-dr-hint' }, 'التدشين يدوي دائمًا بعد اعتماد الملف من «إدارة الحساب › تدشين الحساب»، ويمكن تغيير المستوى والنقاط لكل حساب عند التدشين.'),
       D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null,
       can ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ الإعدادات', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: save }))]) : cuPermNo('للعرض فقط', 'الحفظ لمن يملك صلاحية إدارة الحسابات (accounts.manage).')]),
-    lvPanel('فيلم التدشين', null, [DS.note('info', 'عيّنة الفيلم بانتظار اعتمادك', 'فيلم ترحيبي مدته 120 ثانية بدقة 1080p (أفقي للويب وعمودي للجوال): البطاقة الممنوحة بالعربي والإنجليزي باسم العميل، والنقاط، والمستويات والمؤشر، وجولة في لوحة التحكم ومركز الأمان والمراسلات. بعد اعتماد العيّنة يُولَّد لكل عميل على الخادم ويُتاح تنزيله هنا وللعميل.')])];
+    lvFilmPanel()];
+}
+/* ================= v320: فيلم التدشين في المنصة الحيّة — القاعدة للحالة، وR2 للملفات =================
+ * my_launch_done يُسجَّل في القاعدة فعلًا بعد مشاهدة الفيلم أول مرة، وفيلم العميل باسمه من my_launch_film/my_launch_film_request.
+ * في «صفحة العميل» (دخول الموظف) لا يُطلب فيلم باسم العميل ولا يُعرَض الفيلم تلقائيًا. */
+if (LIVE.on) {
+  const tmrpc0 = window.__TMRPC;
+  window.__TMRPC = function (name) {
+    if (name === 'my_launch_done') {
+      try { if (typeof CPV !== 'undefined' && CPV.on) return Promise.resolve({ ok: true }); } catch (err) { void err; }
+      return liveSb('rpc/my_launch_done', { body: {} }).then(function (r) { try { if (window.__LIVE_MEM) window.__LIVE_MEM.launch_pending = false; } catch (err) { void err; } return r || { ok: true }; });
+    }
+    return tmrpc0(name);
+  };
+  window.__FILMRPC = function (name) {
+    let cpv = false; try { cpv = typeof CPV !== 'undefined' && CPV.on; } catch (err) { void err; }
+    if (name === 'my_launch_film') { if (cpv) return Promise.resolve({ ok: true, launched: true, film: null, left: 0, film_on: true }); return liveSb('rpc/my_launch_film', { body: {} }).then(function (r) { return r || { ok: false }; }); }
+    if (name === 'my_launch_film_request') { if (cpv) return Promise.resolve({ ok: false, error: 'cpv' }); return liveSb('rpc/my_launch_film_request', { body: {} }).then(function (r) { return r || { ok: false }; }); }
+    if (name === 'admin_launch_films') return admRpc('admin_launch_films', {});
+    return Promise.resolve({ ok: false });
+  };
+}
+/* أول دخول بعد التدشين: الفيلم مرّة واحدة (التخطّي بعد 10 ثوانٍ)، ما لم يُوقَف من «إعدادات تدشين الحساب» */
+function liveFilmAuto() {
+  try {
+    if (!LIVE.on || S.role !== 'client') return;
+    if (typeof CPV !== 'undefined' && CPV.on) return;
+    const m = window.__LIVE_MEM;
+    if (!m || !m.exists || m.pending || !m.launch_pending || !m.member_no) return;
+    if (sessionStorage.getItem('tera.film.auto') === m.member_no) return;
+    sessionStorage.setItem('tera.film.auto', m.member_no);
+  } catch (err) { return; }
+  const m = window.__LIVE_MEM;
+  liveSb('rpc/my_launch_film', { body: {} }).catch(function () { return null; }).then(function (j) {
+    if (j && j.film_on === false) { window.__TMRPC('my_launch_done').catch(function () { /* */ }); return; }
+    setTimeout(function () { TM.launchFilm(m, function () { try { m.launch_pending = false; draw(); } catch (err) { void err; } }); }, 500);
+  });
+}
+/* «إعدادات تدشين الحساب › أفلام التدشين»: مكتبة الأفلام الأربعة من R2 بمدة مفتوحة، وطلبات «فيلمك باسمك» */
+function lvFilmLib() {
+  const card = function (f) {
+    const b = FILM_CDN + f.l;
+    return e('article', { class: 'flib-c' + (f.por ? ' is-p' : '') }, [
+      e('button', { type: 'button', class: 'flib-th', 'aria-label': 'تشغيل ' + f.t, onClick: function () { filmPlayer({ l: f.l, p: f.p, skipAfter: 0, title: f.t }); } }, [e('img', { src: b + '.jpg', alt: '', loading: 'lazy' }), e('i', { 'aria-hidden': 'true' }, '▶')]),
+      e('div', { class: 'flib-b' }, [e('div', { class: 'flib-t' }, [e('b', {}, f.t), f.tag ? DS.badge(f.tag[0], f.tag[1]) : null]), e('small', {}, f.d),
+        e('div', { class: 'flib-a' }, [e('a', { href: b + '.mp4', download: true, rel: 'noopener' }, f.p ? 'تنزيل أفقي' : 'تنزيل'), f.p ? e('a', { href: FILM_CDN + f.p + '.mp4', download: true, rel: 'noopener' }, 'تنزيل طولي') : null])])]);
+  };
+  return e('div', { class: 'flib' }, FILM_LIB.map(card));
+}
+const FLR_ST = { queued: ['بالانتظار', 'warn'], rendering: ['قيد التجهيز', 'info'], ready: ['جاهز', 'ok'], failed: ['تعذّر', 'danger'], expired: ['انتهت مدته', null] };
+function lvFilmReqs() {
+  if (!LCHS.fl) {
+    LCHS.fl = { busy: true };
+    window.__FILMRPC('admin_launch_films').then(function (j) {
+      LCHS.fl = j && j.ok !== false ? { rows: j.rows || [] } : { err: j && j.error === 'forbidden' ? 'لا تملك صلاحية عرض الطلبات.' : 'لم تُفعَّل طلبات «فيلمك باسمك» بعد.' }; draw();
+    }).catch(function () { LCHS.fl = { err: 'لم تُفعَّل طلبات «فيلمك باسمك» بعد.' }; draw(); });
+  }
+  const F = LCHS.fl;
+  if (F.busy) return e('p', { class: 'cu-dr-hint' }, 'جارٍ جلب الطلبات…');
+  if (F.err) return DS.note('info', 'طلبات «فيلمك باسمك»', F.err);
+  if (!F.rows.length) return DS.note('info', 'لا طلبات بعد', 'تظهر هنا طلبات العملاء «احصل على فيلمك باسمك» وحالتها، وكل فيلم يبقى 30 يومًا في R2 ثم يُحذف تلقائيًا.');
+  return e('div', { class: 'flib-rq' }, F.rows.map(function (r) {
+    const s = FLR_ST[r.status] || [r.status, null], x = r.files || {};
+    return e('div', { class: 'flib-r' }, [
+      e('div', { class: 'flib-rn' }, [e('b', {}, r.name || '—'), e('small', { dir: 'ltr' }, [r.tera_id || '', r.requested_at ? ' · ' + String(r.requested_at).slice(0, 10) : '', r.expires_at && r.status === 'ready' ? ' → ' + String(r.expires_at).slice(0, 10) : ''].join(''))]),
+      DS.badge(s[0], s[1]),
+      r.status === 'ready' && x.landscape ? e('button', { type: 'button', class: 'flib-mini', onClick: function () { filmPlayer({ l: x.landscape, p: x.portrait, poster: { l: x.landscape_poster, p: x.portrait_poster }, skipAfter: 0, title: 'فيلم ' + (r.name || '') }); } }, 'مشاهدة') : null,
+      r.status === 'failed' && r.error ? e('small', { class: 'flib-er' }, String(r.error).slice(0, 90)) : null]);
+  }));
+}
+function lvFilmPanel() {
+  return lvPanel('أفلام التدشين', null, [
+    e('p', { class: 'cu-dr-hint' }, 'تُبثّ وتُنزَّل من Cloudflare R2 بمدة مفتوحة (لا شيء على موارد الخادم). يُعرض للعميل تلقائيًا الأفقي على الشاشات والطولي على الجوال.'),
+    lvFilmLib(),
+    e('div', { class: 'flib-h' }, [e('b', {}, 'طلبات «فيلمك باسمك»'), e('button', { type: 'button', class: 'flib-mini', onClick: function () { LCHS.fl = null; draw(); } }, 'تحديث')]),
+    lvFilmReqs()]);
 }
 /* مركز الأمن: سجل التدقيق الرسمي بفلاتر جاهزة لكل بطاقة */
 const LV_MON = {
@@ -16167,7 +16380,7 @@ if (LIVE.on) {
     liveData().catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
       /* التحديث يُبقي الصفحة نفسها: يُعاد استرجاع موضع التنقل بعد وصول البيانات الحقيقية (العقد والدفعة والإيصال وملف العميل) */
       try { if (window.__navRaw) { sessionStorage.setItem(NAVKEY, window.__navRaw); window.__navRaw = ''; loadNav(); if (FX.pfc) ADM.pfc = FX.pfc; } } catch (err) { void err; }
-      return S.role === 'client' ? livePayReturn().catch(function () { /* */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); });
+      return S.role === 'client' ? livePayReturn().catch(function () { /* */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); liveFilmAuto(); });
   }).catch(function (err) {
     if (err && err.message === 'auth') { location.replace('/portal/'); return; }
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();

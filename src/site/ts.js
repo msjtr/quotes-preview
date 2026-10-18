@@ -236,6 +236,8 @@
     b.addEventListener('click', function (e) { e.stopPropagation(); if (v.paused) { v.dataset.user = ''; vplay(v); b.innerHTML = I('PiPauseFill') + '<span>إيقاف</span>'; } else { v.dataset.user = 'off'; v.pause(); b.innerHTML = I('PiPlayFill') + '<span>تشغيل</span>'; } });
   });
   /* ---------- launch film v236: stable player, right variant per screen, above header and dock ---------- */
+  /* v320: فيلم التدشين «صُنعت لك» من Cloudflare R2 — أفقي 1920×1080 وطولي 1080×1920 حسب الشاشة */
+  var FILM_R2 = 'https://media.tera-services.com.sa/library/launch-';
   var modal = null, filmKey = '';
   function filmPortrait() { return innerHeight > innerWidth * 1.15 || innerWidth < 560; }
   function closeFilm() { if (!modal) return; var v = $('video', modal); try { v.pause(); } catch (e) {} modal.hidden = true; document.documentElement.classList.remove('ts-noscroll'); }
@@ -244,8 +246,8 @@
     if (modal) modal.remove(); filmKey = fm;
     modal = document.createElement('div'); modal.className = 'ts-modal ts-fm' + (fm ? ' is-m' : ''); modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-label', 'فيلم تدشين منصة تيرا');
     modal.innerHTML = '<div class="ts-fm-bar"><span class="ts-fm-t">' + I('PiFilmSlateFill') + '<b>فيلم تدشين منصة تيرا</b></span><button type="button" class="ts-modal-x" aria-label="إغلاق">' + I('PiXBold') + '</button></div>' +
-      '<div class="ts-fm-box"><video controls playsinline preload="metadata" poster="vid/film-poster' + fm + '.jpg"><source src="vid/film' + fm + '.mp4" type="video/mp4"></video>' +
-      '<span class="ts-fm-load"><i></i><b>جارٍ تحميل الفيلم…</b></span><p class="ts-fm-err" hidden>تعذّر تشغيل الفيلم على هذا الجهاز. <a href="vid/film' + fm + '.mp4" target="_blank" rel="noopener">افتحه مباشرة</a></p></div>';
+      '<div class="ts-fm-box"><video controls playsinline preload="metadata" poster="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.jpg"><source src="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.mp4" type="video/mp4"></video>' +
+      '<span class="ts-fm-load"><i></i><b>جارٍ تحميل الفيلم…</b></span><p class="ts-fm-err" hidden>تعذّر تشغيل الفيلم على هذا الجهاز. <a href="' + FILM_R2 + (fm ? 'portrait' : 'landscape') + '.mp4" target="_blank" rel="noopener">افتحه مباشرة</a></p></div>';
     app.appendChild(modal);
     var v = $('video', modal), ld = $('.ts-fm-load', modal);
     ['playing', 'canplay'].forEach(function (k) { v.addEventListener(k, function () { ld.hidden = true; }); });

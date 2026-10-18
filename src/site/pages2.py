@@ -95,10 +95,10 @@ def home():
     top = (f'<section class="mk-sec"><div class="ts-h"><div><h2>{e(NEW)}<span class="ts-new">خدمة جديدة</span></h2><p>مختارات قليلة من أكثر المنتجات طلبًا هذا الموسم.</p></div>'
            f'<button type="button" class="t2-btn" data-go="/store/devices">عرض الكل</button></div><div class="tb"><div class="tb-row" role="region" tabindex="0">{top_cards(6)}</div></div></section>')
     film = (f'<section class="ts-film"><div class="ts-film-p ts-vid is-film" data-vid="film">'
-            '<video muted loop playsinline preload="none" poster="vid/film-poster.jpg" data-w="vid/film.mp4" data-m="vid/film-m.mp4" data-pw="vid/film-poster.jpg" data-pm="vid/film-poster-m.jpg" aria-label="فيلم تدشين منصة تيرا يعمل بدون صوت"></video>'
+            '<video muted loop playsinline preload="none" poster="https://media.tera-services.com.sa/library/launch-landscape.jpg" data-w="https://media.tera-services.com.sa/library/launch-landscape.mp4" data-m="https://media.tera-services.com.sa/library/launch-portrait.mp4" data-pw="https://media.tera-services.com.sa/library/launch-landscape.jpg" data-pm="https://media.tera-services.com.sa/library/launch-portrait.jpg" aria-label="فيلم تدشين منصة تيرا يعمل بدون صوت"></video>'
             f'<div class="ts-film-ctl"><button type="button" class="ts-film-snd" aria-pressed="false">{I("PiSpeakerSlashFill")}<span>تشغيل الصوت</span></button>'
             f'<button type="button" class="ts-film-fs" data-film aria-label="عرض الفيلم بملء الشاشة">{I("PiFilmSlateFill")}<span>ملء الشاشة</span></button></div></div>'
-            '<div class="ts-film-b"><small>فيلم التدشين</small><h2>رحلة الحساب في منصة تيرا خلال دقيقة</h2><p>من الاحتياج إلى الحل: كيف يبدأ طلبك، وكيف تتابع كل خطوة، وما الذي تمنحك إياه عضويتك.</p>'
+            '<div class="ts-film-b"><small>فيلم التدشين</small><h2>صُنعت لك — فيلم تدشين منصة تيرا</h2><p>ترحيبٌ يُحفَر بالليزر، وبطاقات العضوية الثلاث، وعالمٌ بلا حدود — في 32 ثانية.</p>'
             f'<div><button type="button" class="t2-btn is-primary" data-film>{I("PiPlayFill")} شاهد الفيلم</button></div></div></section>')
     _sp = [q for c in FAQ for q in c[2] if q[0] == 'q-spam']
     fq = ''.join(qsec(a, b, c2) for a, b, c2 in (FAQ[0][2][:3] + _sp + FAQ[3][2][:1]))
