@@ -11977,7 +11977,30 @@ function geoOsm(a, lat, lon, name, nm) { a = a || {}; const hn = a.house_number 
   house_number_type: hn ? 'exact' : '', match_level: hn ? 'رقم المبنى' : a.road ? 'الشارع' : (a.suburb || a.neighbourhood) ? 'الحي' : 'المدينة' }; }
 /* عناوين مختصرة تجريبية للعيّنة وحدها — في النظام يجلبها HERE من العنوان الوطني */
 const GEO_SHORT_DEMO = { HAIL4821: [27.5236, 41.6907], RIYD2929: [24.7136, 46.6753] };
+/* العيّنة تستعمل HERE نفسه عبر خدمات الخريطة العامة لنسخة الاختبار (/api/catalog/geo — المفتاح في الخادم)، وإن تعذّرت فطبقات OpenStreetMap المفتوحة */
+const GEO_HERE = 'https://staging.tera-services.com.sa';
+let GEO_HERE_OFF = false;
+function geoHereFetch(path, body) {
+  if (GEO_HERE_OFF || ['reverse', 'autocomplete', 'geocode', 'browse', 'discover', 'map-token'].indexOf(path) < 0) return Promise.reject(new Error('here'));
+  return fetch(GEO_HERE + '/api/catalog/geo/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'omit', body: JSON.stringify(body || {}) })
+    .then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || j.ok === false) throw new Error((j && j.error) || 'here');
+      if (path === 'map-token') { const t = encodeURIComponent(j.token || ''), base = GEO_HERE + '/api/geo/tile/{z}/{x}/{y}.png?t=' + t + '&style=';
+        j = Object.assign({}, j, { template: base + (j.style || 'explore.day'), tile_size: 512, layers: { map: base + 'explore.day', sat: base + 'explore.satellite.day', topo: base + 'topo.day', traffic: GEO_HERE + '/api/geo/traffic/{z}/{x}/{y}.png?t=' + t } }); }
+      if (j.place) j.place = geoHereAr(j.place); if (Array.isArray(j.alternatives)) j.alternatives = j.alternatives.map(geoHereAr); if (Array.isArray(j.results)) j.results = j.results.map(geoHereAr);
+      return j;
+    });
+}
+/* مستوى المطابقة بالعربية من نتيجة HERE العامة (رقم المبنى ← الشارع ← الحي) */
+function geoHereAr(p) { if (!p) return p; return Object.assign({ house_number_type: p.house_number ? 'exact' : '', match_level: p.house_number ? 'رقم المبنى' : p.road ? 'الشارع' : (p.quarter || p.district) ? 'الحي' : 'المدينة', precise: !!p.house_number }, p); }
 function geoSampleFetch(path, body) {
+  const code = path === 'geocode' && /^[A-Z]{4}\d{4}$/.test(String(body.q || '').toUpperCase()) ? String(body.q).toUpperCase() : '';
+  return geoHereFetch(path, body).then(function (j) {
+    if (code && !(j.results || []).length && GEO_SHORT_DEMO[code]) { const d = GEO_SHORT_DEMO[code]; j.results = [{ latitude: d[0], longitude: d[1], display_name: code }]; }
+    return j;
+  }).catch(function (err) { if (err && err.name === 'TypeError') GEO_HERE_OFF = true; return geoOsmFetch(path, body); });
+}
+function geoOsmFetch(path, body) {
   const N = 'https://nominatim.openstreetmap.org/', q = function (o) { return Object.keys(o).filter(function (k) { return o[k] !== undefined && o[k] !== ''; }).map(function (k) { return k + '=' + encodeURIComponent(o[k]); }).join('&'); };
   const J = function (u) { return fetch(u).then(function (r) { return r.json(); }); };
   const rev = function (la, lo, z) { return J(N + 'reverse?' + q({ format: 'jsonv2', lat: la, lon: lo, zoom: z, addressdetails: 1, 'accept-language': 'ar' })); };
@@ -12046,7 +12069,7 @@ function geoPick(o) {
     const c = o.center || [24.7136, 46.6753];
     const m = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView(c, o.center ? 16 : 11);
     /* بلاطات HERE عبر وسيط الخادم بتوكن قصير العمر — يُجدَّد قبل انتهائه */
-    const tl = L.tileLayer('', { maxZoom: GEO_SAMPLE() ? 19 : 20, attribution: GEO_SAMPLE() ? '© OpenStreetMap — للعيّنة؛ المنصة تستخدم HERE' : '© HERE' }).addTo(m);
+    const tl = L.tileLayer('', { maxZoom: GEO_SAMPLE() ? 19 : 20, attribution: GEO_SAMPLE() && GEO_HERE_OFF ? '© OpenStreetMap — للعيّنة' : '© HERE' }).addTo(m);
     const tok = function () { geoFetch('map-token', { minutes: 30 }).then(function (j) { let u = j.template && /\{z\}/.test(j.template) ? j.template : '/api/geo/tile/{z}/{x}/{y}.png?t=' + encodeURIComponent(j.token || ''); if (Number(j.tile_size) === 512) { tl.options.tileSize = 512; tl.options.zoomOffset = -1; } tl.setUrl(u); setTimeout(tok, 25 * 60 * 1000); })
       .catch(function () { GEO.err = 'تعذّر تحميل صور الخريطة الآن — يمكنك البحث أو استخدام «موقعي الآن».'; geoPaint(); }); };
     tok();
@@ -13261,7 +13284,7 @@ function geoLayerSet(j) {
   if (GEO_SAMPLE() && !L.map) return { map: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max: 19, attr: '© OpenStreetMap' },
     sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', max: 19, attr: '© Esri' },
     topo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', max: 17, attr: '© OpenTopoMap · © OpenStreetMap' }, traffic: null, prov: 'osm' };
-  const one = function (u) { return u ? { url: u, max: 20, attr: '© HERE' } : null; };
+  const one = function (u) { return u ? { url: u, max: 20, attr: '© HERE', ts: Number(j && j.tile_size) === 512 ? 512 : 256 } : null; };
   return { map: one(L.map || tpl), sat: one(L.sat), topo: one(L.topo), traffic: one(L.traffic), prov: 'here' };
 }
 /* نافذة الخريطة — تُبنى مرة واحدة خارج دورة الرسم فلا تُعاد الخريطة مع كل تحديث.
@@ -13383,16 +13406,16 @@ function rvPick(o) {
       b.addEventListener('click', function () { RVL.layer = g[0]; setBase(); paintLayers(); }); return b; })));
     const tOn = !!RVL.traffic && !!LS.traffic, tb = e('button', { type: 'button', class: 'rvm-lay-tg' + (tOn ? ' is-on' : ''), disabled: !LS.traffic, 'aria-pressed': tOn ? 'true' : 'false' }, [frag(ui('car', 18)), e('span', {}, 'حركة المرور'), e('i', { 'aria-hidden': 'true' })]);
     tb.addEventListener('click', function () { RVL.traffic = !RVL.traffic; setTraffic(); paintLayers(); }); lay.appendChild(tb);
-    if (LS.prov === 'osm') lay.appendChild(e('small', {}, 'العيّنة على طبقات مفتوحة مؤقّتًا — حركة المرور متاحة مع HERE.'));
+    if (LS.prov === 'osm') lay.appendChild(e('small', {}, 'تعذّر الوصول إلى HERE الآن — العيّنة على طبقات مفتوحة، وحركة المرور متاحة مع HERE.'));
   }
   bLay.addEventListener('click', function () { const s = lay.style.display === 'none'; lay.style.display = s ? 'grid' : 'none'; bLay.classList.toggle('is-on', s); if (s) paintLayers(); });
   function setBase() {
     if (!map || !LS) return; const k = LS[RVL.layer || 'map'] ? (RVL.layer || 'map') : 'map', d = LS[k];
-    if (base) map.removeLayer(base); base = window.L.tileLayer(d.url, { maxZoom: d.max, subdomains: 'abc', attribution: '' }).addTo(map); base.bringToBack();
-    if (map.getZoom() > d.max) map.setZoom(d.max); map.options.maxZoom = d.max; attr.textContent = d.attr + (LS.prov === 'osm' ? ' — للعيّنة' : '');
+    if (base) map.removeLayer(base); base = window.L.tileLayer(d.url, { maxZoom: d.max, subdomains: 'abc', attribution: '', tileSize: d.ts || 256, zoomOffset: d.ts === 512 ? -1 : 0 }).addTo(map); base.bringToBack();
+    if (map.getZoom() > d.max) map.setZoom(d.max); map.options.maxZoom = d.max; attr.textContent = d.attr + (LS.prov === 'osm' ? ' — للعيّنة (HERE غير متاح الآن)' : '');
     mask.classList.toggle('is-sat', k === 'sat');
   }
-  function setTraffic() { if (!map || !LS) return; if (trf) { map.removeLayer(trf); trf = null; } if (RVL.traffic && LS.traffic) trf = window.L.tileLayer(LS.traffic.url, { maxZoom: 20, opacity: .9 }).addTo(map); }
+  function setTraffic() { if (!map || !LS) return; if (trf) { map.removeLayer(trf); trf = null; } if (RVL.traffic && LS.traffic) trf = window.L.tileLayer(LS.traffic.url, { maxZoom: 20, opacity: .9, tileSize: LS.traffic.ts || 256, zoomOffset: LS.traffic.ts === 512 ? -1 : 0 }).addTo(map); }
   const fmtAcc = (m) => (m >= 1000 ? (Math.round(m / 100) / 10) + ' كم' : m + ' متر');
   function locate(auto) {
     if (!navigator.geolocation) { if (!auto) setNote('warn', 'المتصفّح لا يدعم قراءة الموقع — حدّد موقعك على الخريطة' + (o.shortAddr ? ' أو أدخل العنوان المختصر.' : '.')); return; }
