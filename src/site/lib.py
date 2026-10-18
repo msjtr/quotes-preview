@@ -42,7 +42,7 @@ def shb(icon, title, sub='', extra=''):
 
 def vmedia(name):
     """video with wide (8:3 / hero 64:27) and mobile (1:1 / hero 4:5) renders; source chosen at runtime"""
-    return (f'<video muted loop playsinline preload="none" poster="vid/{name}.jpg" data-w="vid/{name}.mp4" data-m="vid/{name}-m.mp4" '
+    return (f'<video muted loop playsinline preload="none" poster="vid/{name}.jpg" data-w="https://media.tera-services.com.sa/site/{name}.mp4?v=1" data-m="https://media.tera-services.com.sa/site/{name}-m.mp4?v=1" '
             f'data-pw="vid/{name}.jpg" data-pm="vid/{name}-m.jpg"></video>')
 
 def vid(name, cls=''):

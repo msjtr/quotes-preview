@@ -18301,7 +18301,7 @@ const SG_GUIDES = [['Google Authenticator', [['vid/ga-icon.webp', 'حمّل ال
     ['vid/ms-add.webp', 'اختر نوع الحساب', 'اختر «آخر (Google، Facebook، إلخ)» — النوع المناسب لحساب تيرا — ثم تفتح الكاميرا. وإن كنت تتصفح من الجوال نفسه فاختر الإدخال اليدوي والصق المفتاح.'], ['', 'امسح الرمز', 'وجّه الكاميرا إلى رمز QR الظاهر عند التهيئة.'], ['', 'أكّد هنا', 'اكتب الرمز المكوّن من 6 أرقام في خانة التأكيد فيتفعّل فورًا.']]]];
 function sgVideo(k) {
   const m = typeof matchMedia === 'function' && matchMedia('(max-width: 640px)').matches;
-  return e('div', { class: 'sg-vid' }, [e('video', { src: 'vid/' + k + (m ? '-m' : '') + '.mp4', poster: 'vid/' + k + (m ? '-m' : '') + '.jpg', controls: '', playsinline: '', preload: 'none', 'aria-label': 'فيديو الشرح' })]);
+  return e('div', { class: 'sg-vid' }, [e('video', { src: 'https://media.tera-services.com.sa/site/' + k + (m ? '-m' : '') + '.mp4?v=1', poster: 'vid/' + k + (m ? '-m' : '') + '.jpg', controls: '', playsinline: '', preload: 'none', 'aria-label': 'فيديو الشرح' })]);
 }
 function sgAuthGuide() {
   let on = 0; const box = e('div', { class: 'sg-gd' });
