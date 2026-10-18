@@ -11434,7 +11434,7 @@ const MEM_FILM = {
       const f = J.film, st = f ? f.status : 'none', left = Number(J.left == null ? 4 : J.left);
       let h = '', p = '', acts = '', side = '';
       if (st === 'queued' || st === 'rendering') {
-        h = 'فيلمك قيد التجهيز'; p = 'طلبتَه في <bdi dir="ltr">' + day(f.requested_at) + '</bdi>. يستغرقُ التجهيزُ عادةً دقائق، وتصلك رسالة «جُهِّز فيلمك» بالبريد وواتساب فور جاهزيته.';
+        h = 'فيلمك قيد التجهيز'; p = f.auto ? 'بدأنا تجهيزه باسمك عند تدشين حسابك، ويظهر هنا خلال دقائق.' : 'طلبتَه في <bdi dir="ltr">' + day(f.requested_at) + '</bdi>. يستغرقُ التجهيزُ عادةً دقائق، وتصلك رسالة «جُهِّز فيلمك» بالبريد وواتساب فور جاهزيته.';
         side = '<div class="tfm-run" aria-hidden="true"><i></i></div>';
         acts = '<button type="button" class="lux-btn" data-fm="ref">' + glyph('arrows-clockwise') + 'تحديث الحالة</button>';
       } else if (st === 'ready' && f.files && f.files.landscape) {
@@ -11561,7 +11561,8 @@ function launchFilm(m, onDone, opt) {
   const replay = !!(opt && opt.replay);
   let marked = false;
   const mark = function () { if (replay || marked) return; marked = true; rpc('my_launch_done').catch(function () { /* */ }); };
-  filmPlayer({ l: FILM_LAUNCH.l, p: FILM_LAUNCH.p, skipAfter: replay ? 0 : 10, title: 'فيلم التدشين',
+  const own = opt && opt.files && opt.files.landscape ? opt.files : null; /* v326: فيلمه باسمه إن كان جاهزًا */
+  filmPlayer({ l: own ? own.landscape : FILM_LAUNCH.l, p: own ? own.portrait : FILM_LAUNCH.p, poster: own ? { l: own.landscape_poster, p: own.portrait_poster } : null, skipAfter: replay ? 0 : 10, title: 'فيلم التدشين',
     onDone: function () { mark(); CACHE = null; if (typeof onDone === 'function') onDone(); },
     onError: function () { launchFilmCode(m, onDone, opt); } });
 }
@@ -16188,7 +16189,8 @@ function liveFilmAuto() {
   const m = window.__LIVE_MEM;
   liveSb('rpc/my_launch_film', { body: {} }).catch(function () { return null; }).then(function (j) {
     if (j && j.film_on === false) { window.__TMRPC('my_launch_done').catch(function () { /* */ }); return; }
-    setTimeout(function () { TM.launchFilm(m, function () { try { m.launch_pending = false; draw(); } catch (err) { void err; } }); }, 500);
+    const f = j && j.film, own = f && f.status === 'ready' && f.files && f.files.landscape ? f.files : null;
+    setTimeout(function () { TM.launchFilm(m, function () { try { m.launch_pending = false; draw(); } catch (err) { void err; } }, own ? { files: own } : null); }, 500);
   });
 }
 /* «إعدادات تدشين الحساب › أفلام التدشين»: مكتبة الأفلام الأربعة من R2 بمدة مفتوحة، وطلبات «فيلمك باسمك» */
@@ -16218,7 +16220,7 @@ function lvFilmReqs() {
     const s = FLR_ST[r.status] || [r.status, null], x = r.files || {};
     return e('div', { class: 'flib-r' }, [
       e('div', { class: 'flib-rn' }, [e('b', {}, r.name || '—'), e('small', { dir: 'ltr' }, [r.tera_id || '', r.requested_at ? ' · ' + String(r.requested_at).slice(0, 10) : '', r.expires_at && r.status === 'ready' ? ' → ' + String(r.expires_at).slice(0, 10) : ''].join(''))]),
-      DS.badge(s[0], s[1]), r.test ? DS.badge('تجريبي', 'info') : null,
+      DS.badge(s[0], s[1]), r.test ? DS.badge('تجريبي', 'info') : null, r.auto ? DS.badge('تلقائي عند التدشين', null) : null,
       r.status === 'ready' && x.landscape ? e('button', { type: 'button', class: 'flib-mini', onClick: function () { filmPlayer({ l: x.landscape, p: x.portrait, poster: { l: x.landscape_poster, p: x.portrait_poster }, skipAfter: 0, title: 'فيلم ' + (r.name || '') }); } }, 'مشاهدة') : null,
       r.status === 'failed' && r.error ? e('small', { class: 'flib-er' }, String(r.error).slice(0, 90)) : null]);
   }));
@@ -16284,7 +16286,7 @@ function lvFilmTest() {
     e('div', { class: 'sys-form is-2 cu-bd-form' }, [
       DS.editField('الاسم بالعربي', inp('name_ar')), DS.editField('الاسم بالإنجليزي', inp('name_en', 'ltr')),
       DS.editField('المستوى', tierSel), DS.editField('رقم العضوية', inp('member_no', 'ltr'))]),
-    e('small', { class: 'cu-dr-hint' }, 'يُولَّد في GitHub Actions بالمقاسين 1920×1080 و1080×1920، ويستغرق عادةً بين 10 و20 دقيقة. الحالة تتحدّث تلقائيًا.'),
+    e('small', { class: 'cu-dr-hint' }, 'يُولَّد في GitHub Actions بالمقاسين 1920×1080 و1080×1920، على 6 أجهزة في وقت واحد، ويستغرق عادةً حوالي 5–7 دقائق. الحالة تتحدّث تلقائيًا.'),
     FLT.err ? e('span', { class: 'cu-err', role: 'alert' }, FLT.err) : null,
     e('div', { class: 't2-pb-actions' }, [
       DS.button(FLT.busy ? 'جارٍ الإرسال…' : run ? 'قيد التوليد…' : 'ولّد فيلمًا تجريبيًا', { tone: 'primary', ui: 'film-strip', disabled: lock, onClick: gen }),
