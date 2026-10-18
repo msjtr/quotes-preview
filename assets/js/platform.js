@@ -12859,6 +12859,262 @@ function dashPage() {
 const NAV_ADM = [['الأساسي', [['adm-home', 'لوحة المشرف']]], ['الأقسام', [['cu', 'قسم العملاء'], ['fin', 'قسم المالية'], ['cpg', 'صفحة العميل'], ['comm', 'التواصل المباشر'], ['soon-emp', 'الموظفون'], ['soon-par', 'الشركاء'], ['soon-mkt', 'المسوّقون']]], ['الإعدادات', [['sys', 'إعدادات النظام']]]];
 const NAV = [['الأساسي', [['dash', 'لوحتي الرئيسية'], ['profile', 'ملفي الشخصي'], ['shield', 'مركزُ الأمان']]], [null, [['store', 'المتجر'], ['devices', 'سوق الأجهزة'], ['services', 'خدماتي'], ['picks', 'مختاراتي'], ['mail', 'مركز المراسلات'], ['bell', 'مركز الإشعارات'], ['member', 'العضوية']]]];
 const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخصي', shield: 'مركزُ الأمان', bell: 'مركز الإشعارات', member: 'العضوية', points: 'نقاطي', more: 'الأقسام' };
+/* =============================== v329 — «للمراجعة» (المعاينة فقط) ===============================
+   تصوّرات تفاعلية للاعتماد، كل تصوّر في تبويب: نموذج التحديث · الملف والعنوان حسب الإقامة · ربط الواتساب · رسالة «جُهِّز فيلمك».
+   بمكوّنات المنصة نفسها (DS · formSec · otpBox · segBoxes · tile) وألوان الهوية وأيقوناتها؛ لا تُرسل شيئًا ولا تظهر في منفذَي الاختبار والرئيسي. */
+const RV_ON = !document.documentElement.classList.contains('tq-live');
+const RV = { tab: 'upd', toast: '', dlg: null };
+try { RV.tab = sessionStorage.getItem('tera-rv-tab') || 'upd'; } catch (err) { void err; }
+const RV_TABS = [['upd', 'نموذج التحديث', 'newq'], ['addr', 'الملف والعنوان حسب الإقامة', 'pin'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film']];
+function rvGo(t) { RV.tab = t; RV.toast = ''; try { sessionStorage.setItem('tera-rv-tab', t); } catch (err) { void err; } draw(); toTop(); }
+function rvToast(t) { RV.toast = t; draw(); }
+const rvBadge = (t, tone) => DS.badge(t, tone);
+const rvRow = (kids) => e('div', { class: 'rv-fa' }, kids.filter(Boolean));
+function rvSec(title, kids, o, count, badge) { const x = formSec(title, '', kids, o), tx = x.querySelector('.t2-sec-tx'); if (count) tx.appendChild(e('span', { class: 'lv-cnt' }, count)); if (badge) { const h = x.querySelector(':scope > .t2-sec-h'), c = h.querySelector('.t2-sec-c'); h.insertBefore(badge, c); } return x; }
+/* التعليمات: أول الصفحة بعنوان مميز، مغلقة ويفتحها المستخدم */
+function rvIns(key, title, rows) {
+  return e('div', { class: 'rv-ins' }, formSec(title, 'اضغط للعرض · تنطبق على كل الأقسام', [e('dl', { class: 'rv-ins-l' }, rows.map(function (r) { return [e('dt', {}, [frag(ui(r[2] || 'info', 16)), r[0]]), e('dd', {}, r[1])]; }))], { key: 'rv-ins-' + key, ic: 'info' }));
+}
+function rvOverlay() {
+  document.querySelectorAll('.ov.rv-ov').forEach(function (x) { x.remove(); });
+  const d = RV.dlg; if (!d) return;
+  const host = document.querySelector('#pv-host .t2') || document.body;
+  const close = function (msg) { RV.dlg = null; rvOverlay(); if (msg) rvToast(msg); };
+  host.appendChild(e('div', { class: 'ov rv-ov', role: 'dialog', 'aria-modal': 'true', 'aria-label': d.title, onClick: function (ev) { if (ev.target.classList.contains('ov')) close(d.noMsg); } }, e('div', { class: 'ov-b rv-dlg' }, [
+    frag(tile(d.ic || 'note')), e('b', {}, d.title), d.body ? e('span', {}, d.body) : null, d.kids || null,
+    e('div', { class: 'ov-a' }, [DS.button(d.no || 'لا', { onClick: function () { close(d.noMsg); } }), DS.button(d.yes || 'نعم', { tone: 'primary', onClick: function () { const m = d.onYes ? d.onYes() : ''; close(m); } })])])));
+}
+
+/* ---------- ١) نموذج التحديث / التسجيل الجديد ---------- */
+const RVU_SECS = [['personal', 'profile'], ['address', 'pin'], ['contact', 'phone'], ['emergency', 'people'], ['bank', 'bank']];
+const RVU_EMPTY = { name_en: 1, doc_no: 1, em_name: 1, em_phone: 1 };
+const RVU = { st: 'draft', view: 'form', f: {}, docs: { id: 'id.pdf', addr: '', iban: 'iban.pdf' }, sec: { wa: false, auth: false, mail: true }, ack: false, no: '', at: null, back: { doc_exp: 'التاريخ لا يطابق صورة الهوية المرفقة.', 'doc:id': 'الصورة غير واضحة — أرفق صورة أوضح للوجهين.' } };
+function rvuInit() {
+  if (RVU.ok) return; RVU.ok = true;
+  RVU_SECS.forEach(function (s) { lvFlds(s[0]).forEach(function (f) { RVU.f[f[0]] = { v: RVU_EMPTY[f[0]] ? '' : f[3], d: undefined, ed: false, nv: '' }; }); });
+}
+const rvuVal = (k) => { const s = RVU.f[k]; return s ? (s.d !== undefined ? s.d : s.v) : ''; };
+function rvuStats(sec) { const fl = lvFlds(sec), done = fl.filter(function (f) { return String(rvuVal(f[0]) || '').trim(); }).length, dr = fl.filter(function (f) { return RVU.f[f[0]].d !== undefined; }).length; return { n: fl.length, done: done, dr: dr }; }
+function rvuPct() {
+  let n = 0, d = 0; RVU_SECS.forEach(function (s) { const t = rvuStats(s[0]); n += t.n; d += t.done; });
+  ['id', 'addr', 'iban'].forEach(function (k) { n++; if (RVU.docs[k]) d++; }); ['wa', 'auth', 'mail'].forEach(function (k) { n++; if (RVU.sec[k]) d++; });
+  return { pct: Math.round(d / n * 100), n: n, d: d };
+}
+const rvuLocked = (k) => RVU.st === 'recv' || (RVU.st === 'sent') || (RVU.st === 'back' && !RVU.back[k]);
+function rvuSave(k, label) {
+  const s = RVU.f[k], nv = String(s.nv || '').trim(), old = rvuVal(k);
+  if (!nv) { rvToast('أدخل «' + label + '» ثم اضغط حفظ.'); return; }
+  if (!String(old || '').trim()) { s.d = nv; s.ed = false; rvToast('تم الحفظ — أُضيف «' + label + '» إلى مسودتك'); return; }
+  if (nv === String(old)) { s.ed = false; rvToast('لم يتم تغيير شيء'); return; }
+  RV.dlg = { ic: 'note', title: 'تأكيد تعديل البيانات', body: 'هل تؤكد الاستمرار في تعديل البيانات؟', yes: 'نعم، أؤكد', no: 'لا', noMsg: 'لم يتم تغيير شيء',
+    kids: e('div', { class: 'rv-cmp' }, [e('div', { class: 'is-old' }, [e('small', {}, 'السابق'), e('b', {}, String(old))]), e('div', { class: 'is-new' }, [e('small', {}, 'الجديد'), e('b', {}, nv)])]),
+    onYes: function () { s.d = nv; s.ed = false; draw(); return 'تم التأكيد — حُفظ التعديل في مسودتك'; } };
+  s.ed = false; draw();
+}
+function rvuField(f) {
+  const k = f[0], label = f[1], req = !!f[2], opts = f[4], s = RVU.f[k], val = rvuVal(k), has = String(val || '').trim() !== '';
+  const lock = rvuLocked(k), note = RVU.st === 'back' && RVU.back[k];
+  const tag = lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب تعديله', 'danger') : s.d !== undefined ? rvBadge('مسودة محفوظة', 'info') : !has ? rvBadge(req ? 'ناقص' : 'اختياري', req ? 'warn' : null) : rvBadge('معتمد', 'ok');
+  const head = e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [label, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), tag]);
+  if (!lock && (s.ed || !has)) {
+    const ctl = Array.isArray(opts) ? DS.select({ value: s.nv || val || '', options: opts.map(function (o) { return [o, o]; }), onChange: function (v) { s.nv = v; } })
+      : opts === 'date' ? DS.input({ type: 'date', value: s.nv || val || '', onInput: function (v) { s.nv = v; } })
+      : DS.input({ value: s.nv !== '' ? s.nv : (s.ed ? val : ''), dir: /en$|iban|phone|email|zip|bno|ext|short/.test(k) ? 'ltr' : null, placeholder: has ? '' : 'أدخل ' + label, onInput: function (v) { s.nv = v; } });
+    if (!s.nv && s.ed) s.nv = val;
+    return e('div', { class: 'rv-f is-edit' + (note ? ' is-back' : '') }, [head, note ? e('p', { class: 'rv-note' }, [frag(ui('chat-circle-dots', 14)), 'ملاحظة الفريق: ' + note]) : null, ctl,
+      rvRow([DS.button('حفظ', { tone: 'primary', size: 'sm', ui: 'check', onClick: function () { rvuSave(k, label); } }), s.ed ? DS.button('إلغاء', { size: 'sm', onClick: function () { s.ed = false; s.nv = ''; draw(); } }) : null])]);
+  }
+  return e('div', { class: 'rv-f' + (s.d !== undefined ? ' is-draft' : '') }, [head, e('div', { class: 'rv-fv' }, rvLtr(k, val)),
+    lock ? null : rvRow([DS.button('تعديل', { size: 'sm', ui: 'pencil-simple', onClick: function () { s.ed = true; s.nv = val; draw(); } }),
+      s.d !== undefined ? DS.button('تراجع عن التعديل', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { s.d = undefined; s.nv = ''; rvToast('تم التراجع — عادت القيمة السابقة'); } }) : null])]);
+}
+function rvLtr(k, v) { return /en$|iban|phone|email|zip|bno|ext|short|dob|exp|doc_no/.test(k) ? ltr(String(v)) : String(v); }
+function rvuDocs() {
+  return LVD.map(function (d) {
+    const k = d[0], f = RVU.docs[k], lock = rvuLocked('doc:' + k), note = RVU.st === 'back' && RVU.back['doc:' + k];
+    return e('div', { class: 'rv-f' + (note ? ' is-back' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [d[1], e('i', { 'aria-hidden': 'true' }, ' *')]), lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب إرفاقه', 'danger') : f ? rvBadge('مرفق', 'ok') : rvBadge('ناقص', 'warn')]),
+      note ? e('p', { class: 'rv-note' }, [frag(ui('chat-circle-dots', 14)), 'ملاحظة الفريق: ' + note]) : null,
+      f && !note ? DS.fileCard({ name: f, note: 'PDF · مرفق في مسودتك' }) : null,
+      lock ? null : rvRow([DS.button(f && !note ? 'استبدال' : 'إرفاق ملف', { size: 'sm', ui: 'upload-simple', onClick: function () { RVU.docs[k] = k + '-' + (f ? 'new' : 'doc') + '.pdf'; if (note) delete RVU.back['doc:' + k]; rvToast('تم الرفع — شكرًا، سيُراجع مع طلبك'); } })])]);
+  });
+}
+function rvuSecHead(sec) { const t = rvuStats(sec); return [fmtNum(t.done) + ' من ' + fmtNum(t.n) + ' مكتمل', t.dr ? ' · مسودة' : '']; }
+function rvuForm() {
+  rvuInit();
+  if (!/^rv-/.test(String(S.fsOne || ''))) S.fsOne = 'rv-personal';
+  const P = rvuPct(), profDone = RVU_SECS.every(function (s) { const t = rvuStats(s[0]); return t.done === t.n; }) && ['id', 'addr', 'iban'].every(function (k) { return RVU.docs[k]; });
+  const secDone = RVU.sec.wa && RVU.sec.auth && RVU.sec.mail, back = RVU.st === 'back';
+  const lvl = [{ label: 'ملفي الشخصي', state: profDone ? 'done' : 'now' }, { label: 'مركز الأمان', state: secDone ? 'done' : profDone ? 'now' : '' }, { label: 'المراجعة', state: profDone && secDone ? 'now' : '' }, { label: 'الإرسال', state: '' }];
+  const head = DS.panel(back ? 'استكمل طلبك المُعاد' : 'حدّث ملفك', back ? 'رقم الطلب ' + RVU.no + ' · عدّل البنود المطلوبة فقط ثم أعد الإرسال' : 'أكمل الأقسام ثم راجع طلبك وأرسله — تعديلاتك تُحفظ مسودةً تلقائيًا', [
+    e('div', { class: 'rv-prog' }, [e('div', { class: 'rv-ring', style: '--p:' + P.pct, role: 'img', 'aria-label': 'اكتمال الملف ' + P.pct + '%' }, e('span', {}, [e('b', {}, ltr(P.pct + '%')), e('small', {}, 'اكتمال')])),
+      e('div', { class: 'rv-lv' }, [DS.stepper(lvl, 'مستويات التقدّم'), e('div', { class: 'rv-bar', 'aria-hidden': 'true' }, e('b', { style: 'width:' + P.pct + '%' })), e('small', { class: 'rv-sm' }, fmtNum(P.d) + ' من ' + fmtNum(P.n) + ' بندًا')])])],
+    [rvBadge(back ? 'مُعاد للاستكمال' : 'مسودة', back ? 'danger' : 'info'), DS.button('راجع الطلب', { size: 'sm', ui: 'magnifying-glass', onClick: function () { RVU.view = 'review'; draw(); toTop(); } }),
+      DS.button(back ? 'أعد الإرسال' : 'تأكيد وأرسل', { tone: 'primary', size: 'sm', ui: 'paper-plane-tilt', onClick: function () { RVU.view = 'review'; draw(); toTop(); } })]);
+  const secs = RVU_SECS.map(function (s, i) {
+    const P0 = LVP[s[0]], t = rvuStats(s[0]);
+    return rvSec(P0.t, lvFlds(s[0]).map(rvuField), { one: 'rv-' + s[0], ic: s[1] }, fmtNum(t.done) + ' من ' + fmtNum(t.n) + ' مكتمل', rvBadge(RVU.st === 'back' && lvFlds(s[0]).some(function (f) { return RVU.back[f[0]]; }) ? 'مطلوب' : t.dr ? 'مسودة' : t.done === t.n ? 'مكتمل' : 'ناقص', RVU.st === 'back' && lvFlds(s[0]).some(function (f) { return RVU.back[f[0]]; }) ? 'danger' : t.dr ? 'info' : t.done === t.n ? 'ok' : 'warn'));
+  });
+  const dn = ['id', 'addr', 'iban'].filter(function (k) { return RVU.docs[k]; }).length, dback = RVU.st === 'back' && Object.keys(RVU.back).some(function (k) { return /^doc:/.test(k); });
+  secs.push(rvSec('المستندات', rvuDocs(), { one: 'rv-docs', ic: 'files' }, fmtNum(dn) + ' من 3 مرفقة', rvBadge(dback ? 'مطلوب' : dn === 3 ? 'مكتمل' : 'ناقص', dback ? 'danger' : dn === 3 ? 'ok' : 'warn')));
+  const shieldItem = function (k, t, d, ic, act) {
+    const on = RVU.sec[k];
+    return rvSec(t, [e('div', { class: 'rv-f' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, d), on ? rvBadge(k === 'wa' ? 'مربوط' : 'مفعّل', 'ok') : rvBadge('ناقص', 'warn')]),
+      on || RVU.st === 'recv' ? null : rvRow([DS.button(act, { tone: 'primary', size: 'sm', ui: k === 'wa' ? 'chat-circle-dots' : 'shield-check', onClick: k === 'wa' ? function () { rvGo('wa'); } : function () { RVU.sec[k] = true; rvToast('تم الحفظ — شكرًا، فُعّلت وسيلة المصادقة'); } })])])], { one: 'rv-sec-' + k, ic: ic }, null, on ? rvBadge(k === 'wa' ? 'مربوط' : 'مفعّل', 'ok') : rvBadge('ناقص', 'warn'));
+  };
+  return [head,
+    e('div', { class: 'rv-sech' }, [frag(tile('profile')), e('div', {}, [e('b', {}, 'القسم 1 · ملفي الشخصي'), e('small', {}, 'بياناتك الشخصية والعنوان والتواصل والطوارئ والحساب البنكي والمستندات')])]),
+    e('div', { class: 'rv-acc' }, secs),
+    e('div', { class: 'rv-sech' }, [frag(tile('shield')), e('div', {}, [e('b', {}, 'القسم 2 · مركز الأمان'), e('small', {}, 'ربط الواتساب ووسائل المصادقة والتحقق عند الدخول')])]),
+    e('div', { class: 'rv-acc' }, [shieldItem('wa', 'ربط رقم الواتساب', 'شرط لإرسال ملفك للتوثيق', 'wa', 'ابدأ الربط'), shieldItem('auth', 'وسيلة مصادقة واحدة على الأقل', 'تطبيق المصادقة أو الرقم الإضافي', 'key', 'تفعيل'), shieldItem('mail', 'التحقق بالبريد عند كل دخول', 'يصلك رمز على بريدك عند كل دخول', 'email', 'تفعيل')]),
+    DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
+}
+function rvuChanges() {
+  const out = [];
+  RVU_SECS.forEach(function (s) { lvFlds(s[0]).forEach(function (f) { const st = RVU.f[f[0]]; if (st.d !== undefined) out.push([LVP[s[0]].t, f[1], st.v, st.d]); }); });
+  return out;
+}
+function rvuReview() {
+  const ch = rvuChanges(), back = RVU.st === 'back';
+  const rows = ch.length ? ch.map(function (c) { return e('div', { class: 'rv-chg' }, [e('div', {}, [e('small', {}, c[0]), e('b', {}, c[1])]), e('div', { class: 'rv-cmp is-inline' }, [e('div', { class: 'is-old' }, [e('small', {}, 'السابق'), e('b', {}, c[2] ? String(c[2]) : '—')]), e('div', { class: 'is-new' }, [e('small', {}, 'الجديد'), e('b', {}, String(c[3]))])])]); })
+    : [DS.emptyState({ icon: 'note', title: 'لا تعديلات بعد', body: 'عدّل أي حقل واحفظه ليظهر هنا.' })];
+  const ack = e('input', { type: 'checkbox', onChange: function (ev) { RVU.ack = ev.target.checked; draw(); } }); if (RVU.ack) ack.checked = true;
+  return [DS.panel('راجع طلبك', fmtNum(ch.length) + ' تعديل · ' + fmtNum(['id', 'addr', 'iban'].filter(function (k) { return RVU.docs[k]; }).length) + ' مرفقات · مركز الأمان ' + (RVU.sec.wa && RVU.sec.auth ? 'مكتمل' : 'ناقص'), rows.concat([
+    DS.editField('أقرّ بصحة البيانات والمرفقات، وأعلم أن الطلب يُقفل للتعديل بعد استلامه', ack)]), [rvBadge('مسودة', 'info')]),
+    DS.actionBar({ buttons: [DS.button('رجوع للتعديل', { ui: 'pencil-simple', onClick: function () { RVU.view = 'form'; draw(); } }),
+      DS.button(back ? 'أعد الإرسال' : 'تأكيد وأرسل', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !RVU.ack, onClick: function () {
+        RVU.st = 'sent'; RVU.view = 'form'; RVU.no = RVU.no || 'UPD-2610-0042'; RVU.at = new Date(); RVU.ack = false; RV.toast = ''; draw(); toTop(); } })] })];
+}
+function rvuSent() {
+  const recv = RVU.st === 'recv', at = RVU.at || new Date();
+  const step = function (t, m, st) { return e('li', { class: 't2-tl-i' }, [e('span', { class: 't2-tl-dot is-' + (st === 'done' ? 'ok' : st === 'now' ? 'warn' : 'info') + (st ? '' : ' is-off') }), e('div', { class: 't2-tl-b' }, [e('div', { class: 't2-tl-t' }, t), e('div', { class: 't2-tl-m' }, m)])]); };
+  return [e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, recv ? 'طلبك قيد المراجعة' : 'أُرسل طلبك بنجاح'), e('p', {}, recv ? 'استلم الفريق طلبك — لا يمكن التعديل بعد الاستلام، وسنبلغك بالنتيجة بالبريد وواتساب.' : 'شكرًا لك — سنراجع طلبك ونبلغك بالنتيجة بالبريد وواتساب.'),
+      DS.fields([['رقم الطلب', ltr(RVU.no)], ['التاريخ', ltr(iso(at) + ' · ' + hm(at))], ['الحالة', recv ? rvBadge('قيد المراجعة · مقفل', null) : rvBadge('بانتظار الاستلام', 'warn')]])]),
+    DS.panel('مسار الطلب', null, [e('ul', { class: 't2-tl rv-tl' }, [step('أُرسل الطلب', iso(at) + ' · ' + hm(at), 'done'), step('استلام الفريق', recv ? 'استُلم — أُقفل الطلب للتعديل' : 'يمكنك تعديل الطلب حتى يُستلم', recv ? 'done' : 'now'),
+      step('المراجعة والتوثيق', 'مطابقة البيانات والمرفقات', recv ? 'now' : ''), step('الاعتماد أو الإعادة للاستكمال', 'تصلك النتيجة فورًا', '')])],
+      recv ? [rvBadge('مقفل', null)] : [DS.button('تعديل الطلب قبل الاستلام', { size: 'sm', ui: 'pencil-simple', onClick: function () { RVU.st = 'draft'; draw(); } })]),
+    DS.panel('محاكاة للمراجعة', 'أزرار للمعاينة فقط — لا تظهر للعميل', [rvRow([DS.button('استلام الفريق', { size: 'sm', onClick: function () { RVU.st = 'recv'; draw(); } }),
+      DS.button('إعادة الطلب للاستكمال', { size: 'sm', onClick: function () { RVU.st = 'back'; RVU.back = { doc_exp: 'التاريخ لا يطابق صورة الهوية المرفقة.', 'doc:id': 'الصورة غير واضحة — أرفق صورة أوضح للوجهين.' }; S.fsOne = 'rv-personal'; draw(); toTop(); } }),
+      DS.button('بدء التجربة من جديد', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVU.ok = false; RVU.f = {}; RVU.st = 'draft'; RVU.view = 'form'; RVU.no = ''; RVU.docs = { id: 'id.pdf', addr: '', iban: 'iban.pdf' }; RVU.sec = { wa: false, auth: false, mail: true }; draw(); toTop(); } })])])];
+}
+function rvUpd() {
+  const ins = rvIns('upd', 'تعليمات التحديث', [['الهدف', 'تحديث ملفك ليُوثَّق وتُفعَّل خدماتك.', 'flag'], ['كيف؟', 'أكمل كل قسم واحفظه، ثم «راجع الطلب» ← «تأكيد وأرسل».', 'list-checks'],
+    ['المسودة', 'تعديلاتك محفوظة ويمكنك تغييرها حتى يستلم الفريق طلبك، ثم يُقفل.', 'note-pencil'], ['الشروط', 'ربط الواتساب ووسيلة مصادقة واحدة على الأقل.', 'shield-check'], ['تنبيه', 'فريق تيرا لا يطلب كلمة مرورك ولا رموز التحقق.', 'warning']]);
+  if (RVU.st === 'sent' || RVU.st === 'recv') return [ins].concat(rvuSent());
+  if (RVU.view === 'review') return [ins].concat(rvuReview());
+  return [ins, RVU.st === 'back' ? DS.note('warn', 'أُعيد طلبك لاستكمال ' + fmtNum(Object.keys(RVU.back).length) + ' بنود', 'البنود المطلوبة مفتوحة للتعديل وعليها ملاحظة الفريق، وبقية الأقسام معتمدة ومقفلة.') : null].concat(rvuForm());
+}
+
+/* ---------- ٢) الملف الشخصي والعنوان حسب وضع الإقامة ---------- */
+const RVA = { res: 'sa', gin: 'out', v: {} };
+const RV_RES = [['sa', 'سعودي'], ['res', 'مقيم أجنبي'], ['gcc', 'خليجي'], ['nr', 'غير مقيم']];
+const RV_GCC = ['الإمارات', 'الكويت', 'البحرين', 'قطر', 'عُمان'];
+function rvaIn(k, label, o) {
+  o = o || {}; const v = RVA.v[k] !== undefined ? RVA.v[k] : (o.val || '');
+  const ctl = o.opts ? DS.select({ value: v, options: o.opts.map(function (x) { return [x, x]; }), onChange: function (x) { RVA.v[k] = x; } })
+    : o.date ? DS.input({ type: 'date', value: v, onInput: function (x) { RVA.v[k] = x; } })
+    : o.seg ? segBoxes({ label: label, segs: function () { return o.seg; }, get: function () { return String(RVA.v[k] !== undefined ? RVA.v[k] : (o.val || '')); }, set: function (x) { RVA.v[k] = x; } })
+    : DS.input({ value: v, dir: o.ltr ? 'ltr' : null, placeholder: o.ph || null, onInput: function (x) { RVA.v[k] = x; } });
+  return e('div', { class: 'rv-f is-edit' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [label, o.opt ? null : e('i', { 'aria-hidden': 'true' }, ' *')]), o.opt ? rvBadge('اختياري', null) : null]), ctl, o.hint ? e('small', { class: 'rv-sm' }, o.hint) : null]);
+}
+const rvaDoc = (t, h) => e('div', { class: 'rv-f' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [t, e('i', { 'aria-hidden': 'true' }, ' *')]), rvBadge('مطلوب', 'warn')]), e('small', { class: 'rv-sm' }, h), rvRow([DS.button('إرفاق ملف', { size: 'sm', ui: 'upload-simple', onClick: function () { rvToast('تم الرفع — شكرًا، سيُراجع مع طلبك'); } })])]);
+function rvaNational(res) {
+  return [res === 'res' ? DS.note('info', 'المقيم داخل المملكة يُدخل عنوانه الوطني السعودي', 'من تطبيق «سبل» أو «توكلنا».') : null,
+    rvRow([DS.button('املأ من موقعي', { size: 'sm', ui: 'map-pin', onClick: function () { rvToast('حُدّد الموقع — راجع الحقول وأكمل الناقص'); } })]),
+    rvaIn('short', 'العنوان المختصر', { val: res === 'sa' ? 'RHAA4821' : '', ltr: true, hint: '4 أحرف + 4 أرقام — يملأ بقية الحقول تلقائيًا' }),
+    rvaIn('region', 'المنطقة', { val: res === 'sa' ? 'منطقة حائل' : 'منطقة الرياض', opts: REGIONS }), rvaIn('city', 'المدينة', { val: res === 'sa' ? 'حائل' : 'الرياض' }), rvaIn('dist', 'الحي', { val: res === 'sa' ? 'النقرة' : 'العليا' }), rvaIn('street', 'الشارع', { val: res === 'sa' ? 'طريق الملك عبدالعزيز' : '' }),
+    e('div', { class: 'rv-2' }, [rvaIn('bno', 'رقم المبنى', { seg: [4], val: res === 'sa' ? '4821' : '' }), rvaIn('ext', 'الرقم الإضافي', { seg: [4], val: res === 'sa' ? '7316' : '' })]),
+    rvaIn('zip', 'الرمز البريدي', { seg: [5], val: res === 'sa' ? '55431' : '' }), rvaDoc('وثيقة العنوان الوطني', 'PDF من «سبل» أو «توكلنا»')];
+}
+function rvAddr() {
+  if (!/^rva-/.test(String(S.fsOne || ''))) S.fsOne = 'rva-p';
+  const res = RVA.res, gccOut = res === 'gcc' && RVA.gin === 'out';
+  const DOC = { sa: ['الهوية الوطنية', 'رقم الهوية الوطنية', '10 خانات تبدأ بـ 1', 'صورة الهوية الوطنية (الوجهان)'], res: ['هوية مقيم', 'رقم الإقامة', '10 خانات تبدأ بـ 2', 'صورة الإقامة (الوجهان)'], gcc: ['الهوية الخليجية', 'رقم الهوية / الجواز', 'كما في الوثيقة', 'صورة الوثيقة'], nr: ['جواز السفر', 'رقم الجواز', 'كما في صفحة البيانات', 'صورة صفحة بيانات الجواز'] }[res];
+  const nat = { sa: 'السعودية', res: 'مصر', gcc: 'الكويت', nr: 'مصر' }[res];
+  const personal = rvSec('المعلومات الشخصية', [
+    rvaIn('name_ar', 'الاسم الكامل بالعربية', { val: 'يزيد معاويه سعيد خميس' }), rvaIn('name_en', 'الاسم الكامل بالإنجليزية', { ltr: true, ph: 'YAZEED MOAWIA KHAMIS' }),
+    rvaIn('nat', 'الجنسية', { val: nat, opts: NATS }), rvaIn('dob', 'تاريخ الميلاد', { date: true, val: '1992-03-14', hint: 'اختر ميلادي أو هجري — يُحوَّل تلقائيًا ويُعرض الاثنان' }),
+    res === 'sa' ? rvaIn('pob', 'مكان الميلاد', { val: 'حائل' }) : null, res === 'sa' ? rvaIn('rob', 'منطقة الميلاد', { val: 'منطقة حائل', opts: REGIONS }) : null,
+    res === 'gcc' || res === 'nr' ? rvaIn('iss', 'دولة الإصدار', { val: nat, opts: NATS }) : null,
+    rvaIn('doc_type', 'نوع الوثيقة', { val: DOC[0], opts: [DOC[0]] }), rvaIn('doc_no', DOC[1], res === 'sa' || res === 'res' ? { seg: [10], hint: DOC[2] } : { ltr: true, hint: DOC[2] }),
+    res === 'res' ? rvaIn('pass', 'رقم الجواز', { ltr: true, opt: true }) : null,
+    rvaIn('doc_exp', 'تاريخ انتهاء الوثيقة', { date: true, val: '2030-05-20' }), rvaDoc(DOC[3], 'PDF / JPG حتى 2 ميجابايت')], { one: 'rva-p', ic: 'idcard' }, 'الوثيقة: ' + DOC[0]);
+  let addr;
+  if (res === 'sa' || res === 'res' || (res === 'gcc' && RVA.gin === 'in')) addr = rvaNational(res === 'gcc' ? 'res' : res);
+  else if (gccOut) addr = [rvaIn('gc', 'الدولة', { val: 'الكويت', opts: RV_GCC }), rvaIn('gov', 'المحافظة / الإمارة', { val: 'حولي' }), rvaIn('gcity', 'المدينة / المنطقة', { val: 'السالمية' }),
+    e('div', { class: 'rv-2' }, [rvaIn('blk', 'القطعة / الحي', { val: '12' }), rvaIn('gst', 'الشارع / السكة', { val: 'سالم المبارك' })]),
+    e('div', { class: 'rv-2' }, [rvaIn('house', 'رقم المبنى / المنزل', { val: '34' }), rvaIn('pobx', 'الرمز البريدي / ص.ب', { opt: true, ltr: true })]),
+    rvaIn('civ', 'الرقم المدني / العنوان الآلي', { ltr: true }), rvaDoc('إثبات العنوان', 'مستند رسمي حديث · PDF / JPG')];
+  else addr = [rvaIn('ic', 'الدولة', { val: 'مصر', opts: NATS }), rvaIn('st2', 'الولاية / المحافظة', { val: 'القاهرة' }), rvaIn('icity', 'المدينة', { val: 'مدينة نصر' }),
+    rvaIn('l1', 'العنوان — السطر الأول', { val: '12 شارع عباس العقاد' }), rvaIn('l2', 'العنوان — السطر الثاني', { opt: true }), rvaIn('izip', 'الرمز البريدي', { ltr: true, val: '11765' }),
+    rvaDoc('إثبات العنوان', 'فاتورة خدمات أو كشف بنكي خلال آخر 3 أشهر'), DS.note('info', 'الجوال بمفتاح الدولة', 'يصل واتساب إلى الأرقام الدولية.')];
+  return [rvIns('addr', 'تعليمات الملف والعنوان', [['وضع الإقامة', 'يحدّد الوثيقة المطلوبة ونموذج العنوان المناسب لك.', 'identification-card'], ['التواريخ', 'تختار ميلادي أو هجري، ويُعرض الاثنان معًا.', 'calendar-blank'], ['المرفقات', 'PDF أو صورة واضحة حتى 2 ميجابايت للملف.', 'upload-simple']]),
+    DS.panel('وضع الإقامة', 'اختر وضعك ليتغيّر النموذج — للمراجعة: جرّب الأوضاع الأربعة', [DS.editField('وضع الإقامة', DS.select({ value: res, options: RV_RES, onChange: function (v) { RVA.res = v; RVA.v = {}; S.fsOne = 'rva-a'; draw(); } })),
+      res === 'gcc' ? DS.editField('مكان سكنك الحالي', DS.select({ value: RVA.gin, options: [['in', 'داخل المملكة'], ['out', 'خارج المملكة']], onChange: function (v) { RVA.gin = v; RVA.v = {}; draw(); } })) : null]),
+    e('div', { class: 'rv-acc' }, [personal, rvSec(gccOut ? 'العنوان في الدولة الخليجية' : res === 'nr' ? 'العنوان الدولي' : 'العنوان الوطني', addr, { one: 'rva-a', ic: 'pin' }, { sa: 'سعودي · العنوان الوطني', res: 'مقيم · العنوان الوطني', gcc: gccOut ? 'خليجي · خارج المملكة' : 'خليجي · داخل المملكة', nr: 'غير مقيم · عنوان دولي' }[res])]),
+    DS.actionBar({ buttons: [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: function () { rvToast('تم الحفظ — شكرًا لك، حُدّثت بياناتك في مسودة طلبك'); } })] })];
+}
+
+/* ---------- ٣) ربط الواتساب الجديد ---------- */
+const RVW = { st: 0, cc: '+966', num: '', pin: '', pin2: '', at: null };
+function rvWa() {
+  const steps = DS.stepper(['الرقم', 'رمز التحقق', 'رمز التعريف', 'تم'].map(function (l, i) { return { label: l, state: i < RVW.st ? 'done' : i === RVW.st ? 'now' : '' }; }), 'خطوات ربط الواتساب');
+  const ins = rvIns('wa', 'تعليمات ربط الواتساب', [['الهدف', 'ربط رقمك لتصلك رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا.', 'flag'], ['الخطوات', 'أدخل رقمك ← رمز من واتساب ← تحقق ← رمز التعريف ← حفظ.', 'list-checks'], ['شرط', 'ربط الواتساب شرط لإرسال ملفك للتوثيق.', 'shield-check'], ['تنبيه', 'لا تشارك رموز التحقق مع أحد — فريقنا لا يطلبها.', 'warning']]);
+  let body;
+  if (RVW.st === 0) body = DS.panel('اربط رقم واتساب', 'أدخل رقمك المسجّل في ملفك، وسيصلك رمز تحقق على واتساب', [steps,
+    e('div', { class: 'rv-ph' }, [DS.editField('مفتاح الدولة', DS.select({ value: RVW.cc, options: [['+966', '+966 السعودية'], ['+971', '+971 الإمارات'], ['+965', '+965 الكويت'], ['+973', '+973 البحرين'], ['+974', '+974 قطر'], ['+968', '+968 عُمان'], ['+20', '+20 مصر']], onChange: function (v) { RVW.cc = v; } })),
+      DS.editField('رقم الجوال', DS.input({ numeric: true, value: RVW.num, placeholder: '5XXXXXXXX', onInput: function (v) { RVW.num = v; } }))]), e('small', { class: 'rv-sm' }, 'بدون الصفر في البداية · يقبل الأرقام الدولية'),
+    DS.actionBar({ buttons: [DS.button('أرسل رمز التحقق عبر واتساب', { tone: 'primary', ui: 'chat-circle-dots', onClick: function () { if (String(RVW.num).replace(/\D/g, '').length < 8) { rvToast('أدخل رقمًا صحيحًا بدون الصفر.'); return; } RVW.st = 1; S.otpAt = null; RV.toast = ''; draw(); } })] })]);
+  else if (RVW.st === 1) body = DS.panel('أدخل رمز التحقق', 'أرسلنا رمزًا من 6 أرقام إلى واتساب ' + RVW.cc + ' ' + RVW.num + ' — يتحقق تلقائيًا عند اكتماله', [steps,
+    otpBox('wa', function () { RVW.st = 2; rvToast('تم التحقق من رقمك'); }, function () { RVW.st = 0; draw(); }),
+    e('div', { class: 'rv-wa' }, [e('small', {}, [frag(ui('device-mobile', 14)), 'يصل على واتساب من «منصة تيرا»']), e('p', {}, [e('b', { dir: 'ltr' }, '482913'), ' هو رمز التحقق لمنصة تيرا. صالح 5 دقائق. لا تشاركه مع أحد.'])])]);
+  else if (RVW.st === 2) {
+    const bad = RVW.pin.length === 4 && (/^(\d)\1{3}$/.test(RVW.pin) || '0123456789'.indexOf(RVW.pin) >= 0 || '9876543210'.indexOf(RVW.pin) >= 0);
+    body = DS.panel('أدخل رمز التعريف', 'رمز من 4 أرقام تختاره أنت، تذكره لفريق تيرا عند تواصلك معنا على واتساب ليتعرّف عليك', [steps,
+      DS.editField('رمز التعريف', segBoxes({ label: 'رمز التعريف', secret: true, segs: function () { return [1, 1, 1, 1]; }, get: function () { return RVW.pin; }, set: function (v) { RVW.pin = v.slice(0, 4); } })),
+      DS.editField('تأكيد رمز التعريف', segBoxes({ label: 'تأكيد رمز التعريف', secret: true, segs: function () { return [1, 1, 1, 1]; }, get: function () { return RVW.pin2; }, set: function (v) { RVW.pin2 = v.slice(0, 4); } })),
+      e('small', { class: 'rv-sm' }, 'لا يُقبل رمز متسلسل مثل 1234 ولا أرقام متكررة مثل 1111'), bad ? DS.note('warn', 'اختر رمزًا أصعب', 'الرمز سهل التخمين.') : null,
+      DS.actionBar({ buttons: [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: function () {
+        if (RVW.pin.length !== 4 || bad) { rvToast('أدخل رمز تعريف من 4 أرقام غير سهل التخمين.'); return; }
+        if (RVW.pin !== RVW.pin2) { rvToast('الرمزان غير متطابقين.'); return; }
+        RVW.st = 3; RVW.at = new Date(); RVU.sec.wa = true; rvToast('تم الحفظ'); } })] })]);
+  } else body = e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, 'شكرًا لك يا يزيد'),
+    e('p', {}, 'رُبط رقمك بحسابك بنجاح. ستصلك تنبيهات طلباتك ورموز التحقق على واتساب، ويتعرّف عليك فريقنا برمز التعريف.'),
+    DS.fields([['الرقم', ltr(RVW.cc + ' ' + RVW.num)], ['تاريخ الربط', ltr(iso(RVW.at) + ' · ' + hm(RVW.at))], ['رمز التعريف', '•••• محفوظ']]), steps,
+    rvRow([DS.button('العودة لطلب التحديث', { tone: 'primary', size: 'sm', ui: 'files', onClick: function () { rvGo('upd'); } }), DS.button('إعادة التجربة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVW.st = 0; RVW.num = ''; RVW.pin = ''; RVW.pin2 = ''; RVU.sec.wa = false; draw(); } })])]);
+  const rule = DS.panel('القاعدة نفسها لكل عمل يقوم به العميل', 'إدخال ← تحقق عند الحاجة ← حفظ ← «تم الحفظ» ← رسالة شكر بملخص ما تم', [DS.fields([['تحديث العنوان', 'تم الحفظ ← شكرًا، عنوانك محدَّث'], ['إضافة حساب بنكي', 'رمز تحقق ← تم الحفظ ← شكرًا'], ['رفع مستند', 'تم الرفع ← شكرًا، سنراجعه'], ['تغيير البريد', 'رمز على البريد الجديد ← تم الحفظ ← شكرًا'], ['طلب «فيلمك باسمك»', 'استلمنا طلبك ← متابعة حيّة ← جُهِّز فيلمك']])]);
+  return [ins, body, rule];
+}
+
+/* ---------- ٤) رسالة «جُهِّز فيلمك» ---------- */
+function rvFilm() {
+  const poster = IMG.logoWhite ? e('div', { class: 'rv-poster' }, [e('img', { src: IMG.logoWhite, alt: '' }), e('span', { class: 'rv-play', 'aria-hidden': 'true' }, frag(ui('caret-left', 26)))]) : null;
+  const mail = DS.panel('١ · البريد', 'قالب البريد الموحّد للمنصة — يتغيّر العنوان والمحتوى فقط', [e('div', { class: 'rv-mail' }, [
+    e('div', { class: 'rv-mail-h' }, [e('small', {}, 'من: منصة تيرا'), e('b', {}, 'يزيد، فيلمك باسمك جاهز')]),
+    e('div', { class: 'rv-mail-b' }, [e('h3', {}, 'لحظتك في تيرا… صارت فيلمًا'), poster,
+      e('p', {}, 'مرحبًا يزيد، صنعنا هذا الفيلم لك وحدك: بطاقتك تُحفَر باسمك بالليزر، ورصيدك يكتمل أمام عينيك، ومكانتك في تيرا تُعلَن كما تستحق.'),
+      e('p', {}, 'ليست رسالة ترحيبٍ عابرة… بل بدايةٌ تليق بك. شاهده الآن، واحتفظ به، وشاركه مع من تحب.'),
+      rvRow([DS.button('شاهد فيلمك الآن', { tone: 'primary', ui: 'film-strip' }), DS.button('تنزيل أفقي 1920×1080', { size: 'sm', ui: 'download-simple' }), DS.button('تنزيل طولي 1080×1920', { size: 'sm', ui: 'download-simple' })]),
+      e('small', { class: 'rv-sm' }, 'الرابط خاصٌّ بك ومتاحٌ 30 يومًا ثم يُحذف تلقائيًا، ويمكنك طلب نسخة جديدة من «فيلم التدشين» في ملفك الشخصي.')])])]);
+  const wa = DS.panel('٢ · واتساب', 'القالب المعتمد نفسه — تتغيّر الخانات فقط', [DS.fields([['الخانة 1', 'يزيد معاويه سعيد خميس'], ['الخانة 2', ltr('PRV-2610-0042')], ['الخانة 3', 'فيلمك باسمك جاهز'], ['الخانة 4', 'صنعناه لك وحدك: بطاقتك محفورة باسمك، وبدايتك في تيرا تليق بك'], ['الخانة 5', 'شاهده الآن واحتفظ به — الرابط متاح 30 يومًا'], ['الخانة 6', ltr('tera-services.com.sa/watch/#…')]]),
+    DS.note('info', 'الرابط يفتح فيلمه مباشرة', 'بدل صفحة الدخول — والخانات 3 إلى 5 تُعدَّل من نصوص الرسائل دون برمجة.')]);
+  const page = DS.panel('٣ · صفحة المشاهدة', 'تفتح من الرابط · لا تحمل أي بيانات — الاسم داخل الفيلم فقط', [e('div', { class: 'rv-watch' }, [e('b', {}, 'فيلمك باسمك'), e('small', {}, 'صُنع لك وحدك في منصة تيرا'), poster ? poster.cloneNode(true) : null,
+    rvRow([DS.button('تنزيل أفقي', { size: 'sm', ui: 'download-simple' }), DS.button('تنزيل طولي', { size: 'sm', ui: 'download-simple' })]), e('small', { class: 'rv-sm' }, 'متاح 30 يومًا · يُعرض بالمقاس المناسب لجهازك')])]);
+  return [rvIns('film', 'عن هذا التصوّر', [['الحالة', 'بانتظار اعتمادك — لا تُرسل أي رسالة من المعاينة.', 'info'], ['يشمل', 'الأفلام التي يطلبها العميل بنفسه؛ والتلقائية عند التدشين حسب قرارك.', 'film-strip']]), mail, wa, page];
+}
+
+function rvPage() {
+  const body = RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
+  setTimeout(rvOverlay, 0);
+  return [e('div', { class: 'rv-tabs' }, DS.tabs({ items: RV_TABS, value: RV.tab, onChange: rvGo })),
+    RV.toast ? e('div', { class: 'mb-toast', role: 'status' }, [frag(ui(/^(تم|أُرسل)/.test(RV.toast) ? 'check' : 'info', 16)), RV.toast]) : null].concat(body).filter(Boolean);
+}
+if (RV_ON) {
+  ACCT['rv-hub'] = rvPage; PAGES['rv-hub'] = 'للمراجعة';
+  document.querySelectorAll('.pv-bar button[data-rv]').forEach(function (b) { b.addEventListener('click', function () {
+    const app = document.querySelector('.pv-bar button[data-page="app"]'); if (app && !app.classList.contains('is-on')) app.click();
+    if (S.role !== 'client') setRole('client');
+    go('other', 'rv-hub'); toTop(); }); });
+}
 const navOf = () => S.role === 'admin' ? (typeof cuNavOf === 'function' && cuNavOf(S.other)) || (['cs-tickets', 'cs-ticket', 'cs-complaints'].indexOf(S.other) >= 0 ? 'cs-tickets' : ['cs-customers', 'cs-customer'].indexOf(S.other) >= 0 ? 'cs-customers' : S.other === 'cs-updates' ? 'cs-updates' : S.other === 'adm-home' ? 'adm-home' : 'cs') : S.tab === 'notif' ? 'bell' : S.tab === 'msg' ? 'mail' : S.tab === 'qreq' ? 'store' : (S.tab === 'svc' || S.tab === 'elig' || S.tab === 'qreq' || FIN[S.tab]) ? 'services' : S.tab === 'other' ? (LP[S.other] ? (function (r) { let x = S.other, g = 0; while (LP[x] && x !== 'devices' && x !== 'store' && g++ < 8) x = LP[x].up; if (r === 'base') { let y = S.other, g2 = 0; while (LP[y] && LP[y].up && LP[y].up !== 'base' && g2++ < 8) y = LP[y].up; return y === 'base' ? 'base' : y; } return x === 'devices' ? 'devices' : r === 'my-picks' ? 'picks' : r === 'contact' ? 'mail' : r === 'sv-new' ? 'custom' : r === 'products' || r === 'devices' || r === 'digital' ? 'store' : r; })(lvRoot(S.other)) : S.other) : 'dash';
 function shell() {
   const on = navOf();
