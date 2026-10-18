@@ -11863,15 +11863,17 @@ function lvSum(label, pill, tone, extra) { return e('section', { class: 't2-sc i
 
 /* =============================== ملفي الشخصي =============================== */
 /* [مفتاح، الاسم، مطلوب، القيمة، خيارات التعديل] — بيانات تجريبية مجهّلة */
-const NATS = ['السعودية', 'الإمارات', 'الكويت', 'البحرين', 'قطر', 'عُمان', 'مصر', 'الأردن', 'اليمن', 'السودان'];
+/* أسماء الدول الرسمية كما في النظام السابق (V1): الجنسية ومكان الميلاد ودولة العنوان */
+const NATS = ['المملكة العربية السعودية', 'الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', 'جمهورية مصر العربية'];
+const NATS_ADDR = ['المملكة العربية السعودية', 'دولة الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', 'جمهورية مصر العربية'];
 const BANKS = ['البنك الأهلي السعودي', 'مصرف الراجحي', 'بنك الرياض', 'البنك السعودي الأول', 'بنك البلاد', 'بنك الجزيرة', 'مصرف الإنماء', 'البنك العربي الوطني'];
 const LVP = {
-  personal: { t: 'المعلومات الشخصية', ic: 'profile', k: 'me-personal', groups: [['المعلومات الأساسية', [['name_ar', 'الاسم الكامل بالعربية', 1, 'عميل تجريبي'], ['name_en', 'الاسم الكامل بالإنجليزية', 0, 'Demo Client'], ['nat', 'الجنسية', 1, 'السعودية', NATS], ['dob', 'تاريخ الميلاد', 1, '1992-03-14', 'date'], ['pob', 'مكان الميلاد', 1, 'حائل'], ['rob', 'منطقة الميلاد', 1, 'منطقة حائل', REGIONS]]],
-    ['الوثيقة', [['doc_type', 'نوع الوثيقة', 1, 'الهوية الوطنية', ['الهوية الوطنية', 'هوية مقيم', 'جواز السفر']], ['doc_no', 'رقم الوثيقة', 1, '1••• ••• •001'], ['doc_exp', 'تاريخ انتهاء الوثيقة', 1, '2030-05-20', 'date']]]] },
-  address: { t: 'العنوان', ic: 'pin', k: 'me-address', groups: [['العنوان الوطني', [['country', 'الدولة', 1, 'السعودية', NATS], ['region', 'المنطقة', 0, 'منطقة حائل', REGIONS], ['city', 'المدينة', 1, 'حائل'], ['dist', 'الحي', 1, 'النقرة'], ['street', 'الشارع', 1, 'طريق الملك عبدالعزيز'], ['bno', 'رقم المبنى', 1, '4821'], ['zip', 'الرمز البريدي', 1, '55431'], ['ext', 'الرقم الإضافي', 1, '7316'], ['short', 'العنوان المختصر', 0, '']]]] },
+  personal: { t: 'المعلومات الشخصية', ic: 'profile', k: 'me-personal', groups: [['المعلومات الأساسية', [['name_ar', 'الاسم الكامل بالعربية', 1, 'عميل تجريبي'], ['name_en', 'الاسم الكامل بالإنجليزية', 0, 'Demo Client'], ['nat', 'الجنسية', 1, 'المملكة العربية السعودية', NATS], ['dob', 'تاريخ الميلاد', 1, '1992-03-14', 'date'], ['pob', 'مكان الميلاد', 1, 'المملكة العربية السعودية', NATS], ['rob', 'منطقة الميلاد', 1, 'منطقة حائل', REGIONS]]],
+    ['الوثيقة', [['doc_type', 'نوع الوثيقة', 1, 'الهوية الوطنية', ['الهوية الوطنية', 'هوية مقيم', 'الهوية الخليجية', 'إثبات الهوية الوطنية', 'جواز السفر']], ['doc_no', 'رقم الوثيقة', 1, '1••• ••• •001'], ['doc_exp', 'تاريخ انتهاء الوثيقة', 1, '2030-05-20', 'date']]]] },
+  address: { t: 'العنوان', ic: 'pin', k: 'me-address', groups: [['العنوان الوطني', [['country', 'الدولة', 1, 'المملكة العربية السعودية', NATS_ADDR], ['region', 'المنطقة', 0, 'منطقة حائل', REGIONS], ['city', 'المدينة', 1, 'حائل'], ['dist', 'الحي', 1, 'النقرة'], ['street', 'الشارع', 0, 'طريق الملك عبدالعزيز'], ['bno', 'رقم المبنى', 1, '4821'], ['zip', 'الرمز البريدي', 1, '55431'], ['ext', 'الرقم الإضافي', 1, '7316'], ['short', 'العنوان المختصر', 0, '']]]] },
   contact: { t: 'بيانات التواصل', ic: 'phone', k: 'me-contact', groups: [['التواصل المباشر', [['phone', 'رقم الجوال', 1, '+966 5•• ••• •100', null, ['غير موثّق', 'warn']], ['email', 'البريد الإلكتروني', 1, 'cl•••@example.com', null, ['غير موثّق', 'warn']]]]] },
   emergency: { t: 'بيانات تواصل للطوارئ', ic: 'people', k: 'me-emergency', groups: [['التواصل في الطوارئ', [['em_name', 'اسم جهة الطوارئ', 1, 'قريب تجريبي'], ['em_phone', 'جوال جهة الطوارئ', 1, '+966 5•• ••• •200']]]] },
-  bank: { t: 'الحسابُ البنكي', ic: 'bank', k: 'me-bank', groups: [['القائمة', [['recv', 'حدد طريقة الاستلام', 1, 'تحويل بنكي', ['تحويل بنكي']], ['bank', 'اسم البنك', 1, 'البنك الأهلي السعودي', BANKS], ['iban', 'الآيبان', 1, 'SA•• •••• •••• •••• •••• 4417'], ['cur', 'عملة الحساب', 1, 'ريال سعودي', ['ريال سعودي']]]]] },
+  bank: { t: 'الحسابُ البنكي', ic: 'bank', k: 'me-bank', groups: [['القائمة', [['recv', 'حدد طريقة الاستلام', 1, 'تحويل بنكي', ['تحويل بنكي', 'محفظة إلكترونية']], ['bank', 'اسم البنك', 1, 'البنك الأهلي السعودي', BANKS], ['iban', 'الآيبان', 1, 'SA•• •••• •••• •••• •••• 4417'], ['cur', 'عملة الحساب', 1, 'ريال سعودي', ['ريال سعودي']]]]] },
 };
 const LVD = [['id', 'الهوية الوطنية', 0, 4], ['addr', 'وثيقة العنوان الوطني', 1, 2], ['iban', 'شهادة الآيبان البنكي', 1, 1]];
 const lvFlds = (s) => LVP[s].groups.reduce(function (a, g) { return a.concat(g[1]); }, []);
@@ -12865,7 +12867,7 @@ const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخ
 const RV_ON = !document.documentElement.classList.contains('tq-live');
 const RV = { tab: 'upd', toast: '', dlg: null };
 try { RV.tab = sessionStorage.getItem('tera-rv-tab') || 'upd'; } catch (err) { void err; }
-const RV_TABS = [['upd', 'نموذج التحديث', 'newq'], ['addr', 'الملف والعنوان حسب الإقامة', 'pin'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film']];
+const RV_TABS = [['upd', 'نموذج التحديث', 'newq'], ['addr', 'الملف الشخصي والعنوان', 'pin'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film']];
 function rvGo(t) { RV.tab = t; RV.toast = ''; try { sessionStorage.setItem('tera-rv-tab', t); } catch (err) { void err; } draw(); toTop(); }
 function rvToast(t) { RV.toast = t; draw(); }
 const rvBadge = (t, tone) => DS.badge(t, tone);
@@ -12993,7 +12995,7 @@ function rvuSent() {
       step('المراجعة والتوثيق', 'مطابقة البيانات والمرفقات', recv ? 'now' : ''), step('الاعتماد أو الإعادة للاستكمال', 'تصلك النتيجة فورًا', '')])],
       recv ? [rvBadge('مقفل', null)] : [DS.button('تعديل الطلب قبل الاستلام', { size: 'sm', ui: 'pencil-simple', onClick: function () { RVU.st = 'draft'; draw(); } })]),
     DS.panel('محاكاة للمراجعة', 'أزرار للمعاينة فقط — لا تظهر للعميل', [rvRow([DS.button('استلام الفريق', { size: 'sm', onClick: function () { RVU.st = 'recv'; draw(); } }),
-      DS.button('إعادة الطلب للاستكمال', { size: 'sm', onClick: function () { RVU.st = 'back'; RVU.back = { doc_exp: 'التاريخ لا يطابق صورة الهوية المرفقة.', 'doc:id': 'الصورة غير واضحة — أرفق صورة أوضح للوجهين.' }; S.fsOne = 'rv-personal'; draw(); toTop(); } }),
+      DS.button('إعادة الطلب للاستكمال', { size: 'sm', onClick: function () { RVU.st = 'back'; RVU.back = { doc_exp: 'التاريخ لا يطابق صورة الهوية المرفقة.', 'doc:id': 'الصورة غير واضحة — أرفق صورة أوضح للوجهين.' }; RV.one = 'rv-personal'; draw(); toTop(); } }),
       DS.button('بدء التجربة من جديد', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVU.ok = false; RVU.f = {}; RVU.st = 'draft'; RVU.view = 'form'; RVU.no = ''; RVU.docs = { id: 'id.pdf', addr: '', iban: 'iban.pdf' }; RVU.sec = { wa: false, auth: false, mail: true }; draw(); toTop(); } })])])];
 }
 function rvUpd() {
@@ -13004,54 +13006,92 @@ function rvUpd() {
   return [ins, RVU.st === 'back' ? DS.note('warn', 'أُعيد طلبك لاستكمال ' + fmtNum(Object.keys(RVU.back).length) + ' بنود', 'البنود المطلوبة مفتوحة للتعديل وعليها ملاحظة الفريق، وبقية الأقسام معتمدة ومقفلة.') : null].concat(rvuForm());
 }
 
-/* ---------- ٢) الملف الشخصي والعنوان حسب وضع الإقامة ---------- */
-const RVA = { res: 'sa', gin: 'out', v: {} };
-const RV_RES = [['sa', 'سعودي'], ['res', 'مقيم أجنبي'], ['gcc', 'خليجي'], ['nr', 'غير مقيم']];
-const RV_GCC = ['الإمارات', 'الكويت', 'البحرين', 'قطر', 'عُمان'];
+/* ---------- ٢) الملف الشخصي والعنوان — بقواعد النظام السابق (V1) كما في القاعدة: form_fields (personal · address · contact) و countries ---------- */
+/* الأسماء الرسمية للدول كما هي في V1: قائمة الجنسية ومكان الميلاد تكتب «الإمارات العربية المتحدة»، وقائمة دولة العنوان ورمز الدولة تكتب «دولة الإمارات العربية المتحدة» */
+const V1_KSA = 'المملكة العربية السعودية', V1_EG = 'جمهورية مصر العربية';
+const V1_NATS = [V1_KSA, 'الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', V1_EG];
+const V1_ADDR_C = [V1_KSA, 'دولة الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', V1_EG];
+const V1_GCC = ['الإمارات العربية المتحدة', 'دولة الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان'];
+const V1_STATES = {
+  [V1_KSA]: ['منطقة الرياض', 'منطقة مكة المكرمة', 'منطقة المدينة المنورة', 'منطقة القصيم', 'المنطقة الشرقية', 'منطقة عسير', 'منطقة تبوك', 'منطقة حائل', 'منطقة الحدود الشمالية', 'منطقة جازان', 'منطقة نجران', 'منطقة الباحة', 'منطقة الجوف'],
+  'دولة الإمارات العربية المتحدة': ['أبوظبي', 'دبي', 'الشارقة', 'عجمان', 'أم القيوين', 'رأس الخيمة', 'الفجيرة'],
+  'دولة الكويت': ['العاصمة', 'حولي', 'الفروانية', 'الأحمدي', 'الجهراء', 'مبارك الكبير'],
+  'مملكة البحرين': ['العاصمة', 'المحرق', 'الشمالية', 'الجنوبية'],
+  'دولة قطر': ['الدوحة', 'الريان', 'الوكرة', 'الخور والذخيرة', 'أم صلال', 'الشمال', 'الضعاين', 'الشحانية'],
+  'سلطنة عُمان': ['مسقط', 'ظفار', 'مسندم', 'البريمي', 'الداخلية', 'شمال الباطنة', 'جنوب الباطنة', 'شمال الشرقية', 'جنوب الشرقية', 'الظاهرة', 'الوسطى'],
+  [V1_EG]: ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم', 'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد', 'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء', 'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'] };
+/* رمز الدولة والجوال من جدول countries: المفتاح، والنمط، والمثال، والصفر المحذوف */
+const V1_DIAL = [[V1_KSA, '966', '5XXXXXXXX', 9, '0'], ['دولة الإمارات العربية المتحدة', '971', '5XXXXXXXX', 9, '0'], ['دولة الكويت', '965', '5XXXXXXX', 8, ''], ['دولة قطر', '974', '3XXXXXXX', 8, ''], ['مملكة البحرين', '973', '3XXXXXXX', 8, ''], ['سلطنة عُمان', '968', '9XXXXXXX', 8, ''], [V1_EG, '20', '1XXXXXXXXX', 10, '0']];
+const V1_DOC_AR = { national_id: 'الهوية الوطنية', residency: 'هوية مقيم', gcc_id: 'الهوية الخليجية', arab_id: 'إثبات الهوية الوطنية', passport: 'جواز السفر' };
+const V1_RES_AR = { saudi: 'سعودي', gcc: 'خليجي', resident: 'مقيم', non_resident: 'غير مقيم' };
+const v1Res = (nat, pick) => nat === V1_KSA ? 'saudi' : V1_GCC.indexOf(nat) >= 0 ? 'gcc' : (pick === 'non_resident' ? 'non_resident' : 'resident');
+const v1Docs = (res) => ({ saudi: ['national_id'], gcc: ['gcc_id', 'passport'], resident: ['residency'], non_resident: ['arab_id', 'passport'] })[res];
+/* مواصفة رقم الوثيقة (input في V1): الطول والتقسيم والبداية واسم الرقم في كل دولة */
+function v1Spec(doc, nat) {
+  if (doc === 'national_id') return { segs: [10], hint: 'رقمُ الهوية الوطنية عشرةُ أرقامٍ يبدأ بـ 1.' };
+  if (doc === 'residency') return { segs: [10], hint: 'رقمُ الإقامة عشرةُ أرقامٍ يبدأ بـ 2.' };
+  if (doc === 'gcc_id') return ({ 'الإمارات العربية المتحدة': { segs: [3, 4, 7, 1], hint: 'رقمُ الهوية الإماراتية 15 رقمًا يبدأ بـ 784.' }, 'دولة الكويت': { segs: [12], hint: 'الرقمُ المدنيُّ الكويتيُّ 12 رقمًا.' },
+    'مملكة البحرين': { segs: [9], hint: 'الرقمُ الشخصيُّ البحرينيُّ (CPR) 9 أرقام.' }, 'دولة قطر': { segs: [11], hint: 'رقمُ البطاقة الشخصية القطرية 11 رقمًا.' }, 'سلطنة عُمان': { num: true, hint: 'الرقمُ المدنيُّ العُمانيُّ أرقامٌ فقط (حتى 10).' } })[nat] || { num: true, hint: '' };
+  if (doc === 'arab_id') return nat === V1_EG ? { segs: [14], hint: 'الرقمُ القوميُّ المصريُّ 14 رقمًا.' } : { alnum: true, hint: 'رقمُ الهوية حروفٌ لاتينيةٌ وأرقامٌ فقط.' };
+  return { alnum: true, hint: 'رقمُ جواز السفر حروفٌ لاتينيةٌ وأرقام (5 إلى 20).' };
+}
+const RVA = { nat: V1_KSA, pick: 'resident', doc: '', bp: V1_KSA, ac: '', cc: V1_KSA, ecc: V1_KSA, v: {} };
 function rvaIn(k, label, o) {
   o = o || {}; const v = RVA.v[k] !== undefined ? RVA.v[k] : (o.val || '');
-  const ctl = o.opts ? DS.select({ value: v, options: o.opts.map(function (x) { return [x, x]; }), onChange: function (x) { RVA.v[k] = x; } })
+  const ctl = o.opts ? DS.select({ value: v, options: o.opts.map(function (x) { return Array.isArray(x) ? x : [x, x]; }), onChange: o.onChange || function (x) { RVA.v[k] = x; } })
     : o.date ? DS.input({ type: 'date', value: v, onInput: function (x) { RVA.v[k] = x; } })
     : o.seg ? segBoxes({ label: label, segs: function () { return o.seg; }, get: function () { return String(RVA.v[k] !== undefined ? RVA.v[k] : (o.val || '')); }, set: function (x) { RVA.v[k] = x; } })
-    : DS.input({ value: v, dir: o.ltr ? 'ltr' : null, placeholder: o.ph || null, onInput: function (x) { RVA.v[k] = x; } });
-  return e('div', { class: 'rv-f is-edit' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [label, o.opt ? null : e('i', { 'aria-hidden': 'true' }, ' *')]), o.opt ? rvBadge('اختياري', null) : null]), ctl, o.hint ? e('small', { class: 'rv-sm' }, o.hint) : null]);
+    : DS.input({ value: v, numeric: !!o.num, dir: o.ltr ? 'ltr' : null, placeholder: o.ph || null, onInput: function (x) { RVA.v[k] = x; } });
+  return e('div', { class: 'rv-f is-edit' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [label, o.req === false ? null : e('i', { 'aria-hidden': 'true' }, ' *')]), o.req === false ? rvBadge('اختياري', null) : o.auto ? rvBadge('تلقائي', 'info') : null]), ctl, o.hint ? e('small', { class: 'rv-sm' }, o.hint) : null, o.err ? e('p', { class: 'rv-note' }, [frag(ui('warning', 14)), o.err]) : null]);
 }
-const rvaDoc = (t, h) => e('div', { class: 'rv-f' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [t, e('i', { 'aria-hidden': 'true' }, ' *')]), rvBadge('مطلوب', 'warn')]), e('small', { class: 'rv-sm' }, h), rvRow([DS.button('إرفاق ملف', { size: 'sm', ui: 'upload-simple', onClick: function () { rvToast('تم الرفع — شكرًا، سيُراجع مع طلبك'); } })])]);
-function rvaNational(res) {
-  return [res === 'res' ? DS.note('info', 'المقيم داخل المملكة يُدخل عنوانه الوطني السعودي', 'من تطبيق «سبل» أو «توكلنا».') : null,
-    rvRow([DS.button('املأ من موقعي', { size: 'sm', ui: 'map-pin', onClick: function () { rvToast('حُدّد الموقع — راجع الحقول وأكمل الناقص'); } })]),
-    rvaIn('short', 'العنوان المختصر', { val: res === 'sa' ? 'RHAA4821' : '', ltr: true, hint: '4 أحرف + 4 أرقام — يملأ بقية الحقول تلقائيًا' }),
-    rvaIn('region', 'المنطقة', { val: res === 'sa' ? 'منطقة حائل' : 'منطقة الرياض', opts: REGIONS }), rvaIn('city', 'المدينة', { val: res === 'sa' ? 'حائل' : 'الرياض' }), rvaIn('dist', 'الحي', { val: res === 'sa' ? 'النقرة' : 'العليا' }), rvaIn('street', 'الشارع', { val: res === 'sa' ? 'طريق الملك عبدالعزيز' : '' }),
-    e('div', { class: 'rv-2' }, [rvaIn('bno', 'رقم المبنى', { seg: [4], val: res === 'sa' ? '4821' : '' }), rvaIn('ext', 'الرقم الإضافي', { seg: [4], val: res === 'sa' ? '7316' : '' })]),
-    rvaIn('zip', 'الرمز البريدي', { seg: [5], val: res === 'sa' ? '55431' : '' }), rvaDoc('وثيقة العنوان الوطني', 'PDF من «سبل» أو «توكلنا»')];
-}
+const rvaFile = (t) => e('div', { class: 'rv-f' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [t, e('i', { 'aria-hidden': 'true' }, ' *')]), rvBadge('مطلوب', 'warn')]), rvRow([DS.button('إرفاق ملف', { size: 'sm', ui: 'upload-simple', onClick: function () { rvToast('تم الرفع — شكرًا، سيُراجع مع طلبك'); } })])]);
 function rvAddr() {
   if (!/^rva-/.test(String(S.fsOne || ''))) S.fsOne = 'rva-p';
-  const res = RVA.res, gccOut = res === 'gcc' && RVA.gin === 'out';
-  const DOC = { sa: ['الهوية الوطنية', 'رقم الهوية الوطنية', '10 خانات تبدأ بـ 1', 'صورة الهوية الوطنية (الوجهان)'], res: ['هوية مقيم', 'رقم الإقامة', '10 خانات تبدأ بـ 2', 'صورة الإقامة (الوجهان)'], gcc: ['الهوية الخليجية', 'رقم الهوية / الجواز', 'كما في الوثيقة', 'صورة الوثيقة'], nr: ['جواز السفر', 'رقم الجواز', 'كما في صفحة البيانات', 'صورة صفحة بيانات الجواز'] }[res];
-  const nat = { sa: 'السعودية', res: 'مصر', gcc: 'الكويت', nr: 'مصر' }[res];
+  const res = v1Res(RVA.nat, RVA.pick), docs = v1Docs(res); if (docs.indexOf(RVA.doc) < 0) RVA.doc = docs[0];
+  const doc = RVA.doc, spec = v1Spec(doc, RVA.nat), national = doc === 'national_id' || doc === 'residency';
+  const natAddr = RVA.nat === 'الإمارات العربية المتحدة' ? 'دولة الإمارات العربية المتحدة' : RVA.nat;
+  if (!RVA.ac) RVA.ac = national ? V1_KSA : (natAddr === V1_KSA ? V1_EG : natAddr);
+  const acErr = national && RVA.ac !== V1_KSA ? 'أنتَ مقيمٌ في المملكة، فدولةُ العنوانِ يجبُ أن تكونَ المملكةَ العربيَّةَ السعوديَّة. صحِّحِ الدولةَ أو راجِعْ نوعَ الإقامةِ في المعلوماتِ الشخصيَّة.'
+    : !national && RVA.ac === V1_KSA ? 'أنتَ غيرُ مقيمٍ في المملكة، فدولةُ العنوانِ لا تكونُ المملكةَ العربيَّةَ السعوديَّة. صحِّحِ الدولةَ أو راجِعْ نوعَ الإقامةِ في المعلوماتِ الشخصيَّة.' : '';
+  const redraw = function (fn) { return function (x) { fn(x); RVA.v = {}; draw(); }; };
+  const numCtl = spec.segs ? { seg: spec.segs, hint: spec.hint } : { ltr: true, num: !!spec.num, hint: spec.hint };
   const personal = rvSec('المعلومات الشخصية', [
-    rvaIn('name_ar', 'الاسم الكامل بالعربية', { val: 'يزيد معاويه سعيد خميس' }), rvaIn('name_en', 'الاسم الكامل بالإنجليزية', { ltr: true, ph: 'YAZEED MOAWIA KHAMIS' }),
-    rvaIn('nat', 'الجنسية', { val: nat, opts: NATS }), rvaIn('dob', 'تاريخ الميلاد', { date: true, val: '1992-03-14', hint: 'اختر ميلادي أو هجري — يُحوَّل تلقائيًا ويُعرض الاثنان' }),
-    res === 'sa' ? rvaIn('pob', 'مكان الميلاد', { val: 'حائل' }) : null, res === 'sa' ? rvaIn('rob', 'منطقة الميلاد', { val: 'منطقة حائل', opts: REGIONS }) : null,
-    res === 'gcc' || res === 'nr' ? rvaIn('iss', 'دولة الإصدار', { val: nat, opts: NATS }) : null,
-    rvaIn('doc_type', 'نوع الوثيقة', { val: DOC[0], opts: [DOC[0]] }), rvaIn('doc_no', DOC[1], res === 'sa' || res === 'res' ? { seg: [10], hint: DOC[2] } : { ltr: true, hint: DOC[2] }),
-    res === 'res' ? rvaIn('pass', 'رقم الجواز', { ltr: true, opt: true }) : null,
-    rvaIn('doc_exp', 'تاريخ انتهاء الوثيقة', { date: true, val: '2030-05-20' }), rvaDoc(DOC[3], 'PDF / JPG حتى 2 ميجابايت')], { one: 'rva-p', ic: 'idcard' }, 'الوثيقة: ' + DOC[0]);
-  let addr;
-  if (res === 'sa' || res === 'res' || (res === 'gcc' && RVA.gin === 'in')) addr = rvaNational(res === 'gcc' ? 'res' : res);
-  else if (gccOut) addr = [rvaIn('gc', 'الدولة', { val: 'الكويت', opts: RV_GCC }), rvaIn('gov', 'المحافظة / الإمارة', { val: 'حولي' }), rvaIn('gcity', 'المدينة / المنطقة', { val: 'السالمية' }),
-    e('div', { class: 'rv-2' }, [rvaIn('blk', 'القطعة / الحي', { val: '12' }), rvaIn('gst', 'الشارع / السكة', { val: 'سالم المبارك' })]),
-    e('div', { class: 'rv-2' }, [rvaIn('house', 'رقم المبنى / المنزل', { val: '34' }), rvaIn('pobx', 'الرمز البريدي / ص.ب', { opt: true, ltr: true })]),
-    rvaIn('civ', 'الرقم المدني / العنوان الآلي', { ltr: true }), rvaDoc('إثبات العنوان', 'مستند رسمي حديث · PDF / JPG')];
-  else addr = [rvaIn('ic', 'الدولة', { val: 'مصر', opts: NATS }), rvaIn('st2', 'الولاية / المحافظة', { val: 'القاهرة' }), rvaIn('icity', 'المدينة', { val: 'مدينة نصر' }),
-    rvaIn('l1', 'العنوان — السطر الأول', { val: '12 شارع عباس العقاد' }), rvaIn('l2', 'العنوان — السطر الثاني', { opt: true }), rvaIn('izip', 'الرمز البريدي', { ltr: true, val: '11765' }),
-    rvaDoc('إثبات العنوان', 'فاتورة خدمات أو كشف بنكي خلال آخر 3 أشهر'), DS.note('info', 'الجوال بمفتاح الدولة', 'يصل واتساب إلى الأرقام الدولية.')];
-  return [rvIns('addr', 'تعليمات الملف والعنوان', [['وضع الإقامة', 'يحدّد الوثيقة المطلوبة ونموذج العنوان المناسب لك.', 'identification-card'], ['التواريخ', 'تختار ميلادي أو هجري، ويُعرض الاثنان معًا.', 'calendar-blank'], ['المرفقات', 'PDF أو صورة واضحة حتى 2 ميجابايت للملف.', 'upload-simple']]),
-    DS.panel('وضع الإقامة', 'اختر وضعك ليتغيّر النموذج — للمراجعة: جرّب الأوضاع الأربعة', [DS.editField('وضع الإقامة', DS.select({ value: res, options: RV_RES, onChange: function (v) { RVA.res = v; RVA.v = {}; S.fsOne = 'rva-a'; draw(); } })),
-      res === 'gcc' ? DS.editField('مكان سكنك الحالي', DS.select({ value: RVA.gin, options: [['in', 'داخل المملكة'], ['out', 'خارج المملكة']], onChange: function (v) { RVA.gin = v; RVA.v = {}; draw(); } })) : null]),
-    e('div', { class: 'rv-acc' }, [personal, rvSec(gccOut ? 'العنوان في الدولة الخليجية' : res === 'nr' ? 'العنوان الدولي' : 'العنوان الوطني', addr, { one: 'rva-a', ic: 'pin' }, { sa: 'سعودي · العنوان الوطني', res: 'مقيم · العنوان الوطني', gcc: gccOut ? 'خليجي · خارج المملكة' : 'خليجي · داخل المملكة', nr: 'غير مقيم · عنوان دولي' }[res])]),
-    DS.actionBar({ buttons: [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: function () { rvToast('تم الحفظ — شكرًا لك، حُدّثت بياناتك في مسودة طلبك'); } })] })];
+    e('div', { class: 'rv-grp' }, 'المعلومات الأساسية'),
+    rvaIn('full_name', 'الاسم الكامل بالعربية', { val: 'يزيد معاويه سعيد خميس' }),
+    rvaIn('full_name_en', 'الاسم الكامل بالإنجليزية', { ltr: true, ph: 'YAZEED MOAWIA KHAMIS', req: res === 'non_resident' ? true : false, hint: res === 'non_resident' ? 'مطلوبٌ لغيرِ المقيم — حروفٌ لاتينيةٌ فقط.' : 'يُكتَبُ بالحروف اللاتينية فقط.' }),
+    rvaIn('nationality', 'الجنسية', { val: RVA.nat, opts: V1_NATS, onChange: redraw(function (x) { RVA.nat = x; RVA.doc = ''; RVA.ac = ''; }) }),
+    rvaIn('birth_date', 'تاريخ الميلاد', { date: true, val: '1992-03-14', hint: 'العمر من 18 إلى 100 سنة · ميلادي أو هجري ويُعرض الاثنان' }),
+    rvaIn('birth_place', 'مكان الميلاد', { val: RVA.bp, opts: V1_NATS, onChange: redraw(function (x) { RVA.bp = x; }) }),
+    RVA.bp === V1_KSA ? rvaIn('birth_region', 'منطقة الميلاد', { val: 'منطقة حائل', opts: V1_STATES[V1_KSA] }) : null,
+    e('div', { class: 'rv-grp' }, 'الوثيقة'),
+    res === 'resident' || res === 'non_resident' ? rvaIn('residency_type', 'نوع الإقامة', { val: RVA.pick, opts: [['resident', 'مقيم'], ['non_resident', 'غير مقيم']], onChange: redraw(function (x) { RVA.pick = x; RVA.doc = ''; RVA.ac = ''; }), hint: 'لغيرِ السعوديِّ والخليجيِّ: مقيمٌ أو غيرُ مقيم.' })
+      : e('div', { class: 'rv-f' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, 'نوع الإقامة'), rvBadge(V1_RES_AR[res] + ' — من الجنسية', 'info')])]),
+    rvaIn('id_doc', 'نوع الوثيقة', { val: doc, opts: docs.map(function (d) { return [d, V1_DOC_AR[d]]; }), onChange: redraw(function (x) { RVA.doc = x; RVA.ac = ''; }), hint: { saudi: 'الجنسيَّةُ السعوديَّةُ وثيقتُها الهُويَّةُ الوطنيَّة.', gcc: 'مواطنُ الخليج: الهُويَّةُ الخليجيَّةُ أو جوازُ السفر.', resident: 'الأجنبيُّ المقيم: هُويَّةُ مقيم.', non_resident: 'الأجنبيُّ غيرُ المقيم: إثباتُ الهُويَّةِ الوطنيَّةِ أو جوازُ السفر.' }[res] }),
+    rvaIn('national_id', 'رقم الوثيقة', numCtl),
+    rvaIn('id_expiry', 'تاريخ انتهاء الوثيقة', { date: true, val: '2030-05-20', hint: 'لا تُقبل وثيقةٌ منتهية.' }),
+    rvaFile(V1_DOC_AR[doc])], { one: 'rva-p', ic: 'idcard' }, V1_RES_AR[res] + ' · ' + V1_DOC_AR[doc]);
+  const states = V1_STATES[RVA.ac] || [];
+  const addr = rvSec(national ? 'العنوان الوطني' : 'عنوان خارج المملكة', [
+    rvaIn('country', 'الدولة', { val: RVA.ac, opts: V1_ADDR_C, onChange: redraw(function (x) { RVA.ac = x; }), err: acErr }),
+    rvaIn('state', 'المنطقة', { val: states[0] || '', opts: states, req: false }), rvaIn('city', 'المدينة', { val: national ? 'حائل' : '' }),
+    national ? [e('div', { class: 'rv-grp' }, 'عنوان داخل المملكة'), rvaIn('district', 'الحي', { val: 'النقرة' }), rvaIn('street', 'الشارع', { val: 'طريق الملك عبدالعزيز', req: false }),
+      e('div', { class: 'rv-2' }, [rvaIn('building_number', 'رقم المبنى', { seg: [4], val: '4821' }), rvaIn('additional_number', 'الرقم الإضافي', { seg: [4], val: '7316' })]),
+      rvaIn('postal_code', 'الرمز البريدي', { seg: [5], val: '55431' }), rvaIn('short_address', 'العنوان المختصر', { ltr: true, req: false, ph: 'RIYD2929', hint: 'أربعةُ أحرفٍ ثمَّ أربعةُ أرقام، مثل RIYD2929.' }), rvaFile('وثيقة العنوان الوطني')]
+      : [e('div', { class: 'rv-grp' }, 'عنوان خارج المملكة'), rvaIn('line1', 'العنوان — السطر الأول', { req: false }), rvaIn('line2', 'العنوان — السطر الثاني', { req: false }), rvaIn('zip', 'الرمز البريدي الدولي', { ltr: true, req: false }),
+        rvaIn('landmark', 'تفاصيل أكثر عن العنوان أو معلم', { req: false })]], { one: 'rva-a', ic: 'pin' }, national ? 'وثيقة سعودية أو إقامة معتمدة' : 'وثيقة لا تثبت الإقامة في المملكة');
+  const dial = function (c) { return V1_DIAL.filter(function (d) { return d[0] === c; })[0] || V1_DIAL[0]; };
+  const d1 = dial(RVA.cc), d2 = dial(RVA.ecc);
+  const ccOpts = V1_DIAL.map(function (d) { return [d[0], d[0] + ' (+' + d[1] + ')']; });
+  const contact = rvSec('بيانات التواصل', [e('div', { class: 'rv-grp' }, 'التواصل المباشر'),
+    e('div', { class: 'rv-ph' }, [rvaIn('country_code', 'رمز الدولة', { val: RVA.cc, opts: ccOpts, onChange: redraw(function (x) { RVA.cc = x; }) }), rvaIn('phone', 'رقم الجوال', { seg: [d1[3]], hint: 'مثال ' + d1[2] + (d1[4] ? ' — بدون الصفر' : '') + ' · يُوثَّق عبر واتساب' })]),
+    rvaIn('email', 'البريد الإلكتروني', { ltr: true, ph: 'name@example.com' }),
+    e('div', { class: 'rv-grp' }, 'التواصل في الطوارئ'), rvaIn('emg_name', 'اسم جهة الطوارئ'),
+    e('div', { class: 'rv-ph' }, [rvaIn('emg_country_code', 'رمز الدولة', { val: RVA.ecc, opts: ccOpts, onChange: redraw(function (x) { RVA.ecc = x; }) }), rvaIn('emg_phone', 'جوال جهة الطوارئ', { seg: [d2[3]], hint: 'مثال ' + d2[2] })])], { one: 'rva-c', ic: 'phone' }, null);
+  return [rvIns('addr', 'تعليمات الملف الشخصي والعنوان', [['الجنسية أولًا', 'تحدّد الجنسية نوع الإقامة والوثيقة: السعودي هويته الوطنية، والخليجي هويته الخليجية أو جوازه، ولغيرهما مقيم أو غير مقيم.', 'identification-card'],
+      ['العنوان', 'الهوية الوطنية أو هوية مقيم ← العنوان الوطني داخل المملكة؛ وغيرهما ← عنوان خارج المملكة.', 'map-pin'], ['رقم الوثيقة', 'يتغيّر طوله وتقسيمه حسب الدولة ونوع الوثيقة.', 'hash'], ['المرفقات', 'وثيقة الهوية حسب نوعها، ووثيقة العنوان الوطني لمن عنوانه داخل المملكة.', 'upload-simple']]),
+    DS.panel('النتيجة حسب قواعد النظام', null, [DS.fields([['الجنسية', RVA.nat], ['نوع الإقامة', V1_RES_AR[res]], ['نوع الوثيقة', V1_DOC_AR[doc]], ['رقم الوثيقة', spec.hint || 'أرقام فقط'], ['نوع العنوان', national ? 'العنوان الوطني (داخل المملكة)' : 'عنوان خارج المملكة']])]),
+    e('div', { class: 'rv-acc' }, [personal, addr, contact]),
+    DS.actionBar({ buttons: [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: function () { if (acErr) { rvToast('صحّح دولة العنوان أولًا.'); return; } rvToast('تم الحفظ — شكرًا لك، حُدّثت بياناتك في مسودة طلبك'); } })] })];
 }
 
 /* ---------- ٣) ربط الواتساب الجديد ---------- */
@@ -13103,11 +13143,18 @@ function rvFilm() {
 }
 
 function rvPage() {
+  if (!/^rva?-/.test(String(S.fsOne || ''))) RV.prev = S.fsOne; if (RV.one) S.fsOne = RV.one;
   const body = RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
-  setTimeout(rvOverlay, 0);
+  rvKeepOne(); setTimeout(rvOverlay, 0); rvBarOn();
   return [e('div', { class: 'rv-tabs' }, DS.tabs({ items: RV_TABS, value: RV.tab, onChange: rvGo })),
     RV.toast ? e('div', { class: 'mb-toast', role: 'status' }, [frag(ui(/^(تم|أُرسل)/.test(RV.toast) ? 'check' : 'info', 16)), RV.toast]) : null].concat(body).filter(Boolean);
 }
+/* زر «للمراجعة» في شريط العيّنة يبقى مضاءً ما دامت الصفحة مفتوحة */
+function rvBarOn() { const on = S.tab === 'other' && S.other === 'rv-hub'; document.querySelectorAll('.pv-bar button[data-rv]').forEach(function (b) { b.classList.toggle('is-on', on); }); }
+document.addEventListener('click', function () { setTimeout(rvBarOn, 50); });
+/* حالة أكورديون «للمراجعة» منفصلة عن بقية العيّنة: تُحفظ هنا وتُعاد قيمة الصفحات الأخرى */
+function rvKeepOne() { if (/^rva?-/.test(String(S.fsOne || ''))) RV.one = S.fsOne; S.fsOne = RV.prev; }
+document.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('#pv-root .rv-acc .t2-sec-h')) setTimeout(function () { RV.one = S.fsOne || (RV.tab === 'addr' ? 'rva-none' : 'rv-none'); S.fsOne = RV.prev; }, 0); }, true);
 if (RV_ON) {
   ACCT['rv-hub'] = rvPage; PAGES['rv-hub'] = 'للمراجعة';
   document.querySelectorAll('.pv-bar button[data-rv]').forEach(function (b) { b.addEventListener('click', function () {

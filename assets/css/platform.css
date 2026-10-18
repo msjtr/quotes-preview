@@ -8499,6 +8499,7 @@ html.cpv-on .t2-head{top:48px}
 .t2 .rv-done .t2-fields{width:100%;text-align:start}
 .t2 .rv-tl .t2-tl-dot.is-off{opacity:.35}
 .t2 .rv-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.t2 .rv-grp{margin-top:6px;font:700 var(--t2-fs-xs) var(--t2-ff-display);color:var(--t2-brand-3,var(--t2-brand));letter-spacing:.01em}
 .t2 .rv-ph{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px}
 .t2 .rv-wa{background:#0B141A;border-radius:var(--t2-r);padding:10px 12px;color:#E9EDEF}
 .t2 .rv-wa small{display:flex;gap:6px;align-items:center;color:#8696A0;font-size:var(--t2-fs-2xs)}
