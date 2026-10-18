@@ -8421,3 +8421,9 @@ html.cpv-on .t2-head{top:48px}
 .flt-end{border-color:#E5B4AE!important;color:#B42318!important}
 @container app (max-width:40rem){.flt-times{grid-template-columns:1fr}}
 .flt .t2-pb-actions{margin-top:10px;flex-wrap:wrap}
+/* v325: زر الإغلاق فوق لوحة النهاية دائمًا، وواضح على الجوال (منطقة الأمان العلوية) */
+.tfp-end{z-index:2}
+.tfp-bar{z-index:3;top:max(16px,calc(env(safe-area-inset-top) + 10px))}
+.tfp.is-end .tfp-bar button.tfp-skip{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
+.tfp-bar button{min-height:44px;min-width:72px}
+.flt-gh{font-size:.72rem;color:var(--t2-muted,#5B6B82)}

@@ -10921,7 +10921,7 @@ function filmPlayer(o) {
     '<div class="tfp-bar"><button type="button" class="tfp-snd" hidden>تشغيل الصوت</button><button type="button" class="tfp-skip"></button></div>' +
     '<div class="tfp-prog" aria-hidden="true"><i></i></div>' +
     '<div class="tfp-end" hidden><div class="tfp-end-in"><span class="tfp-eye">TERA</span><h3>أهلًا بك في عالم تيرا</h3><p>عالمك بلا حدود — ابدأ الآن من لوحتك.</p>' +
-    '<div class="tfp-acts"><button type="button" class="tfp-go">ابدأ الآن</button><button type="button" class="tfp-re">إعادة المشاهدة</button></div></div></div>';
+    '<div class="tfp-acts"><button type="button" class="tfp-go">' + (Number(o.skipAfter || 0) > 0 ? 'ابدأ الآن' : 'إغلاق') + '</button><button type="button" class="tfp-re">إعادة المشاهدة</button></div></div></div>';
   const v = root.querySelector('video'), skip = root.querySelector('.tfp-skip'), snd = root.querySelector('.tfp-snd'), end = root.querySelector('.tfp-end'), bar = root.querySelector('.tfp-prog i');
   v.poster = poster; v.src = src;
   const prevOverflow = document.documentElement.style.overflow;
@@ -10938,7 +10938,7 @@ function filmPlayer(o) {
   };
   const t0 = Date.now();
   const paintSkip = function () {
-    if (canSkip) { skip.disabled = false; skip.textContent = skipAfter > 0 ? 'تخطٍّ' : 'إغلاق'; return; }
+    if (canSkip) { skip.disabled = false; skip.textContent = skipAfter > 0 && !v.ended ? 'تخطٍّ' : 'إغلاق'; return; }
     /* المحسوب: زمن المشاهدة الفعلي؛ وإن تعثّرت الشبكة يُتاح التخطّي بعد مهلةٍ إضافية من فتح المشغّل */
     const left = Math.min(skipAfter - (v.currentTime || 0), skipAfter + 12 - (Date.now() - t0) / 1000);
     if (left <= 0) { canSkip = true; return paintSkip(); }
@@ -16288,7 +16288,7 @@ function lvFilmTest() {
     FLT.err ? e('span', { class: 'cu-err', role: 'alert' }, FLT.err) : null,
     e('div', { class: 't2-pb-actions' }, [
       DS.button(FLT.busy ? 'جارٍ الإرسال…' : run ? 'قيد التوليد…' : 'ولّد فيلمًا تجريبيًا', { tone: 'primary', ui: 'film-strip', disabled: lock, onClick: gen }),
-      e('a', { class: 'flib-mini', href: 'https://github.com/msjtr/quotes.tera-services/actions/workflows/film-render.yml', target: '_blank', rel: 'noopener' }, 'متابعة التشغيل في GitHub')]),
+      e('a', { class: 'flib-mini', href: 'https://github.com/msjtr/quotes.tera-services/actions/workflows/film-render.yml', target: '_blank', rel: 'noopener' }, 'متابعة التشغيل في GitHub'), e('span', { class: 'flt-gh' }, 'يتطلب تسجيل الدخول إلى GitHub بحساب المستودع')]),
     f ? e('div', { class: 'flt-card' }, [
       e('div', { class: 'flt-top' }, [e('div', { class: 'flib-rn' }, [e('b', {}, t.name_ar || '—'), e('small', { dir: 'ltr' }, [t.name_en, t.member_no, String(t.tier || '').toUpperCase()].filter(Boolean).join(' · '))]),
         s ? DS.badge(s[0], s[1]) : null, run ? e('span', { class: 'flt-run', 'aria-hidden': 'true' }, e('i')) : null]),
