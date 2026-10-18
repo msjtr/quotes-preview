@@ -16235,10 +16235,12 @@ function lvFilmPanel() {
 }
 /* v324: «اختبار فيلم التدشين» (مؤقت · المشرف العام فقط) — بيانات تجريبية لا عميل حقيقي، بلا بريد ولا واتساب ولا تنبيه،
  * مع متابعة حيّة لزمن الانتظار والتوليد، ثم المشاهدة والتنزيل، و«إنهاء الاختبار» يُبطل الرابط فورًا. (stf_33) */
-const FLT_ERR = { forbidden: 'للمشرف العام فقط.', bad_name_ar: 'اكتب الاسم بالعربي (حتى 40 حرفًا).', bad_name_en: 'الاسم بالإنجليزي بحروف لاتينية فقط (حتى 32 حرفًا).', bad_tier: 'اختر المستوى.',
+const FLT_ERR = { forbidden: 'للمشرف العام فقط.', bad_name_ar: 'اكتب الاسم بالعربي (حتى 40 حرفًا).', bad_name_en: 'الاسم بالإنجليزي بحروف لاتينية فقط (حتى 32 حرفًا).', bad_tier: 'اختر المستوى.', bad_points: 'عدد النقاط رقم صحيح من 0 إلى 10,000,000.',
   bad_member_no: 'رقم العضوية بحروف لاتينية وأرقام وشرطة فقط (حتى 16).', limit: 'وصلت إلى حد 10 اختبارات في اليوم.', busy: 'يوجد اختبار قيد التجهيز — انتظر انتهاءه.' };
 const FLT_ST = { queued: ['بالانتظار', 'warn'], rendering: ['قيد التوليد', 'info'], ready: ['جاهز', 'ok'], failed: ['تعذّر', 'danger'], expired: ['انتهى الاختبار', null] };
-const FLT = { f: { name_ar: 'عميل تجريبي', name_en: 'TEST MEMBER', tier: 'elite', member_no: 'TP-TEST0001' }, film: null, id: null, skew: 0, busy: false, err: '', loaded: false, poll: 0 };
+const FLT = { f: { name_ar: 'عميل تجريبي', name_en: 'TEST MEMBER', tier: 'elite', member_no: 'TP-TEST0001', points: '12750' }, film: null, id: null, skew: 0, busy: false, err: '', loaded: false, poll: 0 };
+/* عدد النقاط: يقبل الأرقام العربية والفواصل — الخادم يتحقق (0 … 10,000,000) */
+function fltPts(v) { return String(v == null ? '' : v).replace(/[\u0660-\u0669]/g, function (c) { return String(c.charCodeAt(0) - 0x660); }).replace(/[\s,،٬]/g, ''); }
 function fltNow() { return Date.now() + (FLT.skew || 0); }
 function fltSec(a, b) { if (!a) return null; return Math.max(0, Math.round(((b ? Date.parse(b) : fltNow()) - Date.parse(a)) / 1000)); }
 function fltFmt(s) { if (s == null) return '—'; const m = Math.floor(s / 60), x = s % 60; return (m ? m + ' د ' : '') + x + ' ث'; }
@@ -16264,7 +16266,7 @@ function lvFilmTest() {
   const gen = async function () {
     FLT.busy = true; FLT.err = ''; draw();
     try {
-      const j = await admRpc('admin_launch_film_test', { p: { name_ar: F.name_ar, name_en: F.name_en, tier: F.tier, member_no: F.member_no } });
+      const j = await admRpc('admin_launch_film_test', { p: { name_ar: F.name_ar, name_en: F.name_en, tier: F.tier, member_no: F.member_no, points: fltPts(F.points) } });
       if (j && j.dispatch && j.dispatch !== 'dispatched') FLT.err = j.dispatch === 'no_token' ? 'لم يُعثر على السر github_film_token في Vault.' : 'تعذّر طلب التشغيل من GitHub الآن — يُعاد تلقائيًا خلال 45 دقيقة.';
       FLT.id = j && j.id; await fltLoad();
     } catch (err) { FLT.err = fltErr(err); }
@@ -16285,14 +16287,14 @@ function lvFilmTest() {
     e('div', { class: 'flib-h' }, [e('b', {}, 'اختبار التوليد (مؤقت)'), e('span', { class: 'flt-only' }, 'للمشرف العام فقط · بلا رسائل لأي أحد')]),
     e('div', { class: 'sys-form is-2 cu-bd-form' }, [
       DS.editField('الاسم بالعربي', inp('name_ar')), DS.editField('الاسم بالإنجليزي', inp('name_en', 'ltr')),
-      DS.editField('المستوى', tierSel), DS.editField('رقم العضوية', inp('member_no', 'ltr'))]),
+      DS.editField('المستوى', tierSel), DS.editField('رقم العضوية', inp('member_no', 'ltr')), DS.editField('عدد النقاط', inp('points', 'ltr'))]),
     e('small', { class: 'cu-dr-hint' }, 'يُولَّد في GitHub Actions بالمقاسين 1920×1080 و1080×1920، على 6 أجهزة في وقت واحد، ويستغرق عادةً حوالي 5–7 دقائق. الحالة تتحدّث تلقائيًا.'),
     FLT.err ? e('span', { class: 'cu-err', role: 'alert' }, FLT.err) : null,
     e('div', { class: 't2-pb-actions' }, [
       DS.button(FLT.busy ? 'جارٍ الإرسال…' : run ? 'قيد التوليد…' : 'ولّد فيلمًا تجريبيًا', { tone: 'primary', ui: 'film-strip', disabled: lock, onClick: gen }),
       e('a', { class: 'flib-mini', href: 'https://github.com/msjtr/quotes.tera-services/actions/workflows/film-render.yml', target: '_blank', rel: 'noopener' }, 'متابعة التشغيل في GitHub'), e('span', { class: 'flt-gh' }, 'يتطلب تسجيل الدخول إلى GitHub بحساب المستودع')]),
     f ? e('div', { class: 'flt-card' }, [
-      e('div', { class: 'flt-top' }, [e('div', { class: 'flib-rn' }, [e('b', {}, t.name_ar || '—'), e('small', { dir: 'ltr' }, [t.name_en, t.member_no, String(t.tier || '').toUpperCase()].filter(Boolean).join(' · '))]),
+      e('div', { class: 'flt-top' }, [e('div', { class: 'flib-rn' }, [e('b', {}, t.name_ar || '—'), e('small', { dir: 'ltr' }, [t.name_en, t.member_no, String(t.tier || '').toUpperCase(), t.points != null ? Number(t.points).toLocaleString('en-US') + ' pts' : ''].filter(Boolean).join(' · '))]),
         s ? DS.badge(s[0], s[1]) : null, run ? e('span', { class: 'flt-run', 'aria-hidden': 'true' }, e('i')) : null]),
       times,
       st === 'failed' && f.error ? e('small', { class: 'flib-er' }, f.error === 'ended' ? 'أُنهي قبل اكتماله.' : String(f.error).slice(0, 160)) : null,

@@ -229,6 +229,33 @@ html.P #beam{left:340px;height:2400px}
 .glint b{width:4px;height:180px;margin:-90px 0 0 -2px;background:linear-gradient(180deg,transparent,#fff,transparent)}
 .glint:after{content:"";position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px;border-radius:50%;background:radial-gradient(circle,#fff,rgba(255,230,170,.6) 40%,transparent 70%)}
 .symfly{position:absolute;left:0;top:0;width:520px;height:230px;transform-origin:50% 50%;display:none;pointer-events:none}
+
+#od{position:absolute;left:0;right:0;display:none;justify-content:center;align-items:flex-end;direction:rtl;pointer-events:none}
+.od-c{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 54px;border-inline-start:1px solid rgba(255,214,140,.22)}
+.od-c:first-child{border-inline-start:0}
+.od-c small{font:500 22px/1.2 Alx;color:#cdb98f;letter-spacing:.5px}
+.od-c small em{font-style:normal;letter-spacing:3px;direction:ltr;unicode-bidi:isolate;opacity:.85}
+.od-c .nmw{position:relative;display:inline-block;direction:ltr}
+.od-c .eng{display:inline-block;white-space:nowrap;font:700 46px/66px Alx;letter-spacing:1px;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;background-image:linear-gradient(180deg,#fff6dc 0%,#ffd98a 45%,#c8902c 100%);filter:drop-shadow(0 2px 0 rgba(60,35,0,.7)) drop-shadow(0 10px 26px rgba(242,179,61,.25))}
+.od-c .eng.hot{position:absolute;left:0;top:0;background-image:linear-gradient(180deg,#ffffff 0%,#fff1c0 40%,#ff9a3c 100%);filter:drop-shadow(0 0 14px rgba(255,160,50,.95)) drop-shadow(0 0 4px #fff)}
+.od-c .eng.nsh{position:absolute;left:0;top:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.95) 50%,transparent 60%) 140% 0/300% 100% no-repeat;-webkit-background-clip:text;background-clip:text;filter:none;opacity:0}
+.od-pts .eng{font-size:64px;line-height:80px;transform-origin:50% 60%}
+.od-pts .pv-row{display:flex;align-items:baseline;gap:12px;direction:rtl}
+.od-pts i{font:500 26px/1 Alx;font-style:normal;color:#eef4fa}
+#oph{position:absolute;left:0;right:0;display:none;pointer-events:none}
+#oph .ph{position:absolute;left:0;right:0;top:0;display:none;text-align:center;direction:rtl;padding:0 70px}
+#oph .ph-a{font:700 56px/1.4 Alx;color:#f6d27a;text-shadow:0 2px 0 rgba(60,35,0,.75),0 0 26px rgba(242,179,61,.35)}
+#oph .ph-b{font:400 34px/1.6 Alx;color:#eef4fa;margin-top:4px;text-shadow:0 6px 24px rgba(0,0,0,.55)}
+#oph .w{display:inline-block}
+#oph .ph-sh{position:absolute;inset:-6% 0;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.28) 50%,transparent 58%) 140% 0/300% 100% no-repeat;mix-blend-mode:screen;opacity:0}
+html.P #od{flex-wrap:wrap;row-gap:22px}
+html.P .od-c{padding:0 34px}
+html.P .od-c .eng{font-size:44px}
+html.P .od-pts{flex-basis:100%;border-inline-start:0}
+html.P .od-pts .eng{font-size:72px;line-height:88px}
+html.P #oph .ph{padding:0 60px}
+html.P #oph .ph-a{font-size:60px}
+html.P #oph .ph-b{font-size:38px}
 </style></head><body>
 <div id="stage">
   <div id="bg"><div class="au" id="au1"></div><div class="au" id="au2"></div><div class="au" id="au3"></div><div id="grid"></div></div>
@@ -577,10 +604,111 @@ function SF(t) { // 27.3–32.5
   const fo = io(t, 28.2, 28.7, 31.6, 32.4); FCAP.style.display = fo > 0 ? 'block' : 'none'; FCAP.style.opacity = fo; TNOW = t; kin(FCAP.querySelectorAll('.fc-a .w'), 28.2, 0.1, 0.6, 30, 8);
   const ub = eo(rp(t, 28.7, 29.4)); FCAP.querySelector('.fc-b').style.opacity = ub; FCAP.querySelector('.fc-b').style.letterSpacing = (2 + 10 * (1 - ub)).toFixed(1) + 'px';
   $('fade').style.opacity = sm(rp(t, 31.7, 32.5)); particles(t, 0.5); camSet(SCX, SCY, 1); }
+/* ================= v33 «فيلمك باسمك»: بطاقته الممنوحة وحدها — حفر كل محتواها بالليزر، شريط التفاصيل والنقاط تتصاعد، وعبارات المنح تتعاقب ================= */
+const OWN = !GENERIC;
+const TI = ({ plus: 0, premium: 1, elite: 2 })[CLIENT.tier] || 0;
+const TIER_AR = ['تيرا بلس', 'تيرا بريميوم', 'تيرا إيليت'][TI];
+const TCOL = [['rgba(50,210,215,.32)', 'rgba(110,235,240,.26)', '#7ff0f2', '#e8fdff'], ['rgba(255,205,120,.40)', 'rgba(255,214,140,.40)', '#ffc861', '#ffe3a3'], ['rgba(255,226,170,.32)', 'rgba(255,232,180,.46)', '#ffc861', '#ffe3a3']][TI];
+const OCY = PORT ? 800 : 380, OS = PORT ? 0.9 : 0.78;   // موضع البطاقة وحجمها
+const ODY = PORT ? 1196 : 676, OPY = PORT ? 236 : 868;  // شريط التفاصيل · العبارات
+const ofmtDate = (s) => { const d = s ? new Date(s) : null; if (!d || isNaN(d)) return '—'; const p = (n) => String(n).padStart(2, '0'); return p(d.getUTCDate()) + ' / ' + p(d.getUTCMonth() + 1) + ' / ' + d.getUTCFullYear(); };
+const OPTS = Math.max(0, Math.round(Number(CLIENT.points) || 0));
+/* شريط التفاصيل تحت البطاقة */
+const OD = document.createElement('div'); OD.id = 'od'; OD.style.top = ODY + 'px';
+const odCell = (lab, val, cls) => '<div class="od-c ' + (cls || '') + '"><small>' + lab + '</small><span class="nmw"><b class="eng">' + val + '</b><b class="eng hot">' + val + '</b><b class="eng nsh">' + val + '</b></span></div>';
+OD.innerHTML = odCell('رقم العضوية · <em>NO.</em>', String(CLIENT.member_no || '—')) + odCell('صالحة حتى · <em>VALID</em>', ofmtDate(CLIENT.expires_at)) +
+  '<div class="od-c od-pts"><small>رصيد النقاط · <em>POINTS</em></small><div class="pv-row"><i>نقطة</i><span class="nmw"><b class="eng pv">0</b><b class="eng nsh pv">0</b></span></div></div>';
+$('hud').appendChild(OD);
+const ODC = [...OD.querySelectorAll('.od-c')].map(c => ({ c, nmw: c.querySelector('.nmw'), eng: c.querySelector('.eng'), hot: c.querySelector('.hot'), nsh: c.querySelector('.nsh'), lab: c.querySelector('small') }));
+const ODT = [[18.85, 19.45], [19.55, 20.2]];           // حفر رقم العضوية ثم تاريخ الصلاحية
+const PTS_A = 20.55, PTS_B = 25.0;                      // عدّاد النقاط يكتمل قبل نهاية المشهد
+/* عبارات المنح الثلاث — تتعاقب مع البطاقة */
+const PHR = [
+  ['مُنِحتَ اليوم عضوية ' + TIER_AR, 'مكانةٌ لا تُمنَح إلا لمن يستحقها — وأنتَ أهلٌ لها', 13.6, 17.65],
+  ['هذه البطاقة صُنعت لك وحدك', 'اسمك محفورٌ في عالم تيرا… وامتيازاتك تبدأ الآن', 17.9, 21.95],
+  ['أهلًا بك عضوًا في ' + TIER_AR, 'ثقتك اختيارٌ نعتزّ به، وعالمك معنا بلا حدود', 22.2, 26.35]];
+const OPH = document.createElement('div'); OPH.id = 'oph'; OPH.style.top = OPY + 'px';
+PHR.forEach(p => { const d = document.createElement('div'); d.className = 'ph'; d.innerHTML = '<div class="ph-a">' + wrapW(p[0]) + '</div><div class="ph-b">' + wrapW(p[1]) + '</div><span class="ph-sh"></span>'; OPH.appendChild(d); p.el = d; p.wa = d.querySelectorAll('.ph-a .w'); p.wb = d.querySelectorAll('.ph-b .w'); p.sh = d.querySelector('.ph-sh'); });
+$('hud').appendChild(OPH);
+/* حقول البطاقة المحفورة بالترتيب: المستوى ← الاسم عربي/إنجليزي ← الرقم ← منذ ← حتى */
+const OFLD = [['.mc-brand b', 'ltr', 13.95, 14.45, 'clip'], ['.mc-brand span', 'rtl', 14.5, 14.85], ['.mc-name b', 'rtl', 14.95, 16.25], ['.mc-name span', 'ltr', 16.35, 17.05],
+  ['.mc-foot > div:nth-child(1) b', 'ltr', 17.15, 17.6], ['.mc-foot > div:nth-child(2) b', 'ltr', 17.7, 18.0], ['.mc-foot > div:nth-child(3) b', 'ltr', 18.05, 18.45]];
+let OEN = []; let OLOGO = null, OWM = null, OLOGOR = null;
+const OWN_CSS = 'tera-w.egw{display:inline-block;position:relative;white-space:nowrap}tera-w.egw>tera-e.ef{display:inline}' + '.mc-name b,.mc-name span{overflow:visible!important;text-overflow:clip!important}.mc-name b{line-height:1.55!important;padding-bottom:.06em}' +
+  '.mc-name span{line-height:1.4!important}.mc-logo{filter:brightness(1.3) drop-shadow(0 0 5px rgba(255,255,255,.35)) drop-shadow(0 2px 6px rgba(0,0,0,.35))!important}.mc-wm{opacity:.34!important}';
+/* الاسم يصغر تلقائيًا في سطر واحد داخل مكانه (ويُختصر للأول والأخير إن تجاوز الحد) */
+function ownFit(card) { const d = card._f.contentDocument, cm = card._cmp; if (!cm) return; const avail = cm.getBoundingClientRect().width * 0.7;
+  [['.mc-name b', 0.6], ['.mc-name span', 0.62]].forEach(([sel, minK]) => { const el = cm.querySelector(sel); if (!el) return; el.style.fontSize = ''; const fs0 = parseFloat(d.defaultView.getComputedStyle(el).fontSize);
+    const fit = () => { el.style.fontSize = fs0 + 'px'; const w = el.scrollWidth; if (w > avail) el.style.fontSize = Math.max(fs0 * minK, fs0 * avail / w * 0.98) + 'px'; return el.scrollWidth <= avail + 1; };
+    if (!fit()) { const parts = el.textContent.trim().split(/\s+/); if (parts.length > 2) { el.textContent = parts[0] + ' ' + parts[parts.length - 1]; fit(); } } }); }
+function ownSetup() { const c = CARDS[TI]; const d = c._f.contentDocument; if (!d || !c._cmp) return; const st = d.createElement('style'); st.textContent = ENG_CSS + OWN_CSS; d.head.appendChild(st);
+  ownFit(c); cropMeasure(c); const out = [];
+  OFLD.forEach(([sel, dir, a, b, mode]) => { const el = c._cmp.querySelector(sel); if (!el || !el.textContent.trim()) return; const html = el.innerHTML;
+    if (mode === 'clip') { out.push({ el, clip: true, dir, a, b }); return; } el.style.textOverflow = 'clip'; el.style.overflow = 'visible';
+    const w = d.createElement('tera-w'); w.className = 'egw'; ['ef', 'eg', 'em', 'eh'].forEach(k => { const x = d.createElement('tera-e'); x.className = k; x.innerHTML = html; w.appendChild(x); }); el.innerHTML = ''; el.appendChild(w);
+    out.push({ w, ef: w.children[0], eg: w.children[1], em: w.children[2], eh: w.children[3], dir, a, b }); });
+  out.forEach(e => e.r = lrect(c, e.clip ? e.el : e.w)); OEN = out;
+  OLOGO = c._cmp.querySelector('.mc-logo'); OWM = c._cmp.querySelector('.mc-wm'); OLOGOR = OLOGO ? lrect(c, OLOGO) : null; }
+const ownP = (t) => ({ x: SCX, y: OCY, z: lerp(-260, 0, eo(rp(t, 12.3, 13.5))), s: OS, ry: K(t, [[12.3, -18], [13.4, -3], [14.0, 0], [25.6, 4]]), rx: K(t, [[12.3, 6], [14.0, 0], [25.6, 1.5]]) });
+function SOWN(t) { // 12.2–27.7
+  const ex = eio(rp(t, 26.3, 27.2));
+  background(t, { glow: 0.2 + 0.2 * rp(t, 13.3, 14.2), grid: 0, dark: 0.85 - 0.35 * sm(rp(t, 13.2, 14.0)), gold: 1.1, tint: TI === 0 ? [10, 165, 173, 0.07 * io(t, 13, 14, 26, 27)] : undefined });
+  const c = CARDS[TI]; const lit = sm(rp(t, 13.25, 14.0)); const p0 = ownP(t);
+  const p = Object.assign({}, p0, { y: lerp(OCY, (PORT ? 900 : 480), ex), s: lerp(OS, OS * 0.55, ex), o: sm(rp(t, 12.3, 12.7)) * (1 - sm(rp(t, 26.8, 27.3))), blur: ex * 6, sat: 1.1,
+    br: lerp(0.15, 1.04, eo(rp(t, 13.25, 14.1))) + flash(t, 13.35, 0.45) + 0.12 * flash(t, PTS_B, 1), sheen: rp(t, 25.05, 25.9) || rp(t, 14.0, 14.9) });
+  P('card' + TI, p);
+  // حافة البطاقة يرسمها الليزر بلون المستوى
+  const rc = cardRect(TI, OS, OCY); const [L0, T0, W0, H0, R0] = rc;
+  const dd = 'M ' + (L0 + W0 - R0) + ' ' + T0 + ' L ' + (L0 + R0) + ' ' + T0 + ' A ' + R0 + ' ' + R0 + ' 0 0 0 ' + L0 + ' ' + (T0 + R0) + ' L ' + L0 + ' ' + (T0 + H0 - R0) + ' A ' + R0 + ' ' + R0 + ' 0 0 0 ' + (L0 + R0) + ' ' + (T0 + H0) +
+    ' L ' + (L0 + W0 - R0) + ' ' + (T0 + H0) + ' A ' + R0 + ' ' + R0 + ' 0 0 0 ' + (L0 + W0) + ' ' + (T0 + H0 - R0) + ' L ' + (L0 + W0) + ' ' + (T0 + R0) + ' A ' + R0 + ' ' + R0 + ' 0 0 0 ' + (L0 + W0 - R0) + ' ' + T0;
+  const pp = $('trp'), pg = $('trg'); if (pp.getAttribute('d') !== dd) { pp.setAttribute('d', dd); pg.setAttribute('d', dd); } pp.setAttribute('stroke', TCOL[3]); pg.setAttribute('stroke', TCOL[2]);
+  const len = pp.getTotalLength(); const A = 12.35, B = 13.3; const u = eio(rp(t, A, B)); const to = (t >= A ? 1 : 0) * (1 - sm(rp(t, 13.6, 14.3)));
+  TRC.style.display = to > 0 ? 'block' : 'none'; TRC.style.opacity = to; [pp, pg].forEach(x => { x.style.strokeDasharray = len; x.style.strokeDashoffset = len * (1 - u); });
+  spot(TCOL[1], sm(rp(t, 12.4, 13.4)) * (1 - sm(rp(t, 26.2, 26.9))), 30); halo(SCX, OCY, PORT ? 1300 : 1700, PORT ? 1300 : 1050, TCOL[0], lit * (1 - sm(rp(t, 26.2, 26.9))));
+  $('streak').style.top = (T0 + 4) + 'px'; $('streak').style.opacity = flash(t, 13.35, 0.8); $('streak').style.transform = 'scaleX(' + (0.3 + 0.9 * rp(t, 13.35, 14.1)) + ')'; $('flash').style.opacity = flash(t, 13.35, 0.28);
+  // الشعار على البطاقة يضيء بوضوح مع لمعة
+  const kk = c._k; if (OLOGO) { const g = 1 + 0.9 * flash(t, 13.55, 1); OLOGO.style.filter = 'brightness(' + (1.3 * g).toFixed(3) + ') drop-shadow(0 0 ' + (5 + 14 * (g - 1)).toFixed(1) + 'px rgba(255,255,255,' + (0.35 + 0.4 * (g - 1)).toFixed(2) + ')) drop-shadow(0 2px 6px rgba(0,0,0,.35))'; }
+  if (OWM) OWM.style.opacity = (0.34 + 0.25 * flash(t, 13.55, 1)).toFixed(3);
+  if (OLOGOR) { const q = w2s(cardPt(c, p0, (OLOGOR[0] + OLOGOR[2] / 2) * kk, (OLOGOR[1] + OLOGOR[3] / 2) * kk)); glint(q[0], q[1], rp(t, 13.5, 14.15)); }
+  // الحفر داخل البطاقة
+  const front = (e, uu) => { const fr = e.dir === 'rtl' ? 1 - uu : uu; return cardPt(c, p0, (e.r[0] + e.r[2] * fr) * kk, (e.r[1] + e.r[3] * 0.56) * kk); };
+  let sp = null; OEN.forEach(e => { const uu = rp(t, e.a, e.b);
+    if (e.clip) { const v = uu <= 0 ? 'inset(0 100% 0 0)' : uu >= 1 ? 'none' : (e.dir === 'rtl' ? 'inset(-30% 0 -30% ' + (100 - 100 * uu).toFixed(2) + '%)' : 'inset(-30% ' + (100 - 100 * uu).toFixed(2) + '% -30% 0)'); if (e.el.style.clipPath !== v) e.el.style.clipPath = v; e.el.style.filter = uu > 0 && uu < 1 ? 'brightness(1.6) drop-shadow(0 0 3px #ffcf70)' : ''; }
+    else engr6(e, uu, sm(rp(t, e.b + 0.1, e.b + 0.45))); if (uu > 0 && uu < 1) sp = w2s(front(e, uu)); });
+  // شريط التفاصيل: الحفر ثم النقاط تتصاعد
+  const odo = io(t, 18.6, 18.95, 26.2, 26.7); OD.style.display = odo > 0 ? 'flex' : 'none'; OD.style.opacity = odo; OD.style.filter = ex > 0.01 ? 'blur(' + (ex * 6).toFixed(1) + 'px)' : '';
+  const rects = [];
+  ODC.forEach((o, i) => { o.lab.style.opacity = sm(rp(t, (ODT[i] || [20.2])[0] - 0.3, (ODT[i] || [20.2])[0])); const r = o.nmw.getBoundingClientRect(); rects[i] = r;
+    if (i < 2) { const [a, b] = ODT[i]; const nu = rp(t, a, b), cut = 100 * nu; o.eng.style.clipPath = nu >= 1 ? 'none' : 'inset(-40% ' + (100 - cut).toFixed(2) + '% -40% -8%)';
+      o.hot.style.clipPath = 'inset(-40% ' + (100 - cut).toFixed(2) + '% -40% ' + Math.max(0, cut - 9).toFixed(2) + '%)'; o.hot.style.opacity = nu > 0 ? 1 - sm(rp(t, b, b + 0.45)) : 0;
+      o.nsh.style.opacity = rp(t, b + 0.05, b + 0.15) * (1 - rp(t, b + 0.6, b + 0.75)); o.nsh.style.backgroundPosition = lerp(140, -40, rp(t, b + 0.05, b + 0.75)).toFixed(1) + '% 0';
+      if (nu > 0 && nu < 1) sp = [r.left + r.width * nu, r.top + r.height * 0.56]; } });
+  // النقاط: من صفر إلى رصيده — تبطؤ قرب النهاية، توهّج ونبض مع كل قفزة، ولمعة عند الاكتمال
+  const po = ODC[2]; const pu = rp(t, PTS_A, PTS_B); const pe = 1 - Math.pow(1 - pu, 2.6); const val = Math.round(OPTS * pe); const txt = val.toLocaleString('en-US');
+  po.c.querySelectorAll('.pv').forEach(x => { if (x.textContent !== txt) x.textContent = txt; }); po.c.style.opacity = sm(rp(t, PTS_A - 0.35, PTS_A));
+  const beat = pu > 0 && pu < 1 ? Math.abs(Math.sin(pe * Math.PI * 14)) : 0; const done = flash(t, PTS_B, 1);
+  po.eng.style.transform = 'scale(' + (1 + 0.045 * beat + 0.12 * done).toFixed(3) + ')'; po.eng.style.filter = 'drop-shadow(0 2px 0 rgba(60,35,0,.7)) drop-shadow(0 0 ' + (8 + 22 * pu + 30 * done).toFixed(1) + 'px rgba(255,190,80,' + (0.25 + 0.4 * pu).toFixed(2) + '))';
+  po.nsh.style.opacity = rp(t, PTS_B + 0.05, PTS_B + 0.15) * (1 - rp(t, PTS_B + 0.75, PTS_B + 0.9)); po.nsh.style.backgroundPosition = lerp(140, -40, rp(t, PTS_B + 0.05, PTS_B + 0.9)).toFixed(1) + '% 0';
+  if (pu > 0 && pu < 1 && !sp) { const r = rects[2]; sp = [r.left + r.width * (0.5 + 0.45 * Math.sin(t * 23)), r.top + r.height * (0.3 + 0.4 * Math.abs(Math.sin(t * 17)))]; }
+  if (t > PTS_B) { const r = rects[2]; burst(PTS_B, r.left + r.width / 2, r.top + r.height / 2, 90, 520); }
+  if (sp) { sparkAt(sp[0], sp[1], 0.95, 1.25 + 0.2 * Math.sin(t * 61)); if (t < PTS_A) laserAt(sp, t); }
+  ENGF = (te) => { for (const e of OEN) if (te >= e.a && te < e.b) return w2s(front(e, (te - e.a) / (e.b - e.a)));
+    for (let i = 0; i < 2; i++) { const [a, b] = ODT[i]; if (te >= a && te < b) { const r = rects[i]; return [r.left + r.width * (te - a) / (b - a), r.top + r.height * 0.56]; } }
+    if (te >= PTS_A && te < PTS_B) { const r = rects[2]; return [r.left + r.width * (0.5 + 0.45 * Math.sin(te * 23)), r.top + r.height * 0.5]; } return null; };
+  // العبارات تتعاقب
+  OPH.style.display = 'block'; TNOW = t;
+  PHR.forEach(ph => { const [, , a, b] = ph; const o = io(t, a, a + 0.5, b - 0.45, b); ph.el.style.display = o > 0 ? 'block' : 'none'; if (o <= 0) return; ph.el.style.opacity = o;
+    const out = sm(rp(t, b - 0.45, b)); ph.el.style.transform = 'translateY(' + (-18 * out).toFixed(1) + 'px)'; ph.el.style.filter = out > 0.01 ? 'blur(' + (out * 6).toFixed(1) + 'px)' : '';
+    kin(ph.wa, a, 0.07, 0.6, 26, 8); kin(ph.wb, a + 0.45, 0.04, 0.55, 18, 6); ph.sh.style.opacity = rp(t, a + 1.1, a + 1.25) * (1 - rp(t, a + 1.9, a + 2.05)); ph.sh.style.backgroundPosition = lerp(140, -40, rp(t, a + 1.1, a + 2.05)).toFixed(1) + '% 0'; });
+  // الخروج: رمز اللانهاية يطير من البطاقة ليصير الشعار
+  const fu = eio(rp(t, 26.35, 27.35)); const so = sm(rp(t, 26.25, 26.5)) * (1 - sm(rp(t, 27.35, 27.6)));
+  if (so > 0) { const ys = PORT ? 900 : 480; const y = lerp(ys, FINY, fu), s = lerp(0.55, LOGS, fu); SYM.style.display = 'block'; SYM.style.opacity = so; SYM.style.transform = 'translate(' + (SCX - 260) + 'px,' + (y - 115) + 'px) scale(' + s + ')'; SYM.style.filter = 'drop-shadow(0 0 ' + (20 + 30 * Math.sin(fu * Math.PI)).toFixed(0) + 'px rgba(80,230,235,.85)) brightness(' + (1.2 + 0.6 * Math.sin(fu * Math.PI)).toFixed(2) + ')'; }
+  $('flash').style.opacity = Math.max(+$('flash').style.opacity || 0, flash(t, 27.5, 0.55)); camSet(SCX, SCY, 1); particles(t, 0.25 + 0.15 * lit); }
 /* ---------------- sound cues ---------------- */
 sfx(0.05, 'swell', 0.6); sfx(0.4, 'shimmer', 0.6); sfx(2.3, 'shing', 0.5); sfx(2.6, 'whoosh_s', 0.4);
 WL.forEach((L_) => { const n = Math.round((L_.b - L_.a) / 0.12); for (let j = 0; j < n; j++) sfx(L_.a + j * 0.12, 'engrave', L_.big ? 0.42 : 0.3); sfx(L_.b, L_.big ? 'shing' : 'ping', L_.big ? 0.8 : 0.35); });
 sfx(8.1, 'shimmer', 0.4); sfx(10.4, 'shimmer', 0.35); sfx(11.75, 'whoosh', 0.55);
+if (GENERIC) {
 // plus: glass, turquoise scan, the name engraved
 sfx(12.25, 'whoosh_low', 0.5); sfx(12.75, 'whoosh_s', 0.45); for (let i = 0; i < 8; i++) sfx(12.8 + i * 0.11, 'tickc', 0.22); sfx(13.62, 'ping', 0.55); sfx(13.65, 'shimmer', 0.3);
 ENT.forEach(([a, b]) => { const n = Math.round((b - a) / 0.11); for (let i = 0; i < n; i++) sfx(a + i * 0.11, 'engrave', 0.4); }); sfx(15.4, 'shing', 0.6); sfx(15.95, 'whoosh', 0.5);
@@ -590,14 +718,26 @@ sfx(16.25, 'shimmer', 0.55); for (let i = 1; i <= 10; i++) sfx(16.3 + 0.8 * (1 -
 sfx(20.3, 'whoosh_low', 0.6); for (let i = 0; i < 18; i++) sfx(20.6 + i * 0.095, 'engrave', 0.3); sfx(22.5, 'ding', 0.9); sfx(22.5, 'shing', 0.8); sfx(22.55, 'swell', 0.6);
 // the three together, the symbol becomes the logo
 sfx(24.65, 'whoosh', 0.55); [25.1, 25.25, 25.4].forEach(c => sfx(c, 'shing', 0.3)); sfx(25.6, 'whoosh_s', 0.45); sfx(26.3, 'riser_s', 0.5); sfx(27.5, 'ding', 0.8); sfx(27.5, 'shimmer', 0.8); [28.2, 28.6, 29.1, 29.5].forEach(c => sfx(c, 'ping', 0.22));
+} else {
+  // «فيلمك باسمك»: الحافة بالليزر، البطاقة تضيء، حفر الحقول، التفاصيل، عدّاد النقاط، العبارات
+  sfx(12.3, 'whoosh_low', 0.6); for (let i = 0; i < 10; i++) sfx(12.4 + i * 0.095, 'engrave', 0.3); sfx(13.35, 'ding', 0.9); sfx(13.35, 'shing', 0.8); sfx(13.4, 'swell', 0.6); sfx(13.55, 'shimmer', 0.5);
+  OFLD.forEach(([, , a, b]) => { const n = Math.max(2, Math.round((b - a) / 0.11)); for (let i = 0; i < n; i++) sfx(a + i * 0.11, 'engrave', 0.36); sfx(b, 'ping', 0.28); });
+  ODT.forEach(([a, b]) => { const n = Math.round((b - a) / 0.11); for (let i = 0; i < n; i++) sfx(a + i * 0.11, 'engrave', 0.32); sfx(b, 'ping', 0.3); });
+  for (let k = 1; k <= 26; k++) sfx(PTS_A + (PTS_B - PTS_A) * (1 - Math.pow(1 - k / 26, 1 / 2.6)), 'tickc', 0.16 + 0.1 * k / 26);
+  sfx(PTS_B, 'ding', 0.8); sfx(PTS_B, 'shimmer', 0.6); PHR.forEach(p => sfx(p[2], 'shimmer', 0.32));
+  sfx(26.3, 'riser_s', 0.5); sfx(27.5, 'ding', 0.8); sfx(27.5, 'shimmer', 0.8); [28.2, 28.6, 29.1, 29.5].forEach(c => sfx(c, 'ping', 0.22));
+}
 /* ---------------- frame ---------------- */
 function render(t, live) {
   hideAll(); ['frame', 'thr', 'spiral', 'cd', 'cdring'].forEach(id => { if ($(id)) $(id).style.display = 'none'; }); CUR.style.display = 'none'; RIPS.forEach(r => r.style.display = 'none');
-  FCAP.style.display = 'none'; WLD.style.display = 'none'; HALO.style.display = 'none'; LASER.style.display = 'none'; SPARK.style.display = 'none'; ENGF = null; SCAN.style.display = 'none'; GLINT.style.display = 'none'; SPOT.style.display = 'none'; TRC.style.display = 'none'; SYM.style.display = 'none';
+  FCAP.style.display = 'none'; WLD.style.display = 'none'; OD.style.display = 'none'; OPH.style.display = 'none'; HALO.style.display = 'none'; LASER.style.display = 'none'; SPARK.style.display = 'none'; ENGF = null; SCAN.style.display = 'none'; GLINT.style.display = 'none'; SPOT.style.display = 'none'; TRC.style.display = 'none'; SYM.style.display = 'none';
   $('flash').style.opacity = 0; $('streak').style.opacity = 0; $('fade').style.opacity = 0; BURSTS.length = 0; TFW.style.display = 'none'; $('beam').style.opacity = 0; CARDS.forEach(c => { c.style.webkitBoxReflect = ''; c.style.clipPath = ''; }); camSet(SCX, SCY, 1);
   window.PMUL = 0.6;
-  if (t < 3.2) S0(t); if (t >= 2.9 && t < 12.4) SW(t); if (t >= 16.2 && t < 20.45) SPREM(t); if (t >= 12.2 && t < 16.45) SPLUS(t); if (t >= 20.2 && t < 24.95) SELITE(t); if (t >= 24.6 && t < 27.7) SSTACK(t); if (t >= 27.3) SF(t);
-  dustFx(t, t >= 16.2 && t < 18.3 ? cardRect(1, CS, CY) : null); laserFx(t); drawCaps(t); return { cur: null };
+  if (t < 3.2) S0(t); if (t >= 2.9 && t < 12.4) SW(t);
+  if (GENERIC) { if (t >= 16.2 && t < 20.45) SPREM(t); if (t >= 12.2 && t < 16.45) SPLUS(t); if (t >= 20.2 && t < 24.95) SELITE(t); if (t >= 24.6 && t < 27.7) SSTACK(t); }
+  else if (t >= 12.2 && t < 27.7) SOWN(t);
+  if (t >= 27.3) SF(t);
+  dustFx(t, GENERIC && t >= 16.2 && t < 18.3 ? cardRect(1, CS, CY) : null); laserFx(t); drawCaps(t); return { cur: null };
 }
 window.render = render; window.SFX = SFX; window.CAPS_T = CAPS.map(c => [c.t0, c.t1]);
 window.DIRECTOR = { TG: {}, ACTS: [], ACTIVE: {}, LIVEW: [], TOPONLY: [], YOFF: {} };
@@ -605,7 +745,7 @@ window.liveInit = () => { for (const d of CROPS) { const w = d._f.contentWindow;
 function generic(d) { const doc = d._f.contentDocument; if (!doc) return; doc.querySelectorAll('.mc-st').forEach(x => x.style.display = 'none');
   if (GENERIC) { const c = doc.querySelectorAll(MEM.sel)[0]; const ft = c && c.querySelector('.mc-foot'); if (ft) ft.innerHTML = '<div><small>نقطة لكل · <em>EARN</em></small><b>25 ر.س</b></div><div><small>500 نقطة · <em>VALUE</em></small><b>2 ر.س</b></div>'; } }
 window.liveReady = async () => { CROPS.forEach(generic); for (const d of CROPS) cropMeasure(d); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); for (const d of CROPS) cropMeasure(d);
-  EN = engSetup(CARDS[0], [CLIENT.name_ar, CLIENT.name_en]); const c = CARDS[0]; GLASS._w = c._w; GLASS._h = c._h; GLASS.style.width = c._w + 'px'; GLASS.style.height = c._h + 'px'; GLASS.style.borderRadius = (c._rr || 30) + 'px';
+  if (GENERIC) EN = engSetup(CARDS[0], [CLIENT.name_ar, CLIENT.name_en]); else ownSetup(); const c = CARDS[0]; GLASS._w = c._w; GLASS._h = c._h; GLASS.style.width = c._w + 'px'; GLASS.style.height = c._h + 'px'; GLASS.style.borderRadius = (c._rr || 30) + 'px';
   fitWL(); hideAll(); return true; };
 window.ready = (async () => { await Promise.all([...document.images].map(im => im.decode().catch(() => null))); await document.fonts.ready;
   for (const k in LAYERS) { LAYERS[k].style.display = 'block'; LAYERS[k].style.opacity = 0; } await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); fitWL(); return true; })();
