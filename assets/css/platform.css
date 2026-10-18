@@ -8406,3 +8406,18 @@ html.cpv-on .t2-head{top:48px}
 .flib-r{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--t2-line,#E3E8F0);border-radius:12px}
 .flib-rn{display:grid;flex:1;min-width:160px}.flib-rn small{color:var(--t2-muted,#5B6B82);font-size:.72rem}
 .flib-er{flex-basis:100%;color:#B42318;font-size:.72rem}
+/* v324: اختبار التوليد (مؤقت) */
+.flt{margin:18px 0 6px;padding:14px;border:1px dashed #C98418;border-radius:16px;background:rgba(255,200,97,.06)}
+.flt .flib-h{margin-top:0}
+.flt-only{font-size:.72rem;color:#8A5A12;font-weight:600}
+.flt-card{display:grid;gap:10px;margin-top:12px;padding:12px;border:1px solid var(--t2-line,#E3E8F0);border-radius:12px;background:var(--t2-card,#fff)}
+.flt-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.flt-times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.flt-times>div{display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--t2-soft,#F4F7FB)}
+.flt-times small{font-size:.7rem;color:var(--t2-muted,#5B6B82)}
+.flt-times b{font-size:1rem;font-variant-numeric:tabular-nums}
+.flt-run{width:90px;height:5px;border-radius:99px;background:rgba(10,165,173,.15);overflow:hidden}
+.flt-run i{display:block;width:40%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0AA5AD,#FFC861);animation:tfmRun 1.6s ease-in-out infinite}
+.flt-end{border-color:#E5B4AE!important;color:#B42318!important}
+@container app (max-width:40rem){.flt-times{grid-template-columns:1fr}}
+.flt .t2-pb-actions{margin-top:10px;flex-wrap:wrap}
