@@ -8387,6 +8387,27 @@ html.cpv-on .t2-head{top:48px}
 .tm .tfm-th i svg{width:22px;height:22px;fill:#3D2403;margin-inline-start:3px}
 .tm .tfm-run{width:120px;height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
 .tm .tfm-run i{display:block;width:40%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0AA5AD,#FFC861);animation:tfmRun 1.6s ease-in-out infinite}
+/* v328: متابعة حيّة لتجهيز «فيلمك باسمك» */
+.tm .tfm-trk{display:grid;gap:12px;margin-top:16px}
+.tm .tfm-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;font-size:.84rem;color:rgba(255,255,255,.85)}
+.tm .tfm-meta b{color:#FFC861;font-weight:800;font-size:.95rem;font-variant-numeric:tabular-nums}
+.tm .tfm-bar{position:relative;height:10px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.tm .tfm-bar b{position:absolute;inset-block:0;inset-inline-start:0;border-radius:inherit;background:linear-gradient(to left,#0AA5AD,#FFC861);box-shadow:0 0 14px rgba(255,200,97,.55);transition:width 1s linear;overflow:hidden}
+.tm .tfm-bar b::after{content:"";position:absolute;inset:0;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:tfmRun 1.8s ease-in-out infinite}
+.tm .tfm-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;list-style:none;margin:0;padding:0}
+.tm .tfm-steps li{display:grid;gap:4px;align-content:start;padding:12px 12px 10px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:.82rem;font-weight:600;color:rgba(255,255,255,.7)}
+.tm .tfm-steps li small{font-weight:400;font-size:.72rem;color:rgba(255,255,255,.6)}
+.tm .tfm-steps li i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.75rem;font-weight:800;background:rgba(255,255,255,.12)}
+.tm .tfm-steps li.ok{color:#fff}.tm .tfm-steps li.ok i{background:#0AA5AD;color:#fff}
+.tm .tfm-steps li.now{color:#fff;border-color:rgba(255,200,97,.6);background:rgba(255,200,97,.1)}
+.tm .tfm-steps li.now i{background:linear-gradient(135deg,#FFE1A0,#F0962A);color:#0A1F44;animation:tfmPulse 1.6s ease-in-out infinite}
+.tm .tfm-note{display:flex;gap:8px;align-items:center;margin:0;font-size:.78rem;color:rgba(255,255,255,.7)}
+.tm .tfm-note s,.tm .tfm-done s{flex:none;width:8px;height:8px;border-radius:50%;background:#2BD98B;box-shadow:0 0 0 4px rgba(43,217,139,.2)}
+.tm .tfm-done{display:flex;gap:10px;align-items:center;margin:14px 0 0;padding:12px 14px;border-radius:14px;background:rgba(43,217,139,.12);border:1px solid rgba(43,217,139,.35);font-size:.85rem;color:#fff}
+@keyframes tfmPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,200,97,.45)}50%{box-shadow:0 0 0 6px rgba(255,200,97,0)}}
+@media (prefers-reduced-motion:reduce){.tm .tfm-bar b::after,.tm .tfm-steps li.now i{animation:none}.tm .tfm-bar b{transition:none}}
+@container app (max-width:40rem){.tm .tfm-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container tm (max-width:40rem){.tm .tfm-row{grid-template-columns:1fr}.tm .tfm-th{width:100%}.tm .tfm-run{width:100%}.tm .tfm-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @keyframes tfmRun{0%{transform:translateX(160%)}100%{transform:translateX(-260%)}}
 @container app (max-width:40rem){.tm .tfm-row{grid-template-columns:1fr}.tm .tfm-th{width:100%}.tm .tfm-run{width:100%}}
 .flib{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:10px 0 4px}

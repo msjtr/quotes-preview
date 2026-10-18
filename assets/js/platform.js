@@ -10968,10 +10968,18 @@ function filmPlayer(o) {
   return { close: close };
 }
 window.__TFP = filmPlayer;
+/* العيّنة: طلب توضيحي يمرّ بمراحل التجهيز الحقيقية (بالانتظار ← قيد التوليد ← جاهز) */
+function filmDemo() {
+  const d = window.__FILMDEMO; if (!d) return null;
+  const iso = function (ms) { return new Date(ms).toISOString(); }, el = (Date.now() - d.t0) / 1000;
+  const f = { status: el < 10 ? 'queued' : el < 10 + FM_EST ? 'rendering' : 'ready', requested_at: iso(d.t0), started_at: el < 10 ? null : iso(d.t0 + 10000), now: iso(Date.now()) };
+  if (f.status === 'ready') Object.assign(f, { ready_at: iso(d.t0 + (10 + FM_EST) * 1000), expires_at: iso(d.t0 + 30 * 864e5), files: { landscape: FILM_CDN + FILM_LAUNCH.l + '.mp4' + FILM_V, portrait: FILM_CDN + FILM_LAUNCH.p + '.mp4' + FILM_V } });
+  return f;
+}
 /* استدعاءات فيلم العميل — في المنصة الحيّة من القاعدة، وفي العيّنة بيانات توضيحية */
 window.__FILMRPC = function (name) {
-  if (name === 'my_launch_film') return Promise.resolve({ ok: true, launched: true, film: window.__FILMDEMO || null, left: 4, film_on: true });
-  if (name === 'my_launch_film_request') { window.__FILMDEMO = { status: 'queued', requested_at: new Date().toISOString() }; return Promise.resolve({ ok: true, film: window.__FILMDEMO }); }
+  if (name === 'my_launch_film') return Promise.resolve({ ok: true, launched: true, film: filmDemo(), left: 4, film_on: true });
+  if (name === 'my_launch_film_request') { window.__FILMDEMO = { t0: Date.now() }; return Promise.resolve({ ok: true, film: filmDemo() }); }
   if (name === 'admin_launch_films') return Promise.resolve({ ok: true, rows: [] });
   return Promise.resolve({ ok: true });
 };
@@ -11413,6 +11421,23 @@ const CL_WAIT = {
 /* فيلمُ التدشين في «ملفي الشخصي» — الفيلم العام من R2 بالمقاسين، و«فيلمك باسمك» عند الطلب (30 يومًا) */
 const FM_ST = { limit: 'وصلتَ إلى الحد: 4 طلبات خلال 30 يومًا. يمكنك الطلب لاحقًا.', not_launched: 'يُتاح بعد تدشين حسابك.', cpv: 'هذا إجراء يخص العميل نفسه ولا يُنفَّذ باسمه.' };
 function fmDl(href, label, dim) { return '<a class="tfm-dl" href="' + esc(href) + '" download rel="noopener">' + glyph('download-simple') + '<span><b>' + label + '</b><small dir="ltr">' + dim + '</small></span></a>'; }
+/* v328: متابعة حيّة للعميل أثناء التجهيز (بدل رابط GitHub الخاص بالمشرف) — الوقت من الخادم (stf_36) */
+const FM_EST = 330; /* الزمن المعتاد للتجهيز بالثواني: التصوير المتوازي + الوصل + الرفع */
+function fmClock(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function fmHm(iso) { try { return iso ? new Date(iso).toLocaleTimeString('ar-SA-u-nu-latn', { hour: 'numeric', minute: '2-digit' }) : ''; } catch (err) { return ''; } }
+function fmMins(n) { return n <= 1 ? 'دقيقة' : n === 2 ? 'دقيقتين' : n + (n <= 10 ? ' دقائق' : ' دقيقة'); }
+function fmDur(s) { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), x = s % 60; return (m ? m + ' د' : '') + (m && x ? ' و' : '') + (x || !m ? x + ' ث' : ''); }
+function fmTrack(f, now) {
+  const run = f.status === 'rendering' && f.started_at, el = (now - Date.parse(run ? f.started_at : f.requested_at)) / 1000;
+  const pct = run ? 8 + 88 * Math.min(1, el / FM_EST) : Math.min(7, 2 + el / 6), rem = FM_EST - el;
+  const meta = run ? '<span>مضى <b dir="ltr">' + fmClock(el) + '</b></span><span>' + (rem > 60 ? 'المتبقي نحو <b>' + fmMins(Math.ceil(rem / 60)) + '</b>' : rem > 0 ? 'المتبقي <b>أقل من دقيقة</b>' : '<b>اللمسات الأخيرة…</b>') + '</span>'
+    : '<span>' + (el > 120 ? 'طلبك في الدور، ويبدأ تجهيزه خلال دقائق' : 'جارٍ بدء التجهيز…') + '</span><span>المعتاد نحو <b>' + fmMins(Math.ceil(FM_EST / 60)) + '</b></span>';
+  const step = function (k, t, sub, on) { return '<li class="' + (on === 'ok' ? 'ok' : on === 'now' ? 'now' : '') + '"' + (on === 'now' ? ' aria-current="step"' : '') + '><i>' + (on === 'ok' ? '✓' : k) + '</i>' + t + '<small>' + sub + '</small></li>'; };
+  return '<div class="tfm-meta">' + meta + '</div><div class="tfm-bar" role="progressbar" aria-label="تقدّم تجهيز فيلمك" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(pct) + '"><b style="width:' + pct.toFixed(1) + '%"></b></div>' +
+    '<ol class="tfm-steps">' + step(1, 'استلمنا طلبك', fmHm(f.requested_at), 'ok') + step(2, 'بدأ التجهيز', run ? fmHm(f.started_at) : 'خلال لحظات', run ? 'ok' : 'now') +
+    step(3, 'حفر اسمك بالمقاسين', 'الأفقي والطولي بدقة 1080', run ? 'now' : '') + step(4, 'جاهز للمشاهدة', 'والتنزيل', '') + '</ol>' +
+    '<p class="tfm-note"><s aria-hidden="true"></s>تتحدّث الحالة تلقائيًا كل 15 ثانية</p>';
+}
 function fmPlayOwn(f) { const x = f.files || {}; filmPlayer({ l: x.landscape, p: x.portrait, poster: { l: x.landscape_poster, p: x.portrait_poster }, skipAfter: 0, title: 'فيلمك باسمك' }); }
 const MEM_FILM = {
   title: 'فيلم التدشين',
@@ -11427,16 +11452,16 @@ const MEM_FILM = {
       '<section class="tfm-own" aria-live="polite"><p class="tfm-wait">جارٍ التحقق من فيلمك…</p></section>');
     mount(host, wire(box, ctx, m));
     const own = box.querySelector('.tfm-own');
-    let J = null, busy = false, msg = '', poll = 0;
+    let J = null, busy = false, msg = '', poll = 0, tick = 0, skew = 0, prev = '', done = '';
     const paint = function () {
       if (!own.isConnected) return;
       if (!J || J.ok === false) { own.innerHTML = '<div class="tfm-h"><span class="eyebrow">فيلمك باسمك</span><h3>تعذّر جلب حالة فيلمك</h3><p>تحقّق من اتصالك ثم أعد المحاولة.</p></div><div class="tfm-acts"><button type="button" class="lux-btn" data-fm="ref">إعادة المحاولة</button></div>'; return; }
       const f = J.film, st = f ? f.status : 'none', left = Number(J.left == null ? 4 : J.left);
-      let h = '', p = '', acts = '', side = '';
+      let h = '', p = '', acts = '', side = '', trk = '';
       if (st === 'queued' || st === 'rendering') {
-        h = 'فيلمك قيد التجهيز'; p = f.auto ? 'بدأنا تجهيزه باسمك عند تدشين حسابك، ويظهر هنا خلال دقائق.' : 'طلبتَه في <bdi dir="ltr">' + day(f.requested_at) + '</bdi>. يستغرقُ التجهيزُ عادةً دقائق، وتصلك رسالة «جُهِّز فيلمك» بالبريد وواتساب فور جاهزيته.';
-        side = '<div class="tfm-run" aria-hidden="true"><i></i></div>';
-        acts = '<button type="button" class="lux-btn" data-fm="ref">' + glyph('arrows-clockwise') + 'تحديث الحالة</button>';
+        h = st === 'rendering' && f.started_at ? 'نحفر اسمك على بطاقتك الآن' : 'استلمنا طلبك';
+        p = f.auto ? 'بدأنا تجهيزه باسمك عند تدشين حسابك، ويظهر هنا فور جاهزيته.' : 'تابع التجهيز لحظةً بلحظة. يمكنك مغادرة الصفحة؛ نرسل لك «جُهِّز فيلمك» بالبريد وواتساب فور جاهزيته.';
+        trk = '<div class="tfm-trk" aria-live="off">' + fmTrack(f, Date.now() + skew) + '</div>';
       } else if (st === 'ready' && f.files && f.files.landscape) {
         h = 'جُهِّز فيلمك'; p = 'يحملُ اسمَك على بطاقتك. متاحٌ حتى <bdi dir="ltr">' + day(f.expires_at) + '</bdi> ثم يُحذفُ تلقائيًا، ويمكنك طلبه من جديد.';
         side = '<button type="button" class="tfm-th" data-fm="play" aria-label="شاهد فيلمك"><img src="' + esc(f.files.landscape_poster || '') + '" alt="" loading="lazy"><i>' + glyph('play') + '</i></button>';
@@ -11448,11 +11473,21 @@ const MEM_FILM = {
         acts = '<button type="button" class="lux-btn gold" data-fm="req"' + (busy || left <= 0 ? ' disabled' : '') + '>' + tile('film-strip', 'navy') + (busy ? 'جارٍ إرسال الطلب…' : failedSt ? 'إعادة الطلب' : 'احصل على فيلمك باسمك') + '</button>' +
           '<small class="tfm-left">' + (left <= 0 ? FM_ST.limit : 'المتاح لك: ' + left + ' من 4 طلبات خلال 30 يومًا') + '</small>';
       }
-      own.innerHTML = '<div class="tfm-row"><div class="tfm-h"><span class="eyebrow">فيلمك باسمك</span><h3>' + h + '</h3><p>' + p + '</p>' + (msg ? '<p class="tfm-msg" role="status">' + esc(msg) + '</p>' : '') + '<div class="tfm-acts">' + acts + '</div></div>' + side + '</div>';
-      clearTimeout(poll);
-      if (st === 'queued' || st === 'rendering') poll = setTimeout(load, 30000);
+      own.innerHTML = '<div class="tfm-row"><div class="tfm-h"><span class="eyebrow">فيلمك باسمك</span><h3>' + h + '</h3><p>' + p + '</p>' + (msg ? '<p class="tfm-msg" role="status">' + esc(msg) + '</p>' : '') + (acts ? '<div class="tfm-acts">' + acts + '</div>' : '') + '</div>' + side + '</div>' + trk +
+        (done && st === 'ready' ? '<p class="tfm-done" role="status"><s aria-hidden="true"></s><span><b>جُهِّز فيلمك</b> — اكتمل خلال ' + esc(done) + '. اضغط «شاهد فيلمك».</span></p>' : '');
+      clearTimeout(poll); clearInterval(tick);
+      if (st === 'queued' || st === 'rendering') {
+        poll = setTimeout(load, 15000);
+        tick = setInterval(function () { const t = own.isConnected && own.querySelector('.tfm-trk'); if (!t || !J || !J.film) { clearInterval(tick); return; } t.innerHTML = fmTrack(J.film, Date.now() + skew); }, 1000);
+      }
     };
-    const load = function () { if (!own.isConnected) return; window.__FILMRPC('my_launch_film').then(function (j) { J = j || { ok: false }; paint(); }).catch(function () { J = { ok: false }; paint(); }); };
+    const seen = function () { /* وقت الخادم، وإشعار «جُهِّز فيلمك» عند انتقال الطلب من التجهيز إلى الجاهزية أمام العميل */
+      const f = J && J.film; if (!f) return;
+      if (f.now) skew = Date.parse(f.now) - Date.now();
+      if ((prev === 'queued' || prev === 'rendering') && f.status === 'ready' && f.ready_at && f.requested_at) { done = fmDur((Date.parse(f.ready_at) - Date.parse(f.requested_at)) / 1000); msg = ''; }
+      prev = f.status;
+    };
+    const load = function () { if (!own.isConnected) { clearTimeout(poll); clearInterval(tick); return; } window.__FILMRPC('my_launch_film').then(function (j) { J = j || { ok: false }; seen(); paint(); }).catch(function () { J = { ok: false }; paint(); }); };
     own.addEventListener('click', function (ev) {
       const b = ev.target.closest('[data-fm]'); if (!b || b.disabled) return;
       const k = b.getAttribute('data-fm');
@@ -11463,8 +11498,8 @@ const MEM_FILM = {
         window.__FILMRPC('my_launch_film_request').then(function (r) {
           busy = false;
           if (!r || r.ok === false) { msg = FM_ST[r && r.error] || 'تعذّر إرسال الطلب. أعد المحاولة.'; paint(); return; }
-          msg = r.already ? '' : 'استلمنا طلبك، وسنرسل لك «جُهِّز فيلمك» عند جاهزيته.';
-          J = Object.assign({}, J, { film: r.film, left: r.already ? J.left : Math.max(0, Number(J.left || 4) - 1) }); paint();
+          msg = ''; /* العنوان «استلمنا طلبك» والمتابعة الحيّة تكفيان */
+          J = Object.assign({}, J, { film: r.film, left: r.already ? J.left : Math.max(0, Number(J.left || 4) - 1) }); seen(); paint();
         }).catch(function () { busy = false; msg = 'تعذّر إرسال الطلب. أعد المحاولة.'; paint(); });
       }
     });
