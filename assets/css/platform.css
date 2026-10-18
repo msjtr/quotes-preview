@@ -8672,3 +8672,23 @@ html.cpv-on .t2-head{top:48px}
 .t2-pill.is-pend{background:color-mix(in srgb,#0AA5AD 13%,#fff);color:#06707A}
 .t2.is-dark .t2-pill.is-pend{background:rgba(10,165,173,.18);color:#7FE0E5}
 .t2 .rv-lg-i{display:inline-flex;align-items:center;gap:6px}.t2 .rv-legend{gap:8px 16px}.t2 .rv-legend small{margin:0}
+/* v341 — نافذة الخريطة ثابتة: لا تمرير خلفها، والخريطة تستقبل اللمس كاملًا */
+.rvm-mask{overscroll-behavior:contain;touch-action:none}
+.rvm-box{overscroll-behavior:contain;touch-action:pan-y}
+.rvm-sheet,.rvm-list,.rvm-lay{touch-action:pan-y;overscroll-behavior:contain}
+.rvm-map,.rvm-map .leaflet-container{touch-action:none}
+.rvm-fb,.rvm-chip,.rvm-sel,.rvm-q,.rvm-qb{touch-action:manipulation}
+/* v341 — وسائل الأمان داخل البطاقة: شرح وطريقة تفعيل ومسار في المكان نفسه */
+.t2 .rvs-ms{display:grid;gap:8px;margin-top:4px;padding:10px;border-radius:18px;background:var(--t2-surface);color:var(--t2-ink)}
+.t2 .rvs-m{border:1px solid var(--t2-line);border-radius:16px;background:var(--t2-surface);overflow:hidden}
+.t2 .rvs-m.is-on{border-color:#0AA5AD;box-shadow:0 0 0 1px #0AA5AD}
+.t2 .rvs-m-h{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:0;background:none;color:var(--t2-ink);text-align:start;cursor:pointer}
+.t2 .rvs-m-h .t2-tile{inline-size:38px;flex:none}.t2 .rvs-m-t{flex:1;display:grid;gap:2px;min-width:0}.t2 .rvs-m-t b{font-size:.9rem}.t2 .rvs-m-t small{font-size:.74rem;color:var(--t2-ink-2)}
+.t2 .rvs-m-h .t2-chev{transition:transform .15s}.t2 .rvs-m.is-on .rvs-m-h .t2-chev{transform:rotate(180deg)}
+.t2 .rvs-m-b{display:grid;gap:10px;padding:0 12px 12px}
+.t2 .rvs-ex{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px;padding:12px;border-radius:14px;background:color-mix(in srgb,#0AA5AD 6%,var(--t2-surface));font-size:.84rem}
+.t2 .rvs-ex b{display:block;margin-bottom:4px;color:#06707A;font-size:.82rem}.t2 .rvs-ex p{margin:0;color:var(--t2-ink-2);line-height:1.7}
+.t2 .rvs-ex ol{margin:0;padding-inline-start:18px;display:grid;gap:4px;color:var(--t2-ink);line-height:1.6}
+@media (max-width:40rem){.t2 .rvs-ex{grid-template-columns:1fr}}@container app (max-width:40rem){.t2 .rvs-ex{grid-template-columns:1fr}}
+.t2 .rvs-card.is-open{padding-bottom:12px}
+.t2 .rv-live{display:grid;gap:16px;padding:12px;border:2px dashed color-mix(in srgb,#0AA5AD 35%,var(--t2-line));border-radius:22px}

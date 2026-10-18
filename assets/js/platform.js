@@ -12927,7 +12927,7 @@ const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخ
 const RV_ON = !document.documentElement.classList.contains('tq-live');
 const RV = { tab: 'upd', toast: '', dlg: null };
 try { RV.tab = sessionStorage.getItem('tera-rv-tab') || 'upd'; } catch (err) { void err; }
-const RV_TABS = [['new', 'استكمال تسجيل جديد', 'profile'], ['upd', 'نموذج التحديث', 'newq'], ['addr', 'ملفي الشخصي', 'profile'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film'], ['acc', 'حالات الحساب', 'squares-four']];
+const RV_TABS = [['new', 'استكمال تسجيل جديد', 'profile'], ['upd', 'نموذج التحديث', 'newq'], ['addr', 'ملفي الشخصي', 'profile'], ['wa', 'ربط الواتساب', 'wa'], ['film', 'رسالة «جُهِّز فيلمك»', 'film'], ['live', 'بعد التفعيل', 'seal-check'], ['ctr', 'بعد إصدار العقد', 'contract'], ['acc', 'حالات الحساب', 'squares-four']];
 function rvGo(t) { RV.tab = t; RV.toast = ''; try { sessionStorage.setItem('tera-rv-tab', t); } catch (err) { void err; } draw(); toTop(); }
 function rvToast(t) { RV.toast = t; draw(); }
 const rvBadge = (t, tone) => DS.badge(t, tone);
@@ -13320,7 +13320,15 @@ function rvPick(o) {
       o.shortAddr ? e('div', { class: 'rvm-short' }, [e('label', {}, [e('b', {}, 'العنوان المختصر'), e('small', {}, 'أربعة أحرف إنجليزية ثم أربعة أرقام')]), e('div', { class: 'rvm-short-r' }, [sInp, sBtn])]) : null,
       e('div', { class: 'rvm-btns' }, [bOk, bNo])])]);
   const mask = e('div', { class: 'rvm-mask' + (app ? ' is-app' : '') + (dev ? ' is-dev' : '') }, box); host.appendChild(mask);
-  const close = function () { mask.remove(); document.removeEventListener('keydown', onKey, true); };
+  /* الشاشة ثابتة أثناء الخريطة: لا تتحرك الصفحة خلفها (ولا إطار الجوال في العيّنة) */
+  const unlock = (function () {
+    const sc = (typeof SCROLLER !== 'undefined' && SCROLLER && SCROLLER !== window) ? SCROLLER : null, y = window.scrollY, H = document.documentElement, B = document.body;
+    const prev = [H.style.overflow, B.style.overflow, sc ? sc.style.overflow : '', B.style.position, B.style.top, B.style.width];
+    H.style.overflow = 'hidden'; B.style.overflow = 'hidden'; if (sc) sc.style.overflow = 'hidden';
+    if (!dev && window.innerWidth <= 640) { B.style.position = 'fixed'; B.style.top = (-y) + 'px'; B.style.width = '100%'; }
+    return function () { H.style.overflow = prev[0]; B.style.overflow = prev[1]; if (sc) sc.style.overflow = prev[2]; B.style.position = prev[3]; B.style.top = prev[4]; B.style.width = prev[5]; window.scrollTo(0, y); };
+  })();
+  const close = function () { mask.remove(); unlock(); document.removeEventListener('keydown', onKey, true); };
   const onKey = function (ev) { if (ev.key === 'Escape') { ev.stopPropagation(); if (lay.style.display !== 'none') { lay.style.display = 'none'; return; } close(); } };
   document.addEventListener('keydown', onKey, true);
   xBtn.addEventListener('click', close); bNo.addEventListener('click', close);
@@ -13504,15 +13512,42 @@ function rvuSecState(k) {
 }
 const rvuSecReq = () => [['ربط رقم الواتساب', RVU.sec.wa, 'wa'], ['وسيلة مصادقة واحدة على الأقل', RVU.sec.auth, LVS.xc && !LVS.app ? 'extra' : 'app'], ['التحقق بالبريد عند كل دخول', RVU.sec.mail, 'mail']];
 /* البطاقة في النموذج: ملخّص الحالة وزرّ واحد */
+/* وسائل الأمان: لكل وسيلة شرحها وطريقة تفعيلها، ومسارها الحقيقي يفتح في مكانه داخل الصفحة نفسها */
+const RVU_SECM = [
+  ['wa', 'ربط رقم الواتساب', 'wa', 'يربط رقم جوالك في واتساب بحسابك: تصلك عليه رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا برمز التعريف عند تواصلك معه.',
+    ['أدخل رقم جوالك المسجّل في ملفك (بدون الصفر في البداية).', 'يصلك على واتساب رمز تحقق من 6 أرقام — أدخله، ويتحقق تلقائيًا عند اكتماله.', 'اختر رمز تعريف من 4 أرقام (غير متسلسل ولا مكرر) وأكّده.', 'اضغط «حفظ» — تظهر «تم الحفظ» ثم رسالة شكر بملخص الربط.'], 'شرط لإرسال ملفك للتوثيق.'],
+  ['twofa', 'المصادقة الثنائية — البريد وتطبيق المصادقة', 'key', 'طبقة حماية ثانية مع كلمة المرور: رمز على بريدك عند كل دخول، أو رمز يتغيّر كل 30 ثانية من تطبيق مصادقة مثل Google Authenticator أو Microsoft Authenticator.',
+    ['التحقق بالبريد: اضغط «تشغيلُ التحقُّقِ بالبريد» ← يصلك رمز على بريدك ← أدخله فيُفعَّل.', 'تطبيق المصادقة: اضغط «تهيئةُ التطبيق» ← افتح التطبيق وامسح رمز QR ← أدخل الرمز الظاهر فيه ← «تمت التهيئة».', 'بعد التفعيل يُطلب الرمز عند كل دخول وقبل العمليات الحساسة.'], 'التحقق بالبريد عند كل دخول شرط · وتطبيق المصادقة يحقّق شرط «وسيلة مصادقة واحدة على الأقل».'],
+  ['extra', 'رمز التحقق الإضافي', 'lock', 'رمز احتياطي من 12 خانة تستعمله إن لم يصلك رمز البريد أو الجوال، أو فقدت جهاز تطبيق المصادقة.',
+    ['اضغط «إنشاءُ رمزٍ جديد».', 'تحقّق برمز يصلك على البريد أو واتساب.', 'يظهر الرمز مرة واحدة فقط — انسخه واحفظه في مكان آمن.', 'اضغط «حفظتُ الرمز» — ولا يظهر بعدها في أي مكان.'], 'يحقّق شرط «وسيلة مصادقة واحدة على الأقل».'],
+  ['pw', 'كلمة المرور', 'shield', 'تغيير كلمة مرور حسابك بالتحقق الأمني نفسه.',
+    ['أدخل كلمة المرور الحالية واختر وسيلة التحقق (البريد أو الجوال).', 'أدخل الرمز الذي يصلك.', 'اكتب كلمة المرور الجديدة بشروطها: 5 أحرف و5 أرقام ورمز واحد على الأقل، بلا أحرف متتابعة ولا أرقام متسلسلة — ثم أكّدها.', 'اضغط «حفظ كلمة المرور».'], 'اختياري — يُنصح بتغييرها دوريًا.']];
+function rvuSecMState(k) {
+  if (k === 'twofa') { const a = !!LVS.mail, b = !!LVS.app; return a && b ? ['البريد والتطبيق مفعّلان', 'ok'] : a ? ['البريد مفعّل · التطبيق غير مفعّل', 'warn'] : b ? ['التطبيق مفعّل · البريد غير مفعّل', 'warn'] : ['غير مفعّلة', 'warn']; }
+  return rvuSecState(k === 'pw' ? 'pw' : k);
+}
 function rvuSecCard() {
   rvuSecSync();
-  const R = rvuSecReq(), n = R.filter(function (r) { return r[1]; }).length, lock = RVU.st === 'recv' || RVU.st === 'sent';
-  return e('section', { class: 'rvs-card' + (n === R.length ? ' is-ok' : '') }, [
-    e('div', { class: 'rvs-card-h' }, [frag(tile('shield')), e('div', {}, [e('b', {}, 'القسم 2 · مركز الأمان'), e('small', {}, n === R.length ? 'اكتملت شروط الأمان — جاهز للإرسال' : 'أكمل ' + fmtNum(R.length - n) + ' من ' + fmtNum(R.length) + ' شروط لتتمكّن من إرسال ملفك')]),
+  if (S.toast) { RV.toast = S.toast; S.toast = null; }
+  const R = rvuSecReq(), n = R.filter(function (r) { return r[1]; }).length, lock = RVU.st === 'recv' || RVU.st === 'sent', open = !!RVU.secOpen;
+  const head = [e('div', { class: 'rvs-card-h' }, [frag(tile('shield')), e('div', {}, [e('b', {}, 'القسم 2 · مركز الأمان'), e('small', {}, n === R.length ? 'اكتملت شروط الأمان — جاهز للإرسال' : 'أكمل ' + fmtNum(R.length - n) + ' من ' + fmtNum(R.length) + ' شروط لتتمكّن من إرسال ملفك')]),
       e('span', { class: 'rvs-n', dir: 'ltr' }, fmtNum(n) + '/' + fmtNum(R.length))]),
     e('div', { class: 'rvs-bar', 'aria-hidden': 'true' }, e('i', { style: 'width:' + Math.round(n / R.length * 100) + '%' })),
     e('ul', { class: 'rvs-req' }, R.map(function (r) { return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'warning', 16)), e('span', {}, r[0]), rvBadge(r[1] ? 'مكتمل' : 'ناقص', r[1] ? 'ok' : 'warn')]); })),
-    rvRow([DS.button(lock ? 'عرض مركز الأمان' : n === R.length ? 'فتح مركز الأمان' : 'أكمل الأمان الآن', { tone: 'primary', ui: 'shield-check', onClick: function () { RVU.view = 'sec'; RVU.secPg = ''; LVS.flow = ''; draw(); toTop(); } })])]);
+    rvRow([DS.button(open ? 'إخفاء وسائل الأمان' : n === R.length ? 'عرض وسائل الأمان' : 'أكمل الأمان الآن', { tone: 'primary', ui: open ? 'caret-up' : 'shield-check', onClick: function () { RVU.secOpen = !open; LVS.flow = ''; draw(); } })])];
+  if (!open) return e('section', { class: 'rvs-card' + (n === R.length ? ' is-ok' : '') }, head);
+  /* الوسائل: كل وسيلة صف يفتح شرحها وطريقة تفعيلها ومسارها — واحدة مفتوحة في كل مرة */
+  const items = RVU_SECM.map(function (m) {
+    const on = RVU.secPg === m[0], st = rvuSecMState(m[0]);
+    const row = e('button', { type: 'button', class: 'rvs-m-h', 'aria-expanded': on ? 'true' : 'false', onClick: function () { RVU.secPg = on ? '' : m[0]; LVS.flow = ''; S.otpAt = null; draw(); } },
+      [frag(tile(m[2])), e('span', { class: 'rvs-m-t' }, [e('b', {}, m[1]), e('small', {}, m[5])]), DS.badge(st[0], st[1]), e('span', { class: 't2-chev', 'aria-hidden': 'true' })]);
+    if (!on) return e('article', { class: 'rvs-m' }, [row]);
+    let flow = []; if (!lock) { if (m[0] === 'wa') flow = [rvWa()[1]]; else if (m[0] === 'twofa') flow = secTwofa(); else if (m[0] === 'extra') flow = secExtra(); else flow = secPassword(); }
+    return e('article', { class: 'rvs-m is-on' }, [row, e('div', { class: 'rvs-m-b' }, [
+      e('div', { class: 'rvs-ex' }, [e('div', {}, [e('b', {}, 'ما هي؟'), e('p', {}, m[3])]), e('div', {}, [e('b', {}, 'طريقة التفعيل'), e('ol', {}, m[4].map(function (x) { return e('li', {}, x); }))])]),
+      lock ? DS.note('info', 'الطلب قيد المراجعة', 'لا تُعدَّل وسائل الأمان حتى يصدر القرار.') : e('div', { class: 't2-stack-tight rvs-flow' }, flow.filter(Boolean))])]);
+  });
+  return e('section', { class: 'rvs-card is-open' + (n === R.length ? ' is-ok' : '') }, head.concat([e('div', { class: 'rvs-ms' }, items)]));
 }
 /* صفحة مركز الأمان داخل التحديث */
 function rvuSecPage() {
@@ -13936,7 +13971,7 @@ function rvWa() {
   } else body = e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, 'شكرًا لك يا يزيد'),
     e('p', {}, 'رُبط رقمك بحسابك بنجاح. ستصلك تنبيهات طلباتك ورموز التحقق على واتساب، ويتعرّف عليك فريقنا برمز التعريف.'),
     DS.fields([['الرقم', ltr(RVW.cc + ' ' + RVW.num)], ['تاريخ الربط', ltr(iso(RVW.at) + ' · ' + hm(RVW.at))], ['رمز التعريف', '•••• محفوظ']]), steps,
-    rvRow([DS.button('العودة لطلب التحديث', { tone: 'primary', size: 'sm', ui: 'files', onClick: function () { RVU.secPg = ''; RVU.view = 'form'; rvGo('upd'); } }), DS.button('إعادة التجربة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVW.st = 0; RVW.num = ''; RVW.pin = ''; RVW.pin2 = ''; RVU.sec.wa = false; draw(); } })])]);
+    rvRow([DS.button('تم — إغلاق', { tone: 'primary', size: 'sm', ui: 'check', onClick: function () { RVU.secPg = ''; RVU.view = 'form'; if (RV.tab === 'wa') rvGo(RVU.mode || 'upd'); else draw(); } }), DS.button('إعادة التجربة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVW.st = 0; RVW.num = ''; RVW.pin = ''; RVW.pin2 = ''; RVU.sec.wa = false; draw(); } })])]);
   const rule = DS.panel('القاعدة نفسها لكل عمل يقوم به العميل', 'إدخال ← تحقق عند الحاجة ← حفظ ← «تم الحفظ» ← رسالة شكر بملخص ما تم', [DS.fields([['تحديث العنوان', 'تم الحفظ ← شكرًا، عنوانك محدَّث'], ['إضافة حساب بنكي', 'رمز تحقق ← تم الحفظ ← شكرًا'], ['رفع مستند', 'تم الرفع ← شكرًا، سنراجعه'], ['تغيير البريد', 'رمز على البريد الجديد ← تم الحفظ ← شكرًا'], ['طلب «فيلمك باسمك»', 'استلمنا طلبك ← متابعة حيّة ← جُهِّز فيلمك']])]);
   return [ins, body, rule];
 }
@@ -14028,12 +14063,12 @@ function accTrack(J) {
 }
 function accJourneyPage(J) {
   const first = String(ME.name || '').split(' ')[0], pct = J.v.progress, R = rvuSecReq(), ready = R[0][1] && R[1][1];
-  const toUpd = function () { RV.tab = 'upd'; RVU.view = 'form'; go('other', 'rv-hub'); toTop(); }, toSec = function () { RV.tab = 'upd'; RVU.view = 'sec'; RVU.secPg = ''; go('other', 'rv-hub'); toTop(); };
+  const toUpd = function () { RVU.view = 'form'; draw(); setTimeout(function () { const x = document.querySelector('#pv-root .rv-acc'); if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }, toSec = function () { RVU.secOpen = true; RVU.view = 'form'; draw(); };
   let hero;
   if (J.stage === 'start') hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'WELCOME TO TERA'), e('h2', {}, 'استكمل ملفك، ' + first),
       e('p', {}, 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
       !ready ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تربط رقم الواتساب وتفعّل وسيلة مصادقة واحدة على الأقل من مركز الأمان.')]) : null,
-      e('div', { class: 'jr-acts' }, [DS.button(ready ? 'أكمل ملفي وأرسله' : 'أكمل مركز الأمان', { tone: 'primary', ui: 'caret-left', onClick: ready ? toUpd : toSec })])]),
+      e('div', { class: 'jr-acts' }, [DS.button('ابدأ من أول قسم ناقص', { tone: 'primary', ui: 'caret-down', onClick: toUpd }), ready ? null : DS.button('مركز الأمان', { ui: 'shield-check', onClick: function () { toSec(); setTimeout(function () { const x = document.querySelector('#pv-root .rvs-card'); if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80); } })])]),
     e('div', { class: 'jr-ring', style: '--jr-r:' + pct }, [e('b', {}, String(pct)), e('small', {}, '٪ اكتمال الملف')])]);
   else if (J.stage === 'review') hero = e('section', { class: 'jr-hero is-review' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'FILE UNDER REVIEW'), e('h2', {}, 'ملفك قيد المراجعة'),
     e('p', {}, 'وصل ملفك في ' + iso(new Date(J.v.submitted_at)) + '، وفريق تيرا يطابق بياناتك ومستنداتك. المرحلة الآن: المطابقة والمراجعة.'), accTrack(J)])]);
@@ -14046,6 +14081,8 @@ function accJourneyPage(J) {
   const secC = e('article', { class: 'jr-card' }, [e('header', {}, [frag(tile('shield-check:teal')), e('span', {}, [e('b', {}, 'مركز الأمان'), e('small', {}, sn === R.length ? 'حسابك محمي بكل وسائل التحقق' : 'وسائل أمان ناقصة: ' + fmtNum(R.length - sn) + ' من ' + fmtNum(R.length))]), DS.badge(sn === R.length ? 'مكتمل' : 'ناقص', sn === R.length ? 'ok' : 'warn')]),
     e('ul', { class: 'jr-chk' }, R.map(function (r) { return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'warning', 16)), e('span', {}, r[0]), r[1] ? e('small', {}, 'مكتمل') : DS.button('تفعيل', { size: 'sm', onClick: function () { toSec(); RVU.secPg = r[2]; } })]); })),
     DS.button('مركز الأمان', { size: 'sm', ui: 'shield-check', onClick: toSec })]);
+  /* قبل الإرسال: الاستكمال كله في الصفحة الرئيسية نفسها — الأقسام ومركز الأمان والمراجعة والإرسال، بلا انتقال لصفحات داخلية */
+  if (J.stage === 'start') { const U = rvUpd().filter(function (x, i) { return i > 0; }); return [e('div', { class: 't2-dash jr' }, [hero])].concat(U); }
   const kids = [hero, e('div', { class: 'jr-grid' }, [prof, secC])];
   /* بعد القبول تظهر «خدماتي»: بلا عقد الطلبات والبيانات الوظيفية وطلب عرض السعر */
   if (J.stage === 'approved') kids.push(sec(J.full ? 'خدماتي' : 'الخدمات المتاحة لك', J.full ? null : 'تظهر بقية الخدمات بعد توقيع عقدك وتنفيذه.', [DS.cardGrid((J.full ? [['contract', 'عقودي', function () { go('contracts'); }], ['wallet', 'مدفوعاتي', function () { go('pay'); }]] : [])
@@ -14072,10 +14109,22 @@ svcHubPage = function () {
     ['pt', 'الشركاء', 'people', [{ ic: 'people', t: 'طلب عرض سعر من الشركاء', d: 'عروض أسعار من شركائنا', go: function () { go('other', 'cl-partners'); } }]],
     ['me', 'بياناتي', 'files', [{ ic: 'briefcase:navy', t: 'بياناتي الوظيفية', go: function () { go('other', 'job-info'); } }]]]);
 };
+/* ---------- ٦) و٧) صفحة العميل كما هي: بعد التفعيل (بلا عقود) · بعد إصدار العقد ----------
+   تُعرض الصفحات الحقيقية نفسها (لوحتي الرئيسية · الأقسام · خدماتي) بالحالة المطلوبة دون أي تعديل في شكلها. */
+function rvAfter(full) {
+  const k = RV.aft || 'dash', prev = window.__ACC;
+  const tabs = DS.tabs({ items: [['dash', 'لوحتي الرئيسية', 'house'], ['more', 'الأقسام', 'squares-four'], ['svc', 'خدماتي', 'services']], value: k, onChange: function (v) { RV.aft = v; draw(); } });
+  let body = [];
+  window.__ACC = { stage: 'launched', full: !!full };
+  try { body = k === 'more' ? morePage() : k === 'svc' ? svcPage() : dashPage(); } catch (err) { body = [DS.note('warn', 'تعذّر عرض الصفحة', String(err && err.message || err))]; } finally { window.__ACC = prev; setTimeout(accMark, 0); }
+  return [DS.note('info', full ? 'صفحة العميل بعد إصدار العقد' : 'صفحة العميل بعد التفعيل — قبل أي عقد',
+      full ? 'كما تظهر للعميل بعد توقيع عقده وتنفيذه: العقود والمدفوعات والسداد والتأجيل والتوحيد ظاهرة.' : 'كما تظهر للعميل بعد تدشين حسابه ولا عقد لديه: تظهر «خدماتي» بطلباته وبياناته الوظيفية وطلب عرض السعر، وتُخفى كتل العقود والمدفوعات.'),
+    tabs, e('div', { class: 'rv-live' }, [].concat(body).filter(Boolean))];
+}
 function rvPage() {
   if (!/^rva?-/.test(String(S.fsOne || ''))) RV.prev = S.fsOne; if (RV.one) S.fsOne = RV.one;
   if (RV.tab === 'upd' || RV.tab === 'new') rvuMode(RV.tab);
-  const body = RV.tab === 'acc' ? rvAcc() : RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
+  const body = RV.tab === 'live' ? rvAfter(false) : RV.tab === 'ctr' ? rvAfter(true) : RV.tab === 'acc' ? rvAcc() : RV.tab === 'addr' ? rvAddr() : RV.tab === 'wa' ? rvWa() : RV.tab === 'film' ? rvFilm() : rvUpd();
   rvKeepOne(); setTimeout(rvOverlay, 0); rvBarOn();
   return [e('div', { class: 'rv-tabs' }, DS.tabs({ items: RV_TABS, value: RV.tab, onChange: rvGo })),
     RV.toast ? e('div', { class: 'mb-toast', role: 'status' }, [frag(ui(/^(تم|أُرسل)/.test(RV.toast) ? 'check' : 'info', 16)), RV.toast]) : null].concat(body).filter(Boolean);
