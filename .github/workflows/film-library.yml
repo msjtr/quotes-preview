@@ -27,10 +27,12 @@ jobs:
           cd "$RUNNER_TEMP/src"
           for b in $(ls *.part* | sed 's/\.part[0-9]*$//' | sort -u); do cat $(ls "$b".part* | sort -V) > "$b"; rm "$b".part*; done
           sha256sum -c manifest.sha256
-      - name: فيلم الصفحة الرئيسية القديم (من المستودع)
+      - name: فيلم الصفحة الرئيسية القديم (إن بقي في المستودع؛ نسخته محفوظة في library/home-old-*)
         run: |
-          cp assets/vid/film.mp4 "$RUNNER_TEMP/src/home-old-landscape.mp4"; cp assets/vid/film-m.mp4 "$RUNNER_TEMP/src/home-old-portrait.mp4"
-          cp assets/vid/film-poster.jpg "$RUNNER_TEMP/src/home-old-landscape.jpg"; cp assets/vid/film-poster-m.jpg "$RUNNER_TEMP/src/home-old-portrait.jpg"
+          [ -f assets/vid/film.mp4 ] && cp assets/vid/film.mp4 "$RUNNER_TEMP/src/home-old-landscape.mp4" || true
+          [ -f assets/vid/film-m.mp4 ] && cp assets/vid/film-m.mp4 "$RUNNER_TEMP/src/home-old-portrait.mp4" || true
+          [ -f assets/vid/film-poster.jpg ] && cp assets/vid/film-poster.jpg "$RUNNER_TEMP/src/home-old-landscape.jpg" || true
+          [ -f assets/vid/film-poster-m.jpg ] && cp assets/vid/film-poster-m.jpg "$RUNNER_TEMP/src/home-old-portrait.jpg" || true
       - name: الرفع إلى Cloudflare R2
         run: |
           t() { printf %s "$1" | tr -d '[:space:]'; }  # الأسرار قد تُحفظ بسطر زائد

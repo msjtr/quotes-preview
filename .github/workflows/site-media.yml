@@ -1,0 +1,56 @@
+# فيديوهات أقسام الموقع ← Cloudflare R2 (المسار site/ بلا مدة) — حتى لا يبقى أي فيديو على السيرفر.
+#   remove=no : رفع الفيديوهات والتحقق من وصولها عبر media.tera-services.com.sa فقط
+#   remove=yes: رفع + تحقق، ثم حذف ملفات الفيديو من المستودع (assets/vid/*.mp4) بعد أن تتحول الروابط إلى R2
+# الصور (jpg/webp) تبقى في المستودع لأنها صغيرة.
+name: site-media
+on:
+  workflow_dispatch:
+    inputs:
+      remove:
+        description: 'حذف ملفات الفيديو من المستودع بعد التحقق (yes/no)'
+        required: true
+        default: 'no'
+        type: choice
+        options: ['no', 'yes']
+permissions:
+  contents: write
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      CDN: https://media.tera-services.com.sa
+    steps:
+      - uses: actions/checkout@v4
+      - name: الرفع إلى Cloudflare R2 والتحقق
+        run: |
+          t() { printf %s "$1" | tr -d '[:space:]'; }
+          export AWS_ACCESS_KEY_ID="$(t "$AWS_ACCESS_KEY_ID")" AWS_SECRET_ACCESS_KEY="$(t "$AWS_SECRET_ACCESS_KEY")"
+          R2ID="$(t "$R2_ACCOUNT_ID" | grep -oiE '[0-9a-f]{32}' | head -n 1)"
+          [ -n "$R2ID" ] || { echo "R2_ACCOUNT_ID غير صالح"; exit 1; }
+          EP="https://$R2ID.r2.cloudflarestorage.com"
+          shopt -s nullglob; n=0
+          for f in assets/vid/*.mp4; do b=$(basename "$f")
+            case "$b" in film.mp4|film-m.mp4) continue;; esac   # فيلم الرئيسية القديم محفوظ مسبقًا في library/
+            aws s3 cp "$f" "s3://tera-films/site/$b" --endpoint-url "$EP" --content-type video/mp4 --cache-control "public, max-age=2592000" --only-show-errors
+            sz=$(stat -c %s "$f"); got=$(curl -sI "$CDN/site/$b?chk=$GITHUB_RUN_ID" | tr -d '\r' | awk 'tolower($1)=="content-length:"{print $2}' | tail -n1)
+            code=$(curl -s -o /dev/null -w '%{http_code}' -r 0-0 "$CDN/site/$b?chk=$GITHUB_RUN_ID")
+            [ "$got" = "$sz" ] && [ "$code" = "206" ] || { echo "تعذّر التحقق: $b (حجم $got/$sz، رمز $code)"; exit 1; }
+            echo "ok site/$b $sz"; n=$((n+1)); done
+          echo "رُفع وتُحقِّق من $n فيديو"
+          for b in film.mp4 film-m.mp4; do s="home-old-landscape.mp4"; [ "$b" = film-m.mp4 ] && s="home-old-portrait.mp4"
+            code=$(curl -s -o /dev/null -w '%{http_code}' -r 0-0 "$CDN/library/$s?chk=$GITHUB_RUN_ID"); [ "$code" = "206" ] || { echo "نسخة الأرشيف غير موجودة: library/$s"; exit 1; }; done
+      - name: حذف الفيديوهات من المستودع (بعد التحقق فقط)
+        if: inputs.remove == 'yes'
+        run: |
+          if grep -qF 'data-w="vid/' src/site/lib.py || grep -qF "'vid/' + k + (m ? '-m' : '') + '.mp4'" assets/js/platform.js; then echo "ما زالت روابط الفيديو المحلية في الكود — لا حذف"; exit 1; fi
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q assets/vid/*.mp4
+          git commit -q -m "site-media: الفيديوهات تُبثّ من Cloudflare R2 — حذفها من المستودع (نسخها في site/ و library/)"
+          git push
