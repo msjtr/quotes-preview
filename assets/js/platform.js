@@ -7045,6 +7045,16 @@ function cuMonPage(kind) {
   return [kp, cuRO('audit.view'), note, e('div', { class: 'm3-tools' }, [chips, e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { (ADM.monQ = ADM.monQ || {})[kind] = qi.value; draw(); } }), q ? DS.button('مسح', { size: 'sm', onClick: function () { ADM.monQ[kind] = ''; draw(); } }) : null])]),
     DS.panel(M[0], fmtNum(L.length) + ' حدثًا', [e('small', { class: 'cu-dr-hint' }, M[1]), L.length ? cuTbl(['الوقت', 'الحدث', 'الفاعل', 'المجال', last], rows) : LDS.emptyState({ icon: 'ok', title: 'لا أحداث بهذه التصفية', compact: true })])];
 }
+/* v348: لوحة المراقبة الأمنية في العيّنة — أرقام تجريبية من سجل العيّنة؛ البيانات الحقيقية على منفذ الاختبار */
+function cuMonLivePage() {
+  const all = cuAuditAll(), day = 864e5, d1 = all.filter(function (x) { return T0 - x.at < day; });
+  const warn = all.filter(function (x) { return x.sev === 'تحذير' || x.sev === 'حرِجة'; });
+  return [DS.note('info', 'عيّنة', 'هذه أرقام تجريبية من سجل العيّنة. على منفذ الاختبار تُقرأ اللوحة حيّةً من سجل الأمان في القاعدة: الدخول والمصادقة الفاشلة، وأكثر العناوين محاولات، والحسابات المقفلة الآن، والأحداث الحرِجة.'),
+    cuRO('audit.view'),
+    e('div', { class: 'cu-kpis' }, [['حدثًا أمنيًا', all.length, '', 'list'], ['آخر 24 ساعة', d1.length, 'warn', 'clock'], ['تحذير وحرِجة', warn.length, warn.length ? 'danger' : '', 'shield-warning']].map(function (x) { return e('div', { class: 'cu-kpi' + (x[2] ? ' is-' + x[2] : '') }, [e('span', { class: 'cu-kpi-ic' }, frag(ui(x[3], 18))), e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })),
+    DS.panel('آخر التنبيهات', fmtNum(warn.length) + ' حدثًا', [warn.length ? cuTbl(['الوقت', 'الحدث', 'الفاعل', 'الخطورة'], warn.slice(0, 20).map(function (x) { return e('tr', {}, [e('td', {}, e('span', { class: 'lv-dt' }, cuNowT(x.at))), e('td', {}, e('b', {}, x.ev)), e('td', {}, x.by || '—'), e('td', {}, x.sev)]); }))
+      : LDS.emptyState({ icon: 'ok', title: 'لا تنبيهات', compact: true })])];
+}
 /* حالة وسائل التحقق لكل حساب — للعميل المعاين تُقرأ من مركز أمانه */
 const CU_SECX = {};
 function cuSx(c, i) {
@@ -7131,6 +7141,7 @@ function cuAccHubPage() {
 function cuSecHubPage() {
   const all = cuAuditAll(), n = function (k) { return all.filter(CU_MON[k][2]).length; };
   return secHub('cusec', { t: 'مركز الأمن', s: 'المراقبة والسجلات لحسابات العملاء — كلها تُقرأ من سجل التدقيق.', ic: 'shield-check:teal' }, [
+    ['dash', 'لوحة المراقبة', 'shield-check:teal', [{ ic: 'shield-check:teal', t: 'لوحة المراقبة الأمنية', d: 'ملخّص: الدخول الفاشل والعناوين والحسابات المقفلة والأحداث الحرِجة', n: fmtNum(n('alerts')) + ' تنبيهًا', big: true, go: function () { go('other', 'cu-mon-live'); } }]],
     ['mon', 'السجلاتُ والمراقبة', 'list:navy', [{ ic: 'fingerprint:teal', t: 'النشاطُ والدخول', d: 'الدخول والخروج والجلسات', n: fmtNum(n('activity')) + ' حدثًا', go: function () { go('other', 'cu-mon-activity'); } },
       { ic: 'bell:saffron', t: 'التنبيهات', d: 'أحداث بدرجة تحذير أو حرِجة', n: fmtNum(n('alerts')) + ' حدثًا', go: function () { go('other', 'cu-mon-alerts'); } },
       { ic: 'warning:gold', t: 'العملياتُ الحسَّاسة', d: 'قرارات الموظفين على الحسابات والملفات', n: fmtNum(n('sens')) + ' عملية', go: function () { go('other', 'cu-mon-sens'); } },
@@ -7469,7 +7480,7 @@ function admMorePage() {
     ['set', 'الإعدادات', 'gear-six:navy', [{ ic: 'gear-six:navy', t: 'إعدادات النظام', d: 'الأدوار والصلاحيات · مدد الإنجاز · الردود · القوالب', go: function () { go('other', 'sys'); } }]]]);
 }
 function sysRegister() {
-  try { Object.assign(ICON, { sys: ['gear-six', 'navy'], 'sys-roles': ['key', 'navy'], 'sys-team': ['users-three', 'teal'], 'sys-titles': ['identification-badge', 'teal'], 'sys-invites': ['paper-plane-tilt', 'teal'], 'cu-acc': ['gear-six', 'navy'], 'cu-secc': ['shield-check', 'teal'], 'cu-sx-reccode': ['key', 'navy'], 'cu-sx-sess': ['sign-out', 'gold'], 'sys-acct': ['users-three', 'teal'], 'sys-staff': ['identification-badge', 'teal'], 'cu-sx-totp': ['device-mobile', 'teal'], 'cu-sx-mail': ['envelope-simple', 'sky'], 'cu-wa-pins': ['whatsapp-logo', 'teal'], 'cu-2fa': ['shield-check', 'teal'], 'cu-mon-activity': ['fingerprint', 'teal'], 'cu-mon-alerts': ['bell', 'saffron'], 'cu-mon-sens': ['warning', 'gold'], 'cu-mon-sec': ['shield-warning', 'gold'], 'cu-mon-dev': ['device-mobile', 'navy'], 'cu-audit': ['clock-counter-clockwise', 'navy'], 'sys-sla': ['timer', 'saffron'], 'sys-replies': ['chat-circle-dots', 'teal'], 'sys-ntpl': ['megaphone-simple', 'sky'], 'sys-log': ['clock-counter-clockwise', 'navy'], 'adm-more': ['squares-four', 'navy'] }); } catch (err) { void err; }
+  try { Object.assign(ICON, { sys: ['gear-six', 'navy'], 'sys-roles': ['key', 'navy'], 'sys-team': ['users-three', 'teal'], 'sys-titles': ['identification-badge', 'teal'], 'sys-invites': ['paper-plane-tilt', 'teal'], 'cu-acc': ['gear-six', 'navy'], 'cu-secc': ['shield-check', 'teal'], 'cu-sx-reccode': ['key', 'navy'], 'cu-sx-sess': ['sign-out', 'gold'], 'sys-acct': ['users-three', 'teal'], 'sys-staff': ['identification-badge', 'teal'], 'cu-sx-totp': ['device-mobile', 'teal'], 'cu-sx-mail': ['envelope-simple', 'sky'], 'cu-wa-pins': ['whatsapp-logo', 'teal'], 'cu-2fa': ['shield-check', 'teal'], 'cu-mon-activity': ['fingerprint', 'teal'], 'cu-mon-alerts': ['bell', 'saffron'], 'cu-mon-sens': ['warning', 'gold'], 'cu-mon-sec': ['shield-warning', 'gold'], 'cu-mon-dev': ['device-mobile', 'navy'], 'cu-mon-live': ['shield-check', 'teal'], 'cu-audit': ['clock-counter-clockwise', 'navy'], 'sys-sla': ['timer', 'saffron'], 'sys-replies': ['chat-circle-dots', 'teal'], 'sys-ntpl': ['megaphone-simple', 'sky'], 'sys-log': ['clock-counter-clockwise', 'navy'], 'adm-more': ['squares-four', 'navy'] }); } catch (err) { void err; }
   lp('sys', 'إعدادات النظام', null, 'sys', sysHubPage);
   lp('sys-roles', 'الأدوار والصلاحيات', 'sys', 'sys-roles', sysRolesPage);
   lp('sys-team', 'دليل الحسابات', 'sys', 'sys-team', sysAccountsPage);
@@ -7496,6 +7507,7 @@ function sysRegister() {
   lp('cu-mon-sens', 'العملياتُ الحسَّاسة', 'cu-secc', 'cu-mon-sens', function () { return cuMonPage('sens'); });
   lp('cu-mon-sec', 'التنبيهاتُ الأمنية', 'cu-secc', 'cu-mon-sec', function () { return cuMonPage('sec'); });
   lp('cu-mon-dev', 'الأجهزةُ وأحداثُ الحساب', 'cu-secc', 'cu-mon-dev', cuDevPage);
+  lp('cu-mon-live', 'لوحة المراقبة الأمنية', 'cu-secc', 'cu-mon-live', cuMonLivePage);
   lp('cu-audit', 'سجلُّ التدقيق', 'cu-secc', 'cu-audit', function () { return cuMonPage('audit'); });
   lp('adm-more', 'الأقسام', null, 'adm-more', admMorePage);
 }
@@ -16332,7 +16344,7 @@ if (LIVE.on) secDevices = function () {
   H('client', ['merge', 'settle', 'defer'], 'هذه الطلبات تُفعَّل قريبًا', 'طلبات سداد العقد كاملًا وتأجيل الدفعة وتوحيد العقود تُرسل من هنا عند ربطها بالخادم.');
   H('admin', ['sys-team', 'sys-staff', 'sys-acct'], 'حسابات الفريق في قسم الموظفين', 'يُبنى قسم الموظفين في المرحلة التالية، وتُعرض الحسابات هنا من الخادم.');
   H('admin', ['cu-docs-pq', 'cu-docs-sq', 'cu-docs-cq', 'cu-docs-si'], 'العروض والفواتير', 'تُعرض عروض الأسعار والفواتير هنا من الخادم عند ربط مسار العروض.');
-  H('admin', ['cu-sx-sess', 'cu-sx-reccode', 'cu-sx-totp', 'cu-sx-mail', 'cu-2fa', 'cu-wa-pins', 'cu-mon-dev', 'cu-mon-activity', 'cu-mon-alerts', 'cu-mon-sens', 'cu-mon-sec', 'cu-audit'], 'أدوات الأمان والسجلات', 'تُقرأ هذه الصفحات من سجل التدقيق وحسابات العملاء عند ربطها بالخادم.');
+  H('admin', ['cu-sx-sess', 'cu-sx-reccode', 'cu-sx-totp', 'cu-sx-mail', 'cu-2fa', 'cu-wa-pins', 'cu-mon-live', 'cu-mon-dev', 'cu-mon-activity', 'cu-mon-alerts', 'cu-mon-sens', 'cu-mon-sec', 'cu-audit'], 'أدوات الأمان والسجلات', 'تُقرأ هذه الصفحات من سجل التدقيق وحسابات العملاء عند ربطها بالخادم.');
   H('admin', ['cs-devices'], 'أجهزة العملاء', 'التصريح بالأجهزة يتم من العميل نفسه في مركز أمانه، وتُعرض قائمة أجهزة العملاء هنا عند ربطها بالخادم.');
   H('admin', ['cu-acc', 'cu-secc'], 'إدارة الحسابات ومركز الأمن', 'تُعرض مشكلات حسابات العملاء وسجلات الأمن هنا من الخادم عند ربطها.');
   H('admin', ['cu-mem', 'cu-pf-launch'], 'العضويات والتدشين', 'تُعرض العضويات وتدشين الحسابات من الخادم عند ربطها.');
@@ -18032,7 +18044,8 @@ function lvSecHubPage() {
     function () { return admRpc('admin_audit_list', { p_search: null, p_action: null, p_from: null, p_to: null, p_limit: 400, p_offset: 0 }); },
     function (j) { const R = (j && j.rows) || [], n = function (k) { return R.filter(LV_MON[k][2]).length; }, tot = Number(j && j.total) || R.length;
       const card = function (k, ic) { return { ic: ic, t: LV_MON[k][0], d: LV_MON[k][1], n: fmtNum(n(k)) + ' حدثًا في آخر ' + fmtNum(R.length), go: function () { go('other', k); } }; };
-      return [['mon', 'السجلاتُ والمراقبة', 'list:navy', [card('cu-mon-activity', 'fingerprint:teal'), card('cu-mon-alerts', 'bell:saffron'), card('cu-mon-sens', 'warning:gold'), card('cu-mon-sec', 'shield-warning:gold'),
+      return [['dash', 'لوحة المراقبة', 'shield-check:teal', [{ ic: 'shield-check:teal', t: 'لوحة المراقبة الأمنية', d: 'ملخّص حي: الدخول الفاشل والعناوين والحسابات المقفلة والأحداث الحرِجة', big: true, go: function () { go('other', 'cu-mon-live'); } }]],
+        ['mon', 'السجلاتُ والمراقبة', 'list:navy', [card('cu-mon-activity', 'fingerprint:teal'), card('cu-mon-alerts', 'bell:saffron'), card('cu-mon-sens', 'warning:gold'), card('cu-mon-sec', 'shield-warning:gold'),
           { ic: 'device-mobile:navy', t: 'الأجهزةُ وأحداثُ الحساب', d: 'للعرض — التصريح يتم من العميل في مركز أمانه', go: function () { go('other', 'cu-mon-dev'); } }]],
         ['aud', 'السجل الرسمي', 'clock-counter-clockwise:navy', [{ ic: 'clock-counter-clockwise:navy', t: 'سجلُّ التدقيق', d: 'المصدر الرسمي لكل الأحداث ونتائجها', n: fmtNum(tot) + ' حدثًا', big: true, go: function () { go('other', 'cu-audit'); } }]]]; });
 }
@@ -18048,6 +18061,44 @@ function lvAuditPage(k) {
       admTable(['الوقت', 'الحدث', 'المنفّذ', 'الكيان', 'النتيجة', 'الدرجة'], L.map(function (a) {
         return admRow([lvDt(a.created_at), admName(a.action_label || a.action, a.reason || ''), admName(a.actor_display || a.actor_name || (a.by_system ? 'النظام' : '—'), a.actor_role || ''), a.entity_type ? ltr(a.entity_type + (a.quote_number ? ' · ' + a.quote_number : '')) : '—', DS.badge(a.result_label || a.result || '—', a.result === 'success' ? 'ok' : a.result === 'failure' || a.result === 'denied' ? 'danger' : null), admB(LV_SEV, a.severity)], null,
           [a.action_label, a.action, a.actor_display, a.actor_name, a.entity_type, a.reason, a.quote_number].join(' ')); }), R.length, 'لا أحداث هنا', true)];
+  });
+}
+/* v348: لوحة المراقبة الأمنية — ملخّص حي من سجل الأمان القائم (svc_security_monitor عبر /admin/api/security/monitor، قراءة فقط) */
+const SECMON_H = [[24, 'آخر 24 ساعة'], [168, 'آخر 7 أيام'], [720, 'آخر 30 يومًا']];
+async function secMonFetch(h) {
+  const t = await liveToken();
+  const r = await fetch('/admin/api/security/monitor?hours=' + h + '&limit=150', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' });
+  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  const j = await r.json().catch(function () { return null; });
+  if (!r.ok || !j || j.ok === false) throw new Error((j && j.message) || 'تعذّر تحميل مركز المراقبة.');
+  return j.data || {};
+}
+function lvMonLivePage() {
+  const S = ADMS.secmon || (ADMS.secmon = { q: '', f: 'all', data: null, at: 0 }); if (!S.h) S.h = 24;
+  return admMount('secmon', 'لوحة المراقبة الأمنية', function () { return secMonFetch(S.h); }, function (d, st, paint, refetch) {
+    d = d || {}; const C = d.counts || {}, EV = d.events || [], IP = d.top_ips || [], LK = d.locked || [], TH = d.throttled || [];
+    const hrs = chipRow(SECMON_H.map(function (x) { return [String(x[0]), x[1], null, null]; }), String(st.h), function (v) { st.h = Number(v) || 24; refetch(); }, 'المدة');
+    const sevs = ['critical', 'warning', 'notice', 'info'].filter(function (s) { return EV.some(function (a) { return a.severity === s; }); });
+    const chips = [['all', 'الكل', EV.length]].concat(sevs.map(function (s) { return [s, (LV_SEV[s] || [s])[0], EV.filter(function (a) { return a.severity === s; }).length]; }));
+    const L = EV.filter(function (a) { return st.f === 'all' || a.severity === st.f; });
+    const dt = function (v) { return v ? lvDt(v) : '—'; };
+    return [DS.note('info', 'من سجل الأمان القائم', 'أحداث الدخول والمصادقة والاستعادة والقفل من سجل التدقيق الرسمي. للاطلاع فقط — لا يُعدَّل السجل ولا يُحذف. حظر العناوين المتكرر يتم في Cloudflare، والقفل المؤقت للحساب يتم تلقائيًا في المنصة.'),
+      e('div', { class: 'm3-tools' }, [hrs]),
+      admKpis([['حدثًا أمنيًا', C.total || 0, '', 'list'], ['حرِجة', C.critical || 0, C.critical ? 'danger' : '', 'shield-warning'], ['تحذير', C.warning || 0, C.warning ? 'warn' : '', 'warning'],
+        ['دخول فاشل', C.failed_logins || 0, C.failed_logins ? 'warn' : '', 'sign-in'], ['مصادقة ثنائية فاشلة', C.failed_2fa || 0, C.failed_2fa ? 'warn' : '', 'fingerprint'], ['عناوين بمحاولات فاشلة', C.ips_failing || 0, '', 'globe']]),
+      DS.panel('حسابات مقفلة الآن', fmtNum(LK.length + TH.length), [LK.length || TH.length ? cuTbl(['الحساب', 'النوع', 'السبب', 'حتى'],
+        LK.map(function (x) { return e('tr', {}, [e('td', {}, x.user || '—'), e('td', {}, 'قفل الحساب'), e('td', {}, x.reason || (x.failed ? fmtNum(x.failed) + ' محاولات خاطئة' : '—')), e('td', {}, dt(x.locked_until))]); })
+          .concat(TH.map(function (x) { return e('tr', {}, [e('td', {}, x.user || '—'), e('td', {}, 'قفل مؤقت · ' + (x.scope || '—')), e('td', {}, fmtNum(x.fails || 0) + ' محاولات · الجولة ' + fmtNum(x.round || 0)), e('td', {}, dt(x.locked_until))]); })))
+        : LDS.emptyState({ icon: 'ok', title: 'لا حسابات مقفلة الآن', compact: true })]),
+      DS.panel('أكثر العناوين محاولاتٍ فاشلة', fmtNum(IP.length), [IP.length ? cuTbl(['العنوان', 'المحاولات الفاشلة', 'آخرها'], IP.map(function (x) { return e('tr', {}, [e('td', {}, ltr(x.ip)), e('td', {}, fmtNum(x.n)), e('td', {}, dt(x.last))]); }))
+        : LDS.emptyState({ icon: 'ok', title: 'لا محاولات فاشلة في هذه المدة', compact: true })]),
+      admTools(st, chips, paint, refetch, 'ابحث بالحدث أو الحساب أو العنوان'),
+      admTable(['الوقت', 'الحدث', 'الحساب', 'العنوان', 'النتيجة', 'الدرجة'], L.map(function (a) {
+        const why = [a.reason, a.info && a.info.reason, a.info && a.info.channel].filter(Boolean).join(' · ');
+        return admRow([dt(a.at), admName(a.label || a.key, why), admName(a.subject || a.actor || '—', a.subject && a.actor && a.actor !== a.subject ? 'بواسطة ' + a.actor : ''), a.ip ? ltr(a.ip) : '—',
+          a.result ? DS.badge(a.result === 'success' ? 'نجح' : a.result === 'failure' ? 'فشل' : a.result === 'denied' ? 'مُنع' : a.result, a.result === 'success' ? 'ok' : a.result === 'failure' || a.result === 'denied' ? 'danger' : null) : '—',
+          DS.badge((LV_SEV[a.severity] || [a.severity])[0], (LV_SEV[a.severity] || [])[1] || null)], null, [a.label, a.key, a.subject, a.actor, a.ip, a.reason].join(' '));
+      }), L.length, 'لا أحداث بهذه التصفية', true)];
   });
 }
 /* طلبات تحديث الملف الشخصي: اعتماد أو رفض بسبب */
@@ -18074,7 +18125,7 @@ if (LIVE.on) {
   Object.assign(LIVE_PAGES.admin || (LIVE_PAGES.admin = {}), {
     'cu-acc': lvAccHubPage, 'cu-pf-acct': function () { return lvAcctPage(''); }, 'cu-sx-sess': function () { return lvAcctPage('sess'); }, 'cu-2fa': lv2faPage, 'cu-pf-launch': lvLaunchPage,
     'cu-secc': lvSecHubPage, 'cu-mon-activity': function () { return lvAuditPage('cu-mon-activity'); }, 'cu-mon-alerts': function () { return lvAuditPage('cu-mon-alerts'); }, 'cu-mon-sens': function () { return lvAuditPage('cu-mon-sens'); },
-    'cu-mon-sec': function () { return lvAuditPage('cu-mon-sec'); }, 'cu-audit': function () { return lvAuditPage('cu-audit'); }, 'cu-pf-req': lvPfReqPage });
+    'cu-mon-sec': function () { return lvAuditPage('cu-mon-sec'); }, 'cu-audit': function () { return lvAuditPage('cu-audit'); }, 'cu-pf-req': lvPfReqPage, 'cu-mon-live': lvMonLivePage });
 }
 /* ---------- v285: العروض والفواتير من القاعدة — عروض الشركاء (admin_quotations_list) · عروض المتجر · فواتير المتجر (الطلبات المدفوعة) ---------- */
 const LV_QT = { pending_approval: ['بانتظار الاعتماد الداخلي', 'warn'], declined: ['رفضه العميل', 'danger'], draft: ['مسودة', null], issued: ['صادر — بانتظار العميل', 'warn'], sent: ['صادر — بانتظار العميل', 'warn'], accepted: ['مقبول', 'ok'], approved: ['معتمد', 'ok'], rejected: ['مرفوض', 'danger'], expired: ['منتهٍ', null], cancelled: ['ملغى', null] };
