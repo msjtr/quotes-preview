@@ -13311,14 +13311,16 @@ function rvPick(o) {
   const qBtn = e('button', { type: 'button', class: 'rvm-qb', 'aria-label': 'بحث' }, frag(ui('magnifying-glass', 18)));
   const selC = e('select', { class: 'rvm-sel', 'aria-label': 'الدولة' }), selR = e('select', { class: 'rvm-sel', 'aria-label': 'المنطقة' });
   const freeR = e('input', { class: 'rvm-sel rvm-free', type: 'text', placeholder: 'اكتب المنطقة ثم Enter', style: 'display:none' });
-  const sInp = e('input', { class: 'rvm-sinp', type: 'text', maxlength: '9', dir: 'ltr', autocomplete: 'off', placeholder: 'RIYD2929', 'aria-label': 'العنوان المختصر' });
-  const sBtn = e('button', { type: 'button', class: 'rvm-sbtn' }, [frag(ui('magnifying-glass', 16)), e('span', {}, 'جلب العنوان')]);
+  let sMode = false; const bShort = o.shortAddr ? chip('العنوان المختصر', 'hash') : null;
+  const setMode = function (on) { sMode = !!on && !!o.shortAddr; q.value = ''; q.placeholder = sMode ? 'العنوان المختصر — مثل RIYD2929' : 'ابحث: مدينة أو حي أو شارع أو معلم'; q.dir = sMode ? 'ltr' : 'rtl'; q.classList.toggle('is-code', sMode); if (bShort) bShort.classList.toggle('is-on', sMode); hideList(); q.focus(); };
   const bIn = fab('plus', 'تكبير'), bOut = fab('minus', 'تصغير'), bLay = fab('stack', 'طبقات الخريطة'), bMe = fab('crosshair', 'موقعي الآن', 'is-me');
   const bAddr = chip('أقرب العناوين', 'signpost'), bPoi = chip('أماكن قريبة', 'storefront');
   const list = e('div', { class: 'rvm-list', role: 'listbox', style: 'display:none' });
   const lay = e('div', { class: 'rvm-lay', role: 'dialog', 'aria-label': 'طبقات الخريطة', style: 'display:none' });
   const note = e('div', { class: 'rvm-note ok', 'aria-live': 'polite' }, 'حرّك الدبوس إلى مكانك بالضبط، أو ابحث عنه، أو استعن بالأدوات.');
   const addr = e('div', { class: 'rvm-addr', 'aria-live': 'polite' }, e('span', {}, 'اضغط على مكانك في الخريطة أو اسحب الدبوس.'));
+  const tiles = e('div', { class: 'rvm-tiles', role: 'list', 'aria-label': 'بيانات العنوان' });
+  const bMin = e('button', { type: 'button', class: 'rvm-min', 'aria-expanded': 'true', title: 'إظهار بيانات العنوان أو إخفاؤها', 'aria-label': 'إظهار بيانات العنوان أو إخفاؤها' }, frag(ui('caret-down', 18)));
   const mapEl = e('div', { class: 'rvm-map', role: 'application', 'aria-label': 'الخريطة — اسحب الدبوس أو اضغط على مكانك' }, e('small', { class: 'rvm-wait' }, 'جارٍ تحميل الخريطة…'));
   const attr = e('div', { class: 'rvm-attr', dir: 'ltr' });
   const bOk = e('button', { type: 'button', class: 'rvm-ok' }, [frag(ui('check', 18)), e('span', {}, 'تأكيد الموقع')]), bNo = e('button', { type: 'button', class: 'rvm-no' }, 'إلغاء');
@@ -13326,11 +13328,9 @@ function rvPick(o) {
   const box = e('div', { class: 'rvm-box', role: 'dialog', 'aria-modal': 'true', 'aria-label': o.title || 'تحديد موقع العنوان' }, [
     e('div', { class: 'rvm-head' }, [xBtn, e('div', { class: 'rvm-head-t' }, [e('b', {}, o.title || 'تحديد موقع العنوان'), e('small', {}, o.shortAddr ? 'العنوان الوطني — بالخريطة أو العنوان المختصر' : 'حدّد مكانك ويُعبّأ العنوان')]), frag(tile('map-trifold:teal'))]),
     e('div', { class: 'rvm-stage' }, [mapEl,
-      e('div', { class: 'rvm-top' }, [e('div', { class: 'rvm-find' }, [q, qBtn]), e('div', { class: 'rvm-sels' }, [selC, selR, freeR, bAddr, bPoi]), list]),
-      e('div', { class: 'rvm-fabs' }, [bIn, bOut, bLay, bMe]), lay, attr]),
-    e('div', { class: 'rvm-sheet' }, [e('span', { class: 'rvm-grab', 'aria-hidden': 'true' }), note, addr,
-      o.shortAddr ? e('div', { class: 'rvm-short' }, [e('label', {}, [e('b', {}, 'العنوان المختصر'), e('small', {}, 'أربعة أحرف إنجليزية ثم أربعة أرقام')]), e('div', { class: 'rvm-short-r' }, [sInp, sBtn])]) : null,
-      e('div', { class: 'rvm-btns' }, [bOk, bNo])])]);
+      e('div', { class: 'rvm-top' }, [e('div', { class: 'rvm-find' }, [q, qBtn]), e('div', { class: 'rvm-sels' }, [bShort, selC, selR, freeR, bAddr, bPoi]), list]),
+      e('div', { class: 'rvm-fabs' }, [bIn, bOut, bLay, bMe]), lay,
+      e('div', { class: 'rvm-card' }, [e('div', { class: 'rvm-card-h' }, [note, bMin]), e('div', { class: 'rvm-card-b' }, [addr, tiles]), e('div', { class: 'rvm-btns' }, [bOk, bNo]), attr])])]);
   const mask = e('div', { class: 'rvm-mask' + (app ? ' is-app' : '') + (dev ? ' is-dev' : '') }, box); host.appendChild(mask);
   /* الشاشة ثابتة أثناء الخريطة: لا تتحرك الصفحة خلفها (ولا إطار الجوال في العيّنة) */
   const unlock = (function () {
@@ -13344,20 +13344,56 @@ function rvPick(o) {
   const onKey = function (ev) { if (ev.key === 'Escape') { ev.stopPropagation(); if (lay.style.display !== 'none') { lay.style.display = 'none'; return; } close(); } };
   document.addEventListener('keydown', onKey, true);
   xBtn.addEventListener('click', close); bNo.addEventListener('click', close);
+  bMin.addEventListener('click', function () { const m = !box.classList.contains('is-min'); box.classList.toggle('is-min', m); bMin.setAttribute('aria-expanded', m ? 'false' : 'true'); setTimeout(function () { if (map) map.invalidateSize(); }, 60); });
+  if (bShort) bShort.addEventListener('click', function () { setMode(!sMode); });
   mask.addEventListener('mousedown', function (ev) { if (ev.target === mask) close(); });
   const setNote = function (k, t) { note.className = 'rvm-note ' + k; note.textContent = t; };
   const hideList = function () { list.style.display = 'none'; list.innerHTML = ''; };
   const fmt = (p) => ({ title: (p && (p.name || p.display_name)) || '—', sub: (p && p.name && p.display_name !== p.name) ? p.display_name : '', lat: p ? Number(p.latitude) : null, lon: p ? Number(p.longitude) : null });
-  const setPin = function (la, lo, z) { if (!map) return; pin.setLatLng([la, lo]); map.setView([la, lo], z || map.getZoom()); };
+  const setPin = function (la, lo, z) { if (!map) return; pin.setLatLng([la, lo]); map.setView([la, lo], z || map.getZoom(), { animate: false }); lift(); };
+  /* الدبوس يبقى ظاهرًا فوق لوحة العنوان وتحت شريط البحث */
+  const lift = function () { if (!map) return; const cd = box.querySelector('.rvm-card'), tp = box.querySelector('.rvm-top'); const dy = ((cd ? cd.offsetHeight : 0) - (tp ? tp.offsetHeight : 0)) / 2; if (Math.abs(dy) > 4) map.panBy([0, dy], { animate: false }); };
+  /* مربعات العنوان: كل حقل بقيمته ومصدره (HERE · OpenStreetMap · الدبوس · تكتبه أنت) */
+  function paintTiles(P, S, la, lo) {
+    tiles.innerHTML = ''; P = P || {}; S = S || {};
+    const sm = /\b([A-Za-z]{4})(\d{4})\b/.exec([short, P.display_name, P.name].filter(Boolean).join(' ')), sh = sm ? (sm[1] + sm[2]).toUpperCase() : '';
+    const bno = P.house_number || (sh ? sh.slice(4) : ''), src = function (k) { return S[k] || (P[k] ? (LS && LS.prov === 'osm' ? 'OSM' : 'HERE') : ''); };
+    const T = o.shortAddr
+      ? [['العنوان المختصر', sh, sh ? (short ? 'أنت' : src('display_name')) : '', 1], ['رقم المبنى', bno, P.house_number ? src('house_number') : (bno ? 'من المختصر' : ''), 1], ['الرمز البريدي', P.postcode, src('postcode'), 1], ['الرقم الإضافي', '', 'تكتبه أنت', 1, 1],
+        ['الحي', P.quarter || P.district, src(P.quarter ? 'quarter' : 'district')], ['الشارع', P.road, src('road')], ['المدينة', P.city, src('city')], ['الإحداثيات', isFinite(la) ? Number(la).toFixed(5) + ', ' + Number(lo).toFixed(5) : '', 'الدبوس', 1]]
+      : [['المدينة', P.city, src('city')], ['الحي', P.quarter || P.district, src(P.quarter ? 'quarter' : 'district')], ['الشارع', P.road, src('road')], ['رقم المبنى', P.house_number, src('house_number'), 1], ['الرمز البريدي', P.postcode, src('postcode'), 1], ['الدولة', P.country, src('country')], ['الإحداثيات', isFinite(la) ? Number(la).toFixed(5) + ', ' + Number(lo).toFixed(5) : '', 'الدبوس', 1]];
+    T.forEach(function (t) {
+      const v = String(t[1] || '').trim();
+      tiles.appendChild(e('div', { class: 'rvm-tl' + (v ? '' : ' is-empty') + (t[4] ? ' is-manual' : ''), role: 'listitem' }, [e('small', {}, t[0]), e('b', { dir: t[3] ? 'ltr' : null }, v || (t[4] ? 'تكتبه أنت' : '—')), t[2] && !t[4] && v ? e('i', { class: 'rvm-src is-' + (/OSM/.test(t[2]) ? 'osm' : /HERE/.test(t[2]) ? 'here' : 'me') }, t[2]) : null]));
+    });
+  }
+  /* OpenStreetMap يكمّل ما لم يجلبه HERE — طلب واحد لكل موقع، ولا أكثر من طلب في الثانية (سياسة Nominatim) */
+  let osmAt = 0;
+  function osmRev(la, lo) {
+    if (!GEO_SAMPLE() || Date.now() - osmAt < 1100) return Promise.resolve(null); osmAt = Date.now();
+    return fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=ar&lat=' + la + '&lon=' + lo).then(function (r) { return r.json(); })
+      .then(function (j) { return j && j.address ? geoOsm(j.address, la, lo, j.display_name, j.name) : null; }).catch(function () { return null; });
+  }
+  function mergeOsm(h, s) {
+    const P = Object.assign({}, h || {}), S = {}; if (!s) return { P: P, S: S };
+    const has = function (k) { return !!String(P[k] || '').trim(); };
+    ['house_number', 'road', 'quarter', 'city', 'postcode', 'state', 'country'].forEach(function (k) { if (k === 'quarter' && has('district')) return; if (!has(k) && String(s[k] || '').trim()) { P[k] = s[k]; S[k] = 'OSM'; } });
+    return { P: P, S: S };
+  }
   function resolve(la, lo) {
-    if (busy) return; busy = true; addr.innerHTML = ''; addr.appendChild(e('span', {}, 'جارٍ قراءة العنوان…'));
-    geoFetch('reverse', { lat: Number(Number(la).toFixed(6)), lon: Number(Number(lo).toFixed(6)) }).then(function (r) {
-      busy = false; addr.innerHTML = '';
-      if (!r || !r.place) { last = { lat: la, lon: lo, place: null, alternatives: [] }; addr.appendChild(e('span', {}, 'تعذّر قراءة العنوان لهذا الموقع، ومع ذلك يمكنك تأكيده.')); return; }
-      last = { lat: la, lon: lo, place: r.place, alternatives: r.alternatives || [] };
-      const bits = []; if (r.place.match_level) bits.push('مطابقة: ' + r.place.match_level); if (r.place.postcode) bits.push('الرمز البريدي ' + r.place.postcode); bits.push(Number(la).toFixed(5) + ' · ' + Number(lo).toFixed(5));
-      addr.appendChild(e('span', { class: 'rvm-addr-i' }, frag(ui('map-pin', 18)))); addr.appendChild(e('div', {}, [e('b', {}, r.place.display_name || '—'), e('small', {}, bits.join(' · '))]));
-    }).catch(function () { busy = false; last = { lat: la, lon: lo, place: null, alternatives: [] }; addr.innerHTML = ''; addr.appendChild(e('span', {}, 'تعذّر الاتصال بخدمة العناوين.')); });
+    if (busy) return; busy = true; addr.innerHTML = ''; addr.appendChild(e('span', {}, 'جارٍ قراءة العنوان…')); tiles.classList.add('is-busy');
+    const at = { lat: Number(Number(la).toFixed(6)), lon: Number(Number(lo).toFixed(6)) };
+    Promise.all([geoFetch('reverse', at).catch(function () { return null; }), osmRev(at.lat, at.lon)]).then(function (R) {
+      const r = R[0], m = mergeOsm(r && r.place, R[1]); busy = false; addr.innerHTML = ''; tiles.classList.remove('is-busy');
+      if (!r || !r.place) {
+        last = { lat: la, lon: lo, place: R[1] ? m.P : null, alternatives: [] }; paintTiles(R[1] ? m.P : null, R[1] ? { house_number: 'OSM', road: 'OSM', quarter: 'OSM', district: 'OSM', city: 'OSM', postcode: 'OSM', country: 'OSM' } : {}, la, lo);
+        addr.appendChild(e('span', {}, R[1] ? 'لم يرجع HERE عنوانًا — عُبّئ من OpenStreetMap، راجعه ثم أكّد.' : 'تعذّر قراءة العنوان لهذا الموقع، ومع ذلك يمكنك تأكيده.')); return;
+      }
+      last = { lat: la, lon: lo, place: m.P, alternatives: r.alternatives || [] };
+      const n = Object.keys(m.S).length, bits = []; if (r.place.match_level) bits.push('مطابقة: ' + r.place.match_level); if (n) bits.push('أكمل OpenStreetMap ' + (n === 1 ? 'حقلًا واحدًا' : n === 2 ? 'حقلين' : fmtNum(n) + ' حقول'));
+      addr.appendChild(e('span', { class: 'rvm-addr-i' }, frag(ui('map-pin', 18)))); addr.appendChild(e('div', {}, [e('b', {}, r.place.display_name || '—'), bits.length ? e('small', {}, bits.join(' · ')) : null]));
+      paintTiles(m.P, m.S, la, lo);
+    });
   }
   function showList(rows) {
     list.innerHTML = ''; if (!rows || !rows.length) { hideList(); return; }
@@ -13368,7 +13404,9 @@ function rvPick(o) {
   }
   const isHome = () => (V1_ISO[selC.value] || '') === 'SA';
   function suggest() {
-    const t = String(q.value || '').trim(); if (t.length < 3) { hideList(); setNote('warn', 'اكتب ثلاثة أحرف على الأقل.'); return; }
+    const t = String(q.value || '').trim();
+    if (o.shortAddr && (sMode || /^[A-Za-z]{4}\d{4}$/.test(t))) { shortGo(); return; }
+    if (t.length < 3) { hideList(); setNote('warn', 'اكتب ثلاثة أحرف على الأقل.'); return; }
     const c = map ? map.getCenter() : { lat: 24.7136, lng: 46.6753 };
     geoFetch('autocomplete', { q: t, lat: c.lat, lon: c.lng, limit: 7, country: isHome() ? undefined : '*' }).then(function (r) {
       const rows = (r && r.results) || []; if (rows.length) { showList(rows.map(fmt)); return; } setNote('warn', 'لا نتائج لهذا البحث — جرّب اسمًا آخر أو حرّك الدبوس.'); hideList();
@@ -13394,17 +13432,16 @@ function rvPick(o) {
   selR.addEventListener('change', function () { hideList(); if (selR.value === '__other') { freeR.style.display = ''; freeR.focus(); return; } freeR.style.display = 'none'; if (selR.value) goTo(selR.value + '، ' + selC.value, 9); });
   freeR.addEventListener('keydown', function (ev) { if (ev.key !== 'Enter') return; ev.preventDefault(); const v = String(freeR.value || '').trim(); if (v) goTo(v + '، ' + selC.value, 9); });
   function shortGo() {
-    const code = String(sInp.value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); sInp.value = code;
+    const code = String(q.value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); q.value = code;
     if (!/^[A-Z]{4}[0-9]{4}$/.test(code)) { setNote('warn', 'صيغة العنوان المختصر غير صحيحة: أربعة أحرف إنجليزية ثم أربعة أرقام.'); return; }
-    hideList(); sBtn.disabled = true; setNote('ok', 'جارٍ جلب الموقع من العنوان المختصر…');
+    hideList(); qBtn.disabled = true; setNote('ok', 'جارٍ جلب الموقع من العنوان المختصر…');
     geoFetch('geocode', { q: code, limit: 1 }).then(function (r) {
-      sBtn.disabled = false; const p = (r && r.results && r.results[0]) || null;
+      qBtn.disabled = false; const p = (r && r.results && r.results[0]) || null;
       if (!p) { setNote('warn', 'لم يُعثر على هذا العنوان المختصر، تأكّد من الرمز أو حدّد موقعك على الخريطة.'); return; }
       setPin(p.latitude, p.longitude, 18); short = code; resolve(p.latitude, p.longitude); setNote('ok', 'تم جلب الموقع من العنوان المختصر، عدّل الدبوس إن لزم ثم أكّد.');
-    }).catch(function () { sBtn.disabled = false; setNote('warn', 'تعذّر الاتصال بخدمة العناوين، أعد المحاولة.'); });
+    }).catch(function () { qBtn.disabled = false; setNote('warn', 'تعذّر الاتصال بخدمة العناوين، أعد المحاولة.'); });
   }
-  sBtn.addEventListener('click', shortGo); sInp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); shortGo(); } });
-  sInp.addEventListener('input', function () { sInp.value = String(sInp.value || '').toUpperCase(); });
+  q.addEventListener('input', function () { if (sMode) q.value = String(q.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); });
   bAddr.addEventListener('click', function () {
     const rows = []; if (last && last.place) rows.push(fmt(last.place)); ((last && last.alternatives) || []).forEach(function (a) { rows.push(fmt(a)); });
     if (!rows.length) { setNote('warn', 'لا توجد عناوين قريبة بعد — حرّك الدبوس أولًا.'); return; } setNote('ok', 'اختر أقرب عنوان لمكانك من القائمة.'); showList(rows);
@@ -13466,8 +13503,9 @@ function rvPick(o) {
     map.on('click', function (ev) { short = null; pin.setLatLng(ev.latlng); resolve(ev.latlng.lat, ev.latlng.lng); lay.style.display = 'none'; bLay.classList.remove('is-on'); });
     setTimeout(function () { map.invalidateSize(); }, 80);
     try { new ResizeObserver(function () { map.invalidateSize(); }).observe(mapEl); } catch (err) { void err; }
-    setTimeout(function () { if (seed) { resolve(c[0], c[1]); return; } locate(true); }, 520);
+    setTimeout(function () { if (seed) { lift(); resolve(c[0], c[1]); return; } locate(true); }, 520);
   }).catch(function (err) { mapEl.innerHTML = ''; mapEl.appendChild(DS.note('warn', 'تعذّر تحميل الخريطة', (err && err.message) || 'أدخل حقول العنوان يدويًا.')); });
+  paintTiles(null, null);
   if (!app) setTimeout(function () { q.focus(); }, 60);
 }
 /* حالة القسم في التحديث: ناقص (حقل مطلوب فارغ) · بانتظار اعتماد (عُدّل أو استُكمل) · يحتاج مراجعة (مكتمل ولم يُعدَّل — راجعه وأكّده) */
