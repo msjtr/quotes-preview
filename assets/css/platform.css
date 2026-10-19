@@ -8817,3 +8817,13 @@ html.cpv-on .t2-head{top:48px}
 .rv-side-ic.is-back::before{content:"";position:absolute;inset-inline:4px;bottom:4px;block-size:5px;background:repeating-linear-gradient(90deg,#16407A 0 1px,transparent 1px 3px)}
 .rv-side-e{font-size:.74rem;color:var(--t2-ink-3,#9AA6B6)}
 @media (max-width:520px){.rv-sides.is-two{grid-template-columns:1fr}}
+/* v346 — «للمراجعة»: رحلتان (عميل جديد · طالب تحديث) ومراحل مرقّمة، والشاشة تحتها كما يراها العميل */
+.rv-nav{display:grid;gap:10px;padding:12px;border-radius:20px;background:var(--t2-surface);border:1px solid var(--t2-line);box-shadow:0 10px 24px -20px rgba(10,31,68,.5)}
+.rv-stg{display:flex;gap:6px;margin:0;padding:0;list-style:none;overflow-x:auto;scrollbar-width:none}.rv-stg::-webkit-scrollbar{display:none}
+.rv-stg li{flex:1 0 auto}
+.rv-stg-i{display:flex;align-items:center;justify-content:center;gap:8px;inline-size:100%;min-height:42px;padding:0 14px;border:1px solid var(--t2-line);border-radius:12px;background:var(--t2-surface-2,#F3F6FA);color:var(--t2-ink);font:700 .84rem/1 var(--t2-ff-text);white-space:nowrap;cursor:pointer}
+.rv-stg-i:hover{border-color:#0AA5AD}
+.rv-stg-i.is-on{background:linear-gradient(135deg,#0A1F44,#16407A);border-color:transparent;color:#fff}
+.rv-stg-n{display:grid;place-items:center;inline-size:22px;block-size:22px;border-radius:50%;background:color-mix(in srgb,#0AA5AD 16%,var(--t2-surface));color:#06707A;font:800 .74rem/1 var(--t2-ff-display)}
+.rv-stg-i.is-on .rv-stg-n{background:#0AA5AD;color:#fff}
+.rv-screen{display:grid;gap:16px;margin-top:4px}
