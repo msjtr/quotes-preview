@@ -15259,6 +15259,10 @@ const LIVE_ROLE_AR = { client: 'عميل', staff: 'موظف', marketer: 'مسو�
 /* v350: الخروج يُنهي الجلسة في الخادم أولًا (سجل الجلسة «خروج بطلب صاحب الحساب») ويُبطل رمز التحديث، ثم يُمسح الرمز من المتصفح.
    لا يُنتظر أكثر من 3 ثوانٍ: إن تعذّر الخادم يُمسح الرمز وتُغلق الجلسة لاحقًا بمسح الخمول أو الانقطاع. */
 let LIVE_OUT = false;
+/* أسماء عربية لأسباب إغلاق الجلسات (بدل المصطلحات المخزّنة) */
+var SESS_CLOSE_AR = { idle: 'انتهت بالخمول', idle_timeout: 'انتهت بالخمول', superseded: 'دخول من جهاز آخر', logout: 'خروج بطلب صاحب الحساب', browser_close: 'إغلاق المتصفح',
+  disconnected: 'انقطاع الاتصال', location_off: 'توقف تحديد الموقع', network_blocked: 'حظر الشبكة (VPN/بروكسي)', token_misuse: 'اشتباه سرقة الجلسة',
+  device_limit: 'تجاوز حد الأجهزة', terminated_by_user: 'أنهاها صاحب الحساب', terminated_by_system: 'أنهاها النظام' };
 function liveLogout() {
   if (LIVE_OUT) return; LIVE_OUT = true;
   const s0 = liveSess(), t = s0 && s0.access_token, done = function () { try { localStorage.removeItem('tera.admin.session'); localStorage.removeItem('tera.admin.absolute_until'); } catch (err) { void err; } location.replace('/portal/'); };
@@ -17808,7 +17812,7 @@ function lvAcctOpen(uid, name) {
         lock ? e('div', { class: 'cu-why-x is-lock' }, [e('b', {}, 'الحساب مقفل'), DS.fields([['سبب القفل', S0.lock_reason || '—'], ['قام بالقفل', who(lk)], ['وقت القفل', lvDt(S0.locked_at)], ['ينتهي القفل', S0.locked_until ? lvDt(S0.locked_until) : 'حتى يُرفع']])]) : null,
         dis ? e('div', { class: 'cu-why-x is-dis' }, [e('b', {}, 'الحساب معطَّل'), DS.fields([['سبب التعطيل', (dz && (dz.reason || (dz.details && dz.details.reason))) || '—'], ['قام بالتعطيل', who(dz)], ['وقت التعطيل', dz ? lvDt(dz.at) : '—']])]) : null]),
       acc('act', 'إجراءاتُ الحساب', 'كلُّ إجراءٍ يُسجَّلُ في سجلِّ التدقيق', [actRows]),
-      acc('ses', 'الجلسات', fmtNum(act.length) + ' نشطة من ' + fmtNum(SS.length), [SS.length ? cuTbl(['الجهاز', 'الدخول', 'آخر نشاط', 'الحالة'], SS.slice(0, 12).map(function (x) { return e('tr', {}, [e('td', {}, admName(x.device_label || [x.browser, x.os].filter(Boolean).join(' · ') || 'جلسة', x.session_id_short)), e('td', {}, lvDt(x.login_at)), e('td', {}, lvDt(x.last_activity_at || x.closed_at)), e('td', {}, x.status === 'active' && !x.revoked ? DS.badge('نشطة', 'ok') : DS.badge(x.close_kind === 'idle' ? 'انتهت بالخمول' : x.revoked ? 'أُنهيت' : 'منتهية', null))]); })) : e('small', { class: 'cu-dr-hint' }, 'لا جلسات مسجّلة.'), closeBox]),
+      acc('ses', 'الجلسات', fmtNum(act.length) + ' نشطة من ' + fmtNum(SS.length), [SS.length ? cuTbl(['الجهاز', 'الدخول', 'آخر نشاط', 'الحالة'], SS.slice(0, 12).map(function (x) { return e('tr', {}, [e('td', {}, admName(x.device_label || [x.browser, x.os].filter(Boolean).join(' · ') || 'جلسة', x.session_id_short)), e('td', {}, lvDt(x.login_at)), e('td', {}, lvDt(x.last_activity_at || x.closed_at)), e('td', {}, x.status === 'active' && !x.revoked ? DS.badge('نشطة', 'ok') : DS.badge(SESS_CLOSE_AR[x.close_kind] || (x.revoked ? 'أُنهيت' : 'منتهية'), null))]); })) : e('small', { class: 'cu-dr-hint' }, 'لا جلسات مسجّلة.'), closeBox]),
       acc('log', 'سجلُّ التدقيق', 'آخر الأحداث على هذا الحساب', [EV.length ? e('ol', { class: 'cu-log' }, EV.map(function (x) { const why = x.reason || (x.details && x.details.reason); return e('li', {}, [e('b', {}, (x.label || x.action) + (why ? ' — ' + why : '')), e('small', {}, [who(x), ' · ', bdiD(iso(new Date(x.at))), ' ', ltr(hm(new Date(x.at)))])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')])];
     draw1('إدارة الحساب · ' + nm, (dis ? 'معطَّل' : lock ? 'مقفل' : 'نشِط') + ' · ' + tid, body);
   }).catch(function (err) { W.D = null; draw1('إدارة الحساب · ' + (name || ''), 'تعذّر التحميل', [clFail('الحساب', err && err.message, rerun)]); });

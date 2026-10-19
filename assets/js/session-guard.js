@@ -15,7 +15,7 @@
   var CSS = 'position:fixed;inset:0;z-index:2147482000;background:rgba(7,18,38,.72);display:flex;align-items:center;justify-content:center;padding:16px;font:15px/1.8 "IBM Plex Sans Arabic",sans-serif';
   var CARD = 'background:#fff;color:#0b1f3a;border-radius:16px;max-width:420px;width:100%;padding:20px;box-shadow:0 18px 48px rgba(0,0,0,.35);text-align:right';
   var BTN = 'display:block;width:100%;margin-top:10px;padding:10px 12px;border-radius:10px;border:0;font:700 14px "IBM Plex Sans Arabic",sans-serif;cursor:pointer';
-  var TITLES = { idle: 'انتهت الجلسة لعدم النشاط', silent: 'انقطع الاتصال', superseded: 'دخول من جهاز آخر', vpn: 'اتصال غير مسموح', hosting: 'اتصال غير مسموح', relay: 'أوقف iCloud Private Relay', location: 'تحديد الموقع متوقف', stolen: 'أُنهيت الجلسة لحمايتك' };
+  var TITLES = { idle: 'انتهت الجلسة لعدم النشاط', silent: 'انقطع الاتصال', superseded: 'تم الدخول من جهاز آخر', vpn: 'اتصال غير مسموح', hosting: 'اتصال غير مسموح', relay: 'أوقف iCloud Private Relay', location: 'تحديد الموقع متوقف', stolen: 'أُنهيت الجلسة لحمايتك' };
 
   function card(title, text, buttons) {
     var w = document.createElement('div'); w.setAttribute('dir', 'rtl'); w.setAttribute('role', 'alertdialog'); w.setAttribute('aria-modal', 'true'); w.style.cssText = CSS;
@@ -46,18 +46,25 @@
   }
   function hideLocation() { if (locEl && locEl.parentNode) locEl.parentNode.removeChild(locEl); locEl = null; }
 
-  /* قراءة قرارات الخادم من ردود مسارات الجلسة (بلا تعديل للطلبات) */
+  /* قراءة قرارات الخادم من الردود (بلا تعديل للطلبات):
+   *  • مسارات الجلسة: الموقع والإنهاء.
+   *  • أي طلب للمنصة (/api · /sb · /admin/api) يُرفض لأن الجلسة أُنهيت (دخول من جهاز آخر…) أو لأن الشبكة محظورة. */
   var F = window.fetch;
+  function sameApi(url) { var u = String(url || ''); if (/^https?:/i.test(u) && u.indexOf(location.origin) !== 0) return false; return /\/(api|sb|admin\/api)\//.test(u); }
   window.fetch = function (input, init) {
     var url = typeof input === 'string' ? input : (input && input.url) || '';
     var p = F.apply(this, arguments);
-    if (url.indexOf('/api/account/session/') < 0) return p;
+    var sess = url.indexOf('/api/account/session/') >= 0 || url.indexOf('/api/security/session-state') >= 0;
+    if (!sess && !sameApi(url)) return p;
     return p.then(function (r) {
+      if (!sess && r.status !== 401 && r.status !== 403) return r;
       try {
         r.clone().json().then(function (j) {
           if (!j) return;
+          if (j.error === 'network_blocked') { if (window.TeraNet) window.TeraNet.show(j.reason_code, j.message); return; }
           if (j.reason_code) { lastCode = j.reason_code; lastMsg = j.message || null; }
-          if (j.error === 'session_revoked' || j.closed) { showEnded(j.reason_code || lastCode, j.message || lastMsg); return; }
+          if (j.error === 'session_revoked' || (sess && j.closed)) { showEnded(j.reason_code || lastCode, j.message || lastMsg); return; }
+          if (!sess) return;
           if (j.location_ok === false) showLocation(Number(j.location_grace_s) || 0);
           else if (j.location_ok === true) hideLocation();
         }).catch(function () {});
@@ -65,6 +72,17 @@
       return r;
     });
   };
+
+  /* حالة الجلسة كل 20 ثانية (وعند ظهور الصفحة أو عودة الاتصال): يعرف الجهاز القديم فورًا أن دخولًا جديدًا أنهى جلسته */
+  function stateCheck() {
+    if (ended || document.visibilityState !== 'visible') return;
+    var t = token(); if (!t) return;
+    window.fetch('/api/security/session-state', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' }).catch(function () {});
+  }
+  setInterval(stateCheck, 20000);
+  document.addEventListener('visibilitychange', stateCheck);
+  window.addEventListener('focus', stateCheck);
+  window.addEventListener('online', stateCheck);
 
   /* المُجمِّع القائم يستدعي هذا عند انتهاء الجلسة */
   window.TeraAuth = window.TeraAuth || {};
