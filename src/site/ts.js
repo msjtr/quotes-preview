@@ -1045,6 +1045,19 @@
       if (!document.getElementById('tqc-turnstile-js')) { var sc = document.createElement('script'); sc.id = 'tqc-turnstile-js'; sc.src = '/turnstile.js'; document.head.appendChild(sc); }
     }
 
+    /* v357: تحقق إضافي بعملية جمع قبل: الدخول · بدء التسجيل · نسيت كلمة المرور (قبل إرسال الرمز) · رمز الاستعادة — صالح 10 دقائق لكل مسار */
+    var MATH_AT = {}, MATH_FORMS = { 'f-login': ['login', 'تحقق إضافي قبل الدخول'], 'f-reg1': ['register', 'تحقق إضافي قبل إنشاء الحساب'], 'f-fg1': ['forgot', 'تحقق إضافي قبل استعادة الحساب'], 'f-rc1': ['recover', 'تحقق إضافي قبل استعادة الوصول'] };
+    function mathGate(e, form, again) {
+      var m = MATH_FORMS[form.id]; if (!UX2 || !m || !window.TeraNotify || !TeraNotify.math) return;
+      if (MATH_AT[m[0]] && Date.now() - MATH_AT[m[0]] < 600000) return;
+      e.preventDefault(); e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      TeraNotify.math({ title: m[1] }).then(function (ok) { if (!ok) return; MATH_AT[m[0]] = Date.now(); again(); });
+    }
+    var PT = $('.pt');
+    if (PT) {
+      PT.addEventListener('submit', function (e) { var f = e.target; if (f && f.classList && f.classList.contains('pt-f')) mathGate(e, f, function () { if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', { cancelable: true })); }); }, true);
+      PT.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('#f-fg1 .vc-send'); if (b) mathGate(e, $('#f-fg1'), function () { b.click(); }); }, true);
+    }
     if (UX2) $$('.pt-f').forEach(function (f) {
       f.addEventListener('submit', function () { var r = RUN_T[f.id]; if (r) TN.show({ kind: 'run', title: r[0], text: r[1] }); setTimeout(function () { var c = TN.current(); if (c && !c.closed && c.o.kind === 'run') c.close(); }, 15000); }, true);
     });
