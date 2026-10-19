@@ -12263,15 +12263,102 @@ function secWhatsapp() {
     on ? lvRow(DS.button('تغيير الرمز السري', { size: 'sm', onClick: function () { LVS.wa = 'pin'; draw(); } })) : null]);
   return [stats, steps, flow, lvGrid2([num, pin]), DS.note('info', 'الرمز السري', 'لا يُرسَل الرمز السري في أي رسالة، ويُطلب منك داخل المحادثة فقط.')];
 }
+/* ===== الرقم الإضافي (v345) — يختاره العميل ويحفظه بنفسه، لا تُصدره المنصة ولا تعرضه ولا تسترجعه =====
+   10 أرقام على الأقل، بلا تكرار متتالٍ ولا تسلسل، ومؤشر قوة ومطابقة، وإقرار بالمسؤولية، ثم تحقق أمني قبل الحفظ */
+function xcRules(v) {
+  v = String(v || ''); const d = /^\d+$/.test(v), ph = String(PROF && PROF.phone || '').replace(/\D/g, '');
+  let seq = false; for (let i = 0; i + 3 < v.length; i++) { const a = +v[i], b = +v[i + 1], c = +v[i + 2], z = +v[i + 3]; if ((b - a === 1 && c - b === 1 && z - c === 1) || (a - b === 1 && b - c === 1 && c - z === 1)) seq = true; }
+  return [['أرقام فقط', !!v && d], ['10 أرقام على الأقل', v.length >= 10], ['بلا تكرار متتالٍ (مثل 111)', !!v && !/(\d)\1\1/.test(v)], ['بلا تسلسل (مثل 1234 أو 9876)', !!v && !seq],
+    ['5 أرقام مختلفة على الأقل', new Set(v.split('')).size >= 5], ['ليس رقم جوالك', !!v && !(ph.length >= 8 && v.indexOf(ph.slice(-8)) >= 0)]];
+}
+function xcLevel(v) {
+  const R = xcRules(v), ok = R.filter(function (r) { return r[1]; }).length; v = String(v || '');
+  if (!v) return [0, '', ''];
+  if (ok < R.length) return [1, 'ضعيف', 'danger'];
+  return v.length >= 14 ? [4, 'قوي جدًا', 'ok'] : v.length >= 12 ? [3, 'قوي', 'ok'] : [2, 'مقبول', 'warn'];
+}
 function secExtra() {
-  const x = LVS.xc;
-  const st = lvPanel('حالةُ الرمز', DS.badge(x ? 'مُصدَر' : 'غير مُصدَر', x ? 'ok' : null), [lvFields([lvField('الحالة', x ? 'فعّال' : 'لا رمزَ مُصدَر'), lvField('تاريخُ الإصدار', x ? iso(LVS.xcAt) : '', 0, false), lvField('آخرُ استخدام', '', 0, false)]),
-    x === 'show' ? null : lvRow(DS.button(x ? 'إصدارُ رمزٍ بديل' : 'إنشاءُ رمزٍ جديد', { tone: 'primary', size: 'sm', onClick: function () { LVS.flow = 'xc'; S.otpAt = null; draw(); } }))]);
+  const x = LVS.xc, P = LVS.xx || (LVS.xx = {}), f = LVS.flow;
+  const st = lvPanel('حالةُ الرقم الإضافي', DS.badge(x ? 'مُعيَّن' : 'غير مُعيَّن', x ? 'ok' : null), [lvFields([lvField('الحالة', x ? 'فعّال — تحفظه أنت' : 'لم تعيّن رقمًا بعد'), lvField('تاريخُ التعيين', x ? iso(LVS.xcAt) : '', 0, false), lvField('الطول', x && LVS.xcLen ? fmtNum(LVS.xcLen) + ' أرقام' : '', 0, false)]),
+    f === 'xc' || f === 'xcg' ? null : lvRow(DS.button(x ? 'تغييرُ الرقم' : 'تعيينُ الرقم الإضافي', { tone: 'primary', size: 'sm', ui: 'lock', onClick: function () { LVS.flow = 'xc'; LVS.xx = {}; draw(); } }))]);
   let flow = null;
-  if (LVS.flow === 'xc') flow = lvGate('إنشاءُ رمزِ التحقق الإضافي', function () { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 12; i++) c += A[(Math.random() * A.length) | 0]; LVS.xcCode = c.replace(/(.{4})(?=.)/g, '$1-'); LVS.xc = 'show'; LVS.xcAt = new Date(); LVS.flow = ''; draw(); });
-  if (x === 'show') flow = lvPanel('رمزُك الإضافي', DS.badge('يُعرَض مرة واحدة', 'warn'), [e('div', { class: 'lv-code' }, [e('b', { dir: 'ltr' }, LVS.xcCode), e('small', {}, 'احفظه في مكان آمن — لن يظهر مرة أخرى.')]),
-    lvRow([DS.button('نسخ الرمز', { size: 'sm', ui: 'copy', onClick: function () { try { navigator.clipboard.writeText(LVS.xcCode).catch(function () {}); } catch (err) { void err; } S.toast = 'نُسخ الرمز'; draw(); } }), DS.button('حفظتُ الرمز', { tone: 'primary', size: 'sm', onClick: function () { LVS.xc = 'on'; LVS.xcCode = ''; draw(); } })])]);
-  return [DS.note('warn', 'الرمزُ يُعرَضُ مرةً واحدةً فقط', 'يُحفَظُ مُعمًّى، ولا يظهرُ في سجلٍّ ولا في الواجهةِ بعدَ الإنشاء.'), flow, st];
+  if (f === 'xc') {
+    const rules = e('ul', { class: 'xc-rules' }, xcRules(P.n1).map(function (r) { return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'x-circle', 14)), r[0]]); }));
+    const bar = e('div', { class: 'xc-meter', 'aria-live': 'polite' }, [e('span', { class: 'xc-bar' }, [e('i'), e('i'), e('i'), e('i')]), e('b', {}, '')]);
+    const match = e('div', { class: 'xc-match', 'aria-live': 'polite' });
+    const paint = function () {
+      const R = xcRules(P.n1); rules.querySelectorAll('li').forEach(function (li, i) { li.className = R[i][1] ? 'is-ok' : ''; li.querySelector('svg').outerHTML = ui(R[i][1] ? 'check-circle' : 'x-circle', 14); });
+      const L = xcLevel(P.n1); bar.className = 'xc-meter is-' + L[0]; bar.querySelector('b').textContent = L[1] ? 'القوة: ' + L[1] : 'القوة: —';
+      match.innerHTML = ''; if (P.n2) { const ok = P.n1 === P.n2; match.className = 'xc-match ' + (ok ? 'is-ok' : 'is-bad'); match.appendChild(frag(ui(ok ? 'check-circle' : 'x-circle', 16))); match.appendChild(e('span', {}, ok ? 'مطابق' : 'غير مطابق — راجع الرقمين')); } else match.className = 'xc-match';
+    };
+    const inp = function (k, label, ac) { return e('input', { class: 't2-input xc-in', type: P.show ? 'text' : 'password', inputmode: 'numeric', dir: 'ltr', autocomplete: ac, maxlength: '24', 'aria-label': label, value: P[k] || '',
+      onInput: function (ev) { const v = ev.target.value.replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }).replace(/\D/g, '').slice(0, 24); if (v !== ev.target.value) ev.target.value = v; P[k] = v; P.bad = false; paint(); } }); };
+    const ack = e('label', { class: 'xc-ack' }, [e('input', { type: 'checkbox', checked: P.ack ? 'checked' : null, onChange: function (ev) { P.ack = ev.target.checked; P.bad = false; } }),
+      e('span', {}, 'أقرّ بأنني اخترت هذا الرقم بنفسي وأنني المسؤول وحدي عن حفظه وسرّيته، وأن منصة تيرا لا تعرضه ولا ترسله ولا تستطيع استرجاعه.')]);
+    flow = lvPanel(x ? 'تغييرُ الرقم الإضافي' : 'تعيينُ الرقم الإضافي', DS.badge('تختاره أنت', 'info'), [
+      e('p', { class: 'lv-sub' }, 'رقم سرّي تختاره وتحفظه بنفسك، يُطلب منك عند العمليات الحساسة أو إن تعذّر وصول رمز البريد أو الواتساب.'),
+      DS.editField('الرقم الإضافي', inp('n1', 'الرقم الإضافي', 'new-password')), bar, rules,
+      DS.editField('تأكيد الرقم', inp('n2', 'تأكيد الرقم الإضافي', 'new-password')), match,
+      e('button', { type: 'button', class: 'fx-link xc-eye', onClick: function () { P.show = !P.show; draw(); } }, [frag(ui(P.show ? 'eye-slash' : 'eye', 15)), P.show ? 'إخفاء الأرقام' : 'إظهار الأرقام']),
+      ack, P.bad ? e('span', { class: 't2-field-h is-bad' }, P.bad) : null,
+      lvRow([DS.button('متابعة للتحقق', { tone: 'primary', ui: 'shield-check', onClick: function () {
+        const R = xcRules(P.n1); if (!R.every(function (r) { return r[1]; })) { P.bad = 'الرقم لا يستوفي الشروط — راجع القائمة.'; draw(); return; }
+        if (P.n1 !== P.n2) { P.bad = 'الرقمان غير متطابقين.'; draw(); return; } if (!P.ack) { P.bad = 'أكّد الإقرار بمسؤوليتك عن حفظ الرقم.'; draw(); return; }
+        LVS.flow = 'xcg'; S.otpAt = null; draw(); } }), DS.button('إلغاء', { onClick: function () { LVS.flow = ''; LVS.xx = {}; draw(); } })])]);
+    setTimeout(paint, 0);
+  }
+  if (f === 'xcg') flow = lvGate('تأكيدُ تعيين الرقم الإضافي', function () { LVS.xcLen = String(P.n1 || '').length; LVS.xx = {}; LVS.xc = 'on'; LVS.xcAt = new Date(); LVS.flow = ''; S.toast = 'تم حفظ رقمك الإضافي — احفظه أنت، فلا يُعرض مرة أخرى'; draw(); });
+  return [DS.note('warn', 'أنت المسؤول عن حفظه', 'يُحفظ في النظام مُعمًّى (لا يمكن قراءته)، ولا يظهر في أي شاشة أو سجل أو رسالة. إن نسيته تعيّن رقمًا جديدًا بعد التحقق الأمني.'), flow, st];
+}
+/* ===== تطبيق المصادقة (TOTP) — محاكاة حقيقية في العيّنة: مفتاح عشوائي في المتصفح، ورمز QR يُمسح فعلًا بتطبيق مثل
+   Google Authenticator أو Microsoft Authenticator، والتحقق بالرمز المتغيّر كل 30 ثانية ===== */
+const TOTP = { sec: '', lib: null };
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32rand(n) { const u = new Uint8Array(n); crypto.getRandomValues(u); return Array.from(u).map(function (x) { return B32[x % 32]; }).join(''); }
+function b32bytes(s) { let bits = ''; const out = []; String(s).toUpperCase().split('').forEach(function (c) { const v = B32.indexOf(c); if (v >= 0) bits += v.toString(2).padStart(5, '0'); }); for (let i = 0; i + 8 <= bits.length; i += 8) out.push(parseInt(bits.slice(i, i + 8), 2)); return new Uint8Array(out); }
+function totpAt(sec, t) {
+  let c = Math.floor(t / 30000); const msg = new Uint8Array(8); for (let i = 7; i >= 0; i--) { msg[i] = c & 255; c = Math.floor(c / 256); }
+  return crypto.subtle.importKey('raw', b32bytes(sec), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']).then(function (k) { return crypto.subtle.sign('HMAC', k, msg); })
+    .then(function (b) { const h = new Uint8Array(b), o = h[19] & 15, v = ((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3]; return String(v % 1000000).padStart(6, '0'); });
+}
+function qrLib() {
+  if (window.qrcode) return Promise.resolve(window.qrcode); if (TOTP.lib) return TOTP.lib;
+  TOTP.lib = new Promise(function (ok, no) { const s = document.createElement('script'); s.src = 'js/qrcode-1.4.4.js'; s.onload = function () { window.qrcode ? ok(window.qrcode) : no(new Error('qr')); }; s.onerror = function () { TOTP.lib = null; no(new Error('qr')); }; document.head.appendChild(s); });
+  return TOTP.lib;
+}
+if (!window.__totp) window.__totp = setInterval(function () {
+  const els = document.querySelectorAll('[data-totp]'); if (!els.length || !TOTP.sec || !window.crypto || !crypto.subtle) return;
+  const now = Date.now(), left = 30 - Math.floor(now / 1000) % 30;
+  document.querySelectorAll('[data-totp-ring]').forEach(function (r) { r.style.setProperty('--p', (left / 30 * 100) + '%'); r.textContent = String(left); });
+  totpAt(TOTP.sec, now).then(function (c) { els.forEach(function (el) { el.textContent = c.slice(0, 3) + ' ' + c.slice(3); }); }).catch(function () {});
+}, 1000);
+function totpFlow(onDone, onCancel) {
+  const sec = TOTP.sec || (TOTP.sec = b32rand(32)), acct = 'client@tera-services.com.sa';
+  const uri = 'otpauth://totp/' + encodeURIComponent('TERA:' + acct) + '?secret=' + sec + '&issuer=TERA&algorithm=SHA1&digits=6&period=30';
+  const qrBox = e('div', { class: 'tf-qr', role: 'img', 'aria-label': 'رمز QR لإضافة حسابك في تطبيق المصادقة' }, e('small', {}, 'جارٍ إنشاء الرمز…'));
+  qrLib().then(function (q) { const qr = q(0, 'M'); qr.addData(uri); qr.make(); qrBox.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); })
+    .catch(function () { qrBox.innerHTML = ''; qrBox.appendChild(e('small', {}, 'تعذّر إنشاء الرمز — أدخل المفتاح يدويًا.')); });
+  const keyTxt = sec.replace(/(.{4})(?=.)/g, '$1 ');
+  const phone = e('div', { class: 'tf-phone', 'aria-label': 'مثال: هكذا يظهر حسابك في تطبيق المصادقة' }, [e('div', { class: 'tf-ph-bar' }, [e('span', {}, 'تطبيق المصادقة'), frag(ui('plus', 16))]),
+    e('div', { class: 'tf-acc' }, [e('span', { class: 'tf-av' }, 'T'), e('div', { class: 'tf-acc-t' }, [e('small', {}, 'TERA'), e('small', { class: 'tf-mail', dir: 'ltr' }, acct), e('b', { class: 'tf-code', dir: 'ltr', 'data-totp': '1' }, '••• •••')]), e('i', { class: 'tf-ring', 'data-totp-ring': '1' }, '')]),
+    e('div', { class: 'tf-acc is-ghost' }, [e('span', { class: 'tf-av' }), e('div', { class: 'tf-acc-t' }, [e('small', {}, '—'), e('b', { class: 'tf-code' }, '••• •••')])])]);
+  const code = e('input', { class: 't2-input tf-in', inputmode: 'numeric', maxlength: '6', dir: 'ltr', autocomplete: 'one-time-code', placeholder: '000000', 'aria-label': 'الرمز من تطبيق المصادقة' });
+  const msg = e('span', { class: 't2-field-h' }, '');
+  const check = function () {
+    const v = String(code.value || '').replace(/\D/g, ''); if (v.length !== 6) { msg.className = 't2-field-h is-bad'; msg.textContent = 'الرمز ستة أرقام.'; return; }
+    const now = Date.now(); Promise.all([totpAt(sec, now), totpAt(sec, now - 30000), totpAt(sec, now + 30000)]).then(function (C) {
+      if (C.indexOf(v) >= 0) { TOTP.sec = ''; onDone(); return; } msg.className = 't2-field-h is-bad'; msg.textContent = 'الرمز غير صحيح أو انتهت صلاحيته — اكتب الرمز الظاهر الآن في التطبيق.'; });
+  };
+  code.addEventListener('input', function () { code.value = code.value.replace(/\D/g, '').slice(0, 6); msg.textContent = ''; if (code.value.length === 6) check(); });
+  const step = function (n, t, s, kids) { return e('li', { class: 'tf-step' }, [e('span', { class: 'tf-n' }, fmtNum(n)), e('div', {}, [e('b', {}, t), s ? e('small', {}, s) : null].concat(kids || []))]); };
+  return e('div', { class: 'tf' }, [
+    e('ol', { class: 'tf-steps' }, [
+      step(1, 'ثبّت تطبيق مصادقة على جوالك', 'مثل Google Authenticator أو Microsoft Authenticator، أو أي تطبيق يدعم الرموز المؤقتة (TOTP) — من App Store أو Google Play.'),
+      step(2, 'أضف حسابك بمسح الرمز', 'في التطبيق اضغط «+» ثم «مسح رمز QR» ووجّه الكاميرا إلى الرمز. لا تستطيع المسح؟ اختر «إدخال مفتاح الإعداد» واكتب المفتاح.', [
+        e('div', { class: 'tf-pair' }, [qrBox, phone]),
+        e('div', { class: 'tf-key' }, [e('small', {}, 'مفتاح الإعداد اليدوي — النوع: حسب الوقت'), e('b', { dir: 'ltr' }, keyTxt), DS.button('نسخ المفتاح', { size: 'sm', ui: 'copy', onClick: function () { try { navigator.clipboard.writeText(sec).catch(function () {}); } catch (err) { void err; } msg.className = 't2-field-h'; msg.textContent = 'نُسخ المفتاح.'; } })])]),
+      step(3, 'اكتب الرمز الظاهر في التطبيق', 'ستة أرقام تتغيّر كل 30 ثانية — يُتحقق منه تلقائيًا عند اكتماله.', [e('div', { class: 'tf-code-r' }, [code, DS.button('تأكيد', { tone: 'primary', size: 'sm', onClick: check }), onCancel ? DS.button('إلغاء', { size: 'sm', onClick: onCancel }) : null]), msg])]),
+    DS.note('info', 'للمراجعة في العيّنة', 'الرمز حقيقي: امسحه بتطبيقك وجرّب. وبدون تطبيق، المثال بجانب الرمز يعرض الرمز الحالي كما سيظهر لك في التطبيق.')]);
 }
 function secTwofa() {
   const f = LVS.flow;
@@ -12281,10 +12368,9 @@ function secTwofa() {
       : lvRow(DS.button(LVS.mail ? 'إيقافُ التحقُّقِ بالبريد' : 'تشغيلُ التحقُّقِ بالبريد', { tone: LVS.mail ? null : 'primary', size: 'sm', onClick: function () { if (LVS.mail) { LVS.mail = false; draw(); return; } LVS.flow = 'mail'; S.otpAt = null; draw(); } }))]);
   const app = lvPanel('تطبيقُ المصادقة', DS.badge(LVS.app ? 'مُفعّل' : 'غير مُفعّل', LVS.app ? 'ok' : null), [e('span', { class: 'lv-sub' }, 'رمزٌ متغيِّرٌ كلَّ ثلاثينَ ثانية'),
     lvFields([lvField('الحالة', LVS.app ? 'يعمل' : 'غير مُهيّأ'), lvField('تاريخُ التأكيد', LVS.app ? iso(LVS.appAt) : '', 0, false), lvField('آخرُ استخدام', '', 0, false)]),
-    f === 'app' ? e('div', { class: 'sx-flow' }, [e('div', { class: 'sx-qr lv-qr', 'aria-label': 'رمز QR لإضافة الحساب في تطبيق المصادقة' }, [frag(ui('qr-code', 96)), e('span', {}, 'امسح الرمز من تطبيق المصادقة ثم أدخل الرمز الظاهر')]),
-      otpBox('app', function () { LVS.app = true; LVS.appAt = new Date(); LVS.flow = ''; S.toast = 'تمت تهيئة تطبيق المصادقة'; draw(); }, function () { LVS.flow = ''; draw(); })])
+    f === 'app' ? totpFlow(function () { LVS.app = true; LVS.appAt = new Date(); LVS.flow = ''; S.toast = 'تمت تهيئة تطبيق المصادقة'; draw(); }, function () { LVS.flow = ''; TOTP.sec = ''; draw(); })
       : lvRow(DS.button(LVS.app ? 'إعادةُ التهيئة' : 'تهيئةُ التطبيق', { tone: LVS.app ? null : 'primary', size: 'sm', onClick: function () { LVS.flow = 'app'; draw(); } }))]);
-  return [lvGrid2([mail, app]), DS.note('info', 'التأكيدُ يتمُّ داخلَ نافذةِ التهيئة', 'سرُّ التطبيقِ لا يُعرَضُ ولا يُسجَّلُ بعدَ التأكيد.')];
+  return [f === 'app' ? app : lvGrid2([mail, app]), f === 'app' ? mail : null, DS.note('info', 'التأكيدُ يتمُّ داخلَ نافذةِ التهيئة', 'سرُّ التطبيقِ لا يُعرَضُ ولا يُسجَّلُ بعدَ التأكيد.')].filter(Boolean);
 }
 const DEV_ST = { ok: ['مُصرَّح', 'ok'], wait: ['بانتظار التصريح', 'warn'], block: ['محجوب', 'danger'], off: ['سُحب التصريح', null] };
 function secDevices() {
@@ -13139,8 +13225,21 @@ function v1Check(f, val, get) {
   return '';
 }
 /* بعد أي تغيير: الحقول المخفية تُفرَّغ، والخيار الوحيد المسموح يُعبّأ تلقائيًا، والخيار غير المسموح يُلغى — كما يفعل النظام */
-function v1Settle(vals, onChange, hide) {
+/* دولة العنوان تُعبّأ تلقائيًا من الجنسية (طلب المشرف — العيّنة): العنوان الوطني ← المملكة، والعنوان خارجها ← دولة الجنسية.
+   تُعاد تعبئتها عند تغيّر الجنسية فقط، فإن غيّرها العميل بعد ذلك تبقى كما اختار ما دامت صالحة. */
+const V1_AC = {};
+function v1AutoCountry(get, put, key) {
+  const sec = v1Get(get, 'profile', 'address_section'), nat = get('personal.nationality'), cur = get('address.country');
+  if (!sec || !nat) return;
+  const want = sec === 'national' ? V1_KSA : (v1MatchOpt(V1_ADR_L, nat) || '');
+  const changed = V1_AC[key] !== undefined && V1_AC[key] !== nat; V1_AC[key] = nat;
+  const bad = (sec === 'national' && cur && cur !== V1_KSA) || (sec !== 'national' && cur === V1_KSA);
+  if (want && cur !== want && (!cur || changed || bad)) put('address.country', want);
+  else if (!want && bad) put('address.country', '');
+}
+function v1Settle(vals, onChange, hide, key) {
   const get = function (id) { return vals[id] === undefined ? '' : vals[id]; };
+  if (key) v1AutoCountry(get, onChange, key);
   for (let pass = 0; pass < 3; pass++) V1_FIELDS.forEach(function (f) {
     if (f.t !== 'select') return; const o = v1Options(f, get), cur = get(f.id), vis = v1Visible(f, get);
     /* allowOpts: القيمة التي لم تعد ضمن الخيارات المسموحة تُطرح (لا تعبئة تلقائية — يختار العميل) */
@@ -13175,7 +13274,7 @@ function rvuMode(m) {
 }
 const rvuVal = (id) => { const s = RVU.f[id]; return s ? (s.d !== undefined ? s.d : s.v) : ''; };
 const rvuGet = (id) => rvuVal(id);
-function rvuSettle() { v1Settle(new Proxy({}, { get: function (t, id) { return rvuVal(id); } }), function (id, v) { const s = RVU.f[id]; if (!s) return; if (v === s.v) s.d = undefined; else s.d = v; }); }
+function rvuSettle() { v1Settle(new Proxy({}, { get: function (t, id) { return rvuVal(id); } }), function (id, v) { const s = RVU.f[id]; if (!s) return; if (v === s.v) s.d = undefined; else s.d = v; }, false, 'rvu-' + RV.tab); }
 function rvuStats(form) { const fl = v1Vis(form, rvuGet), req = fl.filter(function (f) { return v1Required(f, rvuGet); }), done = req.filter(function (f) { return String(rvuVal(f.id) || '').trim(); }).length, dr = fl.filter(function (f) { return RVU.f[f.id].d !== undefined; }).length; return { n: req.length, done: done, dr: dr }; }
 function rvuPct() { rvuSecSync(); let n = 0, d = 0; V1_FORMS.forEach(function (F) { const t = rvuStats(F[0]); n += t.n; d += t.done; }); ['wa', 'auth', 'mail'].forEach(function (k) { n++; if (RVU.sec[k]) d++; }); return { pct: n ? Math.round(d / n * 100) : 100, n: n, d: d }; }
 const rvuLocked = (id) => RVU.st === 'recv' || RVU.st === 'sent' || (RVU.st === 'back' && !RVU.back[id]);
@@ -13202,9 +13301,13 @@ function rvuField(f) {
   const id = f.id, s = RVU.f[id], val = rvuVal(id), has = String(val || '').trim() !== '', req = v1Required(f, rvuGet);
   const lock = rvuLocked(id), note = RVU.st === 'back' && RVU.back[id];
   if (f.t === 'file') {
-    return e('div', { class: 'rv-f' + (note ? ' is-back' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب إرفاقه', 'danger') : has ? rvBadge(s.d !== undefined ? 'بانتظار اعتماد' : 'يحتاج مراجعة', s.d !== undefined ? 'pend' : 'info') : rvBadge(req ? 'ناقص' : 'اختياري', req ? 'warn' : null)]),
-      note ? e('p', { class: 'rv-note' }, [frag(ui('chat-circle-dots', 14)), 'ملاحظة الفريق: ' + note]) : null, has && !note ? DS.fileCard({ name: val, note: 'PDF · ' + (s.d !== undefined ? 'في مسودتك' : 'معتمد') }) : null,
-      lock ? null : rvRow([DS.button(has && !note ? 'استبدال' : 'إرفاق ملف', { size: 'sm', ui: 'upload-simple', onClick: function () { s.d = f.k + '-new.pdf'; if (note) delete RVU.back[id]; rvToast('تم الرفع — شكرًا، سيُراجع مع طلبك'); } })])]);
+    const SD = RVU.sd || (RVU.sd = {}), sides = rvDocSides(f.k), part = sides.some(function (x) { return SD[id + '|' + x]; });
+    return e('div', { class: 'rv-f' + (note ? ' is-back' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب إرفاقه', 'danger') : has ? rvBadge(s.d !== undefined ? 'بانتظار اعتماد' : 'يحتاج مراجعة', s.d !== undefined ? 'pend' : 'info') : rvBadge(part ? 'ناقص وجه' : req ? 'ناقص' : 'اختياري', req || part ? 'warn' : null)]),
+      note ? e('p', { class: 'rv-note' }, [frag(ui('chat-circle-dots', 14)), 'ملاحظة الفريق: ' + note]) : null,
+      rvSideSlots(f.k, sides, function (sd) { return SD[id + '|' + sd] || (s.d === undefined && has && !note ? (sides.length > 1 ? val.replace(/\.pdf$/, '') + '-' + sd + '.pdf' : val) : ''); }, s.d !== undefined ? 'في مسودتك' : 'معتمد', lock, function (sd) {
+        SD[id + '|' + sd] = f.k + (sd ? '-' + sd : '') + '-new.pdf'; const all = sides.every(function (x) { return SD[id + '|' + x]; });
+        if (all) { s.d = sides.map(function (x) { return SD[id + '|' + x]; }).join('، '); if (note) delete RVU.back[id]; }
+        rvToast(all ? 'تم الرفع — شكرًا، سيُراجع مع طلبك' : 'تم رفع ' + rvSideL(f.k, sd, sides) + ' — بقي ' + sides.filter(function (x) { return !SD[id + '|' + x]; }).map(function (x) { return rvSideL(f.k, x, sides); }).join(' و')); })]);
   }
   const bad = !lock && has ? v1Check(f, val, rvuGet) : '';
   const tag = lock ? rvBadge('مقفل', null) : note ? rvBadge('مطلوب تعديله', 'danger') : bad ? rvBadge('لا يطابق الشروط الجديدة', 'danger') : !has ? rvBadge(req ? 'ناقص' : 'اختياري', req ? 'warn' : null) : s.d !== undefined ? rvBadge('بانتظار اعتماد', 'pend') : rvBadge('يحتاج مراجعة', 'info');
@@ -13556,7 +13659,7 @@ const RVU_SECP = [['wa', 'ربط رقم الواتساب', 'wa', 'شرط للت�
 function rvuSecState(k) {
   if (k === 'wa') return RVU.sec.wa ? ['مربوط', 'ok'] : (RVW.st > 0 || LVS.wa) ? ['قيد الربط', 'warn'] : ['غير مربوط', 'warn'];
   if (k === 'app') return LVS.app ? ['مفعّل', 'ok'] : ['غير مفعّل', null];
-  if (k === 'extra') return LVS.xc ? ['مُصدَر', 'ok'] : ['غير مُصدَر', null];
+  if (k === 'extra') return LVS.xc ? ['مُعيَّن', 'ok'] : ['غير مُعيَّن', null];
   if (k === 'mail') return LVS.mail ? ['مفعّل', 'ok'] : ['غير مفعّل', 'warn'];
   return [LVS.pwAt ? 'غُيّرت ' + iso(LVS.pwAt) : 'سارية', 'ok'];
 }
@@ -13568,8 +13671,8 @@ const RVU_SECM = [
     ['أدخل رقم جوالك المسجّل في ملفك (بدون الصفر في البداية).', 'يصلك على واتساب رمز تحقق من 6 أرقام — أدخله، ويتحقق تلقائيًا عند اكتماله.', 'اختر رمز تعريف من 4 أرقام (غير متسلسل ولا مكرر) وأكّده.', 'اضغط «حفظ» — تظهر «تم الحفظ» ثم رسالة شكر بملخص الربط.'], 'شرط لإرسال ملفك للتوثيق.'],
   ['twofa', 'المصادقة الثنائية — البريد وتطبيق المصادقة', 'key', 'طبقة حماية ثانية مع كلمة المرور: رمز على بريدك عند كل دخول، أو رمز يتغيّر كل 30 ثانية من تطبيق مصادقة مثل Google Authenticator أو Microsoft Authenticator.',
     ['التحقق بالبريد: اضغط «تشغيلُ التحقُّقِ بالبريد» ← يصلك رمز على بريدك ← أدخله فيُفعَّل.', 'تطبيق المصادقة: اضغط «تهيئةُ التطبيق» ← افتح التطبيق وامسح رمز QR ← أدخل الرمز الظاهر فيه ← «تمت التهيئة».', 'بعد التفعيل يُطلب الرمز عند كل دخول وقبل العمليات الحساسة.'], 'التحقق بالبريد عند كل دخول شرط · وتطبيق المصادقة يحقّق شرط «وسيلة مصادقة واحدة على الأقل».'],
-  ['extra', 'رمز التحقق الإضافي', 'lock', 'رمز احتياطي من 12 خانة تستعمله إن لم يصلك رمز البريد أو الجوال، أو فقدت جهاز تطبيق المصادقة.',
-    ['اضغط «إنشاءُ رمزٍ جديد».', 'تحقّق برمز يصلك على البريد أو واتساب.', 'يظهر الرمز مرة واحدة فقط — انسخه واحفظه في مكان آمن.', 'اضغط «حفظتُ الرمز» — ولا يظهر بعدها في أي مكان.'], 'يحقّق شرط «وسيلة مصادقة واحدة على الأقل».'],
+  ['extra', 'الرقم الإضافي', 'lock', 'رقم سرّي تختاره أنت وتحفظه بنفسك (10 أرقام على الأقل) — يُطلب عند العمليات الحساسة أو إن لم يصلك رمز البريد أو الواتساب. المنصة لا تصدره ولا تعرضه ولا تسترجعه.',
+    ['اضغط «تعيينُ الرقم الإضافي».', 'اكتب رقمًا من 10 أرقام على الأقل: بلا تكرار متتالٍ مثل 111، ولا تسلسل مثل 1234 أو 9876، وبخمسة أرقام مختلفة على الأقل — ومؤشر القوة يوضّح حالته.', 'أعد كتابته في «تأكيد الرقم» حتى يظهر «مطابق».', 'أقرّ بمسؤوليتك عن حفظه ثم «متابعة للتحقق» ← أدخل الرمز الذي يصلك على البريد أو واتساب ← يُحفظ مُعمًّى ولا يظهر بعدها.'], 'يحقّق شرط «وسيلة مصادقة واحدة على الأقل».'],
   ['pw', 'كلمة المرور', 'shield', 'تغيير كلمة مرور حسابك بالتحقق الأمني نفسه.',
     ['أدخل كلمة المرور الحالية واختر وسيلة التحقق (البريد أو الجوال).', 'أدخل الرمز الذي يصلك.', 'اكتب كلمة المرور الجديدة بشروطها: 5 أحرف و5 أرقام ورمز واحد على الأقل، بلا أحرف متتابعة ولا أرقام متسلسلة — ثم أكّدها.', 'اضغط «حفظ كلمة المرور».'], 'اختياري — يُنصح بتغييرها دوريًا.']];
 function rvuSecMState(k) {
@@ -13669,11 +13772,29 @@ function rvUpd() {
 const RVA = { v: null, err: {} };
 function rvaInit() { if (RVA.v) return; RVA.v = Object.assign({}, V1_SEED); }
 const rvaGet = (id) => (RVA.v[id] === undefined ? '' : RVA.v[id]);
-function rvaSet(id, x) { RVA.v[id] = x; delete RVA.err[id]; v1Settle(RVA.v, function (k, v) { RVA.v[k] = v; }, true); }
+/* أوجه الوثيقة من document_requirements: الهوية الخليجية وإثبات الهوية الوطنية بوجهين (أمامي وخلفي)،
+   والهوية الوطنية وهوية مقيم بوجه واحد، والجواز بصفحة البيانات، وبقية المرفقات ملف واحد */
+function rvDocSides(k) { const r = PF_DR.filter(function (x) { return x[1] === k; })[0]; return pfSides(r ? r[3] : 1); }
+function rvSideL(k, sd, sides) { return sides.length > 1 ? PF_SIDE[sd] : k === 'passport' ? 'صفحة البيانات' : /^(national_id|residency)$/.test(k) ? 'الوجه الأمامي' : 'الملف'; }
+function rvSideSlots(k, sides, nameOf, noteTxt, lock, onUp) {
+  const isId = /^(national_id|residency|passport|gcc_id|arab_id)$/.test(k);
+  return e('div', { class: 'rv-sides' + (sides.length > 1 ? ' is-two' : '') }, [isId ? e('small', { class: 'rv-sides-h' }, sides.length > 1 ? 'وجهان: الأمامي والخلفي — كلٌّ في ملف' : k === 'passport' ? 'صفحة البيانات فقط' : 'وجه واحد — الأمامي') : null].concat(sides.map(function (sd) {
+    const nm = nameOf(sd), lab = rvSideL(k, sd, sides);
+    return e('div', { class: 'rv-side' + (nm ? ' is-ok' : '') }, [isId ? e('span', { class: 'rv-side-l' }, [e('i', { class: 'rv-side-ic is-' + (sd || 'one') }, ''), lab]) : null,
+      nm ? DS.fileCard({ name: nm, note: noteTxt }) : e('small', { class: 'rv-side-e' }, 'لم يُرفع بعد'),
+      lock ? null : DS.button(nm ? 'استبدال' : (isId ? 'رفع ' + lab : 'إرفاق ملف'), { size: 'sm', ui: 'upload-simple', onClick: function () { onUp(sd); } })]); })));
+}
+function rvaSet(id, x) { RVA.v[id] = x; delete RVA.err[id]; v1Settle(RVA.v, function (k, v) { RVA.v[k] = v; }, true, 'rva'); }
 function rvaField(f) {
   const val = rvaGet(f.id), req = v1Required(f, rvaGet), hint = v1Hint(f, rvaGet), err = RVA.err[f.id];
-  if (f.t === 'file') return e('div', { class: 'rv-f' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), val ? rvBadge('مرفق', 'ok') : rvBadge(req ? 'مطلوب' : 'اختياري', req ? 'warn' : null)]),
-    val ? DS.fileCard({ name: val, note: 'PDF' }) : null, rvRow([DS.button(val ? 'استبدال' : 'إرفاق ملف', { size: 'sm', ui: 'upload-simple', onClick: function () { RVA.v[f.id] = f.k + '.pdf'; rvToast('تم الرفع — شكرًا، سيُراجع مع طلبك'); } })])]);
+  if (f.t === 'file') {
+    const SD = RVA.sd || (RVA.sd = {}), sides = rvDocSides(f.k), part = sides.some(function (x) { return SD[f.id + '|' + x]; });
+    return e('div', { class: 'rv-f' }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), val ? rvBadge('مرفق', 'ok') : rvBadge(part ? 'ناقص وجه' : req ? 'مطلوب' : 'اختياري', req || part ? 'warn' : null)]),
+      rvSideSlots(f.k, sides, function (sd) { return SD[f.id + '|' + sd] || ''; }, 'PDF', false, function (sd) {
+        SD[f.id + '|' + sd] = f.k + (sd ? '-' + sd : '') + '.pdf'; const all = sides.every(function (x) { return SD[f.id + '|' + x]; });
+        if (all) RVA.v[f.id] = sides.map(function (x) { return SD[f.id + '|' + x]; }).join('، ');
+        rvToast(all ? 'تم الرفع — شكرًا، سيُراجع مع طلبك' : 'تم رفع ' + rvSideL(f.k, sd, sides) + ' — بقي ' + sides.filter(function (x) { return !SD[f.id + '|' + x]; }).map(function (x) { return rvSideL(f.k, x, sides); }).join(' و')); })]);
+  }
   const ctl = v1Ctl(f, val, function (x) { if (f.t === 'select') { rvaSet(f.id, x); draw(); } else { RVA.v[f.id] = x; delete RVA.err[f.id]; } }, rvaGet);
   return e('div', { class: 'rv-f is-edit' + (err ? ' is-back' : '') }, [e('div', { class: 'rv-fh' }, [e('span', { class: 'rv-fl' }, [f.l, req ? e('i', { 'aria-hidden': 'true' }, ' *') : null]), req ? null : rvBadge('اختياري', null)]), ctl,
     hint ? e('small', { class: 'rv-sm' }, hint) : null, err ? e('p', { class: 'rv-note' }, [frag(ui('warning', 14)), err]) : null]);
@@ -13764,6 +13885,7 @@ function pfKeys(k) {
 /* بعد أي تغيير: القيمة المعلّقة لحقلٍ اختفى تُطرح، والخيار غير المسموح يُطرح (كما في inputFor) */
 function pfSettle() {
   const fm = PF.sec;
+  if (fm === 'address') v1AutoCountry(pfG, function (id, v) { PF.u[id] = v; }, 'pf');
   for (let p = 0; p < 3; p++) V1_FIELDS.forEach(function (f) {
     if (f.t === 'file' || f.f !== fm) return; const own = Object.prototype.hasOwnProperty.call(PF.u, f.id), vis = v1Visible(f, pfG), cur = pfG(f.id);
     if (!vis) { if (own && PF.u[f.id] !== '') PF.u[f.id] = ''; return; }
