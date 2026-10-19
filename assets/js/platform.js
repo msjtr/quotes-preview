@@ -14174,11 +14174,11 @@ const ACC_STATES = [['start', false, 'تسجيل جديد أو تحديث', 'ا�
   ['launched', true, 'مدشّن — لديه عقود أو شراكة', 'عقد قائم أو دور شريك أو مستثمر أو مسوّق', 'contract']];
 const ACC_CT = ['عقودي', 'مدفوعاتي', 'سجلات مدفوعاتي', 'سداد عقد كامل', 'طلب تأجيل دفعة', 'توحيد عقودي في عقد واحد', 'توحيد عقودي', 'سداد دفعة', 'معلوماتي المالية'];
 function accOn() { return !!window.__ACC && S.role === 'client'; }
-function accPre() { const A = window.__ACC; return !!A && !A.upd && (A.stage === 'start' || A.stage === 'review'); }
+function accPre() { const A = window.__ACC; return !!A && !A.upd && (A.stage === 'start' || A.stage === 'review' || A.stage === 'back'); }
 /* إخفاء ما لا يظهر في الحالة: في القائمة الجانبية وشريط الجوال، وبطاقات العقود في اللوحة */
 function accMark() {
   const A = window.__ACC, r = document.querySelector('#pv-host .t2'); if (!r) return;
-  r.classList.toggle('acc-pre', accOn() && accPre()); r.classList.toggle('acc-unl', accOn() && !A.upd && A.stage !== 'launched'); r.classList.toggle('acc-noct', accOn() && !A.full);
+  r.classList.toggle('acc-pre', accOn() && accPre()); r.classList.toggle('acc-unl', accOn() && !A.upd && A.stage !== 'launched'); r.classList.toggle('acc-noct', accOn() && (!A.full || accPre()));
 }
 document.addEventListener('click', function () { setTimeout(accMark, 60); });
 function accStrip(nodes) {
@@ -14195,9 +14195,10 @@ function accJourney() {
 }
 /* ما يظهر في كل حالة — جدول المراجعة */
 function accRows(A) {
-  const pre = A.stage === 'start' || A.stage === 'review', unl = A.stage !== 'launched';
+  const pre = !A.upd && (A.stage === 'start' || A.stage === 'review' || A.stage === 'back'), unl = !A.upd && A.stage !== 'launched';
+  if (pre) A = Object.assign({}, A, { full: false });
   return [['لوحتي الرئيسية', true, pre || unl ? 'رحلة الحساب: ' + (A.stage === 'start' ? 'استكمل ملفك وأرسله' : A.stage === 'review' ? 'ملفك قيد المراجعة ومسارها' : 'تمّت الموافقة — بانتظار التدشين') : A.full ? 'اللوحة الكاملة بالعقود والمدفوعات' : 'اللوحة بلا كتل العقود والمدفوعات'],
-    ['ملفي الشخصي', true, A.stage === 'start' ? 'تعديل مباشر — الملف مسودة' : A.stage === 'review' ? 'للاطلاع — مقفل حتى القرار' : 'التعديل بطلب تحديث'],
+    ['ملفي الشخصي', true, A.stage === 'start' ? 'تعديل مباشر — الملف مسودة' : A.stage === 'back' ? 'البنود المعادة مفتوحة للتعديل' : A.stage === 'review' ? 'للاطلاع — مقفل حتى القرار' : 'التعديل بطلب تحديث'],
     ['مركز الأمان', true, 'الواتساب ووسائل المصادقة والبريد وكلمة المرور'],
     ['خدماتي', !pre, pre ? 'تظهر بعد قبول الملف' : A.full ? 'كل الخدمات' : 'طلباتي · بياناتي الوظيفية · طلب عرض سعر من الشركاء'],
     ['عقودي · مدفوعاتي · سجلات المدفوعات', !pre && A.full, A.full && !pre ? 'ظاهرة' : 'لمن لديه عقد أو شراكة'],
@@ -14237,8 +14238,9 @@ function accJourneyPage(J) {
   const first = String(ME.name || '').split(' ')[0], pct = J.v.progress, R = rvuSecReq(), ready = R[0][1] && R[1][1];
   const toUpd = function () { RVU.view = 'form'; draw(); setTimeout(function () { const x = document.querySelector('#pv-root .rv-acc'); if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }, toSec = function () { RVU.secOpen = true; RVU.view = 'form'; draw(); };
   let hero;
-  if (J.stage === 'start') hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'WELCOME TO TERA'), e('h2', {}, 'استكمل ملفك، ' + first),
-      e('p', {}, 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
+  const MG = window.__ACC && window.__ACC.mig;
+  if (J.stage === 'start') hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, MG ? 'WELCOME BACK' : 'WELCOME TO TERA'), e('h2', {}, (MG ? 'حدّث ملفك، ' : 'استكمل ملفك، ') + first),
+      e('p', {}, MG ? 'انتقل حسابك إلى منصة تيرا. حدّث بياناتك ومستنداتك ووسائل أمانك ثم أرسلها للاعتماد، وبعد الاعتماد تُفتح لك كل خدماتك وعقودك.' : 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
       !ready ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تربط رقم الواتساب وتفعّل وسيلة مصادقة واحدة على الأقل من مركز الأمان.')]) : null,
       e('div', { class: 'jr-acts' }, [DS.button('ابدأ من أول قسم ناقص', { tone: 'primary', ui: 'caret-down', onClick: toUpd }), ready ? null : DS.button('مركز الأمان', { ui: 'shield-check', onClick: function () { toSec(); setTimeout(function () { const x = document.querySelector('#pv-root .rvs-card'); if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80); } })])]),
     e('div', { class: 'jr-ring', style: '--jr-r:' + pct }, [e('b', {}, String(pct)), e('small', {}, '٪ اكتمال الملف')])]);
@@ -14264,6 +14266,13 @@ function accJourneyPage(J) {
 }
 /* العيّنة: اللوحة وخدماتي تتبعان حالة الحساب المختارة (وفي المنصة تتبعان بيانات الحساب) */
 const accDash0 = dashPage;
+/* أُعيد الطلب: البنود المطلوبة مفتوحة بملاحظة الفريق، والبقية مقفلة */
+function accBackHero(A) {
+  rvuInit(); const first = String(ME.name || '').split(' ')[0], n = Object.keys(RVU.back || {}).length;
+  return e('section', { class: 'jr-hero is-back' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye is-red' }, 'ACTION REQUIRED'),
+    e('h2', {}, (A.upd ? 'أُعيد طلب التحديث لاستكمال ' : A.mig ? 'أُعيد ملفك لتحديث ' : 'أُعيد ملفك لاستكمال ') + (n === 1 ? 'بند واحد' : n === 2 ? 'بندين' : fmtNum(n) + ' بنود')),
+    e('p', {}, first + '، عدّل البنود المعلَّمة حسب ملاحظة الفريق ثم أعد الإرسال.' + (A.upd ? ' خدماتك متاحة كالمعتاد.' : ''))]), e('div', { class: 'jr-ring is-bad', style: '--jr-r:' + Math.max(5, 100 - n * 10) }, [e('b', {}, fmtNum(n)), e('small', {}, 'بنود للتعديل')])]);
+}
 /* طالب التحديث عميلٌ قائم: حسابه كامل بخدماته، وفوق لوحته حالة طلب التحديث */
 function accUpdHero(A) {
   rvuInit(); rvuSecSync();
@@ -14272,13 +14281,15 @@ function accUpdHero(A) {
     e('p', {}, 'راجع بياناتك ومستنداتك وحدّث ما تغيّر، ثم أرسل الطلب للاعتماد. خدماتك وعقودك تبقى متاحة كما هي.')]), e('div', { class: 'jr-ring', style: '--jr-r:' + rvuPct().pct }, [e('b', {}, String(rvuPct().pct)), e('small', {}, '٪ اكتمال التحديث')])]);
   if (A.stage === 'review') return e('section', { class: 'jr-hero is-review' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'UPDATE UNDER REVIEW'), e('h2', {}, 'طلب تحديث بياناتك قيد المراجعة'),
     e('p', {}, 'وصل طلبك في ' + iso(addDays(new Date(), -1)) + '، وفريق تيرا يطابق التعديلات. خدماتك متاحة كالمعتاد.'), accTrack({ stage: 'review', upd: true })])]);
-  return e('section', { class: 'jr-hero is-approved' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye is-gold' }, 'UPDATE APPROVED'), e('h2', {}, 'مبروك ' + first + '، اعتُمد تحديث بياناتك'),
-    e('p', {}, 'بياناتك الآن محدّثة في حسابك، وكل خدماتك متاحة.')]), e('div', { class: 'jr-crown', 'aria-hidden': 'true' }, frag(tile('crown-simple:gold')))]);
+  return e('section', { class: 'jr-hero is-approved' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye is-gold' }, A.mig ? 'ACCOUNT APPROVED' : 'UPDATE APPROVED'), e('h2', {}, A.mig ? 'مبروك ' + first + '، اعتُمد ملفك' : 'مبروك ' + first + '، اعتُمد تحديث بياناتك'),
+    e('p', {}, A.mig ? 'فُتحت لك كل خدماتك: عقودك ومدفوعاتك وأهليتك وطلباتك.' : 'بياناتك الآن محدّثة في حسابك، وكل خدماتك متاحة.')]), e('div', { class: 'jr-crown', 'aria-hidden': 'true' }, frag(tile('crown-simple:gold')))]);
 }
 dashPage = function () {
   if (!accOn()) return accDash0();
   setTimeout(accMark, 0);
   const A0 = window.__ACC;
+  if (A0.stage === 'back') return [e('div', { class: 't2-dash jr' }, [accBackHero(A0)])].concat(rvUpd().filter(function (x, i) { return i > 1; })).concat(A0.upd ? accDash0() : []);
+  if (A0.mig && A0.stage === 'launched') return [e('div', { class: 't2-dash jr' }, [accUpdHero(A0)])].concat(accDash0());
   if (A0.upd) { const hero = accUpdHero(A0), rest = accDash0(); return [e('div', { class: 't2-dash jr' }, [hero])].concat(A0.stage === 'start' ? rvUpd().filter(function (x, i) { return i > 0; }) : []).concat(rest); }
   const J = accJourney();
   if (J.stage !== 'launched') return accJourneyPage(J);
@@ -14463,25 +14474,37 @@ function rvGmap() {
 }
 /* ---------- «للمراجعة» (v346): رحلتان كما يعيشهما العميل — عميل جديد · طالب تحديث — وكل مرحلة تعرض شاشته بالضبط بلا شرح ----------
    المرحلة تضبط حالة الحساب في العيّنة كلها (اللوحة والأقسام وخدماتي والقائمة الجانبية)، فالتنقّل من الشاشة يبقى على الحالة نفسها. */
-const RV_J = [['new', 'عميل جديد', 'profile'], ['upd', 'طالب تحديث', 'newq'], ['other', 'شاشات أخرى', 'squares-four']];
-const RV_STG = { new: [['n1', 'الاستكمال'], ['n2', 'بعد الإرسال'], ['n3', 'بعد القبول'], ['n4', 'بعد التدشين']], upd: [['u1', 'طلب التحديث'], ['u2', 'بعد الإرسال'], ['u3', 'بعد القبول']],
+const RV_J = [['new', 'عميل جديد', 'profile'], ['mig', 'عميل مُرحَّل', 'newq'], ['upd', 'تحديث بعد التدشين', 'seal-check'], ['other', 'شاشات أخرى', 'squares-four']];
+const RV_STG = { new: [['n1', 'الاستكمال', 'info'], ['n2', 'بعد الإرسال', 'warn'], ['nb', 'أُعيد للاستكمال', 'bad'], ['n3', 'بعد القبول', 'ok'], ['n4', 'بعد التدشين', 'ok']],
+  mig: [['m1', 'تحديث الملف', 'info'], ['m2', 'بعد الإرسال', 'warn'], ['mb', 'أُعيد للتحديث', 'bad'], ['m3', 'بعد القبول', 'ok']],
+  upd: [['u1', 'طلب التحديث', 'info'], ['u2', 'بعد الإرسال', 'warn'], ['ub', 'أُعيد للتعديل', 'bad'], ['u3', 'بعد القبول', 'ok']],
   other: [['addr', 'ملفي الشخصي'], ['wa', 'ربط الواتساب'], ['film', 'رسالة «جُهِّز فيلمك»'], ['acc', 'حالات الحساب'], ['gmap', 'خريطة Google']] };
-const RV_ACC = { n1: { stage: 'start' }, n2: { stage: 'review' }, n3: { stage: 'approved' }, n4: { stage: 'launched' }, u1: { stage: 'start', full: true, upd: true }, u2: { stage: 'review', full: true, upd: true }, u3: { stage: 'launched', full: true, upd: true, done: true } };
+const RV_ACC = { n1: { stage: 'start' }, n2: { stage: 'review' }, nb: { stage: 'back' }, n3: { stage: 'approved' }, n4: { stage: 'launched' },
+  m1: { stage: 'start', mig: true }, m2: { stage: 'review', mig: true }, mb: { stage: 'back', mig: true }, m3: { stage: 'launched', full: true, mig: true, done: true },
+  u1: { stage: 'start', full: true, upd: true }, u2: { stage: 'review', full: true, upd: true }, ub: { stage: 'back', full: true, upd: true }, u3: { stage: 'launched', full: true, upd: true, done: true } };
+const RV_BACK = { 'personal.id_expiry': 'التاريخ لا يطابق صورة الوثيقة المرفقة.', 'docs.address_proof': 'وثيقة العنوان غير واضحة — أعد رفعها من «سُبل».' };
 try { const j0 = sessionStorage.getItem('tera-rv-j'); if (j0) { RV.j = j0; RV.st = JSON.parse(sessionStorage.getItem('tera-rv-st') || '{}'); } } catch (err) { void err; }
 function rvStage() { RV.st = RV.st || {}; const j = RV.j || 'new'; const L = RV_STG[j]; return L.some(function (x) { return x[0] === RV.st[j]; }) ? RV.st[j] : L[0][0]; }
 function rvSetStage(j, k) {
   RV.j = j; RV.st = RV.st || {}; RV.st[j] = k; RV.toast = ''; RV.aft = 'dash';
-  if (j !== 'other') { const a = RV_ACC[k]; window.__ACC = Object.assign({ full: false }, a); rvuMode(j === 'upd' ? 'upd' : 'new');
-    if (a.stage === 'start') { RVU.st = 'draft'; RVU.view = 'form'; } else if (a.stage === 'review') { RVU.st = 'recv'; } PF.st = a.stage === 'start' ? 'draft' : 'approved'; }
+  if (j !== 'other') { const a = RV_ACC[k]; window.__ACC = Object.assign({ full: false }, a); rvuMode(j === 'new' ? 'new' : 'upd');
+    if (a.stage === 'start') { RVU.st = 'draft'; RVU.view = 'form'; } else if (a.stage === 'review') { RVU.st = 'recv'; } else if (a.stage === 'back') { RVU.st = 'back'; RVU.view = 'form'; RVU.back = Object.assign({}, RV_BACK); } else { RVU.st = 'ok'; }
+    PF.st = a.stage === 'start' || a.stage === 'back' ? 'draft' : 'approved'; }
   else { RV.tab = k; }
   try { sessionStorage.setItem('tera-rv-j', j); sessionStorage.setItem('tera-rv-st', JSON.stringify(RV.st)); sessionStorage.setItem('tera-rv-tab', RV.tab || 'upd'); } catch (err) { void err; }
   draw(); toTop();
+}
+/* شريط ملوّن: ما يظهر للعميل في هذه الحالة وما يُخفى عنه */
+function rvVisStrip(A, tone) {
+  const R = accRows(Object.assign({ full: false }, A)), on = R.filter(function (r) { return r[1]; }), off = R.filter(function (r) { return !r[1]; });
+  return e('div', { class: 'rv-vis is-' + (tone || 'info') }, [e('div', { class: 'rv-vis-r' }, [e('b', { class: 'rv-vis-k is-on' }, [frag(ui('eye', 14)), 'يظهر']), e('div', { class: 'rv-vis-c' }, on.map(function (r) { return e('span', { class: 'rv-chip is-on' }, r[0]); }))]),
+    off.length ? e('div', { class: 'rv-vis-r' }, [e('b', { class: 'rv-vis-k is-off' }, [frag(ui('eye-slash', 14)), 'مخفي']), e('div', { class: 'rv-vis-c' }, off.map(function (r) { return e('span', { class: 'rv-chip is-off' }, r[0]); }))]) : null]);
 }
 function rvScreen(k) {
   const a = RV_ACC[k]; window.__ACC = Object.assign({ full: false }, a); setTimeout(accMark, 0);
   /* بعد الإرسال لا يكون الملف إلا مكتمل الأمان: واتساب مربوط ووسيلة مصادقة مفعّلة (شرط الإرسال) */
   if (a.stage !== 'start') { LVS.wa = 'on'; LVS.mail = true; if (!LVS.app && !LVS.xc) { LVS.app = true; LVS.appAt = new Date(); } if (typeof RVW !== 'undefined') RVW.st = 3; }
-  if (a.stage !== 'launched' || a.upd) return dashPage();
+  if (a.stage !== 'launched' || a.upd || a.mig) return dashPage();
   const v = RV.aft || 'dash';
   const tabs = DS.tabs({ items: [['dash', 'لوحتي الرئيسية', 'house'], ['more', 'الأقسام', 'squares-four'], ['svc', 'خدماتي', 'services']], value: v, onChange: function (x) { RV.aft = x; draw(); } });
   return [tabs].concat(v === 'more' ? morePage() : v === 'svc' ? svcPage() : dashPage());
@@ -14489,7 +14512,8 @@ function rvScreen(k) {
 function rvPage() {
   if (!/^rva?-/.test(String(S.fsOne || ''))) RV.prev = S.fsOne; if (RV.one) S.fsOne = RV.one;
   const j = RV.j || 'new', k = rvStage();
-  if (j !== 'other' && (!window.__ACC || !RV_ACC[k] || window.__ACC.stage !== RV_ACC[k].stage || !!window.__ACC.upd !== !!RV_ACC[k].upd)) { RV.st = RV.st || {}; RV.st[j] = k; const a = RV_ACC[k]; window.__ACC = Object.assign({ full: false }, a); rvuMode(j === 'upd' ? 'upd' : 'new'); }
+  if (j !== 'other' && (!window.__ACC || !RV_ACC[k] || window.__ACC.stage !== RV_ACC[k].stage || !!window.__ACC.upd !== !!RV_ACC[k].upd || !!window.__ACC.mig !== !!RV_ACC[k].mig)) { RV.st = RV.st || {}; RV.st[j] = k; const a = RV_ACC[k]; window.__ACC = Object.assign({ full: false }, a); rvuMode(j === 'new' ? 'new' : 'upd');
+    if (a.stage === 'back') { RVU.st = 'back'; RVU.back = Object.assign({}, RV_BACK); } }
   if (j === 'other') { RV.tab = k; if (k === 'addr') rvuMode('upd'); }
   let body;
   try { body = j === 'other' ? (k === 'acc' ? rvAcc() : k === 'gmap' ? rvGmap() : k === 'addr' ? rvAddr() : k === 'wa' ? rvWa() : rvFilm()) : rvScreen(k); }
@@ -14497,7 +14521,8 @@ function rvPage() {
   rvKeepOne(); setTimeout(rvOverlay, 0); rvBarOn();
   const top = e('div', { class: 'rv-nav' }, [e('div', { class: 'rv-tabs rv-j' }, DS.tabs({ items: RV_J, value: j, onChange: function (x) { rvSetStage(x, (RV.st && RV.st[x]) || RV_STG[x][0][0]); } })),
     e('ol', { class: 'rv-stg', role: 'tablist', 'aria-label': 'المرحلة' }, RV_STG[j].map(function (x, i) { const on = x[0] === k;
-      return e('li', {}, e('button', { type: 'button', role: 'tab', class: 'rv-stg-i' + (on ? ' is-on' : ''), 'aria-selected': on ? 'true' : 'false', onClick: function () { rvSetStage(j, x[0]); } }, [j === 'other' ? null : e('span', { class: 'rv-stg-n' }, fmtNum(i + 1)), x[1]])); }))]);
+      return e('li', {}, e('button', { type: 'button', role: 'tab', class: 'rv-stg-i' + (x[2] ? ' is-' + x[2] : '') + (on ? ' is-on' : ''), 'aria-selected': on ? 'true' : 'false', onClick: function () { rvSetStage(j, x[0]); } }, [j === 'other' ? null : e('span', { class: 'rv-stg-n' }, fmtNum(i + 1)), x[1]])); }))]
+    .concat(j === 'other' ? [] : [rvVisStrip(RV_ACC[k], (RV_STG[j].filter(function (x) { return x[0] === k; })[0] || [])[2])]));
   return [top, RV.toast ? e('div', { class: 'mb-toast', role: 'status' }, [frag(ui(/^(تم|أُرسل)/.test(RV.toast) ? 'check' : 'info', 16)), RV.toast]) : null].concat(e('div', { class: 'rv-screen' }, [].concat(body).filter(Boolean))).filter(Boolean);
 }
 /* زر «للمراجعة» في شريط العيّنة يبقى مضاءً ما دامت الصفحة مفتوحة */
