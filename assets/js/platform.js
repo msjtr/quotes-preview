@@ -3560,6 +3560,13 @@ function rankList(tab, list) {
 }
 /* ===== المفضّلة والسلة ===== */
 function snack(msg, act, sub) {
+  /* v356: الإشعار الموحّد في منتصف الشاشة (8 ثوانٍ أو يغلقه المستخدم) — في العيّنة الآن، وعلى المنصة بعد الاعتماد */
+  if (window.TeraNotify && window.TeraNotify.enabled) {
+    const t = String(msg || ''), k = /تعذّر|غير صحيح|خطأ|فشل|مرفوض|لا يمكن|انتهت/.test(t) ? 'bad' : /أدخل|اختر|اكتب|حدّد|يلزم|مطلوب|أكمل|وافق/.test(t) ? 'warn' : /جارٍ/.test(t) ? 'info' : 'ok';
+    const dv = document.querySelector('#pv-host .pv-dev');
+    window.TeraNotify.show({ kind: k, title: t, text: sub || '', host: dv || null, actions: act ? [{ label: act[0], primary: true, run: act[1] }] : null });
+    return;
+  }
   const host = document.querySelector('#pv-host .pv-dev') || document.body;
   document.querySelectorAll('.st-snack').forEach(function (x) { x.remove(); });
   const s = e('div', { class: 'st-snack' + (host !== document.body ? ' is-dev' : ''), role: 'status', 'aria-live': 'polite' }, [e('i', { class: 'st-snack-ic' }, frag(ui('check', 18))), e('span', { class: 'st-snack-tx' }, [e('b', {}, msg), sub ? e('small', {}, sub) : null]), act ? e('button', { type: 'button', onClick: function () { s.remove(); act[1](); } }, act[0]) : null]);

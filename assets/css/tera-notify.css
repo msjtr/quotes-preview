@@ -1,0 +1,35 @@
+/* tera-notify.css — الإشعار الموحّد في منتصف الشاشة (البوابة · المنصة · لوحة التحكم) */
+.tn-wrap{position:fixed;inset:0;z-index:2147482500;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(7,18,38,.32);opacity:0;transition:opacity .2s ease;font-family:"IBM Plex Sans Arabic","Cairo",sans-serif}
+.tn-wrap.is-in{position:absolute}
+.tn-wrap.is-on{opacity:1}
+.tn-wrap.is-modal{background:rgba(7,18,38,.62)}
+.tn-card{position:relative;width:min(400px,100%);background:#fff;color:#0b1f3a;border-radius:20px;padding:20px 20px 16px;box-shadow:0 22px 60px rgba(7,18,38,.32);text-align:center;transform:translateY(10px) scale(.97);transition:transform .22s ease;overflow:hidden}
+.tn-wrap.is-on .tn-card{transform:none}
+.tn-x{position:absolute;top:10px;left:10px;width:32px;height:32px;border-radius:10px;border:0;background:#eef2f7;color:#33445c;font:700 20px/1 sans-serif;cursor:pointer}
+.tn-x:hover{background:#e2e8f0}
+.tn-ic{display:flex;justify-content:center;margin:0 auto 6px}
+.tn-tile{width:clamp(48px,14vw,60px);height:auto;display:block}
+.tn-spin{width:44px;height:44px;border-radius:50%;border:4px solid #d5e3f5;border-top-color:#1D3F86;animation:tnspin .8s linear infinite;margin:6px 0}
+@keyframes tnspin{to{transform:rotate(360deg)}}
+.tn-t{display:block;font:800 clamp(15px,4.2vw,18px)/1.45 "Alexandria","Cairo",sans-serif;margin:2px 26px 4px}
+.tn-p{margin:0;color:#3d4d64;font-size:clamp(13px,3.6vw,14.5px);line-height:1.75}
+.tn-note{display:block;margin-top:8px;color:#5b6b82;font-size:12.5px}
+.tn-acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.tn-btn{border:0;border-radius:12px;padding:9px 14px;font:700 13.5px "IBM Plex Sans Arabic",sans-serif;background:#eef2f7;color:#0b1f3a;cursor:pointer;flex:1 1 auto;min-width:110px}
+.tn-btn.is-p{background:#0B2552;color:#fff}
+.tn-prog{position:absolute;inset:auto 0 0 0;height:4px;background:#eef2f7}
+.tn-prog i{display:block;height:100%;width:0;background:#0AA5AD;transition:width .1s linear}
+.tn-card.is-ok{border-top:4px solid #0AA5AD}
+.tn-card.is-bad{border-top:4px solid #C98418}
+.tn-card.is-bad .tn-prog i{background:#C98418}
+.tn-card.is-warn{border-top:4px solid #F0962A}
+.tn-card.is-warn .tn-prog i{background:#F0962A}
+.tn-card.is-info{border-top:4px solid #2E8FD0}
+.tn-card.is-info .tn-prog i{background:#2E8FD0}
+.tn-card.is-run{border-top:4px solid #1D3F86}
+@media (max-width:420px){.tn-card{padding:18px 14px 14px;border-radius:18px}.tn-btn{min-width:0;padding:9px 10px}}
+.tn-body{margin-top:10px;text-align:right}
+.pv-embed .pv-bar,.pv-embed .tq-ver{display:none!important}
+/* البوابة: تذكّر البريد أو الجوال */
+.pt-who{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#e6f6f7;border-radius:12px;padding:8px 12px;margin:0 0 10px;font-size:13.5px}
+.pt-who b{direction:ltr;unicode-bidi:isolate}

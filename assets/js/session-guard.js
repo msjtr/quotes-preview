@@ -35,12 +35,12 @@
   }
   function showLocation(left) {
     if (ended) return;
-    var t = 'تحديد الموقع شرط لاستمرار الجلسة. شغّل الموقع للمتصفح (أيقونة القفل بجانب العنوان ← الموقع ← سماح)، أو حدّد موقعك بالعنوان الوطني أو على الخريطة.'
+    var t = 'تحديد الموقع شرط لاستمرار الجلسة. شغّل الموقع للمتصفح (أيقونة القفل بجانب العنوان ← الموقع ← سماح)، أو إن تعذّر جلب موقعك فحدّده على الخريطة أو بالعنوان الوطني.'
       + (left > 0 ? ' ستنتهي الجلسة بعد ' + left + ' ثانية إن بقي متوقفًا.' : '');
     if (!locEl) {
       locEl = card(TITLES.location, t, [
         ['إعادة المحاولة', function () { location.reload(); }, true],
-        ['تحديد موقعي يدويًا', function () { try { if (window.TeraSession && window.TeraSession.locate) window.TeraSession.locate(); } catch (e) { void e; } }, false]]);
+        ['حدّد موقعي على الخريطة', function () { try { if (window.TeraSession && window.TeraSession.locate) window.TeraSession.locate(); } catch (e) { void e; } }, false]]);
       (document.body || document.documentElement).appendChild(locEl);
     } else { var p = locEl.querySelector('.sg-text'); if (p) p.textContent = t; }
   }
