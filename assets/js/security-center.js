@@ -79,6 +79,14 @@
       ['bad', '', 'رمز الاستعادة غير صحيح أو مستخدم', 'كل رمز استعادة يُستعمل مرة واحدة فقط.', 'رمز الاستعادة'],
       ['ok', 'seal-check:teal', 'تم تعيين كلمة المرور', 'سجّل الدخول الآن بكلمة المرور الجديدة. أنهينا الجلسات المفتوحة وألغينا تصاريح الأجهزة حفاظًا على أمان حسابك.', 'نهاية الاستعادة', 1]
     ]],
+    ['math', 'التحقق الإضافي (الجمع)', 'shield-check:navy', [
+      ['math', 'shield-check:navy', 'تحقق إضافي قبل الدخول', 'عملية جمع بسيطة في قوالب — جرّبها: اكتب الناتج واضغط «تحقق»، أو «عملية أخرى».', 'الدخول'],
+      ['math', 'shield-check:navy', 'تحقق إضافي قبل إنشاء الحساب', 'تظهر عند بدء التسجيل. الإجابة الخاطئة تغيّر الأرقام تلقائيًا.', 'إنشاء حساب'],
+      ['math', 'shield-check:navy', 'تحقق إضافي قبل استعادة الحساب', 'تظهر قبل إرسال رمز الاستعادة إلى جوالك.', 'نسيت كلمة المرور'],
+      ['math', 'shield-warning:gold', 'تحقق إضافي لعملية حساسة', 'تغيير كلمة المرور، إنهاء الجلسات، المصادقة، الأجهزة، الحساب البنكي، الدفع والسداد والتحويل، والإلغاء.', 'العمليات الحساسة في المنصة ولوحة التحكم'],
+      ['bad', '', 'الإجابة غير صحيحة', 'جرّب هذه العملية الجديدة — تتغيّر الأرقام تلقائيًا بعد كل إجابة خاطئة.', 'إجابة خاطئة'],
+      ['ok', '', 'تم التحقق', 'شكرًا — نكمل الآن.', 'إجابة صحيحة']
+    ]],
     ['session', 'الجلسة', 'fingerprint:teal', [
       ['modal', 'devices:navy', 'تم الدخول من جهاز آخر', 'انتهت جلستك لأن الحساب سُجّل دخوله من جهاز أو متصفح آخر. يبقى الدخول الأحدث وحده.', 'خلال 20 ثانية من الدخول الجديد', 0, [['تسجيل الدخول', 1]]],
       ['warn', 'timer:gold', 'ستنتهي جلستك بعد دقيقتين', 'لم نرصد نشاطًا منذ مدة. ستنتهي الجلسة تلقائيًا ما لم تتابع.', 'قبل انتهاء الخمول', 0, [['متابعة الجلسة', 1], ['تسجيل الخروج']]],
@@ -107,7 +115,7 @@
   CAT.push(['portal', 'كل رسائل البوابة', 'sign-in:navy', EXTRA.portal.map(function (x) { return [x.k === 'bad' ? 'bad' : x.k === 'ok' ? 'ok' : kindOf(x.t), '', x.t, '', 'البوابة']; })]);
   CAT.push(['platform', 'المنصة ولوحة التحكم', 'squares-four:gold', EXTRA.platform.map(function (t) { return [kindOf(t), '', t, '', 'المنصة · لوحة التحكم']; })]);
   GL['sign-in'] = GL['sign-out']; GL.devices = GL['device-mobile'];
-  var KINDS = { ok: 'نجاح', bad: 'خطأ', warn: 'تنبيه', info: 'معلومة', run: 'جارٍ', modal: 'نافذة تحجب الصفحة' };
+  var KINDS = { ok: 'نجاح', bad: 'خطأ', warn: 'تنبيه', info: 'معلومة', run: 'جارٍ', modal: 'نافذة تحجب الصفحة', math: 'تحقق بالجمع' };
 
   /* خريطة التحديد اليدوي (معاينة): المس لتضع الدبوس */
   function mapPicker() {
@@ -117,6 +125,7 @@
     return h('div', {}, [m, h('div', { class: 'sc-row' }, [coord, h('button', { type: 'button', class: 'sc-link', onclick: function () { coord.textContent = '27.5114 , 41.7208 (موقعك الحالي)'; pin.style.left = '50%'; pin.style.top = '50%'; } }, 'استخدم موقعي الحالي')])]);
   }
   function preview(n, layer) {
+    if (n[0] === 'math') { N.math({ title: n[2], text: n[3], icon: n[1], host: layer }).then(function (ok) { if (!ok) N.show({ kind: 'info', title: 'أُلغي التحقق', text: 'لن تُنفَّذ العملية.', host: layer }); }); return; }
     var kind = n[0] === 'modal' ? 'warn' : n[0], o = { kind: kind, icon: n[1] || null, title: n[2], text: n[3], host: layer, modal: n[0] === 'modal' };
     if (n[0] === 'modal') o.ms = 0;
     if (n[7] === MAP_BODY) o.body = mapPicker();
@@ -144,6 +153,87 @@
       h('div', { class: 'sc-grid' }, [['clipboard-text:navy', 'طلباتي'], ['receipt:teal', 'عروضي'], ['wallet:gold', 'دفعاتي'], ['crown-simple:saffron', 'عضويتي'], ['shield-check:teal', 'مركز الأمان'], ['headset:sky', 'الدعم']].map(function (x) { return h('div', { class: 'sc-gi' }, [T(x[0]), x[1]]); }))]);
   }
 
+  /* ===== إشعارات الجوال والويب (تصل حتى والمنصة مغلقة) — معاينة قبل ربط المزوّد ===== */
+  var PUSH = [
+    ['pay', 'السداد والدفعات', 'wallet:gold', [
+      ['تذكير: دفعتك القادمة بعد 3 أيام', 'الدفعة 3 من 6 للعقد TR-2048 بمبلغ 1,250 ر.س تستحق الخميس 23 أكتوبر.', 'ادفع الآن'],
+      ['اليوم موعد سداد دفعتك', '1,250 ر.س للعقد TR-2048. ادفع قبل نهاية اليوم لتجنّب التأخير.', 'ادفع الآن'],
+      ['دفعة متأخرة', 'تأخرت الدفعة 3 للعقد TR-2048 يومين. سدّدها الآن أو تواصل معنا.', 'ادفع الآن'],
+      ['تم استلام دفعتك', 'استلمنا 1,250 ر.س للعقد TR-2048. شكرًا لك — الإيصال في حسابك.', 'عرض الإيصال'],
+      ['رابط دفع جديد', 'أرسل لك فريق تيرا رابط دفع بمبلغ 3,400 ر.س صالحًا 48 ساعة.', 'فتح الرابط']]],
+    ['accept', 'القبول والطلبات', 'clipboard-text:navy', [
+      ['عرض سعر بانتظار قبولك', 'عرض السعر Q-1187 لطلب «آيفون 17 برو» جاهز. راجعه واقبله خلال 72 ساعة.', 'مراجعة وقبول'],
+      ['عقدك جاهز للتوقيع', 'عقد التقسيط TR-2048 جاهز. راجعه ووقّعه إلكترونيًا.', 'توقيع العقد'],
+      ['تحديث على طلبك', 'طلبك REQ-2026-0412 انتقل إلى «قيد التنفيذ».', 'تفاصيل الطلب'],
+      ['طلبك يحتاج إجراءً منك', 'نحتاج صورة الهوية لإكمال الطلب REQ-2026-0412.', 'إكمال الطلب'],
+      ['اكتمل طلبك', 'اكتمل الطلب REQ-2026-0412. قيّم تجربتك في دقيقة.', 'تقييم']]],
+    ['sec', 'الأمان', 'shield-check:teal', [
+      ['دخول جديد إلى حسابك', 'iPhone · Safari — حائل 10:27. إن لم تكن أنت فغيّر كلمة المرور فورًا.', 'ليس أنا'],
+      ['تغيّرت كلمة المرور', 'تغيّرت كلمة مرور حسابك الآن وأُنهيت الجلسات الأخرى.', 'مراجعة الأمان'],
+      ['أُنهيت جلستك', 'سُجّل الدخول إلى حسابك من جهاز آخر، فأُنهيت الجلسة على هذا الجهاز.', 'تسجيل الدخول'],
+      ['صُرّح لجهاز جديد', 'صُرّح لـ «Windows · Chrome» بالدخول 90 يومًا.', 'إدارة الأجهزة']]],
+    ['staff', 'تنبيهات الإدارة والموظفين', 'users-three:teal', [
+      ['طلب جديد بانتظار الاستلام', 'REQ-2026-0413 من عميل جديد — قسم الأجهزة.', 'استلام الطلب'],
+      ['موافقة معلّقة', 'تعديل الحساب البنكي لموظف بانتظار موافقتك.', 'مراجعة'],
+      ['تذكرة جديدة من عميل', 'TKT-0381: استفسار عن موعد التسليم.', 'الرد'],
+      ['تحويل بنكي يحتاج مطابقة', 'تحويل 3,400 ر.س بانتظار المطابقة مع العقد TR-2051.', 'مطابقة'],
+      ['تنبيه أمني حرج', '5 محاولات دخول فاشلة على حساب موظف من عنوان واحد خلال 10 دقائق.', 'مركز المراقبة']]]
+  ];
+  function pushCard(t, b, act, when) {
+    return h('div', { class: 'sc-pn' }, [h('img', { src: 'brand/push-192.png', alt: '' }), h('div', { class: 'sc-pnb' }, [
+      h('div', { class: 'sc-pnh' }, [h('span', {}, 'منصة تيرا'), h('small', {}, when || 'الآن')]), h('b', {}, t), h('p', {}, b), act ? h('i', { class: 'sc-pna' }, act) : null])]);
+  }
+  function lockScreen() {
+    var stack = h('div', { class: 'sc-lk-st' });
+    var el = dev() === 'phone'
+      ? h('div', { class: 'sc-dev' }, h('div', { class: 'sc-phone sc-lock' }, h('div', { class: 'sc-scr sc-lk' }, [h('div', { class: 'sc-lk-top' }, [h('span', {}, 'stc ksa'), h('span', {}, '▮▮▮ 73%')]),
+          h('div', { class: 'sc-lk-d' }, 'الثلاثاء ٢٠ أكتوبر'), h('div', { class: 'sc-lk-t' }, '١٢:٠٦'), h('div', { class: 'sc-lk-c' }, 'مركز الإشعارات'), stack])))
+      : h('div', { class: 'sc-dev' }, h('div', { class: 'sc-desk' }, [h('div', { class: 'sc-desk-bar' }, [h('span', {}, '١٢:٠٦  الثلاثاء ٢٠ أكتوبر')]), h('div', { class: 'sc-desk-hint' }, 'المتصفح مغلق — الإشعار يظهر من النظام نفسه'), stack]));
+    return { el: el, add: function (t, b, act) { var n = pushCard(t, b, act); n.classList.add('is-new'); stack.insertBefore(n, stack.firstChild); while (stack.children.length > 5) stack.removeChild(stack.lastChild); } };
+  }
+  function pushView() {
+    var L = lockScreen();
+    L.add('تم استلام دفعتك', 'استلمنا 1,250 ر.س للعقد TR-2048. شكرًا لك — الإيصال في حسابك.', 'عرض الإيصال');
+    var sec = S.pushSec || 'types', subs = [['types', 'أنواع الإشعارات'], ['send', 'إرسال إشعار (لوحة التحكم)'], ['enable', 'التفعيل على الجهاز']];
+    var nav = h('div', { class: 'sc-chips' }, subs.map(function (x) { return h('button', { type: 'button', class: 'sc-chip' + (sec === x[0] ? ' is-on' : ''), onclick: function () { S.pushSec = x[0]; render(); } }, x[1]); }));
+    var left;
+    if (sec === 'types') {
+      left = h('div', {}, PUSH.map(function (g) {
+        return h('div', {}, [h('div', { class: 'sc-cat' }, [T(g[2]), g[1]]), h('div', { class: 'sc-cards' }, g[3].map(function (x) {
+          return h('div', { class: 'sc-n is-info' }, [h('div', { class: 'sc-nh' }, [T(g[2]), h('b', {}, x[0])]), h('p', {}, x[1]), h('div', { class: 'sc-tags' }, [h('i', { class: 'k' }, 'إشعار الجوال والويب'), h('i', {}, 'زر: ' + x[2])]),
+            btn('أرسل للمعاينة', function () { L.add(x[0], x[1], x[2]); }, 'alt')]);
+        }))]);
+      }));
+    } else if (sec === 'send') {
+      var all = []; PUSH.forEach(function (g) { g[3].forEach(function (x) { all.push([g[1]].concat(x)); }); });
+      var aud = h('select', { class: 'sc-in' }, [['one', 'عميل أو موظف محدد'], ['clients', 'كل العملاء'], ['staff', 'كل الموظفين'], ['members', 'أعضاء عضوية محددة'], ['late', 'العملاء المتأخرون في السداد']].map(function (o) { return h('option', { value: o[0] }, o[1]); }));
+      var to = h('input', { class: 'sc-in ltr', dir: 'ltr', value: 'msjt301@gmail.com' });
+      var tpl = h('select', { class: 'sc-in' }, [h('option', { value: '' }, 'إشعار مخصّص (اكتب بنفسك)')].concat(all.map(function (x, i) { return h('option', { value: String(i) }, x[0] + ' — ' + x[1]); })));
+      var ti = h('input', { class: 'sc-in', value: 'تذكير من فريق تيرا' }), bo = h('textarea', { class: 'sc-in', rows: '3' }, 'لديك إجراء بانتظارك في حسابك. اضغط للمتابعة.'), ac = h('input', { class: 'sc-in', value: 'فتح حسابي' });
+      var when = h('select', { class: 'sc-in' }, [['now', 'الآن'], ['at', 'في موعد محدد'], ['due', 'قبل موعد الاستحقاق تلقائيًا (3 أيام · يوم الاستحقاق · بعد التأخر)']].map(function (o) { return h('option', { value: o[0] }, o[1]); }));
+      var ch = h('div', { class: 'sc-chs' }, [['push', 'إشعار الجوال والويب', 1], ['inapp', 'داخل المنصة', 1], ['mail', 'البريد', 0], ['wa', 'واتساب', 0]].map(function (c) { var i = h('input', { type: 'checkbox' }); i.checked = !!c[2]; return h('label', {}, [i, c[1]]); }));
+      tpl.onchange = function () { var x = all[Number(tpl.value)]; if (!tpl.value || !x) return; ti.value = x[1]; bo.value = x[2]; ac.value = x[3]; };
+      function lbl(t, n) { return [h('label', { class: 'sc-lbl' }, t), n]; }
+      left = h('div', { class: 'sc-card sc-send' }, [h('div', { class: 'sc-row', style: 'gap:10px;margin-bottom:8px' }, [T('paper-plane-tilt:teal'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'إرسال إشعار — لوحة التحكم')]),
+        lbl('الجمهور', aud), lbl('المستلم (البريد أو الجوال)', to), lbl('القالب', tpl), lbl('العنوان', ti), lbl('النص', bo), lbl('زر الإجراء', ac), lbl('التوقيت', when), lbl('القنوات', ch),
+        h('div', { class: 'sc-row', style: 'gap:8px;margin-top:12px;flex-wrap:wrap' }, [
+          btn('إرسال', function () { L.add(ti.value, bo.value, ac.value); N.show({ kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار (معاينة)', text: 'إلى ' + to.value + ' — بعد ربط المزوّد يصل فعليًا إلى جواله وحاسبه حتى والمنصة مغلقة.' }); }),
+          btn('تجربة كل الأنواع على msjt301@gmail.com', function () { var i = 0; (function next() { if (i >= all.length) { N.show({ kind: 'ok', title: 'أُرسلت ' + all.length + ' إشعارات تجريبية (معاينة)', text: 'كل أنواع إشعارات النظام والإدارة. بعد التفعيل تصل فعليًا إلى msjt301@gmail.com.' }); return; } var x = all[i++]; L.add(x[1], x[2], x[3]); setTimeout(next, 900); })(); }, 'teal')])]);
+    } else {
+      left = h('div', {}, [
+        h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('bell-ringing:navy'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'طلب الإذن داخل المنصة')]),
+          h('p', { class: 'sc-hint' }, 'يظهر مرة واحدة بعد الدخول، بشرح واضح قبل نافذة الإذن الرسمية من الجهاز.'),
+          btn('معاينة طلب الإذن', function () { N.show({ kind: 'info', icon: 'bell-ringing:navy', title: 'فعّل إشعارات منصة تيرا', text: 'لتصلك تذكيرات السداد، وطلبات القبول، وتحديثات طلباتك، وتنبيهات الأمان — حتى والمنصة مغلقة.', ms: 0, actions: [{ label: 'تفعيل الإشعارات', primary: true, run: function () { setTimeout(function () { N.show({ kind: 'ok', icon: 'bell-ringing:teal', title: 'فُعّلت الإشعارات على هذا الجهاز', text: 'أرسلنا إشعارًا تجريبيًا للتأكد.' }); L.add('فُعّلت الإشعارات', 'هذا إشعار تجريبي — ستصلك التنبيهات هنا.', 'فتح المنصة'); }, 60); } }, { label: 'لاحقًا' }] }); }, 'alt')]),
+        h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('device-mobile:sky'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'آيفون: أضف المنصة إلى الشاشة الرئيسية')]),
+          h('p', { class: 'sc-hint' }, 'شرط من أبل لكل المواقع: لا تصل الإشعارات إلى شاشة القفل إلا بعد إضافة الموقع إلى الشاشة الرئيسية (iOS 16.4 أو أحدث).'),
+          h('ol', { class: 'sc-ios' }, [['share-network:sky', 'افتح المنصة في Safari واضغط زر المشاركة'], ['plus:teal', 'اختر «إضافة إلى الشاشة الرئيسية» ثم «إضافة»'], ['squares-four:gold', 'افتح «تيرا» من أيقونتها على الشاشة الرئيسية'], ['bell-ringing:navy', 'اضغط «تفعيل الإشعارات» ثم «السماح»']].map(function (x, i) { return h('li', {}, [h('span', { class: 'sc-iosn' }, String(i + 1)), T(x[0]), x[1]]); }))]),
+        h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('monitor:teal'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'أندرويد والكمبيوتر')]),
+          h('p', { class: 'sc-hint' }, 'يكفي الضغط على «تفعيل الإشعارات» ثم «السماح» في المتصفح — تصل الإشعارات حتى والمتصفح مغلق.')])]);
+    }
+    return h('div', {}, [nav, h('div', { class: 'sc-note' }, [h('b', {}, 'معاينة قبل الربط: '), 'تصل هذه الإشعارات إلى شاشة القفل والكمبيوتر حتى والمنصة مغلقة، بشعار تيرا على خلفية بيضاء. بعد اعتماد العيّنة وربط المزوّد (OneSignal) نرسلها فعليًا، ونجرّبها كلها على msjt301@gmail.com.']),
+      h('div', { class: 'sc-gal' }, [left, L.el])]);
+  }
+
   var S = { tab: 'portal', cat: 'verify', q: '' }, root;
   function portalView() {
     var d = dev(), f = h('iframe', { class: 'sc-portal' + (d === 'phone' ? ' is-phone' : ''), src: '../portal/?embed=1&dev=' + d, title: 'بوابة الدخول الموحّدة' });
@@ -167,7 +257,7 @@
     function paint() {
       list.textContent = ''; var v = q.value.trim();
       c[3].filter(function (n) { return !v || (n[2] + ' ' + n[3]).indexOf(v) >= 0; }).forEach(function (n) {
-        var k = n[0] === 'modal' ? 'warn' : n[0], ic = n[1] || ({ ok: 'check-circle:teal', bad: 'x-circle:gold', warn: 'warning:saffron', info: 'info:sky', run: 'clock-countdown:navy' })[k];
+        var k = n[0] === 'modal' || n[0] === 'math' ? (n[0] === 'math' ? 'info' : 'warn') : n[0], ic = n[1] || ({ ok: 'check-circle:teal', bad: 'x-circle:gold', warn: 'warning:saffron', info: 'info:sky', run: 'clock-countdown:navy' })[k];
         list.appendChild(h('div', { class: 'sc-n is-' + k }, [h('div', { class: 'sc-nh' }, [T(ic), h('b', {}, n[2])]), n[3] ? h('p', {}, n[3]) : null,
           h('div', { class: 'sc-tags' }, [h('i', { class: 'k' }, KINDS[n[0]]), n[4] ? h('i', {}, n[4]) : null, n[5] === 1 ? h('i', { class: 'k' }, 'انتظار 5 ثوانٍ') : null]),
           btn('معاينة', function () { preview(n, fr.layer); }, 'alt')]));
@@ -180,13 +270,13 @@
       h('div', { class: 'sc-gal' }, [h('div', {}, [c[0] === 'portal' || c[0] === 'platform' ? q : null, list]), fr.el])]);
   }
   function render() {
-    var tabs = h('div', { class: 'sc-tabs', role: 'tablist' }, [['portal', 'البوابة: الدخول والتسجيل والاستعادة', 'lock-key:navy'], ['notes', 'كل إشعارات النظام', 'bell-ringing:gold']].map(function (x) {
+    var tabs = h('div', { class: 'sc-tabs', role: 'tablist' }, [['portal', 'البوابة: الدخول والتسجيل والاستعادة', 'lock-key:navy'], ['notes', 'كل إشعارات النظام', 'bell-ringing:gold'], ['push', 'إشعارات الجوال والويب', 'device-mobile:teal']].map(function (x) {
       return h('button', { type: 'button', role: 'tab', class: 'sc-tab' + (S.tab === x[0] ? ' is-on' : ''), onclick: function () { S.tab = x[0]; N.closeAll(); render(); } }, [T(x[2]), x[1]]);
     }));
     root.textContent = '';
     root.appendChild(h('div', { class: 'sc-wrap' }, [
       h('div', { class: 'sc-hero' }, [T('shield-check:teal'), h('div', {}, [h('h1', {}, 'مركز الأمان'), h('p', {}, 'البوابة المعتمدة بنظام الإشعارات والتحقق الجديد، وكتالوج كل إشعارات النظام — كما تظهر في ' + (dev() === 'phone' ? 'تطبيق الجوال' : 'الموقع') + '.')])]),
-      tabs, S.tab === 'notes' ? notesView() : portalView()]));
+      tabs, S.tab === 'notes' ? notesView() : S.tab === 'push' ? pushView() : portalView()]));
   }
   function boot() {
     root = document.getElementById('sc-root'); if (!root || !N) return;

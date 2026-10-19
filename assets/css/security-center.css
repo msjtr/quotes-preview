@@ -348,3 +348,34 @@ input.sc-in.bad{border-color:var(--sc-red);background:#fffafa}
 .sc-phone .tn-card{width:calc(100% - 8px);padding:16px 12px 12px}
 .sc-phone .tn-tile{width:46px}
 .sc-gal .sc-cards{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+
+/* ===== v357: إشعارات الجوال والويب (شاشة القفل) ===== */
+.sc-lk{background:linear-gradient(160deg,#7a3b1d 0%,#9b2f2f 38%,#203a63 70%,#3b2a5c 100%)!important;color:#fff;padding:0 10px 20px;overflow:hidden}
+.sc-lk-top{display:flex;justify-content:space-between;padding:14px 18px 0;font:700 13px var(--sc-f);direction:ltr}
+.sc-lk-d{text-align:center;margin-top:18px;font:700 17px var(--sc-f);opacity:.92}
+.sc-lk-t{text-align:center;font:200 76px/1 "Alexandria",sans-serif;letter-spacing:2px;margin:4px 0 16px;color:rgba(255,235,220,.85)}
+.sc-lk-c{font:800 22px var(--sc-h);margin:0 6px 10px}
+.sc-lk-st{display:grid;gap:8px}
+.sc-pn{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.25);border-radius:22px;padding:11px 12px;color:#fff}
+.sc-pn img{width:38px;height:38px;border-radius:10px;background:#fff;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.sc-pnb{flex:1;min-width:0}
+.sc-pnh{display:flex;justify-content:space-between;font-size:12px;opacity:.85}
+.sc-pn b{display:block;font-size:14px;margin:1px 0}
+.sc-pn p{margin:0;font-size:13px;line-height:1.5;opacity:.95;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sc-pna{display:inline-block;margin-top:6px;font-style:normal;font-size:12px;font-weight:700;background:rgba(255,255,255,.22);border-radius:999px;padding:2px 10px}
+.sc-pn.is-new{animation:scdrop .45s ease}
+@keyframes scdrop{from{transform:translateY(-24px);opacity:0}}
+.sc-desk{position:relative;height:600px;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#0e3a5c,#1f6f8b 55%,#7fb8c9);box-shadow:0 20px 50px rgba(11,37,82,.2);padding:44px 14px 14px}
+.sc-desk-bar{position:absolute;top:0;inset-inline:0;height:30px;background:rgba(0,0,0,.35);color:#fff;font-size:12.5px;display:flex;align-items:center;justify-content:flex-end;padding:0 14px}
+.sc-desk-hint{color:#fff;opacity:.8;font-size:12.5px;margin-bottom:8px}
+.sc-desk .sc-lk-st{position:absolute;top:44px;left:14px;width:min(360px,calc(100% - 28px))}
+.sc-desk .sc-pn{background:rgba(250,250,252,.96);color:#0b1f3a;border-color:#dfe6f0;border-radius:14px;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.sc-desk .sc-pna{background:#eef2f7;color:#0b1f3a}
+.sc-send textarea{resize:vertical;font:inherit}
+.sc-chs{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px}
+.sc-chs label{display:flex;gap:6px;align-items:center}
+.sc-ios{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.sc-ios li{display:flex;gap:10px;align-items:center;background:#f4f7fc;border-radius:12px;padding:8px 10px;font-size:13.5px}
+.sc-ios .sc-tile{width:30px;flex:none}
+.sc-iosn{width:22px;height:22px;border-radius:50%;background:var(--sc-navy);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+.sc-card .sc-row>.sc-tile{width:30px}

@@ -16393,7 +16393,13 @@ if (LIVE.on) document.addEventListener('click', function (ev) {
 }, true);
 /* ---------- v271: إجراءات حقيقية في مركز الأمان والطلبات ----------
    تغيير كلمة المرور (البوابة الأمنية + كلمة المرور الحالية)، إنهاء الجلسات الأخرى، إلغاء طلب لم يُستلم بعد — كلها عبر مسارات الخادم نفسها. */
+/* v357: العمليات الحساسة (كلمة المرور · الجلسات · المصادقة · الأجهزة · البنك · الدفع والسداد والتحويل · الإلغاء) تتطلب تحققًا إضافيًا بعملية جمع */
+const SENSITIVE_RE = /\/(password|recovery-code|sessions\/revoke|totp\/(start|disable)|security\/devices|org\/bank|pay\/|payouts|transfers|bonds|fees\/settings|cancel)/;
 async function clPost(path, body) {
+  if (window.TeraNotify && window.TeraNotify.enabled && window.TeraNotify.math && SENSITIVE_RE.test(String(path))) {
+    const okm = await window.TeraNotify.math({ title: 'تحقق إضافي لعملية حساسة', text: 'هذه العملية تمس أمان حسابك أو أموالك. أجب عن السؤال البسيط للمتابعة.' });
+    if (!okm) return { ok: false, message: 'أُلغيت العملية.' };
+  }
   const t = await liveToken();
   const r = await fetch(path, { method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body || {}) });
   if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }

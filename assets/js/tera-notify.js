@@ -112,7 +112,43 @@
     var h = show({ kind: 'run', title: title, text: text }); var at = Date.now();
     return { h: h, after: function (fn) { if (!enabled) return fn(); var w = (minMs == null ? 5000 : minMs) - (Date.now() - at); setTimeout(fn, Math.max(0, w)); }, close: function () { if (h) close(h, 'api'); } };
   }
-  W.TeraNotify = { enabled: enabled, live: live, show: show, hold: hold, busy: busy, tile: tile,
+  /* التحقق الإضافي بعملية جمع بسيطة (الدخول · التسجيل · نسيت كلمة المرور · العمليات الحساسة).
+   * العملية في قالب والنتيجة في قالب؛ «عملية أخرى» تغيّر الأرقام، والإجابة الخاطئة تغيّرها تلقائيًا. يعيد Promise<boolean>. */
+  function math(opt) {
+    opt = opt || {};
+    return new Promise(function (resolve) {
+      if (!enabled) return resolve(true);
+      var D = W.document, a = 0, b = 0, done = false, tries = 0;
+      var A = el('span', 'tn-mb'), B = el('span', 'tn-mb'), I = el('input', 'tn-mi'), err = el('div', 'tn-mx');
+      I.setAttribute('inputmode', 'numeric'); I.setAttribute('autocomplete', 'off'); I.setAttribute('maxlength', '2'); I.setAttribute('aria-label', 'ناتج الجمع');
+      var row = el('div', 'tn-math'); row.setAttribute('dir', 'ltr');
+      [A, el('i', 'tn-mo', '+'), B, el('i', 'tn-mo', '='), I].forEach(function (n) { row.appendChild(n); });
+      var how = el('div', 'tn-mhow'); how.innerHTML = '<b>كيف؟</b> اجمع الرقمين واكتب الناتج في القالب الأخير. مثال: <bdi dir="ltr">1 + 1 = 2</bdi>';
+      var body = el('div', 'tn-mwrap'); body.appendChild(how); body.appendChild(row); body.appendChild(err);
+      function fresh(msg) {
+        var oa = a, ob = b; do { a = 1 + Math.floor(Math.random() * 9); b = 1 + Math.floor(Math.random() * 9); } while (a === oa && b === ob);
+        A.textContent = a; B.textContent = b; I.value = ''; err.textContent = msg || ''; row.classList.remove('is-bad', 'is-ok');
+        if (msg) { row.classList.add('is-bad'); setTimeout(function () { row.classList.remove('is-bad'); }, 600); }
+        setTimeout(function () { try { I.focus(); } catch (e) { void e; } }, 80);
+      }
+      function check() {
+        if (done) return;
+        var v = parseInt(String(I.value).replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }).replace(/\D/g, ''), 10);
+        if (isNaN(v)) { err.textContent = 'اكتب ناتج الجمع أولًا.'; I.focus(); return; }
+        if (v !== a + b) { tries++; return fresh('الإجابة غير صحيحة — جرّب هذه العملية الجديدة.'); }
+        done = true; row.classList.add('is-ok'); I.disabled = true;
+        h.set({ kind: 'ok', icon: 'check-circle:teal', title: 'تم التحقق', text: 'شكرًا — نكمل الآن.', actions: [], body: null });
+        setTimeout(function () { close(h, 'api'); resolve(true); }, 1300);
+      }
+      I.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); check(); } });
+      var h = show({ kind: 'info', icon: opt.icon || 'shield-check:navy', title: opt.title || 'تحقق إضافي للأمان', text: opt.text || 'لحماية حسابك من البرامج الآلية، أجب عن هذا السؤال البسيط.',
+        body: body, ms: 0, modal: true,
+        actions: [{ label: 'تحقق', primary: true, keep: true, run: check }, { label: 'عملية أخرى', keep: true, run: function () { fresh(''); } }, { label: 'إلغاء', run: function () { if (!done) { done = true; resolve(false); } } }],
+        onClose: function (why) { if (!done) { done = true; resolve(false); } }, host: opt.host || null });
+      fresh('');
+    });
+  }
+  W.TeraNotify = { enabled: enabled, live: live, show: show, hold: hold, busy: busy, tile: tile, math: math,
     ok: function (t, x, o) { return show(Object.assign({ kind: 'ok', title: t, text: x }, o || {})); },
     bad: function (t, x, o) { return show(Object.assign({ kind: 'bad', title: t, text: x }, o || {})); },
     warn: function (t, x, o) { return show(Object.assign({ kind: 'warn', title: t, text: x }, o || {})); },

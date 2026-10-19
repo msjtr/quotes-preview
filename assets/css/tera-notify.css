@@ -33,3 +33,18 @@
 /* البوابة: تذكّر البريد أو الجوال */
 .pt-who{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#e6f6f7;border-radius:12px;padding:8px 12px;margin:0 0 10px;font-size:13.5px}
 .pt-who b{direction:ltr;unicode-bidi:isolate}
+/* التحقق الإضافي: عملية جمع في قوالب */
+.tn-mwrap{text-align:center}
+.tn-mhow{background:#f4f7fc;border:1px solid #dfe6f0;border-radius:12px;padding:8px 10px;font-size:13px;color:#33445c;text-align:right;margin-bottom:10px}
+.tn-mhow b{color:#0b1f3a}
+.tn-math{display:flex;align-items:center;justify-content:center;gap:8px;direction:ltr}
+.tn-mb,.tn-mi{width:clamp(48px,14vw,58px);height:clamp(52px,15vw,62px);border-radius:14px;display:grid;place-items:center;font:800 clamp(22px,6vw,28px) "Alexandria","Cairo",sans-serif;box-sizing:border-box}
+.tn-mb{background:linear-gradient(135deg,#0B2552,#1D3F86);color:#fff;box-shadow:0 6px 14px rgba(11,37,82,.25)}
+.tn-mi{border:2px dashed #0AA5AD;background:#f0fbfb;color:#06707A;text-align:center;outline:none;padding:0}
+.tn-mi:focus{border-style:solid;box-shadow:0 0 0 3px rgba(10,165,173,.2)}
+.tn-mo{font-style:normal;font:800 22px "Alexandria",sans-serif;color:#5b6b82}
+.tn-math.is-bad{animation:tnshake .5s}
+.tn-math.is-bad .tn-mi{border-color:#C98418;background:#fff6e3}
+.tn-math.is-ok .tn-mi{border:2px solid #0f7a4f;background:#e6f6ee;color:#0f7a4f}
+.tn-mx{min-height:18px;margin-top:6px;color:#b42318;font-size:12.5px;font-weight:700}
+@keyframes tnshake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
