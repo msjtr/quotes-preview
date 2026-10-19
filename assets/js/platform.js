@@ -13033,7 +13033,7 @@ const V1_FIELDS = [
   ['address', 'building_number', 'رقم المبنى', 'text', 0, 'عنوان داخل المملكة', null, [{ kind: 'pattern', match: 'all', when: v1AS('eq', 'national'), pattern: '^[0-9]{4}$', msg: 'رقم المبنى أربعة أرقام.' }, { kind: 'required_if', match: 'all', when: v1AS('eq', 'national') }, { kind: 'input', type: 'digits', length: 4, match: 'all', when: v1AS('eq', 'national'), msg: 'رقم المبنى أربعة أرقام.' }]],
   ['address', 'postal_code', 'الرمز البريدي', 'text', 0, 'عنوان داخل المملكة', null, [{ kind: 'pattern', match: 'all', when: v1AS('eq', 'national'), pattern: '^[0-9]{5}$', msg: 'الرمز البريدي خمسة أرقام.' }, { kind: 'required_if', match: 'all', when: v1AS('eq', 'national') }, { kind: 'input', type: 'digits', length: 5, match: 'all', when: v1AS('eq', 'national'), msg: 'الرمز البريدي خمسة أرقام.' }]],
   ['address', 'additional_number', 'الرقم الإضافي', 'text', 1, 'عنوان داخل المملكة', null, [{ kind: 'pattern', pattern: '^[0-9]{4}$', msg: 'الرقم الإضافي أربعة أرقام.' }, { kind: 'visible_if', match: 'all', when: v1AS('eq', 'national') }, { kind: 'input', type: 'digits', length: 4, msg: 'الرقم الإضافي أربعة أرقام.' }]],
-  ['address', 'short_address', 'العنوان المختصر', 'text', 0, 'عنوان داخل المملكة', null, [{ kind: 'visible_if', match: 'all', when: v1AS('eq', 'national') }, { kind: 'pattern', pattern: '^[A-Za-z]{4}[0-9]{4}$', msg: 'العنوانُ المختصرُ أربعةُ أحرفٍ ثمَّ أربعةُ أرقام، مثل RIYD2929.' }, { kind: 'input', type: 'mask', mask: 'AAAA9999', msg: 'العنوانُ المختصرُ أربعةُ أحرفٍ ثمَّ أربعةُ أرقام، مثل RIYD2929.' }]],
+  ['address', 'short_address', 'العنوان المختصر', 'text', 0, 'عنوان داخل المملكة', null, [{ kind: 'visible_if', match: 'all', when: v1AS('eq', 'national') }, { kind: 'short_match', field: 'address.building_number', msg: 'أرقام العنوان المختصر الأربعة تطابق رقم المبنى — راجع أحدهما.' }, { kind: 'pattern', pattern: '^[A-Za-z]{4}[0-9]{4}$', msg: 'العنوانُ المختصرُ أربعةُ أحرفٍ ثمَّ أربعةُ أرقام، مثل RIYD2929.' }, { kind: 'input', type: 'mask', mask: 'AAAA9999', msg: 'العنوانُ المختصرُ أربعةُ أحرفٍ ثمَّ أربعةُ أرقام، مثل RIYD2929.' }]],
   ['address', 'line1', 'العنوان — السطر الأول', 'text', 0, 'عنوان خارج المملكة', null, [{ kind: 'visible_if', match: 'all', when: v1AS('eq', 'international') }]],
   ['address', 'line2', 'العنوان — السطر الثاني', 'text', 0, 'عنوان خارج المملكة', null, [{ kind: 'visible_if', match: 'all', when: v1AS('eq', 'international') }]],
   ['address', 'zip', 'الرمز البريدي الدولي', 'text', 0, 'عنوان خارج المملكة', null, [{ kind: 'visible_if', match: 'all', when: v1AS('eq', 'international') }], { ltr: true }],
@@ -13133,6 +13133,7 @@ function v1Check(f, val, get) {
   for (const r of v1Rules(f, 'length', get)) { if (r.min && v.length < r.min) return r.msg_min; if (r.max && v.length > r.max) return r.msg_max; }
   for (const r of v1Rules(f, 'age', get)) { const d = new Date(v), a = (Date.now() - d) / 31557600000; if (isNaN(a)) return r.msg_max; if (a < r.min) return r.msg_min; if (a > r.max) return r.msg_max; }
   for (const r of v1Rules(f, 'date_min', get)) { if (new Date(v) < today0()) return r.msg; }
+  for (const r of v1Rules(f, 'short_match', get)) { const b = String(get(r.field) || '').trim(); if (b && v.slice(4) !== b) return r.msg; }
   for (const r of v1Rules(f, 'address_country', get)) { const sec = v1Get(get, 'profile', 'address_section'); if (!sec) continue; if (sec === 'national' && v !== V1_KSA) return r.msg_national; if (sec !== 'national' && v === V1_KSA) return r.msg_international; }
   if (f.t === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'البريد الإلكتروني غير صحيح.';
   return '';
@@ -13235,10 +13236,13 @@ const v1GeoAcc = (p) => (p && p.house_number_type === 'exact' ? 'مطابقة د
 [GL, window.__PGL].forEach(function (G) { if (!G) return; G.crosshair = G.crosshair || 'M120,32a8,8,0,0,1,16,0V49A80,80,0,0,1,207,120h17a8,8,0,0,1,0,16H207a80,80,0,0,1-71,71v17a8,8,0,0,1-16,0V207a80,80,0,0,1-71-71H32a8,8,0,0,1,0-16H49a80,80,0,0,1,71-71ZM128,64a64,64,0,1,0,64,64A64,64,0,0,0,128,64Zm0,36a28,28,0,1,1-28,28A28,28,0,0,1,128,100Z'; G.mountains = G.mountains || 'M24,208a8,8,0,0,1-6.9-12L89.1,72a8,8,0,0,1,13.8,0L140,135.6l17.1-29.6a8,8,0,0,1,13.8,0L238.9,196a8,8,0,0,1-6.9,12ZM96,92.1,38,192H154Zm68,30-15,26L173.7,192H218Z'; G.car = G.car || 'M48,128,68,76a16,16,0,0,1,15-12H173a16,16,0,0,1,15,12l20,52h16a8,8,0,0,1,0,16h-8v56a8,8,0,0,1-8,8H184a8,8,0,0,1-8-8V184H80v16a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V144H32a8,8,0,0,1,0-16ZM83,80l-17,48H190L173,80ZM56,144v24H200V144Zm20,4a8,8,0,1,1-8,8A8,8,0,0,1,76,148Zm104,0a8,8,0,1,1-8,8A8,8,0,0,1,180,148Z'; });
 function v1Place(p, get, put) {
   let n = 0, cc = get('address.country');
-  const nat = v1Get(get, 'profile', 'address_section') === 'national';
-  const pc = String(p.postcode || '').trim(), road = String(p.road || '').trim(), hn = String(p.house_number || '').trim(), qt = String(p.quarter || p.district || p.subdistrict || '').trim();
+  const nat = v1Get(get, 'profile', 'address_section') === 'national', oldB = String(get('address.building_number') || '').trim();
+  const pc = String(p.postcode || '').trim(), road = String(p.road || '').trim(), qt = String(p.quarter || p.district || p.subdistrict || '').trim();
+  /* العنوان المختصر: ما كتبه العميل، وإلا ما يرد في نص عنوان HERE (مثل HAGB8711) — وأرقامه الأربعة هي رقم المبنى */
+  const sm = /\b([A-Za-z]{4})(\d{4})\b/.exec([p.short_address, p.display_name, p.name].filter(Boolean).join(' ')), sh = sm ? (sm[1] + sm[2]).toUpperCase() : '';
+  const hn = String(p.house_number || '').trim() || (sh ? sh.slice(4) : '');
   /* العنوان الوطني بحقوله؛ والعنوان الآخر: السطر الأول من الشارع ورقم المبنى، والسطر الثاني من الحي */
-  const map = nat ? { country: p.country, state: p.state, city: p.city, district: qt, street: road, building_number: hn, postal_code: (pc.match(/^\d{5}/) || [pc])[0] }
+  const map = nat ? { country: p.country, state: p.state, city: p.city, district: qt, street: road, building_number: hn, postal_code: (pc.match(/^\d{5}/) || [pc])[0], short_address: sh }
     : { country: p.country, state: p.state, city: p.city, line1: [hn, road].filter(Boolean).join(' '), line2: qt, zip: pc };
   Object.keys(map).forEach(function (k) {
     const f = V1_BY['address.' + k]; if (!f || !v1Visible(f, get)) return;
@@ -13247,6 +13251,12 @@ function v1Place(p, get, put) {
     if (f.t === 'select') { const m = v1MatchOpt(k === 'state' ? (V1_STATES[cc] || []) : V1_ADR_L, v); if (!m) return; v = m; if (k === 'country') cc = m; }
     put(f.id, v); n++;
   });
+  /* العنوان الوطني: ما لم يجلبه المزوّد للموقع الجديد يُفرَّغ فلا يبقى من موقع سابق،
+     والرقم الإضافي يُفرَّغ إذا تغيّر المبنى (لا يجلبه المزوّد فيكتبه العميل من جديد) */
+  if (nat) {
+    ['district', 'street', 'building_number', 'postal_code', 'short_address'].forEach(function (k) { const f = V1_BY['address.' + k]; if (f && v1Visible(f, get) && !String(map[k] || '').trim() && get(f.id)) put(f.id, ''); });
+    if (hn && oldB && oldB !== hn && get('address.additional_number')) put('address.additional_number', '');
+  }
   return n;
 }
 /* دولة الخريطة الافتراضية: دولة العنوان، وإلا دولة الجنسية، وإلا المملكة */
@@ -13261,7 +13271,7 @@ function v1Loc(key, get, put, after) {
   rows.push(e('div', { class: 'rvm-bar' }, DS.button('تحديد الموقع على الخريطة', { tone: 'primary', ui: 'map-pin', onClick: function () {
     rvPick({ title: nat ? 'تحديد موقع العنوان الوطني' : 'تحديد موقع العنوان', lat: geo ? geo.lat : undefined, lon: geo ? geo.lon : undefined, country: v1MapCountry(get), shortAddr: nat,
       onPick: function (out) {
-        const p = out.place || {}; p.latitude = out.lat; p.longitude = out.lon;
+        const p = out.place || {}; p.latitude = out.lat; p.longitude = out.lon; if (out.short_address) p.short_address = out.short_address;
         if (!out.place) { RVL[key] = { err: true, lat: out.lat, lon: out.lon }; draw(); return; }
         const n = v1Place(p, get, put); if (after) after();
         RVL[key] = { label: p.display_name || '', lat: out.lat, lon: out.lon, src: out.source === 'short_address' ? 'short' : 'map', acc: v1GeoAcc(p), n: n }; draw();
@@ -13269,7 +13279,9 @@ function v1Loc(key, get, put, after) {
   } })));
   if (geo && geo.err) rows.push(DS.note('danger', 'تعذّر تحديد العنوان', 'لم تصل نتيجة من مزوّد الخرائط، جرّب مرّة أخرى أو أدخل البيانات يدويًا.'));
   if (geo && geo.label) rows.push(e('div', { class: 'rvm-geo' }, [frag(ui('map-pin', 18)), e('div', {}, [e('p', { class: 'rvm-geo-l' }, geo.label),
-    e('p', { class: 'rvm-geo-m' }, [v1GeoSrc(geo.src), geo.acc, geo.n ? (fmtNum(geo.n) + ' حقول مُعبّأة') : ''].filter(Boolean).join(' · '))])]));
+    e('p', { class: 'rvm-geo-m' }, [v1GeoSrc(geo.src), geo.acc, geo.n ? (fmtNum(geo.n) + ' حقول مُعبّأة') : ''].filter(Boolean).join(' · ')),
+    isFinite(geo.lat) ? e('p', { class: 'rvm-geo-c' }, [e('b', {}, 'الإحداثيات'), ltr(Number(geo.lat).toFixed(6) + ', ' + Number(geo.lon).toFixed(6)), e('small', {}, 'تُحفظ مع العنوان من الدبوس')]) : null])]));
+  if (nat) rows.push(DS.note('warn', 'الرقم الإضافي تكتبه أنت', 'مزوّد الخريطة لا يجلب الرقم الإضافي — تجده في شهادة العنوان الوطني (سُبل): أربعة أرقام مثل 7316. والعنوان المختصر يُعبّأ من الخريطة إن وُجد، وأرقامه تطابق رقم المبنى.'));
   rows.push(DS.note('info', 'لم يُضبَط موقعك بدقّة؟', nat
     ? 'أمامك خياران، وكلاهما داخل الخريطة: أدخل العنوان المختصر فيها ليُجلب موقعك مباشرة، أو حرّك الدبوس حتى يقف على مكانك بالضبط. وفي الخريطة أدوات مساعدة: العنوان المختصر · موقعي الآن · أقرب العناوين · أماكن قريبة.'
     : 'حرّك الدبوس حتى يقف على مكانك بالضبط، أو ابحث باسم المدينة أو الحي أو الشارع. وفي الخريطة أدوات مساعدة: موقعي الآن · أقرب العناوين · أماكن قريبة.'));
