@@ -15,7 +15,7 @@
   var CSS = 'position:fixed;inset:0;z-index:2147482000;background:rgba(7,18,38,.72);display:flex;align-items:center;justify-content:center;padding:16px;font:15px/1.8 "IBM Plex Sans Arabic",sans-serif';
   var CARD = 'background:#fff;color:#0b1f3a;border-radius:16px;max-width:420px;width:100%;padding:20px;box-shadow:0 18px 48px rgba(0,0,0,.35);text-align:right';
   var BTN = 'display:block;width:100%;margin-top:10px;padding:10px 12px;border-radius:10px;border:0;font:700 14px "IBM Plex Sans Arabic",sans-serif;cursor:pointer';
-  var TITLES = { idle: 'انتهت الجلسة لعدم النشاط', silent: 'انقطع الاتصال', superseded: 'دخول من جهاز آخر', vpn: 'اتصال غير مسموح', hosting: 'اتصال غير مسموح', relay: 'أوقف iCloud Private Relay', location: 'تحديد الموقع متوقف' };
+  var TITLES = { idle: 'انتهت الجلسة لعدم النشاط', silent: 'انقطع الاتصال', superseded: 'دخول من جهاز آخر', vpn: 'اتصال غير مسموح', hosting: 'اتصال غير مسموح', relay: 'أوقف iCloud Private Relay', location: 'تحديد الموقع متوقف', stolen: 'أُنهيت الجلسة لحمايتك' };
 
   function card(title, text, buttons) {
     var w = document.createElement('div'); w.setAttribute('dir', 'rtl'); w.setAttribute('role', 'alertdialog'); w.setAttribute('aria-modal', 'true'); w.style.cssText = CSS;

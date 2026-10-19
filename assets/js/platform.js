@@ -15256,6 +15256,18 @@ loadNav();
 const LIVE = { on: tqLiveHost(), me: null, roles: [], allow: [], err: '' };
 const LIVE_WIRED = { admin: [], client: ['contracts', 'contract', 'payrec', 'reqs', 'req', 'notif'] }; /* v269: صفحات التصميم نفسها ببيانات حقيقية */
 const LIVE_ROLE_AR = { client: 'عميل', staff: 'موظف', marketer: 'مسوّق', investor: 'مستثمر' };
+/* v350: الخروج يُنهي الجلسة في الخادم أولًا (سجل الجلسة «خروج بطلب صاحب الحساب») ويُبطل رمز التحديث، ثم يُمسح الرمز من المتصفح.
+   لا يُنتظر أكثر من 3 ثوانٍ: إن تعذّر الخادم يُمسح الرمز وتُغلق الجلسة لاحقًا بمسح الخمول أو الانقطاع. */
+let LIVE_OUT = false;
+function liveLogout() {
+  if (LIVE_OUT) return; LIVE_OUT = true;
+  const s0 = liveSess(), t = s0 && s0.access_token, done = function () { try { localStorage.removeItem('tera.admin.session'); localStorage.removeItem('tera.admin.absolute_until'); } catch (err) { void err; } location.replace('/portal/'); };
+  if (!t) { done(); return; }
+  const jobs = [];
+  try { if (window.TeraSession && window.TeraSession.closeForLogout) jobs.push(window.TeraSession.closeForLogout()); else jobs.push(fetch('/api/account/session/close', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ kind: 'logout' }) })); } catch (err) { void err; }
+  try { jobs.push((LIVE.cfg ? Promise.resolve(LIVE.cfg) : liveCfg()).then(function (cfg) { return cfg && cfg.supabaseUrl ? fetch(cfg.supabaseUrl + '/auth/v1/logout?scope=local', { method: 'POST', keepalive: true, headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + t } }) : null; })); } catch (err) { void err; }
+  Promise.race([Promise.all(jobs.map(function (j) { return Promise.resolve(j).catch(function () { return null; }); })), new Promise(function (r) { setTimeout(r, 3000); })]).then(done, done);
+}
 function liveSess() { try { return JSON.parse(localStorage.getItem('tera.admin.session') || 'null'); } catch (err) { return null; } }
 function liveSub(tok) { try { const p = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(decodeURIComponent(escape(atob(p + '==='.slice((p.length + 3) % 4))))).sub || ''; } catch (err) { return ''; } }
 async function liveCfg() { const r = await fetch('/admin/api/config', { cache: 'no-store' }); const j = await r.json(); if (!j || !j.supabaseUrl || !j.supabaseAnonKey) throw new Error('config'); return j; }
@@ -18206,7 +18218,7 @@ if (LIVE.on) {
   };
   try { document.documentElement.classList.add('tq-live'); } catch (err) { void err; }
   showOverlay = function () {
-    if (S.out === 'done') { try { localStorage.removeItem('tera.admin.session'); } catch (err) { void err; } location.replace('/portal/'); return; }
+    if (S.out === 'done') { liveLogout(); return; }
     return overlay0.apply(this, arguments);
   };
   try { ADM.as = 'sup'; } catch (err) { void err; }
