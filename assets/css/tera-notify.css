@@ -48,3 +48,36 @@
 .tn-math.is-ok .tn-mi{border:2px solid #0f7a4f;background:#e6f6ee;color:#0f7a4f}
 .tn-mx{min-height:18px;margin-top:6px;color:#b42318;font-size:12.5px;font-weight:700}
 @keyframes tnshake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+/* تيرا على جهازك: التثبيت والإشعارات (tera-push.js) */
+.tp-card{background:#fff;border:1px solid #dfe6f0;border-radius:18px;padding:16px;box-shadow:0 6px 18px rgba(11,37,82,.06);font-family:"IBM Plex Sans Arabic","Cairo",sans-serif;color:#0b1f3a}
+.tp-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.tp-h b{display:block;font:800 16px/1.4 "Alexandria","Cairo",sans-serif}
+.tp-h small{color:#5b6b82;font-size:12.5px}
+.tp-hi svg,.tp-ci svg,.tp-bi svg{display:block;width:100%;height:auto}
+.tp-hi{width:44px;flex:none}
+.tp-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tp-chip{display:flex;align-items:center;gap:8px;background:#f4f7fc;border:1px solid #e3e9f2;border-radius:14px;padding:6px 10px 6px 12px;flex:1 1 150px}
+.tp-chip small{display:block;color:#5b6b82;font-size:11.5px}
+.tp-chip b{font-size:13.5px}
+.tp-chip.is-ok{background:#e9f7f2;border-color:#bfe6d6}
+.tp-chip.is-ok b{color:#0f7a4f}
+.tp-chip.is-bad{background:#fff6e3;border-color:#f3d79a}
+.tp-chip.is-bad b{color:#8A5A12}
+.tp-ci{width:30px;flex:none}
+.tp-acts{display:flex;gap:8px;flex-wrap:wrap}
+.tp-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #d5dfec;background:#fff;color:#0b1f3a;border-radius:12px;padding:8px 14px 8px 12px;font:700 13.5px "IBM Plex Sans Arabic",sans-serif;cursor:pointer;flex:1 1 auto;min-height:44px}
+.tp-btn.is-p{background:#0B2552;border-color:#0B2552;color:#fff}
+.tp-btn:focus-visible{outline:3px solid rgba(10,165,173,.45);outline-offset:2px}
+.tp-bi{width:26px;flex:none}
+.tp-hint{margin:10px 0 0;color:#5b6b82;font-size:12.5px;line-height:1.7}
+.tp-steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;text-align:right}
+.tp-steps li{display:flex;align-items:center;gap:8px;background:#f4f7fc;border-radius:12px;padding:8px 10px;font-size:13.5px;line-height:1.6}
+.tp-n{flex:none;width:24px;height:24px;border-radius:50%;background:#0B2552;color:#fff;display:grid;place-items:center;font:800 12px "Alexandria",sans-serif}
+.tp-si{flex:none;color:#2E8FD0;display:inline-flex}
+.tp-arrow{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147482600;display:flex;flex-direction:column;align-items:center;pointer-events:none;animation:tpbob 1.1s ease-in-out infinite}
+.tp-arrow b{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#2E8FD0;color:#fff;box-shadow:0 8px 20px rgba(46,143,208,.45)}
+.tp-arrow i{width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:16px solid #2E8FD0;margin-top:4px}
+.tp-arrow.is-top{bottom:auto;top:max(10px,env(safe-area-inset-top));left:auto;right:16px;transform:none;flex-direction:column-reverse}
+.tp-arrow.is-top i{border-top:0;border-bottom:16px solid #2E8FD0;margin:0 0 4px}
+@keyframes tpbob{50%{translate:0 8px}}
+@media (prefers-reduced-motion:reduce){.tp-arrow{animation:none}}

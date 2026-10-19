@@ -3105,6 +3105,7 @@ function notifHub(all) {
 }
 function notifPrefs(PREF) {
   return [DS.note('info', 'كيف تصلك الإشعارات', 'تظهر كل الإشعارات داخل المنصة دائمًا. اختر هنا ما يصلك أيضًا على البريد وواتساب. تنبيهات السداد والتحويلات والأمان إلزامية على كل القنوات.'),
+    window.TeraPush ? formSec('إشعارات الجوال والويب', 'تصل إلى شاشة القفل وسطح المكتب حتى والمنصة مغلقة — لكل جهاز على حدة.', [window.TeraPush.panel({ demo: !window.TeraPush.live })]) : null,
     formSec('قنوات كل نوع', null, [e('div', { class: 'fx-npref' }, NCAT.filter(function (c) { return c[0] !== 'all'; }).map(function (c) {
       return NLOCK[c[0]] ? e('div', { class: 'fx-npref-r is-lock' }, [e('b', {}, c[1]), e('span', {}, 'المنصة والبريد وواتساب'), DS.badge('إلزامي', 'info')])
         : fxReq(c[1], 'np-' + c[0], DS.select({ value: NPREF[c[0]], options: PREF, onChange: function (v) { NPREF[c[0]] = v; draw(); } }));
@@ -7384,7 +7385,8 @@ function sysHubPage() {
       { ic: 'paper-plane-tilt:teal', t: 'دعوات الحسابات', d: 'إصدار الدعوات والدعوات المرسلة وحالتها', n: (function () { cuSeedInv(); const k = CU_INV.filter(function (v) { return cuInvSt(v) === 'wait'; }).length; return k ? fmtNum(k) + ' بانتظار القبول' : fmtNum(CU_INV.length) + ' دعوات'; })(), go: function () { go('other', 'sys-invites'); } }]],
     ['ops', 'التشغيل', 'sliders-horizontal:teal', [{ ic: 'timer:saffron', t: 'مدد الإنجاز', d: 'المدة المسموحة لكل نوع عمل قبل أن يصبح متأخرًا', n: fmtNum(CU_SLA_ROWS.reduce(function (a, g) { return a + g[1].length; }, 0) + Object.keys(CU_REQ_SLA).length) + ' مدة', go: function () { go('other', 'sys-sla'); } },
       { ic: 'chat-circle-dots:teal', t: 'الردود الجاهزة', d: 'أسباب الإعادة والرفض وعدم المطابقة وردود التذاكر', n: fmtNum(tl) + ' قوائم', go: function () { go('other', 'sys-replies'); } },
-      { ic: 'megaphone-simple:sky', t: 'قوالب الإشعارات', d: 'عنوان الإشعار ونصه ورابطه', n: fmtNum(Object.keys(CU_NTPLX).length) + ' قوالب', go: function () { go('other', 'sys-ntpl'); } }]],
+      { ic: 'megaphone-simple:sky', t: 'قوالب الإشعارات', d: 'عنوان الإشعار ونصه ورابطه', n: fmtNum(Object.keys(CU_NTPLX).length) + ' قوالب', go: function () { go('other', 'sys-ntpl'); } },
+      { ic: 'device-mobile:teal', t: 'إشعارات الجوال والويب', d: 'إرسال إشعار يصل حتى والمنصة مغلقة · تجربة كل الأنواع · تفعيل هذا الجهاز', n: window.TeraPush && window.TeraPush.live ? 'مربوطة' : 'معاينة', go: function () { go('other', 'sys-push'); } }]],
     ['tplp', 'قوالب الشركاء', 'contract', tmTplCards('p')],
     ['tpls', 'قوالب المتاجر', 'storefront:teal', tmTplCards('s')],
     ['tplc', 'مشتركة للمستندات', 'seal-check:navy', tmShared()],
@@ -7475,6 +7477,46 @@ function sysNtplPage() {
       e('div', { class: 't2-pb-actions' }, [DS.button('حفظ القالب', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () { if (String(d.t).trim().length < 3 || String(d.b).trim().length < 8) { snack('أكمل العنوان والنص'); return; } T[0] = String(d.t).trim(); T[1] = String(d.b).trim(); cuSetLog('عدّل قالب الإشعار «' + x[1] + '»'); snack('حُفظ القالب'); draw(); } })])]
       : [DS.fields([['العنوان', T[0]], ['النص', T[1]]])]); }));
 }
+/* v358 إشعارات الجوال والويب (OneSignal): إرسال يصل حتى والمنصة مغلقة · تجربة كل الأنواع · تفعيل هذا الجهاز — الإرسال من الخادم بصلاحية notifications.manage */
+const PUSH_LINKS = [['/clients/', 'حساب العميل'], ['/staff/', 'لوحة الفريق'], ['/portal/', 'بوابة الدخول'], ['/home/', 'الصفحة الرئيسية']];
+const PUSH_AUD = [['one', 'حساب محدد (البريد أو الجوال)'], ['clients', 'كل العملاء المفعّلين'], ['staff', 'كل الفريق المفعّلين'], ['all', 'الجميع']];
+function sysPushPage() {
+  const live = !!(window.TeraPush && window.TeraPush.live), can = cuCan('notifications.manage'), F = ADM.push || (ADM.push = { aud: 'one', to: 'msjt301@gmail.com', tpl: '', t: 'تذكير من فريق تيرا', b: 'لديك إجراء بانتظارك في حسابك. اضغط للمتابعة.', btn: 'فتح حسابي', url: '/clients/', types: null, cfg: null });
+  if (live && !F.cfg) { F.cfg = 'loading'; (async function () { try { const t = await liveToken(); const r = await fetch('/admin/api/push/status', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' }); const j = await r.json(); F.cfg = j && j.ok ? (j.configured ? 'ok' : 'off') : 'err'; F.types = j && j.types || null; } catch (err) { F.cfg = 'err'; } draw(); })(); }
+  const T = (F.types || []).reduce(function (a, g) { return a.concat(g.items.map(function (x) { return [x.id, g.name + ' — ' + x.title, x]; })); }, []);
+  const say = function (o) { if (window.TeraNotify) window.TeraNotify.show(Object.assign({ force: true }, o)); else snack(o.title); };
+  const sendNow = async function () {
+    if (!can) return;
+    if (String(F.t).trim().length < 3 || String(F.b).trim().length < 6) { say({ kind: 'warn', title: 'أكمل العنوان والنص' }); return; }
+    if (!live) { say({ kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار (معاينة)', text: 'في المنفذ الحي يصل إلى جوال المستلم وحاسبه حتى والمنصة مغلقة.' }); return; }
+    const h = window.TeraNotify && window.TeraNotify.show({ force: true, kind: 'run', title: 'جارٍ الإرسال…' });
+    const j = await clPost('/admin/api/push/send', { audience: F.aud, to: F.to, title: F.t, text: F.b, button: F.btn, url: F.url });
+    if (h && h.close) h.close();
+    say(j && j.ok ? { kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار', text: (j.to ? 'إلى ' + j.to + ' — ' : '') + 'يصل خلال ثوانٍ إلى أجهزته المفعّلة.' } : { kind: 'bad', title: 'لم يُرسل الإشعار', text: (j && j.message) || 'تعذّر الإرسال.' });
+    cuSetLog('أرسل إشعار جوال وويب «' + F.t + '»');
+  };
+  const testAll = async function () {
+    if (!can) return;
+    if (!live) { say({ kind: 'ok', title: 'تجربة كل الأنواع (معاينة)', text: 'في المنفذ الحي تُرسل كل أنواع إشعارات النظام والإدارة إلى ' + F.to + '.' }); return; }
+    const h = window.TeraNotify && window.TeraNotify.show({ force: true, kind: 'run', title: 'جارٍ إرسال كل الأنواع…', text: 'قرابة 20 إشعارًا بفاصل قصير.' });
+    const j = await clPost('/admin/api/push/test-all', { to: F.to });
+    if (h && h.close) h.close();
+    say(j && j.ok ? { kind: 'ok', icon: 'bell-ringing:teal', title: 'أُرسلت ' + j.sent + ' من ' + j.total + ' إشعارات', text: 'إلى ' + (j.to || F.to) + '. تحقّق من شاشة القفل وسطح المكتب.', ms: 0, actions: [{ label: 'تم', primary: true }] } : { kind: 'bad', title: 'لم تُرسل التجربة', text: (j && j.message) || (j && j.results && j.results[0] && j.results[0].message) || 'تعذّر الإرسال.', ms: 0, actions: [{ label: 'فهمت', primary: true }] });
+    cuSetLog('جرّب كل أنواع إشعارات الجوال والويب على ' + F.to);
+  };
+  const inp = function (k, o) { return e('input', Object.assign({ class: 't2-input', type: 'text', value: F[k], onInput: function (ev) { F[k] = ev.target.value; } }, o || {})); };
+  const st = !live ? ['info', 'معاينة', 'في المنفذين الحيّين يُرسل الإشعار فعليًا عبر OneSignal.'] : F.cfg === 'ok' ? ['ok', 'الخدمة مربوطة', 'OneSignal مهيأ على الخادم ويُرسل الآن.'] : F.cfg === 'off' ? ['warn', 'بانتظار مفتاح الخادم', 'التطبيق في OneSignal جاهز، ويبقى وضع مفتاح الإرسال على الخادم.'] : F.cfg === 'err' ? ['warn', 'تعذّر فحص الحالة', 'أعد فتح الصفحة.'] : ['info', 'جارٍ الفحص…', ''];
+  return [cuRO('notifications.manage'), DS.note(st[0], st[1], st[2]),
+    window.TeraPush ? DS.panel('هذا الجهاز', 'فعّل الإشعارات على جهازك لتصلك تنبيهات الإدارة', [window.TeraPush.panel({ demo: !live })]) : null,
+    DS.panel('إرسال إشعار', 'يصل إلى جوال المستلم وحاسبه حتى والمنصة مغلقة', can ? [
+      DS.editField('الجمهور', DS.select({ value: F.aud, options: PUSH_AUD, onChange: function (v) { F.aud = v; draw(); } })),
+      F.aud === 'one' ? DS.editField('المستلم (البريد أو الجوال)', inp('to', { dir: 'ltr' })) : null,
+      T.length ? DS.editField('القالب', DS.select({ value: F.tpl, options: [['', 'إشعار مخصّص']].concat(T.map(function (x) { return [x[0], x[1]]; })), onChange: function (v) { F.tpl = v; const x = T.filter(function (y) { return y[0] === v; })[0]; if (x) { F.t = x[2].title; F.b = x[2].text; F.btn = x[2].button; } draw(); } })) : null,
+      DS.editField('العنوان', inp('t')), DS.editField('النص', e('textarea', { class: 't2-input', rows: '3', onInput: function (ev) { F.b = ev.target.value; } }, F.b)),
+      DS.editField('زر الإجراء', inp('btn')), DS.editField('يفتح عند الضغط', DS.select({ value: F.url, options: PUSH_LINKS, onChange: function (v) { F.url = v; } })),
+      e('div', { class: 't2-pb-actions' }, [DS.button('إرسال', { tone: 'primary', ui: 'paper-plane-tilt', onClick: sendNow }), DS.button('تجربة كل الأنواع على ' + (F.to || 'الحساب'), { ui: 'bell-ringing', onClick: testAll })])]
+      : [DS.fields([['الإرسال', 'لمن يملك صلاحية إدارة التنبيهات']])])].filter(Boolean);
+}
 function sysLogPage() {
   return [CU_SETLOG.length ? DS.panel('سجل الإعدادات', fmtNum(CU_SETLOG.length) + ' تغييرات', [e('ol', { class: 'cu-log' }, CU_SETLOG.slice().reverse().map(function (x) { return e('li', {}, [e('b', {}, x[1]), e('small', {}, [x[2], ' · '].concat(cuNowT(x[0])))]); }))])
     : LDS.emptyState({ icon: 'clock-counter-clockwise', title: 'لا تغييرات بعد', body: 'كل تعديل في الأدوار والصلاحيات وإعدادات التشغيل يُسجَّل هنا: ماذا تغيّر ومن غيّره ومتى.', compact: true })];
@@ -7487,7 +7529,7 @@ function admMorePage() {
     ['set', 'الإعدادات', 'gear-six:navy', [{ ic: 'gear-six:navy', t: 'إعدادات النظام', d: 'الأدوار والصلاحيات · مدد الإنجاز · الردود · القوالب', go: function () { go('other', 'sys'); } }]]]);
 }
 function sysRegister() {
-  try { Object.assign(ICON, { sys: ['gear-six', 'navy'], 'sys-roles': ['key', 'navy'], 'sys-team': ['users-three', 'teal'], 'sys-titles': ['identification-badge', 'teal'], 'sys-invites': ['paper-plane-tilt', 'teal'], 'cu-acc': ['gear-six', 'navy'], 'cu-secc': ['shield-check', 'teal'], 'cu-sx-reccode': ['key', 'navy'], 'cu-sx-sess': ['sign-out', 'gold'], 'sys-acct': ['users-three', 'teal'], 'sys-staff': ['identification-badge', 'teal'], 'cu-sx-totp': ['device-mobile', 'teal'], 'cu-sx-mail': ['envelope-simple', 'sky'], 'cu-wa-pins': ['whatsapp-logo', 'teal'], 'cu-2fa': ['shield-check', 'teal'], 'cu-mon-activity': ['fingerprint', 'teal'], 'cu-mon-alerts': ['bell', 'saffron'], 'cu-mon-sens': ['warning', 'gold'], 'cu-mon-sec': ['shield-warning', 'gold'], 'cu-mon-dev': ['device-mobile', 'navy'], 'cu-mon-live': ['shield-check', 'teal'], 'cu-audit': ['clock-counter-clockwise', 'navy'], 'sys-sla': ['timer', 'saffron'], 'sys-replies': ['chat-circle-dots', 'teal'], 'sys-ntpl': ['megaphone-simple', 'sky'], 'sys-log': ['clock-counter-clockwise', 'navy'], 'adm-more': ['squares-four', 'navy'] }); } catch (err) { void err; }
+  try { Object.assign(ICON, { sys: ['gear-six', 'navy'], 'sys-push': ['device-mobile', 'teal'], 'sys-roles': ['key', 'navy'], 'sys-team': ['users-three', 'teal'], 'sys-titles': ['identification-badge', 'teal'], 'sys-invites': ['paper-plane-tilt', 'teal'], 'cu-acc': ['gear-six', 'navy'], 'cu-secc': ['shield-check', 'teal'], 'cu-sx-reccode': ['key', 'navy'], 'cu-sx-sess': ['sign-out', 'gold'], 'sys-acct': ['users-three', 'teal'], 'sys-staff': ['identification-badge', 'teal'], 'cu-sx-totp': ['device-mobile', 'teal'], 'cu-sx-mail': ['envelope-simple', 'sky'], 'cu-wa-pins': ['whatsapp-logo', 'teal'], 'cu-2fa': ['shield-check', 'teal'], 'cu-mon-activity': ['fingerprint', 'teal'], 'cu-mon-alerts': ['bell', 'saffron'], 'cu-mon-sens': ['warning', 'gold'], 'cu-mon-sec': ['shield-warning', 'gold'], 'cu-mon-dev': ['device-mobile', 'navy'], 'cu-mon-live': ['shield-check', 'teal'], 'cu-audit': ['clock-counter-clockwise', 'navy'], 'sys-sla': ['timer', 'saffron'], 'sys-replies': ['chat-circle-dots', 'teal'], 'sys-ntpl': ['megaphone-simple', 'sky'], 'sys-log': ['clock-counter-clockwise', 'navy'], 'adm-more': ['squares-four', 'navy'] }); } catch (err) { void err; }
   lp('sys', 'إعدادات النظام', null, 'sys', sysHubPage);
   lp('sys-roles', 'الأدوار والصلاحيات', 'sys', 'sys-roles', sysRolesPage);
   lp('sys-team', 'دليل الحسابات', 'sys', 'sys-team', sysAccountsPage);
@@ -7498,6 +7540,7 @@ function sysRegister() {
   lp('sys-sla', 'مدد الإنجاز', 'sys', 'sys-sla', sysSlaPage);
   lp('sys-replies', 'الردود الجاهزة', 'sys', 'sys-replies', sysRepliesPage);
   lp('sys-ntpl', 'قوالب الإشعارات', 'sys', 'sys-ntpl', sysNtplPage);
+  lp('sys-push', 'إشعارات الجوال والويب', 'sys', 'sys-push', sysPushPage);
   lp('sys-log', 'سجل الإعدادات', 'sys', 'sys-log', sysLogPage);
   qtRegister();
   lp('sys-invites', 'دعوات الحسابات', 'sys', 'sys-invites', sysInvitesPage);
@@ -17127,7 +17170,7 @@ function admSysPage() {
     ['comm', 'التواصل المباشر', 'chat-circle-dots:sky', [c('file-text:gold', 'القوالب الجاهزة للمراسلة', 'قوالب البريد وواتساب بالهوية — إنشاء وتعديل، وتظهر مباشرة في «المراسلة»', 'comm-tpl')]],
     ['cx', 'تجربة العملاء والجودة', 'star:gold', [c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة', 'sys-cx'), c('file-text:gold', 'قوالب الاستبانات', 'خمسة قوالب: أسئلتها ونص واتساب بالشعار ونص البريد الرسمي', 'sys-cx-tpl')]],
     ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والرقم الضريبي والعنوان والتواصل والحساب البنكي', 'sys-org')]],
-    ['ops', 'التشغيل', 'sliders-horizontal:teal', [c('timer:saffron', 'مدد الإنجاز', 'المدة المسموحة لكل نوع عمل', 'sys-sla'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'), c('megaphone-simple:sky', 'قوالب الإشعارات', 'عنوان الإشعار ونصه ورابطه', 'sys-ntpl'), c('clock-counter-clockwise:navy', 'سجل الإعدادات', 'ماذا تغيّر ومن غيّره ومتى', 'sys-log')]],
+    ['ops', 'التشغيل', 'sliders-horizontal:teal', [c('timer:saffron', 'مدد الإنجاز', 'المدة المسموحة لكل نوع عمل', 'sys-sla'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'), c('megaphone-simple:sky', 'قوالب الإشعارات', 'عنوان الإشعار ونصه ورابطه', 'sys-ntpl'), c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة وتجربة كل الأنواع', 'sys-push'), c('clock-counter-clockwise:navy', 'سجل الإعدادات', 'ماذا تغيّر ومن غيّره ومتى', 'sys-log')]],
     ['tpl', 'القوالب والمستندات', 'seal-check:navy', (function () { try { return tmTplCards('p').concat(tmTplCards('s'), tmShared().filter(function (x) { return x.t !== 'سياسة التسعير والسداد'; })); } catch (err) { return [c('contract', 'قوالب العروض والعقود والفواتير', 'قوالب الشركاء والمتاجر والمستندات المشتركة', 'sys-qt')]; } })()],
     ['loy', 'نقاط ومكافآت تيرا', 'star:gold', [c('star:gold', 'إعدادات النقاط', 'معدلات الاكتساب وقيمة النقاط والحدود', 'sys-loy'), c('check-circle:teal', 'اعتماد النقاط', 'النقاط المعلّقة بانتظار الاعتماد', 'sys-loy-appr')]]]));
 }

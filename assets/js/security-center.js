@@ -191,6 +191,64 @@
       : h('div', { class: 'sc-dev' }, h('div', { class: 'sc-desk' }, [h('div', { class: 'sc-desk-bar' }, [h('span', {}, '١٢:٠٦  الثلاثاء ٢٠ أكتوبر')]), h('div', { class: 'sc-desk-hint' }, 'المتصفح مغلق — الإشعار يظهر من النظام نفسه'), stack]));
     return { el: el, add: function (t, b, act) { var n = pushCard(t, b, act); n.classList.add('is-new'); stack.insertBefore(n, stack.firstChild); while (stack.children.length > 5) stack.removeChild(stack.lastChild); } };
   }
+
+  /* ===== محاكي التثبيت على الجهاز (أندرويد · الكمبيوتر · آيفون · ماك · App Clip) ===== */
+  var SHARE_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10H5v10h14V10h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+  function svgEl(html) { var t = document.createElement('template'); t.innerHTML = html; return t.content.firstChild; }
+  function teraIcon(cls) { return h('img', { class: cls || 'sc-is-ico', src: 'brand/icon-192.png', alt: '' }); }
+  function installSim() {
+    var phone = dev() === 'phone', root = h('div', { class: 'sc-dev' }), cap = h('div', { class: 'sc-is-cap' }, 'اختر جهازًا من «التثبيت بضغطة» لترى ما يراه العميل.'), timers = [];
+    function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
+    function stop() { timers.forEach(clearTimeout); timers = []; }
+    function page(url, body) { return h('div', { class: 'sc-is-br' }, [h('div', { class: 'sc-is-url' }, [h('span', { class: 'sc-is-lock' }, '🔒'), h('bdi', { dir: 'ltr' }, url || 'staging.tera-services.com.sa')]), h('div', { class: 'sc-is-pg' }, body || [teraIcon('sc-is-hero'), h('b', {}, 'منصة تيرا للخدمات المتكاملة'), h('small', {}, 'من الاحتياج إلى الحل')])]); }
+    function homeGrid(added, label) {
+      var apps = ['#3DDC84', '#1DA1F2', '#F4B400', '#E1306C', '#25D366', '#5865F2', '#FF6F00', '#00A884', '#7E57C2', '#0F9D58', '#DB4437'];
+      return h('div', { class: 'sc-is-home' }, [h('div', { class: 'sc-is-grid' }, apps.map(function (c) { return h('span', { class: 'sc-is-app' }, [h('i', { style: 'background:' + c }), h('small', {}, '')]); }).concat(added ? [h('span', { class: 'sc-is-app is-new' }, [teraIcon(), h('small', {}, 'تيرا')])] : [])), label ? h('div', { class: 'sc-is-toast' }, label) : null]);
+    }
+    function frame(content) {
+      root.textContent = '';
+      if (frame.k === 'phone') root.appendChild(h('div', { class: 'sc-phone' }, h('div', { class: 'sc-scr sc-is-scr' }, content)));
+      else root.appendChild(h('div', { class: 'sc-desk sc-is-desk' }, content));
+    }
+    function say(t) { cap.textContent = t; }
+    var RUN = {
+      android: function () {
+        frame.k = 'phone'; frame([page(), h('div', { class: 'sc-is-sheet' }, [h('div', { class: 'sc-is-sh' }, [teraIcon(), h('div', {}, [h('b', {}, 'تثبيت التطبيق'), h('small', {}, 'تيرا · staging.tera-services.com.sa')])]), h('div', { class: 'sc-is-acts' }, [h('span', {}, 'إلغاء'), h('span', { class: 'is-p sc-is-tap' }, 'تثبيت')])])]);
+        say('١) العميل يضغط «ثبّت تيرا» داخل المنصة ← تظهر نافذة كروم ← يضغط «تثبيت».');
+        later(2600, function () { frame([homeGrid(true, 'أُضيفت تيرا إلى الشاشة الرئيسية')]); say('٢) تيرا بأيقونتها على الشاشة الرئيسية، وتُفتح كتطبيق مستقل — ضغطة واحدة فقط.'); });
+      },
+      desktop: function () {
+        frame.k = 'desk'; frame([h('div', { class: 'sc-is-win' }, [h('div', { class: 'sc-is-wbar' }, [h('i'), h('i'), h('i'), h('div', { class: 'sc-is-wurl' }, [h('bdi', { dir: 'ltr' }, 'staging.tera-services.com.sa'), h('span', { class: 'sc-is-inst sc-is-tap' }, '⊕')])]), page(' ', [teraIcon('sc-is-hero'), h('b', {}, 'منصة تيرا')]).lastChild,
+          h('div', { class: 'sc-is-dlg' }, [h('b', {}, 'تثبيت التطبيق؟'), h('div', { class: 'sc-is-sh' }, [teraIcon(), h('div', {}, [h('b', {}, 'تيرا'), h('small', {}, 'staging.tera-services.com.sa')])]), h('div', { class: 'sc-is-acts' }, [h('span', { class: 'is-p sc-is-tap' }, 'تثبيت'), h('span', {}, 'إلغاء')])])])]);
+        say('١) «ثبّت تيرا» داخل المنصة (أو ⊕ في شريط العنوان) ← نافذة كروم أو إيدج ← «تثبيت».');
+        later(2600, function () { frame([h('div', { class: 'sc-is-dico' }, [teraIcon(), h('small', {}, 'تيرا')]), h('div', { class: 'sc-is-win is-app' }, [h('div', { class: 'sc-is-wbar' }, [teraIcon('sc-is-wico'), h('span', {}, 'تيرا')]), h('div', { class: 'sc-is-pg' }, [teraIcon('sc-is-hero'), h('b', {}, 'لوحتي الرئيسية'), h('small', {}, 'نافذة مستقلة بلا شريط عنوان')])]), h('div', { class: 'sc-is-task' }, [h('i'), h('i'), teraIcon('sc-is-tico'), h('i')])]); say('٢) أيقونة على سطح المكتب وشريط المهام، وتيرا تُفتح في نافذتها الخاصة.'); });
+      },
+      ios: function () {
+        frame.k = 'phone';
+        var bar = function (hi) { return h('div', { class: 'sc-is-iosbar' }, [h('span', {}, '‹'), h('span', {}, '›'), h('span', { class: hi ? 'sc-is-tap' : '' }, svgEl(SHARE_SVG)), h('span', {}, '▢'), h('span', {}, '⧉')]); };
+        frame([page(), bar(true), h('div', { class: 'tp-arrow sc-is-arr' }, [h('b', {}, svgEl(SHARE_SVG)), h('i')])]); say('١) زر المشاركة أسفل Safari — المنصة تعرض سهمًا يشير إليه.');
+        later(2200, function () { frame([page(), h('div', { class: 'sc-is-sheet is-ios' }, [h('div', { class: 'sc-is-sh' }, [teraIcon(), h('div', {}, [h('b', {}, 'منصة تيرا'), h('small', {}, 'staging.tera-services.com.sa')])]), h('ul', { class: 'sc-is-list' }, [h('li', {}, 'نسخ'), h('li', {}, 'إضافة إلى قائمة القراءة'), h('li', { class: 'sc-is-tap' }, 'إضافة إلى الشاشة الرئيسية  ⊞'), h('li', {}, 'بحث في الصفحة')])])]); say('٢) «إضافة إلى الشاشة الرئيسية».'); });
+        later(4400, function () { frame([h('div', { class: 'sc-is-add' }, [h('div', { class: 'sc-is-addh' }, [h('span', {}, 'إلغاء'), h('b', {}, 'إضافة إلى الشاشة الرئيسية'), h('span', { class: 'is-p sc-is-tap' }, 'إضافة')]), h('div', { class: 'sc-is-sh' }, [teraIcon(), h('div', {}, [h('b', {}, 'تيرا'), h('small', {}, 'staging.tera-services.com.sa')])])])]); say('٣) «إضافة» — الاسم «تيرا» جاهز.'); });
+        later(6600, function () { frame([homeGrid(true, 'افتح تيرا ثم «تفعيل الإشعارات»')]); say('٤) تيرا على الشاشة الرئيسية — منها تُفعَّل الإشعارات فتصل إلى شاشة القفل.'); });
+      },
+      mac: function () {
+        frame.k = 'desk'; frame([h('div', { class: 'sc-is-menu' }, [h('b', {}, 'Safari'), h('span', { class: 'sc-is-tap' }, 'ملف'), h('span', {}, 'تحرير'), h('span', {}, 'عرض')]), h('div', { class: 'sc-is-drop' }, [h('span', {}, 'نافذة جديدة'), h('span', {}, 'مشاركة'), h('span', { class: 'sc-is-tap' }, 'إضافة إلى Dock…')]), page()]);
+        say('١) في Safari على الماك: «ملف» ← «إضافة إلى Dock…» ← «إضافة».');
+        later(2600, function () { frame([page(), h('div', { class: 'sc-is-dock' }, [h('i'), h('i'), h('i'), teraIcon('sc-is-dkico'), h('i')])]); say('٢) تيرا في Dock وتُفتح كتطبيق، وتصل إشعاراتها إلى مركز إشعارات الماك.'); });
+      },
+      clip: function () {
+        frame.k = 'phone';
+        frame([h('div', { class: 'sc-is-sab' }, [teraIcon(), h('div', {}, [h('b', {}, 'تيرا'), h('small', {}, 'App Clip · سداد بلا تثبيت')]), h('span', { class: 'sc-is-open sc-is-tap' }, 'فتح')]), page('staging.tera-services.com.sa/pay/TR-2048', [h('b', {}, 'سداد الدفعة 3 — العقد TR-2048'), h('small', {}, '1,250 ر.س · تستحق الخميس')])]);
+        say('١) العميل يفتح رابط الخدمة (من رسالة أو QR) فيظهر شريط «تيرا — فتح».');
+        later(2400, function () { frame([page('staging.tera-services.com.sa/pay/TR-2048', [h('b', {}, 'سداد الدفعة 3 — العقد TR-2048')]), h('div', { class: 'sc-is-clip' }, [h('div', { class: 'sc-is-cliph' }, teraIcon('sc-is-hero')), h('b', {}, 'سداد دفعة — منصة تيرا'), h('small', {}, 'يعمل فورًا دون تنزيل التطبيق كاملًا'), h('span', { class: 'sc-is-open is-big sc-is-tap' }, 'فتح'), h('small', { class: 'sc-is-n8' }, '🔔 يمكنه إرسال إشعارات خلال 8 ساعات')])]); say('٢) بطاقة App Clip من أبل ← «فتح».'); });
+        later(4800, function () { frame([h('div', { class: 'sc-is-cl' }, [h('div', { class: 'sc-is-clt' }, [teraIcon('sc-is-wico'), h('b', {}, 'تيرا')]), h('b', {}, 'الدفعة 3 من 6'), h('div', { class: 'sc-is-amt' }, '1,250 ر.س'), h('span', { class: 'sc-is-pay' }, 'ادفع بـ Apple Pay'), h('small', {}, 'بعد السداد يصلك الإيصال وإشعار التأكيد.')])]); say('٣) جزء صغير من تطبيق تيرا يعمل فورًا: سداد، ثم إشعار التأكيد على شاشة القفل.'); });
+      },
+      'notif-phone': function () { frame.k = 'phone'; var L = lockScreen(); root.textContent = ''; root.appendChild(L.el.firstChild); L.add('فُعّلت الإشعارات', 'هذا إشعار تجريبي — ستصلك التنبيهات هنا حتى والمنصة مغلقة.', 'فتح المنصة'); say('الإشعار على شاشة القفل.'); },
+      'notif-web': function () { frame.k = 'desk'; var L = lockScreen(); root.textContent = ''; root.appendChild(L.el.firstChild); L.add('فُعّلت الإشعارات', 'هذا إشعار تجريبي — ستصلك التنبيهات هنا حتى والمتصفح مغلق.', 'فتح المنصة'); say('الإشعار على سطح المكتب.'); }
+    };
+    frame.k = phone ? 'phone' : 'desk'; frame([page()]);
+    return { el: h('div', { class: 'sc-is' }, [root, cap]), run: function (k) { stop(); if (RUN[k]) RUN[k](); } };
+  }
   function pushView() {
     var L = lockScreen();
     L.add('تم استلام دفعتك', 'استلمنا 1,250 ر.س للعقد TR-2048. شكرًا لك — الإيصال في حسابك.', 'عرض الإيصال');
@@ -220,15 +278,24 @@
           btn('إرسال', function () { L.add(ti.value, bo.value, ac.value); N.show({ kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار (معاينة)', text: 'إلى ' + to.value + ' — بعد ربط المزوّد يصل فعليًا إلى جواله وحاسبه حتى والمنصة مغلقة.' }); }),
           btn('تجربة كل الأنواع على msjt301@gmail.com', function () { var i = 0; (function next() { if (i >= all.length) { N.show({ kind: 'ok', title: 'أُرسلت ' + all.length + ' إشعارات تجريبية (معاينة)', text: 'كل أنواع إشعارات النظام والإدارة. بعد التفعيل تصل فعليًا إلى msjt301@gmail.com.' }); return; } var x = all[i++]; L.add(x[1], x[2], x[3]); setTimeout(next, 900); })(); }, 'teal')])]);
     } else {
+      var SIM = installSim(), right = SIM.el;
+      var tp = window.TeraPush ? window.TeraPush.panel({ demo: true, onDemo: function () { SIM.run(dev() === 'phone' ? 'notif-phone' : 'notif-web'); } }) : null;
       left = h('div', {}, [
+        tp ? h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px;margin-bottom:10px' }, [T('device-mobile:teal'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'كما تظهر للعميل في «تفضيلات الإشعارات»')]), tp,
+          h('p', { class: 'sc-hint' }, 'الزر حقيقي: في كروم وإيدج وأندرويد تظهر نافذة التثبيت الفعلية بضغطة واحدة؛ وفي آيفون وسفاري تظهر الخطوات مع سهم إلى زر المشاركة.')]) : null,
+        h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('download-simple:navy'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'التثبيت بضغطة — جرّب كل جهاز')]),
+          h('p', { class: 'sc-hint' }, 'ضغطة واحدة على «ثبّت تيرا» ثم «تثبيت» في نافذة المتصفح: تصبح تيرا بأيقونتها على الشاشة الرئيسية أو سطح المكتب، وتُفتح كتطبيق مستقل.'),
+          h('div', { class: 'sc-is-pick' }, [['android', 'أندرويد · كروم', 'ضغطة واحدة'], ['desktop', 'الكمبيوتر · كروم وإيدج', 'ضغطة واحدة'], ['ios', 'آيفون · سفاري', 'ثلاث لمسات — قيد أبل'], ['mac', 'ماك · سفاري', 'من قائمة «ملف»']].map(function (x) {
+            return h('button', { type: 'button', class: 'sc-is-b', onclick: function () { SIM.run(x[0]); } }, [h('b', {}, x[1]), h('small', {}, x[2])]); }))]),
+        h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('squares-four:gold'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'App Clip — من صفحة الخدمة بلا تثبيت (آيفون)')]),
+          h('p', { class: 'sc-hint' }, 'يفتح العميل صفحة الخدمة في Safari فيظهر شريط «تيرا — فتح»، وبلمسة واحدة يعمل جزء صغير من تطبيق تيرا فورًا بلا متجر ولا أيقونة. إشعاراته تعمل 8 ساعات تلقائيًا، وبإذن العميل تستمر للتذكيرات.'),
+          h('div', { class: 'sc-tags' }, [h('i', { class: 'k' }, 'يدعمه OneSignal'), h('i', {}, 'يحتاج تطبيق تيرا في App Store'), h('i', {}, 'مرحلة قادمة')]),
+          btn('معاينة App Clip', function () { SIM.run('clip'); }, 'alt')]),
         h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('bell-ringing:navy'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'طلب الإذن داخل المنصة')]),
-          h('p', { class: 'sc-hint' }, 'يظهر مرة واحدة بعد الدخول، بشرح واضح قبل نافذة الإذن الرسمية من الجهاز.'),
-          btn('معاينة طلب الإذن', function () { N.show({ kind: 'info', icon: 'bell-ringing:navy', title: 'فعّل إشعارات منصة تيرا', text: 'لتصلك تذكيرات السداد، وطلبات القبول، وتحديثات طلباتك، وتنبيهات الأمان — حتى والمنصة مغلقة.', ms: 0, actions: [{ label: 'تفعيل الإشعارات', primary: true, run: function () { setTimeout(function () { N.show({ kind: 'ok', icon: 'bell-ringing:teal', title: 'فُعّلت الإشعارات على هذا الجهاز', text: 'أرسلنا إشعارًا تجريبيًا للتأكد.' }); L.add('فُعّلت الإشعارات', 'هذا إشعار تجريبي — ستصلك التنبيهات هنا.', 'فتح المنصة'); }, 60); } }, { label: 'لاحقًا' }] }); }, 'alt')]),
-        h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('device-mobile:sky'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'آيفون: أضف المنصة إلى الشاشة الرئيسية')]),
-          h('p', { class: 'sc-hint' }, 'شرط من أبل لكل المواقع: لا تصل الإشعارات إلى شاشة القفل إلا بعد إضافة الموقع إلى الشاشة الرئيسية (iOS 16.4 أو أحدث).'),
-          h('ol', { class: 'sc-ios' }, [['share-network:sky', 'افتح المنصة في Safari واضغط زر المشاركة'], ['plus:teal', 'اختر «إضافة إلى الشاشة الرئيسية» ثم «إضافة»'], ['squares-four:gold', 'افتح «تيرا» من أيقونتها على الشاشة الرئيسية'], ['bell-ringing:navy', 'اضغط «تفعيل الإشعارات» ثم «السماح»']].map(function (x, i) { return h('li', {}, [h('span', { class: 'sc-iosn' }, String(i + 1)), T(x[0]), x[1]]); }))]),
-        h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('monitor:teal'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'أندرويد والكمبيوتر')]),
-          h('p', { class: 'sc-hint' }, 'يكفي الضغط على «تفعيل الإشعارات» ثم «السماح» في المتصفح — تصل الإشعارات حتى والمتصفح مغلق.')])]);
+          h('p', { class: 'sc-hint' }, 'يظهر بعد الدخول مرة كل 7 أيام على الأكثر، بشرح واضح قبل نافذة الإذن الرسمية من الجهاز.'),
+          btn('معاينة طلب الإذن', function () { N.show({ kind: 'info', icon: 'bell-ringing:navy', title: 'فعّل إشعارات منصة تيرا', text: 'لتصلك تذكيرات السداد، وطلبات القبول، وتحديثات طلباتك، وتنبيهات الأمان — حتى والمنصة مغلقة.', ms: 0, actions: [{ label: 'تفعيل الإشعارات', primary: true, run: function () { setTimeout(function () { N.show({ kind: 'ok', icon: 'bell-ringing:teal', title: 'فُعّلت الإشعارات على هذا الجهاز', text: 'أرسلنا إشعارًا تجريبيًا للتأكد.' }); SIM.run(dev() === 'phone' ? 'notif-phone' : 'notif-web'); }, 60); } }, { label: 'لاحقًا' }] }); }, 'alt')])]);
+      return h('div', {}, [nav, h('div', { class: 'sc-note' }, [h('b', {}, 'تيرا على جهاز العميل: '), 'التثبيت بضغطة حيث يسمح المتصفح، وخطوات واضحة حيث لا يسمح (آيفون وسفاري)، ثم الإشعارات على شاشة القفل وسطح المكتب حتى والمنصة مغلقة.']),
+        h('div', { class: 'sc-gal' }, [left, right])]);
     }
     return h('div', {}, [nav, h('div', { class: 'sc-note' }, [h('b', {}, 'معاينة قبل الربط: '), 'تصل هذه الإشعارات إلى شاشة القفل والكمبيوتر حتى والمنصة مغلقة، بشعار تيرا على خلفية بيضاء. بعد اعتماد العيّنة وربط المزوّد (OneSignal) نرسلها فعليًا، ونجرّبها كلها على msjt301@gmail.com.']),
       h('div', { class: 'sc-gal' }, [left, L.el])]);
