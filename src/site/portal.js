@@ -30,6 +30,14 @@
       t: ['نسيت كلمة المرور', 'التحقق من البريد', 'كلمة مرور جديدة'], s: ['الخطوة الأولى: تحقق من رقم جوالك المسجّل عبر واتساب.', 'الخطوة الثانية: تحقق من بريدك المسجّل.', 'اختر كلمة مرور قوية وأكّدها.'] };
     function tile(ic) { var t = $('#pt-tiles'), s = t && t.content.querySelector('[data-ic="' + ic + '"]'); return s ? s.innerHTML : I(ic); }
     function go(flow, i) {
+      if (UX2 && flow === cur.flow && i > cur.i) {
+        var from = FLOWS[flow].forms[cur.i], c = TN.current(), F2 = FLOWS[flow];
+        if (!c || c.closed || c.o.kind === 'run' || c.o.kind === 'bad') TN.show({ kind: 'ok', title: DONE_T[from] || 'اكتملت الخطوة', text: 'التالي: ' + F2.t[i] + ' — ' + F2.s[i] });
+        return TN.hold(function () { go0(flow, i); });
+      }
+      go0(flow, i);
+    }
+    function go0(flow, i) {
       if (flow !== cur.flow) startTimer();
       cur = { flow: flow, i: i }; var F = FLOWS[flow];
       ALL.forEach(function (x) { var el = $('#f-' + x); if (el) el.hidden = x !== F.forms[i]; });
@@ -45,6 +53,10 @@
       if (F.forms[i] === 'device' || F.forms[i] === 'reg6') devName();
     }
     function finish(h, p, o) {
+      if (UX2) { var c = TN.current(); if (!c || c.closed || c.o.kind === 'run' || c.o.kind === 'bad') TN.show({ kind: 'ok', title: h, text: p }); return TN.hold(function () { finish0(h, p, o); }); }
+      finish0(h, p, o);
+    }
+    function finish0(h, p, o) {
       o = o || {};
       ALL.forEach(function (x) { var el = $('#f-' + x); if (el) el.hidden = x !== 'done'; });
       $('#pt-steps').querySelectorAll('li').forEach(function (li) { li.className = 'is-done'; li.querySelector('i').textContent = '✓'; });
@@ -56,7 +68,16 @@
       var g = $('#done-go'); g.hidden = !(o.enter || o.next); g.textContent = o.next ? 'استمرار' : 'المتابعة إلى حسابك';
       $('#done-login').hidden = !o.login; $('#done-again').hidden = !!o.next;
     }
-    function msg(id, k, t) { var m = typeof id === 'string' ? $('#' + id) : id; if (!m) return; m.className = (m.classList.contains('vc-msg') ? 'vc-msg' : m.classList.contains('mf-msg') ? 'mf-msg' : 'ts-msg') + (k ? ' ' + k : ''); m.textContent = t || ''; m.hidden = !t; }
+    function msg(id, k, t) { var m = typeof id === 'string' ? $('#' + id) : id; if (!m) return; m.className = (m.classList.contains('vc-msg') ? 'vc-msg' : m.classList.contains('mf-msg') ? 'mf-msg' : 'ts-msg') + (k ? ' ' + k : ''); m.textContent = t || ''; m.hidden = !t;
+      /* v356: كل رسالة تظهر إشعارًا في منتصف الشاشة (8 ثوانٍ أو يغلقه المستخدم) */
+      if (t && UX2) { m.hidden = true; var sp = String(t).match(/^(.+?[.؟!])\s+(.+)$/); TN.show({ kind: k === 'bad' ? 'bad' : k === 'ok' ? 'ok' : 'info', title: sp ? sp[1] : t, text: sp ? sp[2] : '' }); } }
+    var TN = window.TeraNotify || { show: function () {}, hold: function (f) { f(); }, current: function () { return null; } }, UX2 = !!(window.TeraNotify && window.TeraNotify.enabled);
+    /* عنوان الإشعار عند إكمال كل خطوة (يظهر 5 ثوانٍ قبل الانتقال) */
+    var DONE_T = { login: 'تم التحقق من بياناتك', otp: 'تم التحقق من الرمز بنجاح', device: 'تم حفظ اختيارك للجهاز', reg1: 'حُفظ اسمك', reg2: 'حُفظت بيانات التواصل', reg3: 'حُفظت كلمة المرور',
+      reg4: 'تم التحقق من البريد والجوال', reg5: 'فُعّلت المصادقة الثنائية', fg1: 'تم التحقق من رقم جوالك', fg2: 'تم التحقق من بريدك', fg3: 'تم التحقق الإضافي', rc1: 'تم قبول رمز الاستعادة' };
+    var RUN_T = { 'f-login': ['جارٍ تسجيل الدخول…', 'نتحقق من بياناتك بأمان.'], 'f-otp': ['جارٍ التحقق من الرمز…', 'ثوانٍ ويكتمل التحقق.'], 'f-device': ['جارٍ فتح حسابك…', 'نجهّز جلستك.'],
+      'f-reg1': ['جارٍ الحفظ…', ''], 'f-reg2': ['جارٍ الحفظ…', ''], 'f-reg3': ['جارٍ فحص كلمة المرور…', 'نتأكد أنها قوية وغير مسرّبة.'], 'f-reg4': ['جارٍ التحقق…', ''], 'f-reg5': ['جارٍ تفعيل المصادقة…', ''], 'f-reg6': ['جارٍ إنشاء حسابك…', 'لحظات ويصبح حسابك جاهزًا.'],
+      'f-fg1': ['جارٍ التحقق من جوالك…', ''], 'f-fg2': ['جارٍ التحقق من بريدك…', ''], 'f-fg3': ['جارٍ التحقق الإضافي…', ''], 'f-fg4': ['جارٍ حفظ كلمة المرور…', ''], 'f-rc1': ['جارٍ التحقق من رمز الاستعادة…', ''], 'f-rc2': ['جارٍ حفظ كلمة المرور…', ''] };
     function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
     function tick() { var l = Math.max(left, 0); $('#timer-v').textContent = fmt(l); $('#timer-bar').style.width = (l / SESSION * 100) + '%'; $('#pt-timer').classList.toggle('is-low', l <= 60); }
     function startTimer() { clearInterval(timerId); left = SESSION; tick(); timerId = setInterval(function () { left--; tick(); if (left <= 0) { clearInterval(timerId); reset(); msg('lg-msg', 'bad', 'انتهت مدة الجلسة (10 دقائق) قبل اكتمال الخطوات. ابدأ من جديد.'); } }, 1000); }
@@ -83,10 +104,21 @@
 
     /* ---- 6-box code entry: auto-confirm when complete ---- */
     function wireOtp(inputs, onFull) {
+      /* v356: الإدخال التلقائي للرمز (اقتراح لوحة المفاتيح في iOS/Android أو اللصق) يضع الرمز كاملًا في خانة واحدة — يُوزَّع على الخانات */
+      var fired = false;
+      function full() { return inputs.every(function (b) { return b.value; }); }
+      function fire() { if (fired) return; fired = true; setTimeout(function () { fired = false; }, 1200); setTimeout(onFull, 250); }
+      function spread(from, digits) { for (var j = 0; j < digits.length && from + j < inputs.length; j++) inputs[from + j].value = digits[j]; var nx = inputs[Math.min(from + digits.length, inputs.length - 1)]; if (nx && !full()) nx.focus(); else if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
       inputs.forEach(function (inp, i) {
-        inp.addEventListener('input', function () { inp.value = inp.value.replace(/\D/g, '').slice(-1); inp.parentNode.classList.remove('bad'); if (inp.value && inputs[i + 1]) inputs[i + 1].focus(); if (inputs.every(function (b) { return b.value; })) setTimeout(onFull, 150); });
+        inp.setAttribute('autocomplete', i === 0 ? 'one-time-code' : 'off'); inp.setAttribute('inputmode', 'numeric'); if (i === 0) inp.removeAttribute('maxlength');
+        inp.addEventListener('input', function () {
+          var d = ascii(inp.value).replace(/\D/g, ''); inp.parentNode.classList.remove('bad');
+          if (d.length > 1) { inp.value = ''; spread(i === 0 || d.length >= inputs.length ? (d.length >= inputs.length ? 0 : i) : i, d.slice(0, inputs.length)); }
+          else { inp.value = d; if (d && inputs[i + 1]) inputs[i + 1].focus(); }
+          if (full()) fire();
+        });
         inp.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !inp.value && inputs[i - 1]) inputs[i - 1].focus(); });
-        inp.addEventListener('paste', function (e) { var t = ((e.clipboardData && e.clipboardData.getData('text')) || '').replace(/\D/g, '').slice(0, 6); if (t.length) { e.preventDefault(); inputs.forEach(function (b, j) { b.value = t[j] || ''; }); inputs[Math.min(t.length, 5)].focus(); if (t.length === 6) setTimeout(onFull, 150); } });
+        inp.addEventListener('paste', function (e) { var t = ascii((e.clipboardData && e.clipboardData.getData('text')) || '').replace(/\D/g, '').slice(0, inputs.length); if (t.length) { e.preventDefault(); inputs.forEach(function (b) { b.value = ''; }); spread(0, t); if (full()) fire(); } });
       });
     }
     function codeOf(inputs) { return inputs.map(function (b) { return b.value; }).join(''); }
@@ -620,6 +652,21 @@
       var lg = $('.ts-legal'); if (lg) lg.textContent = 'باستخدامك البوابة توافق على سياسة الاستخدام وسياسة الخصوصية.';
       if (!document.getElementById('tqc-turnstile-js')) { var sc = document.createElement('script'); sc.id = 'tqc-turnstile-js'; sc.src = '/turnstile.js'; document.head.appendChild(sc); }
     }
+
+    if (UX2) $$('.pt-f').forEach(function (f) {
+      f.addEventListener('submit', function () { var r = RUN_T[f.id]; if (r) TN.show({ kind: 'run', title: r[0], text: r[1] }); setTimeout(function () { var c = TN.current(); if (c && !c.closed && c.o.kind === 'run') c.close(); }, 15000); }, true);
+    });
+    /* v356: تذكّر البريد أو الجوال على هذا الجهاز (لا تُحفظ كلمة المرور، ويبقى التحقق مطلوبًا) */
+    (function () {
+      var RK = 'tera.remember.id', id = $('#lg-id'), rem = $('#lg-rem'), who = $('#lg-who'); if (!id || !rem) return;
+      if (!UX2) { var rl = rem.closest('label'); if (rl) rl.hidden = true; if (who) who.hidden = true; return; } /* على المنفذين الحيّين بعد الاعتماد */
+      function get() { try { return localStorage.getItem(RK) || ''; } catch (e) { return ''; } }
+      function mask(v) { return v.indexOf('@') > 0 ? v.replace(/^(.{2}).*(.{2})@/, '$1•••$2@') : v.replace(/^(\+?\d{3,5}).*(\d{2})$/, '$1 ••• ••$2'); }
+      function paint() { var v = get(); if (v && !id.value) id.value = v; rem.checked = !!v || rem.checked; if (who) { who.hidden = !v; var b = who.querySelector('b'); if (b) b.textContent = mask(v); } }
+      if (who) who.querySelector('button').addEventListener('click', function () { try { localStorage.removeItem(RK); } catch (e) { void e; } id.value = ''; who.hidden = true; rem.checked = false; id.focus(); if (UX2) TN.show({ kind: 'ok', title: 'أُزيل بريدك من هذا الجهاز', text: 'سيُطلب البريد أو الجوال في الدخول القادم.' }); });
+      $('#f-login').addEventListener('submit', function () { try { if (rem.checked && id.value.trim()) localStorage.setItem(RK, id.value.trim()); else if (!rem.checked) localStorage.removeItem(RK); } catch (e) { void e; } }, true);
+      paint();
+    })();
 
     reset();
   })();

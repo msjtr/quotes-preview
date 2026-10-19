@@ -147,8 +147,10 @@ def portal2():
             f'<div class="pt-timer" id="pt-timer">{I("PiTimerFill")}<span>مدة الجلسة</span><i><b id="timer-bar"></b></i><b id="timer-v" dir="ltr">10:00</b></div></div>')
 
     login = (f'<form class="pt-f" id="f-login" novalidate>'
+             '<p class="pt-who" id="lg-who" hidden>مرحبًا مجددًا — <b dir="ltr"></b> <button type="button" class="ts-link">ليس أنت؟</button></p>'
              '<div class="ts-fld"><label for="lg-id">البريد الإلكتروني أو رقم الجوال</label><input class="ts-in" id="lg-id" dir="ltr" autocomplete="username" inputmode="email" placeholder="name@example.com"></div>'
-             f'<div class="ts-fld"><span class="ts-row"><label for="lg-pw">كلمة المرور</label><button type="button" class="ts-link" data-flow="forgot">نسيت كلمة المرور؟</button></span>{_pw("lg-pw")}</div>'
+             f'<div class="ts-fld"><span class="ts-row"><label for="lg-pw">كلمة المرور</label><button type="button" class="ts-link" data-flow="forgot">نسيت كلمة المرور؟</button></span>{_pw("lg-pw").replace("new-password", "current-password")}</div>'
+             '<label class="ts-chk"><input type="checkbox" id="lg-rem"><span>تذكّر بريدي أو جوالي على هذا الجهاز <small>(لا تُحفظ كلمة المرور)</small></span></label>'
              '<div class="ts-human" id="human"><span class="ts-sp"></span><span id="human-t">جارٍ التحقق البشري…</span><small>Cloudflare</small></div>'
              '<p class="ts-msg" id="lg-msg" hidden></p><button class="t2-btn is-primary pt-go" type="submit" id="lg-go">دخول</button>'
              '<div class="pt-or"><span>خيارات أخرى</span></div><div class="pt-opts">'
