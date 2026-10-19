@@ -1,8 +1,7 @@
-/* مركز الأمان — عيّنة تفاعلية (العيّنة وحدها، لا تعمل على المنافذ الحية):
- *  ١) رحلات الدخول حتى الرئيسية، والعودة بجهاز يتذكّر البريد أو الجوال، وإنشاء الحساب، ونسيت كلمة المرور —
- *     مع إدخال الرمز تلقائيًا من اقتراح لوحة المفاتيح ثم ثوانٍ يظهر فيها «جارٍ التحقق» ثم يكتمل الدخول.
+/* مركز الأمان — عيّنة تفاعلية تحاكي المنصة (العيّنة وحدها، لا تعمل على المنافذ الحية):
+ *  ١) محاكاة حقيقية: الدخول حتى الرئيسية · إنشاء حساب · نسيت كلمة المرور · حساب لم يكمل التسجيل · بريد غير مسجّل ·
+ *     الإقفال بعد 5 محاولات · تذكّر البريد أو الجوال على الجهاز · الرمز يصل إشعارًا ويُقترح فوق لوحة المفاتيح ثم ثوانٍ «جارٍ التحقق».
  *  ٢) معرض كل إشعارات النظام كما تظهر في الويب وتطبيق الجوال (حسب زر «ويب / تطبيق الجوال» في شريط العيّنة).
- *  ٣) الحالات: بريد أو جوال غير مسجّل · حساب لم يكمل التسجيل · زائر لم يسجّل الدخول.
  * الرموز والألوان نفسها في المنصة (البلاطة ثلاثية الأبعاد وتدرّجات الشريط). يولّده tools/build.py بإضافة رموز GL. */
 (function () {
   'use strict';
@@ -33,13 +32,13 @@
   function stopAll() { timers.forEach(function (t) { clearTimeout(t); clearInterval(t); }); timers = []; }
   function mmss(s) { s = Math.max(0, s); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
 
-  var S = { tab: 'flows', flow: 'login', step: 0, state: 'unreg', note: 0, cat: 'all', badCode: false, remember: true, breached: false };
+  var S = { tab: 'sim', note: 0, cat: 'all' };
   function dev() { var b = document.querySelector('.pv-bar button[data-dev].is-on'); return b ? b.dataset.dev : (innerWidth < 640 ? 'phone' : 'web'); }
 
   /* ===== إطار الجهاز ===== */
   function frame(content, o) {
     o = o || {};
-    var body = h('div', { class: 'sc-body' }, [topbar(o.guest), content]);
+    var body = h('div', { class: 'sc-body' }, [topbar(o.home), content]);
     if (dev() === 'phone') {
       var scr = h('div', { class: 'sc-scr' }, [h('div', { class: 'sc-sbar' }, ['10:27', h('i', {}, '5G ▮▮▮ ▰')]), body, o.nav === false ? null : nav()]);
       return { el: h('div', { class: 'sc-dev' }, h('div', { class: 'sc-phone' }, scr)), layer: scr, body: body };
@@ -48,8 +47,8 @@
     w.style.position = 'relative';
     return { el: h('div', { class: 'sc-dev' }, w), layer: w, body: body };
   }
-  function topbar(guest) {
-    var tk = h('div', { class: 'sc-tk' }, guest ? [h('span', {}, [T('user-circle:navy'), 'تسجيل الدخول'])] : [h('span', {}, [T('magnifying-glass:sky')]), h('span', {}, [T('list-checks:navy'), 'متابعة الطلب'])]);
+  function topbar(inApp) {
+    var tk = h('div', { class: 'sc-tk' }, inApp ? [h('span', {}, [T('bell:gold')]), h('span', {}, [T('user-circle:teal'), 'حسابي'])] : [h('span', {}, [T('magnifying-glass:sky')]), h('span', {}, [T('list-checks:navy'), 'متابعة الطلب'])]);
     return h('div', { class: 'sc-top' }, [h('img', { src: 'vid/logo-light.webp', alt: 'تيرا — عالمك بلا حدود' }), tk]);
   }
   function nav() { return h('div', { class: 'sc-nav' }, [h('span', {}, [T('house:navy'), 'الرئيسية']), h('span', {}, [T('squares-four:gold'), 'الأقسام']), h('span', {}, [T('shield-check:teal'), 'الأمان'])]); }
@@ -61,161 +60,373 @@
   }
   function btn(txt, fn, cls) { return h('button', { type: 'button', class: 'sc-btn ' + (cls || ''), onclick: fn }, txt); }
 
-  /* ===== التحقق بالرمز: اقتراح لوحة المفاتيح ← تعبئة الخانات ← ثوانٍ «جارٍ التحقق» ← اكتمال ===== */
-  function otpCard(F, o) {
-    var boxes = [], code = S.badCode ? '582915' : '482915', card, ver, kb, left = 5, valid = 299, resend = 59;
-    for (var i = 0; i < 6; i++) boxes.push(h('span', { class: i === 0 ? 'cur' : '' }));
-    var otp = h('div', { class: 'sc-otp' }, boxes);
-    var vEl = h('b', {}, mmss(valid)), rEl = h('b', {}, mmss(resend)), lEl = h('b', {}, left + ' من 5');
-    ver = h('div');
-    card = h('div', { class: 'sc-card' }, [
-      head('shield-check:teal', o.small || 'بوابة الدخول الموحّدة', o.title || 'التحقق الثنائي', 'أدخل الرمز الذي وصلك — يُعبّأ تلقائيًا من اقتراح لوحة المفاتيح.'),
-      stepper(o.n || 3, o.at || 1),
-      field('وسيلة التحقق', 'رمز التحقق عبر البريد الإلكتروني ⌄'),
-      h('div', { class: 'sc-dest' }, [T('envelope-simple:sky'), 'يُرسل إلى البريد ', h('b', {}, 'ms•••01@gmail.com')]),
-      msg('ok', 'paper-plane-tilt:teal', null, 'أُرسل رمز التحقق إلى بريدك. قد يصل إلى مجلد الرسائل غير المرغوب فيها.'),
-      h('div', { style: 'text-align:center;font-weight:800;margin-top:12px' }, 'أدخل الرمز المكوّن من 6 أرقام'),
-      otp,
-      h('div', { class: 'sc-meta' }, [h('span', {}, ['المحاولات المتبقية: ', lEl]), h('span', {}, ['صلاحية الرمز ', vEl]), h('span', {}, ['إعادة الإرسال بعد ', rEl])]),
-      ver
-    ]);
-    every(function () { valid--; resend--; vEl.textContent = mmss(valid); rEl.textContent = mmss(resend); }, 1000);
-    function fill() {
-      if (kb && kb.parentNode) kb.parentNode.removeChild(kb);
-      code.split('').forEach(function (d, j) { later(function () { boxes[j].textContent = d; boxes[j].className = 'f'; if (boxes[j + 1]) boxes[j + 1].className = 'cur'; }, 90 * j); });
-      later(verify, 90 * 6 + 120);
+  /* ======================================================================
+   * المحاكاة التفاعلية: نماذج حقيقية (كتابة · تحقق · أخطاء · مؤقتات · تذكّر الجهاز) بلا خادم.
+   * حسابات العيّنة في الذاكرة؛ كل حساب يُنشأ هنا يمكن الدخول به بعدها.
+   * ==================================================================== */
+  var RKEY = 'tera.sc.remember';
+  var BREACHED = ['password@123', 'password123', '12345678', '123456789', 'aa123456', 'qwerty@123', 'qwerty123', 'p@ssw0rd', 'welcome@123', 'admin@123', 'abc12345'];
+  var DB = {
+    'msjt301@gmail.com': { name: 'عادل الشمري', phone: '0500000001', pw: 'Tera@2026', status: 'active' },
+    'new.user@gmail.com': { name: 'سارة القحطاني', phone: '0550000002', pw: 'Tera@2026', status: 'incomplete' }
+  };
+  var SIM = { scr: 'login', data: {}, fails: {}, lockUntil: {}, otp: null, user: null, trusted: {}, oldCode: false, path: [] };
+  function remembered() { try { return JSON.parse(localStorage.getItem(RKEY) || 'null'); } catch (e) { return null; } }
+  function remember(v) { try { if (v) localStorage.setItem(RKEY, JSON.stringify(v)); else localStorage.removeItem(RKEY); } catch (e) { void e; } }
+  function norm(v) { v = String(v || '').trim().toLowerCase().replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }).replace(/\s/g, ''); if (/^\+?9665\d{8}$/.test(v)) v = '0' + v.replace(/^\+?966/, ''); if (/^5\d{8}$/.test(v)) v = '0' + v; return v; }
+  function findAcc(id) { var n = norm(id); if (DB[n]) return n; var k = Object.keys(DB).filter(function (e) { return DB[e].phone === n; })[0]; return k || null; }
+  function maskMail(e) { var p = e.split('@'); return p[0].slice(0, 2) + '•••' + p[0].slice(-2) + '@' + p[1]; }
+  function maskPhone(p) { return p.slice(0, 3) + ' ••• ••' + p.slice(-2); }
+  function isMail(v) { return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(String(v).trim()); }
+  function isPhone(v) { return /^05\d{8}$/.test(norm(v)); }
+  function strength(p) { var s = 0; if (p.length >= 8) s++; if (p.length >= 12) s++; if (/[A-Z]/.test(p) && /[a-z]/.test(p)) s++; if (/\d/.test(p)) s++; if (/[^A-Za-z0-9]/.test(p)) s++; return Math.min(4, Math.max(p ? 1 : 0, s - 1)); }
+  function newCode() { return String(100000 + Math.floor(Math.random() * 900000)); }
+
+  /* عناصر إدخال حقيقية */
+  function inp(lbl, o) {
+    o = o || {};
+    var i = h('input', { class: 'sc-in' + (o.ltr ? ' ltr' : ''), type: o.type || 'text', placeholder: o.ph || '', autocomplete: o.ac || 'off', inputmode: o.im || null, value: o.val || '', dir: o.ltr ? 'ltr' : null });
+    if (o.val) i.value = o.val;
+    var wrap = [h('label', { class: 'sc-lbl' }, lbl)];
+    if (o.type === 'password') {
+      var eye = h('button', { type: 'button', class: 'sc-eye', 'aria-label': 'إظهار كلمة المرور', onclick: function () { i.type = i.type === 'password' ? 'text' : 'password'; eye.textContent = i.type === 'password' ? 'إظهار' : 'إخفاء'; } }, 'إظهار');
+      wrap.push(h('div', { class: 'sc-pw' }, [i, eye]));
+    } else wrap.push(i);
+    var err = h('div', { class: 'sc-err' }); wrap.push(err);
+    i.addEventListener('input', function () { i.classList.remove('bad'); err.textContent = ''; });
+    return { el: wrap, i: i, bad: function (t) { i.classList.add('bad'); err.textContent = t; i.focus(); return false; } };
+  }
+  function note(box, kind, ic, title, text, acts) { box.textContent = ''; if (kind) box.appendChild(msg(kind, ic, title, text, acts)); }
+  function busy(b, t) { b.disabled = true; b.dataset.t = b.textContent; b.textContent = t; }
+  function unbusy(b) { b.disabled = false; b.textContent = b.dataset.t || b.textContent; }
+  function link(t, fn) { return h('button', { type: 'button', class: 'sc-link', onclick: fn }, t); }
+
+  /* المسار الظاهر في الجانب */
+  var PATHS = {
+    login: ['بيانات الدخول', 'التحقق بالرمز', 'توثيق الجهاز', 'الرئيسية'],
+    register: ['بياناتك', 'التواصل', 'كلمة المرور', 'التحقق من البريد', 'تم الإنشاء', 'الرئيسية'],
+    forgot: ['البريد أو الجوال', 'الرمز', 'كلمة مرور جديدة', 'تم التغيير'],
+    complete: ['بيانات الدخول', 'إكمال التسجيل', 'التحقق من الجوال', 'الرئيسية']
+  };
+  var POS = { login: ['login', 0], otp_login: ['login', 1], device: ['login', 2], home: ['login', 3],
+    reg1: ['register', 0], reg2: ['register', 1], reg3: ['register', 2], otp_reg: ['register', 3], reg_done: ['register', 4],
+    fg1: ['forgot', 0], otp_fg: ['forgot', 1], fg3: ['forgot', 2], fg_done: ['forgot', 3],
+    incomplete: ['complete', 1], otp_phone: ['complete', 2], locked: ['login', 0] };
+  function goto(scr) { SIM.scr = scr; if (scr === 'home' && SIM.data.flow) SIM.homeFrom = SIM.data.flow; render(); }
+
+  /* ===== الشاشات ===== */
+  var SCR = {};
+  SCR.login = function (F) {
+    var r = remembered(), msgBox = h('div');
+    if (r && !SIM.data.other) return SCR.welcome(F, r);
+    var id = inp('البريد الإلكتروني أو رقم الجوال', { ltr: true, ph: 'name@example.com أو 05xxxxxxxx', ac: 'username', val: SIM.data.prefill || '' });
+    var pw = inp('كلمة المرور', { type: 'password', ltr: true, ac: 'current-password' });
+    var chk = h('input', { type: 'checkbox' }); chk.checked = true;
+    var go = btn('دخول', function () { submitLogin(F, id, pw, chk.checked, go, msgBox); }, 'wide');
+    [id.i, pw.i].forEach(function (x) { x.addEventListener('keydown', function (e) { if (e.key === 'Enter') go.click(); }); });
+    return h('div', { class: 'sc-card' }, [head('lock-key:navy', 'بوابة الدخول الموحّدة', 'تسجيل الدخول', 'حساب واحد لكل خدماتك في منصة تيرا.'), stepper(3, 0), id.el, pw.el,
+      h('label', { class: 'sc-chk' }, [chk, h('span', {}, ['تذكّر بريدي أو جوالي على هذا الجهاز', h('small', {}, 'يُحفظ البريد أو الجوال فقط — لا تُحفظ كلمة المرور، ويبقى رمز التحقق مطلوبًا.')])]),
+      h('div', { style: 'margin-top:12px' }, go), msgBox,
+      h('div', { class: 'sc-row', style: 'justify-content:space-between;margin-top:14px' }, [link('نسيت كلمة المرور؟', function () { SIM.data = { flow: 'forgot', prefill: id.i.value }; goto('fg1'); }), link('إنشاء حساب جديد', function () { SIM.data = { flow: 'register' }; goto('reg1'); })])]);
+  };
+  SCR.welcome = function (F, r) {
+    var msgBox = h('div'), pw = inp('كلمة المرور', { type: 'password', ltr: true, ac: 'current-password' });
+    var go = btn('دخول', function () { submitLogin(F, { i: { value: r.id }, bad: function (t) { note(msgBox, 'bad', 'x-circle:gold', null, t); return false; } }, pw, true, go, msgBox); }, 'wide');
+    pw.i.addEventListener('keydown', function (e) { if (e.key === 'Enter') go.click(); });
+    later(function () { pw.i.focus(); }, 60);
+    return h('div', { class: 'sc-card' }, [head('lock-key:navy', 'بوابة الدخول الموحّدة', 'مرحبًا مجددًا', 'هذا الجهاز يتذكّرك — أدخل كلمة المرور للمتابعة.'),
+      h('div', { class: 'sc-who' }, [h('div', { class: 'sc-av' }, (r.name || 'ت').charAt(0)), h('div', { style: 'flex:1' }, [h('b', {}, r.name || ''), h('small', {}, r.masked)]),
+        link('ليس أنت؟', function () { SIM.data = { other: true }; render(); })]),
+      pw.el, h('div', { style: 'margin-top:12px' }, go), msgBox,
+      h('div', { class: 'sc-row', style: 'justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px' }, [
+        link('نسيت كلمة المرور؟', function () { SIM.data = { flow: 'forgot', prefill: r.id }; goto('fg1'); }),
+        link('إزالة بياناتي من هذا الجهاز', function () { remember(null); SIM.data = {}; render(); F.toast('check-circle:teal', 'أُزيلت بياناتك من هذا الجهاز', 'سيُطلب البريد أو الجوال في الدخول القادم.'); })])]);
+  };
+  function submitLogin(F, id, pw, keep, go, msgBox) {
+    msgBox.textContent = '';
+    var v = id.i.value.trim();
+    if (!v) return id.bad('اكتب بريدك الإلكتروني أو رقم جوالك.');
+    if (!isMail(v) && !isPhone(v)) return id.bad('اكتب بريدًا صحيحًا مثل name@example.com أو جوالًا يبدأ بـ 05.');
+    if (!pw.i.value) return pw.bad('اكتب كلمة المرور.');
+    var key = findAcc(v), lk = SIM.lockUntil[key || norm(v)];
+    if (lk && lk > Date.now()) { SIM.data.lockKey = key || norm(v); return goto('locked'); }
+    busy(go, 'جارٍ الدخول…');
+    later(function () {
+      unbusy(go);
+      if (!key) return note(msgBox, 'info', 'question:sky', 'لا يوجد حساب بهذا البريد أو الجوال', 'تحقّق من كتابته، أو أنشئ حسابًا جديدًا بخطوات قليلة.',
+        [btn('إنشاء حساب', function () { SIM.data = { flow: 'register', email: isMail(v) ? v : '', phone: isPhone(v) ? norm(v) : '' }; goto('reg1'); }, 'teal'), btn('تعديل البريد', function () { id.i.focus(); id.i.select(); }, 'alt')]);
+      var a = DB[key];
+      if (pw.i.value !== a.pw) {
+        SIM.fails[key] = (SIM.fails[key] || 0) + 1; var left = 5 - SIM.fails[key]; pw.i.value = '';
+        if (left <= 0) { SIM.lockUntil[key] = Date.now() + 15 * 60000; SIM.fails[key] = 0; SIM.data.lockKey = key; return goto('locked'); }
+        return note(msgBox, 'bad', 'x-circle:gold', 'البريد أو كلمة المرور غير صحيحة', 'تحقّق منهما وأعد المحاولة. المحاولات المتبقية ' + left + ' من 5 قبل الإقفال المؤقت.');
+      }
+      SIM.fails[key] = 0;
+      if (keep) remember({ id: key, name: a.name, masked: isMail(key) ? maskMail(key) : maskPhone(key) });
+      SIM.data = { flow: 'login', key: key };
+      if (a.status === 'incomplete') { SIM.data.flow = 'complete'; return goto('incomplete'); }
+      startOtp('login', key, 'email'); goto('otp_login');
+    }, 900);
+  }
+  SCR.locked = function () {
+    var key = SIM.data.lockKey, until = SIM.lockUntil[key] || Date.now(), cd = h('div', { class: 'sc-cd', style: 'text-align:center' });
+    function tick() { var s = Math.max(0, Math.round((until - Date.now()) / 1000)); cd.textContent = mmss(s); if (s <= 0) goto('login'); }
+    tick(); every(tick, 1000);
+    return h('div', { class: 'sc-card' }, [head('lock-key:gold', 'بوابة الدخول الموحّدة', 'أُقفل الدخول مؤقتًا', 'تكرّرت المحاولات غير الصحيحة على هذا الحساب.'),
+      msg('warn', 'shield-warning:gold', 'حماية لحسابك', 'يمكنك المحاولة بعد انتهاء المؤقت، أو استعادة كلمة المرور الآن. أرسلنا تنبيهًا إلى بريد الحساب.'), cd,
+      h('div', { style: 'display:grid;gap:8px;margin-top:10px' }, [btn('نسيت كلمة المرور', function () { SIM.data = { flow: 'forgot', prefill: key }; goto('fg1'); }, 'wide'),
+        btn('العودة للدخول', function () { goto('login'); }, 'alt wide')])]);
+  };
+
+  /* --- الرمز --- */
+  function startOtp(purpose, dest, ch) {
+    var prev = SIM.otp && SIM.otp.purpose === purpose ? SIM.otp.code : null;
+    SIM.otp = { purpose: purpose, dest: dest, ch: ch || 'email', code: newCode(), prev: prev, exp: Date.now() + 300000, resendAt: Date.now() + 60000, left: 5, sentAt: Date.now() };
+    SIM.otp.fresh = true;
+  }
+  function otpScreen(F, o) {
+    var O = SIM.otp; if (!O) { startOtp(o.purpose, o.dest, o.ch); O = SIM.otp; }
+    var inputs = [], ver = h('div'), msgBox = h('div');
+    for (var i = 0; i < 6; i++) inputs.push(h('input', { class: 'sc-ob', inputmode: 'numeric', maxlength: '1', autocomplete: i === 0 ? 'one-time-code' : 'off', 'aria-label': 'الرقم ' + (i + 1) }));
+    var boxes = h('div', { class: 'sc-otp' }, inputs);
+    var vEl = h('b'), rEl = h('b'), lEl = h('b', {}, O.left + ' من 5'), resend = h('button', { type: 'button', class: 'sc-link', disabled: true, onclick: doResend }, 'إعادة إرسال الرمز');
+    var dest = O.ch === 'whatsapp' ? '+966 ' + maskPhone(DB[O.dest] ? DB[O.dest].phone : O.dest) : (isMail(O.dest) ? maskMail(O.dest) : O.dest);
+    var sel = h('select', { class: 'sc-in', onchange: function () { startOtp(O.purpose, O.dest, sel.value); render(); } }, [h('option', { value: 'email' }, 'رمز التحقق عبر البريد الإلكتروني'), o.wa ? h('option', { value: 'whatsapp' }, 'رمز التحقق عبر واتساب') : null]);
+    sel.value = O.ch;
+    function tick() {
+      var v = Math.round((O.exp - Date.now()) / 1000), r = Math.round((O.resendAt - Date.now()) / 1000);
+      vEl.textContent = v > 0 ? mmss(v) : 'انتهت'; rEl.textContent = r > 0 ? mmss(r) : 'الآن'; resend.disabled = r > 0;
     }
+    tick(); every(tick, 1000);
+    function code() { return inputs.map(function (x) { return x.value; }).join(''); }
+    function fillAll(c) { c.split('').slice(0, 6).forEach(function (d, j) { later(function () { inputs[j].value = d; inputs[j].classList.add('f'); }, 80 * j); }); later(verify, 80 * 6 + 100); }
+    inputs.forEach(function (x, j) {
+      x.addEventListener('input', function () {
+        var d = x.value.replace(/\D/g, '');
+        if (d.length > 1) { x.value = ''; return fillAll(d); }
+        x.value = d.slice(-1); x.classList.toggle('f', !!x.value); boxes.className = 'sc-otp'; msgBox.textContent = '';
+        if (x.value && inputs[j + 1]) inputs[j + 1].focus();
+        if (code().length === 6) verify();
+      });
+      x.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !x.value && inputs[j - 1]) { inputs[j - 1].focus(); inputs[j - 1].value = ''; inputs[j - 1].classList.remove('f'); } });
+      x.addEventListener('paste', function (e) { var t = ((e.clipboardData && e.clipboardData.getData('text')) || '').replace(/\D/g, ''); if (t.length >= 6) { e.preventDefault(); fillAll(t); } });
+      x.addEventListener('focus', function () { if (kbAt) kbAt.hidden = false; });
+    });
+    var running = false;
     function verify() {
+      if (running) return; running = true; if (kbAt) kbAt.hidden = true;
+      inputs.forEach(function (x) { x.disabled = true; x.blur(); });
       var bar = h('i'), secs = 3, sEl = h('span', {}, 'ثوانٍ قليلة…');
       ver.replaceWith(ver = h('div', { class: 'sc-ver run' }, [h('div', { class: 'sc-spin' }), h('div', { style: 'flex:1' }, [h('div', {}, ['جارٍ التحقق من الرمز — ', sEl]), h('div', { class: 'sc-bar' }, bar)])]));
-      later(function () { bar.style.transition = 'width 2.6s linear'; bar.style.width = '100%'; }, 30);
-      every(function () { secs--; if (secs > 0) sEl.textContent = secs + ' ثوانٍ…'; }, 900);
+      later(function () { bar.style.transition = 'width 2.4s linear'; bar.style.width = '100%'; }, 30);
+      every(function () { secs--; if (secs > 0) sEl.textContent = secs + ' ثوانٍ…'; }, 850);
       later(function () {
-        if (S.badCode) {
-          otp.className = 'sc-otp bad'; left--; lEl.textContent = left + ' من 5';
-          ver.replaceWith(ver = msg('bad', 'x-circle:gold', 'رمز التحقق غير صحيح', 'تأكد أنك أدخلت أحدث رمز وصلك — إن طلبت رمزًا جديدًا يبطل الرمز السابق. المحاولات المتبقية ' + left + '.',
-            [btn('أدخل الرمز من جديد', function () { S.badCode = false; render(); }, 'teal')]));
-          return;
+        running = false; var c = code();
+        if (Date.now() > O.exp) { fail('انتهت صلاحية الرمز', 'اطلب رمزًا جديدًا ثم أدخله خلال 5 دقائق.'); return; }
+        if (c !== O.code) {
+          O.left--; lEl.textContent = O.left + ' من 5';
+          if (O.left <= 0) { SIM.otp = null; F.toast('lock-key:gold', 'استُنفدت المحاولات', 'ابدأ من جديد.'); later(function () { goto(o.restart); }, 1200); return fail('استُنفدت محاولات هذا الرمز', 'ابدأ الدخول من جديد.'); }
+          return fail('رمز التحقق غير صحيح', c === O.prev ? 'هذا رمز قديم — طلب رمز جديد يُبطل السابق. أدخل أحدث رمز وصلك. المحاولات المتبقية ' + O.left + '.' : 'تأكد أنك أدخلت أحدث رمز وصلك. المحاولات المتبقية ' + O.left + '.');
         }
-        otp.className = 'sc-otp ok';
-        ver.replaceWith(ver = h('div', { class: 'sc-ver ok' }, [T('check-circle:teal'), 'تم التحقق بنجاح — جارٍ إكمال الدخول…']));
-        later(F.next, 1300);
-      }, 2700);
+        boxes.className = 'sc-otp ok';
+        ver.replaceWith(ver = h('div', { class: 'sc-ver ok' }, [T('check-circle:teal'), o.okText || 'تم التحقق بنجاح — جارٍ إكمال الدخول…']));
+        SIM.otp = null; later(o.next, 1300);
+      }, 2600);
     }
-    kb = h('div', { class: 'sc-kb' }, [
-      h('div', { class: 'sc-kb-s pulse', role: 'button', tabindex: '0', onclick: fill }, [dev() === 'phone' ? 'من Gmail' : 'اقتراح المتصفح — رمز من البريد', h('b', {}, code)]),
-      h('div', { class: 'sc-kb-k' }, '123456789'.split('').map(function (d) { return h('i', {}, d); })),
-      h('div', { class: 'sc-kb-w' }, dev() === 'phone' ? 'اضغط الاقتراح كما يظهر فوق لوحة المفاتيح في الجوال' : 'اضغط الاقتراح كما يظهر تحت خانة الرمز في المتصفح')
-    ]);
-    F.overlay(kb);
-    return card;
+    function fail(t, p) {
+      boxes.className = 'sc-otp bad';
+      ver.replaceWith(ver = msg('bad', 'x-circle:gold', t, p));
+      inputs.forEach(function (x) { x.disabled = false; x.value = ''; x.classList.remove('f'); }); later(function () { inputs[0].focus(); }, 50);
+    }
+    function doResend() { startOtp(O.purpose, O.dest, O.ch); render(); }
+    /* اقتراح الرمز كما يظهر فوق لوحة المفاتيح (أحدث رسالة، أو رمز قديم في وضع التجربة) */
+    var shown = SIM.oldCode && O.prev ? O.prev : O.code, kbAt = null;
+    var kb = h('div', { class: 'sc-kb' }, [
+      h('div', { class: 'sc-kb-s pulse', role: 'button', tabindex: '0', onclick: function () { fillAll(shown); } }, [dev() === 'phone' ? 'من Gmail' : 'اقتراح المتصفح — رمز من البريد', h('b', {}, shown)]),
+      h('div', { class: 'sc-kb-k' }, '123456789'.split('').map(function (d) { return h('i', { onclick: function () { var e = inputs.filter(function (x) { return !x.value; })[0]; if (e) { e.value = d; e.dispatchEvent(new Event('input')); } } }, d); })),
+      h('div', { class: 'sc-kb-w' }, 'اضغط الاقتراح، أو اكتب الرمز بنفسك')]);
+    kbAt = kb; F.overlay(kb);
+    if (O.fresh) { O.fresh = false; later(function () { F.push(O.ch === 'whatsapp' ? 'واتساب · رمز التحقق' : 'Gmail · رمز التحقق من منصة تيرا', 'رمز التحقق: ' + O.code + ' — صالح 5 دقائق. لا تشاركه مع أحد.'); }, 400); }
+    later(function () { inputs[0].focus({ preventScroll: true }); }, 80);
+    return h('div', { class: 'sc-card' }, [
+      head('shield-check:teal', o.small, o.title, 'اختر وسيلة التحقق، ثم أدخل الرمز الذي يصلك.'), stepper(o.n, o.at),
+      h('label', { class: 'sc-lbl' }, 'وسيلة التحقق'), sel,
+      h('div', { class: 'sc-dest' }, [T(O.ch === 'whatsapp' ? 'chat-circle-dots:teal' : 'envelope-simple:sky'), (O.ch === 'whatsapp' ? 'أُرسل إلى واتساب ' : 'أُرسل إلى البريد '), h('b', {}, dest)]),
+      h('div', { style: 'text-align:center;font-weight:800;margin-top:12px' }, 'أدخل الرمز المكوّن من 6 أرقام'), boxes,
+      h('div', { class: 'sc-meta' }, [h('span', {}, ['المحاولات المتبقية: ', lEl]), h('span', {}, ['صلاحية الرمز ', vEl]), h('span', {}, ['إعادة الإرسال ', rEl])]),
+      ver, msgBox, h('div', { class: 'sc-row', style: 'justify-content:space-between;margin-top:12px' }, [resend, link('رجوع', function () { SIM.otp = null; goto(o.back); })])]);
   }
-
-  /* ===== الرحلات ===== */
-  var FLOWS = {
-    login: { t: 'الدخول حتى الرئيسية', ic: 'lock-key:navy', steps: [
-      ['بيانات الدخول', 'البريد أو الجوال وكلمة المرور، مع خيار تذكّر البريد أو الجوال على هذا الجهاز.', function (F) {
-        var chk = h('input', { type: 'checkbox' }); chk.checked = S.remember; chk.addEventListener('change', function () { S.remember = chk.checked; });
-        var go = btn('دخول', function () { go.disabled = true; go.textContent = 'جارٍ الدخول…'; later(F.next, 900); }, 'wide');
-        return h('div', { class: 'sc-card' }, [head('lock-key:navy', 'بوابة الدخول الموحّدة', 'تسجيل الدخول', 'حساب واحد لكل خدماتك في منصة تيرا.'), stepper(3, 0),
-          field('البريد الإلكتروني أو رقم الجوال', 'msjt301@gmail.com', { ltr: true }), field('كلمة المرور', '••••••••••', { f: true }),
-          h('label', { class: 'sc-chk' }, [chk, h('span', {}, ['تذكّر بريدي أو جوالي على هذا الجهاز', h('small', {}, 'يُحفظ البريد أو الجوال فقط — لا تُحفظ كلمة المرور، ويبقى رمز التحقق مطلوبًا في كل دخول.')])]),
-          h('div', { style: 'margin-top:12px' }, go),
-          h('div', { class: 'sc-row', style: 'justify-content:space-between;margin-top:12px' }, [h('button', { class: 'sc-link', type: 'button' }, 'نسيت كلمة المرور؟'), h('button', { class: 'sc-link', type: 'button' }, 'إنشاء حساب جديد')])]);
-      }],
-      ['التحقق بالرمز', 'يظهر اقتراح الرمز فوق لوحة المفاتيح؛ بلمسة تُعبّأ الخانات الست، ثم ثوانٍ «جارٍ التحقق» بشريط تقدّم، ثم يكتمل الدخول تلقائيًا بلا زر.', function (F) { return otpCard(F, { n: 3, at: 1 }); }],
-      ['توثيق الجهاز', 'أول دخول من هذا الجهاز: يقرّر المستخدم هل يصرّح له.', function (F) {
-        return h('div', { class: 'sc-card' }, [head('device-mobile:teal', 'بوابة الدخول الموحّدة', 'توثيق الجهاز', 'هذا أول دخول من هذا الجهاز.'), stepper(3, 2),
-          msg('info', 'device-mobile:sky', 'iPhone · Safari', 'حائل · الآن · عبر شبكة STC'),
-          h('div', { style: 'display:grid;gap:8px;margin-top:12px' }, [btn('نعم، هذا جهازي', F.next, 'teal wide'), btn('دخول هذه المرة فقط', F.next, 'alt wide')])]);
-      }],
-      ['الرئيسية', 'ثانية «جارٍ فتح حسابك» ثم الرئيسية مع إشعار نجاح الدخول وآخر دخول سابق.', function (F) { return homeScreen(F); }]
-    ] },
-    back: { t: 'العودة بجهاز متذكَّر', ic: 'user-circle:teal', steps: [
-      ['مرحبًا مجددًا', 'الجهاز يتذكّر البريد أو الجوال فقط: يُعرض مخفيًّا جزئيًّا، وتكفي كلمة المرور ثم الرمز.', function (F) {
-        var go = btn('دخول', function () { go.disabled = true; go.textContent = 'جارٍ الدخول…'; later(F.next, 900); }, 'wide');
-        return h('div', { class: 'sc-card' }, [head('lock-key:navy', 'بوابة الدخول الموحّدة', 'مرحبًا مجددًا', 'أدخل كلمة المرور للمتابعة.'),
-          h('div', { class: 'sc-who' }, [h('div', { class: 'sc-av' }, 'ع'), h('div', { style: 'flex:1' }, [h('b', {}, 'عادل الشمري'), h('small', {}, 'ms•••01@gmail.com')]), h('button', { class: 'sc-link', type: 'button' }, 'ليس أنت؟')]),
-          field('كلمة المرور', '', { f: true, ph: 'اكتب كلمة المرور' }), h('div', { style: 'margin-top:12px' }, go),
-          h('div', { class: 'sc-row', style: 'justify-content:space-between;margin-top:12px' }, [h('button', { class: 'sc-link', type: 'button' }, 'الدخول بحساب آخر'), h('button', { class: 'sc-link', type: 'button' }, 'إزالة بياناتي من هذا الجهاز')])]);
-      }],
-      ['التحقق بالرمز', 'الرمز مطلوب كل مرة — التذكّر لا يتخطى التحقق.', function (F) { return otpCard(F, { n: 2, at: 1 }); }],
-      ['الرئيسية', 'يدخل مباشرة إلى الرئيسية.', function (F) { return homeScreen(F); }]
-    ] },
-    register: { t: 'إنشاء حساب', ic: 'user:teal', steps: [
-      ['بياناتك', 'الاسم الكامل كما في الهوية.', function (F) { return regCard(F, 0, 'user:teal', 'إنشاء حساب جديد', 'ابدأ باسمك الكامل كما في الهوية.', [field('الاسم الكامل', 'عادل صالح الشمري', { f: true })]); }],
-      ['التواصل', 'البريد والجوال لإرسال الرموز والتنبيهات.', function (F) { return regCard(F, 1, 'phone:teal', 'بيانات التواصل', 'نرسل إليها رموز التحقق وتنبيهات حسابك.', [field('البريد الإلكتروني', 'msjt301@gmail.com', { ltr: true }), field('رقم الجوال', '+966 5• ••• ••01', { ltr: true })]); }],
-      ['كلمة المرور', 'قوة كلمة المرور، ورفض الكلمات المسرّبة في الإنترنت قبل الحفظ.', function (F) {
-        var meter = h('div', { style: 'display:flex;gap:4px;margin-top:6px' }, [1, 2, 3, 4].map(function (i) { return h('i', { style: 'flex:1;height:6px;border-radius:6px;background:' + (S.breached ? (i < 3 ? '#C98418' : '#e3e9f2') : '#0f7a4f') }); }));
-        return regCard(F, 2, 'lock-key:navy', 'كلمة المرور', 'اختر كلمة مرور قوية وأكّدها.', [field('كلمة المرور', S.breached ? 'Password@123' : '••••••••••••', { ltr: true, f: true }), meter,
-          h('div', { class: 'sc-hint' }, S.breached ? 'قوة متوسطة' : 'قوية — 12 حرفًا وأرقام ورموز'),
-          S.breached ? msg('warn', 'shield-warning:gold', 'كلمة مرور مسرّبة', 'هذه الكلمة ظهرت في تسريبات بيانات سابقة على الإنترنت، فهي غير آمنة. اختر كلمة مرور مختلفة.') : null,
-          field('تأكيد كلمة المرور', '••••••••••••', { ltr: true })], S.breached);
-      }],
-      ['التحقق', 'رمز إلى البريد، يُعبّأ تلقائيًا ويُتحقّق منه خلال ثوانٍ.', function (F) { return otpCard(F, { n: 5, at: 3, small: 'إنشاء حساب جديد', title: 'التحقق من البريد' }); }],
-      ['تم إنشاء الحساب', 'شاشة نجاح واضحة ثم الانتقال إلى الرئيسية.', function (F) { return doneCard('seal-check:teal', 'تم إنشاء حسابك', 'مرحبًا بك في منصة تيرا. فعّلنا المصادقة الثنائية عبر بريدك، ويمكنك إضافة واتساب أو تطبيق المصادقة من مركز الأمان.', btn('الانتقال إلى الرئيسية', F.next, 'teal wide')); }],
-      ['الرئيسية', 'تنبيه لطيف لإكمال الملف.', function (F) { return homeScreen(F, true); }]
-    ] },
-    forgot: { t: 'نسيت كلمة المرور', ic: 'key:gold', steps: [
-      ['البريد أو الجوال', 'يُطلب البريد أو الجوال المسجّل.', function (F) {
-        return h('div', { class: 'sc-card' }, [head('key:gold', 'استعادة الحساب', 'نسيت كلمة المرور', 'أدخل بريدك أو جوالك المسجّل لنرسل لك رمزًا.'), stepper(4, 0),
-          field('البريد الإلكتروني أو رقم الجوال', 'msjt301@gmail.com', { ltr: true, f: true }), h('div', { style: 'margin-top:12px' }, btn('أرسل الرمز', F.next, 'wide'))]);
-      }],
-      ['الرمز', 'نفس تجربة الإدخال التلقائي والتحقق.', function (F) { return otpCard(F, { n: 4, at: 1, small: 'استعادة الحساب', title: 'التحقق من البريد' }); }],
-      ['كلمة مرور جديدة', 'تُفحص الكلمة الجديدة ضد التسريبات قبل الحفظ.', function (F) {
-        return h('div', { class: 'sc-card' }, [head('lock-key:navy', 'استعادة الحساب', 'كلمة مرور جديدة', 'اختر كلمة مرور لم تستخدمها من قبل.'), stepper(4, 2),
-          field('كلمة المرور الجديدة', '••••••••••••', { ltr: true, f: true }), field('تأكيد كلمة المرور', '••••••••••••', { ltr: true }),
-          h('div', { style: 'margin-top:12px' }, btn('حفظ كلمة المرور', F.next, 'wide'))]);
-      }],
-      ['تم', 'تأكيد التغيير، وإنهاء الجلسات الأخرى حفاظًا على الأمان.', function (F) {
-        F.toast('check-circle:teal', 'تم تغيير كلمة المرور', 'أرسلنا إشعارًا إلى بريدك.');
-        return doneCard('seal-check:teal', 'تم تغيير كلمة المرور', 'أُنهيت جلساتك على الأجهزة الأخرى حفاظًا على أمانك. سجّل الدخول بكلمة المرور الجديدة.', btn('تسجيل الدخول', function () { S.flow = 'login'; S.step = 0; render(); }, 'wide'));
-      }]
-    ] }
+  SCR.otp_login = function (F) {
+    return otpScreen(F, { purpose: 'login', dest: SIM.data.key, small: 'بوابة الدخول الموحّدة', title: 'التحقق الثنائي', n: 3, at: 1, wa: true, restart: 'login', back: 'login',
+      next: function () { if (SIM.trusted[SIM.data.key]) { SIM.user = SIM.data.key; goto('home'); } else goto('device'); } });
   };
-  function regCard(F, i, ic, t, s, kids, block) {
-    return h('div', { class: 'sc-card' }, [head(ic, 'إنشاء حساب جديد', t, s), stepper(5, i), kids, h('div', { style: 'margin-top:14px' }, btn(block ? 'غيّر كلمة المرور للمتابعة' : 'التالي', block ? null : F.next, 'wide'))].concat([]));
+  SCR.device = function () {
+    var ua = dev() === 'phone' ? 'iPhone · Safari' : 'Windows · Chrome';
+    return h('div', { class: 'sc-card' }, [head('device-mobile:teal', 'بوابة الدخول الموحّدة', 'توثيق الجهاز', 'هذا أول دخول من هذا الجهاز. قرّر هل تصرّح له.'), stepper(3, 2),
+      msg('info', 'device-mobile:sky', ua, 'حائل · الآن · عبر شبكة STC'),
+      h('div', { style: 'display:grid;gap:8px;margin-top:12px' }, [
+        btn('نعم، هذا جهازي — صرّح له', function () { SIM.trusted[SIM.data.key] = true; SIM.user = SIM.data.key; SIM.welcomeNote = 'صرّحت لهذا الجهاز. لن يُطلب توثيقه مرة أخرى.'; goto('home'); }, 'teal wide'),
+        btn('دخول هذه المرة فقط', function () { SIM.user = SIM.data.key; SIM.welcomeNote = 'دخلت هذه المرة فقط — سيُطلب توثيق الجهاز في الدخول القادم.'; goto('home'); }, 'alt wide')])]);
+  };
+  SCR.home = function (F) {
+    var a = DB[SIM.user] || { name: 'مستخدم' }, wrap = h('div', { style: 'display:grid;place-items:center;padding:60px 0;gap:10px;color:#5b6b82;font-weight:700' }, [h('div', { class: 'sc-spin' }), 'جارٍ فتح حسابك…']);
+    later(function () {
+      wrap.replaceWith(h('div', {}, [
+        h('div', { class: 'sc-hi' }, [h('b', {}, 'مرحبًا ' + a.name.split(' ')[0]), h('small', {}, 'آخر دخول: أمس 9:14 م · Chrome على Windows')]),
+        SIM.homeFrom === 'register' ? msg('warn', 'list-checks:gold', 'أكمل ملفك', 'بقيت خطوتان: رقم الهوية والعنوان الوطني.', [btn('أكمل الآن', null, 'gold')]) : null,
+        h('div', { class: 'sc-grid', style: 'margin-top:12px' }, [['clipboard-text:navy', 'طلباتي'], ['receipt:teal', 'عروضي'], ['wallet:gold', 'دفعاتي'], ['crown-simple:saffron', 'عضويتي'], ['shield-check:teal', 'مركز الأمان'], ['headset:sky', 'الدعم']].map(function (x) { return h('div', { class: 'sc-gi' }, [T(x[0]), x[1]]); })),
+        h('div', { style: 'margin-top:14px' }, btn('تسجيل الخروج', function () { SIM.user = null; SIM.data = {}; SIM.homeFrom = null; goto('login'); later(function () { (CUR_F || F).toast('sign-out:teal', 'تم تسجيل الخروج بأمان', 'أُنهيت جلستك على الخادم.'); }, 120); }, 'alt wide'))
+      ]));
+      F.toast('check-circle:teal', 'تم تسجيل الدخول', SIM.welcomeNote || 'مرحبًا بك — جلستك محمية بالتحقق الثنائي.'); SIM.welcomeNote = null;
+    }, 1000);
+    return h('div', { style: 'min-height:300px' }, wrap);
+  };
+
+  /* --- حساب لم يكمل التسجيل --- */
+  SCR.incomplete = function () {
+    var a = DB[SIM.data.key];
+    var items = [['تم', 'البيانات الأساسية'], ['تم', 'التحقق من البريد'], ['', 'التحقق من الجوال'], ['', 'المصادقة الثنائية']];
+    return h('div', { class: 'sc-card' }, [head('list-checks:gold', 'مرحبًا ' + a.name.split(' ')[0], 'لم يكتمل تسجيلك', 'أكمل الخطوات المتبقية لتفعيل حسابك.'), stepper(4, 1),
+      h('div', { style: 'display:grid;gap:8px' }, items.map(function (x) { return h('div', { class: 'sc-row', style: 'gap:10px;font-weight:700;color:' + (x[0] ? '#0f7a4f' : '#5b6b82') }, [T(x[0] ? 'check-circle:teal' : 'clock-countdown:gold'), x[1] + (x[0] ? '' : ' — مطلوب')]); })),
+      h('div', { style: 'margin-top:14px' }, btn('متابعة التسجيل', function () { startOtp('phone', a.phone, 'whatsapp'); goto('otp_phone'); }, 'gold wide')),
+      h('div', { class: 'sc-hint', style: 'text-align:center' }, 'يُحفظ تقدّمك 7 أيام، ولا تُفتح الخدمات قبل الإكمال.')]);
+  };
+  SCR.otp_phone = function (F) {
+    return otpScreen(F, { purpose: 'phone', dest: SIM.data.key, ch: 'whatsapp', small: 'إكمال التسجيل', title: 'التحقق من الجوال', n: 4, at: 2, wa: true, restart: 'login', back: 'incomplete', okText: 'تم التحقق من جوالك — فُعّلت المصادقة الثنائية.',
+      next: function () { DB[SIM.data.key].status = 'active'; SIM.user = SIM.data.key; SIM.welcomeNote = 'اكتمل تسجيلك وفُعّل حسابك.'; goto('home'); } });
+  };
+
+  /* --- إنشاء حساب --- */
+  function regHead(i, ic, t, s) { return [head(ic, 'إنشاء حساب جديد', t, s), stepper(5, i)]; }
+  SCR.reg1 = function () {
+    var n = inp('الاسم الكامل كما في الهوية', { ph: 'مثال: عادل صالح الشمري', val: SIM.data.name || '', ac: 'name' });
+    var go = btn('التالي', function () {
+      var v = n.i.value.trim().replace(/\s+/g, ' ');
+      if (v.split(' ').length < 3) return n.bad('اكتب اسمك الثلاثي على الأقل كما في الهوية.');
+      if (!/^[؀-ۿ ]+$/.test(v)) return n.bad('اكتب الاسم بالحروف العربية.');
+      SIM.data.name = v; goto('reg2');
+    }, 'wide');
+    n.i.addEventListener('keydown', function (e) { if (e.key === 'Enter') go.click(); });
+    later(function () { n.i.focus(); }, 60);
+    return h('div', { class: 'sc-card' }, regHead(0, 'user:teal', 'إنشاء حساب جديد', 'ابدأ باسمك الكامل كما في الهوية.').concat([n.el, h('div', { style: 'margin-top:12px' }, go),
+      h('div', { class: 'sc-row', style: 'justify-content:center;margin-top:12px;gap:6px' }, ['لديك حساب؟', link('سجّل الدخول', function () { SIM.data = {}; goto('login'); })])]));
+  };
+  SCR.reg2 = function () {
+    var m = inp('البريد الإلكتروني', { ltr: true, ph: 'name@example.com', val: SIM.data.email || '', ac: 'email', im: 'email' });
+    var p = inp('رقم الجوال', { ltr: true, ph: '05xxxxxxxx', val: SIM.data.phone || '', ac: 'tel', im: 'tel' });
+    var msgBox = h('div');
+    var go = btn('التالي', function () {
+      msgBox.textContent = '';
+      if (!isMail(m.i.value)) return m.bad('اكتب بريدًا صحيحًا مثل name@example.com.');
+      if (!isPhone(p.i.value)) return p.bad('اكتب رقم جوال سعودي يبدأ بـ 05 ومكوّن من 10 أرقام.');
+      if (findAcc(m.i.value) || findAcc(p.i.value)) return note(msgBox, 'warn', 'user-circle:gold', 'هذا البريد أو الجوال مسجّل لدينا', 'سجّل الدخول به، أو استعد كلمة المرور إن نسيتها.',
+        [btn('تسجيل الدخول', function () { SIM.data = { prefill: m.i.value, other: true }; goto('login'); }), btn('نسيت كلمة المرور', function () { SIM.data = { flow: 'forgot', prefill: m.i.value }; goto('fg1'); }, 'alt')]);
+      SIM.data.email = norm(m.i.value); SIM.data.phone = norm(p.i.value); goto('reg3');
+    }, 'wide');
+    return h('div', { class: 'sc-card' }, regHead(1, 'phone:teal', 'بيانات التواصل', 'نرسل إليها رموز التحقق وتنبيهات حسابك.').concat([m.el, p.el, h('div', { style: 'margin-top:12px' }, go), msgBox,
+      h('div', { style: 'margin-top:10px' }, link('رجوع', function () { goto('reg1'); }))]));
+  };
+  function pwForm(i0, headEls, onOk, oldPw) {
+    var p1 = inp('كلمة المرور', { type: 'password', ltr: true, ac: 'new-password' }), p2 = inp('تأكيد كلمة المرور', { type: 'password', ltr: true, ac: 'new-password' });
+    var bars = [0, 1, 2, 3].map(function () { return h('i'); }), lbl = h('div', { class: 'sc-hint' }, '8 أحرف على الأقل، مع حرف كبير وصغير ورقم ورمز.'), msgBox = h('div');
+    var rules = h('div', { class: 'sc-rules' });
+    function paint() {
+      var v = p1.i.value, s = strength(v), col = ['#e3e9f2', '#b42318', '#C98418', '#1B5F93', '#0f7a4f'][s];
+      bars.forEach(function (b, j) { b.style.background = j < s ? col : '#e3e9f2'; });
+      lbl.textContent = v ? ['', 'ضعيفة', 'متوسطة', 'جيدة', 'قوية'][s] : '8 أحرف على الأقل، مع حرف كبير وصغير ورقم ورمز.';
+      rules.textContent = '';
+      [[v.length >= 8, '8 أحرف على الأقل'], [/[A-Z]/.test(v) && /[a-z]/.test(v), 'حرف كبير وصغير'], [/\d/.test(v), 'رقم'], [/[^A-Za-z0-9]/.test(v), 'رمز مثل @ أو #']].forEach(function (r) { rules.appendChild(h('span', { class: r[0] ? 'ok' : '' }, (r[0] ? '✓ ' : '• ') + r[1])); });
+    }
+    p1.i.addEventListener('input', paint); paint();
+    var go = btn(oldPw ? 'حفظ كلمة المرور' : 'التالي', function () {
+      msgBox.textContent = ''; var v = p1.i.value;
+      if (v.length < 8 || strength(v) < 3) return p1.bad('كلمة المرور ضعيفة — أكمل الشروط الظاهرة.');
+      if (oldPw && v === oldPw) return p1.bad('اختر كلمة مرور مختلفة عن السابقة.');
+      if (p2.i.value !== v) return p2.bad('كلمتا المرور غير متطابقتين.');
+      busy(go, 'جارٍ فحص كلمة المرور…');
+      later(function () {
+        unbusy(go);
+        if (BREACHED.indexOf(v.toLowerCase()) >= 0) return note(msgBox, 'warn', 'shield-warning:gold', 'كلمة مرور مسرّبة', 'هذه الكلمة ظهرت في تسريبات بيانات سابقة على الإنترنت، فهي غير آمنة. اختر كلمة مرور مختلفة.');
+        onOk(v);
+      }, 1100);
+    }, 'wide');
+    later(function () { p1.i.focus(); }, 60);
+    return h('div', { class: 'sc-card' }, headEls.concat([p1.el, h('div', { class: 'sc-meter' }, bars), lbl, rules, p2.el, h('div', { style: 'margin-top:12px' }, go), msgBox]));
   }
+  SCR.reg3 = function () {
+    return pwForm(2, regHead(2, 'lock-key:navy', 'كلمة المرور', 'اختر كلمة مرور قوية وأكّدها.'), function (v) { SIM.data.pw = v; startOtp('register', SIM.data.email, 'email'); goto('otp_reg'); });
+  };
+  SCR.otp_reg = function (F) {
+    return otpScreen(F, { purpose: 'register', dest: SIM.data.email, small: 'إنشاء حساب جديد', title: 'التحقق من البريد', n: 5, at: 3, restart: 'reg2', back: 'reg3', okText: 'تم التحقق من بريدك.',
+      next: function () { DB[SIM.data.email] = { name: SIM.data.name, phone: SIM.data.phone, pw: SIM.data.pw, status: 'active' }; SIM.data.key = SIM.data.email; goto('reg_done'); } });
+  };
+  SCR.reg_done = function () {
+    return doneCard('seal-check:teal', 'تم إنشاء حسابك', 'مرحبًا ' + SIM.data.name.split(' ')[0] + ' في منصة تيرا. فعّلنا المصادقة الثنائية عبر بريدك، ويمكنك إضافة واتساب من مركز الأمان. يمكنك الآن الدخول بهذا البريد في العيّنة.',
+      btn('الانتقال إلى الرئيسية', function () { SIM.user = SIM.data.key; remember({ id: SIM.data.key, name: SIM.data.name, masked: maskMail(SIM.data.key) }); goto('home'); }, 'teal wide'));
+  };
   function doneCard(ic, t, p, b) {
     var c = h('div', { class: 'sc-card', style: 'text-align:center;padding:26px 18px' }, [T(ic), h('b', { style: 'display:block;font:800 21px var(--sc-h);margin:6px 0' }, t), h('p', { style: 'margin:0 0 14px;color:#3d4d64' }, p), b]);
     c.firstChild.style.width = '74px'; return c;
   }
-  function homeScreen(F, fresh) {
-    var wrap = h('div', { style: 'display:grid;place-items:center;padding:60px 0;gap:10px;color:#5b6b82;font-weight:700' }, [h('div', { class: 'sc-spin' }), 'جارٍ فتح حسابك…']);
-    later(function () {
-      wrap.replaceWith(h('div', {}, [
-        h('div', { class: 'sc-hi' }, [h('b', {}, 'مرحبًا عادل'), h('small', {}, 'آخر دخول: أمس 9:14 م · Chrome على Windows')]),
-        fresh ? msg('warn', 'list-checks:gold', 'أكمل ملفك', 'بقيت خطوتان: رقم الهوية والعنوان الوطني.', [btn('أكمل الآن', null, 'gold')]) : null,
-        h('div', { class: 'sc-grid', style: 'margin-top:12px' }, [['clipboard-text:navy', 'طلباتي'], ['receipt:teal', 'عروضي'], ['wallet:gold', 'دفعاتي'], ['crown-simple:saffron', 'عضويتي'], ['shield-check:teal', 'مركز الأمان'], ['headset:sky', 'الدعم']].map(function (x) { return h('div', { class: 'sc-gi' }, [T(x[0]), x[1]]); }))
-      ]));
-      F.toast('check-circle:teal', 'تم تسجيل الدخول', 'مرحبًا بك — جلستك محمية بالتحقق الثنائي.');
-    }, 1100);
-    return h('div', { style: 'min-height:300px' }, wrap);
-  }
 
-  /* ===== الحالات ===== */
-  var STATES = {
-    unreg: ['بريد أو جوال غير مسجّل', 'تظهر بعد التحقق البشري وبحدّ محاولات، حتى لا تُستغل لمعرفة الحسابات المسجّلة.', function () {
-      return h('div', { class: 'sc-card' }, [head('lock-key:navy', 'بوابة الدخول الموحّدة', 'تسجيل الدخول', 'حساب واحد لكل خدماتك في منصة تيرا.'),
-        field('البريد الإلكتروني أو رقم الجوال', 'adel.new@gmail.com', { ltr: true, f: true }),
-        msg('info', 'question:sky', 'لا يوجد حساب بهذا البريد', 'تحقّق من كتابته، أو أنشئ حسابًا جديدًا بخطوات قليلة.', [btn('إنشاء حساب', null, 'teal'), btn('تعديل البريد', null, 'alt')])]);
-    }],
-    incomplete: ['حساب لم يكمل التسجيل', 'يدخل المستخدم فيرى ما بقي ويكمل من حيث توقّف — لا تُفتح الخدمات قبل الإكمال.', function () {
-      var items = [['تم', 'البيانات الأساسية'], ['تم', 'التحقق من البريد'], ['', 'التحقق من الجوال'], ['', 'المصادقة الثنائية']];
-      return h('div', { class: 'sc-card' }, [head('list-checks:gold', 'حسابك', 'لم يكتمل تسجيلك', 'بقيت خطوتان لتفعيل حسابك.'), stepper(4, 1),
-        h('div', { style: 'display:grid;gap:8px' }, items.map(function (x) { return h('div', { class: 'sc-row', style: 'gap:10px;font-weight:700;color:' + (x[0] ? '#0f7a4f' : '#5b6b82') }, [T(x[0] ? 'check-circle:teal' : 'clock-countdown:gold'), x[1], x[0] ? '' : ' — مطلوب']); })),
-        h('div', { style: 'margin-top:14px' }, btn('متابعة التسجيل', null, 'gold wide')), h('div', { class: 'sc-hint', style: 'text-align:center' }, 'يُحفظ تقدّمك 7 أيام.')]);
-    }],
-    guest: ['زائر لم يسجّل الدخول', 'يتصفّح الموقع بحرية؛ الخدمات الخاصة تظهر مقفلة، وعند فتحها تُطلب منه المتابعة بالدخول.', function (F) {
-      var gi = function (ic, t) { return h('div', { class: 'sc-gi', style: 'cursor:pointer;opacity:.85', onclick: function () { F.dialog('lock-key:navy', 'سجّل الدخول للمتابعة', t + ' متاحة بعد تسجيل الدخول. أنشئ حسابًا في دقيقة أو ادخل بحسابك.', [['تسجيل الدخول', null, 'wide'], ['إنشاء حساب جديد', null, 'alt wide'], ['ليس الآن', F.close, 'alt wide']]); } }, [T(ic), t, h('div', { style: 'font-size:11.5px;color:#8a5a12' }, '🔒 بعد الدخول')]); };
-      return h('div', {}, [h('div', { class: 'sc-hi' }, [h('b', {}, 'أهلًا بك في تيرا'), h('small', {}, 'من الاحتياج إلى الحل — سجّل الدخول لمتابعة طلباتك.')]),
-        h('div', { class: 'sc-grid' }, [['storefront:teal', 'المتجر'], ['question:sky', 'الأسئلة'], ['headset:sky', 'تواصل معنا']].map(function (x) { return h('div', { class: 'sc-gi' }, [T(x[0]), x[1]]); })
-          .concat([gi('clipboard-text:navy', 'طلباتي'), gi('wallet:gold', 'دفعاتي'), gi('crown-simple:saffron', 'عضويتي')])),
-        h('div', { class: 'sc-hint', style: 'text-align:center;margin-top:10px' }, 'المس خدمة مقفلة لترى الإشعار.')]);
-    }, true]
+  /* --- نسيت كلمة المرور --- */
+  SCR.fg1 = function () {
+    var id = inp('البريد الإلكتروني أو رقم الجوال المسجّل', { ltr: true, ph: 'name@example.com أو 05xxxxxxxx', val: SIM.data.prefill || '' }), msgBox = h('div');
+    var go = btn('أرسل رمز الاستعادة', function () {
+      msgBox.textContent = ''; var v = id.i.value.trim();
+      if (!isMail(v) && !isPhone(v)) return id.bad('اكتب بريدًا صحيحًا أو جوالًا يبدأ بـ 05.');
+      busy(go, 'جارٍ الإرسال…');
+      later(function () {
+        unbusy(go); var key = findAcc(v);
+        if (!key) return note(msgBox, 'info', 'question:sky', 'لا يوجد حساب بهذا البريد أو الجوال', 'تحقّق من كتابته، أو أنشئ حسابًا جديدًا.', [btn('إنشاء حساب', function () { SIM.data = { flow: 'register', email: isMail(v) ? v : '' }; goto('reg1'); }, 'teal')]);
+        SIM.data.key = key; startOtp('forgot', key, isMail(v) ? 'email' : 'whatsapp'); goto('otp_fg');
+      }, 900);
+    }, 'wide');
+    id.i.addEventListener('keydown', function (e) { if (e.key === 'Enter') go.click(); });
+    later(function () { id.i.focus(); }, 60);
+    return h('div', { class: 'sc-card' }, [head('key:gold', 'استعادة الحساب', 'نسيت كلمة المرور', 'أدخل بريدك أو جوالك المسجّل لنرسل لك رمز الاستعادة.'), stepper(4, 0), id.el, h('div', { style: 'margin-top:12px' }, go), msgBox,
+      h('div', { style: 'margin-top:12px' }, link('العودة لتسجيل الدخول', function () { SIM.data = {}; goto('login'); }))]);
+  };
+  SCR.otp_fg = function (F) {
+    return otpScreen(F, { purpose: 'forgot', dest: SIM.data.key, small: 'استعادة الحساب', title: 'التحقق من هويتك', n: 4, at: 1, wa: true, restart: 'fg1', back: 'fg1', okText: 'تم التحقق — اختر كلمة مرور جديدة.', next: function () { goto('fg3'); } });
+  };
+  SCR.fg3 = function () {
+    return pwForm(2, [head('lock-key:navy', 'استعادة الحساب', 'كلمة مرور جديدة', 'اختر كلمة مرور لم تستخدمها من قبل.'), stepper(4, 2)], function (v) { DB[SIM.data.key].pw = v; SIM.lockUntil[SIM.data.key] = 0; SIM.fails[SIM.data.key] = 0; goto('fg_done'); }, DB[SIM.data.key].pw);
+  };
+  SCR.fg_done = function (F) {
+    later(function () { F.toast('check-circle:teal', 'تم تغيير كلمة المرور', 'أرسلنا إشعارًا إلى بريدك.'); }, 200);
+    return doneCard('seal-check:teal', 'تم تغيير كلمة المرور', 'أُنهيت جلساتك على الأجهزة الأخرى حفاظًا على أمانك. سجّل الدخول بكلمة المرور الجديدة.',
+      btn('تسجيل الدخول', function () { SIM.data = { prefill: SIM.data.key, other: true }; goto('login'); }, 'wide'));
   };
 
-  /* ===== كل إشعارات النظام ===== */
+  var CUR_F = null;
+  function simView() {
+    var scr = SIM.scr, pos = POS[scr] || ['login', 0], path = PATHS[pos[0]];
+    var content = h('div', { class: 'sc-pg' }), fr = frame(content, { url: scr === 'home' ? '/clients/' : '/portal/', home: scr === 'home' }), F = api(fr); CUR_F = F;
+    content.appendChild((SCR[scr] || SCR.login)(F));
+    var r = remembered();
+    var side = h('div', { class: 'sc-side' }, [
+      h('h3', {}, 'المسار الحالي'),
+      h('div', { class: 'sc-pathn' }, { login: 'الدخول حتى الرئيسية', register: 'إنشاء حساب', forgot: 'نسيت كلمة المرور', complete: 'إكمال التسجيل' }[pos[0]]),
+      h('ol', { class: 'sc-steps' }, path.map(function (x, i) { return h('li', { class: i < pos[1] ? 'is-done' : i === pos[1] ? 'is-on' : '' }, x); })),
+      h('div', { class: 'sc-ctl', style: 'flex-wrap:wrap' }, [
+        btn('الدخول', function () { SIM.data = {}; SIM.otp = null; SIM.user = null; goto('login'); }, scr === 'login' ? '' : 'alt'),
+        btn('التسجيل', function () { SIM.data = { flow: 'register' }; SIM.otp = null; goto('reg1'); }, pos[0] === 'register' ? '' : 'alt'),
+        btn('نسيت كلمة المرور', function () { SIM.data = { flow: 'forgot' }; SIM.otp = null; goto('fg1'); }, pos[0] === 'forgot' ? '' : 'alt')]),
+      h('div', { class: 'sc-why' }, [h('b', {}, 'بيانات تجريبية'),
+        h('div', { class: 'sc-demo' }, [
+          h('div', {}, ['حساب مفعّل: ', h('code', {}, 'msjt301@gmail.com'), ' أو ', h('code', {}, '0500000001')]),
+          h('div', {}, ['حساب لم يكمل التسجيل: ', h('code', {}, 'new.user@gmail.com')]),
+          h('div', {}, ['كلمة المرور لكليهما: ', h('code', {}, 'Tera@2026')]),
+          h('div', {}, 'أي بريد آخر = غير مسجّل · 5 محاولات خاطئة = إقفال مؤقت.'),
+          h('div', {}, ['كلمة مسرّبة للتجربة: ', h('code', {}, 'Password@123')]),
+          h('div', {}, 'الرمز يصل في إشعار أعلى الشاشة، ويظهر كاقتراح فوق لوحة المفاتيح.')])]),
+      h('label', { class: 'sc-chk' }, [h('input', { type: 'checkbox', checked: SIM.oldCode || null, onchange: function (e) { SIM.oldCode = e.target.checked; render(); } }), h('span', {}, ['الاقتراح يعرض رمزًا قديمًا', h('small', {}, 'بعد «إعادة الإرسال» — لترى ما حدث في تجربتك')])]),
+      h('div', { class: 'sc-why' }, [h('b', {}, 'هذا الجهاز'), r ? ['يتذكّر: ', h('code', {}, r.masked), ' ', link('إزالة', function () { remember(null); SIM.data = {}; render(); })] : 'لا يتذكّر أي حساب.']),
+      h('div', { style: 'margin-top:10px' }, btn('إعادة ضبط العيّنة', function () { remember(null); location.reload(); }, 'alt wide'))]);
+    return h('div', { class: 'sc-stage' }, [fr.el, side]);
+  }
+
   var NET_INFO = 'آخر فحص 10:27:14 · شبكتك: M247 · AS9009 · NL';
   var NOTES = [
     ['session', 'modal', 'devices:navy', 'تم الدخول من جهاز آخر', 'انتهت جلستك لأن الحساب سُجّل دخوله من جهاز أو متصفح آخر. يبقى الدخول الأحدث وحده.', [['تسجيل الدخول']], 'خلال 20 ثانية من الدخول الجديد'],
@@ -240,7 +451,6 @@
     ['account', 'toast', 'key:teal', 'تم تغيير كلمة المرور', 'أُنهيت جلساتك على الأجهزة الأخرى.', null, 'مع إشعار على البريد'],
     ['account', 'inline', 'question:sky', 'لا يوجد حساب بهذا البريد', 'تحقّق من كتابته، أو أنشئ حسابًا جديدًا.', [['إنشاء حساب', 'teal']], 'بريد أو جوال غير مسجّل', 0, null, 'info'],
     ['account', 'inline', 'list-checks:gold', 'لم يكتمل تسجيلك', 'بقيت خطوتان لتفعيل حسابك.', [['متابعة التسجيل', 'gold']], 'حساب لم يكمل التسجيل', 0, null, 'warn'],
-    ['account', 'modal', 'lock-key:navy', 'سجّل الدخول للمتابعة', 'هذه الخدمة متاحة بعد تسجيل الدخول.', [['تسجيل الدخول'], ['إنشاء حساب جديد', 'alt']], 'زائر يفتح خدمة خاصة']
   ];
   var CATS = { all: ['الكل', 'bell:navy'], session: ['الجلسة', 'fingerprint:teal'], network: ['الشبكة', 'globe-hemisphere-east:sky'], login: ['الدخول والتحقق', 'lock-key:navy'], account: ['الحساب وكلمة المرور', 'user-circle:teal'] };
   var KIND = { modal: 'نافذة', toast: 'شريط مؤقت', inline: 'داخل الصفحة', push: 'إشعار الجوال' };
@@ -272,35 +482,16 @@
   var root;
   function render() {
     stopAll();
-    var tabs = h('div', { class: 'sc-tabs', role: 'tablist' }, [['flows', 'رحلات الدخول', 'lock-key:navy'], ['notes', 'إشعارات النظام', 'bell-ringing:gold'], ['states', 'الحالات', 'user-circle:teal']].map(function (x) {
+    var y = window.scrollY;
+    var tabs = h('div', { class: 'sc-tabs', role: 'tablist' }, [['sim', 'المحاكاة: الدخول والتسجيل والاستعادة', 'lock-key:navy'], ['notes', 'إشعارات النظام', 'bell-ringing:gold']].map(function (x) {
       return h('button', { type: 'button', role: 'tab', class: 'sc-tab' + (S.tab === x[0] ? ' is-on' : ''), onclick: function () { S.tab = x[0]; render(); } }, [T(x[2]), x[1]]);
     }));
-    var body = S.tab === 'flows' ? flowsView() : S.tab === 'notes' ? notesView() : statesView();
+    var body = S.tab === 'notes' ? notesView() : simView();
     root.textContent = '';
     root.appendChild(h('div', { class: 'sc-wrap' }, [
-      h('div', { class: 'sc-hero' }, [T('shield-check:teal'), h('div', {}, [h('h1', {}, 'مركز الأمان'), h('p', {}, 'عيّنة تجربة الدخول والتحقق وكل إشعارات النظام — كما تظهر في ' + (dev() === 'phone' ? 'تطبيق الجوال' : 'الموقع') + '. بدّل بين «ويب» و«تطبيق الجوال» من الشريط أعلاه.')])]),
+      h('div', { class: 'sc-hero' }, [T('shield-check:teal'), h('div', {}, [h('h1', {}, 'مركز الأمان'), h('p', {}, 'محاكاة تفاعلية لتجربة الدخول والتسجيل واستعادة كلمة المرور، وكل إشعارات النظام — كما تظهر في ' + (dev() === 'phone' ? 'تطبيق الجوال' : 'الموقع') + '. اكتب واضغط كما في المنصة تمامًا.')])]),
       tabs, body]));
-  }
-  function flowsView() {
-    var fl = FLOWS[S.flow], st = fl.steps[S.step];
-    var chips = h('div', { class: 'sc-chips' }, Object.keys(FLOWS).map(function (k) { return h('button', { type: 'button', class: 'sc-chip' + (S.flow === k ? ' is-on' : ''), onclick: function () { S.flow = k; S.step = 0; render(); } }, FLOWS[k].t); }));
-    var content = h('div', { class: 'sc-pg' }), fr = frame(content, { url: S.step === fl.steps.length - 1 ? '/clients/' : '/portal/' }), F = api(fr);
-    F.next = function () { if (S.step < fl.steps.length - 1) { S.step++; render(); } };
-    content.appendChild(st[2](F));
-    var side = h('div', { class: 'sc-side' }, [h('h3', {}, fl.t),
-      h('ol', { class: 'sc-steps' }, fl.steps.map(function (x, i) { return h('li', { class: i < S.step ? 'is-done' : i === S.step ? 'is-on' : '', onclick: function () { S.step = i; render(); } }, x[0]); })),
-      h('div', { class: 'sc-ctl' }, [btn('السابق', function () { if (S.step) { S.step--; render(); } }, 'alt'), btn('التالي', F.next), btn('من البداية', function () { S.step = 0; render(); }, 'alt')]),
-      h('div', { class: 'sc-why' }, [h('b', {}, 'في هذه الخطوة'), st[1]]),
-      /رمز/.test(st[0]) || st[0] === 'التحقق' || st[0] === 'الرمز' ? h('label', { class: 'sc-chk' }, [h('input', { type: 'checkbox', onchange: function (e) { S.badCode = e.target.checked; render(); }, checked: S.badCode || null }), h('span', {}, ['جرّب رمزًا قديمًا أو خاطئًا', h('small', {}, 'لترى رسالة الخطأ الواضحة')])]) : null,
-      S.flow === 'register' && S.step === 2 ? h('label', { class: 'sc-chk' }, [h('input', { type: 'checkbox', onchange: function (e) { S.breached = e.target.checked; render(); }, checked: S.breached || null }), h('span', {}, ['جرّب كلمة مرور مسرّبة', h('small', {}, 'فحص التسريبات قبل الحفظ')])]) : null]);
-    return h('div', {}, [chips, h('div', { class: 'sc-stage' }, [fr.el, side])]);
-  }
-  function statesView() {
-    var s = STATES[S.state];
-    var chips = h('div', { class: 'sc-chips' }, Object.keys(STATES).map(function (k) { return h('button', { type: 'button', class: 'sc-chip' + (S.state === k ? ' is-on' : ''), onclick: function () { S.state = k; render(); } }, STATES[k][0]); }));
-    var content = h('div', { class: 'sc-pg' }), fr = frame(content, { guest: !!s[3], url: s[3] ? '/home/' : '/portal/' }), F = api(fr);
-    content.appendChild(s[2](F));
-    return h('div', {}, [chips, h('div', { class: 'sc-stage' }, [fr.el, h('div', { class: 'sc-side' }, [h('h3', {}, s[0]), h('div', { class: 'sc-why', style: 'border:0;margin:0;padding:0' }, s[1])])])]);
+    window.scrollTo(0, y);
   }
   function notesView() {
     var chips = h('div', { class: 'sc-chips' }, Object.keys(CATS).map(function (k) { return h('button', { type: 'button', class: 'sc-chip' + (S.cat === k ? ' is-on' : ''), onclick: function () { S.cat = k; render(); } }, CATS[k][0]); }));
@@ -328,7 +519,6 @@
     return h('div', {}, [chips, h('div', { class: 'sc-note' }, [h('b', {}, 'الهوية واحدة في كل الإشعارات: '), 'البلاطة ثلاثية الأبعاد نفسها في الرئيسية، وأزرق تيرا الداكن للإجراء الأساسي، والفيروزي للنجاح، والذهبي للتنبيه. اضغط «معاينة» لترى الإشعار داخل الجهاز.']),
       h('div', { class: 'sc-gal' }, [list, fr.el])]);
   }
-
   function boot() {
     root = document.getElementById('sc-root'); if (!root) return;
     document.body.classList.add('sc');
