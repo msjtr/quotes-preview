@@ -11,9 +11,9 @@
       forgot: { steps: ['الجوال', 'البريد', 'التحقق الإضافي', 'كلمة جديدة'], forms: ['fg1', 'fg2', 'fg3', 'fg4'],
         ic: ['PiPhoneFill', 'PiEnvelopeFill', 'PiShieldCheckFill', 'PiLockKeyFill'],
         t: ['نسيت كلمة المرور', 'التحقق من البريد', 'التحقق الإضافي', 'كلمة مرور جديدة'],
-        s: ['الخطوة الأولى: تحقق من رقم جوالك المسجّل.', 'الخطوة الثانية: تحقق من بريدك المسجّل.', 'رمز تطبيق المصادقة أو الرمز الإضافي.', 'اختر كلمة مرور قوية وأكّدها.'] },
-      recover: { steps: ['رمز الاستعادة', 'كلمة مرور جديدة'], forms: ['rc1', 'rc2'], ic: ['PiShieldCheckFill', 'PiLockKeyFill'],
-        t: ['استعادة الوصول', 'كلمة مرور جديدة'], s: ['عند فقدان الجوال أو تطبيق المصادقة.', 'اختر كلمة مرور قوية وأكّدها.'] }
+        s: ['الخطوة الأولى: تحقق من رقم جوالك المسجّل.', 'الخطوة الثانية: تحقق من بريدك المسجّل.', 'رمز تطبيق المصادقة أو الرقم الإضافي الذي أنشأته.', 'اختر كلمة مرور قوية وأكّدها.'] },
+      recover: { steps: ['الرقم الإضافي', 'كلمة مرور جديدة'], forms: ['rc1', 'rc2'], ic: ['PiShieldCheckFill', 'PiLockKeyFill'],
+        t: ['استعادة الوصول', 'كلمة مرور جديدة'], s: ['بالرقم الإضافي الذي أنشأته وحفظته بنفسك.', 'اختر كلمة مرور قوية وأكّدها.'] }
     };
     var ALL = ['login', 'otp', 'device', 'reg1', 'reg2', 'reg3', 'reg4', 'reg5', 'reg6', 'fg1', 'fg2', 'fg3', 'fg4', 'rc1', 'rc2', 'done'];
     var SESSION = 600, cur = { flow: 'login', i: 0 }, timerId, left = SESSION, humanOk = false, cdId, vId, tries = 5;
@@ -49,7 +49,7 @@
       $('.pt').dataset.flow = flow;
       var card = $('.pt'); if (card && card.getBoundingClientRect().top < 0) card.scrollIntoView({ block: 'start', behavior: 'smooth' });
       if (LIVE && (F.forms[i] === 'fg1' || F.forms[i] === 'fg2')) fgHuman(F.forms[i]);
-      if (F.forms[i] === 'reg4') reg4Enter(); if (F.forms[i] === 'reg5') mcHint();
+      if (F.forms[i] === 'reg4') reg4Enter();
       if (F.forms[i] === 'device' || F.forms[i] === 'reg6') devName();
     }
     function finish(h, p, o) {
@@ -174,7 +174,6 @@
       var wa = ynVal('wa');
       $('#rg4-go').disabled = !(vok('#f-reg4 .vc[data-ch=mail]') && vok('#f-reg4 .vc[data-ch=sms]') && (wa !== 'yes' || vok('#wa-box .vc')));
       $('#fg1-go').disabled = !vok('#f-fg1 .vc'); $('#fg2-go').disabled = !vok('#f-fg2 .vc');
-      mcHint();
     }
     function reg4Enter() { $$('#f-reg4 .vc').forEach(function (c) { if (c._st.ok && vcDest(c) !== c._st.d) vcReset(c); else if (!c._st.ok) vcPaint(c); }); vcChanged(); }
 
@@ -216,8 +215,10 @@
     var VIA = { app: ['تطبيق المصادقة · رمز يتجدد كل 30 ثانية', 'PiDeviceMobileFill', 'افتح تطبيق المصادقة وأدخل الرمز الظاهر لحساب Tera', '', ''],
                 wa: ['رمز تحقق من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiWhatsappLogoFill', 'يُرسل إلى واتساب', '+966 5• ••• ••74', 'أرسل الرمز عبر واتساب'],
                 sms: ['رمز تحقق من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiChatCircleTextFill', 'يُرسل برسالة نصية إلى', '+966 5• ••• ••74', 'أرسل الرمز برسالة نصية'],
-                mail: ['رمز تحقق من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiEnvelopeFill', 'يُرسل إلى البريد', 'n•••@example.com', 'أرسل الرمز إلى البريد'] };
-    function paintVia() { var v = $('#otp-via').value, c = VIA[v]; $('#otp-hint').textContent = c[0]; $('#otp-dest-i').innerHTML = I(c[1]); $('#otp-dest-t').textContent = c[2]; $('#otp-dest-v').textContent = c[3]; $('#otp-spam').hidden = v !== 'mail'; var s = $('#otp-send'); s.hidden = v === 'app'; s.textContent = c[4]; s.disabled = false; msg('otp-msg'); if (v === 'app') openBox(false); else { $('#otp-box').hidden = true; $('#otp-go').disabled = true; } }
+                mail: ['رمز تحقق من 6 أرقام · صالح خمس دقائق · خمس محاولات', 'PiEnvelopeFill', 'يُرسل إلى البريد', 'n•••@example.com', 'أرسل الرمز إلى البريد'],
+                xc: ['الرقم الذي أنشأته وحفظته بنفسك — 10 أرقام على الأقل · لا يُرسل إليك', 'PiKeyFill', 'تكتبه من حفظك', '', ''] };
+    function paintVia() { var v = $('#otp-via').value, c = VIA[v]; $('#otp-hint').textContent = c[0]; $('#otp-dest-i').innerHTML = I(c[1]); $('#otp-dest-t').textContent = c[2]; $('#otp-dest-v').textContent = c[3]; $('#otp-spam').hidden = v !== 'mail'; var s = $('#otp-send'); s.hidden = v === 'app' || v === 'xc'; s.textContent = c[4]; s.disabled = false; msg('otp-msg'); var x = $('#otp-xc'); if (x) { x.hidden = v !== 'xc'; $('#otp-xc-in').value = ''; } $('.ts-dest').hidden = v === 'xc';
+      if (v === 'app') openBox(false); else if (v === 'xc') { $('#otp-box').hidden = true; $('#otp-go').disabled = false; setTimeout(function () { $('#otp-xc-in').focus({ preventScroll: true }); }, 30); } else { $('#otp-box').hidden = true; $('#otp-go').disabled = true; } }
     $('#otp-via').addEventListener('change', function () { clearInterval(cdId); clearInterval(vId); if (LIVE) return livePaint(); paintVia(); });
     function openBox(withCd, n0, v0) {
       $('#otp-box').hidden = false; $('#otp-go').disabled = false; $('#otp-resend').hidden = !withCd; $('#otp-valid-w').hidden = !withCd;
@@ -229,7 +230,12 @@
     $('#otp-send').addEventListener('click', function () { if (LIVE) return liveSend(V2F[$('#otp-via').value]); var b = this, v = $('#otp-via').value; b.disabled = true; b.textContent = 'جارٍ الإرسال…';
       setTimeout(function () { clearBoxes(boxes); msg('otp-msg', 'ok', VCH[v === 'mail' ? 'mail' : v][0]); b.textContent = VIA[v][4]; openBox(true); }, 700); });
     wireOtp(boxes, function () { var f = $('#f-otp'); if (f.requestSubmit) f.requestSubmit(); else $('#otp-go').click(); });
-    $('#f-otp').addEventListener('submit', function (e) { e.preventDefault(); if (LIVE) return liveVerify(); var code = codeOf(boxes);
+    $('#f-otp').addEventListener('submit', function (e) { e.preventDefault(); if (LIVE) return liveVerify();
+      if ($('#otp-via').value === 'xc') { var xi = $('#otp-xc-in'), xd = xcDigits(xi.value);
+        if (!/^\d{10,20}$/.test(xd)) { xi.classList.add('bad'); return msg('otp-msg', 'bad', 'اكتب رقمك الإضافي كاملًا (10 أرقام على الأقل).'); }
+        if (/^0+$/.test(xd)) { xi.classList.add('bad'); tries--; $('#otp-left').textContent = String(tries); if (tries <= 0) { reset(); return msg('lg-msg', 'bad', 'استُنفدت المحاولات. ابدأ الدخول من جديد.'); } return msg('otp-msg', 'bad', 'الرقم الإضافي غير صحيح.'); }
+        xi.classList.remove('bad'); xi.value = ''; msg('dev-msg'); go('login', 2); return devCount(); }
+      var code = codeOf(boxes);
       if (code.length < 6) return msg('otp-msg', 'bad', 'أدخل رمز التحقق المكوّن من 6 أرقام.');
       if (code === '000000') { tries--; $('#otp-left').textContent = String(tries); $('#otp-in').classList.add('bad'); if (tries <= 0) { reset(); return msg('lg-msg', 'bad', 'استُنفدت المحاولات لهذا الرمز. ابدأ الدخول من جديد.'); } return msg('otp-msg', 'bad', 'الرمز غير صحيح أو انتهت مدته.'); }
       clearInterval(cdId); clearInterval(vId); msg('dev-msg'); go('login', 2); devCount(); });
@@ -302,36 +308,50 @@
     $$('.mf').forEach(function (sec) { $('.mf-h', sec).addEventListener('click', function () { var on = !sec.classList.contains('is-open'); $$('.mf').forEach(function (o) { mfOpen(o, false); }); mfOpen(sec, on); if (on) setTimeout(function () { sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 60); }); });
     function mfOn(m) {
       MF[m] = true; var sec = $('.mf[data-m="' + m + '"]'); sec.classList.add('is-on'); $('.mf-st', sec).textContent = 'مفعّل';
-      msg($('.mf-msg', sec), 'ok', m === 'app' ? 'فعّلت تطبيق المصادقة لحسابك.' : 'فعّلت رمز التحقق الإضافي، وستصلك الرموز عبر القناة التي اخترتها.');
+      msg($('.mf-msg', sec), 'ok', m === 'app' ? 'فعّلت تطبيق المصادقة لحسابك.' : 'فعّلت رقمك الإضافي. احفظه في مكان آمن — المنصة لا تعرضه ولا تسترجعه.');
       var n = (MF.app ? 1 : 0) + (MF.code ? 1 : 0); $('#mf-n').textContent = n + ' من 2'; $('.pt-must').classList.add('is-ok');
-      var rc = $('#rcodes'); if (rc.hidden) { rc.hidden = false; $('#rc-l').innerHTML = rcodes().map(function (c) { return '<li>' + c + '</li>'; }).join(''); }
+      if (m === 'code') $('#xc-saved-w').hidden = false;
       mfReady();
     }
-    function rcodes() { var out = []; for (var k = 0; k < 8; k++) { var s = ''; for (var j = 0; j < 10; j++) s += Math.floor(Math.random() * 10); out.push(s); } return out; }
-    function mfReady() { $('#rg5-go').disabled = !((MF.app || MF.code) && $('#rc-saved').checked); }
+    function mfReady() { $('#rg5-go').disabled = !((MF.app || MF.code) && (!MF.code || $('#rc-saved').checked)); }
     $('#rc-saved').addEventListener('change', mfReady);
     function mfReset() {
       MF = { app: false, code: false }; $$('.mf').forEach(function (s) { s.classList.remove('is-on'); $('.mf-st', s).textContent = 'غير مفعّل'; mfOpen(s, false); msg($('.mf-msg', s)); clearBoxes($$('.ts-otp input', s)); });
-      $('.mc-box').hidden = true; $('#mf-n').textContent = '0 من 2'; $('.pt-must').classList.remove('is-ok'); $('#rcodes').hidden = true; $('#rc-saved').checked = false; $('#rg5-go').disabled = true;
+      $('#mf-n').textContent = '0 من 2'; $('.pt-must').classList.remove('is-ok'); $('#xc-saved-w').hidden = true; $('#rc-saved').checked = false; $('#rg5-go').disabled = true; xcClear();
     }
     function copy(t, b, done) { try { navigator.clipboard.writeText(t); } catch (e) {} var sp = $('span', b), o = sp.textContent; sp.textContent = done; setTimeout(function () { sp.textContent = o; }, 1600); }
     $('.qr-copy').addEventListener('click', function () { copy($('#qr-key').textContent.replace(/\s/g, ''), this, 'نُسخ المفتاح'); });
-    $('.rc-copy').addEventListener('click', function () { copy($$('#rc-l li').map(function (l) { return l.textContent; }).join('\n'), this, 'نُسخت الرموز'); });
-    $('.rc-dl').addEventListener('click', function () { try { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['رموز استعادة حساب تيرا\n\n' + $$('#rc-l li').map(function (l) { return l.textContent; }).join('\n') + '\n'], { type: 'text/plain' })); a.download = 'tera-recovery-codes.txt'; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {} });
     $$('.gd-tabs button').forEach(function (b) { b.addEventListener('click', function () { var a = b.dataset.app;
       $$('.gd-tabs button').forEach(function (x) { var on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
       $$('.gd[data-app]').forEach(function (o) { o.hidden = o.dataset.app !== a; }); }); });
     var appIn = $$('.mf[data-m=app] .mf-in input');
     wireOtp(appIn, function () { if (MF.app) return; if (codeOf(appIn) === '000000') { appIn[0].parentNode.classList.add('bad'); return msg($('.mf[data-m=app] .mf-msg'), 'bad', 'الرمز غير صحيح. تأكد من أنه الرمز الظاهر الآن في التطبيق.'); } mfOn('app'); });
-    var MCH = { sms: 'يُرسل برسالة نصية إلى رقم جوالك الذي تحققت منه.', wa: 'يُرسل إلى رقم واتساب الذي ربطته.', mail: 'يُرسل إلى بريدك الذي تحققت منه. قد تجده في مجلد الرسائل غير المرغوب فيها.' };
-    function mcHint() { var c = $('#mc-ch').value, waOk = vok('#wa-box .vc'), h = c === 'wa' && !waOk ? 'لم تربط واتساب بعد. ارجع إلى خطوة التحقق واربطه، أو اختر قناة أخرى.' : MCH[c]; $('#mc-h').textContent = h; $('.mc-send').disabled = c === 'wa' && !waOk; }
-    $('#mc-ch').addEventListener('change', function () { $('.mc-box').hidden = true; clearBoxes(mcIn); mcHint(); });
-    var mcIn = $$('.mc-in input');
-    $('.mc-send').addEventListener('click', function () { var b = this; b.disabled = true; b.textContent = 'جارٍ الإرسال…'; setTimeout(function () { b.disabled = false; b.textContent = 'إعادة إرسال رمز التجربة'; clearBoxes(mcIn); $('.mc-box').hidden = false; msg($('.mf[data-m=code] .mf-msg'), 'ok', 'أرسلنا رمز التجربة. أدخله لتأكيد أن الرموز تصلك.'); mcIn[0].focus({ preventScroll: true }); }, 600); });
-    wireOtp(mcIn, function () { if (MF.code) return; if (codeOf(mcIn) === '000000') { mcIn[0].parentNode.classList.add('bad'); return msg($('.mf[data-m=code] .mf-msg'), 'bad', 'الرمز غير صحيح أو انتهت مدته.'); } $('.mc-box').hidden = true; mfOn('code'); });
+    /* v364: الرقم الإضافي — ينشئه العميل ويحفظه (سياسة الخادم نفسها: 10 أرقام+ · بلا تكرار · بلا تسلسل · 4 أرقام مختلفة) */
+    function xcDigits(v) { return ascii(v).replace(/\s/g, ''); }
+    function xcRules(v) {
+      var d = xcDigits(v), only = /^\d*$/.test(d), up = d.length > 1, down = d.length > 1, dbl = d.length > 1 && d.length % 2 === 0;
+      for (var k = 1; k < d.length; k++) { var st = (Number(d[k]) - Number(d[k - 1]) + 10) % 10; if (st !== 1) up = false; if (st !== 9) down = false; }
+      for (var j = 0; j + 1 < d.length && dbl; j += 2) if (d[j] !== d[j + 1]) dbl = false;
+      return { len: only && d.length >= 10 && d.length <= 20, rep: !!d && !/^(\d)\1+$/.test(d) && !/^(\d\d)\1+$/.test(d) && !dbl, seq: !!d && !up && !down, 'var': new Set(d.split('')).size >= 4 };
+    }
+    function xcOk(v) { var r = xcRules(v); return r.len && r.rep && r.seq && r['var']; }
+    function xcPaint() {
+      var v = $('#xc1').value, r = xcRules(v), v2 = $('#xc2').value, m = $('#xc-match');
+      $$('#xc-rules li').forEach(function (li) { li.classList.toggle('is-ok', !!v && !!r[li.dataset.r]); li.classList.toggle('is-bad', !!v && !r[li.dataset.r]); });
+      if (!v2) { m.hidden = true; return; }
+      var same = xcDigits(v) === xcDigits(v2); m.hidden = false; m.className = 'xc-match ' + (same ? 'is-ok' : 'is-bad'); m.textContent = same ? 'الرقمان متطابقان ✓' : 'الرقمان غير متطابقين';
+    }
+    function xcClear() { ['#xc1', '#xc2'].forEach(function (q) { var i = $(q); if (i) { i.value = ''; i.classList.remove('bad'); } }); xcPaint(); }
+    ['#xc1', '#xc2'].forEach(function (q) { $(q).addEventListener('input', function () { $(q).classList.remove('bad'); xcPaint(); }); });
+    $('.xc-set').addEventListener('click', function () {
+      if (MF.code) return; var a = $('#xc1'), b = $('#xc2'), box = $('.mf[data-m="code"] .mf-msg');
+      if (!xcOk(a.value)) { a.classList.add('bad'); return msg(box, 'bad', 'الرقم لا يحقق الشروط الموضحة. اختر رقمًا من 10 أرقام أو أكثر بلا تكرار ولا تسلسل.'); }
+      if (xcDigits(a.value) !== xcDigits(b.value)) { b.classList.add('bad'); return msg(box, 'bad', 'تأكيد الرقم غير مطابق. أعد كتابته.'); }
+      a.value = ''; b.value = ''; xcPaint(); mfOn('code');
+    });
     $('#f-reg5').addEventListener('submit', function (e) { e.preventDefault();
-      if (!MF.app && !MF.code) return msg('rg5-msg', 'bad', 'فعّل وسيلة واحدة على الأقل: تطبيق المصادقة أو رمز التحقق الإضافي.');
-      if (!$('#rc-saved').checked) return msg('rg5-msg', 'bad', 'احفظ رموز الاستعادة وأكّد ذلك للمتابعة.');
+      if (!MF.app && !MF.code) return msg('rg5-msg', 'bad', 'فعّل وسيلة واحدة على الأقل: تطبيق المصادقة أو الرقم الإضافي.');
+      if (MF.code && !$('#rc-saved').checked) return msg('rg5-msg', 'bad', 'أكّد أنك حفظت رقمك الإضافي في مكان آمن للمتابعة.');
       msg('rg5-msg'); go('register', 5); });
     function rnd(n) { var s = ''; for (var k = 0; k < n; k++) s += Math.floor(Math.random() * 10); return s; }
     $('#f-reg6').addEventListener('submit', function (e) { e.preventDefault(); var v = ynVal('rg-trust'); if (!v) return msg('rg6-msg', 'bad', 'اختر هل تصرّح لهذا الجهاز.');
@@ -343,10 +363,13 @@
     $('#f-fg1').addEventListener('submit', function (e) { e.preventDefault(); if (!vok('#f-fg1 .vc')) return msg('fg1-msg', 'bad', 'تحقق من رقم جوالك أولًا.'); msg('fg1-msg'); go('forgot', 1); });
     $('#f-fg2').addEventListener('submit', function (e) { e.preventDefault(); if (!vok('#f-fg2 .vc')) return msg('fg2-msg', 'bad', 'تحقق من بريدك أولًا.'); msg('fg2-msg'); fg3Paint(); go('forgot', 2); });
     var fg3In = $$('.fg3-in input');
-    function fg3Paint() { var m = $('#fg3-m').value; $('#fg3-h').textContent = m === 'app' ? 'افتح تطبيق المصادقة واكتب الرمز الظاهر لحساب Tera.' : 'نرسل رمزًا إضافيًا إلى القناة التي اخترتها عند تفعيله.';
-      $('#fg3-send').hidden = m === 'app'; $('#fg3-send').disabled = false; $('#fg3-send').textContent = 'أرسل الرمز الإضافي'; $('#fg3-box').hidden = m !== 'app'; clearBoxes(fg3In); msg('fg3-msg'); }
+    function fg3Paint() { var m = $('#fg3-m').value; $('#fg3-h').textContent = m === 'app' ? 'افتح تطبيق المصادقة واكتب الرمز الظاهر لحساب Tera.' : 'اكتب الرقم الإضافي الذي أنشأته وحفظته (10 أرقام على الأقل). لا نرسله إليك.';
+      $('#fg3-box').hidden = m !== 'app'; $('#fg3-xc').hidden = m === 'app'; $('#fg3-xc-in').value = ''; clearBoxes(fg3In); msg('fg3-msg'); }
     $('#fg3-m').addEventListener('change', fg3Paint);
-    $('#fg3-send').addEventListener('click', function () { var b = this; b.disabled = true; b.textContent = 'جارٍ الإرسال…'; setTimeout(function () { b.disabled = false; b.textContent = 'إعادة الإرسال'; $('#fg3-box').hidden = false; msg('fg3-msg', 'ok', 'أرسلنا الرمز الإضافي.'); fg3In[0].focus({ preventScroll: true }); }, 600); });
+    $('#fg3-xc-go').addEventListener('click', function () { var i = $('#fg3-xc-in'), d = xcDigits(i.value);
+      if (!/^\d{10,20}$/.test(d)) { i.classList.add('bad'); return msg('fg3-msg', 'bad', 'اكتب رقمك الإضافي كاملًا (10 أرقام على الأقل).'); }
+      if (/^0+$/.test(d)) { i.classList.add('bad'); return msg('fg3-msg', 'bad', 'الرقم الإضافي غير صحيح.'); }
+      i.classList.remove('bad'); i.value = ''; msg('fg3-msg'); go('forgot', 3); });
     wireOtp(fg3In, function () { if (codeOf(fg3In) === '000000') { fg3In[0].parentNode.classList.add('bad'); return msg('fg3-msg', 'bad', 'الرمز غير صحيح أو انتهت مدته.'); } msg('fg3-msg'); go('forgot', 3); });
     $('#f-fg3').addEventListener('submit', function (e) { e.preventDefault(); });
     $('#f-fg4').addEventListener('submit', function (e) { e.preventDefault(); if (pwFail('fg', 'fg4-msg')) return;
@@ -355,12 +378,12 @@
 
     /* ---- recovery code → new password ---- */
     $('#f-rc1').addEventListener('submit', function (e) { e.preventDefault(); var i = $('#rc-id'), c = $('#rc-code');
-      var ik = bad(i, !idOk(i.value)), ck = bad(c, !/^\d{10}$/.test(c.value));
-      if (!ik || !ck) return msg('rc1-msg', 'bad', 'أدخل البريد أو الجوال، ورمز الاستعادة المكوّن من 10 أرقام.');
+      var ik = bad(i, !idOk(i.value)), ck = bad(c, !/^\d{10,20}$/.test(xcDigits(c.value)));
+      if (!ik || !ck) return msg('rc1-msg', 'bad', 'أدخل البريد أو الجوال، ورقمك الإضافي (10 أرقام على الأقل).');
       msg('rc1-msg'); if (LIVE) return liveRecovery(i.value, c.value); go('recover', 1); });
     $('#f-rc2').addEventListener('submit', function (e) { e.preventDefault(); if (pwFail('rc', 'rc2-msg')) return;
       if (LIVE) return livePassword('rc', 'rc2-msg', 'استعدت الوصول إلى حسابك', 'تم تعيين كلمة المرور الجديدة. سجّل الدخول بها، وفعّل وسيلة تحقق جديدة بعد الدخول.');
-      finish('استعدت الوصول إلى حسابك', 'تم تعيين كلمة المرور الجديدة، وأُلغي رمز الاستعادة الذي استخدمته. فعّل وسيلة تحقق جديدة بعد الدخول.', { login: true }); });
+      finish('استعدت الوصول إلى حسابك', 'تم تعيين كلمة المرور الجديدة. سجّل الدخول بها، ثم أنشئ رقمًا إضافيًا جديدًا من مركز الأمان.', { login: true }); });
 
     /* ---- live gateway functions (real server, same origin) ---- */
     function api(path, body) {
@@ -466,7 +489,7 @@
     function liveRecovery(ident, code) {
       api('/api/auth/recovery/start', { identifier: liveId(ident), code: ascii(code).replace(/\D/g, '') }).then(function (r) {
         $('#rc-code').value = '';
-        if (!r || !r.ok || !r.recovery_token) return msg('rc1-msg', 'bad', (r && r.message) || 'رمز الاستعادة غير صحيح. تأكد من الرمز المكوّن من 10 أرقام.');
+        if (!r || !r.ok || !r.recovery_token) return msg('rc1-msg', 'bad', (r && r.message) || 'الرقم الإضافي غير صحيح. تأكد منه ثم أعد المحاولة.');
         S.tok = r.recovery_token; go('recover', 1);
       });
     }
@@ -540,7 +563,7 @@
     }
     var LV_BOX = [], LV_T = null;
     var FX_HINT = { email_code: ['PiEnvelopeSimpleFill', 'يصل رمز من 6 أرقام إلى بريد الحساب.'], whatsapp_code: ['PiWhatsappLogoFill', 'يصل رمز من 6 أرقام عبر واتساب إلى جوالك الموثّق.'], totp: ['PiDeviceMobileFill', 'افتح تطبيق المصادقة وأدخل الرمز الظاهر.'], extra_code: ['PiKeyFill', 'أدخل رمز الاستعادة الذي حفظته.'] };
-    var FX_AR = { email_code: 'رمز التحقق عبر البريد الإلكتروني', whatsapp_code: 'رمز التحقق عبر واتساب', totp: 'تطبيق المصادقة', extra_code: 'رمز الاستعادة' };
+    var FX_AR = { email_code: 'رمز التحقق عبر البريد الإلكتروني', whatsapp_code: 'رمز التحقق عبر واتساب', totp: 'تطبيق المصادقة', extra_code: 'الرقم الإضافي' };
     function liveDevice() {
       devFingerprint().then(function (fp) {
         if (!fp) return liveIn();
@@ -581,13 +604,14 @@
       send.hidden = !deliver; send.disabled = false; send.textContent = f === 'whatsapp_code' ? 'أرسل الرمز عبر واتساب' : 'أرسل الرمز إلى البريد';
       $('#lv-code-w').hidden = deliver && !S.dev.sent[f]; msg('lv-msg');
       var h = FX_HINT[f] || ['PiShieldCheckFill', '']; $('#lv-hint').textContent = h[1]; $('#lv-dest-i').innerHTML = I(h[0]); $('#lv-dest-t').textContent = FX_AR[f] || '';
-      var lab = $('#lv-code-w .pt-lab'); if (lab) lab.textContent = f === 'extra_code' ? 'أدخل رمز الاستعادة' : 'أدخل الرمز المكوّن من 6 أرقام';
+      var xc = f === 'extra_code'; $('#lv-otp').hidden = xc; $('#lv-xc-w').hidden = !xc; if (xc) $('#lv-code-w').hidden = false;
+      var lab = $('#lv-code-w .pt-lab'); if (lab) lab.textContent = xc ? 'اكتب الرقم الإضافي الذي أنشأته (10 أرقام على الأقل)' : 'أدخل الرمز المكوّن من 6 أرقام';
     }
     function liveDeviceSubmit() {
       var D = S.dev, v = ynVal('lg-trust');
       if (!v) return msg('dev-msg', 'bad', 'اختر هل تصرّح لهذا الجهاز.');
       if (v === 'no') return liveIn();
-      var pw = $('#lv-pw').value, f = $('#lv-fx').value, code = ascii(codeOf(LV_BOX)).replace(/\D/g, '');
+      var pw = $('#lv-pw').value, f = $('#lv-fx').value, code = ascii(f === 'extra_code' ? $('#lv-xc').value : codeOf(LV_BOX)).replace(/\D/g, '');
       if (!pw) return msg('dev-msg', 'bad', 'أدخل كلمة المرور لتأكيد هويتك.');
       if (!code) return msg('dev-msg', 'bad', (f === 'email_code' || f === 'whatsapp_code') && !D.sent[f] ? 'أرسل رمز التحقق أولًا.' : 'أدخل رمز التحقق.');
       var b = $('#dev-go'); b.disabled = true; msg('dev-msg');
@@ -623,6 +647,7 @@
           '<button type="button" class="t2-btn" id="lv-send">أرسل الرمز</button>' +
           '<div id="lv-code-w" hidden class="pt-f"><span class="pt-lab">أدخل الرمز المكوّن من 6 أرقام</span><div class="ts-otp" id="lv-otp">' +
             [1, 2, 3, 4, 5, 6].map(function (k) { return '<input inputmode="numeric" maxlength="1" aria-label="الخانة ' + k + '">'; }).join('') + '</div>' +
+            '<span class="ts-pw" id="lv-xc-w" hidden><input class="ts-in xc-in" id="lv-xc" type="password" dir="ltr" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="••••••••••"></span>' +
             '<p class="ts-meta"><span>صلاحية الرمز <b dir="ltr">5:00</b></span><span id="lv-rs" hidden>إعادة الإرسال بعد <b id="lv-cd" dir="ltr">0:60</b></span></p></div>' +
           '<p class="ts-msg" id="lv-msg" hidden></p>' +
           '<div class="pt-why"><p class="pt-why-h">' + I('PiInfoFill') + '<b>ما معنى التصريح للجهاز؟</b></p><ul>' +
