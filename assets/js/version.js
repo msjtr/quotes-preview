@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'386',d:'2026-10-21'};
+window.TQ_VERSION={v:'387',d:'2026-10-21'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -143,6 +143,27 @@ window.TQ_VERSION={v:'386',d:'2026-10-21'};
     window.addEventListener('pageshow', function (e) { if (e.persisted) check(true); });
     window.addEventListener('focus', function () { check(false); });
     setInterval(function () { check(false); }, 300000); setTimeout(function () { check(true); }, 4000);
+    /* v387: الضغط على إشعار الجوال/الويب يفتح التطبيق ويعرض الإشعار نفسه (العنوان والنص) — يصل محتواه في #tqn= (لا يُرسل إلى الخادم)،
+       ثم «عرض التفاصيل» ينقل إلى القسم المرتبط إن كان العميل داخل حسابه. ويُحفظ آخر 30 إشعارًا على الجهاز. */
+    var NK = { ok: /^(offers|member|approved|paid|thanks|qaccepted|qextok|cudok)$/, bad: /^(defaulted|late|rejected|rfrej|qexpired|qrejected|qextno|cudrej)$/, warn: /^(sec|doc|today|fix|refund|qexpire|qmod|cudfix)$/ };
+    function pushOpen() {
+      var m = /[#&]tqn=([^&]+)/.exec(location.hash || ''); if (!m) return;
+      var n = null; try { n = JSON.parse(decodeURIComponent(m[1])); } catch (e) { n = null; }
+      try { var h = location.hash.replace(/[#&]tqn=[^&]+/, '').replace(/^#?&?/, ''); history.replaceState(history.state, '', location.pathname + location.search + (h ? '#' + h : '')); } catch (e) { void e; }
+      if (!n || !(n.t || n.b)) return;
+      try { var L = JSON.parse(localStorage.getItem('tq.push.inbox') || '[]'); L.unshift({ k: n.k || '', t: n.t || '', b: n.b || '', at: Date.now() }); localStorage.setItem('tq.push.inbox', JSON.stringify(L.slice(0, 30))); } catch (e) { void e; }
+      var k = String(n.k || ''), kind = NK.ok.test(k) ? 'ok' : NK.bad.test(k) ? 'bad' : NK.warn.test(k) ? 'warn' : 'info';
+      var tries = 0;
+      (function show() {
+        var TN = window.TeraNotify;
+        if (!TN || !TN.show || (function () { var w = document.querySelector('.tw'); return !!(w && !w.hidden && !w.classList.contains('is-out') && w.getClientRects().length); })()) { if (tries++ < 40) return setTimeout(show, 500); if (!TN || !TN.show) return alert((n.t || '') + '\n' + (n.b || '')); }
+        var acts = [];
+        if (window.TQ_PUSH_GO && window.TQ_PUSH_GO(k, true)) acts.push({ label: 'عرض التفاصيل', primary: true, run: function () { window.TQ_PUSH_GO(k); } });
+        acts.push({ label: 'تم' });
+        TN.show({ force: true, now: true, kind: kind, icon: 'bell-ringing:gold', title: n.t || 'إشعار من تيرا', text: n.b || '', ms: 0, actions: acts });
+      })();
+    }
+    pushOpen(); window.addEventListener('hashchange', pushOpen);
     /* إزالة ?u= من العنوان بعد التحديث (لا يبقى في الرابط) */
     try { var u0 = new URL(location.href); if (u0.searchParams.has('u')) { u0.searchParams.delete('u'); history.replaceState(history.state, '', u0.pathname + (u0.search || '') + u0.hash); } } catch (e) { void e; }
   } catch (e) { void e; }

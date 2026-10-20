@@ -7545,6 +7545,18 @@ function tqAccountPage() {
   try { r.forEach(function (n) { const f = n && n.querySelector && n.querySelector('.hf-row'); if (f) f.remove(); }); } catch (err) { void err; }
   return r;
 }
+/* v387: فتح القسم المرتبط بنوع الإشعار عند الضغط على إشعار الجوال/الويب (للعميل داخل حسابه) — check=true للسؤال فقط */
+window.TQ_PUSH_GO = function (k, check) {
+  try {
+    if (S.role !== 'client') { if (check) return false; return false; }
+    const T = /^(before|today|late|received|approved|fix|rejected|paid|thanks|refund|rfreq|rfrej)$/.test(k) ? function () { go('pay'); }
+      : /^(contract|defaulted)$/.test(k) ? function () { go('contracts'); }
+      : /^(req|offers|q.*)$/.test(k) ? function () { go('reqs'); }
+      : k === 'msg' ? function () { go('msg'); } : k === 'sec' ? function () { go('other', 'shield'); } : k === 'doc' ? function () { goDoc(''); }
+      : k === 'member' ? function () { go('other', 'member'); } : function () { openNs('hub'); };
+    if (check) return true; T(); return true;
+  } catch (err) { return false; }
+};
 function accWhoBtn(m) {
   try {
     if (!m || m.querySelector('.lv-acc-b')) return;
