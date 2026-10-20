@@ -139,7 +139,7 @@
   function dark(){ try{ var t=localStorage.getItem('tera-theme'); if(t) return t==='night' }catch(e){} return document.documentElement.classList.contains('pv-dark') }
   function build(r,pg,opening){
     var d=dark();
-    var head='<!DOCTYPE html><html lang="ar" dir="rtl" class="'+(d?'is-dark':'')+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="'+document.baseURI.replace(/"/g,'&quot;')+'"><title>'+pg.t+'</title>'+
+    var head='<!DOCTYPE html><html lang="ar" dir="rtl" class="'+(d?'is-dark':'')+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no,email=no,address=no,date=no"><base href="'+document.baseURI.replace(/"/g,'&quot;')+'"><title>'+pg.t+'</title>'+
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">'+
       '<style>'+C.css+'</style><script>window.__PATH='+js(r.path)+';window.__HASH='+js(r.hash)+';window.__FOCUS='+js(r.focus)+';window.__GROUP='+js(pg.g||'')+';window.__DARK='+d+';window.__ICON='+js(C.icons)+';window.__FIND='+js(C.find)+';window.__OPT='+js(C.opt)+';<\/script></head><body>';
     var shell=C.shell.replace('@@ROOT@@',function(){return pg.h});
