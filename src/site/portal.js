@@ -67,6 +67,7 @@
       $('#done-next').hidden = !o.next; $('#done-exit').hidden = !o.next; $('#done-exit-n').hidden = !o.next;
       var g = $('#done-go'); g.hidden = !(o.enter || o.next); g.textContent = o.next ? 'استمرار' : 'المتابعة إلى حسابك';
       $('#done-login').hidden = !o.login; $('#done-again').hidden = !!o.next;
+      if (o.after) o.after();
     }
     function msg(id, k, t) { var m = typeof id === 'string' ? $('#' + id) : id; if (!m) return; m.className = (m.classList.contains('vc-msg') ? 'vc-msg' : m.classList.contains('mf-msg') ? 'mf-msg' : 'ts-msg') + (k ? ' ' + k : ''); m.textContent = t || ''; m.hidden = !t;
       /* v356: كل رسالة تظهر إشعارًا في منتصف الشاشة (8 ثوانٍ أو يغلقه المستخدم) */
@@ -85,7 +86,7 @@
     var boxes = $$('#otp-in input');
     function reset() {
       cur = { flow: '', i: 0 }; go('login', 0); human(); tries = 5; clearInterval(cdId); clearInterval(vId);
-      S.pending = ''; S.factors = []; S.ch = {}; S.fg = ''; S.tok = ''; S.inn = false; boxes.forEach(function (b) { b.hidden = false; });
+      S.pending = ''; S.factors = []; S.ch = {}; S.fg = ''; S.tok = ''; S.inn = false; S.going = false; S.vBusy = false; S.vDone = false; boxes.forEach(function (b) { b.hidden = false; });
       $('#otp-box').hidden = true; $('#otp-go').disabled = true; $('#otp-left').textContent = '5'; boxes.forEach(function (i) { i.value = ''; }); msg('otp-msg'); msg('lg-msg');
       $$('.vc').forEach(vcReset); $$('.pt-yn').forEach(function (y) { ynSet(y, ''); }); mfReset(); $('#done-exit-n').hidden = true;
       $$('.dv').forEach(function (d) { d.hidden = false; d.classList.remove('is-gone'); }); devCount();
@@ -160,9 +161,11 @@
         setTimeout(function () { open(60, 300, VCH[ch][0]); }, 600);
       });
       wireOtp(ins, function () {
-        if (st.ok) return; var c = codeOf(ins);
-        if (fgLive) return liveFgVerify(c, done, function (t) { ins[0].parentNode.classList.add('bad'); msg(m, 'bad', t); });
-        if (rgLive) return liveRegVerify(card, c, done, function (t) { ins[0].parentNode.classList.add('bad'); msg(m, 'bad', t); });
+        if (st.ok || st.busy) return; var c = codeOf(ins);
+        /* v380: طلب تحقق واحد في كل مرة (اللصق قد يطلقه مرتين) */
+        var ok1 = function () { st.busy = false; done(); }, no1 = function (t) { st.busy = false; ins[0].parentNode.classList.add('bad'); msg(m, 'bad', t); };
+        if (fgLive) { st.busy = true; return liveFgVerify(c, ok1, no1); }
+        if (rgLive) { st.busy = true; return liveRegVerify(card, c, ok1, no1); }
         if (c === '000000') { ins[0].parentNode.classList.add('bad'); return msg(m, 'bad', 'الرمز غير صحيح أو انتهت مدته.'); }
         done();
       });
@@ -444,7 +447,9 @@
     function liveTop(path) { try { top.location.href = path; } catch (e) { location.href = path; } }
     function adopt(s) { if (!s || !s.access_token) return false; try { localStorage.setItem('tera.admin.session', JSON.stringify(s)); return true; } catch (e) { return false; } }
     function liveEnter() { liveTop('/staff/'); }
-    function liveIn() { S.inn = true; finish('تم الدخول بنجاح', 'دخلت بحسابك الحقيقي. ننقلك الآن إلى حسابك…', { enter: true }); setTimeout(liveEnter, 1600); }
+    /* v380: الانتقال إلى الحساب بعد أن يُقرأ إشعار «تم الدخول بنجاح» كاملًا (أو يضغط العميل «متابعة الآن»/يغلقه) — لا قبله */
+    function liveGoIn() { if (S.going) return; S.going = true; setTimeout(liveEnter, 1200); }
+    function liveIn() { if (S.inn) return; S.inn = true; finish('تم الدخول بنجاح', 'دخلت بحسابك الحقيقي. ننقلك الآن إلى حسابك…', { enter: true, after: liveGoIn }); }
     function liveLogin() {
       var id = $('#lg-id'), pw = $('#lg-pw'), b = $('#lg-go'); b.disabled = true; b.textContent = 'جارٍ الدخول…'; msg('lg-msg');
       api('/api/auth/login', { identifier: liveId(id.value), password: pw.value }).then(function (r) {
@@ -455,7 +460,7 @@
           : r.error === 'unavailable' ? 'تعذّر تسجيل الدخول حاليًا. حاول مرة أخرى.' : 'بيانات الدخول غير صحيحة.');
         if (r.stage === 'password_change_required') return msg('lg-msg', 'bad', r.message || 'يلزم تعيين كلمة مرور جديدة. استخدم «نسيت كلمة المرور».');
         if (r.stage === '2fa_required' || r.stage === 'two_factor' || r.stage === '2fa_enrollment_required') {
-          S.pending = r.pending_token || (r.totp && r.totp.pending_token) || ''; S.ch = {};
+          S.pending = r.pending_token || (r.totp && r.totp.pending_token) || ''; S.ch = {}; S.vBusy = false; S.vDone = false;
           S.factors = (r.factors && r.factors.length) ? r.factors.slice() : [r.factor || 'email'];
           go('login', 1); liveVia(); if (r.message) msg('otp-msg', 'ok', r.message); return;
         }
@@ -499,13 +504,15 @@
       var ch = V2F[$('#otp-via').value], c = S.ch[ch], code = liveCode();
       if (!c || !c.id) return msg('otp-msg', 'bad', ch === 'totp' ? 'جارٍ تجهيز التحقق. أعد المحاولة بعد لحظة.' : 'أرسل الرمز أولًا.');
       if (code.length < (c.len || 6) || /\D/.test(code)) return msg('otp-msg', 'bad', 'أدخل رمز التحقق كاملًا.');
+      /* v380: طلب تحقق واحد فقط — اللصق أو اقتراح لوحة المفاتيح قد يطلق الإرسال مرتين، فيُستهلك الرمز في الأول ويظهر خطأ من الثاني قبل الدخول */
+      if (S.vBusy || S.vDone) return; S.vBusy = true;
       var g = $('#otp-go'); g.disabled = true;
       api('/api/auth/2fa/verify', { challenge_id: c.id, code: code, factor: ch }).then(function (r) {
-        g.disabled = false;
-        if (!r || !r.ok) { clearBoxes(boxes); liveLen(c.len); $('#otp-in').classList.add('bad'); return msg('otp-msg', 'bad', (r && r.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.'); }
-        clearInterval(cdId); clearInterval(vId); S.pending = '';
+        S.vBusy = false;
+        if (!r || !r.ok) { g.disabled = false; clearBoxes(boxes); liveLen(c.len); $('#otp-in').classList.add('bad'); return msg('otp-msg', 'bad', (r && r.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.'); }
+        S.vDone = true; clearInterval(cdId); clearInterval(vId); S.pending = '';
         if (adopt(r.session)) return liveDevice();
-        msg('otp-msg', 'bad', 'تعذّر إكمال الدخول. حاول مرة أخرى.');
+        S.vDone = false; g.disabled = false; msg('otp-msg', 'bad', 'تعذّر إكمال الدخول. حاول مرة أخرى.');
       });
     }
     function liveFgSend(card, onOpen, onFail) {
@@ -662,7 +669,7 @@
         var pay = { device_id: D.id, grant_id: g.grant_id, current_password: pw }; if (D.rep) pay.replace_id = D.rep;
         return authApi('POST', '/api/security/devices/authorize', pay).then(function (a) {
           b.disabled = false; $('#lv-pw').value = ''; clearBoxes(LV_BOX);
-          if (a && a.ok === true) { finish('تم التصريح لهذا الجهاز', 'رُبطت جلستك بهذا الجهاز. ننقلك الآن إلى حسابك…', { enter: true }); S.inn = true; return setTimeout(liveEnter, 1600); }
+          if (a && a.ok === true) { S.inn = true; return finish('تم التصريح لهذا الجهاز', 'رُبطت جلستك بهذا الجهاز. ننقلك الآن إلى حسابك…', { enter: true, after: liveGoIn }); }
           if (a && a.must_replace === true) { D.rep = null; liveDevPaint(); return msg('dev-msg', 'bad', 'بلغ حسابك الحد الأقصى (3 أجهزة). اختر جهازًا يُستبدل.'); }
           msg('dev-msg', 'bad', (a && a.message) || 'تعذّر اعتماد الجهاز.');
         });
