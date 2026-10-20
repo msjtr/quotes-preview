@@ -840,8 +840,10 @@
     function adopt(s) { if (!s || !s.access_token) return false; try { localStorage.setItem('tera.admin.session', JSON.stringify(s)); return true; } catch (e) { return false; } }
     function liveEnter() { liveTop('/staff/'); }
     /* v380: الانتقال إلى الحساب بعد أن يُقرأ إشعار «تم الدخول بنجاح» كاملًا (أو يضغط العميل «متابعة الآن»/يغلقه) — لا قبله */
-    function liveGoIn() { if (S.going) return; S.going = true; setTimeout(liveEnter, 1200); }
-    function liveIn() { if (S.inn) return; S.inn = true; finish('تم الدخول بنجاح', 'دخلت بحسابك الحقيقي. ننقلك الآن إلى حسابك…', { enter: true, after: liveGoIn }); }
+    /* v383: صفحة نجاح واحدة (بلا إشعار مكرر فوقها) تبقى 3 ثوانٍ ثم الانتقال، أو «المتابعة إلى حسابك» فورًا */
+    function liveGoIn() { if (S.going) return; S.going = true; setTimeout(liveEnter, 3000); }
+    function liveDone(h, p) { var c = TN.current && TN.current(); if (c && !c.closed && c.close) c.close(); finish0(h, p, { enter: true }); liveGoIn(); }
+    function liveIn() { if (S.inn) return; S.inn = true; liveDone('تم الدخول بنجاح', 'أهلًا بك في منصة تيرا — ننقلك الآن إلى حسابك…'); }
     function liveLogin() {
       var id = $('#lg-id'), pw = $('#lg-pw'), b = $('#lg-go'); b.disabled = true; b.textContent = 'جارٍ الدخول…'; msg('lg-msg');
       api('/api/auth/login', { identifier: liveId(id.value), password: pw.value }).then(function (r) {
@@ -1061,7 +1063,7 @@
         var pay = { device_id: D.id, grant_id: g.grant_id, current_password: pw }; if (D.rep) pay.replace_id = D.rep;
         return authApi('POST', '/api/security/devices/authorize', pay).then(function (a) {
           b.disabled = false; $('#lv-pw').value = ''; clearBoxes(LV_BOX);
-          if (a && a.ok === true) { S.inn = true; return finish('تم التصريح لهذا الجهاز', 'رُبطت جلستك بهذا الجهاز. ننقلك الآن إلى حسابك…', { enter: true, after: liveGoIn }); }
+          if (a && a.ok === true) { S.inn = true; return liveDone('تم التصريح لهذا الجهاز', 'رُبطت جلستك بهذا الجهاز. ننقلك الآن إلى حسابك…'); }
           if (a && a.must_replace === true) { D.rep = null; liveDevPaint(); return msg('dev-msg', 'bad', 'بلغ حسابك الحد الأقصى (3 أجهزة). اختر جهازًا يُستبدل.'); }
           msg('dev-msg', 'bad', (a && a.message) || 'تعذّر اعتماد الجهاز.');
         });
