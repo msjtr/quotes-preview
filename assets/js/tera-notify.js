@@ -39,6 +39,7 @@
     if (cur === h) cur = null;
     if (h.o.onClose) try { h.o.onClose(why || 'close'); } catch (e) { void e; }
     if (holdQ && holdQ.h === h && why !== 'replaced') { var f = holdQ.fn; holdQ = null; f(); }
+    if (why !== 'replaced' && Q.length) { clearTimeout(qT); qT = setTimeout(qFlush, 300); }
   }
   function paint(h) {
     var o = h.o, k = KIND[o.kind] || KIND.info;
@@ -67,9 +68,29 @@
       }, 100);
     }
   }
+  /* v380: الإشعارات لا تتلاحق — إشعار نتيجة جديد ينتظر حتى يُعرض الحالي 4 ثوانٍ على الأقل أو يغلقه العميل، ثم يظهر.
+   * «جارٍ…» يُستبدل بنتيجته فورًا (البطاقة نفسها)، والإشعار المكرر بالعنوان نفسه لا يُعاد. */
+  var Q = [], qT = null, MIN_VIS = 4000;
+  function qFlush() {
+    clearTimeout(qT); qT = null;
+    while (Q.length && Q[0].closed) Q.shift();
+    if (!Q.length) return;
+    if (cur && !cur.closed && cur.o.kind !== 'run') { var w = lastShownAt + MIN_VIS - Date.now(); if (w > 0) { qT = setTimeout(qFlush, w); return; } }
+    var ph = Q.shift(); ph.o.now = true; var h = show(ph.o); ph.real = h;
+    if (Q.length) qT = setTimeout(qFlush, MIN_VIS);
+  }
   function show(o) {
     o = o || {};
     if (!enabled && !o.force) return null;
+    if (!o.now && o.kind !== 'run' && cur && !cur.closed && cur.o.kind !== 'run' && Date.now() - lastShownAt < MIN_VIS) {
+      if (cur.o.title === o.title && cur.o.text === o.text) return cur;
+      for (var qi = 0; qi < Q.length; qi++) if (!Q[qi].closed && Q[qi].o.title === o.title && Q[qi].o.text === o.text) return Q[qi];
+      var ph = { o: o, closed: false, queued: true, close: function () { ph.closed = true; if (ph.real) ph.real.close(); }, set: function (n) { for (var k in n) if (Object.prototype.hasOwnProperty.call(n, k)) o[k] = n[k]; if (ph.real) ph.real.set(n); return ph; } };
+      Q.push(ph); if (Q.length > 3) Q.splice(0, Q.length - 3);
+      if (!qT) qT = setTimeout(qFlush, Math.max(0, lastShownAt + MIN_VIS - Date.now()));
+      return ph;
+    }
+    delete o.now;
     if (cur && !cur.closed) close(cur, 'replaced');
     var D = W.document, root = el('div', 'tn-wrap' + (o.modal ? ' is-modal' : '')), card = el('div', 'tn-card');
     root.setAttribute('dir', 'rtl'); card.setAttribute('role', o.kind === 'bad' || o.kind === 'warn' ? 'alert' : 'status'); card.setAttribute('aria-live', 'assertive');
