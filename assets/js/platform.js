@@ -16464,7 +16464,7 @@ if (LIVE.on) document.addEventListener('click', function (ev) {
 /* ---------- v271: إجراءات حقيقية في مركز الأمان والطلبات ----------
    تغيير كلمة المرور (البوابة الأمنية + كلمة المرور الحالية)، إنهاء الجلسات الأخرى، إلغاء طلب لم يُستلم بعد — كلها عبر مسارات الخادم نفسها. */
 /* v357: العمليات الحساسة (كلمة المرور · الجلسات · المصادقة · الأجهزة · البنك · الدفع والسداد والتحويل · الإلغاء) تتطلب تحققًا إضافيًا بعملية جمع */
-const SENSITIVE_RE = /\/(password|recovery-code|sessions\/revoke|totp\/(start|disable)|security\/devices|org\/bank|pay\/|payouts|transfers|bonds|fees\/settings|cancel)/;
+const SENSITIVE_RE = /\/(whatsapp\/(link|pin|unlink)|password|recovery-code|sessions\/revoke|totp\/(start|disable)|security\/devices|org\/bank|pay\/|payouts|transfers|bonds|fees\/settings|cancel)/;
 async function clPost(path, body) {
   if (window.TeraNotify && window.TeraNotify.enabled && window.TeraNotify.math && SENSITIVE_RE.test(String(path))) {
     const okm = await window.TeraNotify.math({ title: 'تحقق إضافي لعملية حساسة', text: 'هذه العملية تمس أمان حسابك أو أموالك. أجب عن السؤال البسيط للمتابعة.' });
@@ -20268,14 +20268,107 @@ function secGuide(kind) {
     sgWhy([['flag', 'الهدف', 'رمز من 6 أرقام يُرسل إليك عند الدخول أو الاسترداد، صالح خمس دقائق ولمرة واحدة، يثبت أن من يدخل هو أنت صاحب الجوال أو البريد.'], ['list-checks', 'الاستخدام', 'اختر القناة التي تفضّلها، ثم أرسل رمز تجربة وأدخله لتأكيد أن الرموز تصلك فعلًا.'], ['sparkle', 'متى تختاره؟', 'إذا لم ترغب بتثبيت تطبيق، أو وسيلةً احتياطية بجانب تطبيق المصادقة.']]),
     sgSteps([['اختر القناة', 'رسالة نصية أو واتساب أو البريد الإلكتروني.'], ['أرسل رمز تجربة', 'يصلك رمز من 6 أرقام صالح خمس دقائق.'], ['أدخل الرمز', 'يتأكد تلقائيًا عند اكتماله وتُفعَّل الوسيلة.'], ['احفظ رقمك الإضافي', 'المنصة لا ترسله ولا تعرضه — احفظه في مكان آمن خارج جوالك.']])]);
   if (kind === 'wa') return H('whatsapp-logo:teal', 'شرح ربط الواتساب', 'رموز التحقق وتنبيهات طلباتك على واتساب', [
-    sgWhy([['flag', 'الهدف', 'ربط رقم جوالك في واتساب بحسابك لتصلك رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا عند تواصلك.'], (LIVE.on ? ['shield-check', 'لماذا يربطه فريقنا؟', 'لا يُربط رقم بحساب آليًا أبدًا — يتحقق الفريق من أن الرقم رقمك المسجّل حتى لا تصل بياناتك إلى غيرك.'] : ['shield-check', 'لماذا رمز التحقق؟', 'لا يُربط رقم إلا بعد التحقق منه برمز يصل إليه — حتى لا تصل بياناتك إلى غيرك.']), ['list-checks', 'شرط', 'ربط الواتساب شرط لإرسال ملفك للتوثيق.']]),
-    LIVE.on ? sgSteps([['اضغط «ابدأ الربط»', 'تفتح محادثة واتساب منصة تيرا الرسمي برسالة طلب الربط جاهزة.'], ['أرسل الرسالة من رقمك المسجّل', 'يجب أن يكون الرقم نفسه المسجّل في ملفك.'], ['يتحقق الفريق ويربط الرقم', 'تظهر الحالة «مربوط» هنا بعد الربط، ويمكنك إلغاء الربط من مركز الأمان.']])
-      : sgSteps([['أدخل رقم جوالك', 'رقمك المفعّل عليه واتساب، ثم «أرسل رمز التحقق عبر واتساب».'], ['أدخل رمز التحقق', 'يصلك من واتساب منصة تيرا الرسمي +966 55 569 8774 — 6 أرقام صالحة 5 دقائق.'], ['تم التحقق ✓', 'تنتقل مباشرة لإنشاء رمز التعريف.'], ['أنشئ رمز التعريف وأكّده', '4 أرقام تختارها — يُطلب منك عند استخدام خدماتنا على واتساب.'], ['تم الحفظ', 'تصلك رسالة «تم تسجيل رقمك واعتماده»، وتستطيع تغيير رقمك من مركز الأمان في أي وقت.']]),
+    sgWhy([['flag', 'الهدف', 'ربط رقم جوالك في واتساب بحسابك لتصلك رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا عند تواصلك.'], ['shield-check', 'لماذا رمز التحقق؟', 'لا يُربط رقم إلا بعد التحقق منه برمز يصل إليه — حتى لا تصل بياناتك إلى غيرك.'], ['list-checks', 'شرط', 'ربط الواتساب شرط لإرسال ملفك للتوثيق.']]),
+    sgSteps([['أدخل رقم جوالك', 'رقمك المفعّل عليه واتساب، ثم «أرسل رمز التحقق عبر واتساب».'], ['أدخل رمز التحقق', 'يصلك من واتساب منصة تيرا الرسمي +966 55 569 8774 — صالح لمدة قصيرة.'], ['تم التحقق ✓', 'تنتقل مباشرة لإنشاء رمز التعريف.'], ['أنشئ رمز التعريف وأكّده', '4 أرقام تختارها — لا متكررة ولا متسلسلة ولا آخر 4 أرقام من جوالك.'], ['تأكيد وحفظ', 'بكلمة مرورك الحالية والتحقق الأمني، فيظهر «تم تسجيل رقمك واعتماده». تستطيع تغيير رقمك من مركز الأمان في أي وقت.']]),
     DS.note('warn', 'لا تشارك رموزك', 'فريق تيرا لا يطلب كلمة مرورك ولا رموز التحقق في أي محادثة.')]);
   return null;
 }
-/* صفحة واتساب في الوضع الحي: الحالة الحقيقية من القاعدة + الشرح + بدء الربط من محادثة الواتساب الرسمية */
+/* v379: ربط واتساب الحقيقي في مركز الأمان — مسارات الخادم القائمة (lib/whatsappsecurity.js):
+   GET /api/account/whatsapp (الحالة) · POST code {wa} · POST verify {wa, code} → wa_proof
+   · POST link {wa, wa_proof, wa_pin, current_password, grant_id} (يربط ويحفظ رمز التعريف معًا، ويُلغي الرقم السابق عند التغيير)
+   · POST pin {pin, pin_confirm, current_password, grant_id} (تغيير رمز التعريف وحده). التحقق الأمني بغرض whatsapp_security.
+   الرمز ورمز التعريف لا يُحفظان في المتصفح بعد الإرسال. */
+const LWA = { st: '', cc: '+966', num: '', wa: '', proof: '', code: '', pin: '', pin2: '', len: 6, info: null, busy: false, note: null };
+function lwaPinErr(p, wa) {
+  if (!/^\d{4}$/.test(p)) return 'أدخل رمز تعريف من 4 أرقام.';
+  const d = p.split('').map(Number); if (d.every(function (x) { return x === d[0]; })) return 'لا تُقبل أرقام متكررة مثل 1111.';
+  let up = true, dn = true; for (let i = 0; i < 3; i++) { if (d[i + 1] !== (d[i] + 1) % 10) up = false; if (d[i + 1] !== (d[i] + 9) % 10) dn = false; }
+  if (up || dn) return 'لا يُقبل رمز متسلسل مثل 1234 أو 4321.';
+  if (String(wa || '').replace(/\D/g, '').slice(-4) === p) return 'لا تستخدم آخر 4 أرقام من رقم جوالك.';
+  return '';
+}
+function lwaLoad() { if (LWA.info === 'loading') return; LWA.info = 'loading'; clApi('/api/account/whatsapp').then(function (j) { LWA.info = j; }).catch(function (err) { LWA.info = { ok: false, message: (err && err.message) || '' }; }).then(function () { if (S.other === 'sec-whatsapp') draw(); }); }
+function lwaReset(st) { LWA.st = st || ''; LWA.code = ''; LWA.pin = ''; LWA.pin2 = ''; LWA.note = null; if (!st || st === 'num') { LWA.proof = ''; } }
+async function lwaSend() {
+  const n = String(LWA.num || '').replace(/[٠-٩]/g, function (x) { return String(x.charCodeAt(0) - 0x660); }).replace(/\D/g, '').replace(/^0+/, '');
+  if (n.length < 7) { LWA.note = ['warn', 'أدخل رقمًا صحيحًا بدون الصفر في أوله.']; draw(); return; }
+  const wa = LWA.cc + n; LWA.busy = true; LWA.note = ['info', 'جارٍ إرسال الرمز…']; draw();
+  const j = await clPost('/api/account/whatsapp/code', { wa: wa }).catch(function () { return null; });
+  LWA.busy = false;
+  if (!j || j.ok !== true) { LWA.note = ['warn', (j && j.message) || 'تعذّر إرسال الرمز. أعد المحاولة بعد قليل.']; draw(); return; }
+  LWA.wa = wa; LWA.len = Number(j.otp_length) || 6; LWA.code = ''; LWA.st = 'otp';
+  LWA.note = ['ok', j.sent === false ? 'الرمز السابق ما زال صالحًا — أدخله.' : 'أُرسل رمز التحقق إلى واتساب ' + (j.wa_masked || '') + ' من الرقم الرسمي لمنصة تيرا.']; draw();
+}
+async function lwaVerify() {
+  const c = String(LWA.code || '').replace(/\D/g, '');
+  if (c.length !== LWA.len) { LWA.note = ['warn', 'أدخل الرمز كاملًا (' + LWA.len + ' أرقام).']; draw(); return; }
+  LWA.busy = true; draw();
+  const j = await clPost('/api/account/whatsapp/verify', { wa: LWA.wa, code: c }).catch(function () { return null; });
+  LWA.busy = false; LWA.code = '';
+  if (!j || j.ok !== true || !j.wa_proof) { LWA.note = ['warn', (j && j.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.']; draw(); return; }
+  LWA.proof = j.wa_proof; LWA.st = 'pin'; LWA.note = null; draw();
+}
 function liveWaPage() {
+  if (!LWA.info) lwaLoad();
+  const I = (LWA.info && LWA.info !== 'loading') ? LWA.info : null;
+  if (I && I.ok === false && !LWA.st) return liveWaPageOld();
+  const link = (I && I.link) || { status: 'none' }, pin = (I && I.pin) || {}, lock = (I && I.lock) || {};
+  const linked = link.status === 'active', otpOn = !I || I.otp !== false, pinSet = !!pin.set;
+  const D = function (v) { return v ? bdiD(String(v).replace('T', ' ').slice(0, 16)) : '—'; };
+  const masked = link.wa_masked ? ltr(link.wa_masked) : '—';
+  const at = { num: 0, otp: 1, pin: 3, done: 4 }[LWA.st];
+  const steps = lvSteps([['الرقم', 'رقم جوالك المفعّل عليه واتساب.'], ['رمز التحقق', 'يصلك على واتساب من الرقم الرسمي.'], ['تم التحقق', 'تأكدنا أن الرقم رقمك.'], ['رمز التعريف', '4 أرقام تختارها وتؤكّدها.'], ['تم الحفظ', 'تم تسجيل رقمك واعتماده.']], at == null ? (linked ? 4 : 0) : at);
+  const note = LWA.note ? DS.note(LWA.note[0], LWA.note[1], '') : null;
+  const cancel = liveOk(DS.button('إلغاء', { onClick: function () { lwaReset(''); draw(); } }));
+  let flow = null;
+  if (!I) flow = clWait('واتساب منصة تيرا');
+  else if (LWA.st === 'num') flow = lvPanel(linked ? 'أدخل رقمك الجديد' : 'أدخل رقم جوالك', DS.badge('الخطوة 1 من 5', null), [
+    e('div', { class: 'rv-ph' }, [DS.editField('مفتاح الدولة', DS.select({ value: LWA.cc, options: [['+966', '+966 السعودية'], ['+971', '+971 الإمارات'], ['+965', '+965 الكويت'], ['+973', '+973 البحرين'], ['+974', '+974 قطر'], ['+968', '+968 عُمان'], ['+20', '+20 مصر']], onChange: function (v) { LWA.cc = v; } })),
+      DS.editField('رقم الجوال (واتساب)', DS.input({ numeric: true, value: LWA.num, placeholder: '5XXXXXXXX', onInput: function (v) { LWA.num = v; } }))]),
+    e('small', { class: 'rv-sm' }, 'بدون الصفر في البداية · يقبل الأرقام الدولية'), note,
+    lvRow([liveOk(DS.button(LWA.busy ? 'جارٍ الإرسال…' : 'أرسل رمز التحقق عبر واتساب', { tone: 'primary', ui: 'chat-circle-dots', disabled: LWA.busy, onClick: lwaSend })), cancel])]);
+  else if (LWA.st === 'otp') flow = lvPanel('أدخل رمز التحقق', DS.badge('الخطوة 2 من 5', null), [note,
+    DS.editField('رمز التحقق', segBoxes({ label: 'رمز التحقق', ac: 'one-time-code', segs: function () { return Array(LWA.len).fill(1); }, get: function () { return LWA.code; }, set: function (v) { LWA.code = v.slice(0, LWA.len); }, onFull: function () { lwaVerify(); } })),
+    lvRow([liveOk(DS.button(LWA.busy ? 'جارٍ التحقق…' : 'تحقق', { tone: 'primary', ui: 'check', disabled: LWA.busy, onClick: lwaVerify })), liveOk(DS.button('إعادة إرسال الرمز', { size: 'sm', onClick: lwaSend })), liveOk(DS.button('تغيير الرقم', { size: 'sm', onClick: function () { lwaReset('num'); draw(); } })), cancel])]);
+  else if (LWA.st === 'pin' || LWA.st === 'pinonly') {
+    const only = LWA.st === 'pinonly', st0 = {}, out = e('div', { role: 'status' });
+    const go1 = liveOk(DS.button('تأكيد وحفظ', { tone: 'primary', ui: 'check', onClick: async function () {
+      out.innerHTML = '';
+      const err = lwaPinErr(LWA.pin, only ? '' : LWA.wa);
+      if (err) { out.appendChild(DS.note('warn', err, '')); return; }
+      if (LWA.pin !== LWA.pin2) { out.appendChild(DS.note('warn', 'الرمزان غير متطابقين.', '')); return; }
+      if (!st0.pw()) { out.appendChild(DS.note('warn', 'أدخل كلمة المرور الحالية.', '')); return; }
+      go1.disabled = true;
+      try {
+        const grant = await st0.grant();
+        const r = only ? await clPost('/api/account/whatsapp/pin', { pin: LWA.pin, pin_confirm: LWA.pin2, current_password: st0.pw(), grant_id: grant })
+          : await clPost('/api/account/whatsapp/link', { wa: LWA.wa, wa_proof: LWA.proof, wa_pin: LWA.pin, current_password: st0.pw(), grant_id: grant });
+        if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الحفظ.');
+        LWA.pin = ''; LWA.pin2 = ''; LWA.proof = ''; LWA.st = 'done'; LWA.done = only ? 'pin' : (r.changed ? 'changed' : 'linked'); LWA.info = null; LWA.note = null;
+        if (typeof LIVE_DATA !== 'undefined' && LIVE_DATA && LIVE_DATA.vsec && !only) LIVE_DATA.vsec.wa = true;
+        draw();
+      } catch (err2) { if (err2 && err2.message === 'auth') return; out.appendChild(DS.note('warn', 'لم يُحفظ', (err2 && err2.message) || '')); go1.disabled = false; }
+    } }));
+    flow = lvPanel(only ? 'غيّر رمز التعريف' : 'أنشئ رمز التعريف', DS.badge(only ? 'رمز التعريف' : 'الخطوة 4 من 5', null), [
+      only ? null : DS.note('ok', 'تم التحقق من رقمك', 'بقي أن تختار رمز التعريف ثم تؤكّد الحفظ.'),
+      DS.editField('رمز التعريف', segBoxes({ label: 'رمز التعريف', secret: true, segs: function () { return [1, 1, 1, 1]; }, get: function () { return LWA.pin; }, set: function (v) { LWA.pin = v.slice(0, 4); } })),
+      DS.editField('تأكيد رمز التعريف', segBoxes({ label: 'تأكيد رمز التعريف', secret: true, segs: function () { return [1, 1, 1, 1]; }, get: function () { return LWA.pin2; }, set: function (v) { LWA.pin2 = v.slice(0, 4); } })),
+      e('small', { class: 'rv-sm' }, '4 أرقام · لا متكررة مثل 1111 · لا متسلسلة مثل 1234 · ولا آخر 4 أرقام من جوالك'),
+      livePwBox('whatsapp_security', st0), lvRow([go1, cancel]), out]);
+  } else if (LWA.st === 'done') flow = lvPanel(LWA.done === 'pin' ? 'تم تغيير رمز التعريف' : 'شكرًا لك — تم تسجيل رقمك واعتماده', DS.badge('تم الحفظ', 'ok'), [
+    LWA.done === 'pin' ? DS.note('ok', 'حُفظ رمز التعريف الجديد', 'يُطلب منك عند استخدام خدماتنا على واتساب.')
+      : e('div', { class: 'rv-wa' }, [e('p', {}, [e('b', {}, 'مرحبًا بك في خدمات منصة تيرا'), e('br'), 'تم تسجيل رقمك واعتماده، وربطه بخدماتنا بنجاح ✓', e('br'), 'من الآن تصلك رموز التحقق وتنبيهات حسابك من الرقم الرسمي فقط.', e('br'), 'تستطيع تغيير رقمك من «مركز الأمان» في أي وقت.', e('br'), e('b', {}, 'تيرا… حلول سهلة وآمنة')])]),
+    lvRow([liveOk(DS.button('تم', { size: 'sm', tone: 'primary', onClick: function () { lwaReset(''); draw(); } }))])]);
+  else if (!otpOn) flow = DS.note('warn', 'قناة واتساب غير متاحة لإرسال الرمز الآن', 'أعد المحاولة لاحقًا، أو تواصل مع خدمة العملاء.');
+  const numP = lvPanel('رقم الواتس اب المربوط', DS.badge(linked ? 'مربوط' : link.status === 'pending' ? 'بانتظار الربط' : 'غير مربوط', linked ? 'ok' : null), [lvFields([lvField('الرقم', linked ? masked : '', 0, false), lvField('تاريخ الربط', linked ? D(link.linked_at) : '', 0, false)]),
+    LWA.st || !I || !otpOn ? null : lvRow(liveOk(DS.button(linked ? 'تغيير الرقم' : 'ربط رقم الواتس اب', { tone: 'primary', size: 'sm', ui: linked ? 'arrows-clockwise' : 'whatsapp-logo', onClick: function () { lwaReset('num'); LWA.num = ''; draw(); } })))]);
+  const pinP = lvPanel('رمز التعريف', DS.badge(lock.locked ? 'موقوف مؤقتًا' : pinSet ? 'محفوظ' : 'غير مُنشأ', lock.locked ? 'warn' : pinSet ? 'ok' : null), [lvFields([lvField('تاريخ الإنشاء', pinSet ? D(pin.created_at) : '', 0, false), lvField('آخر تغيير', pinSet ? D(pin.changed_at) : '', 0, false)]),
+    LWA.st || !linked ? null : lvRow(liveOk(DS.button(pinSet ? 'تغيير رمز التعريف' : 'إنشاء رمز التعريف', { size: 'sm', ui: 'lock-key', onClick: function () { lwaReset('pinonly'); draw(); } })))]);
+  return [SH('wa', 'واتساب منصة تيرا', [['ربطُ الرقم', linked ? 'مربوط' : 'غير مربوط', 'phone', linked ? 'ok' : 'warn'], ['الرقم', linked ? (link.wa_masked || '—') : '—', 'device-mobile'], ['رمز التعريف', pinSet ? 'محفوظ' : 'غير مُنشأ', 'lock', pinSet ? 'ok' : null]], [linked ? 'مربوط' : 'غير مربوط', linked ? 'ok' : 'warn']),
+    steps, flow, lvGrid2([numP, pinP]), DS.note('info', 'رمز التعريف', 'لا يُرسَل رمز التعريف في أي رسالة، ويُطلب منك عند استخدام خدماتنا على واتساب فقط. فريق تيرا لا يطلبه منك أبدًا.'), secGuide('wa')];
+}
+/* الطريقة السابقة (احتياط إن تعذّرت قراءة حالة الربط من الخادم): بدء الربط من محادثة الواتساب الرسمية */
+function liveWaPageOld() {
   const V = liveVsec(), me = LIVE.me || {};
   const msg = 'أرغب بربط رقم واتساب هذا بحسابي في منصة تيرا' + (me.tera_id ? ' — رقم تيرا: ' + me.tera_id : '') + (me.full_name ? ' — ' + me.full_name : '');
   return [SH('wa', 'واتساب منصة تيرا', [['ربطُ الرقم', V.wa ? 'مربوط' : 'غير مربوط', 'phone', V.wa ? 'ok' : 'warn'], ['الرقم المسجّل', me.phone ? '+' + String(me.phone).replace(/^\+/, '') : '—', 'device-mobile'], ['شرط التوثيق', V.wa ? 'مكتمل' : 'مطلوب', 'seal-check', V.wa ? 'ok' : 'warn']], [V.wa ? 'مربوط' : 'غير مربوط', V.wa ? 'ok' : 'warn']),
