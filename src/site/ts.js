@@ -90,7 +90,7 @@
     $$('.t2-side-gh', SIDE).forEach(function (h) { if (h.title) { h.dataset.tip = h.title; h.removeAttribute('title'); } });
   }
   /* v241: في صفحة الدخول يختفي زر «تسجيل الدخول» من القائمة السفلية ويتوزع الزران الآخران */
-  $$('.t2-dock').forEach(function (d) { d.classList.toggle('is-auth', /^\/login/.test(PATH)); });
+  /* v386: «حسابك» يبقى في القائمة السفلية في كل الصفحات (ومنها البوابة) */
   $$('.t2-side-i, .t2-dock-i').forEach(function (i) { var on = i.dataset.go === PATH || (i.dataset.alt && i.dataset.alt.split(' ').indexOf(window.__GROUP) >= 0); i.classList.toggle('is-on', !!on); });
 
   /* ---------- search (Ctrl K) ---------- */
@@ -344,15 +344,7 @@
     if (window.__PATH === '/login') document.documentElement.classList.add('is-login');
     var cp = $('.tf-copy'), pv = null; try { pv = parent.document.querySelector('.tq-ver'); } catch (e) {}
     if (cp && pv && !$('.tf-ver', cp)) { var v = document.createElement('span'); v.className = 'tf-ver'; v.innerHTML = pv.innerHTML; cp.appendChild(v); }
-    var live = false; try { live = /(^|\.)tera-services\.com\.sa$/.test(parent.location.hostname || location.hostname); } catch (e) {}
-    if (live) {
-      var tok = ''; try { var s0 = JSON.parse(localStorage.getItem('tera.admin.session') || 'null'); if (s0 && s0.access_token && (!s0.expires_at || s0.expires_at * 1000 > Date.now())) tok = s0.access_token; } catch (e) {}
-      var inb = $('.t2-hbtn.is-in');
-      if (tok && inb) {
-        var tt = $('.t2-hbtn-t', inb); if (tt) tt.textContent = 'حسابي'; inb.setAttribute('aria-label', 'حسابي');
-        inb.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopImmediatePropagation(); try { top.location.href = '/staff/'; } catch (e) { location.href = '/staff/'; } }, true);
-      }
-    }
+    /* v386: زر الهيدر «حسابك» يفتح صفحة «حسابك» دائمًا — وفيها الدخول إلى لوحة التحكم بعد تسجيل الدخول */
   })();
 
   /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
