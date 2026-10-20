@@ -41,8 +41,14 @@
 .pt-who-t b{font:800 .95rem Alexandria,sans-serif;color:var(--t2-ink,#0B1F3A);direction:ltr;unicode-bidi:isolate;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pt-who-x{flex:none;font-weight:700;white-space:nowrap}
 /* v382: لا انزياح أفقي في متصفح الجوال (iOS يوسّع الإطار الداخلي على عرض محتواه، فتنزاح الصفحة كلها) */
-html,body{max-width:100%;overflow-x:clip}
 #pv-site,#pv-site .ts-dev{max-width:100%;overflow:hidden}
+/* v383: نافذة «تحديث التطبيق» */
+.tq-app{display:grid;gap:8px;margin-top:6px;text-align:start}
+.tq-app-r{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:12px;background:var(--t2-surface-2,#F5F8FB);border:1px solid var(--t2-line,#DCE5EE)}
+.tq-app-r span{color:var(--t2-muted,#5B6B80);font-weight:600;font-size:.88rem}
+.tq-app-r b{color:var(--t2-ink,#0B1F3A);font-weight:800;font-size:.92rem}
+/* v383: شعار شاشة الانتظار في سفاري الآيفون — المرشّح مع الدوران ثلاثي الأبعاد يُخفي طبقات الشعار */
+@supports (-webkit-touch-callout:none){.tw-logo{filter:none!important}.tw-st{transform-style:flat!important}.tw-st img{filter:drop-shadow(0 0 14px rgba(10,165,173,.45))}}
 #pv-site iframe{width:1px;min-width:100%;max-width:100%}
 /* التحقق الإضافي: عملية جمع في قوالب */
 .tn-mwrap{text-align:center}
@@ -783,3 +789,7 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
   .rv-vis-c{flex-wrap:wrap}
 }
 @media (max-width:480px){.pv-bar .pv-bar-g.pv-nav{flex-wrap:wrap;justify-content:center;max-width:100%}}
+/* v383: زر «تحديث التطبيق» يبقى ظاهرًا في وضع تطبيق الجوال */
+#pv-host.is-app .t2.is-client .t2-hbtn.t2-hupd{display:inline-flex!important}
+/* v383: هيدر المنصة على الجوال يتّسع لزر «تحديث التطبيق» دون قصّ زر الخروج */
+@media (max-width:430px){.t2-head.is-v3 .t2-hd-r{gap:4px}.t2-head.is-v3 .t2-hd-r>.t2-hbtn,.t2-head.is-v3>.t2-hcmd{width:40px!important;min-width:40px!important;height:40px!important;padding:0!important}.t2-head.is-v3 .t2-hd-r>.t2-hbtn .t2-tile{width:24px;height:27px}.t2-head.is-v3 .t2-hd-r>.t2-hwho .t2-avatar{width:40px;height:40px}.t2-head.is-v3 .t2-hd-brand img{max-width:84px;height:auto}}

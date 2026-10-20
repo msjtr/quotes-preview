@@ -14639,7 +14639,7 @@ function shell() {
   return '<div class="t2 t2-app ' + (ADMIN ? 'is-admin' : 'is-client') + '"><header class="t2-head is-v3"><div class="t2-hd-brand"><img class="t2-hd-logo" src="' + IMG.logo + '" alt="تيرا"><span class="t2-hd-name">منصةُ الخدمات</span></div>' +
     '<button type="button" class="t2-hcmd" aria-label="البحث"><span class="t2-hcmd-i" aria-hidden="true"></span><span class="t2-hcmd-t">ابحث عن منتج أو قسم…</span><kbd class="t2-kbd">Ctrl K</kbd></button><div class="t2-hd-sp"></div>' +
     '<div class="t2-hd-r"><button type="button" class="t2-hwho lv-who" aria-haspopup="dialog" aria-expanded="false"><span class="t2-avatar">' + (ADMIN ? 'م' : 'ع') + '</span><span class="t2-hwho-n">' + (ADMIN ? 'المشرف العام' : ME.name) + '</span><span class="t2-hwho-r">' + (ADMIN ? (typeof cuCtxLabel === 'function' ? cuCtxLabel() : 'المشرف') : 'العميل') + '</span><span class="lv-caret" aria-hidden="true">' + ui('caret-down', 12) + '</span></button>' +
-    '<button class="t2-hbtn t2-hmode" type="button" aria-label="الوضع الليلي" title="الوضع الليلي / النهاري"><span class="t2-hm-moon">' + tile('moon') + '</span><span class="t2-hm-sun">' + tile('sun:gold') + '</span></button><button class="t2-hbtn t2-hcart" type="button" aria-label="سلتي" title="سلتي" data-nav="cart">' + tile('cart') + '</button><button class="t2-hbtn" type="button" aria-label="الإشعارات" data-nav="bell">' + tile('bell') + '</button>' +
+    '<button class="t2-hbtn t2-hmode" type="button" aria-label="الوضع الليلي" title="الوضع الليلي / النهاري"><span class="t2-hm-moon">' + tile('moon') + '</span><span class="t2-hm-sun">' + tile('sun:gold') + '</span></button><button class="t2-hbtn t2-hcart" type="button" aria-label="سلتي" title="سلتي" data-nav="cart">' + tile('cart') + '</button><button class="t2-hbtn" type="button" aria-label="الإشعارات" data-nav="bell">' + tile('bell') + '</button><button class="t2-hbtn t2-hupd" type="button" aria-label="تحديث التطبيق" title="تحديث التطبيق" data-live-ok>' + tile('arrows-clockwise:teal') + '</button>' +
     '<button class="t2-hbtn is-out" type="button" aria-label="تسجيل الخروج">' + tile('out') + '<span class="t2-out-ui" aria-hidden="true">' + ui('sign-out', 24) + '</span>' + '<span class="t2-hbtn-t">تسجيل الخروج</span></button></div></header>' +
     '<aside class="t2-side" aria-label="شريطُ التنقُّل"><div class="t2-side-top"><button class="t2-side-t" type="button"><span class="t2-chev" aria-hidden="true"></span><span>طيُّ القائمة</span></button></div><nav class="t2-side-n">' + side + '</nav></aside>' +
     '<div class="t2-main"><div class="t2-body"><div class="t2-wrap"><div class="t2-stack"><header class="t2-phead"><button type="button" class="t2-back" id="pv-back" hidden>' + ui('caret-right', 16) + '<span></span></button><nav class="t2-crumbs" aria-label="المسار"><ol class="t2-crumb-ol" id="pv-crumb"></ol></nav><div class="t2-phead-tx"><span class="t2-phead-ic" id="pv-ic" aria-hidden="true"></span><div class="t2-phead-tt"><h1 class="t2-phead-t" id="pv-title"></h1><p class="t2-phead-s" id="pv-sub"></p></div></div></header>' +
@@ -18275,7 +18275,7 @@ if (LIVE.on) {
   draw = function () {
     if (!LIVE.me) {
       if (!ROOT) return;
-      ROOT.innerHTML = ''; ROOT.appendChild(DS.panel(null, null, [DS.note('info', LIVE.err ? 'تعذّر تحميل الحساب' : 'جارٍ تحميل حسابك…', LIVE.err || 'نقرأ بياناتك من الخادم.',
+      ROOT.innerHTML = ''; ROOT.appendChild(DS.panel(null, null, [DS.note('info', LIVE.err ? 'تعذّر تحميل الحساب' : 'لحظات ونجهّز حسابك', LIVE.err || 'نرتّب خدماتك وبياناتك لتجدها كاملة أمامك.',
         LIVE.err ? DS.button('إعادة المحاولة', { tone: 'primary', onClick: function () { location.reload(); } }) : null)]));
       return;
     }
@@ -20383,7 +20383,15 @@ function liveWaPageOld() {
 } catch (err) { void err; } })();
 /* v317: تنبيه «إصدار جديد» — التطبيق المفتوح على الجوال لا يعيد التحميل وحده، فيُفحص رقم الإصدار عند العودة للتطبيق وكل عشر دقائق */
 (function () { try {
-  if (typeof window === 'undefined' || !window.fetch) return; let shown = false, last = 0;
+  /* v383: عند كل دخول للعميل — إن لم تكن إشعارات الجوال والويب مفعّلة على هذا الجهاز يُعرض عليه تفعيلها (مرة في الجلسة) */
+  if (LIVE.on) setTimeout(function () { try {
+    const TP = window.TeraPush, TN = window.TeraNotify; if (!TP || !TN || !TP.state || S.role !== 'client') return;
+    if (sessionStorage.getItem('tq.pushAsk')) return; const st = TP.state(); if (!st || st.on || st.blocked || st.perm === 'granted') return;
+    sessionStorage.setItem('tq.pushAsk', '1');
+    TN.show({ kind: 'info', icon: 'bell-ringing:teal', title: 'فعّل إشعارات تيرا', text: 'لتصلك تذكيرات السداد وقبول الطلبات وتنبيهات الأمان على جهازك حتى والمنصة مغلقة.', ms: 0,
+      actions: [{ label: 'تفعيل الإشعارات', primary: true, run: function () { TP.enable(); } }, { label: 'لاحقًا' }] });
+  } catch (err) { void err; } }, 7000);
+  if (typeof window === 'undefined' || !window.fetch || window.__tqUpd) return; /* v383: الفحص صار في version.js لكل الصفحات */ let shown = false, last = 0;
   const cur = function () { return String((window.TQ_VERSION && window.TQ_VERSION.v) || ''); };
   const show = function (v) { if (shown || document.querySelector('.tq-upd')) return; shown = true;
     const b = e('div', { class: 'tq-upd', role: 'status' }, [frag(ui('arrows-clockwise', 18)), e('span', {}, 'إصدار جديد ' + v + ' متاح — حدّث الصفحة لتظهر آخر التعديلات.'), e('button', { type: 'button', onClick: function () { location.reload(); } }, 'تحديث الآن'), e('button', { type: 'button', class: 'is-x', 'aria-label': 'إغلاق', onClick: function () { b.remove(); } }, frag(ui('x', 16)))]);

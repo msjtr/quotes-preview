@@ -50,7 +50,7 @@
     h.x.hidden = o.kind === 'run' || o.closable === false;
     h.acts.textContent = '';
     (o.actions || []).forEach(function (a) {
-      var b = el('button', 'tn-btn' + (a.primary ? ' is-p' : ''), a.label); b.type = 'button';
+      var b = el('button', 'tn-btn' + (a.primary ? ' is-p' : ''), a.label); b.type = 'button'; b.setAttribute('data-live-ok', '');
       b.addEventListener('click', function () { if (a.keep !== true) close(h, 'action'); if (a.run) a.run(); });
       h.acts.appendChild(b);
     });
