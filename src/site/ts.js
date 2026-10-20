@@ -564,9 +564,23 @@
     function vok(sel) { var c = $(sel); return !!(c && c._st && c._st.ok); }
     /* v375: ربط واتساب بالخطوات المعتمدة — رمز تحقق على واتساب ← «تم التحقق» ← رمز التعريف (4 أرقام) وتأكيده ← حفظ ← رسالة الاعتماد */
     var WAID = { ok: false };
+    /* v379: في المنفذين الحيّين الجوال يُتحقَّق منه برمز واتساب في بطاقة الجوال نفسها (/admin/api/register/code)،
+       فلا بطاقة تحقق ثانية لربط الواتساب؛ ورمز التعريف يُعتمد من الخادم (/admin/api/register/wa-link) ويُحفظ مع إنشاء الحساب (wa_link_proof). */
+    function waVer() { return LIVE ? vok('#f-reg4 .vc[data-ch=sms]') : vok('#wa-box .vc'); }
+    if (LIVE) { var wv0 = $('#wa-box .vc'); if (wv0) wv0.hidden = true; }
+    function pinErr(p) {
+      if (!/^\d{4}$/.test(p)) return 'أدخل رمز تعريف من 4 أرقام.';
+      var d = p.split('').map(Number), up = true, dn = true;
+      if (d.every(function (x) { return x === d[0]; })) return 'لا يُقبل رمز متكرر مثل 1111.';
+      for (var i = 0; i < 3; i++) { if (d[i + 1] !== (d[i] + 1) % 10) up = false; if (d[i + 1] !== (d[i] + 9) % 10) dn = false; }
+      if (up || dn) return 'لا يُقبل رمز متسلسل مثل 1234 أو 4321.';
+      var ph = (String($('#rg-ph-cc') ? $('#rg-ph-cc').value : '') + ascii($('#rg-ph') ? $('#rg-ph').value : '')).replace(/\D/g, '');
+      if (ph.length >= 4 && ph.slice(-4) === p) return 'لا تستخدم آخر 4 أرقام من رقم جوالك.';
+      return '';
+    }
     function waIdPaint() {
       var box = $('#wa-id'), done = $('#wa-done'); if (!box) return;
-      var on = ynVal('wa') === 'yes', ver = vok('#wa-box .vc');
+      var on = ynVal('wa') === 'yes', ver = waVer();
       box.hidden = !(on && ver && !WAID.ok); done.hidden = !(on && ver && WAID.ok);
     }
     (function () {
@@ -574,15 +588,25 @@
       function boxes(sel) { var ins = $$(sel + ' input', box); ins.forEach(function (x, i) { x.addEventListener('input', function () { x.value = x.value.replace(/\D/g, '').slice(-1); if (x.value && ins[i + 1]) ins[i + 1].focus(); }); x.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !x.value && ins[i - 1]) ins[i - 1].focus(); }); }); return function () { return ins.map(function (x) { return x.value; }).join(''); }; }
       var A = boxes('.wid-a'), B = boxes('.wid-b'), m = $('#wid-msg');
       $('.wid-go', box).addEventListener('click', function () {
-        var a = A(), b = B(), weak = /^(\d)\1{3}$/.test(a) || '0123456789'.indexOf(a) >= 0 || '9876543210'.indexOf(a) >= 0;
-        if (!/^\d{4}$/.test(a) || weak) return msg(m, 'bad', 'أدخل رمز تعريف من 4 أرقام — لا متسلسلًا مثل 1234 ولا متكررًا مثل 1111.');
+        var a = A(), b = B(), er = pinErr(a), go = this;
+        if (er) return msg(m, 'bad', er);
         if (a !== b) return msg(m, 'bad', 'الرمزان غير متطابقين.');
-        msg(m); WAID.ok = true; waIdPaint(); vcChanged(); var dn = $('#wa-done'); if (dn && dn.scrollIntoView) dn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        function ok() { msg(m); WAID.ok = true; waIdPaint(); vcChanged(); var dn = $('#wa-done'); if (dn && dn.scrollIntoView) dn.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+        if (!LIVE) return ok();
+        var em = S.reg && S.reg.email, ph = S.reg && S.reg.whatsapp;
+        if (!em || !em.proof) return msg(m, 'bad', 'تحقق من بريدك الإلكتروني أولًا، ثم أكّد رمز التعريف.');
+        if (!ph || !ph.proof) return msg(m, 'bad', 'تحقق من رقم جوالك برمز واتساب أولًا.');
+        go.disabled = true; var t0 = go.textContent; go.textContent = 'جارٍ الحفظ…'; msg(m);
+        api('/admin/api/register/wa-link', { email: em.dest, phone: ph.dest, email_proof: em.proof, phone_proof: ph.proof, wa_pin: a }).then(function (r) {
+          go.disabled = false; go.textContent = t0;
+          if (!r || r.ok !== true || !r.link_proof) return msg(m, 'bad', (r && r.message) || 'تعذّر حفظ رمز التعريف. تأكد أنه ليس آخر 4 أرقام من جوالك، ثم أعد المحاولة.');
+          S.reg.walink = r.link_proof; $$('#wa-id input').forEach(function (x) { x.value = ''; }); ok();
+        });
       });
     })();
     function vcChanged() {
-      var wa = ynVal('wa'); waIdPaint();
-      $('#rg4-go').disabled = !(vok('#f-reg4 .vc[data-ch=mail]') && vok('#f-reg4 .vc[data-ch=sms]') && (wa !== 'yes' || (vok('#wa-box .vc') && WAID.ok)));
+      var wa = ynVal('wa'); if (LIVE && WAID.ok && !waVer()) { WAID.ok = false; if (S.reg) S.reg.walink = ''; } waIdPaint();
+      $('#rg4-go').disabled = !(vok('#f-reg4 .vc[data-ch=mail]') && vok('#f-reg4 .vc[data-ch=sms]') && (wa !== 'yes' || (waVer() && WAID.ok)));
       $('#fg1-go').disabled = !vok('#f-fg1 .vc'); $('#fg2-go').disabled = !vok('#f-fg2 .vc');
     }
     function reg4Enter() { $$('#f-reg4 .vc').forEach(function (c) { if (c._st.ok && vcDest(c) !== c._st.d) vcReset(c); else if (!c._st.ok) vcPaint(c); }); vcChanged(); }
@@ -708,7 +732,7 @@
       if (!$('#rg-terms').checked) return msg('rg3-msg', 'bad', 'وافق على سياسة الاستخدام والخصوصية للمتابعة.'); go('register', 3); });
     $('#f-reg4').addEventListener('submit', function (e) { e.preventDefault();
       if (!vok('#f-reg4 .vc[data-ch=mail]') || !vok('#f-reg4 .vc[data-ch=sms]')) return msg('rg4-msg', 'bad', 'تحقق من البريد والجوال أولًا.');
-      if (ynVal('wa') === 'yes' && !(vok('#wa-box .vc') && WAID.ok)) return msg('rg4-msg', 'bad', 'أكمل ربط واتساب: رمز التحقق ثم رمز التعريف — أو اختر «لا، لاحقًا».');
+      if (ynVal('wa') === 'yes' && !(waVer() && WAID.ok)) return msg('rg4-msg', 'bad', 'أكمل ربط واتساب: رمز التحقق ثم رمز التعريف — أو اختر «لا، لاحقًا».');
       if (LIVE) return liveRegister();
       msg('rg4-msg'); go('register', 4); });
 
@@ -945,7 +969,7 @@
       var b = $('#rg4-go'); b.disabled = true; var t0 = b.textContent; b.textContent = 'جارٍ إنشاء الحساب…'; msg('rg4-msg');
       api('/admin/api/register', { requested_user_type: 'client', invite: null, full_name: $('#rg-name').value.trim().replace(/\s+/g, ' '),
         email: em.dest, phone: ph.dest, password: $('#rg-pw').value, policies_accepted: !!$('#rg-terms').checked,
-        email_proof: em.proof, phone_proof: ph.proof }).then(function (r) {
+        email_proof: em.proof, phone_proof: ph.proof, wa_link_proof: (ynVal('wa') === 'yes' && WAID.ok && S.reg.walink) ? S.reg.walink : null }).then(function (r) {
         b.disabled = false; b.textContent = t0;
         if (!r || !r.ok) return msg('rg4-msg', 'bad', (r && r.message) || 'تعذّر إنشاء الحساب حاليًا. أعد المحاولة بعد قليل.');
         var via = []; if (r.email_sent) via.push('بريدك'); if (r.wa_sent) via.push('واتساب');
