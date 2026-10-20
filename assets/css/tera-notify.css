@@ -333,3 +333,39 @@
 .is-dark .gd-pl-tx small,.t2.is-dark .gd-pl-tx small{color:#93A6C4}
 @media (max-width:520px){.gd-pl{flex-wrap:wrap}.gd-pl-go{width:100%;justify-content:center}}
 .is-solo .tpv-dots{gap:3px}.is-solo .tpv-dots i{width:9px;height:9px}
+/* v367 أندرويد: رسوم توضيحية مبسّطة لخطوات التثبيت + «جهازك» في صفحات الدليل */
+.ag-fig{display:grid;gap:6px;justify-items:center}
+.ag-note{font-size:11.5px;color:#7a8aa0}
+.ag-ph{position:relative;width:min(230px,100%);aspect-ratio:9/15;border-radius:24px;background:#f4f7fc;border:6px solid #111a2b;box-shadow:0 10px 26px rgba(11,37,82,.2);overflow:hidden;display:flex;flex-direction:column;direction:ltr}
+.ag-top{display:flex;align-items:center;gap:6px;padding:10px 8px 8px;background:#fff;border-bottom:1px solid #e3e9f2}
+.ag-url{flex:1;min-width:0;background:#eef2f7;border-radius:999px;padding:5px 10px;font:600 10.5px sans-serif;color:#33445c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-ph>.ag-url{margin:10px 8px 6px;flex:none}
+.ag-top b,.ag-nav b{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;font:900 17px/1 sans-serif;color:#33445c}
+.ag-page{flex:1;margin:10px;border-radius:12px;background:linear-gradient(160deg,#0B2552,#0AA5AD);opacity:.85}
+.ag-nav{display:flex;justify-content:space-around;align-items:center;padding:8px 6px;background:#fff;border-top:1px solid #e3e9f2;font:700 15px sans-serif;color:#7a8aa0}
+.ag-hit{position:relative;color:#06707A!important;background:#E2F4F5;box-shadow:0 0 0 3px #0AA5AD}
+.ag-hit::after{content:"";position:absolute;inset:-7px;border-radius:inherit;border:2px solid #0AA5AD;animation:tgbRing 1.6s ease-out infinite}
+.ag-menu{position:absolute;top:44px;right:8px;left:34px;margin:0;padding:6px 0;list-style:none;background:#fff;border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.25);direction:rtl;text-align:right}
+.ag-menu.is-bottom{top:auto;bottom:8px}
+.ag-menu li{padding:8px 12px;font:600 12px "IBM Plex Sans Arabic",sans-serif;color:#33445c}
+.ag-menu li.ag-hit{border-radius:8px;margin:2px 6px;font-weight:800;box-shadow:inset 0 0 0 2px #0AA5AD}
+.ag-menu li.ag-hit::after{display:none}
+.ag-ph.is-dim{background:rgba(7,18,38,.55);justify-content:center;padding:12px}
+.ag-dlg{background:#fff;border-radius:16px;padding:14px;direction:rtl;text-align:right;display:grid;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.ag-dlg>b{font:800 14px "Alexandria",sans-serif;color:#0b1f3a}
+.ag-app{display:flex;align-items:center;gap:8px}
+.ag-app img{width:36px;height:36px;border-radius:9px}
+.ag-app b{display:block;font-size:13px;color:#0b1f3a}.ag-app small{font-size:10.5px;color:#7a8aa0}
+.ag-btns{display:flex;justify-content:flex-start;gap:8px;font:800 13px "IBM Plex Sans Arabic",sans-serif;color:#1B5F93}
+.ag-btns span{padding:6px 12px;border-radius:999px}
+.ag-btns .ag-hit{background:#0AA5AD;color:#fff!important}
+.ag-ph.is-home{background:linear-gradient(160deg,#203a63,#3b2a5c 60%,#0e3a5c)}
+.ag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:28px 14px}
+.ag-grid i{aspect-ratio:1;border-radius:50%;background:var(--c);opacity:.85}
+.ag-me{display:flex;flex-direction:column;align-items:center;gap:3px;color:#fff;font-size:10px;animation:tgPop 3s infinite}
+.ag-me img{width:100%;aspect-ratio:1;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(99,226,224,.8)}
+.ag-now{width:100%;min-height:50px;font-size:16px;background:linear-gradient(135deg,#0AA5AD,#06707A)}
+.gd-plat.is-mine{border-color:#0AA5AD;box-shadow:0 0 0 2px color-mix(in srgb,#0AA5AD 35%,transparent)}
+.gd-mine{display:inline-block;margin-inline-start:8px;padding:1px 10px;border-radius:999px;background:#0AA5AD;color:#fff;font:800 11.5px "IBM Plex Sans Arabic",sans-serif;vertical-align:middle}
+.ag-me{width:100%}.ag-me img{display:block}
+.ag-grid .ag-me img{width:40px;height:40px;max-width:none}
