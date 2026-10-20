@@ -125,7 +125,7 @@
     function clearBoxes(inputs) { inputs.forEach(function (b) { b.value = ''; }); if (inputs[0]) inputs[0].parentNode.classList.remove('bad'); }
 
     /* ---- verification cards (email · SMS · WhatsApp) ---- */
-    var VCH = { mail: ['أُرسل الرمز إلى بريدك.', 'تم التحقق', 'تم التحقق من بريدك الإلكتروني.'], sms: ['أُرسل الرمز برسالة نصية.', 'تم التحقق', 'تم التحقق من رقم جوالك.'], wa: ['أُرسل الرمز إلى واتساب.', 'تم الربط', 'تم ربط رقمكم في واتساب.'] };
+    var VCH = { mail: ['أُرسل الرمز إلى بريدك.', 'تم التحقق', 'تم التحقق من بريدك الإلكتروني.'], sms: ['أُرسل الرمز برسالة نصية.', 'تم التحقق', 'تم التحقق من رقم جوالك.'], wa: ['أُرسل الرمز إلى واتساب من الرقم الرسمي.', 'تم التحقق', 'تم التحقق من رقمك — بقي أن تنشئ رمز التعريف.'] };
     function vcDest(card) {
       var id = card.dataset.dest, el = $('#' + id); if (!el) return '';
       if (card.dataset.ch === 'mail') { var v = el.value.trim(); return reEmail.test(v) ? v : ''; }
@@ -170,9 +170,27 @@
     }
     $$('.vc').forEach(vcInit);
     function vok(sel) { var c = $(sel); return !!(c && c._st && c._st.ok); }
+    /* v375: ربط واتساب بالخطوات المعتمدة — رمز تحقق على واتساب ← «تم التحقق» ← رمز التعريف (4 أرقام) وتأكيده ← حفظ ← رسالة الاعتماد */
+    var WAID = { ok: false };
+    function waIdPaint() {
+      var box = $('#wa-id'), done = $('#wa-done'); if (!box) return;
+      var on = ynVal('wa') === 'yes', ver = vok('#wa-box .vc');
+      box.hidden = !(on && ver && !WAID.ok); done.hidden = !(on && ver && WAID.ok);
+    }
+    (function () {
+      var box = $('#wa-id'); if (!box) return;
+      function boxes(sel) { var ins = $$(sel + ' input', box); ins.forEach(function (x, i) { x.addEventListener('input', function () { x.value = x.value.replace(/\D/g, '').slice(-1); if (x.value && ins[i + 1]) ins[i + 1].focus(); }); x.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !x.value && ins[i - 1]) ins[i - 1].focus(); }); }); return function () { return ins.map(function (x) { return x.value; }).join(''); }; }
+      var A = boxes('.wid-a'), B = boxes('.wid-b'), m = $('#wid-msg');
+      $('.wid-go', box).addEventListener('click', function () {
+        var a = A(), b = B(), weak = /^(\d)\1{3}$/.test(a) || '0123456789'.indexOf(a) >= 0 || '9876543210'.indexOf(a) >= 0;
+        if (!/^\d{4}$/.test(a) || weak) return msg(m, 'bad', 'أدخل رمز تعريف من 4 أرقام — لا متسلسلًا مثل 1234 ولا متكررًا مثل 1111.');
+        if (a !== b) return msg(m, 'bad', 'الرمزان غير متطابقين.');
+        msg(m); WAID.ok = true; waIdPaint(); vcChanged(); var dn = $('#wa-done'); if (dn && dn.scrollIntoView) dn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    })();
     function vcChanged() {
-      var wa = ynVal('wa');
-      $('#rg4-go').disabled = !(vok('#f-reg4 .vc[data-ch=mail]') && vok('#f-reg4 .vc[data-ch=sms]') && (wa !== 'yes' || vok('#wa-box .vc')));
+      var wa = ynVal('wa'); waIdPaint();
+      $('#rg4-go').disabled = !(vok('#f-reg4 .vc[data-ch=mail]') && vok('#f-reg4 .vc[data-ch=sms]') && (wa !== 'yes' || (vok('#wa-box .vc') && WAID.ok)));
       $('#fg1-go').disabled = !vok('#f-fg1 .vc'); $('#fg2-go').disabled = !vok('#f-fg2 .vc');
     }
     function reg4Enter() { $$('#f-reg4 .vc').forEach(function (c) { if (c._st.ok && vcDest(c) !== c._st.d) vcReset(c); else if (!c._st.ok) vcPaint(c); }); vcChanged(); }
@@ -184,7 +202,7 @@
     var DUR = { 30: 'مناسبة لجهاز تستخدمه أحيانًا. بعد 30 يومًا نطلب رمز التحقق من جديد.', 60: 'مناسبة للاستخدام المنتظم. بعد 60 يومًا نطلب رمز التحقق من جديد.', 90: 'لجهازك الشخصي الذي لا يستخدمه غيرك. بعد 90 يومًا نطلب الرمز من جديد.' };
     ['lg', 'rg'].forEach(function (p) { var s = $('#' + p + '-dur'); function h() { $('#' + p + '-dur-h').textContent = DUR[s.value]; } s.addEventListener('change', h); h(); });
     function ynChanged(n, v) {
-      if (n === 'wa') { $('#wa-box').hidden = v !== 'yes'; if (v !== 'yes') vcReset($('#wa-box .vc')); else vcPaint($('#wa-box .vc')); vcChanged(); }
+      if (n === 'wa') { $('#wa-box').hidden = v !== 'yes'; if (v !== 'yes') { vcReset($('#wa-box .vc')); WAID.ok = false; $$('#wa-id input').forEach(function (x) { x.value = ''; }); } else vcPaint($('#wa-box .vc')); vcChanged(); }
       if (n === 'lg-trust') { $('#lg-dur-w').hidden = LIVE || v !== 'yes'; $('#lg-devs').hidden = v !== 'yes'; var lv = $('#lv-dev'); if (lv) lv.hidden = v !== 'yes'; devCount(); }
       if (n === 'rg-trust') { $('#rg-dur-w').hidden = v !== 'yes'; $('#rg6-go').disabled = !v; $('#rg-dn').textContent = (v === 'yes' ? 1 : 0) + ' من 3'; }
     }
@@ -298,7 +316,7 @@
       if (!$('#rg-terms').checked) return msg('rg3-msg', 'bad', 'وافق على سياسة الاستخدام والخصوصية للمتابعة.'); go('register', 3); });
     $('#f-reg4').addEventListener('submit', function (e) { e.preventDefault();
       if (!vok('#f-reg4 .vc[data-ch=mail]') || !vok('#f-reg4 .vc[data-ch=sms]')) return msg('rg4-msg', 'bad', 'تحقق من البريد والجوال أولًا.');
-      if (ynVal('wa') === 'yes' && !vok('#wa-box .vc')) return msg('rg4-msg', 'bad', 'أكمل ربط واتساب، أو اختر «لا، لاحقًا».');
+      if (ynVal('wa') === 'yes' && !(vok('#wa-box .vc') && WAID.ok)) return msg('rg4-msg', 'bad', 'أكمل ربط واتساب: رمز التحقق ثم رمز التعريف — أو اختر «لا، لاحقًا».');
       if (LIVE) return liveRegister();
       msg('rg4-msg'); go('register', 4); });
 
