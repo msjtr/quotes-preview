@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'383',d:'2026-10-20'};
+window.TQ_VERSION={v:'384',d:'2026-10-20'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383: تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -75,8 +75,37 @@ window.TQ_VERSION={v:'383',d:'2026-10-20'};
       else { alert('الإصدار ' + V.v + ' · ' + V.d); return; }
       paint();
     }
-    window.TQ_APP = { open: open, check: function () { last = 0; check(false); }, version: V };
-    document.addEventListener('click', function (e) { var t = e.target && e.target.closest && e.target.closest('[data-tq-app],.t2-hupd'); if (t) { e.preventDefault(); open(); } });
+    /* v384: «إغلاق التطبيق» — في التطبيق المثبّت على الشاشة الرئيسية فقط. لا يسمح النظام لتطبيق الويب أن يغلق نفسه،
+       فتُنهى الجلسة (الخروج نفسه) وتظهر شاشة إغلاق بالهوية، ويُغلق التطبيق نهائيًا بالسحب للأعلى. */
+    var SA = false; try { SA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { void e; }
+    if (SA) document.documentElement.classList.add('is-standalone');
+    function bye() {
+      var o = document.createElement('div'); o.className = 'tq-bye'; o.setAttribute('dir', 'rtl'); o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'أُغلق التطبيق');
+      var im = document.createElement('img'); im.src = src.replace(/js\/version\.js$/, 'vid/logo-dark.webp'); im.alt = 'تيرا';
+      var h = document.createElement('b'); h.textContent = 'أُغلق التطبيق وأُنهيت جلستك';
+      var p = document.createElement('p'); p.textContent = 'لإغلاقه نهائيًا اسحب الشاشة للأعلى. وتفتحه من جديد من أيقونة تيرا متى شئت.';
+      var a = btn('فتح التطبيق من جديد', '', function () { location.replace(location.origin + '/home/?app=1'); });
+      o.appendChild(im); o.appendChild(h); o.appendChild(p); o.appendChild(a); document.body.appendChild(o);
+      try { window.close(); } catch (e) { void e; }
+    }
+    function closeApp() {
+      var TN = window.TeraNotify;
+      function go2() {
+        if (window.TQ_LIVE_LOGOUT) return window.TQ_LIVE_LOGOUT(bye);
+        var t = null; try { t = (JSON.parse(localStorage.getItem('tera.admin.session') || 'null') || {}).access_token; } catch (e) { void e; }
+        var fin = function () { try { localStorage.removeItem('tera.admin.session'); localStorage.removeItem('tera.admin.absolute_until'); } catch (e) { void e; } bye(); };
+        if (!t) return fin();
+        Promise.race([fetch('/api/account/session/close', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: '{"kind":"logout"}' }).catch(function () {}), new Promise(function (r) { setTimeout(r, 3000); })]).then(fin, fin);
+      }
+      if (TN && TN.show) TN.show({ force: true, now: true, kind: 'warn', icon: 'x-circle:navy', title: 'إغلاق التطبيق؟', text: 'تُنهى جلستك على هذا الجهاز، وتفتح التطبيق من جديد من أيقونته متى شئت.', ms: 0,
+        actions: [{ label: 'إغلاق التطبيق', primary: true, run: go2 }, { label: 'إلغاء' }] });
+      else if (window.confirm('إغلاق التطبيق؟')) go2();
+    }
+    window.TQ_APP = { open: open, close: closeApp, standalone: SA, check: function () { last = 0; check(false); }, version: V };
+    document.addEventListener('click', function (e) {
+      var c = e.target && e.target.closest && e.target.closest('[data-tq-close],.t2-hclose'); if (c) { e.preventDefault(); closeApp(); return; }
+      var t = e.target && e.target.closest && e.target.closest('[data-tq-app],.t2-hupd'); if (t) { e.preventDefault(); open(); }
+    });
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') { hid = Date.now(); return; } check(!!hid && Date.now() - hid > 20000); });
     window.addEventListener('pageshow', function (e) { if (e.persisted) check(true); });
     window.addEventListener('focus', function () { check(false); });
