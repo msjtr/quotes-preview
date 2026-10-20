@@ -752,3 +752,5 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
   .g2-steps>li.has-z{grid-template-columns:auto minmax(0,1fr);align-items:start}
   .g2-shot.is-zoom{grid-column:2;width:100%!important;max-width:100%!important}
 }
+/* v374: إطار الفيديو بارتفاع الفيديو نفسه (لا يمتد بطول عمود التنويهات) — فيُختار الفيديو الأفقي في الويب */
+@media (min-width:701px){.g2-film .ts-film-p.is-film{align-self:start;min-height:0}}
