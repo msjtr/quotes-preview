@@ -53,7 +53,7 @@
 
   /* ---------- التثبيت ---------- */
   W.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); S.deferred = e; fire(); });
-  W.addEventListener('appinstalled', function () { S.installed = true; S.deferred = null; fire(); show({ kind: 'ok', icon: 'squares-four:teal', title: 'أُضيفت تيرا إلى جهازك', text: 'تجدها الآن بأيقونتها على ' + (ANDROID ? 'الشاشة الرئيسية' : 'سطح المكتب وقائمة التطبيقات') + '، وتُفتح كتطبيق مستقل.' }); });
+  W.addEventListener('appinstalled', function () { S.installed = true; S.deferred = null; fire(); (bars || []).forEach(function (x) { x.hidden = true; }); show({ kind: 'ok', icon: 'squares-four:teal', title: 'أُضيفت تيرا إلى جهازك', text: 'تجدها الآن بأيقونتها على ' + (ANDROID ? 'الشاشة الرئيسية' : 'سطح المكتب وقائمة التطبيقات') + '، وتُفتح كتطبيق مستقل.' }); });
 
   var SHARE = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10H5v10h14V10h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
   var ADDSQ = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -198,7 +198,51 @@
         actions: [{ label: IOS && !standalone() ? 'كيف أضيفها؟' : 'تفعيل الإشعارات', primary: true, run: function () { setTimeout(function () { enable(); }, 50); } }, { label: 'لاحقًا' }] });
     }, 6000);
   }
+
+  /* ---------- شريط «ثبّت تيرا» أعلى الصفحة الرئيسية وبعد الدخول (يختفي إن كانت مثبّتة أو أُغلق — 3 أيام) ---------- */
+  var BAR_K = 'tera.app.bar';
+  function barHidden() {
+    if (standalone() || S.installed) return true;
+    if (D.documentElement.classList.contains('pv-embed')) return true;
+    try { var t = Number((APP_ID ? W.localStorage : W.sessionStorage).getItem(BAR_K) || 0); return Date.now() - t < 3 * 864e5; } catch (e) { return false; }
+  }
+  function barText() {
+    var s = state();
+    if (IOS) return ['أضف تيرا إلى الشاشة الرئيسية', 'لتُفتح كتطبيق وتصلك الإشعارات على شاشة القفل.', 'كيف؟'];
+    if (s.oneTap) return ['ثبّت تيرا على جهازك', 'بضغطة واحدة — تُفتح كتطبيق وتصلك الإشعارات.', 'ثبّت'];
+    if (MAC_SAFARI) return ['أضف تيرا إلى Dock', 'لتُفتح كتطبيق وتصلك الإشعارات.', 'كيف؟'];
+    return ['ثبّت تيرا على جهازك', 'تُفتح كتطبيق مستقل وتصلك الإشعارات.', 'ثبّت'];
+  }
+  var bars = [];
+  function makeBar(doc) {
+    var b = doc.createElement('div'); b.className = 'tp-bar'; b.setAttribute('dir', 'rtl'); b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'تثبيت تيرا');
+    b.innerHTML = '<img class="tp-bar-i" src="brand/icon-192.png" alt=""><span class="tp-bar-t"><b></b><small></small></span><button type="button" class="tp-bar-go"></button><button type="button" class="tp-bar-x" aria-label="إغلاق">×</button>';
+    function paint() { var t = barText(); b.querySelector('b').textContent = t[0]; b.querySelector('small').textContent = t[1]; b.querySelector('.tp-bar-go').textContent = t[2]; if (barHidden()) b.hidden = true; }
+    b.querySelector('.tp-bar-go').addEventListener('click', function () { install().then(function (r) { if (r === 'accepted' || r === 'installed') bars.forEach(function (x) { x.hidden = true; }); }); });
+    b.querySelector('.tp-bar-x').addEventListener('click', function () { try { (APP_ID ? W.localStorage : W.sessionStorage).setItem(BAR_K, String(Date.now())); } catch (e) { void e; } bars.forEach(function (x) { x.hidden = true; }); });
+    paint(); on(paint); bars.push(b);
+    return b;
+  }
+  function mountBar() {
+    if (barHidden() || FIREFOX) return;
+    var cfg = W.__TERA || {}, sec = cfg.section;
+    if (sec === 'home') {
+      /* الموقع داخل إطار (نفس الأصل): الشريط أعلى صفحته، ويُعاد إن أُعيد رسم الصفحة */
+      var tick = function () {
+        var f = D.getElementById('pv-site-f'), d = null;
+        try { d = f && f.contentDocument; } catch (e) { d = null; }
+        if (d && d.body && !d.querySelector('.tp-bar')) d.body.insertBefore(makeBar(d), d.body.firstChild);
+      };
+      tick(); setInterval(tick, 1500);
+    } else if (sec === 'clients' || sec === 'staff') {
+      /* بعد الدخول: في المنفذ الحي لمن سجّل الدخول، وفي العيّنة دائمًا للمراجعة */
+      if (APP_ID && !session()) return;
+      var host = D.getElementById('pv-host'); if (!host || D.querySelector('body > .tp-bar')) return;
+      D.body.insertBefore(makeBar(D), host);
+    }
+  }
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', boot); else boot();
+  if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', mountBar); else mountBar();
 
   W.TeraPush = { state: state, install: install, enable: enable, test: test, off: off, panel: panel, on: on, guide: guide, live: !!APP_ID, LIVE: LIVE };
 })(window, document);

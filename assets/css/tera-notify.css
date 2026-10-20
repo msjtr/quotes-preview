@@ -81,3 +81,15 @@
 .tp-arrow.is-top i{border-top:0;border-bottom:16px solid #2E8FD0;margin:0 0 4px}
 @keyframes tpbob{50%{translate:0 8px}}
 @media (prefers-reduced-motion:reduce){.tp-arrow{animation:none}}
+/* شريط «ثبّت تيرا» أعلى الصفحة الرئيسية وبعد الدخول */
+.tp-bar{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#0B2552,#1D3F86);color:#fff;padding:8px max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));font-family:"IBM Plex Sans Arabic","Cairo",sans-serif;position:relative;z-index:30}
+.tp-bar[hidden]{display:none!important}
+.tp-bar-i{width:38px;height:38px;border-radius:10px;background:#fff;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tp-bar-t{flex:1;min-width:0;line-height:1.45}
+.tp-bar-t b{display:block;font:800 14px "Alexandria","Cairo",sans-serif}
+.tp-bar-t small{display:block;font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-bar-go{flex:none;border:0;border-radius:999px;background:#0AA5AD;color:#fff;font:800 14px "IBM Plex Sans Arabic",sans-serif;padding:9px 20px;min-height:40px;cursor:pointer;box-shadow:0 4px 12px rgba(10,165,173,.4)}
+.tp-bar-go:hover{background:#09959c}
+.tp-bar-x{flex:none;width:34px;height:34px;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font:700 20px/1 sans-serif;cursor:pointer}
+.tp-bar-go:focus-visible,.tp-bar-x:focus-visible{outline:3px solid #8AF0EC;outline-offset:2px}
+@media (max-width:420px){.tp-bar-t small{white-space:normal}}
