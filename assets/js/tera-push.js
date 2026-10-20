@@ -69,7 +69,8 @@
   }
   /* ---------- دليل آيفون المصوّر: قبل وبعد + 6 خطوات بصور حقيقية من iOS (Safari) ---------- */
   var GI = 'guide/ios/';
-  function inSafari() { return IOS && /Safari\//.test(UA) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Line\/|Snapchat|Twitter|TikTok/.test(UA); }
+  /* Safari ما لم يظهر توقيع متصفح آخر أو متصفح داخل تطبيق (لا نشترط كلمة Safari في المعرّف: «طلب موقع سطح المكتب» وبعض إصدارات iOS تغيّرها) */
+  function inSafari() { return IOS && !/CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|YaBrowser|DuckDuckGo|Instagram|FBAN|FBAV|FB_IAB|Line\/|Snapchat|Twitter|TikTok|musical_ly|Telegram|WhatsApp|LinkedInApp|Pinterest/.test(UA); }
   function img(src, alt, cls) { return el('img', { class: cls || 'tg-img', src: GI + src + '.webp', alt: alt, loading: 'lazy', decoding: 'async' }); }
   var HELP_WA = 'https://wa.me/966555698774?text=' + encodeURIComponent('مرحبًا فريق تيرا، أحتاج مساعدة في إضافة تيرا إلى جهازي.');
   var HELP_MAIL = 'mailto:support@tera-services.com.sa?subject=' + encodeURIComponent('مساعدة في إضافة تيرا إلى جهازي');
@@ -90,24 +91,25 @@
             el('figure', {}, [img('before', 'المنصة داخل Safari'), el('figcaption', {}, [el('b', {}, ['قبل']), ' موقع داخل Safari وشريط العنوان يأخذ من الشاشة'])]),
             el('figure', { class: 'is-after' }, [img('after', 'تيرا كتطبيق بملء الشاشة'), el('figcaption', {}, [el('b', {}, ['بعد']), ' تطبيق تيرا بملء الشاشة من أيقونته'])])])];
       },
-      function () {
-        var out = [el('div', { class: 'tg-row' }, [img('safari', 'Safari', 'tg-saf'), el('div', {}, ttl('١. افتح المنصة في Safari', 'الإضافة إلى الشاشة الرئيسية تعمل من متصفح Safari من أبل — شرط للاستفادة من التطبيق والإشعارات.'))])];
-        if (!inSafari()) {
-          var link = W.location.origin + '/home/';
-          out.push(el('div', { class: 'tg-warn' }, [el('b', {}, ['أنت الآن في متصفح آخر']), el('span', {}, ['انسخ رابط المنصة، ثم افتح Safari والصقه في شريط العنوان.']),
-            el('button', { type: 'button', class: 'tg-btn', onclick: function (e) { var b = e.currentTarget; (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { b.textContent = 'نُسخ الرابط ✓'; }, function () { b.textContent = link; }); } }, ['نسخ رابط المنصة'])]));
-        }
-        out.push(el('div', { class: 'tg-store' }, [el('span', {}, ['لا يوجد Safari في جوالك؟ حمّله مجانًا من App Store:']), img('appstore-safari', 'Safari في App Store'),
-          el('a', { class: 'tg-btn', href: 'https://apps.apple.com/app/safari/id1146562112', target: '_blank', rel: 'noopener' }, ['فتح Safari في App Store'])]));
-        return out;
-      },
-      function () { return ttl('٢. اضغط «•••» أسفل الشاشة، ثم «مشاركة»', 'الزر بجانب شريط العنوان في أسفل Safari.').concat([img('s1-more', 'زر النقاط الثلاث أسفل Safari'),
-        el('button', { type: 'button', class: 'tg-link', onclick: function () { close(); arrow(true); setTimeout(function () { arrow(false); }, 9000); } }, ['أغلق الدليل وأرني الزر'])]); },
-      function () { return ttl('٣. اضغط «عرض المزيد»', 'في أسفل نافذة المشاركة.').concat([img('s2-share', 'عرض المزيد في نافذة المشاركة')]); },
-      function () { return ttl('٤. اختر «إضافة إلى الصفحة الرئيسية»').concat([img('s3-add', 'إضافة إلى الصفحة الرئيسية')]); },
-      function () { return ttl('٥. أبقِ «فتح كتطبيق ويب» مفعّلًا، ثم اضغط «إضافة»', 'الاسم «تيرا» والأيقونة جاهزان.').concat([img('s4-confirm', 'فتح كتطبيق ويب ثم إضافة')]); },
-      function () { return [el('div', { class: 'tg-row is-c' }, [img('s5-icon', 'أيقونة تيرا على الشاشة الرئيسية', 'tg-ico')]), el('div', {}, ttl('٦. افتح «تيرا» من الشاشة الرئيسية', 'تُفتح كتطبيق بملء الشاشة. فعّل منها الإشعارات لتصلك على شاشة القفل حتى والتطبيق مغلق.'))]; }
     ];
+    function shot(src, alt) { return el('img', { class: 'tg-shot', src: GI + src + '.webp', alt: alt, loading: 'lazy', decoding: 'async' }); }
+    function fig(src, alt, cap) { return el('figure', {}, [shot(src, alt), el('figcaption', {}, [cap])]); }
+    var STEPS = [];
+    if (!inSafari()) STEPS.push(function (k) {
+      var link = W.location.origin + '/home/';
+      return [el('div', { class: 'tg-row' }, [img('safari', 'Safari', 'tg-saf'), el('div', {}, ttl(k + 'افتح المنصة في Safari', 'أنت الآن في متصفح آخر. الإضافة إلى الشاشة الرئيسية والإشعارات تعمل من Safari — شرط من أبل.'))]),
+        el('div', { class: 'tg-warn' }, [el('span', {}, ['انسخ رابط المنصة، ثم افتح Safari والصقه في شريط العنوان.']),
+          el('button', { type: 'button', class: 'tg-btn', onclick: function (e) { var bt = e.currentTarget; (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { bt.textContent = 'نُسخ الرابط ✓'; }, function () { bt.textContent = link; }); } }, ['نسخ رابط المنصة'])]),
+        el('div', { class: 'tg-store' }, [el('span', {}, ['لا يوجد Safari في جوالك؟ حمّله مجانًا من App Store:']), img('appstore-safari', 'Safari في App Store'),
+          el('a', { class: 'tg-btn', href: 'https://apps.apple.com/app/safari/id1146562112', target: '_blank', rel: 'noopener' }, ['فتح Safari في App Store'])])];
+    });
+    STEPS.push(function (k) { return ttl(k + 'اضغط «•••» أسفل الشاشة، ثم «مشاركة»', 'الزر بجانب شريط العنوان في أسفل Safari.').concat([shot('f1-more', 'زر النقاط الثلاث أسفل Safari'),
+      el('button', { type: 'button', class: 'tg-link', onclick: function () { close(); arrow(true); setTimeout(function () { arrow(false); }, 9000); } }, ['أغلق الدليل وأرني الزر'])]); });
+    STEPS.push(function (k) { return ttl(k + 'اختر «إضافة إلى الصفحة الرئيسية»', 'اسحب نافذة المشاركة للأعلى تجدها في القائمة مباشرة.').concat([el('div', { class: 'tg-two' }, [
+      fig('f2-add', 'إضافة إلى الصفحة الرئيسية في نافذة المشاركة', 'تجدها هنا مباشرة'), fig('f2b-more', 'زر عرض المزيد في نافذة المشاركة', 'إن لم تجدها: اضغط «عرض المزيد»')])]); });
+    STEPS.push(function (k) { return ttl(k + 'اضغط «إضافة»', '«فتح كتطبيق ويب» مفعّل تلقائيًا، والاسم «تيرا» والأيقونة جاهزان — فقط وافق.').concat([shot('f3-confirm', 'نافذة الإضافة إلى الصفحة الرئيسية')]); });
+    STEPS.push(function (k) { return [el('div', { class: 'tg-row is-c' }, [img('s5-icon', 'أيقونة تيرا على الشاشة الرئيسية', 'tg-ico')]), el('div', {}, ttl(k + 'افتح «تيرا» من الشاشة الرئيسية', 'تُفتح كتطبيق بملء الشاشة. فعّل منها الإشعارات لتصلك على شاشة القفل حتى والتطبيق مغلق.'))]; });
+    STEPS.forEach(function (f, j) { SCR.push(function () { return f('١٢٣٤٥٦'.charAt(j) + '. '); }); });
     function paint() {
       body.textContent = ''; SCR[i]().forEach(function (n) { if (n) body.appendChild(n); }); body.appendChild(helpBox()); body.scrollTop = 0;
       dots.textContent = ''; SCR.forEach(function (_, k) { dots.appendChild(el('i', { class: k === i ? 'is-on' : '' })); });
