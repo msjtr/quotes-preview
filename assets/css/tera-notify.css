@@ -228,3 +228,108 @@
 @keyframes tpvDrop{0%,2%{opacity:0;transform:translateY(-20px)}5%,18%{opacity:1;transform:none}20%,100%{opacity:0}}
 @media (max-width:700px){.tpv-in{grid-template-columns:1fr}.tpv-stage{order:-1}.tpv-ph{width:min(190px,60%)}.tpv-hs{min-height:132px}.tpv{padding:16px}}
 @media (prefers-reduced-motion:reduce){.tpv *,.tpv::before{animation:none!important}.tpv-h.is-1,.tpv-s.is-1{opacity:1;transform:none}.tpv-app{transform:none}}
+/* ===== v366 دليل تيرا: صفحات /guide (بطاقات · بنر مميز · خطوات · تفاصيل فنية) — بهوية الأقسام وأيقوناتها، للويب وتطبيق الجوال ===== */
+.tpv-b.is-g{border-color:#FFD27A;color:#FFE3A6}
+.tg-hb.is-g{background:#06707A;color:#fff;border-color:#06707A;cursor:pointer}
+.tgb{--a:#0AA5AD;--b:#06707A;--c:#0B2552;position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:center;padding:24px;border-radius:26px;color:#fff;
+  background:radial-gradient(110% 130% at 90% 0%,color-mix(in srgb,var(--a) 55%,transparent) 0%,transparent 55%),linear-gradient(135deg,var(--c) 0%,var(--b) 120%);box-shadow:0 18px 40px -18px color-mix(in srgb,var(--c) 80%,transparent);isolation:isolate;font-family:"IBM Plex Sans Arabic","Cairo",sans-serif}
+.tgb::before{content:"";position:absolute;inset:auto auto -45% -15%;width:55%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--a) 50%,transparent),transparent 65%);z-index:-1;animation:tpvGlow 9s ease-in-out infinite alternate}
+.tgb::after{content:"";position:absolute;inset:0;z-index:-1;background:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 2px,transparent 2px 14px);pointer-events:none}
+.tgb.is-navy{--a:#4D8BFF;--b:#1D3F86;--c:#071a3d}
+.tgb.is-saffron{--a:#F2B64A;--b:#B9690F;--c:#3a2008}
+.tgb.is-sky{--a:#5BC0F8;--b:#1B5F93;--c:#0B2349}
+.tgb.is-gold{--a:#FFC861;--b:#8A5A12;--c:#2e1d05}
+.tgb-eye{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:3px 12px;font:800 12.5px "Alexandria","Cairo",sans-serif;color:#FFE3A6}
+.tgb-eye::before{content:"";width:7px;height:7px;border-radius:50%;background:#63E2E0;box-shadow:0 0 0 4px rgba(99,226,224,.25);animation:tpvPulse 2.4s infinite}
+.tgb h2{margin:10px 0 6px;font:900 clamp(21px,3.4vw,32px)/1.35 "Alexandria","Cairo",sans-serif;background:linear-gradient(90deg,#fff,color-mix(in srgb,var(--a) 45%,#fff));-webkit-background-clip:text;background-clip:text;color:transparent;animation:tgbIn .7s var(--t2-ease-out,ease) both}
+.tgb p{margin:0;color:rgba(255,255,255,.88);font-size:clamp(13.5px,2.1vw,15.5px);line-height:1.85;animation:tgbIn .7s .12s var(--t2-ease-out,ease) both}
+@keyframes tgbIn{from{opacity:0;transform:translateY(10px)}}
+.tgb-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 14px;padding:0;list-style:none}
+.tgb-chips li{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:3px 11px;font-size:12.5px;font-weight:700;animation:tgbIn .6s both}
+.tgb-chips li:nth-child(2){animation-delay:.1s}.tgb-chips li:nth-child(3){animation-delay:.2s}
+.tgb-cta{display:flex;flex-wrap:wrap;gap:8px}
+.tgb-b{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:800 14px "IBM Plex Sans Arabic",sans-serif;cursor:pointer;text-decoration:none;transition:transform .15s,background .15s}
+.tgb-b:hover{transform:translateY(-1px);background:rgba(255,255,255,.16)}
+.tgb-b.is-p{background:linear-gradient(135deg,#fff,color-mix(in srgb,var(--a) 35%,#fff));color:var(--c);border-color:transparent;box-shadow:0 8px 20px -6px color-mix(in srgb,var(--a) 70%,transparent);animation:tpvPulse 2.4s ease-in-out infinite}
+.tgb-b.is-wa{border-color:#25D366;color:#b9f5cf}
+.tgb-b:focus-visible{outline:3px solid #FFD27A;outline-offset:2px}
+.tgb-art{display:flex;justify-content:center;align-items:center;min-height:200px}
+.tgb-art .tpv-ph{width:min(200px,100%)}
+.tgb-orb{position:relative;width:180px;aspect-ratio:1;display:grid;place-items:center}
+.tgb-orb .t2-tile{width:96px;height:108px;filter:drop-shadow(0 14px 22px rgba(0,0,0,.35));animation:tpvFloat 5s ease-in-out infinite;position:relative;z-index:1}
+.tgb-orb i{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.35);animation:tgbRing 3.2s ease-out infinite}
+.tgb-orb i+i{animation-delay:1.6s}
+@keyframes tgbRing{from{transform:scale(.45);opacity:.9}to{transform:scale(1.15);opacity:0}}
+/* المشهد المنفرد يتكرر بنفسه (بدل دورة الرئيسية ذات الخمسة مشاهد) */
+.tpv-s.is-solo{opacity:1;animation:none;inset:8px}
+.is-solo .tpv-app{animation:tgPop 4s infinite}
+@keyframes tgPop{0%,8%{transform:scale(0)}18%{transform:scale(1.2)}24%,100%{transform:scale(1)}}
+.is-solo .tpv-auth circle.r{animation:tpvRing 4s linear infinite;animation-delay:0s}
+.is-solo .tpv-dots i{animation:tgDot 5s infinite!important}
+.is-solo .tpv-dots i:nth-child(2){animation-delay:.2s!important}.is-solo .tpv-dots i:nth-child(3){animation-delay:.4s!important}.is-solo .tpv-dots i:nth-child(4){animation-delay:.6s!important}.is-solo .tpv-dots i:nth-child(5){animation-delay:.8s!important}
+.is-solo .tpv-dots i:nth-child(6){animation-delay:1s!important}.is-solo .tpv-dots i:nth-child(7){animation-delay:1.2s!important}.is-solo .tpv-dots i:nth-child(8){animation-delay:1.4s!important}.is-solo .tpv-dots i:nth-child(9){animation-delay:1.6s!important}.is-solo .tpv-dots i:nth-child(10){animation-delay:1.8s!important}
+@keyframes tgDot{0%,4%{background:transparent}8%,80%{background:#0AA5AD}90%,100%{background:transparent}}
+.is-solo .tpv-wa p{animation:tgMsg 6s infinite}.is-solo .tpv-wa .m2{animation-delay:1.2s}
+@keyframes tgMsg{0%{opacity:0;transform:translateY(8px)}10%,82%{opacity:1;transform:none}95%,100%{opacity:0}}
+.is-solo .tpv-lk .n{animation:tgDrop 5s infinite}
+@keyframes tgDrop{0%,8%{opacity:0;transform:translateY(-20px)}18%,85%{opacity:1;transform:none}100%{opacity:0}}
+/* محتوى الدليل */
+.gd-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px}
+.gd-c{display:grid;gap:6px;align-content:start;padding:14px;border-radius:18px;border:1px solid var(--t2-line);background:var(--t2-surface);box-shadow:var(--t2-sh-1)}
+.gd-c .t2-tile{width:40px;height:45px}
+.gd-c b{font:800 .98rem/1.5 var(--t2-ff-display,"Alexandria");color:var(--t2-ink)}
+.gd-c small{font-size:.9rem;line-height:1.8;color:var(--t2-ink-2)}
+.gd-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:8px;margin:0;padding:0;list-style:none}
+.gd-rules li{position:relative;padding:11px 40px 11px 12px;border-radius:14px;background:var(--t2-warn-wash);color:var(--t2-ink);font-weight:700;font-size:.92rem;line-height:1.7}
+.gd-rules li::before{content:"✓";position:absolute;inset-inline-start:12px;top:10px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#B9690F;color:#fff;font-size:12px}
+.gd-plat{display:grid;gap:10px;padding:14px;border-radius:20px;border:1px solid var(--t2-line);background:var(--t2-surface-2)}
+.gd-plat+.gd-plat{margin-top:4px}
+.gd-plat-h{display:flex;align-items:center;gap:10px}
+.gd-plat-h .t2-tile{width:40px;height:45px}
+.gd-plat-h b{display:block;font:800 1rem var(--t2-ff-display,"Alexandria");color:var(--t2-ink)}
+.gd-plat-h small{color:var(--t2-muted);font-size:.86rem}
+.gd-steps{display:grid;gap:10px;margin:0;padding:0;list-style:none;counter-reset:none}
+.gd-steps>li{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:16px;background:var(--t2-surface);border:1px solid var(--t2-line)}
+.gd-n{flex:none;width:32px;height:32px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#0AA5AD,#06707A);color:#fff;font:900 15px "Alexandria",sans-serif;box-shadow:0 6px 14px -6px rgba(6,112,122,.7)}
+.gd-steps b{display:block;font:800 .97rem/1.6 var(--t2-ff-display,"Alexandria");color:var(--t2-ink)}
+.gd-steps p{margin:2px 0 0;font-size:.92rem;line-height:1.85;color:var(--t2-ink-2)}
+.gd-shot{display:block;margin-top:10px;width:min(260px,100%);border-radius:18px;border:1px solid var(--t2-line);box-shadow:var(--t2-sh-2)}
+.gd-tech{display:grid;gap:0;margin:0;border-radius:18px;border:1px solid var(--t2-line);overflow:hidden;background:var(--t2-surface)}
+.gd-tech>div{display:grid;grid-template-columns:minmax(110px,180px) 1fr;gap:12px;padding:12px 14px;border-top:1px solid var(--t2-line)}
+.gd-tech>div:first-child{border-top:0}
+.gd-tech dt{font:800 .9rem/1.7 var(--t2-ff-display,"Alexandria");color:var(--t2-brand-3)}
+.gd-tech dd{margin:0;font-size:.92rem;line-height:1.85;color:var(--t2-ink-2)}
+.gd-q{border:1px solid var(--t2-line);border-radius:16px;background:var(--t2-surface);overflow:hidden}
+.gd-q+.gd-q{margin-top:8px}
+.gd-q summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 14px;font:800 .95rem/1.6 var(--t2-ff-display,"Alexandria");color:var(--t2-ink)}
+.gd-q summary::-webkit-details-marker{display:none}
+.gd-q summary::after{content:"+";flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--t2-brand-wash);color:var(--t2-brand-3);font-weight:900;transition:transform .2s}
+.gd-q[open] summary::after{transform:rotate(45deg)}
+.gd-q p{margin:0;padding:0 14px 14px;font-size:.92rem;line-height:1.85;color:var(--t2-ink-2)}
+.gd-help{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px;border-radius:20px;border:1px dashed color-mix(in srgb,var(--t2-brand) 55%,var(--t2-line));background:var(--t2-brand-wash)}
+.gd-help>.t2-tile{width:42px;height:47px;flex:none}
+.gd-help>div{flex:1;min-width:180px;display:grid;gap:2px}
+.gd-help b{color:var(--t2-ink);font:800 .95rem/1.6 var(--t2-ff-display,"Alexandria")}
+.gd-help small{color:var(--t2-muted)}
+.gd-hl{display:flex;gap:8px}
+.gd-hl a{display:inline-flex;align-items:center;min-height:40px;padding:4px 16px;border-radius:999px;background:var(--t2-surface);border:1px solid var(--t2-brand);color:var(--t2-brand-3);font-weight:800;text-decoration:none}
+.gd-hl a:first-child{background:#25D366;border-color:#25D366;color:#053d1c}
+.gd-trust{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.gd-trust li{display:flex;align-items:center;gap:8px;padding:10px;border-radius:16px;background:var(--t2-surface);border:1px solid var(--t2-line);font-weight:800;font-size:.88rem;color:var(--t2-ink)}
+.gd-trust .t2-tile{width:32px;height:36px;flex:none}
+.ts-gd-link{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:0;border:0;background:none;color:var(--t2-brand-3,#06707A);font:800 .85rem "IBM Plex Sans Arabic",sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.ts-gd-link::before{content:"📘";text-decoration:none}
+@media (max-width:700px){.tgb{grid-template-columns:1fr;padding:18px}.tgb-art{order:-1;min-height:0}.tgb-art .tpv-ph{width:min(140px,42%)}.tgb-orb{width:140px}.gd-trust{grid-template-columns:repeat(2,minmax(0,1fr))}.gd-tech>div{grid-template-columns:1fr;gap:2px}}
+@media (prefers-reduced-motion:reduce){.tgb *,.tgb::before{animation:none!important}}
+/* رابط «دليل تيرا» داخل صفحات المنصة (الويب والتطبيق) */
+.gd-pl{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;border:1px solid #9edfe2;background:linear-gradient(135deg,#f0fbfb,#fff);color:#0b1f3a;text-decoration:none;box-shadow:0 8px 22px -16px rgba(6,112,122,.6);transition:transform .15s,border-color .15s}
+.gd-pl:hover{transform:translateY(-1px);border-color:#0AA5AD}
+.gd-pl-ic{flex:none;width:40px;height:45px}.gd-pl-ic .t2-tile{display:block;width:40px;height:45px}
+.gd-pl-tx{flex:1;min-width:0;display:grid;gap:2px}
+.gd-pl-tx b{font:800 14.5px/1.5 "Alexandria","IBM Plex Sans Arabic",sans-serif}
+.gd-pl-tx small{color:#566A88;font-size:12.5px;line-height:1.7}
+.gd-pl-go{flex:none;display:inline-flex;align-items:center;min-height:38px;padding:4px 14px;border-radius:999px;background:#06707A;color:#fff;font:800 13px "IBM Plex Sans Arabic",sans-serif}
+.is-dark .gd-pl,.pv-dark .gd-pl,.t2.is-dark .gd-pl{background:linear-gradient(135deg,#0E3541,#111C31);border-color:#24506a;color:#E8EEF8}
+.is-dark .gd-pl-tx small,.t2.is-dark .gd-pl-tx small{color:#93A6C4}
+@media (max-width:520px){.gd-pl{flex-wrap:wrap}.gd-pl-go{width:100%;justify-content:center}}
+.is-solo .tpv-dots{gap:3px}.is-solo .tpv-dots i{width:9px;height:9px}

@@ -2,6 +2,8 @@
   var host=document.getElementById('pv-host'), box=document.getElementById('pv-site'), fr=document.getElementById('pv-site-f'), bar=document.querySelector('.pv-bar');
   var CFG=window.__TERA||{}, LINKS=CFG.links||{};
   var page=CFG.start||'app', C=null, loading=null, PP={}, cur={path:'/',hash:''}, first=true;
+  /* v366: رابط مباشر لصفحات الدليل من المنصة والبوابة: home/#/guide/<طريقة> */
+  var GD=/^#(\/guide(?:\/[a-z]+)?)$/, gm=GD.exec(location.hash||''); if(gm){ cur={path:gm[1],hash:''}; if(page==='portal') page='home'; }
   var dv=document.createElement('div'); dv.className='ts-dev'; fr.parentNode.insertBefore(dv,fr); dv.appendChild(fr);
   /* شاشة الانتظار الموحّدة: تظهر في كل تحميل وانتقال وتحديث، ومدتها 3 ثوانٍ على الأقل */
   var LG=['sym','tera','ar','lines','tagtx','en'];
@@ -186,6 +188,7 @@
   window.addEventListener('resize',function(){ if(page!=='app') size() });
   try{ localStorage.removeItem('tera-preview-page') }catch(err){}
   window.__teraSite={setPage:setPage,go:function(h){render(h,false)}};
+  window.addEventListener('hashchange',function(){ var m=GD.exec(location.hash||''); if(m){ if(page==='app'){ page='home'; cur={path:m[1],hash:''}; paint(false) } else render(m[1],false) } });
   paint(false);
   /* سلامة العرض: إن بقي محتوى المنصة بلا رسم بعد التحميل، أنهِ حركات الظهور */
   setTimeout(function(){ try{ document.getAnimations().forEach(function(a){ var t=a.effect&&a.effect.getTiming&&a.effect.getTiming(); if(t&&t.iterations!==Infinity&&a.playState!=='finished'&&a.currentTime<50) a.finish() }) }catch(e){} },2500);

@@ -74,9 +74,19 @@
   function img(src, alt, cls) { return el('img', { class: cls || 'tg-img', src: GI + src + '.webp', alt: alt, loading: 'lazy', decoding: 'async' }); }
   var HELP_WA = 'https://wa.me/966555698774?text=' + encodeURIComponent('مرحبًا فريق تيرا، أحتاج مساعدة في إضافة تيرا إلى جهازي.');
   var HELP_MAIL = 'mailto:support@tera-services.com.sa?subject=' + encodeURIComponent('مساعدة في إضافة تيرا إلى جهازي');
-  function helpBox() {
+  function helpBox(slug) {
     return el('div', { class: 'tg-help' }, [el('span', {}, ['إذا واجهتك مشكلة، فريقنا جاهز لمساعدتك وإرشادك.']),
-      el('span', { class: 'tg-hl' }, [el('a', { class: 'tg-hb', href: HELP_WA, target: '_blank', rel: 'noopener' }, ['واتساب']), el('a', { class: 'tg-hb', href: HELP_MAIL }, ['البريد'])])]);
+      el('span', { class: 'tg-hl' }, [el('button', { type: 'button', class: 'tg-hb is-g', onclick: function () { openGuide(slug == null ? 'app' : slug); } }, ['الدليل الكامل']),
+        el('a', { class: 'tg-hb', href: HELP_WA, target: '_blank', rel: 'noopener' }, ['واتساب']), el('a', { class: 'tg-hb', href: HELP_MAIL }, ['البريد'])])]);
+  }
+  /* «دليل تيرا»: صفحات حقيقية داخل الموقع (/guide و /guide/<طريقة>) — من أي مكان في المنصة أو البوابة */
+  var GUIDES = ['app', 'authenticator', 'extra', 'whatsapp', 'email', 'notifications', 'devices', 'session', 'recovery'];
+  function openGuide(slug) {
+    slug = GUIDES.indexOf(slug) >= 0 ? slug : ''; var p = '/guide' + (slug ? '/' + slug : '');
+    if (tgOpen) tgOpen.close();
+    try { var c = N().current && N().current(); if (c && c.close) c.close('guide'); } catch (e) { void e; }
+    if (W.__teraSite && D.getElementById('pv-site-f')) { W.__teraSite.go(p); return p; }
+    W.location.href = new URL('../home/#' + p, D.baseURI).href; return p;
   }
   var tgOpen = null;
   function iosGuide(why) {
@@ -315,12 +325,12 @@
       ['', 'اربط <b>واتساب</b> لتصلك رموز التحقق والتنبيهات فورًا'],
       ['', 'احصل على <b>تطبيق تيرا</b> وفعّل الإشعارات على جوالك']];
     return show({ kind: 'info', icon: 'shield-check:teal', title: 'فعّل حماية حسابك كاملة', text: 'خمس خطوات تجعل حسابك أكثر أمانًا وخدماتك أقرب إليك:',
-      body: el('div', { class: 'tg-gb' }, [steps(list), helpBox()]), ms: 0,
-      actions: [{ label: 'الدخول إلى حسابي', primary: true, run: function () { W.location.href = new URL('../portal/', W.location.href).href; } }, { label: 'فهمت' }] });
+      body: el('div', { class: 'tg-gb' }, [steps(list), helpBox('')]), ms: 0,
+      actions: [{ label: 'الدخول إلى حسابي', primary: true, run: function () { W.location.href = new URL('../portal/', D.baseURI).href; } }, { label: 'فهمت' }] });
   }
   /* بنر «دليل استخدام تيرا» في الرئيسية (داخل إطار الموقع): أزراره تعمل من هنا */
   function mountPromo() {
-    if ((W.__TERA || {}).section !== 'home') return;
+    if (!D.getElementById('pv-site-f')) return;
     setInterval(function () {
       var f = D.getElementById('pv-site-f'), d = null; try { d = f && f.contentDocument; } catch (e) { d = null; }
       if (!d || d.__tpPromo) return; d.__tpPromo = true;
@@ -334,5 +344,5 @@
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', mountPromo); else mountPromo();
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', mountBar); else mountBar();
 
-  W.TeraPush = { secGuide: secGuide, state: state, install: install, enable: enable, test: test, off: off, panel: panel, on: on, guide: guide, live: !!APP_ID, LIVE: LIVE };
+  W.TeraPush = { secGuide: secGuide, state: state, install: install, enable: enable, test: test, off: off, panel: panel, on: on, guide: guide, openGuide: openGuide, GUIDES: GUIDES, live: !!APP_ID, LIVE: LIVE };
 })(window, document);

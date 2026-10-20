@@ -469,7 +469,7 @@
       reg4: 'تم التحقق من البريد والجوال', reg5: 'فُعّلت المصادقة الثنائية', fg1: 'تم التحقق من رقم جوالك', fg2: 'تم التحقق من بريدك', fg3: 'تم التحقق الإضافي', rc1: 'تم قبول رمز الاستعادة' };
     var RUN_T = { 'f-login': ['جارٍ تسجيل الدخول…', 'نتحقق من بياناتك بأمان.'], 'f-otp': ['جارٍ التحقق من الرمز…', 'ثوانٍ ويكتمل التحقق.'], 'f-device': ['جارٍ فتح حسابك…', 'نجهّز جلستك.'],
       'f-reg1': ['جارٍ الحفظ…', ''], 'f-reg2': ['جارٍ الحفظ…', ''], 'f-reg3': ['جارٍ فحص كلمة المرور…', 'نتأكد أنها قوية وغير مسرّبة.'], 'f-reg4': ['جارٍ التحقق…', ''], 'f-reg5': ['جارٍ تفعيل المصادقة…', ''], 'f-reg6': ['جارٍ إنشاء حسابك…', 'لحظات ويصبح حسابك جاهزًا.'],
-      'f-fg1': ['جارٍ التحقق من جوالك…', ''], 'f-fg2': ['جارٍ التحقق من بريدك…', ''], 'f-fg3': ['جارٍ التحقق الإضافي…', ''], 'f-fg4': ['جارٍ حفظ كلمة المرور…', ''], 'f-rc1': ['جارٍ التحقق من رمز الاستعادة…', ''], 'f-rc2': ['جارٍ حفظ كلمة المرور…', ''] };
+      'f-fg1': ['جارٍ التحقق من جوالك…', ''], 'f-fg2': ['جارٍ التحقق من بريدك…', ''], 'f-fg3': ['جارٍ التحقق الإضافي…', ''], 'f-fg4': ['جارٍ حفظ كلمة المرور…', ''], 'f-rc1': ['جارٍ التحقق من الرقم الإضافي…', ''], 'f-rc2': ['جارٍ حفظ كلمة المرور…', ''] };
     function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
     function tick() { var l = Math.max(left, 0); $('#timer-v').textContent = fmt(l); $('#timer-bar').style.width = (l / SESSION * 100) + '%'; $('#pt-timer').classList.toggle('is-low', l <= 60); }
     function startTimer() { clearInterval(timerId); left = SESSION; tick(); timerId = setInterval(function () { left--; tick(); if (left <= 0) { clearInterval(timerId); reset(); msg('lg-msg', 'bad', 'انتهت مدة الجلسة (10 دقائق) قبل اكتمال الخطوات. ابدأ من جديد.'); } }, 1000); }
@@ -573,7 +573,7 @@
     function ynVal(n) { var y = $('.pt-yn[data-yn="' + n + '"]'); return y ? y.dataset.val || '' : ''; }
     function ynSet(y, v) { y.dataset.val = v; $$('button', y).forEach(function (b) { var on = b.dataset.v === v; b.setAttribute('aria-checked', on ? 'true' : 'false'); b.classList.toggle('is-on', on); }); ynChanged(y.dataset.yn, v); }
     $$('.pt-yn').forEach(function (y) { $$('button', y).forEach(function (b) { b.addEventListener('click', function () { ynSet(y, b.dataset.v); }); }); });
-    var DUR = { 30: 'مناسبة لجهاز تستخدمه أحيانًا. بعد 30 يومًا نطلب الرمز الإضافي من جديد.', 60: 'مناسبة للاستخدام المنتظم. بعد 60 يومًا نطلب الرمز الإضافي من جديد.', 90: 'لجهازك الشخصي الذي لا يستخدمه غيرك. بعد 90 يومًا نطلب الرمز من جديد.' };
+    var DUR = { 30: 'مناسبة لجهاز تستخدمه أحيانًا. بعد 30 يومًا نطلب رمز التحقق من جديد.', 60: 'مناسبة للاستخدام المنتظم. بعد 60 يومًا نطلب رمز التحقق من جديد.', 90: 'لجهازك الشخصي الذي لا يستخدمه غيرك. بعد 90 يومًا نطلب الرمز من جديد.' };
     ['lg', 'rg'].forEach(function (p) { var s = $('#' + p + '-dur'); function h() { $('#' + p + '-dur-h').textContent = DUR[s.value]; } s.addEventListener('change', h); h(); });
     function ynChanged(n, v) {
       if (n === 'wa') { $('#wa-box').hidden = v !== 'yes'; if (v !== 'yes') vcReset($('#wa-box .vc')); else vcPaint($('#wa-box .vc')); vcChanged(); }
@@ -634,7 +634,7 @@
     $('#f-device').addEventListener('submit', function (e) { e.preventDefault(); if (LIVE && S.dev) return liveDeviceSubmit(); var v = ynVal('lg-trust'), d = $('#lg-dur').value;
       if (!v) return msg('dev-msg', 'bad', 'اختر هل تصرّح لهذا الجهاز.');
       if (v === 'yes' && $$('#lg-devs .dv').filter(function (x) { return !x.hidden; }).length >= 3) return msg('dev-msg', 'bad', 'ألغِ تصريح جهاز أولًا؛ الحد الأقصى ثلاثة أجهزة.');
-      finish('تم الدخول بنجاح', v === 'yes' ? 'صرّحنا لهذا الجهاز لمدة ' + d + ' يومًا، ولن نطلب الرمز الإضافي منه خلالها. يمكنك إلغاء التصريح من مركز الأمان.' : 'لم نصرّح لهذا الجهاز، وسنطلب رمز التحقق في الدخول القادم منه.', { enter: true }); });
+      finish('تم الدخول بنجاح', v === 'yes' ? 'صرّحنا لهذا الجهاز لمدة ' + d + ' يومًا، ولن نطلب رمز التحقق منه خلالها. يمكنك إلغاء التصريح من مركز الأمان.' : 'لم نصرّح لهذا الجهاز، وسنطلب رمز التحقق في الدخول القادم منه.', { enter: true }); });
 
     /* ---- password kit: rules + strength + confirm ---- */
     var USED = ['tera2468', 'tera@2025', 'riyadh2580'];

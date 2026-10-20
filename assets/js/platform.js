@@ -3105,7 +3105,7 @@ function notifHub(all) {
 }
 function notifPrefs(PREF) {
   return [DS.note('info', 'كيف تصلك الإشعارات', 'تظهر كل الإشعارات داخل المنصة دائمًا. اختر هنا ما يصلك أيضًا على البريد وواتساب. تنبيهات السداد والتحويلات والأمان إلزامية على كل القنوات.'),
-    window.TeraPush ? formSec('إشعارات الجوال والويب', 'تصل إلى شاشة القفل وسطح المكتب حتى والمنصة مغلقة — لكل جهاز على حدة.', [window.TeraPush.panel({ demo: !window.TeraPush.live })]) : null,
+    window.TeraPush ? formSec('إشعارات الجوال والويب', 'تصل إلى شاشة القفل وسطح المكتب حتى والمنصة مغلقة — لكل جهاز على حدة.', [window.TeraPush.panel({ demo: !window.TeraPush.live }), gdLink('notifications', 'دليل الإشعارات وتطبيق تيرا', 'آيفون وأندرويد والكمبيوتر — خطوة بخطوة بالصور.')]) : null,
     formSec('قنوات كل نوع', null, [e('div', { class: 'fx-npref' }, NCAT.filter(function (c) { return c[0] !== 'all'; }).map(function (c) {
       return NLOCK[c[0]] ? e('div', { class: 'fx-npref-r is-lock' }, [e('b', {}, c[1]), e('span', {}, 'المنصة والبريد وواتساب'), DS.badge('إلزامي', 'info')])
         : fxReq(c[1], 'np-' + c[0], DS.select({ value: NPREF[c[0]], options: PREF, onChange: function (v) { NPREF[c[0]] = v; draw(); } }));
@@ -7016,7 +7016,7 @@ const CU_PEND = { 'accounts.launch': ['تدشين الحسابات', 'accounts.m
   'accounts.invite': ['إصدار دعوات الحسابات', 'accounts.manage', 'دعوات الحسابات'], 'accounts.2fa.policy': ['إلزام المصادقة الثنائية أو رفعه', 'accounts.security.manage', 'سياسة المصادقة الثنائية'], 'accounts.audit.view': ['عرض سجل التدقيق والمراقبة', 'accounts.view', 'مركز الأمن'] };
 /* ربط إجراءات العيّنة بالصلاحيات — المفتاح الموجود في المنصة أو المقترح */
 const CU_MAP = [['قبول · إعادة · رفض طلبات الملف والتوثيق', 'accounts.manage'], ['تدشين الحساب', 'accounts.launch'], ['طلب تحديث بيانات العملاء المرحّلين وحسم تعارض الهوية', 'accounts.migrate'], ['المطابقة في الطلبات المسنَدة', 'profile.match'], ['الإسناد وسحبه', 'assignments.manage'], ['السحب من صاحب صلاحية', 'assignments.withdraw_any'],
-  ['إنهاء جلسات الحساب (أداة طوارئ)', 'accounts.sessions.manage'], ['قفل الحساب', 'accounts.lock'], ['فك القفل', 'accounts.unlock'], ['تعطيل الحساب وتفعيله', 'accounts.manage'], ['تصفير الرمز الإضافي · تعطيل تطبيق المصادقة · تعطيل التحقق بالبريد · إلغاء رمز واتساب', 'accounts.security.manage'], ['سياسة المصادقة الثنائية', 'accounts.2fa.policy'],
+  ['إنهاء جلسات الحساب (أداة طوارئ)', 'accounts.sessions.manage'], ['قفل الحساب', 'accounts.lock'], ['فك القفل', 'accounts.unlock'], ['تعطيل الحساب وتفعيله', 'accounts.manage'], ['تصفير الرقم الإضافي · تعطيل تطبيق المصادقة · تعطيل التحقق بالبريد · إلغاء رمز واتساب', 'accounts.security.manage'], ['سياسة المصادقة الثنائية', 'accounts.2fa.policy'],
   ['مركز الأمن وسجل التدقيق', 'accounts.audit.view'], ['دعوات الحسابات', 'accounts.invite'], ['الأدوار والمسمّيات والحسابات (الوظيفة والأدوار)', 'system.settings'], ['مدد الإنجاز', 'settings.sla'], ['الردود الجاهزة', 'settings.replies'], ['قوالب الإشعارات', 'notifications.manage']];
 Object.assign(CU_GATE, { 'profile.launch': 'accounts.launch', 'profile.migrate': 'accounts.migrate', 'profile.match': 'profile.match', 'work.withdraw_any': 'assignments.withdraw_any', 'settings.sla': 'settings.sla', 'settings.replies': 'settings.replies', 'settings.invite': 'accounts.invite', 'settings.2fa': 'accounts.2fa.policy', 'audit.view': 'accounts.audit.view' });
 const cuKeyOk = (k, R0) => { const f = CU_PEND[k] ? CU_PEND[k][1] : k; return R0.keys.indexOf(f) >= 0; };
@@ -7069,7 +7069,7 @@ function cuSx(c, i) {
   if (c.id === 'me') return { sess: lvSess().filter(function (x) { return x.st === 'نشطة'; }).length, rec: !!LVS.xcAt, recAt: LVS.xcAt, totp: !!LVS.app, totpAt: LVS.appAt, mail: !!LVS.mail, mailAt: LVS.mailAt, wa: LVS.wa === 'on', pin: !!LVS.pinAt, pinAt: LVS.pinAt, fails: 0, f2a: !!(CU_SECX.me && CU_SECX.me.f2a), me: true };
   return CU_SECX[c.id] || (CU_SECX[c.id] = { sess: (i % 3) + 1, sessAt: at2(addDays(T0, -i), 9, 0), rec: i !== 3, recAt: addDays(T0, -(10 + i)), totp: i === 2, totpAt: addDays(T0, -(20 + i)), mail: i !== 1, mailAt: addDays(T0, -(30 + i)), wa: i !== 3, pin: i === 2 || i === 1, pinAt: addDays(T0, -(5 + i)), fails: i === 1 ? 3 : 0, lockUntil: i === 1 ? new Date(T0.getTime() + 36e5 * 2) : null, ver: addDays(T0, -i), f2a: i === 2 });
 }
-const CU_SACT = { sess: ['إنهاءُ جلساتِ الحساب', 'أداة طوارئ: يُنهي كل الجلسات النشطة للحساب فورًا عند الاشتباه، ويُطلب من صاحبه الدخول من جديد.', 'sess', 'الجلسات النشطة', 'إنهاء الجلسات', 'sign-out'], reccode: ['تصفيرُ رمزِ التحقُّقِ الإضافي', 'يُلغي رموزَ الاستردادِ الحاليَّةَ ويطلبُ إصدارَها من جديد.', 'rec', 'الرمز الإضافي', 'تصفير', 'key'], totp: ['تعطيلُ تطبيقِ المصادقة', 'يفكُّ ارتباطَ تطبيقِ المصادقةِ بالحساب.', 'totp', 'تطبيق المصادقة', 'تعطيل', 'device-mobile'],
+const CU_SACT = { sess: ['إنهاءُ جلساتِ الحساب', 'أداة طوارئ: يُنهي كل الجلسات النشطة للحساب فورًا عند الاشتباه، ويُطلب من صاحبه الدخول من جديد.', 'sess', 'الجلسات النشطة', 'إنهاء الجلسات', 'sign-out'], reccode: ['تصفيرُ رمزِ التحقُّقِ الإضافي', 'يُلغي رموزَ الاستردادِ الحاليَّةَ ويطلبُ إصدارَها من جديد.', 'rec', 'الرقم الإضافي', 'تصفير', 'key'], totp: ['تعطيلُ تطبيقِ المصادقة', 'يفكُّ ارتباطَ تطبيقِ المصادقةِ بالحساب.', 'totp', 'تطبيق المصادقة', 'تعطيل', 'device-mobile'],
   mail: ['تعطيلُ التحقُّقِ بالبريد', 'يوقفُ التحقُّقَ بالبريدِ للحساب حتى يُعيدَ صاحبُه تفعيلَه.', 'mail', 'التحقق بالبريد', 'تعطيل', 'envelope-simple'] };
 const CU_SWHY = ['بطلب من صاحب الحساب بعد التحقق من هويته.', 'فقد صاحب الحساب جهازه.', 'اشتباه في وصول طرف آخر إلى وسيلة التحقق.'];
 /* درج إجراء أمني على حساب — سبب إلزامي ويُسجَّل في التدقيق */
@@ -11905,9 +11905,17 @@ const lvProfPct = () => { const F = ['personal', 'address', 'contact', 'emergenc
 /* ---------- سجل الصفحات: العنوان والأصل والأيقونة والعرض ---------- */
 const LP = {};
 function lp(k, t, up, ic, run) { LP[k] = { t: t, up: up, ic: ic, run: run }; ACCT[k] = function () { return lvRun(k); }; }
+/* v366: كل صفحة تفعيل أو إضافة تُشير إلى صفحتها في «دليل تيرا» (صفحات حقيقية في الموقع: home/#/guide/<طريقة>) */
+function gdOf(k) { return { shield: '', 'sec-password': 'recovery', 'sec-whatsapp': 'whatsapp', 'sec-extracode': 'extra', 'sec-twofa': 'authenticator', 'sec-devices': 'devices', 'sec-verify': '', 'sec-sessions': 'session' }[k]; }
+function gdLink(slug, t, d) {
+  return e('a', { class: 'gd-pl', href: new URL('../home/#/guide' + (slug ? '/' + slug : ''), document.baseURI).href, target: '_blank', rel: 'noopener' }, [
+    e('span', { class: 'gd-pl-ic' }, frag(tile('signpost:teal'))), e('span', { class: 'gd-pl-tx' }, [e('b', {}, t || (slug ? 'اقرأ الدليل الكامل لهذه الخطوة' : 'دليل تيرا: فعّل كل وسائل الحماية')), e('small', {}, d || 'شرح وافٍ بالخطوات والصور والتفاصيل الفنية والأسئلة الشائعة — في «دليل تيرا».')]),
+    e('span', { class: 'gd-pl-go' }, 'افتح الدليل')]);
+}
 function lvRun(k) {
   const p = LP[k]; if (!p) return morePage();
   const out = [].concat(p.run()).filter(Boolean);
+  if (gdOf(k) != null) out.splice(Math.min(1, out.length), 0, gdLink(gdOf(k)));
   const root = lvRoot(k);
   return [lvToast(), e('div', { class: 't2-stack lv-page is-' + root + (k === root ? ' is-hub' : '') }, out)].filter(Boolean);
 }
@@ -12451,7 +12459,7 @@ function secDevices() {
         return '—'; } }], rows: D })];
 }
 function secVerify() {
-  const R = [['الرمز عبر البريد الإلكتروني', LVS.mail, LVS.mailAt], ['الرمز عبر تطبيق واتساب', LVS.wa === 'on', LVS.pinAt], ['الرمز عبر تطبيق المصادقة', LVS.app, LVS.appAt], ['رمز التحقق الإضافي', !!LVS.xc, LVS.xcAt]];
+  const R = [['الرمز عبر البريد الإلكتروني', LVS.mail, LVS.mailAt], ['الرمز عبر تطبيق واتساب', LVS.wa === 'on', LVS.pinAt], ['الرمز عبر تطبيق المصادقة', LVS.app, LVS.appAt], ['الرقم الإضافي', !!LVS.xc, LVS.xcAt]];
   return [lvPanel('وسائل التحقّق من العمليات', null, [lvTable({ id: 'sec-ver', pageSize: 3, columns: [{ label: 'الوسيلة', cell: function (r) { return r[0]; } }, { label: 'الحالة', cell: function (r) { return DS.badge(r[1] ? 'مفعّلة' : 'غير مفعّلة', r[1] ? 'ok' : null); }, key: function (r) { return r[1] ? '1' : '0'; } }, { label: 'تاريخ التفعيل', cell: function (r) { return r[1] && r[2] ? ltr(iso(r[2])) : '—'; } }], rows: R }),
     LVS.mail ? null : lvRow(DS.button('تشغيلُ التحقُّقِ بالبريدِ الآن', { tone: 'primary', size: 'sm', onClick: function () { LVS.flow = 'mail'; S.otpAt = null; go('other', 'sec-twofa'); } }))])];
 }
@@ -12486,7 +12494,7 @@ function shieldHub() {
     tiles: [['عوامل التحقق', fmtNum(f) + ' / 3', 'fingerprint', f === 3 ? 'ok' : 'warn'], ['الأجهزة المصرّح بها', fmtNum(ok) + ' / 3', 'device-mobile', wait ? 'warn' : null], ['الجلسات النشطة', fmtNum(act), 'monitor'], ['آخر دخول', iso(lastIn) + ' ' + hm(lastIn), 'clock']] }),
     sec('أمان الدخول', null, [lvHub([['lock', 'إعدادات كلمة المرور بالبريد الإلكتروني', 'آخر تغيير ' + iso(LVS.pwAt || actAt()), null, goP('sec-password')],
       ['wa', 'إعدادات تطبيق الواتس اب', LVS.wa === 'on' ? 'مربوط · الرمز السري مُفعّل' : 'غير مربوط', LVS.wa === 'on' ? 'ok' : 'warn', goP('sec-whatsapp')],
-      ['key', 'إعدادات رمز التحقق الإضافي', LVS.xc ? 'مُصدَر · ' + iso(LVS.xcAt) : 'غير مُصدَر', LVS.xc ? 'ok' : null, goP('sec-extracode')],
+      ['key', 'إعدادات الرقم الإضافي', LVS.xc ? 'مُصدَر · ' + iso(LVS.xcAt) : 'غير مُصدَر', LVS.xc ? 'ok' : null, goP('sec-extracode')],
       ['shield', 'إعدادات المصادقة الثنائية', n2 ? fmtNum(n2) + ' من 2 مُفعّلة' : 'غير مُفعّلة', n2 ? 'ok' : 'warn', goP('sec-twofa')],
       ['device', 'إعدادات الأجهزة المصرح بها', fmtNum(ok) + ' مُصرَّح' + (wait ? ' · ' + fmtNum(wait) + ' بانتظار التصريح' : ''), wait ? 'warn' : 'ok', goP('sec-devices'), wait || null],
       ['ok', 'صلاحيات الوصول والتحقق من العمليات', fmtNum(nv) + ' من 4 وسائل مُفعّلة', nv ? 'ok' : null, goP('sec-verify')]])], true, 'lv:sh:login'),
@@ -12496,7 +12504,7 @@ const SH = function (ic, t, tiles, pill, ring) { return lvHero({ ic: ic, cls: 'i
 lp('shield', 'مركزُ الأمان', null, 'shield', shieldHub);
 lp('sec-password', 'إعدادات كلمة المرور بالبريد الإلكتروني', 'shield', 'lock', function () { return [SH('lock', 'كلمة المرور', [['آخر تغيير', iso(LVS.pwAt || actAt()), 'calendar-blank'], ['إلزام بالتغيير', 'لا', 'password'], ['عوامل مُفعّلة', fmtNum(lvFactors()) + ' / 3', 'fingerprint']], ['محمية', 'ok'])].concat(secPassword()); });
 lp('sec-whatsapp', 'إعدادات تطبيق الواتس اب', 'shield', 'wa', function () { const on = LVS.wa === 'on', li = on || LVS.wa === 'pin'; return [SH('wa', 'واتساب منصة تيرا', [['ربطُ الرقم', li ? 'مربوط' : 'غير مربوط', 'phone', li ? 'ok' : 'warn'], ['الرمزُ السري', on ? 'مُفعّل' : 'غير مُفعّل', 'lock-key', on ? 'ok' : null], ['حالةُ التحقق', 'يعمل', 'shield-check', 'ok']], [on ? 'مُفعّل' : 'غير مربوط', on ? 'ok' : 'warn'])].concat(secWhatsapp().slice(1)); });
-lp('sec-extracode', 'إعدادات رمز التحقق الإضافي', 'shield', 'key', function () { return [SH('key', 'رمز التحقق الإضافي', [['الحالة', LVS.xc ? 'مُصدَر' : 'غير مُصدَر', 'key', LVS.xc ? 'ok' : null], ['تاريخ الإصدار', LVS.xc ? iso(LVS.xcAt) : '—', 'calendar-blank'], ['العرض', 'مرة واحدة', 'eye']], [LVS.xc ? 'مُصدَر' : 'غير مُصدَر', LVS.xc ? 'ok' : 'warn'])].concat(secExtra()); });
+lp('sec-extracode', 'إعدادات الرقم الإضافي', 'shield', 'key', function () { return [SH('key', 'الرقم الإضافي', [['الحالة', LVS.xc ? 'مُصدَر' : 'غير مُصدَر', 'key', LVS.xc ? 'ok' : null], ['تاريخ الإصدار', LVS.xc ? iso(LVS.xcAt) : '—', 'calendar-blank'], ['العرض', 'مرة واحدة', 'eye']], [LVS.xc ? 'مُصدَر' : 'غير مُصدَر', LVS.xc ? 'ok' : 'warn'])].concat(secExtra()); });
 lp('sec-twofa', 'إعدادات المصادقة الثنائية', 'shield', 'shield', function () { const n = (LVS.mail ? 1 : 0) + (LVS.app ? 1 : 0); return [SH('shield', 'المصادقة الثنائية', [['قناة البريد', LVS.mail ? 'مُفعّلة' : 'متوقفة', 'envelope-simple', LVS.mail ? 'ok' : null], ['تطبيق المصادقة', LVS.app ? 'مُفعّل' : 'غير مُهيّأ', 'device-mobile', LVS.app ? 'ok' : null], ['الرمز المتغيّر', 'كل 30 ثانية', 'clock']], [n ? fmtNum(n) + ' من 2 مُفعّلة' : 'غير مُفعّلة', n ? 'ok' : 'warn'], [n * 50, 'مُفعّل'])].concat(secTwofa()); });
 lp('sec-devices', 'إعدادات الأجهزة المصرح بها', 'shield', 'device', function () { const D = lvDevs(), c = function (x) { return D.filter(function (d) { return d.st === x; }).length; }; return [SH('device', 'الأجهزة المصرّح بها', [['مُصرَّحٌ لها', fmtNum(c('ok')), 'check-circle', 'ok'], ['بانتظارِ التصريح', fmtNum(c('wait')), 'clock', c('wait') ? 'warn' : null], ['محجوبة', fmtNum(c('block')), 'x-circle'], ['حدُّ الأجهزة', '3', 'device-mobile']], c('wait') ? ['جهاز بانتظار التصريح', 'warn'] : ['آمنة', 'ok'])].concat(secDevices().slice(1)); });
 lp('sec-verify', 'صلاحيات الوصول والتحقق من العمليات', 'shield', 'ok', function () { const n = [LVS.mail, LVS.wa === 'on', LVS.app, !!LVS.xc].filter(Boolean).length; return [SH('ok', 'وسائل التحقق من العمليات', [['المفعّلة', fmtNum(n) + ' / 4', 'check-circle', n ? 'ok' : 'warn'], ['الأساسية', 'البريد الإلكتروني', 'envelope-simple'], ['العمليات الحساسة', 'تتطلب تحققًا', 'fingerprint']], null, [n * 25, 'مُفعّل'])].concat(secVerify()); });
@@ -13713,11 +13721,11 @@ function rvuForm() {
     DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
 }
 /* ---------- القسم ٢ · مركز الأمان — زرّ واحد يفتح المركز، وكل وسيلة بطاقة تفتح مسارها الحقيقي ----------
-   الشروط: ربط رقم الواتساب · وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو رمز التحقق الإضافي) · التحقق بالبريد عند كل دخول.
+   الشروط: ربط رقم الواتساب · وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو الرقم الإضافي) · التحقق بالبريد عند كل دخول.
    المسارات نفسها في مركز الأمان بالعيّنة: التحقق الأمني ← الرمز ← التفعيل ← «تم». */
 function rvuSecSync() { RVU.sec.wa = RVW.st === 3 || LVS.wa === 'on'; RVU.sec.auth = !!LVS.app || !!LVS.xc; RVU.sec.mail = !!LVS.mail; }
 const RVU_SECP = [['wa', 'ربط رقم الواتساب', 'wa', 'شرط للتوثيق — تصلك عليه رموز التحقق وتنبيهات طلباتك'], ['app', 'تطبيق المصادقة', 'key', 'رمز متغيّر كل ثلاثين ثانية — يحقّق شرط «وسيلة مصادقة»'],
-  ['extra', 'رمز التحقق الإضافي', 'lock', 'رمز احتياطي يُعرض مرة واحدة — يحقّق شرط «وسيلة مصادقة»'], ['mail', 'التحقق بالبريد عند كل دخول', 'email', 'رمز على بريدك مع كل دخول'], ['pw', 'كلمة المرور', 'shield', 'تغييرها بالتحقق الأمني']];
+  ['extra', 'الرقم الإضافي', 'lock', 'رمز احتياطي يُعرض مرة واحدة — يحقّق شرط «وسيلة مصادقة»'], ['mail', 'التحقق بالبريد عند كل دخول', 'email', 'رمز على بريدك مع كل دخول'], ['pw', 'كلمة المرور', 'shield', 'تغييرها بالتحقق الأمني']];
 function rvuSecState(k) {
   if (k === 'wa') return RVU.sec.wa ? ['مربوط', 'ok'] : (RVW.st > 0 || LVS.wa) ? ['قيد الربط', 'warn'] : ['غير مربوط', 'warn'];
   if (k === 'app') return LVS.app ? ['مفعّل', 'ok'] : ['غير مفعّل', null];
@@ -16449,8 +16457,8 @@ async function clPost(path, body) {
   return (await r.json().catch(function () { return null; })) || { ok: false, message: 'تعذّر الاتصال بالخادم.' };
 }
 const liveOk = (b) => { b.setAttribute('data-live-ok', ''); return b; };
-const LIVE_FX = { email_code: 'رمز إلى البريد الإلكتروني', whatsapp_code: 'رمز عبر واتساب', totp: 'تطبيق المصادقة', recovery_code: 'رمز التحقق الإضافي', extra_code: 'رمز التحقق الإضافي' };
-const LIVE_FXM = { email_code: ['envelope-simple', 'رمز من 6 أرقام يصل إلى بريد الحساب'], whatsapp_code: ['wa', 'رمز يصل عبر واتساب إلى جوالك الموثّق'], totp: ['device-mobile', 'الرمز المتغيّر في تطبيق المصادقة'], recovery_code: ['key', 'الرمز الإضافي المحفوظ لديك'], extra_code: ['key', 'الرمز الإضافي المحفوظ لديك'] };
+const LIVE_FX = { email_code: 'رمز إلى البريد الإلكتروني', whatsapp_code: 'رمز عبر واتساب', totp: 'تطبيق المصادقة', recovery_code: 'الرقم الإضافي', extra_code: 'الرقم الإضافي' };
+const LIVE_FXM = { email_code: ['envelope-simple', 'رمز من 6 أرقام يصل إلى بريد الحساب'], whatsapp_code: ['wa', 'رمز يصل عبر واتساب إلى جوالك الموثّق'], totp: ['device-mobile', 'الرمز المتغيّر في تطبيق المصادقة'], recovery_code: ['key', 'الرقم الإضافي المحفوظ لديك'], extra_code: ['key', 'الرقم الإضافي المحفوظ لديك'] };
 /* خطوة التحقق الأمني الموحّدة (نفس بوابة الخادم): اختيار الوسيلة ← إرسال الرمز ← إدخاله ← منحة صالحة للعملية */
 function liveGate(purpose, st) {
   const box = e('div', { class: 't2-stack-tight' }), msg = e('small', { class: 'cu-dr-hint', role: 'status' }, '');
@@ -16465,7 +16473,7 @@ function liveGate(purpose, st) {
   const showOtp = function (f, sent) {
     otp.hidden = false; otpH.innerHTML = ''; otpF.innerHTML = '';
     otpH.appendChild(frag(tile(f === 'totp' ? 'device' : f === 'whatsapp_code' ? 'wa' : f === 'email_code' ? 'email' : 'key')));
-    otpH.appendChild(e('span', {}, f === 'totp' ? 'أدخل الرمز الظاهر في تطبيق المصادقة' : f === 'email_code' ? ['أُرسل رمز التحقق إلى ', e('b', {}, 'بريدك الإلكتروني ' + ((LIVE.me && LIVE.me.email) || ''))] : f === 'whatsapp_code' ? ['أُرسل رمز التحقق إلى ', e('b', {}, 'واتساب')] : 'أدخل رمز التحقق الإضافي'));
+    otpH.appendChild(e('span', {}, f === 'totp' ? 'أدخل الرمز الظاهر في تطبيق المصادقة' : f === 'email_code' ? ['أُرسل رمز التحقق إلى ', e('b', {}, 'بريدك الإلكتروني ' + ((LIVE.me && LIVE.me.email) || ''))] : f === 'whatsapp_code' ? ['أُرسل رمز التحقق إلى ', e('b', {}, 'واتساب')] : 'أدخل الرقم الإضافي'));
     if (sent) { const now = Date.now(); otpF.appendChild(e('span', {}, ['صالح لمدة ', e('b', { 'data-otp-left': String(now + OTP_TTL * 1000) }, '05:00')])); otpF.appendChild(liveOk(e('button', { type: 'button', class: 'fx-link', 'data-otp-resend': String(now + ((sent.retry || OTP_RESEND) * 1000)), disabled: true, onClick: function () { send.click(); } }, 'إعادة الإرسال'))); }
     boxes.forEach(function (x) { x.value = ''; }); code.value = ''; setTimeout(function () { try { boxes[0].focus(); } catch (err) { void err; } }, 30);
   };
@@ -16546,7 +16554,7 @@ function liveSessPage() {
 }
 /* ---------- v272: التحرير والرفع والمصادقة والقرارات — عبر مسارات الخادم ----------
    • تحديث بيانات أقسام الملف الشخصي ورفع المستندات (الخادم يطلب كلمة المرور والتحقق الأمني بعد اعتماد الملف).
-   • تطبيق المصادقة (تهيئة/تأكيد/تعطيل) ورمز التحقق الإضافي.
+   • تطبيق المصادقة (تهيئة/تأكيد/تعطيل) والرقم الإضافي.
    • للموظف: استلام طلب التوثيق واعتماده أو إعادته أو رفضه، وتغيير حالة طلب العميل، وفتح مرفقات العقود. */
 const LIVE_EDIT = {};
 function livePwBox(purpose, st) {
@@ -16678,7 +16686,7 @@ function liveDocActions(d) {
   const btn = liveOk(DS.button(f.doc ? 'استبدال' : 'رفع', { size: 'sm', ui: 'paperclip', onClick: function () { inp.click(); } }));
   return [btn, inp, gate, msg];
 }
-/* تطبيق المصادقة ورمز التحقق الإضافي */
+/* تطبيق المصادقة والرقم الإضافي */
 function liveTotpPage() {
   const st = {}, area = e('div', { class: 't2-stack-tight' }), out = e('div', { role: 'status' });
   const start = liveOk(DS.button('تهيئة تطبيق المصادقة', { tone: 'primary', onClick: async function () {
@@ -16720,7 +16728,7 @@ function liveRecPage() {
     catch (err) { if (err && err.message === 'auth') return; out.appendChild(DS.note('warn', 'لم يُنشأ الرمز', (err && err.message) || '')); }
     go1.disabled = false;
   } }));
-  return [SH('key', 'رمز التحقق الإضافي', [['الحالة', LVS.xc ? 'مُصدَر' : 'غير مُصدَر', 'key', LVS.xc ? 'ok' : null], ['العرض', 'مرة واحدة فقط', 'eye'], ['الحفظ', 'مُعمًّى في الخادم', 'lock']], [LVS.xc ? 'مُصدَر' : 'غير مُصدَر', LVS.xc ? 'ok' : 'warn']),
+  return [SH('key', 'الرقم الإضافي', [['الحالة', LVS.xc ? 'مُصدَر' : 'غير مُصدَر', 'key', LVS.xc ? 'ok' : null], ['العرض', 'مرة واحدة فقط', 'eye'], ['الحفظ', 'مُعمًّى في الخادم', 'lock']], [LVS.xc ? 'مُصدَر' : 'غير مُصدَر', LVS.xc ? 'ok' : 'warn']),
     DS.note('warn', 'الرمزُ يُعرَضُ مرةً واحدةً فقط', 'يُحفَظُ مُعمًّى، ولا يظهرُ في سجلٍّ ولا في الواجهةِ بعدَ الإنشاء. استخدمه إن فقدت وصولك إلى بريدك أو جوالك.'),
     lvPanel('حالةُ الرمز', DS.badge(LVS.xc ? 'مُصدَر' : 'غير مُصدَر', LVS.xc ? 'ok' : null), [lvFields([lvField('الحالة', LVS.xc ? 'فعّال' : 'لا رمزَ مُصدَر'), lvField('عند إنشاء رمز جديد', 'يُلغى الرمز السابق فورًا')])]),
     lvPanel(LVS.xc ? 'إصدارُ رمزٍ بديل' : 'إنشاء رمز جديد', null, [e('small', { class: 'cu-dr-hint' }, 'إنشاء رمز جديد يُلغي الرمز السابق.'), livePwBox('change_security', st), e('div', { class: 't2-pb-actions' }, [go1])]), out];
@@ -18863,7 +18871,7 @@ if (LIVE.on) {
   lp('cu-mem', 'العضويات والنقاط', 'cu', 'cu-mem', lvMemPage);
   lp('cu-svc', 'طلبات الخدمات', 'cu', 'services', lvSvcPage);
 } else { ['__lvLoySave', '__lvLoyDecide', '__lvLoyAdj', '__lvLoyPull', '__lvLoyLink'].forEach(function (k) { try { delete window[k]; } catch (err) { void err; } }); }
-/* ---------- v298: أمان حسابات العملاء — تصفير الرمز الإضافي · تعطيل تطبيق المصادقة · تعطيل التحقق بالبريد · رموز واتساب · الأجهزة ----------
+/* ---------- v298: أمان حسابات العملاء — تصفير الرقم الإضافي · تعطيل تطبيق المصادقة · تعطيل التحقق بالبريد · رموز واتساب · الأجهزة ----------
    المصادر: admin_accounts_list · admin_set_2fa · /admin/api/security/:uid/(totp|reccode) · whatsapp_pin_admin_list/action · /admin/api/devices
    كل إجراء بسبب إلزامي يُسجَّل في أحداث الحساب، والأجهزة للعرض فقط: التصريح عمل العميل وحده من مركز أمانه. */
 const LV_SX = { reccode: ['recovery_code_status', function (v) { return v === 'active' || v === 'issued'; }], totp: ['totp_status', function (v) { return v === 'active' || v === 'confirmed' || v === 'pending'; }], mail: ['email_2fa', function (v) { return !!v; }] };
@@ -20184,7 +20192,7 @@ function cxAnswer(x) {
 } catch (err) { void err; } })();
 
 /* ================= v318: شرط إرسال التوثيق + شروح مركز الأمان =================
- * لا يُرسَل ملف التوثيق حتى يُربط رقم الواتساب وتُفعَّل وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو رمز التحقق الإضافي)
+ * لا يُرسَل ملف التوثيق حتى يُربط رقم الواتساب وتُفعَّل وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو الرقم الإضافي)
  * — والشرط نفسه في القاعدة (my_verification_submit) فلا يتجاوزه أي مسار. والشروح كما في العيّنة: الهدف والاستخدام والفيديو والخطوات بالصور. */
 function liveVsec() {
   const v = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA) ? LIVE_DATA.vsec : null;
@@ -20198,7 +20206,7 @@ function vsecGate(o) {
   return e('section', { class: 'vg' + (V.ready ? ' is-ready' : '') }, [
     e('header', {}, [e('span', { class: 'vg-hic' }, frag(ui(V.ready ? 'seal-check' : 'lock-key', 22))), e('span', {}, [e('b', {}, op.title || 'شرط إرسال الملف للتوثيق'), e('small', {}, V.ready ? 'مكتمل — يمكنك إرسال ملفك للتوثيق متى اكتملت بياناته.' : 'لن يُرسَل ملفك للتوثيق حتى يكتمل الشرطان التاليان.')]), DS.badge(V.ready ? 'جاهز' : 'غير مكتمل', V.ready ? 'ok' : 'warn')]),
     e('ul', { class: 'vg-l' }, [row(V.wa, 'ربط رقم الواتساب', 'اربط رقم جوالك في واتساب بحسابك — تصلك عليه رموز التحقق وتنبيهات طلباتك.', 'sec-whatsapp', 'ربط الواتساب'),
-      row(V.auth, 'وسيلة مصادقة واحدة على الأقل', 'فعّل تطبيق المصادقة أو رمز التحقق الإضافي — ويمكنك تفعيل الاثنتين لحماية أعلى.', V.totp || !V.extra ? 'sec-twofa' : 'sec-extracode', 'تفعيل وسيلة'),
+      row(V.auth, 'وسيلة مصادقة واحدة على الأقل', 'فعّل تطبيق المصادقة أو الرقم الإضافي — ويمكنك تفعيل الاثنتين لحماية أعلى.', V.totp || !V.extra ? 'sec-twofa' : 'sec-extracode', 'تفعيل وسيلة'),
       e('li', { class: 'is-ok is-base' }, [e('span', { class: 'vg-ic' }, frag(ui('envelope-simple', 20))), e('span', { class: 'vg-t' }, [e('b', {}, 'التحقق بالبريد الإلكتروني'), e('small', {}, 'مفعّل لكل حساب عند كل دخول — لا يحتاج إجراء.')]), DS.badge('أساسي', 'info')])])]);
 }
 /* صندوق «ما الهدف وكيف تستخدمها؟» كما في العيّنة */
@@ -20227,8 +20235,8 @@ function sgAuthGuide() {
 function secGuide(kind) {
   const H = function (ic, t, sub, kids) { return e('section', { class: 'sg' }, [e('header', { class: 'sg-h' }, [frag(tile(ic)), e('span', {}, [e('b', {}, t), e('small', {}, sub)])]), e('div', { class: 'sg-b' }, kids)]); };
   if (kind === 'hub') return H('shield-check:teal', 'كيف تفعّل مركز الأمان؟', 'أربع خطوات — والأولى والثانية شرط لإرسال ملفك للتوثيق', [
-    sgSteps([['اربط رقم الواتساب', 'من «إعدادات تطبيق الواتس اب» — تصلك عليه رموز التحقق وتنبيهات طلباتك. شرط لإرسال ملفك.'], ['فعّل وسيلة مصادقة واحدة على الأقل', 'تطبيق المصادقة (الأقوى، يعمل دون إنترنت) أو رمز التحقق الإضافي — ويمكنك تفعيل الاثنتين. شرط لإرسال ملفك.'],
-      ['احفظ رموز الاستعادة', 'رموز لمرة واحدة تستعيد بها حسابك إذا فقدت جوالك أو تطبيق المصادقة — احفظها خارج جوالك.'], ['راجع الأجهزة والجلسات', 'صرّح لأجهزتك فقط (حتى 3 أجهزة)، وأنهِ أي جلسة لا تعرفها من «الجلسات».']]),
+    sgSteps([['اربط رقم الواتساب', 'من «إعدادات تطبيق الواتس اب» — تصلك عليه رموز التحقق وتنبيهات طلباتك. شرط لإرسال ملفك.'], ['فعّل وسيلة مصادقة واحدة على الأقل', 'تطبيق المصادقة (الأقوى، يعمل دون إنترنت) أو الرقم الإضافي — ويمكنك تفعيل الاثنتين. شرط لإرسال ملفك.'],
+      ['احفظ رقمك الإضافي', 'رقم من 10 أرقام أو أكثر تنشئه أنت؛ تستعيد به حسابك إذا فقدت جوالك أو تطبيق المصادقة — احفظه خارج جوالك.'], ['راجع الأجهزة والجلسات', 'صرّح لأجهزتك فقط (حتى 3 أجهزة)، وأنهِ أي جلسة لا تعرفها من «الجلسات».']]),
     sgWhy([['shield-check', 'ما المصادقة الثنائية؟', 'طبقة حماية ثانية بعد كلمة المرور: حتى لو عرف أحد كلمة مرورك لا يستطيع الدخول دون الرمز الذي يصلك أنت.'], ['list-checks', 'متى تُطلب؟', 'عند الدخول من جهاز غير مصرّح له، وعند استرداد كلمة المرور، وعند تغيير بيانات الأمان أو تنفيذ عملية حساسة.']], 'لماذا مركز الأمان؟')]);
   if (kind === 'totp') return H('device-mobile:navy', 'شرح تفعيل تطبيق المصادقة', 'رمز يتجدد كل 30 ثانية من جوالك — الأقوى والأنسب', [
     sgWhy([['flag', 'الهدف', 'يولّد تطبيق على جوالك رمزًا جديدًا كل 30 ثانية مرتبطًا بحسابك وحده، فلا يمكن اعتراضه برسالة أو بريد.'], ['list-checks', 'الاستخدام', 'عند الدخول افتح التطبيق واكتب الرمز الظاهر لحساب TERA. لا يحتاج إلى شبكة ولا إلى رصيد رسائل.']]),
@@ -20237,9 +20245,9 @@ function secGuide(kind) {
     e('div', { class: 'sg-st' }, SG_STORES.map(function (x) { return e('div', { class: 'sg-sti' }, [e('span', { class: 'sg-sti-h' }, [e('b', {}, x[0]), e('small', { dir: 'ltr' }, x[1])])].concat(x[2].map(function (l) { return e('a', { href: l[1], target: '_blank', rel: 'noopener', dir: 'auto' }, l[0]); }))); })),
     e('h4', { class: 'sg-sub' }, '2. خطوات التفعيل بالصور'), sgAuthGuide(),
     DS.note('info', 'ثم اضغط «تهيئة تطبيق المصادقة» أعلى الصفحة', 'يظهر رمز QR ومفتاح الإعداد لحسابك، وبعد إدخال الرمز من التطبيق يتفعّل فورًا. سرّ التطبيق لا يُعرض ولا يُسجَّل بعد التأكيد.')]);
-  if (kind === 'extra') return H('key:saffron', 'شرح رمز التحقق الإضافي', 'رمز لمرة واحدة عند الدخول أو الاسترداد', [
+  if (kind === 'extra') return H('key:saffron', 'شرح الرقم الإضافي', 'رمز لمرة واحدة عند الدخول أو الاسترداد', [
     sgWhy([['flag', 'الهدف', 'رمز من 6 أرقام يُرسل إليك عند الدخول أو الاسترداد، صالح خمس دقائق ولمرة واحدة، يثبت أن من يدخل هو أنت صاحب الجوال أو البريد.'], ['list-checks', 'الاستخدام', 'اختر القناة التي تفضّلها، ثم أرسل رمز تجربة وأدخله لتأكيد أن الرموز تصلك فعلًا.'], ['sparkle', 'متى تختاره؟', 'إذا لم ترغب بتثبيت تطبيق، أو وسيلةً احتياطية بجانب تطبيق المصادقة.']]),
-    sgSteps([['اختر القناة', 'رسالة نصية أو واتساب أو البريد الإلكتروني.'], ['أرسل رمز تجربة', 'يصلك رمز من 6 أرقام صالح خمس دقائق.'], ['أدخل الرمز', 'يتأكد تلقائيًا عند اكتماله وتُفعَّل الوسيلة.'], ['احفظ رموز الاستعادة', 'تظهر مرة واحدة فقط — احفظها في مكان آمن خارج جوالك.']])]);
+    sgSteps([['اختر القناة', 'رسالة نصية أو واتساب أو البريد الإلكتروني.'], ['أرسل رمز تجربة', 'يصلك رمز من 6 أرقام صالح خمس دقائق.'], ['أدخل الرمز', 'يتأكد تلقائيًا عند اكتماله وتُفعَّل الوسيلة.'], ['احفظ رقمك الإضافي', 'المنصة لا ترسله ولا تعرضه — احفظه في مكان آمن خارج جوالك.']])]);
   if (kind === 'wa') return H('whatsapp-logo:teal', 'شرح ربط الواتساب', 'رموز التحقق وتنبيهات طلباتك على واتساب', [
     sgWhy([['flag', 'الهدف', 'ربط رقم جوالك في واتساب بحسابك لتصلك رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا عند تواصلك.'], ['shield-check', 'لماذا يربطه فريقنا؟', 'لا يُربط رقم بحساب آليًا أبدًا — يتحقق الفريق من أن الرقم رقمك المسجّل حتى لا تصل بياناتك إلى غيرك.'], ['list-checks', 'شرط', 'ربط الواتساب شرط لإرسال ملفك للتوثيق.']]),
     sgSteps([['اضغط «ابدأ الربط»', 'تفتح محادثة واتساب منصة تيرا الرسمي برسالة طلب الربط جاهزة.'], ['أرسل الرسالة من رقمك المسجّل', 'يجب أن يكون الرقم نفسه المسجّل في ملفك.'], ['يتحقق الفريق ويربط الرقم', 'تظهر الحالة «مربوط» هنا بعد الربط، ويمكنك إلغاء الربط من مركز الأمان.']]),
