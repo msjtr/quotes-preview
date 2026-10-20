@@ -685,10 +685,9 @@ bdi[dir=ltr]{unicode-bidi:isolate;white-space:nowrap}
 .g2-shot.is-icon{width:96px}.g2-shot.is-icon img{border:0;border-radius:22px}
 
 /* v372: واتساب طولي في الويب أيضًا + تكبير الشاشة بلا قصّ */
-.g2-film.is-wa{grid-template-columns:minmax(260px,380px) minmax(0,1fr)}
 .ts-film-p.is-film.is-tall{justify-content:center;background:#053d33!important}
 .ts-film-p.is-film.is-tall video{aspect-ratio:9/16!important;width:100%!important;height:auto!important;max-height:82vh;object-fit:contain}
-@media (max-width:64rem){.g2-film.is-wa{grid-template-columns:minmax(0,1fr)}.ts-film-p.is-film.is-tall video{max-height:78vh;width:auto!important;margin-inline:auto}}
+@media (max-width:64rem){.ts-film-p.is-film.is-tall video{max-height:78vh;width:auto!important;margin-inline:auto}}
 .ts-film-fs{margin-inline-start:auto}
 .ts-film-p.is-film:fullscreen{display:flex!important;flex-direction:column;width:100vw;height:100vh;background:#0B2552!important}
 .ts-film-p.is-film:fullscreen video{flex:1 1 auto;min-height:0;width:100%!important;height:100%!important;max-height:none!important;aspect-ratio:auto!important;object-fit:contain;margin:0}
