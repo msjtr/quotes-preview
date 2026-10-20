@@ -762,3 +762,13 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
 .pt-wam{background:#0B141A;border-radius:14px;padding:10px 12px;color:#E9EDEF}
 .pt-wam small{display:block;color:#8696A0;font-size:.75rem}
 .pt-wam p{margin:6px 0 0;background:#1F2C34;border-radius:10px;padding:10px 12px;font-size:.88rem;line-height:1.85}
+/* v377: «للمراجعة» على الجوال — التبويبات والمراحل تلتف داخل العرض بدل أن تمدّ الصفحة (كانت تقصّ يسار الشاشة) */
+@media (max-width:760px){
+  .t2 .rv-tabs,.t2 .rv-tabs .t2-tabs,.rv-stg,.rv-vis,.rv-vis-r,.rv-vis-c{min-width:0;max-width:100%}
+  .t2 .rv-tabs .t2-tabs{flex-wrap:wrap;overflow:visible}
+  .t2 .rv-tabs .t2-tab{flex:1 1 auto;justify-content:center}
+  .rv-stg{flex-wrap:wrap;overflow:visible}
+  .rv-stg li{flex:1 1 calc(50% - 6px)}
+  .rv-vis-c{flex-wrap:wrap}
+}
+@media (max-width:480px){.pv-bar .pv-bar-g.pv-nav{flex-wrap:wrap;justify-content:center;max-width:100%}}

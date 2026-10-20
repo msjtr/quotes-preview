@@ -14207,8 +14207,9 @@ function rvAddr() {
 /* ---------- ٣) ربط الواتساب الجديد ---------- */
 const RVW = { st: 0, cc: '+966', num: '', pin: '', pin2: '', at: null };
 function rvWa() {
-  const steps = DS.stepper(['الرقم', 'رمز التحقق', 'رمز التعريف', 'تم'].map(function (l, i) { return { label: l, state: i < RVW.st ? 'done' : i === RVW.st ? 'now' : '' }; }), 'خطوات ربط الواتساب');
-  const ins = rvIns('wa', 'تعليمات ربط الواتساب', [['الهدف', 'ربط رقمك لتصلك رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا.', 'flag'], ['الخطوات', 'أدخل رقمك ← رمز من واتساب ← تحقق ← رمز التعريف ← حفظ.', 'list-checks'], ['شرط', 'ربط الواتساب شرط لإرسال ملفك للتوثيق.', 'shield-check'], ['تنبيه', 'لا تشارك رموز التحقق مع أحد — فريقنا لا يطلبها.', 'warning']]);
+  const sx = [0, 1, 3, 5][RVW.st]; /* v377: الخطوات المعتمدة — الرقم ← رمز التحقق ← تم التحقق ← رمز التعريف ← تم الحفظ */
+  const steps = DS.stepper(['الرقم', 'رمز التحقق', 'تم التحقق', 'رمز التعريف', 'تم الحفظ'].map(function (l, i) { return { label: l, state: i < sx ? 'done' : i === sx ? 'now' : '' }; }), 'خطوات ربط الواتساب');
+  const ins = rvIns('wa', 'تعليمات ربط الواتساب', [['الهدف', 'ربط رقمك لتصلك رموز التحقق وتنبيهات طلباتك، ويتعرّف عليك فريق تيرا.', 'flag'], ['الخطوات', 'أدخل رقمك ← رمز تحقق من واتساب ← تم التحقق ← رمز التعريف وتأكيده ← تأكيد وحفظ ← رسالة الاعتماد.', 'list-checks'], ['تغيير الرقم', 'من مركز الأمان في أي وقت بالخطوات نفسها.', 'arrows-clockwise'], ['شرط', 'ربط الواتساب شرط لإرسال ملفك للتوثيق.', 'shield-check'], ['تنبيه', 'لا تشارك رموز التحقق مع أحد — فريقنا لا يطلبها.', 'warning']]);
   let body;
   if (RVW.st === 0) body = DS.panel('اربط رقم واتساب', 'أدخل رقمك المسجّل في ملفك، وسيصلك رمز تحقق على واتساب', [steps,
     e('div', { class: 'rv-ph' }, [DS.editField('مفتاح الدولة', DS.select({ value: RVW.cc, options: [['+966', '+966 السعودية'], ['+971', '+971 الإمارات'], ['+965', '+965 الكويت'], ['+973', '+973 البحرين'], ['+974', '+974 قطر'], ['+968', '+968 عُمان'], ['+20', '+20 مصر']], onChange: function (v) { RVW.cc = v; } })),
@@ -14216,19 +14217,20 @@ function rvWa() {
     DS.actionBar({ buttons: [DS.button('أرسل رمز التحقق عبر واتساب', { tone: 'primary', ui: 'chat-circle-dots', onClick: function () { if (String(RVW.num).replace(/\D/g, '').length < 8) { rvToast('أدخل رقمًا صحيحًا بدون الصفر.'); return; } RVW.st = 1; S.otpAt = null; RV.toast = ''; draw(); } })] })]);
   else if (RVW.st === 1) body = DS.panel('أدخل رمز التحقق', 'أرسلنا رمزًا من 6 أرقام إلى واتساب ' + RVW.cc + ' ' + RVW.num + ' — يتحقق تلقائيًا عند اكتماله', [steps,
     otpBox('wa', function () { RVW.st = 2; rvToast('تم التحقق من رقمك'); }, function () { RVW.st = 0; draw(); }),
-    e('div', { class: 'rv-wa' }, [e('small', {}, [frag(ui('device-mobile', 14)), 'يصل على واتساب من «منصة تيرا»']), e('p', {}, [e('b', { dir: 'ltr' }, '482913'), ' هو رمز التحقق لمنصة تيرا. صالح 5 دقائق. لا تشاركه مع أحد.'])])]);
+    e('div', { class: 'rv-wa' }, [e('small', {}, [frag(ui('device-mobile', 14)), 'يصل على واتساب من «منصة تيرا» ', ltr('+966 55 569 8774')]), e('p', {}, [e('b', { dir: 'ltr' }, '482913'), ' هو رمز التحقق لربط رقمك بخدمات منصة تيرا. صالح 5 دقائق. لا تشاركه مع أحد.'])])]);
   else if (RVW.st === 2) {
     const bad = RVW.pin.length === 4 && (/^(\d)\1{3}$/.test(RVW.pin) || '0123456789'.indexOf(RVW.pin) >= 0 || '9876543210'.indexOf(RVW.pin) >= 0);
-    body = DS.panel('أدخل رمز التعريف', 'رمز من 4 أرقام تختاره أنت، تذكره لفريق تيرا عند تواصلك معنا على واتساب ليتعرّف عليك', [steps,
+    body = DS.panel('أنشئ رمز التعريف', '4 أرقام تختارها أنت — يُطلب منك عند استخدام خدماتنا على واتساب', [steps, DS.note('ok', 'تم التحقق من رقمك', 'بقي أن تنشئ رمز التعريف وتؤكّده.'),
       DS.editField('رمز التعريف', segBoxes({ label: 'رمز التعريف', secret: true, segs: function () { return [1, 1, 1, 1]; }, get: function () { return RVW.pin; }, set: function (v) { RVW.pin = v.slice(0, 4); } })),
       DS.editField('تأكيد رمز التعريف', segBoxes({ label: 'تأكيد رمز التعريف', secret: true, segs: function () { return [1, 1, 1, 1]; }, get: function () { return RVW.pin2; }, set: function (v) { RVW.pin2 = v.slice(0, 4); } })),
       e('small', { class: 'rv-sm' }, 'لا يُقبل رمز متسلسل مثل 1234 ولا أرقام متكررة مثل 1111'), bad ? DS.note('warn', 'اختر رمزًا أصعب', 'الرمز سهل التخمين.') : null,
-      DS.actionBar({ buttons: [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: function () {
+      DS.actionBar({ buttons: [DS.button('تأكيد وحفظ', { tone: 'primary', ui: 'check', onClick: function () {
         if (RVW.pin.length !== 4 || bad) { rvToast('أدخل رمز تعريف من 4 أرقام غير سهل التخمين.'); return; }
         if (RVW.pin !== RVW.pin2) { rvToast('الرمزان غير متطابقين.'); return; }
         RVW.st = 3; RVW.at = new Date(); RVU.sec.wa = true; rvToast('تم الحفظ'); } })] })]);
   } else body = e('section', { class: 't2-panel rv-done' }, [frag(tile('thanks')), e('h2', { class: 't2-group-t' }, 'شكرًا لك يا يزيد'),
-    e('p', {}, 'رُبط رقمك بحسابك بنجاح. ستصلك تنبيهات طلباتك ورموز التحقق على واتساب، ويتعرّف عليك فريقنا برمز التعريف.'),
+    e('p', {}, 'تم الحفظ — وصلتك رسالة الاعتماد على واتساب:'),
+    e('div', { class: 'rv-wa' }, [e('small', {}, [frag(ui('device-mobile', 14)), 'من «منصة تيرا» ', ltr('+966 55 569 8774')]), e('p', {}, [e('b', {}, 'مرحبًا بك في خدمات منصة تيرا'), e('br'), 'تم تسجيل رقمك واعتماده، وربطه بخدماتنا بنجاح ✓', e('br'), 'من الآن تصلك رموز التحقق وتنبيهات حسابك من هذا الرقم الرسمي فقط.', e('br'), 'تستطيع تغيير رقمك من «مركز الأمان» في أي وقت.', e('br'), e('b', {}, 'تيرا… حلول سهلة وآمنة')])]),
     DS.fields([['الرقم', ltr(RVW.cc + ' ' + RVW.num)], ['تاريخ الربط', ltr(iso(RVW.at) + ' · ' + hm(RVW.at))], ['رمز التعريف', '•••• محفوظ']]), steps,
     rvRow([DS.button('تم — إغلاق', { tone: 'primary', size: 'sm', ui: 'check', onClick: function () { RVU.secPg = ''; RVU.view = 'form'; if (RV.tab === 'wa') rvGo(RVU.mode || 'upd'); else draw(); } }), DS.button('إعادة التجربة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RVW.st = 0; RVW.num = ''; RVW.pin = ''; RVW.pin2 = ''; RVU.sec.wa = false; draw(); } })])]);
   const rule = DS.panel('القاعدة نفسها لكل عمل يقوم به العميل', 'إدخال ← تحقق عند الحاجة ← حفظ ← «تم الحفظ» ← رسالة شكر بملخص ما تم', [DS.fields([['تحديث العنوان', 'تم الحفظ ← شكرًا، عنوانك محدَّث'], ['إضافة حساب بنكي', 'رمز تحقق ← تم الحفظ ← شكرًا'], ['رفع مستند', 'تم الرفع ← شكرًا، سنراجعه'], ['تغيير البريد', 'رمز على البريد الجديد ← تم الحفظ ← شكرًا'], ['طلب «فيلمك باسمك»', 'استلمنا طلبك ← متابعة حيّة ← جُهِّز فيلمك']])]);
