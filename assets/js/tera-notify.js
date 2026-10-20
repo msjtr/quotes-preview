@@ -8,8 +8,8 @@
 (function (W) {
   'use strict';
   if (W.TeraNotify) return;
-  var LIVE_ON = false; /* يُفعَّل على منفذ الاختبار ثم الرئيسي بعد اعتماد العيّنة */
   var host = (function () { try { return (W.parent && W.parent.location.hostname) || W.location.hostname; } catch (e) { return W.location.hostname; } })();
+  var LIVE_ON = host === 'staging.tera-services.com.sa'; /* v378: مفعَّل على منفذ الاختبار فقط بموافقة المشرف العام؛ الرئيسي بعد اعتماد الاختبار */
   var live = /(^|\.)tera-services\.com\.sa$/.test(host);
   var flag = (function () { try { return W.localStorage.getItem('tera.ux2') === '1'; } catch (e) { return false; } })();
   var enabled = !live || LIVE_ON || flag;
