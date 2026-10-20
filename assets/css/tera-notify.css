@@ -31,8 +31,19 @@
 .tn-body{margin-top:10px;text-align:right}
 .pv-embed .pv-bar,.pv-embed .tq-ver{display:none!important}
 /* البوابة: تذكّر البريد أو الجوال */
-.pt-who{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#e6f6f7;border-radius:12px;padding:8px 12px;margin:0 0 10px;font-size:13.5px}
-.pt-who b{direction:ltr;unicode-bidi:isolate}
+/* v382: «مرحبًا مجددًا» بقالب بطاقة البوابة نفسه (مثل بطاقات التحقق) */
+.pt-who{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:0 0 14px;border-radius:18px;border:1px solid var(--t2-line,#DCE5EE);background:var(--t2-surface-2,#F5F8FB)}
+.pt-who[hidden]{display:none!important}
+.pt-who-ic{flex:none;display:grid}
+.pt-who-ic .t2-tile{width:40px;height:45px;display:block}
+.pt-who-t{flex:1;min-width:0;display:grid;gap:2px}
+.pt-who-t small{font:600 .8rem "IBM Plex Sans Arabic",sans-serif;color:var(--t2-muted,#5B6B80)}
+.pt-who-t b{font:800 .95rem Alexandria,sans-serif;color:var(--t2-ink,#0B1F3A);direction:ltr;unicode-bidi:isolate;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt-who-x{flex:none;font-weight:700;white-space:nowrap}
+/* v382: لا انزياح أفقي في متصفح الجوال (iOS يوسّع الإطار الداخلي على عرض محتواه، فتنزاح الصفحة كلها) */
+html,body{max-width:100%;overflow-x:clip}
+#pv-site,#pv-site .ts-dev{max-width:100%;overflow:hidden}
+#pv-site iframe{width:1px;min-width:100%;max-width:100%}
 /* التحقق الإضافي: عملية جمع في قوالب */
 .tn-mwrap{text-align:center}
 .tn-mhow{background:#f4f7fc;border:1px solid #dfe6f0;border-radius:12px;padding:8px 10px;font-size:13px;color:#33445c;text-align:right;margin-bottom:10px}
