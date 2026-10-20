@@ -789,18 +789,27 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
   .rv-vis-c{flex-wrap:wrap}
 }
 @media (max-width:480px){.pv-bar .pv-bar-g.pv-nav{flex-wrap:wrap;justify-content:center;max-width:100%}}
-/* v383: زر «تحديث التطبيق» يبقى ظاهرًا في وضع تطبيق الجوال */
-#pv-host.is-app .t2.is-client .t2-hbtn.t2-hupd{display:inline-flex!important}
-/* v383: هيدر المنصة على الجوال يتّسع لزر «تحديث التطبيق» دون قصّ زر الخروج */
-@media (max-width:430px){.t2-head.is-v3 .t2-hd-r{gap:4px}.t2-head.is-v3 .t2-hd-r>.t2-hbtn,.t2-head.is-v3>.t2-hcmd{width:40px!important;min-width:40px!important;height:40px!important;padding:0!important}.t2-head.is-v3 .t2-hd-r>.t2-hbtn .t2-tile{width:24px;height:27px}.t2-head.is-v3 .t2-hd-r>.t2-hwho .t2-avatar{width:40px;height:40px}.t2-head.is-v3 .t2-hd-brand img{max-width:84px;height:auto}}
-/* v384: «إغلاق التطبيق» يظهر في التطبيق المثبّت على الشاشة الرئيسية فقط */
-.t2-hbtn.t2-hclose,.t2-hbtn.is-close{display:none!important}
-html.is-standalone .t2-hbtn.t2-hclose,html.is-standalone #pv-host .t2 .t2-hbtn.t2-hclose,html.is-standalone .t2-hbtn.is-close{display:inline-flex!important}
-@media (max-width:430px){html.is-standalone .t2-head.is-v3 .t2-hd-r{gap:3px}html.is-standalone .t2-head.is-v3 .t2-hd-r>.t2-hbtn,html.is-standalone .t2-head.is-v3>.t2-hcmd{width:36px!important;min-width:36px!important;height:36px!important}html.is-standalone .t2-head.is-v3 .t2-hd-r>.t2-hbtn .t2-tile{width:22px;height:25px}html.is-standalone .t2-head.is-v3 .t2-hd-r>.t2-hwho .t2-avatar{width:36px;height:36px}html.is-standalone .t2-head.is-v3 .t2-hd-brand img{max-width:72px}}
 /* شاشة الإغلاق */
 .tq-bye{position:fixed;inset:0;z-index:100000;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;color:#fff;background:radial-gradient(120% 90% at 20% 10%,#14417E 0,#0B2552 55%,#06122B 100%)}
 .tq-bye img{width:min(64vw,260px);height:auto;filter:drop-shadow(0 0 22px rgba(10,165,173,.45))}
 .tq-bye b{font:800 1.25rem Alexandria,Cairo,sans-serif}
 .tq-bye p{margin:0;max-width:320px;opacity:.85;font:500 .95rem "IBM Plex Sans Arabic",sans-serif;line-height:1.7}
 .tq-bye button{margin-top:6px;border:0;border-radius:14px;padding:12px 22px;background:#12B3B9;color:#06122B;font:800 .95rem Alexandria,sans-serif;cursor:pointer}
-@media (max-width:430px){html.is-standalone .t2-hbtn.is-follow .t2-hbtn-t{display:none!important}html.is-standalone .t2-hbtn.is-follow{width:auto!important;padding:0 4px!important}}
+
+/* v386: «حسابك» — شريط «يتوفر تحديث» تحت الهيدر (المنصة وصفحات الموقع) */
+.tq-hupd{position:absolute;top:100%;inset-inline:0;z-index:40;display:flex;align-items:center;gap:10px;padding:8px 14px;background:linear-gradient(90deg,#0B2552,#0F3B78);color:#fff;font:600 .86rem/1.4 "IBM Plex Sans Arabic",Cairo,sans-serif;direction:rtl;box-shadow:0 8px 18px -12px rgba(6,18,43,.7)}
+.tq-hupd>span{flex:1;min-width:0}
+.tq-hupd>span b{font:800 .88rem Alexandria,Cairo,sans-serif}
+.tq-hupd>button{flex:none;border:0;border-radius:10px;padding:6px 12px;background:#F2B64A;color:#0B1F3A;font:800 .8rem Alexandria,Cairo,sans-serif;cursor:pointer}
+.tq-hupd>button.is-x{background:transparent;color:#fff;opacity:.75;padding:4px 8px;font-size:1.05rem;line-height:1}
+.tq-upd{position:fixed;inset-inline:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:9999;display:flex;align-items:center;gap:10px;max-width:520px;margin-inline:auto;padding:10px 14px;border-radius:14px;background:#0B2552;color:#fff;font:600 .86rem "IBM Plex Sans Arabic",sans-serif;direction:rtl}
+.tq-upd>span{flex:1}.tq-upd>button{flex:none;border:0;border-radius:10px;padding:8px 14px;background:#FFC861;color:#0B1F3A;font-weight:800;cursor:pointer}.tq-upd>button.is-x{background:transparent;color:#fff;opacity:.8}
+/* صفحة «حسابك» */
+.hc[hidden]{display:none!important}
+.acc-chip{display:inline-block;justify-self:start;width:max-content;margin-top:5px;padding:3px 10px;border-radius:999px;font:800 .72rem/1.3 Alexandria,Cairo,sans-serif;font-style:normal}
+.acc-chip.is-warn{background:#FFF1D9;color:#A15C00}.acc-chip.is-ok{background:#E2F6EC;color:#13804B}
+.t2.is-dark .acc-chip.is-warn{background:rgba(245,176,65,.16);color:#F5C26B}.t2.is-dark .acc-chip.is-ok{background:rgba(52,199,152,.14);color:#6FD9B4}
+@media (max-width:40rem){.acc-page .hc-g{grid-template-columns:minmax(0,1fr)!important}}
+@container app (max-width:40rem){.acc-page .hc-g{grid-template-columns:minmax(0,1fr)!important}}
+#pv-host .lv-page.is-tq-account .hc-g{grid-template-columns:minmax(0,1fr)}
+@media (min-width:52rem){#pv-host .lv-page.is-tq-account .hc-g{grid-template-columns:repeat(3,minmax(0,1fr))}}

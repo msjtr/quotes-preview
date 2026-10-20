@@ -1244,7 +1244,7 @@ function whoMenu() {
   const m = typeof cuWhoMenu === 'function' ? cuWhoMenu() : e('div', { class: 'lv-whom', role: 'dialog', 'aria-label': 'معلومات الحساب' }, [e('div', { class: 'lv-whom-h' }, [e('span', { class: 't2-avatar' }, S.role === 'admin' ? 'م' : 'ع'), e('div', {}, [e('b', {}, S.role === 'admin' ? 'المشرف العام' : ME.name), e('small', {}, S.role === 'admin' ? 'المشرف' : 'العميل')])]),
     e('dl', { class: 'lv-whom-l' }, [e('div', {}, [e('dt', {}, 'حالة الأمان'), e('dd', {}, n ? fmtNum(n) + (n === 1 ? ' عاملُ تحقُّقٍ مُفعَّل' : ' عواملِ تحقُّقٍ مُفعَّلة') : 'لا عاملَ تحقُّقٍ مُفعَّل')]), e('div', {}, [e('dt', {}, 'حالة الحساب'), e('dd', {}, DS.badge('نشِط', 'ok'))])]),
     DS.button('الأمان', { tone: 'primary', size: 'sm', ui: 'shield-check', onClick: function () { S.whoOpen = false; whoMenu(); go('other', 'shield'); } })]);
-  b.parentNode.appendChild(m);
+  b.parentNode.appendChild(m); accWhoBtn(m);
 }
 document.addEventListener('click', function (ev) { if (S.whoOpen && !ev.target.closest('.lv-whom') && !ev.target.closest('.lv-who')) { S.whoOpen = false; whoMenu(); } });
 /* الوضع الليلي وتسجيل الخروج والبحث */
@@ -7522,6 +7522,36 @@ function sysLogPage() {
     : LDS.emptyState({ icon: 'clock-counter-clockwise', title: 'لا تغييرات بعد', body: 'كل تعديل في الأدوار والصلاحيات وإعدادات التشغيل يُسجَّل هنا: ماذا تغيّر ومن غيّره ومتى.', compact: true })];
 }
 /* «الأقسام» في شريط الجوال — كل ما في القائمة الجانبية */
+/* v386: صفحة «حسابك» في لوحة التحكم — بقالب الأقسام نفسه: تسجيل الخروج من حسابك، وتطبيق تيرا (آخر إصدار · الإشعارات · التثبيت أو الخروج من التطبيق) */
+const TQACC = { ver: null, asked: 0 };
+function tqAccountPage() {
+  const A = window.TQ_APP || null, TP = window.TeraPush || null;
+  let st = null; try { st = TP && TP.state && TP.state(); } catch (err) { void err; }
+  const V = (A && A.version) || window.TQ_VERSION || {}, SA = !!(A && A.standalone);
+  if (A && A.info && Date.now() - TQACC.asked > 60000) { TQACC.asked = Date.now(); A.info().then(function (r) { TQACC.ver = r; if (S.tab === 'other' && S.other === 'tq-account') draw(); }); }
+  const vr = TQACC.ver, verB = vr ? (vr.newer && vr.latest ? ['يحتاج إلى تحديث — الإصدار ' + vr.latest.v, 'warn'] : ['لديك آخر إصدار ✓', 'ok']) : null;
+  const pushB = st && st.on ? ['مفعّلة ✓', 'ok'] : st && st.blocked ? ['محظورة من إعدادات المتصفح', 'warn'] : null;
+  const say = function (o) { if (window.TeraNotify && window.TeraNotify.show) window.TeraNotify.show(o); };
+  const app = SA ? { ic: 'x-circle:navy', t: 'تسجيل الخروج من التطبيق', d: 'يُنهي جلستك ويُغلق التطبيق على هذا الجهاز', go: function () { if (A && A.close) A.close(); } }
+    : { ic: 'download-simple:sky', t: 'احصل على تطبيق تيرا', d: 'ثبّته على جهازك ليفتح كتطبيق مستقل', go: function () { if (TP && TP.install) TP.install(); else if (TP && TP.guide) TP.guide(); } };
+  const r = secHub('tq-account', { t: 'حسابك', s: 'أهلًا بك — حسابك وتطبيق تيرا في مكان واحد.', ic: 'user-circle:teal' }, [
+    ['acc', 'حسابك', 'user-circle:teal', [{ ic: 'sign-out:gold', t: 'تسجيل الخروج من حسابك', d: 'يُنهي جلستك على هذا الجهاز', go: function () { askOut(); } }]],
+    ['app', 'تطبيق تيرا', 'device-mobile:teal', [
+      { ic: 'arrows-clockwise:teal', t: 'راجع آخر إصدار', d: ['الإصدار ' + (V.v || '') + (V.d ? ' · ' : ''), V.d ? ltr(V.d) : null].filter(Boolean), badge: verB, go: function () { if (A && A.open) A.open(); } },
+      { ic: 'bell-ringing:gold', t: 'تفعيل الإشعارات', d: 'ليصلك كل ما يخص حسابك', badge: pushB, go: function () {
+        if (st && st.on) return say({ kind: 'ok', icon: 'bell-ringing:gold', title: 'الإشعارات مفعّلة', text: 'يصلك كل ما يخص حسابك على هذا الجهاز.' });
+        if (TP && TP.enable) { try { Promise.resolve(TP.enable()).then(function () { draw(); }, function () { draw(); }); } catch (err) { void err; } } } },
+      app]]]);
+  try { r.forEach(function (n) { const f = n && n.querySelector && n.querySelector('.hf-row'); if (f) f.remove(); }); } catch (err) { void err; }
+  return r;
+}
+function accWhoBtn(m) {
+  try {
+    if (!m || m.querySelector('.lv-acc-b')) return;
+    const b = liveOk(DS.button('حسابك', { size: 'sm', ui: 'user-circle', onClick: function () { S.whoOpen = false; whoMenu(); go('other', 'tq-account'); } })); b.classList.add('lv-acc-b');
+    const row = m.querySelector('.t2-row-wrap'); if (row) row.insertBefore(b, row.firstChild); else m.appendChild(b);
+  } catch (err) { void err; }
+}
 function admMorePage() {
   return secHub('adm-more', { t: 'الأقسام', s: 'كل أقسام لوحة المشرف.', ic: 'squares-four:navy' }, [
     ['main', 'الأساسي', 'squares-four:navy', [{ ic: 'adm-home', t: admHomeT(), d: 'نظرة عامة على العمل', go: function () { go('other', 'adm-home'); } }]],
@@ -11905,6 +11935,9 @@ const lvProfPct = () => { const F = ['personal', 'address', 'contact', 'emergenc
 /* ---------- سجل الصفحات: العنوان والأصل والأيقونة والعرض ---------- */
 const LP = {};
 function lp(k, t, up, ic, run) { LP[k] = { t: t, up: up, ic: ic, run: run }; ACCT[k] = function () { return lvRun(k); }; }
+/* v386: «حسابك» — صفحة واحدة للحساب وتطبيق تيرا (رابع عنصر في القائمة السفلية، ومن قائمة الحساب في الهيدر على الكمبيوتر) */
+try { ICON['tq-account'] = ['user-circle', 'teal']; } catch (err) { void err; }
+lp('tq-account', 'حسابك', null, 'tq-account', tqAccountPage);
 /* v366: كل صفحة تفعيل أو إضافة تُشير إلى صفحتها في «دليل تيرا» (صفحات حقيقية في الموقع: home/#/guide/<طريقة>) */
 function gdOf(k) { return { shield: '', 'sec-password': 'recovery', 'sec-whatsapp': 'whatsapp', 'sec-extracode': 'extra', 'sec-twofa': 'authenticator', 'sec-devices': 'devices', 'sec-verify': '', 'sec-sessions': 'session' }[k]; }
 function gdLink(slug, t, d) {
@@ -13093,7 +13126,7 @@ function dashPage() {
 /* حُذف «الرئيسية» (كان يخرج إلى الصفحة العامة)، و«لوحتي» صارت «لوحتي الرئيسية» */
 const NAV_ADM = [['الأساسي', [['adm-home', 'لوحة المشرف']]], ['الأقسام', [['cu', 'قسم العملاء'], ['fin', 'قسم المالية'], ['cpg', 'صفحة العميل'], ['comm', 'التواصل المباشر'], ['soon-emp', 'الموظفون'], ['soon-par', 'الشركاء'], ['soon-mkt', 'المسوّقون']]], ['الإعدادات', [['sys', 'إعدادات النظام']]]];
 const NAV = [['الأساسي', [['dash', 'لوحتي الرئيسية'], ['profile', 'ملفي الشخصي'], ['shield', 'مركزُ الأمان']]], [null, [['store', 'المتجر'], ['devices', 'سوق الأجهزة'], ['services', 'خدماتي'], ['picks', 'مختاراتي'], ['mail', 'مركز المراسلات'], ['bell', 'مركز الإشعارات'], ['member', 'العضوية']]]];
-const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخصي', shield: 'مركزُ الأمان', bell: 'مركز الإشعارات', member: 'العضوية', points: 'نقاطي', more: 'الأقسام' };
+const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخصي', shield: 'مركزُ الأمان', bell: 'مركز الإشعارات', member: 'العضوية', points: 'نقاطي', more: 'الأقسام', 'tq-account': 'حسابك' };
 /* =============================== v329 — «للمراجعة» (المعاينة فقط) ===============================
    تصوّرات تفاعلية للاعتماد، كل تصوّر في تبويب: نموذج التحديث · الملف والعنوان حسب الإقامة · ربط الواتساب · رسالة «جُهِّز فيلمك».
    بمكوّنات المنصة نفسها (DS · formSec · otpBox · segBoxes · tile) وألوان الهوية وأيقوناتها؛ لا تُرسل شيئًا ولا تظهر في منفذَي الاختبار والرئيسي. */
@@ -14635,11 +14668,11 @@ function shell() {
     return '<div class="t2-side-g">' + (g[0] ? '<button class="t2-side-gh" type="button"><span>' + g[0] + '</span><span class="t2-chev" aria-hidden="true"></span></button>' : '') + '<div class="t2-side-gb">' +
       (g[1].map(function (i) { return '<button class="t2-side-i' + (i[0] === on ? ' is-on' : '') + '" type="button" data-nav="' + i[0] + '"><span class="t2-side-ic">' + tile(i[0]) + '</span><span class="t2-side-l">' + (i[0] === 'adm-home' ? admHomeT() : i[1]) + '</span></button>'; }).join('')) + '</div></div>';
   }).join('');
-  const dock = (ADMIN ? (typeof cuDockAdm === 'function' ? cuDockAdm : function (x) { return x; })([['adm-home', admHomeT()], ['adm-more', 'الأقسام'], ['sys', 'الإعدادات']]) : [['dash', 'الرئيسية'], ['store', 'المتجر'], ['more', 'الأقسام']]).map(function (i) { return '<button type="button" class="t2-dock-i' + (i[0] === on ? ' is-on' : '') + '" data-nav="' + i[0] + '">' + tile(i[0]) + '<span class="t2-dock-l">' + i[1] + '</span></button>'; }).join('');
+  const dock = (ADMIN ? (typeof cuDockAdm === 'function' ? cuDockAdm : function (x) { return x; })([['adm-home', admHomeT()], ['adm-more', 'الأقسام'], ['sys', 'الإعدادات'], ['tq-account', 'حسابك']]) : [['dash', 'الرئيسية'], ['store', 'المتجر'], ['more', 'الأقسام'], ['tq-account', 'حسابك']]).map(function (i) { return '<button type="button" class="t2-dock-i' + (i[0] === on ? ' is-on' : '') + '" data-nav="' + i[0] + '">' + tile(i[0]) + '<span class="t2-dock-l">' + i[1] + '</span></button>'; }).join('');
   return '<div class="t2 t2-app ' + (ADMIN ? 'is-admin' : 'is-client') + '"><header class="t2-head is-v3"><div class="t2-hd-brand"><img class="t2-hd-logo" src="' + IMG.logo + '" alt="تيرا"><span class="t2-hd-name">منصةُ الخدمات</span></div>' +
     '<button type="button" class="t2-hcmd" aria-label="البحث"><span class="t2-hcmd-i" aria-hidden="true"></span><span class="t2-hcmd-t">ابحث عن منتج أو قسم…</span><kbd class="t2-kbd">Ctrl K</kbd></button><div class="t2-hd-sp"></div>' +
     '<div class="t2-hd-r"><button type="button" class="t2-hwho lv-who" aria-haspopup="dialog" aria-expanded="false"><span class="t2-avatar">' + (ADMIN ? 'م' : 'ع') + '</span><span class="t2-hwho-n">' + (ADMIN ? 'المشرف العام' : ME.name) + '</span><span class="t2-hwho-r">' + (ADMIN ? (typeof cuCtxLabel === 'function' ? cuCtxLabel() : 'المشرف') : 'العميل') + '</span><span class="lv-caret" aria-hidden="true">' + ui('caret-down', 12) + '</span></button>' +
-    '<button class="t2-hbtn t2-hmode" type="button" aria-label="الوضع الليلي" title="الوضع الليلي / النهاري"><span class="t2-hm-moon">' + tile('moon') + '</span><span class="t2-hm-sun">' + tile('sun:gold') + '</span></button><button class="t2-hbtn t2-hcart" type="button" aria-label="سلتي" title="سلتي" data-nav="cart">' + tile('cart') + '</button><button class="t2-hbtn" type="button" aria-label="الإشعارات" data-nav="bell">' + tile('bell') + '</button><button class="t2-hbtn t2-hupd" type="button" aria-label="تحديث التطبيق" title="تحديث التطبيق" data-live-ok>' + tile('arrows-clockwise:teal') + '</button><button class="t2-hbtn t2-hclose" type="button" aria-label="إغلاق التطبيق" title="إغلاق التطبيق" data-live-ok>' + tile('x-circle:navy') + '</button>' +
+    '<button class="t2-hbtn t2-hmode" type="button" aria-label="الوضع الليلي" title="الوضع الليلي / النهاري"><span class="t2-hm-moon">' + tile('moon') + '</span><span class="t2-hm-sun">' + tile('sun:gold') + '</span></button><button class="t2-hbtn t2-hcart" type="button" aria-label="سلتي" title="سلتي" data-nav="cart">' + tile('cart') + '</button><button class="t2-hbtn" type="button" aria-label="الإشعارات" data-nav="bell">' + tile('bell') + '</button>' +
     '<button class="t2-hbtn is-out" type="button" aria-label="تسجيل الخروج">' + tile('out') + '<span class="t2-out-ui" aria-hidden="true">' + ui('sign-out', 24) + '</span>' + '<span class="t2-hbtn-t">تسجيل الخروج</span></button></div></header>' +
     '<aside class="t2-side" aria-label="شريطُ التنقُّل"><div class="t2-side-top"><button class="t2-side-t" type="button"><span class="t2-chev" aria-hidden="true"></span><span>طيُّ القائمة</span></button></div><nav class="t2-side-n">' + side + '</nav></aside>' +
     '<div class="t2-main"><div class="t2-body"><div class="t2-wrap"><div class="t2-stack"><header class="t2-phead"><button type="button" class="t2-back" id="pv-back" hidden>' + ui('caret-right', 16) + '<span></span></button><nav class="t2-crumbs" aria-label="المسار"><ol class="t2-crumb-ol" id="pv-crumb"></ol></nav><div class="t2-phead-tx"><span class="t2-phead-ic" id="pv-ic" aria-hidden="true"></span><div class="t2-phead-tt"><h1 class="t2-phead-t" id="pv-title"></h1><p class="t2-phead-s" id="pv-sub"></p></div></div></header>' +
@@ -14753,7 +14786,7 @@ const MSTL = { reply: 'بانتظار الرد', open: 'المفتوحة', done:
 function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(); }
   profSeed();
   LAST = S.tab === 'qreq' ? 1 : 2;
-  if (S.role === 'admin' && (S.tab !== 'other' || !/^(adm-|cs|cu$|cu-|ctr$|soon-|sys|pay-center$|fin$|fin-|cpg$|cpg-|comm$|comm-|cx$|cx-)/.test(S.other || ''))) { S.tab = 'other'; S.other = 'adm-home'; }
+  if (S.role === 'admin' && (S.tab !== 'other' || !/^(adm-|cs|cu$|cu-|ctr$|soon-|sys|pay-center$|fin$|fin-|cpg$|cpg-|comm$|comm-|cx$|cx-|tq-account$)/.test(S.other || ''))) { S.tab = 'other'; S.other = 'adm-home'; }
   if (S.role !== 'admin' && S.tab === 'other' && /^(adm-|cs|cu$|cu-|soon-|sys)/.test(S.other || '')) { S.tab = 'dash'; S.other = ''; }
   const toSvc = function () { go('svc'); }, toMsg = function () { go('msg'); };
   let title, sub, path, nav = null;
@@ -14804,7 +14837,8 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   document.getElementById('pv-title').hidden = S.tab === 'svc' || S.tab === 'other' && ['pr-item', 'store', 'pr-dept', 'picks', 'pr-fav', 'devices', 'digital', 'st-orders', 'my-orders', 'my-picks', 'contact', 'member', 'sv-new'].indexOf(S.other) >= 0;
   if (typeof phSync === 'function') phSync(sub);
   document.querySelectorAll('.t2-side-i').forEach(function (b) { b.classList.toggle('is-on', b.dataset.nav === on); });
-  document.querySelectorAll('.t2-dock-i').forEach(function (b) { b.classList.toggle('is-on', b.dataset.nav === on || (on === 'devices' && b.dataset.nav === 'store') || (S.role === 'admin' && b.dataset.nav === 'adm-more' && on !== 'adm-home' && on !== 'sys') || (b.dataset.nav === 'more' && ['dash', 'store', 'devices', 'custom'].indexOf(on) < 0)); });
+  const accOnNow = S.tab === 'other' && S.other === 'tq-account'; /* v386: «حسابك» */
+  document.querySelectorAll('.t2-dock-i').forEach(function (b) { b.classList.toggle('is-on', accOnNow ? b.dataset.nav === 'tq-account' : b.dataset.nav !== 'tq-account' && (b.dataset.nav === on || (on === 'devices' && b.dataset.nav === 'store') || (S.role === 'admin' && b.dataset.nav === 'adm-more' && on !== 'adm-home' && on !== 'sys') || (b.dataset.nav === 'more' && ['dash', 'store', 'devices', 'custom'].indexOf(on) < 0))); });
   const body = S.tab === 'elig' || S.tab === 'qreq' ? eligPage() : S.tab === 'msg' ? msgPage() : S.tab === 'dash' ? dashPage() : FIN[S.tab] ? FIN[S.tab][2]() : S.tab === 'other' ? ACCT[S.other](): svcPage();
   mount(ROOT, e('div', { class: 't2-stack' }, [
     false ? DS.note('info', 'معاينة للمراجعة', 'افتح بطاقة «تحقق من أهليتك مع شركائنا»، و«مركز المراسلات» من القائمة. لا يُرسل شيء ولا تتغير أي بيانات.') : null,
