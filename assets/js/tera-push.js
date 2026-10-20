@@ -81,7 +81,7 @@
   var tgOpen = null;
   function iosGuide(why) {
     if (tgOpen) tgOpen.close();
-    var i = 0, wrap, card, body, dots, prev, next;
+    var i = inSafari() ? 0 : 1, wrap, card, body, dots, prev, next;
     function ttl(t, sub) { return [el('b', { class: 'tg-t' }, [t]), sub ? el('p', { class: 'tg-p' }, [sub]) : null]; }
     var SCR = [
       function () {
@@ -270,6 +270,7 @@
   }
   function barText() {
     var s = state();
+    if (IOS && !inSafari()) return ['افتح تيرا في Safari لتثبيتها', 'انسخ الرابط والصقه في Safari — الإضافة إلى الشاشة الرئيسية تعمل منه.', 'انسخ الرابط'];
     if (IOS) return ['أضف تيرا إلى الشاشة الرئيسية', 'لتُفتح كتطبيق وتصلك الإشعارات على شاشة القفل.', 'كيف؟'];
     if (s.oneTap) return ['ثبّت تيرا على جهازك', 'بضغطة واحدة — تُفتح كتطبيق وتصلك الإشعارات.', 'ثبّت'];
     if (MAC_SAFARI) return ['أضف تيرا إلى Dock', 'لتُفتح كتطبيق وتصلك الإشعارات.', 'كيف؟'];
@@ -280,7 +281,9 @@
     var b = doc.createElement('div'); b.className = 'tp-bar'; b.setAttribute('dir', 'rtl'); b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'تثبيت تيرا');
     b.innerHTML = '<img class="tp-bar-i" src="brand/icon-192.png" alt=""><span class="tp-bar-t"><b></b><small></small></span><button type="button" class="tp-bar-go"></button><button type="button" class="tp-bar-x" aria-label="إغلاق">×</button>';
     function paint() { var t = barText(); b.querySelector('b').textContent = t[0]; b.querySelector('small').textContent = t[1]; b.querySelector('.tp-bar-go').textContent = t[2]; if (barHidden()) b.hidden = true; }
-    b.querySelector('.tp-bar-go').addEventListener('click', function () { install().then(function (r) { if (r === 'accepted' || r === 'installed') bars.forEach(function (x) { x.hidden = true; }); }); });
+    b.querySelector('.tp-bar-go').addEventListener('click', function (e) {
+      if (IOS && !inSafari()) { var bt = e.currentTarget, link = W.location.origin + '/home/'; (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { bt.textContent = 'نُسخ ✓'; }, function () { iosGuide(); }); return; }
+      install().then(function (r) { if (r === 'accepted' || r === 'installed') bars.forEach(function (x) { x.hidden = true; }); }); });
     b.querySelector('.tp-bar-x').addEventListener('click', function () { try { (APP_ID ? W.localStorage : W.sessionStorage).setItem(BAR_K, String(Date.now())); } catch (e) { void e; } bars.forEach(function (x) { x.hidden = true; }); });
     paint(); on(paint); bars.push(b);
     return b;
