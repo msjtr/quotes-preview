@@ -370,3 +370,52 @@
 .ag-me{width:100%}.ag-me img{display:block}
 .ag-grid .ag-me img{width:40px;height:40px;max-width:none}
 .tg-btn.is-o{background:#fff;color:#0B2552;border:1px solid #0B2552}.tg-row .tg-saf+.tg-saf{margin-inline-start:-4px}
+/* v369 الدليل الحقيقي: شاشات تيرا الفعلية داخل إطار جوال · رسائل واتساب والبريد بقالب تيرا · قنوات تيرا الرسمية */
+.gd-ph{padding:6px;aspect-ratio:auto;height:auto;max-height:420px;overflow:hidden;animation:tpvFloat 6s ease-in-out infinite}
+.gd-ph>img{display:block;width:100%;height:auto;border-radius:24px;background:#fff}
+.tgb-art .gd-ph{width:min(210px,100%)}
+.gd-ph.is-mock{background:#0b1220;padding:8px}
+.gd-ph.is-big{width:min(300px,100%);max-height:none;animation:none}
+.gm-wa{border-radius:24px;overflow:hidden;background:#efe7de;direction:rtl;text-align:right;font-family:"IBM Plex Sans Arabic","Cairo",sans-serif}
+.gm-wa-h{display:flex;align-items:center;gap:8px;padding:12px 10px 9px;background:#075E54;color:#fff}
+.gm-back{font:700 22px/1 sans-serif;opacity:.8}
+.gm-wa-h img{width:34px;height:34px;border-radius:50%;background:#fff}
+.gm-wa-h b{display:block;font:800 13px "Alexandria",sans-serif}.gm-wa-h small{font-size:10.5px;opacity:.85}
+.gm-wa-c{display:flex;flex-direction:column;gap:6px;padding:10px 8px 14px}
+.gm-day{align-self:center;background:#fff;border-radius:8px;padding:1px 9px;font-size:10px;color:#54656f}
+.gm-wa-c p{position:relative;margin:0;max-width:88%;align-self:flex-end;background:#fff;color:#111b21;border-radius:10px 0 10px 10px;padding:7px 9px 15px;font-size:11.5px;line-height:1.65;box-shadow:0 1px 1px rgba(0,0,0,.12)}
+.gm-wa-c p.gm-me{align-self:flex-start;background:#d9fdd3;border-radius:0 10px 10px 10px}
+.gm-wa-c p b{font-weight:800}
+.gm-t{position:absolute;left:7px;bottom:3px;font:500 9.5px sans-serif;color:#667781;font-style:normal}
+.gm-me .gm-t{color:#53bdeb}
+.gm-mail{border-radius:24px;overflow:hidden;background:#f6f8fc;direction:rtl;text-align:right;font-family:"IBM Plex Sans Arabic","Cairo",sans-serif}
+.gm-in{display:flex;gap:8px;align-items:flex-start;padding:12px 10px;background:#fff;border-bottom:1px solid #e3e9f2}
+.gm-av img{width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #dfe6f0}
+.gm-in-t{flex:1;min-width:0;display:grid}
+.gm-in-t b{font:800 12.5px "Alexandria",sans-serif;color:#0b1f3a}.gm-in-t small{font-size:10px;color:#5b6b82}.gm-in-t span{font-size:11.5px;color:#0b1f3a;font-weight:700}
+.gm-in time{font-size:10px;color:#0AA5AD;font-weight:800}
+.gm-msg{margin:10px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(11,37,82,.08);font-size:11.5px;line-height:1.7;color:#0b1f3a}
+.gm-msg-h{display:flex;align-items:center;gap:7px;padding:9px 12px;background:linear-gradient(135deg,#0B2552,#0A7F8C);color:#fff}
+.gm-msg-h img{width:24px;height:24px;border-radius:7px;background:#fff}.gm-msg-h b{font:800 12px "Alexandria",sans-serif}
+.gm-msg p{margin:8px 12px 0}
+.gm-code{margin:8px 12px 0;padding:8px;border-radius:12px;background:#E2F4F5;border:1px dashed #0AA5AD;text-align:center;font:900 24px "Alexandria",sans-serif;letter-spacing:3px;color:#06707A}
+.gm-s{color:#8A4E08;font-weight:700;text-align:center}
+.gm-f{padding:8px 0 12px;font-size:10.5px;color:#5b6b82;border-top:1px solid #eef2f7;margin-top:10px!important;padding-top:8px}
+.gd-how{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:18px;align-items:center}
+.gd-how-v{display:flex;justify-content:center}
+.gd-how-l{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.gd-how-l li{position:relative;padding:10px 38px 10px 12px;border-radius:14px;background:var(--t2-surface);border:1px solid var(--t2-line);color:var(--t2-ink);font-size:.93rem;line-height:1.8}
+.gd-how-l li::before{content:"✓";position:absolute;inset-inline-start:12px;top:11px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#0AA5AD;color:#fff;font-size:11px}
+.gd-cap{margin:8px 0 0;font-size:.8rem;color:var(--t2-muted);text-align:center}
+.gd-chan{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.gd-ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border-radius:18px;border:1px solid var(--t2-line);background:var(--t2-surface)}
+.gd-ch>.t2-tile{width:40px;height:45px;flex:none}
+.gd-ch>div{flex:1;min-width:0;display:grid;gap:1px}
+.gd-ch small{color:var(--t2-muted);font-weight:700;font-size:.8rem}
+.gd-ch b{color:var(--t2-ink);font:800 .98rem "Alexandria",sans-serif;text-align:right;unicode-bidi:plaintext;overflow-wrap:anywhere}
+.gd-ch span{color:var(--t2-ink-2);font-size:.82rem}
+.gd-ch a{flex:none;display:inline-flex;align-items:center;min-height:36px;padding:4px 14px;border-radius:999px;background:#06707A;color:#fff;font-weight:800;font-size:.85rem;text-decoration:none}
+.gd-warn{margin:10px 0 0;padding:10px 12px;border-radius:14px;background:var(--t2-warn-wash);color:var(--t2-warn);font-weight:700;font-size:.9rem;line-height:1.8}
+@media (max-width:700px){.gd-how{grid-template-columns:1fr}.tgb-art .gd-ph{width:min(170px,50%);max-height:330px}}
+.gd-ch b{font-size:.9rem;direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+bdi[dir=ltr]{unicode-bidi:isolate;white-space:nowrap}
