@@ -419,3 +419,155 @@
 @media (max-width:700px){.gd-how{grid-template-columns:1fr}.tgb-art .gd-ph{width:min(170px,50%);max-height:330px}}
 .gd-ch b{font-size:.9rem;direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 bdi[dir=ltr]{unicode-bidi:isolate;white-space:nowrap}
+/* ===== v370 «جرّب بنفسك»: محاكاة تفاعلية حيّة في كل دليل ===== */
+.gs-vb{width:15px;height:15px;vertical-align:-2px;display:inline-block;flex:none}
+.tgb-b.is-try{background:#FFD27A;color:#3a2008;border-color:transparent;box-shadow:0 8px 20px -6px rgba(255,210,122,.7)}
+.gs-sec{scroll-margin-top:90px}
+.gs-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,330px);gap:18px;align-items:start;font-family:"IBM Plex Sans Arabic","Cairo",sans-serif}
+.gs-side{display:grid;gap:12px;align-content:start}
+.gs-hd{display:grid;gap:4px}
+.gs-hd b{font:900 1.25rem "Alexandria",sans-serif;color:var(--t2-ink)}.gs-hd small{color:var(--t2-muted);line-height:1.7}
+.gs-live{justify-self:start;display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;background:#FDECEA;color:#B3261E;font:800 .75rem "Alexandria",sans-serif}
+.gs-live::before{content:"";width:7px;height:7px;border-radius:50%;background:#E53935;animation:tpvPulse 1.4s infinite}
+.gs-bar{height:6px;border-radius:9px;background:var(--t2-surface-3);overflow:hidden}.gs-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0AA5AD,#63E2E0);transition:width .5s}
+.gs-now{margin:0;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#0B2552,#0A7F8C);color:#fff;font:800 1rem/1.6 "Alexandria",sans-serif}
+.gs-now small{display:block;font:700 .75rem "IBM Plex Sans Arabic",sans-serif;color:#8AF0EC;margin-bottom:2px}
+.gs-tasks{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.gs-tasks li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--t2-line);background:var(--t2-surface);color:var(--t2-muted);font-size:.9rem;font-weight:700}
+.gs-tasks li span{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--t2-surface-3);color:var(--t2-muted);font:800 .8rem "Alexandria",sans-serif}
+.gs-tasks li.is-on{border-color:#0AA5AD;color:var(--t2-ink);box-shadow:0 0 0 3px rgba(10,165,173,.15)}.gs-tasks li.is-on span{background:#0AA5AD;color:#fff}
+.gs-tasks li.is-ok{color:var(--t2-ok)}.gs-tasks li.is-ok span{background:var(--t2-ok);color:#fff}
+.gs-acts{display:flex;gap:8px;flex-wrap:wrap}
+.gs-b{min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--t2-line);background:var(--t2-surface);color:var(--t2-ink);font:800 .85rem "IBM Plex Sans Arabic",sans-serif;cursor:pointer}
+.gs-stage{display:flex;justify-content:center}
+.gs-ph{position:relative;width:min(330px,100%);height:620px;border-radius:44px;background:#0b1220;padding:10px;box-shadow:0 24px 50px rgba(11,37,82,.3),inset 0 0 0 2px #2a3550;display:flex;flex-direction:column;overflow:hidden}
+.gs-sb{display:flex;justify-content:space-between;align-items:center;padding:4px 18px 6px;color:#fff;font:700 12px sans-serif;direction:ltr}
+.gs-sb span{display:flex;gap:3px}.gs-sb i{width:4px;height:8px;border-radius:2px;background:#fff}
+.gs-scr{position:relative;flex:1;border-radius:32px;overflow:hidden;background:#F4F7FA;direction:rtl;text-align:right}
+.gs-scr.is-in>*{animation:gsIn .35s ease both}
+@keyframes gsIn{from{opacity:0;transform:translateX(-14px)}}
+.gs-app{height:100%;display:flex;flex-direction:column;background:#F4F7FA;color:#0b1f3a}
+.gs-tb{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border-bottom:1px solid #e3e9f2}
+.gs-tb img{width:28px;height:28px;border-radius:8px}.gs-tb b{font:900 15px "Alexandria",sans-serif;color:#0B2552}.gs-tb small{margin-inline-start:auto;font-weight:800;color:#06707A;font-size:12px}
+.gs-tb.is-auth{background:#1a73e8;color:#fff;border:0}.gs-tb.is-auth b{color:#fff}.gs-tb.is-auth small{color:#fff;font-size:20px}
+.gs-body{flex:1;overflow:auto;padding:12px;display:grid;gap:10px;align-content:start}
+.gs-card{display:grid;gap:2px;padding:10px 12px;border-radius:14px;background:#fff;border:1px solid #e3e9f2}
+.gs-card b{font:800 13px "Alexandria",sans-serif}.gs-card small{color:#566A88;font-size:12px;line-height:1.6}
+.gs-card.is-warn{border-color:#f3d79a;background:#FFF8E8}.gs-card.is-ok{border-color:#9fe0c4;background:#EAF8F1}.gs-card.is-ok small{color:#12795C;font-weight:800}
+.gs-p{margin:0;font-size:12.5px;line-height:1.75;color:#33445c}
+.gs-tip{margin:0;font-size:11.5px;color:#8A5A12;font-weight:700;text-align:center}
+.gs-btn{min-height:44px;border-radius:12px;border:1px solid #0B2552;background:#fff;color:#0B2552;font:800 14px "IBM Plex Sans Arabic",sans-serif;cursor:pointer;padding:6px 12px}
+.gs-btn.is-p{background:linear-gradient(135deg,#0AA5AD,#06707A);border-color:transparent;color:#fff}
+.gs-btn.is-wa{background:#25D366;border-color:#25D366;color:#053d1c}
+.gs-btn.is-o{background:#fff}
+.gs-btn:disabled{opacity:.45;cursor:not-allowed}
+.gs-link{border:0;background:none;color:#06707A;font:700 12px "IBM Plex Sans Arabic",sans-serif;text-decoration:underline;cursor:pointer}
+.gs-msg{margin:0;padding:7px 10px;border-radius:10px;font-size:12px;font-weight:700;line-height:1.6}
+.gs-msg.is-n{background:#eef2f7;color:#566A88}.gs-msg.is-ok{background:#EAF8F1;color:#12795C}.gs-msg.is-bad{background:#FDECEA;color:#B3261E}
+.gs-boxes{display:flex;gap:6px;justify-content:center}
+.gs-box{width:38px;height:46px;border-radius:10px;border:1.5px solid #c9d6e6;background:#fff;text-align:center;font:800 20px "Alexandria",sans-serif;color:#0b1f3a;padding:0}
+.gs-box:focus{outline:none;border-color:#0AA5AD;box-shadow:0 0 0 3px rgba(10,165,173,.2)}
+.gs-boxes.is-ok .gs-box{border-color:#12795C;background:#EAF8F1}
+.gs-shake{animation:gsShake .4s}
+@keyframes gsShake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.gs-in{width:100%;min-height:44px;border-radius:12px;border:1.5px solid #c9d6e6;background:#fff;padding:6px 12px;font:700 16px "Alexandria",sans-serif;letter-spacing:1px;box-sizing:border-box}
+.gs-in:focus{outline:none;border-color:#0AA5AD}
+.gs-rules{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.gs-rules li{position:relative;padding:5px 30px 5px 8px;border-radius:9px;background:#fff;border:1px solid #e3e9f2;font-size:11.5px;color:#566A88;font-weight:700}
+.gs-rules li::before{content:"";position:absolute;right:9px;top:8px;width:12px;height:12px;border-radius:50%;border:2px solid #c9d6e6}
+.gs-rules li.is-ok{color:#12795C;border-color:#9fe0c4;background:#EAF8F1}.gs-rules li.is-ok::before{background:#12795C;border-color:#12795C}
+.gs-chk{display:flex;gap:8px;align-items:center;font-size:12.5px;font-weight:700}
+.gs-key{margin:0;text-align:center;font:700 12px monospace;color:#33445c}
+.gs-qr{width:150px;margin:0 auto;display:grid;grid-template-columns:repeat(11,1fr);gap:1px;padding:8px;background:#fff;border-radius:10px;border:1px solid #e3e9f2}
+.gs-qr i{aspect-ratio:1;background:#fff}.gs-qr i.on{background:#0b1f3a}
+.gs-cam{position:relative;margin:20px auto;width:200px;aspect-ratio:1;border-radius:20px;background:#111;display:grid;place-items:end center;padding:12px;color:#fff;font-weight:700;font-size:12px;overflow:hidden}
+.gs-cam i{position:absolute;inset:30px;border:3px solid #63E2E0;border-radius:14px}.gs-cam i::after{content:"";position:absolute;inset:0 0 auto;height:3px;background:#63E2E0;box-shadow:0 0 12px #63E2E0;animation:gsScan 1.2s ease-in-out infinite alternate}
+@keyframes gsScan{to{transform:translateY(130px)}}
+.gs-acc{display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;background:#fff;border:1px solid #e3e9f2}
+.gs-av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#1a73e8;color:#fff;font:800 14px sans-serif}
+.gs-acc>div{flex:1;display:grid}.gs-acc small{font-size:11px;color:#566A88}.gs-acc b{font:900 26px "Alexandria",sans-serif;color:#1a73e8;letter-spacing:2px;text-align:right;direction:ltr}
+.gs-ring{--p:100%;flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:800 10px sans-serif;font-style:normal;color:#1a73e8;background:conic-gradient(#1a73e8 var(--p),#dfe6f0 0);position:relative}
+.gs-ring::before{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff}.gs-ring{isolation:isolate}.gs-ring::before{z-index:-1}
+.gs-peek{border-radius:14px;border:1px dashed #1a73e8;padding:4px}
+.gs-wah{display:flex;align-items:center;gap:8px;padding:10px;background:#075E54;color:#fff}
+.gs-wbk{font:700 22px/1 sans-serif;opacity:.85}.gs-wah img{width:32px;height:32px;border-radius:50%;background:#fff}
+.gs-wah b{display:flex;align-items:center;gap:4px;font:800 13px "Alexandria",sans-serif}.gs-wah small{font-size:10.5px;opacity:.85}
+.gs-app.is-wa{background:#efe7de}
+.gs-chat{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:10px 8px}
+.gs-day{align-self:center;background:#fff;border-radius:8px;padding:1px 9px;font-size:10px;color:#54656f}
+.gs-sys{align-self:center;margin:0;max-width:90%;background:#fff3c4;color:#54656f;border-radius:8px;padding:4px 9px;font-size:10.5px;text-align:center}
+.gs-bb{position:relative;margin:0;max-width:86%;align-self:flex-end;background:#fff;border-radius:10px 0 10px 10px;padding:7px 9px 16px;font-size:12px;line-height:1.65;box-shadow:0 1px 1px rgba(0,0,0,.12);animation:gsIn .3s both}
+.gs-bb.is-me{align-self:flex-start;background:#d9fdd3;border-radius:0 10px 10px 10px}
+.gs-bt{position:absolute;left:7px;bottom:3px;font:500 9.5px sans-serif;color:#667781;font-style:normal}.gs-bb.is-read .gs-bt{color:#53bdeb}
+.gs-typing{align-self:flex-end;margin:0;background:#fff;border-radius:10px;padding:8px 12px;display:flex;gap:3px}
+.gs-typing i{width:6px;height:6px;border-radius:50%;background:#9aa7b3;animation:tpvPulse 1s infinite}.gs-typing i:nth-child(2){animation-delay:.2s}.gs-typing i:nth-child(3){animation-delay:.4s}
+.gs-comp{display:flex;align-items:flex-end;gap:6px;padding:8px;background:#f0f2f5}
+.gs-comp span{flex:1;background:#fff;border-radius:18px;padding:8px 12px;font-size:11.5px;line-height:1.55}
+.gs-send{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:#00a884;color:#fff;font-size:18px;cursor:pointer;transform:scaleX(-1)}
+.gs-nt{position:absolute;z-index:5;top:40px;right:12px;left:12px;display:flex;gap:9px;align-items:flex-start;padding:10px;border:0;border-radius:18px;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);box-shadow:0 12px 30px rgba(0,0,0,.25);text-align:right;direction:rtl;cursor:pointer;transform:translateY(-140%);transition:transform .45s cubic-bezier(.2,.9,.3,1.2);font-family:inherit}
+.gs-nt.is-in{transform:none}
+.gs-nt img{width:34px;height:34px;border-radius:9px}
+.gs-nt span{display:grid;gap:1px;flex:1;min-width:0}.gs-nt small{font-size:10.5px;color:#566A88;display:flex;align-items:center;gap:3px}.gs-nt b{font:800 13px "Alexandria",sans-serif;color:#0b1f3a}.gs-nt em{font-style:normal;font-size:11.5px;color:#33445c}
+.gs-ov{position:absolute;inset:44px 10px 10px;z-index:6;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;background:#efe7de}
+.gs-ov>.gs-app{height:100%}.gs-ov .gs-btn{margin:8px}
+.gs-ov.is-dim{background:rgba(7,18,38,.5);align-items:center;justify-content:center}
+.gs-app.is-mail{background:#fff}
+.gs-inbox{flex:1;display:flex;flex-direction:column}
+.gs-ibh{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #e3e9f2}.gs-ibh b{font:900 16px "Alexandria",sans-serif}.gs-ibh small{color:#0AA5AD;font-weight:800}
+.gs-row{display:flex;gap:9px;align-items:flex-start;padding:10px 12px;border:0;border-bottom:1px solid #eef2f7;background:#fff;text-align:right;font-family:inherit;width:100%}
+.gs-row img,.gs-row .gs-av{width:34px;height:34px;border-radius:50%;flex:none}.gs-row .gs-av{background:#94a3b8}
+.gs-row>span{flex:1;min-width:0;display:grid}.gs-row b{font:800 12.5px "Alexandria",sans-serif;color:#0b1f3a}.gs-row small{font-size:10px;color:#566A88}.gs-row em{font-style:normal;font-size:11.5px;color:#566A88}
+.gs-row time{font-size:10px;color:#94a3b8}
+.gs-row.is-new{background:#E2F4F5;cursor:pointer;animation:gsIn .5s both}.gs-row.is-new b,.gs-row.is-new em{color:#0b1f3a;font-weight:900}.gs-row.is-new time{color:#0AA5AD;font-weight:800}
+.gs-mo{flex:1;overflow:auto;display:grid;gap:10px;align-content:start;padding:10px}
+.gs-moh{display:flex;gap:8px;align-items:center}.gs-moh img{width:32px;height:32px;border-radius:50%}.gs-moh span{display:grid}.gs-moh b{font:800 13px "Alexandria",sans-serif}.gs-moh small{font-size:10px;color:#566A88}
+.gs-mb{border-radius:14px;overflow:hidden;border:1px solid #e3e9f2;font-size:12px;line-height:1.7}
+.gs-mbh{display:flex;align-items:center;gap:7px;padding:8px 12px;background:linear-gradient(135deg,#0B2552,#0A7F8C);color:#fff}.gs-mbh img{width:22px;height:22px;border-radius:6px;background:#fff}
+.gs-mb p{margin:8px 12px 0}
+.gs-code{margin:8px 12px;padding:8px;border-radius:12px;background:#E2F4F5;border:1px dashed #0AA5AD;text-align:center;font:900 26px "Alexandria",sans-serif;letter-spacing:3px;color:#06707A}
+.gs-s{color:#8A4E08;font-weight:700;text-align:center;padding-bottom:10px}
+.gs-app.is-br{position:relative;background:#fff}
+.gs-urlb,.gs-safb{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f1f3f4}
+.gs-urlb span,.gs-safb span{flex:1;background:#fff;border-radius:999px;padding:6px 10px;font-size:11px;color:#33445c;direction:ltr;text-align:left}
+.gs-urlb b,.gs-safb b{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;font:900 16px sans-serif;cursor:pointer}
+.gs-safb{margin-top:auto}
+.gs-page{flex:1;display:grid;place-content:center;justify-items:center;gap:8px;background:linear-gradient(160deg,#0B2552,#0A7F8C);color:#fff}
+.gs-page img{width:70px;height:70px;border-radius:18px;background:#fff}.gs-page b{font:900 18px "Alexandria",sans-serif}
+.gs-os{position:absolute;top:56px;right:50%;transform:translateX(50%);display:flex;gap:4px;padding:3px;border-radius:999px;background:rgba(255,255,255,.2)}
+.gs-os button{border:0;border-radius:999px;padding:4px 12px;background:none;color:#fff;font:800 11px "IBM Plex Sans Arabic",sans-serif;cursor:pointer}.gs-os button.is-on{background:#fff;color:#0B2552}
+.gs-menu{position:absolute;z-index:3;top:46px;left:10px;right:60px;margin:0;padding:6px 0;list-style:none;background:#fff;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.25);animation:gsIn .25s both}
+.gs-menu.is-b{top:auto;bottom:56px;left:10px;right:10px}.gs-menu.is-sheet{border-radius:18px 18px 14px 14px}
+.gs-menu li{padding:10px 14px;font-size:12.5px;font-weight:700;color:#33445c}
+.gs-menu li.gs-go{cursor:pointer;color:#06707A;background:#E2F4F5;margin:2px 6px;border-radius:10px}
+.gs-dlg{position:absolute;z-index:3;left:14px;right:14px;top:30%;display:grid;gap:10px;padding:14px;border-radius:18px;background:#fff;box-shadow:0 16px 40px rgba(0,0,0,.3);animation:gsIn .25s both}
+.gs-dlg.is-c{position:static;width:80%;text-align:center}
+.gs-dlg b{font:800 14px "Alexandria",sans-serif}.gs-dlg small{color:#566A88;font-size:11.5px}
+.gs-dapp{display:flex;align-items:center;gap:8px}.gs-dapp img{width:40px;height:40px;border-radius:10px}.gs-dapp span{font:800 14px "Alexandria",sans-serif}
+.gs-dbt{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;color:#1B5F93;font-weight:700}
+.gs-dbt button{border:0;border-radius:999px;padding:7px 16px;background:#eef2f7;color:#1B5F93;font:800 13px "IBM Plex Sans Arabic",sans-serif;cursor:pointer}.gs-dbt button.gs-go{background:#0AA5AD;color:#fff}
+.gs-tg{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:700}.gs-tg i{width:38px;height:22px;border-radius:999px;background:#34c759;position:relative}.gs-tg i::after{content:"";position:absolute;top:2px;left:18px;width:18px;height:18px;border-radius:50%;background:#fff}
+.gs-app.is-home{background:linear-gradient(160deg,#203a63,#3b2a5c 60%,#0e3a5c)}
+.gs-home{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:40px 18px}
+.gs-home i{aspect-ratio:1;border-radius:14px;background:var(--c);opacity:.85}
+.gs-hic{display:grid;justify-items:center;gap:3px;border:0;background:none;color:#fff;font-size:10px;cursor:pointer;padding:0;animation:tgPop 2.5s both}
+.gs-hic img{width:100%;aspect-ratio:1;border-radius:14px;background:#fff}
+.gs-splash{height:100%;display:grid;place-content:center;justify-items:center;gap:10px;background:linear-gradient(160deg,#0B2552,#0A7F8C);color:#fff;text-align:center}
+.gs-splash img{width:90px;height:90px;border-radius:22px;background:#fff;animation:tgPop 1.4s both}.gs-splash b{font:900 22px "Alexandria",sans-serif}.gs-splash small{opacity:.85;padding:0 20px}
+.gs-app.is-lockw{background:linear-gradient(160deg,#7a3b1d,#9b2f2f 38%,#203a63 70%,#3b2a5c)}
+.gs-lock{display:grid;justify-items:center;gap:2px;padding-top:70px;color:#fff}.gs-lock b{font:200 56px/1 "Alexandria",sans-serif}.gs-lock .gs-tip{color:#fff;margin-top:30px}
+.gs-devs{display:grid;gap:8px}
+.gs-dev{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:#fff;border:1px solid #e3e9f2}
+.gs-dev>span{flex:1;display:grid}.gs-dev b{font:800 12.5px "Alexandria",sans-serif}.gs-dev small{font-size:11px;color:#566A88}
+.gs-rm{border:1px solid #B3261E;background:#fff;color:#B3261E;border-radius:999px;padding:5px 10px;font:800 11px "IBM Plex Sans Arabic",sans-serif;cursor:pointer}
+.gs-q{font:800 13.5px/1.6 "Alexandria",sans-serif}
+.gs-seg{display:flex;gap:6px}.gs-seg button{flex:1;min-height:38px;border-radius:10px;border:1px solid #c9d6e6;background:#fff;font:800 12px "IBM Plex Sans Arabic",sans-serif;cursor:pointer}.gs-seg button.is-on{border-color:#0AA5AD;background:#E2F4F5;color:#06707A}
+.gs-end{height:100%;display:grid;place-content:center;gap:12px;padding:20px;text-align:center;background:#fff}
+.gs-end b{font:900 18px "Alexandria",sans-serif;color:#B3261E}.gs-end p{margin:0;font-size:13px;line-height:1.8;color:#33445c}
+.gs-done{height:100%;display:grid;place-content:center;gap:12px;padding:20px;text-align:center;background:#fff}
+.gs-ok{width:80px;height:80px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:#12795C;color:#fff;font:900 40px sans-serif;animation:tgPop 1.2s both;box-shadow:0 0 0 10px #EAF8F1}
+.gs-done b{font:900 18px "Alexandria",sans-serif;color:#0b1f3a}.gs-done p{margin:0;font-size:13px;line-height:1.8;color:#33445c}
+.gs-hint{animation:gsHint 1.2s ease-out 3!important;position:relative;z-index:2}
+@keyframes gsHint{0%{box-shadow:0 0 0 0 rgba(255,184,0,.9)}100%{box-shadow:0 0 0 14px rgba(255,184,0,0)}}
+.t2.is-dark .gs-tasks li,.is-dark .gs-tasks li{background:var(--t2-surface)}
+@media (max-width:760px){.gs-grid{grid-template-columns:1fr}.gs-tasks{display:none}.gs-ph{height:580px}.gs-hd small{display:none}}
+@media (prefers-reduced-motion:reduce){.gs-scr *,.gs-nt{animation:none!important;transition:none!important}}
