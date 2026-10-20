@@ -7481,18 +7481,24 @@ function sysNtplPage() {
 const PUSH_LINKS = [['/clients/', 'حساب العميل'], ['/staff/', 'لوحة الفريق'], ['/portal/', 'بوابة الدخول'], ['/home/', 'الصفحة الرئيسية']];
 const PUSH_AUD = [['one', 'حساب محدد (البريد أو الجوال)'], ['clients', 'كل العملاء المفعّلين'], ['staff', 'كل الفريق المفعّلين'], ['all', 'الجميع']];
 function sysPushPage() {
-  const live = !!(window.TeraPush && window.TeraPush.live), can = cuCan('notifications.manage'), F = ADM.push || (ADM.push = { aud: 'one', to: 'msjt301@gmail.com', tpl: '', t: 'تذكير من فريق تيرا', b: 'لديك إجراء بانتظارك في حسابك. اضغط للمتابعة.', btn: 'فتح حسابي', url: '/clients/', types: null, cfg: null, ch: ['push', 'email', 'whatsapp'], who: null, whoBusy: false });
+  const live = !!(window.TeraPush && window.TeraPush.live), can = cuCan('notifications.manage'), F = ADM.push || (ADM.push = { aud: 'one', to: 'msjt301@gmail.com', tpl: '', t: 'تذكير من فريق تيرا', b: 'لديك إجراء بانتظارك في حسابك. اضغط للمتابعة.', btn: 'فتح حسابي', url: '/clients/', types: null, cfg: null, ch: ['push', 'email', 'whatsapp'], who: null, whoBusy: false, ctpl: null, tid: '' });
   if (live && !F.cfg) { F.cfg = 'loading'; (async function () { try { const t = await liveToken(); const r = await fetch('/admin/api/push/status', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' }); const j = await r.json(); F.cfg = j && j.ok ? (j.configured ? 'ok' : 'off') : 'err'; F.types = j && j.types || null; } catch (err) { F.cfg = 'err'; } draw(); })(); }
+  /* v389: القوالب الجاهزة («القوالب الجاهزة» في التواصل المباشر) — الرسالة المباشرة بها وحدها، لا نص حر */
+  if (F.ctpl === null && !live) F.ctpl = [{ id: 'x1', name: 'استكمال بيانات الملف الشخصي', channel: 'both', subject: 'استكمل بيانات ملفك الشخصي', body: 'مرحبًا {الاسم}،\nملفك الشخصي في منصة تيرا يحتاج إلى استكمال بعض البيانات أو المستندات. استكمالها يسرّع مراجعة طلباتك القادمة.\nادخل إلى حسابك ثم «ملفي الشخصي».\nفريق تيرا.' }, { id: 'x2', name: 'تذكير بموعد الدفعة', channel: 'both', subject: 'تذكير بموعد دفعتك القادمة', body: 'مرحبًا {الاسم}،\nنذكّرك بأن موعد دفعتك القادمة يقترب.' }];
+  if (F.ctpl === null) { F.ctpl = 'loading'; admRpc('admin_comm_templates_list', {}).then(function (j) { F.ctpl = ((j && j.rows) || []).filter(function (x) { return !x.archived; }); }).catch(function () { F.ctpl = []; }).then(function () { draw(); }); }
+  const CT = Array.isArray(F.ctpl) ? F.ctpl : [], CTs = CT.filter(function (x) { return x.id === F.tid; })[0] || null;
+  const direct = F.aud === 'one' && !(F.ch.length === 1 && F.ch[0] === 'push');
   const T = (F.types || []).reduce(function (a, g) { return a.concat(g.items.map(function (x) { return [x.id, g.name + ' — ' + x.title, x]; })); }, []);
   const say = function (o) { if (window.TeraNotify) window.TeraNotify.show(Object.assign({ force: true }, o)); else snack(o.title); };
   const sendNow = async function () {
     if (!can) return;
-    if (String(F.t).trim().length < 3 || String(F.b).trim().length < 6) { say({ kind: 'warn', title: 'أكمل العنوان والنص' }); return; }
+    if (!(F.aud === 'one' && !(F.ch.length === 1 && F.ch[0] === 'push')) && (String(F.t).trim().length < 3 || String(F.b).trim().length < 6)) { say({ kind: 'warn', title: 'أكمل العنوان والنص' }); return; }
     if (!live) { say({ kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار (معاينة)', text: 'في المنفذ الحي يصل إلى جوال المستلم وحاسبه حتى والمنصة مغلقة.' }); return; }
     const h = window.TeraNotify && window.TeraNotify.show({ force: true, kind: 'run', title: 'جارٍ الإرسال…' });
     if (F.aud === 'one' && !(F.ch.length === 1 && F.ch[0] === 'push')) {
       if (!F.ch.length) { if (h && h.close) h.close(); say({ kind: 'warn', title: 'اختر قناة واحدة على الأقل' }); return; }
-      const d = await clPost('/admin/api/comm/direct', { to: F.to, subject: F.t, body: F.b, channels: F.ch, url: F.url });
+      if (!F.tid) { if (h && h.close) h.close(); say({ kind: 'warn', title: 'اختر قالبًا جاهزًا', text: 'الرسالة المباشرة بالقوالب الجاهزة وحدها — لا نص حر. وواتساب بالقالب المعتمد لدى واتساب.' }); return; }
+      const d = await clPost('/admin/api/comm/direct', { to: F.to, tpl_id: F.tid, channels: F.ch, url: F.url });
       if (h && h.close) h.close();
       if (!d || typeof d.ok !== 'boolean' || (!d.ok && !d.message && !d.results)) { say({ kind: 'warn', title: 'الإرسال المباشر غير مفعّل على الخادم بعد', text: 'يعمل إشعار الجوال وحده الآن؛ والبريد وواتساب بعد رفع تحديث الخادم.', ms: 0, actions: [{ label: 'فهمت', primary: true }] }); return; }
       const R = (d && d.results) || {}, NM = { push: 'إشعار الجوال', email: 'البريد', whatsapp: 'واتساب' };
@@ -7525,8 +7531,8 @@ function sysPushPage() {
   };
   const TYPE_AR = { client: 'عميل', staff: 'موظف', investor: 'شريك', partner: 'شريك', marketer: 'مسوّق' };
   const whoCard = F.who ? (F.who.err ? DS.note('warn', 'لم نجد الحساب', F.who.err) : DS.note(F.who.status === 'disabled' ? 'warn' : 'ok', F.who.name || 'بلا اسم', ['نوع الحساب: ' + (TYPE_AR[F.who.type] || F.who.type || '—') + (F.who.status === 'disabled' ? ' (موقوف)' : ''), ' · البريد: ', ltr(F.who.email || '—'), ' · الجوال: ', ltr(F.who.phone || '—'), ' · يصله: ' + [F.who.can.push ? 'إشعار الجوال (إن فعّله على جهازه)' : null, F.who.can.email ? 'البريد' : null, F.who.can.whatsapp ? 'واتساب' : null].filter(Boolean).join('، ')])) : null;
-  const chk = function (k, t) { return e('label', { class: 'cu-ck' }, [e('input', { type: 'checkbox', checked: F.ch.indexOf(k) >= 0 ? '' : null, onChange: function (ev) { F.ch = ev.target.checked ? F.ch.concat([k]) : F.ch.filter(function (x) { return x !== k; }); } }), e('span', {}, t)]); };
-  const PRESET = [['upd', 'طلب تحديث الملف', 'طلب تحديث ملفك في منصة تيرا', 'نرجو تحديث بيانات ملفك في منصة تيرا ومراجعة مستنداتك لاستكمال اعتماد حسابك.\nادخل إلى حسابك من «حسابك» ثم «ملفي الشخصي».\nمع تحيات فريق تيرا.', 'فتح حسابي', '/portal/']];
+  const chk = function (k, t) { return e('label', { class: 'cu-ck' }, [e('input', { type: 'checkbox', checked: F.ch.indexOf(k) >= 0 ? '' : null, onChange: function (ev) { F.ch = ev.target.checked ? F.ch.concat([k]) : F.ch.filter(function (x) { return x !== k; }); draw(); } }), e('span', {}, t)]); };
+  const CH_AR = { email: 'بريد', whatsapp: 'واتساب', both: 'بريد وواتساب' };
   const st = !live ? ['info', 'معاينة', 'في المنفذين الحيّين يُرسل الإشعار فعليًا عبر OneSignal.'] : F.cfg === 'ok' ? ['ok', 'الخدمة مربوطة', 'OneSignal مهيأ على الخادم ويُرسل الآن.'] : F.cfg === 'off' ? ['warn', 'بانتظار مفتاح الخادم', 'التطبيق في OneSignal جاهز، ويبقى وضع مفتاح الإرسال على الخادم.'] : F.cfg === 'err' ? ['warn', 'تعذّر فحص الحالة', 'أعد فتح الصفحة.'] : ['info', 'جارٍ الفحص…', ''];
   return [cuRO('notifications.manage'), DS.note(st[0], st[1], st[2]),
     window.TeraPush ? DS.panel('هذا الجهاز', 'فعّل الإشعارات على جهازك لتصلك تنبيهات الإدارة', [window.TeraPush.panel({ demo: !live })]) : null,
@@ -7536,9 +7542,12 @@ function sysPushPage() {
       F.aud === 'one' ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(F.whoBusy ? 'جارٍ التحقق…' : 'تحقق من الحساب', { size: 'sm', ui: 'user-circle', disabled: F.whoBusy, onClick: checkWho }))]) : null, whoCard,
       F.aud === 'one' ? DS.editField('القنوات', e('div', { class: 'cu-cks cu-ch' }, [chk('push', 'إشعار الجوال'), chk('email', 'بريد المنصة'), chk('whatsapp', 'واتساب')])) : null,
       F.aud === 'one' ? e('small', { class: 'cu-dr-hint' }, 'تُرسل إلى بريد الحساب وجواله وأجهزته المسجّلة في المنصة — لا إلى ما يُكتب في «المستلم»، فهو للبحث عن الحساب فقط.') : null,
-      DS.editField('القالب', DS.select({ value: F.tpl, options: [['', 'إشعار مخصّص']].concat(PRESET.map(function (x) { return [x[0], x[1]]; })).concat(T.map(function (x) { return [x[0], x[1]]; })), onChange: function (v) { F.tpl = v; const p = PRESET.filter(function (y) { return y[0] === v; })[0]; if (p) { F.t = p[2]; F.b = p[3]; F.btn = p[4]; F.url = p[5]; } const x = T.filter(function (y) { return y[0] === v; })[0]; if (x) { F.t = x[2].title; F.b = x[2].text; F.btn = x[2].button; } draw(); } })),
-      DS.editField('العنوان', inp('t')), DS.editField('النص', e('textarea', { class: 't2-input', rows: '3', onInput: function (ev) { F.b = ev.target.value; } }, F.b)),
-      DS.editField('زر الإجراء', inp('btn')), DS.editField('يفتح عند الضغط', DS.select({ value: F.url, options: PUSH_LINKS, onChange: function (v) { F.url = v; } })),
+      direct ? DS.editField('القالب الجاهز', DS.select({ value: F.tid, ph: F.ctpl === 'loading' ? 'جارٍ تحميل القوالب…' : 'اختر قالبًا', options: CT.map(function (x) { return [x.id, x.name + ' · ' + (CH_AR[x.channel] || x.channel)]; }), onChange: function (v) { F.tid = v; draw(); } })) : null,
+      direct && CTs ? DS.note('info', CTs.subject || CTs.name, String(CTs.body || '').replace(/\{الاسم\}/g, F.who && F.who.name || '{الاسم}')) : null,
+      direct ? e('small', { class: 'cu-dr-hint' }, 'المحتوى من «القوالب الجاهزة» وحده — لا نص حر. البريد بالقالب الرسمي للمنصة، وواتساب بالقالب المعتمد لدى واتساب «تحديث على ملفك» بمحتوى القالب نفسه، والإشعار بعنوانه ونصه.') : null,
+      direct ? null : (T.length ? DS.editField('القالب', DS.select({ value: F.tpl, options: [['', 'إشعار مخصّص']].concat(T.map(function (x) { return [x[0], x[1]]; })), onChange: function (v) { F.tpl = v; const x = T.filter(function (y) { return y[0] === v; })[0]; if (x) { F.t = x[2].title; F.b = x[2].text; F.btn = x[2].button; } draw(); } })) : null),
+      direct ? null : DS.editField('العنوان', inp('t')), direct ? null : DS.editField('النص', e('textarea', { class: 't2-input', rows: '3', onInput: function (ev) { F.b = ev.target.value; } }, F.b)),
+      direct ? null : DS.editField('زر الإجراء', inp('btn')), DS.editField('يفتح عند الضغط', DS.select({ value: F.url, options: PUSH_LINKS, onChange: function (v) { F.url = v; } })),
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إرسال', { tone: 'primary', ui: 'paper-plane-tilt', onClick: sendNow })), liveOk(DS.button('تجربة كل الأنواع على ' + (F.to || 'الحساب'), { ui: 'bell-ringing', onClick: testAll }))])]
       : [DS.fields([['الإرسال', 'لمن يملك صلاحية إدارة التنبيهات']])])].filter(Boolean);
 }
