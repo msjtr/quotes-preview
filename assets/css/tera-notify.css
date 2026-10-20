@@ -93,3 +93,41 @@
 .tp-bar-x{flex:none;width:34px;height:34px;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font:700 20px/1 sans-serif;cursor:pointer}
 .tp-bar-go:focus-visible,.tp-bar-x:focus-visible{outline:3px solid #8AF0EC;outline-offset:2px}
 @media (max-width:420px){.tp-bar-t small{white-space:normal}}
+.tp-arrow.is-left{left:22px;transform:none}
+.tp-d3{font:900 16px/1 sans-serif;letter-spacing:1px}
+/* دليل آيفون المصوّر */
+.tg-wrap{position:fixed;inset:0;z-index:2147482700;background:rgba(7,18,38,.62);display:flex;align-items:center;justify-content:center;padding:12px;font-family:"IBM Plex Sans Arabic","Cairo",sans-serif}
+.tg-card{position:relative;width:min(440px,100%);max-height:min(94dvh,860px);display:flex;flex-direction:column;background:#fff;color:#0b1f3a;border-radius:22px;box-shadow:0 24px 60px rgba(7,18,38,.4);overflow:hidden;border-top:4px solid #0AA5AD}
+.tg-x{position:absolute;top:10px;left:10px;z-index:2;width:34px;height:34px;border-radius:10px;border:0;background:#eef2f7;color:#33445c;font:700 20px/1 sans-serif;cursor:pointer}
+.tg-body{flex:1;overflow:auto;padding:18px 16px 10px;display:grid;gap:12px;align-content:start;text-align:right}
+.tg-t{display:block;font:800 clamp(16px,4.6vw,19px)/1.5 "Alexandria","Cairo",sans-serif;margin-left:30px}
+.tg-p{margin:2px 0 0;color:#4a5a70;font-size:13.5px;line-height:1.75}
+.tg-hero{display:flex;gap:12px;align-items:center}
+.tg-app{width:58px;height:58px;border-radius:15px;flex:none;box-shadow:0 6px 16px rgba(11,37,82,.25)}
+.tg-ben{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.tg-ben li{position:relative;padding:7px 34px 7px 10px;background:#f0fbfb;border-radius:12px;font-size:13.5px;line-height:1.6}
+.tg-ben li::before{content:"✓";position:absolute;right:10px;top:7px;width:18px;height:18px;border-radius:50%;background:#0AA5AD;color:#fff;font:800 11px/18px sans-serif;text-align:center}
+.tg-ba{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tg-ba figure{margin:0;display:grid;gap:6px}
+.tg-ba .tg-img{border-radius:14px;border:2px solid #dfe6f0;width:100%}
+.tg-ba .is-after .tg-img{border-color:#0AA5AD;box-shadow:0 8px 20px rgba(10,165,173,.25)}
+.tg-ba figcaption{font-size:12px;line-height:1.6;color:#4a5a70}
+.tg-ba figcaption b{display:inline-block;background:#eef2f7;color:#0b1f3a;border-radius:999px;padding:0 9px;margin-left:4px}
+.tg-ba .is-after figcaption b{background:#0AA5AD;color:#fff}
+.tg-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid #dfe6f0;background:#f4f7fc}
+.tg-row{display:flex;gap:12px;align-items:center}
+.tg-row.is-c{justify-content:center}
+.tg-saf{width:56px;height:56px;border:0;border-radius:14px;flex:none;background:none}
+.tg-ico{width:150px;border:0;border-radius:24px}
+.tg-warn{display:grid;gap:6px;background:#fff6e3;border:1px solid #f3d79a;border-radius:14px;padding:10px 12px;font-size:13px}
+.tg-store{display:grid;gap:8px;background:#f4f7fc;border:1px solid #dfe6f0;border-radius:14px;padding:10px 12px;font-size:13px}
+.tg-btn{display:inline-flex;justify-content:center;align-items:center;min-height:42px;border:0;border-radius:12px;background:#0B2552;color:#fff;font:700 14px "IBM Plex Sans Arabic",sans-serif;text-decoration:none;cursor:pointer;padding:8px 14px}
+.tg-link{justify-self:start;border:0;background:none;color:#06707A;font:700 13px "IBM Plex Sans Arabic",sans-serif;text-decoration:underline;cursor:pointer;padding:4px 0}
+.tg-foot{display:flex;align-items:center;gap:10px;padding:10px 14px max(12px,env(safe-area-inset-bottom));border-top:1px solid #eef2f7}
+.tg-dots{flex:1;display:flex;justify-content:center;gap:5px}
+.tg-dots i{width:7px;height:7px;border-radius:50%;background:#d5dfec}
+.tg-dots i.is-on{width:20px;border-radius:999px;background:#0AA5AD}
+.tg-nav{min-height:44px;min-width:92px;border:1px solid #d5dfec;background:#fff;color:#0b1f3a;border-radius:12px;font:700 14px "IBM Plex Sans Arabic",sans-serif;cursor:pointer}
+.tg-nav.is-p{background:#0B2552;border-color:#0B2552;color:#fff}
+.tg-nav[hidden]{visibility:hidden;display:block}
+.tg-card:focus{outline:none}.tg-nav:focus:not(:focus-visible){outline:none}.tg-nav:focus-visible{outline:3px solid rgba(10,165,173,.5);outline-offset:2px}

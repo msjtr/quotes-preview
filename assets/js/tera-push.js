@@ -64,10 +64,65 @@
   function arrow(on) {
     if (arrowEl) { arrowEl.remove(); arrowEl = null; }
     if (!on) return;
-    arrowEl = el('div', { class: 'tp-arrow' + (IPAD ? ' is-top' : ''), 'aria-hidden': 'true', html: '<b>' + SHARE + '</b><i></i>' });
+    arrowEl = el('div', { class: 'tp-arrow' + (IPAD ? ' is-top' : ' is-left'), 'aria-hidden': 'true', html: '<b>' + (IPAD ? SHARE : '<span class="tp-d3">•••</span>') + '</b><i></i>' });
     D.body.appendChild(arrowEl);
   }
+  /* ---------- دليل آيفون المصوّر: قبل وبعد + 6 خطوات بصور حقيقية من iOS (Safari) ---------- */
+  var GI = 'guide/ios/';
+  function inSafari() { return IOS && /Safari\//.test(UA) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Line\/|Snapchat|Twitter|TikTok/.test(UA); }
+  function img(src, alt, cls) { return el('img', { class: cls || 'tg-img', src: GI + src + '.webp', alt: alt, loading: 'lazy', decoding: 'async' }); }
+  var tgOpen = null;
+  function iosGuide(why) {
+    if (tgOpen) tgOpen.close();
+    var i = 0, wrap, card, body, dots, prev, next;
+    function ttl(t, sub) { return [el('b', { class: 'tg-t' }, [t]), sub ? el('p', { class: 'tg-p' }, [sub]) : null]; }
+    var SCR = [
+      function () {
+        return [el('div', { class: 'tg-hero' }, [el('img', { class: 'tg-app', src: 'brand/icon-192.png', alt: '' }), el('div', {}, ttl('حوّل تيرا إلى تطبيق على جوالك', (why ? why + ' ' : '') + 'دقيقة واحدة ومرة واحدة فقط، وتعمل بعدها كتطبيق.'))]),
+          el('ul', { class: 'tg-ben' }, ['تُفتح بلمسة من أيقونتها على الشاشة الرئيسية', 'ملء الشاشة بلا شريط Safari — مساحة أكبر وتركيز أعلى', 'إشعارات السداد والقبول والأمان على شاشة القفل', 'أسرع في إنجاز أعمالك ومتابعتها في أي وقت'].map(function (t) { return el('li', {}, [t]); })),
+          el('div', { class: 'tg-ba' }, [
+            el('figure', {}, [img('before', 'المنصة داخل Safari'), el('figcaption', {}, [el('b', {}, ['قبل']), ' موقع داخل Safari وشريط العنوان يأخذ من الشاشة'])]),
+            el('figure', { class: 'is-after' }, [img('after', 'تيرا كتطبيق بملء الشاشة'), el('figcaption', {}, [el('b', {}, ['بعد']), ' تطبيق تيرا بملء الشاشة من أيقونته'])])])];
+      },
+      function () {
+        var out = [el('div', { class: 'tg-row' }, [img('safari', 'Safari', 'tg-saf'), el('div', {}, ttl('١. افتح المنصة في Safari', 'الإضافة إلى الشاشة الرئيسية تعمل من متصفح Safari من أبل — شرط للاستفادة من التطبيق والإشعارات.'))])];
+        if (!inSafari()) {
+          var link = W.location.origin + '/home/';
+          out.push(el('div', { class: 'tg-warn' }, [el('b', {}, ['أنت الآن في متصفح آخر']), el('span', {}, ['انسخ رابط المنصة، ثم افتح Safari والصقه في شريط العنوان.']),
+            el('button', { type: 'button', class: 'tg-btn', onclick: function (e) { var b = e.currentTarget; (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { b.textContent = 'نُسخ الرابط ✓'; }, function () { b.textContent = link; }); } }, ['نسخ رابط المنصة'])]));
+        }
+        out.push(el('div', { class: 'tg-store' }, [el('span', {}, ['لا يوجد Safari في جوالك؟ حمّله مجانًا من App Store:']), img('appstore-safari', 'Safari في App Store'),
+          el('a', { class: 'tg-btn', href: 'https://apps.apple.com/app/safari/id1146562112', target: '_blank', rel: 'noopener' }, ['فتح Safari في App Store'])]));
+        return out;
+      },
+      function () { return ttl('٢. اضغط «•••» أسفل الشاشة، ثم «مشاركة»', 'الزر بجانب شريط العنوان في أسفل Safari.').concat([img('s1-more', 'زر النقاط الثلاث أسفل Safari'),
+        el('button', { type: 'button', class: 'tg-link', onclick: function () { close(); arrow(true); setTimeout(function () { arrow(false); }, 9000); } }, ['أغلق الدليل وأرني الزر'])]); },
+      function () { return ttl('٣. اضغط «عرض المزيد»', 'في أسفل نافذة المشاركة.').concat([img('s2-share', 'عرض المزيد في نافذة المشاركة')]); },
+      function () { return ttl('٤. اختر «إضافة إلى الصفحة الرئيسية»').concat([img('s3-add', 'إضافة إلى الصفحة الرئيسية')]); },
+      function () { return ttl('٥. أبقِ «فتح كتطبيق ويب» مفعّلًا، ثم اضغط «إضافة»', 'الاسم «تيرا» والأيقونة جاهزان.').concat([img('s4-confirm', 'فتح كتطبيق ويب ثم إضافة')]); },
+      function () { return [el('div', { class: 'tg-row is-c' }, [img('s5-icon', 'أيقونة تيرا على الشاشة الرئيسية', 'tg-ico')]), el('div', {}, ttl('٦. افتح «تيرا» من الشاشة الرئيسية', 'تُفتح كتطبيق بملء الشاشة. فعّل منها الإشعارات لتصلك على شاشة القفل حتى والتطبيق مغلق.'))]; }
+    ];
+    function paint() {
+      body.textContent = ''; SCR[i]().forEach(function (n) { if (n) body.appendChild(n); }); body.scrollTop = 0;
+      dots.textContent = ''; SCR.forEach(function (_, k) { dots.appendChild(el('i', { class: k === i ? 'is-on' : '' })); });
+      prev.hidden = i === 0; next.textContent = i === 0 ? 'ابدأ الخطوات' : i === SCR.length - 1 ? 'تم' : 'التالي';
+    }
+    function close() { if (!wrap) return; wrap.remove(); wrap = null; tgOpen = null; D.removeEventListener('keydown', esc); }
+    function esc(e) { if (e.key === 'Escape') close(); }
+    body = el('div', { class: 'tg-body' }); dots = el('div', { class: 'tg-dots', 'aria-hidden': 'true' });
+    prev = el('button', { type: 'button', class: 'tg-nav' }, ['السابق']); next = el('button', { type: 'button', class: 'tg-nav is-p' }, ['التالي']);
+    prev.addEventListener('click', function () { if (i > 0) { i--; paint(); } });
+    next.addEventListener('click', function () { if (i < SCR.length - 1) { i++; paint(); } else close(); });
+    card = el('div', { class: 'tg-card', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'حوّل تيرا إلى تطبيق على جوالك' }, [el('button', { type: 'button', class: 'tg-x', 'aria-label': 'إغلاق', onclick: close }, ['×']), body, el('div', { class: 'tg-foot' }, [prev, dots, next])]);
+    wrap = el('div', { class: 'tg-wrap', dir: 'rtl' }, [card]);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
+    D.addEventListener('keydown', esc);
+    D.body.appendChild(wrap); paint(); card.setAttribute('tabindex', '-1'); card.focus({ preventScroll: true });
+    tgOpen = { close: close };
+    return tgOpen;
+  }
   function guide(kind, why) {
+    if (kind === 'ios') return iosGuide(why);
     var G = {
       ios: ['أضف تيرا إلى الشاشة الرئيسية', (why ? why + ' ' : '') + 'أبل لا تسمح بالإضافة من زر داخل الموقع، وهي ثلاث لمسات فقط:',
         [[SHARE, 'اضغط زر المشاركة <b>' + (IPAD ? 'أعلى الشاشة' : 'أسفل الشاشة') + '</b> في Safari'], [ADDSQ, 'اختر <b>«إضافة إلى الشاشة الرئيسية»</b> ثم <b>«إضافة»</b>'], ['', 'افتح <b>«تيرا»</b> من أيقونتها، واضغط <b>«تفعيل الإشعارات»</b>']]],
@@ -77,7 +132,6 @@
       menu: ['ثبّت تيرا من قائمة المتصفح', 'إن لم تظهر نافذة التثبيت:',
         [['', EDGE ? 'افتح قائمة <b>«…»</b> أعلى المتصفح' : 'افتح قائمة <b>«⋮»</b> أعلى المتصفح'], ['', EDGE ? '<b>«التطبيقات»</b> ← <b>«تثبيت هذا الموقع كتطبيق»</b>' : ANDROID ? '<b>«إضافة إلى الشاشة الرئيسية»</b> ← <b>«تثبيت»</b>' : '<b>«حفظ ومشاركة»</b> ← <b>«تثبيت الصفحة كتطبيق»</b>'], ['', 'تُفتح تيرا بعدها كتطبيق مستقل بأيقونتها']]]
     }[kind];
-    arrow(kind === 'ios');
     return show({ kind: 'info', icon: kind === 'ios' ? 'device-mobile:sky' : 'monitor:teal', title: G[0], text: G[1], body: G[2].length ? steps(G[2]) : null, ms: 0,
       actions: [{ label: 'فهمت', primary: true }], onClose: function () { arrow(false); } });
   }

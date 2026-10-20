@@ -286,7 +286,8 @@
         h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('download-simple:navy'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'التثبيت بضغطة — جرّب كل جهاز')]),
           h('p', { class: 'sc-hint' }, 'ضغطة واحدة على «ثبّت تيرا» ثم «تثبيت» في نافذة المتصفح: تصبح تيرا بأيقونتها على الشاشة الرئيسية أو سطح المكتب، وتُفتح كتطبيق مستقل.'),
           h('div', { class: 'sc-is-pick' }, [['android', 'أندرويد · كروم', 'ضغطة واحدة'], ['desktop', 'الكمبيوتر · كروم وإيدج', 'ضغطة واحدة'], ['ios', 'آيفون · سفاري', 'ثلاث لمسات — قيد أبل'], ['mac', 'ماك · سفاري', 'من قائمة «ملف»']].map(function (x) {
-            return h('button', { type: 'button', class: 'sc-is-b', onclick: function () { SIM.run(x[0]); } }, [h('b', {}, x[1]), h('small', {}, x[2])]); }))]),
+            return h('button', { type: 'button', class: 'sc-is-b', onclick: function () { SIM.run(x[0]); } }, [h('b', {}, x[1]), h('small', {}, x[2])]); })),
+          h('div', { class: 'sc-row', style: 'gap:8px;margin-top:10px;flex-wrap:wrap' }, [btn('دليل آيفون المصوّر — كما يراه العميل', function () { if (window.TeraPush) window.TeraPush.guide('ios'); }), h('small', { class: 'sc-hint' }, 'قبل وبعد، وشرط Safari، و6 خطوات بصور حقيقية من iOS.')])]),
         h('div', { class: 'sc-card' }, [h('div', { class: 'sc-row', style: 'gap:10px' }, [T('squares-four:gold'), h('b', { style: 'font:800 17px var(--sc-h)' }, 'App Clip — من صفحة الخدمة بلا تثبيت (آيفون)')]),
           h('p', { class: 'sc-hint' }, 'يفتح العميل صفحة الخدمة في Safari فيظهر شريط «تيرا — فتح»، وبلمسة واحدة يعمل جزء صغير من تطبيق تيرا فورًا بلا متجر ولا أيقونة. إشعاراته تعمل 8 ساعات تلقائيًا، وبإذن العميل تستمر للتذكيرات.'),
           h('div', { class: 'sc-tags' }, [h('i', { class: 'k' }, 'يدعمه OneSignal'), h('i', {}, 'يحتاج تطبيق تيرا في App Store'), h('i', {}, 'مرحلة قادمة')]),
