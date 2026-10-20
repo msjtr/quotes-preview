@@ -71,6 +71,12 @@
   var GI = 'guide/ios/';
   function inSafari() { return IOS && /Safari\//.test(UA) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Line\/|Snapchat|Twitter|TikTok/.test(UA); }
   function img(src, alt, cls) { return el('img', { class: cls || 'tg-img', src: GI + src + '.webp', alt: alt, loading: 'lazy', decoding: 'async' }); }
+  var HELP_WA = 'https://wa.me/966555698774?text=' + encodeURIComponent('مرحبًا فريق تيرا، أحتاج مساعدة في إضافة تيرا إلى جهازي.');
+  var HELP_MAIL = 'mailto:support@tera-services.com.sa?subject=' + encodeURIComponent('مساعدة في إضافة تيرا إلى جهازي');
+  function helpBox() {
+    return el('div', { class: 'tg-help' }, [el('span', {}, ['إذا واجهتك مشكلة، فريقنا جاهز لمساعدتك وإرشادك.']),
+      el('span', { class: 'tg-hl' }, [el('a', { class: 'tg-hb', href: HELP_WA, target: '_blank', rel: 'noopener' }, ['واتساب']), el('a', { class: 'tg-hb', href: HELP_MAIL }, ['البريد'])])]);
+  }
   var tgOpen = null;
   function iosGuide(why) {
     if (tgOpen) tgOpen.close();
@@ -103,7 +109,7 @@
       function () { return [el('div', { class: 'tg-row is-c' }, [img('s5-icon', 'أيقونة تيرا على الشاشة الرئيسية', 'tg-ico')]), el('div', {}, ttl('٦. افتح «تيرا» من الشاشة الرئيسية', 'تُفتح كتطبيق بملء الشاشة. فعّل منها الإشعارات لتصلك على شاشة القفل حتى والتطبيق مغلق.'))]; }
     ];
     function paint() {
-      body.textContent = ''; SCR[i]().forEach(function (n) { if (n) body.appendChild(n); }); body.scrollTop = 0;
+      body.textContent = ''; SCR[i]().forEach(function (n) { if (n) body.appendChild(n); }); body.appendChild(helpBox()); body.scrollTop = 0;
       dots.textContent = ''; SCR.forEach(function (_, k) { dots.appendChild(el('i', { class: k === i ? 'is-on' : '' })); });
       prev.hidden = i === 0; next.textContent = i === 0 ? 'ابدأ الخطوات' : i === SCR.length - 1 ? 'تم' : 'التالي';
     }
@@ -132,7 +138,7 @@
       menu: ['ثبّت تيرا من قائمة المتصفح', 'إن لم تظهر نافذة التثبيت:',
         [['', EDGE ? 'افتح قائمة <b>«…»</b> أعلى المتصفح' : 'افتح قائمة <b>«⋮»</b> أعلى المتصفح'], ['', EDGE ? '<b>«التطبيقات»</b> ← <b>«تثبيت هذا الموقع كتطبيق»</b>' : ANDROID ? '<b>«إضافة إلى الشاشة الرئيسية»</b> ← <b>«تثبيت»</b>' : '<b>«حفظ ومشاركة»</b> ← <b>«تثبيت الصفحة كتطبيق»</b>'], ['', 'تُفتح تيرا بعدها كتطبيق مستقل بأيقونتها']]]
     }[kind];
-    return show({ kind: 'info', icon: kind === 'ios' ? 'device-mobile:sky' : 'monitor:teal', title: G[0], text: G[1], body: G[2].length ? steps(G[2]) : null, ms: 0,
+    return show({ kind: 'info', icon: kind === 'ios' ? 'device-mobile:sky' : 'monitor:teal', title: G[0], text: G[1], body: (function () { var b = el('div', { class: 'tg-gb' }, [G[2].length ? steps(G[2]) : null, helpBox()]); return b; })(), ms: 0,
       actions: [{ label: 'فهمت', primary: true }], onClose: function () { arrow(false); } });
   }
   function install() {

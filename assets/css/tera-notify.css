@@ -131,3 +131,7 @@
 .tg-nav.is-p{background:#0B2552;border-color:#0B2552;color:#fff}
 .tg-nav[hidden]{visibility:hidden;display:block}
 .tg-card:focus{outline:none}.tg-nav:focus:not(:focus-visible){outline:none}.tg-nav:focus-visible{outline:3px solid rgba(10,165,173,.5);outline-offset:2px}
+.tg-help{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:#f0fbfb;border:1px dashed #9edfe2;border-radius:14px;padding:8px 12px;font-size:13px;color:#0b1f3a;text-align:right}
+.tg-hl{display:flex;gap:6px}
+.tg-hb{display:inline-flex;align-items:center;min-height:36px;padding:4px 14px;border-radius:999px;background:#fff;border:1px solid #0AA5AD;color:#06707A;font:700 13px "IBM Plex Sans Arabic",sans-serif;text-decoration:none}
+.tg-gb{display:grid;gap:10px}
