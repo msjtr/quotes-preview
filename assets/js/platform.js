@@ -15540,7 +15540,7 @@ var SESS_CLOSE_AR = { idle: 'انتهت بالخمول', idle_timeout: 'انته
 function liveLogout(after) {
   if (LIVE_OUT) return; LIVE_OUT = true;
   /* v384: after — «إغلاق التطبيق» في التطبيق المثبّت: الخروج نفسه ثم شاشة الإغلاق بدل الانتقال إلى البوابة */
-  const s0 = liveSess(), t = s0 && s0.access_token, done = function () { try { localStorage.removeItem('tera.admin.session'); localStorage.removeItem('tera.admin.absolute_until'); } catch (err) { void err; } if (typeof after === 'function') after(); else location.replace('/portal/'); };
+  const s0 = liveSess(), t = s0 && s0.access_token, done = function () { try { localStorage.removeItem('tera.admin.session'); localStorage.removeItem('tera.admin.absolute_until'); } catch (err) { void err; } if (typeof after === 'function') after(); else toLogin(); };
   if (!t) { done(); return; }
   const jobs = [];
   try { if (window.TeraSession && window.TeraSession.closeForLogout) jobs.push(window.TeraSession.closeForLogout()); else jobs.push(fetch('/api/account/session/close', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ kind: 'logout' }) })); } catch (err) { void err; }
@@ -15551,7 +15551,16 @@ window.TQ_LIVE_LOGOUT = function (after) { liveLogout(after); };
 function liveSess() { try { return JSON.parse(localStorage.getItem('tera.admin.session') || 'null'); } catch (err) { return null; } }
 function liveSub(tok) { try { const p = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(decodeURIComponent(escape(atob(p + '==='.slice((p.length + 3) % 4))))).sub || ''; } catch (err) { return ''; } }
 async function liveCfg() { const r = await fetch('/admin/api/config', { cache: 'no-store' }); const j = await r.json(); if (!j || !j.supabaseUrl || !j.supabaseAnonKey) throw new Error('config'); return j; }
-async function liveRefresh(cfg, s0) {
+/* v404: تجديد الرمز مرة واحدة في كل لحظة — طلبات متزامنة تنتظر التجديد نفسه (التجديد المزدوج بالرمز نفسه قد يُبطل الجلسة) */
+let LIVE_REF = null;
+function liveRefresh(cfg, s0) {
+  const cur = liveSess();
+  if (cur && s0 && cur.access_token !== s0.access_token && cur.expires_at && cur.expires_at * 1000 > Date.now() + 60000) return Promise.resolve(cur);
+  if (LIVE_REF) return LIVE_REF;
+  LIVE_REF = liveRefresh0(cfg, s0).then(function (x) { LIVE_REF = null; return x; }, function (err) { LIVE_REF = null; throw err; });
+  return LIVE_REF;
+}
+async function liveRefresh0(cfg, s0) {
   if (!s0 || !s0.refresh_token) return null;
   const r = await fetch(cfg.supabaseUrl + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s0.refresh_token }) });
   const j = await r.json().catch(function () { return null; });
@@ -15625,7 +15634,7 @@ const CL = { cache: {} };
 async function clApi(path) {
   const t = await liveToken();
   const r = await fetch(path, { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' });
-  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  if (r.status === 401) { toLogin(); throw new Error('auth'); }
   const j = await r.json().catch(function () { return null; });
   if (!r.ok || !j || j.ok === false) throw new Error((j && j.message) || 'تعذّر التحميل من الخادم.');
   return j;
@@ -15722,15 +15731,17 @@ const ADM_MIG_ST = { promoted: ['رُحّل إلى حساب في المنصة', 
 const ADM_VER_ST = { submitted: ['بانتظار الاستلام', 'info'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['أُعيد للعميل', 'warn'], approved: ['معتمد', 'ok'], rejected: ['مرفوض', 'danger'], cancelled: ['ملغى', null] };
 const ADM_QT_ST = { draft: 'مسودة', sent: 'مُرسل للعميل', accepted: 'مقبول', rejected: 'مرفوض', expired: 'منتهي الصلاحية', cancelled: 'ملغى', approved: 'معتمد' };
 const ADM_TONE = { ok: 'ok', success: 'ok', green: 'ok', warn: 'warn', warning: 'warn', amber: 'warn', danger: 'danger', red: 'danger', error: 'danger', info: 'info', blue: 'info' };
+/* v404: الخروج إلى البوابة بسبب انتهاء الجلسة يمسح نسختها المحفوظة — فلا تعيدك البوابة إلى حساب منتهٍ (حلقة) */
+function toLogin() { try { localStorage.removeItem('tera.admin.session'); localStorage.removeItem('tera.admin.absolute_until'); } catch (err) { void err; } location.replace('/portal/?login=1'); }
 async function liveToken() {
-  let s0 = liveSess(); if (!s0 || !s0.access_token) { location.replace('/portal/'); throw new Error('auth'); }
-  if (s0.expires_at && s0.expires_at * 1000 < Date.now() + 60000) { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); s0 = await liveRefresh(cfg, s0); if (!s0) { location.replace('/portal/'); throw new Error('auth'); } }
+  let s0 = liveSess(); if (!s0 || !s0.access_token) { toLogin(); throw new Error('auth'); }
+  if (s0.expires_at && s0.expires_at * 1000 < Date.now() + 60000) { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); s0 = await liveRefresh(cfg, s0); if (!s0) { toLogin(); throw new Error('auth'); } }
   return s0.access_token;
 }
 async function admRpc(fn, args) {
   const t = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
   const r = await fetch(cfg.supabaseUrl + '/rest/v1/rpc/' + fn, { method: 'POST', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(args || {}) });
-  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  if (r.status === 401) { toLogin(); throw new Error('auth'); }
   const j = await r.json().catch(function () { return null; });
   if (!r.ok) throw new Error(r.status === 403 ? ADM_ERR.no_permission : 'تعذّر التحميل من الخادم.');
   if (j && j.ok === false) throw new Error(ADM_ERR[j.error] || ('تعذّر التحميل (' + j.error + ').'));
@@ -15739,7 +15750,7 @@ async function admRpc(fn, args) {
 async function admClients(path, raw) {
   await liveToken();
   try { return await tqApi(path || '', raw); }
-  catch (x) { if (x && x.code === 'http_401') { location.replace('/portal/'); throw new Error('auth'); } throw new Error(mgrErrText(x)); }
+  catch (x) { if (x && x.code === 'http_401') { toLogin(); throw new Error('auth'); } throw new Error(mgrErrText(x)); }
 }
 function admMount(key, title, load, render) {
   const box = e('div', { class: 't2-stack adm-live' }), st = ADMS[key] || (ADMS[key] = { q: '', f: 'all', data: null, at: 0 });
@@ -16707,7 +16718,7 @@ async function clPost(path, body) {
   }
   const t = await liveToken();
   const r = await fetch(path, { method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body || {}) });
-  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  if (r.status === 401) { toLogin(); throw new Error('auth'); }
   return (await r.json().catch(function () { return null; })) || { ok: false, message: 'تعذّر الاتصال بالخادم.' };
 }
 const liveOk = (b) => { b.setAttribute('data-live-ok', ''); return b; };
@@ -18402,7 +18413,7 @@ const SECMON_H = [[24, 'آخر 24 ساعة'], [168, 'آخر 7 أيام'], [720, 
 async function secMonFetch(h) {
   const t = await liveToken();
   const r = await fetch('/admin/api/security/monitor?hours=' + h + '&limit=150', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' });
-  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  if (r.status === 401) { toLogin(); throw new Error('auth'); }
   const j = await r.json().catch(function () { return null; });
   if (!r.ok || !j || j.ok === false) throw new Error((j && j.message) || 'تعذّر تحميل مركز المراقبة.');
   return j.data || {};
@@ -18547,7 +18558,7 @@ if (LIVE.on) {
   /* قائمة الحساب: بيانات الحساب الحقيقية، والتبديل بين أدواره الفعلية فقط، والخروج — بلا حسابات تجريبية */
   /* قائمة الحساب: تصميم العيّنة (cuWhoMenu) ببيانات الحساب وأدواره الفعلية */
   liveLoad().then(function (x) {
-    if (!x) { location.replace('/portal/'); return; }
+    if (!x) { toLogin(); return; }
     LIVE.me = x.me; LIVE.roles = x.roles; LIVE.allow = liveAllowed();
     if (!LIVE.allow.length) { LIVE.me = null; LIVE.err = 'حسابك لا يملك دور العميل ولا دور الموظف في هذه المنصة.'; draw(); return; }
     ME.name = x.me.full_name || ME.name; ME.email = x.me.email || ''; ME.phone = x.me.phone ? '+' + String(x.me.phone).replace(/^\+/, '') : ''; ME.region = ''; ME.city = '';
@@ -18558,7 +18569,7 @@ if (LIVE.on) {
       try { if (window.__navRaw) { sessionStorage.setItem(NAVKEY, window.__navRaw); window.__navRaw = ''; loadNav(); if (FX.pfc) ADM.pfc = FX.pfc; } } catch (err) { void err; }
       return S.role === 'client' ? livePayReturn().catch(function () { /* */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); liveFilmAuto(); });
   }).catch(function (err) {
-    if (err && err.message === 'auth') { location.replace('/portal/'); return; }
+    if (err && err.message === 'auth') { toLogin(); return; }
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();
   });
 }
@@ -19192,7 +19203,7 @@ const LV_DEV = { pending_verification: ['بانتظار التصريح', 'warn']
 const lvDevNm = (d) => d.label || [d.browser_name, d.os_name].filter(Boolean).join(' · ') || 'جهاز';
 async function lvDevGet(q) {
   const t = await liveToken(); const r = await fetch('/admin/api/devices' + (q || ''), { cache: 'no-store', headers: { Authorization: 'Bearer ' + t, Accept: 'application/json' } });
-  if (r.status === 401) { location.replace('/portal/'); throw new Error('auth'); }
+  if (r.status === 401) { toLogin(); throw new Error('auth'); }
   const j = await r.json().catch(function () { return null; }); if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر التحميل من الخادم.'); return j.rows || [];
 }
 const lvDevRow = (d, withName) => e('tr', {}, [withName ? e('td', {}, admName(d.name, d.tera_id)) : null, e('td', {}, admName(lvDevNm(d), d.device_type || null)), e('td', {}, admB(LV_DEV, d.status)), e('td', {}, lvDt(d.first_seen_at)), e('td', {}, lvDt(d.last_seen_at)), e('td', {}, fmtNum(Number(d.use_count) || 0))].filter(Boolean));

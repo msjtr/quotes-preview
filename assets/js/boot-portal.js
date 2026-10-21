@@ -1,3 +1,3 @@
 window.__TERA={"start": "portal", "links": {"home": "../home/", "app": "../clients/"}, "section": "portal"};
-if(/(^|\.)tera-services\.com\.sa$/.test(location.hostname)){document.documentElement.classList.add('tq-live');}
+if(/(^|\.)tera-services\.com\.sa$/.test(location.hostname)){document.documentElement.classList.add('tq-live');try{var s=JSON.parse(localStorage.getItem('tera.admin.session')||'null'),fk='tq.fwd',fl=+(sessionStorage.getItem(fk)||0);if(s&&s.access_token&&s.refresh_token&&!/[?&]login=1/.test(location.search)&&Date.now()-fl>20000){sessionStorage.setItem(fk,String(Date.now()));location.replace(localStorage.getItem('tera-preview-role')==='admin'?'/staff/':'/clients/');}}catch(e){}try{if(localStorage.getItem('tera-preview-role')==='admin'&&window.__TERA&&window.__TERA.links)window.__TERA.links.app='../staff/';}catch(e){}}
 if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add('pv-embed');
