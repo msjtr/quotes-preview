@@ -13378,11 +13378,11 @@ const V1_FIELDS = [
     { kind: 'input', type: 'alnum', maxLength: 20, match: 'all', when: [v1W('id_doc', 'eq', 'arab_id', 'personal'), v1W('nationality', 'neq', V1_EG, 'personal')], msg: 'رقمُ الهوية حروفٌ لاتينيةٌ وأرقامٌ فقط.' },
     { kind: 'input', type: 'alnum', minLength: 5, maxLength: 20, match: 'all', when: [v1W('id_doc', 'eq', 'passport', 'personal')], msg: 'رقمُ جواز السفر حروفٌ لاتينيةٌ وأرقام (5 إلى 20).' }]],
   ['personal', 'id_expiry', 'تاريخ انتهاء الوثيقة', 'date', 1, 'الوثيقة', null, [{ kind: 'date_min', value: 'today', msg: 'الوثيقةُ منتهيةٌ — تاريخُ الانتهاءِ يجبُ أن يكونَ مستقبليًّا.' }]],
-  ['contact', 'country_code', 'رمز الدولة', 'select', 0, 'التواصل المباشر', Object.keys(V1_DIAL).map(function (k) { return [k, V1_DIAL[k][0] + ' (' + k + ')']; }), []],
+  ['contact', 'country_code', 'رمز الدولة', 'select', 0, 'التواصل المباشر', Object.keys(V1_DIAL).map(function (k) { return [k, V1_DIAL[k][0] + ' (\u200E' + k + ')']; }), []],
   ['contact', 'phone', 'رقم الجوال', 'phone', 1, 'التواصل المباشر', null, [], { cc: 'country_code', verify: 'whatsapp' }],
   ['contact', 'email', 'البريد الإلكتروني', 'email', 1, 'التواصل المباشر', null, [], { ltr: true, verify: 'email' }],
   ['contact', 'emg_name', 'اسم جهة الطوارئ', 'text', 1, 'التواصل في الطوارئ', null, []],
-  ['contact', 'emg_country_code', 'رمز الدولة', 'select', 0, 'التواصل في الطوارئ', Object.keys(V1_DIAL).map(function (k) { return [k, V1_DIAL[k][0] + ' (' + k + ')']; }), []],
+  ['contact', 'emg_country_code', 'رمز الدولة', 'select', 0, 'التواصل في الطوارئ', Object.keys(V1_DIAL).map(function (k) { return [k, V1_DIAL[k][0] + ' (\u200E' + k + ')']; }), []],
   ['contact', 'emg_phone', 'جوال جهة الطوارئ', 'phone', 1, 'التواصل في الطوارئ', null, [], { cc: 'emg_country_code' }],
   ['address', 'country', 'الدولة', 'select', 1, null, V1_ADR_L, [{ kind: 'address_country', msg_national: 'أنتَ مقيمٌ في المملكة، فدولةُ العنوانِ يجبُ أن تكونَ المملكةَ العربيَّةَ السعوديَّة. صحِّحِ الدولةَ أو راجِعْ نوعَ الإقامةِ في المعلوماتِ الشخصيَّة.', msg_international: 'أنتَ غيرُ مقيمٍ في المملكة، فدولةُ العنوانِ لا تكونُ المملكةَ العربيَّةَ السعوديَّة. صحِّحِ الدولةَ أو راجِعْ نوعَ الإقامةِ في المعلوماتِ الشخصيَّة.' }]],
   ['address', 'state', 'المنطقة', 'select', 0, null, 'states', []],
@@ -20724,7 +20724,10 @@ boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
     document.addEventListener('input', function (ev) {
       var el = ev.target; if (!isCC(el)) return;
       var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
-      if (z !== v) { el.value = z; if (z !== a) note(el); }
+      /* v422: الرقم بطول دولته فقط (السعودية 9 أرقام…) — من قاعدة الدولة المختارة أو من مثال الحقل 5XXXXXXXX */
+      var ph = el.getAttribute('placeholder') || '', cap = Number(el.dataset.tqLen) || (/^[1-9]X{6,}$/.test(ph) ? ph.length : 0);
+      if (cap && z.length > cap) z = z.slice(0, cap);
+      if (z !== v) { el.value = z; if (/^0/.test(a)) note(el); }
     }, true);
   })();
 

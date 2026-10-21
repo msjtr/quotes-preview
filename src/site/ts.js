@@ -359,7 +359,10 @@
     document.addEventListener('input', function (ev) {
       var el = ev.target; if (!isCC(el)) return;
       var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
-      if (z !== v) { el.value = z; if (z !== a) note(el); }
+      /* v422: الرقم بطول دولته فقط (السعودية 9 أرقام…) — من قاعدة الدولة المختارة أو من مثال الحقل 5XXXXXXXX */
+      var ph = el.getAttribute('placeholder') || '', cap = Number(el.dataset.tqLen) || (/^[1-9]X{6,}$/.test(ph) ? ph.length : 0);
+      if (cap && z.length > cap) z = z.slice(0, cap);
+      if (z !== v) { el.value = z; if (/^0/.test(a)) note(el); }
     }, true);
   })();
 
@@ -388,7 +391,7 @@
     function show(id) { return ok(id) ? '‎+' + cc(id) + ' ' + val(id) : ''; }
     function paint(s) {
       var id = s.id.replace(/-cc$/, ''), el = document.getElementById(id), r = rule(id);
-      if (el) { el.setAttribute('placeholder', r[2]); el.setAttribute('maxlength', String(r[2].length + 1)); el.setAttribute('autocomplete', 'tel-national'); }
+      if (el) { el.setAttribute('placeholder', r[2]); el.removeAttribute('maxlength'); el.dataset.tqLen = String(r[2].length); el.setAttribute('autocomplete', 'tel-national'); if (num(el.value).length > r[2].length) el.value = num(el.value).slice(0, r[2].length); }
       var wrap = s.closest('.ts-tel'), h = wrap && wrap.nextElementSibling;
       while (h && !(h.classList.contains('hint'))) h = h.classList.contains('tq-zero') ? h.nextElementSibling : null;
       if (h) h.textContent = hint(id);
@@ -396,8 +399,8 @@
     }
     function wire(s) {
       if (s._tqTel) return; s._tqTel = true;
-      /* اسم الدولة صحيحًا ثم مفتاحها بترتيب سليم داخل القائمة العربية (‎+966 لا 966+) */
-      Array.prototype.forEach.call(s.options, function (o) { var d = D[String(o.value).replace(/\D/g, '')]; if (d) { o.textContent = d[0] + ' ‎+' + String(o.value).replace(/\D/g, ''); o.title = d[1]; } });
+      /* v422: اسم الدولة الرسمي كاملًا ثم مفتاحها بترتيب سليم داخل القائمة العربية (‎+966 لا 966+) */
+      Array.prototype.forEach.call(s.options, function (o) { var d = D[String(o.value).replace(/\D/g, '')]; if (d) { o.textContent = d[1] + ' ‎+' + String(o.value).replace(/\D/g, ''); o.title = d[1]; } });
       s.setAttribute('dir', 'rtl'); s.addEventListener('change', function () { paint(s); var el = document.getElementById(s.id.replace(/-cc$/, '')); if (el) el.dispatchEvent(new Event('input', { bubbles: true })); });
       paint(s);
     }
