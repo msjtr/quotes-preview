@@ -3187,11 +3187,45 @@ function notifHub(all) {
 function notifPrefs(PREF) {
   return [DS.note('info', 'كيف تصلك الإشعارات', 'تظهر كل الإشعارات داخل المنصة دائمًا. اختر هنا ما يصلك أيضًا على البريد وواتساب. تنبيهات السداد والتحويلات والأمان إلزامية على كل القنوات.'),
     window.TeraPush ? formSec('إشعارات الجوال والويب', 'تصل إلى شاشة القفل وسطح المكتب حتى والمنصة مغلقة — لكل جهاز على حدة.', [window.TeraPush.panel({ demo: !window.TeraPush.live, noTest: true }), gdLink('notifications', 'دليل الإشعارات وتطبيق تيرا', 'آيفون وأندرويد والكمبيوتر — خطوة بخطوة بالصور.')]) : null,
-    LIVE.on ? formSec('كيف تصلك إشعاراتك', null, [e('p', { class: 'cu-dr-hint' }, 'تصلك إشعارات حسابك داخل المنصة وعلى إشعار الجوال، ومعها البريد وواتساب لما يخص السداد والطلبات والعقود والأمان.'), e('div', { class: 'fx-nch' }, CH.map(function (c) { return e('span', { class: 'fx-nch-i' }, [e('span', { class: 'fx-mini-ic' }, frag(tile(c[2]))), c[1], e('small', {}, c[0] === 'email' ? ME.email : c[0] === 'wa' ? ME.phone : 'الجرس أعلى الصفحة')]); }))]) :
+    LIVE.on ? npfLive() :
     formSec('قنوات كل نوع', null, [e('div', { class: 'fx-npref' }, NCAT.filter(function (c) { return c[0] !== 'all'; }).map(function (c) {
       return NLOCK[c[0]] ? e('div', { class: 'fx-npref-r is-lock' }, [e('b', {}, c[1]), e('span', {}, 'المنصة والبريد وواتساب'), DS.badge('إلزامي', 'info')])
         : fxReq(c[1], 'np-' + c[0], DS.select({ value: NPREF[c[0]], options: PREF, onChange: function (v) { NPREF[c[0]] = v; draw(); } }));
     })), e('div', { class: 'fx-nch' }, CH.map(function (c) { return e('span', { class: 'fx-nch-i' }, [e('span', { class: 'fx-mini-ic' }, frag(tile(c[2]))), c[1], e('small', {}, c[0] === 'email' ? ME.email : c[0] === 'wa' ? ME.phone : 'الجرس أعلى الصفحة')]); }))])];
+}
+/* v406: قنوات كل نوع على المنصة الفعلية (stf_42 · my_notif_prefs / my_notif_prefs_save) — المنصة دائمًا · غياب الاختيار = كل القنوات · السداد والتحويلات والأمان إلزامية */
+const NPF = { at: 0, busy: false, rows: {}, err: '', off: false };
+const NPF_CH = [['email', 'البريد', 'email'], ['whatsapp', 'واتساب', 'wa'], ['push', 'إشعار الجوال', 'ring']];
+function npfLoad(force) {
+  if (NPF.busy || (!force && NPF.at && Date.now() - NPF.at < 60000)) return;
+  NPF.busy = true;
+  admRpc('my_notif_prefs', {}).then(function (j) { NPF.rows = (j && j.rows) || {}; NPF.err = ''; NPF.off = false; })
+    .catch(function (er) { NPF.err = (er && er.message) || 'تعذّر التحميل.'; NPF.off = true; })
+    .then(function () { NPF.at = Date.now(); NPF.busy = false; draw(); });
+}
+function npfGet(k) { const r = NPF.rows[k] || {}; return { email: r.email !== false, whatsapp: r.whatsapp !== false, push: r.push !== false }; }
+function npfSet(k, ch) {
+  const was = npfGet(k), nx = Object.assign({}, was); nx[ch] = !was[ch];
+  NPF.rows[k] = nx; draw();
+  admRpc('my_notif_prefs_save', { p_kind: k, p_email: nx.email, p_whatsapp: nx.whatsapp, p_push: nx.push })
+    .then(function () { snack('حُفظ اختيارك', null, (NCAT.find(function (c) { return c[0] === k; }) || [0, ''])[1] + ' · ' + NPF_CH.find(function (c) { return c[0] === ch; })[1] + (nx[ch] ? ' مفعّل' : ' متوقف')); })
+    .catch(function (er) { NPF.rows[k] = was; draw(); snack('تعذّر حفظ اختيارك', null, (er && er.message) || ''); });
+}
+function npfLive() {
+  npfLoad(false);
+  const dest = function (c) { return c[0] === 'email' ? (ME.email || 'لا بريد مسجّل') : c[0] === 'whatsapp' ? (ME.phone || 'لا جوال مسجّل') : 'الأجهزة المربوطة'; };
+  const head = e('div', { class: 'fx-nch' }, [e('span', { class: 'fx-nch-i' }, [e('span', { class: 'fx-mini-ic' }, frag(tile('ring'))), 'داخل المنصة', e('small', {}, 'دائمًا')])].concat(NPF_CH.map(function (c) { return e('span', { class: 'fx-nch-i' }, [e('span', { class: 'fx-mini-ic' }, frag(tile(c[2]))), c[1], e('small', {}, dest(c))]); })));
+  if (NPF.off) return formSec('قنوات كل نوع', null, [e('p', { class: 'cu-dr-hint' }, 'تصلك كل الإشعارات على كل القنوات. اختيار القنوات لكل نوع يُفعَّل قريبًا.'), head]);
+  if (!NPF.at) return formSec('قنوات كل نوع', null, [e('p', { class: 'cu-dr-hint' }, 'جارٍ تحميل اختياراتك…')]);
+  return formSec('قنوات كل نوع', 'إشعارات المنصة تظهر دائمًا في مركز الإشعارات. اختر لكل نوع ما يصلك أيضًا — وإن لم تختر يصلك على كل القنوات.', [head,
+    e('div', { class: 'fx-npl' }, NCAT.filter(function (c) { return c[0] !== 'all'; }).map(function (c) {
+      if (NLOCK[c[0]]) return e('div', { class: 'fx-npl-r is-lock' }, [e('b', {}, c[1]), e('span', { class: 'fx-npl-s' }, 'كل القنوات'), DS.badge('إلزامي', 'info')]);
+      const v = npfGet(c[0]);
+      return e('div', { class: 'fx-npl-r' }, [e('b', {}, c[1]), e('div', { class: 'fx-npl-c' }, NPF_CH.map(function (h) {
+        const on = v[h[0]];
+        return e('label', { class: 'fx-npl-t' }, [e('span', {}, h[1]), e('button', { type: 'button', role: 'switch', 'aria-checked': on ? 'true' : 'false', 'aria-label': c[1] + ' — ' + h[1], class: 'sys-sw' + (on ? ' is-on' : ''), onClick: function () { npfSet(c[0], h[0]); } }, e('span', { class: 'sys-sw-k' }))]);
+      }))]);
+    }))].filter(Boolean));
 }
 const chOn = (cat, ch) => { const v = NLOCK[cat] ? 'all' : (NPREF[cat] || 'all'); return ch === 'app' || v === 'all' || (v === 'app_email' && ch === 'email') || (v === 'app_wa' && ch === 'wa'); };
 function adminView() {
