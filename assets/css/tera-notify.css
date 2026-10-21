@@ -848,3 +848,30 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
 .tqn-row p{margin:6px 0 4px;line-height:1.8;font-size:13.5px;color:var(--t2-ink-2,#3d4d64);white-space:pre-line}
 .tqn-row small{color:var(--t2-muted,#5B6B80);font-size:12px}
 .t2.is-dark .tqn-row.is-new{background:#2E2212;border-color:#5A4220}
+
+/* v397: الجرس ومركز الإشعارات */
+.t2-hbtn[data-nav=bell]{position:relative}
+.t2-hbtn[data-nav=bell].has-new{background:#FFF1E2!important;border-color:#F0962A!important;box-shadow:0 0 0 3px rgba(240,150,42,.22)!important}
+.t2-hbtn[data-nav=bell] .t2-nbadge{min-width:22px!important;height:22px!important;line-height:22px!important;font-size:.78rem!important;top:-8px!important;inset-inline-end:-8px!important;background:#E5484D!important}
+.t2.is-dark .t2-hbtn[data-nav=bell].has-new{background:#3A2712!important;border-color:#C9781C!important}
+.nh-sum{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0 0 10px}
+.nh-sum-n{display:inline-flex;align-items:baseline;gap:4px;padding:4px 12px;border-radius:999px;background:var(--t2-surface-2,#F2F5F9);font-weight:700}
+.nh-sum-n b{font:800 1.15rem/1 "Alexandria",sans-serif}
+.nh-sum-n.is-new{background:#FDECEC;color:#B42318}
+.nh-sum-t{color:var(--t2-muted,#5B6B80);font-size:13px}.nh-sum-t b{color:inherit}
+.nh-sum .t2-btn{margin-inline-start:auto}
+.nh-row .nr-top{display:flex;align-items:center;gap:8px}
+.nh-new{flex:none;padding:1px 8px;border-radius:999px;background:#E5484D;color:#fff;font:700 11px/18px "IBM Plex Sans Arabic",sans-serif}
+.nh-when{font-size:12px;color:var(--t2-muted,#5B6B80);direction:rtl}
+.nh-row .nr-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.t2-card.nh-card.has-new{border-color:#F3B3B0!important;background:linear-gradient(0deg,#FFF6F5,#FFF6F5)!important}
+.t2-card.nh-card .t2-card-d{font:800 1.1rem "Alexandria",sans-serif}
+.t2-card.nh-card.has-new .t2-nbadge{background:#E5484D!important;min-width:24px;height:24px;line-height:24px;font-size:.8rem}
+.t2.is-dark .t2-card.nh-card.has-new{background:#3A1C1C!important;border-color:#7A3431!important}
+.t2.is-dark .nh-sum-n.is-new{background:#3A1C1C;color:#FFB4AE}
+.tp-devs{display:grid;gap:6px;margin:12px 0 4px;padding-top:12px;border-top:1px dashed #e3e9f2}
+.tp-devs-h{font-size:13.5px}
+.tp-dev{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:#f4f7fc;border:1px solid #e3e9f2}
+.tp-dev.is-off{opacity:.7}
+.tp-dev-i svg{width:30px;height:34px;display:block}
+.tp-dev-t{display:grid;gap:1px}.tp-dev-t b{font-size:13.5px}.tp-dev-t small{font-size:12px;color:#5b6b82}

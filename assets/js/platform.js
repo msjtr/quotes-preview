@@ -2970,7 +2970,7 @@ function nbSync() {
   const L = (S.role === 'admin' ? dbNotifs() : buildNotifs()).filter(isNew), c = {}; NSEC.forEach(function (x) { c[x[0]] = nIn(L, x[0]).length; });
   document.querySelectorAll('[data-nsc]').forEach(function (b) { const v = c[b.dataset.nsc] || 0; b.innerHTML = v > 9 ? '<bdi dir="ltr">9+</bdi>' : String(v); b.hidden = !v; const t = b.closest('[data-ns]'); if (t) t.classList.toggle('has-new', !!v); });
   document.querySelectorAll('[data-nsh]').forEach(function (b) { const v = c[b.dataset.nsh] || 0; b.querySelector('b').textContent = String(v); b.hidden = !v; });
-  document.querySelectorAll('[data-nav=bell]').forEach(function (b) { let i = b.querySelector('.t2-nbadge'); if (!i) { i = document.createElement('i'); i.className = 't2-nbadge'; b.appendChild(i); } i.innerHTML = c.all > 9 ? '<bdi dir="ltr">9+</bdi>' : String(c.all); i.hidden = !c.all; });
+  document.querySelectorAll('[data-nav=bell]').forEach(function (b) { b.classList.toggle('has-new', !!c.all); let i = b.querySelector('.t2-nbadge'); if (!i) { i = document.createElement('i'); i.className = 't2-nbadge'; b.appendChild(i); } i.innerHTML = c.all > 9 ? '<bdi dir="ltr">9+</bdi>' : String(c.all); i.hidden = !c.all; });
 }
 const openNs = (k) => { FX.ns = k; FX.nv = 'client'; go('notif'); };
 /* v390: الإشعارات المرسلة للحساب من الإدارة (الرسالة المباشرة وإشعار الجوال لحساب محدد) — تُحفظ في القاعدة وتظهر في مركز الإشعارات
@@ -3100,7 +3100,7 @@ function notifPage() {
       e('button', { type: 'button', class: 'nr-main', 'aria-expanded': String(open), onClick: function () { FX.nopen = open ? null : n.id; mark(); draw(); } }, [
         e('span', { class: 'nr-ic' }, frag(tile(kd[2]))),
         e('span', { class: 'nr-b' }, [
-          e('span', { class: 'nr-top' }, [e('b', {}, title), e('time', {}, nAgo(n.at))]),
+          e('span', { class: 'nr-top' }, [e('b', {}, title), e('time', {}, nWhen(n.at))]),
           e('span', { class: 'nr-txt' }, short),
           e('span', { class: 'nr-meta' }, [e('span', { class: 'nr-k is-' + kd[1] }, kd[0]), FX.ns === 'all' ? e('span', { class: 'nr-s' }, sc[4]) : null, n.count && n.k === 'late' ? e('span', { class: 'nr-s' }, 'التذكير ' + n.count) : null, n.paused ? e('span', { class: 'nr-k is-warn' }, 'مُعلَّق: تحويل قيد المراجعة') : null])]),
         unread ? e('i', { class: 'nr-dot', 'aria-label': 'جديد' }) : null]),
@@ -3129,22 +3129,46 @@ function notifPage() {
 }
 const nAgo = (d) => { const n = daysBetween(d, T0); return n <= 0 ? 'اليوم' : n === 1 ? 'أمس' : n <= 7 ? 'قبل ' + dayWord(n) : isoT(d); };
 /* مركز الإشعارات: بطاقات الأقسام — كل بطاقة تفتح قسمها مباشرة بنفس مسار الإشعارات */
+/* v397: مركز الإشعارات — «الأحدث» أولًا (بالوقت والتاريخ وكم مضى)، ثم الأقسام بأرقام، والقسم الذي فيه جديد بالأحمر ورقمه.
+   كل إشعار في قسم واحد فقط («الكل» عرضٌ لا قسم)، فلا يتكرر الإشعار نفسه في أكثر من بطاقة. */
+const nPl = (n, one, two, few, many) => n === 1 ? one : n === 2 ? two : n <= 10 ? fmtNum(n) + ' ' + few : fmtNum(n) + ' ' + many;
+const nWhen = (d) => {
+  try {
+    const t = d instanceof Date ? d : new Date(d), m = Math.max(0, Math.round((Date.now() - t.getTime()) / 6e4)), mid = t.getHours() === 0 && t.getMinutes() === 0;
+    const ago = m < 1 ? 'الآن' : m < 60 ? 'منذ ' + nPl(m, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة') : m < 1440 ? 'منذ ' + nPl(Math.floor(m / 60), 'ساعة', 'ساعتين', 'ساعات', 'ساعة') : 'منذ ' + nPl(Math.floor(m / 1440), 'يوم', 'يومين', 'أيام', 'يومًا');
+    const clock = mid ? '' : t.toLocaleTimeString('ar-SA-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+    const date = t.toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { day: 'numeric', month: 'short', year: t.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+    return (mid && m < 1440 ? 'اليوم' : ago) + (clock ? ' · ' + clock : '') + ' · ' + date;
+  } catch (err) { return nAgo(d); }
+};
+const nTitle = (n) => { const kd = NKIND[n.k] || NKIND.admin; return n.title || (n.p ? (n.k === 'paid' ? 'تم السداد — ' : '') + n.p.c.product + ' · الدفعة ' + n.p.i + ' من ' + n.p.c.n : n.r && typeof t2req === 'function' ? t2req(n.r) : kd[0]); };
 function notifHub(all) {
-  const cnt = function (n) { return !n ? 'لا إشعارات' : n === 1 ? 'إشعار واحد' : n === 2 ? 'إشعاران' : n + (n <= 10 ? ' إشعارات' : ' إشعارًا'); };
-  const card = function (c, L, nw, on) {
-    return e('button', { type: 'button', class: 'fx-nsc nsc' + (nw ? ' has-new' : '') + (c[0] === 'all' ? ' is-all' : ''), 'data-ns': c[0], onClick: on }, [
-      e('span', { class: 'nsc-ic' }, frag(tile(c[3]))),
-      e('span', { class: 'nsc-b' }, [e('b', {}, c[1]), e('small', {}, c[2])]),
-      e('span', { class: 'nsc-f' }, [L ? e('span', {}, cnt(L.length)) : e('span', {}, 'المنصة · البريد · واتساب'), e('i', { class: 't2-nbadge', 'data-nsc': c[0], hidden: !nw }, String(nw)), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))])]);
+  const L = all.slice().sort(function (a, b) { return b.at - a.at; }), nw = L.filter(isNew), top = L.slice(0, 8);
+  const row = function (n) {
+    const kd = NKIND[n.k] || NKIND.admin, sc = nsDef(nsOf(n)), u = isNew(n);
+    return e('button', { type: 'button', class: 'nr nr-mini nh-row is-' + kd[1] + (u ? ' is-unread' : ''), onClick: function () { FX.nopen = n.id; openNs(nsOf(n)); } }, [
+      e('span', { class: 'nr-main' }, [e('span', { class: 'nr-ic' }, frag(tile(kd[2]))),
+        e('span', { class: 'nr-b' }, [e('span', { class: 'nr-top' }, [e('b', {}, nTitle(n)), u ? e('span', { class: 'nh-new' }, 'جديد') : null]),
+          n.text ? e('span', { class: 'nr-txt' }, String(n.text).slice(0, 160)) : null,
+          e('span', { class: 'nr-meta' }, [e('span', { class: 'nr-k is-' + kd[1] }, sc[4] || sc[1]), e('time', { class: 'nh-when' }, nWhen(n.at))])]),
+        u ? e('i', { class: 'nr-dot', 'aria-label': 'جديد' }) : null])]);
   };
-  void card;
-  /* نفس بطاقات أقسام المنصة (خدماتي …) في الويب وتطبيق الجوال — مع عدّاد الجديد */
-  const hc = function (c, L, nw, on) { const b = DS.card({ icon: c[3], title: c[1], note: L ? cnt(L.length) : 'المنصة · البريد · واتساب', onClick: on }); b.classList.add('nh-card'); b.dataset.ns = c[0]; b.appendChild(e('i', { class: 't2-nbadge', 'data-nsc': c[0], hidden: !nw }, String(nw))); return b; };
-  const cards = DS.cardGrid(NSEC.map(function (c) { const L = nIn(all, c[0]); return hc(c, L, L.filter(isNew).length, function () { openNs(c[0]); }); }).concat([hc(NPS, null, 0, function () { openNs('prefs'); })]));
-  const latest = all.filter(isNew).slice(0, 3);
-  return [typeof gsWrap === 'function' ? gsWrap('أقسام الإشعارات', 'bell', [cards], cards.children.length) : cards,
-    latest.length ? sec('الأحدث (' + all.filter(isNew).length + ' جديدة)', 'آخر ما وصلك — اضغط للفتح في قسمه.', [e('div', { class: 'nr-gl' }, latest.map(function (n) { const kd = NKIND[n.k]; return e('button', { type: 'button', class: 'nr nr-mini is-' + kd[1] + ' is-unread', onClick: function () { FX.nopen = n.id; openNs(nsOf(n)); } }, [e('span', { class: 'nr-main' }, [e('span', { class: 'nr-ic' }, frag(tile(kd[2]))), e('span', { class: 'nr-b' }, [e('span', { class: 'nr-top' }, [e('b', {}, n.title || (n.p ? n.p.c.product + ' · الدفعة ' + n.p.i : t2req(n.r))), e('time', {}, nAgo(n.at))]), e('span', { class: 'nr-meta' }, [e('span', { class: 'nr-k is-' + kd[1] }, kd[0]), e('span', { class: 'nr-s' }, nsDef(nsOf(n))[4])])]), e('i', { class: 'nr-dot' })])]); }))], true, 'n-new') : null,
-    e('div', { class: 'nh-team' }, [e('button', { type: 'button', class: 'fx-link', onClick: function () { FX.nv = 'admin'; draw(); } }, [frag(tile('payshield')), 'معاينة داخلية: ما يصل فريق تيرا في لوحة الإدارة'])])].filter(Boolean);
+  const head = e('div', { class: 'nh-sum' }, [
+    e('span', { class: 'nh-sum-n' + (nw.length ? ' is-new' : '') }, [e('b', {}, fmtNum(nw.length)), ' جديدة']),
+    e('span', { class: 'nh-sum-t' }, ['من ' + nPl(L.length, 'إشعار واحد', 'إشعارين', 'إشعارات', 'إشعارًا')]),
+    nw.length ? DS.button('تعليم الكل كمقروء', { size: 'sm', onClick: function () { const rd = FX.nread || (FX.nread = {}); L.forEach(function (n) { rd[n.id] = true; }); try { if (typeof dbMark === 'function') { const m = dbSeen(); L.forEach(function (n) { if (String(n.id).indexOf('db:') === 0) m[n.id] = 2; }); localStorage.setItem(DBN_K, JSON.stringify(m)); } } catch (err) { void err; } nbSync(); draw(); } }) : null]);
+  const latest = gsWrap('الأحدث', 'bell', [head,
+    top.length ? e('div', { class: 'nr-gl' }, top.map(row)) : e('div', { class: 'fx-nempty' }, [e('span', { class: 'fx-card-ic' }, frag(tile('bell'))), e('b', {}, 'لا إشعارات بعد'), e('span', {}, 'تظهر هنا فور وصولها.')]),
+    L.length > top.length ? e('div', { class: 't2-pb-actions' }, [DS.button('عرض كل الإشعارات (' + fmtNum(L.length) + ')', { size: 'sm', onClick: function () { openNs('all'); } })]) : null], null, 'آخر ما وصلك — اضغط الإشعار لفتحه في قسمه.');
+  const hc = function (c, n, k, on) {
+    const b = DS.card({ icon: c[3], title: c[1], note: n === null ? 'المنصة · البريد · واتساب' : fmtNum(n), onClick: on });
+    b.classList.add('nh-card'); if (k) b.classList.add('has-new'); b.dataset.ns = c[0];
+    b.appendChild(e('i', { class: 't2-nbadge', 'data-nsc': c[0], hidden: !k }, String(k))); return b;
+  };
+  const secs = NSEC.filter(function (c) { return c[0] !== 'all'; });
+  const cards = DS.cardGrid(secs.map(function (c) { const S2 = nIn(L, c[0]); return hc(c, S2.length, S2.filter(isNew).length, function () { openNs(c[0]); }); }).concat([hc(NPS, null, 0, function () { openNs('prefs'); })]));
+  return [latest, gsWrap('الأقسام', 'squares-four', [cards], null),
+    !LIVE.on ? e('div', { class: 'nh-team' }, [e('button', { type: 'button', class: 'fx-link', onClick: function () { FX.nv = 'admin'; draw(); } }, [frag(tile('payshield')), 'معاينة داخلية: ما يصل فريق تيرا في لوحة الإدارة'])]) : null].filter(Boolean);
 }
 function notifPrefs(PREF) {
   return [DS.note('info', 'كيف تصلك الإشعارات', 'تظهر كل الإشعارات داخل المنصة دائمًا. اختر هنا ما يصلك أيضًا على البريد وواتساب. تنبيهات السداد والتحويلات والأمان إلزامية على كل القنوات.'),

@@ -310,6 +310,25 @@
   }
 
   /* ---------- لوحة «تيرا على هذا الجهاز» ---------- */
+  var DEV = { list: null, busy: false };
+  function devName(d) {
+    var m = String(d.model || ''), t = String(d.type || ''), b = /Chrome/.test(t) ? 'Chrome' : /Firefox/.test(t) ? 'Firefox' : /Edge/.test(t) ? 'Edge' : /Safari/.test(t) ? 'Safari' : '';
+    if (/iPhone/i.test(m)) return 'آيفون' + (d.os ? ' · iOS ' + d.os : '');
+    if (/iPad/i.test(m)) return 'آيباد' + (d.os ? ' · iPadOS ' + d.os : '');
+    if (/Android/i.test(m)) return 'جوال أندرويد' + (b ? ' · ' + b : '');
+    if (/Win/i.test(m)) return 'حاسب ويندوز' + (b ? ' · ' + b : '');
+    if (/Mac/i.test(m)) return 'حاسب ماك' + (b ? ' · ' + b : '');
+    if (/Linux/i.test(m)) return 'حاسب لينكس' + (b ? ' · ' + b : '');
+    return (m || 'جهاز') + (b ? ' · ' + b : '');
+  }
+  function devices() {
+    var se = session(); if (!APP_ID || !se) return Promise.resolve([]);
+    DEV.busy = true;
+    return fetch('/api/push/my-devices', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + se.token } })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (j) { DEV.list = (j && j.ok && Array.isArray(j.devices)) ? j.devices : []; DEV.busy = false; return DEV.list; })
+      .catch(function () { DEV.list = []; DEV.busy = false; return []; });
+  }
   function panel(opt) {
     opt = opt || {};
     var box = el('section', { class: 'tp-card' });
@@ -319,13 +338,22 @@
       var s = state(); box.textContent = '';
       box.appendChild(el('div', { class: 'tp-h' }, [el('span', { class: 'tp-hi', html: N().tile('device-mobile:teal') }), el('div', {}, [el('b', {}, ['تيرا على هذا الجهاز']), el('small', {}, [s.device + ' · ' + s.browser])])]));
       box.appendChild(el('div', { class: 'tp-chips' }, [
-        chip('squares-four:navy', 'التطبيق', s.installed ? 'مثبّت' : 'غير مثبّت', s.installed ? 'ok' : 'n'),
+        chip('squares-four:navy', 'التطبيق على هذا الجهاز', s.installed ? 'مثبّت' : 'غير مثبّت', s.installed ? 'ok' : 'n'),
         chip('bell-ringing:teal', 'الإشعارات', s.on ? 'مفعّلة' : s.blocked ? 'محظورة' : s.needsInstallForPush ? 'بعد الإضافة للشاشة' : 'غير مفعّلة', s.on ? 'ok' : s.blocked ? 'bad' : 'n')]));
       var acts = [];
       if (!s.installed) acts.push(btn(s.oneTap ? 'تثبيت تطبيق تيرا' : 'احصل على تطبيق تيرا', 'download-simple:navy', function () { install(); }, !s.on || s.oneTap));
       if (!s.on) acts.push(btn('فعّل الإشعارات', 'bell-ringing:teal', function () { enable({ demo: opt.demo, onDemo: opt.onDemo }); }, true));
       else { acts.push(btn('أرسل إشعارًا تجريبيًا لي', 'paper-plane-tilt:teal', function () { test({ demo: opt.demo, onDemo: opt.onDemo }); }, true)); acts.push(btn('إيقاف على هذا الجهاز', 'bell:navy', function () { off(); })); }
       box.appendChild(el('div', { class: 'tp-acts' }, acts));
+      /* v397: كل أجهزة الحساب المربوطة (من الخادم) — عددها ونوع كل جهاز وحالته، وتمييز هذا الجهاز */
+      if (APP_ID && session()) {
+        if (DEV.list === null && !DEV.busy) { devices().then(function () { paint(); }); }
+        var L = DEV.list || [], me = (String(ls('tera.push.reg') || '').split(':')[1] || '').slice(-8);
+        box.appendChild(el('div', { class: 'tp-devs' }, [el('b', { class: 'tp-devs-h' }, [DEV.list === null ? 'أجهزتك المربوطة بحسابك…' : L.length ? 'أجهزتك المربوطة بحسابك: ' + L.length : 'لا أجهزة مربوطة بحسابك بعد'])].concat(L.map(function (d) {
+          return el('div', { class: 'tp-dev' + (d.on ? '' : ' is-off') }, [el('span', { class: 'tp-dev-i', html: N().tile(/iPhone|iPad|Android/i.test(d.model) || /Safari/.test(d.type) && /iP/.test(d.model) ? 'device-mobile:teal' : 'monitor:navy') }),
+            el('span', { class: 'tp-dev-t' }, [el('b', {}, [devName(d) + (d.ref === me ? ' — هذا الجهاز' : '')]), el('small', {}, [d.on ? 'الإشعارات مفعّلة' : 'الإشعارات موقوفة على هذا الجهاز'])])]);
+        }))));
+      }
       box.appendChild(el('p', { class: 'tp-hint' }, [s.needsInstallForPush ? 'في الآيفون والآيباد تصل الإشعارات إلى شاشة القفل بعد إضافة تيرا إلى الشاشة الرئيسية وفتحها منها — شرط من أبل لكل المواقع.'
         : s.oneTap ? 'التثبيت بضغطة واحدة: تظهر نافذة المتصفح فتضغط «تثبيت»، وتصبح تيرا بأيقونتها على جهازك.'
         : 'تصل الإشعارات حتى والمنصة مغلقة: تذكيرات السداد، القبول، تحديثات الطلبات، وتنبيهات الأمان.']));
@@ -435,5 +463,5 @@
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', mountBar); else mountBar();
 
   function link() { if (!APP_ID) return Promise.resolve(true); return sdk().then(register).catch(function () { return false; }); }
-  W.TeraPush = { secGuide: secGuide, state: state, link: link, install: install, enable: enable, test: test, off: off, panel: panel, on: on, guide: guide, androidGuide: androidGuide, openGuide: openGuide, GUIDES: GUIDES, live: !!APP_ID, LIVE: LIVE };
+  W.TeraPush = { secGuide: secGuide, state: state, link: link, devices: function () { DEV.list = null; return devices(); }, install: install, enable: enable, test: test, off: off, panel: panel, on: on, guide: guide, androidGuide: androidGuide, openGuide: openGuide, GUIDES: GUIDES, live: !!APP_ID, LIVE: LIVE };
 })(window, document);
