@@ -3,4 +3,4 @@ Allow: /
 Disallow: /clients/
 Disallow: /staff/
 Disallow: /security/
-Sitemap: https://msjtr.github.io/quotes-preview/sitemap.xml
+Sitemap: https://staging.tera-services.com.sa/sitemap.xml
