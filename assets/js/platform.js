@@ -2875,6 +2875,11 @@ function rcptPage() {
 /* أسفل الإيصال: طلب على العملية نفسها — إلغاء العملية أو استرداد العملية، مع سبب الطلب (تراجعه الإدارة) */
 const OPK = { void: ['إلغاء العملية', 'x-circle:gold', 'قبل تسوية العملية لدى البنك — لا يظهر الخصم في كشفك أو يُعكس مباشرة.'], refund: ['استرداد العملية', 'payshield', 'بعد تسوية العملية — يُعاد المبلغ إلى وسيلة الدفع نفسها حسب إجراءات البنك.'] };
 function rcOpReq(p) {
+  /* v417: الإلغاء والاسترداد لا يُطلبان من حساب العميل — تُنفّذهما إدارة تيرا من مركز المدفوعات، ويظهر أي منهما داخل هذا الإيصال («بيانات الاسترداد») مع إشعار البريد وواتساب */
+  if (!p.rc.void) return DS.note('info', 'الإلغاء والاسترداد', p.refund ? 'تفاصيل الاسترداد أعلاه داخل هذا الإيصال، وصلك إشعارها على البريد وواتساب.' : 'لا يُطلب الإلغاء أو الاسترداد من الحساب. إن نفّذت إدارة تيرا أي استرداد أو إلغاء لهذه العملية يظهر هنا داخل الإيصال، ويصلك إشعاره على البريد وواتساب.');
+  return null;
+}
+function rcOpReqOld(p) {
   if (p.rc.void) return null;
   if (FX.opFor !== p.rc.no) { FX.opFor = p.rc.no; FX.opk = ''; FX.opr = ''; FX.opn = ''; }
   const pend = REQS.filter(function (r) { return r.type === 'refund' && r.pid === p.c.no + ':' + p.i && r.status !== 'done' && r.status !== 'rejected'; })[0];
@@ -17029,9 +17034,9 @@ async function liveClientCtFiles() {
   ROOT.appendChild(e('div', { class: 't2-stack' }, [DS.panel('مرفقات العقد', fmtNum(L.length) + ' ملف', [liveCtFiles(L, false)])]));
 }
 /* ===== للموظف: قرارات طلبات التوثيق ===== */
-function admTwoStep(label, tone, run) {
+function admTwoStep(label, tone, run, icon) {
   let armed = false;
-  const b = liveOk(DS.button(label, { size: 'sm', tone: tone, onClick: async function () {
+  const b = liveOk(DS.button(label, { size: 'sm', tone: tone, ui: icon || undefined, onClick: async function () {
     if (!armed) { armed = true; b.lastChild.nodeValue = 'تأكيد: ' + label; return; }
     b.disabled = true; try { await run(); } finally { b.disabled = false; armed = false; b.lastChild.nodeValue = label; }
   } }));
@@ -17382,13 +17387,16 @@ function payTxnsPanel(D, refetch) {
     if (can && !child && t.status === 'success' && t.auth_state === 'authorized' && S2.capture) {
       acts = e('div', { class: 't2-pb-actions' }, [admTwoStep('تحصيل المبلغ (Capture)', 'primary', async function () { const j = await clPost('/admin/api/pay/txns/' + t.trx + '/capture', {}); snack(j.ok ? (j.pending ? j.message : 'تم التحصيل.') : (j.message || 'تعذّر التحصيل.')); if (j.ok) refetch(); }),
         S2.voids ? admTwoStep('إلغاء التفويض', null, async function () { const j = await clPost('/admin/api/pay/txns/' + t.trx + '/void', {}); snack(j.ok ? 'أُلغي التفويض.' : (j.message || 'تعذّر الإلغاء.')); if (j.ok) refetch(); }) : null]);
+    } else if (can && !child && t.status === 'success' && left > 0 && ['online', 'online_test'].indexOf(t.class_label) >= 0 && !S2.refunds && !S2.voids) {
+      /* v417: الخدمتان موقوفتان — يظهر سبب غياب الأزرار بدل خانة فارغة */
+      acts = e('div', { class: 't2-pb-actions' }, [e('small', { class: 'cu-dr-hint' }, 'الاسترداد والإلغاء موقوفان — فعّلهما من «الخدمات» أعلى مركز المدفوعات.')]);
     } else if (can && !child && t.status === 'success' && left > 0 && ['online', 'online_test'].indexOf(t.class_label) >= 0 && (S2.refunds || S2.voids)) {
       const amt = e('input', { class: 't2-input is-num', inputmode: 'decimal', dir: 'ltr', placeholder: 'كامل ' + left, 'aria-label': 'مبلغ الاسترداد', style: 'max-width:110px' });
       const run = async function (act) {
         const j = await clPost('/admin/api/pay/txns/' + t.trx + '/' + act, act === 'refund' && amt.value ? { amount: Number(amt.value) } : {});
         snack(j.ok ? (j.pending ? j.message : act === 'void' ? 'أُلغيت العملية.' : 'تم الاسترداد.') : (j.message || 'تعذّر التنفيذ.')); if (j.ok) refetch();
       };
-      acts = e('div', { class: 't2-pb-actions' }, [S2.refunds ? amt : null, S2.refunds ? admTwoStep('استرداد', 'danger', function () { return run('refund'); }) : null, S2.voids ? admTwoStep('إلغاء (Void)', null, function () { return run('void'); }) : null]);
+      acts = e('div', { class: 't2-pb-actions' }, [S2.refunds ? amt : null, S2.refunds ? admTwoStep('استرداد', 'danger', function () { return run('refund'); }, 'arrows-clockwise') : null, S2.voids ? admTwoStep('إلغاء (Void)', null, function () { return run('void'); }, 'x') : null]);
     }
     /* v414: إشعار نتيجة العملية للدافع (مدفوع · فشل · استرداد) — يُرسل تلقائيًا، وهذا لإعادة الإرسال */
     if (!child && D.can.links) { const nb = liveOk(DS.button('إشعار الدافع', { size: 'sm', ui: 'bell-ringing', onClick: async function (ev) { ev.stopPropagation(); const j = await clPost('/admin/api/pay/txns/' + t.trx + '/notify', {}); snack(j.ok ? 'أُرسل إشعار ' + ({ paid: 'السداد', failed: 'الفشل', refund: 'الاسترداد' }[j.kind] || 'النتيجة') + ' للدافع.' : (j.message || 'تعذّر الإرسال.')); } }));
