@@ -338,12 +338,12 @@
       var s = state(); box.textContent = '';
       box.appendChild(el('div', { class: 'tp-h' }, [el('span', { class: 'tp-hi', html: N().tile('device-mobile:teal') }), el('div', {}, [el('b', {}, ['تيرا على هذا الجهاز']), el('small', {}, [s.device + ' · ' + s.browser])])]));
       box.appendChild(el('div', { class: 'tp-chips' }, [
-        chip('squares-four:navy', 'التطبيق على هذا الجهاز', s.installed ? 'مثبّت' : 'غير مثبّت', s.installed ? 'ok' : 'n'),
+        (function () { var app = (DEV.list || []).filter(function (d) { return /Safari/.test(d.type) && /iP(hone|ad)/i.test(d.model); }); var v = s.installed ? 'مثبّت على هذا الجهاز' : app.length ? 'مثبّت على ' + (/iPad/i.test(app[0].model) ? 'آيبادك' : 'جوالك') + ' · ليس على هذا الجهاز' : 'غير مثبّت'; return chip('squares-four:navy', 'تطبيق تيرا', v, s.installed || app.length ? 'ok' : 'n'); })(),
         chip('bell-ringing:teal', 'الإشعارات', s.on ? 'مفعّلة' : s.blocked ? 'محظورة' : s.needsInstallForPush ? 'بعد الإضافة للشاشة' : 'غير مفعّلة', s.on ? 'ok' : s.blocked ? 'bad' : 'n')]));
       var acts = [];
       if (!s.installed) acts.push(btn(s.oneTap ? 'تثبيت تطبيق تيرا' : 'احصل على تطبيق تيرا', 'download-simple:navy', function () { install(); }, !s.on || s.oneTap));
       if (!s.on) acts.push(btn('فعّل الإشعارات', 'bell-ringing:teal', function () { enable({ demo: opt.demo, onDemo: opt.onDemo }); }, true));
-      else { acts.push(btn('أرسل إشعارًا تجريبيًا لي', 'paper-plane-tilt:teal', function () { test({ demo: opt.demo, onDemo: opt.onDemo }); }, true)); acts.push(btn('إيقاف على هذا الجهاز', 'bell:navy', function () { off(); })); }
+      else { if (!opt.noTest) acts.push(btn('أرسل إشعارًا تجريبيًا لي', 'paper-plane-tilt:teal', function () { test({ demo: opt.demo, onDemo: opt.onDemo }); }, true)); acts.push(btn('إيقاف على هذا الجهاز', 'bell:navy', function () { off(); })); }
       box.appendChild(el('div', { class: 'tp-acts' }, acts));
       /* v397: كل أجهزة الحساب المربوطة (من الخادم) — عددها ونوع كل جهاز وحالته، وتمييز هذا الجهاز */
       if (APP_ID && session()) {

@@ -2981,24 +2981,26 @@ function dbNotifs() {
     if (!LIVE.on || !LIVE.me) return [];
     if (!DBN.busy && Date.now() - DBN.at > 60000) {
       DBN.busy = true;
-      admRpc('my_inbox', { p_limit: 50 }).then(function (j) {
-        const R = Array.isArray(j) ? j : (j && (j.rows || j.items || j.notifications)) || [];
+      liveToken().then(function (tk) { return fetch('/api/push/inbox', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + tk } }); }).then(function (r) { return r.json(); }).then(function (j) {
+        const R = (j && j.ok && Array.isArray(j.rows)) ? j.rows : [];
         DBN.rows = R.filter(function (x) { return x && x.kind === 'direct_message'; }); DBN.at = Date.now(); DBN.busy = false; if (DBN.rows.length) { dbFresh(); draw(); }
       }).catch(function () { DBN.at = Date.now(); DBN.busy = false; });
     }
-    return DBN.rows.map(function (x) { return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '' }; });
+    /* v399: كل دور يرى إشعاراته فقط — لوحة الفريق: الموجّه للفريق · حساب العميل/الشريك: الموجّه له · والموجّه للجميع في الدورين */
+    return DBN.rows.filter(dbRole).map(function (x) { return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '' }; });
   } catch (err) { return []; }
 }
 /* v396: قراءة الإشعارات محفوظة على الجهاز (لا تعود «جديدة» بعد فتحها)، وأحدث إشعار لم يُعرض يظهر بطاقةً عند فتح التطبيق —
    فيصل محتواه حتى لو فُتح التطبيق دون الضغط على الإشعار أو بعد تسجيل الدخول. */
 const DBN_K = 'tq.inbox.seen';
+function dbRole(x) { const adm = S.role === 'admin'; return x.aud === 'all' || !x.role || (adm ? x.role === 'staff' : x.role !== 'staff'); }
 function dbSeen() { try { return JSON.parse(localStorage.getItem(DBN_K) || '{}') || {}; } catch (err) { return {}; } }
 function dbMark(ids) { try { const m = dbSeen(); ids.forEach(function (i) { if (!m[i]) m[i] = 1; }); const k = Object.keys(m); if (k.length > 300) k.slice(0, k.length - 300).forEach(function (x) { delete m[x]; }); localStorage.setItem(DBN_K, JSON.stringify(m)); } catch (err) { void err; } }
 function dbFresh() {
   try {
     const seen = dbSeen(), rd = FX.nread || (FX.nread = {});
     Object.keys(seen).forEach(function (k) { if (seen[k] === 2) rd[k] = true; });
-    const n = DBN.rows.filter(function (x) { return !seen['db:' + x.id] && Date.now() - new Date(x.created_at).getTime() < 864e5; })[0];
+    const n = DBN.rows.filter(function (x) { return dbRole(x) && !seen['db:' + x.id] && Date.now() - new Date(x.created_at).getTime() < 864e5; })[0];
     if (!n || !window.TQ_PUSH_SHOW) return;
     dbMark(['db:' + n.id]);
     window.TQ_PUSH_SHOW({ k: 'admin', t: n.title || 'إشعار من تيرا', b: n.body || '' });
@@ -3172,7 +3174,8 @@ function notifHub(all) {
 }
 function notifPrefs(PREF) {
   return [DS.note('info', 'كيف تصلك الإشعارات', 'تظهر كل الإشعارات داخل المنصة دائمًا. اختر هنا ما يصلك أيضًا على البريد وواتساب. تنبيهات السداد والتحويلات والأمان إلزامية على كل القنوات.'),
-    window.TeraPush ? formSec('إشعارات الجوال والويب', 'تصل إلى شاشة القفل وسطح المكتب حتى والمنصة مغلقة — لكل جهاز على حدة.', [window.TeraPush.panel({ demo: !window.TeraPush.live }), gdLink('notifications', 'دليل الإشعارات وتطبيق تيرا', 'آيفون وأندرويد والكمبيوتر — خطوة بخطوة بالصور.')]) : null,
+    window.TeraPush ? formSec('إشعارات الجوال والويب', 'تصل إلى شاشة القفل وسطح المكتب حتى والمنصة مغلقة — لكل جهاز على حدة.', [window.TeraPush.panel({ demo: !window.TeraPush.live, noTest: true }), gdLink('notifications', 'دليل الإشعارات وتطبيق تيرا', 'آيفون وأندرويد والكمبيوتر — خطوة بخطوة بالصور.')]) : null,
+    LIVE.on ? formSec('كيف تصلك إشعاراتك', null, [e('p', { class: 'cu-dr-hint' }, 'تصلك إشعارات حسابك داخل المنصة وعلى إشعار الجوال، ومعها البريد وواتساب لما يخص السداد والطلبات والعقود والأمان.'), e('div', { class: 'fx-nch' }, CH.map(function (c) { return e('span', { class: 'fx-nch-i' }, [e('span', { class: 'fx-mini-ic' }, frag(tile(c[2]))), c[1], e('small', {}, c[0] === 'email' ? ME.email : c[0] === 'wa' ? ME.phone : 'الجرس أعلى الصفحة')]); }))]) :
     formSec('قنوات كل نوع', null, [e('div', { class: 'fx-npref' }, NCAT.filter(function (c) { return c[0] !== 'all'; }).map(function (c) {
       return NLOCK[c[0]] ? e('div', { class: 'fx-npref-r is-lock' }, [e('b', {}, c[1]), e('span', {}, 'المنصة والبريد وواتساب'), DS.badge('إلزامي', 'info')])
         : fxReq(c[1], 'np-' + c[0], DS.select({ value: NPREF[c[0]], options: PREF, onChange: function (v) { NPREF[c[0]] = v; draw(); } }));

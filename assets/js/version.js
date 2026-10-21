@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'398',d:'2026-10-21'};
+window.TQ_VERSION={v:'399',d:'2026-10-21'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -171,6 +171,24 @@ window.TQ_VERSION={v:'398',d:'2026-10-21'};
       })();
     }
     window.TQ_PUSH_SHOW = pushShow;
+    /* v399: عند فتح التطبيق من صفحة خارج المنصة (مثل الرئيسية حين يفتحها الآيفون بدل رابط الإشعار): أحدث إشعار لحسابك لم يُعرض
+       خلال 24 ساعة يظهر بطاقةً — من الخادم (/api/push/inbox). داخل المنصة تتولاه المنصة نفسها بحسب دور اللوحة. */
+    function inboxFresh() {
+      try {
+        if (typeof window.dbFresh === 'function' || !/(^|\.)tera-services\.com\.sa$/.test(location.hostname)) return;
+        var s = JSON.parse(localStorage.getItem('tera.admin.session') || 'null');
+        if (!s || !s.access_token || (s.expires_at && s.expires_at * 1000 < Date.now())) return;
+        fetch('/api/push/inbox', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + s.access_token } })
+          .then(function (r) { return r.json(); }).then(function (j) {
+            var R = (j && j.ok && j.rows) || [], seen = {}; try { seen = JSON.parse(localStorage.getItem('tq.inbox.seen') || '{}') || {}; } catch (e) { seen = {}; }
+            var n = R.filter(function (x) { return !seen['db:' + x.id] && Date.now() - new Date(x.created_at).getTime() < 864e5; })[0];
+            if (!n) return; seen['db:' + n.id] = seen['db:' + n.id] || 1; try { localStorage.setItem('tq.inbox.seen', JSON.stringify(seen)); } catch (e) { void e; }
+            pushShow({ k: 'admin', t: n.title || 'إشعار من تيرا', b: n.body || '' });
+          }).catch(function () {});
+      } catch (e) { void e; }
+    }
+    setTimeout(inboxFresh, 3500);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') inboxFresh(); });
     pushOpen(); window.addEventListener('hashchange', pushOpen);
     /* إزالة ?u= من العنوان بعد التحديث (لا يبقى في الرابط) */
     try { var u0 = new URL(location.href); if (u0.searchParams.has('u')) { u0.searchParams.delete('u'); history.replaceState(history.state, '', u0.pathname + (u0.search || '') + u0.hash); } } catch (e) { void e; }
