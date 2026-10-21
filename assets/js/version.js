@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'401',d:'2026-10-21'};
+window.TQ_VERSION={v:'402',d:'2026-10-21'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -147,9 +147,14 @@ window.TQ_VERSION={v:'401',d:'2026-10-21'};
        ثم «عرض التفاصيل» ينقل إلى القسم المرتبط إن كان العميل داخل حسابه. ويُحفظ آخر 30 إشعارًا على الجهاز. */
     var NK = { ok: /^(offers|member|approved|paid|thanks|qaccepted|qextok|cudok)$/, bad: /^(defaulted|late|rejected|rfrej|qexpired|qrejected|qextno|cudrej)$/, warn: /^(sec|doc|today|fix|refund|qexpire|qmod|cudfix)$/ };
     function pushOpen() {
-      var m = /[#&]tqn=([^&]+)/.exec(location.hash || ''); if (!m) return;
-      var n = null; try { n = JSON.parse(decodeURIComponent(m[1])); } catch (e) { n = null; }
-      try { var h = location.hash.replace(/[#&]tqn=[^&]+/, '').replace(/^#?&?/, ''); history.replaceState(history.state, '', location.pathname + location.search + (h ? '#' + h : '')); } catch (e) { void e; }
+      /* tqn= (JSON مُرمَّز) أو v402: tqb= (base64url مضغوط — يتسع لنص أطول ضمن حد 2048 حرفًا للرابط) */
+      var m = /[#&](tq[nb])=([^&]+)/.exec(location.hash || ''); if (!m) return;
+      var n = null;
+      try {
+        if (m[1] === 'tqb') { var s = m[2].replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; var bin = atob(s), u8 = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); n = JSON.parse(new TextDecoder('utf-8').decode(u8)); }
+        else n = JSON.parse(decodeURIComponent(m[2]));
+      } catch (e) { n = null; }
+      try { var h = location.hash.replace(/[#&]tq[nb]=[^&]+/, '').replace(/^#?&?/, ''); history.replaceState(history.state, '', location.pathname + location.search + (h ? '#' + h : '')); } catch (e) { void e; }
       if (!n || !(n.t || n.b)) return;
       pushShow(n);
     }
@@ -175,6 +180,7 @@ window.TQ_VERSION={v:'401',d:'2026-10-21'};
         if (txt) {
           body = document.createElement('div'); body.className = 'tqn-card';
           var pEl = document.createElement('p'); pEl.className = 'tqn-full'; pEl.textContent = txt; body.appendChild(pEl);
+          if (n.more) { var mo = document.createElement('small'); mo.className = 'tqn-cut'; mo.textContent = 'تتمة النص في حسابك.'; body.appendChild(mo); }
           if (txt.length > 180) {
             pEl.classList.add('is-clamp');
             var more = document.createElement('button'); more.type = 'button'; more.className = 'tqn-more'; more.textContent = 'عرض النص كاملًا';
