@@ -93,7 +93,7 @@ body.tp{font-family:Alexandria,"IBM Plex Sans Arabic",Tahoma,sans-serif;color:va
 .tp-meth>a:hover{transform:translateY(-3px);box-shadow:0 16px 26px -18px rgba(184,137,47,.8)}
 .tp-meth .lg{display:flex;align-items:center;gap:8px}
 .tp-meth img{height:18px}.tp-meth img.vi{height:13px}.tp-meth img.mc{height:20px}.tp-meth img.ap{height:22px}
-.tp-pixel{min-height:120px;border-radius:16px;position:relative}
+.tp-pixel{min-height:120px;border-radius:16px;position:relative;padding:6px 2px;direction:ltr}
 .tp-pixel.wait{min-height:170px}
 .tp-pixel.wait:before{content:"";position:absolute;inset:0;border-radius:16px;background:linear-gradient(100deg,#F6F1E4 30%,#FFFDF7 50%,#F6F1E4 70%);background-size:200% 100%;animation:tpShine 1.4s linear infinite}
 .tp-pixel.wait:after{content:"جارٍ تحميل نموذج البطاقة الآمن…";position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:var(--tp-mut)}

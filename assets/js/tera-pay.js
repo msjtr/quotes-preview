@@ -108,7 +108,9 @@
           processing();
         },
         customStyle: {
-          Direction: 'rtl', HideCardIcons: false, HideCardLabel: true,
+          /* v420: حقول البطاقة باتجاه LTR حتى تظهر الأرقام بترتيبها الصحيح ومجمّعة كل 4 أرقام بمسافة، وبلا أيقونات داخل الحقل حتى لا تتداخل مع الرقم
+             (شعارات مدى وفيزا وماستركارد وApple Pay ظاهرة خارج النموذج) */
+          Direction: 'ltr', HideCardIcons: true, HideCardLabel: true,
           Label_Text: { cardLabel: 'بيانات البطاقة', savedCardsLabel: 'بطاقاتك المحفوظة', saveCardConsentLabel: 'احفظ البطاقة للدفعات القادمة', cardEndingLabel: 'تنتهي بـ' },
           Placeholder_Text: { holderName: 'الاسم على البطاقة', cardNumber: 'رقم البطاقة', expiryDate: 'الشهر / السنة', securityCode: 'رمز التحقق CVV' },
           Error_Text: { cardNumber: { required: 'أدخل رقم البطاقة', invalid: 'رقم البطاقة غير صحيح' }, expiryDate: { required: 'أدخل تاريخ الانتهاء', invalid: 'تاريخ الانتهاء غير صحيح' }, securityCode: 'أدخل رمز التحقق (CVV)', holderName: 'أدخل الاسم كما في البطاقة' },
