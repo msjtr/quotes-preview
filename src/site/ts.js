@@ -316,9 +316,9 @@
     }); });
     var reMail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, reLocal = /^[1-9]\d{6,11}$/;
     $('#dk-send').addEventListener('click', function () {
-      var bad = [['#dk-name', !!$('#dk-name').value.trim()], ['#dk-ph', reLocal.test($('#dk-ph').value.replace(/\s/g, ''))], ['#dk-em', reMail.test($('#dk-em').value.trim())], ['#dk-type', !!$('#dk-type').value], ['#dk-subj', !!$('#dk-subj').value.trim()], ['#dk-det', !!$('#dk-det').value.trim()]];
+      var bad = [['#dk-name', !!$('#dk-name').value.trim()], ['#dk-ph', window.TQ_TEL ? TQ_TEL.ok('dk-ph') : reLocal.test($('#dk-ph').value.replace(/\s/g, ''))], ['#dk-em', reMail.test($('#dk-em').value.trim())], ['#dk-type', !!$('#dk-type').value], ['#dk-subj', !!$('#dk-subj').value.trim()], ['#dk-det', !!$('#dk-det').value.trim()]];
       bad.forEach(function (x) { $(x[0]).classList.toggle('bad', !x[1]); });
-      if (bad.some(function (x) { return !x[1]; })) return msg('dk-msg', 'bad', 'يرجى استكمال البيانات المظللة: الاسم، والجوال بدون صفر في أوله، والبريد، والنوع، والموضوع، والتفاصيل.');
+      if (bad.some(function (x) { return !x[1]; })) return msg('dk-msg', 'bad', 'يرجى استكمال البيانات المظللة: الاسم، والجوال (' + (window.TQ_TEL ? TQ_TEL.rule('dk-ph')[4] : '9 أرقام تبدأ بـ 5') + ' بدون صفر في أوله)، والبريد، والنوع، والموضوع، والتفاصيل.');
       $('#dk-ref').textContent = '#TERA-' + String(Math.floor(100000 + Math.random() * 899999)); form.hidden = true; done.hidden = false; scrollToEl(done);
     });
     $('#dk-draft').addEventListener('click', function () { msg('dk-msg', 'warn', 'حُفظت مسودة. لا تُسجَّل مراسلة رسمية ولا تبدأ مدة الرد إلا بعد الإرسال.'); });
@@ -361,6 +361,49 @@
       var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
       if (z !== v) { el.value = z; if (z !== a) note(el); }
     }, true);
+  })();
+
+  /* ---------- v421: قواعد الجوال لكل دولة — حقل الجوال يتبع الدولة المختارة (التسجيل · نسيت كلمة المرور · مكتب الخدمة)
+     نفس جدول المنصة V1_DIAL: الاسم · المثال · الصيغة · الوصف. الصفر في أول الرقم يُحذف تلقائيًا ---------- */
+  (function () {
+    if (window.TQ_TEL) return;
+    var D = {
+      '966': ['السعودية', 'المملكة العربية السعودية', '5XXXXXXXX', /^5\d{8}$/, '9 أرقام تبدأ بـ 5'],
+      '971': ['الإمارات', 'دولة الإمارات العربية المتحدة', '5XXXXXXXX', /^5\d{8}$/, '9 أرقام تبدأ بـ 5'],
+      '965': ['الكويت', 'دولة الكويت', '5XXXXXXX', /^[569]\d{7}$/, '8 أرقام تبدأ بـ 5 أو 6 أو 9'],
+      '973': ['البحرين', 'مملكة البحرين', '3XXXXXXX', /^[36]\d{7}$/, '8 أرقام تبدأ بـ 3 أو 6'],
+      '974': ['قطر', 'دولة قطر', '3XXXXXXX', /^[3567]\d{7}$/, '8 أرقام تبدأ بـ 3 أو 5 أو 6 أو 7'],
+      '968': ['عُمان', 'سلطنة عُمان', '9XXXXXXX', /^[79]\d{7}$/, '8 أرقام تبدأ بـ 7 أو 9'],
+      '20': ['مصر', 'جمهورية مصر العربية', '1XXXXXXXXX', /^1[0125]\d{8}$/, '10 أرقام تبدأ بـ 10 أو 11 أو 12 أو 15']
+    };
+    function num(v) { return String(v == null ? '' : v).replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, '').replace(/^0+/, ''); }
+    function sel(id) { return document.getElementById(id + '-cc'); }
+    function cc(id) { var s = sel(id), v = s ? String(s.value).replace(/\D/g, '') : '966'; return D[v] ? v : '966'; }
+    function rule(id) { return D[cc(id)]; }
+    function val(id) { var el = document.getElementById(id); return el ? num(el.value) : ''; }
+    function ok(id) { return rule(id)[3].test(val(id)); }
+    function hint(id) { var r = rule(id); return 'رقم ' + r[1] + ': ' + r[4] + '، بدون الصفر في أوله.'; }
+    function err(id) { var r = rule(id); return 'رقم الجوال لا يطابق ' + r[1] + ' (' + r[4] + ')، اكتبه بدون الصفر في أوله.'; }
+    function e164(id) { return ok(id) ? '+' + cc(id) + val(id) : ''; }
+    function show(id) { return ok(id) ? '‎+' + cc(id) + ' ' + val(id) : ''; }
+    function paint(s) {
+      var id = s.id.replace(/-cc$/, ''), el = document.getElementById(id), r = rule(id);
+      if (el) { el.setAttribute('placeholder', r[2]); el.setAttribute('maxlength', String(r[2].length + 1)); el.setAttribute('autocomplete', 'tel-national'); }
+      var wrap = s.closest('.ts-tel'), h = wrap && wrap.nextElementSibling;
+      while (h && !(h.classList.contains('hint'))) h = h.classList.contains('tq-zero') ? h.nextElementSibling : null;
+      if (h) h.textContent = hint(id);
+      if (el && el.value) el.classList.toggle('bad', !ok(id));
+    }
+    function wire(s) {
+      if (s._tqTel) return; s._tqTel = true;
+      /* اسم الدولة صحيحًا ثم مفتاحها بترتيب سليم داخل القائمة العربية (‎+966 لا 966+) */
+      Array.prototype.forEach.call(s.options, function (o) { var d = D[String(o.value).replace(/\D/g, '')]; if (d) { o.textContent = d[0] + ' ‎+' + String(o.value).replace(/\D/g, ''); o.title = d[1]; } });
+      s.setAttribute('dir', 'rtl'); s.addEventListener('change', function () { paint(s); var el = document.getElementById(s.id.replace(/-cc$/, '')); if (el) el.dispatchEvent(new Event('input', { bubbles: true })); });
+      paint(s);
+    }
+    function scan() { Array.prototype.forEach.call(document.querySelectorAll('.ts-tel select[id$="-cc"]'), wire); }
+    window.TQ_TEL = { D: D, cc: cc, rule: rule, val: val, ok: ok, hint: hint, err: err, e164: e164, show: show, scan: scan };
+    scan(); document.addEventListener('focusin', function (e) { if (e.target && e.target.closest && e.target.closest('.ts-tel')) scan(); }, true);
   })();
 
   /* ---------- v263: مؤشر تمرير المسار الجانبي حين يخفي الجهاز شريط التمرير (جوال/ماك) ---------- */
@@ -491,7 +534,7 @@
     $('#done-go').addEventListener('click', function () { if (LIVE && S.inn) return liveEnter(); post({ tera: 'enter' }); });
     $('#done-exit').addEventListener('click', function () { reset(); msg('lg-msg', 'ok', 'خرجت من البوابة. يمكنك الإكمال لاحقًا بالدخول من البوابة: تسجيل الدخول.'); });
     var reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, rePhone = /^(05\d{8}|\+?9665\d{8})$/, reLocal = /^5\d{8}$/;
-    function idOk(v) { v = v.replace(/\s/g, ''); return reEmail.test(v) || rePhone.test(v); }
+    function idOk(v) { v = ascii(v).replace(/\s/g, ''); return reEmail.test(v) || rePhone.test(v) || (/^(\+|00)/.test(v) && /^\+\d{8,15}$/.test(liveId(v))); }
     function bad(el, on) { el.classList.toggle('bad', !!on); return !on; }
 
     /* ---- 6-box code entry: auto-confirm when complete ---- */
@@ -521,6 +564,7 @@
     function vcDest(card) {
       var id = card.dataset.dest, el = $('#' + id); if (!el) return '';
       if (card.dataset.ch === 'mail') { var v = el.value.trim(); return reEmail.test(v) ? v : ''; }
+      if (window.TQ_TEL) return TQ_TEL.show(id);
       var n = el.value.replace(/\s/g, ''), cc = $('#' + id + '-cc'); return reLocal.test(n) ? '+' + (cc ? cc.value : '966') + ' ' + n : '';
     }
     function vcPaint(card) { var d = vcDest(card); $('.vc-d', card).textContent = d || (card.dataset.ch === 'mail' ? 'اكتب البريد أعلاه' : 'اكتب رقم الجوال أعلاه'); }
@@ -545,7 +589,7 @@
       }
       send.addEventListener('click', function () {
         var d = vcDest(card); vcPaint(card);
-        if (!d) { var el = $('#' + card.dataset.dest); if (el) bad(el, true); return msg(m, 'bad', ch === 'mail' ? 'اكتب بريدًا إلكترونيًا صحيحًا أولًا.' : 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).'); }
+        if (!d) { var el = $('#' + card.dataset.dest); if (el) bad(el, true); return msg(m, 'bad', ch === 'mail' ? 'اكتب بريدًا إلكترونيًا صحيحًا أولًا.' : (window.TQ_TEL ? TQ_TEL.err(card.dataset.dest) : 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).')); }
         send.disabled = true; send.textContent = 'جارٍ الإرسال…';
         if (fgLive) return liveFgSend(card, open, function (t) { send.disabled = false; send.textContent = 'أرسل رمز التحقق'; msg(m, 'bad', t); });
         if (rgLive) return liveRegSend(card, open, function (t) { send.disabled = false; send.textContent = 'أرسل رمز التحقق'; msg(m, 'bad', t); });
@@ -642,7 +686,7 @@
       e.preventDefault(); var id = $('#lg-id'), pw = $('#lg-pw');
       bad(id, !id.value.trim()); bad(pw, !pw.value);
       if (!id.value.trim() || !pw.value) return msg('lg-msg', 'bad', 'أدخل البريد أو الجوال وكلمة المرور.');
-      if (!idOk(id.value)) { bad(id, true); return msg('lg-msg', 'bad', 'اكتب بريدًا صحيحًا أو جوالًا يبدأ بـ 05 ومكوّنًا من 10 أرقام.'); }
+      if (!idOk(id.value)) { bad(id, true); return msg('lg-msg', 'bad', 'اكتب بريدًا صحيحًا، أو جوالًا سعوديًا يبدأ بـ 05، أو رقمًا دوليًا بمفتاح دولته مثل \u200E+20 1XXXXXXXXX.'); }
       if (!humanOk) return msg('lg-msg', 'bad', 'لم يكتمل التحقق البشري. انتظر لحظة ثم أعد المحاولة.');
       if (LIVE) return liveLogin();
       var b = $('#lg-go'); b.disabled = true; b.textContent = 'جارٍ الدخول…';
@@ -726,8 +770,8 @@
       if (!bad(n, parts.length < 3 || /\d/.test(n.value))) return msg('rg1-msg', 'bad', 'اكتب الاسم الكامل كما في الهوية، ثلاثيًا على الأقل ومن دون أرقام.');
       msg('rg1-msg'); go('register', 1); });
     $('#f-reg2').addEventListener('submit', function (e) { e.preventDefault(); var p = $('#rg-ph'), m = $('#rg-em');
-      var pk = bad(p, !reLocal.test(p.value.replace(/\s/g, ''))), mk = bad(m, !reEmail.test(m.value.trim()));
-      if (!pk) return msg('rg2-msg', 'bad', 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).');
+      var pk = bad(p, !(window.TQ_TEL ? TQ_TEL.ok('rg-ph') : reLocal.test(p.value.replace(/\s/g, '')))), mk = bad(m, !reEmail.test(m.value.trim()));
+      if (!pk) return msg('rg2-msg', 'bad', window.TQ_TEL ? TQ_TEL.err('rg-ph') : 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).');
       if (!mk) return msg('rg2-msg', 'bad', 'اكتب بريدًا إلكترونيًا صحيحًا.');
       msg('rg2-msg'); go('register', 2); });
     $('#f-reg3').addEventListener('submit', function (e) { e.preventDefault(); if (pwFail('rg', 'rg3-msg')) return;
@@ -831,7 +875,10 @@
       v = ascii(v).trim(); if (v.indexOf('@') >= 0) return v.toLowerCase();
       var d = v.replace(/\D/g, '');
       if (/^05\d{8}$/.test(d)) return '+966' + d.slice(1); if (/^5\d{8}$/.test(d)) return '+966' + d;
-      if (/^9665\d{8}$/.test(d)) return '+' + d; if (/^009665\d{8}$/.test(d)) return '+' + d.slice(2); return v;
+      if (/^9665\d{8}$/.test(d)) return '+' + d; if (/^009665\d{8}$/.test(d)) return '+' + d.slice(2);
+      /* v421: رقم دولي بمفتاح دولة مدعومة (+971 · +965 · +973 · +974 · +968 · +20) يُقبل للدخول والاستعادة */
+      if (window.TQ_TEL && /^(\+|00)/.test(v.replace(/\s/g, ''))) { var x = d.replace(/^00/, ''), D = TQ_TEL.D; for (var k in D) if (x.indexOf(k) === 0 && D[k][3].test(x.slice(k.length).replace(/^0+/, ''))) return '+' + k + x.slice(k.length).replace(/^0+/, ''); }
+      return v;
     }
     /* one human-check slot for the forgot flow, moved into the active stage (as the current gateway does) */
     function fgHuman(form, el) { el = el || $('#forgot-human'); var f = $('#f-' + form), vc = f && $('.vc', f); if (el && vc && el.nextSibling !== vc) vc.parentNode.insertBefore(el, vc); }
@@ -910,7 +957,7 @@
     }
     function liveFgSend(card, onOpen, onFail) {
       var one = !!card.closest('#f-fg1'), ch = one ? 'whatsapp' : 'email';
-      var ident = one ? '+' + $('#fg-ph-cc').value + ascii($('#fg-ph').value).replace(/\D/g, '').replace(/^0+/, '') : $('#fg-em').value.trim().toLowerCase();
+      var ident = one ? (window.TQ_TEL ? TQ_TEL.e164('fg-ph') : '+' + $('#fg-ph-cc').value + ascii($('#fg-ph').value).replace(/\D/g, '').replace(/^0+/, '')) : $('#fg-em').value.trim().toLowerCase();
       api('/api/auth/forgot', { identifier: ident, channel: ch }).then(function (r) {
         if (!r) return onFail('تعذّر الاتصال. أعد المحاولة.');
         if (r.ok && r.stage === 'otp' && r.challenge_id) {

@@ -224,7 +224,7 @@ select.ts-in{appearance:none;background-image:var(--t2-chev);background-repeat:n
 .ts-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:36px;border:0;border-radius:10px;background:var(--t2-brand-wash);color:var(--t2-brand-3);display:grid;place-items:center;cursor:pointer}
 .ts-tel{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px}
 .ts-tel select{order:2}
-@container app (max-width:40rem){.ts-tel{grid-template-columns:minmax(0,1fr) 120px}}
+@container app (max-width:40rem){.ts-tel{grid-template-columns:minmax(0,1fr) 148px}}
 .ts-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .ts-link{border:0;background:none;padding:0;cursor:pointer;font:700 .86rem Alexandria,sans-serif;color:var(--t2-brand-3)}
 .t2.is-dark .ts-link{color:#7EE0E4}

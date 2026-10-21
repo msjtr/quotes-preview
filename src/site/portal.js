@@ -107,7 +107,7 @@
     $('#done-go').addEventListener('click', function () { if (LIVE && S.inn) return liveEnter(); post({ tera: 'enter' }); });
     $('#done-exit').addEventListener('click', function () { reset(); msg('lg-msg', 'ok', 'خرجت من البوابة. يمكنك الإكمال لاحقًا بالدخول من البوابة: تسجيل الدخول.'); });
     var reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, rePhone = /^(05\d{8}|\+?9665\d{8})$/, reLocal = /^5\d{8}$/;
-    function idOk(v) { v = v.replace(/\s/g, ''); return reEmail.test(v) || rePhone.test(v); }
+    function idOk(v) { v = ascii(v).replace(/\s/g, ''); return reEmail.test(v) || rePhone.test(v) || (/^(\+|00)/.test(v) && /^\+\d{8,15}$/.test(liveId(v))); }
     function bad(el, on) { el.classList.toggle('bad', !!on); return !on; }
 
     /* ---- 6-box code entry: auto-confirm when complete ---- */
@@ -137,6 +137,7 @@
     function vcDest(card) {
       var id = card.dataset.dest, el = $('#' + id); if (!el) return '';
       if (card.dataset.ch === 'mail') { var v = el.value.trim(); return reEmail.test(v) ? v : ''; }
+      if (window.TQ_TEL) return TQ_TEL.show(id);
       var n = el.value.replace(/\s/g, ''), cc = $('#' + id + '-cc'); return reLocal.test(n) ? '+' + (cc ? cc.value : '966') + ' ' + n : '';
     }
     function vcPaint(card) { var d = vcDest(card); $('.vc-d', card).textContent = d || (card.dataset.ch === 'mail' ? 'اكتب البريد أعلاه' : 'اكتب رقم الجوال أعلاه'); }
@@ -161,7 +162,7 @@
       }
       send.addEventListener('click', function () {
         var d = vcDest(card); vcPaint(card);
-        if (!d) { var el = $('#' + card.dataset.dest); if (el) bad(el, true); return msg(m, 'bad', ch === 'mail' ? 'اكتب بريدًا إلكترونيًا صحيحًا أولًا.' : 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).'); }
+        if (!d) { var el = $('#' + card.dataset.dest); if (el) bad(el, true); return msg(m, 'bad', ch === 'mail' ? 'اكتب بريدًا إلكترونيًا صحيحًا أولًا.' : (window.TQ_TEL ? TQ_TEL.err(card.dataset.dest) : 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).')); }
         send.disabled = true; send.textContent = 'جارٍ الإرسال…';
         if (fgLive) return liveFgSend(card, open, function (t) { send.disabled = false; send.textContent = 'أرسل رمز التحقق'; msg(m, 'bad', t); });
         if (rgLive) return liveRegSend(card, open, function (t) { send.disabled = false; send.textContent = 'أرسل رمز التحقق'; msg(m, 'bad', t); });
@@ -258,7 +259,7 @@
       e.preventDefault(); var id = $('#lg-id'), pw = $('#lg-pw');
       bad(id, !id.value.trim()); bad(pw, !pw.value);
       if (!id.value.trim() || !pw.value) return msg('lg-msg', 'bad', 'أدخل البريد أو الجوال وكلمة المرور.');
-      if (!idOk(id.value)) { bad(id, true); return msg('lg-msg', 'bad', 'اكتب بريدًا صحيحًا أو جوالًا يبدأ بـ 05 ومكوّنًا من 10 أرقام.'); }
+      if (!idOk(id.value)) { bad(id, true); return msg('lg-msg', 'bad', 'اكتب بريدًا صحيحًا، أو جوالًا سعوديًا يبدأ بـ 05، أو رقمًا دوليًا بمفتاح دولته مثل \u200E+20 1XXXXXXXXX.'); }
       if (!humanOk) return msg('lg-msg', 'bad', 'لم يكتمل التحقق البشري. انتظر لحظة ثم أعد المحاولة.');
       if (LIVE) return liveLogin();
       var b = $('#lg-go'); b.disabled = true; b.textContent = 'جارٍ الدخول…';
@@ -342,8 +343,8 @@
       if (!bad(n, parts.length < 3 || /\d/.test(n.value))) return msg('rg1-msg', 'bad', 'اكتب الاسم الكامل كما في الهوية، ثلاثيًا على الأقل ومن دون أرقام.');
       msg('rg1-msg'); go('register', 1); });
     $('#f-reg2').addEventListener('submit', function (e) { e.preventDefault(); var p = $('#rg-ph'), m = $('#rg-em');
-      var pk = bad(p, !reLocal.test(p.value.replace(/\s/g, ''))), mk = bad(m, !reEmail.test(m.value.trim()));
-      if (!pk) return msg('rg2-msg', 'bad', 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).');
+      var pk = bad(p, !(window.TQ_TEL ? TQ_TEL.ok('rg-ph') : reLocal.test(p.value.replace(/\s/g, '')))), mk = bad(m, !reEmail.test(m.value.trim()));
+      if (!pk) return msg('rg2-msg', 'bad', window.TQ_TEL ? TQ_TEL.err('rg-ph') : 'اكتب رقم الجوال بدون صفر في أوله (9 أرقام تبدأ بـ 5).');
       if (!mk) return msg('rg2-msg', 'bad', 'اكتب بريدًا إلكترونيًا صحيحًا.');
       msg('rg2-msg'); go('register', 2); });
     $('#f-reg3').addEventListener('submit', function (e) { e.preventDefault(); if (pwFail('rg', 'rg3-msg')) return;
@@ -447,7 +448,10 @@
       v = ascii(v).trim(); if (v.indexOf('@') >= 0) return v.toLowerCase();
       var d = v.replace(/\D/g, '');
       if (/^05\d{8}$/.test(d)) return '+966' + d.slice(1); if (/^5\d{8}$/.test(d)) return '+966' + d;
-      if (/^9665\d{8}$/.test(d)) return '+' + d; if (/^009665\d{8}$/.test(d)) return '+' + d.slice(2); return v;
+      if (/^9665\d{8}$/.test(d)) return '+' + d; if (/^009665\d{8}$/.test(d)) return '+' + d.slice(2);
+      /* v421: رقم دولي بمفتاح دولة مدعومة (+971 · +965 · +973 · +974 · +968 · +20) يُقبل للدخول والاستعادة */
+      if (window.TQ_TEL && /^(\+|00)/.test(v.replace(/\s/g, ''))) { var x = d.replace(/^00/, ''), D = TQ_TEL.D; for (var k in D) if (x.indexOf(k) === 0 && D[k][3].test(x.slice(k.length).replace(/^0+/, ''))) return '+' + k + x.slice(k.length).replace(/^0+/, ''); }
+      return v;
     }
     /* one human-check slot for the forgot flow, moved into the active stage (as the current gateway does) */
     function fgHuman(form, el) { el = el || $('#forgot-human'); var f = $('#f-' + form), vc = f && $('.vc', f); if (el && vc && el.nextSibling !== vc) vc.parentNode.insertBefore(el, vc); }
@@ -526,7 +530,7 @@
     }
     function liveFgSend(card, onOpen, onFail) {
       var one = !!card.closest('#f-fg1'), ch = one ? 'whatsapp' : 'email';
-      var ident = one ? '+' + $('#fg-ph-cc').value + ascii($('#fg-ph').value).replace(/\D/g, '').replace(/^0+/, '') : $('#fg-em').value.trim().toLowerCase();
+      var ident = one ? (window.TQ_TEL ? TQ_TEL.e164('fg-ph') : '+' + $('#fg-ph-cc').value + ascii($('#fg-ph').value).replace(/\D/g, '').replace(/^0+/, '')) : $('#fg-em').value.trim().toLowerCase();
       api('/api/auth/forgot', { identifier: ident, channel: ch }).then(function (r) {
         if (!r) return onFail('تعذّر الاتصال. أعد المحاولة.');
         if (r.ok && r.stage === 'otp' && r.challenge_id) {
