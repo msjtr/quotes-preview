@@ -7083,6 +7083,7 @@ button.cu-ctx.cu-ctx:hover{border-color:var(--t2-brand,#0B7A80);background:var(-
 .st-seal.st-seal{flex:none;display:grid;place-items:center}
 .st-seal.st-seal .st-svg,.st-seal.st-seal .st-img{display:block;opacity:.92}
 .st-img.st-img{object-fit:contain}
+.st-seal.st-seal .st-img.is-seal,.st-img.is-seal{opacity:1;filter:drop-shadow(0 2px 3px rgba(10,24,71,.18))}
 .t2.t2 .st-prev{display:flex;align-items:center;gap:16px;min-width:0}
 .t2.t2 .st-prev-s{flex:none;padding:6px;border-radius:16px;background:#fff;border:1px solid var(--t2-line)}
 .t2.t2 .st-prev-s .st-svg,.t2.t2 .st-prev-s .st-img{display:block}

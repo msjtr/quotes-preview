@@ -10272,9 +10272,12 @@ const ST_COL = { navy: ['#1a2f7c', 'كحلي'], teal: ['#0f7f7c', 'فيروزي'
 const ST_DOCS = [['pq', 'عرض سعر الشركاء'], ['pc', 'عقد الشركاء'], ['sq', 'عرض سعر المتاجر'], ['cq', 'عرض حسب الطلب'], ['si', 'فاتورة المتاجر']];
 const ST_GAP = { sm: [24, 'قريبة — 24 نقطة'], md: [44, 'متوسطة — 44 نقطة'], lg: [72, 'بعيدة — 72 نقطة'] };
 const ST_SIZE = { sm: [96, 'صغير'], md: [118, 'متوسط'], lg: [140, 'كبير'] };
-const STAMP0 = { on: true, at: { pq: true, pc: true, sq: true, cq: true, si: true }, mode: 'logo', img: '', ring: true, color: 'navy', gap: 'md', size: 'md' };
+const STAMP0 = { on: true, at: { pq: true, pc: true, sq: true, cq: true, si: true }, mode: 'seal', img: '', ring: true, color: 'navy', gap: 'md', size: 'md' };
+/* v415 — الختم الرسمي المعتمد (ذهبي وكحلي، 1024px شفاف) — اعتمده المشرف العام 2026-10-21 */
+const ST_SEAL = '/assets/brand/seal.png';
 const STAMP = qtClone(STAMP0);
-const stSeal = (S, px) => S.mode === 'img' && S.img ? e('img', { class: 'st-img', src: S.img, alt: 'ختم المنصة', style: 'width:' + px + 'px;height:' + px + 'px' })
+const stSeal = (S, px) => S.mode === 'seal' ? e('img', { class: 'st-img is-seal', src: ST_SEAL, alt: 'الختم الرسمي لمنصة تيرا', style: 'width:' + px + 'px;height:' + px + 'px' })
+  : S.mode === 'img' && S.img ? e('img', { class: 'st-img', src: S.img, alt: 'ختم المنصة', style: 'width:' + px + 'px;height:' + px + 'px' })
   : e('span', { class: 'st-logo' + (S.ring ? ' is-ring' : ''), style: 'width:' + px + 'px;height:' + px + 'px;--st:' + (ST_COL[S.color] || ST_COL.navy)[0] }, e('img', { src: IMG.logo, alt: 'شعار تيرا' }));
 /* الختم وحده في آخر المستند: بعيد عن المحتوى بمسافة الأمان، ولا ينقسم بين صفحتين */
 function stBlock(k, S) {
@@ -10285,7 +10288,7 @@ function stBlock(k, S) {
 const stDraft = () => Object.assign(qtClone(STAMP), { err: {} });
 function sysStampPage() {
   const can = cuCan('settings.qtpl'), D = ADM.stD || (ADM.stD = stDraft());
-  if (D.mode !== 'img') D.mode = 'logo';
+  if (D.mode !== 'img' && D.mode !== 'logo') D.mode = 'seal';
   const prev = e('div', { class: 'st-prev' }, [e('div', { class: 'st-prev-s' }, stSeal(D, 128)), e('div', { class: 'st-prev-t' }, [e('b', {}, D.on ? 'الختم مفعّل' : 'الختم موقوف'), e('small', {}, D.on ? 'يظهر في: ' + (ST_DOCS.filter(function (x) { return D.at[x[0]]; }).map(function (x) { return x[1]; }).join(' · ') || 'لا مستند') : 'لا يظهر في أي مستند'), e('small', {}, 'مسافة الأمان: ' + ST_GAP[D.gap][1] + ' · الحجم: ' + ST_SIZE[D.size][1])])]);
   if (!can) return [cuRO('settings.qtpl'), DS.panel('ختم المنصة', 'للعرض فقط', [prev])];
   const ck = function (o, k, label) { const i = e('input', { type: 'checkbox', 'aria-label': label }); i.checked = !!o[k]; i.addEventListener('change', function () { o[k] = i.checked; draw(); }); return DS.editField(label, i); };
@@ -10300,11 +10303,11 @@ function sysStampPage() {
   };
   const preview = function () { const b = QUOTES.filter(function (q) { return q.calc; })[0]; if (!b) { snack('لا عرض للمعاينة'); return; } const S0 = qtClone(STAMP), c = qtClone(D); delete c.err; c.at = Object.assign({}, c.at, { pq: true }); c.on = true; Object.assign(STAMP, c); try { dcPdf(dcQuoteDoc(b, true)); } finally { Object.keys(STAMP).forEach(function (k) { delete STAMP[k]; }); Object.assign(STAMP, S0); } };
   const imgF = (function () { const w = DS.editField('صورة الختم — PNG أو JPG أو SVG حتى 600 كيلوبايت (يفضّل خلفية شفافة)', file); if (D.err.img) { w.classList.add('is-missing'); w.appendChild(e('small', { class: 'cu-bd-err' }, D.err.img)); } return w; })();
-  return [DS.note('info', 'ختم المنصة', 'شعار تيرا ختمًا في آخر المستند — بلا اسم موقّع ولا نصوص — بعيدًا عن المحتوى بمسافة الأمان، ولا ينقسم بين صفحتين. أوقفه كليًا أو لمستندات بعينها، أو ارفع صورة ختمكم بدل الشعار.'),
+  return [DS.note('info', 'ختم المنصة', 'الختم الرسمي المعتمد في آخر المستند — بلا اسم موقّع — بعيدًا عن المحتوى بمسافة الأمان، ولا ينقسم بين صفحتين. أوقفه كليًا أو لمستندات بعينها، أو اختر شعار تيرا بإطار، أو ارفع صورة ختم.'),
     e('div', { class: 'ax-top' }, [prev, e('div', { class: 't2-row-wrap' }, [DS.button('معاينة PDF', { ui: 'file-text', onClick: preview }), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })])]),
     e('div', { class: 'ax-form' }, [
       formSec('1. التفعيل والمستندات', null, [e('div', { class: 'axp-opts' }, [ck(D, 'on', 'إظهار الختم')]), D.on ? e('div', { class: 'axp-opts' }, ST_DOCS.map(function (x) { return ck(D.at, x[0], x[1]); })) : e('small', { class: 'cu-dr-hint' }, 'الختم موقوف — لا يظهر في أي مستند حتى تفعّله.')]),
-      formSec('2. الختم', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('الختم', DS.select({ value: D.mode, options: [['logo', 'شعار تيرا — الافتراضي', 'seal-check'], ['img', 'صورة ختم مرفوعة', 'upload-simple']], onChange: function (v) { D.mode = v; draw(); } }))]
+      formSec('2. الختم', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('الختم', DS.select({ value: D.mode, options: [['seal', 'الختم الرسمي المعتمد — الافتراضي', 'seal-check'], ['logo', 'شعار تيرا بإطار دائري', 'user-circle'], ['img', 'صورة ختم مرفوعة', 'upload-simple']], onChange: function (v) { D.mode = v; draw(); } }))]
         .concat(D.mode === 'logo' ? [sel('color', 'لون الإطار', ST_COL), e('div', { class: 'axp-opts' }, [ck(D, 'ring', 'إطار دائري حول الشعار')])] : [imgF, D.img ? DS.button('إزالة الصورة', { size: 'sm', ui: 'trash', onClick: function () { D.img = ''; draw(); } }) : null].filter(Boolean)))]),
       formSec('3. مسافة الأمان والحجم', 'بين الختم وآخر محتوى في المستند', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [sel('gap', 'مسافة الأمان', ST_GAP), sel('size', 'حجم الختم', ST_SIZE)]), e('small', { class: 'cu-dr-hint' }, 'الختم في كتلة مستقلة آخر المستند، حوله هامش فارغ بنصف مسافة الأمان، فلا يلامس المبالغ ولا النصوص.')])]),
     e('div', { class: 't2-pb-actions' }, [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save }), DS.button('معاينة PDF', { ui: 'file-text', onClick: preview }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM.stD = stDraft(); draw(); } }), DS.button('استعادة الافتراضي', { onClick: function () { ADM.stD = Object.assign(qtClone(STAMP0), { err: {} }); snack('عُبّئ الافتراضي — احفظ لتطبيقه'); draw(); } })])];
@@ -10312,7 +10315,7 @@ function sysStampPage() {
 /* البطاقات المشتركة في الإعدادات */
 function tmShared() {
   return [{ ic: 'receipt:navy', t: 'الضريبة ومواضعها في المستندات', d: 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', n: TAX.v.vat, go: function () { go('other', 'sys-tax'); } },
-    { ic: 'seal-check:navy', t: 'ختم المنصة', d: 'شعار تيرا ختمًا في آخر المستند — يُوقف أو يُغيَّر، ولكل مستند، بمسافة أمان', n: STAMP.on ? 'مفعّل في ' + fmtNum(ST_DOCS.filter(function (x) { return STAMP.at[x[0]]; }).length) + ' مستندات' : 'موقوف', badge: STAMP.on ? null : ['موقوف', 'warn'], go: function () { ADM.stD = stDraft(); go('other', 'sys-stamp'); } },
+    { ic: 'seal-check:navy', t: 'ختم المنصة', d: 'الختم الرسمي المعتمد في آخر المستند — يُوقف أو يُغيَّر، ولكل مستند، بمسافة أمان', n: STAMP.on ? 'مفعّل في ' + fmtNum(ST_DOCS.filter(function (x) { return STAMP.at[x[0]]; }).length) + ' مستندات' : 'موقوف', badge: STAMP.on ? null : ['موقوف', 'warn'], go: function () { ADM.stD = stDraft(); go('other', 'sys-stamp'); } },
     { ic: 'tag:gold', t: 'الخصم والنقاط في العروض', d: 'الحدود والأسباب وقيمة النقطة — لكل العروض', n: 'النقطة ' + sar(DSC.pts.rate), go: function () { go('other', 'sys-disc'); } },
     { ic: 'coins:teal', t: 'سياسة التسعير والسداد', d: 'حدود قيمة الطلب ومدد السداد وأنواعه وحد القدرة على السداد — لنموذج العميل وإعداد العروض', n: ppSummary(), go: function () { go('other', 'sys-pay'); } }];
 }
@@ -10911,44 +10914,13 @@ function d3WmSvg() {
     + '<circle cx="200" cy="200" r="196" fill="url(#d3wm-g)"/>' + d3Ros(200, 200, 190, '#3d7fd0', 0.9) + d3Ros(200, 200, 150, '#29c3c0', 0.55)
     + '<circle cx="200" cy="200" r="58" fill="#0e1a4f"/><circle cx="200" cy="200" r="58" fill="none" stroke="#29c3c0" stroke-width="3"/><circle cx="200" cy="200" r="16" fill="#1b4f9c"/></svg>';
 }
-/* الختم الفاخر — ذهبي وكحلي بإطار مسنّن ونص دائري (أو صورة الختم إن رُفعت من الإعدادات) */
-let D3_SEAL_N = 0;
-/* نص الحلقة: كل كلمة نصٌّ مستقيم مستقل يُدار حول المركز — يحفظ اتصال الحروف العربية واتجاهها في كل المتصفحات (textPath يقلبها في Safari) */
-let D3_MC = null;
-function d3Arc(words, r, fs, top, fill) {
-  const font = '800 ' + fs + 'px Cairo, "IBM Plex Sans Arabic", sans-serif';
-  const W = words.map(function (w) { try { D3_MC = D3_MC || document.createElement('canvas').getContext('2d'); D3_MC.font = font; const m = D3_MC.measureText(w).width; if (m > 0) return m; } catch (err) { void err; } return w.length * fs * 0.56; });
-  const gap = fs * 0.55, tot = W.reduce(function (a, w) { return a + w; }, 0) + gap * (W.length - 1);
-  let at = top ? tot / 2 : -tot / 2;
-  return W.map(function (w, k) { const c = top ? at - w / 2 : at + w / 2, deg = (c / r) * 180 / Math.PI; at = top ? at - w - gap : at + w + gap;
-    return '<text x="100" y="' + (top ? 100 - r : 100 + r) + '" text-anchor="middle" direction="rtl" font-family="Cairo, IBM Plex Sans Arabic, sans-serif" font-size="' + fs + '" font-weight="800" fill="' + fill + '" transform="rotate(' + deg.toFixed(2) + ' 100 100)">' + words[k] + '</text>'; }).join('');
-}
-function d3SealSvg(no) {
-  const id = 'd3s' + (++D3_SEAL_N), pts = []; for (let i = 0; i < 72; i++) { const a = i * Math.PI / 36, r = i % 2 ? 93 : 99; pts.push((100 + r * Math.cos(a)).toFixed(1) + ',' + (100 + r * Math.sin(a)).toFixed(1)); }
-  const star = function (cx, cy, r) { const p = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; p.push((cx + rr * Math.cos(a)).toFixed(1) + ',' + (cy + rr * Math.sin(a)).toFixed(1)); } return '<polygon points="' + p.join(' ') + '" fill="url(#' + id + 'g)"/>'; };
-  return '<svg class="d3-sealsvg" viewBox="0 0 200 200" aria-hidden="true"><defs>'
-    + '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset=".35" stop-color="#f2c75c"/><stop offset=".7" stop-color="#c8901f"/><stop offset="1" stop-color="#8f5f0e"/></linearGradient>'
-    + '<radialGradient id="' + id + 'n" cx=".45" cy=".35" r=".75"><stop offset="0" stop-color="#2160b8"/><stop offset=".55" stop-color="#123a7c"/><stop offset="1" stop-color="#0a1847"/></radialGradient>'
-    + '</defs>'
-    + '<polygon points="' + pts.join(' ') + '" fill="url(#' + id + 'g)"/>'
-    + '<circle cx="100" cy="100" r="88" fill="url(#' + id + 'n)" stroke="#fff1c4" stroke-width="1.5"/>'
-    + '<circle cx="100" cy="100" r="82" fill="none" stroke="url(#' + id + 'g)" stroke-width="2.2"/>'
-    + '<circle cx="100" cy="100" r="58" fill="none" stroke="url(#' + id + 'g)" stroke-width="2.2"/>'
-    + '<circle cx="100" cy="100" r="54" fill="none" stroke="#29c3c0" stroke-width="1" stroke-dasharray="2 3"/>'
-    + d3Arc(['منصة', 'تيرا', 'للخدمات', 'المتكاملة'], 66, 13, true, '#ffe7a8') + d3Arc(['عالمك', 'بلا', 'حدود', '·', 'TERA'], 75, 11.5, false, '#9fe7e4')
-    + d3Ros(100, 100, 46, '#4fd0cc', 0.28)
-    + '<circle cx="100" cy="100" r="30" fill="#0a1847" stroke="url(#' + id + 'g)" stroke-width="1.5"/>'
-    + '<text x="100" y="99" text-anchor="middle" font-family="Cairo, sans-serif" font-size="17" font-weight="900" fill="url(#' + id + 'g)">معتمد</text>'
-    + '<text x="100" y="114" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" font-weight="700" textLength="42" lengthAdjust="spacingAndGlyphs" fill="#9fe7e4">APPROVED</text>'
-    + star(25, 100, 5.5) + star(175, 100, 5.5) + '</svg>';
-}
 /* بطاقة الاعتماد بعرض الصفحة: رمز البيانات · الباركود · الختم */
 function d3ApprWide(seed, stk, sh) {
-  const V = sh || {}, sOn = STAMP.on && STAMP.at && STAMP.at[stk] && V.a_seal !== false, img = STAMP.mode === 'img' && STAMP.img;
+  const V = sh || {}, sOn = STAMP.on && STAMP.at && STAMP.at[stk] && V.a_seal !== false;
   return d3Card('الاعتماد', 'award', [e('div', { class: 'd3-apw' }, [
     V.a_qr !== false ? e('div', { class: 'd3-apw-c' }, [e('div', { class: 'd3-qr' }, dcQr(seed)), e('small', {}, 'رمز بيانات المستند')]) : null,
     V.a_bar !== false ? e('div', { class: 'd3-apw-c is-bar' }, [frag(d3Bar(seed)), e('b', { dir: 'ltr' }, seed), e('small', {}, 'يصدر آليًا من المنصة — التحقق برمز المستند')]) : null,
-    sOn ? e('div', { class: 'd3-apw-c is-seal' }, [img ? stSeal(STAMP, 150) : frag(d3SealSvg(seed)), e('small', {}, 'الختم الرسمي للمنصة')]) : null])], 'is-apw', true);
+    sOn ? e('div', { class: 'd3-apw-c is-seal' }, [stSeal(STAMP, 150), e('small', {}, 'الختم الرسمي للمنصة')]) : null])], 'is-apw', true);
 }
 /* جدول بأربعة أعمدة: كل معلومة مقابل قيمتها، والخلية الناقصة مظلّلة */
 function d3KV(pairs, tots) {
