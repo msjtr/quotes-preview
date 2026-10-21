@@ -9783,7 +9783,7 @@ function dsSetPage() {
   const ck = function (o, k, label) { const i = e('input', { type: 'checkbox', 'aria-label': label }); i.checked = !!o[k]; i.addEventListener('change', function () { o[k] = i.checked; draw(); }); return DS.editField(label, i); };
   const inp = function (o, k, ph) { return DS.input({ value: o[k], numeric: true, placeholder: ph || '', onInput: function (v) { o[k] = v; } }); };
   const ex = (Number(D.pts.rate) || 0) * 500;
-  if (!can) return [cuRO('settings.qtpl'), DS.panel('الخصم والنقاط', 'للعرض فقط', [DS.fields([['الخصم مفعّل في', Object.keys(DS_DOC).filter(function (k) { return DSC.on[k]; }).map(function (k) { return DS_DOC[k]; }).join(' · ') || '—'], ['الحد الأعلى للخصم', fmtNum(DSC.maxPct) + '%'], ['استبدال النقاط', DSC.pts.on ? 'مفعّل' : 'موقوف'], ['قيمة النقطة', sar(DSC.pts.rate)], ['الحد الأدنى للاستبدال', fmtNum(DSC.pts.min) + ' نقطة'], ['الحد الأعلى بالنقاط', fmtNum(DSC.pts.maxPct) + '% من الإجمالي']])])];
+  if (!can) return [cuRO('settings.qtpl'), DS.panel('الخصم والنقاط في العروض', 'للعرض فقط', [DS.fields([['الخصم مفعّل في', Object.keys(DS_DOC).filter(function (k) { return DSC.on[k]; }).map(function (k) { return DS_DOC[k]; }).join(' · ') || '—'], ['الحد الأعلى للخصم', fmtNum(DSC.maxPct) + '%'], ['استبدال النقاط', DSC.pts.on ? 'مفعّل' : 'موقوف'], ['قيمة النقطة', sar(DSC.pts.rate)], ['الحد الأدنى للاستبدال', fmtNum(DSC.pts.min) + ' نقطة'], ['الحد الأعلى بالنقاط', fmtNum(DSC.pts.maxPct) + '% من الإجمالي']])])];
   const save = function () {
     const E2 = {}, pc = function (o, k, key, lo, hi) { const v = Number(o[k]); if (String(o[k]).trim() === '' || isNaN(v) || v < lo || v > hi) E2[key] = 'بين ' + fmtNum(lo) + ' و' + fmtNum(hi); };
     pc(D, 'maxPct', 'maxPct', 1, 100); pc(D.pts, 'rate', 'rate', 0.001, 100); pc(D.pts, 'min', 'min', 1, 100000); pc(D.pts, 'maxPct', 'pmax', 1, 100);
@@ -9793,7 +9793,7 @@ function dsSetPage() {
     Object.assign(DSC, c); ADM.dsD = dsDraft(DSC); cuSetLog('عدّل إعدادات الخصم والنقاط: الخصم حتى ' + fmtNum(DSC.maxPct) + '% · النقطة ' + sar(DSC.pts.rate)); snack('حُفظت الإعدادات — تُطبَّق على كل عرض جديد'); draw();
   };
   return [DS.note('info', 'الخصم واستبدال النقاط — نظام واحد لكل العروض', 'يظهر الخصم في العرض والفاتورة بأيقونته وسببه. النقاط تُحجز من رصيد العميل عند إصدار العرض، وتُخصم من رصيده في «نقاطي» عند اعتماده ودفعه، وتعود متاحة إذا انتهى العرض أو رُفض، وتُعاد عند الاسترداد.'),
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'الخصم والنقاط'), e('small', {}, '500 نقطة = ' + sar(ex))]), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })]),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'الخصم والنقاط في العروض'), e('small', {}, '500 نقطة = ' + sar(ex))]), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })]),
     e('div', { class: 'ax-form' }, [
       formSec('1. الخصم', 'بأيقونة الخصم في المستندات', [e('div', { class: 'axp-opts' }, Object.keys(DS_DOC).map(function (k) { return ck(D.on, k, 'متاح في ' + DS_DOC[k]); })),
         e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('maxPct', 'الحد الأعلى للخصم (%) من قيمة المنتج أو البنود', inp(D, 'maxPct'))])]),
@@ -9806,7 +9806,7 @@ function dsSetPage() {
 }
 function dsRegister() {
   try { Object.assign(ICON, { 'sys-disc': ['tag', 'gold'] }); } catch (err) { void err; }
-  lp('sys-disc', 'الخصم والنقاط', 'sys', 'sys-disc', dsSetPage);
+  lp('sys-disc', 'الخصم والنقاط في العروض', 'sys', 'sys-disc', dsSetPage);
 }
 /* مساعدات المستندات: الخصم والنقاط من نموذج الإصدار أو من المستند الصادر */
 const dsX = (D, base, Q) => { if (D) { const p = dsPack(D, base); return { disc: p.disc, ptsN: p.ptsN, pts: ptsVal(p.ptsN) }; } return { disc: (Q && Q.disc) || null, ptsN: (Q && Q.ptsN) || 0, pts: (Q && Q.pts) || 0 }; };
@@ -9893,7 +9893,7 @@ function dcInvDoc(inv, draft, T0x) {
 const taxDraft = (T) => ({ v: Object.assign({}, T.v), at: qtClone(T.at), err: {} });
 function taxSetPage() {
   const can = cuCan('settings.qtpl'), D = ADM.taxD || (ADM.taxD = taxDraft(TAX)), E = D.err, K = taxKeys();
-  if (!can) return [cuRO('settings.qtpl'), DS.panel('بيانات المنشأة والضريبة', 'للعرض فقط', [DS.fields(TAXF.map(function (f) { return [f[1], TAX.v[f[0]] ? (f[0] === 'eff' ? ltr(qDmy(TAX.v.eff)) : TAX.v[f[0]]) : '—']; }))])];
+  if (!can) return [cuRO('settings.qtpl'), DS.panel('الضريبة ومواضعها في المستندات', 'للعرض فقط', [DS.fields(TAXF.map(function (f) { return [f[1], TAX.v[f[0]] ? (f[0] === 'eff' ? ltr(qDmy(TAX.v.eff)) : TAX.v[f[0]]) : '—']; }))])];
   const save = function () {
     const E2 = {}, vv = String(D.v.vat).trim();
     if (!/^3\d{13}3$/.test(vv)) E2.vat = '15 رقمًا يبدأ وينتهي بالرقم 3'; if (String(D.v.trade).trim().length < 3) E2.trade = 'أدخل الاسم التجاري'; if (String(D.v.name).trim().length < 3) E2.name = 'أدخل اسم المكلف'; if (String(D.v.addr).trim().length < 5) E2.addr = 'أدخل العنوان';
@@ -9906,7 +9906,7 @@ function taxSetPage() {
   const miss = TAX_REQ.filter(function (f) { return (D.at[f] || []).indexOf('si') < 0; });
   return [DS.note('info', 'من شهادة التسجيل في ضريبة القيمة المضافة', 'لكل بيان قائمة «يظهر في» تختار منها القوالب، وأي بيان يمكن إخفاؤه من أي قالب. تُطبَّق على المستندات الصادرة والجديدة فور الحفظ.'),
     miss.length ? DS.note('warn', 'بيان إلزامي مخفي من الفاتورة', 'دليل الفوترة يُلزم الفاتورة الضريبية باسم المورّد وعنوانه ورقمه الضريبي. المخفي الآن: ' + miss.map(function (f) { return TAXF.filter(function (x) { return x[0] === f; })[0][1]; }).join(' · ') + '.') : null,
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'بيانات المنشأة والضريبة'), e('small', {}, 'الرقم الضريبي ' + TAX.v.vat)]), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })]),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'الضريبة ومواضعها في المستندات'), e('small', {}, 'الرقم الضريبي ' + TAX.v.vat)]), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })]),
     e('div', { class: 'ax-form' }, TAXF.map(function (f, i) {
       const k = f[0], fld = DS.editField(f[1], k === 'eff' ? datePick({ value: D.v.eff, onChange: function (v) { D.v.eff = v; } }) : k === 'period' ? DS.select({ value: D.v.period, options: [['شهري', 'شهري'], ['ربع سنوي', 'ربع سنوي']], onChange: function (v) { D.v.period = v; } }) : DS.input({ value: D.v[k], dir: /vat|tin|cert|lic/.test(k) ? 'ltr' : null, numeric: /vat|tin|cert/.test(k), onInput: function (v) { D.v[k] = v; } }));
       if (E[k]) { fld.classList.add('is-missing'); fld.appendChild(e('small', { class: 'cu-bd-err' }, E[k])); }
@@ -9956,7 +9956,7 @@ const pcPick = (no, rerun) => DS.editField('قالب العقد', DS.select({ va
 function txRegister() {
   try { Object.assign(ICON, { 'sys-tax': ['receipt', 'navy'] }); } catch (err) { void err; }
   [QSI, QSI0].forEach(function (T) { T.vatNo = TAX0.v.vat; T.cr = TAX0.v.lic; T.addr = TAX0.v.addr; });
-  lp('sys-tax', 'بيانات المنشأة والضريبة', 'sys', 'sys-tax', taxSetPage);
+  lp('sys-tax', 'الضريبة ومواضعها في المستندات', 'sys', 'sys-tax', taxSetPage);
 }
 
 /* ===================== v192 — في الطلب نفسه: تعديل السعر مباشرة · التقييم الائتماني والتوصية تلقائيًا ويُرفقان مع الطلب للشركاء ===================== */
@@ -10310,9 +10310,9 @@ function sysStampPage() {
 }
 /* البطاقات المشتركة في الإعدادات */
 function tmShared() {
-  return [{ ic: 'receipt:navy', t: 'بيانات المنشأة والضريبة', d: 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', n: TAX.v.vat, go: function () { go('other', 'sys-tax'); } },
+  return [{ ic: 'receipt:navy', t: 'الضريبة ومواضعها في المستندات', d: 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', n: TAX.v.vat, go: function () { go('other', 'sys-tax'); } },
     { ic: 'seal-check:navy', t: 'ختم المنصة', d: 'شعار تيرا ختمًا في آخر المستند — يُوقف أو يُغيَّر، ولكل مستند، بمسافة أمان', n: STAMP.on ? 'مفعّل في ' + fmtNum(ST_DOCS.filter(function (x) { return STAMP.at[x[0]]; }).length) + ' مستندات' : 'موقوف', badge: STAMP.on ? null : ['موقوف', 'warn'], go: function () { ADM.stD = stDraft(); go('other', 'sys-stamp'); } },
-    { ic: 'tag:gold', t: 'الخصم والنقاط', d: 'الحدود والأسباب وقيمة النقطة — لكل العروض', n: 'النقطة ' + sar(DSC.pts.rate), go: function () { go('other', 'sys-disc'); } },
+    { ic: 'tag:gold', t: 'الخصم والنقاط في العروض', d: 'الحدود والأسباب وقيمة النقطة — لكل العروض', n: 'النقطة ' + sar(DSC.pts.rate), go: function () { go('other', 'sys-disc'); } },
     { ic: 'coins:teal', t: 'سياسة التسعير والسداد', d: 'حدود قيمة الطلب ومدد السداد وأنواعه وحد القدرة على السداد — لنموذج العميل وإعداد العروض', n: ppSummary(), go: function () { go('other', 'sys-pay'); } }];
 }
 function stRegister() {
@@ -14977,7 +14977,7 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   profSeed();
   LAST = S.tab === 'qreq' ? 1 : 2;
   if (S.role === 'admin' && (S.tab !== 'other' || !/^(adm-|cs|cu$|cu-|ctr$|soon-|sys|pay-center$|fin$|fin-|cpg$|cpg-|comm$|comm-|cx$|cx-|tq-account$|tq-notif$)/.test(S.other || ''))) { S.tab = 'other'; S.other = 'adm-home'; }
-  if (S.role !== 'admin' && S.tab === 'other' && /^(adm-|cs|cu$|cu-|soon-|sys)/.test(S.other || '')) { S.tab = 'dash'; S.other = ''; }
+  if (S.role !== 'admin' && S.tab === 'other' && /^(adm-|cs|cu$|cu-|soon-|sys|ctr$|fin$|fin-(due|rec)|cpg$|cpg-|comm$|comm-|cx$|cx-|pay-center$)/.test(S.other || '')) { S.tab = 'dash'; S.other = ''; }
   const toSvc = function () { go('svc'); }, toMsg = function () { go('msg'); };
   let title, sub, path, nav = null;
   if (S.tab === 'elig' || S.tab === 'qreq') { const PRD = S.qfrom === 'pr' && qMode() === 'prod' && catOf(FX.catk); title = S.tab === 'qreq' ? (qMode() === 'svc' ? 'طلب خدمة' : PRD ? 'طلب عرض سعر' : 'طلب عرض سعر منتج') : 'تحقق من أهليتك مع شركائنا'; sub = ''; path = (S.tab === 'qreq' ? (S.qfrom === 'pr' && catOf(FX.catk) ? (function (s) { return [[SECT[s], function () { go('other', s); }, s, 'other:' + s], [catOf(FX.catk).t, function () { go('other', 'pr-dept'); }, null, 'other:pr-dept']].concat(S.qitem && prodOf(S.qitem) && S.qitem === F.q_sku ? [[prodOf(S.qitem).t, function () { openItem(S.qitem); }, null, 'other:pr-item']] : []); })(secOf(FX.catk)) : [['المتجر', function () { go('other', 'store'); }, 'store', 'other:store'], ['خدمة حسب الطلب', function () { go('other', 'sv-new'); }, null, 'other:sv-new']]) : [['خدماتي', toSvc, 'services', 'svc'], ['طلب عرض سعر من الشركاء', function () { go('other', 'cl-partners'); }, null, 'other:cl-partners']]).concat([[title, S.sent ? function () { resetForm(); draw(); toTop(); } : null, null, S.tab]]).concat(S.sent ? [['تم إرسال الطلب']] : []); }
@@ -17483,7 +17483,7 @@ function admSysPage() {
     ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والعنوان والتواصل والحساب البنكي', 'sys-org'),
       c('receipt:navy', 'الضريبة ومواضعها في المستندات', 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', 'sys-tax')]],
     ['ops', 'التشغيل', 'sliders-horizontal:teal', [c('timer:saffron', 'مدد الإنجاز', 'المدة المسموحة لكل نوع عمل', 'sys-sla'), c('clock-counter-clockwise:navy', 'سجل الإعدادات', 'ماذا تغيّر ومن غيّره ومتى', 'sys-log')]],
-    ['tpl', 'القوالب والمستندات', 'seal-check:navy', (function () { try { return tmTplCards('p').concat(tmTplCards('s'), tmShared().filter(function (x) { return ['سياسة التسعير والسداد', 'بيانات المنشأة والضريبة', 'الخصم والنقاط'].indexOf(x.t) < 0; })); } catch (err) { return [c('contract', 'قوالب العروض والعقود والفواتير', 'قوالب الشركاء والمتاجر والمستندات المشتركة', null)]; } })()],
+    ['tpl', 'القوالب والمستندات', 'seal-check:navy', (function () { try { return tmTplCards('p').concat(tmTplCards('s'), tmShared().filter(function (x) { return ['سياسة التسعير والسداد', 'الضريبة ومواضعها في المستندات', 'الخصم والنقاط في العروض'].indexOf(x.t) < 0; })); } catch (err) { return [c('contract', 'قوالب العروض والعقود والفواتير', 'قوالب الشركاء والمتاجر والمستندات المشتركة', null)]; } })()],
     ['loy', 'نقاط ومكافآت تيرا', 'star:gold', [c('star:gold', 'إعدادات النقاط', 'معدلات الاكتساب وقيمة النقاط والحدود', 'sys-loy'), c('check-circle:teal', 'اعتماد النقاط', 'النقاط المعلّقة بانتظار الاعتماد', 'sys-loy-appr'),
       c('tag:gold', 'الخصم والنقاط في العروض', 'حدود الخصم وأسبابه وقيمة النقطة في كل العروض', 'sys-disc')]]]));
 }
