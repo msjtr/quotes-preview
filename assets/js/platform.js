@@ -7627,7 +7627,7 @@ function sysPushPage() {
     }
     const j = await clPost('/admin/api/push/send', { audience: F.aud, to: F.to, title: F.t, text: F.b, button: F.btn, url: F.url });
     if (h && h.close) h.close();
-    say(j && j.ok ? { kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار', text: (j.to ? 'إلى ' + j.to + ' — ' : '') + 'يصل خلال ثوانٍ إلى أجهزته المفعّلة.' } : { kind: 'bad', title: 'لم يُرسل الإشعار', text: (j && j.message) || 'تعذّر الإرسال.' });
+    say(j && j.ok && j.off ? { kind: 'warn', icon: 'bell-ringing:gold', title: 'لم يُرسل إشعار الجوال', text: (j.to ? 'إلى ' + j.to + ' — ' : '') + j.message } : j && j.ok ? { kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار', text: (j.to ? 'إلى ' + j.to + ' — ' : '') + 'يصل خلال ثوانٍ إلى أجهزته المفعّلة.' } : { kind: 'bad', title: 'لم يُرسل الإشعار', text: (j && j.message) || 'تعذّر الإرسال.' });
     cuSetLog('أرسل إشعار جوال وويب «' + F.t + '»');
   };
   const testAll = async function () {
