@@ -17418,7 +17418,7 @@ function payTxnsPanel(D, refetch) {
       };
       acts = e('div', { class: 't2-pb-actions' }, [S2.refunds ? amt : null, S2.refunds ? admTwoStep('استرداد', 'danger', function () { return run('refund'); }) : null, S2.voids ? admTwoStep('إلغاء (Void)', null, function () { return run('void'); }) : null]);
     }
-    return admRow([admName(ltr(String(t.trx)), child ? 'من العملية ' + t.parent_trx : (t.class_label === 'online_test' ? 'اختبار' : 'حي')), admName(t.users ? t.users.full_name : '—', t.client_contracts ? 'عقد ' + (t.client_contracts.contract_no || '—') : null),
+    return admRow([admName(ltr(String(t.trx)), child ? 'من العملية ' + t.parent_trx : (t.class_label === 'online_test' ? 'اختبار' : 'حي')), admName(t.users ? t.users.full_name : '—', t.link_ref ? 'رابط دفع مرسل · ' + t.link_ref : t.client_contracts ? 'عقد ' + (t.client_contracts.contract_no || '—') : null),
       admMoney(t.amount), DS.badge(kind[0], kind[1]), PAY_RS[t.refund_state] ? DS.badge(PAY_RS[t.refund_state][0], PAY_RS[t.refund_state][1]) : t.auth_state === 'authorized' ? DS.badge('مفوَّضة — بانتظار التحصيل', 'warn') : (child ? '—' : 'لا يوجد'),
       bdiD(String(t.txn_at || t.created_at || '').slice(0, 16).replace('T', ' ')), acts], null, [t.trx, t.users && t.users.full_name, t.parent_trx].join(' '));
   });
