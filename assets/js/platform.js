@@ -2966,7 +2966,13 @@ const nsDef = (k) => NSEC.concat([NPS]).filter(function (x) { return x[0] === k;
 const isNew = (n) => !(FX.nread || {})[n.id] && daysBetween(n.at, T0) <= 3;
 const nIn = (L, k) => k === 'all' ? L : L.filter(function (n) { return nsOf(n) === k; });
 /* تحديث شارات «الجديد» في القائمة الجانبية والتبويبات والجرس دون إعادة رسم الصفحة */
+/* v400: «عرض في حسابك» من بطاقة الإشعار (قبل الدخول) — بعد الدخول يفتح مركز إشعارات اللوحة مباشرة */
+function goNotifOnce() {
+  try { if (!LIVE.on || !LIVE.me || sessionStorage.getItem('tq.go') !== 'notif') return; sessionStorage.removeItem('tq.go'); } catch (err) { return; }
+  setTimeout(function () { if (S.role === 'admin') go('other', 'tq-notif'); else openNs('hub'); }, 0);
+}
 function nbSync() {
+  goNotifOnce();
   const L = (S.role === 'admin' ? dbNotifs() : buildNotifs()).filter(isNew), c = {}; NSEC.forEach(function (x) { c[x[0]] = nIn(L, x[0]).length; });
   document.querySelectorAll('[data-nsc]').forEach(function (b) { const v = c[b.dataset.nsc] || 0; b.innerHTML = v > 9 ? '<bdi dir="ltr">9+</bdi>' : String(v); b.hidden = !v; const t = b.closest('[data-ns]'); if (t) t.classList.toggle('has-new', !!v); });
   document.querySelectorAll('[data-nsh]').forEach(function (b) { const v = c[b.dataset.nsh] || 0; b.querySelector('b').textContent = String(v); b.hidden = !v; });
@@ -3000,6 +3006,7 @@ function dbFresh() {
   try {
     const seen = dbSeen(), rd = FX.nread || (FX.nread = {});
     Object.keys(seen).forEach(function (k) { if (seen[k] === 2) rd[k] = true; });
+    DBN.rows.forEach(function (x) { if (!seen['db:' + x.id] && window.TQ_PUSH_SEEN && window.TQ_PUSH_SEEN(x.title, x.body)) { seen['db:' + x.id] = 1; dbMark(['db:' + x.id]); } });
     const n = DBN.rows.filter(function (x) { return dbRole(x) && !seen['db:' + x.id] && Date.now() - new Date(x.created_at).getTime() < 864e5; })[0];
     if (!n || !window.TQ_PUSH_SHOW) return;
     dbMark(['db:' + n.id]);

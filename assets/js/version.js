@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'399',d:'2026-10-21'};
+window.TQ_VERSION={v:'400',d:'2026-10-21'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -166,11 +166,14 @@ window.TQ_VERSION={v:'399',d:'2026-10-21'};
         if (!TN || !TN.show || (function () { var w = document.querySelector('.tw'); return !!(w && !w.hidden && !w.classList.contains('is-out') && w.getClientRects().length); })()) { if (tries++ < 40) return setTimeout(show, 500); if (!TN || !TN.show) return alert((n.t || '') + '\n' + (n.b || '')); }
         var acts = [];
         if (window.TQ_PUSH_GO && window.TQ_PUSH_GO(k, true)) acts.push({ label: 'عرض التفاصيل', primary: true, run: function () { window.TQ_PUSH_GO(k); } });
+        else if (n.p && /^\/(staff|clients)\//.test(n.p) && location.pathname.indexOf(n.p) !== 0) acts.push({ label: 'عرض في حسابك', primary: true, run: function () { try { sessionStorage.setItem('tq.go', 'notif'); } catch (e) { void e; } location.href = n.p; } });
         acts.push({ label: 'تم' });
         TN.show({ force: true, now: true, kind: kind, icon: 'bell-ringing:gold', title: n.t || 'إشعار من تيرا', text: n.b || '', ms: 0, actions: acts });
       })();
     }
     window.TQ_PUSH_SHOW = pushShow;
+    /* v400: هل عُرض هذا الإشعار بطاقةً على هذا الجهاز خلال 24 ساعة (من الضغط عليه)؟ — فلا يُعرض مرة ثانية بعد الدخول */
+    window.TQ_PUSH_SEEN = function (t, b) { try { var L = JSON.parse(localStorage.getItem('tq.push.inbox') || '[]'); return L.some(function (x) { return x.t === (t || '') && x.b === (b || '') && Date.now() - x.at < 864e5; }); } catch (e) { return false; } };
     /* v399: عند فتح التطبيق من صفحة خارج المنصة (مثل الرئيسية حين يفتحها الآيفون بدل رابط الإشعار): أحدث إشعار لحسابك لم يُعرض
        خلال 24 ساعة يظهر بطاقةً — من الخادم (/api/push/inbox). داخل المنصة تتولاه المنصة نفسها بحسب دور اللوحة. */
     function inboxFresh() {
@@ -181,7 +184,7 @@ window.TQ_VERSION={v:'399',d:'2026-10-21'};
         fetch('/api/push/inbox', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + s.access_token } })
           .then(function (r) { return r.json(); }).then(function (j) {
             var R = (j && j.ok && j.rows) || [], seen = {}; try { seen = JSON.parse(localStorage.getItem('tq.inbox.seen') || '{}') || {}; } catch (e) { seen = {}; }
-            var n = R.filter(function (x) { return !seen['db:' + x.id] && Date.now() - new Date(x.created_at).getTime() < 864e5; })[0];
+            var n = R.filter(function (x) { return !seen['db:' + x.id] && Date.now() - new Date(x.created_at).getTime() < 864e5 && !(window.TQ_PUSH_SEEN && window.TQ_PUSH_SEEN(x.title, x.body)); })[0];
             if (!n) return; seen['db:' + n.id] = seen['db:' + n.id] || 1; try { localStorage.setItem('tq.inbox.seen', JSON.stringify(seen)); } catch (e) { void e; }
             pushShow({ k: 'admin', t: n.title || 'إشعار من تيرا', b: n.body || '' });
           }).catch(function () {});
