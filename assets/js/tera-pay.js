@@ -153,16 +153,31 @@
         }
         D.pub = j.pub; D.cs = j.cs; D.status = j.status; D.save = j.save || '0';
         if (alt && j.hosted) alt.setAttribute('href', j.hosted);
+        var apl = document.getElementById('tp-apay'); if (apl && j.hosted) apl.setAttribute('href', j.hosted);
         if (j.ref) document.querySelectorAll('[data-ref]').forEach(function (el) { el.textContent = j.ref; });
         if (payBtn) payBtn.disabled = false;
         boot();
       })
       .catch(function () { box.classList.remove('wait'); if (err) { err.textContent = 'تعذّر الاتصال الآن. أعد تحميل الصفحة.'; show(err, true); } });
   } else boot();
+  /* v426: اختيار طريقة الدفع — مدى · فيزا/ماستركارد (نموذج البطاقة) · Apple Pay (نافذة Apple Pay الآمنة) */
+  var cardBox = document.getElementById('tp-cardbox'), appleBox = document.getElementById('tp-applebox');
+  var MN = { mada: 'بمدى', card: 'بالبطاقة الائتمانية' };
+  document.querySelectorAll('.tp-meth [data-m]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var m = b.getAttribute('data-m');
+      document.querySelectorAll('.tp-meth [data-m]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
+      show(cardBox, m !== 'apple'); show(appleBox, m === 'apple');
+      if (payBtn && !started && MN[m]) payBtn.textContent = 'ادفع ' + money(Number(D.amount) || 0) + ' ر.س ' + MN[m];
+    });
+  });
+  var apl0 = document.getElementById('tp-apay');
+  if (apl0) apl0.addEventListener('click', function (ev) { if (apl0.getAttribute('href') === '#') { ev.preventDefault(); if (err) { err.textContent = 'لحظة… نجهّز Apple Pay.'; } } });
+  if (payBtn && MN.mada) payBtn.textContent = 'ادفع ' + money(Number(D.amount) || 0) + ' ر.س ' + MN.mada;
   if (payBtn) payBtn.addEventListener('click', function () {
     if (payBtn.disabled || started) return;
     show(err, false); window.dispatchEvent(new Event('payFromOutside'));
   });
-  var again = document.querySelector('[data-retry]');
+  var again = document.querySelector('button[data-retry]'); /* v426: الزر نفسه — لا الإطار #tp الذي يحمل data-retry */
   if (again) again.addEventListener('click', function () { location.href = D.retry || '/clients/'; });
 })();
