@@ -17343,7 +17343,7 @@ function payLinkForm(D, refetch) {
     f.uid ? null : DS.editField('بريد الدافع', DS.input({ value: f.email, dir: 'ltr', type: 'email', onInput: function (v) { f.email = v; } })),
     DS.editField('صلاحية الرابط', DS.select({ value: f.hours, options: [['24', 'يوم واحد'], ['72', '3 أيام'], ['168', 'أسبوع'], ['720', '30 يومًا']], onChange: function (v) { f.hours = v; } }))
   ];
-  const made = PAYC.made ? DS.note('ok', 'أُنشئ الرابط ' + PAYC.made.ref_no, PAYC.made.url, e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('نسخ الرابط', { size: 'sm', ui: 'copy', onClick: function () { payCopy(PAYC.made.url); } }))])) : null;
+  const made = PAYC.made ? payMadeCard(PAYC.made, D, refetch) : null;
   return DS.panel('إنشاء رابط دفع', D.gateway.mode === 'test' ? 'وضع الاختبار — لا يُخصم مبلغ حقيقي' : null, [lvFields(fields.filter(Boolean)),
     e('small', { class: 'cu-dr-hint' }, 'الرابط المرتبط بدفعة يسدّدها في العقد تلقائيًا عند الدفع (في الوضع الحي فقط). لا يُرسل للعميل شيء تلقائيًا — انسخ الرابط وأرسله.'),
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إنشاء الرابط', { tone: 'primary', ui: 'plus', onClick: async function (ev) {
@@ -17351,9 +17351,51 @@ function payLinkForm(D, refetch) {
       try {
         const j = await clPost('/admin/api/pay/links', { plan_id: f.plan || null, user_id: f.uid || null, payment_id: f.plan ? null : (f.pid || null), amount: f.amount === '' ? null : Number(f.amount), description: f.desc, name: f.name, phone: f.phone, email: f.email, hours: Number(f.hours) });
         if (!j.ok) throw new Error(j.message || 'تعذّر إنشاء الرابط.');
-        PAYC.made = j; PAYC.f = { uid: '', pid: '', amount: '', desc: '', name: '', phone: '', email: '', hours: '72' }; PAYC.pays = {}; refetch();
+        const cu = f.uid ? C.filter(function (c) { return c.id === f.uid; })[0] : null;
+        PAYC.made = Object.assign({}, j, { snap: { amount: f.amount, desc: f.desc, name: cu ? cu.name : f.name, phone: cu ? (cu.phone || '') : f.phone, email: cu ? (cu.email || '') : f.email, hours: f.hours, mode: D.gateway.mode, cno: cu ? cu.no : '' } });
+        PAYC.f = { uid: '', pid: '', amount: '', desc: '', name: '', phone: '', email: '', hours: '72' }; PAYC.pays = {}; refetch();
       } catch (err) { if (err && err.message === 'auth') return; out.appendChild(DS.note('warn', 'لم يُنشأ الرابط', err.message)); b.disabled = false; }
     } }))]), out, made]);
+}
+/* v423: بطاقة «رابط الدفع جاهز» — ملخص واضح (الدافع · المبلغ · الوصف · الانتهاء) ورابط مختصر وأزرار مباشرة */
+function paySendLink(id, ref, b, refetch) {
+  return (async function () {
+    if (b) b.disabled = true;
+    const h = window.TeraNotify && window.TeraNotify.show({ force: true, kind: 'run', title: 'جارٍ إرسال الرابط…' });
+    const j = await clPost('/admin/api/pay/links/' + id + '/send', {}); if (h && h.close) h.close(); if (b) b.disabled = false;
+    const R = (j && j.results) || {}, NM = { email: 'البريد', whatsapp: 'واتساب', push: 'إشعار الجوال', inbox: 'مركز الإشعارات' }, ks = ['email', 'whatsapp', 'push', 'inbox'].filter(function (k) { return R[k]; });
+    const list = ks.length ? e('ul', { class: 'pu-res' }, ks.map(function (k) { return e('li', { class: R[k].ok ? 'is-ok' : 'is-bad' }, [e('span', { class: 'pu-res-i', 'aria-hidden': 'true' }, R[k].ok ? '✓' : '✗'), e('div', { class: 'pu-res-t' }, [e('b', {}, NM[k]), e('small', {}, R[k].ok ? 'وصلت' : (R[k].message || 'لم تصل'))])]); })) : null;
+    if (window.TeraNotify && list) window.TeraNotify.show({ force: true, kind: j && j.ok ? (ks.some(function (k) { return !R[k].ok; }) ? 'warn' : 'ok') : 'bad', icon: 'paper-plane-tilt:teal', title: j && j.ok ? 'أُرسل رابط الدفع' : 'لم يُرسل الرابط', text: ref + ' — وصل عبر ' + ks.filter(function (k) { return R[k].ok; }).length + ' من ' + ks.length + ' قنوات.', body: list, actions: [{ label: 'تم', primary: true }] });
+    else snack(j && j.ok ? 'أُرسل الرابط.' : ((j && j.message) || 'تعذّر الإرسال.'));
+    if (j && j.ok && refetch) refetch();
+  })();
+}
+function payMadeCard(m, D, refetch) {
+  const s = m.snap || {}, test = (s.mode || D.gateway.mode) === 'test', url = String(m.url || '');
+  const tok = url.split('/').pop() || '', short = url.replace(/^https?:\/\//, '').replace(/\/api\/pay\/l\/.*$/, '') + '/pay/' + tok.slice(0, 5) + '…' + tok.slice(-4);
+  const exp = new Date(Date.now() + (Number(s.hours) || 72) * 3600e3);
+  const expTxt = exp.toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
+  const amt = s.amount !== '' && s.amount != null ? Number(s.amount) : (m.amount != null ? Number(m.amount) : null);
+  const kv = function (k, v, ltrv) { return v ? e('div', { class: 'pl-kv' }, [e('small', {}, k), e('b', ltrv ? { dir: 'ltr' } : {}, v)]) : null; };
+  const msg = 'مرحبًا ' + (s.name ? s.name.split(' ')[0] : '') + ' 👋\nرابط الدفع من منصة تيرا للخدمات المتكاملة\n' + (s.desc ? '📌 ' + s.desc + '\n' : '') + (amt != null ? '💰 المبلغ: ' + SAR(amt) + ' ريال\n' : '') + '🔗 ' + url + '\n⏳ صالح حتى ' + expTxt;
+  const ph = String(s.phone || '').replace(/[^0-9+]/g, ''), waNo = ph ? (ph.charAt(0) === '+' ? ph.slice(1) : /^05\d{8}$/.test(ph) ? '966' + ph.slice(1) : /^5\d{8}$/.test(ph) ? '966' + ph : ph) : '';
+  const wa = 'https://wa.me/' + waNo + '?text=' + encodeURIComponent(msg);
+  const abtn = function (label, href, icon) { return liveOk(e('a', { class: 't2-btn is-sm', href: href, target: '_blank', rel: 'noopener' }, [frag(ui(icon, 14)), label])); };
+  return e('section', { class: 'pl-made' + (test ? ' is-test' : ''), role: 'status', 'aria-live': 'polite' }, [
+    e('header', { class: 'pl-made-h' }, [
+      e('span', { class: 'pl-made-ic', 'aria-hidden': 'true' }, '✓'),
+      e('div', { class: 'pl-made-t' }, [e('b', {}, 'رابط الدفع جاهز'), e('small', {}, ['رقم الرابط ', e('bdi', { dir: 'ltr' }, m.ref_no || '—')])]),
+      e('span', { class: 'pl-made-mode' }, test ? 'وضع الاختبار' : 'دفع حقيقي')]),
+    amt != null ? e('div', { class: 'pl-made-amt' }, [e('small', {}, 'المبلغ المطلوب'), e('b', {}, [e('bdi', { dir: 'ltr' }, SAR(amt)), ' ', e('span', {}, 'ريال')])]) : e('div', { class: 'pl-made-amt' }, [e('small', {}, 'المبلغ'), e('b', {}, 'يحدده الدافع')]),
+    e('div', { class: 'pl-made-grid' }, [kv('الدافع', s.name), kv('الجوال', s.phone, true), kv('البريد', s.email, true), kv('العقد', s.cno), kv('الوصف', s.desc), kv('صالح حتى', expTxt)]),
+    e('div', { class: 'pl-made-link' }, [e('span', { class: 'pl-made-url', dir: 'ltr', title: url }, short), liveOk(DS.button('نسخ', { size: 'sm', ui: 'copy', onClick: function () { payCopy(url); } }))]),
+    e('div', { class: 'pl-made-acts' }, [
+      liveOk(DS.button('نسخ الرابط', { size: 'sm', tone: 'primary', ui: 'copy', onClick: function () { payCopy(url); } })),
+      abtn('مشاركة عبر واتساب', wa, 'whatsapp-logo'),
+      D.gateway.send && m.id ? liveOk(DS.button('إرسال للدافع (بريد · واتساب · إشعار)', { size: 'sm', ui: 'paper-plane-tilt', onClick: function (ev) { paySendLink(m.id, m.ref_no, ev.currentTarget, null); } })) : null,
+      abtn('معاينة صفحة الدفع', url, 'globe-hemisphere-east'),
+      liveOk(DS.button('رابط جديد', { size: 'sm', ui: 'plus', onClick: function () { PAYC.made = null; refetch(); } }))]),
+    e('small', { class: 'pl-made-tip' }, 'يفتح الدافع الرابط فيرى المبلغ والوصف، ويدفع بمدى أو البطاقة الائتمانية أو Apple Pay عبر بوابة الدفع المعتمدة، ويصله الإيصال PDF بالختم تلقائيًا بعد الدفع.')]);
 }
 function payLinksPanel(D, st, paint, refetch) {
   const L = D.links || [], by = function (s) { return L.filter(function (x) { return x.status === s; }).length; };

@@ -8861,3 +8861,20 @@ html.cpv-on .t2-head{top:48px}
 .t2.t2 .adm-card.has-acts{flex-wrap:wrap;grid-template-columns:minmax(0,1fr)}
 .t2.t2 .adm-card .adm-ca{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;width:100%;padding:0 10px 10px;cursor:default}
 .t2.t2 .adm-card .adm-ca .t2-pb-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+/* v423: بطاقة «رابط الدفع جاهز» في مركز الدفع */
+.t2 .pl-made{margin-top:14px;border:1px solid var(--t2-st-ok-line);border-radius:18px;background:var(--t2-surface);box-shadow:var(--t2-sh-1);padding:18px;display:grid;gap:14px}
+.t2 .pl-made.is-test{border-color:var(--t2-st-warn-line)}
+.t2 .pl-made-h{display:flex;align-items:center;gap:12px}
+.t2 .pl-made-ic{inline-size:40px;block-size:40px;border-radius:12px;display:grid;place-items:center;background:var(--t2-ok-wash);color:var(--t2-ok);font-weight:800;font-size:20px;flex:none}
+.t2 .pl-made-t{display:grid;gap:2px;flex:1;min-inline-size:0}.t2 .pl-made-t b{font-size:17px;color:var(--t2-ink)}.t2 .pl-made-t small{color:var(--t2-muted);font-size:13px}
+.t2 .pl-made-mode{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--t2-ok-wash);color:var(--t2-ok);white-space:nowrap}
+.t2 .pl-made.is-test .pl-made-mode{background:var(--t2-warn-wash);color:var(--t2-warn)}
+.t2 .pl-made-amt{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;background:var(--t2-surface-2)}
+.t2 .pl-made-amt small{color:var(--t2-muted);font-size:13px}.t2 .pl-made-amt b{font-size:26px;font-weight:800;color:var(--t2-ink)}.t2 .pl-made-amt b span{font-size:14px;font-weight:600;color:var(--t2-muted)}
+.t2 .pl-made-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px}
+.t2 .pl-kv{display:grid;gap:2px;min-inline-size:0}.t2 .pl-kv small{color:var(--t2-muted);font-size:12px}.t2 .pl-kv b{font-size:14px;color:var(--t2-ink);overflow-wrap:anywhere}.t2 .pl-kv b[dir=ltr]{text-align:end}
+.t2 .pl-made-link{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border:1px dashed var(--t2-line-2);border-radius:12px;background:var(--t2-input)}
+.t2 .pl-made-url{flex:1;min-inline-size:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:var(--t2-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.t2 .pl-made-acts{display:flex;flex-wrap:wrap;gap:8px}.t2 .pl-made-acts a.t2-btn{text-decoration:none}
+.t2 .pl-made-tip{color:var(--t2-muted);font-size:12.5px;line-height:1.7}
+@media (max-width:560px){.t2 .pl-made{padding:14px}.t2 .pl-made-acts .t2-btn{flex:1 1 calc(50% - 8px);justify-content:center}.t2 .pl-made-amt b{font-size:22px}}
