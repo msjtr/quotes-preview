@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'395',d:'2026-10-21'};
+window.TQ_VERSION={v:'396',d:'2026-10-21'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -151,6 +151,13 @@ window.TQ_VERSION={v:'395',d:'2026-10-21'};
       var n = null; try { n = JSON.parse(decodeURIComponent(m[1])); } catch (e) { n = null; }
       try { var h = location.hash.replace(/[#&]tqn=[^&]+/, '').replace(/^#?&?/, ''); history.replaceState(history.state, '', location.pathname + location.search + (h ? '#' + h : '')); } catch (e) { void e; }
       if (!n || !(n.t || n.b)) return;
+      pushShow(n);
+    }
+    /* v396: عرض إشعار وصل (من الرابط #tqn أو من حدث الضغط في OneSignal أو من مركز الإشعارات) — مرة واحدة للإشعار نفسه خلال دقيقتين */
+    var lastShow = { key: '', at: 0 };
+    function pushShow(n) {
+      if (!n || !(n.t || n.b)) return;
+      var key = (n.t || '') + '|' + (n.b || ''); if (key === lastShow.key && Date.now() - lastShow.at < 120000) return; lastShow = { key: key, at: Date.now() };
       try { var L = JSON.parse(localStorage.getItem('tq.push.inbox') || '[]'); L.unshift({ k: n.k || '', t: n.t || '', b: n.b || '', at: Date.now() }); localStorage.setItem('tq.push.inbox', JSON.stringify(L.slice(0, 30))); } catch (e) { void e; }
       var k = String(n.k || ''), kind = NK.ok.test(k) ? 'ok' : NK.bad.test(k) ? 'bad' : NK.warn.test(k) ? 'warn' : 'info';
       var tries = 0;
@@ -163,6 +170,7 @@ window.TQ_VERSION={v:'395',d:'2026-10-21'};
         TN.show({ force: true, now: true, kind: kind, icon: 'bell-ringing:gold', title: n.t || 'إشعار من تيرا', text: n.b || '', ms: 0, actions: acts });
       })();
     }
+    window.TQ_PUSH_SHOW = pushShow;
     pushOpen(); window.addEventListener('hashchange', pushOpen);
     /* إزالة ?u= من العنوان بعد التحديث (لا يبقى في الرابط) */
     try { var u0 = new URL(location.href); if (u0.searchParams.has('u')) { u0.searchParams.delete('u'); history.replaceState(history.state, '', u0.pathname + (u0.search || '') + u0.hash); } } catch (e) { void e; }

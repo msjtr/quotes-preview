@@ -255,6 +255,8 @@
         return OS.init({ appId: APP_ID, serviceWorkerPath: 'assets/push/OneSignalSDKWorker.js', serviceWorkerParam: { scope: '/assets/push/' },
           notifyButton: { enable: false }, autoResubscribe: true }).then(function () {
           try { OS.User.PushSubscription.addEventListener('change', function () { S.sub = !!OS.User.PushSubscription.optedIn; fire(); register(OS); }); } catch (e) { void e; }
+          /* v396: الضغط على الإشعار والتطبيق مفتوح في الخلفية (الآيفون يكتفي بإظهار التطبيق) — نعرض الإشعار نفسه */
+          try { OS.Notifications.addEventListener('click', function (ev) { var n = ev && ev.notification; if (!n || !W.TQ_PUSH_SHOW) return; var d = n.additionalData || {}; W.TQ_PUSH_SHOW({ k: d.k || '', t: n.title || '', b: n.body || '' }); }); } catch (e) { void e; }
           S.sub = !!(OS.User && OS.User.PushSubscription && OS.User.PushSubscription.optedIn); fire(); ok(OS);
         }, bad);
       });

@@ -2967,7 +2967,7 @@ const isNew = (n) => !(FX.nread || {})[n.id] && daysBetween(n.at, T0) <= 3;
 const nIn = (L, k) => k === 'all' ? L : L.filter(function (n) { return nsOf(n) === k; });
 /* تحديث شارات «الجديد» في القائمة الجانبية والتبويبات والجرس دون إعادة رسم الصفحة */
 function nbSync() {
-  const L = buildNotifs().filter(isNew), c = {}; NSEC.forEach(function (x) { c[x[0]] = nIn(L, x[0]).length; });
+  const L = (S.role === 'admin' ? dbNotifs() : buildNotifs()).filter(isNew), c = {}; NSEC.forEach(function (x) { c[x[0]] = nIn(L, x[0]).length; });
   document.querySelectorAll('[data-nsc]').forEach(function (b) { const v = c[b.dataset.nsc] || 0; b.innerHTML = v > 9 ? '<bdi dir="ltr">9+</bdi>' : String(v); b.hidden = !v; const t = b.closest('[data-ns]'); if (t) t.classList.toggle('has-new', !!v); });
   document.querySelectorAll('[data-nsh]').forEach(function (b) { const v = c[b.dataset.nsh] || 0; b.querySelector('b').textContent = String(v); b.hidden = !v; });
   document.querySelectorAll('[data-nav=bell]').forEach(function (b) { let i = b.querySelector('.t2-nbadge'); if (!i) { i = document.createElement('i'); i.className = 't2-nbadge'; b.appendChild(i); } i.innerHTML = c.all > 9 ? '<bdi dir="ltr">9+</bdi>' : String(c.all); i.hidden = !c.all; });
@@ -2983,11 +2983,38 @@ function dbNotifs() {
       DBN.busy = true;
       admRpc('my_inbox', { p_limit: 50 }).then(function (j) {
         const R = Array.isArray(j) ? j : (j && (j.rows || j.items || j.notifications)) || [];
-        DBN.rows = R.filter(function (x) { return x && x.kind === 'direct_message'; }); DBN.at = Date.now(); DBN.busy = false; if (DBN.rows.length) draw();
+        DBN.rows = R.filter(function (x) { return x && x.kind === 'direct_message'; }); DBN.at = Date.now(); DBN.busy = false; if (DBN.rows.length) { dbFresh(); draw(); }
       }).catch(function () { DBN.at = Date.now(); DBN.busy = false; });
     }
     return DBN.rows.map(function (x) { return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '' }; });
   } catch (err) { return []; }
+}
+/* v396: قراءة الإشعارات محفوظة على الجهاز (لا تعود «جديدة» بعد فتحها)، وأحدث إشعار لم يُعرض يظهر بطاقةً عند فتح التطبيق —
+   فيصل محتواه حتى لو فُتح التطبيق دون الضغط على الإشعار أو بعد تسجيل الدخول. */
+const DBN_K = 'tq.inbox.seen';
+function dbSeen() { try { return JSON.parse(localStorage.getItem(DBN_K) || '{}') || {}; } catch (err) { return {}; } }
+function dbMark(ids) { try { const m = dbSeen(); ids.forEach(function (i) { if (!m[i]) m[i] = 1; }); const k = Object.keys(m); if (k.length > 300) k.slice(0, k.length - 300).forEach(function (x) { delete m[x]; }); localStorage.setItem(DBN_K, JSON.stringify(m)); } catch (err) { void err; } }
+function dbFresh() {
+  try {
+    const seen = dbSeen(), rd = FX.nread || (FX.nread = {});
+    Object.keys(seen).forEach(function (k) { if (seen[k] === 2) rd[k] = true; });
+    const n = DBN.rows.filter(function (x) { return !seen['db:' + x.id] && Date.now() - new Date(x.created_at).getTime() < 864e5; })[0];
+    if (!n || !window.TQ_PUSH_SHOW) return;
+    dbMark(['db:' + n.id]);
+    window.TQ_PUSH_SHOW({ k: 'admin', t: n.title || 'إشعار من تيرا', b: n.body || '' });
+  } catch (err) { void err; }
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && LIVE.on && LIVE.me) { DBN.at = 0; dbNotifs(); } });
+function tqNotifPage() {
+  const L = dbNotifs(), rd = FX.nread || (FX.nread = {});
+  const when = function (d) { try { return d.toLocaleString('ar-SA-u-nu-latn-ca-gregory', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }); } catch (err) { return ''; } };
+  const list = L.length ? e('div', { class: 'tqn-list' }, L.map(function (n) { const nw = isNew(n);
+    return e('article', { class: 'tqn-row' + (nw ? ' is-new' : '') }, [e('div', { class: 'tqn-h' }, [e('b', {}, n.title), nw ? DS.badge('جديد', 'warn') : null]), n.text ? e('p', {}, n.text) : null, e('small', {}, when(n.at))]); }))
+    : LDS.emptyState({ icon: 'bell', title: 'لا إشعارات بعد', body: 'تظهر هنا الرسائل والإشعارات المرسلة إلى حسابك من الإدارة والنظام.' });
+  const ids = L.map(function (n) { return n.id; }); ids.forEach(function (i) { rd[i] = true; }); try { const m = dbSeen(); ids.forEach(function (i) { m[i] = 2; }); localStorage.setItem(DBN_K, JSON.stringify(m)); } catch (err) { void err; }
+  setTimeout(nbSync, 0);
+  return [DS.panel('إشعاراتي', L.length ? fmtNum(L.length) + ' إشعار' : null, [list]),
+    S.role === 'admin' ? e('div', { class: 't2-pb-actions' }, [DS.button('التذاكر الجديدة', { onClick: function () { ADM.tst = 'new'; go('other', 'cs-tickets'); } })]) : null];
 }
 function extraNotifs() {
   const r31 = REQS.filter(function (x) { return x.no === 'RQ-50231'; })[0], c31 = cByNo('TC-26-0031');
@@ -12011,6 +12038,8 @@ function lp(k, t, up, ic, run) { LP[k] = { t: t, up: up, ic: ic, run: run }; ACC
 /* v386: «حسابك» — صفحة واحدة للحساب وتطبيق تيرا (رابع عنصر في القائمة السفلية، ومن قائمة الحساب في الهيدر على الكمبيوتر) */
 try { ICON['tq-account'] = ['user-circle', 'teal']; } catch (err) { void err; }
 lp('tq-account', 'حسابك', null, 'tq-account', tqAccountPage);
+try { ICON['tq-notif'] = ['bell', 'saffron']; } catch (err) { void err; }
+lp('tq-notif', 'إشعاراتي', null, 'tq-notif', tqNotifPage);
 /* v366: كل صفحة تفعيل أو إضافة تُشير إلى صفحتها في «دليل تيرا» (صفحات حقيقية في الموقع: home/#/guide/<طريقة>) */
 function gdOf(k) { return { shield: '', 'sec-password': 'recovery', 'sec-whatsapp': 'whatsapp', 'sec-extracode': 'extra', 'sec-twofa': 'authenticator', 'sec-devices': 'devices', 'sec-verify': '', 'sec-sessions': 'session' }[k]; }
 function gdLink(slug, t, d) {
@@ -14859,7 +14888,7 @@ const MSTL = { reply: 'بانتظار الرد', open: 'المفتوحة', done:
 function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(); }
   profSeed();
   LAST = S.tab === 'qreq' ? 1 : 2;
-  if (S.role === 'admin' && (S.tab !== 'other' || !/^(adm-|cs|cu$|cu-|ctr$|soon-|sys|pay-center$|fin$|fin-|cpg$|cpg-|comm$|comm-|cx$|cx-|tq-account$)/.test(S.other || ''))) { S.tab = 'other'; S.other = 'adm-home'; }
+  if (S.role === 'admin' && (S.tab !== 'other' || !/^(adm-|cs|cu$|cu-|ctr$|soon-|sys|pay-center$|fin$|fin-|cpg$|cpg-|comm$|comm-|cx$|cx-|tq-account$|tq-notif$)/.test(S.other || ''))) { S.tab = 'other'; S.other = 'adm-home'; }
   if (S.role !== 'admin' && S.tab === 'other' && /^(adm-|cs|cu$|cu-|soon-|sys)/.test(S.other || '')) { S.tab = 'dash'; S.other = ''; }
   const toSvc = function () { go('svc'); }, toMsg = function () { go('msg'); };
   let title, sub, path, nav = null;
@@ -14985,7 +15014,7 @@ function boot(dev) {
   else { host.innerHTML = shell(); SCROLLER = window; }
   ROOT = document.getElementById('pv-root');
   S.dev = dev;
-  host.querySelectorAll('[data-nav]').forEach(function (b) { b.addEventListener('click', function () { const n = b.dataset.nav; if (n === 'logout') { askOut(); return; } if (S.role === 'admin') { if (n === 'bell') { ADM.tst = 'new'; go('other', 'cs-tickets'); } else if (n === 'cs-tickets') { ADM.tst = ''; go('other', n); } else go('other', n); return; } if (n === 'cart') { FX.pk = 'cart'; go('other', 'picks'); } else if (n === 'store' || n === 'picks' || n === 'devices' || n === 'my-orders') go('other', n === 'picks' ? 'my-picks' : n); else if (n === 'mail') go('msg'); else if (n === 'services') go('svc'); else if (n === 'devices' || n === 'digital') go('other', n); else if (n === 'custom') go('other', 'sv-new'); else if (n === 'dash') go('dash'); else if (n === 'bell') openNs('hub'); else if (PAGES[n]) go('other', n); else if (n === 'more') go('other', 'more'); }); });
+  host.querySelectorAll('[data-nav]').forEach(function (b) { b.addEventListener('click', function () { const n = b.dataset.nav; if (n === 'logout') { askOut(); return; } if (S.role === 'admin') { if (n === 'bell') { go('other', 'tq-notif'); } else if (n === 'cs-tickets') { ADM.tst = ''; go('other', n); } else go('other', n); return; } if (n === 'cart') { FX.pk = 'cart'; go('other', 'picks'); } else if (n === 'store' || n === 'picks' || n === 'devices' || n === 'my-orders') go('other', n === 'picks' ? 'my-picks' : n); else if (n === 'mail') go('msg'); else if (n === 'services') go('svc'); else if (n === 'devices' || n === 'digital') go('other', n); else if (n === 'custom') go('other', 'sv-new'); else if (n === 'dash') go('dash'); else if (n === 'bell') openNs('hub'); else if (PAGES[n]) go('other', n); else if (n === 'more') go('other', 'more'); }); });
   document.querySelectorAll('.pv-bar button[data-dev]').forEach(function (b) { b.classList.toggle('is-on', b.dataset.dev === dev); });
   const T2 = host.querySelector('.t2'); if (T2) T2.classList.toggle('is-dark', !!S.dark); document.documentElement.classList.toggle('pv-dark', !!S.dark);
   host.querySelectorAll('.t2-hbtn[aria-label="الوضع الليلي"]').forEach(function (b) { b.addEventListener('click', toggleDark); });
