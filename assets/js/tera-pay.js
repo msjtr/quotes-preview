@@ -50,7 +50,7 @@
   var form = document.getElementById('tp-form'), proc = document.getElementById('tp-proc'), res = document.getElementById('tp-res');
   var started = false, ready = false, seen = false;
   function show(el, on) { if (el) el.hidden = !on; }
-  function fail(msg) { if (err) { err.textContent = msg; show(err, true); } show(alt, true); }
+  function fail(msg) { if (err) { err.textContent = msg; show(err, true); } if (alt && alt.getAttribute('href') !== '#') show(alt, true); }
   function step(n) {
     document.querySelectorAll('.tp-steps li[data-s]').forEach(function (li) {
       var s = Number(li.getAttribute('data-s')); li.className = s < n ? 'done' : s === n ? 'on' : '';
@@ -85,13 +85,16 @@
   }
   function processing() { show(form, false); show(proc, true); step(2); poll(24); }
 
-  var timer = setTimeout(function () { if (!ready) { box.classList.remove('wait'); fail('تعذّر تحميل نموذج البطاقة الآمن. يمكنك إكمال الدفع من واجهة Paymob البديلة.'); } }, 15000);
+  var timer = null;
   function mount() {
     if (ready || typeof window.Pixel !== 'function') return false;
+    if (!D.cs) return false;
     ready = true; clearTimeout(timer); box.classList.remove('wait');
+    /* v424: Apple Pay داخل النموذج نفسه (يظهر في Safari وأجهزة Apple) — لا انتقال إلى واجهة Paymob */
+    var PM = D.apple === '1' ? ['card', 'apple-pay'] : ['card'];
     try {
       new window.Pixel({
-        publicKey: D.pub, clientSecret: D.cs, paymentMethods: ['card'], elementId: 'tp-pixel',
+        publicKey: D.pub, clientSecret: D.cs, paymentMethods: PM, elementId: 'tp-pixel',
         disablePay: true, showSaveCard: D.save === '1',
         cardValidationChanged: function (ok) { seen = true; if (payBtn) payBtn.classList.toggle('is-ready', !!ok); if (ok) show(err, false); },
         beforePaymentComplete: async function () { started = true; if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'جارٍ الدفع…'; } return true; },
@@ -124,12 +127,38 @@
     } catch (e) { fail('تعذّر تشغيل نموذج البطاقة. يمكنك إكمال الدفع من واجهة Paymob البديلة.'); }
     return true;
   }
-  /* إن لم يظهر نموذج البطاقة (حجب شبكة أو متصفح قديم) يظهر رابط واجهة Paymob البديلة */
-  setTimeout(function () { if (!seen && !started && alt) { alt.textContent = 'لم يظهر نموذج البطاقة؟ أكمل الدفع من واجهة Paymob البديلة'; show(alt, true); } }, 20000);
-  if (!mount()) {
-    var tries = 0, iv = setInterval(function () { if (mount() || ++tries > 60) clearInterval(iv); }, 250);
-    window.addEventListener('load', mount);
+  function boot() {
+    timer = setTimeout(function () { if (!ready) { box.classList.remove('wait'); fail('تعذّر تحميل نموذج البطاقة الآمن. أعد تحميل الصفحة أو حاول من متصفح آخر.'); } }, 15000);
+    /* إن لم يظهر نموذج البطاقة (حجب شبكة أو متصفح قديم) يظهر رابط بديل احتياطي فقط */
+    setTimeout(function () { if (!seen && !started && alt && alt.getAttribute('href') !== '#') { alt.textContent = 'لم يظهر نموذج البطاقة؟ أكمل الدفع من الواجهة البديلة'; show(alt, true); } }, 25000);
+    if (!mount()) {
+      var tries = 0, iv = setInterval(function () { if (mount() || ++tries > 80) clearInterval(iv); }, 250);
+      window.addEventListener('load', mount);
+    }
   }
+  /* v424: رابط الدفع صفحة واحدة — تُفتح العملية من هنا (لا من فتح الرابط) ثم يظهر نموذج البطاقة في المكان نفسه */
+  if (D.open && !D.cs) {
+    if (payBtn) payBtn.disabled = true;
+    fetch(D.open, { method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json().catch(function () { return null; }); })
+      .then(function (j) {
+        if (!j) throw new Error('x');
+        if (j.ok && j.redirect) { location.href = j.redirect; return; }
+        if (!j.ok) {
+          box.classList.remove('wait');
+          if (j.state === 'paid') return result('paid');
+          if (err) { err.textContent = j.message || 'تعذّر تجهيز الدفع الآن.'; show(err, true); }
+          if (payBtn) payBtn.hidden = true;
+          return;
+        }
+        D.pub = j.pub; D.cs = j.cs; D.status = j.status; D.save = j.save || '0';
+        if (alt && j.hosted) alt.setAttribute('href', j.hosted);
+        if (j.ref) document.querySelectorAll('[data-ref]').forEach(function (el) { el.textContent = j.ref; });
+        if (payBtn) payBtn.disabled = false;
+        boot();
+      })
+      .catch(function () { box.classList.remove('wait'); if (err) { err.textContent = 'تعذّر الاتصال الآن. أعد تحميل الصفحة.'; show(err, true); } });
+  } else boot();
   if (payBtn) payBtn.addEventListener('click', function () {
     if (payBtn.disabled || started) return;
     show(err, false); window.dispatchEvent(new Event('payFromOutside'));

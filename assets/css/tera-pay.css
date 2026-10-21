@@ -188,3 +188,14 @@ body.tp{font-family:Alexandria,"IBM Plex Sans Arabic",Tahoma,sans-serif;color:va
   .tp-res-in{gap:12px}.tp-seal,.tp-seal>img{width:140px;height:140px}.tp-seal{margin-right:96px}.tp-seal .lb{font-size:13px;padding:3px 12px;top:calc(50% - 17px)}
 }
 @media (prefers-reduced-motion:reduce){.tp *,.tp *:before,.tp *:after{animation:none !important;transition:none !important}}
+/* v424: رابط الدفع صفحة واحدة — على الجوال: ملخص مختصر ثم نموذج البطاقة مباشرة بلا تكرار */
+@media (max-width:820px){
+  .tp-wrap.is-one .tp-stage{display:none}
+  .tp-wrap.is-one .tp-side{padding:18px 18px 20px}
+  .tp-wrap.is-one .tp-side .tp-foot{display:none}
+  .tp-wrap.is-one .tp-gl{display:none}
+  .tp-wrap.is-one .tp-kick{margin-top:12px}
+  .tp-wrap.is-one .tp-amt b{font-size:42px}
+  .tp-wrap.is-one .tp-dl{margin-top:12px}
+  .tp-wrap.is-one .tp-grid{margin-top:12px}
+}
