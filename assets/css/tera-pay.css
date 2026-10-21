@@ -206,3 +206,6 @@ body.tp{font-family:Alexandria,"IBM Plex Sans Arabic",Tahoma,sans-serif;color:va
 }
 .tp-meth>button .lg img{height:20px}.tp-meth>button .lg img.vi{height:14px}.tp-meth>button .lg img.mc{height:22px}.tp-meth>button .lg img.ap{height:24px}
 #tp-apple{min-height:0;padding:0}
+/* v428: وجه البطاقة كما في الفريم المعتمد — رقاقة وإشارة لاتلامسية · CARD HOLDER · EXPIRES */
+.tp-card .nfc{position:absolute;left:86px;top:calc(37% + 8px);width:22px;height:22px;border-radius:50%;border:2px solid rgba(244,233,204,.55);border-left-color:transparent;border-bottom-color:transparent;transform:rotate(45deg)}
+.tp-meth>button{font-size:12px;line-height:1.35;text-align:center}
