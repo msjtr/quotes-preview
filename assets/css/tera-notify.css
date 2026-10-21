@@ -875,3 +875,9 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
 .tp-dev.is-off{opacity:.7}
 .tp-dev-i svg{width:30px;height:34px;display:block}
 .tp-dev-t{display:grid;gap:1px}.tp-dev-t b{font-size:13.5px}.tp-dev-t small{font-size:12px;color:#5b6b82}
+
+/* v401: بطاقة الإشعار — النص كامل، والطويل مختصر مع «عرض النص كاملًا» */
+.tqn-card{text-align:center}
+.tqn-full{margin:0;color:#3d4d64;font-size:clamp(13.5px,3.7vw,15px);line-height:1.85;white-space:pre-line;overflow-wrap:anywhere;max-height:52vh;overflow:auto}
+.tqn-full.is-clamp{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;max-height:none}
+.tqn-more{margin-top:6px;border:0;background:none;color:#06707A;font:700 13.5px "IBM Plex Sans Arabic",sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
