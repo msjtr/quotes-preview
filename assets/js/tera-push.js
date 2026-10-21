@@ -44,11 +44,13 @@
   }
   function browser() { return EDGE ? 'Edge' : /SamsungBrowser/.test(UA) ? 'Samsung Internet' : /CriOS|Chrome\//.test(UA) ? 'Chrome' : /Firefox|FxiOS/.test(UA) ? 'Firefox' : /Safari\//.test(UA) ? 'Safari' : 'المتصفح'; }
   function pushSupported() { return 'Notification' in W && 'serviceWorker' in navigator && 'PushManager' in W; }
+  /* v395: هل هذا الجهاز مربوط بحساب الجلسة على الخادم (external_id)؟ — بدونه لا يصل الإشعار الموجَّه لهذا الحساب */
+  function linked() { if (!APP_ID) return true; var se = session(); if (!se || !se.uid) return false; return String(ls('tera.push.reg') || '').indexOf(se.uid + ':') === 0; }
   function state() {
     var perm = APP_ID ? S.perm : (S.demoPerm || 'default'); /* العيّنة: معاينة لا تتأثر بإذن المتصفح الفعلي */
     return { live: !!APP_ID, device: device(), browser: browser(), installed: S.installed || standalone(), oneTap: !!S.deferred,
       ios: IOS, needsInstallForPush: IOS && !standalone(), supported: pushSupported() || IOS,
-      perm: perm, on: perm === 'granted' && (S.sub || !APP_ID), blocked: perm === 'denied' };
+      perm: perm, on: perm === 'granted' && (S.sub || !APP_ID), blocked: perm === 'denied', linked: linked() };
   }
 
   /* ---------- التثبيت ---------- */
@@ -265,7 +267,7 @@
     var sid = OS.User.PushSubscription.id; if (!sid || !OS.User.PushSubscription.optedIn) return Promise.resolve(false);
     var key = se.uid + ':' + sid; if (ls('tera.push.reg') === key) return Promise.resolve(true);
     return fetch('/api/push/register', { method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + se.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription_id: sid }) })
-      .then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (j) { if (j && j.ok) ls('tera.push.reg', key); return !!(j && j.ok); }).catch(function () { return false; });
+      .then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (j) { if (j && j.ok) { ls('tera.push.reg', key); fire(); } return !!(j && j.ok); }).catch(function () { return false; });
   }
   function enable(opt) {
     opt = opt || {};
@@ -430,5 +432,6 @@
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', mountPromo); else mountPromo();
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', mountBar); else mountBar();
 
-  W.TeraPush = { secGuide: secGuide, state: state, install: install, enable: enable, test: test, off: off, panel: panel, on: on, guide: guide, androidGuide: androidGuide, openGuide: openGuide, GUIDES: GUIDES, live: !!APP_ID, LIVE: LIVE };
+  function link() { if (!APP_ID) return Promise.resolve(true); return sdk().then(register).catch(function () { return false; }); }
+  W.TeraPush = { secGuide: secGuide, state: state, link: link, install: install, enable: enable, test: test, off: off, panel: panel, on: on, guide: guide, androidGuide: androidGuide, openGuide: openGuide, GUIDES: GUIDES, live: !!APP_ID, LIVE: LIVE };
 })(window, document);

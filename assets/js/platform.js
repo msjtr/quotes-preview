@@ -2986,7 +2986,7 @@ function dbNotifs() {
         DBN.rows = R.filter(function (x) { return x && x.kind === 'direct_message'; }); DBN.at = Date.now(); DBN.busy = false; if (DBN.rows.length) draw();
       }).catch(function () { DBN.at = Date.now(); DBN.busy = false; });
     }
-    return DBN.rows.map(function (x) { return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: 'system', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '' }; });
+    return DBN.rows.map(function (x) { return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '' }; });
   } catch (err) { return []; }
 }
 function extraNotifs() {
@@ -7590,7 +7590,7 @@ function tqAccountPage() {
   const V = (A && A.version) || window.TQ_VERSION || {}, SA = !!(A && A.standalone);
   if (A && A.info && Date.now() - TQACC.asked > 60000) { TQACC.asked = Date.now(); A.info().then(function (r) { TQACC.ver = r; if (S.tab === 'other' && S.other === 'tq-account') draw(); }); }
   const vr = TQACC.ver, verB = vr ? (vr.newer && vr.latest ? ['يحتاج إلى تحديث — الإصدار ' + vr.latest.v, 'warn'] : ['لديك آخر إصدار ✓', 'ok']) : null;
-  const pushB = st && st.on ? ['مفعّلة ✓', 'ok'] : st && st.blocked ? ['محظورة من إعدادات المتصفح', 'warn'] : null;
+  const pushB = st && st.on && st.linked === false ? ['مفعّلة — غير مربوطة بحسابك بعد (اضغط للربط)', 'warn'] : st && st.on ? ['مفعّلة ومربوطة بحسابك ✓', 'ok'] : st && st.blocked ? ['محظورة من إعدادات المتصفح', 'warn'] : null;
   const say = function (o) { if (window.TeraNotify && window.TeraNotify.show) window.TeraNotify.show(o); };
   const app = SA ? { ic: 'x-circle:navy', t: 'تسجيل الخروج من التطبيق', d: 'يُنهي جلستك ويُغلق التطبيق على هذا الجهاز', go: function () { if (A && A.close) A.close(); } }
     : { ic: 'download-simple:sky', t: 'احصل على تطبيق تيرا', d: 'ثبّته على جهازك ليفتح كتطبيق مستقل', go: function () { if (TP && TP.install) TP.install(); else if (TP && TP.guide) TP.guide(); } };
@@ -7599,7 +7599,8 @@ function tqAccountPage() {
     ['app', 'تطبيق تيرا', 'device-mobile:teal', [
       { ic: 'arrows-clockwise:teal', t: 'راجع آخر إصدار', d: ['الإصدار ' + (V.v || '') + (V.d ? ' · ' : ''), V.d ? ltr(V.d) : null].filter(Boolean), badge: verB, go: function () { if (A && A.open) A.open(); } },
       { ic: 'bell-ringing:gold', t: 'تفعيل الإشعارات', d: 'ليصلك كل ما يخص حسابك', badge: pushB, go: function () {
-        if (st && st.on) return say({ kind: 'ok', icon: 'bell-ringing:gold', title: 'الإشعارات مفعّلة', text: 'يصلك كل ما يخص حسابك على هذا الجهاز.' });
+        if (st && st.on && st.linked === false && TP && TP.link) { const hb = window.TeraNotify && window.TeraNotify.busy ? window.TeraNotify.busy('جارٍ ربط هذا الجهاز بحسابك…') : null; return TP.link().then(function (ok) { try { hb && hb.close && hb.close(); } catch (err) { void err; } draw(); say(ok ? { kind: 'ok', icon: 'bell-ringing:gold', title: 'رُبط الجهاز بحسابك', text: 'تصلك الآن إشعارات حسابك على هذا الجهاز.' } : { kind: 'warn', title: 'تعذّر الربط الآن', text: 'تأكد من تسجيل الدخول والاتصال، ثم أعد المحاولة.' }); }); }
+        if (st && st.on) return say({ kind: 'ok', icon: 'bell-ringing:gold', title: 'الإشعارات مفعّلة ومربوطة', text: 'يصلك كل ما يخص حسابك على هذا الجهاز.' });
         if (TP && TP.enable) { try { Promise.resolve(TP.enable()).then(function () { draw(); }, function () { draw(); }); } catch (err) { void err; } } } },
       app]]]);
   try { r.forEach(function (n) { const f = n && n.querySelector && n.querySelector('.hf-row'); if (f) f.remove(); }); } catch (err) { void err; }
