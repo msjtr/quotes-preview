@@ -2953,7 +2953,7 @@ function buildNotifs() {
     out.push({ id: 'paid:' + p.c.no + ':' + p.i, cat: 'pay', k: 'paid', at: p.at, p: p, text: nMsg('paid', { amt: SR(p.paid), no: p.c.no, ref: p.gw.txn, rc: p.rc.no }) });
     if (paidOnTime(p)) out.push({ id: 'thx:' + p.c.no + ':' + p.i, cat: 'pay', k: 'thanks', at: p.at, p: p, title: 'شكرًا لالتزامكم بموعد السداد — الدفعة ' + p.i + ' · ' + p.c.no, text: THANKS.body, act: ['عرض رسالة الشكر', function () { FX.pid = p.c.no + ':' + p.i; go('rcpt'); }] });
   });
-  return out.concat(extraNotifs()).concat(quoteNotifs()).sort(function (a, b) { return b.at - a.at || (b.k === 'late') - (a.k === 'late'); });
+  return out.concat(extraNotifs()).concat(quoteNotifs()).concat(dbNotifs()).sort(function (a, b) { return b.at - a.at || (b.k === 'late') - (a.k === 'late'); });
 }
 /* تنبيهات أخرى غير المدفوعات — تصل للعميل في مركز التنبيهات والجرس، وعلى البريد وواتساب حسب تفضيلاته */
 const NCAT = [['all', 'الكل'], ['pay', 'السداد'], ['tr', 'التحويلات البنكية'], ['req', 'الطلبات'], ['contract', 'العقود'], ['msg', 'المراسلات'], ['sec', 'الحساب والأمان'], ['admin', 'إعلانات الإدارة']];
@@ -2973,6 +2973,22 @@ function nbSync() {
   document.querySelectorAll('[data-nav=bell]').forEach(function (b) { let i = b.querySelector('.t2-nbadge'); if (!i) { i = document.createElement('i'); i.className = 't2-nbadge'; b.appendChild(i); } i.innerHTML = c.all > 9 ? '<bdi dir="ltr">9+</bdi>' : String(c.all); i.hidden = !c.all; });
 }
 const openNs = (k) => { FX.ns = k; FX.nv = 'client'; go('notif'); };
+/* v390: الإشعارات المرسلة للحساب من الإدارة (الرسالة المباشرة وإشعار الجوال لحساب محدد) — تُحفظ في القاعدة وتظهر في مركز الإشعارات
+   (my_inbox · stf_38 — إشعارات صاحب الجلسة وحده). في العيّنة لا شيء. */
+const DBN = { at: 0, busy: false, rows: [] };
+function dbNotifs() {
+  try {
+    if (!LIVE.on || !LIVE.me) return [];
+    if (!DBN.busy && Date.now() - DBN.at > 60000) {
+      DBN.busy = true;
+      admRpc('my_inbox', { p_limit: 50 }).then(function (j) {
+        const R = Array.isArray(j) ? j : (j && (j.rows || j.items || j.notifications)) || [];
+        DBN.rows = R.filter(function (x) { return x && x.kind === 'direct_message'; }); DBN.at = Date.now(); DBN.busy = false; if (DBN.rows.length) draw();
+      }).catch(function () { DBN.at = Date.now(); DBN.busy = false; });
+    }
+    return DBN.rows.map(function (x) { return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: 'system', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '' }; });
+  } catch (err) { return []; }
+}
 function extraNotifs() {
   const r31 = REQS.filter(function (x) { return x.no === 'RQ-50231'; })[0], c31 = cByNo('TC-26-0031');
   /* انتهاء صلاحية مرفق في «مرفقاتي» — إشعار يوجّه للمرفق نفسه */
@@ -7501,7 +7517,7 @@ function sysPushPage() {
       const d = await clPost('/admin/api/comm/direct', { to: F.to, tpl_id: F.tid, channels: F.ch, url: F.url });
       if (h && h.close) h.close();
       if (!d || typeof d.ok !== 'boolean' || (!d.ok && !d.message && !d.results)) { say({ kind: 'warn', title: 'الإرسال المباشر غير مفعّل على الخادم بعد', text: 'يعمل إشعار الجوال وحده الآن؛ والبريد وواتساب بعد رفع تحديث الخادم.', ms: 0, actions: [{ label: 'فهمت', primary: true }] }); return; }
-      const R = (d && d.results) || {}, NM = { push: 'إشعار الجوال', email: 'البريد', whatsapp: 'واتساب' };
+      const R = (d && d.results) || {}, NM = { push: 'إشعار الجوال', email: 'البريد', whatsapp: 'واتساب', inbox: 'مركز الإشعارات' };
       const rows = Object.keys(R).map(function (k) { return (R[k].ok ? '✓ ' : '✗ ') + NM[k] + (R[k].ok ? '' : ' — ' + (R[k].message || 'لم يُرسل')); });
       say({ kind: d && d.ok ? (rows.some(function (x) { return x.charAt(0) === '✗'; }) ? 'warn' : 'ok') : 'bad', icon: 'paper-plane-tilt:teal', title: d && d.ok ? 'أُرسلت الرسالة' + (d.to ? ' إلى ' + d.to : '') : 'لم تُرسل الرسالة', text: rows.length ? rows.join(' · ') : ((d && d.message) || 'تعذّر الإرسال.'), ms: 0, actions: [{ label: 'تم', primary: true }] });
       cuSetLog('أرسل رسالة مباشرة «' + F.t + '» (' + F.ch.map(function (k) { return NM[k]; }).join('، ') + ')');
