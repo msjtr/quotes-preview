@@ -57,7 +57,7 @@
       var i = li.querySelector('i'); if (i) i.textContent = s < n ? '✓' : String(s);
     });
   }
-  function result(st) {
+  function result(st, rc) {
     var T = {
       paid: { c: '#0E7C70', l: 'مدفوع', t: 'تم الدفع بنجاح', s: D.okmsg || 'وصلتنا دفعتك، وأُرسل الإيصال إلى بريدك وواتساب وإشعار التطبيق.' },
       failed: { c: '#B3262F', l: 'فشل', t: 'لم تكتمل العملية', s: 'لم يُخصم أي مبلغ من بطاقتك. يمكنك المحاولة مرة أخرى.' },
@@ -72,13 +72,14 @@
     if (seal && !reduce) for (var i = 0; i < 16; i++) { var a = i * Math.PI / 8, r = 110 + (i % 3) * 22, b = document.createElement('i'); b.className = 'bt'; b.style.setProperty('--dx', Math.round(Math.cos(a) * r) + 'px'); b.style.setProperty('--dy', Math.round(Math.sin(a) * r) + 'px'); if (st === 'paid') seal.appendChild(b); }
     show($('[data-rate]', res), st === 'paid');
     var retry = $('[data-retry]', res); show(retry, st === 'failed');
+    var dl = document.getElementById('tp-rcpt'); if (dl && rc) { dl.href = rc; dl.textContent = st === 'paid' ? 'تحميل الإيصال PDF' : 'تحميل إشعار العملية PDF'; show(dl, true); }
     show(res, true);
     try { res.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); } catch (e) { void e; }
   }
   function poll(n) {
     fetch(D.status, { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) {
       var s = j && j.status;
-      if (s === 'paid' || s === 'failed') return result(s);
+      if (s === 'paid' || s === 'failed') return result(s, j.receipt);
       if (n > 0) setTimeout(function () { poll(n - 1); }, 2500); else result('pending');
     }).catch(function () { if (n > 0) setTimeout(function () { poll(n - 1); }, 3000); else result('pending'); });
   }
