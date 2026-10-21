@@ -50,6 +50,9 @@
   var form = document.getElementById('tp-form'), proc = document.getElementById('tp-proc'), res = document.getElementById('tp-res');
   var started = false, ready = false, seen = false;
   function show(el, on) { if (el) el.hidden = !on; }
+  /* v427: تشخيص مراحل الدفع (بلا أي بيانات بطاقة) */
+  function ev(stage, data) { try { if (!D.status) return; fetch(D.status.replace(/\/status$/, '/ev'), { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stage, data: data || {} }) }); } catch (e) { void e; } }
+  window.addEventListener('error', function (e) { ev('js_error', { m: String(e.message || '').slice(0, 200) }); });
   function fail(msg) { if (err) { err.textContent = msg; show(err, true); } if (alt && alt.getAttribute('href') !== '#') show(alt, true); }
   function step(n) {
     document.querySelectorAll('.tp-steps li[data-s]').forEach(function (li) {
@@ -96,11 +99,12 @@
       new window.Pixel({
         publicKey: D.pub, clientSecret: D.cs, paymentMethods: PM, elementId: 'tp-pixel',
         disablePay: true, showSaveCard: D.save === '1',
-        cardValidationChanged: function (ok) { seen = true; if (payBtn) payBtn.classList.toggle('is-ready', !!ok); if (ok) show(err, false); },
-        beforePaymentComplete: async function () { started = true; if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'جارٍ الدفع…'; } return true; },
+        cardValidationChanged: function (ok) { if (!seen) ev('fields_ready'); seen = true; ev('valid', { ok: !!ok }); if (payBtn) payBtn.classList.toggle('is-ready', !!ok); if (ok) show(err, false); },
+        beforePaymentComplete: async function () { ev('before'); started = true; if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'جارٍ الدفع…'; } return true; },
         afterPaymentComplete: async function (r) {
           /* التحقق الآمن من البنك (3-D Secure) أو صفحة العودة: ننتقل إليها، وصفحة العودة في تيرا تعرض النتيجة بالختم */
           var d = (r && r.data) || {}, url = d.redirection_url || d.redirect_url;
+          ev('after', { status: r && r.status, keys: Object.keys(d || {}).slice(0, 20), success: d.success, pending: d.pending, msg: String(d.message || d.msg || d.detail || d.data_message || '').slice(0, 200), redirect: url ? String(url).replace(/\?.*$/, '').slice(0, 120) : '' });
           if (typeof url === 'string' && /^https:\/\//i.test(url)) { show(form, false); show(proc, true); location.href = url; return; }
           if (r && r.status >= 400) {
             started = false; if (payBtn) { payBtn.disabled = false; payBtn.textContent = D.cta || 'ادفع'; }
@@ -124,7 +128,8 @@
           Color_Input_Fields: '#FFFFFF', Text_Color_For_Label: '#5E6B7C', Text_Color_For_Input_Fields: '#0B1B3A', Color_For_Text_Placeholder: '#A3ADBA'
         }
       });
-    } catch (e) { fail('تعذّر تشغيل نموذج البطاقة. يمكنك إكمال الدفع من واجهة Paymob البديلة.'); }
+      ev('mounted');
+    } catch (e) { ev('mount_error', { m: String(e && e.message || e).slice(0, 200) }); fail('تعذّر تشغيل نموذج البطاقة. أعد تحميل الصفحة.'); }
     return true;
   }
   function boot() {
@@ -152,31 +157,39 @@
           return;
         }
         D.pub = j.pub; D.cs = j.cs; D.status = j.status; D.save = j.save || '0';
-        if (alt && j.hosted) alt.setAttribute('href', j.hosted);
-        var apl = document.getElementById('tp-apay'); if (apl && j.hosted) apl.setAttribute('href', j.hosted);
         if (j.ref) document.querySelectorAll('[data-ref]').forEach(function (el) { el.textContent = j.ref; });
         if (payBtn) payBtn.disabled = false;
         boot();
       })
       .catch(function () { box.classList.remove('wait'); if (err) { err.textContent = 'تعذّر الاتصال الآن. أعد تحميل الصفحة.'; show(err, true); } });
   } else boot();
-  /* v426: اختيار طريقة الدفع — مدى · فيزا/ماستركارد (نموذج البطاقة) · Apple Pay (نافذة Apple Pay الآمنة) */
-  var cardBox = document.getElementById('tp-cardbox'), appleBox = document.getElementById('tp-applebox');
-  var MN = { mada: 'بمدى', card: 'بالبطاقة' };
+  /* v427: اختيار طريقة الدفع — مدى أو فيزا/ماستركارد (نموذج البطاقة) · Apple Pay داخل الصفحة نفسها */
+  var cardBox = document.getElementById('tp-cardbox'), appleBox = document.getElementById('tp-applebox'), apMounted = false;
+  function mountApple() {
+    if (apMounted || !D.cs || typeof window.Pixel !== 'function') return;
+    apMounted = true;
+    try {
+      new window.Pixel({ publicKey: D.pub, clientSecret: D.cs, paymentMethods: ['apple-pay'], elementId: 'tp-apple',
+        beforePaymentComplete: async function () { ev('ap_before'); started = true; return true; },
+        afterPaymentComplete: async function (r) { var d = (r && r.data) || {}; ev('ap_after', { status: r && r.status, success: d.success, pending: d.pending }); if (r && r.status >= 400) { started = false; return; } processing(); },
+        onPaymentCancel: function () { ev('ap_cancel'); started = false; } });
+      ev('ap_mounted');
+    } catch (e) { ev('ap_error', { m: String(e && e.message || e).slice(0, 200) }); }
+    setTimeout(function () { var el = document.getElementById('tp-apple'), n = document.getElementById('tp-apnote');
+      if (el && el.getBoundingClientRect().height < 20 && n) n.textContent = 'Apple Pay متاح على iPhone وأجهزة Mac من متصفح Safari. على هذا الجهاز ادفع بمدى أو البطاقة.'; }, 4000);
+  }
   document.querySelectorAll('.tp-meth [data-m]').forEach(function (b) {
     b.addEventListener('click', function () {
       var m = b.getAttribute('data-m');
       document.querySelectorAll('.tp-meth [data-m]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
       show(cardBox, m !== 'apple'); show(appleBox, m === 'apple');
-      if (payBtn && !started && MN[m]) payBtn.textContent = 'ادفع ' + money(Number(D.amount) || 0) + ' ر.س ' + MN[m];
+      if (m === 'apple') mountApple();
+      ev('method', { m: m });
     });
   });
-  var apl0 = document.getElementById('tp-apay');
-  if (apl0) apl0.addEventListener('click', function (ev) { if (apl0.getAttribute('href') === '#') { ev.preventDefault(); if (err) { err.textContent = 'لحظة… نجهّز Apple Pay.'; } } });
-  if (payBtn && MN.mada) payBtn.textContent = 'ادفع ' + money(Number(D.amount) || 0) + ' ر.س ' + MN.mada;
   if (payBtn) payBtn.addEventListener('click', function () {
     if (payBtn.disabled || started) return;
-    show(err, false); window.dispatchEvent(new Event('payFromOutside'));
+    show(err, false); ev('pay_click'); window.dispatchEvent(new Event('payFromOutside'));
   });
   var again = document.querySelector('button[data-retry]'); /* v426: الزر نفسه — لا الإطار #tp الذي يحمل data-retry */
   if (again) again.addEventListener('click', function () { location.href = D.retry || '/clients/'; });

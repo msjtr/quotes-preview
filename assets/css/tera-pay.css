@@ -202,14 +202,7 @@ body.tp{font-family:Alexandria,"IBM Plex Sans Arabic",Tahoma,sans-serif;color:va
 .tp-card .no{top:55%}.tp-card .mk{bottom:50px}
 @media (max-width:820px){
   .tp-wrap.is-one{align-content:flex-start}
-  .tp-wrap.is-one .tp-side{padding:16px 18px 18px}
-  .tp-wrap.is-one .tp-logo{height:28px}
-  .tp-wrap.is-one .tp-gl,.tp-wrap.is-one .tp-h1,.tp-wrap.is-one .tp-vat,.tp-wrap.is-one .tp-dl,.tp-wrap.is-one .tp-side .tp-foot,.tp-wrap.is-one .tp-prog{display:none}
-  .tp-wrap.is-one .tp-kick{margin-top:14px}
-  .tp-wrap.is-one .tp-amt{margin-top:6px}.tp-wrap.is-one .tp-amt b{font-size:46px}
-  .tp-wrap.is-one .tp-hm{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:11.5px;color:#9FAAC0}
-  .tp-wrap.is-one .tp-hm b{color:#F1D894;direction:ltr;letter-spacing:1px;white-space:nowrap}
-  .tp-wrap.is-one .tp-stage{display:none}
-  .tp-wrap.is-one .tp-grid{margin-top:12px}
-  .tp-wrap.is-one .tp-meth>button{min-height:58px;font-size:11.5px;padding:6px 4px}
+  .tp-wrap.is-one .tp-meth>button{min-height:54px;padding:6px 4px}
 }
+.tp-meth>button .lg img{height:20px}.tp-meth>button .lg img.vi{height:14px}.tp-meth>button .lg img.mc{height:22px}.tp-meth>button .lg img.ap{height:24px}
+#tp-apple{min-height:0;padding:0}
