@@ -368,14 +368,25 @@
     if (!APP_ID) return;
     var se = session();
     if (S.perm === 'granted' && (!IOS || standalone())) { sdk().then(register).catch(function () {}); return; }
-    if (!se || S.perm !== 'default' || !D.getElementById('pv-host')) return;
-    var last = Number(ls('tera.push.ask') || 0); if (Date.now() - last < 7 * 864e5) return;
-    setTimeout(function () {
-      if (N().current && N().current()) return;
-      ls('tera.push.ask', String(Date.now()));
-      show({ kind: 'info', icon: 'bell-ringing:navy', title: 'فعّل إشعارات منصة تيرا', text: 'لتصلك تذكيرات السداد، وطلبات القبول، وتحديثات طلباتك، وتنبيهات الأمان — حتى والمنصة مغلقة.' + (IOS && !standalone() ? ' في الآيفون: أضف تيرا إلى الشاشة الرئيسية أولًا.' : ''), ms: 0,
-        actions: [{ label: IOS && !standalone() ? 'كيف أضيفها؟' : 'تفعيل الإشعارات', primary: true, run: function () { setTimeout(function () { enable(); }, 50); } }, { label: 'لاحقًا' }] });
-    }, 6000);
+    /* v398: توصية مهمة عند كل دخول (مرة في كل جلسة للتطبيق) ما دامت الإشعارات غير مفعّلة — حتى يفعّلها صاحب الحساب.
+       الآيفون من المتصفح: إضافة تيرا إلى الشاشة الرئيسية أولًا · المحظورة: دليل تفعيلها من إعدادات المتصفح · غير ذلك: «تفعيل الآن». */
+    if (!se || !D.getElementById('pv-host') || !pushSupported() && !IOS) return;
+    var sk = 'tera.push.nag:' + se.uid;
+    try { if (W.sessionStorage.getItem(sk)) return; } catch (e) { void e; }
+    var tries = 0;
+    function nag() {
+      if (S.perm === 'granted') return;
+      if (N().current && N().current()) { if (tries++ < 10) setTimeout(nag, 5000); return; }
+      try { W.sessionStorage.setItem(sk, String(Date.now())); } catch (e) { void e; }
+      var why = 'بدونها قد تفوتك تذكيرات السداد قبل موعدها، ونتائج طلباتك وعروضك، وتنبيهات أمان حسابك.';
+      if (IOS && !standalone()) return show({ kind: 'warn', icon: 'bell-ringing:gold', title: 'توصية مهمة: فعّل إشعارات تيرا', text: 'في الآيفون تصل الإشعارات بعد إضافة تيرا إلى الشاشة الرئيسية وفتحها منها. ' + why, ms: 0,
+        actions: [{ label: 'كيف أضيفها؟', primary: true, run: function () { setTimeout(function () { guide('ios', 'لتصلك إشعارات حسابك.'); }, 50); } }, { label: 'لاحقًا' }] });
+      if (S.perm === 'denied') return show({ kind: 'warn', icon: 'bell-ringing:gold', title: 'الإشعارات محظورة على هذا الجهاز', text: 'أوقفتها سابقًا من إعدادات المتصفح، فلا نستطيع تفعيلها من هنا. ' + why, ms: 0,
+        actions: [{ label: 'كيف أفعّلها؟', primary: true, run: function () { setTimeout(function () { openGuide('notifications'); }, 50); } }, { label: 'لاحقًا' }] });
+      show({ kind: 'warn', icon: 'bell-ringing:gold', title: 'توصية مهمة: فعّل إشعارات تيرا', text: why + ' تصلك حتى والمنصة مغلقة.', ms: 0,
+        actions: [{ label: 'تفعيل الآن', primary: true, run: function () { setTimeout(function () { enable(); }, 50); } }, { label: 'لاحقًا' }] });
+    }
+    setTimeout(nag, 4000);
   }
 
   /* ---------- شريط «ثبّت تيرا» أعلى الصفحة الرئيسية وبعد الدخول (يختفي إن كانت مثبّتة أو أُغلق — 3 أيام) ---------- */
