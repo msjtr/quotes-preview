@@ -4762,7 +4762,8 @@ function svcHubPage() {
   const nx = docsExpired().length;
   return secHub('svc', { t: 'خدماتي', s: 'عقودك ومدفوعاتك وبياناتك وطلبات الشركاء.', ic: 'services' }, [
     ['ct', 'العقود', 'contract', [{ ic: 'contract', t: 'عقودي', d: 'عقودك القائمة وتفاصيلها', go: function () { go('contracts'); } }, { ic: 'merge', t: 'توحيد عقودي في عقد واحد', d: 'دمج عقودك بدفعة شهرية واحدة', go: rs('merge') }, { ic: 'bank', t: 'سداد عقد كامل', d: 'سداد المتبقي على عقد دفعة واحدة', go: rs('settle') }, { ic: 'clock', t: 'طلب تأجيل دفعة', d: 'تأجيل دفعة مستحقة', go: rs('defer') }]],
-    ['py', 'المدفوعات', 'wallet', [{ ic: 'wallet', t: 'مدفوعاتي', d: 'دفعات العقود المستحقة والقادمة', go: function () { go('pay'); } }, { ic: 'receipt', t: 'سجلات مدفوعاتي', d: 'كل دفعاتك المسددة وإيصالاتها', go: function () { go('payrec'); } }]],
+    ['py', 'المدفوعات', 'wallet', [{ ic: 'wallet', t: 'مدفوعاتي', d: 'دفعات العقود المستحقة والقادمة', go: function () { go('pay'); } }, { ic: 'receipt', t: 'سجلات مدفوعاتي', d: 'كل دفعاتك المسددة وإيصالاتها', go: function () { go('payrec'); } },
+      { ic: 'card', t: 'طلبات الدفع', d: 'طلبات الدفع المرسلة إليك من منصة تيرا — تسدّدها إلكترونيًا', n: LIVE.on && PRQ.rows && PRQ.rows.length ? fmtNum(PRQ.rows.length) + (PRQ.rows.length === 1 ? ' طلب' : ' طلبات') : null, go: function () { go('other', 'pay-req'); } }]],
     ['rq', 'طلبات خدماتي', 'orders', [{ ic: 'orders', t: 'طلبات خدماتي', d: 'طلبات العقود والشركاء ومراحلها', n: (function (n) { return fmtNum(n) + (n <= 10 ? ' طلبات' : ' طلبًا'); })(REQS.filter(function (r) { return !isStoreReq(r); }).length), go: function () { FX.rs = ''; go('reqs'); } }]],
     ['pt', 'الشركاء', 'people', [{ ic: 'people', t: 'طلب عرض سعر من الشركاء', d: 'عروض أسعار من شركائنا', go: function () { go('other', 'cl-partners'); } }]],
     ['me', 'بياناتي', 'files', [{ ic: 'briefcase:navy', t: 'معلوماتي الوظيفية', go: function () { go('other', 'job-info'); } }, { ic: 'coins:teal', t: 'معلوماتي المالية', go: function () { go('other', 'fin-info'); } }, { ic: 'files', t: 'مرفقاتي', go: function () { goDoc(docsExpired()[0] || ''); }, badge: nx ? ['منتهي الصلاحية ' + fmtNum(nx), 'danger'] : null }]]]);
@@ -17253,6 +17254,32 @@ async function livePayExtras(box, cfg) {
       e('span', {}, [SR(Number(x.amount) || 0), x.next_billing ? ' · الخصم القادم ' : '', x.next_billing ? isoT(parseIso(x.next_billing)) : '', ' · ', (PAY_SS[st] || [x.state || '—'])[0]])]), cancel].filter(Boolean));
   })));
 }
+/* v412: طلبات الدفع المرسلة للعميل — خدمة بجانب سداد العقود: كل طلب بمبلغه ووصفه وصلاحيته، وزر الدفع يفتح إطار الدفع بهوية تيرا */
+const PRQ = { at: 0, busy: false, rows: null, err: '' };
+function prqLoad(force) {
+  if (!LIVE.on || PRQ.busy || (!force && PRQ.at && Date.now() - PRQ.at < 60000)) return;
+  PRQ.busy = true;
+  clApi('/api/account/pay/links').then(function (j) { PRQ.rows = (j && j.links) || []; PRQ.err = ''; })
+    .catch(function (er) { PRQ.err = (er && er.message) || 'تعذّر التحميل.'; if (!PRQ.rows) PRQ.rows = []; })
+    .then(function () { PRQ.at = Date.now(); PRQ.busy = false; draw(); });
+}
+function prqRow(x) {
+  const btn = DS.button('الدفع الإلكتروني · ' + SR(x.amount), { tone: 'primary', ui: 'credit-card', onClick: function () { location.href = x.url; } });
+  return e('div', { class: 'fx-lockc' }, [e('span', { class: 'fx-card-ic' }, frag(tile('receipt'))),
+    e('div', { class: 'fx-card-t' }, [e('b', {}, x.desc || 'طلب دفع من منصة تيرا'), e('span', {}, [e('bdi', { dir: 'ltr' }, x.ref), ' · صالح حتى ', isoT(new Date(x.expires_at)), x.contract ? ' · يُسدَّد في عقدك تلقائيًا' : '']),
+      e('small', { class: 'cu-dr-hint' }, 'تُكمل الدفع في إطار الدفع بهوية تيرا ثم بوابة الدفع الآمنة، وتعود إلى المنصة بالنتيجة.')]), btn]);
+}
+function prqPanel(title) {
+  if (!LIVE.on) return DS.panel(title || 'طلبات الدفع', 'المرسلة إليك من منصة تيرا', [DS.note('info', 'تظهر هنا طلبات الدفع المرسلة إليك', 'في المنصة الفعلية: كل طلب دفع ترسله لك منصة تيرا يظهر هنا بمبلغه ووصفه، وتسدّده من الزر.')]);
+  prqLoad(false);
+  const L = PRQ.rows;
+  if (!L) return DS.panel(title || 'طلبات الدفع', null, [DS.note('info', 'جارٍ التحميل…', '')]);
+  if (!L.length) return title ? DS.panel(title, 'المرسلة إليك من منصة تيرا', [DS.note('ok', 'لا طلبات دفع', PRQ.err || 'لا توجد طلبات دفع مفتوحة باسمك الآن.')]) : null;
+  return DS.panel(title || 'طلبات الدفع المرسلة إليك', 'من منصة تيرا · ' + fmtNum(L.length) + (L.length === 1 ? ' طلب' : ' طلبات'), L.map(prqRow));
+}
+function prqPage() { return [prqPanel('طلبات الدفع')].filter(Boolean); }
+try { Object.assign(ICON, { 'pay-req': ['card', 'teal'] }); } catch (err) { void err; }
+lp('pay-req', 'طلبات الدفع', 'svc', 'card', prqPage);
 function livePayPage() {
   const box = e('div', { class: 't2-stack-tight' }, [DS.note('info', 'جارٍ التحميل…', 'نقرأ إعداد الدفع من الخادم.')]);
   const paint = function (cfg) {
@@ -17267,6 +17294,8 @@ function livePayPage() {
     const extra = e('div', { class: 't2-stack-tight' }); box.appendChild(extra);
     box.appendChild(e('div', { class: 't2-pb-actions' }, [DS.button('رجوع', { onClick: function () { go('pay'); } })]));
     livePayExtras(extra, cfg);
+    /* v412: طلبات الدفع المرسلة إليك — مع سداد العقود في المكان نفسه */
+    const rq = prqPanel(); if (rq) box.insertBefore(rq, box.children[1] || null);
   };
   (LIVE_PAY.cfg ? Promise.resolve(LIVE_PAY.cfg) : clApi('/api/account/pay/config').then(function (c) { return (LIVE_PAY.cfg = c); }))
     .then(paint).catch(function () { paint({ enabled: false, mode: 'test' }); });
