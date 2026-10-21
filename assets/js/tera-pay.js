@@ -162,7 +162,7 @@
   } else boot();
   /* v426: اختيار طريقة الدفع — مدى · فيزا/ماستركارد (نموذج البطاقة) · Apple Pay (نافذة Apple Pay الآمنة) */
   var cardBox = document.getElementById('tp-cardbox'), appleBox = document.getElementById('tp-applebox');
-  var MN = { mada: 'بمدى', card: 'بالبطاقة الائتمانية' };
+  var MN = { mada: 'بمدى', card: 'بالبطاقة' };
   document.querySelectorAll('.tp-meth [data-m]').forEach(function (b) {
     b.addEventListener('click', function () {
       var m = b.getAttribute('data-m');
