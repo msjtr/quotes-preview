@@ -17217,7 +17217,7 @@ async function livePayExtras(box, cfg) {
   box.innerHTML = '';
   const C = (cards && cards.cards) || [], SB = ((subs && subs.subs) || []);
   if (cfg.saved_cards) box.appendChild(DS.panel('بطاقاتي المحفوظة', 'تظهر لك في صفحة Paymob لتختارها دون إعادة إدخالها', [
-    C.length ? null : e('small', { class: 'cu-dr-hint' }, 'لا بطاقات محفوظة. عند الدفع يمكنك اختيار حفظ بطاقتك في صفحة Paymob الآمنة — لا تُحفظ بيانات بطاقتك لدى المنصة.')
+    C.length ? null : e('small', { class: 'cu-dr-hint' }, 'لا بطاقات محفوظة. عند الدفع يمكنك اختيار حفظ بطاقتك في صفحة Paymob الآمنة.')
   ].filter(Boolean).concat(C.map(function (c) {
     const del = liveOk(DS.button('حذف', { size: 'sm', onClick: async function () { del.disabled = true; const j = await clPost('/api/account/pay/cards/' + c.id + '/delete', {}); if (j.ok) { snack('حُذفت البطاقة.'); livePayExtras(box, cfg); } else { snack('تعذّر الحذف.'); del.disabled = false; } } }));
     return e('div', { class: 'fx-lockc' }, [e('span', { class: 'fx-card-ic' }, frag(tile('card'))), e('div', { class: 'fx-card-t' }, [e('b', {}, c.card_subtype || 'بطاقة'), e('span', {}, [e('bdi', { dir: 'ltr' }, c.masked_pan || ''), c.expiry_month ? ' · تنتهي ' : '', c.expiry_month ? e('bdi', { dir: 'ltr' }, c.expiry_month + '/' + c.expiry_year) : ''])]), del]);
