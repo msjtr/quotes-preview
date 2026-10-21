@@ -516,7 +516,12 @@ const EXPLAIN = ['حالة العقد', 'ماذا يحدث بعد الطلب؟',
 (function () { const n0 = DS.note; DS.note = function (tone, title) { return tone === 'info' && EXPLAIN.indexOf(title) >= 0 ? null : n0.apply(DS, arguments); }; })();
 const S = { draft: {}, dmiss: [], editItem: -1, tab: 'dash', step: 0, miss: [], sent: null, msg: 'list', thread: 0, files: [], fileErr: '' };
 let ROOT = null;
-try { S.role = localStorage.getItem('tera-preview-role') === 'admin' ? 'admin' : 'client'; } catch (err) { S.role = 'client'; }
+/* v403: التحديث (أو الرجوع) يُبقي الدور الذي اختاره صاحب الجلسة — لا يفرض مدخلُ الصفحة دوره (لوحة الفريق ← المشرف) عند كل تحديث */
+try {
+  const nt = ((performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {}).type, ss = sessionStorage.getItem('tera-role-sess');
+  S.role = (ss === 'admin' || ss === 'client') && (nt === 'reload' || nt === 'back_forward') ? ss : (localStorage.getItem('tera-preview-role') === 'admin' ? 'admin' : 'client');
+} catch (err) { S.role = 'client'; }
+function roleKeep(r) { try { sessionStorage.setItem('tera-role-sess', r); localStorage.setItem('tera-preview-role', r); } catch (err) { void err; } }
 
 const nameOf = (list, v) => { const x = list.filter((o) => o[0] === v)[0]; return x ? x[1] : (v || ''); };
 const opts = (list) => [['', 'اختر']].concat(list.map((x) => Array.isArray(x) ? x : [x, x]));
@@ -14830,13 +14835,28 @@ document.addEventListener('click', function (ev) {
 }, true);
 function keepAnchor() {
   const a = ANCH; ANCH = null;
-  if (!a || a.key !== anchKey() || Date.now() - a.at > 5000) return;
+  if (!a || a.key !== anchKey() || Date.now() - a.at > 5000) return false;
   ROOT.querySelectorAll('.app-row').forEach(function (r, i) { if (a.rows[i] !== undefined) r.scrollLeft = a.rows[i]; });
   /* العنصر المضغوط يُعرَف بمفتاحه الثابت (data-ak) قبل موضعه في الشجرة — حتى لا تقفز الشاشة إذا ظهر أو اختفى تنبيه أعلاها */
   const byAk = a.ak ? ROOT.querySelector('[data-ak="' + a.ak.replace(/"/g, '') + '"]') : null;
   const el = byAk || nodeAt(a.path); if (!el || el === ROOT) return;
   const d = el.getBoundingClientRect().top - (byAk ? a.akTop : a.top);
   if (Math.abs(d) > 1) { const cur = SCROLLER === window ? window.scrollY : SCROLLER.scrollTop, max = SCROLLER === window ? document.documentElement.scrollHeight - window.innerHeight : SCROLLER.scrollHeight - SCROLLER.clientHeight; if (cur + d > max) ROOT.appendChild(e('div', { class: 'anch-sp', 'aria-hidden': 'true', style: 'height:' + Math.ceil(cur + d - max) + 'px' })); if (SCROLLER === window) window.scrollBy(0, d); else SCROLLER.scrollTop += d; }
+  return true;
+}
+/* v403: ثبات الصفحة — (1) إعادة رسم الصفحة نفسها (وصول بيانات، فتح قسم أو إغلاقه) تُبقي موضع التمرير كما هو،
+   (2) التحديث يعيدك إلى موضعك نفسه في الصفحة نفسها، (3) فتح صفحة أخرى أو عنصر تفصيلي يبدأ من أعلاها. */
+const SCRK = 'tera-scroll-v1';
+let SCR_RESTORE = null; try { SCR_RESTORE = JSON.parse(sessionStorage.getItem(SCRK) || 'null'); } catch (err) { SCR_RESTORE = null; }
+let SCR_T = 0, SCR_USER = 0;
+window.addEventListener('scroll', function () { clearTimeout(SCR_T); SCR_T = setTimeout(function () { try { if (!SCR_RESTORE) sessionStorage.setItem(SCRK, JSON.stringify({ k: anchKey(), y: Math.round(window.scrollY) })); } catch (err) { void err; } }, 250); }, { passive: true });
+['wheel', 'touchstart', 'keydown'].forEach(function (ev) { window.addEventListener(ev, function () { SCR_USER = Date.now(); }, { passive: true }); });
+function scrRestore() {
+  const r = SCR_RESTORE; if (!r || SCROLLER !== window) return false;
+  if (r.k !== anchKey() || (LIVE.on && !LIVE.me)) return r.k === anchKey();
+  const t0 = Date.now(), y = r.y;
+  [0, 250, 700, 1400, 2400].forEach(function (ms) { setTimeout(function () { if (SCR_USER > t0) return; if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); if (ms === 2400) SCR_RESTORE = null; }, ms); });
+  return true;
 }
 function toTop() { try { if (SCROLLER === window) window.scrollTo(0, 0); else SCROLLER.scrollTop = 0; } catch (err) { void err; } }
 function crumbs(list) {
@@ -14976,6 +14996,8 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   const accOnNow = S.tab === 'other' && S.other === 'tq-account'; /* v386: «حسابك» */
   document.querySelectorAll('.t2-dock-i').forEach(function (b) { b.classList.toggle('is-on', accOnNow ? b.dataset.nav === 'tq-account' : b.dataset.nav !== 'tq-account' && (b.dataset.nav === on || (on === 'devices' && b.dataset.nav === 'store') || (S.role === 'admin' && b.dataset.nav === 'adm-more' && on !== 'adm-home' && on !== 'sys') || (b.dataset.nav === 'more' && ['dash', 'store', 'devices', 'custom'].indexOf(on) < 0))); });
   const body = S.tab === 'elig' || S.tab === 'qreq' ? eligPage() : S.tab === 'msg' ? msgPage() : S.tab === 'dash' ? dashPage() : FIN[S.tab] ? FIN[S.tab][2]() : S.tab === 'other' ? ACCT[S.other](): svcPage();
+  const pk0 = window.__DRK, pk1 = anchKey(), sameP = pk0 === pk1, y0 = SCROLLER === window ? window.scrollY : SCROLLER.scrollTop;
+  if (sameP && ROOT.offsetHeight) ROOT.style.minHeight = ROOT.offsetHeight + 'px';
   mount(ROOT, e('div', { class: 't2-stack' }, [
     false ? DS.note('info', 'معاينة للمراجعة', 'افتح بطاقة «تحقق من أهليتك مع شركائنا»، و«مركز المراسلات» من القائمة. لا يُرسل شيء ولا تتغير أي بيانات.') : null,
     false ? DS.note('info', 'معاينة — ترتيب مقترح للوحتي الرئيسية', 'الترحيب وما يحتاج إلى إجراء ← اختصاراتك (وأولها «تحقق من أهليتك») ← آخر الطلبات والنشاط ← حالة حسابك ← العضوية. لا يُرسل شيء ولا تتغير أي بيانات.') : null,
@@ -14988,7 +15010,12 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   if (typeof phDedupe === 'function') phDedupe();
   if (typeof fldNorm === 'function') fldNorm();
   window.__LVSTILL = window.__LVAK === anchKey(); window.__LVAK = anchKey(); if (typeof lvMotion === 'function') { lvMotion(); setTimeout(lvMotion, 120); setTimeout(lvMotion, 600); }
-  keepAnchor();
+  const anchored = keepAnchor();
+  window.__DRK = pk1;
+  if (scrRestore()) { /* التحديث: الموضع المحفوظ لهذه الصفحة */ }
+  else if (sameP) { if (!anchored) { const y1 = SCROLLER === window ? window.scrollY : SCROLLER.scrollTop; if (Math.abs(y1 - y0) > 1) { if (SCROLLER === window) window.scrollTo(0, y0); else SCROLLER.scrollTop = y0; } } }
+  else if (pk0 !== undefined) toTop();
+  requestAnimationFrame(function () { ROOT.style.minHeight = ''; });
   /* مسار الدفعات: توسيط الدفعة الحالية عند ضيق المساحة */
   document.querySelectorAll('#pv-host .fx-trail-w, #pv-host .pt-w').forEach(function (w) { const c = w.querySelector('[aria-current]'); if (!c || w.scrollWidth <= w.clientWidth) return; const wr = w.getBoundingClientRect(), cr = c.getBoundingClientRect(); w.scrollLeft += (cr.left + cr.width / 2) - (wr.left + wr.width / 2); });
 }
@@ -15061,7 +15088,7 @@ function boot(dev) {
 }
 document.querySelectorAll('.pv-bar button[data-dev]').forEach(function (b) { b.addEventListener('click', function () { boot(b.dataset.dev); }); });
 /* تبويب المعاينة: العميل | المشرف — تبويب العميل يبقى كما هو */
-function setRole(r) { S.role = r; try { localStorage.setItem('tera-preview-role', r); } catch (err) { void err; } document.querySelectorAll('.pv-bar button[data-role]').forEach(function (x) { x.classList.toggle('is-on', x.dataset.role === r); }); S.tab = r === 'admin' ? 'other' : 'dash'; S.other = r === 'admin' ? 'adm-home' : ''; S.whoOpen = false; boot(S.dev || 'web'); toTop(); }
+function setRole(r) { S.role = r; roleKeep(r); document.querySelectorAll('.pv-bar button[data-role]').forEach(function (x) { x.classList.toggle('is-on', x.dataset.role === r); }); S.tab = r === 'admin' ? 'other' : 'dash'; S.other = r === 'admin' ? 'adm-home' : ''; S.whoOpen = false; boot(S.dev || 'web'); toTop(); }
 /* =============================== v247 — نظام نقاط ومكافآت تيرا =============================== */
 /* المنطق هنا مطابق لدوال القاعدة (loy_01): loyalty_calc_earn · loyalty_calc_redeem · loyalty_core_decide · loyalty_core_redeem.
    في العيّنة البيانات تجريبية؛ وعند الربط تُستبدل بـ RPC: my_loyalty · loyalty_preview · loyalty_redeem · loyalty_admin_*.
@@ -18525,7 +18552,7 @@ if (LIVE.on) {
     if (!LIVE.allow.length) { LIVE.me = null; LIVE.err = 'حسابك لا يملك دور العميل ولا دور الموظف في هذه المنصة.'; draw(); return; }
     ME.name = x.me.full_name || ME.name; ME.email = x.me.email || ''; ME.phone = x.me.phone ? '+' + String(x.me.phone).replace(/^\+/, '') : ''; ME.region = ''; ME.city = '';
     if (LIVE.allow.indexOf(S.role) < 0) { S.role = LIVE.allow[0]; S.tab = S.role === 'admin' ? 'other' : 'dash'; S.other = S.role === 'admin' ? 'adm-home' : ''; }
-    try { localStorage.setItem('tera-preview-role', S.role); } catch (err) { void err; }
+    roleKeep(S.role);
     liveData().catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
       /* التحديث يُبقي الصفحة نفسها: يُعاد استرجاع موضع التنقل بعد وصول البيانات الحقيقية (العقد والدفعة والإيصال وملف العميل) */
       try { if (window.__navRaw) { sessionStorage.setItem(NAVKEY, window.__navRaw); window.__navRaw = ''; loadNav(); if (FX.pfc) ADM.pfc = FX.pfc; } } catch (err) { void err; }
@@ -19525,7 +19552,7 @@ async function cpgExit(to) {
   const b = document.getElementById('cpv-bar'); if (b) b.classList.add('is-busy');
   await Promise.race([cpgLog('exit', cpgPageLabel()[0], 'خروج من صفحة العميل · مدة الزيارة ' + cpgDur(Date.now() - CPV.at)), new Promise(function (res) { setTimeout(res, 3500); })]);
   CPV.on = false;
-  try { localStorage.setItem('tera-preview-role', 'admin'); } catch (err) { void err; }
+  roleKeep('admin');
   S.role = 'admin'; S.tab = 'other'; S.other = to || 'cpg-access';
   try { saveNav(); } catch (err) { void err; }
   location.reload();

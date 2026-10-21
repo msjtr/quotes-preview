@@ -65,6 +65,7 @@
           if (j.reason_code) { lastCode = j.reason_code; lastMsg = j.message || null; }
           if (j.error === 'session_revoked' || (sess && j.closed)) { showEnded(j.reason_code || lastCode, j.message || lastMsg); return; }
           if (!sess) return;
+          if (Number(j.idle_minutes) > 0) IDLE_MIN = Number(j.idle_minutes);
           if (j.location_ok === false) showLocation(Number(j.location_grace_s) || 0);
           else if (j.location_ok === true) hideLocation();
         }).catch(function () {});
@@ -83,6 +84,32 @@
   document.addEventListener('visibilitychange', stateCheck);
   window.addEventListener('focus', stateCheck);
   window.addEventListener('online', stateCheck);
+
+  /* v403: تنبيه قبل انتهاء الجلسة بالخمول بدقيقتين — عدّاد تنازلي و«تمديد الجلسة» (يُسجَّل في عمليات الحساب) أو «تسجيل الخروج».
+   * المدة من الخادم (idle_minutes في نبضات الجلسة): العميل 30 دقيقة، والفريق 60 دقيقة. */
+  var IDLE_MIN = 30, WARN_S = 120, lastAct = Date.now(), warnEl = null, warnT = null;
+  ['pointerdown', 'keydown', 'touchstart', 'wheel', 'scroll'].forEach(function (ev) { window.addEventListener(ev, function () { if (!warnEl) lastAct = Date.now(); }, { passive: true, capture: true }); });
+  function fmtS(n) { n = Math.max(0, Math.ceil(n)); return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
+  function hideWarn() { clearInterval(warnT); warnT = null; if (warnEl && warnEl.parentNode) warnEl.parentNode.removeChild(warnEl); warnEl = null; }
+  function extend() {
+    var left = IDLE_MIN * 60 - (Date.now() - lastAct) / 1000;
+    lastAct = Date.now(); hideWarn();
+    var t = token(); if (t) F('/api/account/session/extend', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ left_s: Math.round(left) }), cache: 'no-store' }).catch(function () {});
+    try { if (window.TeraNotify && window.TeraNotify.show) window.TeraNotify.show({ force: true, kind: 'ok', icon: 'clock-countdown:teal', title: 'مُدّدت جلستك', text: 'تستمر الجلسة ' + IDLE_MIN + ' دقيقة أخرى من آخر نشاط.' }); } catch (e) { void e; }
+  }
+  function logout() { hideWarn(); try { if (window.TQ_APP && window.TQ_APP.logout) return window.TQ_APP.logout(function () { location.replace('/portal/'); }); } catch (e) { void e; } goLogin(); }
+  function idleTick() {
+    if (ended || !token()) { hideWarn(); return; }
+    var left = IDLE_MIN * 60 - (Date.now() - lastAct) / 1000;
+    if (left > WARN_S) { if (warnEl) hideWarn(); return; }
+    if (warnEl) return;
+    warnEl = card('جلستك على وشك الانتهاء', '', [['تمديد الجلسة', extend, true], ['تسجيل الخروج', logout, false]]);
+    var p = warnEl.querySelector('.sg-text');
+    var paint = function () { var l = IDLE_MIN * 60 - (Date.now() - lastAct) / 1000; if (p) p.textContent = 'لم نرصد نشاطًا منذ مدة. ستنتهي جلستك تلقائيًا لحمايتك خلال ' + fmtS(l) + ' دقيقة. اختر «تمديد الجلسة» للمتابعة.'; if (l <= 0) hideWarn(); };
+    paint(); warnT = setInterval(paint, 1000);
+    (document.body || document.documentElement).appendChild(warnEl);
+  }
+  setInterval(idleTick, 5000);
 
   /* المُجمِّع القائم يستدعي هذا عند انتهاء الجلسة */
   window.TeraAuth = window.TeraAuth || {};
