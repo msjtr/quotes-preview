@@ -80,8 +80,15 @@
       'f-reg1': ['جارٍ الحفظ…', ''], 'f-reg2': ['جارٍ الحفظ…', ''], 'f-reg3': ['جارٍ فحص كلمة المرور…', 'نتأكد أنها قوية وغير مسرّبة.'], 'f-reg4': ['جارٍ التحقق…', ''], 'f-reg5': ['جارٍ تفعيل المصادقة…', ''], 'f-reg6': ['جارٍ إنشاء حسابك…', 'لحظات ويصبح حسابك جاهزًا.'],
       'f-fg1': ['جارٍ التحقق من جوالك…', ''], 'f-fg2': ['جارٍ التحقق من بريدك…', ''], 'f-fg3': ['جارٍ التحقق الإضافي…', ''], 'f-fg4': ['جارٍ حفظ كلمة المرور…', ''], 'f-rc1': ['جارٍ التحقق من الرقم الإضافي…', ''], 'f-rc2': ['جارٍ حفظ كلمة المرور…', ''] };
     function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
-    function tick() { var l = Math.max(left, 0); $('#timer-v').textContent = fmt(l); $('#timer-bar').style.width = (l / SESSION * 100) + '%'; $('#pt-timer').classList.toggle('is-low', l <= 60); }
-    function startTimer() { clearInterval(timerId); left = SESSION; tick(); timerId = setInterval(function () { left--; tick(); if (left <= 0) { clearInterval(timerId); reset(); msg('lg-msg', 'bad', 'انتهت مدة الجلسة (10 دقائق) قبل اكتمال الخطوات. ابدأ من جديد.'); } }, 1000); }
+    function tick() { var l = Math.max(left, 0); $('#timer-v').textContent = fmt(l); $('#timer-bar').style.width = Math.min(100, l / SESSION * 100) + '%'; $('#pt-timer').classList.toggle('is-low', l <= 60); }
+    /* v403: قبل انتهاء مدة الخطوات بدقيقة: «تمديد الوقت» (5 دقائق، مرتين على الأكثر) بدل البدء من جديد */
+    var ext = 0, extAsked = false;
+    function askExtend() {
+      if (extAsked || ext >= 2 || !window.TeraNotify || !window.TeraNotify.show) return; extAsked = true;
+      window.TeraNotify.show({ force: true, now: true, kind: 'warn', icon: 'clock-countdown:gold', title: 'قاربت مدة الخطوات على الانتهاء', text: 'بقيت دقيقة لإكمال الدخول. تحتاج وقتًا أطول؟', ms: 0,
+        actions: [{ label: 'تمديد 5 دقائق', primary: true, run: function () { if (left > 0) { ext++; left += 300; tick(); extAsked = false; } } }, { label: 'لا، أكمل' }] });
+    }
+    function startTimer() { clearInterval(timerId); left = SESSION; ext = 0; extAsked = false; tick(); timerId = setInterval(function () { left--; tick(); if (left === 60) askExtend(); if (left <= 0) { clearInterval(timerId); reset(); msg('lg-msg', 'bad', 'انتهت مدة الجلسة قبل اكتمال الخطوات. ابدأ من جديد.'); } }, 1000); }
     function human() { if (LIVE) { humanOk = true; return; } humanOk = false; var h = $('#human'); h.classList.remove('ok'); $('#human-t').textContent = 'جارٍ التحقق البشري…'; setTimeout(function () { humanOk = true; h.classList.add('ok'); $('#human-t').textContent = 'تم التحقق بنجاح'; }, 1400); }
     var boxes = $$('#otp-in input');
     function reset() {
