@@ -15819,7 +15819,10 @@ function admCard(heads, tr) {
   const val = function (c) { return c === null || c === undefined || c === '' ? '—' : c; };
   const meta = e('span', { class: 'adm-cm' }, C.slice(1).map(function (c, i) { return heads[i + 1] ? e('span', { class: 'adm-cm-i' }, [e('small', {}, heads[i + 1]), e('span', {}, val(c))]) : null; }));
   const inner = [e('span', { class: 'ax-r-b' }, [e('b', { class: 'adm-ct' }, val(C[0])), meta]), open ? e('span', { class: 'cu-bd-go' }, ['عرض', frag(ui('caret-left', 14))]) : null];
-  return e('article', { class: 'nr cu-row cu-bd-r ax-r adm-card', 'data-s': s }, [open ? e('button', { type: 'button', class: 'nr-main', onClick: open }, inner) : e('div', { class: 'nr-main' }, inner)]);
+  /* v409: عمود الإجراءات (رأسه فارغ) كان يُسقط من البطاقة فتختفي أزرار التشغيل والإيقاف والاسترداد وغيرها — يُعرض الآن صفًّا تحت البطاقة */
+  const acts = C.slice(1).filter(function (c, i) { return !heads[i + 1] && c !== null && c !== undefined && c !== '' && c !== '—'; });
+  return e('article', { class: 'nr cu-row cu-bd-r ax-r adm-card' + (acts.length ? ' has-acts' : ''), 'data-s': s }, [open ? e('button', { type: 'button', class: 'nr-main', onClick: open }, inner) : e('div', { class: 'nr-main' }, inner),
+    acts.length ? e('div', { class: 'adm-ca', onClick: function (ev) { ev.stopPropagation(); } }, acts) : null]);
 }
 function admTable(heads, rows, total, empty, noOpen) {
   if (!rows.length) return LDS.emptyState({ icon: 'ok', title: empty || 'لا شيء هنا', body: 'غيّر التصفية أو حدّث القائمة.', compact: true });

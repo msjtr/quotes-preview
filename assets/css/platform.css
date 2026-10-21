@@ -8855,3 +8855,8 @@ html.cpv-on .t2-head{top:48px}
 .fx-npl-c{display:flex;flex-wrap:wrap;gap:8px 16px}
 .fx-npl-t{display:inline-flex;align-items:center;gap:8px;font:700 .8rem var(--t2-ff-text);color:var(--t2-ink);cursor:pointer}
 @media (max-width:40rem){.fx-npl-c{width:100%;justify-content:space-between}}
+
+/* v409: صف الإجراءات في بطاقات الإدارة */
+.t2.t2 .adm-card.has-acts{flex-wrap:wrap;grid-template-columns:minmax(0,1fr)}
+.t2.t2 .adm-card .adm-ca{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;width:100%;padding:0 10px 10px;cursor:default}
+.t2.t2 .adm-card .adm-ca .t2-pb-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0}
