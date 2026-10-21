@@ -815,6 +815,8 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
 @media (min-width:52rem){#pv-host .lv-page.is-tq-account .hc-g{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* v391: «حسابك» رابع عنصر في القائمة السفلية — أربعة أعمدة بدل ثلاثة (كان يلتف إلى سطر ثانٍ) */
 #pv-host .t2-app>.t2-dock,#pv-host.is-app .t2.is-client .t2-dock{grid-template-columns:repeat(var(--dock-n,4),minmax(0,1fr))!important}
+/* v393: قائمة صفحات الموقع (البوابة والرئيسية…) ثلاثة عناصر — لا خانة فارغة */
+#pv-host .t2-app>.t2-dock.ts-dock{--dock-n:3}
 
 /* v392: نتيجة الإرسال المباشر لكل قناة + بطاقة التحقق من الحساب */
 .pu-res{list-style:none;margin:0;padding:0;display:grid;gap:6px;text-align:right}
