@@ -14738,7 +14738,7 @@ function shell() {
     '<button class="t2-hbtn is-out" type="button" aria-label="تسجيل الخروج">' + tile('out') + '<span class="t2-out-ui" aria-hidden="true">' + ui('sign-out', 24) + '</span>' + '<span class="t2-hbtn-t">تسجيل الخروج</span></button></div></header>' +
     '<aside class="t2-side" aria-label="شريطُ التنقُّل"><div class="t2-side-top"><button class="t2-side-t" type="button"><span class="t2-chev" aria-hidden="true"></span><span>طيُّ القائمة</span></button></div><nav class="t2-side-n">' + side + '</nav></aside>' +
     '<div class="t2-main"><div class="t2-body"><div class="t2-wrap"><div class="t2-stack"><header class="t2-phead"><button type="button" class="t2-back" id="pv-back" hidden>' + ui('caret-right', 16) + '<span></span></button><nav class="t2-crumbs" aria-label="المسار"><ol class="t2-crumb-ol" id="pv-crumb"></ol></nav><div class="t2-phead-tx"><span class="t2-phead-ic" id="pv-ic" aria-hidden="true"></span><div class="t2-phead-tt"><h1 class="t2-phead-t" id="pv-title"></h1><p class="t2-phead-s" id="pv-sub"></p></div></div></header>' +
-    '<div class="t2-stack" id="pv-root"></div></div></div></div></div><nav class="t2-dock" aria-label="التنقُّلُ السريع">' + dock + '</nav></div>';
+    '<div class="t2-stack" id="pv-root"></div></div></div></div></div><nav class="t2-dock" aria-label="التنقُّلُ السريع" style="--dock-n:' + (dock.split('t2-dock-i').length - 1) + '">' + dock + '</nav></div>';
 }
 let SCROLLER = window;
 /* ===== تثبيت الشاشة: ما ضغطه المستخدم يبقى في مكانه بعد إعادة الرسم (الويب وتطبيق الجوال) — والأشرطة الأفقية تحتفظ بموضعها ===== */

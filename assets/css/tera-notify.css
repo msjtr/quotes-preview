@@ -813,3 +813,5 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
 @container app (max-width:40rem){.acc-page .hc-g{grid-template-columns:minmax(0,1fr)!important}}
 #pv-host .lv-page.is-tq-account .hc-g{grid-template-columns:minmax(0,1fr)}
 @media (min-width:52rem){#pv-host .lv-page.is-tq-account .hc-g{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* v391: «حسابك» رابع عنصر في القائمة السفلية — أربعة أعمدة بدل ثلاثة (كان يلتف إلى سطر ثانٍ) */
+#pv-host .t2-app>.t2-dock,#pv-host.is-app .t2.is-client .t2-dock{grid-template-columns:repeat(var(--dock-n,4),minmax(0,1fr))!important}
