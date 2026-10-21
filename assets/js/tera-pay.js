@@ -92,7 +92,7 @@
       new window.Pixel({
         publicKey: D.pub, clientSecret: D.cs, paymentMethods: ['card'], elementId: 'tp-pixel',
         disablePay: true, showSaveCard: D.save === '1',
-        cardValidationChanged: function (ok) { seen = true; if (payBtn) payBtn.disabled = !ok; if (ok) show(err, false); },
+        cardValidationChanged: function (ok) { seen = true; if (payBtn) payBtn.classList.toggle('is-ready', !!ok); if (ok) show(err, false); },
         beforePaymentComplete: async function () { started = true; if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'جارٍ الدفع…'; } return true; },
         afterPaymentComplete: async function (r) {
           /* التحقق الآمن من البنك (3-D Secure) أو صفحة العودة: ننتقل إليها، وصفحة العودة في تيرا تعرض النتيجة بالختم */
@@ -115,8 +115,7 @@
           Hint_Text: { saveCardConsentHint: 'تُحفظ البطاقة لدى Paymob بأمان لاستخدامها لاحقًا.', cvvModalTitle: 'رمز التحقق CVV', cvvVisaMastercardQuestion: 'بطاقة مدى أو فيزا أو ماستركارد؟', cvvVisaMastercardHint: 'رمز من 3 أرقام على ظهر البطاقة.', cvvAmexQuestion: 'بطاقة أمريكان إكسبريس؟', cvvAmexHint: 'رمز من 4 أرقام على وجه البطاقة.' },
           Font_Size_Label: '14', Font_Size_Input_Fields: '16', Font_Weight_Label: 700, Font_Weight_Input_Fields: 400,
           Color_Container: '#FFFFFF', Color_Border_Input_Fields: '#E7DFCC', Radius_Border: '14', Color_Primary: '#B8892F', Color_Error: '#B3262F', Color_Disabled: '#D9D2C2',
-          Color_Input_Fields: '#FFFFFF', Text_Color_For_Label: '#5E6B7C', Text_Color_For_Input_Fields: '#0B1B3A', Color_For_Text_Placeholder: '#A3ADBA',
-          Width_of_Container: '100%', Vertical_Padding: '6', Vertical_Spacing_between_components: '10', Container_Padding: '0'
+          Color_Input_Fields: '#FFFFFF', Text_Color_For_Label: '#5E6B7C', Text_Color_For_Input_Fields: '#0B1B3A', Color_For_Text_Placeholder: '#A3ADBA'
         }
       });
     } catch (e) { fail('تعذّر تشغيل نموذج البطاقة. يمكنك إكمال الدفع من واجهة Paymob البديلة.'); }
