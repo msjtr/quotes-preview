@@ -7518,8 +7518,10 @@ function sysPushPage() {
       if (h && h.close) h.close();
       if (!d || typeof d.ok !== 'boolean' || (!d.ok && !d.message && !d.results)) { say({ kind: 'warn', title: 'الإرسال المباشر غير مفعّل على الخادم بعد', text: 'يعمل إشعار الجوال وحده الآن؛ والبريد وواتساب بعد رفع تحديث الخادم.', ms: 0, actions: [{ label: 'فهمت', primary: true }] }); return; }
       const R = (d && d.results) || {}, NM = { push: 'إشعار الجوال', email: 'البريد', whatsapp: 'واتساب', inbox: 'مركز الإشعارات' };
-      const rows = Object.keys(R).map(function (k) { return (R[k].ok ? '✓ ' : '✗ ') + NM[k] + (R[k].ok ? '' : ' — ' + (R[k].message || 'لم يُرسل')); });
-      say({ kind: d && d.ok ? (rows.some(function (x) { return x.charAt(0) === '✗'; }) ? 'warn' : 'ok') : 'bad', icon: 'paper-plane-tilt:teal', title: d && d.ok ? 'أُرسلت الرسالة' + (d.to ? ' إلى ' + d.to : '') : 'لم تُرسل الرسالة', text: rows.length ? rows.join(' · ') : ((d && d.message) || 'تعذّر الإرسال.'), ms: 0, actions: [{ label: 'تم', primary: true }] });
+      /* v392: نتيجة كل قناة في صف مستقل (وصلت / لم تصل + السبب) بدل سطر واحد متلاصق */
+      const ks = ['email', 'whatsapp', 'push', 'inbox'].filter(function (k) { return R[k]; }), bad = ks.filter(function (k) { return !R[k].ok; }).length;
+      const list = ks.length ? e('ul', { class: 'pu-res' }, ks.map(function (k) { return e('li', { class: R[k].ok ? 'is-ok' : 'is-bad' }, [e('span', { class: 'pu-res-i', 'aria-hidden': 'true' }, R[k].ok ? '✓' : '✗'), e('div', { class: 'pu-res-t' }, [e('b', {}, NM[k]), e('small', {}, R[k].ok ? 'وصلت' : (R[k].message || 'لم تُرسل'))])]); })) : null;
+      say({ kind: d && d.ok ? (bad ? 'warn' : 'ok') : 'bad', icon: 'paper-plane-tilt:teal', title: d && d.ok ? 'أُرسلت الرسالة' : 'لم تُرسل الرسالة', text: d && d.to ? 'إلى ' + d.to + (ks.length ? ' — وصلت عبر ' + (ks.length - bad) + ' من ' + ks.length + ' قنوات.' : '') : (list ? '' : ((d && d.message) || 'تعذّر الإرسال.')), body: list, ms: 0, actions: [{ label: 'تم', primary: true }] });
       cuSetLog('أرسل رسالة مباشرة «' + F.t + '» (' + F.ch.map(function (k) { return NM[k]; }).join('، ') + ')');
       return;
     }
@@ -7546,7 +7548,15 @@ function sysPushPage() {
     F.whoBusy = false; F.who = d && d.ok ? d.who : { err: (d && d.message) || 'التحقق من الحساب يعمل بعد رفع تحديث الخادم.' }; draw();
   };
   const TYPE_AR = { client: 'عميل', staff: 'موظف', investor: 'شريك', partner: 'شريك', marketer: 'مسوّق' };
-  const whoCard = F.who ? (F.who.err ? DS.note('warn', 'لم نجد الحساب', F.who.err) : DS.note(F.who.status === 'disabled' ? 'warn' : 'ok', F.who.name || 'بلا اسم', ['نوع الحساب: ' + (TYPE_AR[F.who.type] || F.who.type || '—') + (F.who.status === 'disabled' ? ' (موقوف)' : ''), ' · البريد: ', ltr(F.who.email || '—'), ' · الجوال: ', ltr(F.who.phone || '—'), ' · يصله: ' + [F.who.can.push ? 'إشعار الجوال (إن فعّله على جهازه)' : null, F.who.can.email ? 'البريد' : null, F.who.can.whatsapp ? 'واتساب' : null].filter(Boolean).join('، ')])) : null;
+  /* v392: بطاقة التحقق — صفوف واضحة (نوع الحساب · البريد · الجوال) وقنوات الوصول شارات منفصلة */
+  const whoCard = F.who ? (F.who.err ? DS.note('warn', 'لم نجد الحساب', F.who.err) : (function () {
+    const W = F.who, kv = function (k, v) { return e('div', { class: 'pu-who-r' }, [e('span', {}, k), e('b', {}, v)]); };
+    const chip = function (on, t, why) { return e('span', { class: 'pu-chip is-' + (on ? 'ok' : 'off') }, [on ? '✓ ' : '✗ ', t, why ? e('small', {}, ' — ' + why) : null]); };
+    const pushWhy = !W.can.push ? 'لا جهاز مفعّل' : (live && F.cfg === 'off') ? 'مفتاح الخادم غير موضوع' : 'إن فعّله على جهازه';
+    return DS.note(W.status === 'disabled' ? 'warn' : 'ok', W.name || 'بلا اسم', [e('div', { class: 'pu-who' }, [
+      kv('نوع الحساب', (TYPE_AR[W.type] || W.type || '—') + (W.status === 'disabled' ? ' (موقوف)' : '')), kv('البريد', ltr(W.email || '—')), kv('الجوال', ltr(W.phone || '—'))]),
+      e('div', { class: 'pu-chips' }, [chip(!!W.can.email, 'البريد'), chip(!!W.can.whatsapp, 'واتساب', W.can.whatsapp ? '' : 'لا جوال مسجّل'), chip(!!W.can.push && !(live && F.cfg === 'off'), 'إشعار الجوال', pushWhy)])]);
+  })()) : null;
   const chk = function (k, t) { return e('label', { class: 'cu-ck' }, [e('input', { type: 'checkbox', checked: F.ch.indexOf(k) >= 0 ? '' : null, onChange: function (ev) { F.ch = ev.target.checked ? F.ch.concat([k]) : F.ch.filter(function (x) { return x !== k; }); draw(); } }), e('span', {}, t)]); };
   const CH_AR = { email: 'بريد', whatsapp: 'واتساب', both: 'بريد وواتساب' };
   const st = !live ? ['info', 'معاينة', 'في المنفذين الحيّين يُرسل الإشعار فعليًا عبر OneSignal.'] : F.cfg === 'ok' ? ['ok', 'الخدمة مربوطة', 'OneSignal مهيأ على الخادم ويُرسل الآن.'] : F.cfg === 'off' ? ['warn', 'بانتظار مفتاح الخادم', 'التطبيق في OneSignal جاهز، ويبقى وضع مفتاح الإرسال على الخادم.'] : F.cfg === 'err' ? ['warn', 'تعذّر فحص الحالة', 'أعد فتح الصفحة.'] : ['info', 'جارٍ الفحص…', ''];
