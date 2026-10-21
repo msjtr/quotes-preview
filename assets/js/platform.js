@@ -17084,12 +17084,12 @@ function livePayList() {
 }
 function livePayRow(p, cfg) {
   const amt = dueAmt(p), why = p.closed ? 'العقد مغلق' : p.rv !== 'ok' ? 'قيد المراجعة لدى الإدارة' : !cfg.enabled ? 'يُفعَّل قريبًا' : '';
-  const out = e('small', { class: 'cu-dr-hint', role: 'status' }, why ? why + ' — لا يمكن سدادها إلكترونيًا الآن.' : 'تُكمل الدفع في صفحة Paymob الآمنة ثم تعود إلى المنصة تلقائيًا.');
+  const out = e('small', { class: 'cu-dr-hint', role: 'status' }, why ? why + ' — لا يمكن سدادها إلكترونيًا الآن.' : 'تُكمل الدفع في بوابة دفع تيرا الآمنة (بطاقتك داخل نموذج Paymob المشفّر) ثم تعود إلى المنصة تلقائيًا.');
   const btn = liveOk(DS.button('الدفع الإلكتروني · ' + SR(amt), { tone: 'primary', ui: 'credit-card', onClick: async function () {
-    btn.disabled = true; out.textContent = 'جارٍ فتح صفحة الدفع الآمنة…';
+    btn.disabled = true; out.textContent = 'جارٍ فتح بوابة الدفع الآمنة…';
     try {
       const j = await clPost('/api/account/pay/' + encodeURIComponent(p.pid), {});
-      if (!j || !j.ok || !j.url || !/^https:\/\/[a-z0-9.-]*paymob\.com\//i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
+      if (!j || !j.ok || !j.url || !/^(https:\/\/[a-z0-9.-]*paymob\.com\/|\/api\/pay\/c\/[A-Za-z0-9_-]{32}$)/i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
       location.href = j.url;
     } catch (err) { if (err && err.message === 'auth') return; out.textContent = (err && err.message) || 'تعذّر بدء الدفع.'; btn.disabled = false; }
   } }));
@@ -17102,7 +17102,7 @@ function livePayRow(p, cfg) {
    والعودة تعرض إيصال العينة نفسه من بيانات الدفعة الحقيقية. التحويل البنكي والسداد الجزئي يُفعَّلان عند ربطهما. */
 async function livePayGo(p, amount) {
   const j = await clPost('/api/account/pay/' + encodeURIComponent(p.pid), amount ? { amount: amount } : {});
-  if (!j || !j.ok || !j.url || !/^https:\/\/[a-z0-9.-]*paymob\.com\//i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
+  if (!j || !j.ok || !j.url || !/^(https:\/\/[a-z0-9.-]*paymob\.com\/|\/api\/pay\/c\/[A-Za-z0-9_-]{32}$)/i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
   try { sessionStorage.setItem('tera.pay.last', p.pid); } catch (err) { void err; }
   location.href = j.url;
 }
