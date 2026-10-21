@@ -17355,7 +17355,15 @@ function payLinksPanel(D, st, paint, refetch) {
   const rows = L.filter(function (x) { return st.f === 'all' || x.status === st.f; }).map(function (x) {
     const who = x.payer ? x.payer.full_name : x.payer_name, sub = x.client_contracts ? 'عقد ' + (x.client_contracts.contract_no || '—') : (x.payer ? x.payer.tera_id : x.payer_phone);
     const acts = x.status === 'open' ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('نسخ', { size: 'sm', ui: 'copy', onClick: function (ev) { ev.stopPropagation(); payCopy(x.url); } })),
-      D.gateway.send ? liveOk(DS.button('إرسال بالبريد', { size: 'sm', onClick: async function (ev) { ev.stopPropagation(); const j = await clPost('/admin/api/pay/links/' + x.id + '/send', {}); snack(j.ok ? 'أُرسل الرابط.' : (j.message || 'تعذّر الإرسال.')); if (j.ok) refetch(); } })) : null,
+      D.gateway.send ? liveOk(DS.button('إرسال للدافع', { size: 'sm', ui: 'paper-plane-tilt', onClick: async function (ev) { ev.stopPropagation(); const b = ev.currentTarget; b.disabled = true;
+        const h = window.TeraNotify && window.TeraNotify.show({ force: true, kind: 'run', title: 'جارٍ إرسال الرابط…' });
+        const j = await clPost('/admin/api/pay/links/' + x.id + '/send', {}); if (h && h.close) h.close(); b.disabled = false;
+        /* v410: نتيجة كل قناة — البريد · واتساب · إشعار الجوال · مركز الإشعارات */
+        const R = (j && j.results) || {}, NM = { email: 'البريد', whatsapp: 'واتساب', push: 'إشعار الجوال', inbox: 'مركز الإشعارات' }, ks = ['email', 'whatsapp', 'push', 'inbox'].filter(function (k) { return R[k]; });
+        const list = ks.length ? e('ul', { class: 'pu-res' }, ks.map(function (k) { return e('li', { class: R[k].ok ? 'is-ok' : 'is-bad' }, [e('span', { class: 'pu-res-i', 'aria-hidden': 'true' }, R[k].ok ? '✓' : '✗'), e('div', { class: 'pu-res-t' }, [e('b', {}, NM[k]), e('small', {}, R[k].ok ? 'وصلت' : (R[k].message || 'لم تصل'))])]); })) : null;
+        if (window.TeraNotify && list) window.TeraNotify.show({ force: true, kind: j && j.ok ? (ks.some(function (k) { return !R[k].ok; }) ? 'warn' : 'ok') : 'bad', icon: 'paper-plane-tilt:teal', title: j && j.ok ? 'أُرسل رابط الدفع' : 'لم يُرسل الرابط', text: x.ref_no + ' — وصل عبر ' + ks.filter(function (k) { return R[k].ok; }).length + ' من ' + ks.length + ' قنوات.', body: list, actions: [{ label: 'تم', primary: true }] });
+        else snack(j && j.ok ? 'أُرسل الرابط.' : ((j && j.message) || 'تعذّر الإرسال.'));
+        if (j && j.ok) refetch(); } })) : null,
       admTwoStep('إلغاء', 'danger', async function () { const j = await clPost('/admin/api/pay/links/' + x.id + '/cancel', {}); if (!j.ok) snack(j.message || 'تعذّر الإلغاء.'); refetch(); })]) : '—';
     return admRow([admName(ltr(x.ref_no), x.description), admName(who || '—', sub || null), admMoney(x.amount), admB(PAY_LS, x.status), x.status === 'paid' && x.paid_at ? bdiD(String(x.paid_at).slice(0, 16).replace('T', ' ')) : bdiD(String(x.expires_at).slice(0, 16).replace('T', ' ')), acts],
       null, [x.ref_no, who, x.description, x.payer_phone].join(' '));
@@ -17392,7 +17400,7 @@ function payTxnsPanel(D, refetch) {
 const PAY_FREQ = { 7: 'أسبوع', 15: 'أسبوعين', 30: 'شهر', 90: '3 أشهر', 180: '6 أشهر', 365: 'سنة' };
 const PAY_SVC = [['client_pay', 'السداد الإلكتروني للعملاء', 'زر «الدفع الإلكتروني» لدفعات العقود في منصة العميل.'],
   ['pay_links', 'روابط الدفع', 'إنشاء الروابط وفتحها. عند الإيقاف لا تفتح الروابط القائمة أيضًا.'],
-  ['link_email', 'إرسال الروابط بالبريد', 'زر الإرسال بالبريد الرسمي للعميل. موقوف افتراضيًا (لا رسائل للعملاء أثناء الترحيل).'],
+  ['link_email', 'إرسال الروابط للدافع', 'زر «إرسال للدافع»: البريد الرسمي وواتساب (القالب المعتمد) وإشعار الجوال ومركز الإشعارات. موقوف افتراضيًا (لا رسائل للعملاء أثناء الترحيل).'],
   ['saved_cards', 'البطاقات المحفوظة', 'يحفظ العميل بطاقته في صفحة Paymob ويختارها لاحقًا دون إعادة إدخالها.'],
   ['subscriptions', 'الاشتراكات (الخصم المتكرر)', 'خطط خصم دوري يديرها Paymob، وروابط اشتراك للعملاء. تحتاج مفتاح API ووسيلة MOTO.'],
   ['refunds', 'الاسترداد', 'استرداد كلي أو جزئي لعمليات المنصة الجديدة.'],
