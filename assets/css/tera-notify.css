@@ -838,3 +838,13 @@ a[x-apple-data-detectors],a[href^="tel:"]:not(.t2-btn){color:inherit!important;t
 .t2.is-dark .pu-res li{background:#10283A;border-color:#1E4258}.t2.is-dark .pu-res li.is-bad{background:#2E2212;border-color:#5A4220}
 .t2.is-dark .pu-res-t b{color:#E8EEF8}.t2.is-dark .pu-res-t small{color:#93A6C4}
 .t2.is-dark .pu-chip{color:#6FD9B4}.t2.is-dark .pu-chip.is-off{color:#F5C26B}
+
+/* v396: «إشعاراتي» */
+.tqn-list{display:grid;gap:8px}
+.tqn-row{padding:12px 14px;border-radius:14px;border:1px solid var(--t2-line,#DCE5EE);background:var(--t2-surface,#fff)}
+.tqn-row.is-new{border-color:#F6C47A;background:#FFF9F0}
+.tqn-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tqn-h b{font:700 14.5px "IBM Plex Sans Arabic",sans-serif}
+.tqn-row p{margin:6px 0 4px;line-height:1.8;font-size:13.5px;color:var(--t2-ink-2,#3d4d64);white-space:pre-line}
+.tqn-row small{color:var(--t2-muted,#5B6B80);font-size:12px}
+.t2.is-dark .tqn-row.is-new{background:#2E2212;border-color:#5A4220}
