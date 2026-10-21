@@ -90,8 +90,8 @@
     if (ready || typeof window.Pixel !== 'function') return false;
     if (!D.cs) return false;
     ready = true; clearTimeout(timer); box.classList.remove('wait');
-    /* v424: Apple Pay داخل النموذج نفسه (يظهر في Safari وأجهزة Apple) — لا انتقال إلى واجهة Paymob */
-    var PM = D.apple === '1' ? ['card', 'apple-pay'] : ['card'];
+    /* v425: البطاقة فقط — إضافة apple-pay قبل توثيق النطاق لدى Paymob عطّلت إرسال الدفع */
+    var PM = ['card'];
     try {
       new window.Pixel({
         publicKey: D.pub, clientSecret: D.cs, paymentMethods: PM, elementId: 'tp-pixel',

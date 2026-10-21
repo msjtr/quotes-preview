@@ -190,7 +190,8 @@ body.tp{font-family:Alexandria,"IBM Plex Sans Arabic",Tahoma,sans-serif;color:va
 @media (prefers-reduced-motion:reduce){.tp *,.tp *:before,.tp *:after{animation:none !important;transition:none !important}}
 /* v424: رابط الدفع صفحة واحدة — على الجوال: ملخص مختصر ثم نموذج البطاقة مباشرة بلا تكرار */
 @media (max-width:820px){
-  .tp-wrap.is-one .tp-stage{display:none}
+  .tp-wrap.is-one .tp-stage{display:flex}
+  .tp-wrap.is-one .tp-float{max-width:300px}
   .tp-wrap.is-one .tp-side{padding:18px 18px 20px}
   .tp-wrap.is-one .tp-side .tp-foot{display:none}
   .tp-wrap.is-one .tp-gl{display:none}
