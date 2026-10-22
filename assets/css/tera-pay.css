@@ -209,3 +209,14 @@ body.tp{font-family:Alexandria,"IBM Plex Sans Arabic",Tahoma,sans-serif;color:va
 /* v428: وجه البطاقة كما في الفريم المعتمد — رقاقة وإشارة لاتلامسية · CARD HOLDER · EXPIRES */
 .tp-card .nfc{position:absolute;left:86px;top:calc(37% + 8px);width:22px;height:22px;border-radius:50%;border:2px solid rgba(244,233,204,.55);border-left-color:transparent;border-bottom-color:transparent;transform:rotate(45deg)}
 .tp-meth>button{font-size:12px;line-height:1.35;text-align:center}
+/* v429: نافذة التحقق من البنك داخل إطار تيرا */
+.tp-3ds{position:fixed;inset:0;z-index:1000;background:rgba(5,14,36,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
+.tp-3ds-in{width:min(480px,100%);height:min(720px,100%);border-radius:24px;overflow:hidden;background:#fff;display:flex;flex-direction:column;box-shadow:0 40px 80px -30px rgba(0,0,0,.7),0 0 0 1px rgba(241,216,148,.35)}
+.tp-3ds-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:linear-gradient(160deg,#0A1F4A,#050E24);color:#D8C08A;font-size:12px;font-weight:700}
+.tp-3ds-h img{height:26px}
+.tp-3ds-b{position:relative;flex:1;background:#fff}
+.tp-3ds-b iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.tp-3ds-cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--tp-ivory,#FBF8F1);color:var(--tp-ink,#0B1B3A);text-align:center;padding:24px}
+.tp-3ds-cover[hidden]{display:none}
+.tp-3ds-cover b{font-size:18px}
+@media (max-width:560px){.tp-3ds{padding:0}.tp-3ds-in{width:100%;height:100%;border-radius:0}}
