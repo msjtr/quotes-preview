@@ -1289,6 +1289,8 @@ html.cb-lock{overflow:hidden}
 .cf-act-form{margin-top:12px;padding:14px;border:1px dashed var(--t2-line-2);border-radius:14px;background:var(--t2-surface-2)}
 .cf-h{font:700 .9rem var(--t2-ff-display);color:var(--t2-brand-3)}
 .cf-edit{padding:12px;border:1px dashed var(--t2-line-2);border-radius:14px}
+.cf-ilog{display:grid;gap:6px}.cf-cell2{display:grid;gap:6px;min-width:150px}.cf-ilog-h{display:inline-flex;align-items:center;gap:6px;color:var(--t2-muted);font-size:.76rem}
+.cf-tb td .t2-input{min-width:0;width:100%;padding:6px 8px}
 @media (max-width:40rem){.cf-kpis.fx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cf-acts{grid-template-columns:minmax(0,1fr)}}
 @container app (max-width:40rem){.cf-kpis.fx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cf-acts{grid-template-columns:minmax(0,1fr)}}
 /* v441: ملف العميل الموحّد على الجوال — الأقسام المتداخلة بحشو أقل حتى لا يضيق المحتوى */
