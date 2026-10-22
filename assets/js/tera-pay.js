@@ -60,7 +60,8 @@
       var i = li.querySelector('i'); if (i) i.textContent = s < n ? '✓' : String(s);
     });
   }
-  function result(st, rc) {
+  function result(st, rc, info) {
+    info = info || {};
     var T = {
       paid: { c: '#0E7C70', l: 'مدفوع', t: 'تم الدفع بنجاح', s: D.okmsg || 'وصلتنا دفعتك، وأُرسل الإيصال إلى بريدك وواتساب وإشعار التطبيق.' },
       failed: { c: '#B3262F', l: 'فشل', t: 'لم تكتمل العملية', s: 'لم يُخصم أي مبلغ من بطاقتك. يمكنك المحاولة مرة أخرى.' },
@@ -76,13 +77,23 @@
     show($('[data-rate]', res), st === 'paid');
     var retry = $('[data-retry]', res); show(retry, st === 'failed');
     var dl = document.getElementById('tp-rcpt'); if (dl && rc) { dl.href = rc; dl.textContent = st === 'paid' ? 'تحميل الإيصال PDF' : 'تحميل إشعار العملية PDF'; show(dl, true); }
+    var sh = document.getElementById('tp-share');
+    if (sh && rc) { show(sh, true); sh.onclick = function () {
+      var u = new URL(rc, location.href).href, t = (st === 'paid' ? 'إيصال السداد' : 'إشعار العملية') + ' — منصة تيرا';
+      if (navigator.share) navigator.share({ title: t, text: t, url: u }).catch(function () {});
+      else location.href = 'https://wa.me/?text=' + encodeURIComponent(t + '\n' + u);
+      ev('share'); }; }
+    var mv = $('[data-v="method"]', res), av = $('[data-v="at"]', res);
+    if (mv && info.method) { mv.textContent = info.method; show($('[data-row="method"]', res), true); }
+    if (av && info.at) { av.textContent = info.at; show($('[data-row="at"]', res), true); }
+    R.classList.add('is-done'); /* النتيجة وحدها — بلا تكرار لتفاصيل الملخص */
     show(res, true);
     try { res.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); } catch (e) { void e; }
   }
   function poll(n) {
     fetch(D.status, { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) {
       var s = j && j.status;
-      if (s === 'paid' || s === 'failed') return result(s, j.receipt);
+      if (s === 'paid' || s === 'failed') return result(s, j.receipt, j);
       if (n > 0) setTimeout(function () { poll(n - 1); }, 2500); else result('pending');
     }).catch(function () { if (n > 0) setTimeout(function () { poll(n - 1); }, 3000); else result('pending'); });
   }
@@ -204,7 +215,34 @@
       if (el && el.getBoundingClientRect().height < 20 && n) n.textContent = 'Apple Pay متاح على iPhone وأجهزة Mac من متصفح Safari. على هذا الجهاز ادفع بمدى أو البطاقة.'; }, 4000);
   }
   var MG = {}; try { MG = JSON.parse(D.mg || '{}'); } catch (e) { MG = {}; }
+  function cardMark(m) { document.querySelectorAll('.tp-card [data-mk] img').forEach(function (im) { var on = im.getAttribute('data-mk') === m; im.hidden = !on; if (on) { im.classList.remove('pop'); void im.offsetWidth; im.classList.add('pop'); } });
+    var cc = document.querySelector('.tp-card'); if (cc) { cc.classList.remove('swap'); void cc.offsetWidth; cc.classList.add('swap'); } }
+  /* v432: قلب البطاقة باللمس (وجه خلفي برمز التحقق) */
+  var FL = document.getElementById('tp-flip');
+  var flipT = 0;
+  function flipBack() { if (FL) FL.classList.remove('is-flip'); clearTimeout(flipT); }
+  if (FL) FL.addEventListener('click', function (e) { e.stopPropagation(); FL.classList.toggle('is-flip'); clearTimeout(flipT); if (FL.classList.contains('is-flip')) flipT = setTimeout(flipBack, 4000); });
+  /* تعود البطاقة لواجهتها عند لمس أي مكان آخر أو بعد ثوانٍ */
+  document.addEventListener('click', function () { if (FL && FL.classList.contains('is-flip')) flipBack(); });
+  window.addEventListener('blur', function () { setTimeout(flipBack, 2500); });
+  /* v432: إلغاء العملية بتأكيد، ثم الخروج أو البدء من جديد */
+  var ask = document.getElementById('tp-ask'), cxl = document.getElementById('tp-cancel');
+  document.querySelectorAll('[data-cancel]').forEach(function (b) { b.addEventListener('click', function () { if (started) return; show(ask, true); var y = ask && ask.querySelector('[data-ask="no"]'); if (y) y.focus(); }); });
+  if (ask) ask.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-ask]'); if (!a && e.target !== ask) return;
+    show(ask, false); if (!a || a.getAttribute('data-ask') !== 'yes') return;
+    ev('cancel');
+    if (D.status) fetch(D.status.replace(/\/status$/, '/cancel'), { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+    show(form, false); show(proc, false); show(res, false); show(cxl, true); R.classList.add('is-done');
+    try { cxl.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); } catch (x) { void x; }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ask && !ask.hidden) show(ask, false); });
+  var again2 = document.querySelector('[data-again]'); if (again2) again2.addEventListener('click', function () { location.href = D.retry || location.pathname; });
+  (function fitName() { var n = document.querySelector('.tp-card .hn'); if (!n) return; if (/[\u0600-\u06FF]/.test(n.textContent)) n.style.letterSpacing = '0';
+    var box = n.parentElement, w = box.clientWidth || 200, fs = parseFloat(getComputedStyle(n).fontSize) || 13; n.style.whiteSpace = 'nowrap';
+    while (n.scrollWidth > w && fs > 10) { fs -= 0.5; n.style.fontSize = fs + 'px'; } })();
   function setM(m) {
+    cardMark(m);
     document.querySelectorAll('.tp-meth [data-m]').forEach(function (x) { var on = x.getAttribute('data-m') === m; x.classList.toggle('on', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
     show(cardBox, m !== 'apple'); show(appleBox, m === 'apple');
     if (m === 'apple') mountApple();
@@ -221,7 +259,7 @@
   });
   if (payBtn) payBtn.addEventListener('click', function () {
     if (payBtn.disabled || started) return;
-    show(err, false); ev('pay_click'); window.dispatchEvent(new Event('payFromOutside'));
+    show(err, false); flipBack(); ev('pay_click'); window.dispatchEvent(new Event('payFromOutside'));
   });
   var again = document.querySelector('button[data-retry]'); /* v426: الزر نفسه — لا الإطار #tp الذي يحمل data-retry */
   if (again) again.addEventListener('click', function () { location.href = D.retry || '/clients/'; });
