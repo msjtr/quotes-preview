@@ -65,7 +65,7 @@
           if (j.reason_code) { lastCode = j.reason_code; lastMsg = j.message || null; }
           if (j.error === 'session_revoked' || (sess && j.closed)) { showEnded(j.reason_code || lastCode, j.message || lastMsg); return; }
           if (!sess) return;
-          if (Number(j.idle_minutes) > 0) IDLE_MIN = Number(j.idle_minutes);
+          if (j.idle_off) IDLE_MIN = Infinity; else if (Number(j.idle_minutes) > 0) IDLE_MIN = Number(j.idle_minutes);
           if (j.location_ok === false) showLocation(Number(j.location_grace_s) || 0);
           else if (j.location_ok === true) hideLocation();
         }).catch(function () {});
