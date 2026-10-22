@@ -86,6 +86,31 @@
       if (n > 0) setTimeout(function () { poll(n - 1); }, 2500); else result('pending');
     }).catch(function () { if (n > 0) setTimeout(function () { poll(n - 1); }, 3000); else result('pending'); });
   }
+  /* v429: التحقق من البنك (3-D Secure) داخل إطار تيرا — صفحة البنك نفسها فقط، وما قبلها وبعدها بهوية تيرا */
+  function secure3d(url) {
+    ev('3ds_start');
+    var wrap = document.createElement('div'); wrap.className = 'tp-3ds'; wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-label', 'التحقق من البنك');
+    wrap.innerHTML = '<div class="tp-3ds-in"><div class="tp-3ds-h"><img src="/assets/brand/pay/logo-white.png" alt="منصة تيرا"><span>التحقق الآمن من بنكك · <bdi dir="ltr">3-D Secure</bdi></span></div>'
+      + '<div class="tp-3ds-b"><iframe title="صفحة البنك للتحقق" referrerpolicy="origin"></iframe><div class="tp-3ds-cover"><div class="tp-spin"><i></i><i></i><img src="/assets/brand/logo-hd.png" alt=""></div><b>نحوّلك إلى بنكك للتحقق…</b><span class="tp-pulse">لا تغلق هذه الصفحة</span></div></div></div>';
+    document.body.appendChild(wrap); document.documentElement.style.overflow = 'hidden';
+    var ifr = wrap.querySelector('iframe'), cov = wrap.querySelector('.tp-3ds-cover'), loads = 0, done = false;
+    function finish(st) {
+      if (done) return; done = true; clearInterval(pi);
+      try { wrap.remove(); } catch (e) { void e; } document.documentElement.style.overflow = '';
+      ev('3ds_end', { st: st || '' }); processing();
+    }
+    ifr.addEventListener('load', function () {
+      loads++; ev('3ds_load', { n: loads });
+      try { var h = ifr.contentWindow.location.href; if (h && h.indexOf(location.origin) === 0) return finish('return'); } catch (e) { void e; }
+      if (loads >= 2) cov.hidden = true;
+    });
+    /* إن لم تنتقل الصفحة إلى البنك داخل الإطار (حجب من البنك) ننتقل إليه مباشرة */
+    setTimeout(function () { if (!done && loads < 2) { ev('3ds_fallback', { n: loads }); location.href = url; } }, 9000);
+    var pi = setInterval(function () {
+      fetch(D.status, { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) { if (j && (j.status === 'paid' || j.status === 'failed')) finish(j.status); }).catch(function () {});
+    }, 3000);
+    ifr.src = url;
+  }
   function processing() { show(form, false); show(proc, true); step(2); poll(24); }
 
   var timer = null;
@@ -105,7 +130,7 @@
           /* التحقق الآمن من البنك (3-D Secure) أو صفحة العودة: ننتقل إليها، وصفحة العودة في تيرا تعرض النتيجة بالختم */
           var d = (r && r.data) || {}, url = d.redirection_url || d.redirect_url;
           ev('after', { status: r && r.status, keys: Object.keys(d || {}).slice(0, 20), success: d.success, pending: d.pending, msg: String(d.message || d.msg || d.detail || d.data_message || '').slice(0, 200), redirect: url ? String(url).replace(/\?.*$/, '').slice(0, 120) : '' });
-          if (typeof url === 'string' && /^https:\/\//i.test(url)) { show(form, false); show(proc, true); location.href = url; return; }
+          if (typeof url === 'string' && /^https:\/\//i.test(url)) { secure3d(url); return; }
           if (r && r.status >= 400) {
             started = false; if (payBtn) { payBtn.disabled = false; payBtn.textContent = D.cta || 'ادفع'; }
             var m = (d && (d.message || d.msg || d.detail)) || (Array.isArray(d) && d[0]) || 'لم تكتمل العملية. تأكد من بيانات البطاقة وحاول مرة أخرى.';
@@ -178,13 +203,20 @@
     setTimeout(function () { var el = document.getElementById('tp-apple'), n = document.getElementById('tp-apnote');
       if (el && el.getBoundingClientRect().height < 20 && n) n.textContent = 'Apple Pay متاح على iPhone وأجهزة Mac من متصفح Safari. على هذا الجهاز ادفع بمدى أو البطاقة.'; }, 4000);
   }
+  var MG = {}; try { MG = JSON.parse(D.mg || '{}'); } catch (e) { MG = {}; }
+  function setM(m) {
+    document.querySelectorAll('.tp-meth [data-m]').forEach(function (x) { var on = x.getAttribute('data-m') === m; x.classList.toggle('on', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    show(cardBox, m !== 'apple'); show(appleBox, m === 'apple');
+    if (m === 'apple') mountApple();
+  }
+  setM(D.m || 'mada');
   document.querySelectorAll('.tp-meth [data-m]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var m = b.getAttribute('data-m');
-      document.querySelectorAll('.tp-meth [data-m]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
-      show(cardBox, m !== 'apple'); show(appleBox, m === 'apple');
-      if (m === 'apple') mountApple();
-      ev('method', { m: m });
+      var m = b.getAttribute('data-m'); ev('method', { m: m });
+      /* كل وسيلة برقمها في Paymob: إن اختلف رقم الوسيلة تُفتح عملية لها */
+      if (m !== 'apple' && D.open && MG[m] && MG[D.m] && MG[m] !== MG[D.m] && !started) { location.replace((D.retry || location.pathname) + '?m=' + m); return; }
+      if (m !== 'apple') D.m = m;
+      setM(m);
     });
   });
   if (payBtn) payBtn.addEventListener('click', function () {
