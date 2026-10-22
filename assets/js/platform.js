@@ -8039,18 +8039,33 @@ function axPlanCheck(kind, D, selfId) {
   if (!D.per) E.per = 'أدخل القيمة الشهرية'; else if (!(P > 0)) E.per = 'القيمة أكبر من صفر'; else if (T > 0 && P > T) E.per = 'القيمة الشهرية أكبر من الإجمالي';
   if (!D.start) E.start = 'اختر تاريخ البداية';
   if (!E.total && !E.per && !E.start && axSched(D.total, D.per, D.start) === null) E.per = 'الدفعات أكثر من 120 — ارفع القيمة الشهرية';
+  if (kind === 'ck' && !E.total && !E.per && !E.start) { const sc = axSched(D.total, D.per, D.start) || [], N = (D.nos || []).slice(0, sc.length).map(function (x) { return String(x || '').trim(); });
+    if (sc.length && (N.length < sc.length || N.some(function (x) { return !x; }))) E.nos = 'أدخل رقم كل شيك في الجدول (أو اكتب رقم الشيك الأول واضغط «تعبئة الأرقام بالتسلسل»).';
+    else if (new Set(N).size < N.length) E.nos = 'أرقام الشيكات مكررة — لكل شيك رقمه.'; }
   return E;
 }
-function axSchView(sch, kind) {
+/* v450: جدول الدفعات — في الشيكات رقم لكل شيك يُدخل مع إنشاء الجدول (مع تعبئة متسلسلة من رقم الشيك الأول) */
+function axSchView(sch, kind, D, refresh) {
   if (sch === null) return DS.note('warn', 'عدد الدفعات كبير', 'أكثر من 120 دفعة — ارفع القيمة الشهرية.');
   if (!sch.length) return e('small', { class: 'cu-dr-hint' }, 'أدخل الإجمالي والقيمة الشهرية وتاريخ البداية لتظهر الدفعات وعددها وتاريخ النهاية تلقائيًا.');
-  return e('div', { class: 'ax-sch' }, [e('div', { class: 'ax-sch-h' }, [e('b', {}, 'عدد الدفعات: ' + fmtNum(sch.length)), e('span', {}, (kind === 'ck' ? 'شيكات' : 'استقطاعات') + ' شهرية — آخرها ' + sar(sch[sch.length - 1].amt))]),
-    e('div', { class: 'ax-sch-b' }, cuTbl(['رقم الدفعة', 'المبلغ', 'تاريخ الاستحقاق'], sch.map(function (x) { return e('tr', {}, [e('td', {}, fmtNum(x.i)), e('td', {}, sar(x.amt)), e('td', {}, bdiD(x.due))]); })))]);
+  const ck = kind === 'ck' && D, nos = ck ? (D.nos || (D.nos = [])) : null;
+  const numIn = function (k) { const i = e('input', { class: 't2-input ax-pin', type: 'text', dir: 'ltr', value: nos[k] || '', placeholder: 'رقم الشيك', 'aria-label': 'رقم الشيك ' + (k + 1) }); i.addEventListener('input', function () { nos[k] = i.value.trim(); if (D.err) delete D.err.nos; }); return i; };
+  const fill = ck ? (function () {
+    const f = e('input', { class: 't2-input', type: 'text', dir: 'ltr', inputmode: 'numeric', value: D.no1 || '', placeholder: 'مثل 100231', 'aria-label': 'رقم الشيك الأول' });
+    f.addEventListener('input', function () { D.no1 = f.value.trim(); });
+    return e('div', { class: 'ax-sch-fill' }, [DS.editField('رقم الشيك الأول', f), DS.button('تعبئة الأرقام بالتسلسل', { size: 'sm', ui: 'list-numbers', onClick: function () {
+      const m = /^(\D*)(\d+)$/.exec(String(D.no1 || '')); if (!m) { snack('اكتب رقم الشيك الأول بالأرقام.'); return; }
+      const w = m[2].length, b0 = Number(m[2]); sch.forEach(function (x, k) { nos[k] = m[1] + String(b0 + k).padStart(w, '0'); }); if (D.err) delete D.err.nos; if (refresh) refresh(); } })]);
+  })() : null;
+  return e('div', { class: 'ax-sch' }, [e('div', { class: 'ax-sch-h' }, [e('b', {}, 'عدد ' + (kind === 'ck' ? 'الشيكات' : 'الدفعات') + ': ' + fmtNum(sch.length)), e('span', {}, (kind === 'ck' ? 'شيكات' : 'استقطاعات') + ' شهرية — آخرها ' + sar(sch[sch.length - 1].amt))]),
+    fill, ck && D.err && D.err.nos ? e('small', { class: 'cu-bd-err', role: 'alert' }, D.err.nos) : null,
+    e('div', { class: 'ax-sch-b' }, cuTbl(ck ? ['الشيك', 'رقم الشيك', 'المبلغ', 'تاريخ الاستحقاق'] : ['رقم الدفعة', 'المبلغ', 'تاريخ الاستحقاق'], sch.map(function (x, k) {
+      return e('tr', {}, [e('td', {}, fmtNum(x.i))].concat(ck ? [e('td', {}, numIn(k))] : [], [e('td', {}, sar(x.amt)), e('td', {}, bdiD(x.due))])); })))]);
 }
 function axPlanFields(kind, D, rerun, lock) {
   const K = AX_K[kind], C = cuList(), dd = kind === 'dd';
   const prev = e('div', { class: 'cu-bd-wide' }), endBox = axRo('—');
-  const upd = function () { const s = axSched(D.total, D.per, D.start); endBox.replaceChildren(s && s.length ? bdiD(s[s.length - 1].due) : '—'); prev.replaceChildren(axSchView(s, kind)); };
+  const upd = function () { const s = axSched(D.total, D.per, D.start); endBox.replaceChildren(s && s.length ? bdiD(s[s.length - 1].due) : '—'); prev.replaceChildren(axSchView(s, kind, D, upd)); };
   const money = function (k, label) { return cuBdF(D, k, label, DS.input({ value: D[k], numeric: true, placeholder: '0.00', onInput: function (v) { D[k] = v; upd(); } })); };
   upd();
   return axForm([
@@ -16041,7 +16056,7 @@ const CF_TYPE = { new: ['عقد جديد', 'info'], defer: ['عقد تأجيل',
 const CF_CLOSE = { done: 'اكتمل السداد', settled: 'تسوية مبكرة', cancel: 'إلغاء باتفاق الطرفين', other: 'سبب آخر' };
 const CF_PAYT = { 'توحيد': 'مسدَّدة بالتوحيد', 'تأجيل': 'مسدَّدة بالتأجيل', 'تسوية مبكرة': 'مسدَّدة بالتسوية المبكرة', 'إعفاء': 'معفاة' };
 const CF_RR = { paid_on_non_contract: 'سُجّل في النظام السابق سداد على طلب لم يكن عقدًا بعد — يُحسم بتصنيفه عقدًا أو سجل طلب.', payments_pending: 'دفعات لم تُطابق بعد مع إثباتها.', amount_mismatch: 'المبلغ المدفوع يختلف عن قيمة الدفعة.', paid_no_receipt: 'دفعة مسجّلة مسدَّدة بلا إيصال.', closed_with_unpaid: 'مغلق في النظام السابق وفيه دفعات غير مسدَّدة.', client_not_ready: 'ملف العميل لم يُحسم بعد.', paymob_decision: 'عملية Paymob تحتاج قرار ربط.', paid_zero_amount: 'دفعة مسدَّدة بمبلغ صفر.', client55_split_app_payments: 'دفعات مجزّأة من التطبيق.' };
-try { Object.assign(ADM_ERR, { date_required: 'أدخل تاريخ الحالة (السحب أو الإرجاع أو الإجراء).', auth_required: 'اكتب الجهة التي اتُّخذ لديها الإجراء.', bad_date: 'التاريخ لا يكون بعد اليوم.', use_settle: 'التحويل إلى «تسوية مبكرة» لا يكون بتعديل الإغلاق — أعد فتح العقد ثم استخدم «التسوية المبكرة» بمبلغها وتاريخها.', still_due_after_undo: 'إلغاء التسوية المبكرة يعيد متبقيًا على العقد — لا يصح «اكتمل السداد». أعد فتح العقد وسوِّه، أو اختر سببًا آخر.', still_due: 'في العقد مبالغ لم تُسدَّد — سوِّها أو أعفِها أولًا، أو اختر سببًا آخر للإغلاق.', nothing_due: 'لا مبالغ متبقية على هذا العقد.', bad_amount: 'المبلغ غير صالح — أكبر من صفر ولا يتجاوز المتبقي.', bad_date: 'التاريخ غير صالح.', already_closed: 'العقد مغلق من قبل.', note_required: 'اكتب السبب بوضوح.', bad_reason: 'اختر سبب الإغلاق.', forbidden: 'هذا الإجراء لمن يملك صلاحية إدارة العملاء.', one_contract_only: 'اختر دفعات من عقد واحد.', already_settled: 'من الدفعات المختارة ما هو مسدَّد أو مسوّى.', ref_not_found: 'العقد الهدف غير موجود لهذا العميل.', payments_required: 'اختر دفعة واحدة على الأقل.', bad_kind: 'نوع الربط غير صالح.', not_closed: 'العقد ليس مغلقًا.', not_settled: 'الدفعة ليست مسدَّدة بتأجيل أو توحيد أو تسوية أو إعفاء.', contract_closed: 'العقد مغلق — أعد فتحه أولًا.', items_started: 'صُرفت دفعات — لا يُعاد بناء الجدول بعدها.', bank_required: 'أدخل البنك.', bad_iban: 'آيبان غير صالح — SA ثم 22 رقمًا.', bad_status: 'حالة غير صالحة.', client_required: 'العميل غير صالح.', contract_mismatch: 'العقد لا يخص هذا العميل.', already_void: 'الحوالة ملغاة من قبل.' }); } catch (err) { void err; }
+try { Object.assign(ADM_ERR, { cheque_nos_required: 'أدخل رقم كل شيك في الجدول.', cheque_nos_dup: 'أرقام الشيكات مكررة — لكل شيك رقمه.', items_started: 'لا يُعاد بناء الجدول بعد صرف شيك أو تغيير حالته — عدّل كل شيك من بطاقته.', date_required: 'أدخل تاريخ الحالة (السحب أو الإرجاع أو الإجراء).', auth_required: 'اكتب الجهة التي اتُّخذ لديها الإجراء.', bad_date: 'التاريخ لا يكون بعد اليوم.', use_settle: 'التحويل إلى «تسوية مبكرة» لا يكون بتعديل الإغلاق — أعد فتح العقد ثم استخدم «التسوية المبكرة» بمبلغها وتاريخها.', still_due_after_undo: 'إلغاء التسوية المبكرة يعيد متبقيًا على العقد — لا يصح «اكتمل السداد». أعد فتح العقد وسوِّه، أو اختر سببًا آخر.', still_due: 'في العقد مبالغ لم تُسدَّد — سوِّها أو أعفِها أولًا، أو اختر سببًا آخر للإغلاق.', nothing_due: 'لا مبالغ متبقية على هذا العقد.', bad_amount: 'المبلغ غير صالح — أكبر من صفر ولا يتجاوز المتبقي.', bad_date: 'التاريخ غير صالح.', already_closed: 'العقد مغلق من قبل.', note_required: 'اكتب السبب بوضوح.', bad_reason: 'اختر سبب الإغلاق.', forbidden: 'هذا الإجراء لمن يملك صلاحية إدارة العملاء.', one_contract_only: 'اختر دفعات من عقد واحد.', already_settled: 'من الدفعات المختارة ما هو مسدَّد أو مسوّى.', ref_not_found: 'العقد الهدف غير موجود لهذا العميل.', payments_required: 'اختر دفعة واحدة على الأقل.', bad_kind: 'نوع الربط غير صالح.', not_closed: 'العقد ليس مغلقًا.', not_settled: 'الدفعة ليست مسدَّدة بتأجيل أو توحيد أو تسوية أو إعفاء.', contract_closed: 'العقد مغلق — أعد فتحه أولًا.', items_started: 'صُرفت دفعات — لا يُعاد بناء الجدول بعدها.', bank_required: 'أدخل البنك.', bad_iban: 'آيبان غير صالح — SA ثم 22 رقمًا.', bad_status: 'حالة غير صالحة.', client_required: 'العميل غير صالح.', contract_mismatch: 'العقد لا يخص هذا العميل.', already_void: 'الحوالة ملغاة من قبل.' }); } catch (err) { void err; }
 const cfSt = (k, d) => CF_ST[k] || (CF_ST[k] = Object.assign({ err: '', busy: false }, d || {}));
 const cfKpis = (L) => e('div', { class: 'fx-kpis is-3 cf-kpis' }, L.filter(Boolean).map(function (x) { return kpi(x[0], x[1], x[2], x[3], x[4]); }));
 const cfLeft = (p) => p.deferTo ? 0 : Math.max(0, qr2(p.amount - (p.paid || 0)));
@@ -16389,10 +16404,10 @@ function cfPlanD(p) {
   if (!p) return axPlanNew();
   const b = cfPickO(p.bank, AX_BANKS), bb = cfPickO(p.ben_bank, AX_BANKS), ac = AX_ACCTS.filter(function (a) { return axAcctT(a[0]) === p.to_account; })[0];
   return { cid: p.user_id, st: p.status === 'void' ? 'on' : p.status, bank: b[0], bankO: b[1], iban: p.iban || '', ben: p.beneficiary === AX_EST || !p.beneficiary ? 'est' : 'other', benO: p.beneficiary === AX_EST ? '' : (p.beneficiary || ''),
-    benBank: bb[0] || 'مصرف الراجحي', benBankO: bb[1], acct: ac ? ac[0] : (p.to_account ? 'other' : ''), acctO: ac ? '' : (p.to_account || ''), total: String(p.total), per: String(p.per), start: p.start_date, ct: no, note: p.note || '', err: {} };
+    benBank: bb[0] || 'مصرف الراجحي', benBankO: bb[1], acct: ac ? ac[0] : (p.to_account ? 'other' : ''), acctO: ac ? '' : (p.to_account || ''), total: String(p.total), per: String(p.per), start: p.start_date, ct: no, note: p.note || '', nos: (p.items || []).map(function (x) { return x.no || ''; }), err: {} };
 }
 const cfPlanData = (D, kind, p) => ({ user_id: D.cid, kind: kind, contract_id: ((((LIVE_ADM.rows || {})[D.ct] || {}).r || {}).id) || '', status: D.st, bank: axVal(D, 'bank'), iban: kind === 'dd' ? axIban(D.iban) : '', beneficiary: axVal(D, 'ben'),
-  ben_bank: kind === 'dd' ? axVal(D, 'benBank') : '', to_account: kind === 'dd' ? axAcctOf(D, 'acct') : '', total: D.total, per: D.per, start_date: D.start, note: String(D.note || '').trim(), reason: D.why || '' });
+  ben_bank: kind === 'dd' ? axVal(D, 'benBank') : '', to_account: kind === 'dd' ? axAcctOf(D, 'acct') : '', total: D.total, per: D.per, start_date: D.start, note: String(D.note || '').trim(), reason: D.why || '', nos: kind === 'ck' ? (D.nos || []).slice(0, (axSched(D.total, D.per, D.start) || []).length).map(function (x) { return String(x || '').trim(); }) : null });
 function cfPlanSave(kind, D, W, RF, p, msg, done) {
   D.err = axPlanCheck(kind, D, p ? p.id : null); if (Object.keys(D.err).length) { RF.paint(); snack('راجع الحقول المظلّلة'); return; }
   cfAct(W, RF, async function () { await admRpc('admin_plan_save', { p_id: p ? p.id : null, p_data: cfPlanData(D, kind, p) }); done(); }, msg);
@@ -16407,28 +16422,32 @@ function cfPlan(p, C, RF, kp) {
     ['ok', ck ? 'صُرف' : 'خُصم', SR(qr2(paid.reduce(function (a, x) { return a + Number(x.amount); }, 0))), fmtNum(paid.length) + ' من ' + fmtNum(items.length), 'ok'], ['warn', 'لا يوجد رصيد أو إجراءات', fmtNum(bad.length), bad.length ? 'تحتاج متابعة' : 'لا شيء', bad.length ? 'bad' : 'ok']]),
     DS.fields([[AK.ctl, ctNo ? ltr(ctNo) : DS.badge('غير مربوط بعقد', 'warn')], [AK.st, DS.badge(st[0], st[1])], [AK.bank, p.bank || '—'], p.kind === 'dd' ? ['حساب العميل المستقطع منه', p.iban ? ltr(axIbanT(p.iban)) : '—'] : null, ['المستفيد', p.beneficiary || '—'],
       p.kind === 'dd' ? ['بنك المستفيد', p.ben_bank || '—'] : null, p.kind === 'dd' ? ['الحساب المستقطع إليه', p.to_account ? ltr(p.to_account) : '—'] : null, ['تاريخ البداية', bdiD(p.start_date)], p.note ? ['ملاحظات', p.note] : null])];
-  /* v449: سجل كل شيك/استقطاع — الاستحقاق محسوب (غير مستحق · مستحق)، والحالة بتاريخها والجهة والملاحظات وآخر تحديث */
+  /* v450: كل شيك/استقطاع بطاقة (هوية «إجراءات الإدارة»): الرأس بالرقم والمبلغ والاستحقاق والحالة، ثم الحقول، ثم سجلّه */
   const AT_L = { paid: ck ? 'تاريخ السحب' : 'تاريخ الخصم', nsf: 'تاريخ الإرجاع', ref: 'تاريخ الإجراء', back: 'تاريخ الإعادة' };
-  const cols = [ck ? 'الشيك' : 'الدفعة', 'الاستحقاق', 'المبلغ', 'الحالة', 'التاريخ', ck ? 'الجهة والملاحظات' : 'ملاحظات', ''];
-  body.push(e('div', { class: 'fx-table-w' }, e('table', { class: 'fx-table cf-tb' }, [e('thead', {}, e('tr', {}, cols.map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, items.map(function (it) {
+  const fl = function (t, el) { return e('div', { class: 'ax-pay-f' }, [e('small', {}, t), el]); };
+  body.push(e('div', { class: 'ax-pays' }, items.map(function (it) {
     const S = cfSt('pli:' + p.id + ':' + it.i, { st: it.st || 'unpaid', no: it.no || '', note: it.note || '', auth: it.auth || '', at: it.at || '' });
-    const due = String(it.due || ''), open = S.st === 'unpaid', dueN = open ? (due > iso(T0) ? ['غير مستحق', null] : ['مستحق', 'warn']) : null;
-    const dirty = S.st !== (it.st || 'unpaid') || S.no !== (it.no || '') || S.note !== (it.note || '') || S.auth !== (it.auth || '') || S.at !== (it.at || '');
-    const last = (it.hist || []).slice(-1)[0], P0 = AK.pay.filter(function (y) { return y[0] === (it.st || 'unpaid'); })[0] || AK.pay[0];
-    const cells = [
-      [e('b', {}, String(it.i)), ck ? DS.input({ value: S.no, dir: 'ltr', placeholder: 'رقم الشيك', onInput: function (v) { S.no = v; } }) : null],
-      [e('span', {}, isoT(parseIso(due) || T0)), dueN ? DS.badge(dueN[0], dueN[1]) : null],
-      SR(Number(it.amount)),
-      live ? [DS.select({ value: S.st, options: AK.pay.map(function (y) { return [y[0], y[1]]; }), onChange: function (v) { S.st = v; if (v === 'unpaid') S.at = ''; else if (!S.at) S.at = lvToday(); RF.paint(); } }), last ? e('small', { class: 'cf-sub' }, ['آخر تحديث: ', last.by_name || '—', ' · ', bdiD(String(last.ts || '').slice(0, 10))]) : null] : DS.badge(P0[1], P0[2]),
-      open ? '—' : (live ? DS.editField(AT_L[S.st] || 'التاريخ', datePick({ value: S.at, max: lvToday(), onChange: function (v) { S.at = v; RF.paint(); } })) : [e('small', {}, AT_L[it.st] || ''), bdiD(it.at || '')]),
-      e('div', { class: 'cf-cell2' }, [S.st === 'ref' ? DS.input({ value: S.auth, placeholder: 'الجهة (محكمة التنفيذ، الشرطة…)', onInput: function (v) { S.auth = v; } }) : null, DS.input({ value: S.note, placeholder: S.st === 'nsf' ? 'سبب الإرجاع أو ما تم' : S.st === 'ref' ? 'الإجراء المتخذ' : 'ملاحظات', onInput: function (v) { S.note = v; } })]),
-      live ? liveOk(DS.button('حفظ', { size: 'sm', tone: dirty ? 'primary' : null, ui: 'check', onClick: function () { cfAct(W, RF, async function () {
+    const due = String(it.due || ''), st0 = it.st || 'unpaid', open = S.st === 'unpaid', dueN = st0 === 'unpaid' ? (due > iso(T0) ? ['غير مستحق', null] : ['مستحق', 'warn']) : null;
+    const P0 = AK.pay.filter(function (y) { return y[0] === st0; })[0] || AK.pay[0], dirty = S.st !== st0 || S.no !== (it.no || '') || S.note !== (it.note || '') || S.auth !== (it.auth || '') || S.at !== (it.at || '');
+    const H = (it.hist || []).slice().reverse();
+    const head = e('div', { class: 'ax-pay-h' }, [e('b', {}, (ck ? 'الشيك ' : 'الدفعة ') + fmtNum(it.i)), ck && it.no ? e('span', { class: 'cu-nw' }, ['رقم ', ltr(it.no)]) : null, e('span', { class: 'cu-nw ax-pay-a' }, SR(Number(it.amount))),
+      e('span', { class: 'ax-pay-d' }, ['الاستحقاق ', bdiD(due)]), dueN ? DS.badge(dueN[0], dueN[1]) : null, DS.badge(P0[1], P0[2]), st0 !== 'unpaid' && it.at ? e('span', { class: 'ax-pay-d' }, [AT_L[st0] + ' ', bdiD(it.at)]) : null]);
+    const grid = live ? e('div', { class: 'ax-pay-g' }, [
+      ck ? fl('رقم الشيك', DS.input({ value: S.no, dir: 'ltr', placeholder: 'رقم الشيك', onInput: function (v) { S.no = v; } })) : null,
+      fl('الحالة', DS.select({ value: S.st, options: AK.pay.map(function (y) { return [y[0], y[1]]; }), onChange: function (v) { S.st = v; if (v === 'unpaid') S.at = ''; else if (!S.at) S.at = lvToday(); RF.paint(); } })),
+      open ? null : fl(AT_L[S.st] || 'التاريخ', datePick({ value: S.at, max: lvToday(), onChange: function (v) { S.at = v; } })),
+      S.st === 'ref' ? fl('الجهة', DS.input({ value: S.auth, placeholder: 'محكمة التنفيذ، الشرطة…', onInput: function (v) { S.auth = v; } })) : null,
+      fl(S.st === 'nsf' ? 'سبب الإرجاع أو ما تم' : S.st === 'ref' ? 'الإجراء المتخذ' : 'ملاحظات', DS.input({ value: S.note, onInput: function (v) { S.note = v; } })),
+      fl(' ', liveOk(DS.button('حفظ', { size: 'sm', tone: dirty ? 'primary' : null, ui: 'check', onClick: function () { cfAct(W, RF, async function () {
         if (S.st !== 'unpaid' && !S.at) throw new Error('أدخل ' + (AT_L[S.st] || 'التاريخ') + '.');
         if (S.st === 'ref' && !String(S.auth).trim()) throw new Error(ADM_ERR.auth_required);
-        await admRpc('admin_plan_item_set', { p_id: p.id, p_i: it.i, p_st: S.st, p_no: S.no, p_note: S.note, p_auth: S.st === 'ref' ? S.auth : null, p_at: S.st === 'unpaid' ? null : S.at }); delete CF_ST['pli:' + p.id + ':' + it.i]; }, (ck ? 'حُفظ الشيك ' : 'حُفظت الدفعة ') + it.i); } })) : ''];
-    const tone = it.st === 'paid' ? 'paid' : it.st === 'back' ? 'deferred' : it.st === 'nsf' || it.st === 'ref' || (open && due < iso(T0)) ? 'late' : 'up';
-    return e('tr', { class: 'is-' + tone }, cells.map(function (v, j) { return e('td', { 'data-l': cols[j] }, v); }));
-  }))])));
+        if (ck && !String(S.no).trim()) throw new Error('أدخل رقم الشيك.');
+        await admRpc('admin_plan_item_set', { p_id: p.id, p_i: it.i, p_st: S.st, p_no: S.no, p_note: S.note, p_auth: S.st === 'ref' ? S.auth : null, p_at: S.st === 'unpaid' ? null : S.at }); delete CF_ST['pli:' + p.id + ':' + it.i]; }, (ck ? 'حُفظ الشيك ' : 'حُفظت الدفعة ') + it.i); } })))]) : null;
+    const hist = H.length ? e('div', { class: 'ax-pay-t' }, H.slice(0, 4).map(function (h) { const L = AK.pay.filter(function (y) { return y[0] === h.st; })[0];
+      return e('span', {}, [(L ? L[1] : h.st), h.at ? [' ', bdiD(h.at)] : null, h.auth ? ' · ' + h.auth : '', h.note ? ' · ' + h.note : '', ' — ', h.by_name || '—', ' · ', bdiD(String(h.ts || '').slice(0, 10))]); })) : (it.note || it.auth ? e('div', { class: 'ax-pay-t' }, [it.auth ? e('span', {}, 'الجهة: ' + it.auth) : null, it.note ? e('span', {}, it.note) : null]) : null);
+    const late = st0 === 'unpaid' && due < iso(T0);
+    return e('div', { class: 'ax-pay' + (late || st0 === 'nsf' || st0 === 'ref' ? ' is-late' : '') }, [head, grid, hist]);
+  })));
   if (live && W.m === 'edit') {
     const D = CF_ST['ple:' + p.id] || (CF_ST['ple:' + p.id] = cfPlanD(p));
     body.push(e('div', { class: 'cf-form cf-edit' }, [axPlanFields(p.kind, D, RF.paint, true), cfField('سبب التعديل (يُسجَّل)', cfTa(D, 'why')), cfErr(W),
