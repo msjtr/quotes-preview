@@ -15999,9 +15999,10 @@ function admPfFilePage() {
     const W = [admClients('/reg/' + encodeURIComponent(id))];
     if (!LIVE_ADM.at) W.push(liveAdmLoad());
     if (!ADM.trAt) W.push(livePayoutsLoad().then(function () { ADM.trAt = Date.now(); }).catch(function () { /* الحوالات اختيارية */ }));
-    if (CF_PILOT[id] && !LV_SR.ok) W.push(lvSrLoad().catch(function () { /* الطلبات اختيارية */ }));
-    const X = CF_PILOT[id] ? await Promise.all([liveSb('client_internal_events?select=*&user_id=eq.' + encodeURIComponent(id) + '&order=at.desc&limit=600').catch(function () { return []; }),
-      liveSb('client_pay_instruments?select=*&user_id=eq.' + encodeURIComponent(id) + '&order=created_at.desc').catch(function () { return []; })]) : [[], []];
+    if (!LV_SR.ok) W.push(lvSrLoad().catch(function () { /* الطلبات اختيارية */ }));
+    /* v451: الملف الموحّد لكل العملاء (عُمِّم بعد اعتماد السلوك على ملف يزيد) */
+    const X = await Promise.all([liveSb('client_internal_events?select=*&user_id=eq.' + encodeURIComponent(id) + '&order=at.desc&limit=600').catch(function () { return []; }),
+      liveSb('client_pay_instruments?select=*&user_id=eq.' + encodeURIComponent(id) + '&order=created_at.desc').catch(function () { return []; })]);
     const j = (await Promise.all(W))[0];
     const V = (LIVE_DATA.ver || []).filter(function (v) { return v.user_id === id; })[0] || null, Q = {};
     await Promise.all((LIVE_ADM.ct[id] || []).map(async function (c) { const qid = (((LIVE_ADM.rows || {})[c.no] || {}).r || {}).quotation_id; if (!qid) return;
@@ -16032,7 +16033,7 @@ function admPfFilePage() {
     /* 2) السندات — الفتح يفتح درج السند نفسه (التعديل وملف السند) */
     const bds = BD.length ? e('div', { class: 'cu-mgr-docs' }, BD.map(function (b) { const s = (CU_BD_ST.filter(function (x) { return x[0] === b.st; })[0] || ['', b.st, null]);
       return cfRow('السند ' + b.no, [SR(b.amt), ' · ', bdiD(String(b.date).slice(0, 10)), b.ct ? [' · العقد ', ltr(b.ct)] : ' · غير مربوط بعقد'], [DS.badge(s[1], s[2]), liveOk(DS.button('فتح', { size: 'sm', ui: 'seal-check', onClick: function () { cuBdEdit(b.id); } }))]); })) : CF_EMPTY('لا سندات لهذا العميل.');
-    if (CF_PILOT[id]) try {
+    try {
       const RF = function () { refetch(); }; RF.paint = paint;
       return cfPilotPage(id, D, P, hero, pi, ok, all, C, BD, RF);
     } catch (err) { try { console.error('[cf-pilot]', err && err.stack || err); } catch (x) { void x; } }
@@ -16327,8 +16328,8 @@ const cfPostOk = async (u, b) => { const j = await clPost(u, b).catch(function (
 const cfErr = (W) => W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null;
 
 /* السند: عرض · تعديل · السجل الداخلي */
-function cfBond(b, C, RF, kp) {
-  const key = 'bd:' + b.id, can = cuBdCan(), W = cfSt('bdw:' + b.id, { edit: false });
+function cfBond(b, C, RF, kp, ro) {
+  const key = 'bd:' + b.id, can = !ro && cuBdCan(), W = cfSt('bdw:' + b.id, { edit: false });
   const S0 = CU_BD_ST.filter(function (x) { return x[0] === b.st; })[0] || ['', b.st, null];
   const sug = !b.ct ? C.filter(function (c) { const f = c.n ? cInfo(c) : null; return f && Math.abs(f.total - b.amt) < 0.01; })[0] : null;
   const body = [DS.fields([['رقم السند', ltr(b.no)], ['تاريخ السند', bdiD(String(b.date).slice(0, 10))], ['القيمة', SR(b.amt)], ['الحالة', DS.badge(S0[1], S0[2])],
@@ -16349,7 +16350,7 @@ function cfBond(b, C, RF, kp) {
       DS.button('إلغاء', { size: 'sm', onClick: function () { delete LV_BDF[key]; delete CUD[key]; W.edit = false; RF.paint(); } })])]);
     form.addEventListener('change', function (ev) { const t = ev.target; if (t && t.type === 'file' && t.files && t.files[0]) LV_BDF[key] = t.files[0]; });
     body.push(form);
-  } else body.push(e('div', { class: 't2-pb-actions' }, [can ? liveOk(DS.button('تعديل السند', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.edit = true; RF.paint(); } })) : cuPermNo('للعرض فقط', 'تعديل السندات لمن يملك صلاحية «السندات التنفيذية».')]));
+  } else if (!ro) body.push(e('div', { class: 't2-pb-actions' }, [can ? liveOk(DS.button('تعديل السند', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.edit = true; RF.paint(); } })) : cuPermNo('للعرض فقط', 'تعديل السندات لمن يملك صلاحية «السندات التنفيذية».')]));
   const ev = cfEvOf('bond', b.id);
   body.push(lvSec('السجل', fmtNum(ev.length), [cfEvList(ev, 'لا تعديلات على السند منذ تفعيل السجل.')], (kp || '') + 'cf:' + b.cid + ':bd:' + b.id + ':log'));
   return lvSec('السند ' + b.no, SR(b.amt) + ' · ' + S0[1] + (b.ct ? '' : ' · غير مربوط'), body, (kp || '') + 'cf:' + b.cid + ':bd:' + b.id);
@@ -16361,7 +16362,7 @@ function cfNewBond(id, C, RF) {
       lvNewSave('bd', D, RF.paint, async function () { delete CF_ST[k]; await cfRe(RF, 'سُجّل السند ورُفع ملفه.'); }); } }))])]))], 'cf:' + id + ':bd:new');
 }
 /* حوالة تيرا: عرض · تعديل · إلغاء · السجل الداخلي */
-function cfPayout(t, C, RF, kp) {
+function cfPayout(t, C, RF, kp, ro) {
   const x = t.live || {}, W = cfSt('po:' + x.id, { m: '' }), voidd = t.st === 'void';
   const body = [DS.fields([['المبلغ', SR(t.amt)], ['التاريخ', bdiD(t.date)], ['العقد', t.ct ? ltr(t.ct) : '—'], ['من', e('span', {}, [x.from_bank || '—', x.from_last4 ? ' · ' : null, x.from_last4 ? ltr('•••• ' + x.from_last4) : null])],
       ['إلى', x.to_iban ? e('span', {}, [ltr(x.to_iban), x.to_holder ? ' · ' + x.to_holder : '']) : 'حساب العميل'], ['الحالة', DS.badge(voidd ? 'ملغاة' : 'منفّذة', voidd ? null : 'ok')], x.reason ? ['الملاحظة', x.reason] : null, voidd && x.void_reason ? ['سبب الإلغاء', x.void_reason] : null]),
@@ -16382,7 +16383,7 @@ function cfPayout(t, C, RF, kp) {
         if (!window.confirm('إلغاء حوالة ' + SR(t.amt) + '؟ لا تُحذف وتبقى في السجل.')) return;
         cfAct(W, RF, async function () { await cfPostOk('/admin/api/payouts/' + encodeURIComponent(x.id) + '/void', { reason: S.why }); W.m = ''; }, 'أُلغيت الحوالة'); } })),
       DS.button('تراجع', { size: 'sm', onClick: function () { W.m = ''; RF.paint(); } })])]));
-  } else if (!voidd) body.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تعديل الحوالة', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.m = 'edit'; RF.paint(); } })), liveOk(DS.button('إلغاء الحوالة', { size: 'sm', ui: 'x-circle', onClick: function () { W.m = 'void'; RF.paint(); } }))]));
+  } else if (!voidd && !ro) body.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تعديل الحوالة', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.m = 'edit'; RF.paint(); } })), liveOk(DS.button('إلغاء الحوالة', { size: 'sm', ui: 'x-circle', onClick: function () { W.m = 'void'; RF.paint(); } }))]));
   const ev = cfEvOf('payout', x.id);
   body.push(lvSec('السجل', fmtNum(ev.length), [cfEvList(ev, x.source === 'legacy' ? 'نُقلت من النظام السابق — لا تعديلات منذ تفعيل السجل.' : 'لا أحداث بعد.')], (kp || '') + 'cf:po:' + x.id + ':log'));
   return lvSec('حوالة ' + SR(t.amt), (voidd ? 'ملغاة' : 'منفّذة') + ' · ' + t.date + (t.ct ? ' · ' + t.ct : ''), body, (kp || '') + 'cf:po:' + x.id);
@@ -16412,10 +16413,10 @@ function cfPlanSave(kind, D, W, RF, p, msg, done) {
   D.err = axPlanCheck(kind, D, p ? p.id : null); if (Object.keys(D.err).length) { RF.paint(); snack('راجع الحقول المظلّلة'); return; }
   cfAct(W, RF, async function () { await admRpc('admin_plan_save', { p_id: p ? p.id : null, p_data: cfPlanData(D, kind, p) }); done(); }, msg);
 }
-function cfPlan(p, C, RF, kp) {
+function cfPlan(p, C, RF, kp, ro) {
   const K = CF_PLK[p.kind], AK = AX_K[p.kind], W = cfSt('pl:' + p.id, { m: '' }), st = CF_PLS[p.status] || [p.status, null], items = p.items || [], ck = p.kind === 'ck';
   const paid = items.filter(function (x) { return x.st === 'paid'; }), bad = items.filter(function (x) { return x.st === 'nsf' || x.st === 'ref'; });
-  const ctNo = (C.filter(function (c) { return ((((LIVE_ADM.rows || {})[c.no] || {}).r || {}).id) === p.contract_id; })[0] || {}).no, live = p.status !== 'void';
+  const ctNo = (C.filter(function (c) { return ((((LIVE_ADM.rows || {})[c.no] || {}).r || {}).id) === p.contract_id; })[0] || {}).no, live = p.status !== 'void' && !ro;
   const notDue = items.filter(function (x) { return (x.st || 'unpaid') === 'unpaid' && String(x.due) > iso(T0); }), dueNow = items.filter(function (x) { return (x.st || 'unpaid') === 'unpaid' && String(x.due) <= iso(T0); });
   const body = [cfKpis([['wallet', 'الإجمالي', SR(Number(p.total)), fmtNum(items.length) + (ck ? ' شيكات × ' : ' دفعات × ') + SR(Number(p.per))], ['timer', 'غير مستحق', fmtNum(notDue.length), notDue.length ? 'أقربها ' + notDue[0].due : '—'],
     ['warn', 'مستحق لم ' + (ck ? 'يُصرف' : 'يُخصم'), fmtNum(dueNow.length), dueNow.length ? SR(qr2(dueNow.reduce(function (a, x) { return a + Number(x.amount); }, 0))) : 'لا شيء', dueNow.length ? 'bad' : 'ok'],
@@ -21359,38 +21360,126 @@ if (LIVE.on) {
   };
   const liveAdmLoadPl = liveAdmLoad;
   liveAdmLoad = async function () { const out = await liveAdmLoadPl.apply(this, arguments); await lvPlLoad().catch(function () { /* */ }); return out; };
-  const lvPlPage = function (kind) {
-    const K = AX_K[kind];
-    return admMount('pl:' + kind, K.tt, async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else await lvPlLoad(); return { at: Date.now() }; }, function (j, st, paint, refetch) {
-      const RF = function () { refetch(); }; RF.paint = paint;
-      CF_EVD.list = LV_PL.EV;
-      const A = AX[kind], f = ADM['axF' + kind] || 'all', cq = ADM['axC' + kind] || '';
-      const fit = function (p, k) { return k === 'all' || (k === 'late' ? axLate(p).length > 0 : p.st === k); };
-      const on = A.filter(function (p) { return p.st === 'on'; }), lv = A.filter(function (p) { return p.st !== 'void'; });
-      const R = A.filter(function (p) { return fit(p, f) && (!cq || p.cid === cq); });
-      const G = []; R.forEach(function (p) { let g = G.filter(function (x) { return x.cid === p.cid; })[0]; if (!g) { g = { cid: p.cid, L: [] }; G.push(g); } g.L.push(p); });
-      const pil = Object.keys(CF_PILOT), rc = ADM['axR' + kind] && pil.indexOf(ADM['axR' + kind]) >= 0 ? ADM['axR' + kind] : pil[0];
-      const reg = rc ? lvSec((kind === 'ck' ? 'تسجيل مجموعة شيكات' : 'تسجيل أمر مستديم جديد'), null, [
-        e('div', { class: 'sys-form is-2 cu-bd-form' }, [cfField('العميل', DS.select({ value: rc, options: pil.map(function (id) { return [id, cuBdName(id)]; }), onChange: function (v) { ADM['axR' + kind] = v; paint(); } }), 'التسجيل من هنا متاح الآن لملفات التجربة فقط، حتى يُعتمد السلوك ويُعمَّم.')]),
-        cfNewPlan(rc, kind, (LIVE_ADM.ct || {})[rc] || [], RF)], 'axpl:' + kind + ':reg') : null;
-      return axPage({ title: K.tt, hint: (kind === 'dd' ? 'الأوامر ودفعاتها: مصروف أو غير مصروف' : 'الشيكات ودفعاتها: مصروف · غير مصروف · لا يوجد رصيد · تمت الإحالة لجهات الاختصاص') + ' — نفس بطاقات ملف العميل وسجلها الداخلي.', can: false, perm: null,
-        K: [[kind === 'dd' ? 'أوامر مطبّقة' : 'شيكات مطبّقة', fmtNum(on.length), '', kind === 'dd' ? 'bank' : 'receipt'], ['المستحق شهريًا', sar(axSum(on, function (p) { return p.per; })), '', 'calendar-blank'],
-          ['المصروف', sar(axSum(lv, function (p) { return axSum(axPaid(p)); })), 'ok', 'check-circle'], [kind === 'ck' ? 'متأخرة أو مرتجعة' : 'دفعات متأخرة', fmtNum(axSum(lv, function (p) { return axLate(p).length; })), 'danger', 'alarm']],
-        chips: axChipsF('axF' + kind, [['all', 'الكل', 'list:navy'], ['on', 'مطبّق', 'check-circle:teal'], ['off', 'غير مطبّق', 'hourglass-medium:saffron'], ['stop', 'موقوف', 'warning:gold'], ['void', 'ملغي', 'x-circle:gold'], ['late', kind === 'ck' ? 'متأخرة أو مرتجعة' : 'متأخرة', 'alarm:gold']], A, fit, cq),
-        filter: axCliFilter('axC' + kind, A),
-        list: e('div', { class: 't2-stack' }, (G.length ? G.map(function (g) { const C = (LIVE_ADM.ct || {})[g.cid] || [];
-          return lvSec(cuBdName(g.cid), fmtNum(g.L.length), g.L.map(function (p) { return cfPlan(p.live, C, RF, 'axpl:'); }), 'axpl:' + kind + ':' + g.cid); })
-          : [LDS.emptyState({ icon: 'ok', title: A.length ? 'لا شيء بهذا الاختيار' : (kind === 'ck' ? 'لا شيكات مسجّلة بعد' : 'لا أوامر مستديمة مسجّلة بعد'), body: A.length ? 'غيّر الاختيار أو فلتر العميل.' : 'ما يُسجَّل هنا أو في ملف العميل يظهر في المكانين فورًا.', compact: true })]).concat([reg])) });
+  /* v451: المالية تقارير للاطلاع فقط — كل تسجيل وتعديل وكل حدث يُدار من ملف العميل، وينعكس هنا بالبطاقات نفسها للقراءة.
+     «تقرير الإجراءات»: السندات · الاستقطاع (الأمر المستديم) · الحوالات الصادرة · الشيكات — تخصيص التقرير بالعميل والحالة والفترة. */
+  const FR_K = {
+    bd: { t: 'السندات التنفيذية', ic: 'gavel:navy', ent: 'bond', L: function () { return CU_BONDS; }, d: function (x) { return String(x.date || '').slice(0, 10); },
+      st: [['all', 'الكل', 'list:navy'], ['open', 'قائم', 'hourglass-medium:saffron'], ['court', 'محال للتنفيذ', 'warning:gold'], ['done', 'منتهي', 'check-circle:teal'], ['void', 'ملغي', 'x-circle:gold'], ['nolink', 'غير مربوط بعقد', 'link:navy']],
+      fit: function (x, k) { return k === 'all' || (k === 'nolink' ? !x.ct : x.st === k); },
+      K: function (A) { const lv = A.filter(cuBdLive); return [['السندات', fmtNum(A.length), '', 'gavel'], ['القائمة', sar(axSum(lv)), 'warn', 'coins'], ['محالة للتنفيذ', fmtNum(A.filter(function (b) { return b.st === 'court'; }).length), 'danger', 'warning'], ['غير مربوطة بعقد', fmtNum(A.filter(function (b) { return !b.ct; }).length), '', 'link']]; },
+      card: function (x, C, RF) { return cfBond(x, C, RF, 'finro:', true); } },
+    tr: { t: 'الحوالات الصادرة', ic: 'paper-plane-tilt:sky', ent: 'payout', L: function () { return AX.tr; }, d: function (x) { return String(x.date || '').slice(0, 10); },
+      st: [['all', 'الكل', 'list:navy'], ['done', 'منفّذة', 'check-circle:teal'], ['proxy', 'نيابةً عن العميل', 'users-three:saffron'], ['void', 'ملغاة', 'x-circle:gold']],
+      fit: function (x, k) { return k === 'all' || (k === 'proxy' ? x.own === 'no' && x.st !== 'void' : k === 'void' ? x.st === 'void' : x.st !== 'void'); },
+      K: function (A) { const ok = A.filter(function (x) { return x.st !== 'void'; }), m0 = iso(T0).slice(0, 7); return [['الحوالات', fmtNum(ok.length), '', 'paper-plane-tilt'], ['إجمالي المحوَّل', sar(axSum(ok)), '', 'coins'], ['هذا الشهر', sar(axSum(ok.filter(function (x) { return String(x.date).slice(0, 7) === m0; }))), 'ok', 'check-circle'], ['نيابةً عن العميل', fmtNum(ok.filter(function (x) { return x.own === 'no'; }).length), 'warn', 'users-three']]; },
+      card: function (x, C, RF) { return cfPayout(x, C, RF, 'finro:', true); } },
+    dd: { t: 'الاستقطاع البنكي — أمر مستديم', ic: 'bank:teal', ent: 'dd', L: function () { return AX.dd; }, d: function (x) { return String(x.start || ''); } },
+    ck: { t: 'الشيكات', ic: 'receipt:gold', ent: 'check', L: function () { return AX.ck; }, d: function (x) { return String(x.start || ''); } } };
+  ['dd', 'ck'].forEach(function (kind) { Object.assign(FR_K[kind], {
+    st: [['all', 'الكل', 'list:navy'], ['on', 'مطبّق', 'check-circle:teal'], ['off', 'غير مطبّق', 'hourglass-medium:saffron'], ['stop', 'موقوف', 'warning:gold'], ['void', 'ملغي', 'x-circle:gold'], ['late', kind === 'ck' ? 'مستحقة لم تُصرف' : 'مستحقة لم تُخصم', 'alarm:gold']],
+    fit: function (p, k) { return k === 'all' || (k === 'late' ? axLate(p).length > 0 : p.st === k); },
+    K: function (A) { const on = A.filter(function (p) { return p.st === 'on'; }), lv = A.filter(function (p) { return p.st !== 'void'; }); return [[kind === 'dd' ? 'أوامر مطبّقة' : 'شيكات مطبّقة', fmtNum(on.length), '', kind === 'dd' ? 'bank' : 'receipt'], ['المستحق شهريًا', sar(axSum(on, function (p) { return p.per; })), '', 'calendar-blank'], [kind === 'ck' ? 'صُرف' : 'خُصم', sar(axSum(lv, function (p) { return axSum(axPaid(p)); })), 'ok', 'check-circle'], [kind === 'ck' ? 'مستحقة لم تُصرف' : 'مستحقة لم تُخصم', fmtNum(axSum(lv, function (p) { return axLate(p).length; })), 'danger', 'alarm']]; },
+    card: function (x, C, RF) { return cfPlan(x.live, C, RF, 'finro:', true); } }); });
+  const FR_EV = { at: 0, L: [] };
+  const lvFinRo = function (kind) {
+    const K = FR_K[kind];
+    return admMount('finro:' + kind, K.t, async function () {
+      if (!LIVE_ADM.at) await liveAdmLoad(); else await lvPlLoad().catch(function () { /* */ });
+      if (!ADM.trAt) { await livePayoutsLoad().catch(function () { /* */ }); ADM.trAt = Date.now(); }
+      const E = await liveSb('client_internal_events?select=*&entity=in.(bond,payout,check,dd)&order=at.desc&limit=3000').catch(function () { return []; }); FR_EV.L = Array.isArray(E) ? E : [];
+      return { at: Date.now() };
+    }, function (j, st, paint, refetch) {
+      const RF = function () { refetch(); }; RF.paint = paint; CF_EVD.list = FR_EV.L;
+      const A = K.L() || [], f = ADM['frF' + kind] || 'all', per = ADM['frP' + kind] || 'all', cq = ADM['frC' + kind] || '';
+      const R = A.filter(function (x) { return K.fit(x, f) && finPerFit(K.d(x), per) && (!cq || x.cid === cq); });
+      const G = []; R.forEach(function (x) { let g = G.filter(function (y) { return y.cid === x.cid; })[0]; if (!g) { g = { cid: x.cid, L: [] }; G.push(g); } g.L.push(x); });
+      G.sort(function (a, b) { return String(cuBdName(a.cid)).localeCompare(String(cuBdName(b.cid)), 'ar'); });
+      const opts = []; A.forEach(function (x) { if (!opts.some(function (o) { return o[0] === x.cid; })) opts.push([x.cid, cuBdName(x.cid)]); }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
+      return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, K.t), e('small', {}, 'تقرير للاطلاع — التسجيل والتعديل وكل الأحداث من ملف العميل، وتنعكس هنا كما هي.')])]),
+        axKpis(K.K(R)),
+        e('div', { class: 'm3-tools ax-tools' }, [chipRow(K.st.map(function (x) { return [x[0], x[1], x[2], A.filter(function (y) { return K.fit(y, x[0]) && finPerFit(K.d(y), per) && (!cq || y.cid === cq); }).length]; }), f, function (v) { ADM['frF' + kind] = v; draw(); }, 'الحالة'),
+          chipRow(FIN_PER.map(function (x) { return [x[0], x[1], x[2], A.filter(function (y) { return finPerFit(K.d(y), x[0]) && (!cq || y.cid === cq); }).length]; }), per, function (v) { ADM['frP' + kind] = v; draw(); }, 'الفترة'),
+          e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM['frC' + kind] = v === '*' ? '' : v; draw(); } }))])]),
+        G.length ? e('div', { class: 't2-stack' }, G.map(function (g) { const C = (LIVE_ADM.ct || {})[g.cid] || [];
+          return lvSec(cuBdName(g.cid), fmtNum(g.L.length), g.L.map(function (x) { return K.card(x, C, RF); }), 'finro:' + kind + ':' + g.cid); }))
+          : LDS.emptyState({ icon: 'ok', title: 'لا شيء بهذا الاختيار', body: 'غيّر الحالة أو الفترة أو العميل.', compact: true })];
     });
   };
-  LIVE_PAGES.admin['cu-admx-dd'] = function () { return lvPlPage('dd'); };
-  LIVE_PAGES.admin['cu-admx-ck'] = function () { return lvPlPage('ck'); };
-  if (LP['cu-admx-dd']) LP['cu-admx-dd'].run = function () { return lvPlPage('dd'); };
-  if (LP['cu-admx-ck']) LP['cu-admx-ck'].run = function () { return lvPlPage('ck'); };
-  /* الفتح من التقرير أو المركز: الصفحة نفسها مصفّاة على العميل — لا درج ثانٍ */
-  axPlanOpen = function (kind, id) { const p = (AX[kind] || []).filter(function (x) { return x.id === id; })[0]; ADM['axC' + kind] = p ? p.cid : ''; ADM['axF' + kind] = 'all'; go('other', 'cu-admx-' + kind); };
-  const axRegOpenPl = axRegOpen;
-  axRegOpen = function (kind) { if (kind === 'dd' || kind === 'ck') { go('other', 'cu-admx-' + kind); return; } return axRegOpenPl(kind); };
+  ['bd', 'tr', 'dd', 'ck'].forEach(function (k) { LIVE_PAGES.admin['cu-admx-' + k] = function () { return lvFinRo(k); }; if (LP['cu-admx-' + k]) LP['cu-admx-' + k].run = function () { return lvFinRo(k); }; });
+  /* لا تسجيل ولا تعديل من المالية */
+  axRegOpen = function () { snack('التسجيل والتعديل من ملف العميل — المالية للاطلاع.'); };
+  axPlanOpen = function (kind, id) { const p = (AX[kind] || []).filter(function (x) { return x.id === id; })[0]; ADM['frC' + kind] = p ? p.cid : ''; ADM['frF' + kind] = 'all'; go('other', 'cu-admx-' + kind); };
+  /* «تقرير الإجراءات» — بطاقاته الأربع فقط */
+  const lvAxHub = function () {
+    const n = function (L, f) { return (L || []).filter(f || function () { return true; }).length; };
+    return secHub('cuax', { t: 'تقرير الإجراءات', s: 'للاطلاع — السندات والاستقطاع والحوالات الصادرة والشيكات كما تُدار من ملفات العملاء.', ic: 'gavel:navy' }, [['ax', 'تقرير الإجراءات', 'gavel:navy', [
+      { ic: 'gavel:navy', t: 'السندات التنفيذية', d: 'الحالة ومحكمة التنفيذ والربط بالعقود', n: fmtNum(n(CU_BONDS)) + ' سندات', badge: n(CU_BONDS, function (b) { return b.st === 'court'; }) ? [fmtNum(n(CU_BONDS, function (b) { return b.st === 'court'; })) + ' محال للتنفيذ', 'danger'] : null, go: function () { go('other', 'cu-admx-bd'); } },
+      { ic: 'bank:teal', t: 'الاستقطاع البنكي — أمر مستديم', d: 'الأوامر ودفعاتها: خُصم · لم يُخصم · لا يوجد رصيد', n: fmtNum(n(AX.dd, function (p) { return p.st !== 'void'; })) + ' أوامر', go: function () { go('other', 'cu-admx-dd'); } },
+      { ic: 'paper-plane-tilt:sky', t: 'الحوالات الصادرة', d: 'من حساب المنصة إلى العميل أو نيابةً عنه', n: fmtNum(n(AX.tr, function (x) { return x.st !== 'void'; })) + ' حوالات', go: function () { go('other', 'cu-admx-tr'); } },
+      { ic: 'receipt:gold', t: 'الشيكات', d: 'كل شيك بحالته: صُرف · لا يوجد رصيد · تم اتخاذ إجراءات', n: fmtNum(n(AX.ck, function (p) { return p.st !== 'void'; })) + ' مجموعات', badge: (function () { const k = axSum(AX.ck.filter(function (p) { return p.st !== 'void'; }), function (p) { return axLate(p).length; }); return k ? [fmtNum(k) + ' مستحقة لم تُصرف', 'danger'] : null; })(), go: function () { go('other', 'cu-admx-ck'); } }]]]);
+  };
+  /* صفحات المحاور ترجع مصفوفة — تُسجَّل في LP (الذي يرسم المصفوفات) لا في LIVE_PAGES (عقدة واحدة) */
+  if (LP['cu-admx']) { LP['cu-admx'].t = 'تقرير الإجراءات'; LP['cu-admx'].run = lvAxHub; }
+  /* v451: «الرسوم والمصاريف والضرائب» قسم مستقل — كل بند ببطاقة تقرير: الضريبة وحدها، وكل رسم وحده، وكل عمولة ومصروف وحده،
+     والقيم من عقود العملاء نفسها (ما يُعدَّل في ملف العميل ينعكس هنا) — مع الملخص العام والملخص الخاص بكل عميل. */
+  const feeRowsR = function () { return cuList().map(function (c) { return axRep(c.id); }).filter(function (r) { return r.any; }).map(function (r) { return { r: r, FL: r.FE.filter(function (f) { return !f.def; }) }; }); };
+  const feeVal = function (f, k) { return k.indexOf('oth:') === 0 ? ((f.oth.filter(function (x) { return x[0] === k.slice(4); })[0] || [0, 0])[1]) : (Number(f[k]) || 0); };
+  const FEE_IT = function (RR) {
+    const N = {}; RR.forEach(function (x) { x.FL.forEach(function (f) { f.oth.forEach(function (o) { N[o[0]] = 1; }); }); });
+    return [['vat', 'ضريبة القيمة المضافة', 'receipt:teal', 'tax', 'تُحسب على قيمة المنتج وتُورَّد للهيئة — لا تدخل في الإيراد'],
+      ['proc', 'رسوم معالجة الطلب', 'coins:gold', 'fee', 'لكل وحدة من قيمة المنتج'], ['margin', 'قيمة فرق بيع المنتج', 'coins:gold', 'fee', 'لكل وحدة من قيمة المنتج'], ['bond', 'رسوم وخدمة إصدار السند الإلكتروني', 'seal-check:teal', 'fee', 'لكل عقد'],
+      ['mkt', 'عمولات المسوّقين', 'users-three:navy', 'exp', 'من قيمة المنتج — داخلية'], ['emp', 'عمولات الموظفين', 'user-circle:navy', 'exp', 'من قيمة المنتج — داخلية']]
+      .concat(Object.keys(N).map(function (n) { return ['oth:' + n, n, 'coins:saffron', 'exp', 'مصروف — داخلي']; }), [['net', 'صافي إيراد الرسوم', 'trend-up:teal', 'net', 'الرسوم ناقص العمولات والمصاريف']]);
+  };
+  const feeReady = function () { if (!LIVE_FEE.at) { LIVE_FEE.at = 1; lvFeeLoad().then(draw); } };
+  const lvFeeHub = function () {
+    feeReady();
+    const RR = feeRowsR(), ALL = [].concat.apply([], RR.map(function (x) { return x.FL; })), sA = feeSum(ALL), IT = FEE_IT(RR);
+    const card = function (it) { const v = qr2(axSum(ALL, function (f) { return feeVal(f, it[0]); })), n = ALL.filter(function (f) { return feeVal(f, it[0]) !== 0; }).length;
+      return { ic: it[2], t: it[1], d: it[4], n: sar(v) + ' · ' + ctW(n), go: function () { ADM.feeI = it[0]; ADM.feeIC = ''; ADM.feeIP = 'all'; go('other', 'fin-fee-i'); } }; };
+    const grp = function (k) { return IT.filter(function (it) { return it[3] === k; }).map(card); };
+    const KP = axKpis([['المحمَّل على العملاء', sar(sA.chg), 'warn', 'coins'], ['منه الضريبة', sar(sA.vat), '', 'receipt'], ['العمولات والمصاريف', sar(sA.exp), 'danger', 'users-three'], ['صافي إيراد الرسوم', sar(sA.net), feeTone(sA.net), 'trend-up']]);
+    const H = secHub('ffee', { t: 'الرسوم والمصاريف والضرائب', s: 'تقرير للاطلاع — كل بند ببطاقة، والقيم من عقود العملاء كما في ملفاتهم.', ic: 'coins:gold' }, [
+        ['sum', 'الملخص', 'chart-bar:navy', [{ ic: 'chart-bar:navy', t: 'الملخص العام والخاص', d: 'كل البنود لكل العملاء، ثم ملخص كل عميل بعقوده', n: sar(sA.fees) + ' رسوم · ' + ctW(sA.n), go: function () { ADM.feC = ''; go('other', 'cu-admx-fee'); } }].concat(grp('net'))],
+        ['tax', 'الضريبة', 'receipt:teal', grp('tax')], ['fee', 'الرسوم', 'coins:gold', grp('fee')], ['exp', 'العمولات والمصاريف', 'users-three:navy', grp('exp')]]);
+    const box = H[0], hh = box && box.querySelector('.shb-h'); if (box) box.insertBefore(KP, hh ? hh.nextSibling : box.firstChild); else H.unshift(KP);
+    return H;
+  };
+  const lvFeeItem = function () {
+    feeReady();
+    const RR = feeRowsR(), IT = FEE_IT(RR), k = ADM.feeI || 'vat', it = IT.filter(function (x) { return x[0] === k; })[0] || IT[0], per = ADM.feeIP || 'all', cq = ADM.feeIC || '';
+    try { if (LP['fin-fee-i']) LP['fin-fee-i'].t = it[1]; } catch (err) { void err; }
+    const G = RR.map(function (x) { return { r: x.r, FL: x.FL.filter(function (f) { return feeVal(f, k) !== 0 && finPerFit(f.c.req, per); }) }; }).filter(function (g) { return g.FL.length && (!cq || g.r.cid === cq); });
+    const all = [].concat.apply([], G.map(function (g) { return g.FL; })), tot = qr2(axSum(all, function (f) { return feeVal(f, k); }));
+    const opts = RR.filter(function (x) { return x.FL.some(function (f) { return feeVal(f, k) !== 0; }); }).map(function (x) { return [x.r.cid, x.r.name]; }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
+    G.sort(function (a, b) { return axSum(b.FL, function (f) { return feeVal(f, k); }) - axSum(a.FL, function (f) { return feeVal(f, k); }); });
+    return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, it[1]), e('small', {}, it[4] + ' — من عقود العملاء كما في ملفاتهم')])]),
+      axKpis([['الإجمالي', sar(tot), k === 'net' ? feeTone(tot) : '', 'coins'], ['العقود', fmtNum(all.length), '', 'files'], ['العملاء', fmtNum(G.length), '', 'users-three'], ['متوسط العقد', sar(all.length ? qr2(tot / all.length) : 0), '', 'chart-bar']]),
+      e('div', { class: 'm3-tools ax-tools' }, [chipRow(FIN_PER.map(function (x) { return [x[0], x[1], x[2]]; }), per, function (v) { ADM.feeIP = v; draw(); }, 'الفترة'),
+        e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل — الملخص الخاص', DS.select({ value: cq || '*', options: [['*', 'كل العملاء — الملخص العام']].concat(opts), onChange: function (v) { ADM.feeIC = v === '*' ? '' : v; draw(); } }))])]),
+      G.length ? e('div', { class: 't2-stack' }, G.map(function (g) { const v = qr2(axSum(g.FL, function (f) { return feeVal(f, k); }));
+        return lvSec(g.r.name, sar(v) + ' · ' + ctW(g.FL.length), [e('div', { class: 'cu-mgr-docs' }, g.FL.map(function (f) {
+          return cfRow('العقد ' + f.c.no, ['قيمة العقد ', sar(f.total), ' · قيمة المنتج ', sar(f.prod)], [e('b', { class: 'cu-nw' }, sar(feeVal(f, k)))]); }))], 'ffee:' + k + ':' + g.r.cid, !!cq); }))
+        : LDS.emptyState({ icon: 'ok', title: 'لا قيم لهذا البند بهذا الاختيار', body: 'غيّر الفترة أو العميل.', compact: true })];
+  };
+  try { Object.assign(ICON, { 'fin-fee': ['coins', 'gold'], 'fin-fee-i': ['coins', 'gold'] }); } catch (err) { void err; }
+  lp('fin-fee', 'الرسوم والمصاريف والضرائب', 'fin', 'fin-fee', lvFeeHub);
+  lp('fin-fee-i', 'بند الرسوم', 'fin-fee', 'fin-fee-i', lvFeeItem);
+  if (LP['cu-admx-fee']) { LP['cu-admx-fee'].up = 'fin-fee'; LP['cu-admx-fee'].t = 'الملخص العام والخاص'; }
+  if (LP['cu-admx-rp']) LP['cu-admx-rp'].up = 'fin';
+  /* قسم المالية: تقارير — تقرير الإجراءات · الرسوم والمصاريف والضرائب · تقرير العملاء (قسم خاص خارج البطاقة) */
+  const lvFinHub = function () {
+    const P = dcPays(finCts()), late = P.due.filter(function (r) { return r.k === 'late'; }), t0 = P.due.filter(function (r) { return r.k === 'today'; });
+    const rc = function (k) { return P.rec.filter(function (r) { return r.k === k; }); };
+    return secHub('fin', { t: 'قسم المالية', s: 'تقارير عامة للعملاء قابلة للتخصيص — للاطلاع، وكل تسجيل وتعديل من ملف العميل.', ic: 'fin' }, [
+      ['due', 'الاستحقاق', 'calendar-blank:saffron', [{ ic: 'fin-due', t: 'الدفعات المستحقة والقادمة', d: 'الدفعات غير المسددة حسب موعد استحقاقها: المتأخرة · اليوم · خلال 7 أيام · خلال 30 يومًا', n: fmtNum(P.due.length) + ' دفعة', badge: late.length ? [fmtNum(late.length) + ' متأخرة', 'danger'] : t0.length ? [fmtNum(t0.length) + ' تستحق اليوم', 'warn'] : null, go: function () { go('other', 'fin-due'); } }]],
+      ['rec', 'سجل السداد', 'receipt:teal', DC_RECK.filter(function (K) { return K[0] !== 'oth' || rc('oth').length; }).map(function (K) { const A = rc(K[0]); return { ic: 'fin-rec-' + K[0], t: K[1], d: K[3], n: fmtNum(A.length) + ' عملية · ' + sar(qr2(A.reduce(function (a, r) { return a + r.amt; }, 0))), go: function () { ADM['frC' + K[0]] = ''; go('other', 'fin-rec-' + K[0]); } }; })],
+      ['ops', 'المدفوعات', 'wallet:gold', [{ ic: 'wallet:gold', t: 'مركز المدفوعات', d: 'عمليات بوابة الدفع · الاستردادات · التحويلات البنكية بانتظار الاعتماد', go: function () { go('other', 'pay-center'); } }]],
+      ['ax', 'تقرير الإجراءات', 'gavel:navy', [{ ic: 'gavel:navy', t: 'تقرير الإجراءات', d: 'السندات · الاستقطاع · الحوالات الصادرة · الشيكات — للاطلاع', go: function () { go('other', 'cu-admx'); } }]],
+      ['ffee', 'الرسوم والمصاريف والضرائب', 'coins:gold', [{ ic: 'coins:gold', t: 'الرسوم والمصاريف والضرائب', d: 'الضريبة · الرسوم · العمولات والمصاريف — كل بند ببطاقة، مع الملخص العام والخاص', go: function () { go('other', 'fin-fee'); } }]],
+      ['rp', 'تقرير العملاء', 'chart-bar:navy', [{ ic: 'chart-bar:navy', t: 'تقرير العملاء', d: 'العقود والمبالغ والالتزام والمخاطرة — سجل ائتماني لكل عميل وتقرير PDF', go: function () { go('other', 'cu-admx-rp'); } }]]]);
+  };
+  if (LP.fin) LP.fin.run = lvFinHub;
 }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
 })();
