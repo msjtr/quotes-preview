@@ -99,7 +99,13 @@
       else location.href = 'https://wa.me/?text=' + encodeURIComponent(t + '\n' + u);
       ev('share'); }; }
     var mv = $('[data-v="method"]', res), av = $('[data-v="at"]', res);
-    if (mv && info.method) { mv.textContent = info.method; show($('[data-row="method"]', res), true); }
+    if (mv && info.method) {
+      mv.textContent = info.method;
+      /* v439: شعار الشبكة كما سجّلها Paymob (لا حسب الزر الذي اختاره العميل) */
+      var NL = { mada: 'mada.png', visa: 'visa.svg', mastercard: 'mastercard.svg', applepay: 'applepay-b.png' }[info.net];
+      if (NL) { var im = document.createElement('img'); im.src = '/assets/brand/pay/' + NL; im.alt = ''; im.className = 'tp-net'; mv.insertBefore(im, mv.firstChild); }
+      show($('[data-row="method"]', res), true);
+    }
     if (av && info.at) { av.textContent = info.at; show($('[data-row="at"]', res), true); }
     R.classList.add('is-done'); /* النتيجة وحدها — بلا تكرار لتفاصيل الملخص */
     show(res, true);

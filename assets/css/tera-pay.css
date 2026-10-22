@@ -300,3 +300,7 @@ html,body.tp{overflow-x:hidden}
 .tp-pxf{position:absolute;z-index:40;display:none;border:0;margin:0;padding:0;background:transparent;color-scheme:light;height:170px;transition:height .2s ease}
 .tp-pxf.is-3ds{position:fixed;z-index:1001;background:#fff;transition:none}
 .tp-pixel.has-frame{min-height:0}
+
+/* v439: شعار شبكة البطاقة في سطر «الوسيلة» */
+.tp-res [data-v="method"]{display:inline-flex;align-items:center;gap:8px}
+.tp-net{height:18px;width:auto;flex:none}
