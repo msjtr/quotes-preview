@@ -21290,29 +21290,7 @@ function liveWaPageOld() {
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
   window.addEventListener('focus', check); setInterval(check, 600000); setTimeout(check, 15000);
 } catch (err) { void err; } })();
-boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
-})();
-  /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
-  (function () {
-    if (window.__tqZero) return; window.__tqZero = true;
-    function isCC(el) { return !!(el && el.tagName === 'INPUT' && (el.closest('.ts-tel') || /^5X{6,}$/.test(el.getAttribute('placeholder') || ''))); }
-    function note(el) {
-      var host = el.closest('.ts-tel') || el, n = host.nextElementSibling;
-      if (!n || !n.classList.contains('tq-zero')) { n = document.createElement('small'); n.className = 'tq-zero'; n.setAttribute('role', 'status'); n.textContent = 'اكتب الرقم بدون صفر في أوله؛ مفتاح الدولة محدد.'; host.insertAdjacentElement('afterend', n); }
-      n.hidden = false; clearTimeout(n._t); n._t = setTimeout(function () { n.hidden = true; }, 3500);
-    }
-    document.addEventListener('input', function (ev) {
-      var el = ev.target; if (!isCC(el)) return;
-      var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
-      /* v422: الرقم بطول دولته فقط (السعودية 9 أرقام…) — من قاعدة الدولة المختارة أو من مثال الحقل 5XXXXXXXX */
-      var ph = el.getAttribute('placeholder') || '', cap = Number(el.dataset.tqLen) || (/^[1-9]X{6,}$/.test(ph) ? ph.length : 0);
-      if (cap && z.length > cap) z = z.slice(0, cap);
-      if (z !== v) { el.value = z; if (/^0/.test(a)) note(el); }
-    }, true);
-  })();
-
-
-/* ===== v445: الاستقطاع البنكي والشيكات في «إجراءات الإدارة» — من الجدول نفسه الذي يكتب فيه ملف العميل (client_pay_instruments)
+/* ===== v446: الاستقطاع البنكي والشيكات في «إجراءات الإدارة» — من الجدول نفسه الذي يكتب فيه ملف العميل (client_pay_instruments)
    وبالبطاقة نفسها (cfPlan) بإجراءاتها وسجلها الداخلي، فلا نموذج ثانٍ ولا بيانات مكرّرة. المالية متابعة لكل العملاء،
    والتسجيل الجديد متاح لملفات التجربة وحدها حتى يُعتمد السلوك ويُعمَّم. ===== */
 if (LIVE.on) {
@@ -21358,8 +21336,31 @@ if (LIVE.on) {
   };
   LIVE_PAGES.admin['cu-admx-dd'] = function () { return lvPlPage('dd'); };
   LIVE_PAGES.admin['cu-admx-ck'] = function () { return lvPlPage('ck'); };
+  if (LP['cu-admx-dd']) LP['cu-admx-dd'].run = function () { return lvPlPage('dd'); };
+  if (LP['cu-admx-ck']) LP['cu-admx-ck'].run = function () { return lvPlPage('ck'); };
   /* الفتح من التقرير أو المركز: الصفحة نفسها مصفّاة على العميل — لا درج ثانٍ */
   axPlanOpen = function (kind, id) { const p = (AX[kind] || []).filter(function (x) { return x.id === id; })[0]; ADM['axC' + kind] = p ? p.cid : ''; ADM['axF' + kind] = 'all'; go('other', 'cu-admx-' + kind); };
   const axRegOpenPl = axRegOpen;
   axRegOpen = function (kind) { if (kind === 'dd' || kind === 'ck') { go('other', 'cu-admx-' + kind); return; } return axRegOpenPl(kind); };
 }
+boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
+})();
+  /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
+  (function () {
+    if (window.__tqZero) return; window.__tqZero = true;
+    function isCC(el) { return !!(el && el.tagName === 'INPUT' && (el.closest('.ts-tel') || /^5X{6,}$/.test(el.getAttribute('placeholder') || ''))); }
+    function note(el) {
+      var host = el.closest('.ts-tel') || el, n = host.nextElementSibling;
+      if (!n || !n.classList.contains('tq-zero')) { n = document.createElement('small'); n.className = 'tq-zero'; n.setAttribute('role', 'status'); n.textContent = 'اكتب الرقم بدون صفر في أوله؛ مفتاح الدولة محدد.'; host.insertAdjacentElement('afterend', n); }
+      n.hidden = false; clearTimeout(n._t); n._t = setTimeout(function () { n.hidden = true; }, 3500);
+    }
+    document.addEventListener('input', function (ev) {
+      var el = ev.target; if (!isCC(el)) return;
+      var v = String(el.value || ''), a = v.replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 0x6F0); }).replace(/\D/g, ''), z = a.replace(/^0+/, '');
+      /* v422: الرقم بطول دولته فقط (السعودية 9 أرقام…) — من قاعدة الدولة المختارة أو من مثال الحقل 5XXXXXXXX */
+      var ph = el.getAttribute('placeholder') || '', cap = Number(el.dataset.tqLen) || (/^[1-9]X{6,}$/.test(ph) ? ph.length : 0);
+      if (cap && z.length > cap) z = z.slice(0, cap);
+      if (z !== v) { el.value = z; if (/^0/.test(a)) note(el); }
+    }, true);
+  })();
+
