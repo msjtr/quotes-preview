@@ -1267,6 +1267,14 @@ html.cb-lock{overflow:hidden}
 .fx-table tr.is-late td{background:#FDF6F5}.fx-table tr.is-deferred td{background:#FFF9EC}
 .fx-table td:first-child{font:800 .9rem var(--t2-ff-display);color:var(--t2-brand-3)}
 .fx-table.cf-tb{min-width:0}.fx-table.cf-tb td small.cf-sub{display:block;color:var(--t2-ink-3);font-size:.74rem}
+/* v442: تجربة ملف العميل — الطلبات والنماذج داخل البطاقات */
+.cf-sr{display:grid;gap:10px;padding:12px;border:1px solid var(--t2-line);border-radius:14px;background:var(--t2-surface)}.cf-srs{display:grid;gap:12px}
+.cf-form{display:grid;gap:12px}.cf-form .t2-pb-actions{flex-wrap:wrap}
+.cf-wait{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.cf-picks{display:grid;gap:8px}.cf-pick{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--t2-line);border-radius:12px;cursor:pointer}.cf-pick input{width:18px;height:18px;flex:none}.cf-pick small{color:var(--t2-muted)}
+.cf-bd-form{display:grid;gap:12px}
+.cf-orig{flex:1 1 100%;display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--t2-surface-3);font-size:.86rem}.cf-orig b{font-weight:700;color:var(--t2-brand-3)}.cf-orig small{color:var(--t2-muted)}
+.cf-why{white-space:normal;font-size:.8rem;color:var(--t2-ink-2)}
 /* v441: ملف العميل الموحّد على الجوال — الأقسام المتداخلة بحشو أقل حتى لا يضيق المحتوى */
 @media (max-width:40rem){.t2 .adm-live .t2-sec .t2-sec>.t2-sec-h{padding:10px 12px}.t2 .adm-live .t2-sec .t2-sec>.t2-sec-b{padding:10px 8px 12px}.t2 .adm-live .t2-sec .t2-sec .t2-sec>.t2-sec-b{padding:10px 6px 12px}.t2.t2 .adm-live .cu-mgr-doc{flex-wrap:wrap;align-items:flex-start}.t2.t2 .adm-live .cu-mgr-doc>.adm-doc-a{margin-inline-start:auto}.adm-live .fx-chead{padding:14px}}
 @container app (max-width:40rem){.t2 .adm-live .t2-sec .t2-sec>.t2-sec-h{padding:10px 12px}.t2 .adm-live .t2-sec .t2-sec>.t2-sec-b{padding:10px 8px 12px}.t2 .adm-live .t2-sec .t2-sec .t2-sec>.t2-sec-b{padding:10px 6px 12px}.t2.t2 .adm-live .cu-mgr-doc{flex-wrap:wrap;align-items:flex-start}.t2.t2 .adm-live .cu-mgr-doc>.adm-doc-a{margin-inline-start:auto}.adm-live .fx-chead{padding:14px}}
