@@ -295,3 +295,8 @@ html,body.tp{overflow-x:hidden}
 .tp-ring{isolation:isolate;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0)}
 .tp-ring:before{z-index:0;pointer-events:none}
 .tp-ring>.tp-in{z-index:1;transform:translateZ(1px)}
+
+/* v437: نموذج البطاقة في إطار فرعي من تيرا فوق مكانه، ويصير نافذة التحقق من البنك */
+.tp-pxf{position:absolute;z-index:40;display:none;border:0;margin:0;padding:0;background:transparent;color-scheme:light;height:170px;transition:height .2s ease}
+.tp-pxf.is-3ds{position:fixed;z-index:1001;background:#fff;transition:none}
+.tp-pixel.has-frame{min-height:0}

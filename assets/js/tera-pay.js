@@ -2,9 +2,24 @@
    بيانات البطاقة تُدخل داخل إطار Paymob الآمن فقط — هذا الملف لا يقرأها ولا يرسلها. */
 (function () {
   'use strict';
+  var CS = {
+          /* v420: حقول البطاقة باتجاه LTR حتى تظهر الأرقام بترتيبها الصحيح ومجمّعة كل 4 أرقام بمسافة، وبلا أيقونات داخل الحقل حتى لا تتداخل مع الرقم
+             (شعارات مدى وفيزا وماستركارد وApple Pay ظاهرة خارج النموذج) */
+          Direction: 'ltr', HideCardIcons: true, HideCardLabel: true,
+          Label_Text: { cardLabel: 'بيانات البطاقة', savedCardsLabel: 'بطاقاتك المحفوظة', saveCardConsentLabel: 'احفظ البطاقة للدفعات القادمة', cardEndingLabel: 'تنتهي بـ' },
+          Placeholder_Text: { holderName: 'الاسم على البطاقة', cardNumber: 'رقم البطاقة', expiryDate: 'الشهر / السنة', securityCode: 'رمز التحقق CVV' },
+          Error_Text: { cardNumber: { required: 'أدخل رقم البطاقة', invalid: 'رقم البطاقة غير صحيح' }, expiryDate: { required: 'أدخل تاريخ الانتهاء', invalid: 'تاريخ الانتهاء غير صحيح' }, securityCode: 'أدخل رمز التحقق (CVV)', holderName: 'أدخل الاسم كما في البطاقة' },
+          Button_Text: { viewSavedCardsBtn: 'بطاقاتي المحفوظة', addNewCardBtn: 'بطاقة جديدة', payBtn: 'ادفع' },
+          Hint_Text: { saveCardConsentHint: 'تُحفظ البطاقة لدى Paymob بأمان لاستخدامها لاحقًا.', cvvModalTitle: 'رمز التحقق CVV', cvvVisaMastercardQuestion: 'بطاقة مدى أو فيزا أو ماستركارد؟', cvvVisaMastercardHint: 'رمز من 3 أرقام على ظهر البطاقة.', cvvAmexQuestion: 'بطاقة أمريكان إكسبريس؟', cvvAmexHint: 'رمز من 4 أرقام على وجه البطاقة.' },
+          Font_Size_Label: '14', Font_Size_Input_Fields: '16', Font_Weight_Label: 700, Font_Weight_Input_Fields: 400,
+          Color_Container: '#FFFFFF', Color_Border_Input_Fields: '#E7DFCC', Radius_Border: '14', Color_Primary: '#B8892F', Color_Error: '#B3262F', Color_Disabled: '#D9D2C2',
+          Color_Input_Fields: '#FFFFFF', Text_Color_For_Label: '#5E6B7C', Text_Color_For_Input_Fields: '#0B1B3A', Color_For_Text_Placeholder: '#A3ADBA'
+        };
   var R = document.getElementById('tp');
   if (!R) return;
   var D = R.dataset, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* v437: الإطار الفرعي — نموذج Paymob وحده، ويتواصل مع صفحة تيرا الأم. انتقال Pixel إلى صفحة البنك يحدث هنا داخل الإطار لا في الصفحة كلها */
+  if (D.px === '1') { childPixel(D); return; }
   var $ = function (s, el) { return (el || document).querySelector(s); };
   var money = function (n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
 
@@ -49,7 +64,7 @@
   var payBtn = document.getElementById('tp-pay'), err = document.getElementById('tp-err'), alt = document.getElementById('tp-alt');
   var form = document.getElementById('tp-form'), proc = document.getElementById('tp-proc'), res = document.getElementById('tp-res');
   var started = false, ready = false, seen = false;
-  function show(el, on) { if (el) el.hidden = !on; }
+  function show(el, on) { if (el) el.hidden = !on; if (el === form) place(); }
   /* v427: تشخيص مراحل الدفع (بلا أي بيانات بطاقة) */
   function ev(stage, data) { try { if (!D.status) return; fetch(D.status.replace(/\/status$/, '/ev'), { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stage, data: data || {} }) }); } catch (e) { void e; } }
   window.addEventListener('error', function (e) { ev('js_error', { m: String(e.message || '').slice(0, 200) }); });
@@ -124,9 +139,72 @@
   }
   function processing() { show(form, false); show(proc, true); step(2); poll(24); }
 
+  /* v437: نموذج البطاقة في إطار فرعي من تيرا فوق مكانه في النموذج؛ وعند التحقق من البنك يتحوّل الإطار نفسه نافذةً بهوية تيرا (لا تغادر الصفحة) */
+  var PXF = null, in3ds = false, BD = null, P3 = 0, PK = '';
+  function place() {
+    if (!PXF || in3ds) return;
+    if (!box || box.offsetParent === null || (form && form.hidden)) { PXF.style.display = 'none'; return; }
+    var r = box.getBoundingClientRect();
+    PXF.style.display = 'block'; PXF.style.top = Math.round(r.top + window.scrollY) + 'px'; PXF.style.left = Math.round(r.left + window.scrollX) + 'px'; PXF.style.width = Math.round(r.width) + 'px';
+  }
+  function fit3ds() { if (!in3ds || !BD) return; var b = BD.querySelector('.tp-3ds-b').getBoundingClientRect(); PXF.style.top = b.top + 'px'; PXF.style.left = b.left + 'px'; PXF.style.width = b.width + 'px'; PXF.style.height = b.height + 'px'; }
+  function enter3ds() {
+    if (in3ds || !PXF) return; in3ds = true; ev('3ds_start');
+    BD = document.createElement('div'); BD.className = 'tp-3ds'; BD.setAttribute('role', 'dialog'); BD.setAttribute('aria-label', 'التحقق من البنك');
+    BD.innerHTML = '<div class="tp-3ds-in"><div class="tp-3ds-h"><img src="/assets/brand/pay/logo-white.png" alt="منصة تيرا"><span>التحقق الآمن من بنكك · <bdi dir="ltr">3-D Secure</bdi></span></div>'
+      + '<div class="tp-3ds-b"><div class="tp-3ds-cover"><div class="tp-spin"><i></i><i></i><img src="/assets/brand/logo-hd.png" alt=""></div><b>نحوّلك إلى بنكك للتحقق…</b><span class="tp-pulse">لا تغلق هذه الصفحة</span></div></div></div>';
+    document.body.appendChild(BD); document.documentElement.style.overflow = 'hidden';
+    PXF.classList.add('is-3ds'); PXF.style.display = 'block'; fit3ds();
+    P3 = setInterval(function () {
+      fetch(D.status, { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) { if (j && (j.status === 'paid' || j.status === 'failed')) { exit3ds(true); processing(); } }).catch(function () {});
+    }, 3000);
+  }
+  function exit3ds(hide) {
+    clearInterval(P3);
+    if (BD) { try { BD.remove(); } catch (e) { void e; } BD = null; }
+    document.documentElement.style.overflow = '';
+    if (PXF) { PXF.classList.remove('is-3ds'); PXF.style.height = (box.offsetHeight || 170) + 'px'; if (hide) PXF.style.display = 'none'; }
+    in3ds = false; if (!hide) place();
+  }
+  function mountFrame() {
+    PK = ((D.status || '').match(/^\/api\/pay\/c\/([A-Za-z0-9_-]{32})\/status$/) || [])[1] || '';
+    if (!PK) return false;
+    ready = true; clearTimeout(timer);
+    PXF = document.createElement('iframe'); PXF.className = 'tp-pxf'; PXF.title = 'نموذج البطاقة الآمن'; PXF.setAttribute('allow', 'payment'); PXF.setAttribute('scrolling', 'no');
+    PXF.src = '/api/pay/c/' + PK + '/px';
+    document.body.appendChild(PXF);
+    PXF.addEventListener('load', function () {
+      var path = null; try { path = PXF.contentWindow.location.pathname; } catch (e) { path = null; }
+      if (path === '/api/pay/c/' + PK + '/px') { if (in3ds) exit3ds(); return; }
+      if (path !== null) { if (path === 'blank' || path === '') return; ev('3ds_end', { st: 'return' }); exit3ds(true); processing(); return; }
+      /* صفحة البنك أو Paymob داخل الإطار */
+      if (!in3ds) enter3ds(); var cv = BD && BD.querySelector('.tp-3ds-cover'); if (cv) cv.hidden = true; ev('3ds_load');
+    });
+    place(); var n = 0, iv = setInterval(function () { place(); if (++n > 40) { clearInterval(iv); setInterval(place, 700); } }, 100);
+    window.addEventListener('resize', function () { place(); fit3ds(); }); window.addEventListener('scroll', place, { passive: true });
+    return true;
+  }
+  window.addEventListener('message', function (e) {
+    if (!PXF || e.origin !== location.origin || e.source !== PXF.contentWindow || !e.data || typeof e.data.tp !== 'string') return;
+    var t = e.data.tp, x = e.data.x || {};
+    if (t === 'h') { if (!in3ds) { var h = Math.max(120, Math.min(900, x.h | 0)); box.style.height = h + 'px'; PXF.style.height = h + 'px'; box.classList.remove('wait'); place(); } }
+    else if (t === 'mounted') box.classList.remove('wait');
+    else if (t === 'ready') { seen = true; box.classList.remove('wait'); }
+    else if (t === 'valid') { if (payBtn) payBtn.classList.toggle('is-ready', !!x.ok); if (x.ok) show(err, false); }
+    else if (t === 'before') { started = true; if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'جارٍ الدفع…'; } }
+    else if (t === 'nav') { if (started) enter3ds(); }
+    else if (t === 'after') {
+      if (x.status >= 400) { started = false; if (payBtn) { payBtn.disabled = false; payBtn.textContent = D.cta || 'ادفع'; } if (err) { err.textContent = x.msg || 'لم تكتمل العملية. تأكد من بيانات البطاقة وحاول مرة أخرى.'; show(err, true); } }
+      else { PXF.style.display = 'none'; processing(); }
+    }
+    else if (t === 'error') fail('تعذّر تشغيل نموذج البطاقة. أعد تحميل الصفحة.');
+  });
+
   var timer = null;
   function mount() {
-    if (ready || typeof window.Pixel !== 'function') return false;
+    if (ready) return false;
+    if (D.status && mountFrame()) return true;
+    if (typeof window.Pixel !== 'function') return false;
     if (!D.cs) return false;
     ready = true; clearTimeout(timer); box.classList.remove('wait');
     /* v425: البطاقة فقط — إضافة apple-pay قبل توثيق النطاق لدى Paymob عطّلت إرسال الدفع */
@@ -150,19 +228,7 @@
           }
           processing();
         },
-        customStyle: {
-          /* v420: حقول البطاقة باتجاه LTR حتى تظهر الأرقام بترتيبها الصحيح ومجمّعة كل 4 أرقام بمسافة، وبلا أيقونات داخل الحقل حتى لا تتداخل مع الرقم
-             (شعارات مدى وفيزا وماستركارد وApple Pay ظاهرة خارج النموذج) */
-          Direction: 'ltr', HideCardIcons: true, HideCardLabel: true,
-          Label_Text: { cardLabel: 'بيانات البطاقة', savedCardsLabel: 'بطاقاتك المحفوظة', saveCardConsentLabel: 'احفظ البطاقة للدفعات القادمة', cardEndingLabel: 'تنتهي بـ' },
-          Placeholder_Text: { holderName: 'الاسم على البطاقة', cardNumber: 'رقم البطاقة', expiryDate: 'الشهر / السنة', securityCode: 'رمز التحقق CVV' },
-          Error_Text: { cardNumber: { required: 'أدخل رقم البطاقة', invalid: 'رقم البطاقة غير صحيح' }, expiryDate: { required: 'أدخل تاريخ الانتهاء', invalid: 'تاريخ الانتهاء غير صحيح' }, securityCode: 'أدخل رمز التحقق (CVV)', holderName: 'أدخل الاسم كما في البطاقة' },
-          Button_Text: { viewSavedCardsBtn: 'بطاقاتي المحفوظة', addNewCardBtn: 'بطاقة جديدة', payBtn: 'ادفع' },
-          Hint_Text: { saveCardConsentHint: 'تُحفظ البطاقة لدى Paymob بأمان لاستخدامها لاحقًا.', cvvModalTitle: 'رمز التحقق CVV', cvvVisaMastercardQuestion: 'بطاقة مدى أو فيزا أو ماستركارد؟', cvvVisaMastercardHint: 'رمز من 3 أرقام على ظهر البطاقة.', cvvAmexQuestion: 'بطاقة أمريكان إكسبريس؟', cvvAmexHint: 'رمز من 4 أرقام على وجه البطاقة.' },
-          Font_Size_Label: '14', Font_Size_Input_Fields: '16', Font_Weight_Label: 700, Font_Weight_Input_Fields: 400,
-          Color_Container: '#FFFFFF', Color_Border_Input_Fields: '#E7DFCC', Radius_Border: '14', Color_Primary: '#B8892F', Color_Error: '#B3262F', Color_Disabled: '#D9D2C2',
-          Color_Input_Fields: '#FFFFFF', Text_Color_For_Label: '#5E6B7C', Text_Color_For_Input_Fields: '#0B1B3A', Color_For_Text_Placeholder: '#A3ADBA'
-        }
+        customStyle: CS
       });
       ev('mounted');
     } catch (e) { ev('mount_error', { m: String(e && e.message || e).slice(0, 200) }); fail('تعذّر تشغيل نموذج البطاقة. أعد تحميل الصفحة.'); }
@@ -178,7 +244,10 @@
     }
   }
   /* v424: رابط الدفع صفحة واحدة — تُفتح العملية من هنا (لا من فتح الرابط) ثم يظهر نموذج البطاقة في المكان نفسه */
-  if (D.open && !D.cs) {
+  /* v437: العودة من البنك بالصفحة كلها ← النتيجة في إطار تيرا نفسه */
+  var DN = null; try { DN = D.done ? JSON.parse(D.done) : null; } catch (e) { DN = null; }
+  if (DN && DN.st) { box.classList.remove('wait'); result(DN.st, DN.receipt, DN); }
+  else if (D.open && !D.cs) {
     if (payBtn) payBtn.disabled = true;
     fetch(D.open, { method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json().catch(function () { return null; }); })
@@ -259,8 +328,46 @@
   });
   if (payBtn) payBtn.addEventListener('click', function () {
     if (payBtn.disabled || started) return;
-    show(err, false); flipBack(); ev('pay_click'); window.dispatchEvent(new Event('payFromOutside'));
+    show(err, false); flipBack();
+    if (PXF && PXF.contentWindow) { PXF.contentWindow.postMessage({ tp: 'pay' }, location.origin); return; }
+    ev('pay_click'); window.dispatchEvent(new Event('payFromOutside'));
   });
   var again = document.querySelector('button[data-retry]'); /* v426: الزر نفسه — لا الإطار #tp الذي يحمل data-retry */
   if (again) again.addEventListener('click', function () { location.href = D.retry || '/clients/'; });
+  function childPixel(D) {
+    var O = location.origin, P = window.parent;
+    function up(t, x) { try { P.postMessage({ tp: t, x: x || {} }, O); } catch (e) { void e; } }
+    function ev(stage, data) { try { fetch(D.status.replace(/\/status$/, '/ev'), { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stage, data: data || {} }) }); } catch (e) { void e; } }
+    var h0 = 0;
+    function size() { var h = Math.ceil(document.documentElement.scrollHeight); if (h !== h0) { h0 = h; up('h', { h: h }); } }
+    try { new ResizeObserver(size).observe(document.body); } catch (e) { setInterval(size, 400); }
+    window.addEventListener('message', function (e) {
+      if (e.origin !== O || e.source !== P || !e.data || e.data.tp !== 'pay') return;
+      ev('pay_click'); window.dispatchEvent(new Event('payFromOutside'));
+    });
+    var done = false;
+    function mount() {
+      if (done || typeof window.Pixel !== 'function') return false;
+      done = true; var seen = false;
+      try {
+        new window.Pixel({
+          publicKey: D.pub, clientSecret: D.cs, paymentMethods: ['card'], elementId: 'tp-pixel', disablePay: true, showSaveCard: D.save === '1',
+          cardValidationChanged: function (ok) { if (!seen) { seen = true; ev('fields_ready'); up('ready'); } up('valid', { ok: !!ok }); size(); },
+          beforePaymentComplete: async function () { ev('before'); up('before'); return true; },
+          afterPaymentComplete: async function (r) {
+            var d = (r && r.data) || {}, url = d.redirection_url || d.redirect_url;
+            ev('after', { status: r && r.status, success: d.success, pending: d.pending, redirect: url ? String(url).replace(/\?.*$/, '').slice(0, 120) : '' });
+            if (typeof url === 'string' && /^https:\/\//i.test(url)) { up('nav'); location.href = url; return; }
+            up('after', { status: r && r.status, msg: String((d && (d.message || d.msg || d.detail)) || '').slice(0, 200) });
+          },
+          customStyle: CS
+        });
+        ev('mounted'); up('mounted'); setTimeout(size, 300);
+      } catch (e) { ev('mount_error', { m: String(e && e.message || e).slice(0, 200) }); up('error'); }
+      return true;
+    }
+    /* الإطار الفرعي يغادر إلى صفحة البنك ← الأم تكبّره نافذةً بهوية تيرا */
+    window.addEventListener('pagehide', function () { up('nav'); });
+    if (!mount()) { var n = 0, iv = setInterval(function () { if (mount() || ++n > 80) clearInterval(iv); }, 250); window.addEventListener('load', mount); }
+  }
 })();
