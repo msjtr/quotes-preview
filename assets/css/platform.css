@@ -1266,6 +1266,10 @@ html.cb-lock{overflow:hidden}
 .fx-table tr:last-child td{border-bottom:0}
 .fx-table tr.is-late td{background:#FDF6F5}.fx-table tr.is-deferred td{background:#FFF9EC}
 .fx-table td:first-child{font:800 .9rem var(--t2-ff-display);color:var(--t2-brand-3)}
+.fx-table.cf-tb{min-width:0}.fx-table.cf-tb td small.cf-sub{display:block;color:var(--t2-ink-3);font-size:.74rem}
+/* v441: ملف العميل الموحّد على الجوال — الأقسام المتداخلة بحشو أقل حتى لا يضيق المحتوى */
+@media (max-width:40rem){.t2 .adm-live .t2-sec .t2-sec>.t2-sec-h{padding:10px 12px}.t2 .adm-live .t2-sec .t2-sec>.t2-sec-b{padding:10px 8px 12px}.t2 .adm-live .t2-sec .t2-sec .t2-sec>.t2-sec-b{padding:10px 6px 12px}.t2.t2 .adm-live .cu-mgr-doc{flex-wrap:wrap;align-items:flex-start}.t2.t2 .adm-live .cu-mgr-doc>.adm-doc-a{margin-inline-start:auto}.adm-live .fx-chead{padding:14px}}
+@container app (max-width:40rem){.t2 .adm-live .t2-sec .t2-sec>.t2-sec-h{padding:10px 12px}.t2 .adm-live .t2-sec .t2-sec>.t2-sec-b{padding:10px 8px 12px}.t2 .adm-live .t2-sec .t2-sec .t2-sec>.t2-sec-b{padding:10px 6px 12px}.t2.t2 .adm-live .cu-mgr-doc{flex-wrap:wrap;align-items:flex-start}.t2.t2 .adm-live .cu-mgr-doc>.adm-doc-a{margin-inline-start:auto}.adm-live .fx-chead{padding:14px}}
 .fx-link{border:0;background:none;padding:0;color:var(--t2-brand-3);font:700 .84rem var(--t2-ff-text);text-decoration:underline;cursor:pointer}
 .fx-sum{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--t2-brand);border-radius:14px;background:var(--t2-brand-wash)}
 .fx-settle{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);gap:14px;align-items:stretch}
