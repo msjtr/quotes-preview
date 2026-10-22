@@ -1275,6 +1275,22 @@ html.cb-lock{overflow:hidden}
 .cf-bd-form{display:grid;gap:12px}
 .cf-orig{flex:1 1 100%;display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--t2-surface-3);font-size:.86rem}.cf-orig b{font-weight:700;color:var(--t2-brand-3)}.cf-orig small{color:var(--t2-muted)}
 .cf-why{white-space:normal;font-size:.8rem;color:var(--t2-ink-2)}
+/* v443: ملف العميل — مؤشرات كل بطاقة، وإجراءات العقد ملوّنة، ونوع العقد ظاهر من الخارج */
+.cf-kpis.fx-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.cf-kpis .fx-kpi{padding:12px;box-shadow:none}.cf-kpis .fx-kpi-v{font-size:1.02rem}
+.cf-chead.is-defer{border-inline-start:4px solid var(--t2-warn)}.cf-chead.is-merge{border-inline-start:4px solid var(--t2-part)}.cf-chead.is-new{border-inline-start:4px solid var(--t2-info)}
+.rq-dt.is-from{background:var(--t2-warn-wash);color:var(--t2-ink);font-weight:600}
+.cf-tl{margin-bottom:10px}
+.cf-acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cf-act{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--t2-line);border-radius:14px;background:var(--t2-surface);text-align:start;cursor:pointer;font:inherit;color:var(--t2-ink);transition:border-color .15s,box-shadow .15s}
+.cf-act:hover:not([disabled]){border-color:var(--t2-brand);box-shadow:var(--t2-sh-1)}.cf-act[disabled]{opacity:.5;cursor:not-allowed}
+.cf-act-ic .t2-tile{width:38px;height:42px}.cf-act-t{display:grid;gap:2px;min-width:0}.cf-act-t b{font:700 .92rem var(--t2-ff-display)}.cf-act-t small{color:var(--t2-muted);font-size:.78rem}
+.cf-act.is-brand{background:var(--t2-brand-wash)}.cf-act.is-info{background:var(--t2-info-wash)}.cf-act.is-warn{background:var(--t2-warn-wash)}.cf-act.is-danger{background:var(--t2-danger-wash)}.cf-act.is-ok{background:var(--t2-ok-wash)}
+.cf-act.is-on{border-color:var(--t2-brand);box-shadow:0 0 0 2px var(--t2-brand-wash)}
+.cf-act-form{margin-top:12px;padding:14px;border:1px dashed var(--t2-line-2);border-radius:14px;background:var(--t2-surface-2)}
+.cf-h{font:700 .9rem var(--t2-ff-display);color:var(--t2-brand-3)}
+.cf-edit{padding:12px;border:1px dashed var(--t2-line-2);border-radius:14px}
+@media (max-width:40rem){.cf-kpis.fx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cf-acts{grid-template-columns:minmax(0,1fr)}}
+@container app (max-width:40rem){.cf-kpis.fx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cf-acts{grid-template-columns:minmax(0,1fr)}}
 /* v441: ملف العميل الموحّد على الجوال — الأقسام المتداخلة بحشو أقل حتى لا يضيق المحتوى */
 @media (max-width:40rem){.t2 .adm-live .t2-sec .t2-sec>.t2-sec-h{padding:10px 12px}.t2 .adm-live .t2-sec .t2-sec>.t2-sec-b{padding:10px 8px 12px}.t2 .adm-live .t2-sec .t2-sec .t2-sec>.t2-sec-b{padding:10px 6px 12px}.t2.t2 .adm-live .cu-mgr-doc{flex-wrap:wrap;align-items:flex-start}.t2.t2 .adm-live .cu-mgr-doc>.adm-doc-a{margin-inline-start:auto}.adm-live .fx-chead{padding:14px}}
 @container app (max-width:40rem){.t2 .adm-live .t2-sec .t2-sec>.t2-sec-h{padding:10px 12px}.t2 .adm-live .t2-sec .t2-sec>.t2-sec-b{padding:10px 8px 12px}.t2 .adm-live .t2-sec .t2-sec .t2-sec>.t2-sec-b{padding:10px 6px 12px}.t2.t2 .adm-live .cu-mgr-doc{flex-wrap:wrap;align-items:flex-start}.t2.t2 .adm-live .cu-mgr-doc>.adm-doc-a{margin-inline-start:auto}.adm-live .fx-chead{padding:14px}}
