@@ -7603,7 +7603,7 @@ function sysNtplPage() {
 const PUSH_LINKS = [['/clients/', 'حساب العميل'], ['/staff/', 'لوحة الفريق'], ['/portal/', 'بوابة الدخول'], ['/home/', 'الصفحة الرئيسية']];
 const PUSH_AUD = [['one', 'حساب محدد (البريد أو الجوال)'], ['clients', 'كل العملاء المفعّلين'], ['staff', 'كل الفريق المفعّلين'], ['all', 'الجميع']];
 function sysPushPage() {
-  const live = !!(window.TeraPush && window.TeraPush.live), can = cuCan('notifications.manage'), F = ADM.push || (ADM.push = { aud: 'one', to: 'msjt301@gmail.com', tpl: '', t: 'تذكير من فريق تيرا', b: 'لديك إجراء بانتظارك في حسابك. اضغط للمتابعة.', btn: 'فتح حسابي', url: '/clients/', types: null, cfg: null, ch: ['push', 'email', 'whatsapp'], who: null, whoBusy: false, ctpl: null, tid: '' });
+  const live = !!(window.TeraPush && window.TeraPush.live), can = cuCan('notifications.manage'), F = ADM.push || (ADM.push = { aud: 'one', to: '', tpl: '', t: 'تذكير من فريق تيرا', b: 'لديك إجراء بانتظارك في حسابك. اضغط للمتابعة.', btn: 'فتح حسابي', url: '/clients/', types: null, cfg: null, ch: ['push', 'email', 'whatsapp'], who: null, whoBusy: false, ctpl: null, tid: '' });
   if (live && !F.cfg) { F.cfg = 'loading'; (async function () { try { const t = await liveToken(); const r = await fetch('/admin/api/push/status', { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' }); const j = await r.json(); F.cfg = j && j.ok ? (j.configured ? 'ok' : 'off') : 'err'; F.types = j && j.types || null; } catch (err) { F.cfg = 'err'; } draw(); })(); }
   /* v389: القوالب الجاهزة («القوالب الجاهزة» في التواصل المباشر) — الرسالة المباشرة بها وحدها، لا نص حر */
   if (F.ctpl === null && !live) F.ctpl = [{ id: 'x1', name: 'استكمال بيانات الملف الشخصي', channel: 'both', subject: 'استكمل بيانات ملفك الشخصي', body: 'مرحبًا {الاسم}،\nملفك الشخصي في منصة تيرا يحتاج إلى استكمال بعض البيانات أو المستندات. استكمالها يسرّع مراجعة طلباتك القادمة.\nادخل إلى حسابك ثم «ملفي الشخصي».\nفريق تيرا.' }, { id: 'x2', name: 'تذكير بموعد الدفعة', channel: 'both', subject: 'تذكير بموعد دفعتك القادمة', body: 'مرحبًا {الاسم}،\nنذكّرك بأن موعد دفعتك القادمة يقترب.' }];
@@ -7638,6 +7638,7 @@ function sysPushPage() {
   };
   const testAll = async function () {
     if (!can) return;
+    if (!String(F.to || '').trim()) { say({ kind: 'bad', title: 'اكتب الحساب المستلم', text: 'البريد أو الجوال الذي تصله التجربة.' }); return; }
     if (!live) { say({ kind: 'ok', title: 'تجربة كل الأنواع (معاينة)', text: 'في المنفذ الحي تُرسل كل أنواع إشعارات النظام والإدارة إلى ' + F.to + '.' }); return; }
     const h = window.TeraNotify && window.TeraNotify.show({ force: true, kind: 'run', title: 'جارٍ إرسال كل الأنواع…', text: 'قرابة 20 إشعارًا بفاصل قصير.' });
     const j = await clPost('/admin/api/push/test-all', { to: F.to });
@@ -19436,7 +19437,7 @@ if (LIVE.on) { delete LIVE_HOLD.admin['cu-comms']; LIVE_PAGES.admin['cu-comms'] 
    والمعتمِد (غير المُعِدّ) يعتمده ثم يتيحه للعميل في حسابه فقط. العميل يقبل أو يرفض، والقبول يُنشئ العقد بالرقم نفسه
    ودفعاته من خطة العرض وبنود رسومه (contract_fee_items · src = quote). المصادر: admin_quotation_issue · admin_quotation_detail ·
    admin_quotation_set_status · my_quotations · my_quotation_decide. */
-const QT_ERR = { client_required: 'اختر حساب العميل المسجّل في المنصة.', product_required: 'اكتب اسم المنتج.', bad_value: 'أدخل قيمة المنتج.', bad_installments: 'عدد الدفعات بين 1 و36.', bad_plan: 'خطة الدفع لا تطابق عدد الدفعات.',
+const QT_ERR = { bad_item: 'بند رسوم غير مفعّل في الإعدادات أو مكرر — أعد فتح النموذج بعد تحديث «الرسوم والضرائب».', bad_item_amount: 'مبلغ بند ثابت أو بنسبة لا يطابق الإعدادات — أعد الاحتساب.', vat_mismatch: 'الضريبة لا تطابق نسبة الإعدادات — أعد فتح النموذج.', client_required: 'اختر حساب العميل المسجّل في المنصة.', product_required: 'اكتب اسم المنتج.', bad_value: 'أدخل قيمة المنتج.', bad_installments: 'عدد الدفعات بين 1 و36.', bad_plan: 'خطة الدفع لا تطابق عدد الدفعات.',
   totals_mismatch: 'الإجمالي لا يطابق البنود والضريبة وخطة الدفع — أعد الاحتساب.', bad_first_due: 'تاريخ أول دفعة اليوم أو بعده.', no_permission: 'لا تملك صلاحية هذا الإجراء.', reason_required: 'اكتب السبب.', not_open: 'العرض لم يعد متاحًا للقرار.', expired: 'انتهت صلاحية العرض.',
   bad_transition: 'هذا الانتقال غير مسموح من الحالة الحالية — والمعتمِد يجب أن يكون غير مُعِدّ العرض.', not_found: 'العرض غير موجود.', quote_not_found: 'الطلب غير موجود.', no_plan: 'العرض بلا خطة دفع.' };
 const qtErrT = (err) => { const m = String((err && err.message) || ''); const k = (m.match(/\(([a-z_]+)\)/) || [])[1]; return (k && QT_ERR[k]) || m || 'تعذّر تنفيذ الإجراء.'; };

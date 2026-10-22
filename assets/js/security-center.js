@@ -265,7 +265,7 @@
     } else if (sec === 'send') {
       var all = []; PUSH.forEach(function (g) { g[3].forEach(function (x) { all.push([g[1]].concat(x)); }); });
       var aud = h('select', { class: 'sc-in' }, [['one', 'عميل أو موظف محدد'], ['clients', 'كل العملاء'], ['staff', 'كل الموظفين'], ['members', 'أعضاء عضوية محددة'], ['late', 'العملاء المتأخرون في السداد']].map(function (o) { return h('option', { value: o[0] }, o[1]); }));
-      var to = h('input', { class: 'sc-in ltr', dir: 'ltr', value: 'msjt301@gmail.com' });
+      var to = h('input', { class: 'sc-in ltr', dir: 'ltr', value: '', placeholder: 'البريد أو الجوال' });
       var tpl = h('select', { class: 'sc-in' }, [h('option', { value: '' }, 'إشعار مخصّص (اكتب بنفسك)')].concat(all.map(function (x, i) { return h('option', { value: String(i) }, x[0] + ' — ' + x[1]); })));
       var ti = h('input', { class: 'sc-in', value: 'تذكير من فريق تيرا' }), bo = h('textarea', { class: 'sc-in', rows: '3' }, 'لديك إجراء بانتظارك في حسابك. اضغط للمتابعة.'), ac = h('input', { class: 'sc-in', value: 'فتح حسابي' });
       var when = h('select', { class: 'sc-in' }, [['now', 'الآن'], ['at', 'في موعد محدد'], ['due', 'قبل موعد الاستحقاق تلقائيًا (3 أيام · يوم الاستحقاق · بعد التأخر)']].map(function (o) { return h('option', { value: o[0] }, o[1]); }));
@@ -276,7 +276,7 @@
         lbl('الجمهور', aud), lbl('المستلم (البريد أو الجوال)', to), lbl('القالب', tpl), lbl('العنوان', ti), lbl('النص', bo), lbl('زر الإجراء', ac), lbl('التوقيت', when), lbl('القنوات', ch),
         h('div', { class: 'sc-row', style: 'gap:8px;margin-top:12px;flex-wrap:wrap' }, [
           btn('إرسال', function () { L.add(ti.value, bo.value, ac.value); N.show({ kind: 'ok', icon: 'paper-plane-tilt:teal', title: 'أُرسل الإشعار (معاينة)', text: 'إلى ' + to.value + ' — بعد ربط المزوّد يصل فعليًا إلى جواله وحاسبه حتى والمنصة مغلقة.' }); }),
-          btn('تجربة كل الأنواع على msjt301@gmail.com', function () { var i = 0; (function next() { if (i >= all.length) { N.show({ kind: 'ok', title: 'أُرسلت ' + all.length + ' إشعارات تجريبية (معاينة)', text: 'كل أنواع إشعارات النظام والإدارة. بعد التفعيل تصل فعليًا إلى msjt301@gmail.com.' }); return; } var x = all[i++]; L.add(x[1], x[2], x[3]); setTimeout(next, 900); })(); }, 'teal')])]);
+          btn('تجربة كل الأنواع على الحساب المكتوب', function () { var i = 0; (function next() { if (i >= all.length) { N.show({ kind: 'ok', title: 'أُرسلت ' + all.length + ' إشعارات تجريبية (معاينة)', text: 'كل أنواع إشعارات النظام والإدارة. بعد التفعيل تصل فعليًا إلى الحساب المكتوب.' }); return; } var x = all[i++]; L.add(x[1], x[2], x[3]); setTimeout(next, 900); })(); }, 'teal')])]);
     } else {
       var SIM = installSim(), right = SIM.el;
       var tp = window.TeraPush ? window.TeraPush.panel({ demo: true, onDemo: function () { SIM.run(dev() === 'phone' ? 'notif-phone' : 'notif-web'); } }) : null;
@@ -298,7 +298,7 @@
       return h('div', {}, [nav, h('div', { class: 'sc-note' }, [h('b', {}, 'تيرا على جهاز العميل: '), 'التثبيت بضغطة حيث يسمح المتصفح، وخطوات واضحة حيث لا يسمح (آيفون وسفاري)، ثم الإشعارات على شاشة القفل وسطح المكتب حتى والمنصة مغلقة.']),
         h('div', { class: 'sc-gal' }, [left, right])]);
     }
-    return h('div', {}, [nav, h('div', { class: 'sc-note' }, [h('b', {}, 'معاينة قبل الربط: '), 'تصل هذه الإشعارات إلى شاشة القفل والكمبيوتر حتى والمنصة مغلقة، بشعار تيرا على خلفية بيضاء. بعد اعتماد العيّنة وربط المزوّد (OneSignal) نرسلها فعليًا، ونجرّبها كلها على msjt301@gmail.com.']),
+    return h('div', {}, [nav, h('div', { class: 'sc-note' }, [h('b', {}, 'معاينة قبل الربط: '), 'تصل هذه الإشعارات إلى شاشة القفل والكمبيوتر حتى والمنصة مغلقة، بشعار تيرا على خلفية بيضاء. بعد اعتماد العيّنة وربط المزوّد (OneSignal) نرسلها فعليًا، ونجرّبها كلها على حساب تختاره.']),
       h('div', { class: 'sc-gal' }, [left, L.el])]);
   }
 
