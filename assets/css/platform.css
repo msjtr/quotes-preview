@@ -8966,3 +8966,6 @@ html.cpv-on .t2-head{top:48px}
 .stl-cl-amt{display:grid;gap:4px;padding:14px 16px;border-radius:16px;background:var(--navy,#0A1F44);color:#fff}
 .stl-cl-amt b{font-size:1.6rem;color:var(--gold,#FFC861);font-variant-numeric:tabular-nums}
 .stl-cl-amt small{opacity:.85}
+/* v465: مستندات العقد */
+.cf-doc-a{display:flex;flex-wrap:wrap;gap:6px}
+.cf-doc-w{display:grid;gap:8px;padding:8px;border:1px dashed var(--t2-line-2);border-radius:12px}

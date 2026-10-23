@@ -9518,11 +9518,12 @@ function lvCliHead(cid, name, sub, back, extra) {
 }
 /* الدفعات من عقود مجموعة: القادمة والمتأخرة حسب المدة، وسجل المدفوعات حسب الطريقة (بوابة · تحويل · تسوية) */
 function dcPays(L) {
-  const T = iso(T0), D = function (s) { return Math.round((parseIso(s) - parseIso(T)) / 864e5); }, out = { due: [], rec: [] };
+  const T = iso(T0), D = function (s) { return Math.round((parseIso(s) - parseIso(T)) / 864e5); }, out = { due: [], rec: [], cl: [] };
   L.forEach(function (x) { const c = (x.c && x.c.live) || cByNo(x.c.no); if (!c || !c.payments) return;
     c.payments.forEach(function (p) {
       const left = p.deferTo ? 0 : Math.max(0, qr2(p.amount - p.paid)), d = D(iso(p.due));
-      if (left > 0) out.due.push({ x: x, c: c, p: p, left: left, d: d, k: d < 0 ? 'late' : d === 0 ? 'today' : d <= 7 ? 'in7' : d <= 30 ? 'in30' : 'later' });
+      /* v465: العقد المغلق لا يُحسب متأخرًا ولا متعثرًا — متبقّيه في «مغلقة عليها متبقٍّ» للمراجعة */
+      if (left > 0) (p.closed ? out.cl : out.due).push({ x: x, c: c, p: p, left: left, d: d, k: d < 0 ? 'late' : d === 0 ? 'today' : d <= 7 ? 'in7' : d <= 30 ? 'in30' : 'later' });
       /* v452: كل جزء من الدفعة بطريقته — النقد المدفوع فعلًا (بوابة · تحويل · بلا طريقة)، ثم ما سُوّي دون نقد (توحيد · تأجيل · تسوية مبكرة · إعفاء · فرق تقريب) */
       const cash = p.deferTo ? (p.cash > 0 && p.cash < p.amount - 0.005 ? p.cash : 0) : Math.max(0, qr2(Math.min(p.paid, p.amount) - (p.round || 0)));
       if (cash > 0) { const m = (p.deferTo ? p.cashM : p.method) || '', tx = p.deferTo ? p.cashTxn : p.txn, tr = /تحويل/.test(m), cs = m === 'نقدًا', gw = !tr && !cs && (!!p.gw || m === 'سداد إلكتروني' || !!tx), k = gw ? 'gw' : tr ? 'tr' : cs ? 'cash' : 'oth';
@@ -17001,6 +17002,38 @@ function cfParts(qc, r, c, k) {
   return lvSec('مكوّنات قيمة العقد', SR(total), [e('section', { class: 'ax-card fee-tot' }, [e('div', { class: 'fee-tb' }, rows)]),
     Math.abs(diff) >= 0.05 ? DS.note('warn', 'المكوّنات لا تساوي الإجمالي', 'الفرق ' + SR(diff) + ' بين مجموع المكوّنات وإجمالي العقد — راجع عرض السعر.') : null].filter(Boolean), k + ':parts', true);
 }
+/* v465 (stf_77): مستندات العقد — فتح · استبدال بملف جديد · حذف من العقد، والسابق إلى الأرشيف بسببه */
+function cfDocs(docs, uid, RF) {
+  docs = docs.slice().sort(function (a, b) { return (LIVE_FKO[a.kind] == null ? 9 : LIVE_FKO[a.kind]) - (LIVE_FKO[b.kind] == null ? 9 : LIVE_FKO[b.kind]); });
+  return e('div', { class: 'cu-mgr-docs cf-docs' }, docs.map(function (d) {
+    const W = cfSt('doc:' + d.id, { m: '', note: '', file: null });
+    const go = async function (fn, msg) {
+      if (W.busy) return; W.busy = true; W.err = ''; RF.paint();
+      try { await fn(); W.busy = false; W.m = ''; W.note = ''; W.file = null; cfRe(RF, msg); } catch (err) { W.busy = false; W.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; RF.paint(); }
+    };
+    const row = e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, LIVE_FK[d.kind] || ({ other: 'مستند آخر' })[d.kind] || d.kind), e('small', {}, ltr(d.file_name || ''))]),
+      e('span', { class: 'cf-doc-a' }, [liveOk(DS.button('فتح', { size: 'sm', tone: 'primary', ui: 'files', onClick: function () { liveOpenCtFile(d.id, true); } })),
+        DS.button('استبدال', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { W.m = W.m === 'rep' ? '' : 'rep'; W.err = ''; RF.paint(); } }),
+        DS.button('حذف من العقد', { size: 'sm', ui: 'trash', onClick: function () { W.m = W.m === 'del' ? '' : 'del'; W.err = ''; RF.paint(); } })])]);
+    if (!W.m) return row;
+    const fin = e('input', { type: 'file', class: 't2-input', accept: 'application/pdf,image/jpeg,image/png,image/webp', onChange: function (ev) { W.file = ev.target.files && ev.target.files[0] || null; } });
+    return e('div', { class: 'cf-doc-w' }, [row, e('div', { class: 'cf-form' }, [
+      W.m === 'rep' ? DS.editField('الملف الجديد (PDF أو صورة حتى 10 ميغابايت)', fin) : null,
+      DS.editField(W.m === 'rep' ? 'سبب الاستبدال (إلزامي، يُسجَّل)' : 'سبب الحذف (إلزامي، يُسجَّل)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { W.note = ev.target.value; } }, W.note)),
+      DS.note('info', 'ما سيحدث', W.m === 'rep' ? 'يحلّ الملف الجديد محلّ «' + (d.file_name || 'المستند') + '» بالنوع نفسه، وينتقل السابق إلى أرشيف المرفقات بسببه.' : 'يُحذف «' + (d.file_name || 'المستند') + '» من العقد وينتقل إلى أرشيف المرفقات بسببه — الحذف النهائي من التخزين للمشرف وحده.'),
+      W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
+      e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : W.m === 'rep' ? 'رفع واستبدال' : 'حذف من العقد', { size: 'sm', tone: W.m === 'rep' ? 'primary' : 'danger', ui: W.m === 'rep' ? 'upload-simple' : 'trash', disabled: W.busy, onClick: function () {
+          if (String(W.note).trim().length < 4) { W.err = 'اكتب السبب بوضوح.'; RF.paint(); return; }
+          if (W.m === 'rep') {
+            if (!lvFileOk(W.file)) { W.err = 'اختر ملف PDF أو صورة حتى 10 ميغابايت.'; RF.paint(); return; }
+            if (!window.confirm('استبدال «' + (d.file_name || 'المستند') + '» بالملف الجديد؟')) return;
+            go(async function () { const u = await liveStaffUpload('doc', uid, W.file); const j = await clPost('/admin/api/contract-files/' + encodeURIComponent(d.id) + '/replace', Object.assign({ note: W.note }, u)); if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر الاستبدال.'); }, 'استُبدل المستند، والسابق في الأرشيف.');
+          } else {
+            if (!window.confirm('حذف «' + (d.file_name || 'المستند') + '» من العقد ونقله إلى الأرشيف؟')) return;
+            go(async function () { const j = await clPost('/admin/api/contract-files/' + encodeURIComponent(d.id) + '/archive', { note: W.note }); if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر الحذف.'); }, 'حُذف المستند من العقد ونُقل إلى الأرشيف.');
+          } } })), DS.button('إلغاء', { size: 'sm', onClick: function () { W.m = ''; W.err = ''; RF.paint(); } })])])]);
+  }));
+}
 function cfContractP(id, c, D, C, RF) {
   const x = (LIVE_ADM.rows || {})[c.no] || {}, r = x.r || {}, f = c.n ? cInfo(c) : null, k = 'cf:' + id + ':' + c.no, closed = !!r.closed;
   const Qj = D.Q[c.no] || null, q = Qj ? (Qj.quotation || {}) : null, qc = q && q.calc ? q.calc : null;
@@ -17044,7 +17077,7 @@ function cfContractP(id, c, D, C, RF) {
   const tr = trF.length ? lvSec('إيصالات تحويل غير مربوطة بحوالة', fmtNum(trF.length), [
     trF.length ? e('div', { class: 'cu-mgr-docs' }, [].map(function (t) { return cfRow('حوالة ' + SR(t.amt), [bdiD(t.date), t.frBankO ? ' · من ' + t.frBankO : '', t.holder ? ' · إلى ' + t.holder : ''], [DS.badge(t.st === 'void' ? 'ملغاة' : 'منفّذة', t.st === 'void' ? null : 'ok'), t.f && t.f.fid ? liveOk(DS.button('الإيصال', { size: 'sm', ui: 'file-pdf', onClick: function () { liveOpenCtFile(t.f.fid, true); } })) : null]); })
       .concat(trF.map(function (z) { return cfRow('إيصال تحويل تيرا', ltr(z.file_name || ''), [liveOk(DS.button('الإيصال', { size: 'sm', ui: 'file-pdf', onClick: function () { liveOpenCtFile(z.id, true); } }))]); }))) : CF_EMPTY('لا حوالة مسجّلة لهذا العقد.')], k + ':tr') : null;
-  const att = lvSec('مستندات العقد', docs.length ? fmtNum(docs.length) : null, [docs.length ? liveCtFiles(docs, true) : CF_EMPTY('لا مستندات أخرى — إيصالات السداد في جدول السداد، وإيصال حوالة تيرا في بطاقتها.')], k + ':files');
+  const att = lvSec('مستندات العقد', docs.length ? fmtNum(docs.length) : null, [docs.length ? cfDocs(docs, r.user_id || id, RF) : CF_EMPTY('لا مستندات أخرى — إيصالات السداد في جدول السداد، وإيصال حوالة تيرا في بطاقتها.')], k + ':files');
   const fees = lvSec('الرسوم والمصاريف', null, [].concat(cfFees(id, c, RF)), k + ':fees');
   const SRc = cfSrOf(id).filter(function (y) { return (y.contract_nos || []).indexOf(c.no) >= 0; });
   const ev0 = cfEvents(c, r, q, T).filter(function (x) { return !(IE.length && / نُقلت إلى |ضمن التسوية المبكرة|من فرقها/.test(x[1])); });
@@ -17053,7 +17086,10 @@ function cfContractP(id, c, D, C, RF) {
     closed && !IE.length ? [[r.closed_at ? new Date(r.closed_at) : c.payments.reduce(function (a, p) { return p.at && p.at > a ? p.at : a; }, c.req), 'أُغلق العقد — ' + (CF_CLOSE[r.close_reason] || 'مغلق'), 'الإدارة']] : [],
     IE.map(function (y) { return [new Date(y.at), y.text, 'داخلي · ' + (y.by_name || 'النظام')]; }));
   const log = lvSec('سجل الأحداث', fmtNum(ev.length), [cfLog(ev)], k + ':log');
-  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0], stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, money, ind, cfParts(qc, r, c, k), facts, quote, sched, trin, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
+  /* v465: العقد والاستحقاق متسقان — المغلق عليه متبقٍّ للمراجعة، والمكتمل غير المغلق جاهز للإغلاق */
+  const cnote = f && closed && f.remain > 0.004 ? DS.note('warn', 'عقد مغلق عليه متبقٍّ ' + SR(f.remain), 'لا يُحسب في الدفعات المستحقة متأخرًا — راجعه: إعفاء الفرق، أو إعادة فتح العقد وتسويته.')
+    : f && !closed && c.n && f.remain <= 0.004 ? DS.note('info', 'اكتمل السداد — جاهز للإغلاق', 'أغلقه من «إجراء على العقد ← إغلاق العقد ← اكتمل السداد».') : null;
+  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0], stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, cnote, money, ind, cfParts(qc, r, c, k), facts, quote, sched, trin, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
 }
 
 /* ===== v445: الوسائل (السندات · تحويلات تيرا · الشيكات · الأوامر المستديمة) تُضاف وتُعدَّل وتُربط بالعقد من الملف،
@@ -22306,10 +22342,18 @@ if (LIVE.on) {
     const K = DC_DUEF.map(function (x) { const A = O.filter(function (g) { return x[0] === 'all' || g.band === x[0]; });
       return kp(x[0], x[1], x[2].split(':')[0], A, x[0] === 'all' ? lf(L) : qr2(A.reduce(function (a, g) { return a + g.amt; }, 0)), x[0] === 'def' ? (A.length ? 'danger' : '') : x[0] === 'late' ? (A.length ? 'warn' : '') : ''); });
     const BL = {}; DC_DUEF.forEach(function (x) { BL[x[0]] = x[1]; }); BL.later = 'بعد 30 يومًا';
+    /* v465: عقود تحتاج قرارًا لا تحصيلًا — مغلقة عليها متبقٍّ، ومكتملة السداد لم تُغلق (تُعالج من ملف العميل) */
+    const CLG = {}, CLO = []; (P.cl || []).filter(function (r) { return !cq || r.x.cid === cq; }).forEach(function (r) { const k = r.c.no; if (!CLG[k]) { CLG[k] = { x: r.x, c: r.c, rows: [] }; CLO.push(CLG[k]); } CLG[k].rows.push(r); });
+    const FPO = finCts().map(function (x) { return { x: x, c: (x.c && x.c.live) || cByNo(x.c.no) }; }).filter(function (g) { return g.c && g.c.n && !(g.c.payments[0] || {}).closed && cInfo(g.c).remain <= 0.004 && (!cq || g.x.cid === cq); });
+    K.push(kp('cl', 'مغلقة عليها متبقٍّ', 'lock', CLO, qr2(CLO.reduce(function (a, g) { return a + lf(g.rows); }, 0)), CLO.length ? 'warn' : ''), kp('fp', 'اكتمل السداد ولم يُغلق', 'check-circle', FPO, 0, ''));
+    const XL = f === 'cl' ? CLO.map(function (g) { return lvSec(g.x.name + ' — ' + g.c.no, 'مغلق · متبقٍّ ' + sar(lf(g.rows)) + ' في ' + pw(g.rows.length), [
+        DS.note('warn', 'عقد مغلق عليه متبقٍّ', 'لا يُحسب متأخرًا ولا متعثرًا. يُراجع من ملف العميل: إعفاء الفرق، أو إعادة فتح العقد وتسويته.'),
+        cuTbl(['الدفعة', 'الاستحقاق', 'المتبقي'], g.rows.map(function (r) { return e('tr', {}, [e('td', {}, fmtNum(r.p.i) + ' من ' + fmtNum(g.c.n)), e('td', {}, bdiD(iso(r.p.due))), e('td', {}, sar(r.left))]); }))], 'fdcl:' + g.c.no); })
+      : f === 'fp' ? FPO.map(function (g) { return lvSec(g.x.name + ' — ' + g.c.no, 'اكتمل السداد · ' + pw(g.c.n), [DS.note('info', 'اكتمل السداد ولم يُغلق العقد', 'يُغلق من ملف العميل: «إجراء على العقد ← إغلاق العقد ← اكتمل السداد».')], 'fdfp:' + g.c.no); }) : null;
     return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'الدفعات المستحقة والقادمة'), e('small', {}, 'كل عقد في نطاق أقدم دفعة غير مسدَّدة فيه، ومعه دفعاته المتأخرة والقادمة خلال 30 يومًا — اضغط المؤشر لعرض عقوده.')])]),
       e('div', { class: 'cu-kpis cu-bd-k4 fd-kpis' }, K),
       e('div', { class: 'm3-tools ax-tools' }, [finCliFilter('fdC', P.due)]),
-      R.length ? e('div', { class: 't2-stack' }, R.slice(0, 300).map(function (g) { const r0 = g.rows[0];
+      XL ? (XL.length ? e('div', { class: 't2-stack' }, XL) : LDS.emptyState({ icon: 'ok', title: 'لا عقود هنا', compact: true })) : R.length ? e('div', { class: 't2-stack' }, R.slice(0, 300).map(function (g) { const r0 = g.rows[0];
         return lvSec(g.x.name + ' — ' + g.c.no, BL[g.band] + ' · ' + (g.od.length ? 'متأخر ' + sar(lf(g.od)) + ' في ' + (g.od.length === 2 ? 'دفعتين' : pw(g.od.length)) + ' · أقدمها ' + stt(r0).replace('متأخرة ', 'منذ ') : pw(g.due.length) + ' · ' + sar(g.amt) + ' · ' + stt(r0)), [
           cuTbl(['الدفعة', 'الاستحقاق', 'المتبقي', 'الحالة'], g.show.map(function (r) { return e('tr', {}, [e('td', {}, fmtNum(r.p.i) + ' من ' + fmtNum(g.c.n)), e('td', {}, bdiD(iso(r.p.due))), e('td', {}, [sar(r.left), r.p.paid > 0 ? e('small', { class: 'cf-sub' }, ' مدفوعة جزئيًا') : null]), e('td', {}, DS.badge(stt(r), tone(r.d)))]); })),
           g.rows.length > g.show.length ? e('small', { class: 'cu-dr-hint' }, 'وبعدها ' + pw(g.rows.length - g.show.length) + ' بعد 30 يومًا · ' + sar(lf(g.rows.filter(function (r) { return r.d > 30; })))) : null,
