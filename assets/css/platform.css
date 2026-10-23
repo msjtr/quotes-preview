@@ -8962,3 +8962,7 @@ html.cpv-on .t2-head{top:48px}
 .sr-new,.sr-pick,.sr-stl{display:grid;gap:10px}
 .sr-stl{padding:12px;border:1px dashed var(--t2-line-2);border-radius:14px}
 .sr-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+/* v464: عرض التسوية في حساب العميل */
+.stl-cl-amt{display:grid;gap:4px;padding:14px 16px;border-radius:16px;background:var(--navy,#0A1F44);color:#fff}
+.stl-cl-amt b{font-size:1.6rem;color:var(--gold,#FFC861);font-variant-numeric:tabular-nums}
+.stl-cl-amt small{opacity:.85}

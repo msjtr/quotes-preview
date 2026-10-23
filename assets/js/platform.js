@@ -16607,7 +16607,8 @@ function stlQuoteCard(Q, ctx, c, RF) {
   return e('article', { class: 'stl-q is-' + Q.status }, [
     e('div', { class: 'stl-q-h' }, [e('b', {}, 'عرض التسوية '), ltr(Q.quote_no), DS.badge(s0[0], s0[1])]),
     stlSum(R), stlTable(R), ...stlFlags(R),
-    DS.fields([['أعدّه', (Q.created_by_name || '—') + ' · ' + iso(new Date(Q.created_at))], ['صالح حتى', Q.valid_until], Q.decided_by_name ? ['قرار المشرف', Q.decided_by_name + (Q.decide_note ? ' — ' + Q.decide_note : '')] : null, Q.note ? ['الملاحظة', Q.note] : null]),
+    DS.fields([['أعدّه', (Q.created_by_name || '—') + ' · ' + iso(new Date(Q.created_at))], ['صالح حتى', Q.valid_until], Q.decided_by_name ? ['قرار المشرف', Q.decided_by_name + (Q.decide_note ? ' — ' + Q.decide_note : '')] : null, Q.note ? ['الملاحظة', Q.note] : null,
+      Q.request_id ? ['موافقة العميل', Q.client_accepted_at ? 'وافق ' + iso(new Date(Q.client_accepted_at)) + ' — بانتظار سداده عبر البوابة' : 'لم يوافق بعد'] : null, Q.paid_trx ? ['السداد الإلكتروني', 'العملية ' + Q.paid_trx] : null]),
     Q.status === 'pending' && !ctx.can_approve ? DS.note('info', 'بانتظار اعتماد المشرف', 'يعتمده من يملك صلاحية «اعتماد خصومات التسوية المبكرة» من ملف العميل هنا.') : null,
     Q.status === 'pending' || Q.status === 'approved' ? DS.editField(Q.status === 'pending' && ctx.can_approve ? 'ملاحظة القرار (إلزامية عند الرفض)' : 'ملاحظة (اختيارية، تُسجَّل)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { W.note = ev.target.value; } }, W.note)) : null,
     W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
@@ -22414,6 +22415,70 @@ if (LIVE.on) {
     Object.assign(ICON, { 'sys-settle': ['handshake', 'teal'] });
     lp('sys-settle', 'التسوية المبكرة', 'sys', 'sys-settle', sysSettlePage);
     LIVE_PAGES.admin['sys-settle'] = sysSettlePage;
+  } catch (err) { void err; }
+}
+/* ===== v464: التسوية المبكرة في حساب العميل (stf_76) — العرض المعتمد ← موافقة العميل ← السداد عبر بوابة الدفع ← التنفيذ آليًا ===== */
+const STL_C = { offers: [] };
+function stlClientPanel(o) {
+  if (!o) return null;
+  const rows = (o.items || []).map(function (it) { return e('tr', { class: Number(it.disc) ? 'is-disc' : null }, [e('th', { scope: 'row' }, e('span', {}, [e('b', {}, it.t), (it.why || []).length ? e('small', {}, it.why.join(' · ')) : null])), e('td', {}, stlN(it.before)), e('td', {}, Number(it.disc) ? '− ' + stlN(it.disc) : 'لا يطبق'), e('td', {}, stlN(it.after))]); });
+  const V = o.vat || {};
+  rows.push(e('tr', { class: 'is-vat' }, [e('th', { scope: 'row' }, 'ضريبة المنتج'), e('td', {}, stlN(V.product_before)), e('td', {}, qr2(V.product_before - V.product_after) ? '− ' + stlN(qr2(V.product_before - V.product_after)) : '—'), e('td', {}, stlN(V.product_after))]),
+    e('tr', { class: 'is-vat' }, [e('th', { scope: 'row' }, 'ضريبة الخدمات'), e('td', {}, stlN(V.fees_before)), e('td', {}, qr2(V.fees_before - V.fees_after) ? '− ' + stlN(qr2(V.fees_before - V.fees_after)) : '—'), e('td', {}, stlN(V.fees_after))]));
+  if (Number(o.residual)) rows.push(e('tr', { class: 'is-vat' }, [e('th', { scope: 'row' }, 'فرق التقريب'), e('td', {}, stlN(o.residual)), e('td', {}, '—'), e('td', {}, stlN(o.residual))]));
+  rows.push(e('tr', { class: 'is-tot' }, [e('th', { scope: 'row' }, 'الإجمالي'), e('td', {}, stlN(o.remaining)), e('td', {}, '− ' + stlN(o.discount)), e('td', {}, stlN(o.amount))]));
+  const tb = e('div', { class: 'stl-tbw' }, e('table', { class: 'stl-tb' }, [e('thead', {}, e('tr', {}, ['البند', 'المتبقي', 'الخصم', 'بعد التسوية'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, rows)]));
+  const out = e('div', { role: 'status' }), W = STL_C['w' + o.request_id] || (STL_C['w' + o.request_id] = { busy: false });
+  let act = null;
+  if (o.executed) act = DS.note('ok', 'سُوّي عقدك وأُغلق', 'سُدّد مبلغ التسوية ' + SR(o.amount) + ' وصدرت إيصالات السداد في جدول عقدك.');
+  else if (o.paying) act = DS.note('info', 'استلمنا سدادك', 'نراجع العملية ونُغلق العقد — يظهر الإيصال في جدول عقدك.');
+  else if (o.expired) act = DS.note('warn', 'انتهت صلاحية العرض', 'كان العرض صالحًا حتى ' + o.valid_until + ' — تواصل مع فريق تيرا لعرض جديد.');
+  else if (!o.accepted_at) act = e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'أوافق على عرض التسوية', { tone: 'primary', ui: 'check', disabled: W.busy, onClick: async function () {
+      if (W.busy) return; if (!window.confirm('الموافقة على التسوية المبكرة للعقد ' + o.contract_no + ' بمبلغ ' + SR(o.amount) + '؟ بعدها تسدّد المبلغ عبر بوابة الدفع.')) return;
+      W.busy = true; draw();
+      const j = await liveSb('rpc/my_settle_accept', { body: { p_request: o.request_id } }).catch(function () { return null; });
+      W.busy = false;
+      if (!j || !j.ok) { snack(j && j.error === 'quote_expired' ? 'انتهت صلاحية العرض.' : 'تعذّر تسجيل الموافقة، حاول بعد قليل.'); draw(); return; }
+      await stlClientLoad(); snack('سُجّلت موافقتك — يمكنك الآن سداد مبلغ التسوية.'); draw(); } }))]);
+  else act = e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ فتح بوابة الدفع…' : 'سداد مبلغ التسوية · ' + SR(o.amount), { tone: 'primary', ui: 'credit-card', disabled: W.busy, onClick: async function () {
+      if (W.busy) return; W.busy = true; out.textContent = 'جارٍ فتح بوابة الدفع…';
+      try {
+        const j = await clPost('/api/account/pay/settle/' + encodeURIComponent(o.request_id), {});
+        if (!j || !j.ok || !j.url || !/^(https:\/\/[a-z0-9.-]*paymob\.com\/|\/api\/pay\/c\/[A-Za-z0-9_-]{32}$)/i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
+        location.href = j.url;
+      } catch (err) { W.busy = false; if (err && err.message === 'auth') return; out.textContent = (err && err.message) || 'تعذّر بدء الدفع.'; } } }))]);
+  return DS.panel('عرض التسوية المبكرة', 'العقد ' + o.contract_no + ' · العرض ' + o.quote_no, [
+    e('div', { class: 'stl-cl-amt' }, [e('small', {}, o.executed ? 'المبلغ المسدَّد' : 'مبلغ التسوية المطلوب لإغلاق العقد'), e('b', {}, SR(o.amount)),
+      e('small', {}, 'بدل المتبقي ' + SR(o.remaining) + ' · خصم ' + SR(o.discount) + (Number(o.exempt_amount) ? ' منه ربح أشهر لم تبدأ معفاة ' + SR(o.exempt_amount) : '') + (o.executed ? '' : ' · صالح حتى ' + o.valid_until))]),
+    tb, e('small', { class: 'cu-dr-hint' }, 'القيم قبل الضريبة لكل بند، وضريبة المنتج وضريبة الخدمات منفصلتان وتُحسبان بعد الخصم.' + (o.accepted_at && !o.executed ? ' وافقتَ على العرض.' : '')),
+    act, out]);
+}
+async function stlClientLoad() {
+  const j = await liveSb('rpc/my_settle_offers', { body: {} }).catch(function () { return null; });
+  STL_C.offers = Array.isArray(j) ? j : [];
+}
+if (LIVE.on) {
+  try {
+    RSTAT.push(['pay', 'بانتظار سدادك', 'warn']);
+    const lvSrReqStl = lvSrReq;
+    lvSrReq = function (x) {
+      const r = lvSrReqStl(x);
+      if (x.kind === 'settle') {
+        r.fields = (r.fields || []).map(function (f) { return f[0] === 'مبلغ المخالصة المعتمد' ? ['مبلغ التسوية المعتمد', f[1]] : f; });
+        if (x.status === 'approved' && !x.executed_at) { r.status = 'pay'; r.path.push(['سداد مبلغ التسوية', null]); }
+      }
+      return r;
+    };
+    const lvSrLoadStl = lvSrLoad;
+    lvSrLoad = async function () { await Promise.all([lvSrLoadStl.apply(this, arguments), LIVE.allow.indexOf('client') >= 0 ? stlClientLoad() : null]); };
+    const liveReqCancelStl = liveReqCancel;
+    liveReqCancel = function () {
+      liveReqCancelStl.apply(this, arguments);
+      const r = REQS.filter(function (y) { return y.no === FX.rid; })[0];
+      if (!r || !r.sr || r.sr.kind !== 'settle' || !ROOT) return;
+      const o = STL_C.offers.filter(function (y) { return y.request_id === r.sr.id; })[0];
+      if (o) ROOT.appendChild(stlClientPanel(o));
+    };
   } catch (err) { void err; }
 }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
