@@ -9487,10 +9487,10 @@ function dcPcPage() {
   /* عقود العملاء: قائمة العملاء أولًا بملخص كل عميل، والدخول على العميل يعرض ملخصه الكامل وأقسام عقوده المطوية */
   /* v459: كل العقود (124) بأقسام المشرف — تحتاج مراجعة · مكتملة السداد · متعثرة · متأخرة · منتظمة. «تحتاج مراجعة» = عقد معلَّم بمراجعة أو سجل طلب
      من النظام السابق (للإدارة وحدها). كل عقد في قسم واحد بهذا الترتيب. عقود الاختبار (TEST-) لا تُعدّ. */
-  const rvOf = function (x) { const r = ((LIVE_ADM.rows || {})[x.c.no] || {}).r || {}; return x.rh || r.review_state === 'needs_review'; };
+  const rvOf = function (x) { const r = ((LIVE_ADM.rows || {})[x.c.no] || {}).r || {}; return x.rh ? !r.closed : r.review_state === 'needs_review'; };
   const RHL = LIVE.on ? [].concat.apply([], Object.keys(LIVE_ADM.rh || {}).map(function (cid) { const nm = (cuList().filter(function (y) { return y.id === cid; })[0] || {}).name || (ADM.pfN || {})[cid] || '—';
     return (LIVE_ADM.rh[cid] || []).map(function (c) { const fi = c.n ? cInfo(c) : null; return { cid: cid, name: nm, rh: true, c: { no: c.no, k: 'rv', rem: fi ? fi.remain : 0, live: c, from: '' } }; }); })) : [];
-  const L = dcCts().filter(function (x) { return !/^TEST-/.test(x.c.no || ''); }).concat(RHL).map(function (x) { return Object.assign(x, { sec: rvOf(x) ? 'rv' : x.c.k === 'merged' ? 'done' : x.c.k }); });
+  const L = dcCts().filter(function (x) { return !/^TEST-/.test(x.c.no || ''); }).concat(RHL).map(function (x) { return Object.assign(x, { sec: rvOf(x) ? 'rv' : x.rh ? 'cnl' : x.c.k === 'merged' ? 'done' : x.c.k }); });
   const f = ADM.dcPcF || 'all', cq = ADM.dcPcC || '', fit = function (x, k) { return k === 'all' || x.sec === k; };
   if (cq && LIVE.on && /^[0-9a-f-]{36}$/i.test(String(cq))) { ADM.dcPcC = ''; ADM.pfc = cq; FX.pfc = cq; return admPfFilePage(); }
   if (cq && L.some(function (x) { return x.cid === cq; })) return dcPcClient(cq, L.filter(function (x) { return x.cid === cq; }));
@@ -16332,6 +16332,62 @@ function cfEditForm(c, r, W, RF, run) {
       changes ? DS.button('تجاهل التعديلات', { size: 'sm', onClick: function () { delete CF_ST[key]; W.err = ''; RF.paint(); } }) : null])];
 }
 
+/* ===== v461: «تنويه للمراجعة» أعلى ملف العميل (client_file_notices · للإدارة وحدها) — يبقى ظاهرًا حتى يُعلَّم «تمت المراجعة» ===== */
+function cfNotices(id, RF) {
+  const L = ((LIVE_ADM.nt || {})[id] || []).filter(function (n) { return n.status === 'open'; });
+  if (!L.length) return null;
+  const W = cfSt('nt:' + id, { open: '', note: '' });
+  const one = function (n) {
+    const ct = n.contract_id ? Object.keys(LIVE_ADM.rows || {}).filter(function (k) { return ((LIVE_ADM.rows[k] || {}).r || {}).id === n.contract_id; })[0] : '';
+    const ask = W.open === n.id;
+    return e('div', { class: 'cf-nt' }, [
+      e('div', { class: 'cf-nt-h' }, [e('span', { class: 'cf-nt-ic', 'aria-hidden': 'true' }, frag(ui('warning', 18))), e('b', {}, n.title), ct ? e('span', { class: 't2-pill is-info' }, ltr(ct)) : null]),
+      e('p', { class: 'cf-nt-b' }, lvBidi(n.body)),
+      e('small', { class: 'cu-dr-hint' }, (n.created_by_name || 'الإدارة') + ' · ' + iso(new Date(n.created_at)) + (n.source ? ' · ' + n.source : '')),
+      ask ? DS.editField('ما الذي تمّت مراجعته؟ (اختياري، يُسجَّل)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { W.note = ev.target.value; } }, W.note)) : null,
+      W.err && ask ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
+      e('div', { class: 't2-pb-actions' }, ask ? [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'تأكيد: تمت المراجعة', { size: 'sm', tone: 'primary', ui: 'check', disabled: W.busy, onClick: async function () {
+          if (W.busy) return; W.busy = true; W.err = ''; RF.paint();
+          try { await admRpc('admin_notice_resolve', { p_id: n.id, p_note: W.note }); W.busy = false; W.open = ''; W.note = ''; cfRe(RF, 'سُجّلت مراجعة التنويه.'); }
+          catch (err) { W.busy = false; W.err = (err && err.message) || 'تعذّر الحفظ.'; RF.paint(); } } })),
+        DS.button('إلغاء', { size: 'sm', onClick: function () { W.open = ''; W.err = ''; RF.paint(); } })]
+        : [liveOk(DS.button('تمت المراجعة', { size: 'sm', ui: 'check', onClick: function () { W.open = n.id; W.note = ''; W.err = ''; RF.paint(); } }))])]);
+  };
+  return e('section', { class: 'cf-nts', 'aria-label': 'تنويهات للمراجعة' }, [e('div', { class: 'cf-nts-h' }, [e('b', {}, 'تنويهات للمراجعة'), e('span', { class: 't2-pill is-warn' }, fmtNum(L.length)), e('small', { class: 'cu-dr-hint' }, 'للإدارة وحدها — لا يراها العميل')])].concat(L.map(one)));
+}
+
+/* ===== v461: نسخة «مراجعة عقود الترحيل» في الإعدادات (admin_review_decisions) — كل قرار بشرحه وخياره وملاحظته وحالة تنفيذه ===== */
+const ARD_ST = { pending: ['بانتظار التنفيذ', 'warn'], done: ['نُفّذ', 'ok'], review: ['للمراجعة — عليه تنويه', 'info'], postponed: ['مؤجَّل', null] };
+function sysReviewPage() {
+  return admMount('ard', 'قرارات مراجعة الترحيل', function () { return liveSb('admin_review_decisions?select=*&order=ord.asc'); }, function (L, st, paint, refetch) {
+    L = Array.isArray(L) ? L : [];
+    const by = function (k) { return L.filter(function (d) { return d.status === k; }).length; };
+    const card = function (d) {
+      const S = st['d:' + d.id] || (st['d:' + d.id] = { c: d.choice || '', n: d.note || '', busy: false, err: '' });
+      const dirty = S.c !== (d.choice || '') || String(S.n).trim() !== String(d.note || '').trim(), s0 = ARD_ST[d.status] || [d.status, null];
+      return e('article', { class: 'ard-c' }, [
+        e('div', { class: 'ard-h' }, [e('h3', {}, d.title), DS.badge(s0[0], s0[1])]),
+        d.ref ? e('small', { class: 'cu-dr-hint' }, d.ref) : null,
+        d.why ? e('p', {}, d.why) : null,
+        e('div', { class: 'ard-cmp' }, [e('div', {}, [e('small', {}, 'في النظام السابق'), e('span', {}, d.src || '—')]), e('div', {}, [e('small', {}, 'في المنصة'), e('span', {}, d.dst || '—')])]),
+        e('div', { class: 'cf-picks' }, (d.options || []).map(function (o) { return e('label', { class: 'cf-pick' + (S.c === o[0] ? ' is-on' : '') }, [e('input', { type: 'radio', name: 'ard-' + d.id, value: o[0], checked: S.c === o[0] ? 'checked' : null, onChange: function () { S.c = o[0]; paint(); } }), e('span', {}, e('b', {}, o[1]))]); })),
+        DS.editField('الملاحظة', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.n = ev.target.value; const b = ev.target.closest('.ard-c').querySelector('[data-ard-save]'); if (b) b.disabled = false; } }, S.n)),
+        d.result ? DS.note(d.status === 'done' ? 'ok' : 'info', 'ما نُفّذ', d.result) : null,
+        e('small', { class: 'cu-dr-hint' }, (d.updated_by_name || '—') + (d.decided_at ? ' · ' + iso(new Date(d.decided_at)) : '') + ((d.history || []).length ? ' · ' + fmtNum(d.history.length) + ' تعديل سابق' : '')),
+        S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null,
+        e('div', { class: 't2-pb-actions' }, [(function () { const b = liveOk(DS.button(S.busy ? 'جارٍ الحفظ…' : 'حفظ القرار', { size: 'sm', tone: 'primary', ui: 'check', disabled: S.busy || !dirty, onClick: async function () {
+          if (S.busy) return; S.busy = true; S.err = ''; paint();
+          try { const j = await admRpc('admin_review_decision_set', { p_id: d.id, p_choice: S.c || null, p_note: S.n }); S.busy = false; delete st['d:' + d.id]; snack(j && j.changed ? 'حُفظ القرار — يظهر «بانتظار التنفيذ» إن تغيّر الخيار.' : 'لا تغيير.'); refetch(); }
+          catch (err) { S.busy = false; S.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); } } })); b.setAttribute('data-ard-save', ''); return b; })()])]);
+    };
+    const grp = function (g, t) { const A = L.filter(function (d) { return d.grp === g; }); return A.length ? [e('h2', { class: 'ard-g' }, t)].concat(A.map(card)) : []; };
+    return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'قرارات مراجعة الترحيل'), e('small', {}, 'مقارنة عقود المنصة بنسخة النظام السابق (حتى 1/10/2026) — قرار المشرف العام في كل فرق وما نُفّذ منه. تغيير الخيار يجعله «بانتظار التنفيذ».')]),
+        DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: refetch })]),
+      admKpis([['قرارًا', L.length, '', 'list-checks'], ['نُفّذ', by('done'), 'ok', 'check-circle'], ['للمراجعة', by('review'), by('review') ? 'warn' : '', 'warning'], ['بانتظار التنفيذ', by('pending'), by('pending') ? 'warn' : '', 'hourglass-medium']]),
+      L.length ? null : LDS.emptyState({ icon: 'ok', title: 'لا قرارات', compact: true })].concat(grp('new', 'ظهرت من المقارنة'), grp('old', 'معلّقة من قبل'));
+  });
+}
+
 /* إجراءات العقد: ملخص ثم بطاقات ملوّنة، وكل بطاقة تفتح نموذجها هنا */
 function cfCtActs(id, c, r, f, C, RF) {
   const k = 'cf:' + id + ':' + c.no, W = cfSt('act:' + c.no, { a: '' }), closed = !!r.closed;
@@ -16648,11 +16704,11 @@ function cfParts(qc, r, c, k) {
   const qty = Number(r.card_qty) || 0, unit = Number(r.card_price) || 0;
   const rows = [e('div', { class: 'fee-gh' }, 'المنتج'),
     lvQtRow('قيمة المنتج', qty && unit && qr2(qty * unit) === qr2(val) ? fmtNum(qty) + ' × ' + SR(unit) : (qc.pkg || null), val),
-    lvQtRow('ضريبة قيمة المنتج', pVat ? Math.round(rate * 100) + '%' : 'غير خاضع', pVat),
+    lvQtRow('ضريبة المنتج', pVat ? Math.round(rate * 100) + '%' : 'غير خاضع', pVat),
     lvQtRow('إجمالي قيمة المنتج شامل الضريبة', null, qr2(val + pVat), 'is-tot'),
     e('div', { class: 'fee-gh' }, 'الرسوم التشغيلية')]
     .concat(fees.length ? fees.map(function (z) { const a = Number(z.amt) || 0; return lvQtRow(CF_PART_T[z.id] || z.t || 'رسم', z.vat ? 'الضريبة ' + SR(qr2(a * rate)) : 'غير خاضع للضريبة', a); }) : [e('small', { class: 'cu-dr-hint' }, 'لا رسوم على هذا العقد.')])
-    .concat([lvQtRow('إجمالي الرسوم قبل الضريبة', null, fSum), lvQtRow('ضريبة الرسوم', null, fVat), lvQtRow('إجمالي الرسوم شامل الضريبة', null, qr2(fSum + fVat), 'is-tot'),
+    .concat([lvQtRow('إجمالي الرسوم قبل الضريبة', null, fSum), lvQtRow('ضريبة الخدمات (الرسوم)', null, fVat), lvQtRow('إجمالي الرسوم شامل ضريبة الخدمات', null, qr2(fSum + fVat), 'is-tot'),
       e('div', { class: 'fee-gh' }, 'ربح التقسيط والإجمالي'),
       lvQtRow('ربح التقسيط', months ? 'على ' + qTerm(months) + ' · شهريًا ' + SR(qr2(profit / months)) : null, profit),
       lvQtRow('إجمالي قيمة العقد', null, total, 'is-tot')]);
@@ -16903,7 +16959,7 @@ function cfPilotPage(id, D, P, hero, pi, ok, all, C, BD, RF) {
   CF_EVD.list = D.EV || [];
   const RH = ((LIVE_ADM.rh || {})[id] || []).slice().sort(function (a, b) { return b.req - a.req; });
   const PL = D.PL || [], TR = AX.tr.filter(function (t) { return t.cid === id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }), trOk = TR.filter(function (t) { return t.st !== 'void'; });
-  return [hero,
+  return [hero, cfNotices(id, RF),
     lvSec('المعلومات الشخصية', null, pi, 'cf:' + id + ':pi'),
     cfAcctSec(id, D, RF),
     lvSec('السندات', fmtNum(BD.length), [cfKpis([['ok', 'السندات', fmtNum(BD.length), null], ['wallet', 'القيمة القائمة', SR(qr2(bdLive.reduce(function (a, b) { return a + b.amt; }, 0))), fmtNum(bdLive.length) + ' قائمة', bdLive.length ? 'warn' : 'ok'], ['gavel', 'محالة لمحكمة التنفيذ', fmtNum(bdCourt.length), 'السند للعميل — لا يرتبط بعقد', bdCourt.length ? 'warn' : 'ok']])]
@@ -18518,7 +18574,8 @@ function admSysPage() {
       c('users-three:teal', 'دليل الحسابات', 'الهويات وأدوارها — مع قسم الموظفين', null), c('paper-plane-tilt:teal', 'دعوات الحسابات', 'الدعوات وحالتها', 'sys-invites')]],
     /* v315: إعدادات كل قسم في مجموعة باسمه — ولا إعدادات داخل الأقسام نفسها */
     ['fin', 'قسم المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم والنسب والمصاريف والعمولات — إضافة وتفعيل وإيقاف', 'sys-fees'), c('credit-card:teal', 'إعدادات الدفع الإلكتروني', 'الخدمات ووسائل الدفع · روابط الدفع لغير العملاء · الاشتراكات · البطاقات المحفوظة', 'sys-pay')]],
-    ['cu', 'قسم العملاء', 'users-three:teal', [c('rocket-launch:teal', 'إعدادات تدشين الحساب', 'المستوى الافتراضي ونقاط التدشين لكل مستوى وفيلم التدشين', 'sys-launch')]],
+    ['cu', 'قسم العملاء', 'users-three:teal', [c('rocket-launch:teal', 'إعدادات تدشين الحساب', 'المستوى الافتراضي ونقاط التدشين لكل مستوى وفيلم التدشين', 'sys-launch'),
+      c('list-checks:navy', 'قرارات مراجعة الترحيل', 'مقارنة العقود بالنظام السابق — القرار في كل فرق وملاحظته وما نُفّذ منه', 'sys-review')]],
     /* v405: كل مهمة في مكان واحد — المراسلة والإشعارات مجتمعة، وبيانات المنشأة والضريبة معًا، والخصم والنقاط مع نظام النقاط،
        والقوالب والمستندات للمستندات وحدها، والتشغيل للمدد والسجل */
     ['comm', 'المراسلة والإشعارات', 'chat-circle-dots:sky', [c('file-text:gold', 'القوالب الجاهزة للمراسلة', 'قوالب البريد وواتساب بالهوية — إنشاء وتعديل، وتظهر مباشرة في «المراسلة»', 'comm-tpl'),
@@ -20457,9 +20514,9 @@ function lvQtSummary(value, items, vat, total, plan, title, rate0) {
   const fVat = qr2(fees.reduce(function (a, x) { return a + (x.vat ? (Number(x.amt) || 0) * rate : 0); }, 0)), pVat = Math.max(0, qr2((Number(vat) || 0) - fVat));
   const lbl = function (x) { return (typeof CF_PART_T !== 'undefined' && CF_PART_T[x.id]) || x.t || 'رسم'; };
   return e('section', { class: 'ax-card fee-tot' }, [e('b', { class: 'ax-mt-t' }, title || 'الإجمالي وخطة الدفع'), e('div', { class: 'fee-tb' }, [
-    e('div', { class: 'fee-gh' }, 'المنتج'), lvQtRow('قيمة المنتج', null, val), lvQtRow('ضريبة قيمة المنتج', pVat ? Math.round(rate * 100) + '%' : 'غير خاضع', pVat), lvQtRow('إجمالي قيمة المنتج شامل الضريبة', null, qr2(val + pVat), 'is-tot'),
+    e('div', { class: 'fee-gh' }, 'المنتج'), lvQtRow('قيمة المنتج', null, val), lvQtRow('ضريبة المنتج', pVat ? Math.round(rate * 100) + '%' : 'غير خاضع', pVat), lvQtRow('إجمالي قيمة المنتج شامل الضريبة', null, qr2(val + pVat), 'is-tot'),
     e('div', { class: 'fee-gh' }, 'الرسوم')].concat(fees.length ? fees.map(function (x) { const a = Number(x.amt) || 0; return lvQtRow(lbl(x), x.vat ? 'خاضع للضريبة · ' + SR(qr2(a * rate)) : 'غير خاضع للضريبة', a); }) : [e('small', { class: 'cu-dr-hint' }, 'لا رسوم على هذا العرض.')])
-    .concat([lvQtRow('ضريبة الرسوم', null, fVat)], prof.map(function (x) { return lvQtRow('ربح التقسيط', (plan || []).length ? 'على ' + qTerm(plan.length) + ' · شهريًا ' + SR(qr2((Number(x.amt) || 0) / plan.length)) : 'غير خاضع للضريبة', Number(x.amt) || 0); }))
+    .concat([lvQtRow('ضريبة الخدمات (الرسوم)', null, fVat)], prof.map(function (x) { return lvQtRow('ربح التقسيط', (plan || []).length ? 'على ' + qTerm(plan.length) + ' · شهريًا ' + SR(qr2((Number(x.amt) || 0) / plan.length)) : 'غير خاضع للضريبة', Number(x.amt) || 0); }))
     .concat([e('div', { class: 'fee-gh' }, 'الضريبة والإجمالي'), lvQtRow('إجمالي ضريبة القيمة المضافة', 'المنتج والرسوم الخاضعة', Number(vat) || 0), lvQtRow('الإجمالي', null, Number(total) || 0, 'is-tot'),
       e('div', { class: 'fee-gh' }, 'خطة الدفع — ' + qTerm((plan || []).length))]).concat((plan || []).map(function (p) { return lvQtRow('الدفعة ' + fmtNum(p.no), bdiD(String(p.due)), Number(p.amount) || 0); })))]);
 }
@@ -22109,6 +22166,21 @@ if (LIVE.on) {
   if (LP['cu-pf-acct']) LP['cu-pf-acct'].up = 'cu-pf';
   if (LP['cu-audit']) LP['cu-audit'].t = 'سجل التدقيق';
 }
+/* ===== v461: تحميل التنويهات مع بيانات الإدارة، وتسجيل صفحة «قرارات مراجعة الترحيل» في الإعدادات ===== */
+if (LIVE.on) {
+  try {
+    const liveAdmLoadNt = liveAdmLoad;
+    liveAdmLoad = async function () {
+      const out = await liveAdmLoadNt.apply(this, arguments);
+      const N = await liveSb('client_file_notices?select=*&status=eq.open&order=created_at.asc').catch(function () { return null; });
+      LIVE_ADM.nt = {}; (Array.isArray(N) ? N : []).forEach(function (n) { (LIVE_ADM.nt[n.user_id] || (LIVE_ADM.nt[n.user_id] = [])).push(n); });
+      return out;
+    };
+    Object.assign(ICON, { 'sys-review': ['list-checks', 'navy'] });
+    lp('sys-review', 'قرارات مراجعة الترحيل', 'sys', 'sys-review', sysReviewPage);
+    LIVE_PAGES.admin['sys-review'] = sysReviewPage;
+  } catch (err) { void err; }
+}
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
 })();
   /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
@@ -22129,4 +22201,3 @@ boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
       if (z !== v) { el.value = z; if (/^0/.test(a)) note(el); }
     }, true);
   })();
-

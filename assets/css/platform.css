@@ -8921,3 +8921,17 @@ html.cpv-on .t2-head{top:48px}
 .t2 .pl-made-acts{display:flex;flex-wrap:wrap;gap:8px}.t2 .pl-made-acts a.t2-btn{text-decoration:none}
 .t2 .pl-made-tip{color:var(--t2-muted);font-size:12.5px;line-height:1.7}
 @media (max-width:560px){.t2 .pl-made{padding:14px}.t2 .pl-made-acts .t2-btn{flex:1 1 calc(50% - 8px);justify-content:center}.t2 .pl-made-amt b{font-size:22px}}
+/* v461: تنويهات المراجعة أعلى ملف العميل · ونسخة قرارات مراجعة الترحيل في الإعدادات */
+.cf-nts{display:grid;gap:10px;padding:14px;border:1px solid #F3D7A6;border-radius:16px;background:var(--t2-warn-wash,#FFF1DC)}
+.cf-nts-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.cf-nts-h small{margin-inline-start:auto}
+.cf-nt{display:grid;gap:6px;padding:12px;border-radius:12px;background:var(--t2-surface,#fff);border:1px solid var(--t2-line)}
+.cf-nt-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.cf-nt-ic{color:var(--t2-warn,#8A4E08);display:inline-flex}
+.cf-nt-b{margin:0;line-height:1.8}
+.t2.t2.is-dark .cf-nts{background:rgba(245,194,107,.08);border-color:rgba(245,194,107,.35)}
+.ard-g{font-size:1.05rem;margin:8px 0 0}
+.ard-c{display:grid;gap:10px;padding:14px 16px;border:1px solid var(--t2-line);border-radius:16px;background:var(--t2-surface,#fff)}
+.ard-c p{margin:0;line-height:1.8}
+.ard-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.ard-h h3{margin:0;margin-inline-end:auto;font-size:1rem}
+.ard-cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ard-cmp div{display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--t2-surface-2)}.ard-cmp small{color:var(--t2-muted)}
+.cf-pick.is-on{border-color:var(--t2-brand)}
+@media (max-width:520px){.ard-cmp{grid-template-columns:1fr}}
