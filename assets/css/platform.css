@@ -8969,3 +8969,10 @@ html.cpv-on .t2-head{top:48px}
 /* v465: مستندات العقد */
 .cf-doc-a{display:flex;flex-wrap:wrap;gap:6px}
 .cf-doc-w{display:grid;gap:8px;padding:8px;border:1px dashed var(--t2-line-2);border-radius:12px}
+/* v468: كامل بيانات العملية من تقرير Paymob */
+.fx-doc-more{border-top:1px dashed var(--t2-line);padding-top:6px}
+.fx-doc-more>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:8px 0;font:700 .86rem var(--t2-ff-display);color:var(--t2-ink)}
+.fx-doc-more>summary::-webkit-details-marker{display:none}
+.fx-doc-more>summary::before{content:'+';display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--t2-brand-wash);color:var(--t2-brand-3);font-weight:800}
+.fx-doc-more[open]>summary::before{content:'−'}
+.fx-doc-more>summary small{color:var(--t2-muted);font-weight:500}

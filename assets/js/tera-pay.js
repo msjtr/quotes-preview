@@ -77,6 +77,11 @@
   }
   function result(st, rc, info) {
     info = info || {};
+    /* v468: الدفع من داخل المنصة — النتيجة والإيصال ورسالة الشكر تظهر في المنصة نفسها، فلا شاشة نتيجة مكررة هنا */
+    if (D.lite === '1' && D.back) {
+      var bk = D.back; if (st !== 'paid') bk = bk.replace('pay=ok', st === 'failed' ? 'pay=fail' : 'pay=pending');
+      ev('lite_back', { st: st || '' }); location.replace(bk); return;
+    }
     var T = {
       paid: { c: '#0E7C70', l: 'مدفوع', t: 'تم الدفع بنجاح', s: D.okmsg || 'وصلتنا دفعتك، وأُرسل الإيصال إلى بريدك وواتساب وإشعار التطبيق.' },
       failed: { c: '#B3262F', l: 'فشل', t: 'لم تكتمل العملية', s: 'لم يُخصم أي مبلغ من بطاقتك. يمكنك المحاولة مرة أخرى.' },
@@ -91,12 +96,18 @@
     if (seal && !reduce) for (var i = 0; i < 16; i++) { var a = i * Math.PI / 8, r = 110 + (i % 3) * 22, b = document.createElement('i'); b.className = 'bt'; b.style.setProperty('--dx', Math.round(Math.cos(a) * r) + 'px'); b.style.setProperty('--dy', Math.round(Math.sin(a) * r) + 'px'); if (st === 'paid') seal.appendChild(b); }
     show($('[data-rate]', res), st === 'paid');
     var retry = $('[data-retry]', res); show(retry, st === 'failed');
-    var dl = document.getElementById('tp-rcpt'); if (dl && rc) { dl.href = rc; dl.textContent = st === 'paid' ? 'تحميل الإيصال PDF' : 'تحميل إشعار العملية PDF'; show(dl, true); }
+    /* v468: التحميل ملف فعلي (لا فتح في نافذة)، والمشاركة بالملف نفسه حين يدعمها الجهاز، وإلا بالرابط الموقَّع */
+    var dl = document.getElementById('tp-rcpt'); if (dl && rc) { dl.href = rc + (rc.indexOf('?') >= 0 ? '&' : '?') + 'dl=1'; dl.setAttribute('download', 'tera-receipt.pdf'); dl.removeAttribute('target'); dl.textContent = st === 'paid' ? 'تحميل الإيصال PDF' : 'تحميل إشعار العملية PDF'; show(dl, true); }
     var sh = document.getElementById('tp-share');
     if (sh && rc) { show(sh, true); sh.onclick = function () {
       var u = new URL(rc, location.href).href, t = (st === 'paid' ? 'إيصال السداد' : 'إشعار العملية') + ' — منصة تيرا';
-      if (navigator.share) navigator.share({ title: t, text: t, url: u }).catch(function () {});
-      else location.href = 'https://wa.me/?text=' + encodeURIComponent(t + '\n' + u);
+      var viaLink = function () { if (navigator.share) navigator.share({ title: t, text: t, url: u }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(t + '\n' + u), '_blank', 'noopener'); };
+      sh.disabled = true;
+      fetch(u, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error('pdf'); return r.blob(); }).then(function (b) {
+        var f = null; try { f = new File([b], 'tera-receipt.pdf', { type: 'application/pdf' }); } catch (e) { f = null; }
+        if (f && navigator.canShare && navigator.canShare({ files: [f] })) return navigator.share({ title: t, text: t, files: [f] }).catch(function (e) { if (!e || e.name !== 'AbortError') viaLink(); });
+        viaLink();
+      }).catch(viaLink).then(function () { sh.disabled = false; });
       ev('share'); }; }
     var mv = $('[data-v="method"]', res), av = $('[data-v="at"]', res);
     if (mv && info.method) {
@@ -275,20 +286,19 @@
       .catch(function () { box.classList.remove('wait'); if (err) { err.textContent = 'تعذّر الاتصال الآن. أعد تحميل الصفحة.'; show(err, true); } });
   } else boot();
   /* v427: اختيار طريقة الدفع — مدى أو فيزا/ماستركارد (نموذج البطاقة) · Apple Pay داخل الصفحة نفسها */
-  var cardBox = document.getElementById('tp-cardbox'), appleBox = document.getElementById('tp-applebox'), apMounted = false;
-  function mountApple() {
-    if (apMounted || !D.cs || typeof window.Pixel !== 'function') return;
-    apMounted = true;
-    try {
-      new window.Pixel({ publicKey: D.pub, clientSecret: D.cs, paymentMethods: ['apple-pay'], elementId: 'tp-apple',
-        beforePaymentComplete: async function () { ev('ap_before'); started = true; return true; },
-        afterPaymentComplete: async function (r) { var d = (r && r.data) || {}; ev('ap_after', { status: r && r.status, success: d.success, pending: d.pending }); if (r && r.status >= 400) { started = false; return; } processing(); },
-        onPaymentCancel: function () { ev('ap_cancel'); started = false; } });
-      ev('ap_mounted');
-    } catch (e) { ev('ap_error', { m: String(e && e.message || e).slice(0, 200) }); }
-    setTimeout(function () { var el = document.getElementById('tp-apple'), n = document.getElementById('tp-apnote');
-      if (el && el.getBoundingClientRect().height < 20 && n) n.textContent = 'Apple Pay متاح على iPhone وأجهزة Mac من متصفح Safari. على هذا الجهاز ادفع بمدى أو البطاقة.'; }, 4000);
-  }
+  var cardBox = document.getElementById('tp-cardbox'), appleBox = document.getElementById('tp-applebox');
+  /* v468: Apple Pay — صفحة Paymob الآمنة بالعملية نفسها (فيها تكامل Apple Pay)، ثم يعيد Paymob الدافع إلى المنصة لإكمال المرحلة.
+     يظهر على أجهزة Apple التي تدعمه فقط (Safari) */
+  var apOk = false; try { apOk = !!(window.ApplePaySession && window.ApplePaySession.canMakePayments && window.ApplePaySession.canMakePayments()); } catch (e) { apOk = false; }
+  if (D.apple === '1' && D.hosted && apOk) document.querySelectorAll('[data-apwrap]').forEach(function (w) { w.hidden = false; });
+  if (!apOk) document.querySelectorAll('.tp-meth [data-m="apple"]').forEach(function (b) { b.hidden = true; });
+  document.querySelectorAll('[data-apgo]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (!D.hosted || started) return;
+      started = true; ev('ap_hosted'); b.disabled = true;
+      try { (window.top || window).location.href = D.hosted; } catch (e) { location.href = D.hosted; }
+    });
+  });
   var MG = {}; try { MG = JSON.parse(D.mg || '{}'); } catch (e) { MG = {}; }
   function cardMark(m) { document.querySelectorAll('.tp-card [data-mk] img').forEach(function (im) { var on = im.getAttribute('data-mk') === m; im.hidden = !on; if (on) { im.classList.remove('pop'); void im.offsetWidth; im.classList.add('pop'); } });
     var cc = document.querySelector('.tp-card'); if (cc) { cc.classList.remove('swap'); void cc.offsetWidth; cc.classList.add('swap'); } }
@@ -320,7 +330,6 @@
     cardMark(m);
     document.querySelectorAll('.tp-meth [data-m]').forEach(function (x) { var on = x.getAttribute('data-m') === m; x.classList.toggle('on', on); x.setAttribute('aria-checked', on ? 'true' : 'false'); });
     show(cardBox, m !== 'apple'); show(appleBox, m === 'apple');
-    if (m === 'apple') mountApple();
   }
   setM(D.m || 'mada');
   document.querySelectorAll('.tp-meth [data-m]').forEach(function (b) {

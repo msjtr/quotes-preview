@@ -2056,10 +2056,17 @@ function payCard(p) {
 const isGw = (p) => !!p.gw;
 const isTr = (p) => p.method === 'تحويل بنكي';
 const SUBN = { mada: 'mada (مدى)', Visa: 'Visa', MasterCard: 'MasterCard', 'Apple Pay': 'Apple Pay', 'Google Pay': 'Google Pay' };
+/* v468: بنود تقرير Paymob التي تخص التاجر وحده (الرسوم والتحويل والإعدادات) لا تظهر في إيصال العميل */
+const GW_FILE_STAFF = /رسوم|ضريبة القيمة المضافة|إضافات|رقم التحويل|^تحويل$|Batch ID|تكامل الدفع|Is Live|Settlement Currency|Transaction Callback|Instant refund|الموظف المنشئ|أنشئ بواسطة|API Source|بوابة الدفع|الإكراميات/;
+function gwFileRows(g, staff) {
+  return (g && g.file ? g.file : []).filter(function (x) { return Array.isArray(x) && x[0] && x[1] != null && x[1] !== '' && (staff || !GW_FILE_STAFF.test(x[0])); })
+    .map(function (x) { return [x[0], /^[\x20-\x7E]+$/.test(String(x[1])) ? ltr(String(x[1])) : String(x[1])]; });
+}
 function gwView(g) {
   return [['مزود الدفع', g.provider], ['رقم العملية', ltr(g.txn)], ['رقم الطلب', ltr(g.order)], ['المرجع (تيرا)', ltr(g.ref)],
     ['حالة العملية', g.voided ? DS.badge('مُلغاة (Void)', 'rf') : g.refunded ? DS.badge('مستردة (Refund)', 'rf') : DS.badge(g.success ? 'ناجحة' : 'غير ناجحة', g.success ? 'ok' : 'danger')], ['استجابة البنك', [ltr(g.rcode + ' · ' + g.resp)]],
-    ['وسيلة الدفع', g.type === 'wallet' ? 'محفظة رقمية' : 'بطاقة'], ['الشبكة', ltr(SUBN[g.sub] || g.sub)], g.last4 ? ['رقم البطاقة', ltr('•••• ' + g.last4)] : null,
+    ['وسيلة الدفع', g.apple ? 'Apple Pay' : g.type === 'wallet' ? 'محفظة رقمية' : 'بطاقة'], ['نوع البطاقة (Scheme)', ltr(SUBN[g.sub] || g.sub)], g.fund ? ['نوع التمويل', g.fund] : null, g.last4 ? ['رقم البطاقة', ltr('•••• ' + g.last4)] : null,
+    g.rrn && g.rrn !== '—' ? ['الرقم المرجعي (RRN)', ltr(g.rrn)] : null, g.auth && g.auth !== '—' ? ['رمز التفويض', ltr(g.auth)] : null, g.channel ? ['قناة الدفع', g.channel] : null,
     [['التحقق ', ltr('3-D Secure')], g.secure ? 'تم' : 'لا ينطبق'], ['المبلغ', [ltr(Number(g.amount || 0).toFixed(2)), ' ريال']], ['وقت العملية', [isoT(g.date), ' · ', ltr(g.time)]],
     ['التسوية', DS.badge(g.settled ? 'تمت التسوية' : 'بانتظار التسوية', g.settled ? 'ok' : 'warn')]].filter(Boolean);
 }
@@ -2077,6 +2084,34 @@ async function lvRcPdf(pid, adm) {
     if (!r.ok) throw new Error('rc');
     const u = URL.createObjectURL(await r.blob()); if (w) w.location = u; else window.open(u, '_blank');
   } catch (err) { if (w) w.close(); snack('تعذّر فتح الإيصال، حاول بعد قليل.'); }
+}
+/* v468: الإيصال ورسالة الشكر — عرض · تحميل ملف · مشاركة (الملف نفسه حين يدعمه الجهاز، وإلا الرابط الموقَّع) */
+const LV_DOCL = {};
+async function lvDocLinks(pid) {
+  const c = LV_DOCL[pid]; if (c && Date.now() - c.at < 240000) return c.j;
+  const j = await clApi('/api/account/receipt/' + encodeURIComponent(pid) + '/links');
+  if (!j || !j.ok) throw new Error((j && j.message) || 'doc');
+  LV_DOCL[pid] = { at: Date.now(), j: j }; return j;
+}
+async function lvDoc(pid, k, how) {
+  try {
+    const j = await lvDocLinks(pid), u0 = k === 'thanks' ? j.thanks : j.receipt, nm = (k === 'thanks' ? j.thanks_name : j.receipt_name) || 'tera.pdf';
+    if (!u0) { snack('رسالة الشكر غير متاحة لهذه الدفعة.'); return; }
+    const u = new URL(u0, location.href).href, t = (k === 'thanks' ? 'رسالة الشكر والتقدير' : 'إيصال السداد') + ' — منصة تيرا';
+    if (how === 'view') { const w = window.open(u, '_blank', 'noopener'); if (!w) location.href = u; return; }
+    if (how === 'dl') { const a = document.createElement('a'); a.href = u + '?dl=1'; a.download = nm; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); snack('بدأ تحميل ' + (k === 'thanks' ? 'رسالة الشكر' : 'الإيصال') + '.'); return; }
+    const viaLink = function () { if (navigator.share) return navigator.share({ title: t, text: t, url: u }).catch(function () {}); window.open('https://wa.me/?text=' + encodeURIComponent(t + '\n' + u), '_blank', 'noopener'); };
+    let f = null; try { const r = await fetch(u); if (r.ok) f = new File([await r.blob()], nm, { type: 'application/pdf' }); } catch (err) { f = null; }
+    if (f && navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ title: t, text: t, files: [f] }).catch(function (err) { if (!err || err.name !== 'AbortError') viaLink(); }); return; }
+    viaLink();
+  } catch (err) { snack('تعذّر تجهيز المستند، حاول بعد قليل.'); }
+}
+function lvDocActs(pid, k) {
+  const th = k === 'thanks';
+  return e('div', { class: 't2-pb-actions fx-docacts' }, [
+    liveOk(DS.button(th ? 'عرض رسالة الشكر' : 'عرض الإيصال', { tone: th ? null : 'primary', ui: 'file-pdf', onClick: function () { lvDoc(pid, k, 'view'); } })),
+    liveOk(DS.button('تحميل', { ui: 'arrow-down', onClick: function () { lvDoc(pid, k, 'dl'); } })),
+    liveOk(DS.button('مشاركة', { ui: 'share-network', onClick: function () { lvDoc(pid, k, 'share'); } }))]);
 }
 function rcLink(p) { return p.rc ? e('button', { type: 'button', class: 'fx-link fx-rclink' + (p.rc.void ? ' is-void' : ''), onClick: function (ev) { ev.stopPropagation(); FX.pid = p.c.no + ':' + p.i; go('rcpt'); } }, [frag(ui('file-pdf', 14)), ltr(p.rc.file)]) : e('span', { class: 'fx-rcwait' }, 'يصدر بعد اعتماد التحويل'); }
 function gwRows(g) {
@@ -2880,10 +2915,13 @@ function rcptPage() {
     e('div', { class: 'fx-doc-amt' }, [e('span', {}, 'المبلغ المسدَّد'), e('b', {}, [SAR(opAmt(p)), e('small', {}, ' ريال')]), e('i', { class: 'fx-doc-stamp' + (p.rc.void ? ' is-void' : '') }, p.rc.void ? (p.refund && p.refund.kind === 'void' ? 'ملغى' : 'مسترد') : 'مدفوع')]),
     e('section', { class: 'fx-doc-s' }, [e('h3', {}, 'بيانات الدفعة'), r('العميل', ME.name), r('المنتج', c.product), r('رقم العقد', ltr(c.no)), r('رقم الدفعة', p.i + ' من ' + c.n), r('تاريخ الاستحقاق', isoT(p.due)), r('قيمة الدفعة', SR(p.amount)), r('المسدَّد', SR(opAmt(p))), r('المتبقي من الدفعة', SR(dueAmt(p)))]),
     e('section', { class: 'fx-doc-s' }, method),
+    isGw(p) && gwFileRows(p.gw).length ? e('details', { class: 'fx-doc-s fx-doc-more' }, [e('summary', {}, ['كامل بيانات العملية كما في تقرير Paymob ', e('small', {}, '(' + fmtNum(gwFileRows(p.gw).length) + ' بندًا)')])]
+      .concat(gwFileRows(p.gw).map(function (x) { return r(x[0], x[1]); }))) : null,
     p.refund ? e('section', { class: 'fx-doc-s is-rf' }, [e('h3', {}, p.refund.kind === 'void' ? 'بيانات الإلغاء' : 'بيانات الاسترداد'), r('رقم إشعار الاسترداد', ltr(p.refund.no)), r('رقم عملية الاسترداد (Paymob)', ltr(p.refund.txn)), r('المبلغ المسترد', SR(p.refund.amount)), r('تاريخ الاسترداد', isoT(p.refund.at)), r('يُعاد إلى', p.gw && p.gw.last4 ? ['البطاقة نفسها ', ltr('•••• ' + p.gw.last4)] : 'وسيلة الدفع نفسها')]) : null,
     e('footer', { class: 'fx-doc-f' }, ['صادر إلكترونيًا من منصة تيرا ولا يحتاج إلى توقيع. ', isGw(p) ? ['المرجع لدى بوابة الدفع: ', ltr(p.gw.ref)] : rk === 'cash' ? ['رقم الإيصال: ', ltr(p.rc.no)] : [rk === 'gw' ? 'رقم العملية: ' : 'رقم العملية البنكي: ', ltr(p.txn || '—')]])]),
-    p.rc.live && p.pid ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تحميل الإيصال PDF', { tone: 'primary', ui: 'file-pdf', onClick: function () { lvRcPdf(p.pid, false); } }))]) : null,
+    p.rc.live && p.pid ? lvDocActs(p.pid, 'receipt') : null,
     paidOnTime(p) ? thanksCard(p) : null,
+    paidOnTime(p) && p.rc.live && p.pid ? lvDocActs(p.pid, 'thanks') : null,
     rcOpReq(p)];
 }
 /* أسفل الإيصال: طلب على العملية نفسها — إلغاء العملية أو استرداد العملية، مع سبب الطلب (تراجعه الإدارة) */
@@ -17447,14 +17485,33 @@ function liveReq(q) {
 }
 /* بيانات العملية لدى بوابة الدفع لكل دفعة: من payment_gateway_txns (بالرقم أو بالدفعة) وتفاصيلها كما وردت من Paymob */
 const LIVE_SUB = { visa: 'Visa', mastercard: 'MasterCard', mada: 'mada', amex: 'Amex', applepay: 'Apple Pay', 'apple pay': 'Apple Pay' };
+/* v468: مدى كما تسجّلها لوحة Paymob — بطاقة الخصم المحلية مزدوجة الشعار يعيد استعلامها «VISA» بينما المخطط Mada.
+   مدى إن ذكرها Paymob أو ملف البوابة، أو BIN مدى موثّق، أو بطاقة خصم من بنك سعودي (القاعدة نفسها في الخادم) */
+const MADA_BINS_C = { 410621: 1 };
+/* v468: نوع البطاقة كما في Paymob — مخطط تقريرها أولًا، ثم «mada» الصريحة، ثم BIN مدى، ثم بطاقة خصم ناجحة (ليست Apple Pay) */
+function liveMada(d, ok) {
+  if (!d) return false;
+  const px = String(d.pmx_scheme || '').toUpperCase(); if (px) return px === 'MADA';
+  if (d.scheme === 'MADA' || /^mada$/i.test(String(d.net || ''))) return true;
+  if (/^applepay$/i.test(String(d.net || '')) || /apple/i.test(String(d.type || '') + ' ' + String(d.sub_type || ''))) return false;
+  if (MADA_BINS_C[String(d.bin || '').replace(/[^0-9]/g, '').slice(0, 6)]) return true;
+  return ok === true && /^(debit|prepaid)$/i.test(String(d.funding || ''));
+}
+/* v468: بيانات العملية كاملة — من Paymob مباشرة للعمليات الجديدة، ومن تقرير Paymob («كل الحركات المالية») للعمليات المرحَّلة */
+const GW_FUND = { DEBIT: 'خصم (Debit)', CREDIT: 'ائتمان (Credit)', PREPAID: 'مسبقة الدفع (Prepaid)' };
 function liveGw(t) {
-  const d = t.details || {}, at = t.txn_at ? new Date(t.txn_at) : null, ok = t.status === 'success', sub = LIVE_SUB[String(d.brand || '').toLowerCase()] || d.brand || '';
+  const d = t.details || {}, at = t.txn_at ? new Date(t.txn_at) : d.pmx_paid_at ? new Date(String(d.pmx_paid_at).replace(' ', 'T') + '+03:00') : null, ok = t.status === 'success';
+  const px = String(d.pmx_scheme || '').toUpperCase(), apl = px === 'APPLE_PAY' || (!px && /^applepay$/i.test(String(d.net || '')));
+  const sub = liveMada(d, ok) ? 'mada' : apl ? 'Apple Pay' : LIVE_SUB[String(px || d.net || d.brand || '').toLowerCase()] || d.brand || (px ? String(d.pmx_scheme) : '');
+  const yes = function (v) { return v === true || v === 'نعم'; }, fund = String(d.funding || d.pmx_funding || '').toUpperCase();
   const hh = at && !isNaN(at) ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : '—';
-  return { provider: 'Paymob', txn: String(t.trx), order: t.gateway_order ? String(t.gateway_order) : '—', ref: d.ref || (t.class_label && /online/.test(t.class_label) ? '—' : 'النظام السابق'),
-    success: ok, refunded: t.refund_state === 'full' || t.refund_state === 'partial', voided: t.refund_state === 'void', rcode: d.code || (ok ? 'APPROVED' : '—'), resp: d.message || (ok ? 'Approved' : '—'),
-    type: d.type === 'wallet' ? 'wallet' : 'card', sub: sub || '—', last4: t.card_last4 || (d.pan ? String(d.pan).replace(/[^0-9]/g, '').slice(-4) : ''), secure: d.secure3d === true,
-    amount: Number(t.amount) || 0, date: at && !isNaN(at) ? at : T0, time: hh, settled: d.settled !== false, auth: d.auth || '—', rrn: d.rrn || '—',
-    card: (sub || 'بطاقة') + (t.card_last4 ? ' •••• ' + t.card_last4 : ''), kind: d.type === 'wallet' ? 'محفظة' : 'بطاقة', secA: d.secure3d === true ? 'تم' : 'لا ينطبق', secL: '3-D Secure', live: t };
+  const last4 = t.card_last4 || (d.pan ? String(d.pan).replace(/[^0-9]/g, '').slice(-4) : '') || String(d.pmx_last4 || '').replace(/[^0-9]/g, '').slice(-4);
+  return { provider: 'Paymob', txn: String(t.trx), order: t.gateway_order ? String(t.gateway_order) : d.pmx_pm_order ? String(d.pmx_pm_order) : '—', ref: d.ref || d.pmx_order || (t.class_label && /online/.test(t.class_label) ? '—' : 'النظام السابق'),
+    success: ok, refunded: t.refund_state === 'full' || t.refund_state === 'partial', voided: t.refund_state === 'void', rcode: d.code || (ok ? 'APPROVED' : '—'), resp: d.message || (ok ? 'Approved' : d.pmx_status || '—'),
+    type: d.type === 'wallet' ? 'wallet' : 'card', sub: sub || '—', last4: last4, secure: d.secure3d === true || yes(d.pmx_3ds), fund: GW_FUND[fund] || '',
+    amount: Number(t.amount) || 0, date: at && !isNaN(at) ? at : T0, time: hh, settled: d.pmx_transferred ? yes(d.pmx_transferred) : d.settled !== false, auth: d.auth || d.pmx_auth || '—', rrn: d.rrn || d.pmx_rrn || '—',
+    channel: d.pmx_channel || (d.src ? 'الدفع الإلكتروني' : ''), file: Array.isArray(d.pmx_file) ? d.pmx_file : null, apple: apl,
+    card: (sub === 'mada' ? 'مدى' : sub || 'بطاقة') + (last4 ? ' •••• ' + last4 : ''), kind: apl ? 'Apple Pay' : d.type === 'wallet' ? 'محفظة' : 'بطاقة', secA: d.secure3d === true || yes(d.pmx_3ds) ? 'تم' : 'لا ينطبق', secL: '3-D Secure', live: t };
 }
 function liveAttachGw(txns) {
   const ok = txns.filter(function (t) { return !t.parent_trx && t.status === 'success'; }), kids = txns.filter(function (t) { return t.parent_trx; });
@@ -22422,13 +22479,14 @@ if (LIVE.on) {
       d.pmx_order ? ['رقم طلب التاجر', ltr(d.pmx_order)] : null,
       ['المصدر', d.pmx_src ? GW_SRC[d.pmx_src] || d.pmx_src : t.class_label === 'online_test' ? 'المنصة — اختبار' : t.class_label === 'online' ? 'المنصة' : t.class_label === 'online_refund' ? 'استرداد أو إلغاء' : (t.class_label || 'النظام السابق')],
       d.pmx_payer || d.pmx_phone ? ['الدافع في البوابة', e('span', {}, [d.pmx_payer || '—', d.pmx_phone ? e('small', { class: 'cf-sub' }, [' · ', ltr(d.pmx_phone)]) : null])] : null,
-      t.card_last4 || d.pmx_scheme ? ['البطاقة', ltr([d.brand || d.pmx_scheme, t.card_last4 ? '•••• ' + t.card_last4 : ''].filter(Boolean).join(' '))] : null,
+      t.card_last4 || d.pmx_scheme || d.brand ? ['البطاقة', ltr([liveMada(d, t.status === 'success') ? 'mada (مدى)' : String(d.pmx_scheme || '').toUpperCase() === 'APPLE_PAY' || d.net === 'applepay' ? 'Apple Pay' : d.pmx_scheme || d.brand, t.card_last4 ? '•••• ' + t.card_last4 : ''].filter(Boolean).join(' '))] : null,
       d.code || d.message ? ['استجابة البنك', ltr([d.code, d.message].filter(Boolean).join(' — '))] : null, d.rrn || d.pmx_rrn ? ['الرقم المرجعي (RRN)', ltr(d.rrn || d.pmx_rrn)] : null,
       d.pmx_fee != null ? ['رسوم البوابة', SR(qr2((Number(d.pmx_fee) || 0) + (Number(d.pmx_vat) || 0))) + ' (منها ضريبة ' + SR(Number(d.pmx_vat) || 0) + ')'] : null,
       d.pmx_xfer ? ['التحويل إلى البنك', e('span', {}, ['رقم ', ltr(d.pmx_xfer), d.pmx_batch ? ' · الدفعة ' : '', d.pmx_batch ? ltr(d.pmx_batch) : ''])] : null,
       t.parent_trx ? ['العملية الأصل', ltr(String(t.parent_trx))] : null,
       t.review_state === 'needs_review' ? ['المطابقة', DS.badge('تحتاج مطابقة', 'warn')] : mm ? ['المطابقة', DS.badge('الوصف يخالف الربط', 'warn')] : null, t.review_note ? ['ملاحظة', t.review_note] : null].filter(Boolean)),
-      e('small', { class: 'cu-dr-hint' }, 'الاسترداد والإلغاء والتحصيل والربط بالدفعة من ملف العميل ← إجراء على العقد.')], 'fgw:' + t.trx);
+      Array.isArray(d.pmx_file) && d.pmx_file.length ? e('details', { class: 'fx-doc-more' }, [e('summary', {}, 'كامل بيانات العملية في تقرير Paymob (' + fmtNum(d.pmx_file.length) + ' بندًا)'), DS.fields(gwFileRows({ file: d.pmx_file }, true))]) : null,
+      e('small', { class: 'cu-dr-hint' }, 'الاسترداد والإلغاء والتحصيل والربط بالدفعة من ملف العميل ← إجراء على العقد.')].filter(Boolean), 'fgw:' + t.trx);
   };
   /* روابط الدفع وعملياتها تحتها: روابط المنصة (payment_links ← محاولات الدفع ← عمليات البوابة)، وروابط Paymob السريعة في النظام السابق بحسب جوال الدافع */
   const PL_ST = { open: ['مفتوح', 'info'], paid: ['مدفوع', 'ok'], expired: ['منتهي', null], cancelled: ['ملغى', null] };
