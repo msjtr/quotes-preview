@@ -11205,6 +11205,7 @@ const FILM_V = '?v=2'; /* رقم نسخة أفلام المكتبة — يُرف
 const FILM_LIB = [
   { k: 'launch-l', t: 'فيلم التدشين الجديد — أفقي', d: '«صُنعت لك» · 32 ثانية · 1920×1080 · للويب والشاشات', l: 'library/launch-landscape', tag: ['المعتمد', 'ok'] },
   { k: 'launch-p', t: 'فيلم التدشين الجديد — طولي', d: '«صُنعت لك» · 32 ثانية · 1080×1920 · للجوال والتواصل الاجتماعي', l: 'library/launch-portrait', por: true, tag: ['المعتمد', 'ok'] },
+  { k: 'general-p', t: 'الفيلم العام — طولي', d: '«عميل تيرا» · دقيقتان و50 ثانية · 1080×1920 · للجوال والتواصل الاجتماعي', l: 'library/general-portrait', por: true, share: true, tag: ['معتمد', 'ok'] },
   { k: 'home-old', t: 'فيلم الصفحة الرئيسية السابق', d: 'محفوظ للأرشيف · أفقي وطولي', l: 'library/home-old-landscape', p: 'library/home-old-portrait', tag: ['أرشيف', null] },
   { k: 'ref', t: 'الفيلم المرجعي v12', d: 'عيّنة مرجعية لأي فيلم قادم · 3 دقائق · 1920×1080', l: 'library/reference-v12', tag: ['مرجع', 'info'] }];
 const FILM_LAUNCH = { l: 'library/launch-landscape', p: 'library/launch-portrait' };
@@ -19670,16 +19671,35 @@ function liveFilmAuto() {
     setTimeout(function () { TM.launchFilm(m, function () { try { m.launch_pending = false; draw(); } catch (err) { void err; } }, own ? { files: own } : null); }, 500);
   });
 }
-/* «إعدادات تدشين الحساب › أفلام التدشين»: مكتبة الأفلام الأربعة من R2 بمدة مفتوحة، وطلبات «فيلمك باسمك» */
+/* «إعدادات تدشين الحساب › أفلام التدشين»: مكتبة الأفلام من R2 بمدة مفتوحة، وطلبات «فيلمك باسمك» */
 function lvFilmLib() {
   const card = function (f) {
     const b = FILM_CDN + f.l;
     return e('article', { class: 'flib-c' + (f.por ? ' is-p' : '') }, [
       e('button', { type: 'button', class: 'flib-th', 'aria-label': 'تشغيل ' + f.t, onClick: function () { filmPlayer({ l: f.l, p: f.p, skipAfter: 0, title: f.t }); } }, [e('img', { src: b + '.jpg' + FILM_V, alt: '', loading: 'lazy' }), e('i', { 'aria-hidden': 'true' }, '▶')]),
       e('div', { class: 'flib-b' }, [e('div', { class: 'flib-t' }, [e('b', {}, f.t), f.tag ? DS.badge(f.tag[0], f.tag[1]) : null]), e('small', {}, f.d),
-        e('div', { class: 'flib-a' }, [e('a', { href: b + '.mp4' + FILM_V, download: true, rel: 'noopener' }, f.p ? 'تنزيل أفقي' : 'تنزيل'), f.p ? e('a', { href: FILM_CDN + f.p + '.mp4' + FILM_V, download: true, rel: 'noopener' }, 'تنزيل طولي') : null])])]);
+        e('div', { class: 'flib-a' }, [e('a', { href: b + '.mp4' + FILM_V, download: true, rel: 'noopener' }, f.p ? 'تنزيل أفقي' : 'تنزيل'), f.p ? e('a', { href: FILM_CDN + f.p + '.mp4' + FILM_V, download: true, rel: 'noopener' }, 'تنزيل طولي') : null, f.share ? e('button', { type: 'button', class: 'flib-mini', onClick: function () { filmShare(f); } }, 'رابط المشاركة') : null])])]);
   };
   return e('div', { class: 'flib' }, FILM_LIB.map(card));
+}
+/* مشاركة فيلم من المكتبة: الرابط المباشر من Cloudflare R2 (يُشغَّل أو يُنزَّل على جهاز المستلم) — نسخ، واتساب، X، تيليجرام، البريد، أو من الجهاز */
+function filmShare(f) {
+  const host = modalHost(), url = FILM_CDN + f.l + '.mp4', txt = f.t + ' — منصة تيرا للخدمات المتكاملة', enc = encodeURIComponent;
+  const close = function () { document.removeEventListener('keydown', onKey, true); sh.remove(); };
+  const onKey = function (ev) { if (ev.key === 'Escape') { close(); ev.preventDefault(); } };
+  const opt = function (ic, t, fn, cls) { return e('button', { type: 'button', class: 'sh-o' + (cls ? ' ' + cls : ''), onClick: function () { fn(); } }, [e('span', { class: 'sh-o-ic' }, frag(ui(ic, 22))), e('span', {}, t)]); };
+  const open = function (u) { window.open(u, '_blank', 'noopener'); close(); };
+  const L = [opt('link-simple', 'نسخ الرابط', function () { copyText(url); close(); }, 'is-copy'),
+    opt('whatsapp-logo', 'واتساب', function () { open('https://wa.me/?text=' + enc(txt + '\n' + url)); }, 'is-wa'),
+    opt('x-logo', 'X', function () { open('https://twitter.com/intent/tweet?text=' + enc(txt) + '&url=' + enc(url)); }, 'is-x'),
+    opt('telegram-logo', 'تيليجرام', function () { open('https://t.me/share/url?url=' + enc(url) + '&text=' + enc(txt)); }, 'is-tg'),
+    opt('envelope-simple', 'البريد', function () { open('mailto:?subject=' + enc(f.t) + '&body=' + enc(txt + '\n' + url)); }, 'is-mail')];
+  if (navigator.share) L.unshift(opt('share-network', 'من جهازك', function () { navigator.share({ title: f.t, text: txt, url: url }).then(close, function (err) { if (err && err.name === 'AbortError') return; snack('المشاركة من الجهاز غير متاحة هنا — اختر وسيلة أخرى.'); }); }, 'is-dev'));
+  const sh = e('div', { class: 'st-modal' + (host !== document.body ? ' is-dev' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': 'مشاركة ' + f.t, dir: 'rtl', onClick: function (ev) { if (ev.target === sh) close(); } }, [
+    e('div', { class: 'st-sheet' }, [e('span', { class: 'st-grip', 'aria-hidden': 'true' }), e('div', { class: 'st-sheet-h' }, [e('img', { src: FILM_CDN + f.l + '.jpg' + FILM_V, alt: '' }), e('div', {}, [e('b', {}, 'مشاركة الفيلم'), e('span', {}, f.t)]),
+      e('button', { type: 'button', class: 'st-sheet-x', 'aria-label': 'إغلاق', onClick: close }, frag(ui('x', 18)))]),
+      e('div', { class: 'sh-os' }, L), e('div', { class: 'sh-url' }, [e('bdi', { dir: 'ltr' }, url), e('button', { type: 'button', onClick: function () { copyText(url); } }, 'نسخ')])])]);
+  host.appendChild(sh); document.addEventListener('keydown', onKey, true); requestAnimationFrame(function () { sh.classList.add('is-on'); const b = sh.querySelector('.sh-o'); if (b) b.focus(); });
 }
 const FLR_ST = { queued: ['بالانتظار', 'warn'], rendering: ['قيد التجهيز', 'info'], ready: ['جاهز', 'ok'], failed: ['تعذّر', 'danger'], expired: ['انتهت مدته', null] };
 function lvFilmReqs() {
