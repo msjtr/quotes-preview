@@ -8954,3 +8954,11 @@ html.cpv-on .t2-head{top:48px}
 .stl-tb tr.is-vat th,.stl-tb tr.is-vat td{color:var(--t2-muted)}
 .stl-tb tr.is-tot th,.stl-tb tr.is-tot td{font-weight:700;background:var(--t2-brand-wash);border-top:2px solid var(--t2-brand);border-bottom:0}
 @media (max-width:520px){.stl-tb{min-width:0;font-size:.8rem}.stl-tb th,.stl-tb td{padding:6px}}
+/* v463: طلبات الخدمة — بطاقة واحدة في القسم وملف العميل */
+.sr-card.is-warn{border-inline-start:4px solid var(--t2-warn,#e0a100)}
+.sr-card.is-info{border-inline-start:4px solid var(--t2-brand)}
+.sr-card.is-ok{border-inline-start:4px solid var(--t2-ok,#1a8f5a)}
+.sr-card.is-danger{border-inline-start:4px solid var(--t2-danger,#c0392b)}
+.sr-new,.sr-pick,.sr-stl{display:grid;gap:10px}
+.sr-stl{padding:12px;border:1px dashed var(--t2-line-2);border-radius:14px}
+.sr-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
