@@ -16001,7 +16001,7 @@ function admPfFilePage() {
       admRpc('whatsapp_pin_admin_list', { p_q: null, p_limit: 500 }).then(function (w) { return (w && w.rows) || []; }).catch(function () { return []; })]);
     const j = (await Promise.all(W))[0];
     const V = (LIVE_DATA.ver || []).filter(function (v) { return v.user_id === id; })[0] || null, Q = {};
-    await Promise.all((LIVE_ADM.ct[id] || []).map(async function (c) { const qid = (((LIVE_ADM.rows || {})[c.no] || {}).r || {}).quotation_id; if (!qid) return;
+    await Promise.all((LIVE_ADM.ct[id] || []).concat((LIVE_ADM.rh || {})[id] || []).map(async function (c) { const qid = (((LIVE_ADM.rows || {})[c.no] || {}).r || {}).quotation_id; if (!qid) return;
       try { Q[c.no] = await admRpc('admin_quotation_detail', { p_id: qid }); } catch (err) { if (err && err.message === 'auth') throw err; } }));
     const TR = Array.isArray(X[2]) ? X[2] : [], GW = Array.isArray(X[3]) ? X[3] : [];
     Object.keys(CF_TRP).forEach(function (k) { delete CF_TRP[k]; }); CF_TRA.length = 0; TR.forEach(function (t) { CF_TRA.push(t); if (t.status === 'submitted' && t.payment_id) CF_TRP[t.payment_id] = t; });
@@ -16726,6 +16726,7 @@ function cfPilotPage(id, D, P, hero, pi, ok, all, C, BD, RF) {
   const bdLive = BD.filter(function (b) { return b.st === 'open' || b.st === 'court'; }), bdFree = BD.filter(function (b) { return !b.ct; });
   const byT = function (t) { return C.filter(function (c) { return ((((LIVE_ADM.rows || {})[c.no] || {}).r || {}).contract_type || 'new') === t; }).length; };
   CF_EVD.list = D.EV || [];
+  const RH = ((LIVE_ADM.rh || {})[id] || []).slice().sort(function (a, b) { return b.req - a.req; });
   const PL = D.PL || [], TR = AX.tr.filter(function (t) { return t.cid === id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }), trOk = TR.filter(function (t) { return t.st !== 'void'; });
   return [hero,
     lvSec('المعلومات الشخصية', null, pi, 'cf:' + id + ':pi'),
@@ -16738,7 +16739,9 @@ function cfPilotPage(id, D, P, hero, pi, ok, all, C, BD, RF) {
     lvSec('العقود', fmtNum(C.length), [cfKpis([['contract', 'العقود', fmtNum(C.length), [byT('new') ? fmtNum(byT('new')) + ' جديد' : '', byT('defer') ? fmtNum(byT('defer')) + ' تأجيل' : '', byT('merge') ? fmtNum(byT('merge')) + ' توحيد' : ''].filter(Boolean).join(' · ')],
       ['timer', 'القائمة', fmtNum(live.length), fmtNum(C.length - live.length) + ' مغلقة أو مكتملة'], ['wallet', 'المتبقي', SR(rem), lateN ? fmtNum(lateN) + ' متأخرة' : 'لا تأخير', lateN ? 'bad' : 'ok']])]
       .concat(C.length ? C.map(function (c) { return cfContractP(id, c, D, C, RF); }) : [CF_EMPTY('لا عقود لهذا العميل.')]), 'cf:' + id + ':ct'),
-    cfReqCard(id, 'defer', RF), cfReqCard(id, 'merge', RF), cfReqCard(id, 'settle', RF)];
+    RH.length ? lvSec('سجلات طلبات عليها سداد — للإدارة فقط', fmtNum(RH.length), [DS.note('warn', 'لا يراها العميل ولا تدخل في العقود والتقارير', 'سُجّلت في النظام السابق «طلبات» مع أن عليها دفعات وسندات. راجعها ثم قرّر لكل منها: تُعتمد عقدًا، أو تُوحَّد في عقد آخر، أو تُلغى.')]
+      .concat(RH.map(function (c) { return cfContractP(id, c, D, C.concat(RH), RF); })), 'cf:' + id + ':rh') : null,
+    cfReqCard(id, 'defer', RF), cfReqCard(id, 'merge', RF), cfReqCard(id, 'settle', RF)].filter(Boolean);
 }
 
 /* ===== طلبات توثيق الملف (cu-pf-ver) ===== */
@@ -17374,7 +17377,7 @@ function admGwPage() {
 /* ---------- v280: صفحات المشرف بتصميم العيّنة نفسها وبالبيانات الحقيقية ----------
    العقود (ctr · cu-docs-pc) والسندات (cu-admx-bd) وإجراءات الإدارة وتقرير العميل وسجله الائتماني تُرسم بصفحات العيّنة،
    ومصادرها: client_contracts ودفعاتها ومرفقاتها، وclient_bonds. حفظ السند يذهب للخادم (svc_bond_update). لا بيانات تجريبية. */
-const LIVE_ADM = { ct: {}, bonds: [], at: 0 };
+const LIVE_ADM = { ct: {}, rh: {}, bonds: [], at: 0 };
 const BD_TO_SV = { open: 'active', done: 'ended', void: 'cancelled' };
 function liveBondMap(b, N) {
   const S = b.status === 'court' ? ['court', /منته/.test(b.court_status || '') ? 'done' : 'open'] : b.status === 'grace' ? ['court', 'grace'] : b.status === 'ended' ? ['done', ''] : b.status === 'cancelled' ? ['void', ''] : ['open', ''];
@@ -17386,11 +17389,12 @@ function liveBondMap(b, N) {
 async function liveAdmLoad() {
   /* الأسماء والعقود والسندات معًا لا واحدًا بعد الآخر */
   const AB = await Promise.all([liveNames(),
-    liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name)),client_contract_files(id,kind,file_name,payment_id)&kind=eq.contract&order=order_date.desc').catch(function () { return null; }),
+    liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name)),client_contract_files(id,kind,file_name,payment_id)&kind=in.(contract,request_history)&order=order_date.desc').catch(function () { return null; }),
     liveSb('client_bonds?select=*,client_contracts(id,contract_no,legacy_no),client_contract_files(id,kind,file_name)&order=bond_date.desc.nullslast').catch(function () { return null; })]);
   const N = AB[0], C = AB[1], B = AB[2];
-  LIVE_ADM.ct = {}; LIVE_ADM.rows = {};
-  (Array.isArray(C) ? C : []).forEach(function (r) { const c = liveContract(r); (LIVE_ADM.ct[r.user_id] || (LIVE_ADM.ct[r.user_id] = [])).push(c); LIVE_ADM.rows[c.no] = { r: r, c: c, f: c.n ? cInfo(c) : { status: 'بلا دفعات', tone: null, paid: 0, total: 0, remain: 0, leftN: 0 }, name: N[r.user_id] || '—' }; });
+  LIVE_ADM.ct = {}; LIVE_ADM.rows = {}; LIVE_ADM.rh = {};
+  /* v457: «سجلات الطلبات» (kind = request_history) تُحمَّل للإدارة وحدها وتظهر في ملف العميل بقسم مستقل حتى يُقرَّر مصيرها — لا تدخل في العقود ولا التقارير، ولا يراها العميل */
+  (Array.isArray(C) ? C : []).forEach(function (r) { const c = liveContract(r); (r.kind === 'request_history' ? (LIVE_ADM.rh[r.user_id] || (LIVE_ADM.rh[r.user_id] = [])) : (LIVE_ADM.ct[r.user_id] || (LIVE_ADM.ct[r.user_id] = []))).push(c); LIVE_ADM.rows[c.no] = { r: r, c: c, f: c.n ? cInfo(c) : { status: 'بلا دفعات', tone: null, paid: 0, total: 0, remain: 0, leftN: 0 }, name: N[r.user_id] || '—' }; });
   CU_BONDS.length = 0; (Array.isArray(B) ? B : []).forEach(function (b) { CU_BONDS.push(liveBondMap(b, N)); });
   Object.keys(AX_CTC).forEach(function (k) { delete AX_CTC[k]; });
   LIVE_ADM.at = Date.now();
