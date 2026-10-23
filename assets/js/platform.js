@@ -16485,6 +16485,31 @@ function cfAcctSec(id, D, RF) {
 }
 
 /* العقد: رأس بنوعه ومصدره · المبالغ · مؤشرات · ثم أقسامه */
+/* v458: «مكوّنات قيمة العقد» في بطاقة العقد بملف العميل — من عرض السعر المربوط (calc): قيمة المنتج وضريبتها وإجماليها، وكل رسم بضريبته،
+   وربح التقسيط بمدته، والإجمالي — كما في مستند العقد. ضريبة المنتج = ضريبة العرض − ضريبة الرسوم الخاضعة. */
+const CF_PART_T = { admin: 'الرسوم الإدارية', proc: 'رسوم معالجة الطلب', markup: 'فرق البيع', margin: 'فرق البيع', transfer: 'رسوم التحويل البنكي', bond: 'رسوم إصدار السند التنفيذي (نافذ)', platform: 'رسوم المنصة' };
+function cfParts(qc, r, c, k) {
+  if (!qc) return lvSec('مكوّنات قيمة العقد', null, [CF_EMPTY('لا عرض سعر مربوط بهذا العقد — مكوّنات القيمة تُقرأ من عرض السعر.')], k + ':parts', true);
+  const rate = Number(qc.vat_rate) || 0.15, val = Number(qc.value) || 0, its = qc.items || [];
+  const fees = its.filter(function (z) { return z.id !== 'profit' && !/ربح التقسيط/.test(z.t || ''); }), prof = its.filter(function (z) { return z.id === 'profit' || /ربح التقسيط/.test(z.t || ''); });
+  const fVat = qr2(fees.reduce(function (a, z) { return a + (z.vat ? (Number(z.amt) || 0) * rate : 0); }, 0)), fSum = qr2(fees.reduce(function (a, z) { return a + (Number(z.amt) || 0); }, 0));
+  const pVat = Math.max(0, qr2((Number(qc.vat) || 0) - fVat)), profit = qr2(prof.reduce(function (a, z) { return a + (Number(z.amt) || 0); }, 0));
+  const months = (qc.plan || []).length || Number(r.months) || 0, total = Number(qc.total) || Number(r.total) || 0, sum = qr2(val + pVat + fSum + fVat + profit);
+  const qty = Number(r.card_qty) || 0, unit = Number(r.card_price) || 0;
+  const rows = [e('div', { class: 'fee-gh' }, 'المنتج'),
+    lvQtRow('قيمة المنتج', qty && unit && qr2(qty * unit) === qr2(val) ? fmtNum(qty) + ' × ' + SR(unit) : (qc.pkg || null), val),
+    lvQtRow('ضريبة قيمة المنتج', pVat ? Math.round(rate * 100) + '%' : 'غير خاضع', pVat),
+    lvQtRow('إجمالي قيمة المنتج شامل الضريبة', null, qr2(val + pVat), 'is-tot'),
+    e('div', { class: 'fee-gh' }, 'الرسوم التشغيلية')]
+    .concat(fees.length ? fees.map(function (z) { const a = Number(z.amt) || 0; return lvQtRow(CF_PART_T[z.id] || z.t || 'رسم', z.vat ? 'الضريبة ' + SR(qr2(a * rate)) : 'غير خاضع للضريبة', a); }) : [e('small', { class: 'cu-dr-hint' }, 'لا رسوم على هذا العقد.')])
+    .concat([lvQtRow('إجمالي الرسوم قبل الضريبة', null, fSum), lvQtRow('ضريبة الرسوم', null, fVat), lvQtRow('إجمالي الرسوم شامل الضريبة', null, qr2(fSum + fVat), 'is-tot'),
+      e('div', { class: 'fee-gh' }, 'ربح التقسيط والإجمالي'),
+      lvQtRow('ربح التقسيط', months ? 'على ' + qTerm(months) + ' · شهريًا ' + SR(qr2(profit / months)) : null, profit),
+      lvQtRow('إجمالي قيمة العقد', null, total, 'is-tot')]);
+  const diff = qr2(total - sum);
+  return lvSec('مكوّنات قيمة العقد', SR(total), [e('section', { class: 'ax-card fee-tot' }, [e('div', { class: 'fee-tb' }, rows)]),
+    Math.abs(diff) >= 0.05 ? DS.note('warn', 'المكوّنات لا تساوي الإجمالي', 'الفرق ' + SR(diff) + ' بين مجموع المكوّنات وإجمالي العقد — راجع عرض السعر.') : null].filter(Boolean), k + ':parts', true);
+}
 function cfContractP(id, c, D, C, RF) {
   const x = (LIVE_ADM.rows || {})[c.no] || {}, r = x.r || {}, f = c.n ? cInfo(c) : null, k = 'cf:' + id + ':' + c.no, closed = !!r.closed;
   const Qj = D.Q[c.no] || null, q = Qj ? (Qj.quotation || {}) : null, qc = q && q.calc ? q.calc : null;
@@ -16503,8 +16528,9 @@ function cfContractP(id, c, D, C, RF) {
     e('div', { class: 'fx-chead-s' }, [DS.badge(CF_TYPE[ctype][0], CF_TYPE[ctype][1]), DS.badge(stB[0], stB[1]),
       f && !closed ? e('span', {}, f.lateDays ? 'تأخر ' + dayWord(f.lateDays) : f.leftN ? 'لا مستحقات متأخرة' : 'العقد مكتمل') : null])]);
   const money = f ? trio([['إجمالي قيمة المنتجات', f.total, ''], ['المدفوع', f.paid, 'ok'], ['المتبقي', f.remain, f.late.length ? 'bad' : 'brand']], f.pct, 'سُدّد ' + f.pct + '% · ' + f.leftN + ' دفعات متبقية من ' + c.n) : null;
-  const ind = f ? cfKpis([['wallet', 'قيمة الدفعة', SR(c.amount), qTerm(c.n)], ['contract', 'الدفعات المسدَّدة', fmtNum(c.n - f.leftN) + ' من ' + fmtNum(c.n), 'نسبة السداد ' + f.pct + '%', 'ok'],
-    ['warn', 'المتأخر', SR(f.lateSum), f.late.length ? fmtNum(f.late.length) + ' دفعات' : 'لا يوجد', f.late.length ? 'bad' : 'ok'], ['points', 'ربح التقسيط', SR(qr2(profit)), c.n ? 'شهريًا ' + SR(qr2(profit / c.n)) : null],
+  const qn = qc && (qc.plan || []).length ? qc.plan.length : (Number(r.months) || c.n), qInst = qc && (qc.plan || []).length ? Number(qc.plan[0].amount) || c.amount : c.amount;
+  const ind = f ? cfKpis([['wallet', 'قيمة الدفعة', SR(qInst), qTerm(qn)], ['contract', 'الدفعات المسدَّدة', fmtNum(c.n - f.leftN) + ' من ' + fmtNum(c.n), 'نسبة السداد ' + f.pct + '%', 'ok'],
+    ['warn', 'المتأخر', SR(f.lateSum), f.late.length ? fmtNum(f.late.length) + ' دفعات' : 'لا يوجد', f.late.length ? 'bad' : 'ok'], ['points', 'ربح التقسيط', SR(qr2(profit)), qn ? 'شهريًا ' + SR(qr2(profit / qn)) : null],
     ['clock', 'آخر دفعة', c.n ? isoT(c.payments[c.n - 1].due) : '—', closed ? 'العقد مغلق' : f.leftN ? 'بعد ' + fmtNum(f.leftN) + ' دفعات' : 'مكتمل'], ['receipt', 'عرض السعر', q ? ltr(q.quotation_number || '—') : '—', q ? (q.status === 'accepted' ? 'مقبول' : q.status) : 'غير مربوط']]) : null;
   const facts = lvSec('تفاصيل العقد الكاملة', null, [e('div', { class: 'fx-facts' }, [
     factGrp('المواعيد', [['تاريخ الطلب', isoT(c.req)], ['أول دفعة', c.n ? isoT(c.payments[0].due) : '—'], ['آخر دفعة', c.n ? isoT(c.payments[c.n - 1].due) : '—']]),
@@ -16519,7 +16545,7 @@ function cfContractP(id, c, D, C, RF) {
   const quote = lvSec('عرض السعر', q ? q.quotation_number : null, q ? [
     DS.fields([['رقم العرض', ltr(q.quotation_number || '—')], ['الحالة', DS.badge(QS[q.status] || q.status || '—', q.status === 'accepted' ? 'ok' : null)], ['تاريخ العرض', q.issue_date ? bdiD(String(q.issue_date).slice(0, 10)) : '—'], ['تاريخ القبول', q.decided_at ? bdiD(String(q.decided_at).slice(0, 10)) : '—'],
       qc && qc.legacy_no ? ['رقم الطلب السابق', ltr(String(qc.legacy_no))] : null]),
-    lvQtSummary(qc ? qc.value : ((Qj.items || [])[0] || {}).line_total || 0, items, qc ? qc.vat : 0, Number(q.total) || 0, qc ? (qc.plan || []) : [], 'بنود العرض وخطة الدفع'),
+    lvQtSummary(qc ? qc.value : ((Qj.items || [])[0] || {}).line_total || 0, items, qc ? qc.vat : 0, Number(q.total) || 0, qc ? (qc.plan || []) : [], 'بنود العرض وخطة الدفع', qc ? qc.vat_rate : null),
     !profit ? e('small', { class: 'cu-dr-hint' }, 'ربح التقسيط مسجّل صفرًا لهذا العقد — الهامش فيه «فرق البيع».') : null] : [CF_EMPTY('لا عرض سعر مربوط بهذا العقد.')], k + ':quote');
   const sched = lvSec('جدول السداد وطريقة السداد', c.n ? c.payments.filter(settled).length + ' من ' + c.n + ' مسدَّدة' : null, c.n ? cfSchedP(c) : [CF_EMPTY('لا دفعات.')], k + ':sched');
   const trin = cfTrSec(id, c, r, D.TR || [], RF);
@@ -16536,7 +16562,7 @@ function cfContractP(id, c, D, C, RF) {
     closed && !IE.length ? [[r.closed_at ? new Date(r.closed_at) : c.payments.reduce(function (a, p) { return p.at && p.at > a ? p.at : a; }, c.req), 'أُغلق العقد — ' + (CF_CLOSE[r.close_reason] || 'مغلق'), 'الإدارة']] : [],
     IE.map(function (y) { return [new Date(y.at), y.text, 'داخلي · ' + (y.by_name || 'النظام')]; }));
   const log = lvSec('سجل الأحداث', fmtNum(ev.length), [cfLog(ev)], k + ':log');
-  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0], stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, money, ind, facts, quote, sched, trin, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
+  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0], stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, money, ind, cfParts(qc, r, c, k), facts, quote, sched, trin, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
 }
 
 /* ===== v445: الوسائل (السندات · تحويلات تيرا · الشيكات · الأوامر المستديمة) تُضاف وتُعدَّل وتُربط بالعقد من الملف،
@@ -20276,11 +20302,17 @@ function lvQtCalc(D) {
   return { c: c, items: (c.items || []).filter(function (x) { return x.amt > 0; }).map(function (x) { return { id: x.id, t: x.t, amt: qr2(x.amt), vat: !!x.vat }; }) };
 }
 const lvQtRow = (t, sub, v, cls) => e('div', { class: 'fee-r' + (cls ? ' ' + cls : '') }, [e('span', {}, [t, sub ? e('small', {}, sub) : null]), e('b', {}, typeof v === 'number' ? sar(qr2(v)) : v)]);
-function lvQtSummary(value, items, vat, total, plan, title) {
+function lvQtSummary(value, items, vat, total, plan, title, rate0) {
+  /* v458: العرض مفصّلًا — ضريبة المنتج منفصلة عن ضريبة الرسوم، وكل رسم بضريبته، وإجمالي المنتج شامل الضريبة */
+  const rate = Number(rate0) || ((Number((LIVE_FEE.st || {}).vat_rate) || 15) / 100), val = Number(value) || 0;
+  const fees = (items || []).filter(function (x) { return x.id !== 'profit' && !/ربح التقسيط/.test(x.t || ''); }), prof = (items || []).filter(function (x) { return x.id === 'profit' || /ربح التقسيط/.test(x.t || ''); });
+  const fVat = qr2(fees.reduce(function (a, x) { return a + (x.vat ? (Number(x.amt) || 0) * rate : 0); }, 0)), pVat = Math.max(0, qr2((Number(vat) || 0) - fVat));
+  const lbl = function (x) { return (typeof CF_PART_T !== 'undefined' && CF_PART_T[x.id]) || x.t || 'رسم'; };
   return e('section', { class: 'ax-card fee-tot' }, [e('b', { class: 'ax-mt-t' }, title || 'الإجمالي وخطة الدفع'), e('div', { class: 'fee-tb' }, [
-    e('div', { class: 'fee-gh' }, 'القيمة'), lvQtRow('قيمة المنتج', null, Number(value) || 0),
-    e('div', { class: 'fee-gh' }, 'الرسوم')].concat(items.length ? items.map(function (x) { return lvQtRow(x.t, x.vat ? 'خاضع للضريبة' : 'غير خاضع للضريبة', Number(x.amt) || 0); }) : [e('small', { class: 'cu-dr-hint' }, 'لا رسوم مفعّلة في الإعدادات.')])
-    .concat([e('div', { class: 'fee-gh' }, 'الضريبة والإجمالي'), lvQtRow('ضريبة القيمة المضافة', 'على المنتج والرسوم الخاضعة', Number(vat) || 0), lvQtRow('الإجمالي', null, Number(total) || 0, 'is-tot'),
+    e('div', { class: 'fee-gh' }, 'المنتج'), lvQtRow('قيمة المنتج', null, val), lvQtRow('ضريبة قيمة المنتج', pVat ? Math.round(rate * 100) + '%' : 'غير خاضع', pVat), lvQtRow('إجمالي قيمة المنتج شامل الضريبة', null, qr2(val + pVat), 'is-tot'),
+    e('div', { class: 'fee-gh' }, 'الرسوم')].concat(fees.length ? fees.map(function (x) { const a = Number(x.amt) || 0; return lvQtRow(lbl(x), x.vat ? 'خاضع للضريبة · ' + SR(qr2(a * rate)) : 'غير خاضع للضريبة', a); }) : [e('small', { class: 'cu-dr-hint' }, 'لا رسوم على هذا العرض.')])
+    .concat([lvQtRow('ضريبة الرسوم', null, fVat)], prof.map(function (x) { return lvQtRow('ربح التقسيط', (plan || []).length ? 'على ' + qTerm(plan.length) + ' · شهريًا ' + SR(qr2((Number(x.amt) || 0) / plan.length)) : 'غير خاضع للضريبة', Number(x.amt) || 0); }))
+    .concat([e('div', { class: 'fee-gh' }, 'الضريبة والإجمالي'), lvQtRow('إجمالي ضريبة القيمة المضافة', 'المنتج والرسوم الخاضعة', Number(vat) || 0), lvQtRow('الإجمالي', null, Number(total) || 0, 'is-tot'),
       e('div', { class: 'fee-gh' }, 'خطة الدفع — ' + qTerm((plan || []).length))]).concat((plan || []).map(function (p) { return lvQtRow('الدفعة ' + fmtNum(p.no), bdiD(String(p.due)), Number(p.amount) || 0); })))]);
 }
 /* إعداد العرض من طلب العميل */
