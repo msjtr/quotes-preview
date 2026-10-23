@@ -1287,6 +1287,16 @@ html.cb-lock{overflow:hidden}
 .cf-act.is-brand{background:var(--t2-brand-wash)}.cf-act.is-info{background:var(--t2-info-wash)}.cf-act.is-warn{background:var(--t2-warn-wash)}.cf-act.is-danger{background:var(--t2-danger-wash)}.cf-act.is-ok{background:var(--t2-ok-wash)}
 .cf-act.is-on{border-color:var(--t2-brand);box-shadow:0 0 0 2px var(--t2-brand-wash)}
 .cf-act-form{margin-top:12px;padding:14px;border:1px dashed var(--t2-line-2);border-radius:14px;background:var(--t2-surface-2)}
+/* v460: محرّر العقد وجدول السداد */
+.cf-ed-sec{display:grid;gap:10px;margin-top:12px}
+.cf-ed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.cf-ed-rows{display:grid;gap:10px}
+.cf-ed-row{display:grid;gap:8px;padding:12px;border:1px solid var(--t2-line);border-radius:14px;background:var(--t2-surface)}
+.cf-ed-row.is-bad{border-color:var(--t2-danger,#c0392b)}
+.cf-ed-row.is-del{opacity:.7;background:var(--t2-surface-2);border-style:dashed}
+.cf-ed-rh{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.cf-ed-rh>b{margin-inline-end:auto}
+.cf-ed-tool{display:grid;gap:8px;padding:12px;border:1px dashed var(--t2-line-2);border-radius:12px}
+@media (max-width:520px){.cf-ed-grid{grid-template-columns:1fr 1fr}.cf-ed-row{padding:10px}}
 .cf-h{font:700 .9rem var(--t2-ff-display);color:var(--t2-brand-3)}
 .cf-edit{padding:12px;border:1px dashed var(--t2-line-2);border-radius:14px}
 .cf-ilog{display:grid;gap:6px}.ax-sch-fill{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px;padding:10px 12px;border-bottom:1px solid var(--t2-line)}.ax-sch-fill .t2-field,.ax-sch-fill>div:first-child{min-width:180px;flex:1 1 180px}.ax-sch-b .ax-pin{min-width:120px;width:100%}.ax-pay-g .ax-pay-f .t2-btn{justify-self:start}.cf-cell2{display:grid;gap:6px;min-width:150px}.cf-ilog-h{display:inline-flex;align-items:center;gap:6px;color:var(--t2-muted);font-size:.76rem}
@@ -6120,6 +6130,9 @@ html.pv-dark.pv-dark .t2-cb-o.is-closed .t2-cb-rt b,.t2.t2.is-dark .t2-cb-o.is-c
 .cu-kpi.cu-kpi{display:grid;justify-items:start;gap:2px;padding:12px 14px;border-radius:16px;background:var(--t2-surface);border:1px solid var(--t2-line)}
 .cu-kpi.cu-kpi b{font:800 1.4rem/1.2 var(--t2-ff-display);color:var(--t2-ink)}
 .cu-kpi.cu-kpi small{font-size:.8rem;color:var(--t2-muted)}
+/* v460: مؤشرات تختار النطاق */
+button.cu-kpi.is-pick{cursor:pointer;font:inherit;text-align:start;width:100%}button.cu-kpi.is-pick:hover{border-color:var(--t2-line-2)}button.cu-kpi.is-pick.is-on{border-color:var(--t2-brand);box-shadow:0 0 0 2px var(--t2-brand) inset}
+
 .cu-kpi-ic.cu-kpi-ic{color:var(--t2-brand)}
 .cu-kpi.cu-kpi.is-danger{border-color:#F2C4BF}.cu-kpi.cu-kpi.is-danger b,.cu-kpi.cu-kpi.is-danger .cu-kpi-ic{color:#A12B22}
 .cu-kpi.cu-kpi.is-warn{border-color:#F3D7A6}.cu-kpi.cu-kpi.is-warn b,.cu-kpi.cu-kpi.is-warn .cu-kpi-ic{color:#8A4E08}
