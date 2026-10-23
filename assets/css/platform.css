@@ -8935,3 +8935,22 @@ html.cpv-on .t2-head{top:48px}
 .ard-cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ard-cmp div{display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--t2-surface-2)}.ard-cmp small{color:var(--t2-muted)}
 .cf-pick.is-on{border-color:var(--t2-brand)}
 @media (max-width:520px){.ard-cmp{grid-template-columns:1fr}}
+/* v462: التسوية المبكرة بمحرّك القاعدة */
+.stl-ed,.stl-q{display:grid;gap:12px}
+.stl-q{padding:14px 16px;border:1px solid var(--t2-line);border-radius:16px;background:var(--t2-surface,#fff)}
+.stl-q.is-pending{border-color:var(--t2-warn,#e0a100)}.stl-q.is-approved{border-color:var(--t2-brand)}
+.stl-q-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.stl-q-h .t2-pill{margin-inline-start:auto}
+.stl-ln-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.stl-lns{display:grid;gap:10px}
+.stl-ln{display:grid;gap:8px;padding:12px;border:1px solid var(--t2-line);border-radius:14px;background:var(--t2-surface)}
+.stl-ln-f{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.stl-ln-f .t2-btn{margin-inline-start:auto}
+.stl-tbw{overflow-x:auto;border:1px solid var(--t2-line);border-radius:14px}
+.stl-tb{width:100%;border-collapse:collapse;font-size:.9rem;min-width:460px}
+.stl-tb th,.stl-tb td{padding:8px 10px;border-bottom:1px solid var(--t2-line);text-align:start;vertical-align:top}
+.stl-tb td{text-align:end;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stl-tb thead th{background:var(--t2-surface-2);font-weight:600;font-size:.8rem;color:var(--t2-muted)}
+.stl-tb tbody th span{display:grid;gap:2px}.stl-tb tbody th small{color:var(--t2-brand-3);font-weight:400}
+.stl-tb tr.is-disc td:nth-child(3){color:var(--t2-ok,#1a8f5a)}
+.stl-tb tr.is-vat th,.stl-tb tr.is-vat td{color:var(--t2-muted)}
+.stl-tb tr.is-tot th,.stl-tb tr.is-tot td{font-weight:700;background:var(--t2-brand-wash);border-top:2px solid var(--t2-brand);border-bottom:0}
+@media (max-width:520px){.stl-tb{min-width:0;font-size:.8rem}.stl-tb th,.stl-tb td{padding:6px}}
