@@ -15849,8 +15849,6 @@ const admMoney = (v) => v === null || v === undefined || v === '' ? '—' : fmtN
 const admClose = () => document.querySelectorAll('.cu-dh').forEach(function (m) { m.remove(); });
 const admFoot = () => [e('div', { class: 'cu-dr-fa' }, DS.button('إغلاق', { onClick: function () { admClose(); mgrFree(); } }))];
 
-/* رقم الملف السابق — للبحث في قائمة العملاء */
-const admMigNo = (r) => r.no || ('DJ-' + String(r.id).padStart(4, '0'));
 
 /* ===== ملفات العملاء (cu-pf-files · cu-list · cs-customers) ===== */
 function admRegOpen(r) {
@@ -15882,7 +15880,7 @@ async function admRegDoc(id, fid) {
 function admPfFilesPage() {
   /* ملفات العملاء بتصميم العيّنة: كل حسابات العملاء مرة واحدة، والتصفية بالتوثيق — ومصدر كل حساب ظاهر بدقة (سجّل في المنصة أو نُقل من النظام السابق) */
   return admMount('cl', 'ملفات العملاء', function () { return Promise.all([admClients(''), lvAccAll().catch(function () { return []; })]).then(function (X) { return Object.assign({}, X[0], { ACC: X[1] }); }); }, function (j, st, paint, refetch) {
-    const can = j.can || {}, R = j.reg || [], M = j.mig || [];
+    const can = j.can || {}, R = j.reg || [];
     /* v453: قائمة واحدة للعملاء — الملف والحساب معًا، والتصفية بحالة الحساب؛ الإجراءات داخل الملف */
     const AC = {}; (j.ACC || []).forEach(function (a) { AC[a.user_id] = a; });
     const afl = function (r) { const a = AC[r.id]; if (!a) return {}; const f = lvAccFlags(a); f.dis = !!(a.business_status && a.business_status !== 'active'); f.multi = cfAcMulti(a); return f; };
@@ -15890,12 +15888,11 @@ function admPfFilesPage() {
     const fit = function (r, k) { return k === 'all' || !!afl(r)[k]; }, cf = CLF.some(function (x) { return x[0] === ADM.clF; }) ? ADM.clF : 'all';
     if (!can.reg) return [DS.panel('ملفات العملاء', null, [DS.note('warn', 'لا تملك صلاحية الاطلاع على ملفات العملاء', '')])];
     /* v448: قائمة الملفات للوصول إلى ملف العميل فقط — بلا توثيق ولا نواقص ولا شروحات (التوثيق في «طلبات التوثيق») */
-    const MG = {}; M.forEach(function (m) { if (m.target && m.state === 'promoted') MG[m.target] = m; });
     st.f = 'all';
     const L = R.filter(function (r) { return fit(r, cf); }).sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'ar'); });
     const cards = L.map(function (r) {
-      const m = MG[r.id], n = ((LIVE_ADM.ct || {})[r.id] || []).length, f = afl(r), a = AC[r.id];
-      return e('button', { type: 'button', class: 'cu-card', 'data-s': [r.name, r.email, r.phone, r.no, m && admMigNo(m)].join(' ').toLowerCase(), onClick: function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name; go('other', 'cu-pf-file'); } }, [
+      const n = ((LIVE_ADM.ct || {})[r.id] || []).length, f = afl(r), a = AC[r.id];
+      return e('button', { type: 'button', class: 'cu-card', 'data-s': [r.name, r.email, r.phone, r.no].join(' ').toLowerCase(), onClick: function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name; go('other', 'cu-pf-file'); } }, [
         e('span', { class: 'cu-av' }, String(r.name || '؟').slice(0, 1)), e('span', { class: 'cu-card-t' }, [e('b', {}, r.name || '—'), e('small', {}, ['رقم تيرا ', ltr(r.no || '—'), n ? ' · ' + fmtNum(n) + (n === 1 ? ' عقد' : ' عقود') : ''])]),
         e('span', { class: 'cu-card-m' }, [r.status && r.status !== 'active' ? admB(ADM_USER_ST, r.status) : null, f.dis ? DS.badge('معطَّل', 'danger') : f.lock ? DS.badge('مقفل', 'danger') : null,
           f.pw ? DS.badge('يلزمه تغيير كلمة المرور', 'warn') : null, a && Number(a.active_sessions) ? DS.badge(fmtNum(Number(a.active_sessions)) + ' جلسة نشطة', 'info') : null, f.multi ? DS.badge('أدوار: ' + cfAcRoles(a).join('، '), 'warn') : null]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); });
