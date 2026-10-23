@@ -2064,10 +2064,19 @@ function gwView(g) {
     ['التسوية', DS.badge(g.settled ? 'تمت التسوية' : 'بانتظار التسوية', g.settled ? 'ok' : 'warn')]].filter(Boolean);
 }
 function trView(p) {
-  const a = acctOf(p.acct || 'main');
+  const lv = !!(p.c && p.c.live), a = lv ? null : acctOf(p.acct || 'main');
   return [['تاريخ التحويل', p.at ? isoT(p.at) : '—'], ['المبلغ المحوَّل', SR(p.paid)], ['رقم العملية البنكي', p.txn ? ltr(p.txn) : '—'],
-    ['الحساب المحوَّل إليه', a ? a[1] + ' · ' + a[2].slice(-4) : '—'], ['إيصال التحويل (مرفق العميل)', p.file ? e('button', { type: 'button', class: 'fx-link' }, ltr(p.file)) : '—'],
-    ['حالة المراجعة', DS.badge(p.admin || 'قيد المراجعة', p.admin === 'معتمد' ? 'ok' : 'warn')]];
+    lv ? null : ['الحساب المحوَّل إليه', a ? a[1] + ' · ' + a[2].slice(-4) : '—'], lv ? null : ['إيصال التحويل (مرفق العميل)', p.file ? e('button', { type: 'button', class: 'fx-link' }, ltr(p.file)) : '—'],
+    ['حالة المراجعة', DS.badge(p.admin || 'قيد المراجعة', p.admin === 'معتمد' ? 'ok' : 'warn')]].filter(Boolean);
+}
+/* v456: نسخة PDF من الإيصال (العميل لإيصاله · الموظف المخوّل لأي إيصال) */
+async function lvRcPdf(pid, adm) {
+  const w = window.open('', '_blank');
+  try {
+    const r = await fetch((adm ? '/admin/api/receipt/' : '/api/account/receipt/') + encodeURIComponent(pid), { headers: { Authorization: 'Bearer ' + tqToken() } });
+    if (!r.ok) throw new Error('rc');
+    const u = URL.createObjectURL(await r.blob()); if (w) w.location = u; else window.open(u, '_blank');
+  } catch (err) { if (w) w.close(); snack('تعذّر فتح الإيصال، حاول بعد قليل.'); }
 }
 function rcLink(p) { return p.rc ? e('button', { type: 'button', class: 'fx-link fx-rclink' + (p.rc.void ? ' is-void' : ''), onClick: function (ev) { ev.stopPropagation(); FX.pid = p.c.no + ':' + p.i; go('rcpt'); } }, [frag(ui('file-pdf', 14)), ltr(p.rc.file)]) : e('span', { class: 'fx-rcwait' }, 'يصدر بعد اعتماد التحويل'); }
 function gwRows(g) {
@@ -2860,7 +2869,10 @@ function thanksTemplates() {
 function rcptPage() {
   const p = payById(FX.pid); if (!p || !p.rc) return [DS.note('info', 'لا يوجد إيصال', 'يصدر إيصال السداد بعد نجاح الدفع أو اعتماد التحويل.')];
   const c = p.c, r = function (l, v) { return e('div', { class: 'fx-doc-r' }, [e('span', {}, l), e('b', {}, v)]); };
+  const rk = p.rc.kind || (isGw(p) ? 'gw' : 'tr');
   const method = isGw(p) ? [e('h3', {}, 'بيانات الدفع عبر بوابة الدفع')].concat(gwView(p.gw).map(function (x) { return r(x[0], x[1]); }))
+    : rk === 'gw' ? [e('h3', {}, 'بيانات الدفع الإلكتروني'), r('طريقة السداد', 'سداد إلكتروني'), r('رقم العملية', p.txn ? ltr(p.txn) : '—'), r('تاريخ السداد', p.at ? isoT(p.at) : '—'), r('المبلغ', SR(p.paid))]
+    : rk === 'cash' ? [e('h3', {}, 'بيانات السداد'), r('طريقة السداد', 'نقدًا'), r('تاريخ السداد', isoT(p.at || p.rc.at)), r('المبلغ', SR(p.paid))]
     : [e('h3', {}, 'بيانات التحويل البنكي')].concat(trView(p).map(function (x) { return r(x[0], x[1]); }));
   return [e('article', { class: 'fx-doc' }, [
     e('header', { class: 'fx-doc-h' }, [e('img', { src: IMG.logo, alt: 'تيرا', class: 'fx-doc-logo' }), e('div', {}, [e('h2', {}, 'إيصال سداد'), e('span', {}, 'Payment Receipt')]), e('div', { class: 'fx-doc-no' }, [e('small', {}, 'رقم الإيصال'), e('b', {}, ltr(p.rc.no)), e('small', {}, ['تاريخ الإصدار ', isoT(p.rc.at)])])]),
@@ -2869,7 +2881,8 @@ function rcptPage() {
     e('section', { class: 'fx-doc-s' }, [e('h3', {}, 'بيانات الدفعة'), r('العميل', ME.name), r('المنتج', c.product), r('رقم العقد', ltr(c.no)), r('رقم الدفعة', p.i + ' من ' + c.n), r('تاريخ الاستحقاق', isoT(p.due)), r('قيمة الدفعة', SR(p.amount)), r('المسدَّد', SR(opAmt(p))), r('المتبقي من الدفعة', SR(dueAmt(p)))]),
     e('section', { class: 'fx-doc-s' }, method),
     p.refund ? e('section', { class: 'fx-doc-s is-rf' }, [e('h3', {}, p.refund.kind === 'void' ? 'بيانات الإلغاء' : 'بيانات الاسترداد'), r('رقم إشعار الاسترداد', ltr(p.refund.no)), r('رقم عملية الاسترداد (Paymob)', ltr(p.refund.txn)), r('المبلغ المسترد', SR(p.refund.amount)), r('تاريخ الاسترداد', isoT(p.refund.at)), r('يُعاد إلى', p.gw && p.gw.last4 ? ['البطاقة نفسها ', ltr('•••• ' + p.gw.last4)] : 'وسيلة الدفع نفسها')]) : null,
-    e('footer', { class: 'fx-doc-f' }, ['صادر إلكترونيًا من منصة تيرا ولا يحتاج إلى توقيع. ', isGw(p) ? ['المرجع لدى بوابة الدفع: ', ltr(p.gw.ref)] : ['رقم العملية البنكي: ', ltr(p.txn || '—')]])]),
+    e('footer', { class: 'fx-doc-f' }, ['صادر إلكترونيًا من منصة تيرا ولا يحتاج إلى توقيع. ', isGw(p) ? ['المرجع لدى بوابة الدفع: ', ltr(p.gw.ref)] : rk === 'cash' ? ['رقم الإيصال: ', ltr(p.rc.no)] : [rk === 'gw' ? 'رقم العملية: ' : 'رقم العملية البنكي: ', ltr(p.txn || '—')]])]),
+    p.rc.live && p.pid ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تحميل الإيصال PDF', { tone: 'primary', ui: 'file-pdf', onClick: function () { lvRcPdf(p.pid, false); } }))]) : null,
     paidOnTime(p) ? thanksCard(p) : null,
     rcOpReq(p)];
 }
@@ -9506,8 +9519,8 @@ function dcPays(L) {
       if (left > 0) out.due.push({ x: x, c: c, p: p, left: left, d: d, k: d < 0 ? 'late' : d === 0 ? 'today' : d <= 7 ? 'in7' : d <= 30 ? 'in30' : 'later' });
       /* v452: كل جزء من الدفعة بطريقته — النقد المدفوع فعلًا (بوابة · تحويل · بلا طريقة)، ثم ما سُوّي دون نقد (توحيد · تأجيل · تسوية مبكرة · إعفاء · فرق تقريب) */
       const cash = p.deferTo ? (p.cash > 0 && p.cash < p.amount - 0.005 ? p.cash : 0) : Math.max(0, qr2(Math.min(p.paid, p.amount) - (p.round || 0)));
-      if (cash > 0) { const m = (p.deferTo ? p.cashM : p.method) || '', tx = p.deferTo ? p.cashTxn : p.txn, tr = /تحويل/.test(m), gw = !tr && (!!p.gw || m === 'سداد إلكتروني' || !!tx), k = gw ? 'gw' : tr ? 'tr' : 'oth';
-        out.rec.push({ x: x, c: c, p: p, amt: qr2(cash), at: p.at || p.due, k: k, cash: true, txn: tx || '', how: gw ? 'بوابة الدفع' : tr ? m : 'بلا طريقة مسجّلة', ref: gw ? 'رقم العملية ' + ((p.gw && p.gw.txn) || tx || '—') : tr ? (p.file ? 'إثبات التحويل مرفق' : 'بلا مرفق') : 'من النظام السابق' }); }
+      if (cash > 0) { const m = (p.deferTo ? p.cashM : p.method) || '', tx = p.deferTo ? p.cashTxn : p.txn, tr = /تحويل/.test(m), cs = m === 'نقدًا', gw = !tr && !cs && (!!p.gw || m === 'سداد إلكتروني' || !!tx), k = gw ? 'gw' : tr ? 'tr' : cs ? 'cash' : 'oth';
+        out.rec.push({ x: x, c: c, p: p, amt: qr2(cash), at: p.at || p.due, k: k, cash: true, txn: tx || '', how: gw ? 'بوابة الدفع' : tr ? m : cs ? 'نقدًا' : 'بلا طريقة مسجّلة', ref: gw ? 'رقم العملية ' + ((p.gw && p.gw.txn) || tx || '—') : tr ? (p.file ? 'إثبات التحويل مرفق' : 'بلا مرفق') : p.rc ? 'الإيصال ' + p.rc.no : '—' }); }
       if (p.deferTo) { const k = DC_SK[p.method] || 'defer';
         out.rec.push({ x: x, c: c, p: p, amt: qr2(p.amount - cash), at: p.at || p.due, k: k, how: DC_SKT[k], ref: p.settleNote || (k === 'merge' || k === 'defer' ? 'إلى العقد ' + p.deferTo : DC_SKT[k]), sreq: p.sreq || '' }); }
       if (p.round > 0) out.rec.push({ x: x, c: c, p: p, amt: qr2(p.round), at: p.at || p.due, k: 'round', how: 'فرق تقريب', ref: p.roundNote || 'فرق هللات سُجّل عند إغلاق العقد' });
@@ -9520,7 +9533,7 @@ const DC_SKT = { merge: 'توحيد العقود', defer: 'تأجيل دفعة',
 const DC_DUEF = [['late', 'المتأخرة', 'warning:gold'], ['today', 'مستحقة اليوم', 'alarm:saffron'], ['in7', 'خلال 7 أيام', 'calendar-blank:teal'], ['in30', 'خلال 30 يومًا', 'calendar-blank:navy'], ['all', 'كل القادمة', 'list:navy']];
 const dcDueFit = (r, f) => f === 'all' ? true : f === 'late' ? r.k === 'late' : f === 'today' ? r.k === 'today' : f === 'in7' ? (r.k === 'today' || r.k === 'in7') : (r.k === 'today' || r.k === 'in7' || r.k === 'in30');
 /* بطاقات المدفوعات: كل عملية مستقلة بسجلها — لا جمع بين الطرق */
-const DC_RECK = [['gw', 'السداد عبر بوابة الدفع', 'credit-card', 'رقم العملية والإيصال لكل دفعة'], ['tr', 'التحويل البنكي', 'bank', 'إثبات التحويل والاعتماد لكل دفعة'], ['merge', 'توحيد العقود', 'stack', 'الدفعات المنقولة إلى العقد الموحّد'], ['defer', 'تأجيل الدفعات', 'clock', 'الدفعات المؤجَّلة وعقود تأجيلها'], ['settle', 'التسوية المبكرة', 'handshake', 'دفعات سُوّيت ضمن تسوية مبكرة للعقد'], ['waive', 'إعفاء فرق دفعة', 'seal-check', 'فروق دفعات أُعفي منها العميل'], ['round', 'فرق تقريب', 'coins', 'فروق هللات سُجّلت عند إغلاق العقد'], ['oth', 'سداد بلا طريقة مسجّلة', 'receipt', 'دفعات مسدَّدة من النظام السابق دون تحديد الطريقة']];
+const DC_RECK = [['gw', 'السداد عبر بوابة الدفع', 'credit-card', 'رقم العملية والإيصال لكل دفعة'], ['tr', 'التحويل البنكي', 'bank', 'إثبات التحويل والاعتماد لكل دفعة'], ['cash', 'السداد النقدي', 'coins', 'دفعات قُبضت نقدًا بإيصالها'], ['merge', 'توحيد العقود', 'stack', 'الدفعات المنقولة إلى العقد الموحّد'], ['defer', 'تأجيل الدفعات', 'clock', 'الدفعات المؤجَّلة وعقود تأجيلها'], ['settle', 'التسوية المبكرة', 'handshake', 'دفعات سُوّيت ضمن تسوية مبكرة للعقد'], ['waive', 'إعفاء فرق دفعة', 'seal-check', 'فروق دفعات أُعفي منها العميل'], ['round', 'فرق تقريب', 'coins', 'فروق هللات سُجّلت عند إغلاق العقد'], ['oth', 'سداد بلا طريقة مسجّلة', 'receipt', 'دفعات مسدَّدة من النظام السابق دون تحديد الطريقة']];
 function dcRecOpen(k, A, who, cid) {
   if (LP['fin-rec-' + k]) { ADM['frC' + k] = cid || ''; ADM['frF' + k] = 'all'; go('other', 'fin-rec-' + k); return; }
   const K = DC_RECK.filter(function (x) { return x[0] === k; })[0], tot = qr2(A.reduce(function (a, r) { return a + r.amt; }, 0));
@@ -9616,12 +9629,13 @@ function finDueOpen(r) {
 /* سجل السداد — صفحة مستقلة لكل طريقة، صف لكل عملية، والتفاصيل في درج */
 const FIN_RK = { gw: { tt: 'السداد عبر بوابة الدفع', hint: 'دفعات سُدّدت إلكترونيًا عبر بوابة الدفع — رقم العملية لكل دفعة', ic: 'credit-card:teal', amt: 'المبلغ المسدَّد' },
   tr: { tt: 'التحويل البنكي', hint: 'دفعات سُدّدت بتحويل بنكي — إثبات التحويل واعتماده لكل دفعة', ic: 'bank:navy', amt: 'المبلغ المحوَّل' },
+  cash: { tt: 'السداد النقدي', hint: 'دفعات قُبضت نقدًا — رقم الإيصال لكل دفعة', ic: 'coins:teal', amt: 'المبلغ المقبوض' },
   merge: { tt: 'توحيد العقود', hint: 'دفعات نُقلت إلى عقد موحّد — بطلبها والإجراء الذي تم', ic: 'stack:gold', amt: 'المبلغ المنقول' },
   defer: { tt: 'تأجيل الدفعات', hint: 'دفعات أُجّلت إلى عقد تأجيل — بطلبها والإجراء الذي تم', ic: 'clock:sky', amt: 'المبلغ المؤجَّل' },
   settle: { tt: 'التسوية المبكرة', hint: 'دفعات سُوّيت ضمن تسوية مبكرة للعقد', ic: 'handshake:teal', amt: 'المبلغ المسوّى' },
   waive: { tt: 'إعفاء فرق دفعة', hint: 'فروق دفعات أُعفي منها العميل', ic: 'seal-check:teal', amt: 'المبلغ المُعفى' },
   round: { tt: 'فرق تقريب', hint: 'فروق هللات سُجّلت عند إغلاق العقد', ic: 'coins:gold', amt: 'فرق التقريب' },
-  oth: { tt: 'سداد بلا طريقة مسجّلة', hint: 'دفعات سُجّلت مسددة في النظام السابق دون تحديد طريقة السداد', ic: 'receipt:teal', amt: 'المبلغ المسدَّد' } };
+  oth: { tt: 'سداد بلا طريقة مسجّلة', hint: 'دفعات مسدّدة لم تُحدَّد طريقة سدادها', ic: 'receipt:teal', amt: 'المبلغ المسدَّد' } };
 const finSrq = (r) => r.sreq && typeof LV_SR !== 'undefined' ? LV_SR.all.filter(function (y) { return y.id === r.sreq; })[0] : null;
 /* v316: سجل السداد بسلوك واحد لكل الطرق — صف لكل عقد (وللتوحيد والتأجيل: صف لكل عقد أصلي وعقده الهدف)، وبداخله تفاصيل العقد ودفعاته */
 function finRecGroups(A, k) {
@@ -9665,7 +9679,8 @@ function finRecOpen(r) {
   let F = [['اسم العميل', r.x.name], [r.k === 'merge' || r.k === 'defer' ? 'العقد الأصلي' : 'العقد', ltr(r.c.no)], ['الدفعة', fmtNum(p.i) + ' من ' + fmtNum(r.c.n)], [K.amt, sar(r.amt)]];
   if (r.k === 'gw') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['رقم العملية', (p.gw && p.gw.txn) || p.txn ? ltr((p.gw && p.gw.txn) || p.txn) : '—'], ['الطريقة', 'بوابة الدفع — سداد إلكتروني']]);
   else if (r.k === 'tr') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['الطريقة', p.method || 'تحويل بنكي'], ['إثبات التحويل', p.file ? e('bdi', {}, p.file) : DS.badge('لا يوجد مرفق', 'warn')], ['الاعتماد', p.admin || '—']]);
-  else if (r.k === 'oth') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['الطريقة', 'غير مسجّلة — من النظام السابق']]);
+  else if (r.k === 'cash') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['الطريقة', 'نقدًا'], ['الإيصال', p.rc ? ltr(p.rc.no) : '—']]);
+  else if (r.k === 'oth') F = F.concat([['تاريخ السداد', bdiD(iso(r.at))], ['الطريقة', 'غير مسجّلة']]);
   else F = F.concat([['الإجراء', r.k === 'merge' ? 'توحيد العقود' : 'تأجيل دفعة'], [r.k === 'merge' ? 'العقد الموحّد' : 'عقد التأجيل', ltr(p.deferTo)], ['رقم الطلب', q ? ltr(q.req_no) : '—'], ['ما يظهر للعميل', p.settleNote || '—']]);
   const act = q && q.action_note ? cuSec('الإجراء الذي تم', 'check-circle', [DS.note('ok', 'تم الإجراء', lvBidi(q.action_note))]) : null;
   cuBdDraw({ key: 'frec:' + (p.pid || r.c.no + ':' + p.i), ic: K.ic, title: K.tt + ' · ' + r.x.name, sub: sar(r.amt) + ' · الدفعة ' + p.i + ' — ' + r.c.no, body: [cuSec('البيانات', 'file-text', [DS.fields(F)]), act],
@@ -9674,7 +9689,7 @@ function finRecOpen(r) {
       q ? liveOk(DS.button('فتح الطلب', { ui: 'clipboard-text', onClick: function () { admClose(); lvSrOpen(q.id); } })) : null, DS.button('إغلاق', { onClick: cuBdClose })])], onClose: function () { draw(); } });
 }
 function finRegister() {
-  try { Object.assign(ICON, { fin: ['wallet', 'gold'], 'fin-due': ['calendar-blank', 'saffron'], 'fin-rec': ['receipt', 'teal'], 'fin-rec-gw': ['credit-card', 'teal'], 'fin-rec-tr': ['bank', 'navy'], 'fin-rec-merge': ['stack', 'gold'], 'fin-rec-defer': ['clock', 'sky'], 'fin-rec-oth': ['receipt', 'teal'] }); } catch (err) { void err; }
+  try { Object.assign(ICON, { fin: ['wallet', 'gold'], 'fin-due': ['calendar-blank', 'saffron'], 'fin-rec': ['receipt', 'teal'], 'fin-rec-gw': ['credit-card', 'teal'], 'fin-rec-tr': ['bank', 'navy'], 'fin-rec-cash': ['coins', 'teal'], 'fin-rec-merge': ['stack', 'gold'], 'fin-rec-defer': ['clock', 'sky'], 'fin-rec-oth': ['receipt', 'teal'] }); } catch (err) { void err; }
   lp('fin', 'قسم المالية', null, 'fin', finHubPage);
   lp('fin-due', 'الدفعات المستحقة والقادمة', 'fin', 'fin-due', finDuePage);
   lp('fin-rec', 'سجل السداد', 'fin', 'fin-rec', finHubPage);
@@ -15989,7 +16004,7 @@ function admPfFilePage() {
     await Promise.all((LIVE_ADM.ct[id] || []).map(async function (c) { const qid = (((LIVE_ADM.rows || {})[c.no] || {}).r || {}).quotation_id; if (!qid) return;
       try { Q[c.no] = await admRpc('admin_quotation_detail', { p_id: qid }); } catch (err) { if (err && err.message === 'auth') throw err; } }));
     const TR = Array.isArray(X[2]) ? X[2] : [], GW = Array.isArray(X[3]) ? X[3] : [];
-    Object.keys(CF_TRP).forEach(function (k) { delete CF_TRP[k]; }); TR.forEach(function (t) { if (t.status === 'submitted' && t.payment_id) CF_TRP[t.payment_id] = t; });
+    Object.keys(CF_TRP).forEach(function (k) { delete CF_TRP[k]; }); CF_TRA.length = 0; TR.forEach(function (t) { CF_TRA.push(t); if (t.status === 'submitted' && t.payment_id) CF_TRP[t.payment_id] = t; });
     Object.keys(CF_GW).forEach(function (k) { delete CF_GW[k]; }); GW.forEach(function (t) { if (t.contract_id) (CF_GW[t.contract_id] || (CF_GW[t.contract_id] = [])).push(t); });
     const pno = (j.profile || {}).no || '';
     return { P: j.profile || {}, V: V, Q: Q, EV: Array.isArray(X[0]) ? X[0] : [], PL: Array.isArray(X[1]) ? X[1] : [], TR: TR, GW: GW,
@@ -16040,7 +16055,7 @@ function admPfFilePage() {
    وقرار طلبات العميل (svc_service_request_decide)، وتعديل السند، والمصاريف الخاصة بالعقد. */
 const CF_PILOT = { 'b080b2b4-0671-4e5d-861c-90db26758df5': 1 };
 const CF_ST = {};
-const CF_TRP = {}, CF_GW = {}, LV_PAY = { at: 0, busy: null, TR: [], GW: [] };
+const CF_TRA = [], CF_TRP = {}, CF_GW = {}, LV_PAY = { at: 0, busy: null, TR: [], GW: [] };
 const CF_TYPE = { new: ['عقد جديد', 'info'], defer: ['عقد تأجيل', 'warn'], merge: ['عقد توحيد', 'part'] };
 const CF_CLOSE = { done: 'اكتمل السداد', settled: 'تسوية مبكرة', cancel: 'إلغاء باتفاق الطرفين', other: 'سبب آخر' };
 const CF_PAYT = { 'توحيد': 'مسدَّدة بالتوحيد', 'تأجيل': 'مسدَّدة بالتأجيل', 'تسوية مبكرة': 'مسدَّدة بالتسوية المبكرة', 'إعفاء': 'معفاة' };
@@ -16100,17 +16115,44 @@ function cfSchedP(c) {
   const head = e('div', { class: 'tl-h cf-tl' }, [e('div', { class: 'tl-h-t' }, [e('b', {}, [ltr(String(done)), ' من ', ltr(String(c.n)), ' دفعات مسدَّدة']), e('span', {}, ['قيمة الدفعة ', SR(c.amount)])]),
     e('div', { class: 'tl-bar', role: 'img', 'aria-label': done + ' من ' + c.n }, c.payments.map(function (p) { return e('i', { class: 'is-' + ST(p)[0] }); })),
     e('div', { class: 'tl-leg' }, PAY_LEG.filter(function (l) { return cnt[l[0]]; }).map(function (l) { return e('span', { class: 'is-' + l[0] }, [e('i', {}), l[0] === 'def' ? 'مسدَّدة بالتأجيل أو التسوية' : l[1], e('b', {}, ltr(String(cnt[l[0]])))]); }))]);
-  const cols = ['الدفعة', 'القيمة', 'الحالة', 'المسدَّد', 'الطريقة', 'الإثبات'];
+  const cols = ['الدفعة', 'القيمة', 'الحالة', 'المسدَّد', 'الطريقة', 'الإيصال والإثبات'];
   const rows = c.payments.map(function (p) {
     const k = ST(p), lbl = p.deferTo ? (CF_PAYT[p.method] || k[1]) : k[1];
+    const rcB = p.rc && p.rc.live ? liveOk(DS.button(p.rc.no, { size: 'sm', ui: 'file-text', onClick: function () { cfRcOpen(p, c); } })) : null;
     const tw = CF_TRP[p.pid];
     const cells = [[e('b', {}, String(p.i)), e('small', { class: 'cf-sub' }, isoT(p.due))], SR(p.amount), [DS.badge(lbl, p.deferTo ? 'info' : k[3]), tw ? e('small', { class: 'cf-sub' }, ['تحويل ', SR(Number(tw.amount) || 0), ' بانتظار الاعتماد']) : null],
       p.deferTo ? [p.method === 'إعفاء' ? SR(p.paid || 0) : SR(p.amount), e('small', { class: 'cf-sub' }, p.at ? isoT(p.at) : '')] : p.paid > 0 ? [SR(p.paid), p.at ? e('small', { class: 'cf-sub' }, isoT(p.at)) : null, p.round ? e('small', { class: 'cf-sub' }, 'منها فرق تقريب ' + SR(p.round)) : null] : '—',
       p.deferTo ? e('span', { class: 'cf-why' }, lvBidi(p.settleNote || p.method)) : p.txn ? [p.method || 'سداد إلكتروني', e('small', { class: 'cf-sub' }, ltr(p.txn))] : (p.method || '—'),
-      p.fid ? liveOk(DS.button('فتح', { size: 'sm', ui: 'file-pdf', onClick: function () { liveOpenCtFile(p.fid, true); } })) : p.deferTo && p.method !== 'إعفاء' && p.deferTo !== c.no ? e('b', { class: 'cu-nw' }, ltr(p.deferTo)) : '—'];
+      [rcB, p.fid ? liveOk(DS.button('الإثبات', { size: 'sm', ui: 'file-pdf', onClick: function () { liveOpenCtFile(p.fid, true); } })) : p.deferTo && p.method !== 'إعفاء' && p.deferTo !== c.no ? e('b', { class: 'cu-nw' }, ltr(p.deferTo)) : rcB ? null : '—'].filter(Boolean)];
     return e('tr', { class: 'is-' + (p.deferTo ? 'deferred' : payState(p).k) }, cells.map(function (v, j) { return e('td', { 'data-l': cols[j] }, v); }));
   });
   return [head, e('div', { class: 'fx-table-w' }, e('table', { class: 'fx-table cf-tb' }, [e('thead', {}, e('tr', {}, cols.map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, rows)]))];
+}
+
+/* v456: الإيصال في ملف العميل — بيانات شاملة للإدارة حسب القالب: البوابة (الموافقة · RRN · استجابة البنك · 3-D Secure · التكامل · المسترد)،
+   والتحويل (رقم العملية البنكي · الآيبان المحوَّل منه · الحساب المحوَّل إليه · ملاحظة المراجعة · الإثبات)، والنقد */
+function cfRcOpen(p, c) {
+  const rc = p.rc, k = rc.kind || 'tr', KL = { gw: 'سداد إلكتروني', tr: 'تحويل بنكي', cash: 'نقدًا' };
+  const G = [].concat.apply([], Object.keys(CF_GW).map(function (x) { return CF_GW[x]; }));
+  const t = G.filter(function (x) { return !x.parent_trx && x.status === 'success' && ((p.pid && x.payment_id === p.pid) || (p.trxs || []).indexOf(String(x.trx)) >= 0); })[0] || null;
+  const tr = CF_TRA.filter(function (x) { return x.payment_id === p.pid && x.status === 'approved'; })[0] || null, d = (t && t.details) || {};
+  const amt = p.deferTo ? (p.cash || p.paid) : p.paid;
+  const main = cuSec('بيانات الإيصال', 'receipt', [DS.fields([['رقم الإيصال', ltr(rc.no)], ['تاريخ الإصدار', isoT(rc.at)], ['العقد', ltr(c.no)], ['الدفعة', p.i + ' من ' + c.n], ['قيمة الدفعة', SR(p.amount)],
+    ['المبلغ المقبوض', SR(amt)], ['تاريخ السداد', p.at ? isoT(p.at) : '—'], ['القالب', KL[k] || k], ['حالة الإيصال', rc.void ? 'ملغى بالاسترداد' : 'ساري']])]);
+  const gw = t ? cuSec('بيانات العملية لدى مزود الدفع', 'shield', [DS.fields([['رقم العملية', ltr(String(t.trx))], ['رقم الطلب لدى المزود', ltr(t.gateway_order ? String(t.gateway_order) : '—')], ['المرجع (تيرا)', ltr(d.ref || '—')],
+      ['مبلغ العملية', admMoney(t.amount)], ['وقت العملية', t.txn_at ? bdiD(String(t.txn_at).slice(0, 16).replace('T', ' ')) : '—'], ['الشبكة', ltr(d.brand || '—')], ['البطاقة', t.card_last4 ? ltr('•••• ' + t.card_last4) : '—'],
+      ['استجابة البنك', ltr([d.code, d.message].filter(Boolean).join(' — ') || '—')], ['رمز الموافقة', ltr(d.auth || '—')], ['الرقم المرجعي (RRN)', ltr(d.rrn || '—')], ['3-D Secure', d.secure3d === true ? 'تم' : d.secure3d === false ? 'لا' : '—'],
+      ['التكامل', ltr(d.integration ? String(d.integration) : '—')], Number(t.refunded_amount) > 0 ? ['المسترد', admMoney(t.refunded_amount)] : null].filter(Boolean))])
+    : k === 'gw' ? cuSec('بيانات الدفع الإلكتروني', 'shield', [DS.fields([['رقم العملية', ltr(p.txn || '—')]]), DS.note('info', 'بلا تفاصيل من البوابة', 'لم تُحفظ تفاصيل هذه العملية لدى بوابة الدفع في المنصة.')]) : null;
+  const trS = k === 'tr' ? cuSec('بيانات التحويل البنكي', 'bank', [DS.fields(tr ? [['رقم العملية البنكي', ltr(tr.bank_ref || '—')], ['تاريخ التحويل', bdiD(String(tr.transfer_date || ''))], ['المبلغ المحوَّل', admMoney(tr.amount)],
+      ['من آيبان', ltr(tr.from_iban || '—')], ['إلى الحساب', ltr(tr.to_account || '—')], ['ملاحظة المراجعة', tr.review_note || '—']]
+    : [['الطريقة', p.method || 'تحويل بنكي'], ['رقم العملية البنكي', ltr(p.txn || '—')], ['الإثبات', p.fid ? 'مرفق' : 'بلا مرفق']])]) : null;
+  const cashS = k === 'cash' ? cuSec('بيانات السداد النقدي', 'coins', [DS.fields([['الطريقة', 'نقدًا'], ['تاريخ القبض', p.at ? isoT(p.at) : isoT(rc.at)], ['المبلغ', SR(amt)]])]) : null;
+  cuDrawer({ key: 'rc:' + rc.no, ic: 'receipt:teal', title: 'الإيصال ' + rc.no, sub: c.no + ' · الدفعة ' + p.i, body: [
+    e('div', { class: 'cu-dr-st' }, [DS.badge(KL[k] || k, 'info'), DS.badge(rc.void ? 'ملغى' : 'ساري', rc.void ? null : 'ok')]),
+    e('div', { class: 'cu-secs' }, [main, gw, trS, cashS].filter(Boolean)),
+    e('small', { class: 'cu-dr-hint' }, 'العميل يرى في إيصاله بيانات السداد الأساسية فقط، وهذه البيانات الشاملة للإدارة.')],
+    foot: [liveOk(DS.button('تحميل PDF', { tone: 'primary', ui: 'file-pdf', onClick: function () { lvRcPdf(p.pid, true); } })), p.fid ? liveOk(DS.button('الإثبات', { ui: 'files', onClick: function () { liveOpenCtFile(p.fid, true); } })) : null] });
 }
 
 /* الرسوم والمصاريف: بنود العقد وضرائبه، والعمولات، والمصاريف الخاصة بالعقد تُضاف هنا */
@@ -16788,7 +16830,7 @@ function liveWipe() {
   try { CU_NOTES.length = 0; } catch (err) { void err; }
   try { LVS.mail = true; LVS.app = false; LVS.wa = ''; } catch (err) { void err; } /* التحقق بالبريد مفروض عند كل دخول للمنصة */
 }
-const LIVE_PM = { paymob: 'سداد إلكتروني', bank_transfer: 'تحويل بنكي', mixed: 'تحويل بنكي وسداد إلكتروني' };
+const LIVE_PM = { paymob: 'سداد إلكتروني', bank_transfer: 'تحويل بنكي', mixed: 'تحويل بنكي وسداد إلكتروني', cash: 'نقدًا' };
 function liveContract(r) {
   const no = r.contract_no || r.legacy_no || '—';
   const c = { no: no, product: r.card_qty ? 'بطاقات مسبقة الدفع × ' + r.card_qty : 'عقد ' + no, icon: 'contract', req: parseIso(r.order_date) || T0, amount: 0, n: 0, from: '', quote: '', payments: [], legacy: r.legacy_no || '', live: true, rid: r.id };
@@ -16801,7 +16843,10 @@ function liveContract(r) {
     /* تسوية بالتوحيد أو التأجيل (stf_23): الدفعة انتقلت إلى عقد آخر — بدل إثبات السداد يظهر نص التسوية، ولا إيصال سداد لها */
     if (p.settle_kind === 'round') { q.round = qr2(amt - paid); q.paid = amt; q.roundNote = p.settle_note || ''; }
     if (p.settle_kind && p.settle_ref && p.settle_kind !== 'round') { q.cash = paid; q.cashM = q.method; q.cashTxn = q.txn; q.deferTo = p.settle_ref; q.method = p.settle_kind === 'merge' ? 'توحيد' : p.settle_kind === 'settle' ? 'تسوية مبكرة' : p.settle_kind === 'waive' ? 'إعفاء' : 'تأجيل'; q.settleNote = p.settle_note || ''; q.sreq = p.settle_request || ''; q.file = ''; q.fid = ''; if (p.settle_kind === 'merge') c.mergedTo = p.settle_ref; }
-    else if (paid > 0) q.rc = { no: 'RC-' + String(q.at.getFullYear()).slice(-2) + '-' + String(p.id || '').replace(/[^0-9a-f]/gi, '').slice(0, 8).toUpperCase(), file: 'receipt-' + no + '-' + (p.seq || i + 1) + '.pdf', at: q.at, void: false };
+    else if (paid > 0 && !('receipt_no' in p)) q.rc = { no: 'RC-' + String(q.at.getFullYear()).slice(-2) + '-' + String(p.id || '').replace(/[^0-9a-f]/gi, '').slice(0, 8).toUpperCase(), file: 'receipt-' + no + '-' + (p.seq || i + 1) + '.pdf', at: q.at, void: false };
+    /* v456: الإيصال برقمه الثابت من المنصة (stf_66) — يصدر لكل مبلغ مقبوض بعد اعتماده، وقالبه من طريقة السداد (بوابة · تحويل · نقدًا) */
+    /* المسوّاة بالتوحيد أو التأجيل أو التسوية لا إيصال لها إلا لجزء نقدي قُبض قبلها */
+    if (p.receipt_no && paid > 0 && !(q.deferTo && !(paid < amt - 0.005))) q.rc = { no: p.receipt_no, file: p.receipt_no + '.pdf', at: parseIso(p.receipt_at) || q.at || due, void: false, kind: p.receipt_kind || 'tr', live: true };
   });
   c.n = c.payments.length; c.amount = c.n ? c.payments[0].amount : 0; c.start = c.n ? c.payments[0].due : c.req;
   return c;
@@ -21676,10 +21721,10 @@ if (LIVE.on) {
 /* ===== v452: «سجل المدفوعات» واحد للاطلاع — كل عملية مرة واحدة بطريقتها وحالتها (بوابة · تحويل بنكي · توحيد · تأجيل · تسوية مبكرة · إعفاء · فرق تقريب)،
    و«عمليات بوابة الدفع» تقرير واحد، والاستحقاق بلا أدراج. الاعتماد والرفض والاسترداد وروابط الدفع من ملف العميل وصندوق «إيصالات التحويل البنكي». ===== */
 if (LIVE.on) {
-  const FP_K = [['gw', 'بوابة الدفع', 'credit-card:teal', 'المبلغ المسدَّد'], ['tr', 'تحويل بنكي', 'bank:navy', 'المبلغ المحوَّل'], ['merge', 'توحيد العقود', 'stack:gold', 'المبلغ المنقول'], ['defer', 'تأجيل دفعة', 'clock:sky', 'المبلغ المؤجَّل'],
+  const FP_K = [['gw', 'بوابة الدفع', 'credit-card:teal', 'المبلغ المسدَّد'], ['tr', 'تحويل بنكي', 'bank:navy', 'المبلغ المحوَّل'], ['cash', 'نقدًا', 'coins:teal', 'المبلغ المقبوض'], ['merge', 'توحيد العقود', 'stack:gold', 'المبلغ المنقول'], ['defer', 'تأجيل دفعة', 'clock:sky', 'المبلغ المؤجَّل'],
     ['settle', 'تسوية مبكرة', 'handshake:teal', 'المبلغ المسوّى'], ['waive', 'إعفاء فرق دفعة', 'seal-check:teal', 'المبلغ المُعفى'], ['round', 'فرق تقريب', 'coins:gold', 'فرق التقريب'], ['oth', 'بلا طريقة مسجّلة', 'receipt:navy', 'المبلغ المسدَّد']];
   const FP_KM = {}; FP_K.forEach(function (x) { FP_KM[x[0]] = x; });
-  const FP_CASH = { gw: 1, tr: 1, oth: 1 };
+  const FP_CASH = { gw: 1, tr: 1, cash: 1, oth: 1 };
   const FP_ST = [['all', 'كل الحالات', 'list:navy'], ['ok', 'معتمدة', 'check-circle:teal'], ['pend', 'بانتظار الاعتماد', 'hourglass-medium:saffron'], ['rej', 'مرفوضة', 'x-circle:gold'], ['rf', 'مستردة', 'arrows-clockwise:gold']];
   const fpSt = function (o) { return o.st === 'pend' ? ['بانتظار الاعتماد', 'warn'] : o.st === 'rej' ? ['مرفوض', 'danger'] : o.rf > 0 ? [o.rf >= o.amt - 0.005 ? 'مسترد كاملًا' : 'مسترد جزئيًا', 'warn'] : FP_CASH[o.k] ? ['معتمد', 'ok'] : ['مسوّاة دون نقد', 'info']; };
   const fpFitS = function (o, k) { return k === 'all' || (k === 'rf' ? o.rf > 0 : k === 'ok' ? o.st === 'ok' : o.st === k); };
@@ -21713,7 +21758,7 @@ if (LIVE.on) {
     if (q) F.push(['الطلب', ltr(q.req_no)], o.k === 'settle' && q.amount ? ['مبلغ التسوية', SR(Number(q.amount) || 0)] : null, q.action_note ? ['الإجراء الذي تم', e('span', {}, lvBidi(q.action_note))] : null);
     else if (p0.settleNote && (o.k === 'settle' || o.k === 'waive')) F.push([o.k === 'waive' ? 'السبب' : 'الملاحظة', e('span', {}, lvBidi(p0.settleNote))]);
     if (o.k === 'round') F.push(['الملاحظة', p0.roundNote || 'فرق هللات سُجّل عند إغلاق العقد']);
-    if (o.k === 'oth') F.push(['الطريقة', 'غير مسجّلة — من النظام السابق']);
+    if (o.k === 'oth') F.push(['الطريقة', 'غير مسجّلة']);
     const body = [DS.fields(F.filter(Boolean)), o.k === 'tr' && (t || p0.fid) ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(o.st === 'ok' && p0.fid ? 'إيصال التحويل' : 'فتح الإيصال', { size: 'sm', ui: 'file-pdf', onClick: function () { if (o.st === 'ok' && p0.fid) liveOpenCtFile(p0.fid, true); else cfTrFile(t.id); } }))]) : null,
       o.st === 'pend' ? e('small', { class: 'cu-dr-hint' }, 'يُعتمد أو يُرفض من ملف العميل (جدول سداد العقد) أو من «إيصالات التحويل البنكي» في قسم العملاء، ثم يظهر هنا بحالته.') : null];
     return lvSec(K[1] + ' — ' + o.no + (pays.length === 1 ? ' · الدفعة ' + pays[0] : pays.length > 1 ? ' · ' + fmtNum(pays.length) + ' دفعات' : o.seq ? ' · الدفعة ' + o.seq : ''), SR(o.amt) + ' · ' + s[0], body, 'fp:' + o.key);
