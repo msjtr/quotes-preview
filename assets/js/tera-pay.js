@@ -64,6 +64,30 @@
     var rfu = document.referrer ? new URL(document.referrer) : null;
     if (rfu && rfu.origin === location.origin && !/^\/api\/pay\//.test(rfu.pathname)) sessionStorage.setItem('tera.pay.from', rfu.pathname + rfu.search + rfu.hash);
   } catch (e) { void e; }
+  /* v473: إرشاد فتح الرابط من داخل واتساب — من رابط واتساب (?src=wa) أو متصفح داخل تطبيق */
+  (function () {
+    var wa = document.getElementById('tp-wa'); if (!wa || D.done) return;
+    var ua = navigator.userAgent || '', q = new URLSearchParams(location.search);
+    var inApp = q.get('src') === 'wa' || /WhatsApp|FBAN|FBAV|Instagram|Snapchat|Line\/|; wv\)/i.test(ua);
+    if (!inApp) return;
+    var u = new URL(location.href); u.searchParams.delete('src'); var url = u.href;
+    var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), android = /Android/i.test(ua);
+    wa.querySelectorAll('[data-open]').forEach(function (a) {
+      var k = a.getAttribute('data-open');
+      if ((k === 'safari' && android) || (k === 'chrome' && ios)) { a.hidden = true; return; }
+      a.href = k === 'safari' ? 'x-safari-' + url : 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    });
+    var go = wa.querySelector('.tp-wa-go'); if (go && go.querySelectorAll('[data-open]:not([hidden])').length === 1) go.classList.add('is-one');
+    var uEl = wa.querySelector('[data-url]'); if (uEl) uEl.textContent = url;
+    var cb = wa.querySelector('[data-copy]');
+    if (cb) cb.addEventListener('click', function () {
+      var done = function (ok) { cb.textContent = ok ? 'تم النسخ ✓' : 'انسخ الرابط يدويًا'; cb.classList.toggle('is-ok', !!ok); setTimeout(function () { cb.textContent = 'نسخ الرابط'; cb.classList.remove('is-ok'); }, 2400); };
+      var fb = function () { try { var t = document.createElement('textarea'); t.value = url; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:-1000px;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, url.length); var ok = document.execCommand('copy'); t.remove(); return ok; } catch (e) { return false; } };
+      try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(fb()); }); return; } } catch (e) { void e; }
+      done(fb());
+    });
+    wa.hidden = false;
+  })();
   var box = document.getElementById('tp-pixel');
   if (!box) return;
   var payBtn = document.getElementById('tp-pay'), err = document.getElementById('tp-err'), alt = document.getElementById('tp-alt');

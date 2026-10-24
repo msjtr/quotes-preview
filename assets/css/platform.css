@@ -8990,3 +8990,28 @@ html.cpv-on .t2-head{top:48px}
 .fx-net:hover{transform:translateY(-1px)}
 .fx-net.is-on{border-color:#C9A24A;box-shadow:0 0 0 3px rgba(201,162,74,.28)}
 .t2.is-dark .fx-net{background:#fff}
+.fx-safari{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:10px 16px;border-radius:12px;background:#0A84FF;color:#fff!important;font-weight:700;text-decoration:none}
+/* v473: إرشاد Apple Pay — بطاقة بارزة بإطار ذهبي فيروزي (لوحة التصميم المعتمدة) */
+.fx-apg{margin-top:18px;border-radius:22px;padding:2px;background:linear-gradient(135deg,#F1D894,#C9A24A 45%,#19C2AE)}
+.fx-apg-in{border-radius:20px;background:#0E1B40;color:#E9EEF7;padding:22px 18px;display:flex;flex-direction:column;gap:18px;line-height:1.7}
+.fx-apg-h{display:flex;align-items:center;gap:14px}
+.fx-apg-h b{display:block;font-size:17px;color:#fff;line-height:1.5}
+.fx-apg-h small{display:block;font-size:13.5px;color:#C9D4E8;line-height:1.6}
+.fx-apg-ic{display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:16px;background:#fff}
+.fx-apg-ic img{width:32px;height:32px;object-fit:contain;display:block}
+.fx-apg-ic.is-ap img{width:40px;height:auto}
+.fx-apg-ic.is-sm{width:40px;height:40px;border-radius:12px}.fx-apg-ic.is-sm img{width:26px;height:26px}
+.fx-apg-s{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+.fx-apg-s li{display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.8}
+.fx-apg-n{flex:none;display:grid;place-items:center;width:26px;height:26px;margin-top:1px;border-radius:50%;background:#C9A24A;color:#1A1205;font-weight:800;font-size:13px}
+.fx-apg-go{display:flex;align-items:center;justify-content:center;gap:12px;min-height:56px;padding:0 16px;border:0;border-radius:16px;color:#fff!important;font-weight:700;font-size:17px;text-decoration:none;cursor:pointer;font-family:inherit}
+.fx-apg-go.is-safari{background:#0A84FF}.fx-apg-go.is-card{background:#0A7F8C;width:100%}
+.fx-apg-gi{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#fff}.fx-apg-gi img{width:22px;height:22px;display:block}
+.fx-apg-ml{display:flex;gap:6px}.fx-apg-ml i{display:grid;place-items:center;height:28px;padding:0 6px;border-radius:7px;background:#fff}.fx-apg-ml img{height:14px;width:auto;display:block}
+.fx-apg-or{display:flex;align-items:center;gap:10px;color:#8EA0BF;font-size:13px;line-height:1.6}.fx-apg-or i{flex:1;height:1px;background:rgba(255,255,255,.12)}
+.fx-apg-box{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:16px;background:#13245A;font-size:14.5px;line-height:1.8}
+.fx-apg-r{display:flex;align-items:center;gap:12px}
+.fx-cpy{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:#FBF8F1;border:1.5px dashed #C9A24A}
+.fx-cpy-u{font-size:13px;line-height:1.6;color:#0B2552;font-family:ui-monospace,Menlo,monospace;text-align:left;word-break:break-all}
+.fx-cpy-b{min-height:46px;border:0;border-radius:12px;background:#0B2552;color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.fx-cpy-b.is-ok{background:#0E7C70}

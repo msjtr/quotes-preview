@@ -328,3 +328,27 @@ html,body.tp{overflow-x:hidden}
 .tp-lite-ap[hidden]{display:none}
 .tp-lite-ap .tp-or{font-size:12px;color:#6B6B6B}
 .tp-lite-ap small{font-size:12px;color:#6B6B6B}
+
+/* v473: إرشاد «عزيزي العميل» عند فتح رابط الدفع من داخل واتساب */
+.tp-wa{margin:0 0 20px;border-radius:22px;padding:2px;background:linear-gradient(135deg,#F1D894,#C9A24A 50%,#25D366);box-shadow:0 18px 34px -18px rgba(11,37,82,.55)}
+.tp-wa[hidden]{display:none}
+.tp-wa-in{border-radius:20px;background:#fff;padding:22px 18px;display:flex;flex-direction:column;gap:16px;line-height:1.7;color:#0B1B3A}
+.tp-wa-h{display:flex;align-items:center;gap:14px}
+.tp-wa-h b{display:block;font-size:18px;color:#0B2552;line-height:1.5}
+.tp-wa-h small{display:block;font-size:13.5px;color:#3D4B63;line-height:1.6}
+.tp-wa-ic{display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:16px;background:#E9FBF0}
+.tp-wa-ic img{width:30px;height:30px;display:block}
+.tp-wa-p{margin:0;font-size:15px;line-height:1.9;color:#24384C}.tp-wa-p b{color:#0B2552}
+.tp-wa-go{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.tp-wa-go.is-one{grid-template-columns:1fr}
+.tp-wa-b{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:96px;padding:12px 8px;border-radius:16px;background:#F1F6FF;border:1.5px solid #CFE0FF;color:#0B2552!important;text-decoration:none;text-align:center}
+.tp-wa-b[hidden]{display:none}
+.tp-wa-b img{width:34px;height:34px;display:block}
+.tp-wa-b span{font-weight:700;font-size:14.5px;line-height:1.5}
+.tp-wa-b small{font-size:12px;color:#5E6B7C;line-height:1.4}
+.tp-wa-s{margin:0;padding:16px;list-style:none;display:flex;flex-direction:column;gap:12px;border-radius:16px;background:#F4F7FB}
+.tp-wa-s li{display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.8}
+.tp-wa-s i{flex:none;display:grid;place-items:center;width:26px;height:26px;margin-top:1px;border-radius:50%;background:#0B2552;color:#fff;font-style:normal;font-weight:800;font-size:13px}
+.tp-cpy{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:#FBF8F1;border:1.5px dashed #C9A24A}
+.tp-cpy-u{font-size:13px;line-height:1.6;color:#0B2552;font-family:ui-monospace,Menlo,monospace;text-align:left;word-break:break-all}
+.tp-cpy-b{min-height:46px;border:0;border-radius:12px;background:#0B2552;color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.tp-cpy-b.is-ok{background:#0E7C70}

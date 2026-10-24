@@ -2254,6 +2254,41 @@ function groupedPays(pays, pick) {
 /* لا تُحفظ بطاقات ولا خصم تلقائي — قرار المنصة */
 const FX_CARDS = [];
 const PAY_M_ = [['mada', 'بطاقة مدى', 'مدى'], ['visa', 'بطاقة فيزا', 'Visa'], ['mc', 'بطاقة ماستركارد', 'Mastercard'], ['apple', 'Apple Pay', 'Apple Pay'], ['google', 'Google Pay', 'Google Pay'], ['bank', 'تحويل بنكي', null]];
+/* v473: Apple Pay يعمل على أجهزة Apple (Safari) — على غيرها لا يُختار */
+/* v473: إرشاد Apple Pay — آيفون من متصفح آخر: «افتح في Safari» ونسخ الرابط · غير أجهزة Apple: الدفع بالبطاقة، ونسخ الرابط لفتحه على آيفون */
+const PAYB = '/assets/brand/pay/';
+function copyText(t, btn, label) {
+  const done = function (ok) { if (!btn) return; btn.textContent = ok ? 'تم النسخ ✓' : 'انسخ الرابط يدويًا'; btn.classList.toggle('is-ok', !!ok); setTimeout(function () { btn.textContent = label; btn.classList.remove('is-ok'); }, 2400); };
+  try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(function () { done(true); }, function () { done(fallback()); }); return; } } catch (err) { void err; }
+  done(fallback());
+  function fallback() { try { const a = document.createElement('textarea'); a.value = t; a.setAttribute('readonly', ''); a.style.cssText = 'position:fixed;top:-1000px;opacity:0'; document.body.appendChild(a); a.select(); a.setSelectionRange(0, t.length); const ok = document.execCommand('copy'); a.remove(); return ok; } catch (err) { return false; } }
+}
+function copyBox(url) {
+  const b = liveOk(e('button', { type: 'button', class: 'fx-cpy-b' }, 'نسخ الرابط'));
+  b.addEventListener('click', function () { copyText(url, b, 'نسخ الرابط'); });
+  return e('div', { class: 'fx-cpy' }, [e('span', { class: 'fx-cpy-u', dir: 'ltr' }, url), b]);
+}
+function apGuide() {
+  const url = location.href, ios = apIOS();
+  const step = function (n, t) { return e('li', {}, [e('span', { class: 'fx-apg-n' }, String(n)), e('span', {}, t)]); };
+  const ic = function (src, cls) { return e('span', { class: 'fx-apg-ic' + (cls ? ' ' + cls : '') }, e('img', { src: src, alt: '' })); };
+  const or = function (t) { return e('div', { class: 'fx-apg-or' }, [e('i'), e('span', {}, t), e('i')]); };
+  const body = ios ? [
+    e('div', { class: 'fx-apg-h' }, [ic(PAYB + 'safari.svg'), e('div', {}, [e('b', {}, 'Apple Pay يعمل من متصفح Safari'), e('small', {}, 'أنت الآن في متصفح آخر على آيفون')])]),
+    e('ol', { class: 'fx-apg-s' }, [step(1, 'اضغط «افتح في Safari» — تُفتح صفحة الدفع نفسها هناك.'), step(2, 'سجّل دخولك إن طُلب منك.'), step(3, 'اختر Apple Pay وأكّد الدفع بالوجه أو البصمة.')]),
+    liveOk(e('a', { class: 'fx-apg-go is-safari', href: 'x-safari-' + url, rel: 'noopener' }, [e('span', { class: 'fx-apg-gi' }, e('img', { src: PAYB + 'safari.svg', alt: '' })), 'افتح في Safari'])),
+    or('أو انسخ الرابط والصقه في Safari'), copyBox(url)
+  ] : [
+    e('div', { class: 'fx-apg-h' }, [ic(LOGOS['Apple Pay'] || (PAYB + 'applepay-b.png'), 'is-ap'), e('div', {}, [e('b', {}, 'Apple Pay لأجهزة Apple فقط'), e('small', {}, 'جهازك لا يدعم Apple Pay ولا متصفح Safari')])]),
+    e('div', { class: 'fx-apg-box' }, [e('span', {}, 'ادفع الآن من جهازك ببطاقة مدى أو فيزا أو ماستركارد:'),
+      liveOk(e('button', { type: 'button', class: 'fx-apg-go is-card', onClick: function () { FX.net = ''; FX.apNo = false; draw(); } }, [e('span', { class: 'fx-apg-ml' }, ['مدى', 'Visa', 'Mastercard'].filter(function (k) { return LOGOS[k]; }).map(function (k) { return e('i', {}, e('img', { src: LOGOS[k], alt: '' })); })), 'ادفع بالبطاقة الآن']))]),
+    or('أو'),
+    e('div', { class: 'fx-apg-box' }, [e('div', { class: 'fx-apg-r' }, [ic(PAYB + 'safari.svg', 'is-sm'), e('span', {}, 'عندك آيفون؟ انسخ الرابط وافتحه فيه بـ Safari لتدفع بـ Apple Pay.')]), copyBox(url)])
+  ];
+  return e('section', { class: 'fx-apg', role: 'region', 'aria-label': 'إرشاد الدفع بـ Apple Pay' }, e('div', { class: 'fx-apg-in' }, body));
+}
+const apIOS = () => { try { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); } catch (err) { return false; } };
+const apOk = () => { try { return !!(window.ApplePaySession && ApplePaySession.canMakePayments && ApplePaySession.canMakePayments()); } catch (err) { return false; } };
 const PAY_NETS = [['mada', 'مدى', 'مدى'], ['visa', 'Visa', 'فيزا'], ['mc', 'Mastercard', 'ماستركارد'], ['apple', 'Apple Pay', 'Apple Pay']];
 const payM = () => PAY_M_.map(function (m) { return [m[0], m[1], m[2] && LOGOS[m[2]] ? LOGOS[m[2]] : (m[0] === 'bank' ? 'bank' : 'card')]; });
 const PROVIDER = 'Paymob';
@@ -2467,7 +2502,10 @@ function paynowPage() {
   /* v472: شعارات الشبكات تحت «بوابة الدفع» — اختيار شكلي يطمئن العميل (لا يغيّر السجل؛ الشبكة الفعلية من Paymob)، ويظهر في ملخص السداد */
   if (FX.mth === 'paymob') part2.push(e('div', { class: 'fx-nets', role: 'radiogroup', 'aria-label': 'شبكة البطاقة' }, PAY_NETS.filter(function (k) { return LOGOS[k[1]]; }).map(function (k) {
     const on = FX.net === k[0];
-    return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), 'aria-label': k[2], class: 'fx-net fx-nets-' + k[0] + (on ? ' is-on' : ''), 'data-live-ok': '', onClick: function () { FX.net = on ? '' : k[0]; draw(); } }, e('img', { src: LOGOS[k[1]], alt: '' })); })));
+    return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), 'aria-label': k[2], class: 'fx-net fx-nets-' + k[0] + (on ? ' is-on' : ''), 'data-live-ok': '', onClick: function () { if (!on && k[0] === 'apple' && !apOk()) { FX.apNo = true; draw(); return; } FX.apNo = false; FX.net = on ? '' : k[0]; draw(); } }, e('img', { src: LOGOS[k[1]], alt: '' })); })));
+  /* v473: Apple Pay على جهاز أو متصفح لا يدعمه — بطاقة إرشاد بارزة تحت الشعارات مباشرة (المعتمدة في لوحة التصميم) */
+  if (FX.mth === 'paymob' && FX.apNo) part2.push(apGuide());
+  if (FX.mth === 'paymob' && FX.net === 'apple') part2.push(DS.note('info', 'الدفع عبر Apple Pay', 'بعد «ادفع عبر Apple Pay» تنتقل إلى صفحة الدفع الآمنة لتأكيد الدفع بـ Apple Pay، ثم تعود تلقائيًا إلى صفحة نتيجة السداد.'));
   if (isBank && LIVE.on && !ACCTS.length) part2.push(DS.note('warn', 'التحويل البنكي غير متاح الآن', 'لم يُضف حساب الشركة البنكي بعد. اختر «بوابة الدفع» للسداد الآن.'));
   else if (isBank) {
     part2.push(fxReq('الحساب المحوَّل إليه', 'acct', DS.select({ value: FX.acct, options: opts(ACCTS.map(function (a) { return [a[0], a[1] + ' — ' + a[2]]; })), onChange: function (v) { FX.acct = v; FX.miss = []; draw(); } }), 'حساب الشركة الذي حوّلت إليه.', false));
@@ -2490,7 +2528,9 @@ function paynowPage() {
       if (PAY_GO) { PAY_GO(pays, payNow, isBank, partial); return; }
       if (isBank) runPay(); else { FX.stage = 'auth'; draw(); toTop(); setTimeout(function () { if (FX.stage === 'auth') runPay(); }, 1800); }
   };
-  const payBtn = DS.button(isWallet() ? 'ادفع عبر ' + (FX.mth === 'apple' ? 'Apple Pay' : 'Google Pay') : isBank ? 'إرسال إيصال التحويل' : 'تأكيد ودفع', { tone: 'primary', ui: isWallet() ? null : isBank ? 'upload-simple' : 'credit-card', onClick: goConfirm });
+  const apSel = FX.mth === 'paymob' && FX.net === 'apple';
+  const payBtn = DS.button(isWallet() ? 'ادفع عبر ' + (FX.mth === 'apple' ? 'Apple Pay' : 'Google Pay') : apSel ? 'ادفع عبر Apple Pay' : isBank ? 'إرسال إيصال التحويل' : 'تأكيد ودفع', { tone: 'primary', ui: isWallet() || apSel ? null : isBank ? 'upload-simple' : 'credit-card', onClick: goConfirm });
+  if (apSel) payBtn.classList.add('fx-wbtn');
   if (isWallet()) payBtn.classList.add('fx-wbtn');
   if (PAY_GO) payBtn.setAttribute('data-live-ok', '');
   if (!isBank && !isWallet()) payBtn.appendChild(e('span', { class: 'fx-pbtn-v', 'data-live': 'now' }, SR(payNow)));
@@ -18713,7 +18753,8 @@ async function livePayGo(p, amount) {
   const j = await clPost('/api/account/pay/' + encodeURIComponent(p.pid), amount ? { amount: amount } : {});
   if (!j || !j.ok || !j.url || !/^(https:\/\/[a-z0-9.-]*paymob\.com\/|\/api\/pay\/c\/[A-Za-z0-9_-]{32}$)/i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
   try { sessionStorage.setItem('tera.pay.last', p.pid); } catch (err) { void err; }
-  location.href = j.url;
+  /* v473: اختيار Apple Pay يفتح مسار Apple Pay نفسه (صفحة Paymob الآمنة ثم العودة لصفحة ما بعد السداد) */
+  location.href = j.url + (FX.mth === 'paymob' && FX.net === 'apple' && /^\/api\/pay\/c\//.test(j.url) ? '?ap=1' : '');
 }
 if (LIVE.on) {
   /* v472: خياران فقط — «بوابة الدفع» و«تحويل بنكي»؛ الشعارات تحت الاختيار */
