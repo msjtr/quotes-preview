@@ -59,6 +59,11 @@
   }
 
   /* ---------- الدفع: نموذج Paymob الآمن ---------- */
+  /* v471: رابط الدفع — «العودة» ترجع العميل إلى الصفحة التي فتح منها الرابط داخل المنصة (إن وُجدت) */
+  try {
+    var rfu = document.referrer ? new URL(document.referrer) : null;
+    if (rfu && rfu.origin === location.origin && !/^\/api\/pay\//.test(rfu.pathname)) sessionStorage.setItem('tera.pay.from', rfu.pathname + rfu.search + rfu.hash);
+  } catch (e) { void e; }
   var box = document.getElementById('tp-pixel');
   if (!box) return;
   var payBtn = document.getElementById('tp-pay'), err = document.getElementById('tp-err'), alt = document.getElementById('tp-alt');
@@ -77,11 +82,8 @@
   }
   function result(st, rc, info) {
     info = info || {};
-    /* v468: الدفع من داخل المنصة — النتيجة والإيصال ورسالة الشكر تظهر في المنصة نفسها، فلا شاشة نتيجة مكررة هنا */
-    if (D.lite === '1' && D.back) {
-      var bk = D.back; if (st !== 'paid') bk = bk.replace('pay=ok', st === 'failed' ? 'pay=fail' : 'pay=pending');
-      ev('lite_back', { st: st || '' }); location.replace(bk); return;
-    }
+    /* v471: صفحة ما بعد السداد الخاصة تعود لكل عمليات الدفع (أُلغي تحويل v468 المباشر إلى المنصة) */
+    try { var bkA = res && res.querySelector('[data-back][data-src]'), from = sessionStorage.getItem('tera.pay.from'); if (bkA && from) bkA.setAttribute('href', from); } catch (e) { void e; }
     var T = {
       paid: { c: '#0E7C70', l: 'مدفوع', t: 'تم الدفع بنجاح', s: D.okmsg || 'وصلتنا دفعتك، وأُرسل الإيصال إلى بريدك وواتساب وإشعار التطبيق.' },
       failed: { c: '#B3262F', l: 'فشل', t: 'لم تكتمل العملية', s: 'لم يُخصم أي مبلغ من بطاقتك. يمكنك المحاولة مرة أخرى.' },

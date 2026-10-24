@@ -1559,6 +1559,11 @@ const rfReqOf = (p) => REQS.filter(function (r) { return r.type === 'refund' && 
 const RF_WHY = [['dup', 'خصم مكرر للعملية نفسها'], ['amt', 'خُصم مبلغ أكبر من المطلوب'], ['wrong', 'سددت دفعة أو عقدًا بالخطأ'], ['cancel', 'إلغاء الطلب أو المنتج'], ['other', 'سبب آخر']];
 function rfreqPage() {
   const p = payById(FX.pid);
+  /* v471: في المنصة الفعلية «طلب استرداد» من سجل السداد يفتح الطلب الحقيقي نفسه (إلغاء أو استرداد بسببه ← الإدارة ← Paymob) — لا النموذج التجريبي */
+  if (LIVE.on) {
+    if (!p || !isGw(p) || !p.gw || !p.gw.live) return [DS.note('info', 'الإلغاء والاسترداد', 'طلب الإلغاء أو الاسترداد متاح لعمليات الدفع الإلكتروني عبر المنصة. لعمليات النظام السابق تواصل مع خدمة العملاء.'), DS.actionBar({ buttons: [DS.button('رجوع إلى مدفوعاتي', { onClick: function () { go('pay'); } })] })];
+    return [paySummary(p), rcOpReq(p), DS.actionBar({ buttons: [DS.button('رجوع إلى الدفعة', { onClick: function () { go('payment'); } }), DS.button('عرض الإيصال', { onClick: function () { go('rcpt'); } })] })].filter(Boolean);
+  }
   if (FX.rfDone) return [DS.note('ok', 'استلمنا طلب الاسترداد', ['رقم الطلب ', ltr(FX.rfDone), ' — تراجعه الإدارة خلال يومي عمل، وتصلك الإشعارات بكل تغيير في حالته داخل المنصة وعلى البريد وواتساب.']),
     DS.actionBar({ buttons: [DS.button('تفاصيل الدفعة', { onClick: function () { go('payment'); } }), DS.button('متابعة الطلب', { tone: 'primary', onClick: function () { FX.rid = FX.rfDone; go('req'); } })] })];
   if (!p || !p.gw || p.paid <= 0) return [DS.note('info', 'لا يمكن طلب الاسترداد', 'طلب الاسترداد متاح للعمليات المدفوعة عبر بوابة الدفع.')];
@@ -2458,6 +2463,8 @@ function paynowPage() {
   }
   /* 2) طريقة الدفع */
   const part2 = [fxReq('طريقة الدفع', 'mth', DS.select({ value: FX.mth, options: opts(FX_CARDS.map(function (c) { return ['saved:' + c.id, 'بطاقتي ' + c.brand + ' •••• ' + c.last4, 'wallet']; }).concat(payM())), onChange: function (v) { FX.mth = v; FX.ccvv = ''; FX.autoSw = ''; if (v === 'bank') { if (!FX.tdate) FX.tdate = iso(T0); if (!FX.acct) FX.acct = 'main'; } FX.miss = []; draw(); } }))];
+  /* v471: شعارات الشبكات المقبولة تحت «الدفع الإلكتروني» — والشبكة الفعلية تُميَّز في صفحة الدفع وتُثبَّت في الإيصال حسب تقرير Paymob */
+  if (FX.mth === 'paymob') part2.push(e('div', { class: 'fx-nets', role: 'img', 'aria-label': 'الشبكات المقبولة: مدى، فيزا، ماستركارد، Apple Pay' }, ['مدى', 'Visa', 'Mastercard', 'Apple Pay'].filter(function (k) { return LOGOS[k]; }).map(function (k) { return e('img', { src: LOGOS[k], alt: '', class: 'fx-nets-' + (k === 'مدى' ? 'mada' : k === 'Apple Pay' ? 'ap' : k.toLowerCase()) }); }).concat([e('small', {}, 'يُحدَّد نوع بطاقتك تلقائيًا عند إدخالها')])));
   if (isBank) {
     part2.push(fxReq('الحساب المحوَّل إليه', 'acct', DS.select({ value: FX.acct, options: opts(ACCTS.map(function (a) { return [a[0], a[1] + ' — ' + a[2]]; })), onChange: function (v) { FX.acct = v; FX.miss = []; draw(); } }), 'حساب الشركة الذي حوّلت إليه.', false));
     part2.push(bankInfo(FX.acct));
@@ -18718,6 +18725,8 @@ if (LIVE.on) {
     const q = new URLSearchParams(location.search), k = q.get('pay'), ref = q.get('ref') || '';
     if (!k) return;
     try { history.replaceState(null, '', location.pathname + location.hash); } catch (err) { void err; }
+    /* v471: «العودة إلى المدفوعات» من صفحة ما بعد السداد — النتيجة والإيصال عُرضا هناك، فهنا قائمة المدفوعات فقط */
+    if (k === 'back') { LIVE_PAY.ret = null; S.tab = 'pay'; return; }
     let st = null; if (/^TP-[0-9]{6}-[0-9A-F]{10}$/.test(ref)) st = await clApi('/api/account/pay/status/' + encodeURIComponent(ref)).catch(function () { return null; });
     const s = st && st.ok ? st.status : (k === 'ok' ? 'paid' : k === 'fail' ? 'failed' : 'pending'), test = st && st.mode === 'test';
     let last = ''; try { last = sessionStorage.getItem('tera.pay.last') || ''; sessionStorage.removeItem('tera.pay.last'); } catch (err) { void err; }
@@ -18845,7 +18854,7 @@ function livePayPage() {
       !cfg.enabled ? DS.note('info', 'الدفع الإلكتروني يُفعَّل قريبًا', 'يُربط الدفع عبر Paymob بعد إضافة مفاتيحه على الخادم. لا يُنفَّذ أي خصم الآن.') : null,
       L.length ? null : DS.note('ok', 'لا مستحقات', 'لا توجد دفعات مستحقة عليك الآن.')
     ].filter(Boolean).concat(L.map(function (p) { return livePayRow(p, cfg); }))));
-    box.appendChild(DS.note('info', 'طرق السداد الأخرى', 'السداد الجزئي والتحويل البنكي يُفعَّلان قريبًا. الدفع الإلكتروني يسدّد المتبقي من الدفعة كاملًا.'));
+    if (!cfg.transfer) box.appendChild(DS.note('info', 'التحويل البنكي', 'يظهر خيار التحويل البنكي بعد إضافة حساب الشركة البنكي من بيانات المنشأة.'));
     const extra = e('div', { class: 't2-stack-tight' }); box.appendChild(extra);
     box.appendChild(e('div', { class: 't2-pb-actions' }, [DS.button('رجوع', { onClick: function () { go('pay'); } })]));
     livePayExtras(extra, cfg);
@@ -18861,6 +18870,7 @@ async function livePayReturn() {
   const q = new URLSearchParams(location.search), k = q.get('pay'), ref = q.get('ref') || '';
   if (!k) return;
   try { history.replaceState(null, '', location.pathname + location.hash); } catch (err) { void err; }
+  if (k === 'back') { S.tab = 'pay'; return; }
   let st = null; if (/^TP-[0-9]{6}-[0-9A-F]{10}$/.test(ref)) st = await clApi('/api/account/pay/status/' + encodeURIComponent(ref)).catch(function () { return null; });
   const s = st && st.ok ? st.status : (k === 'ok' ? 'paid' : k === 'fail' ? 'failed' : 'pending');
   const test = st && st.mode === 'test';
