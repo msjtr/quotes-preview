@@ -8982,9 +8982,11 @@ html.cpv-on .t2-head{top:48px}
   html:has(#pv-host.is-app),html:has(#pv-host.is-app) body{overscroll-behavior-y:none}
 }
 
-/* v471: شعارات الشبكات تحت الدفع الإلكتروني */
-.fx-nets{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:-4px}
-.fx-nets img{height:22px;width:auto;padding:4px 8px;background:#fff;border:1px solid var(--t2-line);border-radius:8px;box-sizing:content-box}
-.fx-nets img.fx-nets-visa{height:14px;padding:8px 10px}
-.fx-nets small{flex-basis:100%;font-size:12px;color:var(--t2-mut,#5E6B7C)}
-.t2.is-dark .fx-nets img{background:#fff}
+/* v472: شعارات الشبكات تحت «بوابة الدفع» — اختيار شكلي */
+.fx-nets{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+.fx-net{display:inline-grid;place-items:center;height:44px;min-width:72px;padding:6px 12px;border:1.5px solid var(--t2-line);border-radius:12px;background:#fff;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .15s}
+.fx-net img{height:24px;width:auto;display:block}
+.fx-net.fx-nets-visa img{height:16px}
+.fx-net:hover{transform:translateY(-1px)}
+.fx-net.is-on{border-color:#C9A24A;box-shadow:0 0 0 3px rgba(201,162,74,.28)}
+.t2.is-dark .fx-net{background:#fff}

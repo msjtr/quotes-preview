@@ -2254,6 +2254,7 @@ function groupedPays(pays, pick) {
 /* لا تُحفظ بطاقات ولا خصم تلقائي — قرار المنصة */
 const FX_CARDS = [];
 const PAY_M_ = [['mada', 'بطاقة مدى', 'مدى'], ['visa', 'بطاقة فيزا', 'Visa'], ['mc', 'بطاقة ماستركارد', 'Mastercard'], ['apple', 'Apple Pay', 'Apple Pay'], ['google', 'Google Pay', 'Google Pay'], ['bank', 'تحويل بنكي', null]];
+const PAY_NETS = [['mada', 'مدى', 'مدى'], ['visa', 'Visa', 'فيزا'], ['mc', 'Mastercard', 'ماستركارد'], ['apple', 'Apple Pay', 'Apple Pay']];
 const payM = () => PAY_M_.map(function (m) { return [m[0], m[1], m[2] && LOGOS[m[2]] ? LOGOS[m[2]] : (m[0] === 'bank' ? 'bank' : 'card')]; });
 const PROVIDER = 'Paymob';
 const MARKS = ['مدى', 'Visa', 'Mastercard', 'Apple Pay', 'Google Pay'];
@@ -2463,9 +2464,12 @@ function paynowPage() {
   }
   /* 2) طريقة الدفع */
   const part2 = [fxReq('طريقة الدفع', 'mth', DS.select({ value: FX.mth, options: opts(FX_CARDS.map(function (c) { return ['saved:' + c.id, 'بطاقتي ' + c.brand + ' •••• ' + c.last4, 'wallet']; }).concat(payM())), onChange: function (v) { FX.mth = v; FX.ccvv = ''; FX.autoSw = ''; if (v === 'bank') { if (!FX.tdate) FX.tdate = iso(T0); if (!FX.acct) FX.acct = 'main'; } FX.miss = []; draw(); } }))];
-  /* v471: شعارات الشبكات المقبولة تحت «الدفع الإلكتروني» — والشبكة الفعلية تُميَّز في صفحة الدفع وتُثبَّت في الإيصال حسب تقرير Paymob */
-  if (FX.mth === 'paymob') part2.push(e('div', { class: 'fx-nets', role: 'img', 'aria-label': 'الشبكات المقبولة: مدى، فيزا، ماستركارد، Apple Pay' }, ['مدى', 'Visa', 'Mastercard', 'Apple Pay'].filter(function (k) { return LOGOS[k]; }).map(function (k) { return e('img', { src: LOGOS[k], alt: '', class: 'fx-nets-' + (k === 'مدى' ? 'mada' : k === 'Apple Pay' ? 'ap' : k.toLowerCase()) }); }).concat([e('small', {}, 'يُحدَّد نوع بطاقتك تلقائيًا عند إدخالها')])));
-  if (isBank) {
+  /* v472: شعارات الشبكات تحت «بوابة الدفع» — اختيار شكلي يطمئن العميل (لا يغيّر السجل؛ الشبكة الفعلية من Paymob)، ويظهر في ملخص السداد */
+  if (FX.mth === 'paymob') part2.push(e('div', { class: 'fx-nets', role: 'radiogroup', 'aria-label': 'شبكة البطاقة' }, PAY_NETS.filter(function (k) { return LOGOS[k[1]]; }).map(function (k) {
+    const on = FX.net === k[0];
+    return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), 'aria-label': k[2], class: 'fx-net fx-nets-' + k[0] + (on ? ' is-on' : ''), 'data-live-ok': '', onClick: function () { FX.net = on ? '' : k[0]; draw(); } }, e('img', { src: LOGOS[k[1]], alt: '' })); })));
+  if (isBank && LIVE.on && !ACCTS.length) part2.push(DS.note('warn', 'التحويل البنكي غير متاح الآن', 'لم يُضف حساب الشركة البنكي بعد. اختر «بوابة الدفع» للسداد الآن.'));
+  else if (isBank) {
     part2.push(fxReq('الحساب المحوَّل إليه', 'acct', DS.select({ value: FX.acct, options: opts(ACCTS.map(function (a) { return [a[0], a[1] + ' — ' + a[2]]; })), onChange: function (v) { FX.acct = v; FX.miss = []; draw(); } }), 'حساب الشركة الذي حوّلت إليه.', false));
     part2.push(bankInfo(FX.acct));
     part2.push(fxReq('تاريخ التحويل (تاريخ الدفع الفعلي)', 'tdate', datePick({ value: FX.tdate, min: iso(addMonths(T0, -3)), max: iso(T0), onChange: function (v) { FX.tdate = v; } })));
@@ -2497,7 +2501,8 @@ function paynowPage() {
       pays.length === 1 ? row('الدفعة', ['الدفعة ' + pays[0].i + ' · ', ltr(pays[0].c.no)]) : row('الدفعات', pays.length + ' ' + (pays.length >= 3 && pays.length <= 10 ? 'دفعات' : 'دفعة')),
       row('المستحق', SR(total)),
       partial ? row('يتبقى بعد السداد', SR(Math.max(0, total - payNow)), 'is-warn', 'left') : null,
-      FX.mth ? row('طريقة الدفع', (function () { const m = payM().filter(function (x) { return x[0] === FX.mth; })[0]; const lg = m && /^(data:|pimg3\/)/.test(m[2]) && true ? e('img', { class: 'fx-osum-lg', src: m[2], alt: '' }) : null; return e('span', { class: 'fx-osum-m' }, [lg, e('bdi', {}, FX.mth === 'bank' ? 'تحويل بنكي' : isCardEntry() && digits(FX.cno).length < 4 ? (m ? m[1] : BRAND[FX.mth] ? BRAND[FX.mth].t : '') : viaLabel())]); })()) : null]),
+      FX.mth ? row('طريقة الدفع', (function () { const m = payM().filter(function (x) { return x[0] === FX.mth; })[0]; const nt = FX.mth === 'paymob' && FX.net ? PAY_NETS.filter(function (k) { return k[0] === FX.net; })[0] : null;
+        const lg = nt && LOGOS[nt[1]] ? e('img', { class: 'fx-osum-lg', src: LOGOS[nt[1]], alt: '' }) : m && /^(data:|pimg3\/)/.test(m[2]) && true ? e('img', { class: 'fx-osum-lg', src: m[2], alt: '' }) : null; return e('span', { class: 'fx-osum-m' }, [lg, e('bdi', {}, FX.mth === 'bank' ? 'تحويل بنكي' : isCardEntry() && digits(FX.cno).length < 4 ? (m ? m[1] : BRAND[FX.mth] ? BRAND[FX.mth].t : '') : viaLabel())]); })()) : null]),
     e('div', { class: 'fx-osum-t' }, [e('span', {}, 'ستدفع الآن'), e('b', {}, [e('span', { 'data-live': 'nowv' }, SAR(payNow)), e('small', {}, ' ريال')])]),
     payBtn, e('p', { class: 'fx-osum-c' }, isBank ? 'بإرسال الإيصال تؤكد صحة بيانات التحويل، ويصدر إيصال السداد بعد اعتماده.' : isWallet() ? 'تؤكد الدفع من محفظة جهازك، ويصدر الإيصال فورًا في هذه الصفحة.' : 'بالضغط على «تأكيد ودفع» توافق على خصم المبلغ، ويصدر الإيصال فورًا في هذه الصفحة.'),
     DS.button(fromPd() ? 'رجوع إلى الدفعة ' + payById(FX.payPid).i : 'رجوع', { onClick: function () { if (fromPd()) { FX.pid = FX.payPid; go('payment'); } else backOrigin(); } }),
@@ -7246,7 +7251,10 @@ function cuHubPage() {
       return { ic: 'bank:teal', t: 'إيصالات التحويل البنكي', d: 'تحويلات العملاء لدفعاتهم — اعتماد أو رفض، ثم تنتقل إلى ملف العميل بحالتها', n: LV_PAY.at ? w(k) : null, badge: k ? [fmtNum(k) + ' بانتظار الاعتماد', 'warn'] : null, go: function () { go('other', 'cu-trin'); } }; })(),
       /* v469: صندوق طلبات العملاء إلغاء أو استرداد عمليات الدفع */
       (function () { const k = (LV_PAY.OP || []).filter(function (o) { return o.status === 'submitted' || o.status === 'failed'; }).length;
-        return { ic: 'arrows-clockwise:gold', t: 'طلبات الإلغاء والاسترداد', d: 'طلبات العملاء على عمليات بوابة الدفع بأسبابها — الاعتماد يُنفَّذ في Paymob، والرفض بسبب يراه العميل', n: LV_PAY.at ? w(k) : null, badge: k ? [fmtNum(k) + ' بانتظار القرار', 'warn'] : null, go: function () { go('other', 'cu-opin'); } }; })()] : [])],
+        return { ic: 'arrows-clockwise:gold', t: 'طلبات الإلغاء والاسترداد', d: 'طلبات العملاء على عمليات بوابة الدفع بأسبابها — الاعتماد يُنفَّذ في Paymob، والرفض بسبب يراه العميل', n: LV_PAY.at ? w(k) : null, badge: k ? [fmtNum(k) + ' بانتظار القرار', 'warn'] : null, go: function () { go('other', 'cu-opin'); } }; })(),
+      /* v472: إدارة الاسترداد والإلغاء وروابط الدفع */
+      { ic: 'credit-card:gold', t: 'الاسترداد والإلغاء', d: 'عمليات بوابة الدفع — استرداد كلي أو جزئي، أو إلغاء قبل التسوية، وإعادة إشعار الدافع', go: function () { go('other', 'cu-payops'); } },
+      { ic: 'link:teal', t: 'روابط الدفع', d: 'إنشاء رابط دفع وإرساله بكل القنوات ومتابعة حالته — وروابط دفعات العملاء أيضًا من ملف العميل', go: function () { go('other', 'cu-paylinks'); } }] : [])],
     ['st', 'المتجر', 'store', [{ ic: 'store', t: 'طلبات المتجر', d: 'الطلبات والشحن · حسب الطلب · الخدمات الرقمية', n: w(n('store')), go: function () { ADM.cuf = 'store'; go('other', 'cu-inbox'); } }].concat(CC.s)],
     ['co', 'التواصل', 'mail', [{ ic: 'ticket', t: 'التذاكر والمراسلات', d: 'الشكاوى والدعم الفني والاستفسارات', n: w(n('tk')), go: function () { ADM.tst = ''; go('other', 'cs-tickets'); } }, { ic: 'megaphone-simple:sky', t: 'الإشعارات والإعلانات', d: 'إشعار لعميل أو لمجموعة', n: LIVE.on ? 'ما وصل العملاء — الإرسال موقوف' : CU_SENT.length ? fmtNum(CU_SENT.length) + ' مرسلة' : 'إرسال جديد', go: function () { go('other', 'cu-comms'); } }]],
     ['mm', 'العضوية', 'crown:gold', [{ ic: 'crown-simple:gold', t: 'العضويات والنقاط', d: 'المستوى والنقاط وحالة العضوية', n: LIVE.on ? (LIVE_LOY.mem ? fmtNum(LIVE_LOY.mem.length) + ' أعضاء' : 'الأعضاء والنقاط') : fmtNum(C.length) + ' أعضاء', go: function () { go('other', 'cu-mem'); } }]]].filter(Boolean));
@@ -16016,9 +16024,15 @@ async function admRegDoc(id, fid) {
 function admPfFilesPage() {
   /* ملفات العملاء بتصميم العيّنة: كل حسابات العملاء مرة واحدة، والتصفية بالتوثيق — ومصدر كل حساب ظاهر بدقة (سجّل في المنصة أو نُقل من النظام السابق) */
   return admMount('cl', 'ملفات العملاء', function () { return Promise.all([admClients(''), lvAccAll().catch(function () { return []; })]).then(function (X) { return Object.assign({}, X[0], { ACC: X[1] }); }); }, function (j, st, paint, refetch) {
-    const can = j.can || {}, R = j.reg || [];
+    const can = j.can || {};
     /* v453: قائمة واحدة للعملاء — الملف والحساب معًا، والتصفية بحالة الحساب؛ الإجراءات داخل الملف */
     const AC = {}; (j.ACC || []).forEach(function (a) { AC[a.user_id] = a; });
+    /* v472: الحساب المدمَج المغلق (موقوف وبلا أي دور — مثل حساب العميل القديم بعد دمجه في حساب واحد) لا يظهر كملف عميل،
+       وحساب متعدد الأدوار فيه دور العميل يظهر بملفه وإن كان نوعه الأساسي موظفًا */
+    const R0 = (j.reg || []).filter(function (r) { const a = AC[r.id]; return !(a && r.status === 'suspended' && !(a.roles || []).length); });
+    const seen = {}; R0.forEach(function (r) { seen[r.id] = 1; });
+    const R = R0.concat((j.ACC || []).filter(function (a) { return !seen[a.user_id] && (a.roles || []).indexOf('client') >= 0; }).map(function (a) {
+      return { id: a.user_id, name: a.full_name, no: a.tera_id, email: a.email, status: a.business_status }; }));
     const afl = function (r) { const a = AC[r.id]; if (!a) return {}; const f = lvAccFlags(a); f.dis = !!(a.business_status && a.business_status !== 'active'); f.multi = cfAcMulti(a); return f; };
     const CLF = [['all', 'الكل', 'list:navy'], ['lock', 'مقفل', 'lock-key:gold'], ['dis', 'معطَّل', 'x-circle:gold'], ['pw', 'يلزمه تغيير كلمة المرور', 'key:navy'], ['fail', 'محاولات فاشلة', 'warning:gold'], ['sess', 'جلسات نشطة', 'sign-out:teal'], ['f2a', 'تحقق ثنائي مفعّل', 'shield-check:teal'], ['multi', 'هوية بأكثر من دور', 'users-three:navy']];
     const fit = function (r, k) { return k === 'all' || !!afl(r)[k]; }, cf = CLF.some(function (x) { return x[0] === ADM.clF; }) ? ADM.clF : 'all';
@@ -16105,7 +16119,12 @@ function admPfFilePage() {
   const id = ADM.pfc || FX.pfc; if (id) ADM.pfc = id;
   if (!id || !/^[0-9a-f-]{36}$/i.test(String(id))) return admPfFilesPage();
   return admMount('pf:' + id, 'ملف العميل', async function () {
-    const W = [admClients('/reg/' + encodeURIComponent(id))];
+    /* v472: ملف حساب متعدد الأدوار (نوعه الأساسي موظف وفيه دور العميل) — إن لم يُرجع الخادم ملف تسجيل العميل يُبنى من بيانات الحساب، ولا يتعطل الملف */
+    const W = [admClients('/reg/' + encodeURIComponent(id)).catch(async function (err) {
+      if (err && err.message === 'auth') throw err;
+      const A = ((await lvAccAll().catch(function () { return []; })) || []).filter(function (a) { return a.user_id === id; })[0];
+      if (!A) throw err;
+      return { profile: { id: id, name: A.full_name, no: A.tera_id, email: A.email, status: A.business_status, at: '', blocks: {}, files: [] } }; })];
     if (!LIVE_ADM.at) W.push(liveAdmLoad());
     if (!ADM.trAt) W.push(livePayoutsLoad().then(function () { ADM.trAt = Date.now(); }).catch(function () { /* الحوالات اختيارية */ }));
     if (!LV_SR.ok) W.push(lvSrLoad().catch(function () { /* الطلبات اختيارية */ }));
@@ -18697,11 +18716,12 @@ async function livePayGo(p, amount) {
   location.href = j.url;
 }
 if (LIVE.on) {
-  PAY_M_.splice(0, PAY_M_.length, ['paymob', 'الدفع الإلكتروني — مدى · فيزا · ماستركارد · Apple Pay', 'مدى']);
+  /* v472: خياران فقط — «بوابة الدفع» و«تحويل بنكي»؛ الشعارات تحت الاختيار */
+  PAY_M_.splice(0, PAY_M_.length, ['paymob', 'بوابة الدفع', null], ['bank', 'تحويل بنكي', null]);
   const openPay0 = openPay, openDue0 = openDue, viaLabel0 = viaLabel, authPanel0 = authPanel;
   openPay = function (c, p, direct) { openPay0(c, p, direct); FX.mth = 'paymob'; draw(); };
   openDue = function () { openDue0(); FX.mth = 'paymob'; draw(); };
-  viaLabel = function () { return FX.mth === 'paymob' ? 'الدفع الإلكتروني عبر Paymob' : viaLabel0(); };
+  viaLabel = function () { return FX.mth === 'paymob' ? 'بوابة الدفع' : viaLabel0(); };
   authPanel = function () {
     if (FX.mth !== 'paymob') return authPanel0();
     return e('section', { class: 'fx-auth' }, [e('span', { class: 'fx-auth-sp', 'aria-hidden': 'true' }), e('b', {}, 'جارٍ فتح صفحة الدفع الآمنة…'),
@@ -18772,8 +18792,10 @@ async function liveTransferGo(p, amount, partial) {
 function livePayCfgApply(cfg) {
   LIVE_PAY.cfg = cfg || {};
   try {
-    if (cfg && cfg.transfer && cfg.bank && !PAY_M_.some(function (m) { return m[0] === 'bank'; })) PAY_M_.push(['bank', 'تحويل بنكي', null]);
+    if (!PAY_M_.some(function (m) { return m[0] === 'bank'; })) PAY_M_.push(['bank', 'تحويل بنكي', null]);
+    /* v472: حساب الشركة من بيانات المنشأة وحده — بلا حساب لا تظهر حسابات العيّنة للعميل */
     if (cfg && cfg.bank) ACCTS.splice(0, ACCTS.length, ['main', cfg.bank.name || 'الحساب البنكي', String(cfg.bank.iban).replace(/(.{4})(?=.)/g, '$1 ')]);
+    else ACCTS.splice(0, ACCTS.length);
   } catch (err) { void err; }
 }
 if (LIVE.on) {
@@ -19198,6 +19220,26 @@ function admOrgPage() {
 }
 const PAY_TABS = [['svc', 'الخدمات ووسائل الدفع'], ['links', 'روابط الدفع لغير العملاء'], ['subs', 'الاشتراكات'], ['cards', 'البطاقات المحفوظة'], ['wait', 'محاولات لم يصل إشعارها']];
 const payTab = (st, D) => PAY_TABS.some(function (t) { return t[0] === st.tab && (t[0] !== 'links' || D.can.links); }) ? st.tab : 'svc';
+/* v472: قسم «الدفع الإلكتروني» في قسم العملاء — صندوقان: روابط الدفع (الإنشاء والإرسال والمتابعة) · الاسترداد والإلغاء (عمليات بوابة الدفع).
+   روابط دفعات العملاء واسترداد عملياتهم تبقى أيضًا في ملف العميل نفسه. */
+function admPayView(key, title, part) {
+  return admMount(key, title, async function () {
+    const D = await clApi('/admin/api/pay/overview');
+    if (!D || !D.ok) throw new Error((D && D.message) || 'تعذّر تحميل بيانات الدفع.');
+    D.can = D.can || {}; D.gateway = D.gateway || {}; ['links', 'methods', 'subs', 'txns', 'transfers', 'refunds'].forEach(function (k) { if (!Array.isArray(D[k])) D[k] = D[k] == null ? [] : D[k]; });
+    if (part === 'links' && D.can.links) { try { const c = await admClients(''); D.clients = (c && c.reg) || []; } catch (err) { D.clients = []; } }
+    return D;
+  }, function (D, st, paint, refetch0) {
+    const refetch = function (soft) { if (soft === true) paint(); else refetch0(); };
+    const g = D.gateway || {};
+    const head = g.keys && g.mode === 'test' ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي.') : null;
+    if (part === 'links') return D.can.links ? [head, payLinkForm(D, refetch), payLinksPanel(D, st, paint, refetch)].filter(Boolean)
+      : [DS.note('warn', 'لا صلاحية', 'إنشاء روابط الدفع وإرسالها يحتاج صلاحية إدارة العملاء.')];
+    const L = D.txns || [], ok = L.filter(function (t) { return t.status === 'success' && t.class_label !== 'online_refund'; });
+    return [head, admKpis([['عملية ناجحة', ok.length, 'ok', 'check-circle'], ['مستردة كليًا أو جزئيًا', ok.filter(function (t) { return Number(t.refunded_amount) > 0; }).length, '', 'arrows-clockwise'],
+      ['عملية فاشلة', L.filter(function (t) { return t.status === 'failed'; }).length, 'warn', 'x-circle']]), payTxnsPanel(D, refetch)].filter(Boolean);
+  });
+}
 function admPayPage() {
   const box = admMount('paycenter', 'مركز الدفع', async function () {
     const D = await clApi('/admin/api/pay/overview');
@@ -22757,6 +22799,9 @@ if (LIVE.on) {
   };
   try { Object.assign(ICON, { 'fin-pay': ['receipt', 'teal'], 'fin-gw': ['credit-card', 'teal'], 'cu-trin': ['bank', 'teal'], 'cu-opin': ['arrows-clockwise', 'gold'] }); } catch (err) { void err; }
   lp('cu-opin', 'طلبات الإلغاء والاسترداد', 'cu', 'cu-opin', lvOpInbox);
+  try { Object.assign(ICON, { 'cu-payops': ['credit-card', 'gold'], 'cu-paylinks': ['link', 'teal'] }); } catch (err) { void err; }
+  lp('cu-payops', 'الاسترداد والإلغاء', 'cu', 'cu-payops', function () { return admPayView('payops', 'الاسترداد والإلغاء', 'ops'); });
+  lp('cu-paylinks', 'روابط الدفع', 'cu', 'cu-paylinks', function () { return admPayView('paylinks', 'روابط الدفع', 'links'); });
   lp('fin-pay', 'سجل المدفوعات', 'fin', 'fin-pay', lvFinPay);
   lp('fin-gw', 'عمليات بوابة الدفع', 'fin', 'fin-gw', lvFinGw);
   lp('cu-trin', 'إيصالات التحويل البنكي', 'cu', 'cu-trin', lvTrInbox);
