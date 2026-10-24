@@ -11377,6 +11377,8 @@ const FILM_LIB = [
   { k: 'launch-l', t: 'فيلم التدشين الجديد — أفقي', d: '«صُنعت لك» · 32 ثانية · 1920×1080 · للويب والشاشات', l: 'library/launch-landscape', tag: ['المعتمد', 'ok'] },
   { k: 'launch-p', t: 'فيلم التدشين الجديد — طولي', d: '«صُنعت لك» · 32 ثانية · 1080×1920 · للجوال والتواصل الاجتماعي', l: 'library/launch-portrait', por: true, tag: ['المعتمد', 'ok'] },
   { k: 'general-p', t: 'الفيلم العام — طولي', d: '«عميل تيرا» · دقيقتان و50 ثانية · 1080×1920 · للجوال والتواصل الاجتماعي', l: 'library/general-portrait', por: true, share: true, tag: ['معتمد', 'ok'] },
+  { k: 'general-s', t: 'الفيلم العام القصير — طولي', d: '«هلا وغلا» · 54 ثانية · 1080×1920 · المنتجات والخدمات · للجوال والتواصل الاجتماعي', l: 'library/general-short-portrait', por: true, share: true, tag: ['معتمد', 'ok'] },
+  { k: 'membership-p', t: 'فيلم العضويات — طولي', d: 'المستويات والنقاط والمزايا · دقيقة و15 ثانية · 1080×1920 · للجوال والتواصل الاجتماعي', l: 'library/membership-portrait', por: true, share: true, tag: ['معتمد', 'ok'] },
   { k: 'home-old', t: 'فيلم الصفحة الرئيسية السابق', d: 'محفوظ للأرشيف · أفقي وطولي', l: 'library/home-old-landscape', p: 'library/home-old-portrait', tag: ['أرشيف', null] },
   { k: 'ref', t: 'الفيلم المرجعي v12', d: 'عيّنة مرجعية لأي فيلم قادم · 3 دقائق · 1920×1080', l: 'library/reference-v12', tag: ['مرجع', 'info'] }];
 const FILM_LAUNCH = { l: 'library/launch-landscape', p: 'library/launch-portrait' };
