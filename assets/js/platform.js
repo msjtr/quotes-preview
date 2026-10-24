@@ -2065,7 +2065,7 @@ function gwFileRows(g, staff) {
 function gwView(g) {
   return [['مزود الدفع', g.provider], ['رقم العملية', ltr(g.txn)], ['رقم الطلب', ltr(g.order)], ['المرجع (تيرا)', ltr(g.ref)],
     ['حالة العملية', g.voided ? DS.badge('مُلغاة (Void)', 'rf') : g.refunded ? DS.badge('مستردة (Refund)', 'rf') : DS.badge(g.success ? 'ناجحة' : 'غير ناجحة', g.success ? 'ok' : 'danger')], ['استجابة البنك', [ltr(g.rcode + ' · ' + g.resp)]],
-    ['وسيلة الدفع', g.apple ? 'Apple Pay' : g.type === 'wallet' ? 'محفظة رقمية' : 'بطاقة'], ['نوع البطاقة (Scheme)', ltr(SUBN[g.sub] || g.sub)], g.fund ? ['نوع التمويل', g.fund] : null, g.last4 ? ['رقم البطاقة', ltr('•••• ' + g.last4)] : null,
+    ['وسيلة الدفع', g.apple ? 'Apple Pay' : g.type === 'wallet' ? 'محفظة رقمية' : 'بطاقة'], ['شبكة البطاقة', ltr(SUBN[g.sub] || g.sub)], g.fund ? ['فئة البطاقة', g.fund] : null, g.last4 ? ['رقم البطاقة', ltr('•••• ' + g.last4)] : null,
     g.rrn && g.rrn !== '—' ? ['الرقم المرجعي (RRN)', ltr(g.rrn)] : null, g.auth && g.auth !== '—' ? ['رمز التفويض', ltr(g.auth)] : null, g.channel ? ['قناة الدفع', g.channel] : null,
     [['التحقق ', ltr('3-D Secure')], g.secure ? 'تم' : 'لا ينطبق'], ['المبلغ', [ltr(Number(g.amount || 0).toFixed(2)), ' ريال']], ['وقت العملية', [isoT(g.date), ' · ', ltr(g.time)]],
     ['التسوية', DS.badge(g.settled ? 'تمت التسوية' : 'بانتظار التسوية', g.settled ? 'ok' : 'warn')]].filter(Boolean);
@@ -2929,7 +2929,8 @@ const OPK = { void: ['إلغاء العملية', 'x-circle:gold', 'قبل تس�
 /* v469: طلب إلغاء العملية أو استردادها من الإيصال نفسه بسببه — يصل للإدارة فورًا، والاعتماد يُنفَّذ في Paymob ويصلك إشعار الاسترداد */
 const OPC_ST = { submitted: ['قيد مراجعة الإدارة', 'warn'], failed: ['قيد مراجعة الإدارة', 'warn'], approved: ['اعتُمد ونُفّذ', 'ok'], rejected: ['لم يُعتمد', 'danger'], cancelled: ['ألغيتَه', null] };
 async function lvOpReload() { try { const L = await liveSb('payment_op_requests?select=*&user_id=eq.' + encodeURIComponent(LIVE.me.id) + '&order=created_at.desc'); LIVE_DATA.opreq = Array.isArray(L) ? L : []; } catch (err) { void err; } }
-function rcOpReq(p) {
+function rcOpReq(p) { const x = rcOpReq0(p); if (x && x.setAttribute) x.setAttribute('data-live-ok', ''); return x; }
+function rcOpReq0(p) {
   if (!LIVE.on || !isGw(p) || !p.gw || !p.gw.live) {
     if (!p.rc.void) return DS.note('info', 'الإلغاء والاسترداد', p.refund ? 'تفاصيل الاسترداد أعلاه داخل هذا الإيصال، وصلك إشعارها على البريد وواتساب.' : 'لطلب إلغاء عملية دفع أو استردادها افتح إيصال عملية بوابة الدفع.');
     return null;
@@ -16391,7 +16392,7 @@ function cfRcOpen(p, c) {
   const main = cuSec('بيانات الإيصال', 'receipt', [DS.fields([['رقم الإيصال', ltr(rc.no)], ['تاريخ الإصدار', isoT(rc.at)], ['العقد', ltr(c.no)], ['الدفعة', p.i + ' من ' + c.n], ['قيمة الدفعة', SR(p.amount)],
     ['المبلغ المقبوض', SR(amt)], ['تاريخ السداد', p.at ? isoT(p.at) : '—'], ['القالب', KL[k] || k], ['حالة الإيصال', rc.void ? 'ملغى بالاسترداد' : 'ساري']])]);
   const gw = t ? cuSec('بيانات العملية لدى مزود الدفع', 'shield', [DS.fields([['رقم العملية', ltr(String(t.trx))], ['رقم الطلب لدى المزود', ltr(t.gateway_order ? String(t.gateway_order) : '—')], ['المرجع (تيرا)', ltr(d.ref || '—')],
-      ['مبلغ العملية', admMoney(t.amount)], ['وقت العملية', t.txn_at ? bdiD(String(t.txn_at).slice(0, 16).replace('T', ' ')) : '—'], ['نوع البطاقة (Scheme)', ltr((function () { const g = liveGw(t); return SUBN[g.sub] || g.sub || '—'; })())], ['البطاقة', t.card_last4 ? ltr('•••• ' + t.card_last4) : '—'],
+      ['مبلغ العملية', admMoney(t.amount)], ['وقت العملية', t.txn_at ? bdiD(String(t.txn_at).slice(0, 16).replace('T', ' ')) : '—'], ['شبكة البطاقة', ltr((function () { const g = liveGw(t); return SUBN[g.sub] || g.sub || '—'; })())], ['البطاقة', t.card_last4 ? ltr('•••• ' + t.card_last4) : '—'],
       ['استجابة البنك', ltr([d.code, d.message].filter(Boolean).join(' — ') || '—')], ['رمز الموافقة', ltr(d.auth || '—')], ['الرقم المرجعي (RRN)', ltr(d.rrn || '—')], ['3-D Secure', d.secure3d === true ? 'تم' : d.secure3d === false ? 'لا' : '—'],
       ['التكامل', ltr(d.integration ? String(d.integration) : '—')], Number(t.refunded_amount) > 0 ? ['المسترد', admMoney(t.refunded_amount)] : null,
       ['التسوية لدى البوابة', DS.badge(cfGwSettled(t) ? 'تمت التسوية' : 'بانتظار التسوية', cfGwSettled(t) ? 'ok' : 'warn')]].filter(Boolean)),
@@ -17628,7 +17629,7 @@ function liveMada(d, ok) {
   return ok === true && /^(debit|prepaid)$/i.test(String(d.funding || ''));
 }
 /* v468: بيانات العملية كاملة — من Paymob مباشرة للعمليات الجديدة، ومن تقرير Paymob («كل الحركات المالية») للعمليات المرحَّلة */
-const GW_FUND = { DEBIT: 'خصم (Debit)', CREDIT: 'ائتمان (Credit)', PREPAID: 'مسبقة الدفع (Prepaid)' };
+const GW_FUND = { DEBIT: 'بطاقة خصم مباشر (Debit)', CREDIT: 'بطاقة ائتمانية (Credit)', PREPAID: 'بطاقة مسبقة الدفع (Prepaid)' };
 function liveGw(t) {
   const d = t.details || {}, at = t.txn_at ? new Date(t.txn_at) : d.pmx_paid_at ? new Date(String(d.pmx_paid_at).replace(' ', 'T') + '+03:00') : null, ok = t.status === 'success';
   const px = String(d.pmx_scheme || '').toUpperCase(), apl = px === 'APPLE_PAY' || (!px && /^applepay$/i.test(String(d.net || '')));
@@ -18085,7 +18086,7 @@ function admGwOpen(t) {
     e('div', { class: 'cu-dr-st' }, [DS.badge(g[0], g[1]), rs ? DS.badge(rs[0], rs[1]) : null, LIVE_RV(t.review_state)]),
     e('div', { class: 'cu-secs' }, [
       cuSec('بيانات العملية لدى مزود الدفع', 'shield', [DS.fields([['رقم العملية', ltr(String(t.trx))], ['رقم الطلب لدى المزود', ltr(t.gateway_order ? String(t.gateway_order) : '—')], ['المرجع (تيرا)', ltr(d.ref || '—')],
-        ['المبلغ', admMoney(t.amount)], ['وقت العملية', t.txn_at ? bdiD(String(t.txn_at).slice(0, 16).replace('T', ' ')) : '—'], ['نوع البطاقة (Scheme)', ltr((function () { const g = liveGw(t); return SUBN[g.sub] || g.sub || '—'; })())], ['البطاقة', t.card_last4 ? ltr('•••• ' + t.card_last4) : '—'],
+        ['المبلغ', admMoney(t.amount)], ['وقت العملية', t.txn_at ? bdiD(String(t.txn_at).slice(0, 16).replace('T', ' ')) : '—'], ['شبكة البطاقة', ltr((function () { const g = liveGw(t); return SUBN[g.sub] || g.sub || '—'; })())], ['البطاقة', t.card_last4 ? ltr('•••• ' + t.card_last4) : '—'],
         ['استجابة البنك', ltr([d.code, d.message].filter(Boolean).join(' — ') || '—')], ['رمز الموافقة', ltr(d.auth || '—')], ['الرقم المرجعي (RRN)', ltr(d.rrn || '—')], ['3-D Secure', d.secure3d === true ? 'تم' : d.secure3d === false ? 'لا' : '—'],
         ['التكامل', ltr(d.integration ? String(d.integration) : '—')], ['المصدر', d.src === 'webhook' ? 'إشعار Paymob' : d.src === 'return' ? 'عودة الدافع' : d.src === 'inquiry' ? 'استعلام' : (t.class_label || 'النظام السابق')]])]),
       cuSec('الربط', 'file-text', [DS.fields([['العميل', t.name || '—'], ['العقد', t.client_contracts ? ltr(t.client_contracts.contract_no || '—') : '—'], ['التصنيف', t.class_label || '—'], t.parent_trx ? ['العملية الأصل', ltr(String(t.parent_trx))] : null,
