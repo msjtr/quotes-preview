@@ -352,3 +352,23 @@ html,body.tp{overflow-x:hidden}
 .tp-cpy-u{font-size:13px;line-height:1.6;color:#0B2552;font-family:ui-monospace,Menlo,monospace;text-align:left;word-break:break-all}
 .tp-cpy-b{min-height:46px;border:0;border-radius:12px;background:#0B2552;color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
 .tp-cpy-b.is-ok{background:#0E7C70}
+/* v474: Apple Pay في روابط الدفع — زر «ادفع» وإرشاد الجهاز غير الداعم (Safari على آيفون · البطاقة على غيره) */
+.tp-ap-go{gap:8px;color:#fff;font-weight:700;font-size:16px;font-family:inherit}
+.tp-ap-go span{line-height:1}
+.tp-apg{margin-top:6px;border-radius:22px;padding:2px;background:linear-gradient(135deg,#F1D894,#C9A24A 45%,#19C2AE);box-shadow:0 18px 34px -18px rgba(11,37,82,.45)}
+.tp-apg[hidden],.tp-apg [hidden]{display:none!important}
+.tp-apg-in{border-radius:20px;background:#fff;padding:20px 16px;display:flex;flex-direction:column;gap:16px;line-height:1.7;color:#0B1B3A}
+.tp-apg-in>div{display:flex;flex-direction:column;gap:16px}
+.tp-wa-ic.is-sf{background:#EEF4FF}.tp-wa-ic.is-ap{background:#F4F5F7}.tp-wa-ic.is-ap img{width:40px;height:auto}
+.tp-wa-s.is-gold i{background:#C9A24A;color:#1A1205}
+.tp-apg-go{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:56px;padding:0 16px;border:0;border-radius:16px;font-family:inherit;font-weight:700;font-size:17px;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.tp-apg-go.is-sf{background:#0A84FF;color:#fff!important}
+.tp-apg-go.is-sf span{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#fff}.tp-apg-go.is-sf img{width:22px;height:22px;display:block}
+.tp-apg-go.is-card{background:#0A7F8C;color:#fff;flex-wrap:wrap;padding:10px 16px}
+.tp-apg-ml{display:flex;gap:6px}.tp-apg-ml i{display:grid;place-items:center;height:28px;padding:0 6px;border-radius:7px;background:#fff}.tp-apg-ml img{height:14px;width:auto;display:block}
+.tp-apg-or{display:flex;align-items:center;gap:10px;color:#5E6B7C;font-size:13px;line-height:1.6;text-align:center}.tp-apg-or i{flex:1;height:1px;background:#E3E8F0;min-width:16px}
+.tp-apg-go:focus-visible{outline:3px solid #C9A24A;outline-offset:2px}
+/* v474: شعارا Safari وChrome الرسميان (أيقونة Safari بإطارها) — بلا مربع خلفي حولهما */
+.tp-wa-ic.is-sf{background:transparent}.tp-wa-ic.is-sf img{width:48px;height:48px}
+.tp-apg-go.is-sf span{background:transparent;width:34px;height:34px}.tp-apg-go.is-sf img{width:34px;height:34px}
+.tp-wa-b img{width:40px;height:40px}

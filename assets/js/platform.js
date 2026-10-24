@@ -2274,19 +2274,28 @@ function apGuide() {
   const ic = function (src, cls) { return e('span', { class: 'fx-apg-ic' + (cls ? ' ' + cls : '') }, e('img', { src: src, alt: '' })); };
   const or = function (t) { return e('div', { class: 'fx-apg-or' }, [e('i'), e('span', {}, t), e('i')]); };
   const body = ios ? [
-    e('div', { class: 'fx-apg-h' }, [ic(PAYB + 'safari.svg'), e('div', {}, [e('b', {}, 'Apple Pay يعمل من متصفح Safari'), e('small', {}, 'أنت الآن في متصفح آخر على آيفون')])]),
+    e('div', { class: 'fx-apg-h' }, [ic(PAYB + 'safari-app.svg', 'is-sf'), e('div', {}, [e('b', {}, 'Apple Pay يعمل من متصفح Safari'), e('small', {}, 'أنت الآن في متصفح آخر على آيفون')])]),
     e('ol', { class: 'fx-apg-s' }, [step(1, 'اضغط «افتح في Safari» — تُفتح صفحة الدفع نفسها هناك.'), step(2, 'سجّل دخولك إن طُلب منك.'), step(3, 'اختر Apple Pay وأكّد الدفع بالوجه أو البصمة.')]),
-    liveOk(e('a', { class: 'fx-apg-go is-safari', href: 'x-safari-' + url, rel: 'noopener' }, [e('span', { class: 'fx-apg-gi' }, e('img', { src: PAYB + 'safari.svg', alt: '' })), 'افتح في Safari'])),
+    liveOk(e('a', { class: 'fx-apg-go is-safari', href: 'x-safari-' + url, rel: 'noopener' }, [e('span', { class: 'fx-apg-gi is-sf' }, e('img', { src: PAYB + 'safari-app.svg', alt: '' })), 'افتح في Safari'])),
     or('أو انسخ الرابط والصقه في Safari'), copyBox(url)
   ] : [
     e('div', { class: 'fx-apg-h' }, [ic(LOGOS['Apple Pay'] || (PAYB + 'applepay-b.png'), 'is-ap'), e('div', {}, [e('b', {}, 'Apple Pay لأجهزة Apple فقط'), e('small', {}, 'جهازك لا يدعم Apple Pay ولا متصفح Safari')])]),
     e('div', { class: 'fx-apg-box' }, [e('span', {}, 'ادفع الآن من جهازك ببطاقة مدى أو فيزا أو ماستركارد:'),
       liveOk(e('button', { type: 'button', class: 'fx-apg-go is-card', onClick: function () { FX.net = ''; FX.apNo = false; draw(); } }, [e('span', { class: 'fx-apg-ml' }, ['مدى', 'Visa', 'Mastercard'].filter(function (k) { return LOGOS[k]; }).map(function (k) { return e('i', {}, e('img', { src: LOGOS[k], alt: '' })); })), 'ادفع بالبطاقة الآن']))]),
     or('أو'),
-    e('div', { class: 'fx-apg-box' }, [e('div', { class: 'fx-apg-r' }, [ic(PAYB + 'safari.svg', 'is-sm'), e('span', {}, 'عندك آيفون؟ انسخ الرابط وافتحه فيه بـ Safari لتدفع بـ Apple Pay.')]), copyBox(url)])
+    e('div', { class: 'fx-apg-box' }, [e('div', { class: 'fx-apg-r' }, [ic(PAYB + 'safari-app.svg', 'is-sm is-sf'), e('span', {}, 'عندك آيفون؟ انسخ الرابط وافتحه فيه بـ Safari لتدفع بـ Apple Pay.')]), copyBox(url)])
   ];
   return e('section', { class: 'fx-apg', role: 'region', 'aria-label': 'إرشاد الدفع بـ Apple Pay' }, e('div', { class: 'fx-apg-in' }, body));
 }
+function apNote() {
+  const url = location.href;
+  return e('section', { class: 'fx-apg is-note', role: 'note', 'aria-label': 'ملاحظة الدفع بـ Apple Pay' }, e('div', { class: 'fx-apg-in' }, [
+    e('div', { class: 'fx-apg-h' }, [e('span', { class: 'fx-apg-ic is-sf' }, e('img', { src: PAYB + 'safari-app.svg', alt: '' })), e('div', {}, [e('b', {}, 'ملاحظة: Apple Pay يعمل بأفضل شكل في Safari'), e('small', {}, 'اضغط «ادفع عبر Apple Pay» وأكمل الدفع من هنا')])]),
+    e('span', {}, 'إن لم تظهر لك Apple Pay في صفحة الدفع، افتح الصفحة في Safari وأكمل الدفع منه.'),
+    apIOS() ? liveOk(e('a', { class: 'fx-apg-go is-safari', href: 'x-safari-' + url, rel: 'noopener' }, [e('span', { class: 'fx-apg-gi is-sf' }, e('img', { src: PAYB + 'safari-app.svg', alt: '' })), 'افتح في Safari'])) : null,
+    e('div', { class: 'fx-apg-or' }, [e('i'), e('span', {}, 'أو انسخ الرابط والصقه في Safari'), e('i')]), copyBox(url)]));
+}
+const apDev = () => { try { return apIOS() || /Macintosh/.test(navigator.userAgent); } catch (err) { return false; } };
 const apIOS = () => { try { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); } catch (err) { return false; } };
 const apOk = () => { try { return !!(window.ApplePaySession && ApplePaySession.canMakePayments && ApplePaySession.canMakePayments()); } catch (err) { return false; } };
 const PAY_NETS = [['mada', 'مدى', 'مدى'], ['visa', 'Visa', 'فيزا'], ['mc', 'Mastercard', 'ماستركارد'], ['apple', 'Apple Pay', 'Apple Pay']];
@@ -2502,10 +2511,12 @@ function paynowPage() {
   /* v472: شعارات الشبكات تحت «بوابة الدفع» — اختيار شكلي يطمئن العميل (لا يغيّر السجل؛ الشبكة الفعلية من Paymob)، ويظهر في ملخص السداد */
   if (FX.mth === 'paymob') part2.push(e('div', { class: 'fx-nets', role: 'radiogroup', 'aria-label': 'شبكة البطاقة' }, PAY_NETS.filter(function (k) { return LOGOS[k[1]]; }).map(function (k) {
     const on = FX.net === k[0];
-    return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), 'aria-label': k[2], class: 'fx-net fx-nets-' + k[0] + (on ? ' is-on' : ''), 'data-live-ok': '', onClick: function () { if (!on && k[0] === 'apple' && !apOk()) { FX.apNo = true; draw(); return; } FX.apNo = false; FX.net = on ? '' : k[0]; draw(); } }, e('img', { src: LOGOS[k[1]], alt: '' })); })));
+    return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), 'aria-label': k[2], class: 'fx-net fx-nets-' + k[0] + (on ? ' is-on' : ''), 'data-live-ok': '', onClick: function () { if (!on && k[0] === 'apple' && !apOk() && !apDev()) { FX.apNo = true; draw(); return; } FX.apNo = false; FX.net = on ? '' : k[0]; draw(); } }, e('img', { src: LOGOS[k[1]], alt: '' })); })));
   /* v473: Apple Pay على جهاز أو متصفح لا يدعمه — بطاقة إرشاد بارزة تحت الشعارات مباشرة (المعتمدة في لوحة التصميم) */
   if (FX.mth === 'paymob' && FX.apNo) part2.push(apGuide());
   if (FX.mth === 'paymob' && FX.net === 'apple') part2.push(DS.note('info', 'الدفع عبر Apple Pay', 'بعد «ادفع عبر Apple Pay» تنتقل إلى صفحة الدفع الآمنة لتأكيد الدفع بـ Apple Pay، ثم تعود تلقائيًا إلى صفحة نتيجة السداد.'));
+  /* v474: جهاز Apple يكمل من أي متصفح — وإن لم يُتحقَّق من دعم المتصفح: ملاحظة Safari عند الاختيار (لا منع) */
+  if (FX.mth === 'paymob' && FX.net === 'apple' && !apOk()) part2.push(apNote());
   if (isBank && LIVE.on && !ACCTS.length) part2.push(DS.note('warn', 'التحويل البنكي غير متاح الآن', 'لم يُضف حساب الشركة البنكي بعد. اختر «بوابة الدفع» للسداد الآن.'));
   else if (isBank) {
     part2.push(fxReq('الحساب المحوَّل إليه', 'acct', DS.select({ value: FX.acct, options: opts(ACCTS.map(function (a) { return [a[0], a[1] + ' — ' + a[2]]; })), onChange: function (v) { FX.acct = v; FX.miss = []; draw(); } }), 'حساب الشركة الذي حوّلت إليه.', false));

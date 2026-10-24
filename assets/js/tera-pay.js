@@ -64,28 +64,34 @@
     var rfu = document.referrer ? new URL(document.referrer) : null;
     if (rfu && rfu.origin === location.origin && !/^\/api\/pay\//.test(rfu.pathname)) sessionStorage.setItem('tera.pay.from', rfu.pathname + rfu.search + rfu.hash);
   } catch (e) { void e; }
+  /* v474: رابط الصفحة النظيف (بلا علامة واتساب) ونسخه — لإرشاد واتساب وإرشاد Apple Pay */
+  function tpUrl() { try { var u = new URL(location.href); u.searchParams.delete('src'); u.searchParams.delete('ap'); return u.href; } catch (e) { return location.href; } }
+  function tpCopy(root, url) {
+    var uEl = root.querySelector('[data-url]'); if (uEl) uEl.textContent = url;
+    var cb = root.querySelector('[data-copy]'); if (!cb || cb._tp) return; cb._tp = 1;
+    cb.addEventListener('click', function () {
+      var done = function (ok) { cb.textContent = ok ? 'تم النسخ ✓' : 'انسخ الرابط يدويًا'; cb.classList.toggle('is-ok', !!ok); setTimeout(function () { cb.textContent = 'نسخ الرابط'; cb.classList.remove('is-ok'); }, 2400); };
+      var fb = function () { try { var t = document.createElement('textarea'); t.value = url; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:-1000px;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, url.length); var ok = document.execCommand('copy'); t.remove(); return ok; } catch (e) { return false; } };
+      try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(fb()); }); return; } } catch (e) { void e; }
+      done(fb());
+    });
+  }
+  var tpIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   /* v473: إرشاد فتح الرابط من داخل واتساب — من رابط واتساب (?src=wa) أو متصفح داخل تطبيق */
   (function () {
     var wa = document.getElementById('tp-wa'); if (!wa || D.done) return;
     var ua = navigator.userAgent || '', q = new URLSearchParams(location.search);
     var inApp = q.get('src') === 'wa' || /WhatsApp|FBAN|FBAV|Instagram|Snapchat|Line\/|; wv\)/i.test(ua);
     if (!inApp) return;
-    var u = new URL(location.href); u.searchParams.delete('src'); var url = u.href;
-    var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), android = /Android/i.test(ua);
+    var url = tpUrl();
+    var ios = tpIOS, android = /Android/i.test(ua);
     wa.querySelectorAll('[data-open]').forEach(function (a) {
       var k = a.getAttribute('data-open');
       if ((k === 'safari' && android) || (k === 'chrome' && ios)) { a.hidden = true; return; }
       a.href = k === 'safari' ? 'x-safari-' + url : 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
     });
     var go = wa.querySelector('.tp-wa-go'); if (go && go.querySelectorAll('[data-open]:not([hidden])').length === 1) go.classList.add('is-one');
-    var uEl = wa.querySelector('[data-url]'); if (uEl) uEl.textContent = url;
-    var cb = wa.querySelector('[data-copy]');
-    if (cb) cb.addEventListener('click', function () {
-      var done = function (ok) { cb.textContent = ok ? 'تم النسخ ✓' : 'انسخ الرابط يدويًا'; cb.classList.toggle('is-ok', !!ok); setTimeout(function () { cb.textContent = 'نسخ الرابط'; cb.classList.remove('is-ok'); }, 2400); };
-      var fb = function () { try { var t = document.createElement('textarea'); t.value = url; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:-1000px;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, url.length); var ok = document.execCommand('copy'); t.remove(); return ok; } catch (e) { return false; } };
-      try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(fb()); }); return; } } catch (e) { void e; }
-      done(fb());
-    });
+    tpCopy(wa, url);
     wa.hidden = false;
   })();
   var box = document.getElementById('tp-pixel');
@@ -305,6 +311,7 @@
           return;
         }
         D.pub = j.pub; D.cs = j.cs; D.status = j.status; D.save = j.save || '0';
+        if (j.hosted) { D.hosted = j.hosted; document.querySelectorAll('[data-apgo]').forEach(function (b) { b.disabled = false; }); }
         if (j.ref) document.querySelectorAll('[data-ref]').forEach(function (el) { el.textContent = j.ref; });
         if (payBtn) payBtn.disabled = false;
         boot();
@@ -317,7 +324,22 @@
      يظهر على أجهزة Apple التي تدعمه فقط (Safari) */
   var apOk = false; try { apOk = !!(window.ApplePaySession && window.ApplePaySession.canMakePayments && window.ApplePaySession.canMakePayments()); } catch (e) { apOk = false; }
   if (D.apple === '1' && D.hosted && apOk) document.querySelectorAll('[data-apwrap]').forEach(function (w) { w.hidden = false; });
-  if (!apOk) document.querySelectorAll('.tp-meth [data-m="apple"]').forEach(function (b) { b.hidden = true; });
+  /* v474: زر Apple Pay ظاهر دائمًا — على جهاز يدعمه زر الدفع (صفحة Paymob الآمنة)، وعلى غيره إرشاد: Safari على آيفون، أو الدفع بالبطاقة */
+  var apBox = document.getElementById('tp-applebox');
+  if (apBox) {
+    var apR = apBox.querySelector('[data-apready]'), apG = apBox.querySelector('[data-apguide]');
+    /* v474: جهاز Apple (آيفون · آيباد · ماك) يكمل الدفع من أي متصفح — وإن لم يُتحقَّق من دعم المتصفح تظهر ملاحظة Safari تحت الزر.
+       غير أجهزة Apple: لا Apple Pay أصلًا ← إرشاد الدفع بالبطاقة */
+    var apDev = tpIOS || /Macintosh/.test(navigator.userAgent || '');
+    if ((apOk || apDev) && apR) apR.hidden = false;
+    if (!apOk && apG) {
+      var apU = tpUrl(), ios1 = apG.querySelector('[data-apios]'), and1 = apG.querySelector('[data-apand]');
+      if (apDev) { if (ios1) ios1.hidden = false; } else if (and1) and1.hidden = false;
+      var sf = apG.querySelector('[data-apsafari]'); if (sf) sf.href = 'x-safari-' + apU;
+      var ac = apG.querySelector('[data-apcard]'); if (ac) ac.addEventListener('click', function () { var m = D.m && D.m !== 'apple' ? D.m : 'mada'; var t = document.querySelector('.tp-meth [data-m="' + m + '"]'); if (t) t.click(); else setM(m); });
+      tpCopy(apG, apU); apG.hidden = false;
+    }
+  }
   document.querySelectorAll('[data-apgo]').forEach(function (b) {
     b.addEventListener('click', function () {
       if (!D.hosted || started) return;
