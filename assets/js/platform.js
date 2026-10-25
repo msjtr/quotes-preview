@@ -3158,7 +3158,7 @@ const DBN_KINDS = ['direct_message', 'pay_op_decision', 'transfer_decision'].con
 function dbNotifs() {
   try {
     if (!LIVE.on || !LIVE.me) return [];
-    if (!DBN.busy && Date.now() - DBN.at > 60000) {
+    if (!window.__cpvUid && !DBN.busy && Date.now() - DBN.at > 60000) {
       DBN.busy = true;
       liveToken().then(function (tk) { return fetch('/api/push/inbox', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + tk } }); }).then(function (r) { return r.json(); }).then(function (j) {
         const R = (j && j.ok && Array.isArray(j.rows)) ? j.rows : [];
@@ -15123,11 +15123,11 @@ const navOf = () => S.role === 'admin' ? (typeof cuNavOf === 'function' && cuNav
 function shell() {
   const on = navOf();
   const ADMIN = S.role === 'admin';
-  const side = (ADMIN ? (typeof cuNavAdm === 'function' ? cuNavAdm(NAV_ADM) : NAV_ADM) : NAV).map(function (g) {
+  const side = (ADMIN ? (typeof cuNavAdm === 'function' ? cuNavAdm(NAV_ADM) : NAV_ADM) : (typeof clPre === 'function' && clPre() ? CL_PRE_NAV : NAV)).map(function (g) {
     return '<div class="t2-side-g">' + (g[0] ? '<button class="t2-side-gh" type="button"><span>' + g[0] + '</span><span class="t2-chev" aria-hidden="true"></span></button>' : '') + '<div class="t2-side-gb">' +
       (g[1].map(function (i) { return '<button class="t2-side-i' + (i[0] === on ? ' is-on' : '') + '" type="button" data-nav="' + i[0] + '"><span class="t2-side-ic">' + tile(i[0]) + '</span><span class="t2-side-l">' + (i[0] === 'adm-home' ? admHomeT() : i[1]) + '</span></button>'; }).join('')) + '</div></div>';
   }).join('');
-  const dock = (ADMIN ? (typeof cuDockAdm === 'function' ? cuDockAdm : function (x) { return x; })([['adm-home', admHomeT()], ['adm-more', 'الأقسام'], ['sys', 'الإعدادات'], ['tq-account', 'حسابك']]) : [['dash', 'الرئيسية'], ['store', 'المتجر'], ['more', 'الأقسام'], ['tq-account', 'حسابك']]).map(function (i) { return '<button type="button" class="t2-dock-i' + (i[0] === on ? ' is-on' : '') + '" data-nav="' + i[0] + '">' + tile(i[0]) + '<span class="t2-dock-l">' + i[1] + '</span></button>'; }).join('');
+  const dock = (ADMIN ? (typeof cuDockAdm === 'function' ? cuDockAdm : function (x) { return x; })([['adm-home', admHomeT()], ['adm-more', 'الأقسام'], ['sys', 'الإعدادات'], ['tq-account', 'حسابك']]) : (typeof clPre === 'function' && clPre() ? CL_PRE_DOCK : [['dash', 'الرئيسية'], ['store', 'المتجر'], ['more', 'الأقسام'], ['tq-account', 'حسابك']])).map(function (i) { return '<button type="button" class="t2-dock-i' + (i[0] === on ? ' is-on' : '') + '" data-nav="' + i[0] + '">' + tile(i[0]) + '<span class="t2-dock-l">' + i[1] + '</span></button>'; }).join('');
   return '<div class="t2 t2-app ' + (ADMIN ? 'is-admin' : 'is-client') + '"><header class="t2-head is-v3"><div class="t2-hd-brand"><img class="t2-hd-logo" src="' + IMG.logo + '" alt="تيرا"><span class="t2-hd-name">منصةُ الخدمات</span></div>' +
     '<button type="button" class="t2-hcmd" aria-label="البحث"><span class="t2-hcmd-i" aria-hidden="true"></span><span class="t2-hcmd-t">ابحث عن منتج أو قسم…</span><kbd class="t2-kbd">Ctrl K</kbd></button><div class="t2-hd-sp"></div>' +
     '<div class="t2-hd-r"><button type="button" class="t2-hwho lv-who" aria-haspopup="dialog" aria-expanded="false"><span class="t2-avatar">' + (ADMIN ? 'م' : 'ع') + '</span><span class="t2-hwho-n">' + (ADMIN ? 'المشرف العام' : ME.name) + '</span><span class="t2-hwho-r">' + (ADMIN ? (typeof cuCtxLabel === 'function' ? cuCtxLabel() : 'المشرف') : 'العميل') + '</span><span class="lv-caret" aria-hidden="true">' + ui('caret-down', 12) + '</span></button>' +
@@ -17843,13 +17843,26 @@ function liveAttachGw(txns) {
     }
   }); });
 }
+/* v504: «صفحة العميل» — بيانات العميل نفسه من الخادم (/admin/api/cpv) بدل جلسة الموظف: العضوية والتوثيق والملف والأمان وواتساب والإشعارات والطلبات */
+async function cpvLoad(uid) {
+const t = tqToken();
+let j = null;
+if (t) { try { const r = await fetch('/admin/api/cpv/' + encodeURIComponent(uid), { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' }); j = r.ok ? await r.json() : null; } catch (err) { j = null; } }
+if (!j || j.ok !== true) { LIVE_DATA.mem = null; LIVE_DATA.blocks = {}; LIVE_DATA.ver0 = null; LIVE_DATA.vsec = null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null; LVS.devs = []; LVS.sess = []; LIVE_DATA.factors = []; try { DBN.rows = []; DBN.at = Date.now(); LWA.info = { ok: false }; } catch (err) { void err; } return; }
+LIVE_DATA.mem = j.mem; LIVE_DATA.blocks = j.blocks || {}; LIVE_DATA.ver0 = j.ver0 || null; LIVE_DATA.vsec = j.vsec || null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null;
+try { LIVE_DATA.sec = j.sec; liveSec(j.sec || {}); } catch (err) { LVS.devs = []; LVS.sess = []; }
+LIVE_DATA.factors = liveFactorKeys(j.factors);
+try { (j.requests || []).forEach(function (q) { REQS.push(liveReq(q)); }); } catch (err) { void err; }
+try { LWA.info = j.wa || { ok: false }; } catch (err) { void err; }
+try { DBN.rows = (j.inbox || []).filter(function (x) { return x && DBN_KINDS.indexOf(x.kind) >= 0; }); DBN.at = Date.now(); } catch (err) { void err; }
+}
 async function liveData(want) {
   liveWipe();
   const uid = LIVE.me.id, jobs = [];
   /* v493: كل دور يجلب بياناته وحده — الدور النشط فقط (وفي «صفحة العميل» للموظف: العميل). والملف الشخصي وتوثيقه ومركز الأمان مشتركة تتبع الحساب في كل دور */
   const LROLE = LIVE.allow.length === 1 ? LIVE.allow[0] : ((want || S.role) === 'admin' ? 'admin' : 'client'); LIVE.loaded = LROLE;
   if (LIVE.allow.indexOf('client') >= 0 && LROLE === 'client') {
-    jobs.push(liveSb('rpc/my_membership', { body: {} }).then(function (m) { LIVE_DATA.mem = m; }).catch(function () { LIVE_DATA.mem = null; }));
+    if (!window.__cpvUid) jobs.push(liveSb('rpc/my_membership', { body: {} }).then(function (m) { LIVE_DATA.mem = m; }).catch(function () { LIVE_DATA.mem = null; }));
     jobs.push(liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name))&kind=eq.contract&user_id=eq.' + encodeURIComponent(uid) + '&order=order_date.desc')
       .then(function (L) { (L || []).forEach(function (r) { CONTRACTS.push(liveContract(r)); }); }).catch(function () { /* القسم يبقى فارغًا */ }));
     jobs.push(clApi('/api/account/pay/config').then(livePayCfgApply).catch(function () { /* الدفع غير متاح */ }));
@@ -17858,9 +17871,9 @@ async function liveData(want) {
     jobs.push(liveSb('payment_gateway_txns?select=trx,gateway_order,amount,status,txn_at,card_last4,class_label,payment_id,refunded_amount,refund_state,parent_trx,details&user_id=eq.' + encodeURIComponent(uid) + '&order=txn_at.desc.nullslast')
       .then(function (L) { LIVE_DATA.txns = Array.isArray(L) ? L : []; }).catch(function () { LIVE_DATA.txns = []; }));
     }
-    /* مشترك لكل الأدوار: الملف الشخصي وتوثيقه وملاحظاته وأمان التوثيق */
-    {
-    LIVE_DATA.blocks = {};
+    /* مشترك لكل الأدوار: الملف الشخصي وتوثيقه وملاحظاته وأمان التوثيق — v504: وفي «صفحة العميل» من الخادم ببيانات العميل نفسه */
+if (window.__cpvUid) jobs.push(cpvLoad(window.__cpvUid)); else {
+LIVE_DATA.blocks = {};
     LIVE_BLK.concat(['docs']).forEach(function (b) { jobs.push(clApi('/api/account/profile/block/' + b).then(function (d) { LIVE_DATA.blocks[b] = d; }).catch(function () { /* القسم فارغ */ })); });
     jobs.push(liveSb('rpc/my_profile_verification', { body: {} }).then(function (v) { LIVE_DATA.ver0 = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.ver0 = null; }));
     jobs.push(liveSb('rpc/my_surveys', { body: {} }).then(function (v) { LIVE_DATA.surveys = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.surveys = null; }));
@@ -17868,7 +17881,7 @@ async function liveData(want) {
     jobs.push(liveSb('rpc/profile_notes', { body: {} }).then(function (n) { LIVE_DATA.notes = n && n.ok !== false ? n : null; }).catch(function () { LIVE_DATA.notes = null; }));
     }
     if (LIVE.allow.indexOf('client') >= 0 && LROLE === 'client') {
-    jobs.push(clApi('/api/account/my-requests').then(function (j) { (j.requests || []).forEach(function (q) { REQS.push(liveReq(q)); }); }).catch(function () { /* فارغ */ }));
+    if (!window.__cpvUid) jobs.push(clApi('/api/account/my-requests').then(function (j) { (j.requests || []).forEach(function (q) { REQS.push(liveReq(q)); }); }).catch(function () { /* فارغ */ }));
   }
   if (LIVE.allow.indexOf('admin') >= 0 && LROLE === 'admin') {
     jobs.push(admClients('').then(function (j) { LIVE_DATA.clients = j; ADMS.cl = ADMS.cl || { q: '', f: 'all' }; ADMS.cl.data = j; ADMS.cl.at = Date.now(); }).catch(function () { LIVE_DATA.clients = null; }));
@@ -17876,8 +17889,8 @@ async function liveData(want) {
     jobs.push(admRpc('admin_verification_list', { p: { status: 'all' } }).then(function (j) { LIVE_DATA.ver = j.rows || []; ADMS.ver = { q: '', f: 'all', data: j, at: Date.now() }; }).catch(function () { LIVE_DATA.ver = null; }));
     jobs.push(Promise.resolve().then(function () { return liveAdmLoad(); }).catch(function () { /* الأقسام فارغة */ }));
   }
-  jobs.push(clApi('/api/security/overview').then(function (o) { LIVE_DATA.sec = o; liveSec(o); }).catch(function () { LVS.devs = []; LVS.sess = []; }));
-  jobs.push(clApi('/api/security/gateway/factors').then(function (j) { LIVE_DATA.factors = liveFactorKeys(j); }).catch(function () { LIVE_DATA.factors = null; }));
+  if (!window.__cpvUid) jobs.push(clApi('/api/security/overview').then(function (o) { LIVE_DATA.sec = o; liveSec(o); }).catch(function () { LVS.devs = []; LVS.sess = []; }));
+  if (!window.__cpvUid) jobs.push(clApi('/api/security/gateway/factors').then(function (j) { LIVE_DATA.factors = liveFactorKeys(j); }).catch(function () { LIVE_DATA.factors = null; }));
   await Promise.all(jobs);
   liveFactorFlags();
   try { liveAttachGw(LIVE_DATA.txns || []); } catch (err) { void err; }
@@ -17938,13 +17951,30 @@ try {
  * أرسل ملفه: مسار متحرك يبيّن أين طلبه · اعتُمد: «بانتظار تدشين حسابك» · دُشِّن: اللوحة الكاملة
  * الأقسام: من لديه عقد أو شراكة يرى كل أيقونات «خدماتي»، ومن لا يملك يرى طلباته وبياناته الوظيفية وطلب عرض السعر فقط. */
 const JR_PG = { email: 'me-contact', personal: 'me-personal', address: 'me-address', contact: 'me-contact', emergency: 'me-emergency', bank: 'me-bank', docs: 'me-docs', agreed: 'me-verify', submitted: 'me-verify' };
-function liveFull() { try { return CONTRACTS.length > 0 || (LIVE.roles || []).some(function (r) { return r === 'investor' || r === 'marketer' || r === 'partner'; }); } catch (err) { return true; } }
+function liveFull() { try { return CONTRACTS.length > 0 || (LIVE.roles || []).some(function (r) { return r === 'investor' || r === 'marketer' || r === 'partner'; }) || REQS.some(function (r) { return r && r.live && r.q && ['accepted', 'executed'].indexOf(r.q.status) >= 0; }); } catch (err) { return true; } } /* v504: الأهلية المعتمدة (طلب مقبول أو منفَّذ) تفتح الخدمات كالعقد */
 function liveMigrated() { try { return CONTRACTS.some(function (c) { return c.legacy || c.legacy_no || c.old; }) || liveNotes().length > 0; } catch (err) { return false; } }
 function liveJourney() {
   const v = liveVer(), m = window.__LIVE_MEM || {}, st = v.status || 'draft';
   const launched = !!(m && m.exists && !m.pending && !m.launch_pending && m.status !== 'pending');
   const stage = launched ? 'launched' : st === 'approved' ? 'approved' : ['submitted', 'received', 'in_review', 'matching', 'matched'].indexOf(st) >= 0 ? 'review' : 'start';
   return { v: v, m: m, st: st, stage: stage, mig: liveMigrated(), full: liveFull(), returned: st === 'returned' };
+}
+/* v504: قبل التدشين — للمرحَّلين والجدد — لا يظهر للعميل إلا «ملفي الشخصي» و«مركز الأمان» و«مركز المراسلات» (والجرس)،
+   وصفحة البداية «ملفي الشخصي» بنسبة الاكتمال وما ينقصه. بعد التدشين تظهر اللوحة: من لديه عقد أو أهلية معتمدة كل الخدمات، وغيره المحدّد. */
+function clPre() { try { return !!(LIVE.on && S.role === 'client' && LIVE.me && liveJourney().stage !== 'launched'); } catch (err) { return false; } }
+const CL_PRE_NAV = [['الأساسي', [['profile', 'ملفي الشخصي'], ['shield', 'مركزُ الأمان'], ['mail', 'مركز المراسلات']]]];
+const CL_PRE_DOCK = [['profile', 'ملفي'], ['shield', 'الأمان'], ['mail', 'المراسلات'], ['tq-account', 'حسابك']];
+function clPreOk(tab, other) {
+if (tab === 'msg' || tab === 'notif') return true;
+if (tab !== 'other') return false;
+let k = other, n = 0;
+while (k && n++ < 12) { if (['profile', 'shield', 'mail', 'msg', 'con', 'notif', 'tq-account'].indexOf(k) >= 0 || /^(me-|upd-|sec-)/.test(k)) return true; k = LP[k] && LP[k].up; }
+return false;
+}
+if (LIVE.on) {
+const drawPre = draw;
+draw = function () { try { if (clPre() && (S.tab === 'dash' || !clPreOk(S.tab, S.other))) { S.tab = 'other'; S.other = 'profile'; } } catch (err) { void err; } return drawPre.apply(this, arguments); };
+try { if (LP['profile']) { const pr0 = LP['profile'].run; LP['profile'].run = function () { const out = [].concat(pr0.apply(this, arguments) || []); try { if (clPre()) return [].concat(journeyPage(liveJourney()) || []).concat(out); } catch (err) { void err; } return out; }; } } catch (err) { void err; }
 }
 /* المسار المتحرك: من خط زمني القاعدة إن وُجد، وإلا خمس مراحل ثابتة */
 function jrTrack(J) {
@@ -21474,9 +21504,9 @@ function cpgOpen(c) {
 }
 async function cpgEnter(c, why) {
   if (CPV.on) throw new Error('أنت داخل صفحة عميل الآن — اخرج منها أولًا.');
-  CPV.sess = cpgSess(); CPV.uid = c.id;
+  CPV.sess = cpgSess(); CPV.uid = c.id; window.__cpvUid = c.id;
   const r = await cpgLog('enter', 'dash', 'دخول صفحة العميل', why);
-  if (!r || r.ok !== true) { CPV.sess = ''; CPV.uid = ''; throw new Error(r && r.error === 'reason_required' ? 'اكتب سبب الدخول (6 أحرف على الأقل).' : r && /forbidden|صلاحية/.test(String(r.error)) ? 'لا تملك صلاحية الدخول إلى صفحات العملاء.' : 'تعذّر بدء الجلسة — لم يُفتح شيء. ' + ((r && r.error) || '')); }
+  if (!r || r.ok !== true) { CPV.sess = ''; CPV.uid = ''; window.__cpvUid = ''; throw new Error(r && r.error === 'reason_required' ? 'اكتب سبب الدخول (6 أحرف على الأقل).' : r && /forbidden|صلاحية/.test(String(r.error)) ? 'لا تملك صلاحية الدخول إلى صفحات العملاء.' : 'تعذّر بدء الجلسة — لم يُفتح شيء. ' + ((r && r.error) || '')); }
   let prof = null; try { const j = await admClients('/reg/' + encodeURIComponent(c.id)); prof = j && j.profile; } catch (err) { prof = null; }
   try { if (!LIVE_LOY.mem) await lvMemLoad(); } catch (err) { void err; }
   CPV.on = true; CPV.name = c.name || ''; CPV.no = c.no || ''; CPV.reason = why; CPV.at = Date.now(); CPV.prof = prof; CPV.blk = {}; CPV.last = '';
@@ -22494,7 +22524,8 @@ function lwaPinErr(p, wa) {
   if (String(wa || '').replace(/\D/g, '').slice(-4) === p) return 'لا تستخدم آخر 4 أرقام من رقم جوالك.';
   return '';
 }
-function lwaLoad() { if (LWA.info === 'loading') return; LWA.info = 'loading'; clApi('/api/account/whatsapp').then(function (j) { LWA.info = j; }).catch(function (err) { LWA.info = { ok: false, message: (err && err.message) || '' }; }).then(function () { if (S.other === 'sec-whatsapp') draw(); }); }
+function lwaMyNum() { const p = String((LIVE.me || {}).phone || '').replace(/\D/g, ''); if (/^9665\d{8}$/.test(p)) { LWA.cc = '+966'; return p.slice(3); } return ''; }
+function lwaLoad() { if (window.__cpvUid) { if (!LWA.info) LWA.info = { ok: false }; return; } if (LWA.info === 'loading') return; LWA.info = 'loading'; clApi('/api/account/whatsapp').then(function (j) { LWA.info = j; }).catch(function (err) { LWA.info = { ok: false, message: (err && err.message) || '' }; }).then(function () { if (S.other === 'sec-whatsapp') draw(); }); }
 function lwaReset(st) { LWA.st = st || ''; LWA.code = ''; LWA.pin = ''; LWA.pin2 = ''; LWA.note = null; if (!st || st === 'num') { LWA.proof = ''; } }
 async function lwaSend() {
   const n = String(LWA.num || '').replace(/[٠-٩]/g, function (x) { return String(x.charCodeAt(0) - 0x660); }).replace(/\D/g, '').replace(/^0+/, '');
@@ -22518,7 +22549,7 @@ async function lwaVerify() {
 function liveWaPage() {
   if (!LWA.info) lwaLoad();
   const I = (LWA.info && LWA.info !== 'loading') ? LWA.info : null;
-  if (I && I.ok === false && !LWA.st) return liveWaPageOld();
+  if (I && I.ok === false && !LWA.st) return [DS.note('warn', 'تعذّرت قراءة حالة ربط واتساب الآن', ((I && I.message) || '') + ' أعد فتح الصفحة بعد قليل.')]; /* v504: لا طريقة بديلة — الربط برمز ترسله تيرا إلى واتساب العميل فقط */
   const link = (I && I.link) || { status: 'none' }, pin = (I && I.pin) || {}, lock = (I && I.lock) || {};
   const linked = link.status === 'active', otpOn = !I || I.otp !== false, pinSet = !!pin.set;
   const D = function (v) { return v ? bdiD(String(v).replace('T', ' ').slice(0, 16)) : '—'; };
@@ -22568,7 +22599,7 @@ function liveWaPage() {
     lvRow([liveOk(DS.button('تم', { size: 'sm', tone: 'primary', onClick: function () { lwaReset(''); draw(); } }))])]);
   else if (!otpOn) flow = DS.note('warn', 'قناة واتساب غير متاحة لإرسال الرمز الآن', 'أعد المحاولة لاحقًا، أو تواصل مع خدمة العملاء.');
   const numP = lvPanel('رقم الواتس اب المربوط', DS.badge(linked ? 'مربوط' : link.status === 'pending' ? 'بانتظار الربط' : 'غير مربوط', linked ? 'ok' : null), [lvFields([lvField('الرقم', linked ? masked : '', 0, false), lvField('تاريخ الربط', linked ? D(link.linked_at) : '', 0, false)]),
-    LWA.st || !I || !otpOn ? null : lvRow(liveOk(DS.button(linked ? 'تغيير الرقم' : 'ربط رقم الواتس اب', { tone: 'primary', size: 'sm', ui: linked ? 'arrows-clockwise' : 'whatsapp-logo', onClick: function () { lwaReset('num'); LWA.num = ''; draw(); } })))]);
+    LWA.st || !I || !otpOn ? null : lvRow(liveOk(DS.button(linked ? 'تغيير الرقم' : 'ربط رقم الواتس اب', { tone: 'primary', size: 'sm', ui: linked ? 'arrows-clockwise' : 'whatsapp-logo', onClick: function () { lwaReset('num'); LWA.num = lwaMyNum(); draw(); } })))]);
   const pinP = lvPanel('رمز التعريف', DS.badge(lock.locked ? 'موقوف مؤقتًا' : pinSet ? 'محفوظ' : 'غير مُنشأ', lock.locked ? 'warn' : pinSet ? 'ok' : null), [lvFields([lvField('تاريخ الإنشاء', pinSet ? D(pin.created_at) : '', 0, false), lvField('آخر تغيير', pinSet ? D(pin.changed_at) : '', 0, false)]),
     LWA.st || !linked ? null : lvRow(liveOk(DS.button(pinSet ? 'تغيير رمز التعريف' : 'إنشاء رمز التعريف', { size: 'sm', ui: 'lock-key', onClick: function () { lwaReset('pinonly'); draw(); } })))]);
   return [SH('wa', 'واتساب منصة تيرا', [['ربطُ الرقم', linked ? 'مربوط' : 'غير مربوط', 'phone', linked ? 'ok' : 'warn'], ['الرقم', linked ? (link.wa_masked || '—') : '—', 'device-mobile'], ['رمز التعريف', pinSet ? 'محفوظ' : 'غير مُنشأ', 'lock', pinSet ? 'ok' : null]], [linked ? 'مربوط' : 'غير مربوط', linked ? 'ok' : 'warn']),
