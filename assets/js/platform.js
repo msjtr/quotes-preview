@@ -7120,7 +7120,7 @@ function cuPfHubPage() {
       { ic: 'identification-card:teal', t: 'ملفات العملاء', d: LIVE.on ? 'قائمة واحدة: الملف والحساب والأمان لكل عميل، والتصفية بحالة الحساب' : 'محتوى الملفات وبياناتها كاملة — عرض فقط', n: fmtNum(cuList().length) + ' ملفات', go: function () { ADM.clF = 'all'; ADM.clFrom = ''; go('other', 'cu-pf-files'); } },
       { ic: 'note-pencil:saffron', t: 'طلبات الملف الشخصي', d: 'تحديث البيانات واستبدال المستندات', n: w(cnt(R)), badge: lt(R), go: function () { go('other', 'cu-pf-req'); } },
       { ic: 'seal-check:teal', t: 'طلبات توثيق الملف', d: 'مراجعة المستندات واعتماد التوثيق', n: w(cnt(V)), badge: lt(V), go: function () { go('other', 'cu-pf-ver'); } },
-      LIVE.on ? null : { ic: 'arrows-clockwise:teal', t: 'توثيق ملف العملاء المرحّلين', d: 'المنقولون من النظام السابق: النواقص وطلب التحديث بالواتساب والبريد', n: w(cnt(Mg)), badge: lt(Mg), go: function () { go('other', 'cu-pf-mig'); } }].filter(Boolean).concat(LIVE.on ? [(function () { lvLchCount();
+      { ic: 'arrows-clockwise:teal', t: 'توثيق ملف العملاء المرحّلين', d: LIVE.on ? 'المنقولون من النظام السابق: رسالة «تدشين الهوية الجديدة» وحالة الدخول والتدشين والتوثيق' : 'المنقولون من النظام السابق: النواقص وطلب التحديث بالواتساب والبريد', n: w(cnt(Mg)), badge: lt(Mg), go: function () { go('other', 'cu-pf-mig'); } }].filter(Boolean).concat(LIVE.on ? [(function () { lvLchCount();
         return { ic: 'rocket-launch:teal', t: 'تدشين الحساب', d: 'الحسابات المعتمدة بانتظار التدشين — يُسجَّل التدشين في ملف العميل وعضويته', n: LV_LCHN.at ? fmtNum(LV_LCHN.w) + ' بانتظار · ' + fmtNum(LV_LCHN.d) + ' مدشّنة' : null, badge: LV_LCHN.w ? ['بانتظار ' + fmtNum(LV_LCHN.w), 'warn'] : null, go: function () { ADM.lchF = 'wait'; go('other', 'cu-pf-launch'); } }; })()] : [])]]);
   const box = H[0], hf = box && box.querySelector('.hf-row'); if (hf) hf.remove(); 
   return H;
@@ -19904,7 +19904,7 @@ const LV_SRK = [['settle', 'سداد عقد كامل', 'handshake', 'طلبات 
 const lvSrOpenSt = (x) => x.status === 'submitted' || x.status === 'in_review';
 function lvSrNames() { const N = {}; ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).forEach(function (c) { N[c.id] = c.name; }); return N; }
 const LIVE_PAGES = { client: {},
-  admin: {  'pay-center': function () { ADM.payMode = 'set'; return admPayPage(); }, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': function () { return admPfFilesPage(); }, 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
+  admin: {  'pay-center': function () { ADM.payMode = 'set'; return admPayPage(); }, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': cuPfMigPage, /* v499: العملاء المنقولون (حساباتهم في المنصة) — رسالة تدشين الهوية الجديدة */ 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
     'sys-pay': function () { ADM.payMode = 'set'; return admPayPage(); } } };
 /* ---------- v283: قسم العملاء — إدارة الحساب ومركز الأمن وطلبات الملف والتدشين من القاعدة مباشرة ----------
