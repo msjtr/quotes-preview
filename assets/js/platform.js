@@ -7531,8 +7531,11 @@ function cuWhoMenu() {
   return box;
 }
 /* قوائم المشرف حسب الحساب: حساب الموظف يرى ما تسمح به أدواره */
-const cuNavAdm = (N) => cuCan('settings.roles') ? N : N.filter(function (g) { return !g[1].some(function (x) { return x[0] === 'sys'; }); });
-const cuDockAdm = (D) => cuCan('settings.roles') ? D : D.filter(function (x) { return x[0] !== 'sys'; });
+/* v495: أقسام لوحة الموظف حسب صلاحياته الفعلية — المشرف العام يرى الكل */
+const CU_NAV_PERM = { cu: ['customers.manage', 'accounts.view', 'accounts.manage', 'quotes.view', 'quotations.view', 'assignments.manage'], fin: ['earnings.view', 'earnings.view.all', 'investors.finance', 'settlements.approve', 'reports.view'], cpg: ['customers.manage', 'accounts.view'], comm: ['customers.manage', 'notifications.manage', 'whatsapp.inbox.handle', 'whatsapp.send'], cx: ['customers.manage', 'reports.view', 'whatsapp.surveys.view'], 'soon-emp': ['employees.manage'], 'soon-par': ['investors.view', 'investors.manage', 'investors.finance'], 'soon-mkt': ['marketers.manage'] };
+const cuNavOk = (k) => cuAs() === 'sup' || !CU_NAV_PERM[k] || CU_NAV_PERM[k].some(function (p) { return cuCan(p); });
+const cuNavAdm = (N) => (cuCan('settings.roles') ? N : N.filter(function (g) { return !g[1].some(function (x) { return x[0] === 'sys'; }); })).map(function (g) { return [g[0], g[1].filter(function (x) { return cuNavOk(x[0]); })].concat(g.slice(2)); }).filter(function (g) { return g[1].length; });
+const cuDockAdm = (D) => (cuCan('settings.roles') ? D : D.filter(function (x) { return x[0] !== 'sys'; })).filter(function (x) { return cuNavOk(x[0]); });
 /* الحسابات — الوظيفة والأدوار لكل حساب، بنفس سجل الحساب في المنصة */
 const cuAcctKeys = () => ['sup'].concat(STAFF.filter(function (x) { return x[0] !== 'none' && x[0] !== 'emp0'; }).map(function (x) { return x[0]; }));
 const cuAcctName = (k) => k === 'sup' ? 'المشرف العام' : cuStaff(k);
@@ -15233,7 +15236,7 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   document.querySelectorAll('.t2-side-i').forEach(function (b) { b.classList.toggle('is-on', b.dataset.nav === on); });
   const accOnNow = S.tab === 'other' && S.other === 'tq-account'; /* v386: «حسابك» */
   document.querySelectorAll('.t2-dock-i').forEach(function (b) { b.classList.toggle('is-on', accOnNow ? b.dataset.nav === 'tq-account' : b.dataset.nav !== 'tq-account' && (b.dataset.nav === on || (on === 'devices' && b.dataset.nav === 'store') || (S.role === 'admin' && b.dataset.nav === 'adm-more' && on !== 'adm-home' && on !== 'sys') || (b.dataset.nav === 'more' && ['dash', 'store', 'devices', 'custom'].indexOf(on) < 0))); });
-  const body = S.tab === 'elig' || S.tab === 'qreq' ? eligPage() : S.tab === 'msg' ? msgPage() : S.tab === 'dash' ? dashPage() : FIN[S.tab] ? FIN[S.tab][2]() : S.tab === 'other' ? ACCT[S.other](): svcPage();
+  const body = S.tab === 'elig' || S.tab === 'qreq' ? eligPage() : S.tab === 'msg' ? msgPage() : S.tab === 'dash' ? dashPage() : FIN[S.tab] ? FIN[S.tab][2]() : S.tab === 'other' ? (S.role === 'admin' && !cuNavOk(S.other) ? cuPermNo('هذا القسم خارج صلاحياتك', 'يظهر لك ما تسمح به صلاحيات دورك — اطلبها من المشرف العام.') : ACCT[S.other]()): svcPage();
   const pk0 = window.__DRK, pk1 = anchKey(), sameP = pk0 === pk1, y0 = SCROLLER === window ? window.scrollY : SCROLLER.scrollTop;
   if (sameP && ROOT.offsetHeight) ROOT.style.minHeight = ROOT.offsetHeight + 'px';
   mount(ROOT, e('div', { class: 't2-stack' }, [
@@ -15821,12 +15824,16 @@ async function liveLoad() {
   return { me: me, roles: (Array.isArray(r) ? r : []).map(function (x) { return x.role; }) };
 }
 /* v311: دور الموظف الفعلي من قاعدة البيانات (staff_roles · roles) — يقرأ الموظف أدواره فقط */
+/* v495: الموظف غير المشرف يرى ويعمل بما تسمح به صلاحياته الفعلية في القاعدة (role_permissions) — القوائم والأقسام والإجراءات؛ والمشرف العام كما هو */
+function liveAsStaff(keys) { try { const R = CU_ROLES.filter(function (r) { return r.k === 'live'; })[0]; if (R) { R.keys = keys; R.t = LIVE.roleAr || 'موظف'; } else CU_ROLES.push({ k: 'live', t: LIVE.roleAr || 'موظف', d: 'صلاحياتك كما في قاعدة البيانات', sys: true, keys: keys }); CU_SROLE.live = ['live']; ADM.as = 'live'; } catch (err) { void err; } }
 function liveStaffRole() {
   if (!LIVE.me || (LIVE.allow || []).indexOf('admin') < 0) return Promise.resolve();
   return liveSb('staff_roles?select=role_id&staff_id=eq.' + encodeURIComponent(LIVE.me.id)).then(function (R) {
     const ids = (Array.isArray(R) ? R : []).map(function (x) { return x.role_id; }).filter(Boolean);
-    if (!ids.length) { LIVE.sup = false; return; }
-    return liveSb('roles?select=key,label_ar&id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (K) { if (Array.isArray(K)) { LIVE.sup = K.some(function (x) { return x.key === 'super_admin'; }); LIVE.roleAr = K.map(function (x) { return x.label_ar || ''; }).filter(Boolean).join('، '); } });
+    if (!ids.length) { LIVE.sup = false; liveAsStaff([]); return; }
+    return liveSb('roles?select=key,label_ar&id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (K) { if (Array.isArray(K)) { LIVE.sup = K.some(function (x) { return x.key === 'super_admin'; }); LIVE.roleAr = K.map(function (x) { return x.label_ar || ''; }).filter(Boolean).join('، '); }
+    if (LIVE.sup === true) { ADM.as = 'sup'; return; }
+    return liveSb('role_permissions?select=permission_key&role_id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (P) { liveAsStaff((Array.isArray(P) ? P : []).map(function (x) { return x.permission_key; }).filter(function (k, i, a) { return k && a.indexOf(k) === i; })); }); });
   }).catch(function () { /* يبقى العنوان الافتراضي */ });
 }
 /* v494: الدور النشط وحده — بيانات كل دور تُجلب في دوره فقط (وفي «صفحة العميل» للموظف: العميل) */
@@ -20374,7 +20381,7 @@ if (LIVE.on) {
     if (S.out === 'done') { liveLogout(); return; }
     return overlay0.apply(this, arguments);
   };
-  try { ADM.as = 'sup'; } catch (err) { void err; }
+  try { liveAsStaff([]); } catch (err) { void err; } /* v495: بلا صلاحيات حتى يُعرَف دور الموظف من القاعدة؛ والمشرف العام يُرفَع إلى «sup» */
   /* قائمة الحساب: بيانات الحساب الحقيقية، والتبديل بين أدواره الفعلية فقط، والخروج — بلا حسابات تجريبية */
   /* قائمة الحساب: تصميم العيّنة (cuWhoMenu) ببيانات الحساب وأدواره الفعلية */
   liveLoad().then(function (x) {
