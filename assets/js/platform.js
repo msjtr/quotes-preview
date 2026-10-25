@@ -18002,11 +18002,11 @@ window.__clProg = clProg; window.__clSubmit = clSubmit; window.__clConfirm = clC
 • الجديد: يعدّل ويحفظ. المرحَّل: يعدّل ثم «حفظ» فتظهر مقارنة القديم بالجديد ثم «تأكيد الحفظ» — والحفظ بلا تغيير يعتمد القسم كما هو.
 • «تراجع عن الحفظ» للجميع: يعيد القسم إلى ما كان قبل آخر حفظ (stf_89) عبر مسار الحفظ نفسه.
 • ربط الواتساب ووسيلة المصادقة والمستندات أقسام داخل الاستمارة نفسها. */
-const CF = { ed: {}, undo: null, undoAt: 0, vsAt: 0 };
+const CF = { ed: {}, undo: null, undoAt: 0, vsAt: 0, auth: '' };
 const CF_ID = ['national_id', 'residency', 'gcc_id', 'arab_id', 'passport'];
 const CF_IC = { personal: 'profile', address: 'pin', contact: 'phone', emergency: 'phone', bank: 'bank', docs: 'files', _wa: 'shield', _auth: 'shield' };
 function cfRaw(k) { const d = LIVE_DATA.blocks && LIVE_DATA.blocks[k]; return d && Array.isArray(d.fields) ? d.fields : null; }
-function cfEmpty(f) { return f.kind === 'file' ? !(f.doc && typeof f.doc === 'object') : (f.value === null || f.value === undefined || typeof f.value === 'object' || String(f.value).trim() === ''); }
+function cfEmpty(f) { return f.kind === 'file' ? !(cfDocOk(f.doc) && (Number(f.side_count) !== 2 || cfDocOk(f.doc_back))) : (f.value === null || f.value === undefined || typeof f.value === 'object' || String(f.value).trim() === ''); }
 function cfBlk(k) {
 const R0 = cfRaw(k); if (!R0) return null;
 const F = R0.filter(function (f) { return f && f.active !== false && !f.hidden; }), R = F.filter(function (f) { return f.required; }), miss = R.filter(cfEmpty);
@@ -18069,7 +18069,7 @@ rvRow([liveOk(DS.button(U.busy ? 'جارٍ الحفظ…' : 'تأكيد الحف
 }
 const ctl = function (f) {
 const v = cur(f), set = function (x) { U.vals[f.key] = x; U.msg = ''; };
-if (f.options) return DS.select({ value: v, options: [['', 'اختر']].concat(f.options), onChange: function (x) { set(x); draw(); } });
+if (f.options) return DS.select({ value: v, options: [['', 'اختر']].concat(cfStr(v) && !f.options.some(function (o) { return o[0] === cfStr(v); }) ? [[cfStr(v), cfStr(v)]] : []).concat(f.options), onChange: function (x) { set(x); draw(); } });
 if (f.kind === 'date') return DS.input({ type: 'date', value: v, title: f.label, onInput: function (x) { set(x); } });
 return DS.input({ value: v, dir: /phone|email|iban|number|postal|building|zip|short/.test(f.kind + ' ' + f.key) ? 'ltr' : null, onInput: set });
 };
@@ -18078,7 +18078,8 @@ e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, live
 U.map ? LV.geoPick({ key: 'cf:' + k, onUse: function (R) { U.geo = R; const n = LV.geoFill(R, F, function (x, y) { U.vals[x] = y; }); snack(n ? 'عُبّئت ' + fmtNum(n) + ' حقول من الخريطة — راجعها ثم احفظ.' : 'لم تتطابق بيانات الموقع مع الحقول — أدخلها يدويًا.'); draw(); } }) : null])]) : null;
 const grid = e('div', { class: 't2-pb-grid' }, F.map(function (f) {
 const empty = f.required && !cfStr(cur(f));
-return e('div', { class: 't2-pb-cell', 'data-key': f.key }, [DS.editField([f.label, f.required ? ' *' : ''].join(''), ctl(f)), empty ? e('span', { class: 't2-field-h is-bad' }, 'مطلوب') : null]);
+const box = DS.editField(f.label + (f.required ? '' : ' (اختياري)'), ctl(f)); if (empty && box.classList) box.classList.add('is-missing');
+return e('div', { class: 't2-pb-cell', 'data-key': f.key }, [box, empty ? e('span', { class: 't2-field-h is-bad' }, 'هذا الحقل مطلوب.') : null]);
 }));
 const roBox = RO.length ? DS.fields(RO.map(function (f) { return [f.label, cfOpt(f, cfStr(f.value)) || '—']; })) : null;
 const askBox = und && U.ask ? e('div', { class: 't2-stack-tight' }, [DS.note('warn', 'التراجع عن آخر حفظ', 'يعيد بيانات هذا القسم إلى ما كانت عليه قبل آخر حفظ' + (und.at ? ' (' + iso(new Date(und.at)) + ')' : '') + '.'),
@@ -18093,6 +18094,71 @@ if (!b) return null;
 const L = b.miss.map(function (f) { return f.label || f.key; }).concat(b.idMiss ? ['مستند الهوية — حدّد الجنسية ونوع الإقامة أو الوثيقة في «المعلومات الشخصية» ليظهر المطلوب'] : []);
 return L.length ? e('p', { class: 't2-field-h is-bad' }, 'الناقص: ' + L.join('، ')) : null;
 }
+/* v508: مستندات الاستمارة — لكل مستند حالته، وللمستند ذي الوجهين رفعٌ للوجه الأمامي وآخر للخلفي («المفتاح#back» في القاعدة).
+السعودي: الهوية الوطنية (وجه) · المقيم: هوية مقيم (وجه) · غير السعودي: الجواز (وجه) أو الهوية الوطنية لبلده (وجهان). */
+const CF_DST = { pending: ['بانتظار المراجعة', 'info'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض — ارفعه من جديد', 'danger'], needs_changes: ['مطلوب تعديله', 'warn'] };
+function cfDocOk(d) { return !!(d && typeof d === 'object' && ['rejected', 'needs_changes', 'replaced'].indexOf(d.status) < 0); }
+function cfDocSide(f, back) {
+const LV = window.__LV || {}, d = back ? f.doc_back : f.doc, k = f.key + (back ? '#back' : ''), st = {}, gate = e('div'), msg = e('div', { role: 'status' });
+const S = d && typeof d === 'object' ? (CF_DST[d.status] || [d.status || 'مرفوع', 'info']) : [f.required ? 'مطلوب — لم يُرفع' : 'لم يُرفع', f.required ? 'warn' : null];
+const inp = e('input', { type: 'file', accept: 'application/pdf,image/jpeg,image/png,image/webp', hidden: true, onChange: async function () {
+const file = inp.files && inp.files[0]; inp.value = ''; msg.innerHTML = ''; if (!file || !LV.upload) return;
+btn.disabled = true; msg.appendChild(e('small', { class: 'cu-dr-hint' }, 'جارٍ الرفع…'));
+try { await LV.upload(k, file, st, gate); await cfRefresh(); msg.innerHTML = ''; snack('رُفع المستند — بانتظار المراجعة.'); draw(); }
+catch (err) { if (err && err.message === 'auth') return; msg.innerHTML = ''; msg.appendChild(DS.note('warn', 'لم يُرفع', (err && err.message) || '')); }
+btn.disabled = false;
+} });
+const btn = liveOk(DS.button(d ? 'استبدال' : 'رفع', { size: 'sm', ui: 'paperclip', onClick: function () { inp.click(); } }));
+const open = d && d.id && LV.openDoc ? liveOk(DS.button('فتح', { size: 'sm', ui: 'files', onClick: function () { LV.openDoc(d.id); } })) : null;
+return e('div', { class: 'cu-mgr-doc' }, [e('div', {}, [e('b', {}, back === null ? f.label : (back ? 'الوجه الخلفي' : 'الوجه الأمامي')), d && d.reject_reason ? e('small', {}, d.reject_reason) : null]), rvBadge(S[0], S[1]), rvRow([btn, open]), inp, gate, msg]);
+}
+function cfDocs() {
+const R = (cfRaw('docs') || []).filter(function (f) { return f && f.kind === 'file' && f.active !== false && !f.hidden; });
+if (!R.length) return [DS.note('info', 'لا مستندات مطلوبة الآن.', '')];
+const by = {}, order = [];
+R.forEach(function (f) { const s = f.section || 'المستندات'; if (!by[s]) { by[s] = []; order.push(s); } by[s].push(f); });
+return order.map(function (s) {
+return DS.panel(s, null, by[s].map(function (f) {
+if (Number(f.side_count) === 2) return e('div', { class: 't2-stack-tight' }, [e('b', {}, f.label), e('small', {}, 'يُرفع الوجهان: الأمامي والخلفي'), cfDocSide(f, false), cfDocSide(f, true)]);
+return cfDocSide(f, null);
+}));
+});
+}
+/* v508: قسم «وسيلة مصادقة واحدة على الأقل» — سطر اختيار فوق بطاقتين منفصلتين، لكل وسيلة تعريفها وطريقة استخدامها وحالتها، وتُفتح خطوات تفعيلها داخل بطاقتها فقط. */
+function cfAuth() {
+const LV = window.__LV || {}, VS = liveVsec();
+const card = function (k, title, on, what, how, ic) {
+const open = CF.auth === k, flow = open ? [].concat((k === 'totp' ? (LV.totp ? LV.totp() : []) : (LV.rec ? LV.rec() : [])) || []).slice(1) : [];
+return e('article', { class: 'jr-card cf-auth' }, [
+e('header', {}, [e('span', { class: 'fx-card-ic' }, frag(ui(ic, 20))), e('span', {}, [e('b', {}, title), e('small', {}, what)]), DS.badge(on ? 'مفعّل' : 'غير مفعّل', on ? 'ok' : null)]),
+e('ol', { class: 'jr-chk' }, how.map(function (t, i) { return e('li', {}, [e('b', {}, fmtNum(i + 1) + '.'), e('span', {}, ' ' + t)]); })),
+open ? e('div', { class: 't2-stack-tight' }, flow) : null,
+rvRow([liveOk(DS.button(open ? 'إغلاق' : (on ? 'إدارة الوسيلة' : 'تفعيل ' + title), { tone: open ? null : 'primary', size: 'sm', ui: open ? 'x' : 'caret-left', onClick: function () { CF.auth = open ? '' : k; draw(); } }))])]);
+};
+return [DS.note('info', 'اختر وسيلة واحدة أو كليهما', 'وسيلة المصادقة حماية ثانية بعد كلمة المرور: لا يدخل أحد حسابك دونها ولو عرف كلمة مرورك. تكفي وسيلة واحدة لإرسال ملفك، وتفعيل الاثنتين أقوى حماية.'),
+card('totp', 'تطبيق المصادقة', VS.totp, 'رمز من 6 أرقام يتجدّد كل 30 ثانية في تطبيق على جوالك — يعمل دون إنترنت، وهو الأقوى.',
+['حمّل تطبيق Google Authenticator أو Microsoft Authenticator على جوالك.', 'اضغط «تفعيل تطبيق المصادقة» وأدخل كلمة المرور الحالية وأكمل التحقق.', 'امسح رمز QR بالتطبيق، ثم اكتب الرمز الظاهر فيه لتأكيد التفعيل.', 'عند الدخول أو تنفيذ عملية حساسة: افتح التطبيق واكتب الرمز الظاهر.'], 'device-mobile'),
+card('rec', 'الرقم الإضافي', VS.extra, 'رقم سري تحتفظ به خارج جوالك، تتحقق به وتستعيد حسابك إن فقدت جوالك أو التطبيق.',
+['اضغط «تفعيل الرقم الإضافي» وأدخل كلمة المرور الحالية وأكمل التحقق.', 'احفظ الرقم في مكان آمن خارج جوالك — يُعرض مرة واحدة فقط.', 'يُطلب منك عند استعادة الحساب أو التحقق من عملية حساسة.'], 'key')];
+}
+/* v508: كل حقل كلمة مرور في المنصة فيه «عين» لإظهار ما كُتب وإخفائه (ما لم يكن للحقل زر إظهار خاص به). */
+(function () { try {
+const ic = function (b, sh) { b.innerHTML = ''; try { b.appendChild(frag(ui(sh ? 'eye-slash' : 'eye', 18))); } catch (err) { b.textContent = sh ? 'إخفاء' : 'إظهار'; } b.setAttribute('aria-label', sh ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'); b.title = sh ? 'إخفاء' : 'إظهار'; };
+const add = function (inp) {
+if (!inp || !inp.parentNode || inp.getAttribute('data-eye')) return;
+inp.setAttribute('data-eye', '1');
+const box = inp.parentNode.closest ? inp.parentNode.closest('div,section,label') : null; if (box && box.querySelector('.xc-eye, .pw-eye')) return;
+const w = document.createElement('span'); w.className = 'pw-eye-w'; w.style.cssText = 'position:relative;display:block;width:100%';
+inp.parentNode.insertBefore(w, inp); w.appendChild(inp); inp.style.paddingInlineEnd = '44px';
+const b = document.createElement('button'); b.type = 'button'; b.className = 'pw-eye'; b.setAttribute('data-live-ok', '');
+b.style.cssText = 'position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);background:none;border:0;padding:6px;cursor:pointer;color:inherit;opacity:.75;line-height:0';
+b.addEventListener('click', function (ev) { ev.preventDefault(); const sh = inp.type === 'password'; inp.type = sh ? 'text' : 'password'; ic(b, sh); try { inp.focus(); } catch (err) { void err; } });
+ic(b, false); w.appendChild(b);
+};
+const scan = function (n) { if (n.matches && n.matches('input[type=password]')) add(n); if (n.querySelectorAll) n.querySelectorAll('input[type=password]').forEach(add); };
+new MutationObserver(function (M) { M.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
+scan(document);
+} catch (err) { void err; } })();
 function clForm(J) {
 const me = LIVE.me || {}, first = String(me.full_name || ME.name || '').split(' ')[0], C = clConf(), mig = C ? !!C.mig : !!J.mig, cb = (C && C.blocks) || {};
 const PG = clProg(), VS = liveVsec(), sub = J.st === 'submitted', LV = window.__LV || {};
@@ -18112,22 +18178,21 @@ const secs = PG.items.map(function (it) {
 let st, body;
 if (it.kind === 'sec') {
 st = it.done ? 'done' : 'empty';
-if (it.key === '_wa') body = [DS.note('info', 'ربط رقم الواتساب', 'ترسل تيرا رمز تحقق إلى واتساب رقمك فتكتبه هنا، ثم تختار رمز تعريف من 4 أرقام.')].concat(LV.wa ? [].concat(LV.wa() || []) : [DS.note('warn', 'تعذّر تحميل ربط الواتساب', 'أعد فتح الصفحة بعد قليل.')]);
-else body = [DS.note('info', 'فعّل وسيلة واحدة على الأقل', 'تطبيق المصادقة (الأقوى، يعمل دون إنترنت) أو الرقم الإضافي — ويمكنك تفعيل الاثنتين.'),
-e('h3', { class: 't2-group-t' }, 'تطبيق المصادقة')].concat(LV.totp ? [].concat(LV.totp() || []) : []).concat([e('h3', { class: 't2-group-t' }, 'الرقم الإضافي')]).concat(LV.rec ? [].concat(LV.rec() || []) : []);
+if (it.key === '_wa') body = [DS.note('info', 'ربط رقم الواتساب', 'ترسل تيرا رمز تحقق إلى واتساب رقمك فتكتبه هنا، ثم تختار رمز تعريف من 4 أرقام.')].concat(LV.wa ? [].concat(LV.wa() || []).slice(1, -1) : [DS.note('warn', 'تعذّر تحميل ربط الواتساب', 'أعد فتح الصفحة بعد قليل.')]);
+else body = cfAuth();
 } else {
 const b = cfBlk(it.key), conf = !mig || !!cb[it.key];
 st = retd[it.key] ? 'back' : !b ? (it.done ? 'done' : 'empty') : b.done ? (conf ? 'done' : 'wait') : b.any ? 'part' : 'empty';
 const back = retd[it.key] && retd[it.key] !== true ? DS.note('warn', 'ملاحظة الفريق', String(retd[it.key])) : null;
 if (it.key === 'docs') {
-body = [back, cfMissLine(b)].concat(LV.docs ? [].concat(LV.docs() || []) : [DS.note('warn', 'تعذّر تحميل المستندات', 'أعد فتح الصفحة بعد قليل.')])
+body = [back, cfMissLine(b)].concat(cfDocs())
 .concat(st === 'wait' ? [rvRow([liveOk(DS.button('تأكيد المستندات', { tone: 'primary', size: 'sm', ui: 'check', onClick: function () { clConfirm('docs'); } }))])] : []);
 } else body = [back, st === 'wait' ? DS.note('info', 'معبّأ من ملفك السابق', 'راجع البيانات وعدّل ما يلزم، ثم «حفظ» — الحفظ بلا تغيير يعتمدها كما هي.') : null, cfMissLine(b)].concat(cfEditor(it.key, mig));
 }
 return rvSec(it.label, body.filter(Boolean), { one: 'cf-' + it.key, ic: CF_IC[it.key] || 'profile' }, null, cfBadge(st));
 });
 const foot = sub ? null : DS.panel(J.returned ? 'إعادة إرسال الملف' : 'إرسال الملف للتوثيق', PG.ready ? 'ملفك مكتمل — أرسله للتوثيق، ويمكنك تعديله حتى يستلمه الفريق.' : 'المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total) + ' — أكمل الأقسام الناقصة ثم أرسل ملفك.',
-[], [liveOk(DS.button(J.returned ? 'أعد الإرسال' : 'إرسال الملف للتوثيق', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } }))]);
+[DS.note(PG.ready ? 'ok' : 'info', PG.ready ? 'ملفك مكتمل' : 'المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total), PG.ready ? 'أرسله للتوثيق، ويمكنك تعديله حتى يستلمه الفريق.' : 'أكمل الأقسام الناقصة ثم أرسل ملفك.')], [liveOk(DS.button(J.returned ? 'أعد الإرسال' : 'إرسال الملف للتوثيق', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } }))]);
 const box = e('div', { class: 't2-dash jr cf' }, [hero, e('div', { class: 'rv-acc' }, secs), foot]);
 jrCount(box);
 return [box];
@@ -18927,6 +18992,7 @@ function liveEditPanel(k) {
   return lvPanel('تحديث ' + LVP[k].t, null, [lvFields(inputs.map(function (x) { return DS.editField([x[0].label || x[0].key, x[0].required ? ' *' : ''].join(''), x[1]); })), gate, e('div', { class: 't2-pb-actions' }, [save, cancel]), out]);
 }
 /* رفع مستند: رابط رفع موقّع من الخادم ← الملف إلى المخزن ← حفظ مساره في قسم المستندات */
+window.__LV = Object.assign(window.__LV || {}, { upload: typeof liveUpload === 'function' ? liveUpload : null, openDoc: typeof clOpenDoc === 'function' ? clOpenDoc : null }); /* v508 */
 async function liveUpload(field, file, st, host) {
   if (!file) return;
   if (['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0 || file.size > 10 * 1024 * 1024) throw new Error('المرفق PDF أو صورة، حتى 10 ميغابايت.');
@@ -18936,8 +19002,8 @@ async function liveUpload(field, file, st, host) {
   let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
   if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
   if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن.');
-  const v = {}; v[field] = u.path;
-  return liveSaveBlock('docs', v, st, host);
+  const v = {}; v[field] = /#back$/.test(field) ? { path: u.path, name: file.name } : u.path; /* v508: الوجه الخلفي «المفتاح#back» */
+return liveSaveBlock('docs', v, st, host);
 }
 function liveDocActions(d) {
   const f = d[4], st = {}, gate = e('div'), msg = e('div', { role: 'status' });
