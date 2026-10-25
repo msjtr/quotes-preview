@@ -15829,6 +15829,17 @@ function liveStaffRole() {
     return liveSb('roles?select=key,label_ar&id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (K) { if (Array.isArray(K)) { LIVE.sup = K.some(function (x) { return x.key === 'super_admin'; }); LIVE.roleAr = K.map(function (x) { return x.label_ar || ''; }).filter(Boolean).join('، '); } });
   }).catch(function () { /* يبقى العنوان الافتراضي */ });
 }
+/* v494: الدور النشط وحده — بيانات كل دور تُجلب في دوره فقط (وفي «صفحة العميل» للموظف: العميل) */
+function lvRole(k) { return !!(LIVE.allow && LIVE.allow.indexOf(k) >= 0 && (LIVE.allow.length === 1 || S.role === k)); }
+/* v494: دور الجلسة في القاعدة (active_role) يتبع الدور النشط في الصفحة — فتعمل واجهات كل دور (مثل «طلباتي» للعميل) ويُسجَّل التبديل في سجل الجلسة */
+function liveRoleSync() {
+  const want = S.role === 'admin' ? 'staff' : 'client';
+  if (!LIVE.roles || LIVE.roles.indexOf(want) < 0) return Promise.resolve();
+  return liveSb('rpc/active_role', { body: {} }).then(function (cur) {
+    if (cur === want) return;
+    return liveSb('rpc/set_active_role', { body: { p_role: want, p_user_agent: navigator.userAgent } }).then(function () { try { if (window.TeraSession && typeof window.TeraSession.noteRoleSwitch === 'function') window.TeraSession.noteRoleSwitch(); } catch (err) { void err; } });
+  }).catch(function () { /* يبقى الدور كما هو */ });
+}
 function liveAllowed() {
   const a = []; if (LIVE.roles.indexOf('client') >= 0 || (LIVE.me && LIVE.me.user_type === 'client')) a.push('client');
   if (LIVE.roles.indexOf('staff') >= 0 || (LIVE.me && LIVE.me.user_type === 'staff')) a.push('admin');
@@ -19405,8 +19416,8 @@ function liveSoSync(force) {
 }
 async function liveSoLoad() {
   const uid = LIVE.me.id, jobs = [];
-  if (LIVE.allow.indexOf('client') >= 0) jobs.push(liveSb('store_orders?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc&limit=200').then(function (L) { LIVE_SO.mine = Array.isArray(L) ? L : []; }).catch(function () { LIVE_SO.mine = []; }));
-  if (LIVE.allow.indexOf('admin') >= 0) jobs.push(liveSb('store_orders?select=*&order=created_at.desc&limit=500').then(async function (L) { LIVE_SO.all = Array.isArray(L) ? L : []; if (LIVE_SO.all.length) LIVE_SO.N = await liveNames().catch(function () { return {}; }); }).catch(function () { LIVE_SO.all = []; }));
+  if (lvRole('client')) jobs.push(liveSb('store_orders?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc&limit=200').then(function (L) { LIVE_SO.mine = Array.isArray(L) ? L : []; }).catch(function () { LIVE_SO.mine = []; }));
+  if (lvRole('admin')) jobs.push(liveSb('store_orders?select=*&order=created_at.desc&limit=500').then(async function (L) { LIVE_SO.all = Array.isArray(L) ? L : []; if (LIVE_SO.all.length) LIVE_SO.N = await liveNames().catch(function () { return {}; }); }).catch(function () { LIVE_SO.all = []; }));
   await Promise.all(jobs);
   liveSoSync(true);
 }
@@ -19718,10 +19729,10 @@ function lvSrReq(x) {
 }
 async function lvSrLoad() {
   const uid = LIVE.me.id;
-  const P2 = await Promise.all([LIVE.allow.indexOf('client') >= 0 ? liveSb('client_service_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').catch(function () { return null; }) : null,
-    LIVE.allow.indexOf('admin') >= 0 ? liveSb('client_service_requests?select=*&order=created_at.desc&limit=300').catch(function () { return null; }) : null]);
-  if (LIVE.allow.indexOf('client') >= 0) LV_SR.mine = Array.isArray(P2[0]) ? P2[0] : [];
-  if (LIVE.allow.indexOf('admin') >= 0) { LV_SR.all = Array.isArray(P2[1]) ? P2[1] : []; LV_SR.ok = Array.isArray(P2[1]); }
+  const P2 = await Promise.all([lvRole('client') ? liveSb('client_service_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').catch(function () { return null; }) : null,
+    lvRole('admin') ? liveSb('client_service_requests?select=*&order=created_at.desc&limit=300').catch(function () { return null; }) : null]);
+  if (lvRole('client')) LV_SR.mine = Array.isArray(P2[0]) ? P2[0] : [];
+  if (lvRole('admin')) { LV_SR.all = Array.isArray(P2[1]) ? P2[1] : []; LV_SR.ok = Array.isArray(P2[1]); }
   for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr) REQS.splice(i, 1);
   LV_SR.mine = LV_SR.mine.filter(function (x) { return !(x.status === 'cancelled' && x.origin === 'staff'); });
   LV_SR.mine.forEach(function (x) { REQS.push(lvSrReq(x)); });
@@ -20375,7 +20386,7 @@ if (LIVE.on) {
     /* v493: الرابط يحدّد الدور — /staff/ منصة الموظف و/clients/ منصة العميل؛ وإن لم يملك الحساب دور الصفحة يُنقل إلى صفحة دوره */
     try { const sec = (window.__TERA || {}).section, pr = sec === 'staff' ? 'admin' : sec === 'clients' ? 'client' : ''; if (pr && LIVE.allow.indexOf(pr) >= 0 && S.role !== pr) { S.role = pr; S.tab = pr === 'admin' ? 'other' : 'dash'; S.other = pr === 'admin' ? 'adm-home' : ''; } else if (pr && LIVE.allow.indexOf(pr) < 0) { roleKeep(S.role); location.replace(S.role === 'admin' ? '/staff/' : '/clients/'); return; } } catch (err) { void err; }
     roleKeep(S.role);
-    liveData().catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
+    liveRoleSync().then(function () { return liveData(); }).catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
       /* التحديث يُبقي الصفحة نفسها: يُعاد استرجاع موضع التنقل بعد وصول البيانات الحقيقية (العقد والدفعة والإيصال وملف العميل) */
       try { if (window.__navRaw) { sessionStorage.setItem(NAVKEY, window.__navRaw); window.__navRaw = ''; loadNav(); if (FX.pfc) ADM.pfc = FX.pfc; } } catch (err) { void err; }
       return S.role === 'client' ? livePayReturn().catch(function () { /* */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); liveFilmAuto(); });
@@ -23038,7 +23049,7 @@ if (LIVE.on) {
       return r;
     };
     const lvSrLoadStl = lvSrLoad;
-    lvSrLoad = async function () { await Promise.all([lvSrLoadStl.apply(this, arguments), LIVE.allow.indexOf('client') >= 0 ? stlClientLoad() : null]); };
+    lvSrLoad = async function () { await Promise.all([lvSrLoadStl.apply(this, arguments), lvRole('client') ? stlClientLoad() : null]); };
     const liveReqCancelStl = liveReqCancel;
     liveReqCancel = function () {
       liveReqCancelStl.apply(this, arguments);
