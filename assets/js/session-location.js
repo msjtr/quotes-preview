@@ -16,6 +16,9 @@
  *   • منتقي الخريطةِ من مكوّناتِ خريطةِ العنوانِ في المستودعِ الجديد (Leaflet
  *     من assets وبلاطاتُ HERE والبحثُ والعنوانُ العكسيُّ عبرَ /api/geo) — لا ملفَّ من الأرشيف.
  *
+ * v484: الحسابُ المعفى (يُعرَفُ من ردِّ الخادم idle_off) لا يُرسِلُ حدثَ خمولٍ ولا إعلانَ مغادرة،
+ *   ولا تظهرُ له مطالبةُ الموقع — فلا شيءَ آليٌّ يُنهي جلستَه في أيِّ دور.
+ *
  * لا يُرسَلُ رمزٌ ولا سِرٌّ في أيِّ حمولة، ولا يُقرأُ من التخزينِ إلّا
  * رمزُ الجلسةِ الذي يستعملُه بقيةُ الواجهةِ نفسُها.
  * ############################################################ */
@@ -868,7 +871,7 @@ function retryGeo(why) {
 
 function showGeoAsk(kind) {
   /* v483: لا تقطعُ المطالبةُ لوحةَ تحديدٍ مفتوحة (الخريطة أو العنوان الوطني) */
-  if (!document.body || askH || mapH || locH) return;
+  if (!document.body || askH || mapH || locH || state.exempt) return;   /* v484: لا مطالبةَ للحساب المعفى */
   /* auth_75: قبلَ مطالبةِ المستخدمِ — جرِّبْ موقعَ الجهازِ الموثوق مرّةً واحدةً */
   if (!state.trustedTried) {
     state.trustedTried = true;
@@ -1022,6 +1025,7 @@ function showGeoAsk(kind) {
       }).then(function (r) {
       handleAuth(r);
       if (r && r.body && r.body.ok === true) state.sentOnce = true;
+      if (r && r.body) state.exempt = (r.body.idle_off === true);   /* v484 */
       if (r && r.body && r.body.idle_minutes) {          /* auth_39 */
         var _m = Number(r.body.idle_minutes);
         if (_m >= 1 && _m <= 1440) IDLE_MS = _m * 60000;
@@ -1039,7 +1043,10 @@ function showGeoAsk(kind) {
       gps_status: state.status, latitude: state.lat, longitude: state.lon,
       accuracy_m: state.acc, best_accuracy_m: state.best, updates: state.updates,
       connection: connectionInfo()
-    }).then(handleAuth);
+    }).then(function (r) {
+      if (r && r.body && r.body.ok === true) state.exempt = (r.body.idle_off === true);   /* v484 */
+      return handleAuth(r);
+    });
   }
 
   function close(kind) {
@@ -1120,6 +1127,7 @@ function showGeoAsk(kind) {
    * أنَّ سببَه إغلاقُ المتصفّح. */
   function leaving() {
     if (state.closing || state.stopped) return;
+    if (state.exempt) return;   /* v484: الحساب المعفى لا يُعلِنُ مغادرةً تُنهي جلستَه */
     pushEv("leaving", "غادرت الصفحة (تحديث أو تنقل أو إغلاق)");
     flushEv(true);
     var t = bearer();
@@ -1142,6 +1150,11 @@ function showGeoAsk(kind) {
     if (state.stopped) return;
     if (!bearer()) return;
     var now = Date.now();
+    if (state.exempt) {   /* v484: لا خمولَ ولا مهلةَ مطلقةً للحساب المعفى — تستمرُّ النبضاتُ وحدَها */
+      if (now - state.lastFull >= TELEMETRY_MS) { send(false); return; }
+      if (now - state.lastBeat >= BEAT_MS) { state.lastBeat = now; beat(); }
+      return;
+    }
     try {
       var absUntil = window.__teraAbsOn === false ? 0 : Number(localStorage.getItem("tera.admin.absolute_until") || "0");
       if (absUntil && now > absUntil) {
