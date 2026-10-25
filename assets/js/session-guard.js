@@ -1,5 +1,5 @@
 /* session-guard.js — حارس الجلسة في واجهات المنصة الجديدة (الموظفين والعملاء) على النطاقات الحية فقط.
- * يشغّل مُجمِّع الجلسة القائم في النظام (/admin/session-geo.js): النبضات، الخمول، إعلان المغادرة، الموقع.
+ * يشغّل مُجمِّع الجلسة وتحديد الموقع (assets/js/session-location.js — v483، منقول من الأرشيف): النبضات، الخمول، إعلان المغادرة، الموقع.
  * ويعرض قرارات سياسة الجلسة في الخادم (sessionpolicy.js) بوضوح:
  *   • الموقع متوقف ← طبقة تحجب الصفحة مع زر التشغيل والتحديد اليدوي، وعدّاد قبل الإنهاء.
  *   • إنهاء الجلسة (خمول · انقطاع · دخول من جهاز آخر · VPN/بروكسي/Tor · Private Relay · الموقع) ← رسالة بالسبب ثم شاشة الدخول.
@@ -115,14 +115,14 @@
   window.TeraAuth = window.TeraAuth || {};
   if (typeof window.TeraAuth.expired !== 'function') window.TeraAuth.expired = function () { showEnded(lastCode, lastMsg); };
 
-  /* تحميل مُجمِّع الجلسة القائم مرة واحدة بعد وجود جلسة */
+  /* v483: تحميل مُجمِّع الجلسة وتحديد الموقع من المستودع الجديد مرة واحدة بعد وجود جلسة (بدل /admin/session-geo.js) */
   var tries = 0;
   var boot = setInterval(function () {
     tries += 1;
     if (window.TeraSession) { clearInterval(boot); return; }
     if (!token()) { if (tries > 400) clearInterval(boot); return; }
     clearInterval(boot);
-    var s = document.createElement('script'); s.src = '/admin/session-geo.js'; s.async = true;
+    var s = document.createElement('script'); s.src = '/assets/js/session-location.js?v=483'; s.async = true;
     (document.head || document.documentElement).appendChild(s);
   }, 1500);
 })();
