@@ -4904,6 +4904,8 @@ function soPage() {
 /* ===== صفحة القسم: عنوان ← فلتر جانبي عريض ← بطاقات مصممة مجمّعة ===== */
 let HUB_INLINE = false;
 function secHub(key, head, groups) {
+  /* v496: صفحة «الأقسام» في لوحة الموظف تعرض أقسام صلاحياته فقط */
+  if (key === 'adm-more' && typeof cuSecOk === 'function') { try { groups = groups.map(function (g) { return g.slice(0, 3).concat([(g[3] || []).filter(function (it) { return !it || !it.ic || cuSecOk(it.ic); })], g.slice(4)); }).filter(function (g) { return g[3].length; }); } catch (err) { void err; } }
   /* حالة الحساب في العيّنة (حالات الحساب): قبل الاعتماد لا «خدماتي»، والعضوية بعد التدشين */
   if (typeof accOn === 'function' && accOn()) {
     const A = window.__ACC, pre = accPre(), unl = A.stage !== 'launched'; setTimeout(accMark, 0);
@@ -7534,6 +7536,8 @@ function cuWhoMenu() {
 /* v495: أقسام لوحة الموظف حسب صلاحياته الفعلية — المشرف العام يرى الكل */
 const CU_NAV_PERM = { cu: ['customers.manage', 'accounts.view', 'accounts.manage', 'quotes.view', 'quotations.view', 'assignments.manage'], fin: ['earnings.view', 'earnings.view.all', 'investors.finance', 'settlements.approve', 'reports.view'], cpg: ['customers.manage', 'accounts.view'], comm: ['customers.manage', 'notifications.manage', 'whatsapp.inbox.handle', 'whatsapp.send'], cx: ['customers.manage', 'reports.view', 'whatsapp.surveys.view'], 'soon-emp': ['employees.manage'], 'soon-par': ['investors.view', 'investors.manage', 'investors.finance'], 'soon-mkt': ['marketers.manage'] };
 const cuNavOk = (k) => cuAs() === 'sup' || !CU_NAV_PERM[k] || CU_NAV_PERM[k].some(function (p) { return cuCan(p); });
+/* v496: الصفحة الفرعية تتبع قسمها (cuNavOf) — وإعدادات النظام لصاحب صلاحيتها */
+const cuSecOk = (o) => { const s = (typeof cuNavOf === 'function' ? cuNavOf(o) : null) || o; return s === 'sys' ? cuCan('settings.roles') : cuNavOk(s); };
 const cuNavAdm = (N) => (cuCan('settings.roles') ? N : N.filter(function (g) { return !g[1].some(function (x) { return x[0] === 'sys'; }); })).map(function (g) { return [g[0], g[1].filter(function (x) { return cuNavOk(x[0]); })].concat(g.slice(2)); }).filter(function (g) { return g[1].length; });
 const cuDockAdm = (D) => (cuCan('settings.roles') ? D : D.filter(function (x) { return x[0] !== 'sys'; })).filter(function (x) { return cuNavOk(x[0]); });
 /* الحسابات — الوظيفة والأدوار لكل حساب، بنفس سجل الحساب في المنصة */
@@ -13263,9 +13267,9 @@ function admHome() {
   return [lvHero({ avatar: 'م', eye: admHomeT() + ' · خدمات العملاء', t: LIVE.on ? (LIVE.sup === false ? (ME.name || 'الموظف') : 'المشرف العام') : cuWho(), sub: AR_DAY[new Date().getDay()] + ' ' + iso(new Date()), pill: [acts.length ? acts.length + ' إجراءات مطلوبة' : 'لا إجراءات معلّقة', acts.length ? 'warn' : 'ok'],
       ring: [T.length ? Math.round(T.filter(function (t) { return tkSla(t)[1] !== 'danger'; }).length / T.length * 100) : 100, 'ضمن موعد الرد'],
       tiles: [['تذاكر مفتوحة', fmtNum(nw + wk), 'ticket', nw ? 'warn' : null], ['بانتظار الرد', fmtNum(nw), 'chats-circle', nw ? 'warn' : 'ok'], ['شكاوى مفتوحة', fmtNum(comp), 'warning', comp ? 'warn' : 'ok'], ['طلبات تحديث', fmtNum(up), 'note-pencil', up ? 'warn' : 'ok']] }),
-    typeof cuHomeBlock === 'function' ? cuHomeBlock() : null,
-    sec('إجراءات مطلوبة', null, [acts.length ? lvHub(acts) : LDS.emptyState({ icon: 'ok', title: 'لا إجراءات معلّقة', compact: true })], true, 'adm:acts'),
-    sec('خدمات العملاء', null, [csHubCards()], true, 'adm:cs')];
+    typeof cuHomeBlock === 'function' && cuSecOk('cu') ? cuHomeBlock() : null,
+    !cuSecOk('cu') ? null : sec('إجراءات مطلوبة', null, [acts.length ? lvHub(acts) : LDS.emptyState({ icon: 'ok', title: 'لا إجراءات معلّقة', compact: true })], true, 'adm:acts'),
+    (cuSecOk('cu') ? sec('خدمات العملاء', null, [csHubCards()], true, 'adm:cs') : null)];
 }
 function csHubCards() {
   const T = allTickets(), nw = T.filter(function (t) { return tkFit(t, 'new'); }).length, comp = T.filter(function (t) { return t.kind === 'شكوى' && t.status[1]; }).length;
@@ -15236,7 +15240,7 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   document.querySelectorAll('.t2-side-i').forEach(function (b) { b.classList.toggle('is-on', b.dataset.nav === on); });
   const accOnNow = S.tab === 'other' && S.other === 'tq-account'; /* v386: «حسابك» */
   document.querySelectorAll('.t2-dock-i').forEach(function (b) { b.classList.toggle('is-on', accOnNow ? b.dataset.nav === 'tq-account' : b.dataset.nav !== 'tq-account' && (b.dataset.nav === on || (on === 'devices' && b.dataset.nav === 'store') || (S.role === 'admin' && b.dataset.nav === 'adm-more' && on !== 'adm-home' && on !== 'sys') || (b.dataset.nav === 'more' && ['dash', 'store', 'devices', 'custom'].indexOf(on) < 0))); });
-  const body = S.tab === 'elig' || S.tab === 'qreq' ? eligPage() : S.tab === 'msg' ? msgPage() : S.tab === 'dash' ? dashPage() : FIN[S.tab] ? FIN[S.tab][2]() : S.tab === 'other' ? (S.role === 'admin' && !cuNavOk(S.other) ? cuPermNo('هذا القسم خارج صلاحياتك', 'يظهر لك ما تسمح به صلاحيات دورك — اطلبها من المشرف العام.') : ACCT[S.other]()): svcPage();
+  const body = S.tab === 'elig' || S.tab === 'qreq' ? eligPage() : S.tab === 'msg' ? msgPage() : S.tab === 'dash' ? dashPage() : FIN[S.tab] ? FIN[S.tab][2]() : S.tab === 'other' ? (S.role === 'admin' && !cuSecOk(S.other) ? cuPermNo('هذا القسم خارج صلاحياتك', 'يظهر لك ما تسمح به صلاحيات دورك — اطلبها من المشرف العام.') : ACCT[S.other]()): svcPage();
   const pk0 = window.__DRK, pk1 = anchKey(), sameP = pk0 === pk1, y0 = SCROLLER === window ? window.scrollY : SCROLLER.scrollTop;
   if (sameP && ROOT.offsetHeight) ROOT.style.minHeight = ROOT.offsetHeight + 'px';
   mount(ROOT, e('div', { class: 't2-stack' }, [
@@ -15839,12 +15843,14 @@ function liveStaffRole() {
 /* v494: الدور النشط وحده — بيانات كل دور تُجلب في دوره فقط (وفي «صفحة العميل» للموظف: العميل) */
 function lvRole(k) { return !!(LIVE.allow && LIVE.allow.indexOf(k) >= 0 && (LIVE.allow.length === 1 || S.role === k)); }
 /* v494: دور الجلسة في القاعدة (active_role) يتبع الدور النشط في الصفحة — فتعمل واجهات كل دور (مثل «طلباتي» للعميل) ويُسجَّل التبديل في سجل الجلسة */
+/* v496: تسجيل التبديل في سجل الجلسة في الاتجاهين — يُنتظر تحميل جزء سجل الجلسة إن تأخّر (حتى 20 ثانية) */
+function liveRoleNote(n) { try { if (window.TeraSession && typeof window.TeraSession.noteRoleSwitch === 'function') { window.TeraSession.noteRoleSwitch(); return; } } catch (err) { void err; return; } if (n > 0) setTimeout(function () { liveRoleNote(n - 1); }, 1000); }
 function liveRoleSync() {
   const want = S.role === 'admin' ? 'staff' : 'client';
   if (!LIVE.roles || LIVE.roles.indexOf(want) < 0) return Promise.resolve();
   return liveSb('rpc/active_role', { body: {} }).then(function (cur) {
     if (cur === want) return;
-    return liveSb('rpc/set_active_role', { body: { p_role: want, p_user_agent: navigator.userAgent } }).then(function () { try { if (window.TeraSession && typeof window.TeraSession.noteRoleSwitch === 'function') window.TeraSession.noteRoleSwitch(); } catch (err) { void err; } });
+    return liveSb('rpc/set_active_role', { body: { p_role: want, p_user_agent: navigator.userAgent } }).then(function () { liveRoleNote(20); });
   }).catch(function () { /* يبقى الدور كما هو */ });
 }
 function liveAllowed() {
