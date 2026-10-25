@@ -15822,10 +15822,13 @@ async function liveLoad() {
   const H = { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + s0.access_token, Accept: 'application/json' };
   const q = function (path) { return fetch(cfg.supabaseUrl + '/rest/v1/' + path, { headers: H, cache: 'no-store' }).then(function (r) { if (r.status === 401) throw new Error('auth'); return r.json(); }); };
   /* الحساب والأدوار معًا */
-  const ur = await Promise.all([q('users?select=id,full_name,email,phone,user_type,status,tera_id,created_at&id=eq.' + encodeURIComponent(uid)), q('user_roles?select=role,is_primary&user_id=eq.' + encodeURIComponent(uid))]);
+  const ld = function () { return Promise.all([q('users?select=id,full_name,email,phone,user_type,status,tera_id,created_at&id=eq.' + encodeURIComponent(uid)), q('user_roles?select=role,is_primary&user_id=eq.' + encodeURIComponent(uid))]); };
+  let ur = await ld();
+  /* v497: إعادة المحاولة مرة إن تعثّر جلب الحساب أو أدواره (عطل عابر في الخادم) — فلا يُخرَج المستخدم ولا يُنقل من صفحته بسببه */
+  if (!Array.isArray(ur[0]) || !Array.isArray(ur[1])) { await new Promise(function (ok) { setTimeout(ok, 800); }); try { ur = await ld(); } catch (err) { if (err && err.message === 'auth') throw err; } }
   const u = ur[0], r = ur[1];
   const me = Array.isArray(u) ? u[0] : null; if (!me) return null;
-  return { me: me, roles: (Array.isArray(r) ? r : []).map(function (x) { return x.role; }) };
+  return { me: me, roles: (Array.isArray(r) ? r : []).map(function (x) { return x.role; }), rolesOk: Array.isArray(r) };
 }
 /* v311: دور الموظف الفعلي من قاعدة البيانات (staff_roles · roles) — يقرأ الموظف أدواره فقط */
 /* v495: الموظف غير المشرف يرى ويعمل بما تسمح به صلاحياته الفعلية في القاعدة (role_permissions) — القوائم والأقسام والإجراءات؛ والمشرف العام كما هو */
@@ -20392,12 +20395,12 @@ if (LIVE.on) {
   /* قائمة الحساب: تصميم العيّنة (cuWhoMenu) ببيانات الحساب وأدواره الفعلية */
   liveLoad().then(function (x) {
     if (!x) { toLogin(); return; }
-    LIVE.me = x.me; LIVE.roles = x.roles; LIVE.allow = liveAllowed();
+    LIVE.me = x.me; LIVE.roles = x.roles; LIVE.allow = liveAllowed(); LIVE.rolesOk = x.rolesOk !== false;
     if (!LIVE.allow.length) { LIVE.me = null; LIVE.err = 'حسابك لا يملك دور العميل ولا دور الموظف في هذه المنصة.'; draw(); return; }
     ME.name = x.me.full_name || ME.name; ME.email = x.me.email || ''; ME.phone = x.me.phone ? '+' + String(x.me.phone).replace(/^\+/, '') : ''; ME.region = ''; ME.city = '';
     if (LIVE.allow.indexOf(S.role) < 0) { S.role = LIVE.allow[0]; S.tab = S.role === 'admin' ? 'other' : 'dash'; S.other = S.role === 'admin' ? 'adm-home' : ''; }
     /* v493: الرابط يحدّد الدور — /staff/ منصة الموظف و/clients/ منصة العميل؛ وإن لم يملك الحساب دور الصفحة يُنقل إلى صفحة دوره */
-    try { const sec = (window.__TERA || {}).section, pr = sec === 'staff' ? 'admin' : sec === 'clients' ? 'client' : ''; if (pr && LIVE.allow.indexOf(pr) >= 0 && S.role !== pr) { S.role = pr; S.tab = pr === 'admin' ? 'other' : 'dash'; S.other = pr === 'admin' ? 'adm-home' : ''; } else if (pr && LIVE.allow.indexOf(pr) < 0) { roleKeep(S.role); location.replace(S.role === 'admin' ? '/staff/' : '/clients/'); return; } } catch (err) { void err; }
+    try { const sec = (window.__TERA || {}).section, pr = sec === 'staff' ? 'admin' : sec === 'clients' ? 'client' : ''; if (pr && LIVE.allow.indexOf(pr) >= 0 && S.role !== pr) { S.role = pr; S.tab = pr === 'admin' ? 'other' : 'dash'; S.other = pr === 'admin' ? 'adm-home' : ''; } else if (pr && LIVE.allow.indexOf(pr) < 0) { if (!LIVE.rolesOk) { LIVE.me = null; LIVE.err = 'تعذّر التحقق من أدوار حسابك الآن — أعد تحميل الصفحة.'; draw(); return; } roleKeep(S.role); location.replace(S.role === 'admin' ? '/staff/' : '/clients/'); return; } } catch (err) { void err; }
     roleKeep(S.role);
     liveRoleSync().then(function () { return liveData(); }).catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
       /* التحديث يُبقي الصفحة نفسها: يُعاد استرجاع موضع التنقل بعد وصول البيانات الحقيقية (العقد والدفعة والإيصال وملف العميل) */
