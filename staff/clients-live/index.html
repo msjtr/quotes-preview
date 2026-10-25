@@ -150,7 +150,7 @@ function call(path,raw){var t=token();if(!t)return Promise.reject({code:401});
 function gate(err){
   app.textContent='';
   if(err&&err.code===401){app.appendChild(el('div',{class:'card msg'},[el('h2',{text:'سجّل الدخول أولًا'}),el('p',{text:'هذه الصفحة تستعمل جلسة لوحة التحكم. سجّل الدخول بحسابك ثم ارجع إلى هنا.'}),
-    el('a',{class:'btn p',href:'/admin/?next='+encodeURIComponent('/staff/clients-live/'),text:'الدخول إلى لوحة التحكم'})]));return;}
+    el('a',{class:'btn p',href:'/portal/',text:'الدخول إلى لوحة التحكم'})]));return;}
   app.appendChild(el('div',{class:'card msg'},[el('h2',{text:err&&err.code===403?'لا تملك الصلاحية':'تعذّر التحميل'}),el('p',{text:(err&&err.msg)||'حاول مجددًا بعد قليل.'}),
     el('button',{class:'btn',type:'button',onclick:boot,text:'إعادة المحاولة'})]));}
 /* --- مسمّيات الحقول --- */
