@@ -16072,7 +16072,7 @@ function clShield() {
    • القوائم من مسارات الخادم (/admin/api/clients) ودوال القاعدة المحمية (/sb/rest/v1/rpc) بجلسة الموظف نفسها وصلاحياته.
    • لا كتابة ولا إرسال لأي عميل من هنا؛ كل فتح ملف أو مرفق يُسجَّل في سجل التدقيق على الخادم. */
 const ADMS = {};
-const ADM_ERR = { no_permission: 'لا تملك صلاحية الاطلاع على هذا القسم.', session_invalid: 'الجلسة غير صالحة — سجّل الدخول من جديد.', not_authenticated: 'سجّل الدخول من جديد.', not_found: 'غير موجود.' };
+const ADM_ERR = { no_marked_fields: 'حدّد «غير مطابق» مع السبب على حقل واحد على الأقل قبل الإعادة — يُعاد للعميل ما عليه ملاحظة فقط.', note_required: 'اكتب الملاحظة للعميل.', no_permission: 'لا تملك صلاحية الاطلاع على هذا القسم.', session_invalid: 'الجلسة غير صالحة — سجّل الدخول من جديد.', not_authenticated: 'سجّل الدخول من جديد.', not_found: 'غير موجود.' };
 const ADM_ROLE = { client: 'عميل', staff: 'موظف', employee: 'موظف', marketer: 'مسوّق', investor: 'مستثمر', partner: 'شريك', admin: 'مشرف' };
 const ADM_USER_ST = { active: ['نشط', 'ok'], pending: ['بانتظار التفعيل', 'warn'], inactive: ['غير مفعّل', 'warn'], suspended: ['موقوف', 'danger'], blocked: ['محظور', 'danger'], archived: ['مؤرشف', null] };
 const ADM_MIG_ST = { promoted: ['رُحّل إلى حساب في المنصة', 'ok'], ready: ['جاهز للترحيل', 'info'], conflict: ['تعارض هوية', 'danger'], excluded: ['مستبعد', null], pending: ['قيد التجهيز', 'warn'] };
@@ -17848,8 +17848,8 @@ async function cpvLoad(uid) {
 const t = tqToken();
 let j = null;
 if (t) { try { const r = await fetch('/admin/api/cpv/' + encodeURIComponent(uid), { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store', credentials: 'same-origin' }); j = r.ok ? await r.json() : null; } catch (err) { j = null; } }
-if (!j || j.ok !== true) { LIVE_DATA.mem = null; LIVE_DATA.blocks = {}; LIVE_DATA.ver0 = null; LIVE_DATA.vsec = null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null; LVS.devs = []; LVS.sess = []; LIVE_DATA.factors = []; try { DBN.rows = []; DBN.at = Date.now(); LWA.info = { ok: false }; } catch (err) { void err; } return; }
-LIVE_DATA.mem = j.mem; LIVE_DATA.blocks = j.blocks || {}; LIVE_DATA.ver0 = j.ver0 || null; LIVE_DATA.vsec = j.vsec || null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null;
+if (!j || j.ok !== true) { LIVE_DATA.conf = null; LIVE_DATA.mem = null; LIVE_DATA.blocks = {}; LIVE_DATA.ver0 = null; LIVE_DATA.vsec = null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null; LVS.devs = []; LVS.sess = []; LIVE_DATA.factors = []; try { DBN.rows = []; DBN.at = Date.now(); LWA.info = { ok: false }; } catch (err) { void err; } return; }
+LIVE_DATA.mem = j.mem; LIVE_DATA.conf = j.conf || null; LIVE_DATA.blocks = j.blocks || {}; LIVE_DATA.ver0 = j.ver0 || null; LIVE_DATA.vsec = j.vsec || null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null;
 try { LIVE_DATA.sec = j.sec; liveSec(j.sec || {}); } catch (err) { LVS.devs = []; LVS.sess = []; }
 try { const pa = j.sec && j.sec.account && j.sec.account.password_changed_at; LVS.pwAt = pa ? new Date(pa) : null; } catch (err) { void err; }
 LIVE_DATA.factors = liveFactorKeys(j.factors);
@@ -17877,6 +17877,7 @@ if (window.__cpvUid) jobs.push(cpvLoad(window.__cpvUid)); else {
 LIVE_DATA.blocks = {};
     LIVE_BLK.concat(['docs']).forEach(function (b) { jobs.push(clApi('/api/account/profile/block/' + b).then(function (d) { LIVE_DATA.blocks[b] = d; }).catch(function () { /* القسم فارغ */ })); });
     jobs.push(liveSb('rpc/my_profile_verification', { body: {} }).then(function (v) { LIVE_DATA.ver0 = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.ver0 = null; }));
+jobs.push(liveSb('rpc/my_profile_confirms', { body: {} }).then(function (v) { LIVE_DATA.conf = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.conf = null; })); /* v506: تأكيد أقسام المنقول */
     jobs.push(liveSb('rpc/my_surveys', { body: {} }).then(function (v) { LIVE_DATA.surveys = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.surveys = null; }));
     jobs.push(liveSb('rpc/my_verification_security', { body: {} }).then(function (v) { LIVE_DATA.vsec = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.vsec = null; }));
     jobs.push(liveSb('rpc/profile_notes', { body: {} }).then(function (n) { LIVE_DATA.notes = n && n.ok !== false ? n : null; }).catch(function () { LIVE_DATA.notes = null; }));
@@ -17954,6 +17955,45 @@ try {
 const JR_PG = { email: 'me-contact', personal: 'me-personal', address: 'me-address', contact: 'me-contact', emergency: 'me-emergency', bank: 'me-bank', docs: 'me-docs', agreed: 'me-verify', submitted: 'me-verify' };
 function liveFull() { try { return CONTRACTS.length > 0 || (LIVE.roles || []).some(function (r) { return r === 'investor' || r === 'marketer' || r === 'partner'; }) || REQS.some(function (r) { return r && r.live && r.q && ['accepted', 'executed'].indexOf(r.q.status) >= 0; }); } catch (err) { return true; } } /* v504: الأهلية المعتمدة (طلب مقبول أو منفَّذ) تفتح الخدمات كالعقد */
 function liveMigrated() { try { return CONTRACTS.some(function (c) { return c.legacy || c.legacy_no || c.old; }) || liveNotes().length > 0; } catch (err) { return false; } }
+/* v506: نسبة الاكتمال المقنّنة — ثمانية بنود ثابتة لكل عميل (جديد أو منقول): أقسام الملف الستة + ربط الواتساب + وسيلة مصادقة.
+البند يُحسب كاملًا أو لا يُحسب. قسم المنقول المعبّأ من النظام السابق لا يُحسب حتى يضغط العميل «تأكيد القسم» (stf_88، والقاعدة ترفض الإرسال قبله).
+التحقق بالبريد مفعّل لكل حساب تلقائيًا فلا يدخل النسبة. 100٪ = يُقبل الإرسال للتوثيق، وزر الإرسال يرسل فعلًا (my_verification_open ثم my_verification_submit). */
+const CL_PROG_B = [['personal', 'المعلومات الشخصية'], ['address', 'العنوان الوطني'], ['contact', 'بيانات التواصل'], ['emergency', 'بيانات تواصل للطوارئ'], ['bank', 'الحساب البنكي'], ['docs', 'المستندات']];
+JR_PG._wa = 'sec-whatsapp'; JR_PG._auth = 'sec-twofa';
+function clConf() { const c = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA && LIVE_DATA.conf) || null; return c && c.ok !== false ? c : null; }
+function clProg() {
+const St = {}; (liveVer().steps || []).forEach(function (x) { if (x && x.key) St[x.key] = x; });
+const C = clConf(), mig = !!(C && C.mig), cb = (C && C.blocks) || {}, VS = liveVsec();
+const items = CL_PROG_B.map(function (b) { const s = St[b[0]] || {}, filled = !!s.done, conf = !mig || !!cb[b[0]]; return { key: b[0], label: s.label || b[1], kind: 'block', filled: filled, confirmed: conf, done: filled && conf }; })
+.concat([{ key: '_wa', label: 'ربط رقم الواتساب', kind: 'sec', filled: !!VS.wa, confirmed: true, done: !!VS.wa }, { key: '_auth', label: 'وسيلة مصادقة واحدة على الأقل', kind: 'sec', filled: !!VS.auth, confirmed: true, done: !!VS.auth }]);
+const done = items.filter(function (x) { return x.done; }).length;
+return { items: items, done: done, total: items.length, pct: Math.round(done / items.length * 100), mig: mig, ready: done === items.length };
+}
+function clSay(m) { try { snack(m); } catch (err) { void err; } }
+const CLS = { busy: false };
+async function clConfirm(key) {
+if (CLS.busy) return; CLS.busy = true;
+try {
+const r = await liveSb('rpc/my_profile_block_confirm', { body: { p_block: key } });
+if (!r || r.ok === false) { clSay((r && r.message) || 'تعذّر تأكيد القسم الآن.'); return; }
+LIVE_DATA.conf = r; clSay('تم تأكيد القسم.'); draw();
+} catch (err) { if (!(err && err.message === 'auth')) clSay('تعذّر تأكيد القسم الآن.'); } finally { CLS.busy = false; }
+}
+async function clSubmit() {
+const PG = clProg();
+if (!PG.ready) { const n = PG.items.filter(function (x) { return !x.done; })[0]; clSay('أكمل «' + n.label + '» أولًا — المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total) + '.'); go('other', JR_PG[n.key] || 'profile'); toTop(); return; }
+if (CLS.busy) return; CLS.busy = true;
+try {
+const o = await liveSb('rpc/my_verification_open', { body: {} });
+if (!o || o.ok === false) { clSay((o && o.message) || 'تعذّر فتح طلب التوثيق الآن.'); return; }
+const r = await liveSb('rpc/my_verification_submit', { body: {} });
+if (!r || r.ok === false) { const E = { incomplete: 'بقيت حقول مطلوبة ناقصة في ملفك.', bad_value: 'بعض القيم غير صالحة — راجع الحقول المحددة.', locked: 'ملفك قيد المراجعة الآن.', security_required: 'اربط الواتساب وفعّل وسيلة مصادقة أولًا.' }; clSay((r && (r.message || E[r.error])) || 'تعذّر الإرسال الآن.'); return; }
+const v = await liveSb('rpc/my_profile_verification', { body: {} }).catch(function () { return null; });
+if (v && v.ok !== false) LIVE_DATA.ver0 = v;
+clSay('أُرسل ملفك للتوثيق — يمكنك تعديله حتى يستلمه فريق تيرا.'); draw(); toTop();
+} catch (err) { if (!(err && err.message === 'auth')) clSay('تعذّر الإرسال الآن — أعد المحاولة بعد قليل.'); } finally { CLS.busy = false; }
+}
+window.__clProg = clProg; window.__clSubmit = clSubmit; window.__clConfirm = clConfirm;
 function liveJourney() {
   const v = liveVer(), m = window.__LIVE_MEM || {}, st = v.status || 'draft';
   const launched = !!(m && m.exists && !m.pending && !m.launch_pending && m.status !== 'pending');
@@ -18005,8 +18045,8 @@ function jrProf(J) {
 }
 function jrCount(el) { requestAnimationFrame(function () { el.querySelectorAll('[data-jr-n]').forEach(function (n) { const to = Number(n.getAttribute('data-jr-n')) || 0, t0 = performance.now(), D = 1400; (function f(t) { const k = Math.min(1, (t - t0) / D), ez = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; n.textContent = fmtNum(Math.round(to * ez)); if (k < 1) requestAnimationFrame(f); })(t0); }); }); }
 function journeyPage(J) {
-  const me = LIVE.me || {}, first = String(me.full_name || ME.name || '').split(' ')[0], pct = Number(J.v.progress) || livePct();
-  const next0 = (J.v.steps || []).filter(function (x) { return !x.done; })[0], VS = liveVsec();
+  const me = LIVE.me || {}, first = String(me.full_name || ME.name || '').split(' ')[0], pct = clProg().pct;
+  const next0 = clProg().items.filter(function (x) { return !x.done; })[0], VS = liveVsec();
   /* v318: الملف لا يُرسَل قبل ربط الواتساب ووسيلة مصادقة — فإن اكتملت البيانات يكون الإجراء التالي مركز الأمان */
   const next = next0 && (next0.key === 'agreed' || next0.key === 'submitted') && !VS.ready ? { key: '_sec', label: !VS.wa ? 'ربط الواتساب' : 'تفعيل وسيلة مصادقة' } : next0;
   const out = function () { const b = document.querySelector('.t2-hbtn.is-out'); if (b) b.click(); };
@@ -18016,7 +18056,7 @@ function journeyPage(J) {
         e('p', {}, J.mig ? 'نُقل ملفك من النظام السابق — راجع بياناتك وحدّث الناقص منها، ثم أرسل الملف للاعتماد ليُدشَّن حسابك.' : 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
         !VS.ready ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تربط رقم الواتساب وتفعّل وسيلة مصادقة واحدة على الأقل من مركز الأمان.')]) : null,
         J.returned ? DS.note('warn', 'أُعيد ملفك للتعديل', ((J.v.returned_items || []).map(function (x) { return x.label + (x.reason ? ' — ' + x.reason : ''); }).join('، ')) || 'راجع الملاحظات وعدّل ثم أعد الإرسال.') : null,
-        e('div', { class: 'jr-acts' }, [liveOk(DS.button(next ? (J.mig ? 'حدّث: ' : 'أكمل: ') + next.label : 'إرسال الملف للاعتماد', { tone: 'primary', ui: 'caret-left', onClick: function () { go('other', next ? (next.key === '_sec' ? (!VS.wa ? 'sec-whatsapp' : 'sec-twofa') : (JR_PG[next.key] || 'profile')) : (VS.ready ? 'me-verify' : 'shield')); } })), DS.button('الخروج والعودة لاحقًا', { ui: 'sign-out', onClick: out })])]),
+        e('div', { class: 'jr-acts' }, [liveOk(DS.button(next ? (next.filled && !next.confirmed ? 'أكّد: ' : J.mig ? 'حدّث: ' : 'أكمل: ') + next.label : 'إرسال الملف للاعتماد', { tone: 'primary', ui: 'caret-left', onClick: function () { if (!next) return clSubmit(); go('other', next ? (next.key === '_sec' ? (!VS.wa ? 'sec-whatsapp' : 'sec-twofa') : (JR_PG[next.key] || 'profile')) : (VS.ready ? 'me-verify' : 'shield')); } })), DS.button('الخروج والعودة لاحقًا', { ui: 'sign-out', onClick: out })])]),
       e('div', { class: 'jr-ring', style: '--jr-r:' + pct }, [e('b', { 'data-jr-n': String(pct) }, '0'), e('small', {}, '٪ اكتمال الملف')])]);
   } else if (J.stage === 'review') {
     hero = e('section', { class: 'jr-hero is-review' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'FILE UNDER REVIEW'), e('h2', {}, 'ملفك قيد المراجعة'),
@@ -18037,9 +18077,9 @@ function journeyPage(J) {
 const LV_SEC_IC = { personal: 'profile', contact: 'phone', email: 'email', address: 'pin', emergency: 'phone', bank: 'bank', docs: 'files' };
 function lvRegFlow(J, pct) {
   const S2 = (J.v.steps || []).filter(function (x) { return x.key !== 'submitted' && x.key !== 'agreed'; }), VS = liveVsec();
-  const nd = S2.filter(function (x) { return x.done; }).length, profDone = S2.length > 0 && nd === S2.length, secDone = !!(VS.wa && VS.auth);
-  const R = [['ربط رقم الواتساب', !!VS.wa, 'sec-whatsapp'], ['وسيلة مصادقة واحدة على الأقل', !!VS.auth, VS.extra && !VS.totp ? 'sec-extracode' : 'sec-twofa'], ['التحقق بالبريد عند كل دخول', true, 'sec-twofa']];
-  const rn = R.filter(function (r) { return r[1]; }).length, N = S2.length + R.length, D = nd + rn, P = N ? Math.round(D / N * 100) : (Number(pct) || 0);
+  const PG = clProg(), nd = S2.filter(function (x) { return x.done; }).length, profDone = PG.items.every(function (x) { return x.kind !== 'block' || x.done; }), secDone = !!(VS.wa && VS.auth);
+  const R = [['ربط رقم الواتساب', !!VS.wa, 'sec-whatsapp'], ['وسيلة مصادقة واحدة على الأقل', !!VS.auth, VS.extra && !VS.totp ? 'sec-extracode' : 'sec-twofa']]; /* v506: التحقق بالبريد تلقائي — يظهر سطرًا ولا يدخل العدّ */
+  const rn = R.filter(function (r) { return r[1]; }).length, N = PG.total, D = PG.done, P = PG.pct;
   const back = J.returned, NEW = !J.mig;
   const lvl = [{ label: 'ملفي الشخصي', state: profDone ? 'done' : 'now' }, { label: 'مركز الأمان', state: secDone ? 'done' : profDone ? 'now' : '' }, { label: 'المراجعة', state: profDone && secDone ? 'now' : '' }, { label: 'الإرسال', state: '' }];
   const toVerify = function () { go('other', 'me-verify'); toTop(); };
@@ -18047,23 +18087,23 @@ function lvRegFlow(J, pct) {
     e('div', { class: 'rv-prog' }, [e('div', { class: 'rv-ring', style: '--p:' + P, role: 'img', 'aria-label': 'اكتمال الملف ' + P + '%' }, e('span', {}, [e('b', {}, ltr(P + '%')), e('small', {}, 'اكتمال')])),
       e('div', { class: 'rv-lv' }, [DS.stepper(lvl, 'مستويات التقدّم'), e('div', { class: 'rv-bar', 'aria-hidden': 'true' }, e('b', { style: 'width:' + P + '%' })), e('small', { class: 'rv-sm' }, fmtNum(D) + ' من ' + fmtNum(N) + ' بندًا مطلوبًا')])])],
     [rvBadge(back ? 'مُعاد للاستكمال' : NEW ? 'تسجيل جديد' : 'تحديث بيانات', back ? 'danger' : 'info'), liveOk(DS.button('راجع الطلب', { size: 'sm', ui: 'magnifying-glass', onClick: toVerify })),
-      liveOk(DS.button(back ? 'أعد الإرسال' : 'تأكيد وأرسل', { tone: 'primary', size: 'sm', ui: 'paper-plane-tilt', onClick: toVerify }))]);
+      liveOk(DS.button(back ? 'أعد الإرسال' : 'تأكيد وأرسل', { tone: 'primary', size: 'sm', ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } }))]);
   const retd = {}; (J.v.returned_items || []).forEach(function (x) { if (x && x.key) retd[x.key] = x.reason || true; });
   const secs = S2.map(function (x) {
-    const need = !!retd[x.key], badge = need ? rvBadge('مطلوب تعديله', 'danger') : !x.done ? rvBadge('ناقص', 'warn') : rvBadge('يحتاج مراجعة', 'info');
-    const body = [DS.note(need ? 'warn' : x.done ? 'info' : 'warn', need ? 'أعاده الفريق للتعديل' : x.done ? 'مكتمل — راجعه وتأكّد منه' : 'حقل مطلوب فارغ', need && retd[x.key] !== true ? String(retd[x.key]) : x.done ? 'افتح القسم وراجع بياناتك قبل الإرسال.' : 'افتح القسم وأكمل الحقول المطلوبة، ثم احفظ.'),
-      rvRow([liveOk(DS.button(x.done ? 'مراجعة القسم' : (J.mig ? 'تحديث القسم' : 'استكمال القسم'), { tone: 'primary', size: 'sm', ui: 'caret-left', onClick: function () { go('other', JR_PG[x.key] || 'profile'); toTop(); } }))])];
+    const pi = PG.items.filter(function (y) { return y.key === x.key; })[0], waitC = !!(pi && pi.filled && !pi.confirmed), need = !!retd[x.key], badge = need ? rvBadge('مطلوب تعديله', 'danger') : !x.done ? rvBadge('ناقص', 'warn') : waitC ? rvBadge('بانتظار تأكيدك', 'info') : rvBadge('مكتمل', 'ok');
+    const body = [DS.note(need ? 'warn' : x.done ? 'info' : 'warn', need ? 'أعاده الفريق للتعديل' : x.done ? (waitC ? 'معبّأ من ملفك السابق — راجعه ثم أكّده' : 'مكتمل') : 'حقل مطلوب فارغ', need && retd[x.key] !== true ? String(retd[x.key]) : x.done ? (waitC ? 'افتح القسم وراجع بياناتك، ثم اضغط «تأكيد القسم» ليُحسب في نسبة الاكتمال.' : 'يمكنك فتح القسم وتعديله قبل الإرسال.') : 'افتح القسم وأكمل الحقول المطلوبة، ثم احفظ.'),
+      rvRow([liveOk(DS.button(x.done ? 'مراجعة القسم' : (J.mig ? 'تحديث القسم' : 'استكمال القسم'), { tone: 'primary', size: 'sm', ui: 'caret-left', onClick: function () { go('other', JR_PG[x.key] || 'profile'); toTop(); } })), waitC && !need ? liveOk(DS.button('تأكيد القسم', { size: 'sm', ui: 'check-circle', onClick: function () { clConfirm(x.key); } })) : null].filter(Boolean))];
     return rvSec(x.label, body, { one: 'lv-' + x.key, ic: LV_SEC_IC[x.key] || 'profile' }, null, badge);
   });
   const sec = e('section', { class: 'rvs-card' + (rn === R.length ? ' is-ok' : '') }, [e('div', { class: 'rvs-card-h' }, [frag(tile('shield')), e('div', {}, [e('b', {}, 'القسم 2 · مركز الأمان'), e('small', {}, rn === R.length ? 'اكتملت شروط الأمان — جاهز للإرسال' : 'أكمل ' + fmtNum(R.length - rn) + ' من ' + fmtNum(R.length) + ' شروط لتتمكّن من إرسال ملفك')]),
       e('span', { class: 'rvs-n', dir: 'ltr' }, fmtNum(rn) + '/' + fmtNum(R.length))]),
     e('div', { class: 'rvs-bar', 'aria-hidden': 'true' }, e('i', { style: 'width:' + Math.round(rn / R.length * 100) + '%' })),
-    e('ul', { class: 'rvs-req' }, R.map(function (r) { return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'warning', 16)), e('span', {}, r[0]), r[1] ? rvBadge('مكتمل', 'ok') : liveOk(DS.button('أكمل', { size: 'sm', onClick: function () { go('other', r[2]); toTop(); } }))]); })),
-    rvRow([liveOk(DS.button(rn === R.length ? 'عرض وسائل الأمان' : 'أكمل الأمان الآن', { tone: 'primary', ui: 'shield-check', onClick: function () { go('other', rn === R.length ? 'shield' : (R.filter(function (r) { return !r[1]; })[0] || R[0])[2]); toTop(); } }))])]);
+    e('ul', { class: 'rvs-req' }, R.map(function (r) { return e('li', { class: r[1] ? 'is-ok' : '' }, [frag(ui(r[1] ? 'check-circle' : 'warning', 16)), e('span', {}, r[0]), r[1] ? rvBadge('مكتمل', 'ok') : liveOk(DS.button('أكمل', { size: 'sm', onClick: function () { go('other', r[2]); toTop(); } }))]); }).concat([e('li', { class: 'is-ok' }, [frag(ui('check-circle', 16)), e('span', {}, 'التحقق بالبريد عند كل دخول'), rvBadge('تلقائي', 'ok')])])),
+rvRow([liveOk(DS.button(rn === R.length ? 'عرض وسائل الأمان' : 'أكمل الأمان الآن', { tone: 'primary', ui: 'shield-check', onClick: function () { go('other', rn === R.length ? 'shield' : (R.filter(function (r) { return !r[1]; })[0] || R[0])[2]); toTop(); } }))])]);
   return [head,
     e('div', { class: 'rv-sech' }, [frag(tile('profile')), e('div', {}, [e('b', {}, 'القسم 1 · ملفي الشخصي'), e('small', {}, 'المعلومات الشخصية والتواصل والعنوان والحساب البنكي والمستندات')])]),
-    e('div', { class: 'rv-legend', role: 'note', 'aria-label': 'دليل حالات الأقسام' }, [['ناقص', 'warn', 'حقل مطلوب فارغ'], ['مطلوب تعديله', 'danger', 'أعاده الفريق للتعديل'], ['يحتاج مراجعة', 'info', 'مكتمل — راجعه وتأكّد منه']].map(function (x) { return e('span', { class: 'rv-lg-i' }, [rvBadge(x[0], x[1]), e('small', {}, x[2])]); })),
-    e('div', { class: 'rv-acc' }, secs),
+    e('div', { class: 'rv-legend', role: 'note', 'aria-label': 'دليل حالات الأقسام' }, [['ناقص', 'warn', 'حقل مطلوب فارغ'], ['مطلوب تعديله', 'danger', 'أعاده الفريق للتعديل']].concat(PG.mig ? [['بانتظار تأكيدك', 'info', 'معبّأ من ملفك السابق — راجعه وأكّده']] : []).concat([['مكتمل', 'ok', 'يُحسب في نسبة الاكتمال']]).map(function (x) { return e('span', { class: 'rv-lg-i' }, [rvBadge(x[0], x[1]), e('small', {}, x[2])]); })),
+e('div', { class: 'rv-acc' }, secs),
     sec,
     DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
 }
@@ -18174,7 +18214,7 @@ function livePct() { const F = LIVE_BLK.reduce(function (a, k) { return a.concat
 function liveProfileHub() {
   const me = LIVE.me || {}, vs = liveVst(), up = LVD.filter(function (d) { return d[3]; }).length, nN = liveNotes().length, mem = window.__LIVE_MEM || {};
   const card = function (k) { const F = lvFlds(k), n = F.filter(function (f) { return f[3]; }).length, miss = F.filter(function (f) { return f[2] && !f[3]; }).length; return [LVP[k].ic, LVP[k].t, F.length ? fmtNum(n) + ' من ' + fmtNum(F.length) + ' مكتمل' : 'لم يُدخل بعد', miss ? 'warn' : 'ok', goP(LVP[k].k)]; };
-  return [lvHero({ avatar: (me.full_name || '؟').charAt(0), eye: 'ملفي الشخصي · عميل', t: me.full_name || '', sub: 'رقم تيرا ' + (me.tera_id || '—'), pill: vs, ring: [livePct(), 'اكتمال الملف'],
+  return [lvHero({ avatar: (me.full_name || '؟').charAt(0), eye: 'ملفي الشخصي · عميل', t: me.full_name || '', sub: 'رقم تيرا ' + (me.tera_id || '—'), pill: vs, ring: [window.__clProg ? window.__clProg().pct : livePct(), 'اكتمال الملف'],
       tiles: [['المستندات', fmtNum(up) + ' / ' + fmtNum(LVD.length) + ' مرفوعة', 'files', up < LVD.length ? 'warn' : null], ['التوثيق', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn'], ['التنبيهات', nN ? fmtNum(nN) : 'لا تنبيهات', 'bell', nN ? 'warn' : null]] }),
     sec('بياناتي', null, [lvHub(LIVE_BLK.map(card).concat([['idcard', 'بياناتُ الحساب', (me.status === 'active' ? 'نشِط' : 'غير مفعّل') + ' · عميل', me.status === 'active' ? 'ok' : 'warn', goP('prof-account')]]))], true, 'lv:pf:data'),
     sec('المستندات والتنبيهات', null, [lvHub([['files', 'المستندات', fmtNum(up) + ' من ' + fmtNum(LVD.length) + ' مرفوعة', up < LVD.length ? 'warn' : 'ok', goP('me-docs')],
@@ -18196,7 +18236,7 @@ function liveDocsList() {
 }
 function liveVerifyPage() {
   const V = liveVer(), vs = liveVst(), S0 = V.steps || [];
-  return [PH('ok', 'طلب توثيق الملف', [['الحالة', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn'], ['الإكمال', fmtNum(V.progress || 0) + '%', 'list-checks'], ['أُرسل', V.submitted_at ? iso(new Date(V.submitted_at)) : '—', 'calendar-check']], vs),
+  return [PH('ok', 'طلب توثيق الملف', [['الحالة', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn'], ['الإكمال', fmtNum(window.__clProg ? window.__clProg().pct : (V.progress || 0)) + '%', 'list-checks'], ['أُرسل', V.submitted_at ? iso(new Date(V.submitted_at)) : '—', 'calendar-check']], vs),
     lvPanel('مراحل التوثيق', null, S0.length ? [lvFields(S0.map(function (x) { return lvField(x.label || x.key, DS.badge(x.done ? 'مكتمل' : 'غير مكتمل', x.done ? 'ok' : 'warn')); }))] : [DS.note('info', 'لم يبدأ طلب التوثيق بعد.', 'أكمل بيانات ملفك ومستنداته ثم أرسل الطلب.')]),
     V.notes ? DS.note('warn', 'ملاحظات الإدارة', typeof V.notes === 'string' ? V.notes : JSON.stringify(V.notes)) : null].filter(Boolean);
 }
