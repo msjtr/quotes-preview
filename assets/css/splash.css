@@ -20,7 +20,7 @@
 .tw-st{position:absolute;inset:0;transform-style:preserve-3d}
 .tw-st img{position:absolute;inset:0;width:100%;height:100%;user-select:none;-webkit-user-drag:none}
 .tw-gh{opacity:0;filter:grayscale(1) brightness(1.6)}
-.tw-sheen{position:absolute;inset:0;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.95) 50%,transparent 58%) 160% 0/300% 100% no-repeat;-webkit-mask:url(vid/logo-dark.webp) center/100% 100% no-repeat;mask:url(vid/logo-dark.webp) center/100% 100% no-repeat;opacity:0;mix-blend-mode:screen}
+.tw-sheen{position:absolute;inset:0;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.95) 50%,transparent 58%) 160% 0/300% 100% no-repeat;-webkit-mask:url(../vid/logo-dark.webp) center/100% 100% no-repeat;mask:url(../vid/logo-dark.webp) center/100% 100% no-repeat;opacity:0;mix-blend-mode:screen}
 .tw.run .tw-st{animation:twRot 3s cubic-bezier(.45,.05,.25,1) both}
 .tw.run .tw-gh{animation:twGh 3s linear both}
 .tw.run .tw-sheen{animation:twSh 3s linear both}

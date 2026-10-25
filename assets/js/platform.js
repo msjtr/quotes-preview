@@ -9488,7 +9488,7 @@ function tqCheckQ(D, kind) {
 /* معاينة القالب PDF بعيّنة — قبل الحفظ */
 function tqPreviewQ(D, kind) {
   const cfg = tqCfgQ(D, kind);
-  if (kind === 'pq') { const b = QUOTES[QUOTES.length - 1], q = Object.assign({}, b, { no: tqNextNo(cfg.num.prefix), issued: NOWQ, status: 'issued', cfg: cfg, sel: null });
+  if (kind === 'pq') { /* v493: عيّنة ثابتة للمعاينة إن لم يوجد عرض سابق كامل (في منصة الموظف لا تُجلب عروض العميل) — كان التاريخ يصل فارغًا فتتعطل المعاينة */ const b0 = QUOTES[QUOTES.length - 1], b = b0 && b0.firstDue && b0.value ? b0 : { req: 'RQ-50231', ver: 1, type: 'بطاقات مسبقة الدفع — زين', denom: 500, value: 2500, n: 6, firstDue: iso(addMonths(T0, 1)), recv: { m: 'pickup' } }, q = Object.assign({}, b, { no: tqNextNo(cfg.num.prefix), issued: NOWQ, status: 'issued', cfg: cfg, sel: null });
     q.calc = qtWith(cfg, function () { return calcQuote({ productValue: q.value, installments: q.n, firstDue: q.firstDue, denomination: q.denom, freq: q.freq, firstPct: q.firstPct, discount: q.discount, points: q.points }); }); q.until = new Date(NOWQ.getTime() + cfg.num.validityHours * 3600e3);
     { const p0 = QT.pn; QT.pn = cfg.pn || p0; try { dcPdf(dcQuoteDoc(q, true)); } finally { QT.pn = p0; } } return; }
   const L = kind === 'sq' ? [['جوال Samsung Galaxy S25 Ultra', 4899, 1], ['سماعات Galaxy Buds3 Pro', 899, 2]] : [['تصميم الشعار ودليل الهوية', 1800, 1], ['تصميم 6 لوحات وبنرات للجناح', 1200, 1]];
@@ -15826,7 +15826,7 @@ function liveStaffRole() {
   return liveSb('staff_roles?select=role_id&staff_id=eq.' + encodeURIComponent(LIVE.me.id)).then(function (R) {
     const ids = (Array.isArray(R) ? R : []).map(function (x) { return x.role_id; }).filter(Boolean);
     if (!ids.length) { LIVE.sup = false; return; }
-    return liveSb('roles?select=key&id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (K) { if (Array.isArray(K)) LIVE.sup = K.some(function (x) { return x.key === 'super_admin'; }); });
+    return liveSb('roles?select=key,label_ar&id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (K) { if (Array.isArray(K)) { LIVE.sup = K.some(function (x) { return x.key === 'super_admin'; }); LIVE.roleAr = K.map(function (x) { return x.label_ar || ''; }).filter(Boolean).join('، '); } });
   }).catch(function () { /* يبقى العنوان الافتراضي */ });
 }
 function liveAllowed() {
@@ -17734,10 +17734,12 @@ function liveAttachGw(txns) {
     }
   }); });
 }
-async function liveData() {
+async function liveData(want) {
   liveWipe();
   const uid = LIVE.me.id, jobs = [];
-  if (LIVE.allow.indexOf('client') >= 0) {
+  /* v493: كل دور يجلب بياناته وحده — الدور النشط فقط (وفي «صفحة العميل» للموظف: العميل). والملف الشخصي وتوثيقه ومركز الأمان مشتركة تتبع الحساب في كل دور */
+  const LROLE = LIVE.allow.length === 1 ? LIVE.allow[0] : ((want || S.role) === 'admin' ? 'admin' : 'client'); LIVE.loaded = LROLE;
+  if (LIVE.allow.indexOf('client') >= 0 && LROLE === 'client') {
     jobs.push(liveSb('rpc/my_membership', { body: {} }).then(function (m) { LIVE_DATA.mem = m; }).catch(function () { LIVE_DATA.mem = null; }));
     jobs.push(liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name))&kind=eq.contract&user_id=eq.' + encodeURIComponent(uid) + '&order=order_date.desc')
       .then(function (L) { (L || []).forEach(function (r) { CONTRACTS.push(liveContract(r)); }); }).catch(function () { /* القسم يبقى فارغًا */ }));
@@ -17746,15 +17748,20 @@ async function liveData() {
     jobs.push(liveSb('payment_op_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').then(function (L) { LIVE_DATA.opreq = Array.isArray(L) ? L : []; }).catch(function () { LIVE_DATA.opreq = []; }));
     jobs.push(liveSb('payment_gateway_txns?select=trx,gateway_order,amount,status,txn_at,card_last4,class_label,payment_id,refunded_amount,refund_state,parent_trx,details&user_id=eq.' + encodeURIComponent(uid) + '&order=txn_at.desc.nullslast')
       .then(function (L) { LIVE_DATA.txns = Array.isArray(L) ? L : []; }).catch(function () { LIVE_DATA.txns = []; }));
+    }
+    /* مشترك لكل الأدوار: الملف الشخصي وتوثيقه وملاحظاته وأمان التوثيق */
+    {
     LIVE_DATA.blocks = {};
     LIVE_BLK.concat(['docs']).forEach(function (b) { jobs.push(clApi('/api/account/profile/block/' + b).then(function (d) { LIVE_DATA.blocks[b] = d; }).catch(function () { /* القسم فارغ */ })); });
     jobs.push(liveSb('rpc/my_profile_verification', { body: {} }).then(function (v) { LIVE_DATA.ver0 = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.ver0 = null; }));
     jobs.push(liveSb('rpc/my_surveys', { body: {} }).then(function (v) { LIVE_DATA.surveys = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.surveys = null; }));
     jobs.push(liveSb('rpc/my_verification_security', { body: {} }).then(function (v) { LIVE_DATA.vsec = v && v.ok !== false ? v : null; }).catch(function () { LIVE_DATA.vsec = null; }));
     jobs.push(liveSb('rpc/profile_notes', { body: {} }).then(function (n) { LIVE_DATA.notes = n && n.ok !== false ? n : null; }).catch(function () { LIVE_DATA.notes = null; }));
+    }
+    if (LIVE.allow.indexOf('client') >= 0 && LROLE === 'client') {
     jobs.push(clApi('/api/account/my-requests').then(function (j) { (j.requests || []).forEach(function (q) { REQS.push(liveReq(q)); }); }).catch(function () { /* فارغ */ }));
   }
-  if (LIVE.allow.indexOf('admin') >= 0) {
+  if (LIVE.allow.indexOf('admin') >= 0 && LROLE === 'admin') {
     jobs.push(admClients('').then(function (j) { LIVE_DATA.clients = j; ADMS.cl = ADMS.cl || { q: '', f: 'all' }; ADMS.cl.data = j; ADMS.cl.at = Date.now(); }).catch(function () { LIVE_DATA.clients = null; }));
     jobs.push(admRpc('admin_quotes_list', { p_status: null, p_search: null, p_sort: null, p_limit: 100, p_offset: 0 }).then(function (j) { LIVE_DATA.quotes = j; ADMS.quotes = { q: '', f: 'all', data: j, at: Date.now() }; }).catch(function () { LIVE_DATA.quotes = null; }));
     jobs.push(admRpc('admin_verification_list', { p: { status: 'all' } }).then(function (j) { LIVE_DATA.ver = j.rows || []; ADMS.ver = { q: '', f: 'all', data: j, at: Date.now() }; }).catch(function () { LIVE_DATA.ver = null; }));
@@ -18297,7 +18304,7 @@ if (LIVE.on) {
   /* حساب المشرف: بطاقات الأدوار بتصميم العيّنة، والتبديل بين أدوار الحساب الفعلية فقط */
   cuWhoMenu = function () {
     const me = LIVE.me || {}, cur = S.role === 'admin' ? 'admin' : 'client', n = Array.isArray(LIVE_DATA.factors) ? LIVE_DATA.factors.length : lvFactors();
-    const RC = { admin: ['منصة الموظف', 'shield-check:navy', (LIVE.roles.filter(function (k) { return k !== 'client'; }).map(function (k) { return LIVE_ROLE_AR[k] || k; }).join('، ')) || 'الموظف'], client: ['منصة العميل', 'user:teal', 'عقودك ومدفوعاتك وطلباتك'] };
+    const RC = { admin: ['منصة الموظف', 'shield-check:navy', (LIVE.sup ? 'المشرف العام' : (LIVE.roleAr || 'موظف'))], client: ['منصة العميل', 'user:teal', 'عقودك ومدفوعاتك وطلباتك'] };
     const card = function (k, on) { const C = RC[k]; return e(on ? 'div' : 'button', on ? { class: 'cu-ctx is-on' } : { type: 'button', class: 'cu-ctx', 'data-live-ok': '', onClick: function () { S.whoOpen = false; whoMenu(); setRole(k); } }, [e('span', { class: 'cu-ctx-ic' }, frag(tile(C[1]))), e('span', { class: 'cu-ctx-t' }, [e('b', {}, C[0]), e('small', {}, C[2])]), on ? DS.badge('نشط', 'ok') : e('span', { class: 'cu-ctx-go' }, 'تبديل')]); };
     const others = LIVE.allow.filter(function (k) { return k !== cur; });
     return e('div', { class: 'lv-whom cu-whom', role: 'dialog', 'aria-label': 'حسابي' }, [e('div', { class: 'lv-whom-h' }, [e('span', { class: 't2-avatar' }, (me.full_name || '؟').charAt(0)), e('div', {}, [e('b', {}, me.full_name || ''), e('small', {}, ltr(me.tera_id || me.email || ''))])]),
@@ -20339,8 +20346,17 @@ if (LIVE.on) {
     try { ['ns', 'nv', 'cid', 'pid', 'rid', 'pfrom', 'payPid', 'dpid', 'opk', 'opr', 'opn', 'opDone', 'mode'].forEach(function (k) { delete FX[k]; }); if (Array.isArray(FX.trail)) FX.trail.length = 0; } catch (err) { void err; }
     try { ADM.tst = ''; ADM.cuf = ''; S.cmd = false; admClose(); } catch (err) { void err; }
     try { Object.keys(ADMS).forEach(function (k) { if (ADMS[k]) ADMS[k].q = ''; }); } catch (err) { void err; }
+    /* v493: بيانات الدور تُجلب عند التبديل إليه (لا تُجلب بيانات دورٍ غير نشط)، ويبقى العرض الحالي حتى تكتمل */
+    const done = function () {
     setRole0(r);
     try { (LVS.sess || []).forEach(function (x) { if (x.cur) x.role = r === 'admin' ? 'الموظف' : 'العميل'; }); } catch (err) { void err; }
+    };
+    /* v493: في صفحتي الموظف والعميل يتبع الرابطُ الدورَ — /staff/ للموظف و/clients/ للعميل — فيتغيّر الرابط وتُحمَّل بيانات الدور وحده */
+    const sec = (window.__TERA || {}).section;
+    if ((sec === 'staff' || sec === 'clients') && sec !== (r === 'admin' ? 'staff' : 'clients')) { roleKeep(r); snack(r === 'admin' ? 'جارٍ فتح منصة الموظف…' : 'جارٍ فتح منصة العميل…'); location.assign(r === 'admin' ? '/staff/' : '/clients/'); return; }
+    if (!LIVE.me || !LIVE.loaded || LIVE.loaded === r) { done(); return; }
+    snack(r === 'admin' ? 'جارٍ فتح منصة الموظف…' : 'جارٍ فتح منصة العميل…');
+    LIVE.q = (LIVE.q || Promise.resolve()).then(function () { return liveData(r).catch(function () { /* الأقسام تبقى فارغة */ }); }).then(done);
   };
   try { document.documentElement.classList.add('tq-live'); } catch (err) { void err; }
   showOverlay = function () {
@@ -20356,6 +20372,8 @@ if (LIVE.on) {
     if (!LIVE.allow.length) { LIVE.me = null; LIVE.err = 'حسابك لا يملك دور العميل ولا دور الموظف في هذه المنصة.'; draw(); return; }
     ME.name = x.me.full_name || ME.name; ME.email = x.me.email || ''; ME.phone = x.me.phone ? '+' + String(x.me.phone).replace(/^\+/, '') : ''; ME.region = ''; ME.city = '';
     if (LIVE.allow.indexOf(S.role) < 0) { S.role = LIVE.allow[0]; S.tab = S.role === 'admin' ? 'other' : 'dash'; S.other = S.role === 'admin' ? 'adm-home' : ''; }
+    /* v493: الرابط يحدّد الدور — /staff/ منصة الموظف و/clients/ منصة العميل؛ وإن لم يملك الحساب دور الصفحة يُنقل إلى صفحة دوره */
+    try { const sec = (window.__TERA || {}).section, pr = sec === 'staff' ? 'admin' : sec === 'clients' ? 'client' : ''; if (pr && LIVE.allow.indexOf(pr) >= 0 && S.role !== pr) { S.role = pr; S.tab = pr === 'admin' ? 'other' : 'dash'; S.other = pr === 'admin' ? 'adm-home' : ''; } else if (pr && LIVE.allow.indexOf(pr) < 0) { roleKeep(S.role); location.replace(S.role === 'admin' ? '/staff/' : '/clients/'); return; } } catch (err) { void err; }
     roleKeep(S.role);
     liveData().catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
       /* التحديث يُبقي الصفحة نفسها: يُعاد استرجاع موضع التنقل بعد وصول البيانات الحقيقية (العقد والدفعة والإيصال وملف العميل) */
