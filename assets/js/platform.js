@@ -20230,7 +20230,7 @@ function lvFilmLib() {
 }
 /* مشاركة فيلم من المكتبة: الرابط المباشر من Cloudflare R2 (يُشغَّل أو يُنزَّل على جهاز المستلم) — نسخ، واتساب، X، تيليجرام، البريد، أو من الجهاز */
 function filmShare(f) {
-  const host = modalHost(), url = FILM_CDN + f.l + '.mp4', txt = f.t + ' — منصة تيرا للخدمات المتكاملة', enc = encodeURIComponent;
+  const host = modalHost(), url = FILM_CDN + f.l.replace('library/', 'library/view/') + '.mp4', txt = f.t + ' — منصة تيرا للخدمات المتكاملة', enc = encodeURIComponent;
   const close = function () { document.removeEventListener('keydown', onKey, true); sh.remove(); };
   const onKey = function (ev) { if (ev.key === 'Escape') { close(); ev.preventDefault(); } };
   const opt = function (ic, t, fn, cls) { return e('button', { type: 'button', class: 'sh-o' + (cls ? ' ' + cls : ''), onClick: function () { fn(); } }, [e('span', { class: 'sh-o-ic' }, frag(ui(ic, 22))), e('span', {}, t)]); };
