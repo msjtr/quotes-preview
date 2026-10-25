@@ -12998,9 +12998,9 @@ function shieldHub() {
   const D = lvDevs(), ok = D.filter(function (d) { return d.st === 'ok'; }).length, wait = D.filter(function (d) { return d.st === 'wait'; }).length;
   const n2 = (LVS.mail ? 1 : 0) + (LVS.app ? 1 : 0), nv = [LVS.mail, LVS.wa === 'on', LVS.app, !!LVS.xc].filter(Boolean).length, f = lvFactors();
   const act = lvSess().filter(function (x) { return x.st === 'نشطة'; }).length;
-  const lastIn = lvSess()[0].in;
+  const lastIn = (lvSess()[0] || {}).in || null;
   return [lvHero({ ic: 'shield', cls: 'is-sec', eye: 'مركزُ الأمان', t: f === 3 ? 'حسابك محمي بالكامل' : 'عزّز حماية حسابك', sub: f ? fmtNum(f) + ' من 3 عوامل تحقّق مُفعَّلة' : 'لا عاملَ تحقُّقٍ مُفعَّل بعد', pill: [f === 3 ? 'محمي' : 'يحتاج تعزيز', f === 3 ? 'ok' : 'warn'], ring: [Math.round(f / 3 * 100), 'درجة الحماية'],
-    tiles: [['عوامل التحقق', fmtNum(f) + ' / 3', 'fingerprint', f === 3 ? 'ok' : 'warn'], ['الأجهزة المصرّح بها', fmtNum(ok) + ' / 3', 'device-mobile', wait ? 'warn' : null], ['الجلسات النشطة', fmtNum(act), 'monitor'], ['آخر دخول', iso(lastIn) + ' ' + hm(lastIn), 'clock']] }),
+    tiles: [['عوامل التحقق', fmtNum(f) + ' / 3', 'fingerprint', f === 3 ? 'ok' : 'warn'], ['الأجهزة المصرّح بها', fmtNum(ok) + ' / 3', 'device-mobile', wait ? 'warn' : null], ['الجلسات النشطة', fmtNum(act), 'monitor'], ['آخر دخول', lastIn ? iso(lastIn) + ' ' + hm(lastIn) : '—', 'clock']] }),
     sec('أمان الدخول', null, [lvHub([['lock', 'إعدادات كلمة المرور بالبريد الإلكتروني', 'آخر تغيير ' + iso(LVS.pwAt || actAt()), null, goP('sec-password')],
       ['wa', 'إعدادات تطبيق الواتس اب', LVS.wa === 'on' ? 'مربوط · رمز التعريف محفوظ' : 'غير مربوط', LVS.wa === 'on' ? 'ok' : 'warn', goP('sec-whatsapp')],
       ['key', 'إعدادات الرقم الإضافي', LVS.xc ? 'مُصدَر · ' + iso(LVS.xcAt) : 'غير مُصدَر', LVS.xc ? 'ok' : null, goP('sec-extracode')],
@@ -15123,11 +15123,11 @@ const navOf = () => S.role === 'admin' ? (typeof cuNavOf === 'function' && cuNav
 function shell() {
   const on = navOf();
   const ADMIN = S.role === 'admin';
-  const side = (ADMIN ? (typeof cuNavAdm === 'function' ? cuNavAdm(NAV_ADM) : NAV_ADM) : (typeof clPre === 'function' && clPre() ? CL_PRE_NAV : NAV)).map(function (g) {
+  const side = (ADMIN ? (typeof cuNavAdm === 'function' ? cuNavAdm(NAV_ADM) : NAV_ADM) : (window.__clPre && window.__clPre() ? window.__CL_PRE_NAV : NAV)).map(function (g) {
     return '<div class="t2-side-g">' + (g[0] ? '<button class="t2-side-gh" type="button"><span>' + g[0] + '</span><span class="t2-chev" aria-hidden="true"></span></button>' : '') + '<div class="t2-side-gb">' +
       (g[1].map(function (i) { return '<button class="t2-side-i' + (i[0] === on ? ' is-on' : '') + '" type="button" data-nav="' + i[0] + '"><span class="t2-side-ic">' + tile(i[0]) + '</span><span class="t2-side-l">' + (i[0] === 'adm-home' ? admHomeT() : i[1]) + '</span></button>'; }).join('')) + '</div></div>';
   }).join('');
-  const dock = (ADMIN ? (typeof cuDockAdm === 'function' ? cuDockAdm : function (x) { return x; })([['adm-home', admHomeT()], ['adm-more', 'الأقسام'], ['sys', 'الإعدادات'], ['tq-account', 'حسابك']]) : (typeof clPre === 'function' && clPre() ? CL_PRE_DOCK : [['dash', 'الرئيسية'], ['store', 'المتجر'], ['more', 'الأقسام'], ['tq-account', 'حسابك']])).map(function (i) { return '<button type="button" class="t2-dock-i' + (i[0] === on ? ' is-on' : '') + '" data-nav="' + i[0] + '">' + tile(i[0]) + '<span class="t2-dock-l">' + i[1] + '</span></button>'; }).join('');
+  const dock = (ADMIN ? (typeof cuDockAdm === 'function' ? cuDockAdm : function (x) { return x; })([['adm-home', admHomeT()], ['adm-more', 'الأقسام'], ['sys', 'الإعدادات'], ['tq-account', 'حسابك']]) : (window.__clPre && window.__clPre() ? window.__CL_PRE_DOCK : [['dash', 'الرئيسية'], ['store', 'المتجر'], ['more', 'الأقسام'], ['tq-account', 'حسابك']])).map(function (i) { return '<button type="button" class="t2-dock-i' + (i[0] === on ? ' is-on' : '') + '" data-nav="' + i[0] + '">' + tile(i[0]) + '<span class="t2-dock-l">' + i[1] + '</span></button>'; }).join('');
   return '<div class="t2 t2-app ' + (ADMIN ? 'is-admin' : 'is-client') + '"><header class="t2-head is-v3"><div class="t2-hd-brand"><img class="t2-hd-logo" src="' + IMG.logo + '" alt="تيرا"><span class="t2-hd-name">منصةُ الخدمات</span></div>' +
     '<button type="button" class="t2-hcmd" aria-label="البحث"><span class="t2-hcmd-i" aria-hidden="true"></span><span class="t2-hcmd-t">ابحث عن منتج أو قسم…</span><kbd class="t2-kbd">Ctrl K</kbd></button><div class="t2-hd-sp"></div>' +
     '<div class="t2-hd-r"><button type="button" class="t2-hwho lv-who" aria-haspopup="dialog" aria-expanded="false"><span class="t2-avatar">' + (ADMIN ? 'م' : 'ع') + '</span><span class="t2-hwho-n">' + (ADMIN ? 'المشرف العام' : ME.name) + '</span><span class="t2-hwho-r">' + (ADMIN ? (typeof cuCtxLabel === 'function' ? cuCtxLabel() : 'المشرف') : 'العميل') + '</span><span class="lv-caret" aria-hidden="true">' + ui('caret-down', 12) + '</span></button>' +
@@ -17851,6 +17851,7 @@ if (t) { try { const r = await fetch('/admin/api/cpv/' + encodeURIComponent(uid)
 if (!j || j.ok !== true) { LIVE_DATA.mem = null; LIVE_DATA.blocks = {}; LIVE_DATA.ver0 = null; LIVE_DATA.vsec = null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null; LVS.devs = []; LVS.sess = []; LIVE_DATA.factors = []; try { DBN.rows = []; DBN.at = Date.now(); LWA.info = { ok: false }; } catch (err) { void err; } return; }
 LIVE_DATA.mem = j.mem; LIVE_DATA.blocks = j.blocks || {}; LIVE_DATA.ver0 = j.ver0 || null; LIVE_DATA.vsec = j.vsec || null; LIVE_DATA.notes = null; LIVE_DATA.surveys = null;
 try { LIVE_DATA.sec = j.sec; liveSec(j.sec || {}); } catch (err) { LVS.devs = []; LVS.sess = []; }
+try { const pa = j.sec && j.sec.account && j.sec.account.password_changed_at; LVS.pwAt = pa ? new Date(pa) : null; } catch (err) { void err; }
 LIVE_DATA.factors = liveFactorKeys(j.factors);
 try { (j.requests || []).forEach(function (q) { REQS.push(liveReq(q)); }); } catch (err) { void err; }
 try { LWA.info = j.wa || { ok: false }; } catch (err) { void err; }
@@ -17915,7 +17916,7 @@ function liveSec(o) {
   LVS.mail = true;
 }
 /* الجلسة والجهاز الحاليان يظهران دائمًا حتى لو لم يُرجع الخادم قائمة */
-function liveSecFill() {
+function liveSecFill() { if (window.__cpvUid) return; /* v505: في «صفحة العميل» لا يُضاف جهاز المتصفح وجلسته (جهاز الموظف) إلى بيانات العميل */
   const ua = navigator.userAgent, br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : 'المتصفح';
   const os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac OS/.test(ua) ? 'macOS' : /Windows/.test(ua) ? 'Windows' : '';
   if (!Array.isArray(LVS.devs)) LVS.devs = []; if (!Array.isArray(LVS.sess)) LVS.sess = [];
@@ -17964,6 +17965,8 @@ function liveJourney() {
 function clPre() { try { return !!(LIVE.on && S.role === 'client' && LIVE.me && liveJourney().stage !== 'launched'); } catch (err) { return false; } }
 const CL_PRE_NAV = [['الأساسي', [['profile', 'ملفي الشخصي'], ['shield', 'مركزُ الأمان'], ['mail', 'مركز المراسلات']]]];
 const CL_PRE_DOCK = [['profile', 'ملفي'], ['shield', 'الأمان'], ['mail', 'المراسلات'], ['tq-account', 'حسابك']];
+/* v505: الدوال هنا داخل كتلة؛ تُكشف لـ shell() خارجها (القائمة الجانبية وشريط الجوال) */
+window.__clPre = clPre; window.__CL_PRE_NAV = CL_PRE_NAV; window.__CL_PRE_DOCK = CL_PRE_DOCK;
 function clPreOk(tab, other) {
 if (tab === 'msg' || tab === 'notif') return true;
 if (tab !== 'other') return false;
