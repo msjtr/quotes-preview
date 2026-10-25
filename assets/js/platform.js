@@ -6755,7 +6755,79 @@ const CU_MG_CH = [['both', 'واتساب والبريد'], ['wa', 'واتساب 
 const CU_MG = [];
 const cuMgNew = ['الاسم بالإنجليزية', 'مكان الميلاد', 'الحي', 'جهة اتصال للطوارئ'];
 const CU_MG_L = [];
+/* ---------- v498: العملاء المنقولون (حساباتهم في المنصة نفسها) — من الخادم /admin/api/mig، والإرسال «محاكاة» حتى يُفعَّل بقرار الإدارة ---------- */
+const MIG2 = { st: 'idle', rows: null, mode: 'simulated', err: '', at: 0, pv: {} };
+async function mig2Api(path, body) {
+const t = tqToken(); if (!t) throw { code: 'not_signed_in' };
+const r = await fetch('/admin/api/mig' + path, { method: body ? 'POST' : 'GET', headers: Object.assign({ Authorization: 'Bearer ' + t }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined, cache: 'no-store', credentials: 'same-origin' });
+let j = {}; try { j = await r.json(); } catch (err) { void err; }
+if (!r.ok && !(j && j.results)) throw { code: 'http_' + r.status, msg: j && j.message };
+return j;
+}
+function mig2Load(force) {
+if (!tqLive()) return Promise.resolve(null);
+if (MIG2.st === 'loading' || (!force && MIG2.rows && Date.now() - MIG2.at < 60000)) return Promise.resolve(MIG2.rows);
+MIG2.st = 'loading';
+return mig2Api('/clients').then(function (j) { MIG2.rows = j.rows || []; MIG2.mode = j.mode || 'simulated'; MIG2.st = 'ok'; MIG2.at = Date.now(); MIG2.err = ''; CU_MG_L.length = 0; draw(); return MIG2.rows; })
+.catch(function (err) { MIG2.st = 'err'; MIG2.err = mgrErrText(err); MIG2.at = Date.now(); draw(); return null; });
+}
+const mig2Of = (uid) => (MIG2.rows || []).filter(function (r) { return r.uid === uid; })[0] || null;
+const MIG2_VER = { approved: ['موثَّق', 'ok'], submitted: ['بانتظار المراجعة', 'warn'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['مُعاد للتعديل', 'info'], rejected: ['مرفوض', 'danger'], draft: ['لم يُرسل بعد', null] };
+const mig2VerB = (s) => { const b = MIG2_VER[s] || ['لم يبدأ', null]; return DS.badge(b[0], b[1]); };
+function mig2Type(uid) { if (!MIG2.rows) return '—'; return mig2Of(uid) ? DS.badge('منقول من النظام السابق', 'info') : DS.badge('جديد', null); }
+function mig2Launch(uid) { const r = mig2Of(uid); if (!r) return '—'; return r.launched ? DS.badge('دُشّن', 'ok') : DS.badge('قبل التدشين — الملف الشخصي ومركز الأمان فقط', 'warn'); }
+function mig2File(uid, name) { document.querySelectorAll('.cu-dh').forEach(function (x) { x.remove(); }); try { admClose(); } catch (err) { void err; } ADM.pfc = uid; FX.pfc = uid; (ADM.pfN || (ADM.pfN = {}))[uid] = name || ''; go('other', 'cu-pf-file'); }
+function mig2St(r) { return r.ver === 'approved' ? 'done' : ['submitted', 'received', 'in_review'].indexOf(r.ver) >= 0 ? 'sub' : r.signed_in ? 'pw' : (r.notices || []).some(function (n) { return n.mode === 'live'; }) ? 'sent' : 'new'; }
+const mig2Ch = (L) => (L || []).indexOf('email') >= 0 && (L || []).indexOf('whatsapp') >= 0 ? 'both' : (L || []).indexOf('whatsapp') >= 0 ? 'wa' : 'mail';
+function mig2Item(r) {
+const at = r.migrated_at ? new Date(r.migrated_at) : new Date(), st = mig2St(r), vAt = r.ver_at ? new Date(r.ver_at) : at;
+const sent = (r.notices || []).slice().reverse().map(function (n) { return [new Date(n.at), mig2Ch(n.channels), n.mode]; });
+const m = { id: 'u' + r.uid, uid2: r.uid, real: r, live: true, live2: true, name: r.name || '—', uid: r.tera_id || String(r.uid).slice(0, 8).toUpperCase(), legacy: (r.legacy || []).join('، ') || '—', mAt: at, wasV: false,
+last: r.last_login ? new Date(r.last_login) : at, gaps: {}, docs: [], sent: sent, ct: [], ch: 'both', st: st, conf: '',
+pwAt: r.signed_in && r.last_login ? new Date(r.last_login) : null, subAt: st === 'sub' || st === 'done' ? vAt : null, doneAt: st === 'done' ? vAt : null,
+log: [[at, 'نُقل الحساب من النظام السابق — ' + fmtNum(r.contracts || 0) + ' عقد بأرقامها السابقة', 'النظام']] };
+sent.forEach(function (s) { m.log.push([s[0], (s[2] === 'live' ? 'أُرسلت' : 'محاكاة إرسال —') + ' رسالة «تدشين الهوية الجديدة» — ' + ((CU_MG_CH.filter(function (c) { return c[0] === s[1]; })[0] || ['', ''])[1]), 'الإدارة']); });
+if (m.pwAt) m.log.push([m.pwAt, 'دخل العميل إلى المنصة بكلمة مرور عيّنها من «نسيت كلمة المرور»', 'العميل']);
+if (r.launched_at) m.log.push([new Date(r.launched_at), 'دشّن العميل حسابه', 'العميل']);
+if (m.subAt) m.log.push([m.subAt, 'أرسل العميل ملفه للتوثيق', 'العميل']);
+if (m.doneAt) m.log.push([m.doneAt, 'اعتُمد توثيق الملف', 'الإدارة']);
+m.log.sort(function (a, b) { return a[0] - b[0]; });
+return m;
+}
+async function mig2Send(m, ch) {
+const C = ch === 'both' ? ['email', 'whatsapp'] : ch === 'wa' ? ['whatsapp'] : ['email'];
+const j = await mig2Api('/notify', { uid: m.uid2, channels: C });
+const R = j.results || {}, bad = Object.keys(R).filter(function (k) { return !R[k].ok; }).map(function (k) { return (k === 'email' ? 'البريد: ' : 'واتساب: ') + R[k].message; });
+await mig2Load(true);
+return (j.simulated ? 'محاكاة — بُنيت الرسالة وسُجّلت ولم يُرسل شيء للعميل' : 'أُرسلت رسالة «تدشين الهوية الجديدة»') + (bad.length ? ' · ' + bad.join(' · ') : '');
+}
+function mig2Preview(m, rerun) {
+const P = MIG2.pv[m.uid2];
+if (!P) { MIG2.pv[m.uid2] = 'loading'; mig2Api('/preview?uid=' + encodeURIComponent(m.uid2)).then(function (j) { MIG2.pv[m.uid2] = j; rerun(); }).catch(function (err) { MIG2.pv[m.uid2] = { err: mgrErrText(err) }; rerun(); }); }
+if (!P || P === 'loading') { const w = e('small', { class: 'cu-dr-hint' }, 'جارٍ بناء المعاينة من الخادم…'); return { wa: w, mail: e('small', { class: 'cu-dr-hint' }, 'جارٍ بناء المعاينة من الخادم…'), req: '' }; }
+if (P.err) return { wa: DS.note('warn', 'تعذّرت المعاينة', P.err), mail: DS.note('warn', 'تعذّرت المعاينة', P.err), req: '' };
+const W = P.whatsapp || {}, pr = W.params || [];
+const wa = e('div', { class: 'fx-tpl-wa' }, [e('div', { class: 'fx-tpl-wa-h' }, [e('img', { src: IMG.logo, alt: '' }), e('div', {}, [e('b', {}, 'تيرا'), e('small', {}, 'حساب أعمال موثّق')])]),
+e('div', { class: 'fx-tpl-wa-c' }, [e('div', { class: 'fx-tpl-wa-m' }, [W.header ? e('img', { src: String(W.header).replace(/^https?:\/\/[^/]+/, ''), alt: 'صورة رأس الرسالة', style: 'width:100%;border-radius:8px;display:block;margin:0 0 6px' }) : null,
+e('p', {}, 'مرحبًا ' + (pr[0] || '') + '،'), e('b', {}, pr[1] || ''), e('p', {}, 'الحالة: ' + (pr[2] || '')), e('p', {}, pr[3] || ''), e('p', { class: 'fx-tpl-wa-ref' }, ['رقم تيرا ', ltr(pr[4] || '—')]),
+e('small', { class: 'fx-tpl-wa-t' }, [pr[5] || '', ' ', frag(ui('check', 12))]), e('span', { class: 'cu-mg-btn is-p' }, 'عرض في حسابي')])])]);
+const mail = P.email && P.email.html ? e('iframe', { class: 'cu-mg-mail', title: 'معاينة البريد كما يصل العميل', sandbox: 'allow-same-origin', srcdoc: P.email.html, style: 'width:100%;min-height:760px;border:1px solid rgba(120,130,150,.35);border-radius:12px;background:#fff' })
+: DS.note('warn', 'معاينة البريد غير متاحة', 'قالب البريد الرسمي غير متاح على الخادم الآن.');
+return { wa: wa, mail: mail, req: '' };
+}
+function mig2Panel() {
+const head = 'العملاء المنقولون — من القاعدة';
+if (!MIG2.rows && MIG2.st !== 'err') { if (MIG2.st !== 'loading') mig2Load(); return DS.panel(head, 'جارٍ القراءة', [e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل العملاء المنقولين من خادم المنصة…')]); }
+if (!MIG2.rows) return DS.panel(head, 'تعذّرت القراءة', [DS.note('warn', 'تعذّر التحميل', MIG2.err), DS.button('إعادة المحاولة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { MIG2.st = 'idle'; mig2Load(true); } })]);
+const R = MIG2.rows, n = function (f) { return R.filter(f).length; };
+return DS.panel(head, fmtNum(R.length) + ' حسابًا', [DS.fields([['دخلوا المنصة', fmtNum(n(function (r) { return r.signed_in; })) + ' من ' + fmtNum(R.length)], ['دشّنوا حساباتهم', fmtNum(n(function (r) { return r.launched; }))],
+['معفَون من تحقق الجهاز حتى التدشين', fmtNum(n(function (r) { return r.exempt; }))], ['وصلتهم الرسالة فعليًا', fmtNum(n(function (r) { return (r.notices || []).some(function (x) { return x.mode === 'live'; }); }))],
+['الإرسال', MIG2.mode === 'live' ? DS.badge('فعلي', 'ok') : DS.badge('محاكاة — لا يخرج شيء لأي عميل', 'warn')]]),
+e('div', { class: 't2-pb-actions' }, [DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { mig2Load(true); } }), DS.button('القالب في «القوالب الجاهزة»', { size: 'sm', ui: 'file-text', onClick: function () { go('other', 'comm-tpl'); } })]),
+e('small', { class: 'cu-dr-hint' }, 'افتح الحساب لمعاينة رسالة «تدشين الهوية الجديدة» بالبريد وواتساب كما تصل العميل — «هذا حسابك» بأول 3 وآخر 3 أرقام من الجوال والبريد المسجّل — ثم الإرسال.')]);
+}
 function cuMgLive() {
+if (tqLive()) { if (!MIG2.rows) { if (MIG2.st !== 'loading' && MIG2.st !== 'err') mig2Load(); return CU_MG_L; } if (!CU_MG_L.length) MIG2.rows.forEach(function (r) { CU_MG_L.push(mig2Item(r)); }); return CU_MG_L; }
   if (!MGR.live) { if (MGR.st !== 'loading' && MGR.st !== 'err') mgrLoad(); return CU_MG_L; }
   if (CU_MG_L.length || !MGR.live.length) return CU_MG_L;
   MGR.live.forEach(function (r) { const lg = 'DJ-' + String(r.id).padStart(4, '0'), at = r.at ? new Date(r.at) : new Date(), g = r.gaps || {};
@@ -6806,18 +6878,18 @@ function cuMgMsg(m) {
 }
 function cuMgOpen(id) {
   const m = cuMgOf(id); if (!m) return;
-  if (m.live && !MGR_DET[m.lid]) { cuDrawer({ key: 'mg:' + id, ic: 'arrows-clockwise:teal', title: 'ملف مُرحَّل · ' + m.name, sub: 'جارٍ القراءة من الخادم…', body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل الملف…')], foot: [] });
+  if (m.live && !m.live2 && !MGR_DET[m.lid]) { cuDrawer({ key: 'mg:' + id, ic: 'arrows-clockwise:teal', title: 'ملف مُرحَّل · ' + m.name, sub: 'جارٍ القراءة من الخادم…', body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل الملف…')], foot: [] });
     tqApi('/mig/' + m.lid).then(function (j) { const P = j.profile; MGR_DET[m.lid] = { id: m.lid, name: P.name, state: P.state, conflict: P.conflict, blocks: P.blocks || {}, gaps: P.gaps || {}, svc: P.svc || {}, wv: P.verified === true, files: P.files || [],
       docs: (P.files || []).filter(function (f) { return f.place === 'profile' && f.ready; }).map(function (f) { return { id: f.fid, label: f.label || f.kind, type: f.kind, mime: f.mime, size: f.size, at: f.at }; }) };
       m.docs = (P.files || []).map(function (f) { return [f.label || f.kind || 'مرفق', f.ready ? (f.fresh === false && f.place === 'svc' ? 2 : 1) : f.place === 'archive' ? 3 : 4, f.place === 'svc' ? 'svc' : 'pf']; }).concat(m.docs.filter(function (d) { return d[1] === 0; }));
       cuMgOpen(id); }).catch(function (err) { cuDrawer({ key: 'mg:' + id, ic: 'arrows-clockwise:teal', title: 'ملف مُرحَّل · ' + m.name, sub: '', body: [DS.note('warn', 'تعذّر فتح الملف', mgrErrText(err))], foot: [] }); });
     return; }
   const key = 'mg:' + id, D = CUD[key] || (CUD[key] = { mode: '', why: '', tpl: '', err: '', chk: {}, ch: m.ch || 'both', pv: 'wa' }), rerun = function () { cuMgOpen(id); };
-  const W = cuW(key), live = cuMgOpenSt(m.st), can = cuCan('profile.migrate') && !m.live, last = m.sent.length ? m.sent[m.sent.length - 1][0] : m.mAt, sla = cuSla(new Date(last.getTime() + CU_SLA.mig * CU_DAY)), M = cuMgMsg(m);
+  const W = cuW(key), live = cuMgOpenSt(m.st), can = cuCan('profile.migrate') && (!m.live || !!m.live2), last = m.sent.length ? m.sent[m.sent.length - 1][0] : m.mAt, sla = cuSla(new Date(last.getTime() + CU_SLA.mig * CU_DAY)), M = m.live2 ? mig2Preview(m, rerun) : cuMgMsg(m);
   const chName = function (k) { return CU_MG_CH.filter(function (c) { return c[0] === k; })[0][1]; };
   const steps = [['ترحيل', 1], ['طلب التحديث', m.sent.length ? 1 : 0], ['كلمة المرور', m.pwAt ? 1 : 0], ['تحديث العميل', m.subAt ? 1 : 0], ['التوثيق', m.doneAt ? 1 : 0]];
   const nowI = steps.findIndex(function (s) { return !s[1]; });
-  const send = function () { const now = new Date(), re = m.sent.length > 0; m.sent.push([now, D.ch]); m.ch = D.ch; if (m.st === 'new') m.st = 'sent'; m.log.push([now, (re ? 'أُعيد إرسال' : 'أُرسل') + ' طلب تحديث البيانات مع رابط «نسيت كلمة المرور» — ' + chName(D.ch), cuWho()]); cuAud((re ? 'تذكير' : 'طلب') + ' تحديث بيانات عميل مُرحَّل — ' + m.name + ' (' + M.req + ')', null, 'الملف الشخصي', 'ملاحظة'); return (re ? 'أُعيد الإرسال' : 'أُرسل طلب التحديث') + ' — ' + chName(D.ch); };
+  const send = function () { if (m.live2) { mig2Send(m, D.ch).then(function (msg) { snack(msg); cuMgOpen(id); }).catch(function (err) { snack(mgrErrText(err)); }); return 'جارٍ بناء الرسالة وتسجيلها…'; } const now = new Date(), re = m.sent.length > 0; m.sent.push([now, D.ch]); m.ch = D.ch; if (m.st === 'new') m.st = 'sent'; m.log.push([now, (re ? 'أُعيد إرسال' : 'أُرسل') + ' طلب تحديث البيانات مع رابط «نسيت كلمة المرور» — ' + chName(D.ch), cuWho()]); cuAud((re ? 'تذكير' : 'طلب') + ' تحديث بيانات عميل مُرحَّل — ' + m.name + ' (' + M.req + ')', null, 'الملف الشخصي', 'ملاحظة'); return (re ? 'أُعيد الإرسال' : 'أُرسل طلب التحديث') + ' — ' + chName(D.ch); };
   const P2 = { can: can, noPerm: m.live ? cuPermNo('للعرض فقط', 'بيانات حقيقية — الإرسال الفعلي للعميل يُفعَّل بعد اعتماد النشر.') : cuPermNo('للعرض فقط', 'إرسال طلبات التحديث وحسم التعارض لمن يملك صلاحية «ترحيل حسابات العملاء» (accounts.migrate) — تعمل الآن ببديلها accounts.manage.'),
     form: m.st === 'conf' ? { hidden: true, cta: '', check: function () { return null; }, run: function () { return ''; } } : live ? { cta: m.sent.length ? 'إعادة الإرسال (تذكير)' : 'إرسال طلب التحديث', check: function () { return null; }, run: send } : null,
     alts: m.st === 'conf' ? [{ mode: 'fix', label: 'دمج مع الحساب القائم', word: 'الدمج', tpl: ['تحققنا أنه الشخص نفسه: البريد ورقم الهوية مطابقان.'], run: function (w) { m.st = 'new'; m.conf = ''; m.log.push([new Date(), 'دُمج مع الحساب القائم: ' + w, cuWho()]); cuAud('دمج ملف مُرحَّل مع حساب قائم — ' + m.name + ': ' + w, null, 'الملف الشخصي', 'تحذير', { sec: true }); return 'دُمج الملف مع الحساب القائم — جاهز لطلب التحديث'; } },
@@ -6827,19 +6899,21 @@ function cuMgOpen(id) {
   const body = [e('div', { class: 'cu-dr-st' }, [DS.badge(CU_MG_ST[m.st][0], CU_MG_ST[m.st][1]), live ? e('span', { class: 'nr-k is-' + sla[1] }, sla[0]) : null, live ? cuAsgChip(W.asg) : null]),
     e('div', { class: 'cu-secs' }, [cuPart(1, 'الملف المرحَّل', 'من النظام السابق إلى المنصة'),
       m.st === 'conf' ? DS.note('danger', 'تعارض هوية — لا يُرسل شيء قبل الحسم', m.conf) : null,
-      cuSec('بيانات الترحيل', 'clipboard-text', [DS.fields([['العميل', m.name], ['المعرّف في المنصة', ltr(m.uid)], ['رقم الملف في النظام السابق', ltr(m.legacy)], ['تاريخ الترحيل', e('span', {}, cuNowT(m.mAt))], ['التوثيق في النظام السابق', DS.badge(m.wasV ? 'كان موثَّقًا' : 'لم يكن موثَّقًا', m.wasV ? 'ok' : null)], ['آخر دخول في النظام السابق', bdiD(iso(m.last))], ['كلمة المرور', m.pwAt ? DS.badge('عُيّنت ' + iso(m.pwAt), 'ok') : DS.badge('لم تُعيَّن — لا تُنقل كلمات المرور', 'warn')]])]),
-      cuSec('المسار', 'clock-counter-clockwise', [DS.stepper(steps.map(function (s, i) { return { label: s[0], state: s[1] ? 'done' : i === nowI ? 'now' : 'todo' }; }), 'مسار العميل المرحَّل')]),
+      cuSec('بيانات الترحيل', 'clipboard-text', [DS.fields([['العميل', m.name], ['المعرّف في المنصة', ltr(m.uid)], ['رقم الملف في النظام السابق', ltr(m.legacy)], ['تاريخ الترحيل', e('span', {}, cuNowT(m.mAt))], m.live2 ? ['التوثيق', DS.badge('يُعاد في المنصة — «طلبات توثيق الملف»', 'info')] : ['التوثيق في النظام السابق', DS.badge(m.wasV ? 'كان موثَّقًا' : 'لم يكن موثَّقًا', m.wasV ? 'ok' : null)], ['آخر دخول في النظام السابق', bdiD(iso(m.last))], ['كلمة المرور', m.pwAt ? DS.badge('عُيّنت ' + iso(m.pwAt), 'ok') : DS.badge('لم تُعيَّن — لا تُنقل كلمات المرور', 'warn')]])]),
+      m.live2 ? cuSec('هذا حسابك — كما يظهر في الرسالة', 'identification-card', [DS.fields([['الجوال المسجّل', ltr(m.real.phone || '—')], ['البريد المسجّل', ltr(m.real.email || '—')], ['نوع الحساب', m.real.type === 'staff' ? 'موظف له عقود سابقة' : 'عميل منقول'], ['دخل المنصة', m.real.signed_in ? DS.badge('نعم — ' + iso(new Date(m.real.last_login)), 'ok') : DS.badge('لم يدخل بعد', 'warn')], ['تدشين الحساب', mig2Launch(m.uid2)], ['تحقق الجهاز', m.real.exempt ? DS.badge('معفى حتى التدشين', 'info') : DS.badge('مطلوب', null)], ['توثيق الملف', mig2VerB(m.real.ver)]]), e('div', { class: 't2-pb-actions' }, [DS.button('ملف العميل', { size: 'sm', ui: 'user', onClick: function () { mig2File(m.uid2, m.name); } })])]) : null,
+cuSec('المسار', 'clock-counter-clockwise', [DS.stepper(steps.map(function (s, i) { return { label: s[0], state: s[1] ? 'done' : i === nowI ? 'now' : 'todo' }; }), 'مسار العميل المرحَّل')]),
       cuPart(2, 'النواقص', fmtNum(cuMgN(m)) + ' بندًا — تُرسل للعميل في طلب التحديث'),
       m.live && MGR_DET[m.lid] ? e('div', { class: 'cu-secs' }, mgrFieldSecs(MGR_DET[m.lid])) : null,
       cuSec('الحقول', 'list-checks', gapRows),
       cuSec('المرفقات المنقولة', 'files', [cuTbl(['المستند', 'المكان', 'الحالة'], m.docs.map(function (d) { const B = [['ناقص', 'danger'], ['منقول — يُراجع في التوثيق', 'ok'], ['منقول — منتهٍ (أقدم من 30 يومًا)', 'warn'], ['أرشيف — يراه الفريق فقط', null], ['في النظام السابق — يُجلب عند النشر', null]][d[1]]; return e('tr', {}, [e('td', {}, e('b', {}, d[0])), e('td', {}, d[2] === 'svc' ? 'خدماتي › مرفقاتي' : 'ملفي الشخصي'), e('td', {}, DS.badge(B[0], B[1]))]); })), e('small', { class: 'cu-dr-hint' }, 'البيانات الوظيفية والمالية ومرفقاتها تنتقل إلى «خدماتي › بياناتي». خطابات مرفقاتي تُقبل خلال 30 يومًا، فالأقدم يظهر منتهيًا ويُطلب حديثه.')]),
       cuSec('العقود المنقولة', 'receipt', m.ct.length ? [cuTbl(['العقد', 'الرقم السابق', 'المنتج', 'الدفعات', 'الحالة'], m.ct.map(function (c) { const S0 = c[3] >= c[4] ? ['مكتمل', 'ok'] : !c[5] ? ['منتظم', 'ok'] : c[5] <= 30 ? ['متأخر — ' + fmtNum(c[5]) + ' يومًا', 'warn'] : ['متعثر — ' + fmtNum(c[5]) + ' يومًا', 'danger'];
         return e('tr', {}, [e('td', {}, e('b', { class: 'cu-nw' }, ltr(c[0]))), e('td', {}, e('span', { class: 'cu-nw' }, ltr(c[1]))), e('td', {}, c[2]), e('td', {}, fmtNum(c[3]) + ' من ' + fmtNum(c[4]) + ' مسدّدة'), e('td', {}, DS.badge(S0[0], S0[1]))]); })),
-        e('small', { class: 'cu-dr-hint' }, 'تظهر في «عقودي» و«مدفوعاتي» برقم جديد والرقم السابق بجانبه. الحالة بقواعد المنصة: منتظم · متأخر حتى 30 يومًا · متعثر بعدها. الدفعات المسدّدة سابقًا تظهر «سُدّدت في النظام السابق» بإثباتها، بلا إيصال جديد.')] : [e('small', { class: 'cu-dr-hint' }, 'لا عقود لهذا العميل في النظام السابق.')]),
+        e('small', { class: 'cu-dr-hint' }, 'تظهر في «عقودي» و«مدفوعاتي» برقم جديد والرقم السابق بجانبه. الحالة بقواعد المنصة: منتظم · متأخر حتى 30 يومًا · متعثر بعدها. الدفعات المسدّدة سابقًا تظهر «سُدّدت في النظام السابق» بإثباتها، بلا إيصال جديد.')] : [e('small', { class: 'cu-dr-hint' }, m.live2 ? 'عقوده المنقولة بأرقامها السابقة (' + m.legacy + ') في ملف العميل › العقود.' : 'لا عقود لهذا العميل في النظام السابق.')]),
       cuPart(3, 'طلب التحديث', 'واتساب والبريد — مع رابط «نسيت كلمة المرور»'),
       live && m.st !== 'conf' && can ? e('div', { class: 'sys-form is-2' }, [DS.editField('قناة الإرسال', DS.select({ value: D.ch, options: CU_MG_CH, onChange: function (v) { D.ch = v; rerun(); } })), DS.editField('معاينة', DS.select({ value: D.pv, options: [['wa', 'رسالة الواتساب'], ['mail', 'رسالة البريد']], onChange: function (v) { D.pv = v; rerun(); } }))]) : DS.editField('معاينة', DS.select({ value: D.pv, options: [['wa', 'رسالة الواتساب'], ['mail', 'رسالة البريد']], onChange: function (v) { D.pv = v; rerun(); } })),
-      e('div', { class: 'cu-mg-pv' }, D.pv === 'mail' ? M.mail : M.wa),
-      e('small', { class: 'cu-dr-hint' }, 'قالب الواتساب المعتمد tera_profile_review_update. كلمات المرور لا تُنقل من النظام السابق، فيدخل العميل أول مرة من «نسيت كلمة المرور».'),
+      m.live2 && MIG2.mode !== 'live' ? DS.note('warn', 'الإرسال الآن محاكاة', 'زر الإرسال يبني الرسالة كاملة ويسجّلها في سجل العميل، ولا يخرج بريد ولا واتساب لأي عميل حتى يُفعَّل الإرسال بقرار الإدارة.') : null,
+e('div', { class: 'cu-mg-pv' }, D.pv === 'mail' ? M.mail : M.wa),
+      e('small', { class: 'cu-dr-hint' }, m.live2 ? 'واتساب بالقالب المعتمد tera_update (صورة الرأس أول صورة في وسائط القالب) والبريد بالقالب الرسمي — النص والوسائط من «القوالب الجاهزة › تدشين الهوية الجديدة». كلمات المرور لا تُنقل، فيدخل العميل أول مرة من «نسيت كلمة المرور».' : 'قالب الواتساب المعتمد tera_profile_review_update. كلمات المرور لا تُنقل من النظام السابق، فيدخل العميل أول مرة من «نسيت كلمة المرور».'),
       m.sent.length ? cuTbl(['الإرسال', 'القناة'], m.sent.slice().reverse().map(function (s, i) { return e('tr', {}, [e('td', {}, e('span', {}, cuNowT(s[0]))), e('td', {}, [chName(s[1]), i === m.sent.length - 1 ? '' : ' · تذكير'])]); })) : null,
       cuPart(4, 'المتابعة الداخلية', 'الإسناد والملاحظات والسجل'), cuWorkBox(key, rerun),
       cuSec('السجل', 'clock-counter-clockwise', [e('ol', { class: 'cu-log' }, m.log.slice().reverse().map(function (x) { return e('li', {}, [e('b', {}, x[1]), e('small', {}, [x[2], ' · '].concat(cuNowT(x[0])))]); }))])])];
@@ -7032,8 +7106,7 @@ function cuPfMigPage() {
   const K = [['مرحَّلون', M.length, '', 'arrows-clockwise'], ['بانتظار الإرسال', W0.length, 'warn', 'paper-plane-tilt'], ['تعارض هوية', M.filter(function (m) { return m.st === 'conf'; }).length, 'danger', 'warning'], ['موثَّقون', M.filter(function (m) { return m.st === 'done'; }).length, '', 'seal-check']];
   const R = cuFilt(L, 'mig');
   return [DS.note('info', 'العملاء المنقولون من النظام السابق', 'نُقلت بياناتهم ومرفقاتهم كما هي، والتوثيق يُعاد في المنصة. كلمات المرور لا تُنقل؛ يدخل العميل أول مرة من «نسيت كلمة المرور»، ثم يكمل نواقصه ويرسل التحديث إلى «طلبات توثيق الملف».'),
-    mgrPanel(),
-    tqLive() ? null : DS.panel('حالة الترحيل الفعلي — المرحلة الأولى', 'في القاعدة الحالية · تجهيز محمي', [DS.fields([['ملفات العملاء', '33 ملفًا — 30 جاهزًا · 3 تعارض هوية'], ['المستندات', '134 — 99 ملفي الشخصي · 13 خدماتي › مرفقاتي · 22 أرشيف للفريق'], ['حسابات الدخول', DS.badge('تُنشأ من خادم المنصة عند النشر', 'info')], ['مرفقات الملف الشخصي', DS.badge('99 نُسخت ومطابقة البصمة', 'ok')], ['مرفقات خدماتي والأرشيف', DS.badge('عند النشر', 'info')]]),
+    tqLive() ? mig2Panel() : mgrPanel(), tqLive() ? null : DS.panel('حالة الترحيل الفعلي — المرحلة الأولى', 'في القاعدة الحالية · تجهيز محمي', [DS.fields([['ملفات العملاء', '33 ملفًا — 30 جاهزًا · 3 تعارض هوية'], ['المستندات', '134 — 99 ملفي الشخصي · 13 خدماتي › مرفقاتي · 22 أرشيف للفريق'], ['حسابات الدخول', DS.badge('تُنشأ من خادم المنصة عند النشر', 'info')], ['مرفقات الملف الشخصي', DS.badge('99 نُسخت ومطابقة البصمة', 'ok')], ['مرفقات خدماتي والأرشيف', DS.badge('عند النشر', 'info')]]),
       e('small', { class: 'cu-dr-hint' }, tqLive() ? 'الصفوف أدناه من القاعدة مباشرة — للاطلاع. الإرسال الفعلي يُفعَّل بعد اعتماد النشر.' : 'البيانات الحقيقية محفوظة في منطقة تجهيز لا يصل إليها أحد من الواجهة، وتظهر هنا بعد النشر. الصفوف أدناه تجريبية.')]),
     e('div', { class: 'cu-kpis' }, K.map(function (x) { return e('div', { class: 'cu-kpi' + (x[2] ? ' is-' + x[2] : '') }, [e('span', { class: 'cu-kpi-ic' }, frag(ui(x[3], 18))), e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })), bulk, R.tools,
     R.rows.length ? e('div', { class: 'nr-gl cu-list' }, R.rows.map(cuPfRow)) : LDS.emptyState({ icon: 'ok', title: 'لا ملفات هنا', body: 'غيّر الفلتر لعرض ملفات أخرى.', compact: true })];
@@ -15120,9 +15193,19 @@ function crumbs(list) {
 /* ===== المسار (Breadcrumb) لكامل النظام: كل صفحة تفصيلية تحفظ مسار المكان الذي دخلت منه، وكل عنصر قبل الأخير قابل للضغط ===== */
 let LASTPATH = [];
 /* تحديث الصفحة يبقيك في نفس المكان: تُحفظ الصفحة الحالية وحالة الأقسام في متصفحك */
-const NAVKEY = 'tera-preview-nav-v1';
+const NAVKEY0 = 'tera-preview-nav-v1';
+/* v498: موضع التنقل محفوظ لكل منصة على حدة (الموظف · العميل) — فلا يختلط موضع دور بدور عند التحديث أو الرجوع */
+const NAVKEY = NAVKEY0 + (function () { try { const s = (window.__TERA || {}).section; return s === 'staff' || s === 'clients' ? ':' + s : ''; } catch (err) { return ''; } })();
 const NAV_FX = ['pfc', 'cf', 'rid', 'cid', 'pid', 'qid', 'payPid', 'ns', 'nv', 'view', 'rs', 'rt', 'dnt', 'nf', 'lock', 'mg', 'sts', 'stsSeed', 'qv', 'rk', 'pdirect', 'pfrom', 'catk', 'catb', 'sku', 'cmp', 'stab', 'htab', 'sq', 'pk', 'fcat', 'cdiff', 'sf', 'sall', 'dtab', 'ot', 'of', 'hf_store', 'hf_svc', 'hf_ord', 'hf_base', 'hf_pk', 'hf_con', 'hf_mem', 'hf_cus', 'osf', 'odf'];
-function saveNav() {
+/* v498: سجل المتصفح يتبع التنقل داخل المنصة — زر الرجوع في المتصفح والجوال يعيد للصفحة السابقة داخل المنصة لا إلى الرئيسية */
+function navSig() { try { return [S.tab, S.other, S.msg, S.thread, FX.pfc, FX.cid, FX.rid, FX.pid, FX.qid, FX.sku].map(function (v) { return v == null ? '' : String(v); }).join('|'); } catch (err) { return ''; } }
+function navHist() { try { if (!window.__navReady || window.__navPop) return; const sig = navSig(); if (sig === window.__navSig) return; window.__navSig = sig; history.pushState({ tqn: sessionStorage.getItem(NAVKEY) || '', sig: sig }, '', location.pathname + location.search + location.hash); } catch (err) { void err; } }
+function navReady() { try { window.__navSig = navSig(); history.replaceState({ tqn: sessionStorage.getItem(NAVKEY) || '', sig: window.__navSig }, '', location.pathname + location.search + location.hash); window.__navReady = true; } catch (err) { void err; } }
+/* الصفحة تطابق دور المنصة: صفحات الإدارة لا تُفتح في دور العميل والعكس */
+function navFit() { try { if (S.role === 'admin' && S.tab !== 'other') { S.tab = 'other'; S.other = 'adm-home'; } else if (S.role === 'client' && S.tab === 'other' && typeof cuNavOf === 'function' && cuNavOf(S.other)) { S.tab = 'dash'; S.other = ''; } } catch (err) { void err; } }
+window.addEventListener('popstate', function (ev) { const st = ev.state; if (!st || typeof st.tqn !== 'string' || !st.tqn) return; try { window.__navPop = true; sessionStorage.setItem(NAVKEY, st.tqn); loadNav(); navFit(); window.__navSig = st.sig || navSig(); draw(); if (typeof toTop === 'function') toTop(); } catch (err) { void err; } finally { window.__navPop = false; } });
+function saveNav() { try { saveNav0(); } finally { navHist(); } }
+function saveNav0() {
   try { const pf = {}; PROFK.forEach(function (k) { if (k in F) pf[k] = F[k]; }); sessionStorage.setItem('tera-preview-prof', JSON.stringify(pf)); } catch (err) { void err; }
   try { const fx = {}; NAV_FX.forEach(function (k) { fx[k] = FX[k]; }); sessionStorage.setItem(NAVKEY, JSON.stringify({ tab: S.tab, other: S.other, msg: S.msg === 'new' ? 'list' : S.msg, thread: S.thread, mst: S.mst, fx: fx, sec: SECST, trail: (FX.trail ? Object.keys(FX.trail) : []), q: S.tab === 'qreq' || S.tab === 'elig' ? { m: S.qmode, fr: S.qfrom, it: S.qitem, st: S.step, F: JSON.parse(JSON.stringify(F, function (k, v) { return (typeof Blob !== 'undefined' && v instanceof Blob) || typeof v === 'function' ? undefined : v; })) } : null })); } catch (err) { void err; }
 }
@@ -16237,13 +16320,13 @@ function admPfFilePage() {
     let all = 0, ok = 0; secs.forEach(function (b) { Bk[b[0]].forEach(function (f) { all++; if (clVal(f) !== null) ok++; }); });
     const up = F.filter(function (f) { return f.fid; }).length, pct = all ? Math.round(ok / all * 100) : 0;
     try { const PN = ADM.pfN || (ADM.pfN = {}); if (P.name && PN[id] !== P.name) { PN[id] = P.name; setTimeout(draw, 0); } ['cu-pf-file', 'cu-file', 'cs-customer'].forEach(function (k) { if (LP[k]) LP[k].t = P.name || 'ملف العميل'; }); } catch (err) { void err; }
-    const VS = { approved: ['موثَّق', 'ok'], submitted: ['بانتظار المراجعة', 'warn'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['مُعاد للتعديل', 'info'], rejected: ['مرفوض', 'danger'] };
+    const VS = { draft: ['لم يُرسل للتوثيق', 'warn'], approved: ['موثَّق', 'ok'], submitted: ['بانتظار المراجعة', 'warn'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['مُعاد للتعديل', 'info'], rejected: ['مرفوض', 'danger'] };
     const vs = D.V ? (VS[D.V.status] || [D.V.status, null]) : ['غير موثَّق', 'warn'];
     const C = (LIVE_ADM.ct[id] || []).slice().sort(function (a, b) { return b.req - a.req; }), BD = CU_BONDS.filter(function (b) { return b.cid === id; });
     const rem = C.reduce(function (a, c) { return a + (c.n ? cInfo(c).remain : 0); }, 0), late = C.filter(function (c) { return c.n && cInfo(c).late.length; }).length;
-    const hero = lvHero({ avatar: String(P.name || '؟').slice(0, 1), eye: 'ملف العميل', t: P.name || '—', sub: 'رقم تيرا ' + (P.no || '—') + ' · عميل منذ ' + String(P.at || '').slice(0, 10), 
+    const hero = lvHero({ avatar: String(P.name || '؟').slice(0, 1), eye: 'ملف العميل', t: P.name || '—', sub: 'رقم تيرا ' + (P.no || '—') + ' · عميل منذ ' + String(P.at || '').slice(0, 10) + (tqLive() && !MIG2.rows && MIG2.st === 'idle' ? (mig2Load(), '') : '') + (mig2Of(id) ? ' · منقول من النظام السابق' : ''), 
       tiles: [['العقود', fmtNum(C.length), 'contract', late ? 'warn' : 'ok'], ['المتبقي', SR(rem), 'wallet', null], ['المتأخرة', fmtNum(late), 'warning', late ? 'warn' : 'ok'], ['السندات', fmtNum(BD.length), 'seal-check', null],
-        ['حالة الحساب', (ADM_USER_ST[P.status] || [P.status || '—'])[0], 'shield-check', P.status === 'active' ? 'ok' : 'warn']],
+        ['حالة الحساب', (ADM_USER_ST[P.status] || [P.status || '—'])[0], 'shield-check', P.status === 'active' ? 'ok' : 'warn'], ['توثيق الملف', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn']],
       acts: [DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LIVE_ADM.at = 0; ADM.trAt = 0; refetch(); } })] });
     /* 1) المعلومات الشخصية والمستندات */
     /* v448: ملف العميل بياناته فقط — التوثيق ونواقصه في «طلبات التوثيق» */
@@ -17602,17 +17685,16 @@ function cfPilotPage(id, D, P, hero, pi, ok, all, C, BD, RF) {
 
 /* ===== طلبات توثيق الملف (cu-pf-ver) ===== */
 function admVerPage() {
-  return admMount('ver', 'طلبات توثيق الملف', function () { return admRpc('admin_verification_list', { p: { status: 'all' } }); }, function (j, st, paint, refetch) {
-    const L = j.rows || [], by = function (s) { return L.filter(function (r) { return r.status === s; }).length; };
+  return admMount('ver', 'طلبات توثيق الملف', function () { return admRpc('admin_verification_list', { p: { status: 'all' } }); }, function (j, st, paint, refetch) { if (tqLive() && !MIG2.rows && MIG2.st === 'idle') mig2Load(); const L = j.rows || [], by = function (s) { return L.filter(function (r) { return r.status === s; }).length; };
     const states = Object.keys(L.reduce(function (o, r) { o[r.status] = 1; return o; }, {}));
     const chips = [['all', 'الكل', L.length]].concat(states.map(function (s) { return [s, (ADM_VER_ST[s] || [s])[0], by(s)]; }));
     const rows = L.filter(function (r) { return st.f === 'all' || r.status === st.f; }).map(function (r) {
-      return admRow([admName(r.name, r.job_title || null), ADM_ROLE[r.role] || r.role || '—', admB(ADM_VER_ST, r.status), r.submitted_at ? bdiD(String(r.submitted_at).slice(0, 10)) : '—',
+      return admRow([admName(r.name, r.job_title || null), ADM_ROLE[r.role] || r.role || '—', r.role === 'client' ? mig2Type(r.user_id) : '—', admB(ADM_VER_ST, r.status), r.submitted_at ? bdiD(String(r.submitted_at).slice(0, 10)) : '—',
         e('span', { class: 'adm-cnt' }, [DS.badge(fmtNum(r.match || 0) + ' مطابق', 'ok'), r.mismatch ? DS.badge(fmtNum(r.mismatch) + ' غير مطابق', 'danger') : null, r.missing_required ? DS.badge(fmtNum(r.missing_required) + ' ناقص', 'warn') : null]), r.assigned_to_name || '—'],
         function () { admVerOpen(r); }, [r.name, r.role, r.status, r.assigned_to_name].join(' '));
     });
     return [admKpis([['طلب توثيق', L.length, '', 'seal-check'], ['بانتظار الاستلام', by('submitted'), by('submitted') ? 'warn' : '', 'clock'], ['قيد المراجعة', by('received') + by('in_review'), '', 'list-checks'], ['معتمد', by('approved'), 'ok', 'check-circle']]),
-      DS.panel('طلبات توثيق الملف', 'من القاعدة بصلاحياتك · للاطلاع', [admTools(st, chips, paint, refetch, 'ابحث بالاسم أو المسؤول'), admTable(['صاحب الطلب', 'الدور', 'الحالة', 'أُرسل', 'البنود', 'المسؤول'], rows, L.length, 'لا طلبات توثيق بهذه الحالة')]),
+      DS.panel('طلبات توثيق الملف', 'من القاعدة بصلاحياتك · للاطلاع', [admTools(st, chips, paint, refetch, 'ابحث بالاسم أو المسؤول'), admTable(['صاحب الطلب', 'الدور', 'نوع العميل', 'الحالة', 'أُرسل', 'البنود', 'المسؤول'], rows, L.length, 'لا طلبات توثيق بهذه الحالة')]),
       DS.note('info', 'اتخاذ القرار', 'افتح الطلب لاستلامه أو اعتماده أو إعادته أو رفضه — القرار يُسجَّل في القاعدة مباشرة.')];
   });
 }
@@ -18414,7 +18496,8 @@ if (LIVE.on) document.addEventListener('click', function (ev) {
 /* ---------- v271: إجراءات حقيقية في مركز الأمان والطلبات ----------
    تغيير كلمة المرور (البوابة الأمنية + كلمة المرور الحالية)، إنهاء الجلسات الأخرى، إلغاء طلب لم يُستلم بعد — كلها عبر مسارات الخادم نفسها. */
 /* v357: العمليات الحساسة (كلمة المرور · الجلسات · المصادقة · الأجهزة · البنك · الدفع والسداد والتحويل · الإلغاء) تتطلب تحققًا إضافيًا بعملية جمع */
-const SENSITIVE_RE = /\/(whatsapp\/(link|pin|unlink)|password|recovery-code|sessions\/revoke|totp\/(start|disable)|security\/devices|org\/bank|pay\/|payouts|transfers|bonds|fees\/settings|cancel)/;
+/* v498: «التحقق الإضافي للعملية الحساسة» أُلغي من عمليات الدفع لكل الأدوار — ويبقى لأمان الحساب وحساب المنشأة البنكي */
+const SENSITIVE_RE = /\/(whatsapp\/(link|pin|unlink)|password|recovery-code|sessions\/revoke|totp\/(start|disable)|security\/devices|org\/bank)/;
 async function clPost(path, body) {
   if (window.TeraNotify && window.TeraNotify.enabled && window.TeraNotify.math && SENSITIVE_RE.test(String(path))) {
     const okm = await window.TeraNotify.math({ title: 'تحقق إضافي لعملية حساسة', text: 'هذه العملية تمس أمان حسابك أو أموالك. أجب عن السؤال البسيط للمتابعة.' });
@@ -18749,7 +18832,9 @@ function admVerOpen(r) {
     cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: (ADM_ROLE[r.role] || r.role || '') + ' · من القاعدة مباشرة', foot: admFoot(), body: [
       e('div', { class: 'cu-dr-st' }, [admB(ADM_VER_ST, st), r.submitted_at ? e('span', { class: 'cu-dr-at' }, ['أُرسل ', bdiD(String(r.submitted_at).slice(0, 10))]) : null]),
       e('div', { class: 'cu-secs' }, [
-        cuSec('بنود الطلب', 'list-checks', [items.length ? DS.fields(items.map(function (i) { const v = IV[i.verdict]; return [i.label || i.field_label || i.field || i.key || '—', e('span', { class: 'cu-mgr-fv' }, [ltrIf(i.value || '—'), v ? DS.badge(v[0], v[1]) : null])]; })) : e('small', { class: 'cu-dr-hint' }, 'لا بنود.')]),
+        cuSec('صاحب الطلب', 'user-circle', [DS.fields([['الاسم', r.name || '—'], ['الدور', ADM_ROLE[r.role] || r.role || '—'], r.role === 'client' ? ['نوع العميل', mig2Type(r.user_id)] : null, ['حالة توثيق الملف', admB(ADM_VER_ST, st)], r.role === 'client' && mig2Of(r.user_id) ? ['تدشين الحساب', mig2Launch(r.user_id)] : null, ['البنود', fmtNum(r.match || 0) + ' مطابق' + (r.mismatch ? ' · ' + fmtNum(r.mismatch) + ' غير مطابق' : '') + (r.missing_required ? ' · ' + fmtNum(r.missing_required) + ' ناقص' : '')]].filter(Boolean)),
+r.user_id && r.role === 'client' ? e('div', { class: 't2-pb-actions' }, [DS.button('فتح ملف العميل', { size: 'sm', ui: 'user', onClick: function () { mig2File(r.user_id, r.name); } })]) : null, e('small', { class: 'cu-dr-hint' }, 'حالة التوثيق تنعكس على ملف العميل (بطاقة «توثيق الملف») فور تسجيل القرار.')]),
+cuSec('بنود الطلب', 'list-checks', [items.length ? DS.fields(items.map(function (i) { const v = IV[i.verdict]; return [i.label || i.field_label || i.field || i.key || '—', e('span', { class: 'cu-mgr-fv' }, [ltrIf(i.value || '—'), v ? DS.badge(v[0], v[1]) : null])]; })) : e('small', { class: 'cu-dr-hint' }, 'لا بنود.')]),
         acts.length ? cuSec('القرار', 'seal-check', [note, e('div', { class: 't2-pb-actions' }, acts), e('small', { class: 'cu-dr-hint' }, 'يصل العميل إشعار بالنتيجة حسب إعدادات الإشعارات. الضغطة الأولى للتأكيد والثانية للتنفيذ.'), out]) : null])] });
   }).catch(function (err) { if (err && err.message === 'auth') return; cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: '', body: [DS.note('warn', 'تعذّر فتح الطلب', err && err.message)], foot: admFoot() }); });
 }
@@ -20380,7 +20465,10 @@ if (LIVE.on) {
     };
     /* v493: في صفحتي الموظف والعميل يتبع الرابطُ الدورَ — /staff/ للموظف و/clients/ للعميل — فيتغيّر الرابط وتُحمَّل بيانات الدور وحده */
     const sec = (window.__TERA || {}).section;
-    if ((sec === 'staff' || sec === 'clients') && sec !== (r === 'admin' ? 'staff' : 'clients')) { roleKeep(r); snack(r === 'admin' ? 'جارٍ فتح منصة الموظف…' : 'جارٍ فتح منصة العميل…'); location.assign(r === 'admin' ? '/staff/' : '/clients/'); return; }
+    if ((sec === 'staff' || sec === 'clients') && sec !== (r === 'admin' ? 'staff' : 'clients')) { roleKeep(r); snack(r === 'admin' ? 'جارٍ فتح منصة الموظف…' : 'جارٍ فتح منصة العميل…');
+      /* v498: إن طُلبت صفحة بعينها مع التبديل (go بعد setRole) تُفتح هي في منصة الدور، ويبقى موضع المنصة الحالية كما هو */
+      const tgt = r === 'admin' ? 'staff' : 'clients', s0 = navSig(); let keep = null; try { keep = sessionStorage.getItem(NAVKEY); } catch (err) { void err; }
+      setTimeout(function () { try { if (navSig() !== s0) { window.__navPop = true; saveNav(); window.__navPop = false; const nv = sessionStorage.getItem(NAVKEY); if (nv) sessionStorage.setItem(NAVKEY0 + ':' + tgt, nv); if (keep !== null) sessionStorage.setItem(NAVKEY, keep); } } catch (err) { void err; } location.assign('/' + tgt + '/'); }, 0); return; }
     if (!LIVE.me || !LIVE.loaded || LIVE.loaded === r) { done(); return; }
     snack(r === 'admin' ? 'جارٍ فتح منصة الموظف…' : 'جارٍ فتح منصة العميل…');
     LIVE.q = (LIVE.q || Promise.resolve()).then(function () { return liveData(r).catch(function () { /* الأقسام تبقى فارغة */ }); }).then(done);
@@ -20404,8 +20492,8 @@ if (LIVE.on) {
     roleKeep(S.role);
     liveRoleSync().then(function () { return liveData(); }).catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
       /* التحديث يُبقي الصفحة نفسها: يُعاد استرجاع موضع التنقل بعد وصول البيانات الحقيقية (العقد والدفعة والإيصال وملف العميل) */
-      try { if (window.__navRaw) { sessionStorage.setItem(NAVKEY, window.__navRaw); window.__navRaw = ''; loadNav(); if (FX.pfc) ADM.pfc = FX.pfc; } } catch (err) { void err; }
-      return S.role === 'client' ? livePayReturn().catch(function () { /* */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); liveFilmAuto(); });
+      try { if (window.__navRaw) { sessionStorage.setItem(NAVKEY, window.__navRaw); window.__navRaw = ''; loadNav(); navFit(); if (FX.pfc) ADM.pfc = FX.pfc; } } catch (err) { void err; }
+      return S.role === 'client' ? livePayReturn().catch(function () { /* */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); liveFilmAuto(); navReady(); });
   }).catch(function (err) {
     if (err && err.message === 'auth') { toLogin(); return; }
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();
@@ -21548,9 +21636,10 @@ const COMM_ROLE = { client: ['عميل', 'users-three:teal'], staff: ['موظف'
 const COMM_CH = { email: ['البريد الإلكتروني', 'envelope-simple:sky'], whatsapp: ['واتساب', 'whatsapp-logo:teal'], both: ['البريد وواتساب', 'paper-plane-tilt:sky'] };
 const COMM_ST = { held: ['محجوزة — الإرسال موقوف', 'warn'], queued: ['في الانتظار', 'info'], sent: ['أُرسلت', 'ok'], partial: ['أُرسلت جزئيًا', 'warn'], failed: ['فشلت', 'danger'], cancelled: ['أُلغيت', ''], skipped: ['بلا عنوان — تُخطّيت', ''] };
 const COMM_ERR = { name_required: 'اكتب الاسم.', phone_or_email_required: 'أدخل الجوال أو البريد.', bad_phone: 'رقم الجوال غير صحيح.', bad_email: 'البريد غير صحيح.', duplicate: 'جهة الاتصال موجودة مسبقًا بالجوال أو البريد نفسه.', forbidden: 'لا تملك الصلاحية.', channel_required: 'اختر وسيلة الإرسال.', body_required: 'اكتب محتوى الرسالة.', subject_required: 'اكتب عنوان البريد.', audience_required: 'حدّد المستلمين.', no_recipients: 'لا مستلمين بهذا التحديد.', bad_channel: 'اختر الوسيلة.' };
+Object.assign(COMM_ERR, { bad_url: 'رابط الوسيط غير صالح — https أو مسار /assets/ فقط.', bad_kind: 'نوع الوسيط غير صالح.', too_many: 'حتى 8 وسائط للقالب.', bad_caption: 'وصف الوسيط أطول من 200 حرف.' });
 const commErr = (err) => { const m = String((err && err.message) || err || ''), k = /\(([a-z_]+)\)/.exec(m); return (k && COMM_ERR[k[1]]) || m || 'تعذّر الحفظ.'; };
-const COMM_VARS = [['{الاسم}', 'اسم المستلم'], ['{رقم_تيرا}', 'رقم تيرا'], ['{التاريخ}', 'تاريخ اليوم']];
-const commFill = (t, c) => String(t || '').replace(/\{الاسم\}/g, (c && c.name) || 'اسم العميل').replace(/\{رقم_تيرا\}/g, (c && c.ident) || 'USR-XXXXXX').replace(/\{التاريخ\}/g, iso(T0));
+const COMM_VARS = [['{الاسم}', 'اسم المستلم'], ['{رقم_تيرا}', 'رقم تيرا'], ['{التاريخ}', 'تاريخ اليوم'], ['{الجوال_المقنع}', 'الجوال مقنّعًا'], ['{البريد_المقنع}', 'البريد مقنّعًا'], ['{رابط_الدخول}', 'رابط بوابة الدخول']];
+const commFill = (t, c) => String(t || '').replace(/\{الاسم\}/g, (c && c.name) || 'اسم العميل').replace(/\{رقم_تيرا\}/g, (c && c.ident) || 'USR-XXXXXX').replace(/\{التاريخ\}/g, iso(T0)).replace(/\{الجوال_المقنع\}/g, '055••••567').replace(/\{البريد_المقنع\}/g, 'abc•••@gmail.com').replace(/\{رابط_الدخول\}/g, location.origin + '/portal/');
 const commIn = (o) => { const x = DS.input(o); if (o.disabled) x.disabled = true; if (o.type === 'tel' || o.type === 'email') x.setAttribute('dir', 'ltr'); return x; };
 const commChips = (key, items, L, fit, def) => chipRow(items.map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), ADM[key] || def || 'all', function (v) { ADM[key] = v; draw(); }, 'اختيار سريع');
 const commRoleT = (roles) => (roles || []).map(function (r) { return (COMM_ROLE[r] || [r])[0]; }).join('، ');
@@ -21577,7 +21666,8 @@ function commHubPage() {
   return secHub('comm', { t: 'التواصل المباشر', s: 'دليل الشركاء، والمراسلة بالبريد وواتساب بقوالب الهوية، وتقرير الإرسال — الإرسال الفعلي موقوف الآن بقرار الإدارة.', ic: 'comm' }, [
     ['dir', 'الدليل', 'users-three:teal', [{ ic: 'comm-dir', t: 'دليل هواتف وبريد الشركاء', d: 'العملاء والموظفون والمسوّقون والمستثمرون — تلقائيًا من الحسابات، ويدويًا أو من جهات اتصال الجوال', n: COMM.ct ? fmtNum(C.length) + ' جهة اتصال' : 'الدليل', go: function () { go('other', 'comm-dir'); } }]],
     ['snd', 'المراسلة', 'paper-plane-tilt:sky', [{ ic: 'comm-send', t: 'المراسلة', d: 'الكل أو المفضلة أو حسب الدور أو أشخاص محددون · البريد بالقالب المعتمد · واتساب بالشعار واسم العميل', badge: ['الإرسال موقوف', 'warn'], go: function () { go('other', 'comm-send'); } },
-      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'الرسائل ومستلموها حسب نوع المستلم والوسيلة — بالتصفية والفرز', n: COMM.msgs ? fmtNum(M.length) + ' رسالة' : 'التقرير', go: function () { go('other', 'comm-rep'); } }]]]);
+      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'الرسائل ومستلموها حسب نوع المستلم والوسيلة — بالتصفية والفرز', n: COMM.msgs ? fmtNum(M.length) + ' رسالة' : 'التقرير', go: function () { go('other', 'comm-rep'); } },
+{ ic: 'comm-tpl', t: 'تدشين الهوية الجديدة — العملاء المنقولون', d: 'رسالة «هذا حسابك» مع خطوات «نسيت كلمة المرور» بالصور — البريد بالقالب الرسمي وواتساب بصورة الرأس', badge: ['محاكاة', 'warn'], go: function () { go('other', 'cu-pf-mig'); } }]]]);
 }
 /* ---------- v315: نموذج استيراد جهات الاتصال — تنزيل النموذج (Excel/CSV) ← الكتابة فيه ← رفعه ← مطابقة الأعمدة والتحقق ← القبول ← حفظ الملف للتنزيل ---------- */
 const CI_COLS = [['name', 'الاسم', 1, ['الاسم', 'الاسمالكامل', 'اسمالعميل', 'name', 'fullname']], ['phone', 'رقم الجوال', 0, ['رقمالجوال', 'الجوال', 'الهاتف', 'رقمالهاتف', 'phone', 'mobile']], ['email', 'البريد الإلكتروني', 0, ['البريدالالكتروني', 'البريد', 'الايميل', 'email', 'mail']],
@@ -21962,16 +22052,43 @@ function commTplPage() {
     filter: null,
     list: axList(T.filter(function (t) { return fit(t, f); }).map(function (t) { return axRow({ ic: COMM_CH[t.channel][1], t: t.name, sub: COMM_CH[t.channel][0] + (t.subject ? ' — ' + t.subject : '') + (t.by ? ' — ' + t.by : ''), go: function () { commTplOpen(t); } }); }), 'لا قوالب هنا') });
 }
+/* v498: وسائط القالب — صور وفيديو وروابط تُرفق بالبريد (كتلة في القالب الرسمي)، وأول صورة رأسُ رسالة واتساب */
+const COMM_MK = [['image', 'صورة'], ['video', 'فيديو'], ['link', 'رابط']];
+const commMUrl = (u) => /^\/assets\//.test(String(u || '')) || /^https:\/\//.test(String(u || '')) ? String(u) : '';
+function commMediaView(D) {
+const T = 'الوسائط المرفقة';
+if (D.media === null || D.media === undefined) return cuSec(T, 'image', [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')]);
+if (D.mErr) return cuSec(T, 'image', [DS.note('warn', 'الوسائط غير متاحة بعد', D.mErr)]);
+if (!D.media.length) return cuSec(T, 'image', [e('small', { class: 'cu-dr-hint' }, 'لا وسائط — تُرفق الصور والفيديو والروابط من «تعديل».')]);
+return cuSec(T, 'image', [e('div', { class: 'comm-media' }, D.media.map(function (x, i) { const u = commMUrl(x.url);
+return e('div', { class: 'comm-media-i', style: 'margin:0 0 12px' }, [x.kind === 'image' && u ? e('img', { src: u, alt: x.caption || 'صورة', loading: 'lazy', style: 'width:100%;max-width:440px;border-radius:10px;display:block' })
+: e('a', { href: u || '#', target: '_blank', rel: 'noopener noreferrer' }, [frag(ui(x.kind === 'video' ? 'film-strip' : 'share-network', 16)), ' ', x.caption || u]),
+e('small', { class: 'cu-dr-hint' }, [(COMM_MK.filter(function (k) { return k[0] === x.kind; })[0] || ['', ''])[1], i === 0 && x.kind === 'image' ? ' · رأس رسالة واتساب' : '', x.caption && x.kind === 'image' ? ' · ' + x.caption : ''])]); })),
+e('small', { class: 'cu-dr-hint' }, 'في البريد: الصور بعرض الرسالة، والفيديو والروابط أزرار. في واتساب: أول صورة رأسُ القالب المعتمد tera_update.')]);
+}
+function commMediaEdit(D, rerun) {
+const T = 'الوسائط المرفقة';
+if (D.media === null || D.media === undefined) return cuSec(T, 'image', [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')]);
+if (D.mErr) return cuSec(T, 'image', [DS.note('warn', 'الوسائط غير متاحة بعد', D.mErr)]);
+const rows = D.media.map(function (x, i) { return e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+commFld('الوسيط ' + fmtNum(i + 1), DS.select({ value: x.kind, options: COMM_MK, onChange: function (v) { x.kind = v; rerun(); } })),
+commFld('الرابط', (function () { const u = commIn({ value: x.url, placeholder: 'https://… أو /assets/…', onInput: function (v) { x.url = String(v || '').trim(); } }); u.setAttribute('dir', 'ltr'); return u; })()),
+commFld('الوصف (اختياري)', commIn({ value: x.caption, placeholder: 'تحت الصورة، أو على زر الفيديو والرابط', onInput: function (v) { x.caption = v; } })),
+e('div', { class: 't2-pb-actions' }, [DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { D.media.splice(i, 1); rerun(); } })])]); });
+return cuSec(T, 'image', rows.concat([D.media.length < 8 ? e('div', { class: 't2-pb-actions' }, [DS.button('إضافة صورة أو فيديو أو رابط', { size: 'sm', ui: 'plus', onClick: function () { D.media.push({ kind: 'image', url: '', caption: '' }); rerun(); } })]) : null,
+e('small', { class: 'cu-dr-hint' }, 'حتى 8 وسائط. الرابط https أو مسار داخلي يبدأ بـ /assets/. أول صورة رأس رسالة واتساب، والفيديو والروابط أزرار في البريد.')]));
+}
 function commTplOpen(t, mode) {
   const key = t ? t.id : 'new', D = COMMD['t:' + key] || (COMMD['t:' + key] = t ? { mode: mode || 'view', name: t.name, channel: t.channel, subject: t.subject || '', body: t.body || '', err: '', busy: false } : { mode: 'edit', name: '', channel: 'both', subject: '', body: '', err: '', busy: false });
   const rerun = function () { commTplOpen(t); }, close = function () { delete COMMD['t:' + key]; admClose(); };
-  const save = async function (arch) { if (D.busy) return; D.busy = true; D.err = ''; rerun(); try { await admRpc('admin_comm_template_save', { p_id: t ? t.id : null, p_data: { name: D.name, channel: D.channel, subject: D.subject, body: D.body, archived: arch === undefined ? null : arch } }); delete COMMD['t:' + key]; await commLoad('tpl'); admClose(); snack(arch === true ? 'أُرشف القالب.' : arch === false ? 'أُعيد القالب.' : 'حُفظ القالب — يظهر الآن في المراسلة.'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); rerun(); } };
+if (D.media === undefined) { if (t) { D.media = null; admRpc('admin_comm_template_media_list', { p_id: t.id }).then(function (j) { D.media = (j.rows || []).map(function (x) { return { kind: x.kind, url: x.url, caption: x.caption || '' }; }); D.media0 = JSON.stringify(D.media); if (COMMD['t:' + key] === D) rerun(); }).catch(function (err) { D.media = []; D.media0 = '[]'; D.mErr = (err && err.message) || 'تعذّر تحميل الوسائط.'; if (COMMD['t:' + key] === D) rerun(); }); } else { D.media = []; D.media0 = '[]'; } }
+  const save = async function (arch) { if (D.busy) return; D.busy = true; D.err = ''; rerun(); try { const sv = await admRpc('admin_comm_template_save', { p_id: t ? t.id : null, p_data: { name: D.name, channel: D.channel, subject: D.subject, body: D.body, archived: arch === undefined ? null : arch } }); const tid = t ? t.id : (sv && sv.id); if (arch === undefined && tid && !D.mErr && Array.isArray(D.media) && JSON.stringify(D.media) !== D.media0) await admRpc('admin_comm_template_media_save', { p_id: tid, p_items: D.media.filter(function (x) { return String(x.url || '').trim(); }) }); delete COMMD['t:' + key]; await commLoad('tpl'); admClose(); snack(arch === true ? 'أُرشف القالب.' : arch === false ? 'أُعيد القالب.' : 'حُفظ القالب — يظهر الآن في المراسلة.'); draw(); } catch (err) { D.busy = false; D.err = commErr(err); rerun(); } };
   const pv = { body: D.body, subject: D.subject }, sample = { name: 'اسم العميل', ident: 'USR-XXXXXX' };
   let body, foot;
   if (D.mode === 'view' && t) {
     body = [cuSec('البيانات', 'file-text', [DS.fields([['اسم القالب', t.name], ['الوسيلة', COMM_CH[t.channel][0]], ['عنوان البريد', t.subject || '—'], ['آخر تعديل', t.updated_at ? bdiD(iso(new Date(t.updated_at))) : '—'], ['بواسطة', t.by || 'قالب معتمد من المنصة'], ['الحالة', DS.badge(t.archived ? 'مؤرشف' : 'نشط', t.archived ? null : 'ok')]])]),
       t.channel !== 'whatsapp' ? cuSec('معاينة البريد — القالب الرسمي', 'envelope-simple', [commMailPreview(sample, D.pvW || (D.pvW = { subject: t.subject, body: t.body }), rerun)]) : null,
-      t.channel !== 'email' ? cuSec('معاينة واتساب', 'whatsapp-logo', [commWaPreview(sample, pv)]) : null];
+      t.channel !== 'email' ? cuSec('معاينة واتساب', 'whatsapp-logo', [commWaPreview(sample, pv)]) : null, commMediaView(D)];
     foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('استخدام في رسالة', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { close(); commCompose(t); } })), COMM.can ? liveOk(DS.button('تعديل', { ui: 'pencil-simple', onClick: function () { D.mode = 'edit'; rerun(); } })) : null,
       COMM.can ? liveOk(DS.button(t.archived ? 'إعادة من الأرشيف' : 'أرشفة', { ui: 'tray', onClick: function () { save(!t.archived); } })) : null, DS.button('إغلاق', { onClick: close })])];
   } else {
@@ -21980,7 +22097,7 @@ function commTplOpen(t, mode) {
       commFld('الوسيلة', DS.select({ value: D.channel, options: [['both', 'البريد وواتساب'], ['email', 'البريد فقط'], ['whatsapp', 'واتساب فقط']], onChange: function (v) { D.channel = v; rerun(); } })),
       D.channel !== 'whatsapp' ? commFld('عنوان البريد', commIn({ value: D.subject, placeholder: 'عنوان الرسالة', onInput: function (v) { D.subject = v; } })) : null]),
       e('div', { class: 'comm-help' }, [e('small', {}, 'المتغيرات:')].concat(COMM_VARS.map(function (v) { return DS.button(v[1], { size: 'sm', onClick: function () { ta.value += v[0]; D.body = ta.value; } }); }))), ta]),
-      D.channel !== 'email' ? cuSec('معاينة واتساب', 'whatsapp-logo', [commWaPreview(sample, { body: D.body })]) : null, D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
+      commMediaEdit(D, rerun), D.channel !== 'email' ? cuSec('معاينة واتساب', 'whatsapp-logo', [commWaPreview(sample, { body: D.body })]) : null, D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
     foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ القالب', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(); } })), t ? DS.button('رجوع للعرض', { onClick: function () { D.mode = 'view'; D.pvW = null; rerun(); } }) : null, DS.button('إغلاق', { onClick: close })])];
   }
   cuBdDraw({ key: 'commt:' + key, ic: COMM_CH[(t && t.channel) || D.channel][1], title: t ? 'قالب · ' + t.name : 'قالب جديد', sub: t ? COMM_CH[t.channel][0] : 'يُحفظ ويظهر في المراسلة', body: body, foot: foot, onClose: function () { delete COMMD['t:' + key]; draw(); } });
