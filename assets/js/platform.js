@@ -19904,7 +19904,7 @@ const LV_SRK = [['settle', 'سداد عقد كامل', 'handshake', 'طلبات 
 const lvSrOpenSt = (x) => x.status === 'submitted' || x.status === 'in_review';
 function lvSrNames() { const N = {}; ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).forEach(function (c) { N[c.id] = c.name; }); return N; }
 const LIVE_PAGES = { client: {},
-  admin: {  'pay-center': function () { ADM.payMode = 'set'; return admPayPage(); }, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': cuPfMigPage, /* v499: العملاء المنقولون (حساباتهم في المنصة) — رسالة تدشين الهوية الجديدة */ 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
+  admin: {  'pay-center': function () { ADM.payMode = 'set'; return admPayPage(); }, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': function () { return e('div', { class: 't2-stack adm-live' }, cuPfMigPage()); }, /* v499: العملاء المنقولون (حساباتهم في المنصة) — رسالة تدشين الهوية الجديدة */ 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
     'sys-pay': function () { ADM.payMode = 'set'; return admPayPage(); } } };
 /* ---------- v283: قسم العملاء — إدارة الحساب ومركز الأمن وطلبات الملف والتدشين من القاعدة مباشرة ----------
