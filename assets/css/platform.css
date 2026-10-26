@@ -9017,3 +9017,45 @@ html.cpv-on .t2-head{top:48px}
 .fx-cpy-b.is-ok{background:#0E7C70}
 /* v474: أيقونة Safari الرسمية (بإطارها) — بلا مربع أبيض حولها */
 .fx-apg-ic.is-sf,.fx-apg-gi.is-sf{background:transparent}.fx-apg-ic.is-sf img{width:48px;height:48px}.fx-apg-ic.is-sm.is-sf img{width:38px;height:38px}.fx-apg-gi.is-sf img{width:34px;height:34px}
+/* v509: بنر «نطمئنكم» للعملاء المحدَّثين — بألوان هوية تيرا (الكحلي والفيروزي والذهبي)، أيقونات بطبقات، وشريط متحرك */
+section.tq-mgb,.t2 section.tq-mgb{display:block;flex:none;width:100%;max-width:100%;padding:0}
+.tq-mgb{position:relative;overflow:hidden;isolation:isolate;border-radius:24px;color:#fff;margin:4px 0;
+background:radial-gradient(120% 150% at 100% 0%,rgba(10,165,173,.5) 0%,rgba(10,165,173,0) 55%),radial-gradient(90% 130% at 0% 100%,rgba(255,200,97,.2) 0%,rgba(255,200,97,0) 60%),linear-gradient(135deg,#0B1F3A 0%,#0E2C4F 55%,#06424A 100%);
+box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
+.tq-mgb::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.06) 45%,transparent 60%);transform:translateX(-100%);animation:tq-mgb-sheen 6s ease-in-out infinite;pointer-events:none;z-index:-1}
+.tq-mgb-run{display:block;width:100%;overflow:hidden;direction:rtl;border-bottom:1px solid rgba(255,200,97,.28);background:linear-gradient(90deg,rgba(255,200,97,.16),rgba(255,200,97,.06) 50%,rgba(255,200,97,.16))}
+.tq-mgb-track{display:flex;width:max-content;animation:tq-mgb-run 38s linear infinite}
+.tq-mgb:hover .tq-mgb-track,.tq-mgb:focus-within .tq-mgb-track{animation-play-state:paused}
+.tq-mgb-lane{display:flex;align-items:center;gap:14px;padding:9px 14px;white-space:nowrap;font:600 .82rem/1.4 var(--t2-ff-text);color:#FFE1A0}
+.tq-mgb-dot{display:inline-block;inline-size:6px;block-size:6px;border-radius:50%;background:#FFC861;box-shadow:0 0 0 3px rgba(255,200,97,.18);flex:none}
+.tq-mgb-in{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:20px;align-items:center;padding:22px 24px}
+.tq-mgb-ic{position:relative;inline-size:124px;block-size:116px;flex:none}
+.tq-mgb-l{position:absolute;line-height:0;filter:drop-shadow(0 10px 14px rgba(0,0,0,.28));animation:tq-mgb-float 5s ease-in-out infinite}
+.tq-mgb-l svg{width:100%;height:auto;display:block}
+.tq-mgb-l.is-3{inline-size:58px;inset-block-start:0;inset-inline-start:0;opacity:.75;transform:rotate(-10deg);animation-delay:-1.6s}
+.tq-mgb-l.is-2{inline-size:62px;inset-block-start:6px;inset-inline-end:0;opacity:.88;transform:rotate(9deg);animation-delay:-3.2s}
+.tq-mgb-l.is-1{inline-size:82px;inset-block-end:0;inset-inline-start:20px;z-index:2}
+.tq-mgb-tx{display:grid;gap:8px;min-width:0}
+.tq-mgb-t{margin:0;font:800 clamp(1.08rem,2.1vw,1.4rem)/1.45 var(--t2-ff-display);color:#fff}
+.tq-mgb-tx p{margin:0;font:500 .9rem/1.85 var(--t2-ff-text);color:rgba(255,255,255,.84);max-width:70ch}
+.tq-mgb-tx .tq-mgb-thx{display:inline-flex;align-items:center;gap:8px;color:#FFC861;font-weight:700}
+.tq-mgb-thx svg{width:14px;height:14px;fill:currentColor}
+.tq-mgb-acts{display:grid;gap:10px;min-width:12.5rem}
+.tq-mgb-acts .t2-btn{justify-content:center;width:100%;text-decoration:none}
+.tq-mgb .tq-mgb-wa{background:#fff;color:#0A1F44;border-color:rgba(255,255,255,.6)}
+.tq-mgb .tq-mgb-wa svg{fill:#12795C}
+.tq-mgb .tq-mgb-wa:hover{background:#E2F4F5}
+@keyframes tq-mgb-run{from{transform:translateX(0)}to{transform:translateX(50%)}}
+@keyframes tq-mgb-float{0%,100%{translate:0 0}50%{translate:0 -6px}}
+@keyframes tq-mgb-sheen{0%,55%{transform:translateX(-100%)}80%,100%{transform:translateX(100%)}}
+@media (max-width:760px){
+.tq-mgb{border-radius:20px}
+.tq-mgb-in{grid-template-columns:minmax(0,1fr);gap:14px;padding:18px 16px}
+.tq-mgb-ic{inline-size:104px;block-size:96px}
+.tq-mgb-l.is-1{inline-size:70px;inset-inline-start:16px}.tq-mgb-l.is-2{inline-size:52px}.tq-mgb-l.is-3{inline-size:48px}
+.tq-mgb-acts{min-width:0;grid-template-columns:1fr 1fr}
+.tq-mgb-tx p{font-size:.86rem}
+}
+@media (max-width:380px){.tq-mgb-acts{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.tq-mgb-track,.tq-mgb-l,.tq-mgb::after{animation:none}.tq-mgb-run{overflow-x:auto}}
+
