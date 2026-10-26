@@ -18943,7 +18943,7 @@ function liveGate(purpose, st) {
 function livePwRules(v) {
   v = String(v || ''); const L = (v.match(/[A-Za-z\u0600-\u06FF]/g) || []).length, D = (v.match(/[0-9]/g) || []).length, X = (v.match(/[^A-Za-z0-9\u0600-\u06FF\s]/g) || []).length;
   let seq = false; for (let i = 0; i + 2 < v.length; i++) { const a = v.charCodeAt(i), b = v.charCodeAt(i + 1), c = v.charCodeAt(i + 2); if ((a === b && b === c) || (b === a + 1 && c === b + 1) || (b === a - 1 && c === b - 1)) seq = true; }
-  return [['من 11 إلى 128 خانة', v.length >= 11 && v.length <= 128], ['5 حروف على الأقل', L >= 5], ['5 أرقام على الأقل', D >= 5], ['رمز واحد على الأقل (مثل ! أو @)', X >= 1], ['بلا تسلسل أو تكرار لثلاث خانات', !!v && !seq]];
+  return [['8 خانات على الأقل', v.length >= 8 && v.length <= 128], ['حرف إنجليزي واحد على الأقل', (v.match(/[A-Za-z]/g) || []).length >= 1], ['رقم واحد على الأقل', D >= 1], ['بالإنجليزية فقط — بلا أحرف أو أرقام عربية', !!v && !/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(v)]];
 }
 function livePwPage() {
   const st = {}, cur = e('input', { class: 't2-input', type: 'password', dir: 'ltr', autocomplete: 'current-password', 'aria-label': 'كلمة المرور الحالية' }),

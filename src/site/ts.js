@@ -732,16 +732,17 @@
     function cls(c) { return c >= 48 && c <= 57 ? 'd' : c >= 97 && c <= 122 ? 'a' : ''; }
     function hasSeq(v) { var s = v.toLowerCase(); for (var i = 0; i + 2 < s.length; i++) { var a = s.charCodeAt(i), b = s.charCodeAt(i + 1), c = s.charCodeAt(i + 2), k = cls(a);
       if (!k || cls(b) !== k || cls(c) !== k) continue; if ((b - a === 1 && c - b === 1) || (a - b === 1 && b - c === 1) || (a === b && b === c)) return true; } return false; }
-    /* نفس سياسة الخادم (passwordPolicyError): 11–128 حرفًا، 5 أحرف و5 أرقام ورمز واحد على الأقل، وبلا تتابع أو تكرار ثلاثي */
+    /* نفس سياسة الخادم (passwordPolicyError) — v523: 8 خانات على الأقل بالإنجليزية فيها حرف ورقم */
     var AR_AB = 'ابتثجحخدذرزسشصضطظعغفقكلمنهوي';
     function fold(v) { return ascii(v).toLowerCase(); }
     function seqIn(s, ab) { for (var i = 0; i + 2 < s.length; i++) { var a = ab.indexOf(s.charAt(i)), b = ab.indexOf(s.charAt(i + 1)), c = ab.indexOf(s.charAt(i + 2));
       if (a < 0 || b < 0 || c < 0) continue; if ((a === b && b === c) || (b === a + 1 && c === b + 1) || (b === a - 1 && c === b - 1)) return true; } return false; }
-    var R = { len: function (v) { return v.length >= 11 && v.length <= 128; },
-              let: function (v) { return (v.match(/[A-Za-z\u0621-\u064A]/g) || []).length >= 5; },
-              dig: function (v) { return (ascii(v).match(/[0-9]/g) || []).length >= 5; },
-              sym: function (v) { return (v.match(/[^0-9A-Za-z\u0621-\u064A\u0660-\u0669\u06F0-\u06F9\s]/g) || []).length >= 1; },
-              seq: function (v) { var f = fold(v); return !!v && !seqIn(f, 'abcdefghijklmnopqrstuvwxyz') && !seqIn(f, AR_AB) && !seqIn(f, '0123456789'); },
+    var R = { len: function (v) { return v.length >= 8 && v.length <= 128; },
+              let: function (v) { return (v.match(/[A-Za-z]/g) || []).length >= 1; },
+              dig: function (v) { return (v.match(/[0-9]/g) || []).length >= 1; },
+              eng: function (v) { return !!v && !/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(v); },
+              sym: function (v) { return true; },
+              seq: function (v) { return !!v; },
               old: function (v) { return !!v && (LIVE || USED.indexOf(v.toLowerCase()) < 0); } };
     var LV = [['ضعيفة جدًا', 'w0'], ['ضعيفة', 'w1'], ['مقبولة', 'w2'], ['جيدة', 'w3'], ['قوية', 'w4']];
     function pkState(p) {

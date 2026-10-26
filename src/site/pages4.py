@@ -6,11 +6,10 @@ def _pw(i, ph='••••••••'):
     return (f'<span class="ts-pw"><input class="ts-in" id="{i}" type="password" dir="ltr" autocomplete="new-password" placeholder="{ph}">'
             f'<button type="button" class="ts-eye" aria-label="إظهار كلمة المرور">{I("PiEyeFill")}</button></span>')
 
-PW_RULES = [('len', 'من 11 إلى 128 خانة'),
-            ('let', 'خمسة أحرف على الأقل'),
-            ('dig', 'خمسة أرقام على الأقل'),
-            ('sym', 'رمز واحد على الأقل مثل ! أو @'),
-            ('seq', 'لا أحرف ولا أرقام متسلسلة أو مكررة'),
+PW_RULES = [('len', '8 خانات على الأقل'),  # v523: سياسة مبسّطة
+            ('let', 'حرف إنجليزي واحد على الأقل'),
+            ('dig', 'رقم واحد على الأقل'),
+            ('eng', 'بالإنجليزية فقط — بلا أحرف أو أرقام عربية'),
             ('old', 'لم تُستخدم من قبل في حسابك')]
 
 def pwkit(p, old=True):
@@ -21,7 +20,7 @@ def pwkit(p, old=True):
             f'<div class="ts-fld"><label for="{p}-pw">كلمة المرور</label>{_pw(p + "-pw")}'
             f'<div class="pk-meter" aria-live="polite"><span class="pk-bars"><i></i><i></i><i></i><i></i></span><b class="pk-lv">أدخل كلمة مرور</b></div>'
             f'<ul class="pk-rules">{rules}</ul>'
-            f'<p class="pt-tip">{I("PiLightbulbFill")}<span>يُرفض التسلسل والتكرار مثل abc و cba و 123 و 321 و 111. اجعلها سهلة التذكّر صعبة التخمين.</span></p></div>'
+            f'<p class="pt-tip">{I("PiLightbulbFill")}<span>اجعلها سهلة التذكّر صعبة التخمين، ولا تستخدم اسمك أو تاريخ ميلادك أو رقم جوالك.</span></p></div>'
             f'<div class="ts-fld"><label for="{p}-pw2">تأكيد كلمة المرور</label>{_pw(p + "-pw2", "أعد كتابة كلمة المرور")}'
             f'<p class="pk-match" hidden></p></div>'
             + ('<p class="pt-demo">معاينة: كلمة المرور Tera2468 تُعدّ مستخدمة سابقًا.</p>' if old else '') + '</div>')
