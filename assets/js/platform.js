@@ -22689,8 +22689,8 @@ return typeof rvSec === 'function' ? rvSec((b.tpl_name || 'إرسال') + ' · '
 return [axTop('تقرير الإرسال', 'كل ما أُرسل من مركز الإرسال — اضغط الدفعة لعرض تفاصيلها'), e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إرسال جديد', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { COMMT.t = 'send'; go('other', 'comm'); } })), DS.button('تحديث', { ui: 'arrows-clockwise', onClick: function () { SCR.at = 0; draw(); } })]),
 L.length ? e('div', { class: 'rv-acc' }, sec) : DS.note('info', 'لا إرسال بعد', 'كل إرسال من مركز الإرسال يظهر هنا مع حالة كل مستلم.')];
 }
-/* v522: إدارة التذكير — v529: قوائم المتأخرين والمتعثرين والمنتظمين والمفضلة، إرسال الآن أو مجدول، وقواعد تلقائية متعددة متناسقة (مستلمون · فئات · استبعاد · وقت كامل) لا تعمل قبل الاعتماد (reminders.js · stf_106–108) */
-const RM = { L: null, at: 0, tab: 'late', C: null, ca: 0, sel: {}, open: '', all: {}, P: {}, q: '', busy: false, err: '', msg: '', ask: '', S: null, tp: {}, R: null, rf: '', rt: '', res: null, prog: '', ex: {}, lists: null, pq: '', pr: null, pk: '', pend: null, sch: null, Q: null };
+/* v522: إدارة التذكير — v530: الإرسال يطابق الدفعة المحددة بالضبط · v529: قوائم المتأخرين والمتعثرين والمنتظمين والمفضلة، إرسال الآن أو مجدول، وقواعد تلقائية متعددة متناسقة (مستلمون · فئات · استبعاد · وقت كامل) لا تعمل قبل الاعتماد (reminders.js · stf_106–108) */
+const RM = { L: null, at: 0, tab: 'late', C: null, ca: 0, sel: {}, open: '', all: {}, P: {}, q: '', busy: false, err: '', msg: '', ask: '', S: null, tp: {}, R: null, rf: '', rt: '', res: null, prog: '', ex: {}, lists: null, pq: '', pr: null, pk: '', pend: null, sch: null, Q: null, rq: null };
 const RM_CH = [['whatsapp', 'واتساب'], ['email', 'البريد'], ['push', 'إشعار الجوال'], ['inbox', 'داخل المنصة']];
 const RM_SEG = { late: ['المتأخرون', 'متأخر من يوم إلى 15 يومًا'], default: ['المتعثرون', 'متأخر أكثر من 15 يومًا'], regular: ['المنتظمون', 'لا تأخير — دفعتهم القادمة'] };
 const RM_SEGS = [['regular', 'المنتظمون'], ['late', 'المتأخرون'], ['default', 'المتعثرون']];
@@ -22809,6 +22809,13 @@ function rmSchedBox(items) {
       } })),
       DS.button('إلغاء', { onClick: function () { RM.sch = null; draw(); } })])]));
 }
+/* وصف العنصر المحدد بدقة: العميل والعقد ورقم الدفعة وموعدها */
+function rmItemTx(it) {
+  const x = (Array.isArray(RM.C) ? RM.C : []).filter(function (y) { return y.id === it.user_id; })[0] || {};
+  let py = x.pay && x.pay.pid === it.pid ? x.pay : null;
+  if (!py && Array.isArray(RM.P[it.user_id])) py = RM.P[it.user_id].filter(function (z) { return z.pid === it.pid; })[0] || null;
+  return (x.name || '—') + (py ? ' — الدفعة ' + fmtNum(py.seq) + ' من ' + fmtNum(py.n) + ' · ' + (py.contract_no || '') + ' · ' + rmD(py.due_date) + ' · ' + fmtNum(py.left) + ' ريال' : '');
+}
 function rmListView(L, tab) {
   if (RM.C === null || RM.C === 'loading') return [clWait('القائمة')];
   if (RM.C.fail) return [DS.note('warn', 'تعذّر تحميل القائمة', RM.C.fail), DS.button('إعادة المحاولة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RM.C = null; rmLoadC(true); draw(); } })];
@@ -22845,6 +22852,7 @@ function rmListView(L, tab) {
       liveOk(DS.button('أرسل الآن رغم ذلك', { tone: 'danger', ui: 'paper-plane-tilt', disabled: RM.busy, onClick: function () { const pd = RM.pend; RM.ask = ''; rmSend(pd.items, pd.label, true); } })),
       DS.button('جدولة الساعة 10:00 ص', { tone: 'primary', ui: 'calendar-plus', onClick: function () { const pd = RM.pend; RM.ask = ''; RM.pend = null; const d = new Date(); const h = Number(d.toLocaleString('en-US', { timeZone: 'Asia/Riyadh', hour: '2-digit', hour12: false })) % 24; const day = h >= 10 ? iso(new Date(Date.now() + 864e5)) : (L.today || iso(d)); RM.sch = { day: day, h: 10, m: 0, items: pd.items }; draw(); } }),
       DS.button('إلغاء', { onClick: function () { RM.ask = ''; RM.pend = null; draw(); } })])) : null,
+    items.length ? e('div', { class: 'rm-will' }, [e('b', {}, 'سيُرسل تذكير عن:'), e('ul', {}, items.slice(0, 12).map(function (it) { return e('li', {}, rmItemTx(it)); })), items.length > 12 ? e('small', { class: 'cu-dr-hint' }, 'و' + fmtNum(items.length - 12) + ' غيرها') : null]) : null,
     RM.prog ? e('small', { class: 'cu-dr-hint' }, RM.prog) : e('small', { class: 'cu-dr-hint' }, (nSel > items.length ? fmtNum(nSel - items.length) + ' من المحدد لا يُرسل الآن. ' : '') + why)]);
   const res = RM.res && RM.res.length ? rmPanel('نتيجة الإرسال', fmtNum(RM.res.filter(function (o) { return o.ok; }).length) + ' وصل', [e('div', { class: 'ci-pk-l' }, RM.res.map(function (o) {
     return e('div', { class: 'ci-pk-r' }, [e('span', { class: 'ci-pk-t' }, [e('b', {}, (o.name || '—') + (o.seq ? ' · الدفعة ' + fmtNum(o.seq) : '')), e('small', {}, o.ok ? rmChTx(Object.keys(o.out || {}).filter(function (k) { return o.out[k] && o.out[k].ok; })) : o.why)]), DS.badge(o.ok ? 'وصل' : 'لم يُرسل', o.ok ? 'ok' : 'warn')]);
@@ -23020,6 +23028,8 @@ function rmCss() {
     + '.rm-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.rm-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #BFCDDE;border-radius:999px;padding:4px 6px 4px 10px;font-size:13px;background:#F4F7FA}'
     + '.rm-chip button{border:0;background:none;cursor:pointer;color:#A3221B;font-size:15px;line-height:1;padding:0 4px}'
     + '.rm-time{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}.rm-time>*{flex:1 1 90px}'
+    + '.rm-ch.is-ok{background:#E8F6F1;border-color:#9FD8C4;color:#0B6B53}.rm-ch.is-bad{background:#FDECEC;border-color:#F1B5B1;color:#A3221B}.rm-log .rm-meta span>small:last-child:not(:first-child){display:block}'
+    + '.rm-will{border:1px dashed #0B8F96;border-radius:12px;padding:8px 12px;background:#F2FAFA;font-size:13px}.rm-will ul{margin:4px 0 0;padding-inline-start:18px;line-height:1.8}'
     + '.rm-ltr{direction:ltr;unicode-bidi:isolate}'
     + '@media (max-width:720px){.rm-pay{grid-template-columns:28px 1fr 1fr}.rm-pay>:nth-child(n+4){grid-column:2/-1}.rm-pay.is-h{display:none}}';
   document.head.appendChild(st);
@@ -23084,27 +23094,60 @@ function rmPays(x, can) {
 }
 function rmRep(L) {
   if (RM.R === null) { RM.R = 'loading'; clApi('/admin/api/reminders/report' + (RM.rf ? '?from=' + RM.rf + '&to=' + (RM.rt || L.today) : '')).then(function (j) { RM.R = j; RM.rf = j.from; RM.rt = j.to; draw(); }).catch(function (err) { RM.R = { fail: (err && err.message) || 'تعذّر التحميل.' }; draw(); }); }
-  const R = RM.R;
-  const bar = e('div', { class: 't2-row-wrap' }, [
+  const R = RM.R, F = RM.rq || (RM.rq = { q: '', res: 'all', kind: 'all', n: 20 });
+  const bar = e('div', { class: 'rm-time' }, [
     DS.editField('من', DS.input({ type: 'date', value: RM.rf, max: L.today, onInput: function (v) { RM.rf = v; } })),
     DS.editField('إلى', DS.input({ type: 'date', value: RM.rt, max: L.today, onInput: function (v) { RM.rt = v; } })),
-    DS.button('عرض', { tone: 'primary', size: 'sm', ui: 'arrows-clockwise', onClick: function () { RM.R = null; draw(); } })]);
-  if (R === 'loading') return [bar, clWait('السجل')];
-  if (R.fail) return [bar, DS.note('warn', 'تعذّر التحميل', R.fail)];
-  const P = R.report || {};
-  return [bar, e('div', { class: 't2-stats' }, [
-    lvStat({ k: 'تذكيرات أُرسلت', v: P.total || 0, n: rmD(R.from) + ' ← ' + rmD(R.to) }),
-    lvStat({ k: 'وصلت', v: P.ok || 0, n: 'لم تصل ' + fmtNum(P.failed || 0) }),
-    lvStat({ k: 'العملاء', v: P.clients || 0 }),
-    lvStat({ k: 'سُدّدت بعد التذكير', v: P.paid_after || 0, n: 'دفعات صارت مسددة' })]),
-    rmPanel('آخر ما أُرسل', null, [(P.rows || []).length ? lvTable({ id: 'rm-rep', pageSize: 10, rows: P.rows, columns: [
-      { label: 'الوقت', cell: function (x) { return rmDT(x.at); } },
-      { label: 'العميل', cell: function (x) { return x.name || '—'; } },
-      { label: 'العقد', cell: function (x) { return e('span', { class: 'rm-ltr' }, x.contract_no || '—'); } },
-      { label: 'الدفعة', cell: function (x) { return fmtNum(x.seq); } },
-      { label: 'الوسائل', cell: function (x) { const o = x.out || {}; return Object.keys(o).filter(function (k) { return k !== 'error'; }).map(function (k) { return rmChTx([k]) + (o[k] && o[k].ok ? ' ✓' : ' ✗'); }).join(' · ') || '—'; } },
-      { label: 'النتيجة', cell: function (x) { return !x.done ? DS.badge('جارٍ', 'info') : x.ok ? DS.badge('وصل', 'ok') : DS.badge('لم يصل', 'danger'); } },
-      { label: 'السداد', cell: function (x) { return x.paid ? DS.badge('سُدّدت', 'ok') : '—'; } }] }) : DS.note('info', 'لا إرسال في الفترة', 'يظهر هنا كل تذكير أُرسل ونتيجته لكل وسيلة.')])];
+    DS.editField('النتيجة', DS.select({ value: F.res, options: [['all', 'الكل'], ['ok', 'وصل'], ['fail', 'لم يصل']], onChange: function (v) { F.res = v; F.n = 20; draw(); } })),
+    DS.editField('النوع', DS.select({ value: F.kind, options: [['all', 'الكل'], ['manual', 'يدوي'], ['auto', 'تلقائي (القواعد)']], onChange: function (v) { F.kind = v; F.n = 20; draw(); } })),
+    DS.editField('بحث', DS.input({ value: F.q, placeholder: 'الاسم أو رقم تيرا أو العقد', onInput: function (v) { F.q = v; } }))]);
+  const acts = e('div', { class: 't2-pb-actions' }, [DS.button('عرض', { tone: 'primary', size: 'sm', ui: 'arrows-clockwise', onClick: function () { RM.R = null; F.n = 20; draw(); } })]);
+  if (R === 'loading') return [rmPanel('سجل التذكير', null, [bar, acts]), clWait('السجل')];
+  if (R.fail) return [rmPanel('سجل التذكير', null, [bar, acts]), DS.note('warn', 'تعذّر التحميل', R.fail)];
+  const P = R.report || {}, C = P.channels || {}, q = String(F.q || '').trim().toLowerCase();
+  const rows = (P.rows || []).filter(function (x) {
+    if (F.res === 'ok' && !x.ok) return false;
+    if (F.res === 'fail' && (x.ok || !x.done)) return false;
+    if (F.kind === 'manual' && !x.manual) return false;
+    if (F.kind === 'auto' && x.manual) return false;
+    return !q || [x.name, x.tera_id, x.contract_no].some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; });
+  });
+  const chTx = function (x) { const o = x.out || {}; return Object.keys(o).filter(function (k) { return k !== 'error' && o[k] && !o[k].skip; }); };
+  const csv = function () {
+    const H = ['التاريخ', 'الوقت', 'العميل', 'رقم تيرا', 'العقد', 'الدفعة', 'من', 'موعد الدفع', 'المبلغ', 'المتبقي', 'التأخر عند الإرسال (يوم)', 'النوع', 'القاعدة', 'واتساب', 'البريد', 'إشعار الجوال', 'داخل المنصة', 'النتيجة', 'سُددت'];
+    const st = function (x, k) { const o = (x.out || {})[k]; return !o || o.skip ? '' : o.ok ? 'وصل' : 'لم يصل'; };
+    const lines = [H].concat(rows.map(function (x) { const d = new Date(x.at); return [iso(d), hm(d), x.name || '', x.tera_id || '', x.contract_no || '', x.seq, x.n || '', x.due_date || '', x.amount || '', x.left || '', x.late,
+      x.manual ? 'يدوي' : 'تلقائي', x.rule || '', st(x, 'whatsapp'), st(x, 'email'), st(x, 'push'), st(x, 'inbox'), !x.done ? 'جارٍ' : x.ok ? 'وصل' : 'لم يصل', x.paid ? 'نعم' : 'لا']; }));
+    const txt = '﻿' + lines.map(function (r) { return r.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' })); a.download = 'سجل-التذكير-' + (RM.rf || '') + '-' + (RM.rt || '') + '.csv'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+  acts.appendChild(DS.button('تصدير CSV (' + fmtNum(rows.length) + ')', { size: 'sm', ui: 'download-simple', disabled: !rows.length, onClick: csv }));
+  const card = function (x) {
+    const d = new Date(x.at), late = Number(x.late) || 0, chs = chTx(x);
+    return e('div', { class: 'rm-row rm-log' }, [
+      e('div', { class: 'rm-top' }, [e('span', { class: 'rm-grow' }, [e('b', {}, x.name || '—'), ' ', e('small', { class: 'rm-ltr' }, x.tera_id || '')]),
+        DS.badge(x.manual ? 'يدوي' : 'تلقائي', x.manual ? 'info' : null), DS.badge(!x.done ? 'جارٍ' : x.ok ? 'وصل' : 'لم يصل', !x.done ? 'info' : x.ok ? 'ok' : 'danger'), x.paid ? DS.badge('سُددت بعده', 'ok') : null]),
+      e('div', { class: 'rm-meta' }, [
+        e('span', {}, [e('small', {}, 'وقت الإرسال'), iso(d) + ' · ' + hm(d), e('small', {}, hijri(d))]),
+        e('span', {}, [e('small', {}, 'العقد'), e('span', { class: 'rm-ltr' }, x.contract_no || '—')]),
+        e('span', {}, [e('small', {}, 'الدفعة'), fmtNum(x.seq) + (x.n ? ' من ' + fmtNum(x.n) : '')]),
+        e('span', {}, [e('small', {}, 'موعد الدفع'), rmD(x.due_date)]),
+        e('span', {}, [e('small', {}, 'المبلغ'), e('span', { class: 'rm-amt' }, fmtNum(x.amount) + ' ريال'), x.left != null && Number(x.left) !== Number(x.amount) ? e('small', {}, 'المتبقي الآن ' + fmtNum(x.left)) : null]),
+        e('span', {}, [e('small', {}, 'عند الإرسال'), e('span', { class: late > 0 ? 'rm-late' : 'rm-ok' }, rmLate(late))]),
+        e('span', {}, [e('small', {}, x.manual ? 'أُرسل يدويًا' : 'القاعدة'), x.manual ? 'من القوائم' : (x.rule || '—')])]),
+      e('div', { class: 'rm-chips' }, chs.length ? chs.map(function (k) { const o = x.out[k]; return e('span', { class: 'rm-chip rm-ch ' + (o.ok ? 'is-ok' : 'is-bad'), title: o.message || '' }, (o.ok ? '✓ ' : '✗ ') + rmChTx([k]) + (!o.ok && o.message ? ' — ' + o.message : '')); })
+        : [e('small', { class: 'cu-dr-hint' }, (x.out && x.out.error) || (x.done ? 'لا تفاصيل للوسائل.' : 'جارٍ الإرسال…'))])]);
+  };
+  const shown = rows.slice(0, F.n);
+  return [rmPanel('سجل التذكير', rmD(R.from) + ' ← ' + rmD(R.to), [bar, acts]),
+    e('div', { class: 't2-stats' }, [
+      lvStat({ k: 'أُرسل', v: P.total || 0, n: 'منها يدوي ' + fmtNum(P.manual || 0) }),
+      lvStat({ k: 'وصل', v: P.ok || 0, n: 'لم يصل ' + fmtNum(P.failed || 0) }),
+      lvStat({ k: 'العملاء', v: P.clients || 0 }),
+      lvStat({ k: 'سُدّدت بعد التذكير', v: P.paid_after || 0, n: 'دفعات صارت مسددة' })]),
+    rmPanel('الوصول حسب الوسيلة', null, [e('div', { class: 'rm-chips' }, RM_CH.map(function (c) { return e('span', { class: 'rm-chip' }, c[1] + ': ' + fmtNum(C[c[0]] || 0) + ' وصل'); }))]),
+    rows.length ? e('div', { class: 'rm-list' }, shown.map(card)) : DS.note('info', 'لا سجلات تطابق', (P.rows || []).length ? 'غيّر عوامل التصفية.' : 'يظهر هنا كل تذكير أُرسل بتفاصيل الدفعة ونتيجته لكل وسيلة.'),
+    rows.length > shown.length ? e('div', { class: 't2-pb-actions' }, [DS.button('عرض المزيد (' + fmtNum(rows.length - shown.length) + ')', { size: 'sm', onClick: function () { F.n += 20; draw(); } })]) : null];
 }
 function rmRow(x, can, live) {
   const p = x.pay || {}, n = rmSelN(x.id), op = RM.open === x.id;
@@ -23126,7 +23169,10 @@ function rmRow(x, can, live) {
       e('span', {}, [e('small', {}, 'آخر تذكير'), x.last_at ? rmDT(x.last_at) + (x.last_ok === false ? ' · لم يصل' : '') : 'لم يُرسل بعد']),
       e('span', {}, [e('small', {}, 'التذكير القادم'), x.next_day ? rmD(x.next_day) : '—'])]) : null,
     e('div', { class: 'rm-acts' }, [
-      can ? liveOk(DS.button('إرسال الآن', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: RM.busy, onClick: function () { rmSend([{ user_id: x.id, pid: p.pid }], 'أُرسل لـ' + (x.name || 'العميل')); } })) : null,
+      can ? liveOk(DS.button(n ? 'إرسال الآن — ' + (n === 1 ? 'الدفعة المحددة' : fmtNum(n) + ' دفعات محددة') : 'إرسال الآن — الدفعة ' + fmtNum(p.seq), { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: RM.busy, onClick: function () {
+        const mine = n ? Object.keys(RM.sel[x.id]).filter(function (k) { return RM.sel[x.id][k]; }).map(function (k) { return { user_id: x.id, pid: k }; }) : [{ user_id: x.id, pid: p.pid }];
+        rmSend(mine, 'أُرسل لـ' + (x.name || 'العميل'));
+      } })) : null,
       x.pay ? DS.button(op ? 'إخفاء الدفعات' : 'الدفعات' + (x.n_late > 1 ? ' (' + fmtNum(x.n_late) + ' متأخرة)' : ''), { size: 'sm', ui: 'list-bullets', onClick: openPays }) : null,
       x.pay && !x.excluded ? DS.button('إيقاف التذكير', { size: 'sm', ui: 'hourglass-medium', onClick: function () { RM.ex[x.id] = ex ? null : { why: '', until: '' }; draw(); } }) : null,
       x.excluded && x.excl_id ? liveOk(DS.button('إعادة التذكير', { size: 'sm', ui: 'check-circle', disabled: RM.busy, onClick: function () { rmPost('/admin/api/reminders/exclusions/' + encodeURIComponent(x.excl_id) + '/end', {}, 'عاد التذكير لـ' + (x.name || 'العميل') + '.'); } })) : null,
