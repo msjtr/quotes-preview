@@ -4900,6 +4900,8 @@ function soPage() {
 let HUB_INLINE = false;
 /* v515: صفحات القسم تحت القسم المفتوح في الشريط الجانبي — تنتقل بين صفحات القسم مباشرة دون الرجوع إلى صفحة القسم */
 const SEC_LINKS = {};
+/* v516: البطاقة التي فُتحت منها الصفحة — لتمييزها في القائمة حتى لو اختلف عنوان الصفحة عن اسم البطاقة */
+let SEC_CUR = { t: '', title: null };
 function secSideSub() {
   try {
     document.querySelectorAll('.t2-side-sub').forEach(function (x) { x.remove(); });
@@ -4907,8 +4909,10 @@ function secSideSub() {
     const b = document.querySelector('.t2-side-i.is-on'), L = b && SEC_LINKS[b.dataset.nav];
     if (!L || L.length < 2 || (S.tab === 'other' && S.other === b.dataset.nav)) return;
     const cur = ((document.querySelector('.t2-phead-t') || {}).textContent || '').trim();
+    if (SEC_CUR.t && SEC_CUR.title === null) SEC_CUR.title = cur;
+    const isOn = function (it) { return it.t === cur || (SEC_CUR.t === it.t && SEC_CUR.title === cur); };
     b.insertAdjacentElement('afterend', e('div', { class: 't2-side-sub', role: 'list', 'aria-label': 'صفحات ' + ((b.querySelector('.t2-side-l') || {}).textContent || 'القسم') }, L.map(function (it) {
-      return e('button', { type: 'button', role: 'listitem', class: 't2-side-si' + (it.t === cur ? ' is-on' : ''), title: it.t, 'aria-current': it.t === cur ? 'page' : null, onClick: function () { it.go(); } }, it.t);
+      return e('button', { type: 'button', role: 'listitem', class: 't2-side-si' + (isOn(it) ? ' is-on' : ''), title: it.t, 'aria-current': isOn(it) ? 'page' : null, onClick: function () { SEC_CUR = { t: it.t, title: null }; it.go(); } }, it.t);
     })));
   } catch (err) { void err; }
 }
@@ -4929,7 +4933,7 @@ function secHub(key, head, groups) {
   const fc = function (gk, label, ic, n) { const on = gk === f; return e('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', class: 'hf-c' + (on ? ' is-on' : ''), onClick: function () { FX[fk] = gk; draw(); } }, [e('span', { class: 'hf-ic' }, frag(tile(ic))), e('span', { class: 'hf-tx' }, [e('b', {}, label), e('small', {}, n === 1 ? 'عنصر واحد' : n === 2 ? 'عنصران' : fmtNum(n) + (n <= 10 ? ' عناصر' : ' عنصرًا'))])]); };
   const filt = e('div', { class: 'hf-row', role: 'tablist', 'aria-label': 'تصفية ' + head.t }, [fc('', 'الكل', key === 'store' ? 'squares-four:teal' : 'squares-four:navy', total)].concat(groups.map(function (g) { return fc(g[0], g[1], g[2], g[3].length); })));
   const card = function (it) {
-    return e('button', { type: 'button', class: 'hc' + (it.big ? ' is-big' : '') + (it.ims && it.ims.length ? ' has-ims' : ''), onClick: it.go }, [
+    return e('button', { type: 'button', class: 'hc' + (it.big ? ' is-big' : '') + (it.ims && it.ims.length ? ' has-ims' : ''), onClick: function () { if (typeof it.go !== 'function') return; SEC_CUR = { t: it.t, title: null }; return it.go.apply(this, arguments); } }, [
       it.ims && it.ims.length ? (it.dg ? e('span', { class: 'hc-ims is-dg', 'aria-hidden': 'true' }, it.ims.map(function (src, j) { return e('span', { class: 'hc-dgt is-' + j }, e('img', { src: src, alt: '', loading: 'lazy' })); }))
         : e('span', { class: 'hc-ims', 'aria-hidden': 'true' }, it.ims.map(function (src, j) { return e('img', { src: src, alt: '', loading: 'lazy', class: 'is-' + j }); }))) : null,
       e('span', { class: 'hc-row' }, [e('span', { class: 'hc-ic' }, frag(tile(it.ic))), e('span', { class: 'hc-tx' }, [e('b', {}, it.t), it.d ? e('small', {}, it.d) : null]), e('span', { class: 'hc-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 16)))]),
