@@ -22006,11 +22006,11 @@ const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف �
 function commHubPage() {
   if (LIVE.on && !COMM.ctAt) commReady('التواصل المباشر');
   const C = (COMM.ct || []).filter(function (c) { return !c.archived; }), M = COMM.msgs || [], T = (COMM.tpl || []).filter(function (t) { return !t.archived; });
-  return secHub('comm', { t: 'التواصل المباشر', s: 'دليل الشركاء، والمراسلة بالبريد وواتساب بقوالب الهوية، وتقرير الإرسال — الإرسال الفعلي موقوف الآن بقرار الإدارة.', ic: 'comm' }, [
+  return secHub('comm', { t: 'التواصل المباشر', s: 'دليل الشركاء، ومركز الإرسال الواحد (واتساب · البريد · الجوال والويب · داخل المنصة)، وتقرير الإرسال.', ic: 'comm' }, [
     ['dir', 'الدليل', 'users-three:teal', [{ ic: 'comm-dir', t: 'دليل هواتف وبريد الشركاء', d: 'العملاء والموظفون والمسوّقون والمستثمرون — تلقائيًا من الحسابات، ويدويًا أو من جهات اتصال الجوال', n: COMM.ct ? fmtNum(C.length) + ' جهة اتصال' : 'الدليل', go: function () { go('other', 'comm-dir'); } }]],
     ['snd', 'المراسلة', 'paper-plane-tilt:sky', [{ ic: 'comm-send', t: 'مركز الإرسال', d: 'المستهدفون ← الوسيلة ← القالب ← المعاينة ← الإرسال · واتساب والبريد وإشعار الجوال والويب وداخل المنصة', go: function () { go('other', 'comm-send'); } },
-      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'الرسائل ومستلموها حسب نوع المستلم والوسيلة — بالتصفية والفرز', n: COMM.msgs ? fmtNum(M.length) + ' رسالة' : 'التقرير', go: function () { go('other', 'comm-rep'); } },
-{ ic: 'comm-tpl', t: 'تدشين الهوية الجديدة — العملاء المنقولون', d: 'رسالة «هذا حسابك» مع خطوات «نسيت كلمة المرور» بالصور — البريد بالقالب الرسمي وواتساب بصورة الرأس', badge: ['محاكاة', 'warn'], go: function () { go('other', 'cu-pf-mig'); } }]]]);
+      { ic: 'comm-rep', t: 'تقرير الإرسال', d: 'كل دفعة أُرسلت من مركز الإرسال وحالة كل مستلم في كل وسيلة', n: 'التقرير', go: function () { go('other', 'comm-rep'); } },
+{ ic: 'comm-tpl', t: 'تحديث الحساب — العملاء المنقولون', d: 'رسالة «هذا حسابك» بخطوات الدخول — تُرسل من مركز الإرسال للمرحّلين', go: function () { if (window.__scGo) window.__scGo({ grp: 'mig', tpl: 'a4980000-0498-4498-8498-000000000498', ch: 'whatsapp_email' }); else go('other', 'cu-pf-mig'); } }]]]);
 }
 /* ---------- v315: نموذج استيراد جهات الاتصال — تنزيل النموذج (Excel/CSV) ← الكتابة فيه ← رفعه ← مطابقة الأعمدة والتحقق ← القبول ← حفظ الملف للتنزيل ---------- */
 const CI_COLS = [['name', 'الاسم', 1, ['الاسم', 'الاسمالكامل', 'اسمالعميل', 'name', 'fullname']], ['phone', 'رقم الجوال', 0, ['رقمالجوال', 'الجوال', 'الهاتف', 'رقمالهاتف', 'phone', 'mobile']], ['email', 'البريد الإلكتروني', 0, ['البريدالالكتروني', 'البريد', 'الايميل', 'email', 'mail']],
@@ -22460,8 +22460,8 @@ e('div', { class: 't2-pb-actions' }, [DS.button('إدارة القوالب في 
 const smp = (rows[0] && rows[0].name) || 'اسم العميل';
 let pv = DS.note('info', 'اختر القالب لتظهر المعاينة', '');
 if (T) {
-SC.W.subject = T.subject; SC.W.body = T.body;
 const pvc = C.indexOf(SC.pv) >= 0 ? SC.pv : (C[0] || 'whatsapp');
+SC.W.subject = T.subject; SC.W.body = pvc === 'email' ? String(T.body || '').replace(/\*([^*\n]+)\*/g, '$1') : T.body;
 const tabs = C.length > 1 ? DS.select({ value: pvc, options: C.map(function (k) { return [k, 'معاينة ' + SC_CHT[k]]; }), onChange: function (v) { SC.pv = v; draw(); } }) : null;
 const body = pvc === 'email' ? commMailPreview({ name: smp }, SC.W, draw) : pvc === 'whatsapp' ? commWaPreview({ name: smp }, SC.W)
 : e('div', { class: 'fx-dn' }, [e('div', { class: 'fx-dn-i is-info is-unread' }, [e('span', { class: 'fx-card-ic' }, frag(tile('bell'))), e('span', { class: 'fx-dn-t' }, [e('b', {}, T.subject), e('small', {}, String(T.body).replace(/\{الاسم\}/g, smp).split('\n').filter(function (x) { return x.trim() && !/^مرحب/.test(x.trim()) && !/فريق تيرا/.test(x); }).join(' '))])])]);

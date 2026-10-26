@@ -1,0 +1,65 @@
+# v510: وسائط رسائل مركز الإرسال ← Cloudflare R2 (المسار msg/ بلا مدة)
+# • فيلما رسالة التدشين («هلا وغلا» 54 ثانية · العضويات دقيقة و15 ثانية) بنسخة مضغوطة 720×1280 (H.264 + AAC، أقل من 16 ميجابايت)
+#   تصلح لواتساب (ترويسة فيديو) ومرفقًا في البريد — تُنسخ من أفلام المكتبة الموجودة في R2 ولا تُمسّ الأصول.
+# • صور البريد وواتساب (assets/brand/mail و assets/brand/wa) تُنسخ إلى msg/brand/ حتى تصل للبريد كاملة من خادم الوسائط.
+# لا يمسّ سير العمل film-library ولا مكتبة الأفلام: يقرأ منها فقط ويكتب في msg/.
+name: wa-media
+on:
+  workflow_dispatch:
+  push:
+    branches: [v510]
+    paths: ['.github/workflows/wa-media.yml']
+permissions:
+  contents: read
+jobs:
+  media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      CDN: https://media.tera-services.com.sa
+    steps:
+      - uses: actions/checkout@v4
+      - name: الأدوات
+        run: command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null; }
+      - name: ضغط الفيلمين لواتساب والبريد
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/m" && cd "$RUNNER_TEMP/m"
+          enc() {
+            src="$1"; out="$2"; mb="$3"
+            curl -fsSL "$CDN/library/$src.mp4?v=2" -o "src-$out.mp4"
+            d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "src-$out.mp4")
+            vb=$(python3 -c "print(int(($mb*1024*1024*8/float('$d') - 96000)*0.93/1000))")
+            vf="scale=720:1280:force_original_aspect_ratio=decrease:flags=lanczos,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=0x050B18,format=yuv420p"
+            ffmpeg -y -loglevel error -i "src-$out.mp4" -vf "$vf" -c:v libx264 -profile:v main -level 3.1 -preset slow -b:v ${vb}k -pass 1 -passlogfile "pl-$out" -an -f mp4 /dev/null
+            ffmpeg -y -loglevel error -i "src-$out.mp4" -vf "$vf" -c:v libx264 -profile:v main -level 3.1 -preset slow -b:v ${vb}k -pass 2 -passlogfile "pl-$out" -c:a aac -b:a 96k -ac 2 -ar 44100 -movflags +faststart "$out.mp4"
+            ffmpeg -y -loglevel error -ss 3 -i "$out.mp4" -frames:v 1 -q:v 3 "$out.jpg"
+            sz=$(stat -c %s "$out.mp4"); echo "$out: ${d}s → $sz bytes (video ${vb}k)"
+            [ "$sz" -lt 16000000 ] || { echo "$out أكبر من حد واتساب"; exit 1; }
+          }
+          enc general-short-portrait hala 11
+          enc membership-portrait membership 13
+          ls -la
+      - name: الرفع إلى Cloudflare R2 والتحقق
+        run: |
+          set -e
+          t() { printf %s "$1" | tr -d '[:space:]'; }
+          export AWS_ACCESS_KEY_ID="$(t "$AWS_ACCESS_KEY_ID")" AWS_SECRET_ACCESS_KEY="$(t "$AWS_SECRET_ACCESS_KEY")"
+          R2ID="$(t "$R2_ACCOUNT_ID" | grep -oiE '[0-9a-f]{32}' | head -n 1)"
+          [ -n "$R2ID" ] || { echo "R2_ACCOUNT_ID غير صالح"; exit 1; }
+          EP="https://$R2ID.r2.cloudflarestorage.com"
+          up() { aws s3 cp "$1" "s3://tera-films/$2" --endpoint-url "$EP" --content-type "$3" --content-disposition "inline; filename=\"TERA-$(basename "$2")\"" --cache-control "public, max-age=604800" --only-show-errors
+            sz=$(stat -c %s "$1"); got=$(curl -sI "$CDN/$2?chk=$GITHUB_RUN_ID" | tr -d '\r' | awk 'tolower($1)=="content-length:"{print $2}' | tail -n1)
+            [ "$got" = "$sz" ] || { echo "تعذّر التحقق: $2 ($got/$sz)"; exit 1; }; echo "ok $2 $sz"; }
+          for n in hala membership; do up "$RUNNER_TEMP/m/$n.mp4" "msg/$n.mp4" video/mp4; up "$RUNNER_TEMP/m/$n.jpg" "msg/$n.jpg" image/jpeg; done
+          shopt -s nullglob
+          for f in assets/brand/mail/*.jpg assets/brand/mail/*.png assets/brand/wa/*.jpg assets/brand/wa/*.png; do
+            case "$f" in (*.png) T=image/png;; (*) T=image/jpeg;; esac
+            up "$f" "msg/brand/${f#assets/brand/}" "$T"
+          done
