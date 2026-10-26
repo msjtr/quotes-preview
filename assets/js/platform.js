@@ -16557,9 +16557,14 @@ function cfSchedP(c) {
       p.deferTo ? e('span', { class: 'cf-why' }, lvBidi(p.settleNote || p.method)) : p.txn ? (function () { const gt = cfGwOf(p); return [p.method || 'سداد إلكتروني', e('small', { class: 'cf-sub' }, ltr(p.txn)),
         gt ? e('small', { class: 'cf-sub' }, cfGwSettled(gt) ? 'تسوية البوابة: تمت' : 'تسوية البوابة: بانتظار') : null]; })() : (p.method || '—'),
       [rcB, p.fid ? liveOk(DS.button('الإثبات', { size: 'sm', ui: 'file-pdf', onClick: function () { liveOpenCtFile(p.fid, true); } })) : p.deferTo && p.method !== 'إعفاء' && p.deferTo !== c.no ? e('b', { class: 'cu-nw' }, ltr(p.deferTo)) : rcB ? null : '—'].filter(Boolean)];
-    return e('tr', { class: 'is-' + (p.deferTo ? 'deferred' : payState(p).k) }, cells.map(function (v, j) { return e('td', { 'data-l': cols[j] }, v); }));
+    return e('tr', { class: 'is-' + (p.deferTo ? 'deferred' : payState(p).k), 'data-paid': settled(p) ? '1' : null }, cells.map(function (v, j) { return e('td', { 'data-l': cols[j] }, v); }));
   });
-  return [head, e('div', { class: 'fx-table-w' }, e('table', { class: 'fx-table cf-tb' }, [e('thead', {}, e('tr', {}, cols.map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, rows)]))];
+  /* v514: الدفعات المسدَّدة مطوية — تظهر المفتوحة وحدها، ومفتاح يُظهر المسدَّدة */
+  const doneP = c.payments.filter(settled), fold = doneP.length > 4 && doneP.length < c.payments.length;
+  const tw = e('div', { class: 'fx-table-w' + (fold ? ' cf-fold' : '') }, e('table', { class: 'fx-table cf-tb' }, [e('thead', {}, e('tr', {}, cols.map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, rows)]));
+  const tg = fold ? e('label', { class: 'cf-pick' }, [e('input', { type: 'checkbox', 'data-live-ok': '', onChange: function (ev) { tw.classList.toggle('cf-fold', !ev.target.checked); } }),
+    e('span', {}, [e('b', {}, 'إظهار الدفعات المسدَّدة (' + fmtNum(doneP.length) + ')'), e('small', {}, ' · ' + SR(qr2(doneP.reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0))) + ' — تظهر الآن الدفعات المفتوحة وحدها (' + fmtNum(c.payments.length - doneP.length) + ')')])]) : null;
+  return [head, tg, tw];
 }
 
 /* v456: الإيصال في ملف العميل — بيانات شاملة للإدارة حسب القالب: البوابة (الموافقة · RRN · استجابة البنك · 3-D Secure · التكامل · المسترد)،
@@ -16763,7 +16768,7 @@ e('span', {}, [e('b', {}, 'إظهار الدفعات المسدَّدة (' + fmt
     changes ? e('small', { class: 'cu-dr-hint' }, fmtNum(changes) + (changes >= 3 && changes <= 10 ? ' تعديلات' : ' تعديل') + ' بانتظار الحفظ' + (badN ? ' · ' + fmtNum(badN) + ' دفعة تحتاج تصحيحًا' : '') + '.') : null,
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ التعديلات', { tone: 'primary', ui: 'check', disabled: W.busy || !changes, onClick: save })),
       changes ? DS.button('تجاهل التعديلات', { size: 'sm', onClick: function () { delete CF_ST[key]; W.err = ''; RF.paint(); } }) : null,
-DS.button('إغلاق', { size: 'sm', onClick: function () { if (changes && !window.confirm('إغلاق دون حفظ التعديلات؟')) return; delete CF_ST[key]; W.err = ''; W.a = ''; RF.paint(); } })])];
+DS.button('إغلاق', { size: 'sm', onClick: function () { if (changes && !window.confirm('إغلاق دون حفظ التعديلات؟')) return; delete CF_ST[key]; W.err = ''; W.a = ''; W.open = false; RF.paint(); } })])];
 }
 
 /* ===== v461: «تنويه للمراجعة» أعلى ملف العميل (client_file_notices · للإدارة وحدها) — يبقى ظاهرًا حتى يُعلَّم «تمت المراجعة» ===== */
@@ -17025,7 +17030,7 @@ function cfCtActs(id, c, r, f, C, RF) {
   const grid = W.open ? e('div', { class: 'cf-form cf-act-pick' }, [
       DS.editField('المهمة المطلوبة', DS.select({ value: W.a || '', ph: '— اختر المهمة —', options: avail.map(function (t) { return [t[0], t[2]]; }), onChange: function (v) { W.a = v; W.err = ''; RF.paint(); } })),
       cur ? e('small', { class: 'cu-dr-hint' }, cur[3]) : null,
-      e('div', { class: 't2-pb-actions' }, [DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.a = ''; W.err = ''; RF.paint(); } })])])
+      cur ? null : e('div', { class: 't2-pb-actions' }, [DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.a = ''; W.err = ''; RF.paint(); } })])])
     : e('div', { class: 'cf-acts' }, [e('button', { type: 'button', class: 'cf-act is-brand', disabled: avail.length ? null : 'disabled', 'data-live-ok': '', onClick: function () { W.open = true; W.a = avail.length === 1 ? avail[0][0] : ''; W.err = ''; RF.paint(); } },
       [e('span', { class: 'cf-act-ic' }, frag(tile('note'))), e('span', { class: 'cf-act-t' }, [e('b', {}, 'إجراء على العقد'), e('small', {}, avail.length ? avail.map(function (t) { return t[2]; }).join(' · ') : 'لا إجراءات متاحة الآن')])])]);
   let form = null;
@@ -17102,7 +17107,7 @@ function cfCtActs(id, c, r, f, C, RF) {
   }
   return lvSec('الإجراءات', closed ? 'مغلق' : rem ? 'متبقٍّ ' + SR(rem) : 'جاهز للإغلاق', [
     DS.note(closed ? 'ok' : rem ? 'info' : 'ok', closed ? 'العقد مغلق — ' + (CF_CLOSE[r.close_reason] || 'مغلق') : rem ? 'المتبقي على العقد' : 'جاهز للإغلاق', closed ? (r.close_note ? lvBidi(r.close_note) : 'أعد فتح العقد لتعديل دفعاته أو إجراءاته.') : (rem ? 'المتبقي ' + SR(rem) + ' في ' + fmtNum(open.length) + ' دفعات' + (diffs.length ? '، منها ' + fmtNum(diffs.length) + ' بفرق صغير' : '') + '.' : 'كل الدفعات مسدَّدة — يمكن إغلاق العقد.')),
-    grid, form ? e('div', { class: 'cf-form cf-act-form' }, form.concat([W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null, e('small', { class: 'cu-dr-hint' }, W.a === 'plink' ? 'يُنشأ الرابط في الخادم ويُسجَّل في سجل التدقيق، ولا يُرسل للعميل شيء تلقائيًا — انسخه وأرسله.' : W.a === 'edit' ? 'يُنفَّذ في الخادم ويُسجَّل في سجل العقد بما قبله وما بعده، ولا يُرسل للعميل شيء. الإيصالات تصدر تلقائيًا لكل مبلغ مقبوض في دفعة سليمة.' : W.a === 'gwop' ? 'يُنفَّذ لدى بوابة الدفع ويُسجَّل في سجل التدقيق، وتُخفَّض الدفعة في العقد بالمبلغ المسترد (في الوضع الحي).' : 'يُنفَّذ في الخادم ويُسجَّل في سجل التدقيق، ولا يُرسل للعميل إشعار ولا استبانة.')])) : null], k + ':act');
+    grid, form ? e('div', { class: 'cf-form cf-act-form' }, form.concat([W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null, e('small', { class: 'cu-dr-hint' }, W.a === 'plink' ? 'يُنشأ الرابط في الخادم ويُسجَّل في سجل التدقيق، ولا يُرسل للعميل شيء تلقائيًا — انسخه وأرسله.' : W.a === 'edit' ? 'يُنفَّذ في الخادم ويُسجَّل في سجل العقد بما قبله وما بعده، ولا يُرسل للعميل شيء. الإيصالات تصدر تلقائيًا لكل مبلغ مقبوض في دفعة سليمة.' : W.a === 'gwop' ? 'يُنفَّذ لدى بوابة الدفع ويُسجَّل في سجل التدقيق، وتُخفَّض الدفعة في العقد بالمبلغ المسترد (في الوضع الحي).' : 'يُنفَّذ في الخادم ويُسجَّل في سجل التدقيق، ولا يُرسل للعميل إشعار ولا استبانة.')])) : null, /* v514: الإغلاق في آخر الإجراء */ W.open && cur && W.a !== 'edit' ? e('div', { class: 't2-pb-actions cf-act-end' }, [DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.a = ''; W.err = ''; RF.paint(); } })]) : null], k + ':act');
 }
 
 /* ===== v452: إيصالات التحويل وعمليات البوابة وروابط الدفع — تُدار من ملف العميل (وصندوق «إيصالات التحويل البنكي»)،
