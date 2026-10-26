@@ -6,6 +6,11 @@
 name: wa-media
 on:
   workflow_dispatch:
+    inputs:
+      images_only:
+        description: "صور البريد وواتساب فقط بلا إعادة ضغط الفيلمين (v521)"
+        type: boolean
+        default: true
   push:
     branches: [v510]
     paths: ['.github/workflows/wa-media.yml']
@@ -28,6 +33,7 @@ jobs:
       - name: الأدوات
         run: command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null; }
       - name: ضغط الفيلمين لواتساب والبريد
+        if: ${{ inputs.images_only != true }}
         run: |
           set -e
           mkdir -p "$RUNNER_TEMP/m" && cd "$RUNNER_TEMP/m"
@@ -57,7 +63,7 @@ jobs:
           up() { aws s3 cp "$1" "s3://tera-films/$2" --endpoint-url "$EP" --content-type "$3" --content-disposition "inline; filename=\"TERA-$(basename "$2")\"" --cache-control "public, max-age=604800" --only-show-errors
             sz=$(stat -c %s "$1"); got=$(curl -sI "$CDN/$2?chk=$GITHUB_RUN_ID" | tr -d '\r' | awk 'tolower($1)=="content-length:"{print $2}' | tail -n1)
             [ "$got" = "$sz" ] || { echo "تعذّر التحقق: $2 ($got/$sz)"; exit 1; }; echo "ok $2 $sz"; }
-          for n in hala membership; do up "$RUNNER_TEMP/m/$n.mp4" "msg/$n.mp4" video/mp4; up "$RUNNER_TEMP/m/$n.jpg" "msg/$n.jpg" image/jpeg; done
+          if [ "${{ inputs.images_only }}" != "true" ]; then for n in hala membership; do up "$RUNNER_TEMP/m/$n.mp4" "msg/$n.mp4" video/mp4; up "$RUNNER_TEMP/m/$n.jpg" "msg/$n.jpg" image/jpeg; done; fi
           shopt -s nullglob
           for f in assets/brand/mail/*.jpg assets/brand/mail/*.png assets/brand/wa/*.jpg assets/brand/wa/*.png; do
             case "$f" in (*.png) T=image/png;; (*) T=image/jpeg;; esac
