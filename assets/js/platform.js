@@ -4898,6 +4898,20 @@ function soPage() {
 
 /* ===== صفحة القسم: عنوان ← فلتر جانبي عريض ← بطاقات مصممة مجمّعة ===== */
 let HUB_INLINE = false;
+/* v515: صفحات القسم تحت القسم المفتوح في الشريط الجانبي — تنتقل بين صفحات القسم مباشرة دون الرجوع إلى صفحة القسم */
+const SEC_LINKS = {};
+function secSideSub() {
+  try {
+    document.querySelectorAll('.t2-side-sub').forEach(function (x) { x.remove(); });
+    if (S.role !== 'admin') return;
+    const b = document.querySelector('.t2-side-i.is-on'), L = b && SEC_LINKS[b.dataset.nav];
+    if (!L || L.length < 2 || (S.tab === 'other' && S.other === b.dataset.nav)) return;
+    const cur = ((document.querySelector('.t2-phead-t') || {}).textContent || '').trim();
+    b.insertAdjacentElement('afterend', e('div', { class: 't2-side-sub', role: 'list', 'aria-label': 'صفحات ' + ((b.querySelector('.t2-side-l') || {}).textContent || 'القسم') }, L.map(function (it) {
+      return e('button', { type: 'button', role: 'listitem', class: 't2-side-si' + (it.t === cur ? ' is-on' : ''), title: it.t, 'aria-current': it.t === cur ? 'page' : null, onClick: function () { it.go(); } }, it.t);
+    })));
+  } catch (err) { void err; }
+}
 function secHub(key, head, groups) {
   /* v496: صفحة «الأقسام» في لوحة الموظف تعرض أقسام صلاحياته فقط */
   if (key === 'adm-more' && typeof cuSecOk === 'function') { try { groups = groups.map(function (g) { return g.slice(0, 3).concat([(g[3] || []).filter(function (it) { return !it || !it.ic || cuSecOk(it.ic); })], g.slice(4)); }).filter(function (g) { return g[3].length; }); } catch (err) { void err; } }
@@ -4910,6 +4924,7 @@ function secHub(key, head, groups) {
     if (key === 'base' && unl) groups = groups.map(function (g) { return [g[0], g[1], g[2], g[3].map(function (it) { return it.t === 'لوحتي الرئيسية' ? Object.assign({}, it, { d: 'رحلة حسابك ومراحل اعتماد ملفك' }) : it; })]; });
   }
   const fk = 'hf_' + key, f = !HUB_INLINE && groups.some(function (g) { return g[0] === FX[fk]; }) ? FX[fk] : '';
+    try { SEC_LINKS[key] = [].concat.apply([], groups.filter(Boolean).map(function (g) { return (g[3] || []).filter(Boolean); })).filter(function (it) { return it.t && typeof it.go === 'function'; }).map(function (it) { return { t: it.t, go: it.go }; }); } catch (err) { void err; }
   const total = groups.reduce(function (a, g) { return a + g[3].length; }, 0);
   const fc = function (gk, label, ic, n) { const on = gk === f; return e('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', class: 'hf-c' + (on ? ' is-on' : ''), onClick: function () { FX[fk] = gk; draw(); } }, [e('span', { class: 'hf-ic' }, frag(tile(ic))), e('span', { class: 'hf-tx' }, [e('b', {}, label), e('small', {}, n === 1 ? 'عنصر واحد' : n === 2 ? 'عنصران' : fmtNum(n) + (n <= 10 ? ' عناصر' : ' عنصرًا'))])]); };
   const filt = e('div', { class: 'hf-row', role: 'tablist', 'aria-label': 'تصفية ' + head.t }, [fc('', 'الكل', key === 'store' ? 'squares-four:teal' : 'squares-four:navy', total)].concat(groups.map(function (g) { return fc(g[0], g[1], g[2], g[3].length); })));
@@ -15317,7 +15332,7 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   document.getElementById('pv-sub').hidden = true;
   document.getElementById('pv-title').hidden = S.tab === 'svc' || S.tab === 'other' && ['pr-item', 'store', 'pr-dept', 'picks', 'pr-fav', 'devices', 'digital', 'st-orders', 'my-orders', 'my-picks', 'contact', 'member', 'sv-new'].indexOf(S.other) >= 0;
   if (typeof phSync === 'function') phSync(sub);
-  document.querySelectorAll('.t2-side-i').forEach(function (b) { b.classList.toggle('is-on', b.dataset.nav === on); });
+  document.querySelectorAll('.t2-side-i').forEach(function (b) { b.classList.toggle('is-on', b.dataset.nav === on); }); setTimeout(secSideSub, 0);
   const accOnNow = S.tab === 'other' && S.other === 'tq-account'; /* v386: «حسابك» */
   document.querySelectorAll('.t2-dock-i').forEach(function (b) { b.classList.toggle('is-on', accOnNow ? b.dataset.nav === 'tq-account' : b.dataset.nav !== 'tq-account' && (b.dataset.nav === on || (on === 'devices' && b.dataset.nav === 'store') || (S.role === 'admin' && b.dataset.nav === 'adm-more' && on !== 'adm-home' && on !== 'sys') || (b.dataset.nav === 'more' && ['dash', 'store', 'devices', 'custom'].indexOf(on) < 0))); });
   const body = S.tab === 'elig' || S.tab === 'qreq' ? eligPage() : S.tab === 'msg' ? msgPage() : S.tab === 'dash' ? (window.__clUpd ? window.__clUpd(dashPage()) : dashPage()) : FIN[S.tab] ? FIN[S.tab][2]() : S.tab === 'other' ? (S.role === 'admin' && !cuSecOk(S.other) ? cuPermNo('هذا القسم خارج صلاحياتك', 'يظهر لك ما تسمح به صلاحيات دورك — اطلبها من المشرف العام.') : ACCT[S.other]()): svcPage();
@@ -17353,7 +17368,7 @@ function cfAcctSec(id, D, RF) {
   const pick = W.open ? e('div', { class: 'cf-form cf-act-pick' }, [
       DS.editField('المهمة المطلوبة', DS.select({ value: W.act || '', ph: '— اختر المهمة —', options: T.map(function (t) { return [t[0], t[1]]; }), onChange: function (v) { W.act = v; W.err = ''; RF.paint(); } })),
       cur ? e('small', { class: 'cu-dr-hint' }, cur[2]) : null,
-      e('div', { class: 't2-pb-actions' }, [DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.act = ''; W.err = ''; RF.paint(); } })])])
+      cur ? null : e('div', { class: 't2-pb-actions' }, [DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.act = ''; W.err = ''; RF.paint(); } })])])
     : e('div', { class: 'cf-acts' }, [e('button', { type: 'button', class: 'cf-act is-brand', disabled: T.length ? null : 'disabled', 'data-live-ok': '', onClick: function () { W.open = true; W.act = T.length === 1 ? T[0][0] : ''; W.err = ''; RF.paint(); } },
       [e('span', { class: 'cf-act-ic' }, frag(tile('note'))), e('span', { class: 'cf-act-t' }, [e('b', {}, 'إجراء على الحساب'), e('small', {}, T.length ? T.map(function (t) { return t[1].replace(/[ً-ْ]/g, ''); }).join(' · ') : 'لا إجراءات متاحة الآن')])])]);
   const form = W.open && cur ? e('div', { class: 'cf-form cf-act-form' }, [
@@ -17361,7 +17376,7 @@ function cfAcctSec(id, D, RF) {
     waK ? null : DS.editField('سبب جاهز', DS.select({ value: W.tpl, ph: LV_SXW[''], options: Object.keys(LV_SXW).filter(Boolean).map(function (k) { return [k, LV_SXW[k]]; }), onChange: function (v) { W.tpl = v; W.why = LV_SXW[v] || W.why; W.err = ''; RF.paint(); } })),
     waK ? null : DS.editField('السبب (إلزامي — يُسجَّل في التدقيق)', e('textarea', { class: 't2-input cu-why', rows: '2', onInput: function (ev) { W.why = ev.target.value; W.err = ''; } }, W.why || '')),
     W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
-    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'تنفيذ: ' + cur[1].replace(/[ً-ْ]/g, ''), { tone: ['unlock', 'enable'].indexOf(cur[0]) >= 0 ? 'primary' : 'danger', ui: 'shield-check', disabled: W.busy, onClick: run }))]),
+    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'تنفيذ: ' + cur[1].replace(/[ً-ْ]/g, ''), { tone: ['unlock', 'enable'].indexOf(cur[0]) >= 0 ? 'primary' : 'danger', ui: 'shield-check', disabled: W.busy, onClick: run })), DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.act = ''; W.err = ''; RF.paint(); } })]),
     e('small', { class: 'cu-dr-hint' }, 'يُنفَّذ في الخادم ويُسجَّل في سجل التدقيق بمن قام ومتى، ولا يُرسل للعميل إشعار.')]) : null;
   return lvSec('الحساب والأمان', st[0] + (act.length ? ' · ' + fmtNum(act.length) + ' جلسة نشطة' : ''), [kp, sum].concat(why, [ver, ses, lvSec('الإجراءات', T.length ? fmtNum(T.length) + ' متاحة' : null, [pick, form], key + ':act', !!W.open), log]), key);
 }
