@@ -3001,7 +3001,7 @@ function rcOpReq0(p) {
     return e('div', { class: 'fx-doc-r' }, [e('span', {}, [ltr(o.req_no), ' · ', o.kind === 'void' ? 'إلغاء' : 'استرداد']), e('b', {}, [DS.badge(st[0], st[1]), o.decision_note && o.status === 'rejected' ? e('small', { class: 'cf-sub' }, ' ' + o.decision_note) : null])]); });
   if (open) {
     return formSec('طلب ' + (open.kind === 'void' ? 'إلغاء' : 'استرداد') + ' هذه العملية', null, [DS.note('warn', 'طلبك ' + open.req_no + ' قيد مراجعة الإدارة', 'المبلغ ' + SR(Number(open.amount) || 0) + ' · السبب: ' + open.reason + ' — يصلك إشعار بالنتيجة، وعند الاعتماد يعود المبلغ إلى وسيلة الدفع نفسها.'),
-      DS.actionBar({ buttons: [DS.button('إلغاء طلبي', { onClick: async function () { if (!window.confirm('إلغاء الطلب ' + open.req_no + '؟')) return;
+      DS.actionBar({ buttons: [DS.button('إلغاء طلبي', { onClick: async function () { if (!tqConfirm('إلغاء الطلب ' + open.req_no + '؟')) return;
         const j = await clPost('/api/account/pay-ops/' + encodeURIComponent(open.id) + '/cancel', {}).catch(function () { return null; });
         if (!j || j.ok !== true) { snack((j && j.message) || 'تعذّر الإلغاء.'); return; } await lvOpReload(); snack('أُلغي الطلب.'); draw(); } })] })].concat(hist));
   }
@@ -3846,6 +3846,23 @@ function rankList(tab, list) {
   return by(function (k) { const i = I[k]; return i.buys * Math.pow(i.r / 5, 2) + (PD[k] && PD[k].bd === 'new' ? 160 : 0); });
 }
 /* ===== المفضّلة والسلة ===== */
+/* v517: التأكيد قبل الحفظ أو التنفيذ بهوية تيرا (بطاقة الإشعار الموحّد في منتصف الشاشة) بدل نافذة المتصفح أعلى الصفحة.
+   يُعاد تشغيل الزر نفسه بعد «نعم، تابع» فيكمل المسار كما هو؛ وإن تعذّر الإشعار الموحّد تُستخدم نافذة المتصفح. */
+let TQ_CF_LAST = null, TQ_CF_PASS = null;
+try { document.addEventListener('click', function (ev) { const t = ev.target && ev.target.closest ? ev.target.closest('button, a, [role="button"], input[type="checkbox"], input[type="radio"]') : null; if (t && !t.closest('.tn-wrap')) TQ_CF_LAST = t; }, true); } catch (err) { void err; }
+function tqConfirm(msg) {
+  const m = String(msg || ''), T = window.TeraNotify;
+  if (TQ_CF_PASS && TQ_CF_PASS.m === m && Date.now() < TQ_CF_PASS.until) { TQ_CF_PASS = null; return true; }
+  const el = TQ_CF_LAST;
+  if (!T || !T.enabled || typeof T.show !== 'function' || !el || !el.isConnected) return window['confirm'](m);
+  const q = m.indexOf('؟'), title = q > 0 ? m.slice(0, q + 1) : m, text = q > 0 ? m.slice(q + 1).trim() : '';
+  try {
+    T.show({ kind: 'warn', title: title, text: text, ms: 0, modal: true, now: true, actions: [
+      { label: 'نعم، تابع', primary: true, run: function () { if (!el.isConnected) { snack('تعذّرت المتابعة — أعد المحاولة.'); return; } TQ_CF_PASS = { m: m, until: Date.now() + 5000 }; el.click(); } },
+      { label: 'تراجع' }] });
+  } catch (err) { return window['confirm'](m); }
+  return false;
+}
 function snack(msg, act, sub) {
   /* v356: الإشعار الموحّد في منتصف الشاشة (8 ثوانٍ أو يغلقه المستخدم) — في العيّنة الآن، وعلى المنصة بعد الاعتماد */
   if (window.TeraNotify && window.TeraNotify.enabled) {
@@ -9740,7 +9757,34 @@ function dcCqOpen(no) {
     foot: [e('div', { class: 'cu-dr-fa is-wrap' }, [DS.button('معاينة PDF', { tone: 'primary', ui: 'file-text', onClick: function () { dcPdf(dcLineDoc(x, 'cq')); } }), inv ? DS.button('الفاتورة PDF', { ui: 'receipt', onClick: function () { dcPdf(dcInvDoc(inv, false)); } }) : null, DS.button('فتح الطلب', { ui: 'note-pencil', onClick: function () { cuStoreOpen('c:' + no); } }), DS.button('إغلاق', { onClick: cuBdClose })])], onClose: function () { draw(); } });
 }
 /* عقود الشركاء */
+/* v517: العقود التي عُدِّل جدولها أو بياناتها (حدث contract_edited في السجل الداخلي) — للشارة «معدّل» وخانة التصفية */
+const CF_ED = { at: 0, m: {}, busy: false };
+function cfEdLoad() {
+  if (CF_ED.busy || CF_ED.at) return; CF_ED.busy = true;
+  liveSb('client_internal_events?select=contract_id,at&action=eq.contract_edited&order=at.desc&limit=5000').then(function (L) {
+    CF_ED.m = {}; (Array.isArray(L) ? L : []).forEach(function (x) { if (x && x.contract_id && !CF_ED.m[x.contract_id]) CF_ED.m[x.contract_id] = String(x.at || ''); });
+    CF_ED.at = Date.now(); CF_ED.busy = false; draw();
+  }).catch(function () { CF_ED.busy = false; CF_ED.at = Date.now(); });
+}
+function cfEdAt(no) { const r = ((LIVE_ADM.rows || {})[no] || {}).r; return r && r.id ? CF_ED.m[r.id] || '' : ''; }
+/* تعديلات عقد واحد من سجله: آخر تعديل وعدده، والدفعات المعدَّلة (مبلغ أو استحقاق أو مسدَّد) والمضافة */
+function cfEdits(EV, cid) {
+  const out = { n: 0, at: '', ids: {} };
+  (Array.isArray(EV) ? EV : []).filter(function (x) { return x && x.action === 'contract_edited' && x.contract_id === cid; }).slice().reverse().forEach(function (x) {
+    out.n++; if (String(x.at || '') > out.at) out.at = String(x.at || '');
+    const d = x.details || {}, B = {};
+    (((d.before || {}).payments) || []).forEach(function (p) { if (p && p.id) B[p.id] = p; });
+    (((d.after || {}).payments) || []).forEach(function (p) {
+      if (!p || !p.id) return; const b = B[p.id];
+      if (!b) { out.ids[p.id] = 'new'; return; }
+      if (out.ids[p.id] === 'new') return;
+      if (Number(b.amount) !== Number(p.amount) || String(b.due_date || '') !== String(p.due_date || '') || Number(b.paid_amount || 0) !== Number(p.paid_amount || 0)) out.ids[p.id] = 'ed';
+    });
+  });
+  return out;
+}
 function dcPcPage() {
+  if (LIVE.on) cfEdLoad();
   /* عقود العملاء: قائمة العملاء أولًا بملخص كل عميل، والدخول على العميل يعرض ملخصه الكامل وأقسام عقوده المطوية */
   /* v459: كل العقود (124) بأقسام المشرف — تحتاج مراجعة · مكتملة السداد · متعثرة · متأخرة · منتظمة. «تحتاج مراجعة» = عقد معلَّم بمراجعة أو سجل طلب
      من النظام السابق (للإدارة وحدها). كل عقد في قسم واحد بهذا الترتيب. عقود الاختبار (TEST-) لا تُعدّ. */
@@ -9748,7 +9792,7 @@ function dcPcPage() {
   const RHL = LIVE.on ? [].concat.apply([], Object.keys(LIVE_ADM.rh || {}).map(function (cid) { const nm = (cuList().filter(function (y) { return y.id === cid; })[0] || {}).name || (ADM.pfN || {})[cid] || '—';
     return (LIVE_ADM.rh[cid] || []).map(function (c) { const fi = c.n ? cInfo(c) : null; return { cid: cid, name: nm, rh: true, c: { no: c.no, k: 'rv', rem: fi ? fi.remain : 0, live: c, from: '' } }; }); })) : [];
   const L = dcCts().filter(function (x) { return !/^TEST-/.test(x.c.no || ''); }).concat(RHL).map(function (x) { return Object.assign(x, { sec: rvOf(x) ? 'rv' : x.rh ? 'cnl' : x.c.k === 'merged' ? 'done' : x.c.k }); });
-  const f = ADM.dcPcF || 'all', cq = ADM.dcPcC || '', fit = function (x, k) { return k === 'all' || x.sec === k; };
+  const f = ADM.dcPcF || 'all', cq = ADM.dcPcC || '', fit = function (x, k) { return k === 'all' || (k === 'ed' ? !!cfEdAt(x.c.no) : x.sec === k); };
   if (cq && LIVE.on && /^[0-9a-f-]{36}$/i.test(String(cq))) { ADM.dcPcC = ''; ADM.pfc = cq; FX.pfc = cq; return admPfFilePage(); }
   if (cq && L.some(function (x) { return x.cid === cq; })) return dcPcClient(cq, L.filter(function (x) { return x.cid === cq; }));
   const G = []; L.filter(function (x) { return fit(x, f); }).forEach(function (x) { let g = G.filter(function (y) { return y.cid === x.cid; })[0]; if (!g) G.push(g = { cid: x.cid, name: x.name, L: [] }); g.L.push(x); });
@@ -9757,11 +9801,11 @@ function dcPcPage() {
     const by = function (k) { return g.L.filter(function (x) { return x.sec === k; }).length; }, nl = by('late'), nd = by('def'), nc = by('done'), nr = by('rv');
     return e('button', { type: 'button', class: 'cu-card', 'data-s': g.name, onClick: function () { if (LIVE.on && /^[0-9a-f-]{36}$/i.test(String(g.cid))) { ADM.pfc = g.cid; FX.pfc = g.cid; (ADM.pfN || (ADM.pfN = {}))[g.cid] = g.name; go('other', 'cu-pf-file'); return; } ADM.dcPcC = g.cid; window.scrollTo(0, 0); draw(); } }, [e('span', { class: 'cu-av' }, String(g.name || '؟').slice(0, 1)),
       e('span', { class: 'cu-card-t' }, [e('b', {}, g.name), e('small', {}, [ctW(g.L.length) + ' · المتبقي ' + sar(rem(g.L))]), f !== 'all' ? e('small', { class: 'cf-sub', dir: 'ltr' }, g.L.map(function (x) { return x.c.no; }).slice(0, 4).join(' · ') + (g.L.length > 4 ? ' …' : '')) : null]),
-      e('span', { class: 'cu-card-m' }, [nr ? DS.badge(fmtNum(nr) + ' مراجعة', 'warn') : null, nd ? DS.badge(fmtNum(nd) + ' متعثر', 'danger') : null, nl ? DS.badge(fmtNum(nl) + ' متأخر', 'warn') : null, nc ? DS.badge(fmtNum(nc) + ' مسدد', 'ok') : null, !nd && !nl && !nc && !nr ? DS.badge('منتظم', 'info') : null]),
+      e('span', { class: 'cu-card-m' }, [nr ? DS.badge(fmtNum(nr) + ' مراجعة', 'warn') : null, nd ? DS.badge(fmtNum(nd) + ' متعثر', 'danger') : null, nl ? DS.badge(fmtNum(nl) + ' متأخر', 'warn') : null, nc ? DS.badge(fmtNum(nc) + ' مسدد', 'ok') : null, (function () { const ne = g.L.filter(function (x) { return cfEdAt(x.c.no); }).length; return ne ? DS.badge(fmtNum(ne) + ' معدّل', 'info') : null; })(), !nd && !nl && !nc && !nr ? DS.badge('منتظم', 'info') : null]),
       e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); });
   return [dcTop('عقود الشركاء', LIVE.on ? 'اختر العميل لفتح ملفه الموحّد: عقوده وعروض أسعارها ومرفقاتها وجدول سدادها وسجل أحداثها' : 'اختر العميل لعرض ملخص عقوده وأقسامها', [dcTplBtn('pc')]),
     axKpis([['العقود', fmtNum(L.length), '', 'contract'], ['العملاء', fmtNum(new Set(L.map(function (x) { return x.cid; })).size), '', 'users-three'], ['تحتاج مراجعة', fmtNum(L.filter(function (x) { return x.sec === 'rv'; }).length), 'warn', 'note'], ['متعثرة', fmtNum(L.filter(function (x) { return x.sec === 'def'; }).length), 'danger', 'warning'], ['متأخرة', fmtNum(L.filter(function (x) { return x.sec === 'late'; }).length), 'warn', 'clock'], ['إجمالي المتبقي', sar(rem(L.filter(function (x) { return !x.rh; }))), 'warn', 'coins']]),
-    e('div', { class: 'm3-tools ax-tools' }, [chipRow([['rv', 'تحتاج مراجعة', 'note-pencil:saffron'], ['done', 'مكتملة السداد', 'seal-check:teal'], ['def', 'متعثرة', 'warning-octagon:gold'], ['late', 'متأخرة', 'warning:gold'], ['act', 'منتظمة', 'check-circle:teal'], ['all', 'الكل', 'list:navy']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), f, function (v) { ADM.dcPcF = v; draw(); }, 'تصفية العقود'),
+    e('div', { class: 'm3-tools ax-tools' }, [chipRow([['rv', 'تحتاج مراجعة', 'note-pencil:saffron'], ['done', 'مكتملة السداد', 'seal-check:teal'], ['def', 'متعثرة', 'warning-octagon:gold'], ['late', 'متأخرة', 'warning:gold'], ['act', 'منتظمة', 'check-circle:teal'], ['ed', 'معدّلة', 'note-pencil:navy'], ['all', 'الكل', 'list:navy']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), f, function (v) { ADM.dcPcF = v; draw(); }, 'تصفية العقود'),
       e('div', { class: 'cu-bd-cf' }, [DS.editField('اسم العميل', DS.select({ value: '*', options: [['*', 'كل العملاء']].concat(G.map(function (g) { return [g.cid, g.name]; })), onChange: function (v) { ADM.dcPcC = v === '*' ? '' : v; draw(); } }))])]),
     cards.length ? e('div', { class: 'cu-cards' }, cards) : e('div', { class: 'tm-empty' }, 'لا عقود هنا'),
     DS.note('info', 'الدفعات والمدفوعات انتقلت إلى «قسم المالية»', 'الدفعات المستحقة والقادمة لكل العملاء وسجل السداد بطرقه الأربع في قسم المالية.', DS.button('فتح قسم المالية', { size: 'sm', ui: 'wallet', onClick: function () { go('other', 'fin'); } }))];
@@ -16383,7 +16427,7 @@ const cfSt = (k, d) => CF_ST[k] || (CF_ST[k] = Object.assign({ err: '', busy: fa
 const cfKpis = (L) => e('div', { class: 'fx-kpis is-3 cf-kpis' }, L.filter(Boolean).map(function (x) { return kpi(x[0], x[1], x[2], x[3], x[4]); }));
 const cfLeft = (p) => p.deferTo ? 0 : Math.max(0, qr2(p.amount - (p.paid || 0)));
 const cfSrOf = (id, kind) => (LV_SR.all || []).filter(function (x) { return x.user_id === id && (!kind || x.kind === kind); }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; });
-const cfRe = async function (RF, msg) { snack(msg); LIVE_ADM.at = 0; await Promise.all([liveAdmLoad().catch(function () { /* */ }), lvSrLoad().catch(function () { /* */ })]); RF(); };
+const cfRe = async function (RF, msg) { snack(msg); LIVE_ADM.at = 0; CF_ED.at = 0; await Promise.all([liveAdmLoad().catch(function () { /* */ }), lvSrLoad().catch(function () { /* */ })]); RF(); };
 
 /* ===== v463: طلبات الخدمة منظومة واحدة (stf_75) =====
    بطاقة الطلب نفسها في «طلبات الخدمات» وفي ملف العميل — القرار والتعديل والإلغاء والتنفيذ داخلها، بلا أدراج.
@@ -16449,7 +16493,7 @@ function srCard(x, RF, o) {
   o = o || {};
   const K = srKind(x.kind), st = srStat(x), W = cfSt('srw:' + x.id, { mode: '', note: '', tgt: '', internal: false, nos: null, pids: null, key: 'e' + x.id });
   const go = async function (fn, args, msg, ask) {
-    if (W.busy) return; if (ask && !window.confirm(ask)) return;
+    if (W.busy) return; if (ask && !tqConfirm(ask)) return;
     W.busy = true; W.err = ''; RF.paint();
     try { await admRpc(fn, args); W.busy = false; W.mode = ''; W.note = ''; ADM.svFocus = x.id; cfRe(RF, msg); } catch (err) { W.busy = false; W.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; RF.paint(); }
   };
@@ -16560,7 +16604,7 @@ function lvSrOpen(id) {
 }
 
 /* جدول السداد: شريط التقدّم والمفتاح ثم الجدول — الإيصال في صفّ دفعته فقط */
-function cfSchedP(c) {
+function cfSchedP(c, ED) {
   const ST = payKind, cnt = {}; c.payments.forEach(function (p) { const k = ST(p)[0]; cnt[k] = (cnt[k] || 0) + 1; });
   const done = c.payments.filter(settled).length;
   const head = e('div', { class: 'tl-h cf-tl' }, [e('div', { class: 'tl-h-t' }, [e('b', {}, [ltr(String(done)), ' من ', ltr(String(c.n)), ' دفعات مسدَّدة']), e('span', {}, ['قيمة الدفعة ', SR(c.amount)])]),
@@ -16576,10 +16620,11 @@ function cfSchedP(c) {
       p.deferTo ? e('span', { class: 'cf-why' }, lvBidi(p.settleNote || p.method)) : p.txn ? (function () { const gt = cfGwOf(p); return [p.method || 'سداد إلكتروني', e('small', { class: 'cf-sub' }, ltr(p.txn)),
         gt ? e('small', { class: 'cf-sub' }, cfGwSettled(gt) ? 'تسوية البوابة: تمت' : 'تسوية البوابة: بانتظار') : null]; })() : (p.method || '—'),
       [rcB, p.fid ? liveOk(DS.button('الإثبات', { size: 'sm', ui: 'file-pdf', onClick: function () { liveOpenCtFile(p.fid, true); } })) : p.deferTo && p.method !== 'إعفاء' && p.deferTo !== c.no ? e('b', { class: 'cu-nw' }, ltr(p.deferTo)) : rcB ? null : '—'].filter(Boolean)];
-    return e('tr', { class: 'is-' + (p.deferTo ? 'deferred' : payState(p).k), 'data-paid': settled(p) ? '1' : null }, cells.map(function (v, j) { return e('td', { 'data-l': cols[j] }, v); }));
+    const em = ED && ED.ids ? ED.ids[p.pid] : '';
+    return e('tr', { class: 'is-' + (p.deferTo ? 'deferred' : payState(p).k) + (em ? ' is-ed' : ''), 'data-paid': settled(p) && !em ? '1' : null }, cells.map(function (v, j) { return e('td', { 'data-l': cols[j] }, j === 0 && em ? [v, e('span', { class: 'cf-edb is-' + em }, em === 'new' ? 'جديدة' : 'معدّلة')] : v); }));
   });
   /* v514: الدفعات المسدَّدة مطوية — تظهر المفتوحة وحدها، ومفتاح يُظهر المسدَّدة */
-  const doneP = c.payments.filter(settled), fold = doneP.length > 4 && doneP.length < c.payments.length;
+  const doneP = c.payments.filter(function (p) { return settled(p) && !(ED && ED.ids && ED.ids[p.pid]); }), fold = doneP.length > 4 && doneP.length < c.payments.length;
   const tw = e('div', { class: 'fx-table-w' + (fold ? ' cf-fold' : '') }, e('table', { class: 'fx-table cf-tb' }, [e('thead', {}, e('tr', {}, cols.map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, rows)]));
   const tg = fold ? e('label', { class: 'cf-pick' }, [e('input', { type: 'checkbox', 'data-live-ok': '', onChange: function (ev) { tw.classList.toggle('cf-fold', !ev.target.checked); } }),
     e('span', {}, [e('b', {}, 'إظهار الدفعات المسدَّدة (' + fmtNum(doneP.length) + ')'), e('small', {}, ' · ' + SR(qr2(doneP.reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0))) + ' — تظهر الآن الدفعات المفتوحة وحدها (' + fmtNum(c.payments.length - doneP.length) + ')')])]) : null;
@@ -16769,7 +16814,7 @@ e('span', {}, [e('b', {}, 'إظهار الدفعات المسدَّدة (' + fmt
     if (badN) { W.err = 'صحّح الدفعات المعلَّمة أولًا.'; RF.paint(); return; }
     if (!live.length) { W.err = ADM_ERR.empty_schedule; RF.paint(); return; }
     if (String(S.note).trim().length < 6) { W.err = ADM_ERR.note_required; RF.paint(); return; }
-    if (!window.confirm('حفظ ' + fmtNum(changes) + (changes >= 3 && changes <= 10 ? ' تعديلات' : ' تعديل') + ' على العقد ' + c.no + '؟ يُسجَّل كل تعديل في سجل العقد.')) return;
+    if (!tqConfirm('حفظ ' + fmtNum(changes) + (changes >= 3 && changes <= 10 ? ' تعديلات' : ' تعديل') + ' على العقد ' + c.no + '؟ يُسجَّل كل تعديل في سجل العقد.')) return;
     run('admin_contract_edit', { p_contract: r.id, p_data: P, p_note: String(S.note).trim() }, 'حُفظت تعديلات العقد ' + c.no + '.').then(function () { if (!W.err) delete CF_ST[key]; });
   };
   return [
@@ -16787,7 +16832,7 @@ e('span', {}, [e('b', {}, 'إظهار الدفعات المسدَّدة (' + fmt
     changes ? e('small', { class: 'cu-dr-hint' }, fmtNum(changes) + (changes >= 3 && changes <= 10 ? ' تعديلات' : ' تعديل') + ' بانتظار الحفظ' + (badN ? ' · ' + fmtNum(badN) + ' دفعة تحتاج تصحيحًا' : '') + '.') : null,
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ التعديلات', { tone: 'primary', ui: 'check', disabled: W.busy || !changes, onClick: save })),
       changes ? DS.button('تجاهل التعديلات', { size: 'sm', onClick: function () { delete CF_ST[key]; W.err = ''; RF.paint(); } }) : null,
-DS.button('إغلاق', { size: 'sm', onClick: function () { if (changes && !window.confirm('إغلاق دون حفظ التعديلات؟')) return; delete CF_ST[key]; W.err = ''; W.a = ''; W.open = false; RF.paint(); } })])];
+DS.button('إغلاق', { size: 'sm', onClick: function () { if (changes && !tqConfirm('إغلاق دون حفظ التعديلات؟')) return; delete CF_ST[key]; W.err = ''; W.a = ''; W.open = false; RF.paint(); } })])];
 }
 
 /* ===== v461: «تنويه للمراجعة» أعلى ملف العميل (client_file_notices · للإدارة وحدها) — يبقى ظاهرًا حتى يُعلَّم «تمت المراجعة» ===== */
@@ -16932,7 +16977,7 @@ function stlLineRow(S, l, i, R, ctx, onCh) {
 function stlQuoteCard(Q, ctx, c, RF) {
   const W = cfSt('stq:' + Q.id, { note: '' }), s0 = STL_ST[Q.status] || [Q.status, null], R = Q.result || {};
   const go = async function (fn, args, msg, ask) {
-    if (W.busy) return; if (ask && !window.confirm(ask)) return;
+    if (W.busy) return; if (ask && !tqConfirm(ask)) return;
     W.busy = true; W.err = ''; RF.paint();
     try { await admRpc(fn, args); W.busy = false; W.note = ''; cfRe(RF, msg); } catch (err) { W.busy = false; W.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; RF.paint(); }
   };
@@ -17064,7 +17109,7 @@ function cfCtActs(id, c, r, f, C, RF) {
       DS.editField('سبب الإعفاء', e('textarea', { class: 't2-input', rows: '2', placeholder: 'مثل: فرق هللة في التحويل', onInput: function (ev) { S.note = ev.target.value; } }, S.note)),
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'إعفاء الفرق', { tone: 'primary', ui: 'seal-check', disabled: W.busy || !p0, onClick: function () {
         if (String(S.note).trim().length < 4) { W.err = ADM_ERR.note_required; RF.paint(); return; }
-        if (!window.confirm('إعفاء ' + SR(cfLeft(p0)) + ' من الدفعة ' + p0.i + '؟')) return;
+        if (!tqConfirm('إعفاء ' + SR(cfLeft(p0)) + ' من الدفعة ' + p0.i + '؟')) return;
         run('admin_payment_waive', { p_payment: p0.pid, p_note: S.note }, 'أُعفي فرق الدفعة ' + p0.i + '.'); } }))])];
   } else if (W.a === 'link') {
     /* v463: الربط بالدالة نفسها التي تنفّذ طلبات التأجيل والتوحيد — طلب واحد منفّذ لا طلبان */
@@ -17078,7 +17123,7 @@ function cfCtActs(id, c, r, f, C, RF) {
       sel.length && S.ref ? DS.note('info', 'ما سيحدث', 'تُسجَّل ' + (sel.length === 1 ? 'الدفعة ' : 'الدفعات ') + sel.map(function (p) { return p.i; }).join('، ') + ' «' + (S.kind === 'merge' ? 'مسدَّدة بالتوحيد' : 'مسدَّدة بالتأجيل') + '» إلى ' + S.ref + '، ويُسجَّل طلب واحد منفّذ في «' + (S.kind === 'merge' ? 'توحيد العقود' : 'تأجيل دفعة') + '»، ويُغلق العقد إن لم يبقَ عليه شيء.') : null,
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'ربط الدفعات', { tone: 'primary', ui: 'arrows-clockwise', disabled: W.busy || !sel.length || !S.ref, onClick: function () {
         if (String(S.note).trim().length < 4) { W.err = ADM_ERR.note_required; RF.paint(); return; }
-        if (!window.confirm('ربط ' + sel.length + ' دفعة بالعقد ' + S.ref + '؟')) return;
+        if (!tqConfirm('ربط ' + sel.length + ' دفعة بالعقد ' + S.ref + '؟')) return;
         run('admin_contract_link', { p_contract: r.id, p_payment_ids: sel.map(function (p) { return p.pid; }), p_kind: S.kind, p_target: S.ref, p_note: S.note }, 'رُبطت الدفعات بالعقد ' + S.ref + '.', { });
         S.pick = {}; S.note = ''; } }))])];
   } else if (W.a === 'unset') {
@@ -17088,7 +17133,7 @@ function cfCtActs(id, c, r, f, C, RF) {
       DS.editField('السبب (إلزامي، يُسجَّل)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; } }, S.note)),
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'التراجع عن التسديد', { tone: 'primary', ui: 'arrow-counter-clockwise', disabled: W.busy || !p0, onClick: function () {
         if (String(S.note).trim().length < 6) { W.err = ADM_ERR.note_required; RF.paint(); return; }
-        if (!window.confirm('التراجع عن تسديد الدفعة ' + p0.i + '؟')) return;
+        if (!tqConfirm('التراجع عن تسديد الدفعة ' + p0.i + '؟')) return;
         run('admin_payment_unsettle', { p_payment: p0.pid, p_note: S.note }, 'أُلغي تسديد الدفعة ' + p0.i + '.'); } }))])];
   } else if (W.a === 'reopen') {
     const S = cfSt('ro:' + c.no, { note: '' });
@@ -17096,7 +17141,7 @@ function cfCtActs(id, c, r, f, C, RF) {
       DS.editField('السبب (إلزامي، يُسجَّل)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; } }, S.note)),
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'إعادة فتح العقد', { tone: 'primary', ui: 'lock-open', disabled: W.busy, onClick: function () {
         if (String(S.note).trim().length < 6) { W.err = ADM_ERR.note_required; RF.paint(); return; }
-        if (!window.confirm('إعادة فتح العقد ' + c.no + '؟')) return;
+        if (!tqConfirm('إعادة فتح العقد ' + c.no + '؟')) return;
         run('admin_contract_reopen', { p_contract: r.id, p_note: S.note }, 'أُعيد فتح العقد ' + c.no + '.'); } }))])];
   } else if (W.a === 'cedit') {
     const S = cfSt('ce:' + c.no, { why: r.close_reason || 'done', note: r.close_note || '' });
@@ -17121,7 +17166,7 @@ function cfCtActs(id, c, r, f, C, RF) {
       S.why === 'done' && rem > 0 && rem <= 0.10 ? DS.note('info', 'فرق تقريب', 'بقي ' + SR(rem) + ' فرق هللات — يُسجَّل «فرق تقريب» على دفعته عند الإغلاق.') : S.why === 'done' && rem ? DS.note('warn', 'لم يكتمل السداد', 'بقي ' + SR(rem) + ' — استخدم «التسوية المبكرة» أو «إعفاء فرق دفعة» أولًا.') : null,
       DS.editField(S.why === 'done' ? 'ملاحظة (اختيارية)' : 'السبب بالتفصيل', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; } }, S.note)),
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'إغلاق العقد', { tone: 'danger', ui: 'lock', disabled: W.busy || !S.why, onClick: function () {
-        if (!window.confirm('إغلاق العقد ' + c.no + '؟')) return;
+        if (!tqConfirm('إغلاق العقد ' + c.no + '؟')) return;
         run('admin_contract_close', { p_contract: r.id, p_reason: S.why, p_note: S.note }, 'أُغلق العقد ' + c.no + '.'); } }))])];
   }
   return lvSec('الإجراءات', closed ? 'مغلق' : rem ? 'متبقٍّ ' + SR(rem) : 'جاهز للإغلاق', [
@@ -17160,7 +17205,7 @@ function cfTrCard(t, RF, o) {
     if (W.busy) return;
     const n = String(W.note || '').trim();
     if (a === 'reject' && n.length < 4) { W.err = 'اكتب سبب الرفض — يراه العميل في صفحة الدفعة.'; RF.paint(); return; }
-    if (!window.confirm((a === 'approve' ? 'اعتماد التحويل ' : 'رفض التحويل ') + SR(Number(t.amount) || 0) + (pp.seq ? ' للدفعة ' + pp.seq : '') + '؟')) return;
+    if (!tqConfirm((a === 'approve' ? 'اعتماد التحويل ' : 'رفض التحويل ') + SR(Number(t.amount) || 0) + (pp.seq ? ' للدفعة ' + pp.seq : '') + '؟')) return;
     cfAct(W, RF, async function () { await cfPostOk('/admin/api/pay/transfers/' + encodeURIComponent(t.id) + '/' + a, { note: n }); W.note = ''; LV_PAY.at = 0; },
       a === 'approve' ? 'اعتُمد التحويل: أُضيف المبلغ إلى الدفعة وحُفظ الإيصال في مرفقات العقد.' : 'رُفض التحويل — يرى العميل السبب في صفحة الدفعة.');
   };
@@ -17205,7 +17250,7 @@ function cfOpCard(o, c, RF, kp) {
   const act = function (a) {
     const n = String(W.note || '').trim();
     if (a === 'reject' && n.length < 4) { W.err = 'اكتب سبب الرفض — يراه العميل.'; RF.paint(); return; }
-    if (!window.confirm(a === 'approve' ? (o.kind === 'void' ? 'إلغاء العملية ' + o.trx + ' في Paymob الآن؟' : 'استرداد ' + SR(Number(o.amount) || 0) + ' للعملية ' + o.trx + ' في Paymob الآن؟') : 'رفض الطلب ' + o.req_no + '؟')) return;
+    if (!tqConfirm(a === 'approve' ? (o.kind === 'void' ? 'إلغاء العملية ' + o.trx + ' في Paymob الآن؟' : 'استرداد ' + SR(Number(o.amount) || 0) + ' للعملية ' + o.trx + ' في Paymob الآن؟') : 'رفض الطلب ' + o.req_no + '؟')) return;
     cfAct(W, RF, async function () { await cfPostOk('/admin/api/pay-ops/' + encodeURIComponent(o.id) + '/' + a, { note: n }); W.note = ''; LV_PAY.at = 0; },
       a === 'approve' ? (o.kind === 'void' ? 'أُلغيت العملية في Paymob وأُبلغ العميل.' : 'نُفّذ الاسترداد في Paymob وأُبلغ العميل.') : 'رُفض الطلب وأُبلغ العميل بالسبب.');
   };
@@ -17235,7 +17280,7 @@ function cfPsetForm(c, L, W, RF) {
     const a = S.amt === '' ? left : Number(S.amt);
     if (!(a > 0) || a > left + 0.004) { W.err = 'المبلغ أكبر من صفر ولا يتجاوز ' + SR(left) + '.'; RF.paint(); return; }
     if (String(S.note || '').trim().length < 4) { W.err = 'اكتب بيان التسوية (من سلّم المبلغ وأين).'; RF.paint(); return; }
-    if (!window.confirm('تسجيل ' + SR(a) + ' ' + (S.m === 'cash' ? 'نقدًا' : 'بتحويل بنكي') + ' على الدفعة ' + p0.i + '؟')) return;
+    if (!tqConfirm('تسجيل ' + SR(a) + ' ' + (S.m === 'cash' ? 'نقدًا' : 'بتحويل بنكي') + ' على الدفعة ' + p0.i + '؟')) return;
     cfAct(W, RF, async function () { await admRpc('admin_payment_record', { p_payment: p0.pid, p_method: S.m, p_amount: a, p_date: S.date, p_ref: S.ref, p_note: S.note }); delete CF_ST['pset:' + c.no]; W.a = ''; W.open = false; },
       'سُجّل السداد على الدفعة ' + p0.i + ' وصدر إيصاله.');
   };
@@ -17260,7 +17305,7 @@ function cfGwForm(c, L, W, RF) {
   const run = function () {
     const a = S.amt === '' ? null : Number(S.amt);
     if (a !== null && (!(a > 0) || a > left + 0.001)) { W.err = 'المبلغ أكبر من صفر ولا يتجاوز ' + SR(left) + '.'; RF.paint(); return; }
-    if (!window.confirm((S.act === 'refund' ? 'استرداد ' + SR(a === null ? left : a) : S.act === 'capture' ? 'تحصيل ' + SR(a === null ? left : a) : 'إلغاء') + ' للعملية ' + t.trx + '؟')) return;
+    if (!tqConfirm((S.act === 'refund' ? 'استرداد ' + SR(a === null ? left : a) : S.act === 'capture' ? 'تحصيل ' + SR(a === null ? left : a) : 'إلغاء') + ' للعملية ' + t.trx + '؟')) return;
     cfAct(W, RF, async function () {
       const j = await clPost('/admin/api/pay/txns/' + encodeURIComponent(t.trx) + '/' + S.act, (S.act === 'refund' || S.act === 'capture') && a !== null ? { amount: a } : {}).catch(function () { return null; });
       if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر التنفيذ.');
@@ -17355,7 +17400,7 @@ function cfAcctSec(id, D, RF) {
     const w = String(W.why || '').trim();
     if (!waK && w.length < 6) { W.err = LV_AC_ERR.reason_required; RF.paint(); return; }
     if (cur[0] === 'sess' && !W.sid) { W.err = 'اختر الجلسة.'; RF.paint(); return; }
-    if (!window.confirm(cur[1].replace(/[ً-ْ]/g, '') + '؟')) return;
+    if (!tqConfirm(cur[1].replace(/[ً-ْ]/g, '') + '؟')) return;
     W.busy = true; W.err = ''; RF.paint();
     try {
       const k = cur[0];
@@ -17435,10 +17480,10 @@ function cfDocs(docs, uid, RF) {
           if (String(W.note).trim().length < 4) { W.err = 'اكتب السبب بوضوح.'; RF.paint(); return; }
           if (W.m === 'rep') {
             if (!lvFileOk(W.file)) { W.err = 'اختر ملف PDF أو صورة حتى 10 ميغابايت.'; RF.paint(); return; }
-            if (!window.confirm('استبدال «' + (d.file_name || 'المستند') + '» بالملف الجديد؟')) return;
+            if (!tqConfirm('استبدال «' + (d.file_name || 'المستند') + '» بالملف الجديد؟')) return;
             go(async function () { const u = await liveStaffUpload('doc', uid, W.file); const j = await clPost('/admin/api/contract-files/' + encodeURIComponent(d.id) + '/replace', Object.assign({ note: W.note }, u)); if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر الاستبدال.'); }, 'استُبدل المستند، والسابق في الأرشيف.');
           } else {
-            if (!window.confirm('حذف «' + (d.file_name || 'المستند') + '» من العقد ونقله إلى الأرشيف؟')) return;
+            if (!tqConfirm('حذف «' + (d.file_name || 'المستند') + '» من العقد ونقله إلى الأرشيف؟')) return;
             go(async function () { const j = await clPost('/admin/api/contract-files/' + encodeURIComponent(d.id) + '/archive', { note: W.note }); if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر الحذف.'); }, 'حُذف المستند من العقد ونُقل إلى الأرشيف.');
           } } })), DS.button('إلغاء', { size: 'sm', onClick: function () { W.m = ''; W.err = ''; RF.paint(); } })])])]);
   }));
@@ -17458,7 +17503,7 @@ function cfContractP(id, c, D, C, RF) {
     e('div', { class: 'fx-chead-t' }, [e('b', {}, product), e('span', { class: 'rq-ids' }, [e('span', { class: 'rq-no' }, [e('small', {}, 'العقد'), ltr(c.no)]), c.legacy ? e('span', { class: 'rq-no' }, [e('small', {}, 'الرقم السابق'), ltr(c.legacy)]) : null,
       c.n ? e('span', { class: 'rq-dt' }, [frag(ui('calendar-blank', 13)), ltr(iso(c.payments[0].due)), e('small', {}, '←'), ltr(iso(c.payments[c.n - 1].due))]) : null, c.n ? e('span', { class: 'rq-dt' }, c.n + ' دفعات') : null,
       orig.length ? e('span', { class: 'rq-dt is-from' }, [ctype === 'merge' ? 'ناتج عن توحيد ' : 'ناتج عن تأجيل ', orig.map(function (o) { return 'الدفعة ' + o.seq + ' من '; })[0] || '', ltr(orig[0].contract)]) : null])]),
-    e('div', { class: 'fx-chead-s' }, [DS.badge(CF_TYPE[ctype][0], CF_TYPE[ctype][1]), DS.badge(stB[0], stB[1]),
+    e('div', { class: 'fx-chead-s' }, [DS.badge(CF_TYPE[ctype][0], CF_TYPE[ctype][1]), (function () { const ed = cfEdits(D.EV, r.id); return ed.n ? DS.badge('معدّل · ' + String(ed.at).slice(0, 10), 'info') : null; })(), DS.badge(stB[0], stB[1]),
       f && !closed ? e('span', {}, f.lateDays ? 'تأخر ' + dayWord(f.lateDays) : f.leftN ? 'لا مستحقات متأخرة' : 'العقد مكتمل') : null])]);
   const money = f ? trio([['إجمالي قيمة المنتجات', f.total, ''], ['المدفوع', f.paid, 'ok'], ['المتبقي', f.remain, f.late.length ? 'bad' : 'brand']], f.pct, 'سُدّد ' + f.pct + '% · ' + f.leftN + ' دفعات متبقية من ' + c.n) : null;
   const qn = qc && (qc.plan || []).length ? qc.plan.length : (Number(r.months) || c.n), qInst = qc && (qc.plan || []).length ? Number(qc.plan[0].amount) || c.amount : c.amount;
@@ -17481,7 +17526,7 @@ const ind = f ? cfKpis([['wallet', nxt ? 'الدفعة القادمة' : 'قيم
       qc && qc.legacy_no ? ['رقم الطلب السابق', ltr(String(qc.legacy_no))] : null]),
     lvQtSummary(qc ? qc.value : ((Qj.items || [])[0] || {}).line_total || 0, items, qc ? qc.vat : 0, Number(q.total) || 0, qc ? (qc.plan || []) : [], 'بنود العرض وخطة الدفع', qc ? qc.vat_rate : null),
     !profit ? e('small', { class: 'cu-dr-hint' }, 'ربح التقسيط مسجّل صفرًا لهذا العقد — الهامش فيه «فرق البيع».') : null] : [CF_EMPTY('لا عرض سعر مربوط بهذا العقد.')], k + ':quote');
-  const sched = lvSec('جدول السداد وطريقة السداد', c.n ? c.payments.filter(settled).length + ' من ' + c.n + ' مسدَّدة' : null, c.n ? cfSchedP(c) : [CF_EMPTY('لا دفعات.')], k + ':sched');
+  const sched = lvSec('جدول السداد وطريقة السداد', c.n ? c.payments.filter(settled).length + ' من ' + c.n + ' مسدَّدة' : null, c.n ? cfSchedP(c, cfEdits(D.EV, r.id)) : [CF_EMPTY('لا دفعات.')], k + ':sched');
   const trin = cfTrSec(id, c, r, D.TR || [], RF), opsec = cfOpSec(id, c, r, RF);
   const IE = CF_EVD.list.filter(function (y) { return y.contract_id === r.id; });
   const tr = trF.length ? lvSec('إيصالات تحويل غير مربوطة بحوالة', fmtNum(trF.length), [
@@ -17499,7 +17544,7 @@ const ind = f ? cfKpis([['wallet', nxt ? 'الدفعة القادمة' : 'قيم
   /* v465: العقد والاستحقاق متسقان — المغلق عليه متبقٍّ للمراجعة، والمكتمل غير المغلق جاهز للإغلاق */
   const cnote = f && closed && f.remain > 0.004 ? DS.note('warn', 'عقد مغلق عليه متبقٍّ ' + SR(f.remain), 'لا يُحسب في الدفعات المستحقة متأخرًا — راجعه: إعفاء الفرق، أو إعادة فتح العقد وتسويته.')
     : f && !closed && c.n && f.remain <= 0.004 ? DS.note('info', 'اكتمل السداد — جاهز للإغلاق', 'أغلقه من «إجراء على العقد ← إغلاق العقد ← اكتمل السداد».') : null;
-  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0], stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, cnote, money, ind, cfParts(qc, r, c, k), facts, quote, sched, trin, opsec, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
+  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0] + (cfEdits(D.EV, r.id).n ? ' · معدّل' : ''), stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, cnote, money, ind, cfParts(qc, r, c, k), facts, quote, sched, trin, opsec, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
 }
 
 /* ===== v445: الوسائل (السندات · تحويلات تيرا · الشيكات · الأوامر المستديمة) تُضاف وتُعدَّل وتُربط بالعقد من الملف،
@@ -17572,7 +17617,7 @@ function cfPayout(t, C, RF, kp, ro) {
     body.push(e('div', { class: 'cf-form cf-edit' }, [cfField('سبب إلغاء الحوالة (إلزامي)', cfTa(S, 'why')), cfErr(W), e('div', { class: 't2-pb-actions' }, [
       liveOk(DS.button(W.busy ? 'جارٍ الإلغاء…' : 'إلغاء الحوالة', { size: 'sm', tone: 'danger', ui: 'x-circle', disabled: W.busy, onClick: function () {
         if (String(S.why).trim().length < 6) { W.err = 'اكتب سبب الإلغاء بوضوح.'; RF.paint(); return; }
-        if (!window.confirm('إلغاء حوالة ' + SR(t.amt) + '؟ لا تُحذف وتبقى في السجل.')) return;
+        if (!tqConfirm('إلغاء حوالة ' + SR(t.amt) + '؟ لا تُحذف وتبقى في السجل.')) return;
         cfAct(W, RF, async function () { await cfPostOk('/admin/api/payouts/' + encodeURIComponent(x.id) + '/void', { reason: S.why }); W.m = ''; }, 'أُلغيت الحوالة'); } })),
       DS.button('تراجع', { size: 'sm', onClick: function () { W.m = ''; RF.paint(); } })])]));
   } else if (!voidd && !ro) body.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تعديل الحوالة', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.m = 'edit'; RF.paint(); } })), liveOk(DS.button('إلغاء الحوالة', { size: 'sm', ui: 'x-circle', onClick: function () { W.m = 'void'; RF.paint(); } }))]));
@@ -20208,7 +20253,7 @@ if (LIVE.on) {
     if (!r || !r.sr) return liveReqCancel0();
     if (r.sr.status !== 'submitted' || !ROOT) return;
     const b = liveOk(DS.button('إلغاء الطلب', { onClick: async function () {
-      if (!window.confirm('إلغاء الطلب ' + r.no + '؟ لا يمكن التراجع.')) return;
+      if (!tqConfirm('إلغاء الطلب ' + r.no + '؟ لا يمكن التراجع.')) return;
       const j = await clPost('/api/account/service-requests/' + encodeURIComponent(r.sr.id) + '/cancel', {});
       if (!j || j.ok !== true) { snack((j && j.message) || 'تعذّر الإلغاء.'); return; }
       snack('أُلغي الطلب.'); await lvSrLoad().catch(function () { /* */ }); draw(); } }));
@@ -22016,11 +22061,31 @@ const COMM_VARS = [['{الاسم}', 'اسم المستلم'], ['{رقم_تيرا
 const commFill = (t, c) => String(t || '').replace(/\{الاسم\}/g, (c && c.name) || 'اسم العميل').replace(/\{رقم_تيرا\}/g, (c && c.ident) || 'USR-XXXXXX').replace(/\{التاريخ\}/g, iso(T0)).replace(/\{الجوال_المقنع\}/g, '055••••567').replace(/\{البريد_المقنع\}/g, 'abc•••@gmail.com').replace(/\{رابط_الدخول\}/g, location.origin + '/portal/');
 const commIn = (o) => { const x = DS.input(o); if (o.disabled) x.disabled = true; if (o.type === 'tel' || o.type === 'email') x.setAttribute('dir', 'ltr'); return x; };
 const commChips = (key, items, L, fit, def) => chipRow(items.map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), ADM[key] || def || 'all', function (v) { ADM[key] = v; draw(); }, 'اختيار سريع');
+/* v517: قوائم المفضلة المسمّاة — العضوية والزر والاختيار داخل صف جهة الاتصال */
+const commInL = (lid, cid) => ((COMM.lists || []).filter(function (l) { return l.id === lid; })[0] || { members: [] }).members.indexOf(cid) >= 0;
+function commLBtn(c) {
+  const L = COMM.lists || []; if (!L.length) return null;
+  const k = L.filter(function (l) { return (l.members || []).indexOf(c.id) >= 0; }).length;
+  return liveOk(DS.button('القوائم' + (k ? ' (' + fmtNum(k) + ')' : ''), { size: 'sm', ui: 'list-checks', tone: COMM.lpk === c.id ? 'primary' : null, onClick: function () { COMM.lpk = COMM.lpk === c.id ? '' : c.id; draw(); } }));
+}
+function commLPick(c) {
+  return e('div', { class: 'ct-lpick' }, (COMM.lists || []).map(function (l) {
+    const on = (l.members || []).indexOf(c.id) >= 0;
+    return e('label', { class: 'cf-pick' }, [e('input', { type: 'checkbox', 'data-live-ok': '', checked: on ? 'checked' : null, onChange: async function (ev) {
+      const want = !!ev.target.checked;
+      try { await admRpc('admin_contact_list_set', { p_list: l.id, p_contact: c.id, p_on: want });
+        l.members = want ? (l.members || []).concat([c.id]) : (l.members || []).filter(function (x) { return x !== c.id; });
+        snack(want ? 'أُضيفت إلى «' + l.name + '».' : 'أُزيلت من «' + l.name + '».'); draw(); }
+      catch (err) { ev.target.checked = !want; snack(commErr(err)); } } }),
+      e('span', {}, [e('b', {}, l.name), e('small', {}, ' · ' + fmtNum((l.members || []).length))])]);
+  }));
+}
 const commRoleT = (roles) => (roles || []).map(function (r) { return (COMM_ROLE[r] || [r])[0]; }).join('، ');
 const commFld = (label, input) => DS.editField(label, input);
 const commSw = (label, on, fn) => DS.editField(label, e('input', { type: 'checkbox', checked: on ? '' : null, onChange: function (ev) { fn(!!ev.target.checked); } }));
 async function commLoad(what) {
   const J = [];
+  if (!what || what === 'ct') J.push(admRpc('admin_contact_lists', {}).then(function (j) { COMM.lists = (j && j.lists) || []; }).catch(function () { COMM.lists = COMM.lists || []; }));
   if (!what || what === 'ct') J.push(admRpc('admin_contacts_list', {}).then(function (j) { COMM.ct = j.rows || []; COMM.ctErr = ''; }).catch(function (err) { COMM.ct = COMM.ct || []; COMM.ctErr = (err && err.message) || 'تعذّر التحميل.'; }).then(function () { COMM.ctAt = Date.now(); }));
   if (!what || what === 'tpl') J.push(admRpc('admin_comm_templates_list', {}).then(function (j) { COMM.tpl = j.rows || []; COMM.can = !!j.can; }).catch(function () { COMM.tpl = COMM.tpl || []; }).then(function () { COMM.tplAt = Date.now(); }));
   if (!what || what === 'msg') J.push(admRpc('admin_comm_messages_list', { p_limit: 300 }).then(function (j) { COMM.msgs = j.rows || []; }).catch(function () { COMM.msgs = COMM.msgs || []; }).then(function () { COMM.msgAt = Date.now(); }));
@@ -22229,7 +22294,7 @@ function commDirPage() {
   const w = commReady('دليل هواتف وبريد الشركاء', ['ct']); if (w) return w;
   if (COMM.ctErr && !(COMM.ct || []).length) return [clFail('دليل هواتف وبريد الشركاء', COMM.ctErr, function () { COMM.ctAt = 0; draw(); })];
   const all = COMM.ct || [], A = all.filter(function (c) { return !c.archived; }), f = ADM.cdF || 'all', q = String(COMM.q || '').trim().toLowerCase();
-  const fit = function (c, k) { return k === 'all' ? !c.archived : k === 'arch' ? c.archived : c.archived ? false : k === 'fav' ? c.favorite : k === 'manual' ? c.source !== 'auto' : (c.roles || []).indexOf(k) >= 0; };
+  const fit = function (c, k) { return k === 'all' ? !c.archived : k === 'arch' ? c.archived : c.archived ? false : k === 'fav' ? c.favorite : String(k).indexOf('L:') === 0 ? commInL(String(k).slice(2), c.id) : k === 'manual' ? c.source !== 'auto' : (c.roles || []).indexOf(k) >= 0; };
   const R = all.filter(function (c) { return fit(c, f) && (!q || [c.name, c.phone, c.email, c.ident, c.partner_type].join(' ').toLowerCase().indexOf(q) >= 0); });
   const n = function (r) { return A.filter(function (c) { return (c.roles || []).indexOf(r) >= 0; }).length; };
   const qi = e('input', { class: 't2-input m3-q-i', type: 'search', placeholder: 'ابحث بالاسم أو الجوال أو البريد أو المعرّف', value: COMM.q || '', 'aria-label': 'بحث في الدليل', onKeydown: function (ev) { if (ev.key === 'Enter') { COMM.q = ev.target.value; draw(); } } });
@@ -22237,16 +22302,30 @@ function commDirPage() {
   const impB = liveOk(e('button', { type: 'button', class: 'ax-ic-btn', title: 'استيراد جهات الاتصال', 'aria-label': 'استيراد جهات الاتصال', onClick: function () { commImpHub(); } }, [frag(ui('upload-simple', 18)), e('span', {}, 'استيراد')]));
   const favL = A.filter(function (c) { return c.favorite && c.user_id; });
 const favB = favL.length ? liveOk(DS.button('مراسلة المفضلة (' + fmtNum(favL.length) + ')', { size: 'sm', ui: 'paper-plane-tilt', onClick: function () { scGo({ ids: favL.map(function (c) { return c.user_id; }) }); } })) : null;
+const curL = String(f).indexOf('L:') === 0 ? (COMM.lists || []).filter(function (l) { return 'L:' + l.id === f; })[0] : null;
+const lnB = liveOk(DS.button('قائمة جديدة', { size: 'sm', ui: 'plus', onClick: function () { COMM.lnew = { id: null, name: '' }; draw(); } }));
+const lsave = async function () {
+  const nm = String((COMM.lnew || {}).name || '').trim(); if (!nm) { snack('اكتب اسم القائمة.'); return; }
+  try { const was = COMM.lnew.id, j = await admRpc('admin_contact_list_save', { p_id: was, p_name: nm }); COMM.lnew = null; await commLoad('ct'); if (!was && j && j.id) ADM.cdF = 'L:' + j.id;
+    snack(was ? 'حُفظ اسم القائمة.' : 'أُنشئت القائمة «' + nm + '».', null, was ? '' : 'أضف إليها من زر «القوائم» بجوار كل جهة اتصال.'); draw(); }
+  catch (err) { snack(/name_taken/.test(String(err && err.message)) ? 'يوجد قائمة بهذا الاسم.' : commErr(err)); }
+};
+const lform = COMM.lnew ? e('div', { class: 'cf-form ct-lform' }, [DS.editField(COMM.lnew.id ? 'اسم القائمة' : 'اسم القائمة الجديدة', e('input', { class: 't2-input', type: 'text', maxlength: '60', value: COMM.lnew.name || '', placeholder: 'مثال: عملاء الرياض المميزون', 'aria-label': 'اسم القائمة', onInput: function (ev) { COMM.lnew.name = ev.target.value; }, onKeydown: function (ev) { if (ev.key === 'Enter') lsave(); } })),
+  e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('حفظ القائمة', { tone: 'primary', ui: 'check', onClick: lsave })), DS.button('إلغاء', { onClick: function () { COMM.lnew = null; draw(); } })])]) : null;
+const lIds = curL ? A.filter(function (c) { return commInL(curL.id, c.id) && c.user_id; }).map(function (c) { return c.user_id; }) : [];
+const lbar = curL ? e('div', { class: 't2-pb-actions ct-lbar' }, [lIds.length ? liveOk(DS.button('مراسلة القائمة (' + fmtNum(lIds.length) + ')', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { scGo({ grp: 'ct:L:' + curL.id }); } })) : null,
+  liveOk(DS.button('إعادة التسمية', { size: 'sm', ui: 'note-pencil', onClick: function () { COMM.lnew = { id: curL.id, name: curL.name }; draw(); } })),
+  liveOk(DS.button('حذف القائمة', { size: 'sm', ui: 'x', onClick: async function () { if (!tqConfirm('حذف القائمة «' + curL.name + '»؟ تبقى جهات الاتصال نفسها في الدليل.')) return; try { await admRpc('admin_contact_list_delete', { p_id: curL.id }); ADM.cdF = 'all'; await commLoad('ct'); snack('حُذفت القائمة.'); draw(); } catch (err) { snack(commErr(err)); } } }))]) : null;
 const favT = async function (c) { try { await admRpc('admin_contact_flag', { p_id: c.id, p_flag: 'favorite', p_on: !c.favorite }); c.favorite = !c.favorite; snack(c.favorite ? 'أُضيفت إلى المفضلة.' : 'أُزيلت من المفضلة.'); draw(); } catch (err) { snack(commErr(err)); } };
-return axPage({ title: 'دليل هواتف وبريد الشركاء', hint: 'المفضلة بضغطة على النجمة — ومراسلة المفضلة دفعة واحدة من مركز الإرسال', reg: 'إضافة جهة اتصال', can: true, onReg: function () { commCtOpen(null, 'edit'); }, tools: [impB].concat(favB ? [favB] : []),
+return axPage({ title: 'دليل هواتف وبريد الشركاء', hint: 'المفضلة بضغطة على النجمة — ومراسلة المفضلة دفعة واحدة من مركز الإرسال', reg: 'إضافة جهة اتصال', can: true, onReg: function () { commCtOpen(null, 'edit'); }, tools: [impB, lnB].concat(favB ? [favB] : []),
     K: [['جهات الاتصال', fmtNum(A.length), '', 'users-three'], ['العملاء', fmtNum(n('client')), '', 'users-three'], ['الموظفون', fmtNum(n('staff')), '', 'briefcase'], ['المسوّقون والمستثمرون', fmtNum(n('marketer') + n('investor')), '', 'megaphone-simple']],
-    chips: commChips('cdF', [['all', 'الكل', 'list:navy'], ['client', 'العملاء', 'users-three:teal'], ['staff', 'الموظفون', 'briefcase:navy'], ['marketer', 'المسوّقون', 'megaphone-simple:sky'], ['investor', 'المستثمرون', 'trend-up:gold'], ['fav', 'المفضلة', 'star:gold'], ['manual', 'أُضيفت يدويًا', 'note-pencil:saffron'], ['arch', 'المؤرشفة', 'tray:navy']], all, fit),
+    chips: commChips('cdF', [['all', 'الكل', 'list:navy'], ['client', 'العملاء', 'users-three:teal'], ['staff', 'الموظفون', 'briefcase:navy'], ['marketer', 'المسوّقون', 'megaphone-simple:sky'], ['investor', 'المستثمرون', 'trend-up:gold'], ['fav', 'المفضلة', 'star:gold']].concat((COMM.lists || []).map(function (l) { return ['L:' + l.id, l.name, 'list:teal']; })).concat([['manual', 'أُضيفت يدويًا', 'note-pencil:saffron'], ['arch', 'المؤرشفة', 'tray:navy']]), all, fit),
     filter: e('div', { class: 'm3-q' }, [qi, DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: function () { COMM.q = qi.value; draw(); } }), COMM.q ? DS.button('مسح', { size: 'sm', onClick: function () { COMM.q = ''; draw(); } }) : null]),
-    list: [R.length ? e('div', { class: 'sc-ppl' }, R.slice(0, 400).map(function (c) {
+    list: [lform, lbar].filter(Boolean).concat([R.length ? e('div', { class: 'sc-ppl' }, R.slice(0, 400).map(function (c) {
 return e('div', { class: 'sc-p' + (c.favorite ? ' is-on' : '') + (c.archived ? ' is-arch' : '') }, [e('span', { class: 'ci-pk-av' }, String(c.name || '؟').charAt(0)),
 e('button', { type: 'button', class: 'ci-pk-t sc-p-open', 'data-live-ok': '', 'aria-label': 'عرض ' + c.name, onClick: function () { commCtOpen(c); } }, [e('b', {}, c.name), e('small', {}, [commRoleT(c.roles), c.phone ? ' · +' + c.phone : ' · بلا جوال', c.email ? ' · ' + c.email : '', c.source === 'auto' ? (c.file_status === 'suspended' ? ' · ملف موقوف' : '') : c.source === 'device' ? ' · من الجوال' : c.source === 'file' ? ' · من ملف' : ' · يدوي'])]),
-e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(c.favorite ? '★ مفضلة' : '☆ مفضلة', { size: 'sm', tone: c.favorite ? 'primary' : null, onClick: function () { favT(c); } })),
-c.user_id ? liveOk(DS.button('مراسلة', { size: 'sm', ui: 'paper-plane-tilt', onClick: function () { scGo({ ids: [c.user_id] }); } })) : null])]); })) : axList([], 'لا جهات اتصال هنا')] });
+e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(c.favorite ? '★ مفضلة' : '☆ مفضلة', { size: 'sm', tone: c.favorite ? 'primary' : null, onClick: function () { favT(c); } })), commLBtn(c),
+c.user_id ? liveOk(DS.button('مراسلة', { size: 'sm', ui: 'paper-plane-tilt', onClick: function () { scGo({ ids: [c.user_id] }); } })) : null]), COMM.lpk === c.id ? commLPick(c) : null]); })) : axList([], 'لا جهات اتصال هنا')]) });
 }
 /* v317: لوحة الاستيراد — ١ من جهات الجوال · ٢ من ملف نموذج الاستيراد · والملفات المرفوعة */
 function commImpHub() {
@@ -22439,10 +22518,22 @@ const SC_CH = [['all', 'جميع الوسائل'], ['whatsapp', 'واتساب'],
 const SC_CHS = { all: ['whatsapp', 'email', 'push'], whatsapp: ['whatsapp'], email: ['email'], push: ['push'] };
 const SC_CHT = { whatsapp: 'واتساب', email: 'البريد', push: 'الجوال والويب', inbox: 'داخل المنصة' };
 function scChans() { if (SC.ch === 'custom') return ['whatsapp', 'email', 'push'].filter(function (k) { return SC.cs.indexOf(k) >= 0; }); if (SC.ch === 'whatsapp_email') return ['whatsapp', 'email']; return SC_CHS[SC.ch] || SC_CHS.all; }
-function scKey() { return JSON.stringify([SC.mode === 'pick' ? 'pick' : SC.grp, SC.ids, SC.ex]); }
+/* v517: فئات الدليل (العملاء · الموظفون · المسوّقون · المستثمرون · كل الشركاء · المفضلة) وكل قائمة مفضلة — في «المستهدفون».
+   تُرسل لأصحابها الذين لهم حساب في المنصة (جهة بلا حساب لا تصلها رسائل المنصة). */
+function scCtGroups() {
+  const A = (COMM.ct || []).filter(function (c) { return !c.archived; }), role = function (r) { return function (c) { return (c.roles || []).indexOf(r) >= 0; }; };
+  return [['ct:all', 'كل الشركاء في الدليل', function () { return true; }], ['ct:client', 'العملاء في الدليل', role('client')], ['ct:staff', 'الموظفون في الدليل', role('staff')],
+    ['ct:marketer', 'المسوّقون', role('marketer')], ['ct:investor', 'المستثمرون', role('investor')], ['ct:fav', 'المفضلة', function (c) { return !!c.favorite; }]]
+    .concat((COMM.lists || []).map(function (l) { return ['ct:L:' + l.id, 'قائمة: ' + l.name, function (c) { return (l.members || []).indexOf(c.id) >= 0; }]; }))
+    .map(function (g) { const M = A.filter(g[2]), ids = []; M.forEach(function (c) { if (c.user_id && ids.indexOf(c.user_id) < 0) ids.push(c.user_id); }); return { k: g[0], t: g[1], n: M.length, ids: ids }; });
+}
+function scCtIds() { if (SC.mode === 'pick' || String(SC.grp || '').indexOf('ct:') !== 0) return []; const g = scCtGroups().filter(function (x) { return x.k === SC.grp; })[0]; return g ? g.ids : []; }
+function scGrps() { return SC.mode !== 'pick' && SC.grp && SC.grp !== 'pick' && String(SC.grp).indexOf('ct:') !== 0 ? [SC.grp] : []; }
+function scAllIds() { const x = SC.ids.concat(scCtIds()); return x.filter(function (v, i) { return x.indexOf(v) === i; }); }
+function scKey() { return JSON.stringify([SC.mode === 'pick' ? 'pick' : SC.grp, SC.ids, SC.ex, scCtIds().length]); }
 function scLoad() {
 const k = scKey(); if (SC.pAt === k || SC.pBusy) return; SC.pBusy = true;
-admRpc('admin_send_audience_preview', { p_groups: SC.mode !== 'pick' && SC.grp && SC.grp !== 'pick' ? [SC.grp] : [], p_ids: SC.ids, p_exclude: SC.ex, p_q: null })
+admRpc('admin_send_audience_preview', { p_groups: scGrps(), p_ids: scAllIds(), p_exclude: SC.ex, p_q: null })
 .then(function (j) { SC.P = j; SC.pAt = k; SC.pBusy = false; draw(); })
 .catch(function (err) { SC.pBusy = false; SC.pAt = k; SC.P = null; SC.err = (err && err.message) || 'تعذّر تحميل المستهدفين.'; draw(); });
 }
@@ -22483,7 +22574,7 @@ if (T.kind === 'survey') {
 const j = await admRpc('admin_survey_send', { p: { template: T.key, channels: C.filter(function (x) { return x === 'email' || x === 'whatsapp'; }), users: (SC.P.ids || []) } });
 SC.res = { ok: true, survey: true, n: j.created || 0, skip: j.skipped || 0 };
 } else {
-const r = await clPost('/admin/api/send-center/send', { groups: SC.mode !== 'pick' && SC.grp ? [SC.grp] : [], ids: SC.ids, exclude: SC.ex, tpl_id: T.id, channels: C.length ? C : ['inbox'] });
+const r = await clPost('/admin/api/send-center/send', { groups: scGrps(), ids: scAllIds(), exclude: SC.ex, tpl_id: T.id, channels: C.length ? C : ['inbox'] });
 if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الإرسال.');
 SC.res = { ok: true, batch: r.batch, n: r.total };
 }
@@ -22523,7 +22614,7 @@ if (SC.res) return [axTop('مركز الإرسال', SC.res.survey ? 'أُنشئ
 e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تقرير الإرسال', { tone: 'primary', ui: 'list-checks', onClick: function () { SC.res = null; COMMT.t = 'rep'; go('other', 'comm'); } })), liveOk(DS.button('إرسال جديد', { ui: 'paper-plane-tilt', onClick: function () { SC.res = null; SC.ids = []; SC.ex = []; SC.grp = ''; SC.tpl = ''; SC.pAt = ''; SC.PV = null; SC.pvAt = ''; draw(); } }))])];
 /* 1) المستهدفون: فئة جاهزة أو أشخاص بالبحث المباشر */
 const seg = e('div', { class: 'sc-seg' }, [['grp', 'فئة جاهزة'], ['pick', 'أشخاص محددون']].map(function (m) { return liveOk(DS.button(m[1], { size: 'sm', tone: SC.mode === m[0] ? 'primary' : null, onClick: function () { SC.mode = m[0]; SC.ex = []; SC.pAt = ''; draw(); } })); }));
-const grpSel = SC.mode === 'grp' ? DS.editField('الفئة', DS.select({ value: SC.grp, options: [['', '— اختر الفئة —']].concat(SC_GRP.map(function (g) { return [g[0], g[1] + (G[g[0]] != null ? ' (' + fmtNum(G[g[0]]) + ')' : '')]; })), onChange: function (v) { SC.grp = v; SC.ex = []; SC.pAt = ''; draw(); } })) : null;
+const grpSel = SC.mode === 'grp' ? DS.editField('الفئة', DS.select({ value: SC.grp, options: [['', '— اختر الفئة —']].concat(SC_GRP.map(function (g) { return [g[0], g[1] + (G[g[0]] != null ? ' (' + fmtNum(G[g[0]]) + ')' : '')]; })).concat(scCtGroups().map(function (g) { return [g.k, g.t + ' (' + fmtNum(g.ids.length) + (g.ids.length < g.n ? ' من ' + fmtNum(g.n) + ' لهم حساب' : '') + ')']; })), onChange: function (v) { SC.grp = v; SC.ex = []; SC.pAt = ''; draw(); } })) : null;
 const qIn = e('input', { class: 't2-input', type: 'search', placeholder: 'اكتب الاسم أو رقم تيرا أو الجوال أو البريد', value: SC.sq, autocomplete: 'off', onInput: function (ev) { scSearch(ev.target.value); } });
 const pick = function (h) { if (SC.ids.indexOf(h.id) >= 0) { SC.ids = SC.ids.filter(function (x) { return x !== h.id; }); } else { SC.ids.push(h.id); SC.nm[h.id] = h.name; SC.PD[h.id] = Object.assign({}, SC.PD[h.id] || {}, h); SC.ex = SC.ex.filter(function (x) { return x !== h.id; }); } SC.pAt = ''; draw(); };
 const pRow = function (h, on) { return e('div', { class: 'sc-p' + (on ? ' is-on' : '') }, [e('span', { class: 'ci-pk-av' }, String(h.name || '؟').charAt(0)),
@@ -23717,7 +23808,7 @@ function stlClientPanel(o) {
   else if (o.paying) act = DS.note('info', 'استلمنا سدادك', 'نراجع العملية ونُغلق العقد — يظهر الإيصال في جدول عقدك.');
   else if (o.expired) act = DS.note('warn', 'انتهت صلاحية العرض', 'كان العرض صالحًا حتى ' + o.valid_until + ' — تواصل مع فريق تيرا لعرض جديد.');
   else if (!o.accepted_at) act = e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'أوافق على عرض التسوية', { tone: 'primary', ui: 'check', disabled: W.busy, onClick: async function () {
-      if (W.busy) return; if (!window.confirm('الموافقة على التسوية المبكرة للعقد ' + o.contract_no + ' بمبلغ ' + SR(o.amount) + '؟ بعدها تسدّد المبلغ عبر بوابة الدفع.')) return;
+      if (W.busy) return; if (!tqConfirm('الموافقة على التسوية المبكرة للعقد ' + o.contract_no + ' بمبلغ ' + SR(o.amount) + '؟ بعدها تسدّد المبلغ عبر بوابة الدفع.')) return;
       W.busy = true; draw();
       const j = await liveSb('rpc/my_settle_accept', { body: { p_request: o.request_id } }).catch(function () { return null; });
       W.busy = false;
