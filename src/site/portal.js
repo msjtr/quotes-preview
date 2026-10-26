@@ -614,7 +614,18 @@
         .then(function (r) { return r.json().catch(function () { return null; }); }).catch(function () { return null; });
     }
     /* نفس خوارزمية fp2.js في الخادم حرفيًا — أي اختلاف يُنشئ سجل جهاز ثانيًا للمتصفح نفسه */
+    /* v518: مفتاح جهاز ثابت — تُحفظ أوّل بصمة محسوبة على هذا المتصفح (tq.devk) وتُستعمل بعدها دائمًا،
+       فلا يتغيّر «الجهاز» بتحديث المتصفح أو تكبير الصفحة أو تغيير الشاشة فيُطلب التصريح من جديد. */
     function devFingerprint() {
+      var K = 'tq.devk', v = null;
+      try { v = localStorage.getItem(K); } catch (e) { v = null; }
+      if (v && /^[0-9a-f]{64}$/.test(v)) return Promise.resolve(v);
+      return devFingerprintRaw().then(function (fp) {
+        if (fp && /^[0-9a-f]{64}$/.test(fp)) { try { localStorage.setItem(K, fp); } catch (e) { void e; } }
+        return fp;
+      });
+    }
+    function devFingerprintRaw() {
       var n = navigator, sc = (top && top.screen) || screen, bits = [n.userAgent || '', n.platform || '', (n.languages || []).join(','), n.hardwareConcurrency || '',
         n.deviceMemory || n.deviceMemoryGB || '', sc.width + 'x' + sc.height + 'x' + (sc.colorDepth || ''), window.devicePixelRatio || '',
         (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } })()].join('|');

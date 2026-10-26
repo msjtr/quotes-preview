@@ -77,7 +77,18 @@
   /* بصمةٌ محلّيةٌ تُميِّزُ الجهازَ دون أن تُعرِّفَ صاحبَه: خصائصُ عرضٍ
    * ولغةٍ ومنطقةٍ زمنيةٍ ومُعالجٍ تُختزَلُ بـSHA-256. لا تُعرَضُ في أيِّ
    * واجهةٍ ولا يُعيدُها أيُّ مسلك. */
+  /* v518: مفتاح جهاز ثابت — تُحفظ أوّل بصمة محسوبة على هذا المتصفح (tq.devk) وتُستعمل بعدها دائمًا،
+   * فلا يتغيّر «الجهاز» بتحديث المتصفح أو تكبير الصفحة أو تغيير الشاشة فيُطلب التصريح من جديد. */
   function fingerprint() {
+    var K = "tq.devk", v = null;
+    try { v = localStorage.getItem(K); } catch (_e) { v = null; }
+    if (v && /^[0-9a-f]{64}$/.test(v)) return Promise.resolve(v);
+    return fingerprintRaw().then(function (fp) {
+      if (fp && /^[0-9a-f]{64}$/.test(fp)) { try { localStorage.setItem(K, fp); } catch (_e) { void _e; } }
+      return fp;
+    });
+  }
+  function fingerprintRaw() {
     var bits = [
       navigator.userAgent || "", navigator.platform || "",
       (navigator.languages || []).join(","), navigator.hardwareConcurrency || "",
