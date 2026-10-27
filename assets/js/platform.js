@@ -19660,6 +19660,9 @@ function vr3Css() {
   ].join('\n');
   document.head.appendChild(s);
 }
+/* v547: أزرار صفحة مراجعة التوثيق مربوطة بالخادم — تُعلَّم data-live-ok حتى لا يحجبها «حارس الإجراءات» العام
+ * (كان يحجب «تأكيد: غير مطابق» و«حفظ الملاحظة» و«إضافة الملاحظة» و«إسنادها لي» وتبويبي «اعتماد الملف» و«رفض» برسالة «لم يُنفَّذ شيء»). */
+function vr3Btn(label, o) { return liveOk(DS.button(label, o)); }
 function admVerOpen2(r) {
   vr3Css();
   const S = VR3[r.id] || (VR3[r.id] = { V: null, ui: {}, msg: {}, busy: false, staff: null, fold: {}, dec: { mode: '', pick: {}, txt: '' }, gnote: '' });
@@ -19708,7 +19711,7 @@ function admVerOpen2(r) {
     const asgSel = (canMgr && open) ? e('div', { class: 'vr3-row' }, [
       Array.isArray(S.staff) && S.staff.length ? DS.select({ value: V.assigned_to || '', ph: 'اختر موظفًا للمراجعة', options: [['', '— غير مُسند —']].concat(S.staff), onChange: function (v) { if ((v || '') === (V.assigned_to || '')) return; act('asg', 'admin_verification_assign', { p_id: r.id, p_user: v || null }, v ? 'أُسند الطلب.' : 'أُلغي الإسناد.'); } })
         : e('small', { class: 'cu-dr-hint' }, S.staff === 'loading' ? 'جارٍ تحميل قائمة الموظفين…' : 'لا تظهر قائمة الموظفين لصلاحيتك — يمكنك إسنادها لنفسك.'),
-      meId && V.assigned_to !== meId ? DS.button('إسنادها لي', { size: 'sm', disabled: S.busy, onClick: function () { act('asg', 'admin_verification_assign', { p_id: r.id, p_user: meId }, 'أُسند الطلب إليك.'); } }) : null
+      meId && V.assigned_to !== meId ? vr3Btn('إسنادها لي', { size: 'sm', disabled: S.busy, onClick: function () { act('asg', 'admin_verification_assign', { p_id: r.id, p_user: meId }, 'أُسند الطلب إليك.'); } }) : null
     ]) : null;
     const top = e('div', { class: 'vr3-top' }, [
       e('div', { class: 'vr3-kvs' }, [
@@ -19721,7 +19724,7 @@ function admVerOpen2(r) {
       ]),
       e('div', { class: 'vr3-bar', role: 'img', 'aria-label': nMatch + ' مطابق و' + nMis + ' غير مطابق من ' + total }, [e('i', { class: 'm', style: 'width:' + pct(nMatch) + '%' }), e('i', { class: 'x', style: 'width:' + pct(nMis) + '%' })]),
       e('div', { class: 'vr3-row' }, [DS.badge(nMatch + ' مطابق', 'ok'), nMis ? DS.badge(nMis + ' غير مطابق', 'danger') : null, nPend ? DS.badge(nPend + ' بانتظار المطابقة', 'warn') : null, e('small', { class: 'cu-dr-hint' }, 'من ' + total + ' بند'),
-        (canRev && inRev) ? e('button', { type: 'button', class: 'vr3-link', onClick: function () { const d = document.getElementById('vr3-dec'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 'الانتقال إلى القرار') : null]),
+        (canRev && inRev) ? e('button', { type: 'button', 'data-live-ok': '', class: 'vr3-link', onClick: function () { const d = document.getElementById('vr3-dec'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 'الانتقال إلى القرار') : null]),
       asgSel, msgOf('asg'),
       (canRev && st === 'submitted') ? e('div', { class: 'vr3-row' }, [DS.note('info', 'ابدأ بالاستلام', 'استلم الطلب لتظهر أزرار المطابقة على كل بند.'),
         admTwoStep('استلام الطلب', 'primary', function () { return act('rcv', 'admin_verification_receive', { p_id: r.id }, 'استُلم الطلب — ابدأ المطابقة.'); })]) : null,
@@ -19736,20 +19739,20 @@ function admVerOpen2(r) {
       if (canAct && U.mode === 'why') {
         const L = vr3Why(it).concat(['أخرى']);
         box.push(e('div', { class: 'vr3-box' }, [e('small', {}, 'سبب عدم المطابقة (يظهر لصاحب الملف عند الإعادة):'),
-          e('div', { class: 'vr3-chips' }, L.map(function (x) { return e('button', { type: 'button', class: 'vr3-chip' + (U.pick === x ? ' is-on' : ''), onClick: function () { U.pick = x; paint(); } }, x); })),
+          e('div', { class: 'vr3-chips' }, L.map(function (x) { return e('button', { type: 'button', 'data-live-ok': '', class: 'vr3-chip' + (U.pick === x ? ' is-on' : ''), onClick: function () { U.pick = x; paint(); } }, x); })),
           U.pick === 'أخرى' ? e('textarea', { class: 't2-input', rows: '2', placeholder: 'اكتب السبب', 'aria-label': 'سبب آخر', onInput: function (ev) { U.txt = ev.target.value; } }, U.txt) : null,
-          e('div', { class: 'vr3-acts' }, [DS.button('تأكيد: غير مطابق', { size: 'sm', tone: 'danger', onClick: function () {
+          e('div', { class: 'vr3-acts' }, [vr3Btn('تأكيد: غير مطابق', { size: 'sm', tone: 'danger', onClick: function () {
             const why = U.pick === 'أخرى' ? String(U.txt || '').trim() : U.pick;
             if (!why) { S.msg['it:' + it.id] = ['warn', 'اختر سببًا أو اكتبه']; paint(); return; }
             U.mode = ''; act('it:' + it.id, 'admin_verification_item_decide', { p_item: it.id, p_verdict: 'mismatch', p_reason: why }, 'سُجّل: غير مطابق.');
-          } }), DS.button('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
+          } }), vr3Btn('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
       }
       if (canRev && U.mode === 'note') {
         box.push(e('div', { class: 'vr3-box' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية على هذا البند (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة على البند', onInput: function (ev) { U.note = ev.target.value; } }, U.note),
-          e('div', { class: 'vr3-acts' }, [DS.button('حفظ الملاحظة', { size: 'sm', tone: 'primary', onClick: function () {
+          e('div', { class: 'vr3-acts' }, [vr3Btn('حفظ الملاحظة', { size: 'sm', tone: 'primary', onClick: function () {
             const t = String(U.note || '').trim(); if (!t) { S.msg['it:' + it.id] = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; }
             U.mode = ''; U.note = ''; act('it:' + it.id, 'admin_verification_item_note', { p_item: it.id, p_body: t }, 'أُضيفت الملاحظة على البند.');
-          } }), DS.button('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
+          } }), vr3Btn('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
       }
       return e('div', { class: 'vr3-it is-' + (v || 'pend'), id: 'vr3-' + it.id }, [
         e('div', { class: 'vr3-it-h' }, [e('div', { class: 'vr3-it-l' }, [e('b', {}, it.label || it.field_key || '—'), it.required ? ' · مطلوب' : null]),
@@ -19760,10 +19763,11 @@ function admVerOpen2(r) {
         .concat([msgOf('it:' + it.id)])
         .concat(box)
         .concat([e('div', { class: 'vr3-acts' }, [
-          it.doc_id ? DS.button('عرض المرفق', { size: 'sm', ui: 'file-text', onClick: function () { admVerDoc(it); } }) : null,
-          canAct && v !== 'match' && U.mode !== 'why' ? DS.button('مطابق', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () { act('it:' + it.id, 'admin_verification_item_decide', { p_item: it.id, p_verdict: 'match', p_reason: null }, ''); } }) : null,
-          canAct && v !== 'mismatch' && U.mode !== 'why' ? DS.button('غير مطابق', { size: 'sm', tone: 'danger', onClick: function () { U.mode = 'why'; U.pick = ''; U.txt = ''; delete S.msg['it:' + it.id]; paint(); } }) : null,
-          canRev && open && U.mode !== 'note' ? DS.button('ملاحظة', { size: 'sm', onClick: function () { U.mode = 'note'; delete S.msg['it:' + it.id]; paint(); } }) : null
+          it.doc_id ? vr3Btn('عرض المرفق', { size: 'sm', ui: 'file-text', onClick: function () { admVerDoc(it); } }) : null,
+          canAct && v !== 'match' && U.mode !== 'why' ? vr3Btn(v === 'mismatch' ? 'تراجع: مطابق' : 'مطابق', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () { act('it:' + it.id, 'admin_verification_item_decide', { p_item: it.id, p_verdict: 'match', p_reason: null }, v === 'mismatch' ? 'أُلغي «غير مطابق» — البند الآن مطابق.' : ''); } }) : null,
+          canAct && v === 'mismatch' && U.mode !== 'why' ? vr3Btn('تعديل السبب', { size: 'sm', onClick: function () { const L0 = vr3Why(it), known = L0.indexOf(it.reason || '') >= 0; U.mode = 'why'; U.pick = known ? it.reason : 'أخرى'; U.txt = known ? '' : (it.reason || ''); delete S.msg['it:' + it.id]; paint(); } }) : null,
+          canAct && v !== 'mismatch' && U.mode !== 'why' ? vr3Btn('غير مطابق', { size: 'sm', tone: 'danger', onClick: function () { U.mode = 'why'; U.pick = ''; U.txt = ''; delete S.msg['it:' + it.id]; paint(); } }) : null,
+          canRev && open && U.mode !== 'note' ? vr3Btn('ملاحظة', { size: 'sm', onClick: function () { U.mode = 'note'; delete S.msg['it:' + it.id]; paint(); } }) : null
         ].filter(Boolean))]).filter(Boolean));
     };
     /* 3) القسم: عدّاد · «مطابقة القسم كاملًا» · طيّ المكتمل */
@@ -19786,8 +19790,8 @@ function admVerOpen2(r) {
           e('div', { class: 'vr3-sec-t' }, [e('span', { class: 'vr3-sec-ic' }, frag(ui(VR3_IC[b.block] || 'list-checks', 18))), e('div', {}, [e('h3', {}, b.title || b.block),
             e('div', { class: 'vr3-sec-m' }, [e('span', {}, m + ' من ' + items.length + ' مطابق'), x ? DS.badge(x + ' غير مطابق', 'danger') : null, items.length - m - x ? DS.badge((items.length - m - x) + ' بانتظار', 'warn') : null, done ? DS.badge('مكتمل', 'ok') : null])])]),
           e('div', { class: 'vr3-acts' }, [
-            canAct && pendOk.length ? DS.button('مطابقة القسم (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
-            DS.button(fold ? 'عرض البنود' : 'طيّ', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
+            canAct && pendOk.length ? vr3Btn('مطابقة القسم (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
+            vr3Btn(fold ? 'عرض البنود' : 'طيّ', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
           ].filter(Boolean))]),
         miss.length ? DS.note('warn', 'حقول مطلوبة ناقصة في هذا القسم', miss.join('، ')) : null,
         msgOf('sec:' + b.block),
@@ -19796,14 +19800,14 @@ function admVerOpen2(r) {
     });
     /* 4) القرار: أسباب جاهزة + «أخرى» · التنبيهات في مكانها مع روابط للبنود */
     const D = S.dec;
-    const probList = function (filter) { return all.filter(function (x) { return filter(x[1]); }).map(function (x) { return e('li', {}, [e('button', { type: 'button', class: 'vr3-link', onClick: function () { S.fold[x[0].block] = false; paint(); setTimeout(function () { flash(x[1].id); }, 60); } }, (x[0].title || x[0].block) + ' — ' + (x[1].label || x[1].field_key)), x[1].reason ? e('small', { class: 'cu-dr-hint' }, ' · ' + x[1].reason) : null]); }); };
+    const probList = function (filter) { return all.filter(function (x) { return filter(x[1]); }).map(function (x) { return e('li', {}, [e('button', { type: 'button', 'data-live-ok': '', class: 'vr3-link', onClick: function () { S.fold[x[0].block] = false; paint(); setTimeout(function () { flash(x[1].id); }, 60); } }, (x[0].title || x[0].block) + ' — ' + (x[1].label || x[1].field_key)), x[1].reason ? e('small', { class: 'cu-dr-hint' }, ' · ' + x[1].reason) : null]); }); };
     const misText = function () { return all.filter(function (x) { return x[1].verdict === 'mismatch'; }).map(function (x) { return '• ' + (x[1].label || x[1].field_key) + (x[1].reason ? ': ' + x[1].reason : ''); }).join('\n'); };
-    const chips = function (L, multi) { return e('div', { class: 'vr3-chips' }, L.concat(['أخرى']).map(function (t) { const on = !!D.pick[t]; return e('button', { type: 'button', class: 'vr3-chip' + (on ? ' is-on' : ''), onClick: function () { if (!multi) D.pick = {}; D.pick[t] = !on; paint(); } }, t); })); };
+    const chips = function (L, multi) { return e('div', { class: 'vr3-chips' }, L.concat(['أخرى']).map(function (t) { const on = !!D.pick[t]; return e('button', { type: 'button', 'data-live-ok': '', class: 'vr3-chip' + (on ? ' is-on' : ''), onClick: function () { if (!multi) D.pick = {}; D.pick[t] = !on; paint(); } }, t); })); };
     const noteOf = function () { const L = Object.keys(D.pick).filter(function (k) { return D.pick[k] && k !== 'أخرى'; }); const extra = String(D.txt || '').trim(); return L.concat(extra ? [extra] : []).join('\n'); };
     let dec = null;
     if (canRev && inRev) {
       const tabs = e('div', { class: 'vr3-tabs', role: 'tablist' }, [['approve', 'اعتماد الملف', 'primary'], ['return', 'إعادة للتعديل', null], ['reject', 'رفض', 'danger']].map(function (t) {
-        return DS.button(t[1], { size: 'sm', tone: D.mode === t[0] ? (t[2] || 'primary') : null, onClick: function () { if (D.mode !== t[0]) { D.mode = t[0]; D.pick = {}; D.txt = t[0] === 'return' ? misText() : ''; delete S.msg.dec; } paint(); } });
+        return vr3Btn(t[1], { size: 'sm', tone: D.mode === t[0] ? (t[2] || 'primary') : null, onClick: function () { if (D.mode !== t[0]) { D.mode = t[0]; D.pick = {}; D.txt = t[0] === 'return' ? misText() : ''; delete S.msg.dec; } paint(); } });
       }));
       let body = [];
       if (D.mode === 'approve') {
@@ -19831,7 +19835,7 @@ function admVerOpen2(r) {
     } else if (V.decision_note) dec = e('section', { class: 'vr3-sec' }, [DS.note('info', 'ملاحظة القرار', String(V.decision_note))]);
     /* 5) السجل والملاحظات العامة — مطويّة */
     const gnote = canRev ? e('div', { class: 'vr3-box' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية عامة للفريق (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة داخلية', onInput: function (ev) { S.gnote = ev.target.value; } }, S.gnote),
-      e('div', { class: 'vr3-acts' }, [DS.button('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(S.gnote || '').trim(); if (!t) { S.msg.gn = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; } S.gnote = ''; act('gn', 'admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.'); } })]), msgOf('gn')]) : null;
+      e('div', { class: 'vr3-acts' }, [vr3Btn('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(S.gnote || '').trim(); if (!t) { S.msg.gn = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; } S.gnote = ''; act('gn', 'admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.'); } })]), msgOf('gn')]) : null;
     const logRows = evs.slice().sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); }).map(function (x) {
       return e('div', { class: 'vr3-ev' }, [e('b', {}, VER_EVK[x.kind] || x.kind || '—'), e('small', { class: 'cu-dr-hint' }, [' · ', verDate(x.at), x.actor ? ' · ' + x.actor : '', x.field_key ? ' · ' + x.field_key : '']), x.body ? e('div', { class: 'cu-dr-hint' }, String(x.body)) : null]);
     });
