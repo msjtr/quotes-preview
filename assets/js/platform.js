@@ -19490,33 +19490,44 @@ function vr3Why(it) {
   return ['غير مطابق للمستند المرفوع', 'غير واضح أو ناقص', 'صيغة غير صحيحة'];
 }
 function vr3Css() {
-  if (document.getElementById('vr3-css')) return;
-  const s = document.createElement('style'); s.id = 'vr3-css';
+  const old0 = document.getElementById('vr3-css'); if (old0 && old0.getAttribute('data-v') === '545') return; if (old0) old0.remove();
+  const s = document.createElement('style'); s.id = 'vr3-css'; s.setAttribute('data-v', '545');
   s.textContent = [
-    '.vr3-top{display:grid;gap:10px;padding:12px;border:1px solid var(--line,#e6ecf3);border-radius:14px;background:var(--surface-2,rgba(14,138,131,.04))}',
-    '.vr3-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}',
-    '.vr3-kv{display:flex;flex-direction:column;gap:2px;min-width:120px}.vr3-kv small{opacity:.7}',
-    '.vr3-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--line,#e6ecf3)}',
-    '.vr3-bar i{display:block;height:100%}.vr3-bar .m{background:#16a34a}.vr3-bar .x{background:#dc2626}',
-    '.vr3-sec{border:1px solid var(--line,#e6ecf3);border-radius:14px;padding:10px 12px;display:grid;gap:10px}',
-    '.vr3-sec-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}',
-    '.vr3-sec-h h3{display:flex;align-items:center;gap:8px;margin:0;font-size:15px}',
-    '.vr3-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}',
-    '.vr3-it{border:1px solid var(--line,#e6ecf3);border-radius:12px;padding:8px 10px;display:grid;gap:6px;scroll-margin:90px}',
-    '.vr3-it.is-match{border-inline-start:4px solid #16a34a}.vr3-it.is-mismatch{border-inline-start:4px solid #dc2626}.vr3-it.is-pend{border-inline-start:4px solid #d4a017}',
-    '.vr3-it.is-flash{box-shadow:0 0 0 3px rgba(212,160,23,.45)}',
-    '.vr3-it-h{display:flex;align-items:center;gap:6px;justify-content:space-between}',
-    '.vr3-it-v{font-weight:600;word-break:break-word}',
-    '.vr3-why{color:#b42318;font-size:12.5px}',
-    '.vr3-nt{font-size:12.5px;padding:4px 8px;border-radius:8px;background:rgba(18,51,91,.06)}',
-    '.vr3-acts{display:flex;flex-wrap:wrap;gap:6px}',
+    /* v545: نفس رموز هوية المنصة (--t2-*) — بطاقات متساوية في شبكة ثابتة، وقيم طويلة تلتف داخل البطاقة */
+    '.vr3{display:grid;gap:14px}',
+    '.vr3-top,.vr3-sec{background:var(--t2-surface,#fff);border:1px solid var(--t2-line,#D4DEEA);border-radius:var(--t2-r,14px);box-shadow:var(--t2-sh-1,none);padding:14px 16px;display:grid;gap:12px;min-width:0}',
+    '.vr3-kvs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px}',
+    '.vr3-kv{display:grid;gap:2px;min-width:0}.vr3-kv small{color:var(--t2-muted,#566A88);font-size:12px}.vr3-kv>b,.vr3-kv>span{font-weight:600;color:var(--t2-ink,#0A1F44);overflow-wrap:anywhere}',
+    '.vr3-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}',
+    '.vr3-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--t2-surface-2,#F7F9FC);border:1px solid var(--t2-line,#D4DEEA)}',
+    '.vr3-bar i{display:block;height:100%}.vr3-bar .m{background:var(--t2-ok,#12795C)}.vr3-bar .x{background:var(--t2-danger,#B3261E)}',
+    '.vr3-sec-h{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}',
+    '.vr3-sec-t{display:flex;align-items:center;gap:10px;min-width:0}',
+    '.vr3-sec-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(10,165,173,.10);color:var(--t2-brand,#0AA5AD)}',
+    '.vr3-sec-t h3{margin:0;font:600 1rem/1.3 var(--t2-ff-display,inherit);color:var(--t2-ink,#0A1F44)}',
+    '.vr3-sec-m{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px;color:var(--t2-muted,#566A88)}',
+    '.vr3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}',
+    '.vr3-it{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;background:var(--t2-surface-2,#F7F9FC);border:1px solid var(--t2-line,#D4DEEA);border-inline-start-width:3px;border-radius:12px;padding:10px 12px;scroll-margin:110px}',
+    '.vr3-it.is-match{border-inline-start-color:var(--t2-ok,#12795C)}.vr3-it.is-mismatch{border-inline-start-color:var(--t2-danger,#B3261E)}.vr3-it.is-pend{border-inline-start-color:var(--t2-gold,#FFC861)}',
+    '.vr3-it.is-flash{box-shadow:0 0 0 3px rgba(255,200,97,.55)}',
+    '.vr3-it-h{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}',
+    '.vr3-it-l{font-size:12.5px;color:var(--t2-muted,#566A88);line-height:1.5}.vr3-it-l b{color:var(--t2-ink-2,#132E5E);font-weight:600}',
+    '.vr3-it-v{font-weight:600;color:var(--t2-ink,#0A1F44);min-width:0;overflow-wrap:anywhere;word-break:break-word}',
+    '.vr3-it-v bdi{white-space:normal;overflow-wrap:anywhere}',
+    '.vr3-file{display:block;min-width:0;font-size:12.5px;font-weight:500;color:var(--t2-muted,#566A88);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:end}',
+    '.vr3-why{font-size:12.5px;color:var(--t2-danger,#B3261E);background:rgba(179,38,30,.06);border-radius:8px;padding:4px 8px}',
+    '.vr3-nt{font-size:12.5px;padding:4px 8px;border-radius:8px;background:rgba(10,31,68,.05);color:var(--t2-ink-2,#132E5E)}',
+    '.vr3-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}',
+    '.vr3-it>.vr3-acts{margin-top:auto;padding-top:6px;border-top:1px dashed var(--t2-line,#D4DEEA)}',
     '.vr3-chips{display:flex;flex-wrap:wrap;gap:6px}',
-    '.vr3-chip{border:1px solid var(--line,#d6dee8);background:transparent;border-radius:99px;padding:4px 10px;font:inherit;font-size:12.5px;cursor:pointer;color:inherit}',
-    '.vr3-chip.is-on{border-color:#0e8a83;background:rgba(14,138,131,.12);font-weight:700}',
-    '.vr3-box{display:grid;gap:8px;padding:8px;border-radius:10px;background:rgba(18,51,91,.04)}',
+    '.vr3-chip{border:1px solid var(--t2-line,#D4DEEA);background:var(--t2-surface,#fff);border-radius:99px;padding:4px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--t2-ink-2,#132E5E)}',
+    '.vr3-chip.is-on{border-color:var(--t2-brand,#0AA5AD);background:rgba(10,165,173,.10);font-weight:700}',
+    '.vr3-box{display:grid;gap:8px;padding:10px;border-radius:10px;background:var(--t2-surface,#fff);border:1px solid var(--t2-line,#D4DEEA)}',
     '.vr3-tabs{display:flex;gap:6px;flex-wrap:wrap}',
-    '.vr3-link{background:none;border:0;padding:0;color:#0e8a83;text-decoration:underline;cursor:pointer;font:inherit}',
-    '@media (max-width:640px){.vr3-grid{grid-template-columns:1fr}}'
+    '.vr3-link{background:none;border:0;padding:0;color:var(--t2-brand,#0AA5AD);text-decoration:underline;cursor:pointer;font:inherit}',
+    '.vr3-log summary{cursor:pointer;font:600 .95rem/1.4 var(--t2-ff-display,inherit);color:var(--t2-ink,#0A1F44)}',
+    '.vr3-ev{padding:6px 0;border-bottom:1px dashed var(--t2-line,#D4DEEA)}',
+    '@media (max-width:760px){.vr3-grid{grid-template-columns:minmax(0,1fr)}.vr3-sec-h{grid-template-columns:minmax(0,1fr)}}'
   ].join('\n');
   document.head.appendChild(s);
 }
@@ -19571,7 +19582,7 @@ function admVerOpen2(r) {
       meId && V.assigned_to !== meId ? DS.button('إسنادها لي', { size: 'sm', disabled: S.busy, onClick: function () { act('asg', 'admin_verification_assign', { p_id: r.id, p_user: meId }, 'أُسند الطلب إليك.'); } }) : null
     ]) : null;
     const top = e('div', { class: 'vr3-top' }, [
-      e('div', { class: 'vr3-row' }, [
+      e('div', { class: 'vr3-kvs' }, [
         e('div', { class: 'vr3-kv' }, [e('small', {}, 'صاحب الملف'), e('b', {}, (V.name || T))]),
         e('div', { class: 'vr3-kv' }, [e('small', {}, 'الدور'), e('span', {}, (staff ? 'موظف' : 'عميل') + (V.job_title ? ' · ' + V.job_title : ''))]),
         e('div', { class: 'vr3-kv' }, [e('small', {}, 'الحالة'), stB(st)]),
@@ -19612,9 +19623,9 @@ function admVerOpen2(r) {
           } }), DS.button('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
       }
       return e('div', { class: 'vr3-it is-' + (v || 'pend'), id: 'vr3-' + it.id }, [
-        e('div', { class: 'vr3-it-h' }, [e('span', {}, [e('b', {}, it.label || it.field_key || '—'), it.required ? e('small', { class: 'cu-dr-hint' }, ' · مطلوب') : null]),
+        e('div', { class: 'vr3-it-h' }, [e('div', { class: 'vr3-it-l' }, [e('b', {}, it.label || it.field_key || '—'), it.required ? ' · مطلوب' : null]),
           v === 'match' ? DS.badge('مطابق', 'ok') : v === 'mismatch' ? DS.badge('غير مطابق', 'danger') : DS.badge('بانتظار', 'warn')]),
-        e('div', { class: 'vr3-it-v' }, [val ? ltrIf(val) : DS.badge(it.required ? 'غير مُدخل — مطلوب' : 'غير مُدخل', it.required ? 'danger' : null), it.value_off ? e('small', { class: 'cu-dr-hint' }, ' (قيمة خارج القائمة)') : null]),
+        (it.kind === 'file' || it.doc_id) && val ? e('div', { class: 'vr3-file', title: val }, val) : e('div', { class: 'vr3-it-v' }, [val ? ltrIf(val) : DS.badge(it.required ? 'غير مُدخل — مطلوب' : 'غير مُدخل', it.required ? 'danger' : null), it.value_off ? e('small', { class: 'cu-dr-hint' }, ' (قيمة خارج القائمة)') : null]),
         v === 'mismatch' && it.reason ? e('div', { class: 'vr3-why' }, 'السبب: ' + it.reason) : null
       ].concat(notes.map(function (n) { return e('div', { class: 'vr3-nt' }, [String(n.body || ''), e('small', { class: 'cu-dr-hint' }, ' — ' + (n.actor || '') + ' · ' + String(n.at || '').slice(0, 16).replace('T', ' '))]); }))
         .concat([msgOf('it:' + it.id)])
@@ -19643,10 +19654,11 @@ function admVerOpen2(r) {
       };
       return e('section', { class: 'vr3-sec', id: 'vr3-s-' + b.block }, [
         e('div', { class: 'vr3-sec-h' }, [
-          e('h3', {}, [frag(ui(VR3_IC[b.block] || 'list-checks', 16)), b.title || b.block, DS.badge(m + '/' + items.length + ' مطابق', done ? 'ok' : null), x ? DS.badge(x + ' غير مطابق', 'danger') : null]),
+          e('div', { class: 'vr3-sec-t' }, [e('span', { class: 'vr3-sec-ic' }, frag(ui(VR3_IC[b.block] || 'list-checks', 18))), e('div', {}, [e('h3', {}, b.title || b.block),
+            e('div', { class: 'vr3-sec-m' }, [e('span', {}, m + ' من ' + items.length + ' مطابق'), x ? DS.badge(x + ' غير مطابق', 'danger') : null, items.length - m - x ? DS.badge((items.length - m - x) + ' بانتظار', 'warn') : null, done ? DS.badge('مكتمل', 'ok') : null])])]),
           e('div', { class: 'vr3-acts' }, [
-            canAct && pendOk.length ? DS.button('مطابقة القسم كاملًا (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
-            DS.button(fold ? 'إظهار البنود' : 'طيّ القسم', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
+            canAct && pendOk.length ? DS.button('مطابقة القسم (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
+            DS.button(fold ? 'عرض البنود' : 'طيّ', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
           ].filter(Boolean))]),
         miss.length ? DS.note('warn', 'حقول مطلوبة ناقصة في هذا القسم', miss.join('، ')) : null,
         msgOf('sec:' + b.block),
@@ -19686,19 +19698,20 @@ function admVerOpen2(r) {
           })])
         ];
       } else body = [e('small', { class: 'cu-dr-hint' }, 'اختر القرار. الضغطة الأولى على زر التأكيد للتنبيه والثانية للتنفيذ، ويصل ' + who + ' إشعار بالنتيجة.')];
-      dec = e('section', { class: 'vr3-sec', id: 'vr3-dec' }, [e('div', { class: 'vr3-sec-h' }, [e('h3', {}, [frag(ui('seal-check', 16)), 'القرار'])]), tabs].concat(body).concat([msgOf('dec')]).filter(Boolean));
+      dec = e('section', { class: 'vr3-sec', id: 'vr3-dec' }, [e('div', { class: 'vr3-sec-t' }, [e('span', { class: 'vr3-sec-ic' }, frag(ui('seal-check', 18))), e('h3', {}, 'القرار')]), tabs].concat(body).concat([msgOf('dec')]).filter(Boolean));
     } else if (V.decision_note) dec = e('section', { class: 'vr3-sec' }, [DS.note('info', 'ملاحظة القرار', String(V.decision_note))]);
     /* 5) السجل والملاحظات العامة — مطويّة */
     const gnote = canRev ? e('div', { class: 'vr3-box' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية عامة للفريق (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة داخلية', onInput: function (ev) { S.gnote = ev.target.value; } }, S.gnote),
       e('div', { class: 'vr3-acts' }, [DS.button('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(S.gnote || '').trim(); if (!t) { S.msg.gn = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; } S.gnote = ''; act('gn', 'admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.'); } })]), msgOf('gn')]) : null;
     const logRows = evs.slice().sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); }).map(function (x) {
-      return e('div', { style: 'padding:6px 0;border-bottom:1px dashed var(--line,#e6ecf3)' }, [e('b', {}, VER_EVK[x.kind] || x.kind || '—'), e('small', { class: 'cu-dr-hint' }, [' · ', verDate(x.at), x.actor ? ' · ' + x.actor : '', x.field_key ? ' · ' + x.field_key : '']), x.body ? e('div', { class: 'cu-dr-hint' }, String(x.body)) : null]);
+      return e('div', { class: 'vr3-ev' }, [e('b', {}, VER_EVK[x.kind] || x.kind || '—'), e('small', { class: 'cu-dr-hint' }, [' · ', verDate(x.at), x.actor ? ' · ' + x.actor : '', x.field_key ? ' · ' + x.field_key : '']), x.body ? e('div', { class: 'cu-dr-hint' }, String(x.body)) : null]);
     });
-    const log = e('details', { class: 'vr3-sec', open: S.logOpen ? true : null, onToggle: function (ev) { S.logOpen = ev.target.open; } }, [e('summary', { style: 'cursor:pointer;font-weight:700' }, 'السجل والملاحظات الداخلية (' + evs.length + ')'), gnote].concat(logRows.length ? logRows : [e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]).filter(Boolean));
+    const log = e('details', { class: 'vr3-sec vr3-log', open: S.logOpen ? true : null, onToggle: function (ev) { S.logOpen = ev.target.open; } },  [e('summary', {}, 'السجل والملاحظات الداخلية (' + evs.length + ')'), gnote].concat(logRows.length ? logRows : [e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]).filter(Boolean));
     cuBdDraw({ key: key, ic: 'seal-check:teal', title: T, sub: (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st), foot: admFoot(),
-      body: [e('div', { class: 'cu-secs', style: 'display:grid;gap:12px' }, [top].concat(secs).concat([dec, log]).filter(Boolean))] });
+      body: [e('div', { class: 'vr3' }, [top].concat(secs).concat([dec, log]).filter(Boolean))] });
+    try { const hs = document.querySelector('.cu-dr[data-r="' + CSS.escape(key) + '"] .cu-dr-h > div > span'); if (hs) hs.textContent = (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st); } catch (e1) { void e1; }
   };
-  cuDrawer({ key: key, ic: 'seal-check:teal', title: T, sub: 'جارٍ القراءة…', body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
+  cuDrawer({ key: key, ic: 'seal-check:teal', title: T, sub: (VER_ST2[r.status] ? VER_ST2[r.status][0] : 'طلب توثيق'), body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
   load().then(function () { paint(); }).catch(function (err) { if (err && err.message === 'auth') return; cuBdDraw({ key: key, ic: 'seal-check:teal', title: T, sub: '', body: [DS.note('warn', 'تعذّر فتح الطلب', (err && err.message) || '')], foot: admFoot() }); });
 }
 
