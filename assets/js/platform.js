@@ -19190,8 +19190,11 @@ function lvpErr(r, block, vals) {
   if (r.error === 'phone_not_verified' && !lvpWa(vals && vals[r.field || 'phone'])) return 'أدخل رقم الجوال كاملًا بهذا الشكل: 5XXXXXXXX.';
   if (r.error === 'phone_not_verified') return 'رقم الجوال تغيّر ويحتاج توثيقًا برمز يصلك على واتساب — اتبع الخطوة الظاهرة ثم احفظ مرة أخرى.';
   if (r.error === 'required') { const fl = Array.isArray(r.fields) && r.fields.length ? r.fields : (r.field ? [r.field] : []); return 'أكمل الحقول المطلوبة' + (fl.length ? ': ' + fl.map(L).join('، ') : '') + '.'; }
+  /* v543: «قيمة غير صالحة» تذكر كل حقل ورسالته كما تعيدها القاعدة (fields + messages) */
+  if (r.error === 'bad_value' && r.messages && typeof r.messages === 'object') { const ks = Object.keys(r.messages); if (ks.length) return ks.map(function (k) { return L(k) + ': ' + r.messages[k]; }).join(' — '); }
+  if (r.error === 'residency_required') return 'احفظ «المعلومات الشخصية» أولًا (الجنسية ونوع الإقامة)، ثم ارجع إلى العنوان.';
   if (r.message) return r.message;
-  const M = { bad_value: 'قيمة غير صالحة في ' + L(r.field) + '.', locked: 'الملف مقفل للتعديل الآن — يُفتح إذا أعاده إليك الفريق.', request_pending: 'لديك طلب تحديث قيد المراجعة لهذا القسم — انتظر قراره.', residency_required: 'أكمل بيانات الإقامة أولًا.', field_not_allowed: 'حقل غير متاح للتعديل: ' + L(r.field) + '.', bad_file: 'المرفق غير صالح — أعد رفعه.', form_disabled: 'التعديل غير متاح الآن.', form_not_eligible: 'التعديل غير متاح لحسابك الآن.', bad_input: 'تعذّر قراءة البيانات — أعد المحاولة.' };
+  const M = { bad_value: 'قيمة غير صالحة' + (r.field ? ' في ' + L(r.field) : (Array.isArray(r.fields) && r.fields.length ? ' في ' + r.fields.map(L).join('، ') : '')) + '.', locked: 'الملف مقفل للتعديل الآن — يُفتح إذا أعاده إليك الفريق.', request_pending: 'لديك طلب تحديث قيد المراجعة لهذا القسم — انتظر قراره.', residency_required: 'أكمل بيانات الإقامة أولًا.', field_not_allowed: 'حقل غير متاح للتعديل: ' + L(r.field) + '.', bad_file: 'المرفق غير صالح — أعد رفعه.', form_disabled: 'التعديل غير متاح الآن.', form_not_eligible: 'التعديل غير متاح لحسابك الآن.', bad_input: 'تعذّر قراءة البيانات — أعد المحاولة.' };
   return M[r.error] || r.error || 'تعذّر الحفظ.';
 }
 /* v542: توثيق الرقم الجديد في مكانه — رمز يصل على واتساب (المسارات نفسها في مركز الأمان)، ثم «حفظ» مرة أخرى */
