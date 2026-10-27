@@ -7882,6 +7882,157 @@ function sysSlaPage() {
     const ch = []; Object.keys(D0).forEach(function (k) { const n = Math.max(1, Math.min(30, parseInt(D0[k], 10) || 1)); if (k.indexOf('req:') === 0) { const t = k.slice(4); if (CU_REQ_SLA[t] !== n) { ch.push(rType(t)[1] + ': ' + n); CU_REQ_SLA[t] = n; } } else if (CU_SLA[k] !== n) { const l = CU_SLA_ROWS.reduce(function (a, g) { return a.concat(g[1]); }, []).filter(function (y) { return y[0] === k; })[0]; ch.push((l ? l[1] : k) + ': ' + n); CU_SLA[k] = n; } });
     ADM.slaD = {}; if (ch.length) { cuSetLog('عدّل مدد الإنجاز — ' + ch.join('، ') + ' يوم'); snack('حُفظت مدد الإنجاز'); } else snack('لا تغييرات'); draw(); } }), DS.button('تراجع', { onClick: function () { ADM.slaD = {}; draw(); } })])] : []);
 }
+/* v541: مركز القوالب — كل ما يصل العميل والفريق في صفحة واحدة: قوالب واتساب المعتمدة في Meta (وأين تُستخدم)،
+ * ومراحل توثيق الملف (واتساب · البريد · إشعار المنصة)، وقوالب التقييم، وقوالب مركز الإرسال، والردود الجاهزة.
+ * بحث وتصفية وترتيب، ومعاينة حقيقية: نص القالب المعتمد من Meta نفسه مع صورته — للقراءة فقط (التعديل في مكانه). */
+const MH = { wa: null, rules: [], stages: [], at: 0, busy: false, err: '', txt: {}, txtBusy: {}, syncing: false };
+const MH_CDN = 'https://media.tera-services.com.sa/msg', MH_IMG = '/assets/brand/wa/';
+const MH_GRP = [['pay', 'السداد والإيصالات', 'credit-card:teal'], ['rate', 'التقييم', 'star:gold'], ['acct', 'الحساب والتدشين', 'rocket-launch:teal'], ['ver', 'توثيق الملف', 'seal-check:teal'],
+  ['order', 'الطلبات والعروض', 'clipboard-text:navy'], ['contract', 'العقود', 'file-text:navy'], ['support', 'الدعم', 'headset:sky'], ['sec', 'الأمان والتحقق', 'shield-check:navy'], ['gen', 'رسائل عامة', 'megaphone-simple:sky']];
+/* [الاسم بالعربية · متى يُرسل · المجموعة · الصورة · مستخدم في النظام · معاني المتغيرات] — من كود المنصة وقواعد الإرسال (v541) */
+const MH_MAP = {
+  tera_payment_received: ['إيصال استلام الدفعة', 'بعد كل سداد ناجح — ومعه ملف الإيصال PDF', 'pay', null, 1, ['اسم العميل', 'المبلغ', 'رقم العملية', 'مصدر الدفع', 'التاريخ']],
+  tera_payment_document: ['إيصال الدفعة — احتياطي', 'إذا تعذّر قالب الإيصال الأساسي', 'pay', null, 1, ['اسم العميل', 'المبلغ', 'رقم العملية']],
+  tera_payment_receipt: ['إيصال الدفعة بالصورة — احتياطي', 'إذا تعذّر إرسال ملف الإيصال', 'pay', MH_IMG + 'receipt-paid.jpg', 1, null],
+  tera_payment_failed: ['عملية دفع لم تكتمل', 'عند فشل عملية الدفع — ومعه إيصال المحاولة', 'pay', MH_IMG + 'receipt-failed.jpg', 1, null],
+  tera_payment_refunded: ['استرداد مبلغ', 'عند تنفيذ الاسترداد', 'pay', MH_IMG + 'receipt-refund.jpg', 1, null],
+  tera_payment_link: ['رابط الدفع', 'عند إنشاء رابط دفع وإرساله', 'pay', MH_IMG + 'ev-pay-link.jpg', 1, null],
+  tera_payment_due: ['دفعة مستحقة', 'تذكير السداد من «إدارة التذكير»', 'pay', MH_IMG + 'ev-pay-due.jpg', 1, null],
+  tera_payment_reminder: ['تذكير بموعد الدفعة', 'تذكير السداد — احتياطي', 'pay', MH_IMG + 'ev-pay-due.jpg', 1, null],
+  tera_payment_overdue: ['دفعة متأخرة', '', 'pay', MH_IMG + 'ev-pay-overdue.jpg', 0, null],
+  tera_payment_due_soon: ['دفعة قريبة الموعد', '', 'pay', MH_IMG + 'ev-pay-due.jpg', 0, null],
+  tera_payment_confirmed: ['تأكيد السداد', '', 'pay', MH_IMG + 'ev-pay-thanks.jpg', 0, null],
+  tera_payment_early: ['التسوية المبكرة', '', 'pay', null, 0, null],
+  tera_rating_pay: ['تقييم السداد', 'بعد كل دفعة تُسدَّد — بخمسة أزرار', 'rate', MH_IMG + 'ev-survey-settle.jpg', 1, ['اسم العميل', 'الدفعة']],
+  tera_rating_v2: ['تقييم المنصة', 'بعد التدشين والدخول — بخمسة أزرار', 'rate', MH_CDN + '/brand/wa/ev-survey-launch.jpg', 1, ['اسم العميل']],
+  tera_rating: ['تقييم المنصة — احتياطي', 'إذا تعذّر قالب تقييم المنصة', 'rate', MH_CDN + '/brand/wa/ev-survey-launch.jpg', 1, ['اسم العميل']],
+  tera_launch_films: ['تدشين الهوية مع الفيلمين', 'أول رسالة في دورة رسائل العميل', 'acct', MH_CDN + '/brand/wa/ev-launch-v2.jpg', 1, ['اسم العميل']],
+  tera_launch: ['تدشين الهوية', 'مركز الإرسال ودورة رسائل العميل', 'acct', MH_IMG + 'ev-launch.jpg', 1, ['اسم العميل']],
+  tera_account_access: ['بيانات الدخول', 'دورة رسائل العميل — بعد رسالة التدشين', 'acct', MH_CDN + '/brand/wa/acct-ready.jpg', 1, ['اسم العميل']],
+  tera_account_ready: ['تحديث الحساب', 'مركز الإرسال — العملاء المنقولون', 'acct', MH_IMG + 'acct-ready.jpg', 1, null],
+  tera_film: ['فيلم التدشين', '', 'acct', null, 0, null],
+  tera_profile_review_img: ['مراحل توثيق الملف — بالصورة', 'كل مراحل التوثيق — بصورة المرحلة', 'ver', MH_IMG + 'pv-submitted.jpg', 1, ['اسم صاحب الملف', 'رقم الطلب', 'الحالة', 'المطلوب منه', 'الخطوة التالية', 'رابط حسابه']],
+  tera_profile_review_update: ['مراحل توثيق الملف — نصي', 'احتياطي: إذا تعذّر قالب الصورة، وللمراحل التي بلا صورة', 'ver', null, 1, ['اسم صاحب الملف', 'رقم الطلب', 'الحالة', 'المطلوب منه', 'الخطوة التالية', 'رابط حسابه']],
+  tera_profile_review_notice: ['إشعار التوثيق — تسويقي', '', 'ver', null, 0, null],
+  tera_order_created: ['طلب جديد', 'عند تسجيل طلب جديد', 'order', MH_IMG + 'ev-order-new.jpg', 1, null],
+  tera_order_approved: ['اعتماد الطلب', 'عند اعتماد الطلب', 'order', MH_IMG + 'ev-order-approved.jpg', 1, null],
+  tera_order_rejected: ['رفض الطلب', 'عند رفض الطلب', 'order', MH_IMG + 'ev-order-rejected.jpg', 1, null],
+  tera_order_status_update: ['تحديث حالة الطلب', 'عند تغيّر حالة الطلب', 'order', MH_IMG + 'ev-order-status.jpg', 1, null],
+  tera_quotation_offer: ['عرض السعر', '', 'order', MH_IMG + 'ev-quote.jpg', 0, null],
+  tera_contract_created: ['عقد جديد', '', 'contract', MH_IMG + 'ev-contract-new.jpg', 0, null],
+  tera_contract_signed: ['توقيع العقد', '', 'contract', MH_IMG + 'ev-contract-signed.jpg', 0, null],
+  tera_support_notice: ['إشعار الدعم', 'ردود الدعم والتذاكر', 'support', MH_IMG + 'ev-support.jpg', 1, null],
+  tera_mobile_confirmed: ['تأكيد رقم الجوال', '', 'sec', MH_IMG + 'ev-mobile.jpg', 0, null],
+  verify_otp_usecase: ['رمز التحقق', 'رموز الدخول وتأكيد العمليات', 'sec', null, 1, ['الرمز']],
+  tera_update: ['رسالة عامة', 'مركز الإرسال والإعلانات', 'gen', null, 1, null]
+};
+const MH_ST = { APPROVED: ['معتمد', 'ok'], PENDING: ['بانتظار اعتماد Meta', 'warn'], IN_APPEAL: ['قيد الاعتراض', 'warn'], REJECTED: ['مرفوض من Meta', 'danger'], PAUSED: ['موقوف مؤقتًا', 'warn'], DISABLED: ['معطّل', 'danger'] };
+const MH_CAT = { UTILITY: 'أداة مساعدة', MARKETING: 'تسويقي', AUTHENTICATION: 'مصادقة' };
+/* مراحل التوثيق التي لها صورة (v539) — والمرحلة التي تبقى داخل المنصة فقط */
+const MH_PV_IMG = ['submitted', 'resubmitted', 'received', 'returned', 'approved', 'rejected', 'registered', 'launched', 'film_ready'];
+const MH_PV_OFF = { under_review: 'داخل المنصة فقط — توقفت في واتساب والبريد لأنها تكرار «استُلم طلبك»' };
+function mhLoad(force) {
+  if (MH.busy || (MH.at && !force)) return;
+  MH.busy = true; MH.err = '';
+  clPost('/admin/api/send-center/templates', {}).then(function (j) { MH.busy = false; MH.at = Date.now(); MH.wa = j.wa || []; MH.rules = j.rules || []; MH.stages = j.stages || []; draw(); })
+    .catch(function (err) { MH.busy = false; MH.at = Date.now(); MH.wa = MH.wa || []; MH.err = (err && err.message) || 'تعذّر التحميل.'; draw(); });
+}
+function mhTxt(name, cb) {
+  if (MH.txt[name] || MH.txtBusy[name]) return;
+  MH.txtBusy[name] = true;
+  clPost('/admin/api/send-center/template-text', { name: name, lang: 'ar' }).then(function (j) { MH.txtBusy[name] = false; MH.txt[name] = j.tpl || { err: 'لا نص' }; cb(); })
+    .catch(function (err) { MH.txtBusy[name] = false; MH.txt[name] = { err: (err && err.message) || 'تعذّر جلب نص القالب من Meta.' }; cb(); });
+}
+const mhInfo = function (n) { const m = MH_MAP[n]; return m ? { label: m[0], when: m[1], grp: m[2], img: m[3], used: !!m[4], vars: m[5] } : { label: n, when: '', grp: 'gen', img: null, used: false, vars: null }; };
+const mhRuleUse = function (n) { return MH.rules.filter(function (r) { return r.template_name === n && r.enabled; }).length; };
+const mhUsed = function (t) { return mhInfo(t.template_name).used || mhRuleUse(t.template_name) > 0; };
+/* النص بالمتغيرات: {{n}} ← معناه بين «» (أو قيمته في معاينة المرحلة) */
+function mhFill(body, vals) { return String(body || '').replace(/\{\{(\d+)\}\}/g, function (m0, n) { const v = vals && vals[+n - 1]; return v != null && v !== '' ? v : '«متغير ' + n + '»'; }); }
+function mhWaPhone(t, img, vals) {
+  const T = MH.txt[t];
+  if (!T) return e('div', { class: 'comm-wa sc-wa' }, [DS.note('info', 'جارٍ جلب نص القالب المعتمد من Meta…', '')]);
+  if (T.err) return DS.note('warn', 'تعذّرت المعاينة', T.err);
+  const h = T.header || null, fmt = h ? String(h.format || '').toUpperCase() : '';
+  const head = fmt === 'DOCUMENT' ? e('div', { class: 'mh-doc', style: 'display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed rgba(120,130,150,.45);border-radius:12px;margin:6px 0' }, [frag(ui('file-pdf', 22)), e('span', {}, ['ملف PDF يُرفق بالرسالة', e('small', {}, 'مثل: إيصال الدفعة')])])
+    : fmt === 'VIDEO' ? e('div', { class: 'mh-doc', style: 'display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed rgba(120,130,150,.45);border-radius:12px;margin:6px 0' }, [frag(ui('play', 22)), e('span', {}, 'فيديو يُرفق بالرسالة')])
+    : fmt === 'TEXT' && h.text ? e('b', { class: 'mh-ht' }, mhFill(h.text, vals)) : null;
+  const m = { img: fmt === 'IMAGE' ? (img || null) : null, text: mhFill(T.body, vals), foot: T.footer || '', buttons: T.buttons || [] };
+  return e('div', { class: 'comm-wa sc-wa' }, [e('div', { class: 'comm-wa-chip' }, [frag(ui('whatsapp-logo', 14)), 'قالب ' + t]),
+    fmt === 'IMAGE' && !img ? e('div', { class: 'mh-doc', style: 'display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed rgba(120,130,150,.45);border-radius:12px;margin:6px 0' }, [frag(ui('image', 22)), e('span', {}, 'صورة الحدث تُرفق بالرسالة')]) : null, head, scWaMsg(m)]);
+}
+function mhWaOpen(t) {
+  const n = t.template_name, I = mhInfo(n), st = MH_ST[t.status] || [t.status || '—', null];
+  const draw2 = function () {
+    cuBdDraw({ key: 'mh:' + n, ic: 'whatsapp-logo:teal', title: I.label, sub: n + ' · ' + (MH_CAT[t.category] || t.category || ''), onClose: function () { draw(); }, foot: admFoot(), body: [
+      cuSec('البيانات', 'info', [DS.fields([['الاسم في Meta', ltrIf(n)], ['الحالة في Meta', DS.badge(st[0], st[1])], ['الفئة', MH_CAT[t.category] || t.category || '—'],
+        ['يُرسل عند', I.when || (mhUsed(t) ? 'قاعدة إرسال مفعّلة' : '—')], ['في النظام', mhUsed(t) ? DS.badge('مستخدم', 'ok') : DS.badge('غير مستخدم حاليًا', null)],
+        ['عدد المتغيرات', fmtNum(t.vars_count || 0)], ['آخر مزامنة', verDate(t.synced_at)]])]),
+      cuSec('المعاينة — كما يصل', 'device-mobile', [mhWaPhone(n, I.img, I.vars ? I.vars.map(function (v) { return '«' + v + '»'; }) : null)]),
+      I.vars ? cuSec('المتغيرات', 'list-checks', [e('div', { class: 'mh-vars', style: 'display:flex;flex-wrap:wrap;gap:6px' }, I.vars.map(function (v, i) { return e('span', { class: 'mh-var', style: 'padding:4px 10px;border-radius:999px;background:rgba(14,165,164,.12);font-size:13px' }, [ltrIf('{{' + (i + 1) + '}}'), ' ', v]); }))]) : null,
+      mhUsed(t) ? null : DS.note('info', 'غير مستخدم حاليًا', 'لا يرسله أي حدث في المنصة الآن — يبقى معتمدًا في Meta حتى تقرّر تفعيله أو حذفه من Meta.')] });
+  };
+  draw2(); mhTxt(n, draw2);
+}
+function mhPvOpen(s) {
+  const k = s.event_key, img = MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, off = MH_PV_OFF[k], tpl = img ? 'tera_profile_review_img' : 'tera_profile_review_update';
+  const vals = ['«اسم صاحب الملف»', '«رقم الطلب»', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', '«رابط حسابه»'];
+  const draw2 = function () {
+    cuBdDraw({ key: 'mhpv:' + k, ic: 'seal-check:teal', title: s.wa_event_label || k, sub: 'مرحلة توثيق الملف · ' + k, onClose: function () { draw(); }, foot: admFoot(), body: [
+      off ? DS.note('info', 'يصل داخل المنصة فقط', off) : null,
+      cuSec('واتساب', 'whatsapp-logo', off ? [e('small', { class: 'cu-dr-hint' }, 'لا يُرسل في واتساب.')] : [mhWaPhone(tpl, img, vals), e('small', { class: 'cu-dr-hint' }, img ? 'بقالب الصورة وصورة المرحلة.' : 'بالقالب النصي — هذه المرحلة بلا صورة.')]),
+      cuSec('البريد', 'envelope-simple', off ? [e('small', { class: 'cu-dr-hint' }, 'لا يُرسل بالبريد.')] : [DS.fields([['الموضوع', s.subject || '—'], ['العنوان', s.title || '—'], ['المقدمة', s.lead || '—'], s.note ? ['ملاحظة', s.note] : null].filter(Boolean))]),
+      cuSec('إشعار داخل المنصة', 'bell', [DS.fields([['العنوان', s.wa_event_label || '—'], ['النص', (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : '')]])])] });
+  };
+  draw2(); if (!off) mhTxt(tpl, draw2);
+}
+function msgHubPage() {
+  if (!LIVE.on) return [liveEmptyNote('مركز القوالب')];
+  mhLoad(false);
+  try { commReady('قوالب الإرسال', ['tpl']); } catch (e0) { void e0; }
+  try { cxReady('قوالب الاستبانات', ['set']); } catch (e1) { void e1; }
+  const F = ADM.mh || (ADM.mh = { tab: 'all', q: '', st: 'all', sort: 'grp' });
+  const WA = MH.wa || [], ST = MH.stages || [], CT = (COMM.tpl || []).filter(function (t) { return !t.archived; }), SV = (CX.set && CX.set.templates) || [], RP = cuTplLists();
+  const q = String(F.q || '').trim().toLowerCase();
+  const hit = function (a) { return !q || a.some(function (x) { return String(x || '').toLowerCase().indexOf(q) >= 0; }); };
+  const stOk = function (used, status) { return F.st === 'all' || (F.st === 'used' && used) || (F.st === 'unused' && !used) || (F.st === 'pending' && status && status !== 'APPROVED'); };
+  /* صفوف موحّدة: [المجموعة, الاسم, الوصف, الأيقونة, الحالة للترتيب, الإجراء, نغمة] */
+  let rows = [];
+  if (F.tab === 'all' || F.tab === 'wa') WA.forEach(function (t) { const I = mhInfo(t.template_name), u = mhUsed(t), st = MH_ST[t.status] || [t.status || '—', null];
+    if (hit([t.template_name, I.label, I.when]) && stOk(u, t.status)) rows.push([I.grp, I.label, 'واتساب · ' + st[0] + (u ? '' : ' · غير مستخدم') + (I.when ? ' — ' + I.when : '') + ' · ' + t.template_name, 'whatsapp-logo:teal', (t.status === 'APPROVED' ? 0 : 1) + (u ? 0 : 2), function () { mhWaOpen(t); }, t.status !== 'APPROVED' ? 'warn' : '']); });
+  if (F.tab === 'all' || F.tab === 'ver') ST.forEach(function (s) { const off = MH_PV_OFF[s.event_key];
+    if (hit([s.event_key, s.wa_event_label, s.subject, s.title]) && stOk(true, null)) rows.push(['ver', s.wa_event_label || s.event_key, (off ? 'داخل المنصة فقط' : 'واتساب + البريد + إشعار المنصة') + (MH_PV_IMG.indexOf(s.event_key) >= 0 ? ' · بصورة' : '') + ' — ' + (s.subject || s.title || ''), 'seal-check:teal', 0, function () { mhPvOpen(s); }, '']); });
+  if (F.tab === 'all' || F.tab === 'rate') SV.forEach(function (t) {
+    if (hit([t.name, t.key, t.trigger_note]) && stOk(!!t.active, null)) rows.push(['rate', t.name, 'تقييم · ' + (t.channels || []).map(function (c) { return (CX_CH[c] || [c])[0]; }).join(' + ') + ' · ' + (t.auto ? 'آلي' : 'يدوي') + (t.active ? '' : ' · موقوف'), (CX_TPL_IC[t.key] || 'star:gold'), t.active ? 0 : 2, function () { cxTplOpen(t); }, t.active ? '' : 'warn']); });
+  if (F.tab === 'all' || F.tab === 'comm') CT.forEach(function (t) {
+    if (hit([t.name, t.subject]) && stOk(true, null)) rows.push(['gen', t.name, 'مركز الإرسال · ' + (COMM_CH[t.channel] || ['—'])[0] + (t.subject ? ' — ' + t.subject : ''), (COMM_CH[t.channel] || ['', 'paper-plane-tilt:sky'])[1], 0, function () { commTplOpen(t); }, '']); });
+  if (F.tab === 'all' || F.tab === 'rep') RP.forEach(function (g) { g[2].forEach(function (x) {
+    if (hit([x[0], g[1]].concat(x[1])) && stOk(true, null)) rows.push(['rep', x[0], 'ردود جاهزة · ' + g[1] + ' · ' + fmtNum(x[1].length) + ' ردود', 'chat-circle-dots:teal', 0, function () { go('other', 'sys-replies'); }, '']); }); });
+  if (F.sort === 'name') rows.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
+  else if (F.sort === 'st') rows.sort(function (a, b) { return a[4] - b[4] || String(a[1]).localeCompare(String(b[1]), 'ar'); });
+  const G = MH_GRP.concat([['rep', 'الردود الجاهزة', 'chat-circle-dots:teal']]);
+  const mk = function (r) { return axRow({ ic: r[3], t: r[1], sub: r[2], tone: r[6], go: r[5] }); };
+  const list = !rows.length ? axList([], 'لا قوالب بهذا البحث أو الفلتر') : F.sort !== 'grp' ? axList(rows.map(mk), '')
+    : e('div', { class: 't2-stack' }, G.map(function (g) { const R = rows.filter(function (r) { return r[0] === g[0]; }); return R.length ? DS.panel(g[1], fmtNum(R.length) + ' قوالب', [axList(R.map(mk), '')]) : null; }).filter(Boolean));
+  const nUsed = WA.filter(mhUsed).length, nPend = WA.filter(function (t) { return t.status !== 'APPROVED'; }).length;
+  const qIn = e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث باسم القالب أو الحدث…', 'aria-label': 'بحث في القوالب', value: F.q || '',
+    onInput: function (ev) { F.q = ev.target.value; clearTimeout(MH.qt); MH.qt = setTimeout(function () { draw(); const x = document.querySelector('.mh-q input'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 250); } });
+  const sync = DS.button(MH.syncing ? 'جارٍ المزامنة…' : 'مزامنة الحالة من Meta', { size: 'sm', ui: 'arrows-clockwise', disabled: MH.syncing, onClick: function () {
+    MH.syncing = true; draw();
+    clPost('/admin/api/send-center/templates-sync', {}).then(function (j) { MH.syncing = false; MH.txt = {}; snack('تمت المزامنة — ' + fmtNum(j.count || 0) + ' قالبًا من Meta.'); mhLoad(true); })
+      .catch(function (err) { MH.syncing = false; snack((err && err.message) || 'تعذّرت المزامنة.'); draw(); }); } });
+  return [cuBdInt(true),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل ما يصل العميل والفريق: قوالب واتساب المعتمدة في Meta وأين تُستخدم، ومراحل التوثيق، والتقييمات، وقوالب مركز الإرسال، والردود الجاهزة — بمعاينة كما يصل.')]), e('div', { class: 'ax-top-a' }, [sync])]),
+    MH.err ? DS.note('warn', 'تعذّر تحميل قوالب واتساب', MH.err) : null,
+    axKpis([['قوالب واتساب', fmtNum(WA.length), '', 'whatsapp-logo'], ['مستخدمة في النظام', fmtNum(nUsed), 'ok', 'check-circle'], ['غير مستخدمة', fmtNum(WA.length - nUsed), '', 'clock'], ['بانتظار أو مرفوضة', fmtNum(nPend), nPend ? 'warn' : '', 'timer']]),
+    e('div', { class: 'm3-tools ax-tools' }, [
+      chipRow([['all', 'الكل', 'list:navy', WA.length + ST.length + SV.length + CT.length + RP.reduce(function (a, g) { return a + g[2].length; }, 0)], ['wa', 'واتساب Meta', 'whatsapp-logo:teal', WA.length], ['ver', 'مراحل التوثيق', 'seal-check:teal', ST.length], ['rate', 'التقييمات', 'star:gold', SV.length], ['comm', 'مركز الإرسال', 'paper-plane-tilt:sky', CT.length], ['rep', 'الردود الجاهزة', 'chat-circle-dots:teal', RP.reduce(function (a, g) { return a + g[2].length; }, 0)]],
+        F.tab, function (v) { F.tab = v; draw(); }, 'نوع القالب'),
+      e('div', { class: 'mh-f', style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px' }, [e('div', { class: 'mh-q', style: 'flex:1;min-width:200px' }, [qIn]),
+        DS.select({ value: F.st, options: [['all', 'كل الحالات'], ['used', 'المستخدمة'], ['unused', 'غير المستخدمة'], ['pending', 'بانتظار أو مرفوضة']], onChange: function (v) { F.st = v; draw(); } }),
+        DS.select({ value: F.sort, options: [['grp', 'حسب الحدث'], ['name', 'حسب الاسم'], ['st', 'حسب الحالة']], onChange: function (v) { F.sort = v; draw(); } })])]),
+    MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : list];
+}
+
 function sysRepliesPage() {
   const can = cuCan('settings.replies'), OP = ADM.sysT || (ADM.sysT = {}), NW = ADM.sysTn || (ADM.sysTn = {});
   const list = function (gk, x, i) { const id = gk + i, L = x[1], op = !!OP[id];
@@ -8037,7 +8188,7 @@ function admMorePage() {
     ['set', 'الإعدادات', 'gear-six:navy', [{ ic: 'gear-six:navy', t: 'إعدادات النظام', d: 'الأدوار والصلاحيات · مدد الإنجاز · الردود · القوالب', go: function () { go('other', 'sys'); } }]]]);
 }
 function sysRegister() {
-  try { Object.assign(ICON, { sys: ['gear-six', 'navy'], 'sys-push': ['device-mobile', 'teal'], 'sys-roles': ['key', 'navy'], 'sys-team': ['users-three', 'teal'], 'sys-titles': ['identification-badge', 'teal'], 'sys-invites': ['paper-plane-tilt', 'teal'], 'cu-acc': ['gear-six', 'navy'], 'cu-secc': ['shield-check', 'teal'], 'cu-sx-reccode': ['key', 'navy'], 'cu-sx-sess': ['sign-out', 'gold'], 'sys-acct': ['users-three', 'teal'], 'sys-staff': ['identification-badge', 'teal'], 'cu-sx-totp': ['device-mobile', 'teal'], 'cu-sx-mail': ['envelope-simple', 'sky'], 'cu-wa-pins': ['whatsapp-logo', 'teal'], 'cu-2fa': ['shield-check', 'teal'], 'cu-mon-activity': ['fingerprint', 'teal'], 'cu-mon-alerts': ['bell', 'saffron'], 'cu-mon-sens': ['warning', 'gold'], 'cu-mon-sec': ['shield-warning', 'gold'], 'cu-mon-dev': ['device-mobile', 'navy'], 'cu-mon-live': ['shield-check', 'teal'], 'cu-audit': ['clock-counter-clockwise', 'navy'], 'sys-sla': ['timer', 'saffron'], 'sys-replies': ['chat-circle-dots', 'teal'], 'sys-ntpl': ['megaphone-simple', 'sky'], 'sys-log': ['clock-counter-clockwise', 'navy'], 'adm-more': ['squares-four', 'navy'] }); } catch (err) { void err; }
+  try { Object.assign(ICON, { sys: ['gear-six', 'navy'], 'sys-push': ['device-mobile', 'teal'], 'sys-roles': ['key', 'navy'], 'sys-team': ['users-three', 'teal'], 'sys-titles': ['identification-badge', 'teal'], 'sys-invites': ['paper-plane-tilt', 'teal'], 'cu-acc': ['gear-six', 'navy'], 'cu-secc': ['shield-check', 'teal'], 'cu-sx-reccode': ['key', 'navy'], 'cu-sx-sess': ['sign-out', 'gold'], 'sys-acct': ['users-three', 'teal'], 'sys-staff': ['identification-badge', 'teal'], 'cu-sx-totp': ['device-mobile', 'teal'], 'cu-sx-mail': ['envelope-simple', 'sky'], 'cu-wa-pins': ['whatsapp-logo', 'teal'], 'cu-2fa': ['shield-check', 'teal'], 'cu-mon-activity': ['fingerprint', 'teal'], 'cu-mon-alerts': ['bell', 'saffron'], 'cu-mon-sens': ['warning', 'gold'], 'cu-mon-sec': ['shield-warning', 'gold'], 'cu-mon-dev': ['device-mobile', 'navy'], 'cu-mon-live': ['shield-check', 'teal'], 'cu-audit': ['clock-counter-clockwise', 'navy'], 'sys-sla': ['timer', 'saffron'], 'sys-replies': ['chat-circle-dots', 'teal'], 'sys-ntpl': ['megaphone-simple', 'sky'], 'sys-msg': ['squares-four', 'navy'], 'sys-log': ['clock-counter-clockwise', 'navy'], 'adm-more': ['squares-four', 'navy'] }); } catch (err) { void err; }
   lp('sys', 'إعدادات النظام', null, 'sys', sysHubPage);
   lp('sys-roles', 'الأدوار والصلاحيات', 'sys', 'sys-roles', sysRolesPage);
   lp('sys-team', 'دليل الحسابات', 'sys', 'sys-team', sysAccountsPage);
@@ -8049,6 +8200,7 @@ function sysRegister() {
   lp('sys-replies', 'الردود الجاهزة', 'sys', 'sys-replies', sysRepliesPage);
   lp('sys-ntpl', 'قوالب الإشعارات', 'sys', 'sys-ntpl', sysNtplPage);
   lp('sys-push', 'إشعارات الجوال والويب', 'sys', 'sys-push', sysPushPage);
+  lp('sys-msg', 'مركز القوالب', 'sys', 'sys-msg', msgHubPage); /* v541 */
   lp('sys-log', 'سجل الإعدادات', 'sys', 'sys-log', sysLogPage);
   qtRegister();
   lp('sys-invites', 'دعوات الحسابات', 'sys', 'sys-invites', sysInvitesPage);
@@ -12454,7 +12606,7 @@ function lvFieldLux(f) {
       e('span', { class: 'lx-f-v' }, empty ? DS.badge('غير مُدخل') : [ltrIf(v), f[5] ? DS.badge(f[5][0], f[5][1]) : null])]),
     empty ? null : e('span', { class: 'lx-f-ok', 'aria-hidden': 'true' }, frag(ui('check', 12)))]);
 }
-const lvProfPct = () => { const F = ['personal', 'address', 'contact', 'emergency', 'bank'].reduce(function (a, k) { return a.concat(lvFlds(k)); }, []); return Math.round(F.filter(function (f) { return f[3]; }).length / F.length * 100); };
+const lvProfPct = () => { const F = ['personal', 'address', 'contact', 'bank'].reduce(function (a, k) { return a.concat(lvFlds(k)); }, []); return Math.round(F.filter(function (f) { return f[3]; }).length / F.length * 100); };
 /* ---------- سجل الصفحات: العنوان والأصل والأيقونة والعرض ---------- */
 const LP = {};
 function lp(k, t, up, ic, run) { LP[k] = { t: t, up: up, ic: ic, run: run }; ACCT[k] = function () { return lvRun(k); }; }
@@ -12535,7 +12687,7 @@ function profileHub() {
   return [lvHero({ avatar: 'ع', eye: 'ملفي الشخصي · عميل', t: ME.name, sub: 'عضو Terra Plus منذ ' + iso(actAt()), pill: ['الملف موثَّق', 'ok'], ring: [lvProfPct(), 'اكتمال الملف'],
       tiles: [['المستندات', fmtNum(LVD.length) + ' / ' + fmtNum(LVD.length) + ' مقبولة', 'files'], ['طلبات التحديث', pend ? fmtNum(pend) + ' قيد المراجعة' : 'لا طلبات', 'note-pencil', pend ? 'warn' : null], ['التنبيهات', '1 بانتظار التوثيق', 'bell', 'warn'], ['تاريخ التوثيق', iso(actAt()), 'seal-check']] }),
     sec('بياناتي', null, [lvHub([card('personal', 'profile', 'المعلومات الشخصية'), card('address', 'pin', 'العنوان'), (function () { const c = card('contact', 'phone', 'بيانات التواصل'); if (!lvPend('contact')) { c[2] = 'غير موثّق'; c[3] = 'warn'; } return c; })(),
-      card('emergency', 'people', 'بيانات تواصل للطوارئ'), card('bank', 'bank', 'الحسابُ البنكي'), ['idcard', 'بياناتُ الحساب', 'نشِط · عميل', 'ok', goP('prof-account')]])], true, 'lv:pf:data'),
+      /* v542: الطوارئ أرشيف */ card('bank', 'bank', 'الحسابُ البنكي'), ['idcard', 'بياناتُ الحساب', 'نشِط · عميل', 'ok', goP('prof-account')]])], true, 'lv:pf:data'),
     sec('المستندات والطلبات', null, [lvHub([['files', 'المستندات', fmtNum(LVD.length) + ' مقبولة', 'ok', goP('me-docs')], ['orders', 'متابعة الطلبات', pend ? fmtNum(pend) + ' قيد المراجعة' : LV.reqs.length ? fmtNum(LV.reqs.length) + ' مُنجزة' : 'لا طلبات', pend ? 'warn' : LV.reqs.length ? 'ok' : null, goP('me-requests'), pend || null],
       ['newq', 'طلب تحديث جديد', '6 أقسام', null, goP('me-newreq')], ['ring', 'تنبيهات على ملفك الشخصي', 'بانتظار التوثيق', 'warn', goP('me-notes'), 1]])], true, 'lv:pf:docs'),
     sec('التوثيق والتدشين', null, [lvHub([['ok', 'طلب توثيق الملف', 'موثَّق · ' + iso(actAt()), 'ok', goP('me-verify')], ['film', 'فيلم التدشين', 'مُدشَّن · ' + iso(actAt()), 'ok', goP('mem-film')]])], true, 'lv:pf:ver')];
@@ -12570,7 +12722,7 @@ function lvReqsPage() {
   })))];
 }
 function newReqPage() {
-  const L = ['personal', 'address', 'contact', 'emergency', 'bank'].map(function (s) { return lvCard(LVP[s].ic, LVP[s].t, function () { lvUpdStart(s); }, [fmtNum(lvFlds(s).length) + ' حقل', 'none']); });
+  const L = ['personal', 'address', 'contact', 'bank'] /* v542 */.map(function (s) { return lvCard(LVP[s].ic, LVP[s].t, function () { lvUpdStart(s); }, [fmtNum(lvFlds(s).length) + ' حقل', 'none']); });
   L.push(lvCard('files', 'المستندات', function () { lvUpdStart('docs'); }, [fmtNum(LVD.length) + ' حقل', 'none']));
   return [DS.cardGrid(L)];
 }
@@ -16062,7 +16214,7 @@ function clMount(title, loader) {
   run(); return box;
 }
 const CL_DOC = { uploaded: ['مرفوع — بانتظار المراجعة', 'info'], pending: ['بانتظار المراجعة', 'info'], submitted: ['بانتظار المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض', 'warn'], needs_changes: ['يحتاج تعديلًا', 'warn'], replaced: ['مستبدل', 'info'], not_required: ['غير مطلوب', 'info'] };
-const CL_BLOCKS = [['personal', 'المعلومات الشخصية'], ['contact', 'التواصل'], ['address', 'العنوان'], ['emergency', 'جهة اتصال للطوارئ'], ['bank', 'الحساب البنكي']];
+const CL_BLOCKS = [['personal', 'المعلومات الشخصية'], ['contact', 'التواصل'], ['address', 'العنوان'], /* v542: الطوارئ أرشيف */ ['bank', 'الحساب البنكي']];
 function clVal(f) {
   let v = f.value;
   if (v === null || v === undefined || v === '') return null;
@@ -18032,7 +18184,7 @@ function liveMigrated() { try { return CONTRACTS.some(function (c) { return c.le
 /* v506: نسبة الاكتمال المقنّنة — ثمانية بنود ثابتة لكل عميل (جديد أو منقول): أقسام الملف الستة + ربط الواتساب + وسيلة مصادقة.
 البند يُحسب كاملًا أو لا يُحسب. قسم المنقول المعبّأ من النظام السابق لا يُحسب حتى يضغط العميل «تأكيد القسم» (stf_88، والقاعدة ترفض الإرسال قبله).
 التحقق بالبريد مفعّل لكل حساب تلقائيًا فلا يدخل النسبة. 100٪ = يُقبل الإرسال للتوثيق، وزر الإرسال يرسل فعلًا (my_verification_open ثم my_verification_submit). */
-const CL_PROG_B = [['personal', 'المعلومات الشخصية'], ['address', 'العنوان الوطني'], ['contact', 'بيانات التواصل'], ['emergency', 'بيانات تواصل للطوارئ'], ['bank', 'الحساب البنكي'], ['docs', 'المستندات']];
+const CL_PROG_B = [['personal', 'المعلومات الشخصية'], ['address', 'العنوان الوطني'], ['contact', 'بيانات التواصل'], /* v542: الطوارئ أرشيف في القاعدة فقط */ ['bank', 'الحساب البنكي'], ['docs', 'المستندات']];
 JR_PG._wa = 'sec-whatsapp'; JR_PG._auth = 'sec-twofa';
 function clConf() { const c = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA && LIVE_DATA.conf) || null; return c && c.ok !== false ? c : null; }
 function clProg() {
@@ -18390,7 +18542,7 @@ function journeyPage(J) {
    البيانات من القاعدة نفسها (خطوات الملف وشروط الأمان)، وكل قسم يفتح صفحة تعديله الحقيقية. */
 const LV_SEC_IC = { personal: 'profile', contact: 'phone', email: 'email', address: 'pin', emergency: 'phone', bank: 'bank', docs: 'files' };
 function lvRegFlow(J, pct) {
-  const S2 = (J.v.steps || []).filter(function (x) { return x.key !== 'submitted' && x.key !== 'agreed'; }), VS = liveVsec();
+  const S2 = (J.v.steps || []).filter(function (x) { return x.key !== 'submitted' && x.key !== 'agreed' && x.key !== 'emergency'; /* v542 */ }), VS = liveVsec();
   const PG = clProg(), nd = S2.filter(function (x) { return x.done; }).length, profDone = PG.items.every(function (x) { return x.kind !== 'block' || x.done; }), secDone = true; /* v532: الأمان اختياري */
   const R = [['ربط رقم الواتساب', !!VS.wa, 'sec-whatsapp'], ['وسيلة مصادقة واحدة على الأقل', !!VS.auth, VS.extra && !VS.totp ? 'sec-extracode' : 'sec-twofa']]; /* v506: التحقق بالبريد تلقائي — يظهر سطرًا ولا يدخل العدّ */
   const rn = R.filter(function (r) { return r[1]; }).length, N = PG.total, D = PG.done, P = PG.pct;
@@ -18507,7 +18659,7 @@ function livePolish() {
    • للموظف: عقود العملاء ودفعاتها، السندات، عمليات بوابة الدفع — من الجداول الحقيقية بصلاحيات الموظف (RLS).
    • ما لا يملك خادمًا بعد يُحجب برسالة واضحة، وأي زر يغيّر بيانات بلا ربط حقيقي يُوقَف ولا يُنفَّذ شيء. */
 const LIVE_VST = { draft: ['لم يُرسل للتوثيق', 'warn'], submitted: ['أُرسل — بانتظار الاستلام', 'info'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['أُعيد إليك للتعديل', 'warn'], approved: ['موثَّق', 'ok'], rejected: ['مرفوض', 'danger'] };
-const LIVE_BLK = ['personal', 'address', 'contact', 'emergency', 'bank'];
+const LIVE_BLK = ['personal', 'address', 'contact', 'bank']; /* v542: الطوارئ أرشيف في القاعدة فقط */
 function liveFieldTuple(f) { const v = clVal(f); return [f.key, f.label || f.key, f.required ? 1 : 0, v === null ? '' : v, Array.isArray(f.options) ? f.options.map(function (o) { return Array.isArray(o) ? o[1] : (o && o.label) || o; }) : null]; }
 function liveProfileApply() {
   const B = LIVE_DATA.blocks || {};
@@ -19008,8 +19160,82 @@ function livePwBox(purpose, st) {
   return e('div', { class: 't2-stack-tight' }, [DS.editField('كلمة المرور الحالية', pw), liveGate(purpose, st)]);
 }
 /* حفظ يطلب التحقق عند الحاجة فقط: أول محاولة بلا كلمة مرور، وإن طلبها الخادم تظهر خانتها والتحقق الأمني */
+/* v542: حقول الجوال (التواصل والطوارئ وغيرها) تُرسَل للقاعدة بصيغتها {country, number} — كانت تُرسَل نصًّا فتُقرأ فارغة:
+   «مطلوب» في الطوارئ و«غير موثّق» في التواصل حتى لو لم يتغيّر الرقم. قواعد التحقق في الخادم كما هي دون تغيير. */
+const LVP_DIAL = [['966', 'SA'], ['971', 'AE'], ['965', 'KW'], ['973', 'BH'], ['974', 'QA'], ['968', 'OM'], ['962', 'JO'], ['20', 'EG']];
+function lvpDigits(s) { return String(s === null || s === undefined ? '' : s).replace(/[٠-٩]/g, function (x) { return String(x.charCodeAt(0) - 0x660); }).replace(/[۰-۹]/g, function (x) { return String(x.charCodeAt(0) - 0x6F0); }); }
+function lvpVal(f, v) {
+  if (v === null || v === undefined || typeof v === 'object') return v;
+  const s = lvpDigits(v).replace(/[\s\-().]/g, ''); if (!s) return v;
+  let iso = (f && f.phone && f.phone.iso2) || 'SA', num = s;
+  const m = s.match(/^(?:\+|00)(\d{6,})$/);
+  if (m) { const d = LVP_DIAL.filter(function (c) { return m[1].indexOf(c[0]) === 0; })[0]; if (d) { iso = d[1]; num = m[1].slice(d[0].length); } }
+  return { country: iso, number: num };
+}
+function lvpFields(block) { const b = LIVE_DATA.blocks && LIVE_DATA.blocks[block]; return b && Array.isArray(b.fields) ? b.fields : []; }
+function lvpVals(block, values) {
+  const out = Object.assign({}, values || {});
+  lvpFields(block).forEach(function (f) { if (f && f.kind === 'phone' && Object.prototype.hasOwnProperty.call(out, f.key)) out[f.key] = lvpVal(f, out[f.key]); });
+  return out;
+}
+function lvpWa(pv) {
+  if (!pv || typeof pv !== 'object') return '';
+  const d = LVP_DIAL.filter(function (c) { return c[1] === pv.country; })[0], n = lvpDigits(pv.number).replace(/\D/g, '').replace(/^0+/, '');
+  return d && n.length >= 7 ? '+' + d[0] + n : '';
+}
+function lvpErr(r, block, vals) {
+  if (!r) return 'تعذّر الحفظ.';
+  const L = function (k) { const key = String(k || '').split('#')[0], f = lvpFields(block).filter(function (x) { return x && x.key === key; })[0]; return '«' + ((f && f.label) || key) + '»'; };
+  if (r.error === 'bad_phone') return 'رقم ' + L(r.field) + ' غير صحيح' + (r.example ? ' — اكتبه بهذا الشكل: ' + r.example : '') + '.';
+  if (r.error === 'phone_not_verified' && !lvpWa(vals && vals[r.field || 'phone'])) return 'أدخل رقم الجوال كاملًا بهذا الشكل: 5XXXXXXXX.';
+  if (r.error === 'phone_not_verified') return 'رقم الجوال تغيّر ويحتاج توثيقًا برمز يصلك على واتساب — اتبع الخطوة الظاهرة ثم احفظ مرة أخرى.';
+  if (r.error === 'required') { const fl = Array.isArray(r.fields) && r.fields.length ? r.fields : (r.field ? [r.field] : []); return 'أكمل الحقول المطلوبة' + (fl.length ? ': ' + fl.map(L).join('، ') : '') + '.'; }
+  if (r.message) return r.message;
+  const M = { bad_value: 'قيمة غير صالحة في ' + L(r.field) + '.', locked: 'الملف مقفل للتعديل الآن — يُفتح إذا أعاده إليك الفريق.', request_pending: 'لديك طلب تحديث قيد المراجعة لهذا القسم — انتظر قراره.', residency_required: 'أكمل بيانات الإقامة أولًا.', field_not_allowed: 'حقل غير متاح للتعديل: ' + L(r.field) + '.', bad_file: 'المرفق غير صالح — أعد رفعه.', form_disabled: 'التعديل غير متاح الآن.', form_not_eligible: 'التعديل غير متاح لحسابك الآن.', bad_input: 'تعذّر قراءة البيانات — أعد المحاولة.' };
+  return M[r.error] || r.error || 'تعذّر الحفظ.';
+}
+/* v542: توثيق الرقم الجديد في مكانه — رمز يصل على واتساب (المسارات نفسها في مركز الأمان)، ثم «حفظ» مرة أخرى */
+function lvpVerify(values, field, host) {
+  if (!host || !host.appendChild) return;
+  const wa = lvpWa(values && values[field]); if (!wa) return;
+  const old = host.querySelector('[data-lvp]'); if (old) { if (old.getAttribute('data-lvp') === wa && !old.__done) return; old.remove(); }
+  const S = { st: 'send', busy: false, code: '', len: 6, note: null }, num = '⁦' + wa + '⁩';
+  const box = e('div', { class: 't2-stack-tight', 'data-lvp': wa });
+  let send = null, check = null;
+  const paint = function () {
+    box.innerHTML = '';
+    if (S.st === 'done') { box.appendChild(DS.note('ok', 'تم توثيق الرقم ' + num, 'اضغط «حفظ» مرة أخرى لإكمال حفظ القسم.')); return; }
+    box.appendChild(DS.note('info', 'وثّق رقم الجوال الجديد', 'لحماية حسابك نرسل رمز تحقق إلى واتساب على الرقم ' + num + ' من الرقم الرسمي لمنصة تيرا، ثم تحفظ القسم.'));
+    if (S.note) box.appendChild(DS.note(S.note[0], S.note[1], ''));
+    const acts = [];
+    if (S.st === 'otp') {
+      box.appendChild(DS.editField('رمز التحقق (' + S.len + ' أرقام)', DS.input({ numeric: true, value: S.code, onInput: function (v) { S.code = v; } })));
+      acts.push(liveOk(DS.button(S.busy ? 'جارٍ التحقق…' : 'تحقق من الرمز', { tone: 'primary', size: 'sm', ui: 'check', disabled: S.busy, onClick: check })));
+      acts.push(DS.button('إعادة الإرسال', { size: 'sm', disabled: S.busy, onClick: send }));
+    } else acts.push(liveOk(DS.button(S.busy ? 'جارٍ الإرسال…' : 'أرسل رمز التحقق عبر واتساب', { tone: 'primary', size: 'sm', ui: 'chat-circle-dots', disabled: S.busy, onClick: send })));
+    box.appendChild(e('div', { class: 't2-pb-actions' }, acts));
+  };
+  send = async function () {
+    if (S.busy) return; S.busy = true; S.note = ['info', 'جارٍ إرسال الرمز…']; paint();
+    const j = await clPost('/api/account/whatsapp/code', { wa: wa }).catch(function () { return null; });
+    S.busy = false;
+    if (!j || j.ok !== true) { S.note = ['warn', (j && j.message) || 'تعذّر إرسال الرمز. أعد المحاولة بعد قليل.']; paint(); return; }
+    S.len = Number(j.otp_length) || 6; S.code = ''; S.st = 'otp';
+    S.note = ['ok', j.sent === false ? 'الرمز السابق ما زال صالحًا — أدخله.' : 'أُرسل الرمز إلى واتساب' + (j.wa_masked ? ' ⁦' + j.wa_masked + '⁩' : '') + '.']; paint();
+  };
+  check = async function () {
+    const c = lvpDigits(S.code).replace(/\D/g, '');
+    if (c.length !== S.len) { S.note = ['warn', 'أدخل الرمز كاملًا (' + S.len + ' أرقام).']; paint(); return; }
+    S.busy = true; paint();
+    const j = await clPost('/api/account/whatsapp/verify', { wa: wa, code: c }).catch(function () { return null; });
+    S.busy = false;
+    if (!j || j.ok !== true) { S.code = ''; S.note = ['warn', (j && j.message) || 'رمز التحقق غير صحيح أو انتهت صلاحيته.']; paint(); return; }
+    S.st = 'done'; S.note = null; box.__done = true; paint();
+  };
+  host.appendChild(box); paint();
+}
 async function liveSaveBlock(block, values, st, host) {
-  const body = { values: values };
+  const body = { values: lvpVals(block, values) }; /* v542 */
   if (st.need) { if (!st.pw || !st.pw()) throw new Error('أدخل كلمة المرور الحالية.'); body.current_password = st.pw(); if (st.grant) body.grant_id = await st.grant(); }
   const r = await clPost('/api/account/profile/' + block, body);
   /* v533: الرمز للجوال والبريد والحساب البنكي فقط (step: code) — وبقية الأقسام للعميل بكلمة المرور وحدها (step: password) */
@@ -19022,7 +19248,9 @@ async function liveSaveBlock(block, values, st, host) {
     host.appendChild(DS.note('info', 'تحقق أمني مطلوب', r.step === 'code' ? 'تعديل الجوال أو البريد أو الحساب البنكي يلزمه كلمة المرور الحالية ورمز تحقق — اختر الوسيلة المتاحة لك.' : 'ملفك معتمد، لذلك يلزم إدخال كلمة المرور الحالية ورمز التحقق قبل الحفظ.')); host.appendChild(livePwBox('change_security', st));
     throw new Error('أكمل التحقق الأمني ثم اضغط الحفظ مرة أخرى.');
   }
-  if (!r || r.ok !== true) throw new Error((r && (r.message || r.error)) || 'تعذّر الحفظ.');
+  if (r && r.error === 'phone_not_verified') lvpVerify(body.values, r.field || 'phone', host); /* v542 */
+  if (!r || r.ok !== true) throw new Error(lvpErr(r, block, body.values));
+  if (host && host.querySelector) { const o = host.querySelector('[data-lvp]'); if (o) o.remove(); }
   const d = await clApi('/api/account/profile/block/' + block).catch(function () { return null; });
   if (d) { LIVE_DATA.verChkAt = 0; if (LIVE_DATA.verBad) LIVE_DATA.verBad = LIVE_DATA.verBad.filter(function (x) { return x && x.block !== block; }); LIVE_DATA.blocks[block] = d; liveProfileApply(); }
   return r;
@@ -19862,10 +20090,11 @@ function admSysPage() {
       c('handshake:teal', 'التسوية المبكرة', 'نسب خصم العضوية · سقف خصم الرسوم قبل اعتماد المشرف · صلاحية العرض · الإعفاء من ربح الأشهر التي لم تبدأ', 'sys-settle')]],
     /* v405: كل مهمة في مكان واحد — المراسلة والإشعارات مجتمعة، وبيانات المنشأة والضريبة معًا، والخصم والنقاط مع نظام النقاط،
        والقوالب والمستندات للمستندات وحدها، والتشغيل للمدد والسجل */
-    ['comm', 'المراسلة والإشعارات', 'chat-circle-dots:sky', [c('file-text:gold', 'القوالب الجاهزة للمراسلة', 'قوالب البريد وواتساب بالهوية — إنشاء وتعديل، وتظهر مباشرة في «المراسلة»', 'comm-tpl'),
-      c('megaphone-simple:sky', 'قوالب الإشعارات', 'عنوان الإشعار ونصه ورابطه داخل المنصة', 'sys-ntpl'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'),
+    ['comm', 'المراسلة والإشعارات', 'chat-circle-dots:sky', [c('squares-four:navy', 'مركز القوالب', 'كل القوالب في مكان واحد: واتساب المعتمدة في Meta وأين تُستخدم · مراحل التوثيق · التقييمات · مركز الإرسال · الردود — بحث وتصفية ومعاينة كما يصل', 'sys-msg'),
+      c('file-text:gold', 'قوالب مركز الإرسال', 'قوالب البريد وواتساب بالهوية لمركز الإرسال — إنشاء وتعديل، وتظهر مباشرة في «مركز الإرسال»', 'comm-tpl'),
+      c('star:gold', 'قوالب التقييم', 'الاستبانات وأسئلتها ونص واتساب والبريد ومتى تُرسل', 'sys-cx-tpl'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'),
       c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة، والرسالة المباشرة بكل القنوات', 'sys-push')]],
-    ['cx', 'تجربة العملاء والجودة', 'star:gold', [c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة', 'sys-cx'), c('file-text:gold', 'قوالب الاستبانات', 'أسئلة كل استبانة ونص واتساب والبريد', 'sys-cx-tpl')]],
+    ['cx', 'تجربة العملاء والجودة', 'star:gold', [c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة', 'sys-cx')]] /* v541: قوالب التقييم في «المراسلة والإشعارات» */,
     ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والعنوان والتواصل والحساب البنكي', 'sys-org'),
       c('receipt:navy', 'الضريبة ومواضعها في المستندات', 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', 'sys-tax')]],
     ['ops', 'التشغيل', 'sliders-horizontal:teal', [c('timer:saffron', 'مدد الإنجاز', 'المدة المسموحة لكل نوع عمل', 'sys-sla'), c('clock-counter-clockwise:navy', 'سجل الإعدادات', 'ماذا تغيّر ومن غيّره ومتى', 'sys-log')]],
@@ -22591,7 +22820,7 @@ function commMailPreview(c, W, rerun) {
   const sub = commFill(W.subject, c), body = commFill(W.body, c), sig = sub + '|' + body + '|' + c.name;
   const box = e('div', { class: 'comm-mail' });
   if (sub.trim().length < 2 || body.trim().length < 2) { box.appendChild(e('small', { class: 'cu-dr-hint' }, 'اكتب العنوان والمحتوى لتظهر المعاينة بالقالب الرسمي للبريد.')); return box; }
-  if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: '' }); f.srcdoc = W.html; box.appendChild(DS.fields([['إلى', c.name], ['الموضوع', sub]])); box.appendChild(f); return box; }
+  if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: 'allow-same-origin' }) /* v541: صور البريد تظهر في المعاينة */; f.srcdoc = W.html; box.appendChild(DS.fields([['إلى', c.name], ['الموضوع', sub]])); box.appendChild(f); return box; }
   box.appendChild(e('small', { class: 'cu-dr-hint' }, W.hErr && W.hAt === sig ? W.hErr : 'جارٍ تجهيز المعاينة بالقالب الرسمي…'));
   if (!W.hBusy && W.hAt !== sig) { W.hBusy = true; clPost('/admin/api/comm/preview', { subject: sub, body: body, name: c.name }).then(function (j) { W.hBusy = false; W.hAt = sig; if (j && j.ok) { W.html = j.html; W.hErr = ''; } else W.hErr = (j && j.message) || 'تعذّرت المعاينة.'; if (rerun) rerun(); else draw(); }); }
   return box;
@@ -22784,7 +23013,7 @@ scPvLoad(T, uid);
 const V = SC.PV;
 if (!V) body = SC.pvErr ? DS.note('warn', 'تعذّرت المعاينة', SC.pvErr) : clWait('المعاينة');
 else if (pvc === 'whatsapp') body = scWaView(V.whatsapp);
-else if (pvc === 'email') { if (V.email && V.email.html) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: '' }); f.srcdoc = V.email.html; body = e('div', { class: 'comm-mail' }, [DS.fields([['إلى', V.who.name || smpName], ['الموضوع', V.email.subject]]), f]); } else body = DS.note('warn', 'لا معاينة للبريد', (V.email && V.email.error) || 'بريد المنصة غير متاح الآن.'); }
+else if (pvc === 'email') { if (V.email && V.email.html) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: 'allow-same-origin' }) /* v541: صور البريد تظهر في المعاينة */; f.srcdoc = V.email.html; body = e('div', { class: 'comm-mail' }, [DS.fields([['إلى', V.who.name || smpName], ['الموضوع', V.email.subject]]), f]); } else body = DS.note('warn', 'لا معاينة للبريد', (V.email && V.email.error) || 'بريد المنصة غير متاح الآن.'); }
 else if (pvc === 'push') body = e('div', { class: 'fx-dn' }, [e('div', { class: 'fx-dn-i is-info is-unread' }, [e('span', { class: 'fx-card-ic' }, frag(tile('bell'))), e('span', { class: 'fx-dn-t' }, [e('b', {}, V.push.title), e('small', {}, V.push.text), e('small', { class: 'cu-dr-hint' }, 'زر: ' + V.push.button)])])]);
 else body = e('div', { class: 'fx-dn' }, [e('div', { class: 'fx-dn-i is-unread' }, [e('span', { class: 'fx-card-ic' }, frag(tile('tray'))), e('span', { class: 'fx-dn-t' }, [e('b', {}, V.inbox.title), e('small', { class: 'sc-pre' }, V.inbox.body)])])]);
 }
@@ -23631,7 +23860,7 @@ function cxWaPreview(text, nm) {
 function cxMailPreview(W, nm) {
   const sub = cxFill(W.subject, nm), body = cxFill(W.body, nm) + '\n\n⭐ قيّم الآن: ' + cxFill('{link}') + '\n\n' + cxTeam() + ' · منصة تيرا', sig = sub + '|' + body;
   const box = e('div', { class: 'comm-mail' });
-  if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: '' }); f.srcdoc = W.html; box.appendChild(DS.fields([['إلى', nm], ['الموضوع', sub], ['من', cxTeam()]])); box.appendChild(f); return box; }
+  if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: 'allow-same-origin' }) /* v541: صور البريد تظهر في المعاينة */; f.srcdoc = W.html; box.appendChild(DS.fields([['إلى', nm], ['الموضوع', sub], ['من', cxTeam()]])); box.appendChild(f); return box; }
   box.appendChild(e('small', { class: 'cu-dr-hint' }, W.hErr && W.hAt === sig ? W.hErr : 'جارٍ تجهيز المعاينة بالقالب الرسمي للبريد…'));
   if (!W.hBusy && W.hAt !== sig) { W.hBusy = true; clPost('/admin/api/comm/preview', { subject: sub, body: body, name: nm }).then(function (j) { W.hBusy = false; W.hAt = sig; if (j && j.ok) { W.html = j.html; W.hErr = ''; } else W.hErr = (j && j.message) || 'تعذّرت المعاينة.'; if (W.rerun) W.rerun(); }).catch(function () { W.hBusy = false; W.hAt = sig; W.hErr = 'تعذّرت المعاينة.'; if (W.rerun) W.rerun(); }); }
   return box;
@@ -23707,7 +23936,7 @@ function cxSetPage() {
 function cxTplPage() {
   const w = cxReady('قوالب الاستبانات', ['set']); if (w) return w;
   const L = (CX.set && CX.set.templates) || [];
-  return axPage({ title: 'قوالب الاستبانات', hint: 'خمسة قوالب — لكل قالب أسئلته ونص واتساب بالشعار ونص البريد بالقالب الرسمي', can: false, perm: null,
+  return axPage({ title: 'قوالب الاستبانات', hint: 'لكل قالب أسئلته ونص واتساب بالصورة ونص البريد بالقالب الرسمي — ومتى يُرسل', can: false, perm: null,
     K: [['القوالب', fmtNum(L.length), '', 'file-text'], ['مفعّلة', fmtNum(L.filter(function (t) { return t.active; }).length), 'ok', 'check-circle'], ['آلية', fmtNum(L.filter(function (t) { return t.auto; }).length), '', 'arrows-clockwise'], ['الأسئلة', fmtNum(L.reduce(function (a, t) { return a + (t.questions || []).length; }, 0)), '', 'list-checks']],
     list: axList(L.map(function (t) { return axRow({ ic: (CX_TPL_IC[t.key] || 'star').split(':')[0], t: t.name, sub: fmtNum((t.questions || []).length) + ' أسئلة — ' + t.channels.map(function (c) { return CX_CH[c][0]; }).join(' + ') + ' — ' + (t.auto ? 'آلي: ' + (t.trigger_note || '') : 'يدوي') + (t.active ? '' : ' — موقوف'), tone: t.active ? '' : 'warn', go: function () { cxTplOpen(t); } }); }), 'لا قوالب') });
 }
