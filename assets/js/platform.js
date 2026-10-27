@@ -10366,6 +10366,8 @@ function tqRegister() {
   lp('sys-qc', 'قالب عرض حسب الطلب', 'sys', 'sys-qc', function () { return tqQuotePage('cq'); });
   lp('sys-pc', 'قوالب عقد الشركاء', 'sys', 'sys-pc', tqCtPage2);
   lp('sys-si', 'قالب فاتورة المتاجر', 'sys', 'sys-si', tqInvPage);
+lp('sys-es', 'قالب التسوية المبكرة', 'sys', 'sys-es', sysEsPage);
+try { Object.assign(ICON, { 'sys-es': ['coins', 'gold'] }); } catch (err) { void err; }
   lp('cu-docs', 'العقود والمستندات', 'cu', 'cu-docs', dcHubPage);
   lp('cu-docs-pq', 'عروض أسعار الشركاء', 'cu-docs', 'cu-docs-pq', dcPqPage);
   lp('cu-docs-sq', 'عروض أسعار المتاجر', 'cu-docs', 'cu-docs-sq', dcSqPage);
@@ -10884,7 +10886,8 @@ function tmQuoteTpl(kind) {
 function tmTplCards(side) {
   if (side === 'p') return [
     { ic: 'file-text:navy', t: 'قالب عرض سعر الشركاء', d: 'البنود وطريقة الاحتساب والضريبة لكل بند · البنود المخفية · الترويسة والأقسام والشروط', n: QT.num.prefix + ' · ' + fmtNum((QT.items || []).length) + ' بنود', go: function () { go('other', 'sys-qt'); } },
-    { ic: 'contract', t: 'قوالب عقد الشركاء', d: 'الكامل والمختصر — إظهار ما يلزم وإخفاء الباقي', n: fmtNum(QPCS.length) + ' قوالب · برقم العرض', go: function () { go('other', 'sys-pc'); } }];
+    { ic: 'contract', t: 'قوالب عقد الشركاء', d: 'الكامل والمختصر — إظهار ما يلزم وإخفاء الباقي', n: fmtNum(QPCS.length) + ' قوالب · برقم العرض', go: function () { go('other', 'sys-pc'); } },
+{ ic: 'coins:gold', t: 'قالب التسوية المبكرة', d: 'على ورق عرض السعر وختمه · قسم التحصيل · الحاسبة ورسالة العميل', n: 'صالح حتى الدفعة القادمة', go: function () { go('other', 'sys-es'); } }];
   return [
     { ic: 'storefront:teal', t: 'قالب عرض سعر المتاجر', d: 'البنود وطريقة الاحتساب والترويسة والشروط — ومعه إعدادات الفاتورة', n: QTS.num.prefix, go: function () { ADM.tqTab_sq = 'q'; go('other', 'sys-qs'); } },
     { ic: 'note-pencil:saffron', t: 'قالب عرض حسب الطلب', d: 'قالب مستقل — ومعه إعدادات الفاتورة', n: QTC.num.prefix, go: function () { ADM.tqTab_cq = 'q'; go('other', 'sys-qc'); } }];
@@ -17216,6 +17219,10 @@ function stlFlags(R) {
 }
 /* معاينة الإشعار للإدارة وحدها — للطباعة أو الحفظ PDF من المتصفح */
 function stlNotice(R, Q) {
+  try { if (R && R.items) { dcPdf(dcSettleDoc(esFromR(R, Q), !Q)); return; } } catch (err) { void err; }
+  return stlNotice0(R, Q);
+}
+function stlNotice0(R, Q) {
   const w = window.open('', '_blank'); if (!w) { snack('اسمح بالنوافذ المنبثقة لمعاينة الإشعار.'); return; }
   const h = function (s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); };
   const V = R.vat || {}, tr = function (a, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' + a.map(function (x, i) { return (i ? '<td>' : '<th>') + x + (i ? '</td>' : '</th>'); }).join('') + '</tr>'; };
@@ -17311,6 +17318,7 @@ function stlForm(c, r, RF) {
     R ? e('small', { class: 'cu-dr-hint' }, 'ربح الشهر ' + SR(R.interest_month) + ' على ' + fmtNum(R.months) + ' شهرًا · أشهر لم تبدأ: ' + fmtNum(R.future_months) + ' · الدفعات المفتوحة ' + (R.payments || []).map(function (p) { return p.seq; }).join('، ')) : null,
     e('div', { class: 'stl-lns' }, [e('b', {}, 'بنود الخصم')].concat(S.lines.length ? S.lines.map(function (l, i) { return stlLineRow(S, l, i, R || S.res, ctx, onCh); }) : [e('small', { class: 'cu-dr-hint' }, 'لا بنود خصم — تُطبَّق بالترتيب لكل بند: العضوية ثم النقاط ثم الإضافي ثم الاستثنائي.')])),
     e('div', { class: 't2-pb-actions' }, [DS.button('إضافة بند خصم', { size: 'sm', ui: 'plus', onClick: function () { S.lines.push({ cat: 'extra', item: 'margin', calc: 'pct', val: '', reason: '' }); onCh(); } })]),
+R ? stlRound(S, R, onCh) : null,
     S.calc ? e('small', { class: 'cu-dr-hint', role: 'status' }, 'جارٍ الحساب…') : null,
     S.cerr ? DS.note('warn', 'تعذّر الحساب', S.cerr) : null,
     R ? stlSum(R) : null, R ? stlTable(R) : null].concat(R ? stlFlags(R) : [], [
@@ -17325,6 +17333,227 @@ function stlForm(c, r, RF) {
       R ? DS.button('معاينة الإشعار', { ui: 'file-pdf', onClick: function () { stlNotice(R, null); } }) : null,
       Q ? DS.button('إلغاء', { ui: 'x', onClick: function () { S.edit = false; RF.paint(); } }) : null])])));
   return out;
+}
+/* ===================== v549 — قالب التسوية المبكرة (قوالب الشركاء · قسم التحصيل) =====================
+   القواعد المعتمدة (early-settlement.ts): تُعفى فائدة الأشهر التي لم تبدأ، والخصم الإضافي على البنود المختارة فقط،
+   والضريبة محصّلة ولا تنقص، والعرض صالح حتى تاريخ الدفعة القادمة (شاملًا). المستند على ورق عرض السعر وختمه. */
+const ES_ITEMS = [['product', 'قيمة المنتج'], ['admin', 'الرسوم الإدارية'], ['margin', 'فرق بيع المنتج'], ['bank', 'رسوم التحويل البنكي'], ['nafith', 'رسوم سند نافذ'], ['vat', 'ضريبة القيمة المضافة'], ['interest', 'الفائدة']];
+const ES_NAME = ES_ITEMS.reduce(function (o, x) { o[x[0]] = x[1]; return o; }, {});
+const ES_DISC = ['admin', 'margin', 'bank', 'nafith', 'interest'], ES_NOREC = ['bank', 'nafith'];
+const ES0 = { org: QT0.org, issuer: 'قسم التحصيل', auto: 'صدر هذا العرض آليًا ولا يحتاج إلى توقيع', slogan: QT0.slogan, title: 'عرض تسوية مبكرة',
+  intro: 'يسرّنا تقديم عرض التسوية المبكرة لعقدكم: تُعفى فائدة الأشهر التي لم تبدأ، ويُطبَّق الخصم الإضافي على البنود الموضّحة أدناه.',
+  steps: ['الموافقة على العرض من صفحة طلبكم في منصة تيرا.', 'سداد مبلغ التسوية عبر بوابة الدفع قبل انتهاء صلاحية العرض.', 'يُغلق العقد وتصدر إيصالات السداد في جدول عقدكم.'],
+  note: 'الضريبة محصّلة ولا تنقص بالخصم. العرض صالح حتى تاريخ الدفعة القادمة (شاملًا)؛ وفي يومها يُسدَّد مبلغ التسوية أو الدفعة المستحقة، وبعده يُعاد احتساب العرض.',
+  msg: 'مرحبًا {name}،\nأُعدّ لكم عرض تسوية مبكرة للعقد {contract}:\nالمتبقي على العقد {remaining}\nإعفاء فائدة الأشهر التي لم تبدأ {exempt}\nخصم إضافي {extra}\nالمبلغ المطلوب لإغلاق العقد: {due}\nالعرض صالح حتى {valid}.\nللموافقة والسداد: صفحة طلبكم في منصة تيرا.',
+  show: { items: true, valid: true, steps: true, note: true, appr: true } };
+const ES = JSON.parse(JSON.stringify(ES0));
+
+/* ---------- الحاسبة: منقولة كما هي من early-settlement.ts (كل الحسابات بالهللة) ---------- */
+const esH = function (s) { return Math.round(Number(s || 0) * 100); }, esS = function (h) { return h / 100; };
+const esAddM = function (iso, k) { const a = String(iso).split('-').map(Number); return new Date(Date.UTC(a[0], a[1] - 1 + k, a[2])).toISOString().slice(0, 10); };
+function esSchedule(c) {
+  const ids = ES_ITEMS.map(function (x) { return x[0]; }), totalH = ids.reduce(function (s, id) { return s + esH(c.totals[id]); }, 0);
+  const amounts = [], regular = Math.round(totalH / c.months);
+  for (let i = 1; i <= c.months; i++) amounts.push(i === c.months ? totalH - regular * (c.months - 1) : regular);
+  return { totalH: totalH, amounts: amounts, dues: amounts.map(function (_, i) { return esAddM(c.firstDue, i); }) };
+}
+function esStatus(c, date) {
+  const S = esSchedule(c), starts = S.dues.map(function (_, i) { return esAddM(c.firstDue, i - 1); });
+  const dueCount = S.dues.filter(function (d) { return d <= date; }).length, started = starts.filter(function (s) { return s < date; }).length, overdue = Math.max(0, dueCount - c.paid);
+  const nextDue = S.dues.filter(function (d) { return d >= date; })[0] || null;
+  const paidH = S.amounts.slice(0, c.paid).reduce(function (s, a) { return s + a; }, 0), overdueH = S.amounts.slice(c.paid, c.paid + overdue).reduce(function (s, a) { return s + a; }, 0);
+  return Object.assign(S, { started: started, overdue: overdue, nextDue: nextDue, validUntil: nextDue || date, paidH: paidH, overdueH: overdueH });
+}
+function esRemaining(c, totalH, paidH) {
+  const rem = {}; let sum = 0;
+  ES_ITEMS.forEach(function (x) { const t = esH(c.totals[x[0]]); rem[x[0]] = c.paid >= c.months ? 0 : Math.round(t - (t * paidH) / totalH); sum += rem[x[0]]; });
+  rem.product += (totalH - paidH) - sum;
+  return rem;
+}
+function esSettle(c, date, extras) {
+  const st = esStatus(c, date), rem = esRemaining(c, st.totalH, st.paidH), remainingH = st.totalH - st.paidH;
+  const startedUnpaidH = st.amounts.slice(c.paid, Math.max(c.paid, st.started)).reduce(function (s, a) { return s + a; }, 0);
+  const chargedH = Math.min(rem.interest, Math.round((esH(c.totals.interest) * startedUnpaidH) / st.totalH)), exemptH = rem.interest - chargedH;
+  const disc = {}, flags = [];
+  ES_ITEMS.forEach(function (x) { disc[x[0]] = 0; }); disc.interest = exemptH;
+  (extras || []).forEach(function (x) {
+    if (x.item === 'vat') throw new Error('الضريبة محصّلة ولا يُخصم منها');
+    if (ES_DISC.indexOf(x.item) < 0) flags.push('الخصم من «' + ES_NAME[x.item] + '» غير مسموح');
+    if (ES_NOREC.indexOf(x.item) >= 0) flags.push('الخصم من «' + ES_NAME[x.item] + '» غير موصى به (تكلفة خارجية)');
+    disc[x.item] += Math.min(rem[x.item] - disc[x.item], esH(x.amount));
+  });
+  const needsApproval = disc.admin + disc.margin > Math.round((rem.admin + rem.margin) * 0.25);
+  if (needsApproval) flags.push('خصم الرسوم يتجاوز 25% — يحتاج اعتماد المشرف العام');
+  const extraH = ES_ITEMS.reduce(function (s, x) { return s + disc[x[0]]; }, 0) - exemptH, dueH = remainingH - exemptH - extraH, ni = st.nextDue ? st.dues.indexOf(st.nextDue) : -1;
+  return { contractNo: c.no, customer: c.customer, date: date, validUntil: st.validUntil, nextDue: st.nextDue, nextInstallment: ni >= 0 ? esS(st.amounts[ni]) : null, nextInstallmentNo: ni >= 0 ? ni + 1 : null,
+    overdue: { count: st.overdue, amount: esS(st.overdueH) }, paid: esS(st.paidH),
+    ledger: { remaining: esS(remainingH), interestExemption: esS(exemptH), extraDiscount: esS(extraH), due: esS(dueH) },
+    discountedItems: ES_ITEMS.filter(function (x) { return disc[x[0]] > 0; }).map(function (x) { return { item: x[0], name: x[1], discount: esS(disc[x[0]]), fullyExempt: disc[x[0]] === rem[x[0]] }; }).sort(function (a, b) { return b.discount - a.discount; }),
+    netInterest: esS(rem.interest - disc.interest), remainingByItem: ES_ITEMS.reduce(function (o, x) { o[x[0]] = esS(rem[x[0]]); return o; }, {}), needsApproval: needsApproval, flags: flags };
+}
+/* التقريب إلى مبلغ: إعفاء كامل للبنود المختارة أولًا، ثم يُقسَّم الباقي بالتساوي */
+function esToTarget(c, date, plan) {
+  const base = esSettle(c, date), st = esStatus(c, date), rem = esRemaining(c, st.totalH, st.paidH);
+  rem.interest -= esH(base.ledger.interestExemption); /* المتاح من الفائدة بعد إعفاء الأشهر التي لم تبدأ */
+  let needH = esH(base.ledger.due) - esH(plan.target);
+  if (needH <= 0) throw new Error('المبلغ المستهدف أكبر من مبلغ التسوية أو يساويه');
+  const extras = [];
+  plan.fullItems.forEach(function (id) { const a = Math.min(rem[id], needH); if (a > 0) { extras.push({ item: id, amount: esS(a), reason: plan.reason }); needH -= a; } });
+  const n = plan.shareItems.length;
+  if (needH > 0 && !n) throw new Error('لا توجد بنود لتوزيع الباقي');
+  if (needH > 0) { const each = Math.floor(needH / n), ext = needH - each * n;
+    plan.shareItems.forEach(function (id, i) { const a = each + (i < ext ? 1 : 0); if (a > rem[id]) throw new Error('الخصم أكبر من المتبقي في ' + ES_NAME[id]); if (a > 0) extras.push({ item: id, amount: esS(a), reason: plan.reason }); }); }
+  return esSettle(c, date, extras);
+}
+/* توزيع التقريب على بنود محرّك المنصة (بعد الخصومات الحالية) → بنود خصم إضافي بالمبلغ */
+function esSplit(cur, needH, mode) {
+  const add = {}, full = ES_DISC.filter(function (k) { return mode[k] === 'full' && esH(cur[k]) > 0; }), share = ES_DISC.filter(function (k) { return mode[k] === 'share' && esH(cur[k]) > 0; });
+  full.forEach(function (k) { const a = Math.min(esH(cur[k]), needH); if (a > 0) { add[k] = a; needH -= a; } });
+  if (needH > 0 && !share.length) throw new Error('لا توجد بنود لتوزيع الباقي — اختر «توزيع» لبند واحد على الأقل.');
+  if (needH > 0) { const each = Math.floor(needH / share.length), ext = needH - each * share.length;
+    share.forEach(function (k, i) { const a = each + (i < ext ? 1 : 0); if (a > esH(cur[k]) - (add[k] || 0)) throw new Error('الخصم أكبر من المتبقي في ' + (ES_NAME[k] || k)); if (a > 0) add[k] = (add[k] || 0) + a; }); }
+  return add;
+}
+
+/* ---------- المستند: بيانات موحّدة من المحرّك أو العرض أو الحاسبة ---------- */
+const esMoney = function (n) { return qMoney(qr2(Number(n) || 0)); };
+function esFromR(R, Q) {
+  const ex = Number(R.exempt_amount) || 0, nx = (R.payments || []).filter(function (p) { return String(p.due) >= String(R.date); }).sort(function (a, b) { return String(a.due) < String(b.due) ? -1 : 1; })[0];
+  return { no: Q ? Q.quote_no : 'مسودة', contract: R.contract, client: R.client_name || '—', date: R.date, valid: (Q && Q.valid_until) || R.valid_until || R.date,
+    remaining: Number(R.before), exempt: ex, extra: qr2(Number(R.discount) - ex), due: Number(R.after),
+    items: (R.items || []).filter(function (it) { return Number(it.disc) > 0; }).map(function (it) { return { name: it.t, disc: Number(it.disc), full: Number(it.after) === 0 }; }),
+    next: nx ? { no: nx.seq, due: nx.due, amount: Number(nx.left) } : null };
+}
+function esFromOffer(o) {
+  const ex = Number(o.exempt_amount) || 0;
+  return { no: o.quote_no, contract: o.contract_no, client: (ME && ME.name) || '—', date: o.settle_date, valid: o.valid_until,
+    remaining: Number(o.remaining), exempt: ex, extra: qr2(Number(o.discount) - ex), due: Number(o.amount),
+    items: (o.items || []).filter(function (it) { return Number(it.disc) > 0; }).map(function (it) { return { name: it.t, disc: Number(it.disc), full: Number(it.after) === 0 }; }), next: null, aud: false };
+}
+function esFromCalc(r) {
+  const L = r.ledger;
+  return { no: 'مسودة', contract: r.contractNo, client: r.customer || '—', date: r.date, valid: r.validUntil, remaining: L.remaining, exempt: L.interestExemption, extra: L.extraDiscount, due: L.due,
+    items: r.discountedItems.map(function (x) { return { name: x.name, disc: x.discount, full: x.fullyExempt }; }),
+    next: r.nextDue ? { no: r.nextInstallmentNo, due: r.nextDue, amount: r.nextInstallment } : null };
+}
+function esFill(T, L) {
+  const V = { name: L.client, contract: L.contract, remaining: esMoney(L.remaining), exempt: esMoney(L.exempt), extra: esMoney(L.extra), due: esMoney(L.due), valid: qDmy(L.valid), date: qDmy(L.date), no: L.no };
+  return String(T.msg || '').replace(/\{(\w+)\}/g, function (m, k) { return V[k] !== undefined ? V[k] : m; });
+}
+function esNextLine(L) {
+  return L.next ? 'إن لم يُسدَّد مبلغ التسوية حتى هذا التاريخ، تُسدَّد الدفعة رقم ' + L.next.no + ' بمبلغ ' + esMoney(L.next.amount) + ' في موعدها ' + qDmy(L.next.due) + ' ويُعاد احتساب العرض.'
+    : 'بعد هذا التاريخ يُعاد احتساب العرض.';
+}
+function dcSettleDoc(L, draft, Tp) {
+  const T = Tp || ES, sh = T.show || {}, on = function (k) { return sh[k] !== false; }, B = [], steps = (T.steps || []).filter(function (s) { return String(s).trim(); });
+  const tots = [['المتبقي على العقد', esMoney(L.remaining)], L.exempt ? ['إعفاء فائدة الأشهر التي لم تبدأ', '− ' + esMoney(L.exempt), 'neg'] : null, L.extra ? ['خصم إضافي', '− ' + esMoney(L.extra), 'neg'] : null, ['المبلغ المطلوب لإغلاق العقد', esMoney(L.due), 'gt']];
+  const its = L.items.map(function (x) { return [x.name, '− ' + esMoney(x.disc) + (x.full ? ' · إعفاء كامل' : '')]; });
+  const base = { hdr: Object.assign({}, QT.hdr), label: 'عرض التسوية المبكرة', title: T.title, sub: T.org + ' · ' + T.issuer, org: T.org, issuer: T.issuer, foot: T.org + ' · ' + T.auto, pill: 'نسخة العميل', auto: T.auto, slogan: d2Slogan(T),
+    fname: 'تسوية-مبكرة-' + L.contract + '.pdf', draft: draft, aud: draft || L.aud === false ? null : 'تنزيل عرض تسوية مبكرة PDF — ' + L.no };
+  if (DOCDSN.pq === 2) {
+    B.push(d3Card('بيانات العقد', 'user', [d3KV([['اسم العميل', L.client], ['رقم العقد', L.contract, true], ['تاريخ التسوية', qDmy(L.date)], ['صالح حتى', qDmy(L.valid)]])]));
+    B.push(d3Card('مبلغ التسوية', 'receipt', [T.intro ? e('p', { class: 'd3-p' }, T.intro) : null, d3KV([], tots.filter(Boolean))]));
+    if (on('items') && its.length) B.push(d3Card('البنود المخصومة', 'list', [d3KV(its)]));
+    if (on('valid')) B.push(d3Card('صلاحية العرض', 'clock', [e('div', { class: 'd3-exec' }, [e('b', {}, 'صالح حتى ' + qDmy(L.valid)), e('span', {}, esNextLine(L))])]));
+    if (on('steps') && steps.length) B.push(d3Card('خطوات القبول والسداد', 'shield', [d3List(steps, 0, false)], 'is-terms'));
+    if (on('note') && T.note) B.push(d3Card('تنويه', 'info', [e('p', { class: 'd3-p' }, T.note)], 'is-note', true));
+    if (on('appr')) B.push(d3ApprWide(L.no, 'pq', {}));
+    return Object.assign(base, { dsn: 2, cls: 'is-pq', en: 'EARLY SETTLEMENT', slogan0: T.slogan || QT0.slogan, blocks: B, stk: null, meta: [['رقم المستند', L.no], ['تاريخ الإصدار', qDmy(L.date)]], meta3: [['العميل', L.client, false]] });
+  }
+  B.push(dcKV([['العميل', L.client], ['رقم العقد', L.contract], ['صالح حتى', qDmy(L.valid)]], 'is-3'));
+  if (T.intro) B.push(dcPar(T.intro));
+  B.push(dcTbl('1 · مبلغ التسوية', ['البيان', 'المبلغ'], tots.filter(Boolean).map(function (t) { return t[2] === 'gt' ? dcGT([t[0], t[1]]) : [t[0], t[1]]; })));
+  let n = 1;
+  if (on('items') && its.length) B.push(dcTbl((++n) + ' · البنود المخصومة', ['البند', 'الخصم'], its));
+  if (on('valid')) B.push(e('div', {}, [dcH(++n, 'صلاحية العرض'), dcKV([['صالح حتى', qDmy(L.valid)]], 'is-1'), dcPar(esNextLine(L))]));
+  if (on('steps') && steps.length) B.push(dcTbl((++n) + ' · خطوات القبول والسداد', ['#', 'الخطوة'], steps.map(function (s, i) { return [e('span', { class: 'dc-n' }, String(i + 1)), s]; }), 'sec', 'dc-term'));
+  if (on('note') && T.note) B.push(dcPar(T.note, 'is-note'));
+  B.push(dcClose(T));
+  return Object.assign(base, { meta: [['رقم المستند', L.no], ['التاريخ', qDmy(L.date)], ['العميل', L.client, false]], stk: on('appr') ? 'pq' : null, blocks: B });
+}
+
+/* ---------- التقريب إلى مبلغ في نموذج عرض التسوية ---------- */
+function stlRound(S, R, onCh) {
+  const X = S.rnd || (S.rnd = { open: false, target: '', reason: 'خصم إضافي تقديرًا لتسويتك المبكرة', mode: { bank: 'full', admin: 'share', margin: 'share', nafith: '', interest: '' }, err: '' });
+  if (!X.open) return e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('التقريب إلى مبلغ', { size: 'sm', ui: 'sliders-horizontal', onClick: function () { X.open = true; X.err = ''; onCh(); } }))]);
+  const cur = {}; (R.items || []).forEach(function (it) { cur[it.k] = Number(it.after) || 0; });
+  const ks = ES_DISC.filter(function (k) { return cur[k] > 0; });
+  const apply = function () {
+    X.err = '';
+    try {
+      const t = Number(X.target);
+      if (!(t > 0)) throw new Error('اكتب المبلغ المستهدف.');
+      if (String(X.reason || '').trim().length < 3) throw new Error('اكتب سبب الخصم (3 أحرف على الأقل).');
+      const need = esH(R.after) - esH(t);
+      if (need <= 0) throw new Error('المبلغ المستهدف يجب أن يكون أقل من مبلغ التسوية الحالي ' + SR(R.after) + '.');
+      const add = esSplit(cur, need, X.mode);
+      Object.keys(add).forEach(function (k) { S.lines.push({ cat: 'extra', item: k, calc: 'amt', val: String(esS(add[k])), reason: String(X.reason).trim() }); });
+      X.open = false; X.target = '';
+    } catch (err) { X.err = (err && err.message) || 'تعذّر التقريب.'; }
+    onCh();
+  };
+  return e('div', { class: 'stl-lns' }, [e('b', {}, 'التقريب إلى مبلغ'),
+    e('small', { class: 'cu-dr-hint' }, 'يُعفى أولًا ما تختاره «كامل»، ثم يُوزَّع الباقي بالتساوي على ما تختاره «توزيع» — وتُضاف بنود خصم إضافي بالمبلغ. الضريبة لا تنقص.'),
+    e('div', { class: 'stl-ln-g' }, [DS.editField('المبلغ المستهدف (ر.س)', e('input', { class: 't2-input', type: 'number', min: '0', step: '0.01', dir: 'ltr', value: X.target, onInput: function (ev) { X.target = ev.target.value; } })),
+      DS.editField('سبب الخصم', e('input', { class: 't2-input', value: X.reason, onInput: function (ev) { X.reason = ev.target.value; } }))]),
+    e('div', { class: 'stl-ln-g' }, ks.map(function (k) { const it = (R.items || []).filter(function (x) { return x.k === k; })[0] || {};
+      return DS.editField((it.t || ES_NAME[k]) + ' · متبقٍ ' + stlN(cur[k]), DS.select({ value: X.mode[k] || 'none', options: [['none', '—'], ['full', 'كامل أولًا'], ['share', 'توزيع']], onChange: function (v) { X.mode[k] = v; } })); })),
+    X.err ? e('span', { class: 'cu-err', role: 'alert' }, X.err) : null,
+    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تطبيق التقريب', { size: 'sm', tone: 'primary', ui: 'check', onClick: apply })), liveOk(DS.button('إغلاق', { size: 'sm', ui: 'x', onClick: function () { X.open = false; onCh(); } }))])]);
+}
+
+/* ---------- صفحة الإعدادات: قالب التسوية المبكرة ---------- */
+const esDraft = function () { const D = JSON.parse(JSON.stringify(ES)); D.stepsT = (ES.steps || []).join('\n'); return D; };
+const esCalc0 = function () { return { no: '2026080007', customer: 'عميل تجريبي', firstDue: '2026-08-27', months: '8', paid: '2', date: lvToday(), target: '', reason: 'خصم إضافي تقديرًا لتسويتك المبكرة',
+  totals: { product: '5000', admin: '300', margin: '550', bank: '100', nafith: '100', vat: '907.5', interest: '298.46' }, mode: { bank: 'full', admin: 'share', margin: 'share', nafith: '', interest: '' } }; };
+function esRun(C) {
+  const c = { no: C.no, customer: C.customer, firstDue: C.firstDue, months: Math.max(1, parseInt(C.months, 10) || 1), paid: Math.max(0, parseInt(C.paid, 10) || 0), totals: {} };
+  ES_ITEMS.forEach(function (x) { c.totals[x[0]] = Number(C.totals[x[0]]) || 0; });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(C.firstDue)) || !/^\d{4}-\d{2}-\d{2}$/.test(String(C.date))) throw new Error('اختر تاريخ أول دفعة وتاريخ التسوية.');
+  if (c.paid > c.months) throw new Error('الدفعات المسدَّدة أكثر من عدد الدفعات.');
+  const t = Number(C.target);
+  if (t > 0) return esToTarget(c, C.date, { target: t, fullItems: ES_DISC.filter(function (k) { return C.mode[k] === 'full'; }), shareItems: ES_DISC.filter(function (k) { return C.mode[k] === 'share'; }), reason: C.reason });
+  return esSettle(c, C.date);
+}
+function sysEsPage() {
+  const can = cuCan('settings.qtpl'), D = ADM.esD || (ADM.esD = esDraft()), C = ADM.esC || (ADM.esC = esCalc0());
+  const inp = function (k, o) { return e('input', Object.assign({ class: 't2-input', value: D[k] || '', disabled: can ? null : 'disabled', onInput: function (ev) { D[k] = ev.target.value; } }, o || {})); };
+  const ta = function (k, rows) { return e('textarea', { class: 't2-input', rows: String(rows || 3), disabled: can ? null : 'disabled', onInput: function (ev) { D[k] = ev.target.value; } }, D[k] || ''); };
+  const ck = function (k, t) { return tmCk(D.show, k, t, false, true); };
+  const tpl = function () { const T = JSON.parse(JSON.stringify(D)); T.steps = String(D.stepsT || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean); delete T.stepsT; return T; };
+  let R = null, err = '';
+  try { R = esRun(C); } catch (x) { err = (x && x.message) || 'تعذّر الحساب.'; }
+  const L = R ? esFromCalc(R) : null, T = tpl();
+  const cin = function (k, o) { return e('input', Object.assign({ class: 't2-input', value: C[k], onChange: function (ev) { C[k] = ev.target.value; draw(); } }, o || {})); };
+  const tin = function (k) { return DS.editField(ES_NAME[k], e('input', { class: 't2-input', type: 'number', min: '0', step: '0.01', dir: 'ltr', value: C.totals[k], onChange: function (ev) { C.totals[k] = ev.target.value; draw(); } })); };
+  const prev = function () { if (!L) { snack(err || 'أكمل بيانات الحاسبة أولًا'); return; } dcPdf(dcSettleDoc(L, true, T)); };
+  const save = function () {
+    const c = tpl(); if (String(c.issuer || '').trim().length < 2 || String(c.title || '').trim().length < 2) { snack('اكتب الجهة المُصدِرة وعنوان المستند'); return; }
+    if (JSON.stringify(c) === JSON.stringify(JSON.parse(JSON.stringify(ES)))) { snack('لا تغيير'); return; }
+    Object.keys(ES).forEach(function (k) { delete ES[k]; }); Object.assign(ES, c); ADM.esD = esDraft(); cuSetLog('عدّل قالب التسوية المبكرة'); snack('حُفظ القالب — يُطبَّق على كل عرض تسوية جديد'); draw();
+  };
+  const msg = L ? esFill(T, L) : '';
+  const bub = function (t, x) { return e('div', { class: 'stl-lns' }, [e('b', {}, t), e('div', { class: 't2-input', style: 'white-space:pre-wrap;line-height:1.8;height:auto' }, x)]); };
+  return [DS.note('info', 'قالب التسوية المبكرة — على ورق عرض سعر الشركاء وختمه', 'يصدر عن ' + (ES.issuer || 'قسم التحصيل') + '. تُعفى فائدة الأشهر التي لم تبدأ، والخصم الإضافي على البنود المختارة فقط، والضريبة محصّلة ولا تنقص، والعرض صالح حتى تاريخ الدفعة القادمة (شاملًا). العروض الصادرة تبقى كما صدرت.'),
+    can ? null : cuRO('settings.qtpl'),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, T.title), e('small', {}, T.org + ' · ' + T.issuer)]), e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('معاينة PDF', { ui: 'file-text', onClick: prev })), can ? liveOk(DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save })) : null])]),
+    e('div', { class: 'ax-form' }, [
+      tmFs('1. الترويسة والجهة المُصدِرة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('اسم المنشأة', inp('org')), DS.editField('الجهة المُصدِرة', inp('issuer')), DS.editField('عنوان المستند', inp('title')), DS.editField('الشعار النصي في الختام', inp('slogan')), DS.editField('عبارة الإصدار الآلي', inp('auto'))])]),
+      tmFs('2. المحتوى', 'يظهر على المستند بالترتيب', [DS.editField('المقدمة', ta('intro', 2)), DS.editField('خطوات القبول والسداد — خطوة في كل سطر', ta('stepsT', 4)), DS.editField('التنويه', ta('note', 3)),
+        e('div', { class: 't2-row-wrap' }, [ck('items', 'البنود المخصومة'), ck('valid', 'صلاحية العرض والدفعة القادمة'), ck('steps', 'الخطوات'), ck('note', 'التنويه'), ck('appr', 'الاعتماد والختم')])]),
+      tmFs('3. رسالة العميل', 'الحقول: {name} {contract} {remaining} {exempt} {extra} {due} {valid} {date} {no}', [DS.editField('نص الرسالة', ta('msg', 7))]),
+      tmFs('4. الحاسبة', 'تجربة القواعد على عقد افتراضي — لا تحفظ شيئًا', [
+        e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('رقم العقد', cin('no', { dir: 'ltr' })), DS.editField('العميل', cin('customer')), DS.editField('تاريخ أول دفعة', cin('firstDue', { type: 'date', dir: 'ltr' })), DS.editField('تاريخ التسوية', cin('date', { type: 'date', dir: 'ltr' })),
+          DS.editField('عدد الدفعات', cin('months', { type: 'number', min: '1', dir: 'ltr' })), DS.editField('الدفعات المسدَّدة', cin('paid', { type: 'number', min: '0', dir: 'ltr' }))]),
+        e('div', { class: 'sys-form is-2 cu-bd-form' }, ES_ITEMS.map(function (x) { return tin(x[0]); })),
+        e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('التقريب إلى مبلغ (اختياري)', cin('target', { type: 'number', min: '0', step: '0.01', dir: 'ltr' })), DS.editField('سبب الخصم الإضافي', cin('reason'))].concat(ES_DISC.map(function (k) {
+          return DS.editField(ES_NAME[k], DS.select({ value: C.mode[k] || 'none', options: [['none', '—'], ['full', 'كامل أولًا'], ['share', 'توزيع']], onChange: function (v) { C.mode[k] = v; draw(); } })); }))),
+        err ? DS.note('warn', 'تعذّر الحساب', err) : null,
+        R ? DS.fields([['المتبقي على العقد', esMoney(R.ledger.remaining)], ['إعفاء فائدة الأشهر التي لم تبدأ', '− ' + esMoney(R.ledger.interestExemption)], ['خصم إضافي', '− ' + esMoney(R.ledger.extraDiscount)], ['المبلغ المطلوب لإغلاق العقد', esMoney(R.ledger.due)],
+          ['صافي الفائدة', esMoney(R.netInterest)], ['صالح حتى', qDmy(R.validUntil)], ['الدفعة القادمة', R.nextDue ? '#' + R.nextInstallmentNo + ' · ' + qDmy(R.nextDue) + ' · ' + esMoney(R.nextInstallment) : '—'], ['المتأخر', R.overdue.count ? fmtNum(R.overdue.count) + ' · ' + esMoney(R.overdue.amount) : 'لا يوجد']]
+          .concat(R.discountedItems.map(function (x) { return [x.name, '− ' + esMoney(x.discount) + (x.fullyExempt ? ' · إعفاء كامل' : '')]; }))) : null,
+        R && R.flags.length ? DS.note('warn', 'تنبيه', R.flags.join(' · ')) : null]),
+      L ? tmFs('5. معاينة الرسالة', 'كما تصل العميل — لا يُرسل شيء من هنا', [bub('واتساب', msg), bub('البريد — ' + T.title + ' · العقد ' + L.contract, msg), bub('إشعار التطبيق', T.title + ': ' + esMoney(L.due) + ' — صالح حتى ' + qDmy(L.valid))]) : null])];
 }
 /* إعدادات التسوية المبكرة — في «إعدادات النظام · قسم العملاء» */
 function sysSettlePage() {
@@ -25121,8 +25350,9 @@ function stlClientPanel(o) {
   return DS.panel('عرض التسوية المبكرة', 'العقد ' + o.contract_no + ' · العرض ' + o.quote_no, [
     e('div', { class: 'stl-cl-amt' }, [e('small', {}, o.executed ? 'المبلغ المسدَّد' : 'مبلغ التسوية المطلوب لإغلاق العقد'), e('b', {}, SR(o.amount)),
       e('small', {}, 'بدل المتبقي ' + SR(o.remaining) + ' · خصم ' + SR(o.discount) + (Number(o.exempt_amount) ? ' منه ربح أشهر لم تبدأ معفاة ' + SR(o.exempt_amount) : '') + (o.executed ? '' : ' · صالح حتى ' + o.valid_until))]),
-    tb, e('small', { class: 'cu-dr-hint' }, 'القيم قبل الضريبة لكل بند، وضريبة المنتج وضريبة الخدمات منفصلتان وتُحسبان بعد الخصم.' + (o.accepted_at && !o.executed ? ' وافقتَ على العرض.' : '')),
-    act, out]);
+    tb, e('small', { class: 'cu-dr-hint' }, 'القيم قبل الضريبة لكل بند، والضريبة محصّلة ولا تنقص بالخصم.' + (o.accepted_at && !o.executed ? ' وافقتَ على العرض.' : '')),
+    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تنزيل العرض PDF', { size: 'sm', ui: 'file-pdf', onClick: function () { try { dcPdf(dcSettleDoc(esFromOffer(o), false)); } catch (err) { snack('تعذّر تجهيز الملف.'); } } }))]),
+act, out]);
 }
 async function stlClientLoad() {
   const j = await liveSb('rpc/my_settle_offers', { body: {} }).catch(function () { return null; });
