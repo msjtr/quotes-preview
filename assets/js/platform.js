@@ -7882,59 +7882,127 @@ function sysSlaPage() {
     const ch = []; Object.keys(D0).forEach(function (k) { const n = Math.max(1, Math.min(30, parseInt(D0[k], 10) || 1)); if (k.indexOf('req:') === 0) { const t = k.slice(4); if (CU_REQ_SLA[t] !== n) { ch.push(rType(t)[1] + ': ' + n); CU_REQ_SLA[t] = n; } } else if (CU_SLA[k] !== n) { const l = CU_SLA_ROWS.reduce(function (a, g) { return a.concat(g[1]); }, []).filter(function (y) { return y[0] === k; })[0]; ch.push((l ? l[1] : k) + ': ' + n); CU_SLA[k] = n; } });
     ADM.slaD = {}; if (ch.length) { cuSetLog('عدّل مدد الإنجاز — ' + ch.join('، ') + ' يوم'); snack('حُفظت مدد الإنجاز'); } else snack('لا تغييرات'); draw(); } }), DS.button('تراجع', { onClick: function () { ADM.slaD = {}; draw(); } })])] : []);
 }
-/* v541: مركز القوالب — كل ما يصل العميل والفريق في صفحة واحدة: قوالب واتساب المعتمدة في Meta (وأين تُستخدم)،
- * ومراحل توثيق الملف (واتساب · البريد · إشعار المنصة)، وقوالب التقييم، وقوالب مركز الإرسال، والردود الجاهزة.
- * بحث وتصفية وترتيب، ومعاينة حقيقية: نص القالب المعتمد من Meta نفسه مع صورته — للقراءة فقط (التعديل في مكانه). */
-const MH = { wa: null, rules: [], stages: [], at: 0, busy: false, err: '', txt: {}, txtBusy: {}, syncing: false };
+/* v546: مركز القوالب — كتالوج «رسائل» لا قائمة قوالب: كل رسالة بطاقة واحدة فيها قنواتها (واتساب · البريد · إشعار المنصة · مركز الإرسال)
+ * ونسخها (الأساسي + الاحتياطي) بلا تكرار، وعيّنات حقيقية لكل متغير، وصورة كل قالب. القوالب المعتمدة في Meta وغير المفعّلة في قسم مستقل.
+ * الجرد (v546): 34 قالب واتساب — 23 يرسلها كود المنصة و11 غير مفعّلة · 17 مرحلة توثيق · 6 تقييمات · 12 قالب مركز إرسال · 6 بريد حالات الطلب · الردود الجاهزة. */
+const MH = { wa: null, rules: [], stages: [], status: [], at: 0, busy: false, err: '', txt: {}, txtBusy: {}, syncing: false };
 const MH_CDN = 'https://media.tera-services.com.sa/msg', MH_IMG = '/assets/brand/wa/';
-const MH_GRP = [['pay', 'السداد والإيصالات', 'credit-card:teal'], ['rate', 'التقييم', 'star:gold'], ['acct', 'الحساب والتدشين', 'rocket-launch:teal'], ['ver', 'توثيق الملف', 'seal-check:teal'],
-  ['order', 'الطلبات والعروض', 'clipboard-text:navy'], ['contract', 'العقود', 'file-text:navy'], ['support', 'الدعم', 'headset:sky'], ['sec', 'الأمان والتحقق', 'shield-check:navy'], ['gen', 'رسائل عامة', 'megaphone-simple:sky']];
-/* [الاسم بالعربية · متى يُرسل · المجموعة · الصورة · مستخدم في النظام · معاني المتغيرات] — من كود المنصة وقواعد الإرسال (v541) */
-const MH_MAP = {
-  tera_payment_received: ['إيصال استلام الدفعة', 'بعد كل سداد ناجح — ومعه ملف الإيصال PDF', 'pay', null, 1, ['اسم العميل', 'المبلغ', 'رقم العملية', 'مصدر الدفع', 'التاريخ']],
-  tera_payment_document: ['إيصال الدفعة — احتياطي', 'إذا تعذّر قالب الإيصال الأساسي', 'pay', null, 1, ['اسم العميل', 'المبلغ', 'رقم العملية']],
-  tera_payment_receipt: ['إيصال الدفعة بالصورة — احتياطي', 'إذا تعذّر إرسال ملف الإيصال', 'pay', MH_IMG + 'receipt-paid.jpg', 1, null],
-  tera_payment_failed: ['عملية دفع لم تكتمل', 'عند فشل عملية الدفع — ومعه إيصال المحاولة', 'pay', MH_IMG + 'receipt-failed.jpg', 1, null],
-  tera_payment_refunded: ['استرداد مبلغ', 'عند تنفيذ الاسترداد', 'pay', MH_IMG + 'receipt-refund.jpg', 1, null],
-  tera_payment_link: ['رابط الدفع', 'عند إنشاء رابط دفع وإرساله', 'pay', MH_IMG + 'ev-pay-link.jpg', 1, null],
-  tera_payment_due: ['دفعة مستحقة', 'تذكير السداد من «إدارة التذكير»', 'pay', MH_IMG + 'ev-pay-due.jpg', 1, null],
-  tera_payment_reminder: ['تذكير بموعد الدفعة', 'تذكير السداد — احتياطي', 'pay', MH_IMG + 'ev-pay-due.jpg', 1, null],
-  tera_payment_overdue: ['دفعة متأخرة', '', 'pay', MH_IMG + 'ev-pay-overdue.jpg', 0, null],
-  tera_payment_due_soon: ['دفعة قريبة الموعد', '', 'pay', MH_IMG + 'ev-pay-due.jpg', 0, null],
-  tera_payment_confirmed: ['تأكيد السداد', '', 'pay', MH_IMG + 'ev-pay-thanks.jpg', 0, null],
-  tera_payment_early: ['التسوية المبكرة', '', 'pay', null, 0, null],
-  tera_rating_pay: ['تقييم السداد', 'بعد كل دفعة تُسدَّد — بخمسة أزرار', 'rate', MH_IMG + 'ev-survey-settle.jpg', 1, ['اسم العميل', 'الدفعة']],
-  tera_rating_v2: ['تقييم المنصة', 'بعد التدشين والدخول — بخمسة أزرار', 'rate', MH_CDN + '/brand/wa/ev-survey-launch.jpg', 1, ['اسم العميل']],
-  tera_rating: ['تقييم المنصة — احتياطي', 'إذا تعذّر قالب تقييم المنصة', 'rate', MH_CDN + '/brand/wa/ev-survey-launch.jpg', 1, ['اسم العميل']],
-  tera_launch_films: ['تدشين الهوية مع الفيلمين', 'أول رسالة في دورة رسائل العميل', 'acct', MH_CDN + '/brand/wa/ev-launch-v2.jpg', 1, ['اسم العميل']],
-  tera_launch: ['تدشين الهوية', 'مركز الإرسال ودورة رسائل العميل', 'acct', MH_IMG + 'ev-launch.jpg', 1, ['اسم العميل']],
-  tera_account_access: ['بيانات الدخول', 'دورة رسائل العميل — بعد رسالة التدشين', 'acct', MH_CDN + '/brand/wa/acct-ready.jpg', 1, ['اسم العميل']],
-  tera_account_ready: ['تحديث الحساب', 'مركز الإرسال — العملاء المنقولون', 'acct', MH_IMG + 'acct-ready.jpg', 1, null],
-  tera_film: ['فيلم التدشين', '', 'acct', null, 0, null],
-  tera_profile_review_img: ['مراحل توثيق الملف — بالصورة', 'كل مراحل التوثيق — بصورة المرحلة', 'ver', MH_IMG + 'pv-submitted.jpg', 1, ['اسم صاحب الملف', 'رقم الطلب', 'الحالة', 'المطلوب منه', 'الخطوة التالية', 'رابط حسابه']],
-  tera_profile_review_update: ['مراحل توثيق الملف — نصي', 'احتياطي: إذا تعذّر قالب الصورة، وللمراحل التي بلا صورة', 'ver', null, 1, ['اسم صاحب الملف', 'رقم الطلب', 'الحالة', 'المطلوب منه', 'الخطوة التالية', 'رابط حسابه']],
-  tera_profile_review_notice: ['إشعار التوثيق — تسويقي', '', 'ver', null, 0, null],
-  tera_order_created: ['طلب جديد', 'عند تسجيل طلب جديد', 'order', MH_IMG + 'ev-order-new.jpg', 1, null],
-  tera_order_approved: ['اعتماد الطلب', 'عند اعتماد الطلب', 'order', MH_IMG + 'ev-order-approved.jpg', 1, null],
-  tera_order_rejected: ['رفض الطلب', 'عند رفض الطلب', 'order', MH_IMG + 'ev-order-rejected.jpg', 1, null],
-  tera_order_status_update: ['تحديث حالة الطلب', 'عند تغيّر حالة الطلب', 'order', MH_IMG + 'ev-order-status.jpg', 1, null],
-  tera_quotation_offer: ['عرض السعر', '', 'order', MH_IMG + 'ev-quote.jpg', 0, null],
-  tera_contract_created: ['عقد جديد', '', 'contract', MH_IMG + 'ev-contract-new.jpg', 0, null],
-  tera_contract_signed: ['توقيع العقد', '', 'contract', MH_IMG + 'ev-contract-signed.jpg', 0, null],
-  tera_support_notice: ['إشعار الدعم', 'ردود الدعم والتذاكر', 'support', MH_IMG + 'ev-support.jpg', 1, null],
-  tera_mobile_confirmed: ['تأكيد رقم الجوال', '', 'sec', MH_IMG + 'ev-mobile.jpg', 0, null],
-  verify_otp_usecase: ['رمز التحقق', 'رموز الدخول وتأكيد العمليات', 'sec', null, 1, ['الرمز']],
-  tera_update: ['رسالة عامة', 'مركز الإرسال والإعلانات', 'gen', null, 1, null]
+const MH_GRP = [['pay', 'السداد والإيصالات', 'credit-card'], ['rate', 'التقييم', 'star'], ['acct', 'الحساب والتدشين', 'rocket-launch'], ['ver', 'توثيق الملف', 'seal-check'],
+  ['order', 'الطلبات والعروض', 'clipboard-text'], ['contract', 'العقود', 'file-text'], ['support', 'الدعم', 'headset'], ['sec', 'الأمان والتحقق', 'shield-check'], ['gen', 'رسائل عامة', 'megaphone-simple'],
+  ['rep', 'الردود الجاهزة', 'chat-circle-dots'], ['off', 'معتمدة وغير مفعّلة', 'clock']];
+/* قوالب Meta: [الاسم · الترويسة (رابط صورة | 'doc' | 'video' | null) · معاني المتغيرات · عيّنة لكل متغير · يرسلها كود المنصة (من الجرد) · أين تُرسل] */
+const MH_T = {
+  tera_payment_received: ['إيصال استلام الدفعة', 'doc', ['اسم العميل', 'المبلغ', 'رقم العملية', 'مصدر الدفع', 'التاريخ'], ['محمد الشمري', '1,250.00 ريال', 'TRX-482193', 'بطاقة مدى', '27-10-2026'], 1, 'بوابة الدفع آليًا بعد كل سداد ناجح'],
+  tera_payment_document: ['إيصال الدفعة — ملف', 'doc', ['اسم العميل', 'وصف المرفق', 'رقم العملية'], ['محمد الشمري', 'إيصال سداد 1,250.00 ريال', 'TRX-482193'], 1, 'احتياطي إذا تعذّر القالب الأساسي'],
+  tera_payment_receipt: ['إيصال الدفعة — بالصورة', MH_IMG + 'receipt-paid.jpg', ['اسم العميل', 'المبلغ', 'رقم العملية', 'البيان', 'التاريخ'], ['محمد الشمري', '1,250.00', 'TRX-482193', 'الدفعة 4 من 12', '27-10-2026'], 1, 'احتياطي إذا تعذّر إرسال ملف الإيصال'],
+  tera_payment_failed: ['عملية دفع لم تكتمل', MH_IMG + 'receipt-failed.jpg', ['اسم العميل', 'المبلغ', 'رقم العملية', 'البيان'], ['محمد الشمري', '1,250.00', 'TRX-482194', 'الدفعة 4 من 12'], 1, 'بوابة الدفع آليًا عند فشل العملية'],
+  tera_payment_refunded: ['استرداد مبلغ', MH_IMG + 'receipt-refund.jpg', ['اسم العميل', 'المبلغ المسترد', 'رقم العملية', 'البيان'], ['محمد الشمري', '350.00', 'RF-10233', 'استرداد رسوم خدمة'], 1, 'بوابة الدفع آليًا عند تنفيذ الاسترداد'],
+  tera_payment_link: ['رابط الدفع', MH_IMG + 'ev-pay-link.jpg', ['اسم العميل', 'المبلغ', 'رقم الرابط', 'صالح حتى'], ['محمد الشمري', '1,250.00', 'PL-2026-0915', '30-10-2026'], 1, 'عند إصدار رابط دفع من المالية'],
+  tera_payment_due: ['دفعة مستحقة', MH_IMG + 'ev-pay-due.jpg', ['اسم العميل', 'الموضوع', 'المبلغ', 'المرجع', 'البيان', 'تاريخ الاستحقاق'], ['محمد الشمري', 'عقد C-2026-0142', '1,250.00', 'INV-48213', 'الدفعة 5 من 12', '05-11-2026'], 1, 'تذكير السداد من «إدارة التذكير»'],
+  tera_rating_pay: ['تقييم السداد', MH_IMG + 'ev-survey-settle.jpg', ['اسم العميل', 'الدفعة'], ['محمد الشمري', 'الدفعة 4 من 12'], 1, 'دورة رسائل العميل — بعد كل دفعة'],
+  tera_rating_v2: ['تقييم المنصة', MH_CDN + '/brand/wa/ev-survey-launch.jpg', ['اسم العميل'], ['محمد الشمري'], 1, 'دورة رسائل العميل — بعد التدشين والدخول'],
+  tera_rating: ['تقييم المنصة — نصي', null, ['اسم العميل'], ['محمد الشمري'], 1, 'احتياطي إذا تعذّر قالب الصورة'],
+  tera_launch_films: ['تدشين الهوية مع الفيلمين', MH_CDN + '/brand/wa/ev-launch-v2.jpg', ['اسم العميل'], ['محمد الشمري'], 1, 'دورة رسائل العميل — أول رسالة'],
+  tera_launch: ['تدشين الهوية — النسخة السابقة', MH_IMG + 'ev-launch.jpg', ['اسم العميل'], ['محمد الشمري'], 1, 'مركز الإرسال (حملة التدشين)'],
+  tera_account_access: ['بيانات الدخول', MH_CDN + '/brand/wa/acct-ready.jpg', ['اسم العميل'], ['محمد الشمري'], 1, 'دورة رسائل العميل — بعد رسالة التدشين'],
+  tera_account_ready: ['تحديث الحساب — المنقولون', MH_IMG + 'acct-ready.jpg', ['اسم العميل', 'رابط بوابة الدخول'], ['محمد الشمري', 'tera-services.com.sa/login'], 1, 'مركز الإرسال — العملاء المنقولون'],
+  tera_profile_review_img: ['مراحل التوثيق — بالصورة', MH_IMG + 'pv-submitted.jpg', ['اسم صاحب الملف', 'رقم الطلب', 'الحالة', 'المطلوب منه', 'الخطوة التالية', 'رابط حسابه'], ['محمد الشمري', 'REQ-10458', 'أُرسل طلب الاعتماد', 'لا شيء الآن', 'يراجع الفريق ملفك', 'tera-services.com.sa/clients'], 1, 'كل مراحل التوثيق التي لها صورة'],
+  tera_profile_review_update: ['مراحل التوثيق — نصي', null, ['اسم صاحب الملف', 'رقم الطلب', 'الحالة', 'المطلوب منه', 'الخطوة التالية', 'رابط حسابه'], ['محمد الشمري', 'REQ-10458', 'أُعيد الطلب للاستكمال', 'تصحيح البنود المحددة', 'أعد الإرسال بعد التعديل', 'tera-services.com.sa/clients'], 1, 'احتياطي، وللمراحل التي بلا صورة'],
+  tera_order_created: ['طلب جديد', null, ['اسم العميل', 'رقم الطلب'], ['محمد الشمري', 'R-10458'], 1, 'التواصل المباشر — عند تسجيل الطلب'],
+  tera_order_approved: ['اعتماد الطلب', null, ['اسم العميل', 'رقم الطلب'], ['محمد الشمري', 'R-10458'], 1, 'التواصل المباشر — عند الاعتماد'],
+  tera_order_rejected: ['رفض الطلب', null, ['اسم العميل', 'رقم الطلب', 'السبب', 'رابط الدعم'], ['محمد الشمري', 'R-10458', 'المستندات غير مكتملة', 'tera-services.com.sa/support'], 1, 'التواصل المباشر — عند الرفض'],
+  tera_order_status_update: ['تحديث حالة الطلب', null, ['اسم العميل', 'رقم الطلب', 'الحالة', 'رابط الطلب'], ['محمد الشمري', 'R-10458', 'قيد التنفيذ', 'tera-services.com.sa/clients'], 1, 'التواصل المباشر — عند تغيّر الحالة'],
+  tera_support_notice: ['إشعار الدعم', null, ['اسم العميل', 'رقم التذكرة', 'الموضوع'], ['محمد الشمري', 'T-2291', 'استفسار عن الدفعة'], 1, 'التواصل المباشر — تذاكر الدعم'],
+  tera_update: ['تحديث على طلبك', MH_IMG + 'ev-order-status.jpg', ['اسم العميل', 'الموضوع', 'الحالة', 'التفاصيل', 'رقم المرجع', 'التاريخ'], ['محمد الشمري', 'طلب خدمة', 'قيد التنفيذ', 'بدأ الفريق تنفيذ طلبك', 'R-10458', '27-10-2026'], 1, 'مركز الإرسال والإشعارات — صورة الحدث تتغيّر حسبه'],
+  verify_otp_usecase: ['رمز التحقق', null, ['الرمز'], ['482913'], 1, 'رموز الدخول وتأكيد العمليات'],
+  tera_payment_confirmed: ['تأكيد السداد', null, ['اسم العميل', 'المبلغ', 'رقم العملية'], ['محمد الشمري', '1,250.00', 'TRX-482193'], 0, ''],
+  tera_payment_due_soon: ['دفعة قريبة الموعد', null, ['اسم العميل', 'المبلغ', 'رقم العقد', 'التاريخ', 'رابط السداد'], ['محمد الشمري', '1,250.00', 'C-2026-0142', '05-11-2026', 'tera-services.com.sa/pay'], 0, ''],
+  tera_payment_reminder: ['تذكير بموعد الدفعة', null, ['اسم العميل', 'المبلغ', 'رقم الطلب أو العقد', 'تاريخ الاستحقاق', 'رابط السداد'], ['محمد الشمري', '1,250.00', 'C-2026-0142', '05-11-2026', 'tera-services.com.sa/pay'], 0, ''],
+  tera_payment_overdue: ['دفعة متأخرة', null, ['اسم العميل', 'المبلغ', 'رقم العقد', 'تاريخ الاستحقاق', 'رابط السداد'], ['محمد الشمري', '1,250.00', 'C-2026-0142', '05-10-2026', 'tera-services.com.sa/pay'], 0, ''],
+  tera_payment_early: ['التسوية المبكرة', null, ['اسم العميل', 'المبلغ', 'رقم العقد'], ['محمد الشمري', '6,800.00', 'C-2026-0142'], 0, ''],
+  tera_quotation_offer: ['عرض السعر', null, ['اسم العميل', 'رقم الطلب', 'الإجمالي', 'صالح حتى', 'رابط العرض'], ['محمد الشمري', 'R-10458', '14,950.00', '10-11-2026', 'tera-services.com.sa/clients'], 0, ''],
+  tera_contract_created: ['عقد جديد', null, ['اسم العميل', 'رقم العقد', 'رقم الطلب', 'رابط التوقيع'], ['محمد الشمري', 'C-2026-0142', 'R-10458', 'tera-services.com.sa/sign'], 0, ''],
+  tera_contract_signed: ['توقيع العقد', null, ['اسم العميل', 'رقم العقد', 'رابط التحميل'], ['محمد الشمري', 'C-2026-0142', 'tera-services.com.sa/clients'], 0, ''],
+  tera_mobile_confirmed: ['تأكيد رقم الجوال', null, ['اسم العميل'], ['محمد الشمري'], 0, ''],
+  tera_profile_review_notice: ['إشعار التوثيق — تسويقي', null, ['اسم صاحب الملف', 'رقم الطلب', 'نوع الحدث', 'المهمة', 'الإجراء التالي'], ['محمد الشمري', 'REQ-10458', 'أُعيد الطلب', 'تصحيح البنود', 'أعد الإرسال'], 0, ''],
+  tera_film: ['فيلم التدشين', 'video', ['عنوان الفيلم', 'وصف قصير'], ['فيلم تدشين حسابك', 'رحلتك مع تيرا في دقيقة'], 0, '']
 };
+/* الرسائل: كل رسالة بطاقة واحدة — wa: [الأساسي, …الاحتياطي] · comm: أسماء قوالب مركز الإرسال المرتبطة · st: بريد حالات الطلب · sv: مفتاح الاستبانة */
+const MH_MSG = [
+  { id: 'pay-receipt', g: 'pay', t: 'إيصال استلام الدفعة', w: 'بعد كل سداد ناجح — ومعه ملف الإيصال PDF بالختم', wa: ['tera_payment_received', 'tera_payment_document', 'tera_payment_receipt'], comm: ['تأكيد استلام السداد'] },
+  { id: 'pay-failed', g: 'pay', t: 'عملية دفع لم تكتمل', w: 'عند فشل عملية الدفع', wa: ['tera_payment_failed'] },
+  { id: 'pay-refund', g: 'pay', t: 'استرداد مبلغ', w: 'عند تنفيذ الاسترداد', wa: ['tera_payment_refunded'] },
+  { id: 'pay-link', g: 'pay', t: 'رابط الدفع', w: 'عند إصدار رابط دفع وإرساله للعميل', wa: ['tera_payment_link'] },
+  { id: 'pay-due', g: 'pay', t: 'دفعة مستحقة — تذكير', w: 'تذكير السداد من «إدارة التذكير»، ويدويًا من مركز الإرسال', wa: ['tera_payment_due'], comm: ['تذكير بموعد الدفعة'] },
+  { id: 'pay-late', g: 'pay', t: 'دفعة متأخرة', w: 'يدويًا من مركز الإرسال', comm: ['تنبيه دفعة متأخرة'] },
+  { id: 'rate-pay', g: 'rate', t: 'تقييم بعد سداد الدفعة', w: 'بعد كل دفعة تُسدَّد — بخمسة أزرار', wa: ['tera_rating_pay'], sv: 'pay' },
+  { id: 'rate-launch', g: 'rate', t: 'استبانة المنصة بعد التدشين', w: 'بعد التدشين والدخول — بخمسة أزرار', wa: ['tera_rating_v2', 'tera_rating'], sv: 'launch' },
+  { id: 'rate-service', g: 'rate', t: 'تقييم الخدمة', w: '', sv: 'service' },
+  { id: 'rate-support', g: 'rate', t: 'تقييم الدعم', w: '', sv: 'support' },
+  { id: 'rate-settle', g: 'rate', t: 'استبانة بعد السداد الكامل', w: '', sv: 'settle' },
+  { id: 'rate-nps', g: 'rate', t: 'مؤشر الولاء (NPS)', w: '', sv: 'nps' },
+  { id: 'acct-launch', g: 'acct', t: 'تدشين الهوية مع الفيلمين', w: 'أول رسالة في دورة رسائل العميل', wa: ['tera_launch_films', 'tera_launch'], comm: ['تدشين الهوية الجديدة — رسالة التدشين مع الفيلمين'] },
+  { id: 'acct-access', g: 'acct', t: 'بيانات الدخول', w: 'بعد رسالة التدشين — عند ضغط «بيانات دخولي»', wa: ['tera_account_access'] },
+  { id: 'acct-ready', g: 'acct', t: 'تحديث الحساب — العملاء المنقولون', w: 'حملة مركز الإرسال للعملاء المنقولين', wa: ['tera_account_ready'], comm: ['تحديث الحساب — العملاء المنقولون'] },
+  { id: 'acct-welcome', g: 'acct', t: 'ترحيب بعميل جديد', w: 'يدويًا من مركز الإرسال', comm: ['ترحيب بعميل جديد'] },
+  { id: 'ver-complete', g: 'ver', t: 'استكمال بيانات الملف', w: 'يدويًا من مركز الإرسال', comm: ['استكمال بيانات الملف الشخصي'] },
+  { id: 'ord-new', g: 'order', t: 'طلب جديد', w: 'عند تسجيل الطلب', wa: ['tera_order_created'], st: ['under_review'] },
+  { id: 'ord-ok', g: 'order', t: 'اعتماد الطلب', w: 'عند اعتماد الطلب', wa: ['tera_order_approved'], st: ['accepted'], comm: ['اعتماد طلب الخدمة'] },
+  { id: 'ord-no', g: 'order', t: 'رفض الطلب', w: 'عند رفض الطلب', wa: ['tera_order_rejected'], st: ['rejected'] },
+  { id: 'ord-st', g: 'order', t: 'تحديث حالة الطلب', w: 'عند تغيّر الحالة: يحتاج تعديلًا · نُفّذ · انتهت صلاحيته', wa: ['tera_order_status_update', 'tera_update'], st: ['needs_changes', 'executed', 'expired'] },
+  { id: 'ord-quote', g: 'order', t: 'عرض السعر جاهز', w: 'يدويًا من مركز الإرسال', comm: ['عرض السعر جاهز'] },
+  { id: 'ctr-upd', g: 'contract', t: 'تحديث على العقد', w: 'توحيد أو تأجيل أو تسوية — يدويًا من مركز الإرسال', comm: ['تحديث على العقد'] },
+  { id: 'sup-ticket', g: 'support', t: 'تذكرة دعم', w: 'عند تسجيل تذكرة دعم', wa: ['tera_support_notice'] },
+  { id: 'sec-otp', g: 'sec', t: 'رمز التحقق', w: 'رموز الدخول وتأكيد العمليات الحساسة', wa: ['verify_otp_usecase'] },
+  { id: 'gen-maint', g: 'gen', t: 'صيانة مجدولة', w: 'يدويًا من مركز الإرسال', comm: ['صيانة مجدولة للمنصة'] },
+  { id: 'gen-offer', g: 'gen', t: 'عرض خاص في المتجر', w: 'يدويًا من مركز الإرسال', comm: ['عرض خاص في متجر تيرا'] }
+];
 const MH_ST = { APPROVED: ['معتمد', 'ok'], PENDING: ['بانتظار اعتماد Meta', 'warn'], IN_APPEAL: ['قيد الاعتراض', 'warn'], REJECTED: ['مرفوض من Meta', 'danger'], PAUSED: ['موقوف مؤقتًا', 'warn'], DISABLED: ['معطّل', 'danger'] };
 const MH_CAT = { UTILITY: 'أداة مساعدة', MARKETING: 'تسويقي', AUTHENTICATION: 'مصادقة' };
-/* مراحل التوثيق التي لها صورة (v539) — والمرحلة التي تبقى داخل المنصة فقط */
 const MH_PV_IMG = ['submitted', 'resubmitted', 'received', 'returned', 'approved', 'rejected', 'registered', 'launched', 'film_ready'];
 const MH_PV_OFF = { under_review: 'داخل المنصة فقط — توقفت في واتساب والبريد لأنها تكرار «استُلم طلبك»' };
+const MH_PV_STAFF = { rv_submitted: 1, rv_resubmitted: 1 };
+const MH_CH = { wa: ['واتساب', 'chat-circle-dots'], mail: ['البريد', 'envelope-simple'], app: ['إشعار المنصة', 'bell'], comm: ['مركز الإرسال', 'paper-plane-tilt'] };
+const MH_SAMPLE = { 'الاسم': 'محمد الشمري', 'التاريخ': '27-10-2026', 'رقم_تيرا': 'TR-100458', 'المبلغ': '1,250.00 ريال', 'رقم_العقد': 'C-2026-0142', 'رقم_الطلب': 'R-10458' };
+function mhCss() {
+  const o = document.getElementById('mh2-css'); if (o && o.getAttribute('data-v') === '546') return; if (o) o.remove();
+  const s = document.createElement('style'); s.id = 'mh2-css'; s.setAttribute('data-v', '546');
+  s.textContent = [
+    '.mh2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}',
+    '.mh2-card{display:flex;flex-direction:column;min-width:0;background:var(--t2-surface,#fff);border:1px solid var(--t2-line,#D4DEEA);border-radius:var(--t2-r,14px);box-shadow:var(--t2-sh-1,none);overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:start;padding:0;font:inherit;color:inherit}',
+    '.mh2-card:hover,.mh2-card:focus-visible{border-color:var(--t2-brand,#0AA5AD);box-shadow:0 4px 14px rgba(10,31,68,.08);outline:none}',
+    '.mh2-th{position:relative;aspect-ratio:16/7;background:linear-gradient(135deg,#0A1F44,#132E5E);display:grid;place-items:center;color:#fff;overflow:hidden}',
+    '.mh2-th img{width:100%;height:100%;object-fit:cover;display:block}',
+    '.mh2-th .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#8FE3E7}',
+    '.mh2-th .tag{position:absolute;top:8px;inset-inline-start:8px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(10,31,68,.72);color:#fff}',
+    '.mh2-b{display:flex;flex-direction:column;gap:6px;padding:10px 12px 12px;flex:1;min-width:0}',
+    '.mh2-b b{font:600 .98rem/1.35 var(--t2-ff-display,inherit);color:var(--t2-ink,#0A1F44)}',
+    '.mh2-w{font-size:12.5px;color:var(--t2-muted,#566A88);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}',
+    '.mh2-ch{display:flex;flex-wrap:wrap;gap:4px}',
+    '.mh2-chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:2px 8px;border-radius:99px;background:var(--t2-surface-2,#F7F9FC);border:1px solid var(--t2-line,#D4DEEA);color:var(--t2-ink-2,#132E5E)}',
+    '.mh2-f{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:auto;padding-top:8px;border-top:1px dashed var(--t2-line,#D4DEEA);font-size:12px;color:var(--t2-muted,#566A88)}',
+    '.mh2-f .go{color:var(--t2-brand,#0AA5AD);font-weight:700}',
+    '.mh2-sec{display:grid;gap:10px}.mh2-sec-h{display:flex;align-items:center;gap:8px;font:600 1rem/1.3 var(--t2-ff-display,inherit);color:var(--t2-ink,#0A1F44)}',
+    '.mh2-sec-h .n{font-size:12px;font-weight:600;color:var(--t2-muted,#566A88);background:var(--t2-surface-2,#F7F9FC);border:1px solid var(--t2-line,#D4DEEA);border-radius:99px;padding:1px 8px}',
+    '.mh2-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mh2-tools .q{flex:1;min-width:220px}',
+    '.mh2-dr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:14px;align-items:start}',
+    '.mh2-pane{background:var(--t2-surface,#fff);border:1px solid var(--t2-line,#D4DEEA);border-radius:var(--t2-r,14px);padding:14px;display:grid;gap:12px;min-width:0}',
+    '.mh2-pane h4{margin:0;font:600 .95rem/1.3 var(--t2-ff-display,inherit);color:var(--t2-ink,#0A1F44);display:flex;align-items:center;gap:6px}',
+    '.mh2-prev{background:#ECE5DD;border-radius:12px;padding:12px;min-height:200px}',
+    '.mh2-tabs{display:flex;flex-wrap:wrap;gap:6px}',
+    '.mh2-kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:13px}.mh2-kv dt{color:var(--t2-muted,#566A88)}.mh2-kv dd{margin:0;font-weight:600;color:var(--t2-ink,#0A1F44);overflow-wrap:anywhere}',
+    '.mh2-vars{display:grid;gap:4px}.mh2-var{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:8px;font-size:12.5px;padding:4px 8px;border-radius:8px;background:var(--t2-surface-2,#F7F9FC)}.mh2-var span:last-child{color:var(--t2-muted,#566A88);direction:ltr;text-align:end;overflow-wrap:anywhere}',
+    '.mh2-tpl{display:grid;gap:6px}.mh2-tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;justify-content:space-between;padding:6px 8px;border-radius:8px;border:1px solid var(--t2-line,#D4DEEA)}.mh2-tr code{font-size:12px;direction:ltr}',
+    '.mh2-mail{background:#fff;border:1px solid var(--t2-line,#D4DEEA);border-radius:12px;overflow:hidden}.mh2-mail .hd{background:#0A1F44;color:#fff;padding:10px 14px;font-weight:700}.mh2-mail .bd{padding:14px;display:grid;gap:8px;font-size:13.5px;line-height:1.7}.mh2-mail .sj{font-size:12px;color:var(--t2-muted,#566A88)}',
+    '.mh2-app{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--t2-line,#D4DEEA);border-radius:12px;padding:12px}.mh2-app .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(10,165,173,.12);color:var(--t2-brand,#0AA5AD);flex:none}',
+    '@media (max-width:900px){.mh2-dr{grid-template-columns:minmax(0,1fr)}}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
 function mhLoad(force) {
   if (MH.busy || (MH.at && !force)) return;
   MH.busy = true; MH.err = '';
-  clPost('/admin/api/send-center/templates', {}).then(function (j) { MH.busy = false; MH.at = Date.now(); MH.wa = j.wa || []; MH.rules = j.rules || []; MH.stages = j.stages || []; draw(); })
+  clPost('/admin/api/send-center/templates', {}).then(function (j) { MH.busy = false; MH.at = Date.now(); MH.wa = j.wa || []; MH.rules = j.rules || []; MH.stages = j.stages || []; MH.status = j.status || []; draw(); })
     .catch(function (err) { MH.busy = false; MH.at = Date.now(); MH.wa = MH.wa || []; MH.err = (err && err.message) || 'تعذّر التحميل.'; draw(); });
 }
 function mhTxt(name, cb) {
@@ -7943,94 +8011,155 @@ function mhTxt(name, cb) {
   clPost('/admin/api/send-center/template-text', { name: name, lang: 'ar' }).then(function (j) { MH.txtBusy[name] = false; MH.txt[name] = j.tpl || { err: 'لا نص' }; cb(); })
     .catch(function (err) { MH.txtBusy[name] = false; MH.txt[name] = { err: (err && err.message) || 'تعذّر جلب نص القالب من Meta.' }; cb(); });
 }
-const mhInfo = function (n) { const m = MH_MAP[n]; return m ? { label: m[0], when: m[1], grp: m[2], img: m[3], used: !!m[4], vars: m[5] } : { label: n, when: '', grp: 'gen', img: null, used: false, vars: null }; };
-const mhRuleUse = function (n) { return MH.rules.filter(function (r) { return r.template_name === n && r.enabled; }).length; };
-const mhUsed = function (t) { return mhInfo(t.template_name).used || mhRuleUse(t.template_name) > 0; };
-/* النص بالمتغيرات: {{n}} ← معناه بين «» (أو قيمته في معاينة المرحلة) */
+const mhMeta = function (n) { return (MH.wa || []).filter(function (t) { return t.template_name === n; })[0] || null; };
+const mhT = function (n) { const m = MH_T[n]; return m ? { label: m[0], head: m[1], vars: m[2], sample: m[3], used: !!m[4], where: m[5] } : { label: n, head: null, vars: [], sample: [], used: false, where: '' }; };
+const mhImg = function (n) { const h = mhT(n).head; return h && h !== 'doc' && h !== 'video' ? h : null; };
 function mhFill(body, vals) { return String(body || '').replace(/\{\{(\d+)\}\}/g, function (m0, n) { const v = vals && vals[+n - 1]; return v != null && v !== '' ? v : '«متغير ' + n + '»'; }); }
-function mhWaPhone(t, img, vals) {
-  const T = MH.txt[t];
+function mhFillComm(s) { return String(s || '').replace(/\{([^{}]+)\}/g, function (m0, k) { return MH_SAMPLE[k] || ('«' + k + '»'); }); }
+function mhWaPhone(n, imgOver, valsOver) {
+  const T = MH.txt[n], I = mhT(n);
   if (!T) return e('div', { class: 'comm-wa sc-wa' }, [DS.note('info', 'جارٍ جلب نص القالب المعتمد من Meta…', '')]);
   if (T.err) return DS.note('warn', 'تعذّرت المعاينة', T.err);
-  const h = T.header || null, fmt = h ? String(h.format || '').toUpperCase() : '';
-  const head = fmt === 'DOCUMENT' ? e('div', { class: 'mh-doc', style: 'display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed rgba(120,130,150,.45);border-radius:12px;margin:6px 0' }, [frag(ui('file-pdf', 22)), e('span', {}, ['ملف PDF يُرفق بالرسالة', e('small', {}, 'مثل: إيصال الدفعة')])])
-    : fmt === 'VIDEO' ? e('div', { class: 'mh-doc', style: 'display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed rgba(120,130,150,.45);border-radius:12px;margin:6px 0' }, [frag(ui('play', 22)), e('span', {}, 'فيديو يُرفق بالرسالة')])
-    : fmt === 'TEXT' && h.text ? e('b', { class: 'mh-ht' }, mhFill(h.text, vals)) : null;
-  const m = { img: fmt === 'IMAGE' ? (img || null) : null, text: mhFill(T.body, vals), foot: T.footer || '', buttons: T.buttons || [] };
-  return e('div', { class: 'comm-wa sc-wa' }, [e('div', { class: 'comm-wa-chip' }, [frag(ui('whatsapp-logo', 14)), 'قالب ' + t]),
-    fmt === 'IMAGE' && !img ? e('div', { class: 'mh-doc', style: 'display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed rgba(120,130,150,.45);border-radius:12px;margin:6px 0' }, [frag(ui('image', 22)), e('span', {}, 'صورة الحدث تُرفق بالرسالة')]) : null, head, scWaMsg(m)]);
+  const vals = valsOver || I.sample, h = T.header || null, fmt = h ? String(h.format || '').toUpperCase() : '';
+  const box = function (ic, a, b) { return e('div', { class: 'mh-doc', style: 'display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px dashed rgba(120,130,150,.45);border-radius:12px;margin:6px 0;background:#fff' }, [frag(ui(ic, 22)), e('span', {}, [a, b ? e('small', { style: 'display:block;opacity:.7' }, b) : null])]); };
+  const head = fmt === 'DOCUMENT' ? box('file-pdf', 'ملف PDF يُرفق بالرسالة', 'إيصال السداد بالختم الرسمي') : fmt === 'VIDEO' ? box('film-strip', 'فيديو يُرفق بالرسالة', 'فيلم تدشين الحساب') : fmt === 'TEXT' && h.text ? e('b', { class: 'mh-ht' }, mhFill(h.text, vals)) : null;
+  const img = fmt === 'IMAGE' ? (imgOver || mhImg(n)) : null;
+  return e('div', { class: 'comm-wa sc-wa' }, [fmt === 'IMAGE' && !img ? box('image', 'صورة الحدث تُرفق بالرسالة', '') : null, head, scWaMsg({ img: img, text: mhFill(T.body, vals), foot: T.footer || '', buttons: T.buttons || [] })]);
 }
-function mhWaOpen(t) {
-  const n = t.template_name, I = mhInfo(n), st = MH_ST[t.status] || [t.status || '—', null];
-  const draw2 = function () {
-    cuBdDraw({ key: 'mh:' + n, ic: 'whatsapp-logo:teal', title: I.label, sub: n + ' · ' + (MH_CAT[t.category] || t.category || ''), onClose: function () { draw(); }, foot: admFoot(), body: [
-      cuSec('البيانات', 'info', [DS.fields([['الاسم في Meta', ltrIf(n)], ['الحالة في Meta', DS.badge(st[0], st[1])], ['الفئة', MH_CAT[t.category] || t.category || '—'],
-        ['يُرسل عند', I.when || (mhUsed(t) ? 'قاعدة إرسال مفعّلة' : '—')], ['في النظام', mhUsed(t) ? DS.badge('مستخدم', 'ok') : DS.badge('غير مستخدم حاليًا', null)],
-        ['عدد المتغيرات', fmtNum(t.vars_count || 0)], ['آخر مزامنة', verDate(t.synced_at)]])]),
-      cuSec('المعاينة — كما يصل', 'device-mobile', [mhWaPhone(n, I.img, I.vars ? I.vars.map(function (v) { return '«' + v + '»'; }) : null)]),
-      I.vars ? cuSec('المتغيرات', 'list-checks', [e('div', { class: 'mh-vars', style: 'display:flex;flex-wrap:wrap;gap:6px' }, I.vars.map(function (v, i) { return e('span', { class: 'mh-var', style: 'padding:4px 10px;border-radius:999px;background:rgba(14,165,164,.12);font-size:13px' }, [ltrIf('{{' + (i + 1) + '}}'), ' ', v]); }))]) : null,
-      mhUsed(t) ? null : DS.note('info', 'غير مستخدم حاليًا', 'لا يرسله أي حدث في المنصة الآن — يبقى معتمدًا في Meta حتى تقرّر تفعيله أو حذفه من Meta.')] });
+function mhMail(subject, title, lead, note) {
+  return e('div', { class: 'mh2-mail' }, [e('div', { class: 'hd' }, 'منصة تيرا للخدمات المتكاملة'), e('div', { class: 'bd' }, [e('div', { class: 'sj' }, 'الموضوع: ' + (subject || '—')), title ? e('b', {}, title) : null, lead ? e('div', {}, mhFillComm(lead)) : null, note ? e('div', { class: 'sj' }, mhFillComm(note)) : null])]);
+}
+function mhApp(title, text) { return e('div', { class: 'mh2-app' }, [e('span', { class: 'ic' }, frag(ui('bell', 18))), e('div', {}, [e('b', {}, title || '—'), e('div', { style: 'font-size:13px;color:var(--t2-muted,#566A88)' }, text || '')])]); }
+const mhComm = function (name) { return (COMM.tpl || []).filter(function (t) { return !t.archived && t.name === name; })[0] || null; };
+const mhSurv = function (k) { return ((CX.set && CX.set.templates) || []).filter(function (t) { return t.key === k; })[0] || null; };
+const mhStat = function (k) { return (MH.status || []).filter(function (x) { return x.status === k; })[0] || null; };
+/* بطاقة واحدة لكل رسالة */
+function mhCard(o) {
+  const th = o.img ? e('img', { src: o.img, alt: '', loading: 'lazy', onError: function (ev) { ev.target.remove(); } }) : e('span', { class: 'ic' }, frag(ui(o.ic || 'chat-circle-dots', 24)));
+  return e('button', { type: 'button', class: 'mh2-card', onClick: o.go, 'aria-label': o.t }, [
+    e('div', { class: 'mh2-th' }, [th, o.tag ? e('span', { class: 'tag' }, o.tag) : null]),
+    e('div', { class: 'mh2-b' }, [e('b', {}, o.t), e('div', { class: 'mh2-w' }, o.w || '—'),
+      e('div', { class: 'mh2-ch' }, (o.ch || []).map(function (c) { const x = MH_CH[c]; return x ? e('span', { class: 'mh2-chip' }, [frag(ui(x[1], 12)), x[0]]) : null; }).concat(o.badge ? [o.badge] : [])),
+      e('div', { class: 'mh2-f' }, [e('span', {}, o.meta || ''), e('span', { class: 'go' }, 'معاينة ‹')])])]);
+}
+/* نافذة الرسالة: المعاينة في جهة والبيانات في الجهة الأخرى — بلا مساحات فارغة */
+function mhDrawer(key, title, sub, ic, left, right) {
+  cuBdDraw({ key: key, ic: ic || 'chat-circle-dots:teal', title: title, sub: sub, onClose: function () { draw(); }, foot: admFoot(), body: [e('div', { class: 'mh2-dr' }, [left, right])] });
+}
+function mhTplRows(list) {
+  return e('div', { class: 'mh2-tpl' }, list.map(function (n, i) { const M = mhMeta(n), I = mhT(n), st = M ? (MH_ST[M.status] || [M.status, null]) : ['غير موجود في Meta', 'danger'];
+    return e('div', { class: 'mh2-tr' }, [e('span', {}, [e('b', {}, i === 0 ? 'الأساسي' : 'احتياطي'), ' · ', I.label]), e('code', {}, n), DS.badge(st[0], st[1]), M ? DS.badge(MH_CAT[M.category] || M.category || '', null) : null]); }));
+}
+function mhVars(n) {
+  const I = mhT(n); if (!I.vars.length) return null;
+  return e('div', { class: 'mh2-vars' }, I.vars.map(function (v, i) { return e('div', { class: 'mh2-var' }, [e('code', {}, '{{' + (i + 1) + '}}'), e('span', {}, v), e('span', {}, I.sample[i] || '')]); }));
+}
+function mhMsgOpen(m) {
+  const S = ADM.mhd || (ADM.mhd = {}); const st = S[m.id] || (S[m.id] = { ch: '', v: 0 });
+  const C = mhMsgCh(m); if (!st.ch || C.indexOf(st.ch) < 0) st.ch = C[0];
+  const sv = m.sv ? mhSurv(m.sv) : null;
+  const paint = function () {
+    const n = (m.wa || [])[st.v] || (m.wa || [])[0];
+    const tabs = e('div', { class: 'mh2-tabs' }, C.map(function (c) { return DS.button(MH_CH[c][0], { size: 'sm', tone: st.ch === c ? 'primary' : null, ui: MH_CH[c][1], onClick: function () { st.ch = c; paint(); } }); }));
+    let prev = null;
+    if (st.ch === 'wa' && n) { mhTxt(n, paint); prev = e('div', {}, [(m.wa || []).length > 1 ? e('div', { class: 'mh2-tabs', style: 'margin-bottom:8px' }, m.wa.map(function (x, i) { return DS.button(i === 0 ? 'الأساسي' : 'احتياطي ' + i, { size: 'sm', tone: st.v === i ? 'primary' : null, onClick: function () { st.v = i; paint(); } }); })) : null, e('div', { class: 'mh2-prev' }, [mhWaPhone(n)])]); }
+    else if (st.ch === 'wa' && sv) prev = e('div', { class: 'mh2-prev' }, [e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: null, text: mhFillComm(sv.wa_body || ''), foot: 'منصة تيرا للخدمات المتكاملة', buttons: [] })])]);
+    else if (st.ch === 'mail') { const L = (m.st || []).map(mhStat).filter(Boolean); prev = e('div', { style: 'display:grid;gap:10px' }, L.length ? L.map(function (x) { return mhMail(x.subject, x.title, x.lead, x.note); }) : sv ? [mhMail(sv.email_subject, sv.name, sv.email_body, '')] : [DS.note('info', 'لا بريد لهذه الرسالة', '')]); }
+    else if (st.ch === 'comm') prev = e('div', { style: 'display:grid;gap:10px' }, (m.comm || []).map(mhComm).filter(Boolean).map(function (t) { return e('div', { style: 'display:grid;gap:6px' }, [e('small', { class: 'cu-dr-hint' }, 'قالب مركز الإرسال: ' + t.name + ' · ' + ((COMM_CH[t.channel] || ['—'])[0])), e('div', { class: 'mh2-prev' }, [e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: null, text: mhFillComm(t.body), foot: '', buttons: [] })])]), t.subject ? mhMail(t.subject, '', t.body, '') : null]); }));
+    const left = e('div', { class: 'mh2-pane' }, [e('h4', {}, [frag(ui('device-mobile', 16)), 'المعاينة — كما يصل']), tabs, prev || DS.note('info', 'لا معاينة لهذه القناة', '')]);
+    const kv = [['متى يُرسل', m.w || (sv && sv.trigger_note) || '—'], ['القنوات', C.map(function (c) { return MH_CH[c][0]; }).join(' · ')], n ? ['أين يُرسل في النظام', mhT(n).where || '—'] : null, sv ? ['الاستبانة', (sv.active ? 'مفعّلة' : 'موقوفة') + ' · ' + (sv.auto ? 'آلية' : 'يدوية')] : null].filter(Boolean);
+    const right = e('div', { class: 'mh2-pane' }, [e('h4', {}, [frag(ui('info', 16)), 'البيانات']),
+      e('dl', { class: 'mh2-kv' }, kv.reduce(function (a, r) { return a.concat([e('dt', {}, r[0]), e('dd', {}, r[1])]); }, [])),
+      (m.wa || []).length ? e('div', { style: 'display:grid;gap:6px' }, [e('h4', {}, [frag(ui('chat-circle-dots', 16)), 'قوالب واتساب (Meta)']), mhTplRows(m.wa)]) : null,
+      n && st.ch === 'wa' && mhVars(n) ? e('div', { style: 'display:grid;gap:6px' }, [e('h4', {}, [frag(ui('list-checks', 16)), 'المتغيرات وعيّنتها']), mhVars(n)]) : null,
+      sv ? DS.button('تعديل الاستبانة', { size: 'sm', ui: 'pencil-simple', onClick: function () { cxTplOpen(sv); } }) : null,
+      (m.comm || []).length ? DS.button('فتح قوالب مركز الإرسال', { size: 'sm', ui: 'paper-plane-tilt', onClick: function () { go('other', 'comm-tpl'); } }) : null].filter(Boolean));
+    mhDrawer('mh:' + m.id, m.t, MH_GRP.filter(function (g) { return g[0] === m.g; }).map(function (g) { return g[1]; })[0] || '', 'chat-circle-dots:teal', left, right);
   };
-  draw2(); mhTxt(n, draw2);
+  paint();
 }
+function mhMsgCh(m) { const C = []; if ((m.wa || []).length || (m.sv && mhSurv(m.sv) && (mhSurv(m.sv).channels || []).indexOf('whatsapp') >= 0)) C.push('wa'); if ((m.st || []).length || (m.sv && mhSurv(m.sv) && (mhSurv(m.sv).channels || []).indexOf('email') >= 0)) C.push('mail'); if ((m.comm || []).filter(mhComm).length) C.push('comm'); return C.length ? C : ['wa']; }
 function mhPvOpen(s) {
-  const k = s.event_key, img = MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, off = MH_PV_OFF[k], tpl = img ? 'tera_profile_review_img' : 'tera_profile_review_update';
-  const vals = ['«اسم صاحب الملف»', '«رقم الطلب»', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', '«رابط حسابه»'];
-  const draw2 = function () {
-    cuBdDraw({ key: 'mhpv:' + k, ic: 'seal-check:teal', title: s.wa_event_label || k, sub: 'مرحلة توثيق الملف · ' + k, onClose: function () { draw(); }, foot: admFoot(), body: [
-      off ? DS.note('info', 'يصل داخل المنصة فقط', off) : null,
-      cuSec('واتساب', 'whatsapp-logo', off ? [e('small', { class: 'cu-dr-hint' }, 'لا يُرسل في واتساب.')] : [mhWaPhone(tpl, img, vals), e('small', { class: 'cu-dr-hint' }, img ? 'بقالب الصورة وصورة المرحلة.' : 'بالقالب النصي — هذه المرحلة بلا صورة.')]),
-      cuSec('البريد', 'envelope-simple', off ? [e('small', { class: 'cu-dr-hint' }, 'لا يُرسل بالبريد.')] : [DS.fields([['الموضوع', s.subject || '—'], ['العنوان', s.title || '—'], ['المقدمة', s.lead || '—'], s.note ? ['ملاحظة', s.note] : null].filter(Boolean))]),
-      cuSec('إشعار داخل المنصة', 'bell', [DS.fields([['العنوان', s.wa_event_label || '—'], ['النص', (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : '')]])])] });
+  const k = s.event_key, img = MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, off = MH_PV_OFF[k] || (MH_PV_STAFF[k] ? 'إشعار للفريق داخل المنصة — لا يصل صاحب الملف' : ''), tpl = img ? 'tera_profile_review_img' : 'tera_profile_review_update';
+  const vals = ['محمد الشمري', 'REQ-10458', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', 'tera-services.com.sa/clients'];
+  const S = ADM.mhd || (ADM.mhd = {}); const st = S['pv:' + k] || (S['pv:' + k] = { ch: off ? 'app' : 'wa' });
+  const paint = function () {
+    const C = off ? ['app'] : ['wa', 'mail', 'app'];
+    const tabs = e('div', { class: 'mh2-tabs' }, C.map(function (c) { return DS.button(MH_CH[c][0], { size: 'sm', tone: st.ch === c ? 'primary' : null, ui: MH_CH[c][1], onClick: function () { st.ch = c; paint(); } }); }));
+    let prev = null;
+    if (st.ch === 'wa') { mhTxt(tpl, paint); prev = e('div', { class: 'mh2-prev' }, [mhWaPhone(tpl, img, vals)]); }
+    else if (st.ch === 'mail') prev = mhMail(s.subject, s.title, s.lead, s.note);
+    else prev = mhApp(s.wa_event_label || k, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''));
+    const left = e('div', { class: 'mh2-pane' }, [e('h4', {}, [frag(ui('device-mobile', 16)), 'المعاينة — كما يصل']), tabs, prev]);
+    const right = e('div', { class: 'mh2-pane' }, [e('h4', {}, [frag(ui('info', 16)), 'البيانات']),
+      e('dl', { class: 'mh2-kv' }, [e('dt', {}, 'المرحلة'), e('dd', {}, s.wa_event_label || k), e('dt', {}, 'المفتاح'), e('dd', {}, ltrIf(k)), e('dt', {}, 'القنوات'), e('dd', {}, C.map(function (c) { return MH_CH[c][0]; }).join(' · ')),
+        e('dt', {}, 'قالب واتساب'), e('dd', {}, off ? 'لا يُرسل' : (img ? 'tera_profile_review_img — بصورة المرحلة' : 'tera_profile_review_update — نصي'))]),
+      off ? DS.note('info', 'ملاحظة', off) : null, !off ? mhVars(tpl) : null].filter(Boolean));
+    mhDrawer('mhpv:' + k, s.wa_event_label || k, 'مرحلة توثيق الملف', 'seal-check:teal', left, right);
   };
-  draw2(); if (!off) mhTxt(tpl, draw2);
+  paint();
+}
+function mhOffOpen(n) {
+  const I = mhT(n), M = mhMeta(n);
+  const paint = function () {
+    mhTxt(n, paint);
+    const left = e('div', { class: 'mh2-pane' }, [e('h4', {}, [frag(ui('device-mobile', 16)), 'المعاينة — كما يصل']), e('div', { class: 'mh2-prev' }, [mhWaPhone(n)])]);
+    const right = e('div', { class: 'mh2-pane' }, [e('h4', {}, [frag(ui('info', 16)), 'البيانات']), mhTplRows([n]), mhVars(n),
+      DS.note('info', 'معتمد في Meta وغير مفعّل', 'لا يرسله أي حدث في المنصة الآن. يمكن ربطه بحدث لاحقًا، أو حذفه من Meta إذا لم يعد مطلوبًا.'), M ? null : DS.note('warn', 'غير موجود في مزامنة Meta الأخيرة', '')].filter(Boolean));
+    mhDrawer('mhoff:' + n, I.label, n, 'chat-circle-dots:teal', left, right);
+  };
+  paint();
 }
 function msgHubPage() {
   if (!LIVE.on) return [liveEmptyNote('مركز القوالب')];
-  mhLoad(false);
+  mhCss(); mhLoad(false);
   try { commReady('قوالب الإرسال', ['tpl']); } catch (e0) { void e0; }
   try { cxReady('قوالب الاستبانات', ['set']); } catch (e1) { void e1; }
-  const F = ADM.mh || (ADM.mh = { tab: 'all', q: '', st: 'all', sort: 'grp' });
-  const WA = MH.wa || [], ST = MH.stages || [], CT = (COMM.tpl || []).filter(function (t) { return !t.archived; }), SV = (CX.set && CX.set.templates) || [], RP = cuTplLists();
+  const F = ADM.mh2 || (ADM.mh2 = { g: 'all', q: '', ch: 'all' });
   const q = String(F.q || '').trim().toLowerCase();
   const hit = function (a) { return !q || a.some(function (x) { return String(x || '').toLowerCase().indexOf(q) >= 0; }); };
-  const stOk = function (used, status) { return F.st === 'all' || (F.st === 'used' && used) || (F.st === 'unused' && !used) || (F.st === 'pending' && status && status !== 'APPROVED'); };
-  /* صفوف موحّدة: [المجموعة, الاسم, الوصف, الأيقونة, الحالة للترتيب, الإجراء, نغمة] */
-  let rows = [];
-  if (F.tab === 'all' || F.tab === 'wa') WA.forEach(function (t) { const I = mhInfo(t.template_name), u = mhUsed(t), st = MH_ST[t.status] || [t.status || '—', null];
-    if (hit([t.template_name, I.label, I.when]) && stOk(u, t.status)) rows.push([I.grp, I.label, 'واتساب · ' + st[0] + (u ? '' : ' · غير مستخدم') + (I.when ? ' — ' + I.when : '') + ' · ' + t.template_name, 'whatsapp-logo:teal', (t.status === 'APPROVED' ? 0 : 1) + (u ? 0 : 2), function () { mhWaOpen(t); }, t.status !== 'APPROVED' ? 'warn' : '']); });
-  if (F.tab === 'all' || F.tab === 'ver') ST.forEach(function (s) { const off = MH_PV_OFF[s.event_key];
-    if (hit([s.event_key, s.wa_event_label, s.subject, s.title]) && stOk(true, null)) rows.push(['ver', s.wa_event_label || s.event_key, (off ? 'داخل المنصة فقط' : 'واتساب + البريد + إشعار المنصة') + (MH_PV_IMG.indexOf(s.event_key) >= 0 ? ' · بصورة' : '') + ' — ' + (s.subject || s.title || ''), 'seal-check:teal', 0, function () { mhPvOpen(s); }, '']); });
-  if (F.tab === 'all' || F.tab === 'rate') SV.forEach(function (t) {
-    if (hit([t.name, t.key, t.trigger_note]) && stOk(!!t.active, null)) rows.push(['rate', t.name, 'تقييم · ' + (t.channels || []).map(function (c) { return (CX_CH[c] || [c])[0]; }).join(' + ') + ' · ' + (t.auto ? 'آلي' : 'يدوي') + (t.active ? '' : ' · موقوف'), (CX_TPL_IC[t.key] || 'star:gold'), t.active ? 0 : 2, function () { cxTplOpen(t); }, t.active ? '' : 'warn']); });
-  if (F.tab === 'all' || F.tab === 'comm') CT.forEach(function (t) {
-    if (hit([t.name, t.subject]) && stOk(true, null)) rows.push(['gen', t.name, 'مركز الإرسال · ' + (COMM_CH[t.channel] || ['—'])[0] + (t.subject ? ' — ' + t.subject : ''), (COMM_CH[t.channel] || ['', 'paper-plane-tilt:sky'])[1], 0, function () { commTplOpen(t); }, '']); });
-  if (F.tab === 'all' || F.tab === 'rep') RP.forEach(function (g) { g[2].forEach(function (x) {
-    if (hit([x[0], g[1]].concat(x[1])) && stOk(true, null)) rows.push(['rep', x[0], 'ردود جاهزة · ' + g[1] + ' · ' + fmtNum(x[1].length) + ' ردود', 'chat-circle-dots:teal', 0, function () { go('other', 'sys-replies'); }, '']); }); });
-  if (F.sort === 'name') rows.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
-  else if (F.sort === 'st') rows.sort(function (a, b) { return a[4] - b[4] || String(a[1]).localeCompare(String(b[1]), 'ar'); });
-  const G = MH_GRP.concat([['rep', 'الردود الجاهزة', 'chat-circle-dots:teal']]);
-  const mk = function (r) { return axRow({ ic: r[3], t: r[1], sub: r[2], tone: r[6], go: r[5] }); };
-  const list = !rows.length ? axList([], 'لا قوالب بهذا البحث أو الفلتر') : F.sort !== 'grp' ? axList(rows.map(mk), '')
-    : e('div', { class: 't2-stack' }, G.map(function (g) { const R = rows.filter(function (r) { return r[0] === g[0]; }); return R.length ? DS.panel(g[1], fmtNum(R.length) + ' قوالب', [axList(R.map(mk), '')]) : null; }).filter(Boolean));
-  const nUsed = WA.filter(mhUsed).length, nPend = WA.filter(function (t) { return t.status !== 'APPROVED'; }).length;
-  const qIn = e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث باسم القالب أو الحدث…', 'aria-label': 'بحث في القوالب', value: F.q || '',
-    onInput: function (ev) { F.q = ev.target.value; clearTimeout(MH.qt); MH.qt = setTimeout(function () { draw(); const x = document.querySelector('.mh-q input'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 250); } });
+  const chOk = function (C) { return F.ch === 'all' || C.indexOf(F.ch) >= 0; };
+  /* البطاقات */
+  const cards = [];
+  MH_MSG.forEach(function (m) {
+    const sv = m.sv ? mhSurv(m.sv) : null; if (m.sv && !sv) return;
+    const comm = (m.comm || []).filter(mhComm); if (!(m.wa || []).length && !sv && !comm.length) return;
+    const C = mhMsgCh(m), first = (m.wa || [])[0], img = first ? mhImg(first) : null;
+    const allUsed = (m.wa || []).every(function (n) { const M = mhMeta(n); return !M || M.status === 'APPROVED'; });
+    const meta = (m.wa || []).length ? (m.wa.length > 1 ? 'قالب + ' + fmtNum(m.wa.length - 1) + ' احتياطي' : 'قالب واحد') : comm.length ? 'مركز الإرسال' : 'استبانة';
+    if (!hit([m.t, m.w].concat(m.wa || [], m.comm || [], sv ? [sv.name] : [])) || !chOk(C)) return;
+    cards.push([m.g, mhCard({ t: sv && !m.t ? sv.name : m.t, w: m.w || (sv && sv.trigger_note) || '', img: img, ic: (MH_GRP.filter(function (g) { return g[0] === m.g; })[0] || [])[2], ch: C, meta: meta,
+      tag: sv ? (sv.active ? (sv.auto ? 'آلية' : 'يدوية') : 'موقوفة') : (comm.length && !(m.wa || []).length ? 'يدوية' : null), badge: allUsed ? null : DS.badge('بانتظار Meta', 'warn'), go: function () { mhMsgOpen(m); } })]);
+  });
+  (MH.stages || []).forEach(function (s) { const k = s.event_key, off = MH_PV_OFF[k] || MH_PV_STAFF[k], C = off ? ['app'] : ['wa', 'mail', 'app'];
+    if (!hit([k, s.wa_event_label, s.subject, s.title]) || !chOk(C)) return;
+    cards.push(['ver', mhCard({ t: s.wa_event_label || k, w: s.subject || s.title || '', img: MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, ic: 'seal-check', ch: C, meta: MH_PV_STAFF[k] ? 'للفريق' : 'مرحلة توثيق', tag: MH_PV_STAFF[k] ? 'للفريق' : null, go: function () { mhPvOpen(s); } })]); });
+  Object.keys(MH_T).filter(function (n) { return !MH_T[n][4]; }).forEach(function (n) { const I = mhT(n);
+    if (!hit([n, I.label]) || !chOk(['wa'])) return;
+    cards.push(['off', mhCard({ t: I.label, w: 'معتمد في Meta — لا يرسله أي حدث الآن', img: null, ic: 'chat-circle-dots', ch: ['wa'], meta: n, tag: 'غير مفعّل', go: function () { mhOffOpen(n); } })]); });
+  const RP = (function () { try { return cuTplLists(); } catch (e2) { return []; } })();
+  RP.forEach(function (g) { if (!hit([g[1]].concat(g[2].map(function (x) { return x[0]; }))) || F.ch !== 'all') return;
+    cards.push(['rep', mhCard({ t: g[1], w: g[2].map(function (x) { return x[0]; }).slice(0, 4).join(' · '), ic: 'chat-circle-dots', ch: [], meta: fmtNum(g[2].reduce(function (a, x) { return a + (x[1] || []).length; }, 0)) + ' ردًا', go: function () { go('other', 'sys-replies'); } })]); });
+  const cnt = function (g) { return cards.filter(function (c) { return c[0] === g; }).length; };
+  const groups = MH_GRP.filter(function (g) { return (F.g === 'all' || F.g === g[0]) && cnt(g[0]); });
+  const body = !cards.length ? DS.note('info', 'لا رسائل بهذا البحث أو الفلتر', '') : e('div', { class: 't2-stack', style: 'display:grid;gap:18px' }, groups.map(function (g) {
+    return e('section', { class: 'mh2-sec' }, [e('div', { class: 'mh2-sec-h' }, [frag(ui(g[2], 18)), g[1], e('span', { class: 'n' }, fmtNum(cnt(g[0])))]), e('div', { class: 'mh2-grid' }, cards.filter(function (c) { return c[0] === g[0]; }).map(function (c) { return c[1]; }))]); }));
+  const WA = MH.wa || [], nOff = Object.keys(MH_T).filter(function (n) { return !MH_T[n][4]; }).length, nPend = WA.filter(function (t) { return t.status !== 'APPROVED'; }).length;
+  const qIn = e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث باسم الرسالة أو القالب…', 'aria-label': 'بحث في القوالب', value: F.q || '',
+    onInput: function (ev) { F.q = ev.target.value; clearTimeout(MH.qt); MH.qt = setTimeout(function () { draw(); const x = document.querySelector('.mh2-tools .q input'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 250); } });
   const sync = DS.button(MH.syncing ? 'جارٍ المزامنة…' : 'مزامنة الحالة من Meta', { size: 'sm', ui: 'arrows-clockwise', disabled: MH.syncing, onClick: function () {
     MH.syncing = true; draw();
     clPost('/admin/api/send-center/templates-sync', {}).then(function (j) { MH.syncing = false; MH.txt = {}; snack('تمت المزامنة — ' + fmtNum(j.count || 0) + ' قالبًا من Meta.'); mhLoad(true); })
       .catch(function (err) { MH.syncing = false; snack((err && err.message) || 'تعذّرت المزامنة.'); draw(); }); } });
+  const gChips = [['all', 'الكل', 'squares-four:navy', cards.length]].concat(MH_GRP.filter(function (g) { return cnt(g[0]); }).map(function (g) { return [g[0], g[1], g[2] + ':teal', cnt(g[0])]; }));
   return [cuBdInt(true),
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل ما يصل العميل والفريق: قوالب واتساب المعتمدة في Meta وأين تُستخدم، ومراحل التوثيق، والتقييمات، وقوالب مركز الإرسال، والردود الجاهزة — بمعاينة كما يصل.')]), e('div', { class: 'ax-top-a' }, [sync])]),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل رسالة بطاقة واحدة فيها قنواتها ونسخها — واتساب والبريد وإشعار المنصة ومركز الإرسال — بمعاينة كما تصل وبعيّنات حقيقية.')]), e('div', { class: 'ax-top-a' }, [sync])]),
     MH.err ? DS.note('warn', 'تعذّر تحميل قوالب واتساب', MH.err) : null,
-    axKpis([['قوالب واتساب', fmtNum(WA.length), '', 'whatsapp-logo'], ['مستخدمة في النظام', fmtNum(nUsed), 'ok', 'check-circle'], ['غير مستخدمة', fmtNum(WA.length - nUsed), '', 'clock'], ['بانتظار أو مرفوضة', fmtNum(nPend), nPend ? 'warn' : '', 'timer']]),
-    e('div', { class: 'm3-tools ax-tools' }, [
-      chipRow([['all', 'الكل', 'list:navy', WA.length + ST.length + SV.length + CT.length + RP.reduce(function (a, g) { return a + g[2].length; }, 0)], ['wa', 'واتساب Meta', 'whatsapp-logo:teal', WA.length], ['ver', 'مراحل التوثيق', 'seal-check:teal', ST.length], ['rate', 'التقييمات', 'star:gold', SV.length], ['comm', 'مركز الإرسال', 'paper-plane-tilt:sky', CT.length], ['rep', 'الردود الجاهزة', 'chat-circle-dots:teal', RP.reduce(function (a, g) { return a + g[2].length; }, 0)]],
-        F.tab, function (v) { F.tab = v; draw(); }, 'نوع القالب'),
-      e('div', { class: 'mh-f', style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px' }, [e('div', { class: 'mh-q', style: 'flex:1;min-width:200px' }, [qIn]),
-        DS.select({ value: F.st, options: [['all', 'كل الحالات'], ['used', 'المستخدمة'], ['unused', 'غير المستخدمة'], ['pending', 'بانتظار أو مرفوضة']], onChange: function (v) { F.st = v; draw(); } }),
-        DS.select({ value: F.sort, options: [['grp', 'حسب الحدث'], ['name', 'حسب الاسم'], ['st', 'حسب الحالة']], onChange: function (v) { F.sort = v; draw(); } })])]),
-    MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : list];
+    axKpis([['الرسائل', fmtNum(cards.filter(function (c) { return c[0] !== 'off' && c[0] !== 'rep'; }).length), '', 'squares-four'], ['قوالب واتساب في Meta', fmtNum(WA.length), '', 'chat-circle-dots'], ['مفعّلة في المنصة', fmtNum(Math.max(0, WA.length - nOff)), 'ok', 'check-circle'], ['معتمدة وغير مفعّلة', fmtNum(nOff), '', 'clock'], ['بانتظار Meta أو مرفوضة', fmtNum(nPend), nPend ? 'warn' : '', 'timer']]),
+    e('div', { class: 'm3-tools ax-tools', style: 'display:grid;gap:8px' }, [
+      chipRow(gChips, F.g, function (v) { F.g = v; draw(); }, 'قسم الرسائل'),
+      e('div', { class: 'mh2-tools' }, [e('div', { class: 'q' }, [qIn]), DS.select({ value: F.ch, options: [['all', 'كل القنوات'], ['wa', 'واتساب'], ['mail', 'البريد'], ['app', 'إشعار المنصة'], ['comm', 'مركز الإرسال']], onChange: function (v) { F.ch = v; draw(); } })])]),
+    MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : body];
 }
 
 function sysRepliesPage() {
