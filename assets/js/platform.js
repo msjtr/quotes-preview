@@ -1055,7 +1055,7 @@ function ticketCard(t) {
       (function () { const k = !t.status[1] ? 4 : t.status[1] === 'ok' ? 3 : 1; return DS.stepper(['إنشاء التذكرة', 'قيد المراجعة', 'الرد', 'الإغلاق'].map(function (l, i) { return { label: l, state: i < k ? 'done' : i === k ? 'now' : null }; }), 'مراحل التذكرة'); })()]),
     e('div', { class: 'tk-stub' }, [e('small', {}, 'رقم التذكرة'), e('b', { dir: 'ltr' }, t.ref), e('span', { class: 'tk-bar', 'aria-hidden': 'true' }, frag(ui('barcode', 64))), copy])]);
 }
-function msgPage() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(); }
+function msgPage() { if (LIVE.on && typeof deskMine === 'function') return deskMine(); /* v557: مراسلات العميل الحقيقية */ if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(); }
   const back = function () { S.msg = 'list'; S.files = []; S.fileErr = ''; draw(); toTop(); };
   const openT = function (i) { S.thread = i; S.msg = 'thread'; THREADS[i].unread = false; S.files = []; S.fileErr = ''; draw(); toTop(); };
   if (S.msg === 'new') return m3Compose(back, openT);
@@ -23155,10 +23155,10 @@ const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف �
 function commHubPage() {
 /* v513: مساحة واحدة — الإرسال · تقرير الإرسال · الدليل — بتبويبات في الصفحة نفسها (القوالب في الإعدادات) */
 if (LIVE.on && !COMM.ctAt) commReady('التواصل المباشر');
-const tabs = [['send', 'الإرسال', 'paper-plane-tilt'], ['rep', 'تقرير الإرسال', 'list-checks'], ['dir', 'دليل الهواتف والبريد', 'users-three'], ['rem', 'إدارة التذكير', 'bell-ringing']];
+const tabs = [['send', 'الإرسال', 'paper-plane-tilt'], ['desk', 'مراسلات العملاء', 'chat-circle-dots'], ['rep', 'تقرير الإرسال', 'list-checks'], ['dir', 'دليل الهواتف والبريد', 'users-three'], ['rem', 'إدارة التذكير', 'bell-ringing']];
 const cur = COMMT.t || 'send';
 const bar = e('div', { class: 'sc-seg sc-tabs' }, tabs.map(function (t) { return liveOk(DS.button(t[1], { tone: cur === t[0] ? 'primary' : null, ui: t[2], onClick: function () { COMMT.t = t[0]; draw(); } })); }));
-const body = cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : scPage();
+const body = cur === 'desk' ? deskBoardPage() : cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : scPage();
 return [bar].concat(body || []);
 }
 /* ---------- v315: نموذج استيراد جهات الاتصال — تنزيل النموذج (Excel/CSV) ← الكتابة فيه ← رفعه ← مطابقة الأعمدة والتحقق ← القبول ← حفظ الملف للتنزيل ---------- */
@@ -24391,6 +24391,123 @@ if (D.media === undefined) { if (t) { D.media = null; admRpc('admin_comm_templat
     foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ القالب', { tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(); } })), t ? DS.button('رجوع للعرض', { onClick: function () { D.mode = 'view'; D.pvW = null; rerun(); } }) : null, DS.button('إغلاق', { onClick: close })])];
   }
   cuBdDraw({ key: 'commt:' + key, ic: COMM_CH[(t && t.channel) || D.channel][1], title: t ? 'قالب · ' + t.name : 'قالب جديد', sub: t ? COMM_CH[t.channel][0] : 'يُحفظ ويظهر في المراسلة', body: body, foot: foot, onClose: function () { delete COMMD['t:' + key]; draw(); } });
+}
+/* ===== v557: مركز المراسلات — ربط حقيقي بمركز المراسلات الرسمي (/api/desk) =====
+ * العميل: قائمة مراسلاته الحقيقية، وفتحها والرد عليها في صفحة المراسلات الرسمية (/desk).
+ * الموظفون: «مراسلات العملاء» في التواصل المباشر — القائمة والفتح والرد وتغيير الحالة والأولوية والإسناد. */
+const DSK = { mine: null, mineErr: '', mineBusy: false, rows: null, at: 0, err: '', busy: false, st: 'open', q: '', cat: null, staff: [] };
+const DSKD = {};
+const DSK_OPEN = ['new', 'review', 'processing', 'waiting_customer', 'replied', 'waiting_other'];
+const DSK_ST = { new: 'جديدة', review: 'قيد المراجعة', processing: 'قيد المعالجة', waiting_customer: 'بانتظار معلومات من العميل', replied: 'تم الرد', waiting_other: 'بانتظار جهة أخرى', resolved: 'تم الحل', closed: 'مغلقة' };
+const DSK_KIND = { request: 'طلب', complaint: 'شكوى', support: 'دعم' };
+const DSK_PRI = { normal: 'عادية', medium: 'متوسطة', high: 'عالية', urgent: 'عاجلة' };
+const dskTone = function (s) { return s === 'new' || s === 'waiting_customer' ? 'warn' : (s === 'resolved' || s === 'closed') ? 'ok' : 'info'; };
+const dskDate = function (v) { try { return v ? iso(new Date(v)) : '—'; } catch (err) { return '—'; } };
+const dskOpts = function (o) { return Object.keys(o || {}).filter(function (k) { return k !== 'draft'; }).map(function (k) { return [k, o[k]]; }); };
+function deskMine() {
+  const head = e('div', { class: 'mt-top' }, [e('span'), liveOk(DS.button('مراسلة جديدة', { tone: 'primary', ui: 'plus', size: 'sm', onClick: function () { location.href = '/desk'; } }))]);
+  if (!DSK.mine && !DSK.mineErr && !DSK.mineBusy) {
+    DSK.mineBusy = true;
+    clApi('/api/desk/threads').then(function (j) { DSK.mine = (j && j.threads) || []; DSK.mineBusy = false; draw(); })
+      .catch(function (err) { DSK.mineErr = (err && err.message) || 'تعذّر جلب المراسلات.'; DSK.mineBusy = false; draw(); });
+  }
+  if (DSK.mineErr) return [head, DS.note('warn', 'تعذّر جلب مراسلاتك', DSK.mineErr, liveOk(DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { DSK.mineErr = ''; DSK.mine = null; draw(); } })))];
+  if (!DSK.mine) return [head, DS.note('info', 'جارٍ جلب مراسلاتك…', '')];
+  const L = DSK.mine.filter(function (t) { return t.status !== 'draft'; });
+  if (!L.length) return [head, DS.note('info', 'لا توجد مراسلات بعد', 'لتقديم طلب أو شكوى أو طلب دعم اضغط «مراسلة جديدة».')];
+  return [head, e('div', { class: 'nr-gl' }, L.map(function (t) {
+    return e('article', { class: 'nr' }, [e('button', { type: 'button', class: 'nr-main', onClick: function () { location.href = '/desk#' + encodeURIComponent(t.ref); } }, [
+      e('span', { class: 'nr-ic' }, frag(tile('mail'))),
+      e('span', { class: 'nr-b' }, [e('span', { class: 'nr-top' }, [e('b', {}, t.subject || '—'), e('time', {}, dskDate(t.updated_at || t.created_at))]),
+        e('span', { class: 'nr-meta' }, [e('span', { class: 'nr-k is-' + dskTone(t.status) }, DSK_ST[t.status] || t.status), e('span', { class: 'nr-s' }, DSK_KIND[t.kind] || t.kind), e('span', { class: 'nr-s' }, ltr(t.ref))])]),
+      e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))])]);
+  }))];
+}
+function deskLoad(force) {
+  if (DSK.busy || (!force && DSK.rows && Date.now() - DSK.at < 30000)) return;
+  DSK.busy = true; DSK.err = '';
+  Promise.all([clApi('/api/desk/admin/threads?status=all'), DSK.cat ? Promise.resolve(null) : clApi('/api/desk/admin/staff')]).then(function (r) {
+    DSK.rows = (r[0] && r[0].threads) || [];
+    if (r[1]) { DSK.cat = r[1].catalog || {}; DSK.staff = r[1].staff || []; }
+    DSK.at = Date.now(); DSK.busy = false; draw();
+  }).catch(function (err) { DSK.busy = false; DSK.err = (err && err.message) || 'تعذّر جلب المراسلات.'; draw(); });
+}
+function deskBoardPage() {
+  deskLoad(false);
+  if (DSK.err) return [DS.note('warn', 'تعذّر جلب مراسلات العملاء', DSK.err, liveOk(DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { deskLoad(true); } })))];
+  if (!DSK.rows) return [DS.note('info', 'جارٍ جلب مراسلات العملاء…', '')];
+  const all = DSK.rows.filter(function (r) { return r && r.status !== 'draft'; });
+  const F = [['open', 'المفتوحة'], ['new', 'الجديدة'], ['waiting_customer', 'بانتظار العميل'], ['done', 'المحلولة والمغلقة'], ['all', 'الكل']];
+  const fit = function (r, k) { return k === 'all' || (k === 'open' && DSK_OPEN.indexOf(r.status) >= 0) || (k === 'done' && (r.status === 'resolved' || r.status === 'closed')) || r.status === k; };
+  const q = String(DSK.q || '').trim().toLowerCase();
+  const L = all.filter(function (r) { return fit(r, DSK.st) && (!q || [r.ref, r.subject, r.name, r.email, r.phone, r.order_ref].join(' ').toLowerCase().indexOf(q) >= 0); });
+  const chips = e('div', { class: 'sc-seg' }, F.map(function (f) {
+    const n = all.filter(function (r) { return fit(r, f[0]); }).length;
+    return liveOk(DS.button(f[1] + ' (' + fmtNum(n) + ')', { size: 'sm', tone: DSK.st === f[0] ? 'primary' : null, onClick: function () { DSK.st = f[0]; draw(); } }));
+  }));
+  const tools = e('div', { class: 'mt-top' }, [e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث برقم المراسلة أو الموضوع أو اسم العميل…', 'aria-label': 'بحث في المراسلات', value: DSK.q || '', onChange: function (ev) { DSK.q = ev.target.value; draw(); } }),
+    liveOk(DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { deskLoad(true); } }))]);
+  const list = L.length ? e('div', { class: 'nr-gl' }, L.map(function (r) {
+    return e('article', { class: 'nr' + (r.status === 'new' ? ' is-unread is-ok' : '') }, [e('button', { type: 'button', class: 'nr-main', onClick: function () { deskOpen(r.ref); } }, [
+      e('span', { class: 'nr-ic' }, frag(tile('mail'))),
+      e('span', { class: 'nr-b' }, [e('span', { class: 'nr-top' }, [e('b', {}, r.subject || '—'), e('time', {}, dskDate(r.updated_at || r.created_at))]),
+        e('span', { class: 'nr-txt' }, (r.name || 'عميل') + (r.assignee_name ? ' · المسؤول: ' + r.assignee_name : ' · بلا إسناد')),
+        e('span', { class: 'nr-meta' }, [e('span', { class: 'nr-k is-' + dskTone(r.status) }, DSK_ST[r.status] || r.status), e('span', { class: 'nr-s' }, DSK_KIND[r.kind] || r.kind), e('span', { class: 'nr-s' }, ltr(r.ref))])]),
+      r.status === 'new' ? e('i', { class: 'nr-dot', 'aria-label': 'جديدة' }) : e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))])]);
+  })) : e('p', { class: 'fx-empty' }, 'لا توجد مراسلات بهذه الحالة.');
+  return [DS.note('info', 'مراسلات العملاء', 'الطلبات والشكاوى وطلبات الدعم الواردة من «مركز المراسلات» — افتح المراسلة للرد عليها أو تغيير حالتها أو إسنادها. الرد وتغيير الحالة يصلان العميل بالبريد وواتساب.'), chips, tools, list];
+}
+function deskOpen(ref) {
+  const D = DSKD[ref] || (DSKD[ref] = { t: null, err: '', busy: false, reply: '', patch: {}, sending: false, saving: false });
+  const redraw = function () { if (DSKD[ref] === D) deskOpen(ref); };
+  if (!D.t && !D.busy && !D.err) {
+    D.busy = true;
+    clApi('/api/desk/admin/threads/' + encodeURIComponent(ref)).then(function (j) { D.t = j.thread; D.busy = false; redraw(); })
+      .catch(function (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر فتح المراسلة.'; redraw(); });
+  }
+  const t = D.t, P = D.patch, cat = DSK.cat || {};
+  let body;
+  if (D.err) body = [DS.note('warn', 'تعذّر فتح المراسلة', D.err)];
+  else if (!t) body = [DS.note('info', 'جارٍ فتح المراسلة…', '')];
+  else {
+    const msgs = t.messages || [];
+    body = [
+      cuSec('المراسلة', 'file-text', [DS.fields([['رقم المراسلة', ltr(t.ref)], ['النوع', t.kind_label || DSK_KIND[t.kind] || '—'], ['الحالة', DS.badge(t.status_label || DSK_ST[t.status] || t.status, dskTone(t.status))], ['الموضوع', t.subject || '—'],
+        ['التصنيف', t.request_type || t.complaint_type || t.support_type || t.service || '—'], ['الطلب المرتبط', t.order_ref ? ltr(t.order_ref) : '—'], ['أُرسلت', dskDate(t.created_at)], ['آخر تحديث', dskDate(t.updated_at)]])]),
+      cuSec('العميل', 'user-circle', [DS.fields([['الاسم', t.customer_name || '—'], ['البريد', t.customer_email ? ltr(t.customer_email) : '—'], ['الجوال', t.customer_phone ? ltr(t.customer_phone) : '—']])]),
+      cuSec('التفاصيل', 'file-text', [e('p', { style: 'white-space:pre-wrap;line-height:1.9;margin:0' }, t.details || '—'),
+        t.extra ? e('p', { style: 'white-space:pre-wrap;line-height:1.9' }, t.extra) : null,
+        t.action_requested ? DS.note('info', 'الإجراء المطلوب', t.action_requested) : null,
+        (t.attachments || []).length ? e('small', { class: 'cu-dr-hint' }, 'مرفقات العميل: ' + t.attachments.map(function (a) { return a.name || 'ملف'; }).join('، ')) : null]),
+      cuSec('المحادثة', 'chat-circle-dots', [msgs.length ? e('ol', { class: 'mt-c' }, msgs.map(function (m) {
+        const st = m.role === 'staff';
+        return e('li', { class: 'mt-m ' + (st ? 'is-staff' : 'is-me') }, [e('div', { class: 'mt-bub' }, [e('div', { class: 'mt-who' }, [e('b', {}, st ? ('فريق تيرا' + (m.staff_name ? ' — ' + m.staff_name : '')) : (t.customer_name || 'العميل')), e('time', {}, ltr(dskDate(m.at)))]), e('p', { style: 'white-space:pre-wrap' }, m.body || '')])]);
+      })) : e('small', { class: 'cu-dr-hint' }, 'لا ردود بعد — رسالة العميل في «التفاصيل».'),
+        e('textarea', { class: 't2-input cu-why', rows: '3', placeholder: 'اكتب الرد للعميل — يصله بالبريد وواتساب ويظهر في مراسلته', onInput: function (ev) { D.reply = ev.target.value; } }, D.reply || ''),
+        e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.sending ? 'جارٍ الإرسال…' : 'إرسال الرد', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !!D.sending, onClick: function () {
+          const v = String(D.reply || '').trim(); if (v.length < 2) { snack('اكتب الرد أولًا.'); return; }
+          D.sending = true; redraw();
+          clPost('/api/desk/admin/threads/' + encodeURIComponent(ref) + '/reply', { text: v }).then(function (j) {
+            if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.');
+            D.t = j.thread || D.t; D.reply = ''; D.sending = false; snack('أُرسل الرد إلى العميل.'); redraw(); deskLoad(true);
+          }).catch(function (err) { D.sending = false; snack((err && err.message) || 'تعذّر الإرسال.'); redraw(); });
+        } }))])]),
+      cuSec('إدارة المراسلة', 'seal-check', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+        DS.editField('الحالة', DS.select({ value: P.status || t.status, options: dskOpts(cat.statuses || DSK_ST), onChange: function (v) { P.status = v; redraw(); } })),
+        DS.editField('الأولوية', DS.select({ value: P.priority || t.priority || 'normal', options: dskOpts(cat.priorities || DSK_PRI), onChange: function (v) { P.priority = v; redraw(); } })),
+        DS.editField('المسؤول', DS.select({ value: P.assignee_id != null ? (P.assignee_id || '-') : (t.assignee_id || '-'), options: [['-', 'بلا إسناد']].concat((DSK.staff || []).map(function (s) { return [String(s.id), s.name]; })), onChange: function (v) { P.assignee_id = v === '-' ? '' : v; redraw(); } })),
+        DS.editField('الجهة المختصة', DS.select({ value: P.department || t.department || '-', options: [['-', '—']].concat((cat.departments || []).map(function (x) { return [x, x]; })), onChange: function (v) { if (v !== '-') P.department = v; redraw(); } }))]),
+        e('small', { class: 'cu-dr-hint' }, 'تغيير الحالة يُبلغ العميل تلقائيًا بالبريد وواتساب.')])
+    ];
+  }
+  const foot = t ? [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.saving ? 'جارٍ الحفظ…' : 'حفظ التغييرات', { tone: 'primary', ui: 'check', disabled: !!D.saving || !Object.keys(P).length, onClick: function () {
+    D.saving = true; redraw();
+    clPost('/api/desk/admin/threads/' + encodeURIComponent(ref), P).then(function (j) {
+      if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الحفظ.');
+      D.t = j.thread || D.t; D.patch = {}; D.saving = false; snack('حُفظت التغييرات.'); redraw(); deskLoad(true);
+    }).catch(function (err) { D.saving = false; snack((err && err.message) || 'تعذّر الحفظ.'); redraw(); });
+  } }))])] : [];
+  cuBdDraw({ key: 'desk:' + ref, ic: 'chat-circle-dots:sky', title: 'مراسلة ' + ref, sub: t ? ((t.kind_label || '') + ' · ' + (t.status_label || '')) : 'مراسلات العملاء', body: body.filter(Boolean), foot: foot, onClose: function () { delete DSKD[ref]; draw(); } });
 }
 function commRegister() {
   try { Object.assign(ICON, { comm: ['chat-circle-dots', 'sky'], 'comm-dir': ['users-three', 'teal'], 'comm-send': ['paper-plane-tilt', 'sky'], 'comm-rep': ['chart-bar', 'navy'], 'comm-tpl': ['file-text', 'gold'] }); } catch (err) { void err; }
