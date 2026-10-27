@@ -243,7 +243,7 @@
     else if (t === 'before') { started = true; if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'جارٍ الدفع…'; } }
     else if (t === 'nav') { if (started) enter3ds(); }
     else if (t === 'after') {
-      if (x.status >= 400) { started = false; if (payBtn) { payBtn.disabled = false; payBtn.textContent = D.cta || 'ادفع'; } if (err) { err.textContent = x.msg || 'لم تكتمل العملية. تأكد من بيانات البطاقة وحاول مرة أخرى.'; show(err, true); } }
+      if (x.status >= 400) { started = false; if (payBtn) { payBtn.disabled = false; payBtn.textContent = D.cta || 'ادفع'; } if (err) { err.textContent = x.status === 422 ? 'انتهت صلاحية جلسة الدفع هذه بعد محاولة سابقة. ارجع إلى صفحة الدفعة واضغط «ادفع» من جديد لتُفتح جلسة جديدة.' : (x.msg || 'لم تكتمل العملية. تأكد من بيانات البطاقة وحاول مرة أخرى.'); /* v535 */ show(err, true); } }
       else { PXF.style.display = 'none'; processing(); }
     }
     else if (t === 'error') fail('تعذّر تشغيل نموذج البطاقة. أعد تحميل الصفحة.');
@@ -271,7 +271,7 @@
           if (typeof url === 'string' && /^https:\/\//i.test(url)) { secure3d(url); return; }
           if (r && r.status >= 400) {
             started = false; if (payBtn) { payBtn.disabled = false; payBtn.textContent = D.cta || 'ادفع'; }
-            var m = (d && (d.message || d.msg || d.detail)) || (Array.isArray(d) && d[0]) || 'لم تكتمل العملية. تأكد من بيانات البطاقة وحاول مرة أخرى.';
+            var m = r.status === 422 ? 'انتهت صلاحية جلسة الدفع هذه بعد محاولة سابقة. ارجع إلى صفحة الدفعة واضغط «ادفع» من جديد لتُفتح جلسة جديدة.' : ((d && (d.message || d.msg || d.detail)) || (Array.isArray(d) && d[0]) || 'لم تكتمل العملية. تأكد من بيانات البطاقة وحاول مرة أخرى.'); /* v535: جلسة مستهلكة */
             if (err) { err.textContent = String(m); show(err, true); }
             return;
           }
