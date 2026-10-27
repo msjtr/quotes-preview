@@ -3148,7 +3148,7 @@ const openNs = (k) => { FX.ns = k; FX.nv = 'client'; go('notif'); };
 /* v390: الإشعارات المرسلة للحساب من الإدارة (الرسالة المباشرة وإشعار الجوال لحساب محدد) — تُحفظ في القاعدة وتظهر في مركز الإشعارات
    (my_inbox · stf_38 — إشعارات صاحب الجلسة وحده). في العيّنة لا شيء. */
 const DBN = { at: 0, busy: false, rows: [] };
-const DBN_STAFF = ['pay_received', 'pay_refund', 'pay_failed', 'pay_op_request', 'transfer_submitted', 'service_request'];
+const DBN_STAFF = ['pay_received', 'pay_refund', 'pay_failed', 'pay_op_request', 'transfer_submitted', 'service_request', 'profile_review']; /* v537: + إشعارات التوثيق */
 const DBN_KINDS = ['direct_message', 'pay_op_decision', 'transfer_decision'].concat(DBN_STAFF);
 function dbNotifs() {
   try {
@@ -3157,7 +3157,13 @@ function dbNotifs() {
       DBN.busy = true;
       liveToken().then(function (tk) { return fetch('/api/push/inbox', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + tk } }); }).then(function (r) { return r.json(); }).then(function (j) {
         const R = (j && j.ok && Array.isArray(j.rows)) ? j.rows : [];
-        DBN.rows = R.filter(function (x) { return x && DBN_KINDS.indexOf(x.kind) >= 0; }); DBN.at = Date.now(); DBN.busy = false; if (DBN.rows.length) { dbFresh(); draw(); }
+        DBN.rows = R.filter(function (x) { return x && DBN_KINDS.indexOf(x.kind) >= 0; }); DBN.at = Date.now(); DBN.busy = false;
+        /* v537: إشعارات التوثيق للفريق (طلب اعتماد جديد للمراجع، وحالة طلبي لصاحبه) من my_notifications بصلاحيات القاعدة */
+        (S.role === 'admin' && typeof admRpc === 'function' ? admRpc('my_notifications', { p_only_open: false, p_limit: 30, p_offset: 0 }).catch(function () { return null; }) : Promise.resolve(null)).then(function (n) {
+          const N = (n && n.ok !== false && Array.isArray(n.rows)) ? n.rows.filter(function (x) { return x && x.kind === 'profile_review'; }).map(function (x) { return { id: x.id, kind: 'profile_review', title: x.title, body: x.body, created_at: x.created_at, read_at: x.is_read ? x.created_at : null, role: 'staff', aud: null, uid: null, mine: !x.is_role_wide }; }) : [];
+          if (N.length) DBN.rows = DBN.rows.concat(N).sort(function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); });
+          if (DBN.rows.length) { dbFresh(); draw(); }
+        });
       }).catch(function () { DBN.at = Date.now(); DBN.busy = false; });
     }
     /* v399: كل دور يرى إشعاراته فقط — لوحة الفريق: الموجّه للفريق · حساب العميل/الشريك: الموجّه له · والموجّه للجميع في الدورين */
@@ -3165,7 +3171,7 @@ function dbNotifs() {
     return DBN.rows.filter(dbRole).map(function (x) {
       const staffK = DBN_STAFF.indexOf(x.kind) >= 0 && S.role === 'admin' && x.uid;
       return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: DBN_STAFF.indexOf(x.kind) >= 0 ? 'system' : 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '',
-        act: staffK ? ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }] : undefined };
+        act: x.kind === 'profile_review' ? (x.mine ? ['حالة طلبي', function () { go('other', 'me-verify'); }] : ['فتح طلبات التوثيق', function () { go('other', 'cu-pf-ver'); }]) : staffK ? ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }] : undefined };
     });
   } catch (err) { return []; }
 }
@@ -17757,8 +17763,8 @@ function admVerPage() {
     const states = Object.keys(L.reduce(function (o, r) { o[r.status] = 1; return o; }, {}));
     const chips = [['all', 'الكل', L.length]].concat(states.map(function (s) { return [s, (ADM_VER_ST[s] || [s])[0], by(s)]; }));
     const rows = L.filter(function (r) { return st.f === 'all' || r.status === st.f; }).map(function (r) {
-      return admRow([admName(r.name, r.job_title || null), ADM_ROLE[r.role] || r.role || '—', r.role === 'client' ? mig2Type(r.user_id) : '—', admB(ADM_VER_ST, r.status), r.submitted_at ? bdiD(String(r.submitted_at).slice(0, 10)) : '—',
-        e('span', { class: 'adm-cnt' }, [DS.badge(fmtNum(r.match || 0) + ' مطابق', 'ok'), r.mismatch ? DS.badge(fmtNum(r.mismatch) + ' غير مطابق', 'danger') : null, r.missing_required ? DS.badge(fmtNum(r.missing_required) + ' ناقص', 'warn') : null]), r.assigned_to_name || '—'],
+      return admRow([admName(r.name, r.job_title || null), ADM_ROLE[r.role] || r.role || '—', r.role === 'client' ? mig2Type(r.user_id) : (r.job_title || 'موظف'), admB(ADM_VER_ST, r.status), r.submitted_at ? bdiD(String(r.submitted_at).slice(0, 10)) : '—',
+        e('span', { class: 'adm-cnt' }, [DS.badge(fmtNum(r.match || 0) + ' مطابق', 'ok'), r.mismatch ? DS.badge(fmtNum(r.mismatch) + ' غير مطابق', 'danger') : null, r.missing_required ? DS.badge(fmtNum(r.missing_required) + ' ناقص', 'warn') : null]), r.assigned_to_name || DS.badge('غير مُسند', 'warn')],
         function () { admVerOpen(r); }, [r.name, r.role, r.status, r.assigned_to_name].join(' '));
     });
     return [admKpis([['طلب توثيق', L.length, '', 'seal-check'], ['بانتظار الاستلام', by('submitted'), by('submitted') ? 'warn' : '', 'clock'], ['قيد المراجعة', by('received') + by('in_review'), '', 'list-checks'], ['معتمد', by('approved'), 'ok', 'check-circle']]),
@@ -19207,7 +19213,116 @@ function admTwoStep(label, tone, run, icon) {
   } }));
   return b;
 }
-function admVerOpen(r) {
+/* v537: نافذة مراجعة التوثيق الكاملة — كانت تقرأ «items» والقاعدة ترجع «blocks» فتظهر «لا بنود»، وبلا مطابقة ولا إسناد ولا مرفقات.
+ * الآن: الملخص · الإسناد · الأقسام وبنودها (مطابق/غير مطابق + المرفق) · الملاحظات الداخلية · سجل المراحل · القرار.
+ * كل إجراء عبر دوال القاعدة نفسها وصلاحياتها (verification_view · admin_verification_*). */
+const VER_EVK = { created: 'أُنشئ الطلب', submitted: 'أُرسل للتوثيق', resubmitted: 'أُعيد إرساله', received: 'استُلم للمراجعة', assigned: 'إسناد', unassigned: 'إلغاء الإسناد', item_match: 'بند مطابق', item_mismatch: 'بند غير مطابق', approved: 'اعتُمد', returned: 'أُعيد للتعديل', rejected: 'رُفض', note: 'ملاحظة داخلية', reopened: 'أُعيد فتحه', seed_refill: 'تحديث البنود' };
+const VER_ST2 = { draft: ['مسودة', null], submitted: ['بانتظار الاستلام', 'warn'], received: ['قيد المراجعة', 'info'], under_review: ['قيد المراجعة', 'info'], approved: ['معتمد', 'ok'], returned: ['معاد للتعديل', 'warn'], rejected: ['مرفوض', 'danger'] };
+const VER_ERR = { not_pending: 'الطلب ليس قيد المراجعة.', self_decision: 'لا يراجع صاحب الملف ملفه بنفسه.', staff_required: 'الإسناد لموظف نشط فقط.', no_permission: 'لا تملك صلاحية هذا الإجراء.', not_received: 'استلم الطلب أولًا.', note_required: 'اكتب الملاحظة أولًا.', not_found: 'الطلب غير موجود.', session_invalid: 'انتهت الجلسة — سجّل الدخول من جديد.', items_pending: 'بقيت بنود لم تُطابق بعد.', has_mismatch: 'يوجد بند غير مطابق — أعد الطلب للتعديل بدل الاعتماد.', no_file: 'لا يوجد ملف مرفق لهذا البند.' };
+function verErr(j) { return (j && (VER_ERR[j.error] || (typeof ADM_ERR !== 'undefined' && ADM_ERR[j.error]) || j.message || j.error)) || 'تعذّر تنفيذ الإجراء.'; }
+function verDate(s) { return s ? bdiD(String(s).slice(0, 16).replace('T', ' ')) : '—'; }
+async function admVerDoc(it) {
+  window.tqView(async function () {
+    const j = await admRpc('admin_verification_doc', { p_item: it.id });
+    if (!j || j.ok === false || !j.path) throw new Error(verErr(j || { error: 'no_file' }));
+    const tk = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
+    const p = String(j.path).split('/').map(encodeURIComponent).join('/');
+    const r = await fetch(cfg.supabaseUrl + '/storage/v1/object/sign/' + encodeURIComponent(j.bucket || 'attachments') + '/' + p, { method: 'POST', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 }) });
+    const s = await r.json().catch(function () { return null; });
+    const u = s && (s.signedURL || s.signedUrl);
+    if (!r.ok || !u) throw new Error('تعذّر فتح المرفق — تحقق من صلاحية الاطلاع على المستندات.');
+    return /^https?:/i.test(u) ? u : cfg.supabaseUrl + '/storage/v1' + (u.charAt(0) === '/' ? '' : '/') + u;
+  }, it.label || 'المرفق');
+}
+function admVerOpen2(r) {
+  const T = r.name || 'طلب التوثيق';
+  cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: 'جارٍ القراءة…', body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
+  admRpc('verification_view', { p_id: r.id, p_detail: true }).then(function (V) {
+    if (!V || V.ok === false) throw new Error(verErr(V));
+    const st = V.status || r.status, role = V.role || r.role, staff = role === 'staff', who = staff ? 'الموظف' : 'العميل';
+    const open = ['submitted', 'received', 'under_review'].indexOf(st) >= 0, inRev = st === 'received' || st === 'under_review';
+    const C = V.counts || {}, blocks = Array.isArray(V.blocks) ? V.blocks : [], evs = Array.isArray(V.events) ? V.events : [];
+    const canRev = V.can_review !== false, canMgr = !!V.can_manage;
+    const meId = LIVE.me && (LIVE.me.id || LIVE.me.user_id);
+    const out = e('div', { role: 'status' });
+    const say = function (tone, a, b) { out.innerHTML = ''; out.appendChild(DS.note(tone, a, b || '')); try { out.scrollIntoView({ block: 'nearest' }); } catch (e0) { void e0; } };
+    const refreshList = function () { if (ADMS.ver) ADMS.ver.at = 0; if (LIVE_DATA.ver) LIVE_DATA.ver = null; };
+    const call = async function (fn, args, okMsg, close) {
+      try {
+        const j = await admRpc(fn, args);
+        if (j && j.ok === false) throw new Error(verErr(j));
+        refreshList(); snack(okMsg);
+        if (close) setTimeout(function () { admClose(); draw(); }, 700); else admVerOpen2(r);
+      } catch (err) { if (err && err.message === 'auth') return; say('warn', 'لم يُنفَّذ الإجراء', (err && err.message) || ''); }
+    };
+    const stB = function (s) { const x = VER_ST2[s] || [s || '—', null]; return DS.badge(x[0], x[1]); };
+    /* 1) الملخص */
+    const total = C.total || 0, match = C.match || 0, mis = C.mismatch || 0, pend = C.pending != null ? C.pending : Math.max(0, total - match - mis);
+    const sum = cuSec('ملخص الطلب', 'user-circle', [DS.fields([
+      ['صاحب الملف', V.name || T], ['الدور', (staff ? 'موظف' : 'عميل') + (V.job_title ? ' · ' + V.job_title : '')],
+      ['الحالة', stB(st)], ['أُرسل', verDate(V.submitted_at)], ['استُلم', verDate(V.received_at)],
+      ['المسؤول عن المراجعة', V.assigned_to_name ? e('span', {}, [V.assigned_to_name, V.assigned_at ? e('small', { class: 'cu-dr-hint' }, [' · ', verDate(V.assigned_at)]) : null]) : DS.badge('غير مُسند', 'warn')],
+      ['المطابقة', e('span', {}, [DS.badge(match + ' مطابق', 'ok'), ' ', mis ? DS.badge(mis + ' غير مطابق', 'danger') : null, ' ', pend ? DS.badge(pend + ' بانتظار المطابقة', 'warn') : null, ' ', e('small', { class: 'cu-dr-hint' }, 'من ' + total + ' بند')])],
+      C.missing_required ? ['حقول مطلوبة ناقصة', DS.badge(String(C.missing_required), 'danger')] : null
+    ].filter(Boolean))]);
+    /* 2) الإسناد */
+    const asg = (canMgr && open) ? cuSec('الإسناد', 'user-switch', [
+      e('div', { class: 't2-pb-actions' }, [
+        meId && V.assigned_to !== meId ? DS.button('إسنادها لي', { size: 'sm', tone: 'primary', onClick: function () { call('admin_verification_assign', { p_id: r.id, p_user: meId }, 'أُسند الطلب إليك.'); } }) : null,
+        V.assigned_to ? DS.button('إلغاء الإسناد', { size: 'sm', onClick: function () { call('admin_verification_assign', { p_id: r.id, p_user: null }, 'أُلغي الإسناد.'); } }) : null
+      ]),
+      e('small', { class: 'cu-dr-hint' }, 'الإسناد يحدد من يراجع الطلب، ويظهر في السجل.')]) : null;
+    /* 3) الأقسام والبنود */
+    const IVB = { match: ['مطابق', 'ok'], mismatch: ['غير مطابق', 'danger'] };
+    const secs = blocks.map(function (b) {
+      const items = Array.isArray(b.items) ? b.items : [], miss = Array.isArray(b.missing) ? b.missing : [];
+      const bm = items.filter(function (i) { return i.verdict === 'match'; }).length;
+      const rows = items.map(function (it) {
+        const v = IVB[it.verdict];
+        const val = it.value_ar != null && it.value_ar !== '' ? it.value_ar : it.value;
+        const btns = (canRev && inRev) ? [
+          it.verdict !== 'match' ? DS.button('مطابق', { size: 'sm', tone: 'primary', onClick: function () { call('admin_verification_item_decide', { p_item: it.id, p_verdict: 'match', p_reason: null }, 'سُجّل: مطابق.'); } }) : null,
+          it.verdict !== 'mismatch' ? DS.button('غير مطابق', { size: 'sm', tone: 'danger', onClick: function () { const why = window.prompt('سبب عدم المطابقة (يظهر لصاحب الملف عند الإعادة):', ''); if (why === null) return; if (!String(why).trim()) { say('warn', 'اكتب السبب', 'سبب عدم المطابقة مطلوب.'); return; } call('admin_verification_item_decide', { p_item: it.id, p_verdict: 'mismatch', p_reason: String(why).trim() }, 'سُجّل: غير مطابق.'); } }) : null
+        ] : [];
+        return e('div', { class: 'cu-vi', style: 'display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line,#e6ecf3)' }, [
+          e('div', { style: 'min-width:180px;flex:1' }, [e('b', {}, it.label || it.field_key || '—'), it.required ? e('small', { class: 'cu-dr-hint' }, ' · مطلوب') : null,
+            e('div', {}, [ltrIf(String(val == null ? '—' : val)), it.value_off ? e('small', { class: 'cu-dr-hint' }, ' (قيمة خارج القائمة)') : null]),
+            it.verdict === 'mismatch' && it.reason ? e('small', { style: 'color:#b42318' }, 'السبب: ' + it.reason) : null]),
+          e('div', { style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap' }, [
+            it.doc_id ? DS.button('عرض المرفق', { size: 'sm', onClick: function () { admVerDoc(it); } }) : null,
+            v ? DS.badge(v[0], v[1]) : DS.badge('بانتظار', null)].concat(btns))
+        ]);
+      });
+      return cuSec((b.title || b.block) + ' · ' + bm + '/' + items.length, 'list-checks', [
+        miss.length ? DS.note('warn', 'حقول مطلوبة ناقصة', miss.join('، ')) : null,
+        rows.length ? e('div', {}, rows) : e('small', { class: 'cu-dr-hint' }, 'لا بنود معبّأة في هذا القسم.')
+      ].filter(Boolean));
+    });
+    const hintRev = (!inRev && st === 'submitted') ? DS.note('info', 'ابدأ بالاستلام', 'استلم الطلب أولًا لتظهر أزرار المطابقة على كل بند.') : null;
+    /* 4) ملاحظة داخلية */
+    const nIn = e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية للفريق (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة داخلية' });
+    const notes = canRev ? cuSec('ملاحظة داخلية', 'note', [nIn, e('div', { class: 't2-pb-actions' }, [DS.button('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(nIn.value || '').trim(); if (!t) { say('warn', 'اكتب الملاحظة', ''); return; } call('admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.'); } })])]) : null;
+    /* 5) سجل المراحل */
+    const log = cuSec('سجل المراحل', 'clock-counter-clockwise', [evs.length ? e('div', {}, evs.slice().sort(function (a, b) { return String(b.at || b.created_at || '').localeCompare(String(a.at || a.created_at || '')); }).map(function (x) {
+      return e('div', { style: 'padding:6px 0;border-bottom:1px dashed var(--line,#e6ecf3)' }, [e('b', {}, VER_EVK[x.kind] || x.kind || '—'), e('small', { class: 'cu-dr-hint' }, [' · ', verDate(x.at || x.created_at), x.actor_name ? ' · ' + x.actor_name : '']), x.body ? e('div', { class: 'cu-dr-hint' }, String(x.body)) : null]);
+    })) : e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]);
+    /* 6) القرار */
+    const dn = e('textarea', { class: 't2-input', rows: '3', placeholder: 'ملاحظة القرار لـ' + who + ' (مطلوبة عند الإعادة أو الرفض)', 'aria-label': 'ملاحظة القرار' });
+    const need = function () { if (!String(dn.value || '').trim()) { say('warn', 'اكتب الملاحظة', 'الإعادة والرفض يحتاجان سببًا يصل ' + who + '.'); return false; } return true; };
+    const acts = !canRev ? [] : st === 'submitted' ? [admTwoStep('استلام الطلب', 'primary', function () { return call('admin_verification_receive', { p_id: r.id }, 'استُلم الطلب — ابدأ المطابقة.'); })]
+      : inRev ? [admTwoStep('اعتماد الملف', 'primary', function () { return call('admin_verification_approve', { p_id: r.id, p_note: String(dn.value || '').trim() || null }, 'اعتُمد الملف.', true); }),
+        admTwoStep('إعادة للتعديل', null, function () { if (!need()) return; return call('admin_verification_return', { p_id: r.id, p_note: String(dn.value || '').trim() }, 'أُعيد الطلب لـ' + who + '.', true); }),
+        admTwoStep('رفض', 'danger', function () { if (!need()) return; return call('admin_verification_reject', { p_id: r.id, p_note: String(dn.value || '').trim() }, 'رُفض الطلب.', true); })] : [];
+    const dec = acts.length ? cuSec('القرار', 'seal-check', [inRev ? dn : null, e('div', { class: 't2-pb-actions' }, acts),
+      e('small', { class: 'cu-dr-hint' }, 'يصل ' + who + ' إشعار بالنتيجة. الضغطة الأولى للتأكيد والثانية للتنفيذ.'), inRev && (pend || mis) ? DS.note('warn', 'قبل الاعتماد', (pend ? pend + ' بند بانتظار المطابقة' : '') + (pend && mis ? ' · ' : '') + (mis ? mis + ' بند غير مطابق — الأنسب إعادته للتعديل' : '')) : null].filter(Boolean)) : (V.decision_note ? cuSec('القرار', 'seal-check', [DS.note('info', 'ملاحظة القرار', String(V.decision_note))]) : null);
+    cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st), foot: admFoot(), body: [
+      e('div', { class: 'cu-dr-st' }, [stB(st), V.submitted_at ? e('span', { class: 'cu-dr-at' }, ['أُرسل ', verDate(V.submitted_at)]) : null]),
+      out, e('div', { class: 'cu-secs' }, [sum, asg, hintRev].concat(secs).concat([notes, log, dec]).filter(Boolean))] });
+  }).catch(function (err) { if (err && err.message === 'auth') return; cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: '', body: [DS.note('warn', 'تعذّر فتح الطلب', (err && err.message) || '')], foot: admFoot() }); });
+}
+
+function admVerOpen(r) { return admVerOpen2(r); }
+function admVerOpenV1(r) {
   const T = r.name || 'طلب التوثيق';
   cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: 'جارٍ القراءة…', body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
   admRpc('verification_view', { p_id: r.id, p_detail: true }).then(function (j) {
