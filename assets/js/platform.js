@@ -16293,7 +16293,7 @@ const ADM_ERR = { no_marked_fields: 'حدّد «غير مطابق» مع الس�
 const ADM_ROLE = { client: 'عميل', staff: 'موظف', employee: 'موظف', marketer: 'مسوّق', investor: 'مستثمر', partner: 'شريك', admin: 'مشرف' };
 const ADM_USER_ST = { active: ['نشط', 'ok'], pending: ['بانتظار التفعيل', 'warn'], inactive: ['غير مفعّل', 'warn'], suspended: ['موقوف', 'danger'], blocked: ['محظور', 'danger'], archived: ['مؤرشف', null] };
 const ADM_MIG_ST = { promoted: ['رُحّل إلى حساب في المنصة', 'ok'], ready: ['جاهز للترحيل', 'info'], conflict: ['تعارض هوية', 'danger'], excluded: ['مستبعد', null], pending: ['قيد التجهيز', 'warn'] };
-const ADM_VER_ST = { submitted: ['بانتظار الاستلام', 'info'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['أُعيد للعميل', 'warn'], approved: ['معتمد', 'ok'], rejected: ['مرفوض', 'danger'], cancelled: ['ملغى', null] };
+const ADM_VER_ST = { submitted: ['بانتظار الاستلام', 'info'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], under_review: ['قيد المراجعة', 'info'], returned: ['أُعيد للتعديل', 'warn'] /* v544: للعميل والموظف */, approved: ['معتمد', 'ok'], rejected: ['مرفوض', 'danger'], cancelled: ['ملغى', null] };
 const ADM_QT_ST = { draft: 'مسودة', sent: 'مُرسل للعميل', accepted: 'مقبول', rejected: 'مرفوض', expired: 'منتهي الصلاحية', cancelled: 'ملغى', approved: 'معتمد' };
 const ADM_TONE = { ok: 'ok', success: 'ok', green: 'ok', warn: 'warn', warning: 'warn', amber: 'warn', danger: 'danger', red: 'danger', error: 'danger', info: 'info', blue: 'info' };
 /* v404: الخروج إلى البوابة بسبب انتهاء الجلسة يمسح نسختها المحفوظة — فلا تعيدك البوابة إلى حساب منتهٍ (حلقة) */
@@ -19465,91 +19465,241 @@ async function admVerDoc(it) {
     return /^https?:/i.test(u) ? u : cfg.supabaseUrl + '/storage/v1' + (u.charAt(0) === '/' ? '' : '/') + u;
   }, it.label || 'المرفق');
 }
+/* v544: صفحة مراجعة التوثيق — إعادة تنظيم كاملة:
+ * لا نوافذ prompt · كل رسالة تظهر في مكان الإجراء نفسه (البند/القسم/الإسناد/القرار) · قائمة إسناد للموظفين
+ * أسباب «غير مطابق» جاهزة حسب نوع البند + «أخرى» · مطابقة القسم كاملًا · ملاحظة على البند نفسه
+ * التحديث في مكانه دون القفز للأعلى (cuBdDraw) · بنود في شبكة مضغوطة · الأقسام المكتملة تُطوى
+ * تنبيهات النقص قبل الاعتماد/الإعادة/الرفض داخل لوحة القرار مع روابط للبنود · أسباب الإعادة والرفض جاهزة + «أخرى». */
+const VR3 = {};
+const VR3_RET = ['بيانات غير مطابقة للمستندات — راجع البنود المحددة', 'مستند غير واضح أو ناقص — أعد رفعه', 'مستند منتهي الصلاحية — ارفع نسخة سارية', 'حقول مطلوبة ناقصة — أكملها ثم أعد الإرسال'];
+const VR3_REJ = ['المستندات غير صحيحة أو لا تخص صاحب الملف', 'صاحب الملف غير مؤهل للخدمة', 'طلب مكرر لحساب آخر'];
+const VR3_IC = { personal: 'user-circle', address: 'map-pin', contact: 'phone', bank: 'bank', docs: 'files', emergency: 'phone' };
+function vr3Why(it) {
+  const k = String(it.field_key || ''), kind = String(it.kind || '');
+  if (kind === 'file' || it.doc_id) return ['المستند غير واضح', 'المستند منتهي الصلاحية', 'المستند لا يخص صاحب الملف', 'الاسم في المستند لا يطابق الملف', 'المستند ناقص (وجه واحد فقط)', 'نوع المستند غير المطلوب'];
+  if (/full_name/.test(k)) return ['الاسم لا يطابق الهوية', 'الاسم ناقص — الاسم الرباعي مطلوب', 'خطأ إملائي في الاسم', k === 'full_name_en' ? 'الاسم الإنجليزي لا يطابق الجواز' : 'الاسم بغير العربية'];
+  if (/national_id|id_no|iqama|passport_no|doc_no/.test(k)) return ['الرقم لا يطابق المستند', 'عدد الأرقام غير صحيح', 'الرقم لا يخص صاحب الملف'];
+  if (/expir/.test(k)) return ['الوثيقة منتهية الصلاحية', 'التاريخ لا يطابق المستند', 'التاريخ غير مُدخل'];
+  if (kind === 'date') return ['التاريخ لا يطابق المستند', 'صيغة التاريخ غير صحيحة'];
+  if (kind === 'phone') return ['رقم الجوال غير صحيح', 'الرقم لا يخص صاحب الملف', 'الرقم غير مفعّل على واتساب'];
+  if (kind === 'email') return ['البريد غير صحيح', 'البريد لا يخص صاحب الملف'];
+  if (/iban/.test(k)) return ['الآيبان لا يطابق شهادة الآيبان', 'الحساب ليس باسم صاحب الملف', 'صيغة الآيبان غير صحيحة'];
+  if (/bank|payout|currency/.test(k)) return ['لا يطابق شهادة الآيبان', 'الاختيار غير صحيح'];
+  if (/building|postal|additional|street|district|city|state|short|country|address/.test(k)) return ['لا يطابق وثيقة العنوان الوطني', 'الصيغة غير صحيحة', 'العنوان ناقص'];
+  if (kind === 'select') return ['الاختيار لا يطابق المستند', 'الاختيار غير صحيح'];
+  return ['غير مطابق للمستند المرفوع', 'غير واضح أو ناقص', 'صيغة غير صحيحة'];
+}
+function vr3Css() {
+  if (document.getElementById('vr3-css')) return;
+  const s = document.createElement('style'); s.id = 'vr3-css';
+  s.textContent = [
+    '.vr3-top{display:grid;gap:10px;padding:12px;border:1px solid var(--line,#e6ecf3);border-radius:14px;background:var(--surface-2,rgba(14,138,131,.04))}',
+    '.vr3-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}',
+    '.vr3-kv{display:flex;flex-direction:column;gap:2px;min-width:120px}.vr3-kv small{opacity:.7}',
+    '.vr3-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--line,#e6ecf3)}',
+    '.vr3-bar i{display:block;height:100%}.vr3-bar .m{background:#16a34a}.vr3-bar .x{background:#dc2626}',
+    '.vr3-sec{border:1px solid var(--line,#e6ecf3);border-radius:14px;padding:10px 12px;display:grid;gap:10px}',
+    '.vr3-sec-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}',
+    '.vr3-sec-h h3{display:flex;align-items:center;gap:8px;margin:0;font-size:15px}',
+    '.vr3-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}',
+    '.vr3-it{border:1px solid var(--line,#e6ecf3);border-radius:12px;padding:8px 10px;display:grid;gap:6px;scroll-margin:90px}',
+    '.vr3-it.is-match{border-inline-start:4px solid #16a34a}.vr3-it.is-mismatch{border-inline-start:4px solid #dc2626}.vr3-it.is-pend{border-inline-start:4px solid #d4a017}',
+    '.vr3-it.is-flash{box-shadow:0 0 0 3px rgba(212,160,23,.45)}',
+    '.vr3-it-h{display:flex;align-items:center;gap:6px;justify-content:space-between}',
+    '.vr3-it-v{font-weight:600;word-break:break-word}',
+    '.vr3-why{color:#b42318;font-size:12.5px}',
+    '.vr3-nt{font-size:12.5px;padding:4px 8px;border-radius:8px;background:rgba(18,51,91,.06)}',
+    '.vr3-acts{display:flex;flex-wrap:wrap;gap:6px}',
+    '.vr3-chips{display:flex;flex-wrap:wrap;gap:6px}',
+    '.vr3-chip{border:1px solid var(--line,#d6dee8);background:transparent;border-radius:99px;padding:4px 10px;font:inherit;font-size:12.5px;cursor:pointer;color:inherit}',
+    '.vr3-chip.is-on{border-color:#0e8a83;background:rgba(14,138,131,.12);font-weight:700}',
+    '.vr3-box{display:grid;gap:8px;padding:8px;border-radius:10px;background:rgba(18,51,91,.04)}',
+    '.vr3-tabs{display:flex;gap:6px;flex-wrap:wrap}',
+    '.vr3-link{background:none;border:0;padding:0;color:#0e8a83;text-decoration:underline;cursor:pointer;font:inherit}',
+    '@media (max-width:640px){.vr3-grid{grid-template-columns:1fr}}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
 function admVerOpen2(r) {
-  const T = r.name || 'طلب التوثيق';
-  cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: 'جارٍ القراءة…', body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
-  admRpc('verification_view', { p_id: r.id, p_detail: true }).then(function (V) {
-    if (!V || V.ok === false) throw new Error(verErr(V));
+  vr3Css();
+  const S = VR3[r.id] || (VR3[r.id] = { V: null, ui: {}, msg: {}, busy: false, staff: null, fold: {}, dec: { mode: '', pick: {}, txt: '' }, gnote: '' });
+  const T = r.name || 'طلب التوثيق', key = 'ver:' + r.id;
+  const meId = LIVE.me && (LIVE.me.id || LIVE.me.user_id);
+  const refreshList = function () { if (ADMS.ver) ADMS.ver.at = 0; if (LIVE_DATA.ver) LIVE_DATA.ver = null; };
+  const msgOf = function (k) { const m = S.msg[k]; return m ? DS.note(m[0], m[1], m[2] || '') : null; };
+  const flash = function (id) { const el = document.getElementById('vr3-' + id); if (!el) return; try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e0) { void e0; } el.classList.add('is-flash'); setTimeout(function () { el.classList.remove('is-flash'); }, 1600); };
+  let paint = null;
+  const load = function () {
+    return admRpc('verification_view', { p_id: r.id, p_detail: true }).then(function (V) { if (!V || V.ok === false) throw new Error(verErr(V)); S.V = V; });
+  };
+  const act = async function (where, fn, args, okMsg, close) {
+    if (S.busy) return; S.busy = true; S.msg[where] = ['info', 'جارٍ التنفيذ…']; paint();
+    try {
+      const j = await admRpc(fn, args);
+      if (j && j.ok === false) throw new Error(verErr(j));
+      refreshList();
+      if (close) { S.busy = false; snack(okMsg); delete VR3[r.id]; setTimeout(function () { admClose(); draw(); }, 500); return; }
+      await load(); S.msg[where] = okMsg ? ['ok', okMsg] : null;
+    } catch (err) { if (err && err.message === 'auth') { S.busy = false; return; } S.msg[where] = ['warn', 'لم يُنفَّذ', (err && err.message) || '']; }
+    S.busy = false; paint();
+  };
+  const staffLoad = function () {
+    if (S.staff) return; S.staff = 'loading';
+    admRpc('staff_directory', {}).then(function (L) {
+      const A = Array.isArray(L) ? L : (L && (L.rows || L.items)) || [];
+      S.staff = A.filter(function (x) { return x && x.id; }).map(function (x) { return [x.id, (x.full_name || '—') + (x.employee_code ? ' · ' + x.employee_code : '')]; });
+      paint();
+    }).catch(function () { S.staff = []; paint(); });
+  };
+  paint = function () {
+    const V = S.V; if (!V) return;
     const st = V.status || r.status, role = V.role || r.role, staff = role === 'staff', who = staff ? 'الموظف' : 'العميل';
     const open = ['submitted', 'received', 'under_review'].indexOf(st) >= 0, inRev = st === 'received' || st === 'under_review';
-    const C = V.counts || {}, blocks = Array.isArray(V.blocks) ? V.blocks : [], evs = Array.isArray(V.events) ? V.events : [];
-    const canRev = V.can_review !== false, canMgr = !!V.can_manage;
-    const meId = LIVE.me && (LIVE.me.id || LIVE.me.user_id);
-    const out = e('div', { role: 'status' });
-    const say = function (tone, a, b) { out.innerHTML = ''; out.appendChild(DS.note(tone, a, b || '')); try { out.scrollIntoView({ block: 'nearest' }); } catch (e0) { void e0; } };
-    const refreshList = function () { if (ADMS.ver) ADMS.ver.at = 0; if (LIVE_DATA.ver) LIVE_DATA.ver = null; };
-    const call = async function (fn, args, okMsg, close) {
-      try {
-        const j = await admRpc(fn, args);
-        if (j && j.ok === false) throw new Error(verErr(j));
-        refreshList(); snack(okMsg);
-        if (close) setTimeout(function () { admClose(); draw(); }, 700); else admVerOpen2(r);
-      } catch (err) { if (err && err.message === 'auth') return; say('warn', 'لم يُنفَّذ الإجراء', (err && err.message) || ''); }
-    };
+    const canRev = V.can_review !== false, canMgr = !!V.can_manage, canAct = canRev && inRev && !S.busy;
+    const blocks = Array.isArray(V.blocks) ? V.blocks : [], evs = Array.isArray(V.events) ? V.events : [];
+    const all = []; blocks.forEach(function (b) { (Array.isArray(b.items) ? b.items : []).forEach(function (it) { all.push([b, it]); }); });
+    const nMatch = all.filter(function (x) { return x[1].verdict === 'match'; }).length, nMis = all.filter(function (x) { return x[1].verdict === 'mismatch'; }).length;
+    const total = all.length, nPend = total - nMatch - nMis;
+    const valOf = function (it) { const v = it.value_ar != null && it.value_ar !== '' ? it.value_ar : it.value; return v == null ? '' : String(v); };
     const stB = function (s) { const x = VER_ST2[s] || [s || '—', null]; return DS.badge(x[0], x[1]); };
-    /* 1) الملخص */
-    const total = C.total || 0, match = C.match || 0, mis = C.mismatch || 0, pend = C.pending != null ? C.pending : Math.max(0, total - match - mis);
-    const sum = cuSec('ملخص الطلب', 'user-circle', [DS.fields([
-      ['صاحب الملف', V.name || T], ['الدور', (staff ? 'موظف' : 'عميل') + (V.job_title ? ' · ' + V.job_title : '')],
-      ['الحالة', stB(st)], ['أُرسل', verDate(V.submitted_at)], ['استُلم', verDate(V.received_at)],
-      ['المسؤول عن المراجعة', V.assigned_to_name ? e('span', {}, [V.assigned_to_name, V.assigned_at ? e('small', { class: 'cu-dr-hint' }, [' · ', verDate(V.assigned_at)]) : null]) : DS.badge('غير مُسند', 'warn')],
-      ['المطابقة', e('span', {}, [DS.badge(match + ' مطابق', 'ok'), ' ', mis ? DS.badge(mis + ' غير مطابق', 'danger') : null, ' ', pend ? DS.badge(pend + ' بانتظار المطابقة', 'warn') : null, ' ', e('small', { class: 'cu-dr-hint' }, 'من ' + total + ' بند')])],
-      C.missing_required ? ['حقول مطلوبة ناقصة', DS.badge(String(C.missing_required), 'danger')] : null
-    ].filter(Boolean))]);
-    /* 2) الإسناد */
-    const asg = (canMgr && open) ? cuSec('الإسناد', 'user-switch', [
-      e('div', { class: 't2-pb-actions' }, [
-        meId && V.assigned_to !== meId ? DS.button('إسنادها لي', { size: 'sm', tone: 'primary', onClick: function () { call('admin_verification_assign', { p_id: r.id, p_user: meId }, 'أُسند الطلب إليك.'); } }) : null,
-        V.assigned_to ? DS.button('إلغاء الإسناد', { size: 'sm', onClick: function () { call('admin_verification_assign', { p_id: r.id, p_user: null }, 'أُلغي الإسناد.'); } }) : null
+    const pct = function (n) { return total ? Math.round(n / total * 100) : 0; };
+    /* 1) الرأس: الحالة والتقدم والإسناد في مكان واحد */
+    if (canMgr && open) staffLoad();
+    const asgSel = (canMgr && open) ? e('div', { class: 'vr3-row' }, [
+      Array.isArray(S.staff) && S.staff.length ? DS.select({ value: V.assigned_to || '', ph: 'اختر موظفًا للمراجعة', options: [['', '— غير مُسند —']].concat(S.staff), onChange: function (v) { if ((v || '') === (V.assigned_to || '')) return; act('asg', 'admin_verification_assign', { p_id: r.id, p_user: v || null }, v ? 'أُسند الطلب.' : 'أُلغي الإسناد.'); } })
+        : e('small', { class: 'cu-dr-hint' }, S.staff === 'loading' ? 'جارٍ تحميل قائمة الموظفين…' : 'لا تظهر قائمة الموظفين لصلاحيتك — يمكنك إسنادها لنفسك.'),
+      meId && V.assigned_to !== meId ? DS.button('إسنادها لي', { size: 'sm', disabled: S.busy, onClick: function () { act('asg', 'admin_verification_assign', { p_id: r.id, p_user: meId }, 'أُسند الطلب إليك.'); } }) : null
+    ]) : null;
+    const top = e('div', { class: 'vr3-top' }, [
+      e('div', { class: 'vr3-row' }, [
+        e('div', { class: 'vr3-kv' }, [e('small', {}, 'صاحب الملف'), e('b', {}, (V.name || T))]),
+        e('div', { class: 'vr3-kv' }, [e('small', {}, 'الدور'), e('span', {}, (staff ? 'موظف' : 'عميل') + (V.job_title ? ' · ' + V.job_title : ''))]),
+        e('div', { class: 'vr3-kv' }, [e('small', {}, 'الحالة'), stB(st)]),
+        e('div', { class: 'vr3-kv' }, [e('small', {}, 'أُرسل'), verDate(V.submitted_at)]),
+        e('div', { class: 'vr3-kv' }, [e('small', {}, 'استُلم'), verDate(V.received_at)]),
+        e('div', { class: 'vr3-kv' }, [e('small', {}, 'المسؤول عن المراجعة'), V.assigned_to_name ? e('span', {}, V.assigned_to_name) : DS.badge('غير مُسند', 'warn')])
       ]),
-      e('small', { class: 'cu-dr-hint' }, 'الإسناد يحدد من يراجع الطلب، ويظهر في السجل.')]) : null;
-    /* 3) الأقسام والبنود */
-    const IVB = { match: ['مطابق', 'ok'], mismatch: ['غير مطابق', 'danger'] };
-    const secs = blocks.map(function (b) {
-      const items = Array.isArray(b.items) ? b.items : [], miss = Array.isArray(b.missing) ? b.missing : [];
-      const bm = items.filter(function (i) { return i.verdict === 'match'; }).length;
-      const rows = items.map(function (it) {
-        const v = IVB[it.verdict];
-        const val = it.value_ar != null && it.value_ar !== '' ? it.value_ar : it.value;
-        const btns = (canRev && inRev) ? [
-          it.verdict !== 'match' ? DS.button('مطابق', { size: 'sm', tone: 'primary', onClick: function () { call('admin_verification_item_decide', { p_item: it.id, p_verdict: 'match', p_reason: null }, 'سُجّل: مطابق.'); } }) : null,
-          it.verdict !== 'mismatch' ? DS.button('غير مطابق', { size: 'sm', tone: 'danger', onClick: function () { const why = window.prompt('سبب عدم المطابقة (يظهر لصاحب الملف عند الإعادة):', ''); if (why === null) return; if (!String(why).trim()) { say('warn', 'اكتب السبب', 'سبب عدم المطابقة مطلوب.'); return; } call('admin_verification_item_decide', { p_item: it.id, p_verdict: 'mismatch', p_reason: String(why).trim() }, 'سُجّل: غير مطابق.'); } }) : null
-        ] : [];
-        return e('div', { class: 'cu-vi', style: 'display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line,#e6ecf3)' }, [
-          e('div', { style: 'min-width:180px;flex:1' }, [e('b', {}, it.label || it.field_key || '—'), it.required ? e('small', { class: 'cu-dr-hint' }, ' · مطلوب') : null,
-            e('div', {}, [ltrIf(String(val == null ? '—' : val)), it.value_off ? e('small', { class: 'cu-dr-hint' }, ' (قيمة خارج القائمة)') : null]),
-            it.verdict === 'mismatch' && it.reason ? e('small', { style: 'color:#b42318' }, 'السبب: ' + it.reason) : null]),
-          e('div', { style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap' }, [
-            it.doc_id ? DS.button('عرض المرفق', { size: 'sm', onClick: function () { admVerDoc(it); } }) : null,
-            v ? DS.badge(v[0], v[1]) : DS.badge('بانتظار', null)].concat(btns))
-        ]);
-      });
-      return cuSec((b.title || b.block) + ' · ' + bm + '/' + items.length, 'list-checks', [
-        miss.length ? DS.note('warn', 'حقول مطلوبة ناقصة', miss.join('، ')) : null,
-        rows.length ? e('div', {}, rows) : e('small', { class: 'cu-dr-hint' }, 'لا بنود معبّأة في هذا القسم.')
+      e('div', { class: 'vr3-bar', role: 'img', 'aria-label': nMatch + ' مطابق و' + nMis + ' غير مطابق من ' + total }, [e('i', { class: 'm', style: 'width:' + pct(nMatch) + '%' }), e('i', { class: 'x', style: 'width:' + pct(nMis) + '%' })]),
+      e('div', { class: 'vr3-row' }, [DS.badge(nMatch + ' مطابق', 'ok'), nMis ? DS.badge(nMis + ' غير مطابق', 'danger') : null, nPend ? DS.badge(nPend + ' بانتظار المطابقة', 'warn') : null, e('small', { class: 'cu-dr-hint' }, 'من ' + total + ' بند'),
+        (canRev && inRev) ? e('button', { type: 'button', class: 'vr3-link', onClick: function () { const d = document.getElementById('vr3-dec'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 'الانتقال إلى القرار') : null]),
+      asgSel, msgOf('asg'),
+      (canRev && st === 'submitted') ? e('div', { class: 'vr3-row' }, [DS.note('info', 'ابدأ بالاستلام', 'استلم الطلب لتظهر أزرار المطابقة على كل بند.'),
+        admTwoStep('استلام الطلب', 'primary', function () { return act('rcv', 'admin_verification_receive', { p_id: r.id }, 'استُلم الطلب — ابدأ المطابقة.'); })]) : null,
+      msgOf('rcv')
+    ]);
+    /* 2) البند: القيمة · السبب · ملاحظاته · أزرار في مكانه */
+    const card = function (b, it) {
+      const U = S.ui[it.id] || (S.ui[it.id] = { mode: '', pick: '', txt: '', note: '' });
+      const v = it.verdict, val = valOf(it);
+      const notes = evs.filter(function (x) { return x.kind === 'note' && x.field_key === it.field_key && x.block === b.block; });
+      const box = [];
+      if (canAct && U.mode === 'why') {
+        const L = vr3Why(it).concat(['أخرى']);
+        box.push(e('div', { class: 'vr3-box' }, [e('small', {}, 'سبب عدم المطابقة (يظهر لصاحب الملف عند الإعادة):'),
+          e('div', { class: 'vr3-chips' }, L.map(function (x) { return e('button', { type: 'button', class: 'vr3-chip' + (U.pick === x ? ' is-on' : ''), onClick: function () { U.pick = x; paint(); } }, x); })),
+          U.pick === 'أخرى' ? e('textarea', { class: 't2-input', rows: '2', placeholder: 'اكتب السبب', 'aria-label': 'سبب آخر', onInput: function (ev) { U.txt = ev.target.value; } }, U.txt) : null,
+          e('div', { class: 'vr3-acts' }, [DS.button('تأكيد: غير مطابق', { size: 'sm', tone: 'danger', onClick: function () {
+            const why = U.pick === 'أخرى' ? String(U.txt || '').trim() : U.pick;
+            if (!why) { S.msg['it:' + it.id] = ['warn', 'اختر سببًا أو اكتبه']; paint(); return; }
+            U.mode = ''; act('it:' + it.id, 'admin_verification_item_decide', { p_item: it.id, p_verdict: 'mismatch', p_reason: why }, 'سُجّل: غير مطابق.');
+          } }), DS.button('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
+      }
+      if (canRev && U.mode === 'note') {
+        box.push(e('div', { class: 'vr3-box' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية على هذا البند (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة على البند', onInput: function (ev) { U.note = ev.target.value; } }, U.note),
+          e('div', { class: 'vr3-acts' }, [DS.button('حفظ الملاحظة', { size: 'sm', tone: 'primary', onClick: function () {
+            const t = String(U.note || '').trim(); if (!t) { S.msg['it:' + it.id] = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; }
+            U.mode = ''; U.note = ''; act('it:' + it.id, 'admin_verification_item_note', { p_item: it.id, p_body: t }, 'أُضيفت الملاحظة على البند.');
+          } }), DS.button('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
+      }
+      return e('div', { class: 'vr3-it is-' + (v || 'pend'), id: 'vr3-' + it.id }, [
+        e('div', { class: 'vr3-it-h' }, [e('span', {}, [e('b', {}, it.label || it.field_key || '—'), it.required ? e('small', { class: 'cu-dr-hint' }, ' · مطلوب') : null]),
+          v === 'match' ? DS.badge('مطابق', 'ok') : v === 'mismatch' ? DS.badge('غير مطابق', 'danger') : DS.badge('بانتظار', 'warn')]),
+        e('div', { class: 'vr3-it-v' }, [val ? ltrIf(val) : DS.badge(it.required ? 'غير مُدخل — مطلوب' : 'غير مُدخل', it.required ? 'danger' : null), it.value_off ? e('small', { class: 'cu-dr-hint' }, ' (قيمة خارج القائمة)') : null]),
+        v === 'mismatch' && it.reason ? e('div', { class: 'vr3-why' }, 'السبب: ' + it.reason) : null
+      ].concat(notes.map(function (n) { return e('div', { class: 'vr3-nt' }, [String(n.body || ''), e('small', { class: 'cu-dr-hint' }, ' — ' + (n.actor || '') + ' · ' + String(n.at || '').slice(0, 16).replace('T', ' '))]); }))
+        .concat([msgOf('it:' + it.id)])
+        .concat(box)
+        .concat([e('div', { class: 'vr3-acts' }, [
+          it.doc_id ? DS.button('عرض المرفق', { size: 'sm', ui: 'file-text', onClick: function () { admVerDoc(it); } }) : null,
+          canAct && v !== 'match' && U.mode !== 'why' ? DS.button('مطابق', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () { act('it:' + it.id, 'admin_verification_item_decide', { p_item: it.id, p_verdict: 'match', p_reason: null }, ''); } }) : null,
+          canAct && v !== 'mismatch' && U.mode !== 'why' ? DS.button('غير مطابق', { size: 'sm', tone: 'danger', onClick: function () { U.mode = 'why'; U.pick = ''; U.txt = ''; delete S.msg['it:' + it.id]; paint(); } }) : null,
+          canRev && open && U.mode !== 'note' ? DS.button('ملاحظة', { size: 'sm', onClick: function () { U.mode = 'note'; delete S.msg['it:' + it.id]; paint(); } }) : null
+        ].filter(Boolean))]).filter(Boolean));
+    };
+    /* 3) القسم: عدّاد · «مطابقة القسم كاملًا» · طيّ المكتمل */
+    const secs = blocks.filter(function (b) { return Array.isArray(b.items) && b.items.length; }).map(function (b) {
+      const items = b.items, miss = Array.isArray(b.missing) ? b.missing : [];
+      const m = items.filter(function (i) { return i.verdict === 'match'; }).length, x = items.filter(function (i) { return i.verdict === 'mismatch'; }).length;
+      const pendOk = items.filter(function (i) { return !i.verdict && (valOf(i) || i.doc_id); });
+      const done = m === items.length, fold = S.fold[b.block] != null ? S.fold[b.block] : done;
+      const matchAll = async function () {
+        if (S.busy || !pendOk.length) return; S.busy = true; let n = 0;
+        S.msg['sec:' + b.block] = ['info', 'جارٍ مطابقة ' + pendOk.length + ' بند…']; paint();
+        try {
+          for (const it of pendOk) { const j = await admRpc('admin_verification_item_decide', { p_item: it.id, p_verdict: 'match', p_reason: null }); if (j && j.ok === false) throw new Error(verErr(j)); n += 1; }
+          refreshList(); await load(); S.msg['sec:' + b.block] = ['ok', 'طوبق ' + n + ' بند في «' + (b.title || b.block) + '».'];
+        } catch (err) { if (err && err.message === 'auth') { S.busy = false; return; } await load().catch(function () {}); S.msg['sec:' + b.block] = ['warn', 'توقفت المطابقة بعد ' + n + ' بند', (err && err.message) || '']; }
+        S.busy = false; paint();
+      };
+      return e('section', { class: 'vr3-sec', id: 'vr3-s-' + b.block }, [
+        e('div', { class: 'vr3-sec-h' }, [
+          e('h3', {}, [frag(ui(VR3_IC[b.block] || 'list-checks', 16)), b.title || b.block, DS.badge(m + '/' + items.length + ' مطابق', done ? 'ok' : null), x ? DS.badge(x + ' غير مطابق', 'danger') : null]),
+          e('div', { class: 'vr3-acts' }, [
+            canAct && pendOk.length ? DS.button('مطابقة القسم كاملًا (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
+            DS.button(fold ? 'إظهار البنود' : 'طيّ القسم', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
+          ].filter(Boolean))]),
+        miss.length ? DS.note('warn', 'حقول مطلوبة ناقصة في هذا القسم', miss.join('، ')) : null,
+        msgOf('sec:' + b.block),
+        fold ? null : e('div', { class: 'vr3-grid' }, items.map(function (it) { return card(b, it); }))
       ].filter(Boolean));
     });
-    const hintRev = (!inRev && st === 'submitted') ? DS.note('info', 'ابدأ بالاستلام', 'استلم الطلب أولًا لتظهر أزرار المطابقة على كل بند.') : null;
-    /* 4) ملاحظة داخلية */
-    const nIn = e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية للفريق (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة داخلية' });
-    const notes = canRev ? cuSec('ملاحظة داخلية', 'note', [nIn, e('div', { class: 't2-pb-actions' }, [DS.button('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(nIn.value || '').trim(); if (!t) { say('warn', 'اكتب الملاحظة', ''); return; } call('admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.'); } })])]) : null;
-    /* 5) سجل المراحل */
-    const log = cuSec('سجل المراحل', 'clock-counter-clockwise', [evs.length ? e('div', {}, evs.slice().sort(function (a, b) { return String(b.at || b.created_at || '').localeCompare(String(a.at || a.created_at || '')); }).map(function (x) {
-      return e('div', { style: 'padding:6px 0;border-bottom:1px dashed var(--line,#e6ecf3)' }, [e('b', {}, VER_EVK[x.kind] || x.kind || '—'), e('small', { class: 'cu-dr-hint' }, [' · ', verDate(x.at || x.created_at), x.actor_name ? ' · ' + x.actor_name : '']), x.body ? e('div', { class: 'cu-dr-hint' }, String(x.body)) : null]);
-    })) : e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]);
-    /* 6) القرار */
-    const dn = e('textarea', { class: 't2-input', rows: '3', placeholder: 'ملاحظة القرار لـ' + who + ' (مطلوبة عند الإعادة أو الرفض)', 'aria-label': 'ملاحظة القرار' });
-    const need = function () { if (!String(dn.value || '').trim()) { say('warn', 'اكتب الملاحظة', 'الإعادة والرفض يحتاجان سببًا يصل ' + who + '.'); return false; } return true; };
-    const acts = !canRev ? [] : st === 'submitted' ? [admTwoStep('استلام الطلب', 'primary', function () { return call('admin_verification_receive', { p_id: r.id }, 'استُلم الطلب — ابدأ المطابقة.'); })]
-      : inRev ? [admTwoStep('اعتماد الملف', 'primary', function () { return call('admin_verification_approve', { p_id: r.id, p_note: String(dn.value || '').trim() || null }, 'اعتُمد الملف.', true); }),
-        admTwoStep('إعادة للتعديل', null, function () { if (!need()) return; return call('admin_verification_return', { p_id: r.id, p_note: String(dn.value || '').trim() }, 'أُعيد الطلب لـ' + who + '.', true); }),
-        admTwoStep('رفض', 'danger', function () { if (!need()) return; return call('admin_verification_reject', { p_id: r.id, p_note: String(dn.value || '').trim() }, 'رُفض الطلب.', true); })] : [];
-    const dec = acts.length ? cuSec('القرار', 'seal-check', [inRev ? dn : null, e('div', { class: 't2-pb-actions' }, acts),
-      e('small', { class: 'cu-dr-hint' }, 'يصل ' + who + ' إشعار بالنتيجة. الضغطة الأولى للتأكيد والثانية للتنفيذ.'), inRev && (pend || mis) ? DS.note('warn', 'قبل الاعتماد', (pend ? pend + ' بند بانتظار المطابقة' : '') + (pend && mis ? ' · ' : '') + (mis ? mis + ' بند غير مطابق — الأنسب إعادته للتعديل' : '')) : null].filter(Boolean)) : (V.decision_note ? cuSec('القرار', 'seal-check', [DS.note('info', 'ملاحظة القرار', String(V.decision_note))]) : null);
-    cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st), foot: admFoot(), body: [
-      e('div', { class: 'cu-dr-st' }, [stB(st), V.submitted_at ? e('span', { class: 'cu-dr-at' }, ['أُرسل ', verDate(V.submitted_at)]) : null]),
-      out, e('div', { class: 'cu-secs' }, [sum, asg, hintRev].concat(secs).concat([notes, log, dec]).filter(Boolean))] });
-  }).catch(function (err) { if (err && err.message === 'auth') return; cuDrawer({ key: 'ver:' + r.id, ic: 'seal-check:teal', title: T, sub: '', body: [DS.note('warn', 'تعذّر فتح الطلب', (err && err.message) || '')], foot: admFoot() }); });
+    /* 4) القرار: أسباب جاهزة + «أخرى» · التنبيهات في مكانها مع روابط للبنود */
+    const D = S.dec;
+    const probList = function (filter) { return all.filter(function (x) { return filter(x[1]); }).map(function (x) { return e('li', {}, [e('button', { type: 'button', class: 'vr3-link', onClick: function () { S.fold[x[0].block] = false; paint(); setTimeout(function () { flash(x[1].id); }, 60); } }, (x[0].title || x[0].block) + ' — ' + (x[1].label || x[1].field_key)), x[1].reason ? e('small', { class: 'cu-dr-hint' }, ' · ' + x[1].reason) : null]); }); };
+    const misText = function () { return all.filter(function (x) { return x[1].verdict === 'mismatch'; }).map(function (x) { return '• ' + (x[1].label || x[1].field_key) + (x[1].reason ? ': ' + x[1].reason : ''); }).join('\n'); };
+    const chips = function (L, multi) { return e('div', { class: 'vr3-chips' }, L.concat(['أخرى']).map(function (t) { const on = !!D.pick[t]; return e('button', { type: 'button', class: 'vr3-chip' + (on ? ' is-on' : ''), onClick: function () { if (!multi) D.pick = {}; D.pick[t] = !on; paint(); } }, t); })); };
+    const noteOf = function () { const L = Object.keys(D.pick).filter(function (k) { return D.pick[k] && k !== 'أخرى'; }); const extra = String(D.txt || '').trim(); return L.concat(extra ? [extra] : []).join('\n'); };
+    let dec = null;
+    if (canRev && inRev) {
+      const tabs = e('div', { class: 'vr3-tabs', role: 'tablist' }, [['approve', 'اعتماد الملف', 'primary'], ['return', 'إعادة للتعديل', null], ['reject', 'رفض', 'danger']].map(function (t) {
+        return DS.button(t[1], { size: 'sm', tone: D.mode === t[0] ? (t[2] || 'primary') : null, onClick: function () { if (D.mode !== t[0]) { D.mode = t[0]; D.pick = {}; D.txt = t[0] === 'return' ? misText() : ''; delete S.msg.dec; } paint(); } });
+      }));
+      let body = [];
+      if (D.mode === 'approve') {
+        body = (nPend || nMis) ? [DS.note('warn', 'لا يمكن الاعتماد بعد', (nPend ? nPend + ' بند بانتظار المطابقة' : '') + (nPend && nMis ? ' · ' : '') + (nMis ? nMis + ' بند غير مطابق — الأنسب «إعادة للتعديل»' : '')), e('ul', {}, probList(function (it) { return it.verdict !== 'match'; }))]
+          : [DS.note('ok', 'كل البنود مطابقة', 'سيصل ' + who + ' إشعار باعتماد ملفه.'),
+            e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة القرار (اختيارية)', 'aria-label': 'ملاحظة الاعتماد', onInput: function (ev) { D.txt = ev.target.value; } }, D.txt),
+            e('div', { class: 'vr3-acts' }, [admTwoStep('اعتماد الملف', 'primary', function () { return act('dec', 'admin_verification_approve', { p_id: r.id, p_note: String(D.txt || '').trim() || null }, 'اعتُمد الملف.', true); })])];
+      } else if (D.mode === 'return' || D.mode === 'reject') {
+        const isRet = D.mode === 'return';
+        body = [
+          isRet && nMis ? DS.note('info', 'البنود غير المطابقة ستُذكر لـ' + who, '') : null,
+          isRet && nMis ? e('ul', {}, probList(function (it) { return it.verdict === 'mismatch'; })) : null,
+          isRet && !nMis ? DS.note('warn', 'لا يوجد بند «غير مطابق»', 'حدّد البنود المطلوب تعديلها أولًا ليعرف ' + who + ' ما يصلحه، أو اختر سببًا عامًا.') : null,
+          e('small', {}, isRet ? 'سبب الإعادة (يصل ' + who + '):' : 'سبب الرفض (يصل ' + who + '):'),
+          chips(isRet ? VR3_RET : VR3_REJ, isRet),
+          e('textarea', { class: 't2-input', rows: '4', placeholder: D.pick['أخرى'] ? 'اكتب السبب' : 'تفاصيل إضافية (اختيارية)', 'aria-label': 'تفاصيل السبب', onInput: function (ev) { D.txt = ev.target.value; } }, D.txt),
+          e('div', { class: 'vr3-acts' }, [admTwoStep(isRet ? 'إعادة الطلب للتعديل' : 'رفض الطلب', isRet ? null : 'danger', function () {
+            const note = noteOf();
+            if (!note) { S.msg.dec = ['warn', 'اختر سببًا أو اكتبه', 'الإعادة والرفض يحتاجان سببًا يصل ' + who + '.']; paint(); return; }
+            return act('dec', isRet ? 'admin_verification_return' : 'admin_verification_reject', { p_id: r.id, p_note: note }, isRet ? 'أُعيد الطلب لـ' + who + '.' : 'رُفض الطلب.', true);
+          })])
+        ];
+      } else body = [e('small', { class: 'cu-dr-hint' }, 'اختر القرار. الضغطة الأولى على زر التأكيد للتنبيه والثانية للتنفيذ، ويصل ' + who + ' إشعار بالنتيجة.')];
+      dec = e('section', { class: 'vr3-sec', id: 'vr3-dec' }, [e('div', { class: 'vr3-sec-h' }, [e('h3', {}, [frag(ui('seal-check', 16)), 'القرار'])]), tabs].concat(body).concat([msgOf('dec')]).filter(Boolean));
+    } else if (V.decision_note) dec = e('section', { class: 'vr3-sec' }, [DS.note('info', 'ملاحظة القرار', String(V.decision_note))]);
+    /* 5) السجل والملاحظات العامة — مطويّة */
+    const gnote = canRev ? e('div', { class: 'vr3-box' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية عامة للفريق (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة داخلية', onInput: function (ev) { S.gnote = ev.target.value; } }, S.gnote),
+      e('div', { class: 'vr3-acts' }, [DS.button('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(S.gnote || '').trim(); if (!t) { S.msg.gn = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; } S.gnote = ''; act('gn', 'admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.'); } })]), msgOf('gn')]) : null;
+    const logRows = evs.slice().sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); }).map(function (x) {
+      return e('div', { style: 'padding:6px 0;border-bottom:1px dashed var(--line,#e6ecf3)' }, [e('b', {}, VER_EVK[x.kind] || x.kind || '—'), e('small', { class: 'cu-dr-hint' }, [' · ', verDate(x.at), x.actor ? ' · ' + x.actor : '', x.field_key ? ' · ' + x.field_key : '']), x.body ? e('div', { class: 'cu-dr-hint' }, String(x.body)) : null]);
+    });
+    const log = e('details', { class: 'vr3-sec', open: S.logOpen ? true : null, onToggle: function (ev) { S.logOpen = ev.target.open; } }, [e('summary', { style: 'cursor:pointer;font-weight:700' }, 'السجل والملاحظات الداخلية (' + evs.length + ')'), gnote].concat(logRows.length ? logRows : [e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]).filter(Boolean));
+    cuBdDraw({ key: key, ic: 'seal-check:teal', title: T, sub: (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st), foot: admFoot(),
+      body: [e('div', { class: 'cu-secs', style: 'display:grid;gap:12px' }, [top].concat(secs).concat([dec, log]).filter(Boolean))] });
+  };
+  cuDrawer({ key: key, ic: 'seal-check:teal', title: T, sub: 'جارٍ القراءة…', body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
+  load().then(function () { paint(); }).catch(function (err) { if (err && err.message === 'auth') return; cuBdDraw({ key: key, ic: 'seal-check:teal', title: T, sub: '', body: [DS.note('warn', 'تعذّر فتح الطلب', (err && err.message) || '')], foot: admFoot() }); });
 }
 
 function admVerOpen(r) { return admVerOpen2(r); }
