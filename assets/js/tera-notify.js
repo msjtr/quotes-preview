@@ -135,10 +135,11 @@
   }
   /* التحقق الإضافي بعملية جمع بسيطة (الدخول · التسجيل · نسيت كلمة المرور · العمليات الحساسة).
    * العملية في قالب والنتيجة في قالب؛ «عملية أخرى» تغيّر الأرقام، والإجابة الخاطئة تغيّرها تلقائيًا. يعيد Promise<boolean>. */
+  var MATH_OFF = true;
   function math(opt) {
     opt = opt || {};
     return new Promise(function (resolve) {
-      if (!enabled) return resolve(true);
+      if (!enabled || MATH_OFF) return resolve(true); /* v548: أُوقف سؤال الجمع بطلب المشرف العام */
       var D = W.document, a = 0, b = 0, done = false, tries = 0;
       var A = el('span', 'tn-mb'), B = el('span', 'tn-mb'), I = el('input', 'tn-mi'), err = el('div', 'tn-mx');
       I.setAttribute('inputmode', 'numeric'); I.setAttribute('autocomplete', 'off'); I.setAttribute('maxlength', '2'); I.setAttribute('aria-label', 'ناتج الجمع');
