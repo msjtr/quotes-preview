@@ -4939,7 +4939,7 @@ function secHub(key, head, groups) {
   /* حالة الحساب في العيّنة (حالات الحساب): قبل الاعتماد لا «خدماتي»، والعضوية بعد التدشين */
   if (typeof accOn === 'function' && accOn()) {
     const A = window.__ACC, pre = accPre(), unl = A.stage !== 'launched'; setTimeout(accMark, 0);
-    if (key === 'svc' && pre) return [DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تظهر «خدماتي» بمحتواها.', DS.button('ملفي الشخصي', { size: 'sm', onClick: function () { go('other', 'profile'); } }))];
+    if (key === 'svc' && pre) return [DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز المراسلات فقط، وبعد القبول تظهر «خدماتي» بمحتواها.', DS.button('ملفي الشخصي', { size: 'sm', onClick: function () { go('other', 'profile'); } }))];
     if (key === 'more') groups = groups.map(function (g) { return [g[0], g[1], g[2], g[3].filter(function (it) { return !((pre && (it.t === 'خدماتي' || it.t === 'مختاراتي')) || (unl && it.t === 'العضوية')); })
       .map(function (it) { return it.t === 'خدماتي' && !A.full ? Object.assign({}, it, { d: 'طلباتي وبياناتي الوظيفية وطلب عرض سعر', n: 'لا عقود' }) : it; })]; });
     if (key === 'base' && unl) groups = groups.map(function (g) { return [g[0], g[1], g[2], g[3].map(function (it) { return it.t === 'لوحتي الرئيسية' ? Object.assign({}, it, { d: 'رحلة حسابك ومراحل اعتماد ملفك' }) : it; })]; });
@@ -6806,7 +6806,7 @@ const mig2Of = (uid) => (MIG2.rows || []).filter(function (r) { return r.uid ===
 const MIG2_VER = { approved: ['موثَّق', 'ok'], submitted: ['بانتظار المراجعة', 'warn'], received: ['قيد المراجعة', 'info'], in_review: ['قيد المراجعة', 'info'], returned: ['مُعاد للتعديل', 'info'], rejected: ['مرفوض', 'danger'], draft: ['لم يُرسل بعد', null] };
 const mig2VerB = (s) => { const b = MIG2_VER[s] || ['لم يبدأ', null]; return DS.badge(b[0], b[1]); };
 function mig2Type(uid) { if (!MIG2.rows) return '—'; return mig2Of(uid) ? DS.badge('منقول من النظام السابق', 'info') : DS.badge('جديد', null); }
-function mig2Launch(uid) { const r = mig2Of(uid); if (!r) return '—'; return r.launched ? DS.badge('دُشّن', 'ok') : DS.badge('قبل التدشين — الملف الشخصي ومركز الأمان فقط', 'warn'); }
+function mig2Launch(uid) { const r = mig2Of(uid); if (!r) return '—'; return r.launched ? DS.badge('دُشّن', 'ok') : DS.badge('قبل التدشين — الملف الشخصي والمراسلات فقط', 'warn'); }
 function mig2File(uid, name) { document.querySelectorAll('.cu-dh').forEach(function (x) { x.remove(); }); try { admClose(); } catch (err) { void err; } ADM.pfc = uid; FX.pfc = uid; (ADM.pfN || (ADM.pfN = {}))[uid] = name || ''; go('other', 'cu-pf-file'); }
 function mig2St(r) { return r.ver === 'approved' ? 'done' : ['submitted', 'received', 'in_review'].indexOf(r.ver) >= 0 ? 'sub' : r.signed_in ? 'pw' : (r.notices || []).some(function (n) { return n.mode === 'live'; }) ? 'sent' : 'new'; }
 const mig2Ch = (L) => (L || []).indexOf('email') >= 0 && (L || []).indexOf('whatsapp') >= 0 ? 'both' : (L || []).indexOf('whatsapp') >= 0 ? 'wa' : 'mail';
@@ -14262,7 +14262,7 @@ function rvuForm() {
   if (!/^rv-/.test(String(S.fsOne || ''))) S.fsOne = 'rv-personal';
   const P = rvuPct(), done = function (k) { const t = rvuStats(k); return t.done === t.n; }, profDone = V1_FORMS.every(function (F) { return done(F[0]); });
   const secDone = RVU.sec.wa && RVU.sec.auth && RVU.sec.mail, back = RVU.st === 'back';
-  const lvl = [{ label: 'ملفي الشخصي', state: profDone ? 'done' : 'now' }, { label: 'مركز الأمان', state: secDone ? 'done' : profDone ? 'now' : '' }, { label: 'المراجعة', state: profDone && secDone ? 'now' : '' }, { label: 'الإرسال', state: '' }];
+  const lvl = [{ label: 'ملفي الشخصي', state: profDone ? 'done' : 'now' }, { label: 'المراجعة', state: profDone ? 'now' : '' }, { label: 'الإرسال', state: '' }];
   const NEW = RVU.mode === 'new', head = DS.panel(back ? 'استكمل طلبك المُعاد' : NEW ? 'استكمل تسجيلك' : 'حدّث ملفك', NEW && !back ? 'أنشأت حسابك — أكمل ملفك ووسائل أمانك ثم أرسله للاعتماد ليُدشَّن حسابك' : null, [
     e('div', { class: 'rv-prog' }, [e('div', { class: 'rv-ring', style: '--p:' + P.pct, role: 'img', 'aria-label': 'اكتمال الملف ' + P.pct + '%' }, e('span', {}, [e('b', {}, ltr(P.pct + '%')), e('small', {}, 'اكتمال')])),
       e('div', { class: 'rv-lv' }, [DS.stepper(lvl, 'مستويات التقدّم'), e('div', { class: 'rv-bar', 'aria-hidden': 'true' }, e('b', { style: 'width:' + P.pct + '%' })), e('small', { class: 'rv-sm' }, fmtNum(P.d) + ' من ' + fmtNum(P.n) + ' بندًا مطلوبًا')])])],
@@ -14287,14 +14287,14 @@ function rvuForm() {
     e('div', { class: 'rv-legend', role: 'note', 'aria-label': 'دليل حالات الأقسام' }, [['ناقص', 'warn', 'حقل مطلوب فارغ'], ['بانتظار اعتماد', 'pend', 'عدّلته أو أكملته'], ['يحتاج مراجعة', 'info', 'مكتمل — راجعه وتأكّد منه']].map(function (x) { return e('span', { class: 'rv-lg-i' }, [rvBadge(x[0], x[1]), e('small', {}, x[2])]); })),
     e('div', { class: 'rv-acc' }, secs),
     rvuSecCard(),
-    DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
+    DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز المراسلات فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
 }
 /* ---------- القسم ٢ · مركز الأمان — زرّ واحد يفتح المركز، وكل وسيلة بطاقة تفتح مسارها الحقيقي ----------
    الشروط: ربط رقم الواتساب · وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو الرقم الإضافي) · التحقق بالبريد عند كل دخول.
    المسارات نفسها في مركز الأمان بالعيّنة: التحقق الأمني ← الرمز ← التفعيل ← «تم». */
 function rvuSecSync() { RVU.sec.wa = RVW.st === 3 || LVS.wa === 'on'; RVU.sec.auth = !!LVS.app || !!LVS.xc; RVU.sec.mail = !!LVS.mail; }
-const RVU_SECP = [['wa', 'ربط رقم الواتساب', 'wa', 'شرط للتوثيق — تصلك عليه رموز التحقق وتنبيهات طلباتك'], ['app', 'تطبيق المصادقة', 'key', 'رمز متغيّر كل ثلاثين ثانية — يحقّق شرط «وسيلة مصادقة»'],
-  ['extra', 'الرقم الإضافي', 'lock', 'رمز احتياطي يُعرض مرة واحدة — يحقّق شرط «وسيلة مصادقة»'], ['mail', 'التحقق بالبريد عند كل دخول', 'email', 'رمز على بريدك مع كل دخول'], ['pw', 'كلمة المرور', 'shield', 'تغييرها بالتحقق الأمني']];
+const RVU_SECP = [['wa', 'ربط رقم الواتساب', 'wa', 'اختياري — تصلك عليه رموز التحقق وتنبيهات طلباتك'], ['app', 'تطبيق المصادقة', 'key', 'رمز متغيّر كل ثلاثين ثانية — حماية إضافية اختيارية'],
+  ['extra', 'الرقم الإضافي', 'lock', 'رمز احتياطي يُعرض مرة واحدة — حماية إضافية اختيارية'], ['mail', 'التحقق بالبريد عند كل دخول', 'email', 'رمز على بريدك مع كل دخول'], ['pw', 'كلمة المرور', 'shield', 'تغييرها بالتحقق الأمني']];
 function rvuSecState(k) {
   if (k === 'wa') return RVU.sec.wa ? ['مربوط', 'ok'] : (RVW.st > 0 || LVS.wa) ? ['قيد الربط', 'warn'] : ['غير مربوط', 'warn'];
   if (k === 'app') return LVS.app ? ['مفعّل', 'ok'] : ['غير مفعّل', null];
@@ -14881,8 +14881,8 @@ function accJourneyPage(J) {
   let hero;
   const MG = window.__ACC && window.__ACC.mig;
   if (J.stage === 'start') hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, MG ? 'WELCOME BACK' : 'WELCOME TO TERA'), e('h2', {}, (MG ? 'حدّث ملفك، ' : 'استكمل ملفك، ') + first),
-      e('p', {}, MG ? 'انتقل حسابك إلى منصة تيرا. حدّث بياناتك ومستنداتك ووسائل أمانك ثم أرسلها للاعتماد، وبعد الاعتماد تُفتح لك كل خدماتك وعقودك.' : 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
-      !ready ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تربط رقم الواتساب وتفعّل وسيلة مصادقة واحدة على الأقل من مركز الأمان.')]) : null,
+      e('p', {}, MG ? 'انتقل حسابك إلى منصة تيرا. حدّث بياناتك ومستنداتك ووسائل أمانك ثم أرسلها للاعتماد، وبعد الاعتماد تُفتح لك كل خدماتك وعقودك.' : 'أكمل بياناتك ومستنداتك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
+      !ready ? e('p', { class: 'jr-gate' }, [frag(ui('info', 16)), e('span', {}, 'مركز الأمان يظهر بعد تدشين حسابك، ووسائل الحماية فيه اختيارية.')]) : null,
       e('div', { class: 'jr-acts' }, [DS.button('ابدأ من أول قسم ناقص', { tone: 'primary', ui: 'caret-down', onClick: toUpd }), ready ? null : DS.button('مركز الأمان', { ui: 'shield-check', onClick: function () { toSec(); setTimeout(function () { const x = document.querySelector('#pv-root .rvs-card'); if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80); } })])]),
     e('div', { class: 'jr-ring', style: '--jr-r:' + pct }, [e('b', {}, String(pct)), e('small', {}, '٪ اكتمال الملف')])]);
   else if (J.stage === 'review') hero = e('section', { class: 'jr-hero is-review' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, 'FILE UNDER REVIEW'), e('h2', {}, 'ملفك قيد المراجعة'),
@@ -18033,7 +18033,7 @@ function clProg() {
 const St = {}; (liveVer().steps || []).forEach(function (x) { if (x && x.key) St[x.key] = x; });
 const C = clConf(), mig = !!(C && C.mig), cb = (C && C.blocks) || {}, VS = liveVsec();
 const items = CL_PROG_B.map(function (b) { const s = St[b[0]] || {}, cb0 = cfBlk(b[0]), filled = cb0 ? cb0.done : !!s.done, conf = !mig || !!cb[b[0]]; return { key: b[0], label: s.label || b[1], kind: 'block', filled: filled, confirmed: conf, done: filled && conf }; })
-.concat([{ key: '_wa', label: 'ربط رقم الواتساب', kind: 'sec', filled: !!VS.wa, confirmed: true, done: !!VS.wa }, { key: '_auth', label: 'وسيلة مصادقة واحدة على الأقل', kind: 'sec', filled: !!VS.auth, confirmed: true, done: !!VS.auth }]);
+; /* v532: ربط الواتساب ووسيلة المصادقة اختياريان وخارج نسبة الاكتمال — مركز الأمان يظهر بعد التدشين */ void VS;
 const done = items.filter(function (x) { return x.done; }).length;
 return { items: items, done: done, total: items.length, pct: Math.round(done / items.length * 100), mig: mig, ready: done === items.length };
 }
@@ -18067,7 +18067,7 @@ window.__clProg = clProg; window.__clSubmit = clSubmit; window.__clConfirm = clC
 • حالة كل قسم: مكتمل · ناقص (بدأ وبقي مطلوب) · غير مكتمل (لم يبدأ) · بانتظار تأكيدك (للمرحَّل) · مطلوب تعديله (أعاده الفريق).
 • الجديد: يعدّل ويحفظ. المرحَّل: يعدّل ثم «حفظ» فتظهر مقارنة القديم بالجديد ثم «تأكيد الحفظ» — والحفظ بلا تغيير يعتمد القسم كما هو.
 • «تراجع عن الحفظ» للجميع: يعيد القسم إلى ما كان قبل آخر حفظ (stf_89) عبر مسار الحفظ نفسه.
-• ربط الواتساب ووسيلة المصادقة والمستندات أقسام داخل الاستمارة نفسها. */
+• المستندات قسم داخل الاستمارة؛ وربط الواتساب ووسيلة المصادقة في مركز الأمان بعد التدشين، وهما اختياريان (v532). */
 const CF = { ed: {}, undo: null, undoAt: 0, vsAt: 0, auth: '' };
 const CF_ID = ['national_id', 'residency', 'gcc_id', 'arab_id', 'passport'];
 const CF_IC = { personal: 'profile', address: 'pin', contact: 'phone', emergency: 'phone', bank: 'bank', docs: 'files', _wa: 'shield', _auth: 'shield' };
@@ -18236,7 +18236,7 @@ const retd = {}; (J.v.returned_items || []).forEach(function (x) { if (x && x.ke
 const left = PG.items.filter(function (x) { return !x.done; }).map(function (x) { return x.label; });
 const hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [
 e('span', { class: 'jr-eye' }, mig ? 'WELCOME BACK · TERA' : 'WELCOME TO TERA'), e('h2', {}, (mig ? 'حدّث بياناتك' : 'استكمل ملفك') + (first ? '، ' + first : '')),
-e('p', {}, sub ? 'أُرسل ملفك للتوثيق وهو بانتظار استلام فريق تيرا — يمكنك تعديله الآن، وكل حفظ يُحدّث طلبك، ويُقفل عند الاستلام.' : mig ? 'نُقل ملفك من النظام السابق. افتح كل قسم وراجع بياناته وعدّل ما يلزم ثم احفظ — كل شيء في هذه الصفحة.' : 'أكمل كل قسم في هذه الصفحة واحفظه، ثم أرسل ملفك للتوثيق ليُدشَّن حسابك. يُحفظ ما أدخلته ويمكنك العودة متى شئت.'),
+e('p', {}, sub ? 'أُرسل ملفك للتوثيق وهو بانتظار استلام فريق تيرا — يمكنك تعديله الآن، وكل حفظ يُحدّث طلبك، ويُقفل عند الاستلام.' : mig ? 'نُقل ملفك من النظام السابق. افتح كل قسم وراجع بياناته وعدّل ما يلزم ثم احفظ — كل شيء في هذه الصفحة. مركز الأمان يظهر بعد تدشين حسابك، ووسائل الحماية فيه اختيارية.' : 'أكمل كل قسم في هذه الصفحة واحفظه، ثم أرسل ملفك للتوثيق ليُدشَّن حسابك. يُحفظ ما أدخلته ويمكنك العودة متى شئت. مركز الأمان يظهر بعد التدشين، ووسائل الحماية فيه اختيارية.'),
 !sub && left.length ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تُكمل: ' + left.join('، ') + '.')]) : null,
 J.returned ? DS.note('warn', 'أُعيد ملفك للتعديل', ((J.v.returned_items || []).map(function (x) { return x.label + (x.reason ? ' — ' + x.reason : ''); }).join('، ')) || 'عدّل الحقول التي عليها ملاحظات ثم أعد الإرسال.') : null]),
 e('div', { class: 'jr-ring', style: '--jr-r:' + PG.pct }, [e('b', { 'data-jr-n': String(PG.pct) }, '0'), e('small', {}, '٪ اكتمال الملف')])]);
@@ -18314,7 +18314,7 @@ function clPreOk(tab, other) {
 if (tab === 'msg' || tab === 'notif') return true;
 if (tab !== 'other') return false;
 let k = other, n = 0;
-while (k && n++ < 12) { if (['profile', 'shield', 'mail', 'msg', 'con', 'notif', 'tq-account'].indexOf(k) >= 0 || /^(me-|upd-|sec-)/.test(k)) return true; k = LP[k] && LP[k].up; }
+while (k && n++ < 12) { if (['profile', 'mail', 'msg', 'con', 'notif', 'tq-account'].indexOf(k) >= 0 || /^(me-|upd-)/.test(k)) return true; /* v532: مركز الأمان يظهر بعد التدشين فقط */ k = LP[k] && LP[k].up; }
 return false;
 }
 if (LIVE.on) {
@@ -18336,7 +18336,7 @@ function jrTrack(J) {
       e('span', { class: 'jr-st-t' }, [e('b', {}, x.t), e('small', {}, x.s === 'now' ? 'المرحلة الحالية' : x.at ? iso(new Date(x.at)) : x.s === 'done' ? 'تمت' : x.s === 'bad' ? 'تحتاج إجراء' : 'لاحقًا')])]); }));
 }
 function jrSec() {
-  const V = liveVsec(), F = [['ربط رقم الواتساب — شرط للتوثيق', V.wa, 'sec-whatsapp'], ['وسيلة مصادقة واحدة على الأقل — شرط للتوثيق', V.auth, V.extra && !V.totp ? 'sec-extracode' : 'sec-twofa'], ['التحقق بالبريد عند كل دخول', true, 'sec-twofa']], n = F.filter(function (x) { return x[1]; }).length;
+  const V = liveVsec(), F = [['ربط رقم الواتساب — اختياري', V.wa, 'sec-whatsapp'], ['وسيلة مصادقة واحدة على الأقل — اختياري', V.auth, V.extra && !V.totp ? 'sec-extracode' : 'sec-twofa'], ['التحقق بالبريد عند كل دخول', true, 'sec-twofa']], n = F.filter(function (x) { return x[1]; }).length;
   return e('article', { class: 'jr-card' }, [e('header', {}, [frag(tile('shield-check:teal')), e('span', {}, [e('b', {}, 'مركز الأمان'), e('small', {}, n === F.length ? 'حسابك محمي بكل وسائل التحقق' : 'وسائل أمان ناقصة: ' + fmtNum(F.length - n) + ' من ' + fmtNum(F.length))]), DS.badge(n === F.length ? 'مكتمل' : 'ناقص', n === F.length ? 'ok' : 'warn')]),
     e('ul', { class: 'jr-chk' }, F.map(function (x) { return e('li', { class: x[1] ? 'is-ok' : '' }, [frag(ui(x[1] ? 'check-circle' : 'warning', 16)), e('span', {}, x[0]), x[1] ? e('small', {}, 'مفعّل') : liveOk(DS.button('تفعيل', { size: 'sm', onClick: function () { go('other', x[2]); } }))]); })),
     DS.button('مركز الأمان', { size: 'sm', ui: 'shield-check', onClick: function () { go('other', 'shield'); } })]);
@@ -18352,13 +18352,13 @@ function journeyPage(J) {
   const me = LIVE.me || {}, first = String(me.full_name || ME.name || '').split(' ')[0], pct = clProg().pct;
   const next0 = clProg().items.filter(function (x) { return !x.done; })[0], VS = liveVsec();
   /* v318: الملف لا يُرسَل قبل ربط الواتساب ووسيلة مصادقة — فإن اكتملت البيانات يكون الإجراء التالي مركز الأمان */
-  const next = next0 && (next0.key === 'agreed' || next0.key === 'submitted') && !VS.ready ? { key: '_sec', label: !VS.wa ? 'ربط الواتساب' : 'تفعيل وسيلة مصادقة' } : next0;
+  const next = next0; /* v532: الأمان لا يوقف الإرسال */
   const out = function () { const b = document.querySelector('.t2-hbtn.is-out'); if (b) b.click(); };
   let hero;
   if (J.stage === 'start') {
     hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [e('span', { class: 'jr-eye' }, J.mig ? 'WELCOME BACK · TERA' : 'WELCOME TO TERA'), e('h2', {}, (J.mig ? 'حدّث بياناتك' : 'استكمل ملفك') + '، ' + first),
-        e('p', {}, J.mig ? 'نُقل ملفك من النظام السابق — راجع بياناتك وحدّث الناقص منها، ثم أرسل الملف للاعتماد ليُدشَّن حسابك.' : 'أكمل بياناتك ومستنداتك ووسائل أمانك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
-        !VS.ready ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تربط رقم الواتساب وتفعّل وسيلة مصادقة واحدة على الأقل من مركز الأمان.')]) : null,
+        e('p', {}, J.mig ? 'نُقل ملفك من النظام السابق — راجع بياناتك وحدّث الناقص منها، ثم أرسل الملف للاعتماد ليُدشَّن حسابك.' : 'أكمل بياناتك ومستنداتك، ثم أرسل الملف للاعتماد ليُدشَّن حسابك. يمكنك الخروج والعودة متى شئت — يُحفظ ما أدخلته.'),
+        null,
         J.returned ? DS.note('warn', 'أُعيد ملفك للتعديل', ((J.v.returned_items || []).map(function (x) { return x.label + (x.reason ? ' — ' + x.reason : ''); }).join('، ')) || 'راجع الملاحظات وعدّل ثم أعد الإرسال.') : null,
         e('div', { class: 'jr-acts' }, [liveOk(DS.button(next ? (next.filled && !next.confirmed ? 'أكّد: ' : J.mig ? 'حدّث: ' : 'أكمل: ') + next.label : 'إرسال الملف للاعتماد', { tone: 'primary', ui: 'caret-left', onClick: function () { if (!next) return clSubmit(); go('other', next ? (next.key === '_sec' ? (!VS.wa ? 'sec-whatsapp' : 'sec-twofa') : (JR_PG[next.key] || 'profile')) : (VS.ready ? 'me-verify' : 'shield')); } })), DS.button('الخروج والعودة لاحقًا', { ui: 'sign-out', onClick: out })])]),
       e('div', { class: 'jr-ring', style: '--jr-r:' + pct }, [e('b', { 'data-jr-n': String(pct) }, '0'), e('small', {}, '٪ اكتمال الملف')])]);
@@ -18371,7 +18371,7 @@ function journeyPage(J) {
       e('p', {}, 'حسابك الآن بانتظار التدشين من إدارة منصة تيرا. عند التدشين تُصدَر عضويتك ' + (TN[t] || TN.plus) + ' ونقاطك الترحيبية، ويظهر لك فيلم التدشين.'), jrTrack(J)]),
       e('div', { class: 'jr-crown', 'aria-hidden': 'true' }, frag(tile('crown-simple:gold')))]);
   }
-  const box = e('div', { class: 't2-dash jr' }, J.stage === 'start' ? [hero].concat(lvRegFlow(J, pct)) : [hero, e('div', { class: 'jr-grid' }, [jrProf(J), jrSec()]), jrSvc(J)]);
+  const box = e('div', { class: 't2-dash jr' }, J.stage === 'start' ? [hero].concat(lvRegFlow(J, pct)) : [hero, e('div', { class: 'jr-grid' }, [jrProf(J)]), jrSvc(J)]);
   jrCount(box);
   return [box];
 }
@@ -18381,13 +18381,13 @@ function journeyPage(J) {
 const LV_SEC_IC = { personal: 'profile', contact: 'phone', email: 'email', address: 'pin', emergency: 'phone', bank: 'bank', docs: 'files' };
 function lvRegFlow(J, pct) {
   const S2 = (J.v.steps || []).filter(function (x) { return x.key !== 'submitted' && x.key !== 'agreed'; }), VS = liveVsec();
-  const PG = clProg(), nd = S2.filter(function (x) { return x.done; }).length, profDone = PG.items.every(function (x) { return x.kind !== 'block' || x.done; }), secDone = !!(VS.wa && VS.auth);
+  const PG = clProg(), nd = S2.filter(function (x) { return x.done; }).length, profDone = PG.items.every(function (x) { return x.kind !== 'block' || x.done; }), secDone = true; /* v532: الأمان اختياري */
   const R = [['ربط رقم الواتساب', !!VS.wa, 'sec-whatsapp'], ['وسيلة مصادقة واحدة على الأقل', !!VS.auth, VS.extra && !VS.totp ? 'sec-extracode' : 'sec-twofa']]; /* v506: التحقق بالبريد تلقائي — يظهر سطرًا ولا يدخل العدّ */
   const rn = R.filter(function (r) { return r[1]; }).length, N = PG.total, D = PG.done, P = PG.pct;
   const back = J.returned, NEW = !J.mig;
-  const lvl = [{ label: 'ملفي الشخصي', state: profDone ? 'done' : 'now' }, { label: 'مركز الأمان', state: secDone ? 'done' : profDone ? 'now' : '' }, { label: 'المراجعة', state: profDone && secDone ? 'now' : '' }, { label: 'الإرسال', state: '' }];
+  const lvl = [{ label: 'ملفي الشخصي', state: profDone ? 'done' : 'now' }, { label: 'المراجعة', state: profDone ? 'now' : '' }, { label: 'الإرسال', state: '' }];
   const toVerify = function () { go('other', 'me-verify'); toTop(); };
-  const head = DS.panel(back ? 'استكمل طلبك المُعاد' : NEW ? 'استكمل تسجيلك' : 'حدّث ملفك', NEW && !back ? 'أكمل ملفك ووسائل أمانك ثم أرسله للاعتماد ليُدشَّن حسابك' : null, [
+  const head = DS.panel(back ? 'استكمل طلبك المُعاد' : NEW ? 'استكمل تسجيلك' : 'حدّث ملفك', NEW && !back ? 'أكمل ملفك ثم أرسله للاعتماد ليُدشَّن حسابك' : null, [
     e('div', { class: 'rv-prog' }, [e('div', { class: 'rv-ring', style: '--p:' + P, role: 'img', 'aria-label': 'اكتمال الملف ' + P + '%' }, e('span', {}, [e('b', {}, ltr(P + '%')), e('small', {}, 'اكتمال')])),
       e('div', { class: 'rv-lv' }, [DS.stepper(lvl, 'مستويات التقدّم'), e('div', { class: 'rv-bar', 'aria-hidden': 'true' }, e('b', { style: 'width:' + P + '%' })), e('small', { class: 'rv-sm' }, fmtNum(D) + ' من ' + fmtNum(N) + ' بندًا مطلوبًا')])])],
     [rvBadge(back ? 'مُعاد للاستكمال' : NEW ? 'تسجيل جديد' : 'تحديث بيانات', back ? 'danger' : 'info'), liveOk(DS.button('راجع الطلب', { size: 'sm', ui: 'magnifying-glass', onClick: toVerify })),
@@ -18408,8 +18408,7 @@ rvRow([liveOk(DS.button(rn === R.length ? 'عرض وسائل الأمان' : 'أ
     e('div', { class: 'rv-sech' }, [frag(tile('profile')), e('div', {}, [e('b', {}, 'القسم 1 · ملفي الشخصي'), e('small', {}, 'المعلومات الشخصية والتواصل والعنوان والحساب البنكي والمستندات')])]),
     e('div', { class: 'rv-legend', role: 'note', 'aria-label': 'دليل حالات الأقسام' }, [['ناقص', 'warn', 'حقل مطلوب فارغ'], ['مطلوب تعديله', 'danger', 'أعاده الفريق للتعديل']].concat(PG.mig ? [['بانتظار تأكيدك', 'info', 'معبّأ من ملفك السابق — راجعه وأكّده']] : []).concat([['مكتمل', 'ok', 'يُحسب في نسبة الاكتمال']]).map(function (x) { return e('span', { class: 'rv-lg-i' }, [rvBadge(x[0], x[1]), e('small', {}, x[2])]); })),
 e('div', { class: 'rv-acc' }, secs),
-    sec,
-    DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز الأمان فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
+    DS.note('warn', '«خدماتي» تظهر بعد اعتماد ملفك', 'أثناء التسجيل أو التحديث تظهر أقسام الملف ومركز المراسلات فقط، وبعد القبول تعود «خدماتي» بمحتواها كما هو.')];
 }
 /* أيقونات «خدماتي» حسب العقد أو الشراكة */
 function jrSvc(J) {
@@ -23657,8 +23656,8 @@ function cxAnswer(x) {
 } catch (err) { void err; } })();
 
 /* ================= v318: شرط إرسال التوثيق + شروح مركز الأمان =================
- * لا يُرسَل ملف التوثيق حتى يُربط رقم الواتساب وتُفعَّل وسيلة مصادقة واحدة على الأقل (تطبيق المصادقة أو الرقم الإضافي)
- * — والشرط نفسه في القاعدة (my_verification_submit) فلا يتجاوزه أي مسار. والشروح كما في العيّنة: الهدف والاستخدام والفيديو والخطوات بالصور. */
+ * v532: ربط الواتساب ووسيلة المصادقة (تطبيق المصادقة أو الرقم الإضافي) اختياريان ولا يشترطان لإرسال ملف التوثيق
+ * — وأُزيل الشرط من القاعدة أيضًا (my_verification_submit · stf_111). والشروح كما في العيّنة: الهدف والاستخدام والفيديو والخطوات بالصور. */
 function liveVsec() {
   const v = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA) ? LIVE_DATA.vsec : null;
   if (v && v.ok !== false && v.wa !== undefined) return { known: true, wa: !!v.wa, totp: !!v.totp, extra: !!v.extra, auth: !!(v.totp || v.extra), ready: !!v.ready };
@@ -23666,13 +23665,14 @@ function liveVsec() {
   return { known: false, wa: wa, totp: !!LVS.app, extra: !!LVS.xc, auth: auth, ready: wa && auth };
 }
 function vsecGate(o) {
-  const V = liveVsec(), op = o || {};
-  const row = function (ok, t, d, k, b) { return e('li', { class: ok ? 'is-ok' : '' }, [e('span', { class: 'vg-ic' }, frag(ui(ok ? 'check-circle' : 'warning', 20))), e('span', { class: 'vg-t' }, [e('b', {}, t), e('small', {}, ok ? 'مكتمل' : d)]), ok ? DS.badge('مكتمل', 'ok') : liveOk(DS.button(b, { size: 'sm', tone: 'primary', onClick: function () { go('other', k); } }))]); };
-  return e('section', { class: 'vg' + (V.ready ? ' is-ready' : '') }, [
-    e('header', {}, [e('span', { class: 'vg-hic' }, frag(ui(V.ready ? 'seal-check' : 'lock-key', 22))), e('span', {}, [e('b', {}, op.title || 'شرط إرسال الملف للتوثيق'), e('small', {}, V.ready ? 'مكتمل — يمكنك إرسال ملفك للتوثيق متى اكتملت بياناته.' : 'لن يُرسَل ملفك للتوثيق حتى يكتمل الشرطان التاليان.')]), DS.badge(V.ready ? 'جاهز' : 'غير مكتمل', V.ready ? 'ok' : 'warn')]),
-    e('ul', { class: 'vg-l' }, [row(V.wa, 'ربط رقم الواتساب', 'اربط رقم جوالك في واتساب بحسابك — تصلك عليه رموز التحقق وتنبيهات طلباتك.', 'sec-whatsapp', 'ربط الواتساب'),
-      row(V.auth, 'وسيلة مصادقة واحدة على الأقل', 'فعّل تطبيق المصادقة أو الرقم الإضافي — ويمكنك تفعيل الاثنتين لحماية أعلى.', V.totp || !V.extra ? 'sec-twofa' : 'sec-extracode', 'تفعيل وسيلة'),
-      e('li', { class: 'is-ok is-base' }, [e('span', { class: 'vg-ic' }, frag(ui('envelope-simple', 20))), e('span', { class: 'vg-t' }, [e('b', {}, 'التحقق بالبريد الإلكتروني'), e('small', {}, 'مفعّل لكل حساب عند كل دخول — لا يحتاج إجراء.')]), DS.badge('أساسي', 'info')])])]);
+  /* v532: وسائل الأمان اختيارية — بطاقة تعريف وحالة لا شرط إرسال */
+  const V = liveVsec(), op = o || {}, cl = S.role === 'client', on = V.wa || V.auth;
+  const row = function (ok, t, d, k, b) { return e('li', { class: ok ? 'is-ok' : '' }, [e('span', { class: 'vg-ic' }, frag(ui(ok ? 'check-circle' : 'shield', 20))), e('span', { class: 'vg-t' }, [e('b', {}, t), e('small', {}, ok ? 'مفعّل' : d)]), ok ? DS.badge('مفعّل', 'ok') : liveOk(DS.button(b, { size: 'sm', onClick: function () { go('other', k); } }))]); };
+  return e('section', { class: 'vg' + (on ? ' is-ready' : '') }, [
+    e('header', {}, [e('span', { class: 'vg-hic' }, frag(ui(on ? 'seal-check' : 'shield-check', 22))), e('span', {}, [e('b', {}, op.title || 'حماية إضافية لحسابك — اختيارية'), e('small', {}, on ? 'فعّلت حماية إضافية لحسابك، ويمكنك إدارتها من هنا.' : 'لا يلزمك تفعيلها لاستخدام حسابك أو إرسال ملفك، وتفعيلها يزيد حماية حسابك.')]), DS.badge(on ? 'مفعّلة' : 'اختيارية', on ? 'ok' : 'info')]),
+    e('ul', { class: 'vg-l' }, [row(V.wa, 'ربط رقم الواتساب', 'تصلك عليه رموز التحقق وتنبيهات طلباتك.', 'sec-whatsapp', 'ربط الواتساب'),
+      row(V.auth, 'وسيلة مصادقة (تطبيق المصادقة أو الرقم الإضافي)', 'رمز إضافي للعمليات الحساسة واستعادة حسابك — ويمكنك تفعيل الاثنتين.', V.totp || !V.extra ? 'sec-twofa' : 'sec-extracode', 'تفعيل'),
+      e('li', { class: 'is-ok is-base' }, [e('span', { class: 'vg-ic' }, frag(ui('envelope-simple', 20))), e('span', { class: 'vg-t' }, [e('b', {}, 'التحقق بالبريد الإلكتروني'), e('small', {}, cl ? 'يصلك رمز على بريدك عند استعادة الحساب والعمليات الحساسة — لا يحتاج إجراء.' : 'مفعّل لكل حساب عند كل دخول — لا يحتاج إجراء.')]), DS.badge('أساسي', 'info')])])]);
 }
 /* صندوق «ما الهدف وكيف تستخدمها؟» كما في العيّنة */
 function sgWhy(items, title) { return e('div', { class: 'sg-why' }, [e('p', { class: 'sg-why-h' }, [frag(ui('info', 18)), e('b', {}, title || 'ما الهدف وكيف تستخدمها؟')]), e('ul', {}, items.map(function (x) { return e('li', {}, [frag(ui(x[0], 18)), e('div', {}, [e('b', {}, x[1]), e('span', {}, x[2])])]); }))]); }
@@ -23826,7 +23826,7 @@ function liveWaPageOld() {
   const wrap = function (k, kind, top) { const P = LP[k]; if (!P || P.__sg) return; const r0 = P.run; P.__sg = true; P.run = function () { const out = [].concat(r0.apply(this, arguments) || []); if (top) out.splice(1, 0, vsecGate()); out.push(secGuide(kind)); return out; }; };
   window.__LV = Object.assign(window.__LV || {}, { wa: liveWaPage }); if (LIVE.on && LP['sec-whatsapp']) LP['sec-whatsapp'].run = liveWaPage; else wrap('sec-whatsapp', 'wa');
   wrap('shield', 'hub', true); wrap('sec-twofa', 'totp'); wrap('sec-extracode', 'extra');
-  if (LP['me-verify']) { const v0 = LP['me-verify'].run; LP['me-verify'].run = function () { const out = [].concat(v0.apply(this, arguments) || []); out.splice(1, 0, vsecGate({ title: 'قبل إرسال الملف للتوثيق' })); return out; }; }
+  if (LP['me-verify']) { const v0 = LP['me-verify'].run; LP['me-verify'].run = function () { const out = [].concat(v0.apply(this, arguments) || []); /* v532: وسائل الأمان لا تشترط لإرسال الملف */ return out; }; }
 } catch (err) { void err; } })();
 /* v317: تنبيه «إصدار جديد» — التطبيق المفتوح على الجوال لا يعيد التحميل وحده، فيُفحص رقم الإصدار عند العودة للتطبيق وكل عشر دقائق */
 (function () { try {
