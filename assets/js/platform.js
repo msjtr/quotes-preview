@@ -21400,6 +21400,13 @@ function lchEmboss() {
     + '.lch-vid{display:block;width:100%;max-width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;border-radius:14px;background:#050b18}.lch-vid.is-p{aspect-ratio:9/16;max-height:440px;margin:0 auto}@media (max-width:640px){.lch-vids{grid-template-columns:minmax(0,1fr)}}';
   document.head.appendChild(s);
 }
+/* v553: تنبيه عدم مطابقة الفيلم لقرار التدشين، وزر توليده بالقرار الحالي */
+function lchPlanWarn(fr, D, ptsN, regen) {
+  const T = function (k) { return (LCH_T[k] || LCH_T.plus)[1]; };
+  const was = fr && fr.plan ? 'وُلّد بمستوى ' + T(fr.plan.tier) + ' و' + fmtNum(Number(fr.plan.points) || 0) + ' نقطة' : 'وُلّد قبل اختيار المستوى والنقاط';
+  return e('div', {}, [DS.note('warn', 'الفيلم لا يطابق قرار التدشين', was + ' — والقرار الحالي ' + T(D.tier) + ' و' + fmtNum(ptsN) + ' نقطة. أعد توليده بالقرار الحالي ثم شاهده واعتمده.'),
+    e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('توليد الفيلم بالقرار الحالي', { tone: 'primary', ui: 'film-strip', onClick: regen }))])]);
+}
 /* v552: معاينة فيلم التدشين داخل الصفحة بمقاس الشاشة — أفقي وطولي جنبًا إلى جنب، ويُحسب «شاهدت الفيلم» عند انتهاء أحدهما */
 function lchVids(fx, D, rerun) {
   const mk = function (src, poster, por, lbl) {
@@ -21432,6 +21439,7 @@ function lchOpen(x) {
   const S0 = LCH.set || { default_tier: 'plus', points: {} }, key = 'lch:' + x.user_id, D = LCHD[key] || (LCHD[key] = { tier: S0.default_tier || 'plus', pts: String((S0.points || {})[S0.default_tier || 'plus'] || 500), note: '', err: '', busy: false, ask: false });
   const rerun = function () { lchOpen(x); }, T = LCH_T[x.launched ? x.tier : D.tier] || LCH_T.plus;
   const run = async function () { const n = Number(D.pts); if (!isFinite(n) || n < 0 || n > 100000) { D.err = 'نقاط التدشين من 0 إلى 100000.'; rerun(); return; }
+  { const fr0 = (D.film || {}).row; if (!x.launched && !(fr0 && fr0.plan && fr0.plan.tier === D.tier && Number(fr0.plan.points) === Math.round(n))) { D.ask = false; D.err = 'الفيلم لا يطابق المستوى أو النقاط المختارة — أعد توليده بالقرار الحالي ثم شاهده واعتمده.'; rerun(); return; } }
     D.busy = true; D.err = ''; rerun();
     try { const j = await admRpc('admin_account_launch_ex', { p_user: x.user_id, p_tier: D.tier, p_points: Math.round(n), p_note: [String(D.note || '').trim(), 'اعتُمد فيلم التدشين بعد مشاهدته'].filter(Boolean).join(' · ') });
       if (j && j.ok === false) throw new Error({ not_approved: 'الملف غير معتمد بعد.', already_launched: 'الحساب مُدشَّن مسبقًا.', not_active: 'الحساب غير نشط.', not_client: 'الحساب ليس عميلًا.', no_permission: 'لا تملك صلاحية التدشين.', self_decision: 'لا يمكن تدشين حسابك.' }[j.error] || 'تعذّر التدشين.');
@@ -21451,23 +21459,25 @@ lchCalcUpd();
   const needFilm = !x.launched; /* v550: الفيلم شرط للتدشين دائمًا */
   const filmLoad = function () { D.film = { busy: true }; admRpc('admin_launch_films', {}).then(function (j) { const R = ((j && j.rows) || []).filter(function (r) { return !r.test && x.tera_id && r.tera_id === x.tera_id; }); D.film = { row: R[0] || null }; rerun(); }).catch(function (err) { D.film = { err: (err && err.message) || 'تعذّر جلب الفيلم.' }; rerun(); }); };
   if (needFilm && !D.film) filmLoad();
-  const filmGen = function (force) { D.film = { busy: true }; D.seen = false; D.filmOk = false; rerun(); admRpc('admin_launch_film_prepare', { p_user: x.user_id, p_force: !!force }).then(function () { filmLoad(); }).catch(function (err) { D.film = { err: (err && err.message) || 'تعذّر طلب الفيلم.' }; rerun(); }); };
+  const filmGen = function (force) { D.film = { busy: true }; D.seen = false; D.filmOk = false; rerun(); admRpc('admin_launch_film_prepare_plan', { p_user: x.user_id, p_force: !!force, p_tier: D.tier, p_points: Math.round(Number(String(D.pts == null ? '' : D.pts).replace(/[^\d.]/g, '')) || 0) }) /* v553: الفيلم بالمستوى والنقاط المختارة */.then(function () { filmLoad(); }).catch(function (err) { D.film = { err: (err && err.message) || 'تعذّر طلب الفيلم.' }; rerun(); }); };
   const FL = D.film || { busy: true }, fr = FL.row, fx = (fr && fr.files) || {}, fst = fr ? fr.status : 'none';
+/* v553: الفيلم يطابق قرار التدشين (المستوى والنقاط) — وإلا يُعاد توليده قبل الاعتماد والتدشين */
+const ptsN = Math.round(Number(String(D.pts == null ? '' : D.pts).replace(/[^\d.]/g, '')) || 0), planOk = !!(fr && fr.plan && fr.plan.tier === D.tier && Number(fr.plan.points) === ptsN);
   const play = function (por) { D.seen = true; filmPlayer(por ? { l: fx.portrait || fx.landscape, poster: { l: fx.portrait_poster || fx.landscape_poster }, skipAfter: 0, title: 'فيلم ' + (x.name || '') + ' — طولي' } : { l: fx.landscape, poster: { l: fx.landscape_poster }, skipAfter: 0, title: 'فيلم ' + (x.name || '') + ' — أفقي' }); setTimeout(function () { /* v551: مشغّل الفيلم فوق لوحة التدشين (كانت تغطيه فلا يظهر) */ const ps = document.querySelectorAll('.tfp'); ps.forEach(function (n, i) { if (i < ps.length - 1) n.remove(); }); if (ps.length) ps[ps.length - 1].style.zIndex = '2147483600'; }, 0); setTimeout(rerun, 400); };
   const filmSec = !needFilm ? null : cuSec('فيلم التدشين — معاينة قبل التدشين', 'film-strip', [
     FL.busy ? e('small', { class: 'cu-dr-hint' }, 'جارٍ جلب حالة الفيلم…')
     : FL.err ? DS.note('warn', 'تعذّر جلب الفيلم', FL.err)
     : fst === 'ready' ? e('div', {}, [DS.note(D.seen ? 'ok' : 'info', D.seen ? 'شاهدتَ الفيلم' : 'الفيلم جاهز — شاهده قبل التدشين', D.seen ? 'تحقّقتَ من الفيلم — اعتمده ليُفتح التدشين.' : 'شغّل الفيلم حتى نهايته (أفقي أو طولي) وتحقّق من الاسم والبطاقة والنقاط والصوت والصورة.'),
-        lchVids(fx, D, rerun), e('div', { class: 'cu-dr-fa is-wrap' }, [admTwoStep('إعادة توليد الفيلم', null, function () { filmGen(true); })]), D.seen ? (D.filmOk ? DS.note('ok', 'الفيلم معتمد', 'يمكنك الآن تدشين الحساب.') : e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('اعتماد الفيلم', { tone: 'primary', ui: 'seal-check', onClick: function () { D.filmOk = true; rerun(); } }))])) : null])
+        planOk ? null : lchPlanWarn(fr, D, ptsN, function () { filmGen(true); }), planOk ? lchVids(fx, D, rerun) : null, e('div', { class: 'cu-dr-fa is-wrap' }, [admTwoStep('إعادة توليد الفيلم', null, function () { filmGen(true); })]), D.seen ? (D.filmOk ? DS.note('ok', 'الفيلم معتمد', 'يمكنك الآن تدشين الحساب.') : e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('اعتماد الفيلم', { tone: 'primary', ui: 'seal-check', onClick: function () { D.filmOk = true; rerun(); } }))])) : null])
     : (fst === 'queued' || fst === 'rendering') ? e('div', {}, [DS.note('info', fst === 'queued' ? 'الفيلم بالانتظار' : 'الفيلم قيد التجهيز', 'يصلك إشعار عند جاهزيته — التجهيز يستغرق دقائق.'), liveOk(DS.button('تحديث الحالة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { filmLoad(); rerun(); } }))])
     : e('div', {}, [DS.note('warn', fst === 'failed' ? 'تعذّر تجهيز الفيلم' : fst === 'expired' ? 'انتهت مدة الفيلم' : 'لا فيلم لهذا الحساب بعد', fr && fr.error ? String(fr.error).slice(0, 120) : 'اطلب توليده ثم شاهده قبل التدشين.'),
         e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('توليد الفيلم الآن', { tone: 'primary', ui: 'film-strip', onClick: function () { filmGen(fst !== 'none'); } }))])])
   ]);
-  const filmOk = !needFilm || (D.seen && D.filmOk);
+  const filmOk = !needFilm || (D.seen && D.filmOk && planOk);
   const body = x.launched ? [lchCard(x.name, x.tier, x.member_no, x),
       cuSec('تفاصيل التدشين', 'rocket-launch', [DS.fields([['الحالة', DS.badge('مُدشَّن', 'ok')], ['يوم وتاريخ وساعة التدشين', lchDT(x.launched_at)], ['دشّنه', x.launched_by || '—'], ['البطاقة الممنوحة', T[1] + ' — ' + T[0]], ['نقاط التدشين', x.launch_points != null ? fmtNum(x.launch_points) + ' نقطة' : '—'], ['رقم العضوية', ltr(x.member_no || '—')], ['صالحة حتى', x.expires_at ? bdiD(iso(new Date(x.expires_at))) : '—'], ['شاهد العميل الفيلم', x.launch_seen ? DS.badge('نعم', 'ok') : DS.badge('لم يشاهده بعد', 'warn')], ['ملاحظة', x.launch_note || '—']])]),
       cuSec('الملف', 'seal-check', [DS.fields([['العميل', x.name || '—'], ['رقم تيرا', ltr(x.tera_id || '—')], ['طلب التوثيق', ltr(x.req_no || '—')], ['اعتُمد الملف', lchDT(x.approved_at)]])])]
-    : [lchCard(x.name, D.tier, x.member_no || null, x), lchSteps(fst === 'ready', !!D.seen, !!D.filmOk),
+    : [lchCard(x.name, D.tier, x.member_no || null, x), lchSteps(fst === 'ready' && planOk, !!D.seen && planOk, !!D.filmOk && planOk),
       cuSec('الملف', 'seal-check', [DS.fields([['العميل', x.name || '—'], ['رقم تيرا', ltr(x.tera_id || '—')], ['طلب التوثيق', ltr(x.req_no || '—')], ['اعتُمد الملف', lchDT(x.approved_at)]])]),
       filmSec,
       cuSec('قرار التدشين', 'crown-simple', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
@@ -21478,7 +21488,7 @@ lchCalcUpd();
         D.ask ? DS.note('warn', 'تأكيد التدشين', 'سيُدشَّن حساب ' + (x.name || '') + ' بالبطاقة ' + (LCH_T[D.tier] || LCH_T.plus)[1] + ' و' + fmtNum(Number(D.pts) || 0) + ' نقطة. لا يمكن التراجع عن التدشين.') : null,
         D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null])];
   const foot = x.launched ? [] : [e('div', { class: 'cu-dr-fa is-wrap' }, D.ask ? [liveOk(DS.button(D.busy ? 'جارٍ التدشين…' : 'تأكيد التدشين', { tone: 'primary', ui: 'rocket-launch', disabled: D.busy, onClick: run })), DS.button('تراجع', { onClick: function () { D.ask = false; rerun(); } })]
-    : [filmOk ? liveOk(DS.button('تدشين الحساب', { tone: 'primary', ui: 'rocket-launch', onClick: function () { D.ask = true; D.err = ''; rerun(); } })) : DS.button(!D.seen ? 'شاهد فيلم التدشين أولًا' : 'اعتمد الفيلم أولًا', { ui: 'film-strip', disabled: true })])];
+    : [filmOk ? liveOk(DS.button('تدشين الحساب', { tone: 'primary', ui: 'rocket-launch', onClick: function () { D.ask = true; D.err = ''; rerun(); } })) : DS.button(needFilm && fst === 'ready' && !planOk ? 'أعد توليد الفيلم بالقرار الحالي' : !D.seen ? 'شاهد فيلم التدشين أولًا' : 'اعتمد الفيلم أولًا', { ui: 'film-strip', disabled: true })])];
   /* v552: قبل التدشين — الخطوات أعلى الصفحة، ثم عمودان: البطاقة وقرار التدشين والملف · معاينة الفيلم */
   const body2 = x.launched ? body : (function (B) { lchEmboss(); return [B[1], e('div', { class: 'lch-grid' }, [e('div', { class: 'lch-col' }, [B[0], B[4], B[2]].filter(Boolean)), e('div', { class: 'lch-col' }, [B[3]].filter(Boolean))])]; })(body);
   cuBdDraw({ key: key, ic: x.launched ? 'rocket-launch:teal' : 'hourglass-medium:saffron', title: 'تدشين الحساب · ' + (x.name || ''), sub: x.launched ? 'مُدشَّن · ' + T[1] : 'بانتظار التدشين', body: body2.filter(Boolean), foot: foot, onClose: function () { draw(); } });
