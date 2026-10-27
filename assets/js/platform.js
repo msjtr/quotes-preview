@@ -21434,6 +21434,18 @@ function lvLaunchPage() {
       list: axList(R.map(function (x) { return axRow({ ic: x.launched ? 'rocket-launch:teal' : 'hourglass-medium:saffron', t: x.name || '—', sub: (x.launched ? 'مُدشَّن · ' + (LCH_T[x.tier] || LCH_T.plus)[1] + (x.launch_points != null ? ' · ' + fmtNum(x.launch_points) + ' نقطة' : '') + ' · ' + iso(new Date(x.launched_at)) : 'اعتُمد ' + (x.approved_at ? iso(new Date(x.approved_at)) : '—') + ' — بانتظار التدشين') + ' — ' + (x.tera_id || ''), tone: x.launched ? '' : 'warn', go: function () { lchOpen(x); } }); }), f === 'wait' ? 'لا حسابات بانتظار التدشين' : 'لا حسابات هنا') });
   });
 }
+/* v554: قرار التدشين يُستعاد من خطة الفيلم الحالي (لا يرجع للافتراضي بعد تحديث الصفحة فيُلغى الفيلم الصحيح) · تحديث تلقائي لحالة الفيلم أثناء التجهيز */
+function lchFilmSync(D, r, key, load) {
+  const st = r ? r.status : 'none';
+  if (r && r.plan && LCH_T[r.plan.tier] && !D.touched && (st === 'ready' || st === 'queued' || st === 'rendering')) { D.tier = r.plan.tier; D.pts = String(Math.round(Number(r.plan.points) || 0)); }
+  if ((D.pollSt === 'queued' || D.pollSt === 'rendering') && st === 'ready') snack('فيلم التدشين الجديد جاهز — شاهده الآن');
+  D.pollSt = st; clearTimeout(D.pollT); D.pollT = 0;
+  if (st === 'queued' || st === 'rendering') D.pollT = setTimeout(function () { D.pollT = 0; if (LCHD[key] === D && document.querySelector('.cu-dr[data-r="' + CSS.escape(key) + '"]')) load(); }, 15000);
+}
+function lchFilmEta(r) {
+  const p = r && r.plan, T = p && LCH_T[p.tier];
+  return (T ? 'يُجهَّز بالبطاقة ' + T[1] + ' و' + fmtNum(Math.round(Number(p.points) || 0)) + ' نقطة. ' : '') + 'التجهيز يستغرق نحو 6 دقائق — الصفحة تتحدّث تلقائيًا وتعرض الفيلم فور جاهزيته، فلا حاجة لإعادة الطلب.';
+}
 const LCHD = {};
 function lchOpen(x) {
   const S0 = LCH.set || { default_tier: 'plus', points: {} }, key = 'lch:' + x.user_id, D = LCHD[key] || (LCHD[key] = { tier: S0.default_tier || 'plus', pts: String((S0.points || {})[S0.default_tier || 'plus'] || 500), note: '', err: '', busy: false, ask: false });
@@ -21457,7 +21469,7 @@ const calcBox = ptsVal;
 lchCalcUpd();
   /* v548: معاينة فيلم التدشين قبل التدشين — للتحقق من الاسم والبطاقة والتوافق والصوت والصورة */
   const needFilm = !x.launched; /* v550: الفيلم شرط للتدشين دائمًا */
-  const filmLoad = function () { D.film = { busy: true }; admRpc('admin_launch_films', {}).then(function (j) { const R = ((j && j.rows) || []).filter(function (r) { return !r.test && x.tera_id && r.tera_id === x.tera_id; }); D.film = { row: R[0] || null }; rerun(); }).catch(function (err) { D.film = { err: (err && err.message) || 'تعذّر جلب الفيلم.' }; rerun(); }); };
+  const filmLoad = function () { D.film = { busy: true }; admRpc('admin_launch_films', {}).then(function (j) { const R = ((j && j.rows) || []).filter(function (r) { return !r.test && x.tera_id && r.tera_id === x.tera_id; }); D.film = { row: R[0] || null }; lchFilmSync(D, R[0], key, filmLoad); rerun(); }).catch(function (err) { D.film = { err: (err && err.message) || 'تعذّر جلب الفيلم.' }; rerun(); }); };
   if (needFilm && !D.film) filmLoad();
   const filmGen = function (force) { D.film = { busy: true }; D.seen = false; D.filmOk = false; rerun(); admRpc('admin_launch_film_prepare_plan', { p_user: x.user_id, p_force: !!force, p_tier: D.tier, p_points: Math.round(Number(String(D.pts == null ? '' : D.pts).replace(/[^\d.]/g, '')) || 0) }) /* v553: الفيلم بالمستوى والنقاط المختارة */.then(function () { filmLoad(); }).catch(function (err) { D.film = { err: (err && err.message) || 'تعذّر طلب الفيلم.' }; rerun(); }); };
   const FL = D.film || { busy: true }, fr = FL.row, fx = (fr && fr.files) || {}, fst = fr ? fr.status : 'none';
@@ -21469,7 +21481,7 @@ const ptsN = Math.round(Number(String(D.pts == null ? '' : D.pts).replace(/[^\d.
     : FL.err ? DS.note('warn', 'تعذّر جلب الفيلم', FL.err)
     : fst === 'ready' ? e('div', {}, [DS.note(D.seen ? 'ok' : 'info', D.seen ? 'شاهدتَ الفيلم' : 'الفيلم جاهز — شاهده قبل التدشين', D.seen ? 'تحقّقتَ من الفيلم — اعتمده ليُفتح التدشين.' : 'شغّل الفيلم حتى نهايته (أفقي أو طولي) وتحقّق من الاسم والبطاقة والنقاط والصوت والصورة.'),
         planOk ? null : lchPlanWarn(fr, D, ptsN, function () { filmGen(true); }), planOk ? lchVids(fx, D, rerun) : null, e('div', { class: 'cu-dr-fa is-wrap' }, [admTwoStep('إعادة توليد الفيلم', null, function () { filmGen(true); })]), D.seen ? (D.filmOk ? DS.note('ok', 'الفيلم معتمد', 'يمكنك الآن تدشين الحساب.') : e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('اعتماد الفيلم', { tone: 'primary', ui: 'seal-check', onClick: function () { D.filmOk = true; rerun(); } }))])) : null])
-    : (fst === 'queued' || fst === 'rendering') ? e('div', {}, [DS.note('info', fst === 'queued' ? 'الفيلم بالانتظار' : 'الفيلم قيد التجهيز', 'يصلك إشعار عند جاهزيته — التجهيز يستغرق دقائق.'), liveOk(DS.button('تحديث الحالة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { filmLoad(); rerun(); } }))])
+    : (fst === 'queued' || fst === 'rendering') ? e('div', {}, [DS.note('info', fst === 'queued' ? 'الفيلم بالانتظار' : 'الفيلم قيد التجهيز', lchFilmEta(fr)), liveOk(DS.button('تحديث الحالة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { filmLoad(); rerun(); } }))])
     : e('div', {}, [DS.note('warn', fst === 'failed' ? 'تعذّر تجهيز الفيلم' : fst === 'expired' ? 'انتهت مدة الفيلم' : 'لا فيلم لهذا الحساب بعد', fr && fr.error ? String(fr.error).slice(0, 120) : 'اطلب توليده ثم شاهده قبل التدشين.'),
         e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('توليد الفيلم الآن', { tone: 'primary', ui: 'film-strip', onClick: function () { filmGen(fst !== 'none'); } }))])])
   ]);
@@ -21481,8 +21493,8 @@ const ptsN = Math.round(Number(String(D.pts == null ? '' : D.pts).replace(/[^\d.
       cuSec('الملف', 'seal-check', [DS.fields([['العميل', x.name || '—'], ['رقم تيرا', ltr(x.tera_id || '—')], ['طلب التوثيق', ltr(x.req_no || '—')], ['اعتُمد الملف', lchDT(x.approved_at)]])]),
       filmSec,
       cuSec('قرار التدشين', 'crown-simple', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
-        DS.editField('البطاقة الممنوحة (المستوى)', DS.select({ value: D.tier, options: Object.keys(LCH_T).map(function (k) { return [k, LCH_T[k][1] + ' — ' + LCH_T[k][0]]; }), onChange: function (v) { D.tier = v; D.pts = String(((S0.points || {})[v]) || 500); rerun(); } })),
-        DS.editField('نقاط التدشين', DS.input({ value: D.pts, numeric: true, onInput: function (v) { D.pts = v; lchCalcUpd(); } }))]), calcBox,
+        DS.editField('البطاقة الممنوحة (المستوى)', DS.select({ value: D.tier, options: Object.keys(LCH_T).map(function (k) { return [k, LCH_T[k][1] + ' — ' + LCH_T[k][0]]; }), onChange: function (v) { D.tier = v; D.touched = true; D.pts = String(((S0.points || {})[v]) || 500); rerun(); } })),
+        DS.editField('نقاط التدشين', DS.input({ value: D.pts, numeric: true, onInput: function (v) { D.pts = v; D.touched = true; lchCalcUpd(); } }))]), calcBox,
         e('textarea', { class: 't2-input cu-why', rows: '2', placeholder: 'ملاحظة على التدشين (اختيارية) — تُحفظ في السجل', onInput: function (ev) { D.note = ev.target.value; } }, D.note || ''),
         e('small', { class: 'cu-dr-hint' }, 'الافتراضي من «إعدادات النظام › قسم العملاء › إعدادات تدشين الحساب». عند التدشين تُصدَر العضوية والنقاط، وتصل العميل رسالة «تم تدشين حسابكم — يمكنكم الاستفادة من الخدمات الآن»، ويُسجَّل اليوم والتاريخ والساعة ومن دشّن.'),
         D.ask ? DS.note('warn', 'تأكيد التدشين', 'سيُدشَّن حساب ' + (x.name || '') + ' بالبطاقة ' + (LCH_T[D.tier] || LCH_T.plus)[1] + ' و' + fmtNum(Number(D.pts) || 0) + ' نقطة. لا يمكن التراجع عن التدشين.') : null,
