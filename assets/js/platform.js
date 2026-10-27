@@ -21446,6 +21446,16 @@ function lchFilmEta(r) {
   const p = r && r.plan, T = p && LCH_T[p.tier];
   return (T ? 'يُجهَّز بالبطاقة ' + T[1] + ' و' + fmtNum(Math.round(Number(p.points) || 0)) + ' نقطة. ' : '') + 'التجهيز يستغرق نحو 6 دقائق — الصفحة تتحدّث تلقائيًا وتعرض الفيلم فور جاهزيته، فلا حاجة لإعادة الطلب.';
 }
+/* v555: إعادة إرسال رسالة «تم تدشين حسابك» بالقالب المعتمد (البريد ومركز الإشعارات، وواتساب بعد اعتماد Meta) — بقرار المشرف بخطوتين */
+function lchResend(x) {
+  return e('div', { class: 'cu-dr-fa is-wrap', style: 'margin-top:10px' }, [admTwoStep('إعادة إرسال رسالة التدشين للعميل', null, function () {
+    return admRpc('admin_launch_welcome_resend', { p_user: x.user_id }).then(function (j) {
+      if (j && j.ok === false) throw new Error({ not_launched: 'الحساب غير مُدشَّن.', no_permission: 'لا تملك الصلاحية.' }[j.error] || 'تعذّر الإرسال.');
+      const w = ((j && j.result) || {}).whatsapp || {};
+      snack('أُرسلت رسالة التدشين — البريد ومركز الإشعارات' + (w.queued ? ' وواتساب' : ' · واتساب بعد اعتماد Meta للقالب'), null, x.name);
+    }).catch(function (err) { snack((err && err.message) || 'تعذّر الإرسال.', null, x.name); });
+  }, 'paper-plane-tilt')]);
+}
 const LCHD = {};
 function lchOpen(x) {
   const S0 = LCH.set || { default_tier: 'plus', points: {} }, key = 'lch:' + x.user_id, D = LCHD[key] || (LCHD[key] = { tier: S0.default_tier || 'plus', pts: String((S0.points || {})[S0.default_tier || 'plus'] || 500), note: '', err: '', busy: false, ask: false });
@@ -21487,7 +21497,7 @@ const ptsN = Math.round(Number(String(D.pts == null ? '' : D.pts).replace(/[^\d.
   ]);
   const filmOk = !needFilm || (D.seen && D.filmOk && planOk);
   const body = x.launched ? [lchCard(x.name, x.tier, x.member_no, x),
-      cuSec('تفاصيل التدشين', 'rocket-launch', [DS.fields([['الحالة', DS.badge('مُدشَّن', 'ok')], ['يوم وتاريخ وساعة التدشين', lchDT(x.launched_at)], ['دشّنه', x.launched_by || '—'], ['البطاقة الممنوحة', T[1] + ' — ' + T[0]], ['نقاط التدشين', x.launch_points != null ? fmtNum(x.launch_points) + ' نقطة' : '—'], ['رقم العضوية', ltr(x.member_no || '—')], ['صالحة حتى', x.expires_at ? bdiD(iso(new Date(x.expires_at))) : '—'], ['شاهد العميل الفيلم', x.launch_seen ? DS.badge('نعم', 'ok') : DS.badge('لم يشاهده بعد', 'warn')], ['ملاحظة', x.launch_note || '—']])]),
+      cuSec('تفاصيل التدشين', 'rocket-launch', [DS.fields([['الحالة', DS.badge('مُدشَّن', 'ok')], ['يوم وتاريخ وساعة التدشين', lchDT(x.launched_at)], ['دشّنه', x.launched_by || '—'], ['البطاقة الممنوحة', T[1] + ' — ' + T[0]], ['نقاط التدشين', x.launch_points != null ? fmtNum(x.launch_points) + ' نقطة' : '—'], ['رقم العضوية', ltr(x.member_no || '—')], ['صالحة حتى', x.expires_at ? bdiD(iso(new Date(x.expires_at))) : '—'], ['شاهد العميل الفيلم', x.launch_seen ? DS.badge('نعم', 'ok') : DS.badge('لم يشاهده بعد', 'warn')], ['ملاحظة', x.launch_note || '—']]), lchResend(x)]),
       cuSec('الملف', 'seal-check', [DS.fields([['العميل', x.name || '—'], ['رقم تيرا', ltr(x.tera_id || '—')], ['طلب التوثيق', ltr(x.req_no || '—')], ['اعتُمد الملف', lchDT(x.approved_at)]])])]
     : [lchCard(x.name, D.tier, x.member_no || null, x), lchSteps(fst === 'ready' && planOk, !!D.seen && planOk, !!D.filmOk && planOk),
       cuSec('الملف', 'seal-check', [DS.fields([['العميل', x.name || '—'], ['رقم تيرا', ltr(x.tera_id || '—')], ['طلب التوثيق', ltr(x.req_no || '—')], ['اعتُمد الملف', lchDT(x.approved_at)]])]),
