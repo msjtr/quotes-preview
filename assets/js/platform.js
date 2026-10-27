@@ -18919,7 +18919,8 @@ function liveGate(purpose, st) {
     sel.value = L[0];
   };
   fill(Array.isArray(LIVE_DATA.factors) && LIVE_DATA.factors.length ? LIVE_DATA.factors : ['email_code']);
-  clApi('/api/security/gateway/factors').then(function (j) { const L = liveFactorKeys(j); if (L.length) { LIVE_DATA.factors = L; fill(L); } }).catch(function () { /* البريد افتراضيًا */ });
+  /* v533: الوسائل المتاحة لهذا الغرض (البريد دائمًا وواتساب إن كان مربوطًا) — دون تغيير قائمة الوسائل المفعّلة */
+  clApi('/api/security/gateway/factors?purpose=' + encodeURIComponent(purpose)).then(function (j) { const L = liveFactorKeys(j); if (L.length) fill(L); }).catch(function () { /* البريد افتراضيًا */ });
   const send = liveOk(DS.button('أرسل الرمز', { size: 'sm', onClick: async function () {
     const f = sel.value; if (f !== 'email_code' && f !== 'whatsapp_code') { showOtp(f, null); return; }
     send.disabled = true; msg.textContent = 'جارٍ الإرسال…';
@@ -18985,6 +18986,12 @@ function liveSessPage() {
    • تطبيق المصادقة (تهيئة/تأكيد/تعطيل) والرقم الإضافي.
    • للموظف: استلام طلب التوثيق واعتماده أو إعادته أو رفضه، وتغيير حالة طلب العميل، وفتح مرفقات العقود. */
 const LIVE_EDIT = {};
+/* v533: كلمة المرور وحدها (بلا رمز) */
+function livePwOnly(st) {
+  const pw = e('input', { class: 't2-input', type: 'password', dir: 'ltr', autocomplete: 'current-password', 'aria-label': 'كلمة المرور الحالية' });
+  st.pw = function () { return pw.value; }; st.grant = null;
+  return e('div', { class: 't2-stack-tight' }, [DS.editField('كلمة المرور الحالية', pw)]);
+}
 function livePwBox(purpose, st) {
   const pw = e('input', { class: 't2-input', type: 'password', dir: 'ltr', autocomplete: 'current-password', 'aria-label': 'كلمة المرور الحالية' });
   st.pw = function () { return pw.value; };
@@ -18993,10 +19000,16 @@ function livePwBox(purpose, st) {
 /* حفظ يطلب التحقق عند الحاجة فقط: أول محاولة بلا كلمة مرور، وإن طلبها الخادم تظهر خانتها والتحقق الأمني */
 async function liveSaveBlock(block, values, st, host) {
   const body = { values: values };
-  if (st.need) { if (!st.pw || !st.pw()) throw new Error('أدخل كلمة المرور الحالية.'); body.current_password = st.pw(); body.grant_id = await st.grant(); }
+  if (st.need) { if (!st.pw || !st.pw()) throw new Error('أدخل كلمة المرور الحالية.'); body.current_password = st.pw(); if (st.grant) body.grant_id = await st.grant(); }
   const r = await clPost('/api/account/profile/' + block, body);
-  if (r && (r.error === 'bad_password' || r.error === 'verification_required') && !st.need) {
-    st.need = true; host.innerHTML = ''; host.appendChild(DS.note('info', 'تحقق أمني مطلوب', 'ملفك معتمد، لذلك يلزم إدخال كلمة المرور الحالية ورمز التحقق قبل الحفظ.')); host.appendChild(livePwBox('change_security', st));
+  /* v533: الرمز للجوال والبريد والحساب البنكي فقط (step: code) — وبقية الأقسام للعميل بكلمة المرور وحدها (step: password) */
+  if (r && (r.error === 'bad_password' || r.error === 'verification_required') && (!st.need || (r.step === 'code' && !st.grant))) {
+    st.need = true; host.innerHTML = '';
+    if (r.step === 'password') {
+      host.appendChild(DS.note('info', 'تأكيد قبل الحفظ', 'ملفك معتمد، لذلك يلزم إدخال كلمة المرور الحالية قبل الحفظ.')); host.appendChild(livePwOnly(st));
+      throw new Error('أدخل كلمة المرور الحالية ثم اضغط الحفظ مرة أخرى.');
+    }
+    host.appendChild(DS.note('info', 'تحقق أمني مطلوب', r.step === 'code' ? 'تعديل الجوال أو البريد أو الحساب البنكي يلزمه كلمة المرور الحالية ورمز تحقق — اختر الوسيلة المتاحة لك.' : 'ملفك معتمد، لذلك يلزم إدخال كلمة المرور الحالية ورمز التحقق قبل الحفظ.')); host.appendChild(livePwBox('change_security', st));
     throw new Error('أكمل التحقق الأمني ثم اضغط الحفظ مرة أخرى.');
   }
   if (!r || r.ok !== true) throw new Error((r && (r.message || r.error)) || 'تعذّر الحفظ.');
