@@ -7882,6 +7882,32 @@ function sysSlaPage() {
     const ch = []; Object.keys(D0).forEach(function (k) { const n = Math.max(1, Math.min(30, parseInt(D0[k], 10) || 1)); if (k.indexOf('req:') === 0) { const t = k.slice(4); if (CU_REQ_SLA[t] !== n) { ch.push(rType(t)[1] + ': ' + n); CU_REQ_SLA[t] = n; } } else if (CU_SLA[k] !== n) { const l = CU_SLA_ROWS.reduce(function (a, g) { return a.concat(g[1]); }, []).filter(function (y) { return y[0] === k; })[0]; ch.push((l ? l[1] : k) + ': ' + n); CU_SLA[k] = n; } });
     ADM.slaD = {}; if (ch.length) { cuSetLog('عدّل مدد الإنجاز — ' + ch.join('، ') + ' يوم'); snack('حُفظت مدد الإنجاز'); } else snack('لا تغييرات'); draw(); } }), DS.button('تراجع', { onClick: function () { ADM.slaD = {}; draw(); } })])] : []);
 }
+/* v551: «إعدادات الإرسال للعملاء» — صفحة مستقلة: ساعات وصول الرسائل الآلية للعملاء، وتقييم السداد فورًا (stf_125 · يقرؤها الخادم) */
+const CSND = { at: 0, d: null, can: false, err: '', busy: false };
+function sysCliSendPage() {
+  if (!LIVE.on) return [liveEmptyNote('إعدادات الإرسال للعملاء')];
+  if (!CSND.at) { CSND.at = -1; admRpc('admin_client_send_settings', {}).then(function (j) { CSND.d = Object.assign({ window_on: true, start: 9, end: 21, pay_rating_now: true }, (j && j.settings) || {}); CSND.can = !!(j && j.can); CSND.err = ''; CSND.at = Date.now(); draw(); }).catch(function (err) { CSND.err = (err && err.message) || 'تعذّر التحميل.'; CSND.at = Date.now(); draw(); }); }
+  if (CSND.at < 0) return [clWait('إعدادات الإرسال للعملاء')];
+  if (!CSND.d) return [DS.note('warn', 'تعذّر تحميل إعدادات الإرسال', CSND.err || ''), liveOk(DS.button('إعادة المحاولة', { ui: 'arrows-clockwise', onClick: function () { CSND.at = 0; draw(); } }))];
+  const D = CSND.d, can = CSND.can, lab = function (h) { h = Number(h); return (h === 0 || h === 24 ? '12 منتصف الليل' : (h % 12 || 12) + (h < 12 ? ' صباحًا' : ' مساءً')) + ' (' + String(h).padStart(2, '0') + ':00)'; };
+  const H0 = []; for (let h = 0; h < 24; h++) H0.push([String(h), lab(h)]);
+  const H1 = []; for (let h = 1; h <= 24; h++) H1.push([String(h), lab(h)]);
+  const save = async function () {
+    if (!can || CSND.busy) return; CSND.busy = true; draw();
+    try { const j = await admRpc('admin_client_send_settings_save', { p: { window_on: D.window_on !== false, start: Number(D.start), end: Number(D.end), pay_rating_now: D.pay_rating_now !== false } });
+      CSND.d = Object.assign({}, D, (j && j.settings) || {}); cuSetLog('عدّل إعدادات الإرسال للعملاء'); snack('حُفظت إعدادات الإرسال — تُطبَّق خلال دقيقة'); }
+    catch (err) { snack((err && err.message) || 'تعذّر الحفظ — تأكد أن «من» لا تساوي «إلى».'); }
+    CSND.busy = false; draw();
+  };
+  const on = D.window_on !== false;
+  return [DS.note('info', 'إعدادات الإرسال للعملاء — مستقلة', 'تحدد متى تصل الرسائل الآلية للعملاء الحقيقيين (واتساب والبريد والجوال): إشعارات الأحداث وتذكير الدفعات. الحسابات التجريبية في أي وقت دائمًا، وإيصال السداد يصل فور السداد كما هو.'),
+    can ? null : cuRO('notifications.manage'),
+    DS.panel('ساعات الإرسال', 'بتوقيت الرياض', [tmCk(D, 'window_on', 'الإرسال ضمن ساعات محددة فقط — وإن أُلغي التحديد تُرسل في أي وقت', true, true),
+      on ? e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('من الساعة', DS.select({ value: String(D.start), options: H0, onChange: function (v) { D.start = Number(v); } })), DS.editField('إلى الساعة', DS.select({ value: String(D.end), options: H1, onChange: function (v) { D.end = Number(v); } }))]) : null,
+      e('small', { class: 'cu-dr-hint' }, on ? 'الرسائل خارج هذه الساعات تُؤجَّل وتُرسل تلقائيًا عند بدايتها.' : 'تُرسل الرسائل فور حدوثها في أي وقت.')]),
+    DS.panel('تقييم السداد', 'بعد كل دفعة تُسدَّد', [tmCk(D, 'pay_rating_now', 'تقييم السداد يصل فور السداد في أي وقت — مستثنى من ساعات الإرسال', true, true)]),
+    e('div', { class: 't2-pb-actions' }, [can ? liveOk(DS.button(CSND.busy ? 'جارٍ الحفظ…' : 'حفظ إعدادات الإرسال', { tone: 'primary', ui: 'check', disabled: CSND.busy, onClick: save })) : null])];
+}
 /* v546: مركز القوالب — كتالوج «رسائل» لا قائمة قوالب: كل رسالة بطاقة واحدة فيها قنواتها (واتساب · البريد · إشعار المنصة · مركز الإرسال)
  * ونسخها (الأساسي + الاحتياطي) بلا تكرار، وعيّنات حقيقية لكل متغير، وصورة كل قالب. القوالب المعتمدة في Meta وغير المفعّلة في قسم مستقل.
  * الجرد (v546): 34 قالب واتساب — 23 يرسلها كود المنصة و11 غير مفعّلة · 17 مرحلة توثيق · 6 تقييمات · 12 قالب مركز إرسال · 6 بريد حالات الطلب · الردود الجاهزة. */
@@ -8334,7 +8360,9 @@ function sysRegister() {
   lp('sys-replies', 'الردود الجاهزة', 'sys', 'sys-replies', sysRepliesPage);
   lp('sys-ntpl', 'قوالب الإشعارات', 'sys', 'sys-ntpl', sysNtplPage);
   lp('sys-push', 'إشعارات الجوال والويب', 'sys', 'sys-push', sysPushPage);
-  lp('sys-msg', 'مركز القوالب', 'sys', 'sys-msg', msgHubPage); /* v541 */
+  lp('sys-msg', 'مركز القوالب', 'sys', 'sys-msg', msgHubPage);
+  lp('sys-csend', 'إعدادات الإرسال للعملاء', 'sys', 'sys-csend', sysCliSendPage); /* v551 */
+  try { Object.assign(ICON, { 'sys-csend': ['clock', 'teal'] }); } catch (err) { void err; } /* v541 */
   lp('sys-log', 'سجل الإعدادات', 'sys', 'sys-log', sysLogPage);
   qtRegister();
   lp('sys-invites', 'دعوات الحسابات', 'sys', 'sys-invites', sysInvitesPage);
@@ -20641,7 +20669,8 @@ function admSysPage() {
     ['comm', 'المراسلة والإشعارات', 'chat-circle-dots:sky', [c('squares-four:navy', 'مركز القوالب', 'كل القوالب في مكان واحد: واتساب المعتمدة في Meta وأين تُستخدم · مراحل التوثيق · التقييمات · مركز الإرسال · الردود — بحث وتصفية ومعاينة كما يصل', 'sys-msg'),
       c('file-text:gold', 'قوالب مركز الإرسال', 'قوالب البريد وواتساب بالهوية لمركز الإرسال — إنشاء وتعديل، وتظهر مباشرة في «مركز الإرسال»', 'comm-tpl'),
       c('star:gold', 'قوالب التقييم', 'الاستبانات وأسئلتها ونص واتساب والبريد ومتى تُرسل', 'sys-cx-tpl'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'),
-      c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة، والرسالة المباشرة بكل القنوات', 'sys-push')]],
+      c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة، والرسالة المباشرة بكل القنوات', 'sys-push'),
+      c('clock:teal', 'إعدادات الإرسال للعملاء', 'متى تصل رسائل العملاء الآلية (ساعات الإرسال) · تقييم السداد فورًا بعد كل دفعة', 'sys-csend')]],
     ['cx', 'تجربة العملاء والجودة', 'star:gold', [c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة', 'sys-cx')]] /* v541: قوالب التقييم في «المراسلة والإشعارات» */,
     ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والعنوان والتواصل والحساب البنكي', 'sys-org'),
       c('receipt:navy', 'الضريبة ومواضعها في المستندات', 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', 'sys-tax')]],
@@ -21356,11 +21385,14 @@ function lchSteps(ready, seen, ok) {
 }
 /* v550: حفر بارز للاسم بالعربي والإنجليزي والرقم والتواريخ — على بطاقة صفحة التدشين فقط */
 function lchEmboss() {
-  if (document.getElementById('lch-emb')) return;
-  const s = document.createElement('style'); s.id = 'lch-emb';
-  s.textContent = '.lch-mc .mcard .mc-name b,.lch-mc .mcard .mc-name span,.lch-mc .mcard .mc-foot b{text-shadow:0 -1px 0 rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.42),0 2px 4px rgba(0,0,0,.38);letter-spacing:.04em}'
-    + '.lch-mc .mcard .mc-name span{text-transform:uppercase;letter-spacing:.14em;font-weight:600}'
-    + '.lch-mc .mcard .mc-foot b{letter-spacing:.16em;font-variant-numeric:tabular-nums}';
+  /* v551: حفر بارز بلون متوافق مع خلفية كل بطاقة — فضي على بلس، عاجي على بريميوم، ذهبي على إيليت — للاسم بالعربي والإنجليزي والرقم والتواريخ */
+  if (document.getElementById('lch-emb3')) return;
+  const s = document.createElement('style'); s.id = 'lch-emb3';
+  const T = '.lch-mc .mcard .mc-name b,.lch-mc .mcard .mc-name span,.lch-mc .mcard .mc-foot b', sel = function (m) { return T.split(',').map(function (x) { return x.replace('.mcard', '.mcard' + m); }).join(','); };
+  s.textContent = T + '{color:#F3F6FB!important;text-shadow:-1px -1px 0 rgba(255,255,255,.45),1px 1px 0 rgba(0,10,30,.85),2px 2px 3px rgba(0,10,30,.45)}'
+    + sel('.premium') + '{color:#FFF6DF!important;text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 0 rgba(70,40,0,.85),2px 2px 3px rgba(70,40,0,.45)}'
+    + sel('.elite') + '{color:#EFD08A!important;text-shadow:-1px -1px 0 rgba(255,236,180,.35),1px 1px 0 rgba(0,0,0,.95),2px 2px 3px rgba(0,0,0,.6)}'
+    + '.lch-mc .mcard .mc-name span{text-transform:uppercase;letter-spacing:.16em;font-weight:700}.lch-mc .mcard .mc-foot b{letter-spacing:.18em;font-variant-numeric:tabular-nums;font-weight:800}';
   document.head.appendChild(s);
 }
 /* v548: قيمة 500 نقطة لكل مستوى من «إعدادات نظام النقاط» (وإلا الافتراضي 2/4/6 ر.س) */
@@ -21390,8 +21422,13 @@ function lchOpen(x) {
       delete LCHD[key]; if (ADMS.launch) ADMS.launch.at = 0; admClose(); snack('دُشّن الحساب — ' + T[1] + ' · ' + fmtNum(Math.round(n)) + ' نقطة', null, x.name); draw(); }
     catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر التدشين.'; rerun(); } };
   /* v550: حقل نقاط واحد — قيمته تظهر تحته في المستوى المختار (أُلغيت الحاسبة المكررة) */
-const ptsVal = e('small', { class: 'cu-dr-hint', role: 'status', style: 'display:block;margin-top:6px' });
-const lchCalcUpd = function () { const n = Number(String(D.pts == null ? '' : D.pts).replace(/[^\d.]/g, '')); ptsVal.textContent = String(D.pts == null ? '' : D.pts).trim() !== '' && isFinite(n) && n >= 0 ? fmtNum(Math.round(n)) + ' نقطة تعادل ' + fmtNum(Math.round(n / 500 * lchPer(D.tier) * 100) / 100) + ' ر.س في ' + (LCH_T[D.tier] || LCH_T.plus)[1] + ' — كل 500 نقطة = ' + fmtNum(lchPer(D.tier)) + ' ر.س' : 'اكتب عدد النقاط بالأرقام.'; };
+const ptsVal = e('div', { class: 'lch-calc', role: 'status', 'aria-live': 'polite', style: 'margin-top:10px' });
+const lchCalcUpd = function () { /* v551: حاسبة النقاط — من حقل «نقاط التدشين» نفسه، قيمتها في كل مستوى */
+  const raw = String(D.pts == null ? '' : D.pts).trim(), n = Number(raw.replace(/[^\d.]/g, '')); ptsVal.textContent = '';
+  ptsVal.appendChild(e('b', { style: 'display:block;margin-bottom:4px' }, 'حاسبة النقاط'));
+  if (raw === '' || !isFinite(n) || n < 0) { ptsVal.appendChild(e('small', { class: 'cu-dr-hint' }, 'اكتب عدد النقاط بالأرقام في «نقاط التدشين».')); return; }
+  ['plus', 'premium', 'elite'].forEach(function (k) { const v = Math.round(n / 500 * lchPer(k) * 100) / 100, on = k === D.tier;
+    ptsVal.appendChild(e('div', { style: 'display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;margin-top:6px;border-radius:14px;background:' + (on ? 'rgba(10,165,173,.10)' : 'var(--t2-soft,#f3f6fa)') + ';border:1px solid ' + (on ? 'var(--t2-brand,#0AA5AD)' : 'transparent') }, [e('span', {}, [e('b', {}, LCH_T[k][1] + (on ? ' — المختارة' : '')), e('small', { class: 'cu-dr-hint' }, ' · ' + fmtNum(Math.round(n)) + ' نقطة · كل 500 نقطة = ' + fmtNum(lchPer(k)) + ' ر.س')]), e('b', { dir: 'ltr' }, fmtNum(v) + ' SAR')])); }); };
 const calcBox = ptsVal;
 lchCalcUpd();
   /* v548: معاينة فيلم التدشين قبل التدشين — للتحقق من الاسم والبطاقة والتوافق والصوت والصورة */
@@ -21400,7 +21437,7 @@ lchCalcUpd();
   if (needFilm && !D.film) filmLoad();
   const filmGen = function (force) { D.film = { busy: true }; D.seen = false; D.filmOk = false; rerun(); admRpc('admin_launch_film_prepare', { p_user: x.user_id, p_force: !!force }).then(function () { filmLoad(); }).catch(function (err) { D.film = { err: (err && err.message) || 'تعذّر طلب الفيلم.' }; rerun(); }); };
   const FL = D.film || { busy: true }, fr = FL.row, fx = (fr && fr.files) || {}, fst = fr ? fr.status : 'none';
-  const play = function (por) { D.seen = true; filmPlayer(por ? { l: fx.portrait || fx.landscape, poster: { l: fx.portrait_poster || fx.landscape_poster }, skipAfter: 0, title: 'فيلم ' + (x.name || '') + ' — طولي' } : { l: fx.landscape, poster: { l: fx.landscape_poster }, skipAfter: 0, title: 'فيلم ' + (x.name || '') + ' — أفقي' }); setTimeout(rerun, 400); };
+  const play = function (por) { D.seen = true; filmPlayer(por ? { l: fx.portrait || fx.landscape, poster: { l: fx.portrait_poster || fx.landscape_poster }, skipAfter: 0, title: 'فيلم ' + (x.name || '') + ' — طولي' } : { l: fx.landscape, poster: { l: fx.landscape_poster }, skipAfter: 0, title: 'فيلم ' + (x.name || '') + ' — أفقي' }); setTimeout(function () { /* v551: مشغّل الفيلم فوق لوحة التدشين (كانت تغطيه فلا يظهر) */ const ps = document.querySelectorAll('.tfp'); ps.forEach(function (n, i) { if (i < ps.length - 1) n.remove(); }); if (ps.length) ps[ps.length - 1].style.zIndex = '2147483600'; }, 0); setTimeout(rerun, 400); };
   const filmSec = !needFilm ? null : cuSec('فيلم التدشين — معاينة قبل التدشين', 'film-strip', [
     FL.busy ? e('small', { class: 'cu-dr-hint' }, 'جارٍ جلب حالة الفيلم…')
     : FL.err ? DS.note('warn', 'تعذّر جلب الفيلم', FL.err)
