@@ -18030,9 +18030,9 @@ const CL_PROG_B = [['personal', 'المعلومات الشخصية'], ['address'
 JR_PG._wa = 'sec-whatsapp'; JR_PG._auth = 'sec-twofa';
 function clConf() { const c = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA && LIVE_DATA.conf) || null; return c && c.ok !== false ? c : null; }
 function clProg() {
-const St = {}; (liveVer().steps || []).forEach(function (x) { if (x && x.key) St[x.key] = x; });
+const St = {}; /* v536: قسم فيه قيمة غير صالحة لا يُحسب مكتملًا ولا تبلغ النسبة 100 */ const BADB = {}; try { (LIVE_DATA.verBad || []).forEach(function (x) { if (x && x.block) BADB[x.block] = true; }); } catch (e9) { void e9; } (liveVer().steps || []).forEach(function (x) { if (x && x.key) St[x.key] = x; });
 const C = clConf(), mig = !!(C && C.mig), cb = (C && C.blocks) || {}, VS = liveVsec();
-const items = CL_PROG_B.map(function (b) { const s = St[b[0]] || {}, cb0 = cfBlk(b[0]), filled = cb0 ? cb0.done : !!s.done, conf = !mig || !!cb[b[0]]; return { key: b[0], label: s.label || b[1], kind: 'block', filled: filled, confirmed: conf, done: filled && conf }; })
+const items = CL_PROG_B.map(function (b) { const s = St[b[0]] || {}, cb0 = cfBlk(b[0]), filled = cb0 ? cb0.done : !!s.done, conf = !mig || !!cb[b[0]]; return { key: b[0], label: s.label || b[1], kind: 'block', filled: filled, confirmed: conf, bad: !!BADB[b[0]], done: filled && conf && !BADB[b[0]] }; })
 ; /* v532: ربط الواتساب ووسيلة المصادقة اختياريان وخارج نسبة الاكتمال — مركز الأمان يظهر بعد التدشين */ void VS;
 const done = items.filter(function (x) { return x.done; }).length;
 return { items: items, done: done, total: items.length, pct: Math.round(done / items.length * 100), mig: mig, ready: done === items.length };
@@ -18055,10 +18055,14 @@ try {
 const o = await liveSb('rpc/my_verification_open', { body: {} });
 if (!o || o.ok === false) { clSay((o && o.message) || 'تعذّر فتح طلب التوثيق الآن.'); return; }
 const r = await liveSb('rpc/my_verification_submit', { body: {} });
-if (!r || r.ok === false) { const E = { incomplete: 'بقيت حقول مطلوبة ناقصة في ملفك.', bad_value: 'بعض القيم غير صالحة — راجع الحقول المحددة.', locked: 'ملفك قيد المراجعة الآن.', security_required: 'اربط الواتساب وفعّل وسيلة مصادقة أولًا.' }; clSay((r && (r.message || E[r.error])) || 'تعذّر الإرسال الآن.'); return; }
+if (!r || r.ok === false) { const E = { incomplete: 'بقيت حقول مطلوبة ناقصة في ملفك.', bad_value: 'قيم غير صالحة، صحّحها ثم أعد الإرسال.', locked: 'ملفك قيد المراجعة الآن.', security_required: 'اربط الواتساب وفعّل وسيلة مصادقة أولًا.' }; /* v536: الرفض يظهر رفضًا (لا إشعارًا أخضر) ومعه الحقول بأسمائها وسبب كل منها — كان «بعض القيم غير صالحة» يبدو نجاحًا ولا يذكر الحقل */
+  const BN = {}; try { CL_PROG_B.forEach(function (p) { BN[p[0]] = p[1]; }); } catch (e9) { void e9; }
+  const det = (r && Array.isArray(r.items) ? r.items.map(function (x) { return (BN[x.block] || x.block || '') + ' · ' + (x.label || x.field || '') + (x.message ? ': ' + x.message : ''); }) : (r && Array.isArray(r.fields) ? r.fields.map(function (x) { return typeof x === 'string' ? x : ((BN[x.block] || x.block || '') + ' · ' + (x.label || x.field || '')); }) : [])).slice(0, 5).join('\n');
+  if (r && r.error === 'bad_value' && Array.isArray(r.items)) { LIVE_DATA.verBad = r.items; try { draw(); } catch (e8) { void e8; } }
+  snack('تعذّر إرسال ملفك للتوثيق — ' + ((r && (r.message || E[r.error])) || 'أعد المحاولة بعد قليل.'), null, det); return; }
 const v = await liveSb('rpc/my_profile_verification', { body: {} }).catch(function () { return null; });
 if (v && v.ok !== false) LIVE_DATA.ver0 = v;
-clSay('أُرسل ملفك للتوثيق — يمكنك تعديله حتى يستلمه فريق تيرا.'); draw(); toTop();
+LIVE_DATA.verBad = null; clSay('أُرسل ملفك للتوثيق — يمكنك تعديله حتى يستلمه فريق تيرا.'); draw(); toTop();
 } catch (err) { if (!(err && err.message === 'auth')) clSay('تعذّر الإرسال الآن — أعد المحاولة بعد قليل.'); } finally { CLS.busy = false; }
 }
 window.__clProg = clProg; window.__clSubmit = clSubmit; window.__clConfirm = clConfirm;
@@ -18232,7 +18236,7 @@ if (!window.__cpvUid) {
 if (Date.now() - CF.undoAt > 60000) { CF.undoAt = Date.now(); liveSb('rpc/my_profile_undo_list', { body: {} }).then(function (u) { const n = u && u.ok !== false ? u : null; if (JSON.stringify(n) !== JSON.stringify(CF.undo)) { CF.undo = n; draw(); } }).catch(function () { /* اختياري */ }); }
 if (Date.now() - CF.vsAt > 20000) { CF.vsAt = Date.now(); liveSb('rpc/my_verification_security', { body: {} }).then(function (s) { if (s && s.ok !== false && JSON.stringify(s) !== JSON.stringify(LIVE_DATA.vsec)) { LIVE_DATA.vsec = s; draw(); } }).catch(function () { /* اختياري */ }); }
 }
-const retd = {}; (J.v.returned_items || []).forEach(function (x) { if (x && x.key) retd[x.key] = x.reason || true; });
+const retd = {}; (J.v.returned_items || []).forEach(function (x) { if (x && x.key) retd[x.key] = x.reason || true; }); /* v536: فحص القيم عند فتح الملف (كل 30 ثانية على الأكثر) — القيمة غير الصالحة تظهر خطأً قبل الإرسال لا بعده */ if (!LIVE_DATA.verChkAt || Date.now() - LIVE_DATA.verChkAt > 30000) { LIVE_DATA.verChkAt = Date.now(); liveSb('rpc/my_profile_value_errors', { body: {} }).then(function (q) { if (q && q.ok !== false && Array.isArray(q.items)) { const was = JSON.stringify(LIVE_DATA.verBad || []); LIVE_DATA.verBad = q.items; if (JSON.stringify(q.items) !== was) draw(); } }).catch(function () { /* الفحص عند الإرسال يبقى */ }); } /* v536: الحقول المرفوضة عند الإرسال تظهر «مطلوب تعديله» على قسمها مع السبب */ const VB = {}; try { (LIVE_DATA.verBad || []).forEach(function (x) { if (x && x.block) { VB[x.block] = true; retd[x.block] = (retd[x.block] && retd[x.block] !== true ? retd[x.block] + ' · ' : '') + (x.label ? x.label + ': ' : '') + (x.message || 'قيمة غير صالحة'); } }); } catch (e9) { void e9; }
 const left = PG.items.filter(function (x) { return !x.done; }).map(function (x) { return x.label; });
 const hero = e('section', { class: 'jr-hero is-start' }, [e('div', { class: 'jr-glow', 'aria-hidden': 'true' }), e('div', { class: 'jr-h-b' }, [
 e('span', { class: 'jr-eye' }, mig ? 'WELCOME BACK · TERA' : 'WELCOME TO TERA'), e('h2', {}, (mig ? 'حدّث بياناتك' : 'استكمل ملفك') + (first ? '، ' + first : '')),
@@ -18249,7 +18253,7 @@ else body = cfAuth();
 } else {
 const b = cfBlk(it.key), conf = !mig || !!cb[it.key];
 st = retd[it.key] ? 'back' : !b ? (it.done ? 'done' : 'empty') : b.done ? (conf ? 'done' : 'wait') : b.any ? 'part' : 'empty';
-const back = retd[it.key] && retd[it.key] !== true ? DS.note('warn', 'ملاحظة الفريق', String(retd[it.key])) : null;
+const back = retd[it.key] && retd[it.key] !== true ? DS.note('warn', VB[it.key] ? 'صحّح هذا قبل الإرسال' : 'ملاحظة الفريق', String(retd[it.key])) : null;
 if (it.key === 'docs') {
 body = [back, cfMissLine(b)].concat(cfDocs())
 .concat(st === 'wait' ? [rvRow([liveOk(DS.button('تأكيد المستندات', { tone: 'primary', size: 'sm', ui: 'check', onClick: function () { clConfirm('docs'); } }))])] : []);
@@ -18392,7 +18396,7 @@ function lvRegFlow(J, pct) {
       e('div', { class: 'rv-lv' }, [DS.stepper(lvl, 'مستويات التقدّم'), e('div', { class: 'rv-bar', 'aria-hidden': 'true' }, e('b', { style: 'width:' + P + '%' })), e('small', { class: 'rv-sm' }, fmtNum(D) + ' من ' + fmtNum(N) + ' بندًا مطلوبًا')])])],
     [rvBadge(back ? 'مُعاد للاستكمال' : NEW ? 'تسجيل جديد' : 'تحديث بيانات', back ? 'danger' : 'info'), liveOk(DS.button('راجع الطلب', { size: 'sm', ui: 'magnifying-glass', onClick: toVerify })),
       liveOk(DS.button(back ? 'أعد الإرسال' : 'تأكيد وأرسل', { tone: 'primary', size: 'sm', ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } }))]);
-  const retd = {}; (J.v.returned_items || []).forEach(function (x) { if (x && x.key) retd[x.key] = x.reason || true; });
+  const retd = {}; (J.v.returned_items || []).forEach(function (x) { if (x && x.key) retd[x.key] = x.reason || true; }); /* v536: فحص القيم عند فتح الملف (كل 30 ثانية على الأكثر) — القيمة غير الصالحة تظهر خطأً قبل الإرسال لا بعده */ if (!LIVE_DATA.verChkAt || Date.now() - LIVE_DATA.verChkAt > 30000) { LIVE_DATA.verChkAt = Date.now(); liveSb('rpc/my_profile_value_errors', { body: {} }).then(function (q) { if (q && q.ok !== false && Array.isArray(q.items)) { const was = JSON.stringify(LIVE_DATA.verBad || []); LIVE_DATA.verBad = q.items; if (JSON.stringify(q.items) !== was) draw(); } }).catch(function () { /* الفحص عند الإرسال يبقى */ }); } /* v536: الحقول المرفوضة عند الإرسال تظهر «مطلوب تعديله» على قسمها مع السبب */ const VB = {}; try { (LIVE_DATA.verBad || []).forEach(function (x) { if (x && x.block) { VB[x.block] = true; retd[x.block] = (retd[x.block] && retd[x.block] !== true ? retd[x.block] + ' · ' : '') + (x.label ? x.label + ': ' : '') + (x.message || 'قيمة غير صالحة'); } }); } catch (e9) { void e9; }
   const secs = S2.map(function (x) {
     const pi = PG.items.filter(function (y) { return y.key === x.key; })[0], waitC = !!(pi && pi.filled && !pi.confirmed), need = !!retd[x.key], badge = need ? rvBadge('مطلوب تعديله', 'danger') : !x.done ? rvBadge('ناقص', 'warn') : waitC ? rvBadge('بانتظار تأكيدك', 'info') : rvBadge('مكتمل', 'ok');
     const body = [DS.note(need ? 'warn' : x.done ? 'info' : 'warn', need ? 'أعاده الفريق للتعديل' : x.done ? (waitC ? 'معبّأ من ملفك السابق — راجعه ثم أكّده' : 'مكتمل') : 'حقل مطلوب فارغ', need && retd[x.key] !== true ? String(retd[x.key]) : x.done ? (waitC ? 'افتح القسم وراجع بياناتك، ثم اضغط «تأكيد القسم» ليُحسب في نسبة الاكتمال.' : 'يمكنك فتح القسم وتعديله قبل الإرسال.') : 'افتح القسم وأكمل الحقول المطلوبة، ثم احفظ.'),
@@ -19014,7 +19018,7 @@ async function liveSaveBlock(block, values, st, host) {
   }
   if (!r || r.ok !== true) throw new Error((r && (r.message || r.error)) || 'تعذّر الحفظ.');
   const d = await clApi('/api/account/profile/block/' + block).catch(function () { return null; });
-  if (d) { LIVE_DATA.blocks[block] = d; liveProfileApply(); }
+  if (d) { LIVE_DATA.verChkAt = 0; if (LIVE_DATA.verBad) LIVE_DATA.verBad = LIVE_DATA.verBad.filter(function (x) { return x && x.block !== block; }); LIVE_DATA.blocks[block] = d; liveProfileApply(); }
   return r;
 }
 function liveInput(f) {
