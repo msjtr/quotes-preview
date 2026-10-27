@@ -21385,15 +21385,31 @@ function lchSteps(ready, seen, ok) {
 }
 /* v550: حفر بارز للاسم بالعربي والإنجليزي والرقم والتواريخ — على بطاقة صفحة التدشين فقط */
 function lchEmboss() {
-  /* v551: حفر بارز بلون متوافق مع خلفية كل بطاقة — فضي على بلس، عاجي على بريميوم، ذهبي على إيليت — للاسم بالعربي والإنجليزي والرقم والتواريخ */
-  if (document.getElementById('lch-emb3')) return;
-  const s = document.createElement('style'); s.id = 'lch-emb3';
+  /* v552: حفر بارز معدني ظاهر بلون كل بطاقة — فضي على بلس، عاجي ذهبي على بريميوم، ذهبي على إيليت — وتخطيط صفحة التدشين ومعاينة الفيلم داخلها */
+  if (document.getElementById('lch-emb5')) return;
+  ['lch-emb', 'lch-emb2', 'lch-emb3'].forEach(function (id) { const o = document.getElementById(id); if (o) o.remove(); });
+  const s = document.createElement('style'); s.id = 'lch-emb5';
   const T = '.lch-mc .mcard .mc-name b,.lch-mc .mcard .mc-name span,.lch-mc .mcard .mc-foot b', sel = function (m) { return T.split(',').map(function (x) { return x.replace('.mcard', '.mcard' + m); }).join(','); };
-  s.textContent = T + '{color:#F3F6FB!important;text-shadow:-1px -1px 0 rgba(255,255,255,.45),1px 1px 0 rgba(0,10,30,.85),2px 2px 3px rgba(0,10,30,.45)}'
-    + sel('.premium') + '{color:#FFF6DF!important;text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 0 rgba(70,40,0,.85),2px 2px 3px rgba(70,40,0,.45)}'
-    + sel('.elite') + '{color:#EFD08A!important;text-shadow:-1px -1px 0 rgba(255,236,180,.35),1px 1px 0 rgba(0,0,0,.95),2px 2px 3px rgba(0,0,0,.6)}'
-    + '.lch-mc .mcard .mc-name span{text-transform:uppercase;letter-spacing:.16em;font-weight:700}.lch-mc .mcard .mc-foot b{letter-spacing:.18em;font-variant-numeric:tabular-nums;font-weight:800}';
+  const g = function (stops, dk, hl) { return '{background:linear-gradient(180deg,' + stops + ');-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;text-shadow:none!important;filter:drop-shadow(-1px -1px 0 ' + hl + ') drop-shadow(1px 2px 0 ' + dk + ') drop-shadow(0 4px 4px rgba(0,0,0,.5))}'; };
+  s.textContent = T + g('#ffffff 0%,#dfe7f1 35%,#8fa2ba 52%,#e8eef6 70%,#b3c1d3 100%', 'rgba(2,12,32,1)', 'rgba(255,255,255,.6)')
+    + sel('.premium') + g('#fffaf0 0%,#fbe9c4 35%,#b8904a 52%,#fff3d6 70%,#d9b877 100%', 'rgba(60,34,0,.95)', 'rgba(255,255,255,.65)')
+    + sel('.elite') + g('#fff1c7 0%,#f3d27e 35%,#a8792a 52%,#f7dc94 70%,#c99a45 100%', 'rgba(0,0,0,1)', 'rgba(255,230,160,.5)')
+    + '.lch-mc .mcard .mc-name span{text-transform:uppercase;letter-spacing:.16em;font-weight:800}.lch-mc .mcard .mc-foot b{letter-spacing:.18em;font-variant-numeric:tabular-nums;font-weight:800}'
+    + '.lch-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}.lch-col{display:grid;gap:14px;min-width:0}@media (max-width:980px){.lch-grid{grid-template-columns:minmax(0,1fr)}}'
+    + '.lch-vids{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:12px;align-items:start}.lch-fig{margin:0;min-width:0}.lch-fig figcaption{font-size:12px;color:#5b6b85;text-align:center;margin-top:6px}'
+    + '.lch-vid{display:block;width:100%;max-width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;border-radius:14px;background:#050b18}.lch-vid.is-p{aspect-ratio:9/16;max-height:440px;margin:0 auto}@media (max-width:640px){.lch-vids{grid-template-columns:minmax(0,1fr)}}';
   document.head.appendChild(s);
+}
+/* v552: معاينة فيلم التدشين داخل الصفحة بمقاس الشاشة — أفقي وطولي جنبًا إلى جنب، ويُحسب «شاهدت الفيلم» عند انتهاء أحدهما */
+function lchVids(fx, D, rerun) {
+  const mk = function (src, poster, por, lbl) {
+    if (!src) return null;
+    const v = e('video', { class: 'lch-vid' + (por ? ' is-p' : ''), src: src, poster: poster || null, controls: 'controls', preload: 'metadata', playsinline: 'playsinline' });
+    v.addEventListener('ended', function () { if (!D.seen) { D.seen = true; rerun(); } });
+    return e('figure', { class: 'lch-fig' }, [v, e('figcaption', {}, lbl)]);
+  };
+  const L = [mk(fx.landscape, fx.landscape_poster, false, 'أفقي — الشاشة الكبيرة'), mk(fx.portrait, fx.portrait_poster, true, 'طولي — الجوال')].filter(Boolean);
+  return L.length ? e('div', { class: 'lch-vids' }, L) : null;
 }
 /* v548: قيمة 500 نقطة لكل مستوى من «إعدادات نظام النقاط» (وإلا الافتراضي 2/4/6 ر.س) */
 function lchPer(k) { let v = NaN; try { v = Number(String(window.__loyTierInfo(k).per).replace(/[^\d.]/g, '')); } catch (e1) { void e1; } return isFinite(v) && v > 0 ? v : ({ plus: 2, premium: 4, elite: 6 })[k] || 2; }
@@ -21441,8 +21457,8 @@ lchCalcUpd();
   const filmSec = !needFilm ? null : cuSec('فيلم التدشين — معاينة قبل التدشين', 'film-strip', [
     FL.busy ? e('small', { class: 'cu-dr-hint' }, 'جارٍ جلب حالة الفيلم…')
     : FL.err ? DS.note('warn', 'تعذّر جلب الفيلم', FL.err)
-    : fst === 'ready' ? e('div', {}, [DS.note(D.seen ? 'ok' : 'info', D.seen ? 'شاهدتَ الفيلم' : 'الفيلم جاهز — شاهده قبل التدشين', 'تحقّق من الاسم والبطاقة والنقاط والصوت والصورة، أفقيًا وطوليًا.'),
-        e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('معاينة — أفقي', { tone: 'primary', ui: 'film-strip', onClick: function () { play(false); } })), liveOk(DS.button('معاينة — طولي (الجوال)', { ui: 'device-mobile', onClick: function () { play(true); } })), admTwoStep('إعادة توليد الفيلم', null, function () { filmGen(true); })]), D.seen ? (D.filmOk ? DS.note('ok', 'الفيلم معتمد', 'يمكنك الآن تدشين الحساب.') : e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('اعتماد الفيلم', { tone: 'primary', ui: 'seal-check', onClick: function () { D.filmOk = true; rerun(); } }))])) : null])
+    : fst === 'ready' ? e('div', {}, [DS.note(D.seen ? 'ok' : 'info', D.seen ? 'شاهدتَ الفيلم' : 'الفيلم جاهز — شاهده قبل التدشين', D.seen ? 'تحقّقتَ من الفيلم — اعتمده ليُفتح التدشين.' : 'شغّل الفيلم حتى نهايته (أفقي أو طولي) وتحقّق من الاسم والبطاقة والنقاط والصوت والصورة.'),
+        lchVids(fx, D, rerun), e('div', { class: 'cu-dr-fa is-wrap' }, [admTwoStep('إعادة توليد الفيلم', null, function () { filmGen(true); })]), D.seen ? (D.filmOk ? DS.note('ok', 'الفيلم معتمد', 'يمكنك الآن تدشين الحساب.') : e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('اعتماد الفيلم', { tone: 'primary', ui: 'seal-check', onClick: function () { D.filmOk = true; rerun(); } }))])) : null])
     : (fst === 'queued' || fst === 'rendering') ? e('div', {}, [DS.note('info', fst === 'queued' ? 'الفيلم بالانتظار' : 'الفيلم قيد التجهيز', 'يصلك إشعار عند جاهزيته — التجهيز يستغرق دقائق.'), liveOk(DS.button('تحديث الحالة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { filmLoad(); rerun(); } }))])
     : e('div', {}, [DS.note('warn', fst === 'failed' ? 'تعذّر تجهيز الفيلم' : fst === 'expired' ? 'انتهت مدة الفيلم' : 'لا فيلم لهذا الحساب بعد', fr && fr.error ? String(fr.error).slice(0, 120) : 'اطلب توليده ثم شاهده قبل التدشين.'),
         e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button('توليد الفيلم الآن', { tone: 'primary', ui: 'film-strip', onClick: function () { filmGen(fst !== 'none'); } }))])])
@@ -21463,7 +21479,9 @@ lchCalcUpd();
         D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null])];
   const foot = x.launched ? [] : [e('div', { class: 'cu-dr-fa is-wrap' }, D.ask ? [liveOk(DS.button(D.busy ? 'جارٍ التدشين…' : 'تأكيد التدشين', { tone: 'primary', ui: 'rocket-launch', disabled: D.busy, onClick: run })), DS.button('تراجع', { onClick: function () { D.ask = false; rerun(); } })]
     : [filmOk ? liveOk(DS.button('تدشين الحساب', { tone: 'primary', ui: 'rocket-launch', onClick: function () { D.ask = true; D.err = ''; rerun(); } })) : DS.button(!D.seen ? 'شاهد فيلم التدشين أولًا' : 'اعتمد الفيلم أولًا', { ui: 'film-strip', disabled: true })])];
-  cuBdDraw({ key: key, ic: x.launched ? 'rocket-launch:teal' : 'hourglass-medium:saffron', title: 'تدشين الحساب · ' + (x.name || ''), sub: x.launched ? 'مُدشَّن · ' + T[1] : 'بانتظار التدشين', body: body.filter(Boolean), foot: foot, onClose: function () { draw(); } });
+  /* v552: قبل التدشين — الخطوات أعلى الصفحة، ثم عمودان: البطاقة وقرار التدشين والملف · معاينة الفيلم */
+  const body2 = x.launched ? body : (function (B) { lchEmboss(); return [B[1], e('div', { class: 'lch-grid' }, [e('div', { class: 'lch-col' }, [B[0], B[4], B[2]].filter(Boolean)), e('div', { class: 'lch-col' }, [B[3]].filter(Boolean))])]; })(body);
+  cuBdDraw({ key: key, ic: x.launched ? 'rocket-launch:teal' : 'hourglass-medium:saffron', title: 'تدشين الحساب · ' + (x.name || ''), sub: x.launched ? 'مُدشَّن · ' + T[1] : 'بانتظار التدشين', body: body2.filter(Boolean), foot: foot, onClose: function () { draw(); } });
 }
 /* إعدادات تدشين الحساب — الافتراضي لكل المستويات، ونقاط كل مستوى، وفيلم التدشين */
 const LCHS = {};
