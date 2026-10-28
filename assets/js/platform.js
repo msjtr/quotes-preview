@@ -19967,7 +19967,7 @@ if (LIVE.on) document.addEventListener('click', function (ev) {
   /* رؤوس الأقسام المطوية وشرائح التصفية ليست إجراءات */
   if (b.classList.contains('t2-sec-h') || b.classList.contains('t2-group-h') || b.classList.contains('st-chip')) return;
   /* v309: بطاقات الأقسام وصفوف القوائم وروابط المسار تفتح صفحة أو درجًا للعرض — ليست إجراءات (مثل «سجل توثيق الوصول» و«سجل السداد») */
-  if (b.matches('.hc, .hf-c, .nr-main, .cu-card, .tm-r, .t2-crumb-a, .t2-side-i, .t2-dock-i, .st-sa')) return;
+  if (b.matches('.hc, .hf-c, .nr-main, .cu-card, .tm-r, .t2-crumb-a, .t2-side-i, .t2-dock-i, .st-sa, .fx-req')) return; /* v569: بطاقة الطلب تفتح تفاصيله — ليست إجراءً (كانت «سداد عقد كامل…» تُمنع) */
   const t = (b.innerText || b.getAttribute('aria-label') || '').replace(LIVE_DIA, '').replace(/\s+/g, ' ').trim(); if (!t || LIVE_PASS.test(t) || !LIVE_ACT.test(t)) return;
   ev.preventDefault(); ev.stopImmediatePropagation();
   snack('لم يُنفَّذ شيء — هذا الإجراء يُفعَّل عند ربطه بالخادم.');
