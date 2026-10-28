@@ -21249,7 +21249,7 @@ function admSysPage() {
     ['fin', 'قسم المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم والنسب والمصاريف والعمولات — إضافة وتفعيل وإيقاف', 'sys-fees'), c('credit-card:teal', 'إعدادات الدفع الإلكتروني', 'الخدمات ووسائل الدفع · روابط الدفع لغير العملاء · الاشتراكات · البطاقات المحفوظة', 'sys-pay')]],
     ['cu', 'قسم العملاء', 'users-three:teal', [c('rocket-launch:teal', 'إعدادات تدشين الحساب', 'المستوى الافتراضي ونقاط التدشين لكل مستوى وفيلم التدشين', 'sys-launch'),
       c('list-checks:navy', 'قرارات مراجعة الترحيل', 'مقارنة العقود بالنظام السابق — القرار في كل فرق وملاحظته وما نُفّذ منه', 'sys-review'),
-      c('handshake:teal', 'سداد قيمة المنتج', 'نسب خصم العضوية · سقف خصم الرسوم قبل اعتماد المشرف · صلاحية العرض · الإعفاء من ربح الأشهر التي لم تبدأ', 'sys-settle')]],
+      c('handshake:teal', 'سداد قيمة المنتج', 'نسب خصم العضوية · سقف خصم الرسوم قبل اعتماد المشرف · صلاحية العرض · الإعفاء من ربح الأشهر التي لم تبدأ', 'sys-settle'), c('files:teal', 'مرفقات الوظيفة', 'المرفقات المطلوبة والاختيارية لكل حالة وظيفية — إضافة وإيقاف', 'sys-jobdocs')]],
     /* v405: كل مهمة في مكان واحد — المراسلة والإشعارات مجتمعة، وبيانات المنشأة والضريبة معًا، والخصم والنقاط مع نظام النقاط،
        والقوالب والمستندات للمستندات وحدها، والتشغيل للمدد والسجل */
     ['comm', 'المراسلة والإشعارات', 'chat-circle-dots:sky', [c('squares-four:navy', 'مركز القوالب', 'كل القوالب في مكان واحد: واتساب المعتمدة في Meta وأين تُستخدم · مراحل التوثيق · التقييمات · مركز الإرسال · الردود — بحث وتصفية ومعاينة كما يصل', 'sys-msg'),
@@ -26289,7 +26289,7 @@ if (LIVE.on) {
     };
     Object.assign(ICON, { 'sys-settle': ['handshake', 'teal'] });
     lp('sys-settle', 'سداد قيمة المنتج', 'sys', 'sys-settle', sysSettlePage);
-    LIVE_PAGES.admin['sys-settle'] = sysSettlePage;
+    LIVE_PAGES.admin['sys-settle'] = sysSettlePage; /* v575 */ Object.assign(ICON, { 'sys-jobdocs': ['files', 'teal'] }); lp('sys-jobdocs', 'مرفقات الوظيفة', 'sys', 'sys-jobdocs', sysJobDocsPage); LIVE_PAGES.admin['sys-jobdocs'] = sysJobDocsPage;
   } catch (err) { void err; }
 }
 /* ===== v464: سداد قيمة المنتج في حساب العميل (stf_76) — العرض المعتمد ← موافقة العميل ← السداد عبر بوابة الدفع ← التنفيذ آليًا ===== */
@@ -26441,12 +26441,18 @@ function lvJobRow(r, d) {
   const cpv = !!window.__cpvUid, busy = LVJ.up === r.doc_type;
   const acts = [DS.badge(st[0], st[1])];
   if (d) { const o = DS.button('فتح', { size: 'sm', ui: 'files', onClick: function () { lvJobOpen(d); } }); o.setAttribute('data-live-ok', ''); acts.push(o); }
+  /* v575: قرار الفريق من «صفحة العميل» — قبول أو رفض بسبب يصل للعميل */
+  if (cpv && d && ['pending', 'uploaded', 'accepted', 'rejected'].indexOf(d.status) >= 0) {
+    if (d.status !== 'accepted') acts.push(liveOk(DS.button(LVJ.dec === d.id ? 'جارٍ…' : 'قبول', { size: 'sm', tone: 'primary', ui: 'check', disabled: !!LVJ.dec, onClick: function () { lvJobDecide(d, 'accepted'); } })));
+    if (d.status !== 'rejected') acts.push(liveOk(DS.button('رفض', { size: 'sm', ui: 'x', disabled: !!LVJ.dec, onClick: function () { LVJ.rej = LVJ.rej === d.id ? '' : d.id; LVJ.why = ''; draw(); } })));
+  }
   if (!cpv) {
     const inp = e('input', { type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.webp', style: 'display:none', onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; lvJobUpload(r.doc_type, f); } });
     acts.push(inp, liveOk(DS.button(busy ? 'جارٍ الرفع…' : d ? 'استبدال' : 'رفع', { size: 'sm', tone: d ? null : 'primary', disabled: !!LVJ.up, onClick: function () { inp.click(); } })));
   }
-  return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, r.label), e('small', {}, d ? ['رُفع ', bdiD(String(d.uploaded_at || '').slice(0, 10)), d.reject_reason ? ' — ' + d.reject_reason : ''] : (r.note || 'اختياري'))]),
+  const row = e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, r.label + (r.requirement === 'required' ? ' · مطلوب' : '')), e('small', {}, d ? ['رُفع ', bdiD(String(d.uploaded_at || '').slice(0, 10)), d.reject_reason ? ' — ' + d.reject_reason : ''] : ((r.requirement === 'required' ? 'مطلوب' : 'اختياري') + (r.note ? ' · ' + r.note : '')))]),
     e('span', { class: 'adm-doc-a' }, acts)]);
+  return cpv && d && LVJ.rej === d.id ? e('div', {}, [row, lvJobRejBox(d)]) : row;
 }
 /* v574: تحميل فاتورة السداد والبيانات الوظيفية عند فتح صفحاتها (للعميل ولـ«صفحة العميل») — لا يعتمد على تسلسل التحميل الأول */
 const LVE = { uid: '', busy: false };
@@ -26464,6 +26470,87 @@ function lvEnsure() {
     });
   } catch (err) { LVE.busy = false; try { console.warn('[tq-ensure]', err && err.message); } catch (x) { void x; } }
 }
+/* v575: قرار الفريق على مرفق الوظيفة من «صفحة العميل» — قبول، أو رفض بسبب يصل للعميل في حسابه وبالواتساب */
+async function lvJobDecide(d, verdict, reason) {
+  if (LVJ.dec) return;
+  LVJ.dec = d.id; draw();
+  const r = await clPost('/admin/api/cjob/doc/' + encodeURIComponent(d.id) + '/decide', { verdict: verdict, reason: reason || '' }).catch(function () { return null; });
+  LVJ.dec = '';
+  if (!r || r.ok !== true) { snack((r && r.message) || 'تعذّر تسجيل القرار.'); draw(); return; }
+  LVJ.rej = ''; LVJ.why = '';
+  snack(verdict === 'accepted' ? 'قُبل المرفق.' : 'رُفض المرفق ووصل العميلَ السبب في حسابه وبالواتساب.');
+  await lvJobLoad().catch(function () { /* */ });
+  draw();
+}
+function lvJobRejBox(d) {
+  const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '300', placeholder: 'سبب الرفض — يصل للعميل (مثال: الصورة غير واضحة، أو التعريف قديم)', 'aria-label': 'سبب الرفض', onInput: function (ev) { LVJ.why = ev.target.value; } });
+  ta.value = LVJ.why || '';
+  return e('div', { class: 'cjob-rej', style: 'padding:8px 0 12px' }, [ta, e('div', { class: 't2-pb-actions' }, [
+    liveOk(DS.button(LVJ.dec === d.id ? 'جارٍ…' : 'تأكيد الرفض', { size: 'sm', tone: 'danger', ui: 'x', disabled: !!LVJ.dec, onClick: function () {
+      const w = String(LVJ.why || '').trim(); if (w.length < 3) { snack('اكتب سبب الرفض — يصل للعميل.'); return; } lvJobDecide(d, 'rejected', w); } })),
+    DS.button('إلغاء', { size: 'sm', onClick: function () { LVJ.rej = ''; LVJ.why = ''; draw(); } })])]);
+}
+/* ═════ v575: إعدادات «مرفقات الوظيفة» — المطلوب والاختياري لكل حالة وظيفية (إعدادات النظام · قسم العملاء) ═════
+ * تُحفظ في client_job_doc_rules (admin_job_rules_save — صلاحية إعدادات النظام). لا حذف: الإيقاف يخفي المرفق عن العميل وتبقى ملفاته. */
+function sysJobDocsPage() {
+  return admMount('jobdocs', 'مرفقات الوظيفة', function () { return admRpc('admin_job_rules', {}); }, function (X, st, paint) {
+    if (!X || X.ok !== true) return [DS.note('warn', 'تحتاج صلاحية إعدادات النظام', 'هذه الصفحة لمن يملك صلاحية إدارة إعدادات النظام.')];
+    const WTS = ['gov_civil', 'gov_military', 'company', 'investor', 'retired', 'housewife', 'student'];
+    const sig = function (r) { return JSON.stringify([String(r.label || '').trim(), String(r.note || '').trim(), r.requirement, Number(r.sort) || 0, !!r.active]); };
+    const R = st.rows || (st.rows = (X.rows || []).map(function (r) { const o = Object.assign({}, r); o._o = sig(r); return o; }));
+    const UP = X.uploads || {}, types = {};
+    R.forEach(function (r) { if (r.id && !types[r.doc_type]) types[r.doc_type] = r.label; });
+    const dirty = function (r) { return !r.id || sig(r) !== r._o; };
+    const rowEd = function (r, i) {
+      const seg = e('div', { class: 'stl-tl-seg', role: 'radiogroup', 'aria-label': 'المطلوبية' }, [['required', 'مطلوب'], ['optional', 'اختياري']].map(function (m) {
+        return e('button', { type: 'button', role: 'radio', 'aria-checked': r.requirement === m[0] ? 'true' : 'false', class: 'stl-tl-pm' + (r.requirement === m[0] ? ' is-on' : ''), onClick: function () { r.requirement = m[0]; paint(); } }, m[1]);
+      }));
+      const on = e('input', { type: 'checkbox', checked: r.active ? 'checked' : null, onChange: function (ev) { r.active = ev.target.checked; paint(); } });
+      return e('div', { class: 't2-stack', style: (i ? 'border-top:1px solid var(--t2-line);padding-top:12px' : '') + (r.active ? '' : ';opacity:.6') }, [
+        e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+          DS.editField('اسم المرفق', DS.input({ value: r.label || '', onInput: function (v) { r.label = v; } })),
+          DS.editField('وصف قصير يظهر للعميل', DS.input({ value: r.note || '', onInput: function (v) { r.note = v; } }))]),
+        e('div', { class: 'stl-ln-g' }, [DS.editField('المطلوبية', seg), DS.editField('الترتيب', DS.input({ value: String(r.sort == null ? '' : r.sort), numeric: true, onInput: function (v) { r.sort = v; } })), DS.editField('يظهر للعميل', on)]),
+        e('small', { class: 'cu-dr-hint' }, (r.id ? 'مرفوع لدى العملاء: ' + fmtNum(UP[r.doc_type] || 0) : 'جديد — يُحفظ عند الضغط على «حفظ»') + (r.active ? '' : ' · موقوف: لا يظهر للعميل وتبقى ملفاته'))]);
+    };
+    const addRow = function (wt) {
+      const pk = (st.pick || {})[wt] || '';
+      const free = Object.keys(types).filter(function (k) { return !R.some(function (r) { return r.work_type === wt && r.doc_type === k; }); });
+      const sel = e('select', { class: 't2-input', 'aria-label': 'نوع المرفق', onChange: function (ev) { (st.pick || (st.pick = {}))[wt] = ev.target.value; } },
+        [e('option', { value: '' }, 'مرفق جديد…')].concat(free.map(function (k) { return e('option', { value: k, selected: pk === k ? 'selected' : null }, types[k]); })));
+      return e('div', { class: 't2-pb-actions' }, [sel, DS.button('إضافة مرفق', { size: 'sm', ui: 'plus', onClick: function () {
+        const k = (st.pick || {})[wt] || '';
+        R.push({ id: null, work_type: wt, doc_type: k || ('job_n' + Date.now().toString(36).slice(-7)), label: k ? types[k] : '', note: '', requirement: 'optional', sort: 50, active: true });
+        if (st.pick) st.pick[wt] = '';
+        paint();
+      } })]);
+    };
+    const save = async function () {
+      if (st.busy) return;
+      const rows = R.filter(dirty).map(function (r) {
+        const o = { label: String(r.label || '').trim(), note: String(r.note || '').trim() || null, requirement: r.requirement === 'required' ? 'required' : 'optional', sort: Math.max(0, Math.min(999, parseInt(r.sort, 10) || 0)), active: !!r.active };
+        if (r.id) o.id = r.id; else { o.work_type = r.work_type; o.doc_type = r.doc_type; }
+        return o;
+      });
+      if (!rows.length) { snack('لا تعديلات للحفظ.'); return; }
+      if (rows.some(function (o) { return o.label.length < 2 || o.label.length > 80; })) { st.err = 'اكتب اسم كل مرفق (من حرفين إلى 80 حرفًا).'; paint(); return; }
+      st.busy = true; st.err = ''; paint();
+      try {
+        const j = await admRpc('admin_job_rules_save', { p_rows: rows });
+        if (!j || j.ok !== true) throw new Error({ forbidden: 'تحتاج صلاحية إعدادات النظام.', bad_label: 'اسم المرفق من حرفين إلى 80 حرفًا.', bad_note: 'الوصف حتى 160 حرفًا.', bad_sort: 'الترتيب رقم من 0 إلى 999.' }[j && j.error] || 'تعذّر الحفظ.');
+        st.busy = false; st.rows = null; st.data = j; snack('حُفظت إعدادات مرفقات الوظيفة.'); paint();
+      } catch (err) { st.busy = false; st.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
+    };
+    const n = R.filter(dirty).length;
+    return [DS.note('info', 'مرفقات الوظيفة حسب الحالة الوظيفية', 'تظهر للعميل في «خدماتي · مرفقاتي» حسب حالته الوظيفية، ويظهر «مطلوب» بجانب المرفق المطلوب. الإيقاف يخفي المرفق عن العميل وتبقى ملفاته المرفوعة.')]
+      .concat(WORK.filter(function (w) { return WTS.indexOf(w[0]) >= 0; }).map(function (w) {
+        const L = R.filter(function (r) { return r.work_type === w[0]; }).sort(function (a, b) { return (Number(a.sort) || 0) - (Number(b.sort) || 0); });
+        return DS.panel(w[1], fmtNum(L.length) + ' مرفق · ' + fmtNum(L.filter(function (r) { return r.active && r.requirement === 'required'; }).length) + ' مطلوب', L.map(rowEd).concat([addRow(w[0])]));
+      }))
+      .concat([st.err ? e('span', { class: 'cu-err', role: 'alert' }, st.err) : null,
+        e('div', { class: 't2-pb-actions' }, [DS.button(st.busy ? 'جارٍ الحفظ…' : n ? 'حفظ التعديلات (' + fmtNum(n) + ')' : 'حفظ', { tone: 'primary', ui: 'check', disabled: st.busy, onClick: save })])]);
+  });
+}
 function lvJobDocsPage() {
   lvEnsure();
   const wt = F.work_type || '', wn = wt ? nameOf(WORK, wt) : '', R = LVJ.rules, D = LVJ.docs, cpv = !!window.__cpvUid;
@@ -26473,7 +26560,7 @@ function lvJobDocsPage() {
   if (!LVJ.ok) out.push(DS.note('warn', 'تعذّر تحميل المرفقات', 'أعد تحميل الصفحة بعد قليل.'));
   else if (!wt) out.push(lvJobNote('info', cpv ? 'لم يحفظ العميل بياناته الوظيفية بعد' : 'احفظ «بياناتي الوظيفية» أولًا', 'تظهر مرفقات الوظيفة حسب الحالة الوظيفية بعد حفظها.', cpv ? null : DS.button('بياناتي الوظيفية', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: function () { go('other', 'job-info'); } })));
   else if (!R.length) out.push(DS.note('info', 'لا مرفقات لحالتك الوظيفية الآن', ''));
-  else out.push(lvPanel('مرفقات الوظيفة — ' + wn, null, R.map(function (r) { return lvJobRow(r, cur(r.doc_type)); }).concat([DS.note('info', 'رفع المرفقات', cpv ? 'عرض فقط — الرفع من حساب العميل نفسه.' : 'PDF أو صورة حتى 2 ميغابايت. يُحفظ المرفق فورًا ويراجعه فريق تيرا.')])));
+  else out.push(lvPanel('مرفقات الوظيفة — ' + wn, null, R.map(function (r) { return lvJobRow(r, cur(r.doc_type)); }).concat([DS.note('info', 'رفع المرفقات', cpv ? 'الرفع من حساب العميل نفسه. القبول والرفض من هنا، ويصل العميلَ سبب الرفض في حسابه وبالواتساب.' : 'PDF أو صورة حتى 2 ميغابايت. يُحفظ المرفق فورًا ويراجعه فريق تيرا.')])));
   out.push(lvJobNote('info', 'مستندات الهوية والعنوان والآيبان', 'تُدار من «ملفي الشخصي» ولا تظهر هنا.', cpv ? null : DS.button('ملفي الشخصي', { size: 'sm', ui: 'caret-left', onClick: function () { go('other', 'profile'); } })));
   return out;
 }
