@@ -26297,6 +26297,8 @@ function stlClientPanel(o) {
         if (!j || !j.ok || !j.url || !/^(https:\/\/[a-z0-9.-]*paymob\.com\/|\/api\/pay\/c\/[A-Za-z0-9_-]{32}$)/i.test(j.url)) throw new Error((j && j.message) || 'تعذّر بدء الدفع.');
         location.href = j.url;
       } catch (err) { W.busy = false; if (err && err.message === 'auth') return; out.textContent = (err && err.message) || 'تعذّر بدء الدفع.'; } } }))])];
+  /* v571: «صفحة العميل» من حساب الموظف — عرض الفاتورة وحالتها فقط: لا توقيع ولا سداد نيابةً عن العميل */
+  if (window.__cpvUid && !o.executed && !o.expired) act = DS.note('info', !o.accepted_at ? 'بانتظار توقيع العميل' : (o.paying || (tr && tr.status === 'submitted')) ? 'السداد قيد المعالجة' : 'وقّع العميل — بانتظار السداد', 'هذه صفحة العميل من حسابك: تُعرض الفاتورة وحالتها فقط، والتوقيع والسداد من حساب العميل نفسه.');
   return DS.panel((D.texts && D.texts.title) || 'فاتورة سداد قيمة المنتج', 'العقد ' + o.contract_no + ' · الفاتورة ' + o.quote_no, [
     e('div', { class: 'stl-cl-amt' }, [e('small', {}, o.executed ? 'المبلغ المسدَّد' : 'المبلغ المطلوب لإغلاق العقد'), e('b', {}, SR(o.amount)),
       e('small', {}, 'بدل المتبقي ' + SR(o.remaining) + ' · خصم ' + SR(o.discount) + (Number(o.exempt_amount) ? ' منه ربح أشهر لم تبدأ معفاة ' + SR(o.exempt_amount) : '') + (o.executed ? '' : ' · صالحة حتى ' + o.valid_until) + (o.executed ? '' : ' · السداد: ' + (bank ? 'تحويل بنكي' : 'بوابة الدفع')))]),
@@ -26310,7 +26312,9 @@ function stlClientPanel(o) {
     ...(Array.isArray(act) ? act : [act]), out]);
 }
 async function stlClientLoad() {
-  const j = await liveSb('rpc/my_settle_offers', { body: {} }).catch(function () { return null; });
+  /* v571: في «صفحة العميل» من حساب الموظف تُقرأ فاتورة العميل نفسه للعرض (كانت تُقرأ للموظف فلا يظهر شيء وتبدو الحالة «بانتظار سدادك») */
+  const cpv = window.__cpvUid || '';
+  const j = await liveSb(cpv ? 'rpc/admin_client_settle_offers' : 'rpc/my_settle_offers', { body: cpv ? { p_user: cpv } : {} }).catch(function () { return null; });
   STL_C.offers = Array.isArray(j) ? j : [];
 }
 if (LIVE.on) {
