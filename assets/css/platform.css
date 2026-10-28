@@ -9191,3 +9191,51 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .btr-nm{display:flex;flex-direction:column;gap:8px}.btr-nm:not(.is-no)>:last-child{display:none}
 @media (max-width:40rem){.btr-rv{grid-template-columns:1fr}}
 .rm-pm{margin-inline-end:6px}.rm-pm .stl-tl-pm{padding:5px 10px;font-size:12px}
+/* v565: نموذج إعداد فاتورة سداد قيمة المنتج بالخطوات · المسودة · الدفعة المستحقة · جدول البنود المخصومة في المستند */
+.stl-wz{display:flex;gap:6px;list-style:none;margin:0 0 12px;padding:0;flex-wrap:wrap}
+.stl-wz>li{flex:1 1 150px;min-width:0}
+.stl-wz-b{appearance:none;width:100%;display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #dfe5ef;border-radius:12px;background:#fff;color:#0B2552;font:inherit;font-weight:700;font-size:13px;cursor:pointer;text-align:start}
+.stl-wz-b i{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#eef3fb;color:#0B2552;font-style:normal;font-size:13px}
+.stl-wz-b.is-on{border-color:#0AA5AD;background:#E2F4F5;box-shadow:inset 0 -3px 0 #0AA5AD}
+.stl-wz-b.is-on i{background:#0AA5AD;color:#fff}
+.stl-wz-b.is-done i{background:#c9b37a;color:#fff}
+.stl-wz-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.stl-wz-sum>div{border:1px solid #e3e8f2;border-radius:12px;padding:8px 12px;background:#f7f9fc;min-width:0}
+.stl-wz-sum small{display:block;color:#5d6a86;font-size:12px}
+.stl-wz-sum b{display:block;font-size:15px;color:#0B2552;overflow-wrap:anywhere}
+.stl-wz-sum>.is-due{background:#0B2552;border-color:#0B2552}
+.stl-wz-sum>.is-due small{color:#cfdcf3}
+.stl-wz-sum>.is-due b{color:#FFC861}
+.stl-wz-c{border:1px solid #e3e8f2;border-radius:14px;padding:12px 14px;margin:0 0 10px;background:#fff}
+.stl-wz-c>h5{margin:0 0 10px;font-size:14px;color:#0B2552}
+.stl-wz-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid #e3e8f2;padding-top:12px;margin-top:12px}
+.stl-wz-nav>.sp{flex:1}
+.stl-dft{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:8px 12px;border:1px dashed #c9b37a;border-radius:12px;background:#fffdf7;color:#0B2552;font-size:13px}
+.stl-due{display:grid;gap:8px;margin:0 0 10px}
+.stl-due-r{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid #d9c99f;background:#fffdf7}
+.stl-due-r b{display:block;color:#0B2552;font-size:14px}
+.stl-due-r small{display:block;color:#5d6a86;font-size:12px}
+.stl-due-st{flex:none;display:inline-block;padding:3px 10px;border-radius:999px;background:#B54708;color:#fff;font-size:12px;font-weight:700}
+.stl-due-r.is-late{border-color:#f1b5ae;background:#fff5f4}
+.stl-due-r.is-late .stl-due-st{background:#B42318}
+@media (max-width:40rem){.stl-wz-sum{grid-template-columns:repeat(2,minmax(0,1fr))}.stl-wz>li{flex-basis:45%}}
+/* المستند: البنود المخصومة بالنسبة والسبب */
+.d3-dt{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.d3-dt th,.d3-dt td{padding:7px 8px;border:1px solid #e3e8f2;text-align:start;vertical-align:middle}
+.d3-dt thead th{background:#0f1d4a;color:#fff;font-weight:700;font-size:11.5px}
+.d3-dt tbody th{color:#0f1d4a;font-weight:700;width:24%}
+.d3-dt td{color:#14213D;white-space:nowrap}
+.d3-dt td.is-neg{color:#B42318;font-weight:700}
+.d3-dt td.is-why{white-space:normal;width:32%;color:#14213D}
+.d3-due{display:grid;gap:6px;margin-top:10px}
+.d3-due-r{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1.5px solid #d9c99f;border-radius:10px;background:#fffdf7}
+.d3-due-r b{display:block;color:#0f1d4a;font-size:12.5px}
+.d3-due-r small{display:block;color:#14213D;font-size:11px}
+.d3-due-st{flex:none;padding:3px 10px;border-radius:999px;background:#B54708;color:#fff;font-size:11px;font-weight:800}
+.d3-due-r.is-late{border-color:#f1b5ae;background:#fff5f4}
+.d3-due-r.is-late .d3-due-st{background:#B42318}
+.stl-wz-c .stl-tl-seg+.cu-dr-hint{display:block;margin-top:8px}
+.stl-wz-c>.stl-ln{margin-bottom:8px}
+.is-stl .d3-meta.is-4 .d3-chip b{font-size:12.5px;letter-spacing:0}
+.d3-card>.d3-due{margin:10px 14px 12px}
+.d3-dt th,.d3-dt td{padding:5px 8px}.d3-card>.d3-due{margin:8px 14px 10px;gap:5px}.d3-due-r{padding:5px 10px;gap:8px}.d3-due-r b{font-size:12px}.d3-due-r small{font-size:10.5px}

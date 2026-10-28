@@ -17234,13 +17234,13 @@ function stlTable(R) {
   if (!R || !R.items) return null;
   const row = function (cells, cls) { return e('tr', { class: cls || null }, cells.map(function (x, i) { return e(i ? 'td' : 'th', { scope: i ? null : 'row' }, x); })); };
   const V = R.vat || {}, body = R.items.map(function (it) {
-    return row([e('span', {}, [e('b', {}, it.t), (it.why || []).length ? e('small', {}, it.why.join(' · ')) : null]), stlN(it.before), Number(it.disc) ? '− ' + stlN(it.disc) : '—', stlN(it.after)], Number(it.disc) ? 'is-disc' : null);
+    return row([e('span', {}, [e('b', {}, it.t), (it.why || []).length ? e('small', {}, it.why.join(' · ')) : null]), stlN(it.before), Number(it.disc) ? '− ' + stlN(it.disc) + ' (' + stlPctV(it.disc, it.before) + ')' : '—', stlN(it.after)], Number(it.disc) ? 'is-disc' : null);
   }).concat([
     row(['ضريبة المنتج', stlN(V.product_before), qr2(V.product_before - V.product_after) ? '− ' + stlN(qr2(V.product_before - V.product_after)) : '—', stlN(V.product_after)], 'is-vat'),
     row(['ضريبة الخدمات (الرسوم)', stlN(V.fees_before), qr2(V.fees_before - V.fees_after) ? '− ' + stlN(qr2(V.fees_before - V.fees_after)) : '—', stlN(V.fees_after)], 'is-vat'),
     Number(R.residual) ? row(['فرق التقريب', stlN(R.residual), '—', stlN(R.residual)], 'is-vat') : null,
     row(['الإجمالي', stlN(R.before), '− ' + stlN(R.discount), stlN(R.after)], 'is-tot')]).filter(Boolean);
-  return e('div', { class: 'stl-tbw' }, e('table', { class: 'stl-tb' }, [e('thead', {}, e('tr', {}, ['البند', 'المتبقي قبل', 'الخصم', 'بعد'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, body)]));
+  return e('div', { class: 'stl-tbw' }, e('table', { class: 'stl-tb' }, [e('thead', {}, e('tr', {}, ['البند', 'المتبقي قبل', 'الخصم (النسبة)', 'بعد'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, body)]));
 }
 function stlSum(R) {
   return cfKpis([['wallet', 'المتبقي على العقد', SR(R.before), fmtNum((R.payments || []).length) + ' دفعات مفتوحة'],
@@ -17567,15 +17567,82 @@ function stlQuoteCard(Q, ctx, c, RF) {
     W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
     e('div', { class: 't2-pb-actions' }, acts)]);
 }
+/* ═════ v565: نموذج إعداد فاتورة سداد قيمة المنتج بخطوات واضحة — وسيلة السداد والمستند عند الإعداد · حفظ مسودة · نسبة الخصم وسببه · الدفعة المستحقة ═════ */
+try { Object.assign(ADM_ERR, { draft_big: 'المسودة أكبر من المسموح — احذف بعض النصوص.' }); } catch (err) { void err; }
+const STL_WZ = ['الأساسيات ووسيلة السداد', 'الخصومات', 'المستند', 'المراجعة والحفظ'];
+const stlPctV = function (d, b) { const x = Number(b) > 0 ? Math.round(Number(d) / Number(b) * 1000) / 10 : 0; return fmtNum(x) + '%'; };
+/* الدفعات المتأخرة قبل تاريخ السداد والدفعة القادمة — من نتيجة المحرّك */
+function stlOd(R) {
+  const P = (R && R.payments) || [], od = P.filter(function (p) { return String(p.due) < String(R.date) && Number(p.left) > 0; });
+  return od.length ? { nos: od.map(function (p) { return p.seq; }), amount: qr2(od.reduce(function (a, p) { return a + Number(p.left); }, 0)) } : null;
+}
+function stlDueNote(R) {
+  if (!R) return null;
+  const od = stlOd(R), L = esFromR(R, null), nx = L.next;
+  return e('div', { class: 'stl-due' }, [od ? e('div', { class: 'stl-due-r is-late' }, [e('span', { class: 'stl-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'دفعات متأخرة ' + SR(od.amount)), e('small', {}, 'الدفعات ' + od.nos.join('، ') + ' — مشمولة في مبلغ الفاتورة.')])]) : null,
+    nx ? e('div', { class: 'stl-due-r' }, [e('span', { class: 'stl-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'في ' + qDmy(nx.due) + ': مبلغ الفاتورة ' + SR(R.after) + ' أو الدفعة رقم ' + nx.no + ' بقيمة ' + SR(nx.amount)), e('small', {}, 'الفاتورة صالحة حتى هذا اليوم؛ ويُسدّد العميل في يومه أحدهما، وبعده يُعاد احتساب الفاتورة.')])]) : null]);
+}
+/* في المستند: جدول البنود المخصومة بالنسبة والسبب · ومربّع «مستحق عليكم» */
+function stlDiscTbl(I) {
+  return e('table', { class: 'd3-dt' }, [e('thead', {}, e('tr', {}, ['البند', 'قبل الخصم', 'الخصم', 'النسبة', 'سبب الخصم'].map(function (h) { return e('th', {}, h); }))),
+    e('tbody', {}, I.map(function (x) { return e('tr', {}, [e('th', {}, x.name), e('td', {}, x.before ? esMoney(x.before) : '—'), e('td', { class: 'is-neg' }, '− ' + esMoney(x.disc)), e('td', {}, x.full ? '100%' : stlPctV(x.disc, x.before)), e('td', { class: 'is-why' }, x.why || (x.full ? 'إعفاء كامل' : '—'))]); }))]);
+}
+function stlDueBox(L) {
+  const od = L.od, nx = L.next;
+  if (!od && !nx) return null;
+  return e('div', { class: 'd3-due' }, [od ? e('div', { class: 'd3-due-r is-late' }, [e('span', { class: 'd3-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'دفعات متأخرة ' + esMoney(od.amount)), e('small', {}, 'الدفعات ' + od.nos.join('، ') + ' — مشمولة في مبلغ الفاتورة')])]) : null,
+    nx ? e('div', { class: 'd3-due-r' }, [e('span', { class: 'd3-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'في ' + qDmy(nx.due) + ': مبلغ الفاتورة ' + esMoney(L.due) + ' أو الدفعة المستحقة رقم ' + nx.no + ' بقيمة ' + esMoney(nx.amount)), e('small', {}, 'يُسدَّد أحدهما في اليوم نفسه')])]) : null]);
+}
+/* وسيلة السداد: زرّان */
+function stlPmSeg(S, onCh) {
+  return e('div', { class: 'stl-tl-seg', role: 'radiogroup', 'aria-label': 'وسيلة السداد' }, [['gateway', 'بوابة الدفع', 'credit-card'], ['bank', 'تحويل بنكي', 'bank']].map(function (m) {
+    return e('button', { type: 'button', role: 'radio', 'aria-checked': S.pm === m[0] ? 'true' : 'false', class: 'stl-tl-pm' + (S.pm === m[0] ? ' is-on' : ''), onClick: function () { S.pm = m[0]; onCh(); } }, [frag(ui(m[2], 16)), e('span', {}, m[1])]); }));
+}
+/* إعداد المستند: البنود الظاهرة ومسمياتها ونصوص الفاتورة — لهذه الفاتورة وحدها */
+function stlDocEd(d, R, onCh, mark, pm) {
+  d.hide = d.hide || []; d.labels = d.labels || {}; d.texts = d.texts || {};
+  const ES1 = (typeof ES !== 'undefined' && ES) || {}, st0 = (ES1.steps || []).slice();
+  if (pm === 'bank' && st0.length > 1) st0[1] = STL_BANK_STEP;
+  const items = ((R && R.items) || []).map(function (it) {
+    const hid = d.hide.indexOf(it.k) >= 0;
+    return e('div', { class: 'stl-tl-it' + (hid ? ' is-off' : '') }, [
+      e('label', { class: 'stl-sg-ck' }, [e('input', { type: 'checkbox', checked: hid ? null : 'checked', 'aria-label': 'إظهار ' + it.t, onChange: function (ev) { if (ev.target.checked) d.hide = d.hide.filter(function (x) { return x !== it.k; }); else if (d.hide.indexOf(it.k) < 0) d.hide.push(it.k); onCh(); } }), e('span', {}, hid ? 'مخفي' : 'ظاهر')]),
+      e('input', { class: 't2-input', type: 'text', maxlength: '60', value: d.labels[it.k] || '', placeholder: it.t, 'aria-label': 'مسمى البند ' + it.t, onInput: function (ev) { const v = ev.target.value.trim(); if (v.length >= 2) d.labels[it.k] = v; else delete d.labels[it.k]; mark(); } }),
+      e('small', {}, Number(it.disc) ? 'خصم ' + stlN(it.disc) + ' (' + stlPctV(it.disc, it.before) + ')' : 'بلا خصم')]); });
+  const tx = function (k, lbl, rows, def) { return DS.editField(lbl, e('textarea', { class: 't2-input', rows: String(rows), maxlength: '700', placeholder: def || '', onInput: function (ev) { const v = ev.target.value; if (v.trim().length >= 2) d.texts[k] = v; else delete d.texts[k]; mark(); } }, d.texts[k] || '')); };
+  return [e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'البنود الظاهرة في الفاتورة ومسمياتها'), R ? e('div', { class: 'stl-tl-its' }, items) : e('small', { class: 'cu-dr-hint' }, 'تظهر البنود بعد اكتمال الحساب.'),
+      e('small', { class: 'cu-dr-hint' }, 'أزل العلامة لإخفاء البند، واكتب مسمى جديدًا ليظهر بدل الأصلي. الحساب والإجمالي والضريبة لا تتغيّر.')]),
+    e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'نصوص الفاتورة'), tx('title', 'العنوان', 1, ES1.title), tx('intro', 'المقدمة', 2, ES1.intro), tx('steps', 'خطوات القبول والسداد (سطر لكل خطوة)', 3, st0.join('\n')), tx('note', 'التنويه', 2, ES1.note),
+      e('small', { class: 'cu-dr-hint' }, 'الحقل الفارغ يأخذ النص الافتراضي المكتوب بداخله.'),
+      e('div', { class: 't2-pb-actions' }, [DS.button('إرجاع الافتراضي', { size: 'sm', ui: 'x', onClick: function () { d.hide = []; d.labels = {}; d.texts = {}; onCh(); } })])])];
+}
+const stlDocClean = function (d) { const o = {}; if (d && (d.hide || []).length) o.hide = d.hide.slice(); if (d && Object.keys(d.labels || {}).length) o.labels = Object.assign({}, d.labels); if (d && Object.keys(d.texts || {}).length) o.texts = Object.assign({}, d.texts); return Object.keys(o).length ? o : null; };
+const stlDraftOf = function (S) { return { v: 1, date: S.date, ex: !!S.ex, note: S.note || '', addr: S.addr || '', pm: S.pm, step: S.step, doc: stlDocClean(S.doc) || {},
+  lines: S.lines.map(function (l) { return { cat: l.cat, item: l.item, calc: l.calc, val: l.val === undefined ? '' : String(l.val), pts: l.pts === undefined ? '' : String(l.pts), reason: l.reason || '', xid: l.xid || null, rsO: !!l.rsO }; }) }; };
+function stlDraftUse(S, d) {
+  if (!d || typeof d !== 'object') return;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(d.date || ''))) S.date = d.date;
+  S.ex = d.ex !== false; S.note = String(d.note || ''); S.addr = d.addr === 'm' || d.addr === 'f' ? d.addr : S.addr; S.pm = d.pm === 'bank' ? 'bank' : 'gateway';
+  S.lines = Array.isArray(d.lines) ? d.lines.map(function (l) { return Object.assign({}, l); }) : [];
+  const D = d.doc || {}; S.doc = { hide: Array.isArray(D.hide) ? D.hide.slice() : [], labels: Object.assign({}, D.labels || {}), texts: Object.assign({}, D.texts || {}) };
+  S.step = Math.max(0, Math.min(3, Number(d.step) || 0)); S.rk = '';
+}
 function stlForm(c, r, RF) {
   const ctx = LIVE_ADM.stx || {}, QL = ((LIVE_ADM.sq || {})[r.id] || []), Q = QL.filter(function (q) { return q.status === 'pending' || q.status === 'approved'; })[0], last = QL[0];
   if (!LIVE_ADM.stx) return [DS.note('warn', 'محرّك سداد قيمة المنتج غير متاح', 'تعذّر تحميل إعدادات سداد قيمة المنتج من القاعدة — حدّث الصفحة.')];
-  const S = cfSt('stl:' + c.no, { date: lvToday(), ex: ctx.exempt_default !== false, lines: [], note: '', res: null, rk: '', cerr: '', calc: false, edit: false, addr: (QL.filter(function (q) { return q.addr; })[0] || {}).addr || '' });
+  const S = cfSt('stl:' + c.no, { date: lvToday(), ex: ctx.exempt_default !== false, lines: [], note: '', res: null, rk: '', cerr: '', calc: false, edit: false, step: 0, pm: 'gateway', doc: { hide: [], labels: {}, texts: {} }, dft: null, dfl: 0,
+    addr: (QL.filter(function (q) { return q.addr; })[0] || {}).addr || '' });
   const out = [];
   if (Q) out.push(stlQuoteCard(Q, ctx, c, RF));
-  else if (last && (last.status === 'rejected' || last.status === 'executed')) out.push(DS.note(last.status === 'rejected' ? 'warn' : 'info', 'آخر عرض: ' + last.quote_no + ' — ' + (STL_ST[last.status] || [last.status])[0], last.decide_note || null));
+  else if (last && (last.status === 'rejected' || last.status === 'executed')) out.push(DS.note(last.status === 'rejected' ? 'warn' : 'info', 'آخر فاتورة: ' + last.quote_no + ' — ' + (STL_ST[last.status] || [last.status])[0], last.decide_note || null));
   if (Q && !S.edit) { out.push(e('div', { class: 't2-pb-actions' }, [DS.button('إعداد فاتورة جديدة بدلًا منها', { size: 'sm', ui: 'plus', onClick: function () { S.edit = true; RF.paint(); } })])); return out; }
-  const onCh = function () { RF.paint(); };
+  /* المسودة المحفوظة لهذا العقد — تُحمَّل مرة واحدة */
+  if (!S.dfl) {
+    S.dfl = 1;
+    admRpc('admin_settle_draft_get', { p_contract: r.id }).then(function (j) { S.dfl = 2; if (j && j.ok !== false && j.draft) { S.dft = { at: j.at, by: j.by_name || '' }; if (!S.touched) stlDraftUse(S, j.draft); RF.paint(); } }).catch(function () { S.dfl = 2; });
+  }
+  const mark = function () { S.touched = true; };
+  const onCh = function () { S.touched = true; RF.paint(); };
   const key = JSON.stringify([S.date, S.ex, S.lines]);
   if (key !== S.rk) {
     S.rk = key; S.calc = true;
@@ -17584,28 +17651,80 @@ function stlForm(c, r, RF) {
       .catch(function (err) { if (S.rk !== key) return; S.cerr = (err && err.message) || 'تعذّر الحساب.'; S.calc = false; RF.paint(); });
   }
   const R = S.res && !S.cerr ? S.res : null;
-  const ex = e('input', { type: 'checkbox', checked: S.ex ? 'checked' : null, onChange: function (ev) { S.ex = ev.target.checked; onCh(); } });
-  out.push(e('div', { class: 'stl-ed' }, [
-    Q ? DS.note('info', 'فاتورة جديدة', 'حفظها يلغي الفاتورة ' + Q.quote_no + ' ويحلّ محلّه.') : null,
-    e('div', { class: 'stl-ln-g' }, [DS.editField('تاريخ السداد', datePick({ value: S.date, onChange: function (v) { S.date = v; onCh(); } })), DS.editField('إعفاء ربح الأشهر التي لم تبدأ', ex), DS.editField('المخاطبة في المستندات والشهادة', DS.select({ value: S.addr || '', options: [['', 'اختر'], ['m', 'السيد'], ['f', 'السيدة']], onChange: function (v) { S.addr = v; } }))]),
-    R ? e('small', { class: 'cu-dr-hint' }, 'ربح الشهر ' + SR(R.interest_month) + ' على ' + fmtNum(R.months) + ' شهرًا · أشهر لم تبدأ: ' + fmtNum(R.future_months) + ' · الدفعات المفتوحة ' + (R.payments || []).map(function (p) { return p.seq; }).join('، ')) : null,
-    e('div', { class: 'stl-lns' }, [e('b', {}, 'بنود الخصم')].concat(S.lines.length ? S.lines.map(function (l, i) { return stlLineRow(S, l, i, R || S.res, ctx, onCh); }) : [e('small', { class: 'cu-dr-hint' }, 'لا بنود خصم — تُطبَّق بالترتيب لكل بند: العضوية ثم النقاط ثم الإضافي ثم الاستثنائي.')])),
-    e('div', { class: 't2-pb-actions' }, [DS.button('إضافة بند خصم', { size: 'sm', ui: 'plus', onClick: function () { S.lines.push({ cat: 'extra', item: 'margin', calc: 'pct', val: '', reason: (ctx.extra_reasons || [])[0] || '' }); onCh(); } })]),
-R ? stlRound(S, R, onCh) : null,
-    S.calc ? e('small', { class: 'cu-dr-hint', role: 'status' }, 'جارٍ الحساب…') : null,
-    S.cerr ? DS.note('warn', 'تعذّر الحساب', S.cerr) : null,
-    R ? stlSum(R) : null, R ? stlTable(R) : null].concat(R ? stlFlags(R) : [], [
-    DS.editField('ملاحظة الفاتورة (اختيارية)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; } }, S.note)),
-    S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null,
-    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(S.busy ? 'جارٍ الحفظ…' : R && R.needs_approval ? 'حفظ الفاتورة وطلب اعتماد المشرف' : 'حفظ فاتورة سداد قيمة المنتج', { tone: 'primary', ui: 'check', disabled: S.busy || S.calc || !R, onClick: async function () {
-        if (S.busy || !R) return; if (!S.addr) { S.err = 'اختر صيغة المخاطبة (السيد أو السيدة) — تظهر في المستند والشهادة.'; RF.paint(); return; } S.busy = true; S.err = ''; RF.paint();
-        try { const j = await admRpc('admin_settle_quote_save', { p_contract: r.id, p_date: S.date, p_exempt: S.ex, p_lines: JSON.parse(S.rk)[2].map(stlLn), p_note: S.note });
-          try { await admRpc('admin_settle_quote_addr', { p_id: j.id, p_addr: S.addr }); } catch (err) { void err; } /* v564 */
-      S.busy = false; S.edit = false; S.lines = []; S.note = ''; S.rk = ''; S.res = null;
-          cfRe(RF, 'حُفظت فاتورة سداد قيمة المنتج ' + j.quote_no + (j.status === 'pending' ? ' — بانتظار اعتماد المشرف.' : ' — جاهز للتنفيذ.')); }
-        catch (err) { S.busy = false; S.err = (err && err.message) || 'تعذّر الحفظ.'; RF.paint(); } } })),
-      R ? DS.button('معاينة الإشعار', { ui: 'file-pdf', onClick: function () { stlNotice(R, null); } }) : null,
-      Q ? DS.button('إلغاء', { ui: 'x', onClick: function () { S.edit = false; RF.paint(); } }) : null])])));
+  const go = function (i) { S.step = Math.max(0, Math.min(3, i)); RF.paint(); };
+  const wz = e('ol', { class: 'stl-wz', 'aria-label': 'خطوات إعداد الفاتورة' }, STL_WZ.map(function (t, i) {
+    return e('li', {}, e('button', { type: 'button', class: 'stl-wz-b' + (i === S.step ? ' is-on' : i < S.step ? ' is-done' : ''), 'aria-current': i === S.step ? 'step' : null, onClick: function () { go(i); } }, [e('i', {}, String(i + 1)), e('span', {}, t)])); }));
+  const bar = R ? e('div', { class: 'stl-wz-sum' }, [['المتبقي على العقد', SR(R.before)], ['إجمالي الخصم', SR(R.discount) + ' · ' + fmtNum(R.discount_pct) + '%'], ['مبلغ الفاتورة', SR(R.after)], ['وسيلة السداد', S.pm === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع']].map(function (x, i) {
+    return e('div', { class: i === 2 ? 'is-due' : null }, [e('small', {}, x[0]), e('b', {}, x[1])]); })) : null;
+  const saveDraft = async function () {
+    if (S.dbusy) return; S.dbusy = true; S.err = ''; RF.paint();
+    try {
+      const j = await admRpc('admin_settle_draft_save', { p_contract: r.id, p_data: stlDraftOf(S) });
+      if (j && j.ok === false) throw new Error(ADM_ERR[j.error] || 'تعذّر حفظ المسودة.');
+      S.dft = { at: (j && j.at) || new Date().toISOString(), by: (ME && ME.name) || '' }; S.touched = false;
+      snack('حُفظت المسودة', null, 'تجدها هنا كما تركتها عند العودة لهذا العقد — لا يراها العميل ولا تذهب للاعتماد.');
+    } catch (err) { S.err = (err && err.message) || 'تعذّر حفظ المسودة.'; }
+    S.dbusy = false; RF.paint();
+  };
+  const dropDraft = async function () {
+    if (!tqConfirm('حذف المسودة المحفوظة لهذا العقد؟')) return;
+    try { await admRpc('admin_settle_draft_drop', { p_contract: r.id }); } catch (err) { void err; }
+    S.dft = null; snack('حُذفت المسودة'); RF.paint();
+  };
+  const prev = function () { if (!R) return; const L = esFromR(R, null); L.doc = stlDocClean(S.doc); L.pay_method = S.pm; L.addr = S.addr || null; try { dcPdf(dcSettleDoc(L, true)); } catch (err) { stlNotice(R, null); } };
+  const save = async function () {
+    if (S.busy || !R) return;
+    if (!S.addr) { S.err = 'اختر صيغة المخاطبة (السيد أو السيدة) — تظهر في المستند والشهادة.'; S.step = 0; RF.paint(); return; }
+    S.busy = true; S.err = ''; RF.paint();
+    try {
+      const j = await admRpc('admin_settle_quote_save', { p_contract: r.id, p_date: S.date, p_exempt: S.ex, p_lines: JSON.parse(S.rk)[2].map(stlLn), p_note: S.note });
+      let warn = '';
+      try { await admRpc('admin_settle_quote_addr', { p_id: j.id, p_addr: S.addr }); } catch (err) { void err; }
+      const dd = stlDocClean(S.doc);
+      if (S.pm !== 'gateway' || dd) { try { const m = await admRpc('admin_settle_quote_meta', { p_id: j.id, p_pay_method: S.pm, p_doc: dd || {} }); if (m && m.ok === false) warn = ' — تعذّر حفظ وسيلة السداد أو إعداد المستند، عدّلها من «أدوات الفاتورة».'; } catch (err) { warn = ' — تعذّر حفظ وسيلة السداد أو إعداد المستند، عدّلها من «أدوات الفاتورة».'; } }
+      if (S.dft) { try { await admRpc('admin_settle_draft_drop', { p_contract: r.id }); } catch (err) { void err; } }
+      S.busy = false; S.edit = false; S.lines = []; S.note = ''; S.rk = ''; S.res = null; S.step = 0; S.pm = 'gateway'; S.doc = { hide: [], labels: {}, texts: {} }; S.dft = null; S.touched = false;
+      cfRe(RF, 'حُفظت فاتورة سداد قيمة المنتج ' + j.quote_no + (j.status === 'pending' ? ' — بانتظار اعتماد المشرف.' : ' — جاهزة للتنفيذ.') + warn);
+    } catch (err) { S.busy = false; S.err = (err && err.message) || 'تعذّر الحفظ.'; RF.paint(); }
+  };
+  let body;
+  if (S.step === 0) {
+    const ex = e('input', { type: 'checkbox', checked: S.ex ? 'checked' : null, onChange: function (ev) { S.ex = ev.target.checked; onCh(); } });
+    body = [e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'بيانات الفاتورة'),
+        e('div', { class: 'stl-ln-g' }, [DS.editField('تاريخ السداد', datePick({ value: S.date, onChange: function (v) { S.date = v; onCh(); } })),
+          DS.editField('المخاطبة في المستند والشهادة', DS.select({ value: S.addr || '', options: [['', 'اختر'], ['m', 'السيد'], ['f', 'السيدة']], onChange: function (v) { S.addr = v; onCh(); } })),
+          DS.editField('إعفاء ربح الأشهر التي لم تبدأ', e('label', { class: 'stl-sg-ck' }, [ex, e('span', {}, S.ex ? 'مُعفاة' : 'غير مُعفاة')]))]),
+        R ? e('small', { class: 'cu-dr-hint' }, 'ربح الشهر ' + SR(R.interest_month) + ' على ' + fmtNum(R.months) + ' شهرًا · أشهر لم تبدأ: ' + fmtNum(R.future_months) + ' · الدفعات المفتوحة ' + (R.payments || []).map(function (p) { return p.seq; }).join('، ')) : null]),
+      e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'وسيلة السداد'), stlPmSeg(S, onCh),
+        e('small', { class: 'cu-dr-hint' }, S.pm === 'bank' ? 'بعد توقيع العميل يصله طلب التحويل البنكي ببيانات الحساب الافتراضي ورابط إرفاق الإيصال.' : 'بعد توقيع العميل يصله رابط السداد عبر بوابة الدفع.')]),
+      R ? stlDueNote(R) : null];
+  } else if (S.step === 1) {
+    body = [e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'بنود الخصم')].concat(S.lines.length ? S.lines.map(function (l, i) { return stlLineRow(S, l, i, R || S.res, ctx, onCh); }) : [e('small', { class: 'cu-dr-hint' }, 'لا بنود خصم بعد — تُطبَّق بالترتيب لكل بند: العضوية ثم النقاط ثم الإضافي ثم الاستثنائي. سبب الخصم الإضافي يُختار من القائمة.')],
+        [e('div', { class: 't2-pb-actions' }, [DS.button('إضافة بند خصم', { size: 'sm', ui: 'plus', onClick: function () { S.lines.push({ cat: 'extra', item: 'margin', calc: 'pct', val: '', reason: (ctx.extra_reasons || [])[0] || '' }); onCh(); } })]), R ? stlRound(S, R, onCh) : null])),
+      R ? stlTable(R) : null].concat(R ? stlFlags(R) : []);
+  } else if (S.step === 2) {
+    body = stlDocEd(S.doc, R, onCh, mark, S.pm).concat([e('div', { class: 't2-pb-actions' }, [R ? DS.button('معاينة الفاتورة', { size: 'sm', ui: 'file-pdf', onClick: prev }) : null])]);
+  } else {
+    const dd = stlDocClean(S.doc);
+    body = [R ? stlTable(R) : null].concat(R ? stlFlags(R) : [], [R ? stlDueNote(R) : null,
+      DS.fields([['وسيلة السداد', S.pm === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع'], ['المخاطبة', S.addr === 'f' ? 'السيدة' : S.addr === 'm' ? 'السيد' : 'لم تُحدَّد'], ['تاريخ السداد', S.date],
+        ['إعداد المستند', dd ? [(dd.hide || []).length ? 'مخفي ' + fmtNum(dd.hide.length) + ' بند' : null, dd.labels ? 'مسميات معدّلة' : null, dd.texts ? 'نصوص معدّلة' : null].filter(Boolean).join(' · ') : 'افتراضي']]),
+      DS.editField('ملاحظة الفاتورة (اختيارية)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; mark(); } }, S.note))]);
+  }
+  const nav = e('div', { class: 'stl-wz-nav' }, [
+    S.step > 0 ? DS.button('السابق', { size: 'sm', ui: 'caret-right', onClick: function () { go(S.step - 1); } }) : null,
+    S.step < 3 ? liveOk(DS.button('التالي', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: function () { go(S.step + 1); } })) : null,
+    S.step === 3 ? liveOk(DS.button(S.busy ? 'جارٍ الحفظ…' : R && R.needs_approval ? 'حفظ الفاتورة وطلب اعتماد المشرف' : 'حفظ الفاتورة', { tone: 'primary', ui: 'check', disabled: S.busy || S.calc || !R, onClick: save })) : null,
+    S.step === 3 && R ? DS.button('معاينة الفاتورة', { size: 'sm', ui: 'file-pdf', onClick: prev }) : null,
+    e('span', { class: 'sp' }),
+    liveOk(DS.button(S.dbusy ? 'جارٍ الحفظ…' : 'حفظ مسودة', { size: 'sm', ui: 'file-text', disabled: !!S.dbusy, onClick: saveDraft })),
+    Q ? DS.button('إلغاء', { size: 'sm', ui: 'x', onClick: function () { S.edit = false; RF.paint(); } }) : null]);
+  out.push(e('div', { class: 'stl-ed stl-wzf' }, [
+    Q ? DS.note('info', 'فاتورة جديدة', 'حفظها يلغي الفاتورة ' + Q.quote_no + ' وتحلّ محلّها.') : null,
+    S.dft ? e('div', { class: 'stl-dft' }, [e('span', {}, 'مسودة محفوظة' + (S.dft.by ? ' — ' + S.dft.by : '') + (S.dft.at ? ' · ' + stlD(S.dft.at) : '') + (S.touched ? ' · تعديلات لم تُحفظ' : '')), DS.button('حذف المسودة', { size: 'sm', ui: 'trash', onClick: dropDraft })]) : null,
+    wz, bar, S.calc ? e('small', { class: 'cu-dr-hint', role: 'status' }, 'جارٍ الحساب…') : null, S.cerr ? DS.note('warn', 'تعذّر الحساب', S.cerr) : null,
+    e('div', { class: 'stl-wz-p' }, body),
+    S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null, nav]));
   return out;
 }
 /* ===================== v549 — قالب سداد قيمة المنتج (قوالب الشركاء · قسم التحصيل) =====================
@@ -17615,7 +17734,7 @@ const ES_ITEMS = [['product', 'قيمة المنتج'], ['admin', 'الرسوم 
 const ES_NAME = ES_ITEMS.reduce(function (o, x) { o[x[0]] = x[1]; return o; }, {});
 const ES_DISC = ['admin', 'margin', 'bank', 'nafith', 'interest'], ES_NOREC = ['bank', 'nafith'];
 const ES0 = { org: QT0.org, issuer: 'قسم التحصيل', auto: 'صدرت هذه الفاتورة إلكترونيًا وتُعتمد بتوقيع العميل بعد التحقق برمز', slogan: QT0.slogan, title: 'فاتورة سداد قيمة المنتج',
-  intro: 'يسرّنا تقديم فاتورة سداد قيمة المنتج لعقدكم: تُعفى فائدة الأشهر التي لم تبدأ، ويُطبَّق الخصم الإضافي على البنود الموضّحة أدناه.',
+  intro: 'يسرّنا تقديم فاتورة سداد قيمة المنتج.',
   steps: ['الموافقة على الفاتورة وتوقيعها من صفحة طلبكم في منصة تيرا بعد التحقق برمز.', 'سداد المبلغ عبر رابط السداد المرسل إليكم أو من صفحة الطلب قبل انتهاء صلاحية الفاتورة.', 'يُغلق العقد تلقائيًا وتصدر إيصالات السداد وشهادة «تقدير ووفاء».'],
   note: 'الضريبة محصّلة ولا تنقص بالخصم. الفاتورة صالحة حتى تاريخ الدفعة القادمة (شاملًا)؛ وفي يومها يُسدَّد مبلغ السداد أو الدفعة المستحقة، وبعده يُعاد احتساب الفاتورة.',
   msg: 'مرحبًا {name}،\nأُعدّت لكم فاتورة سداد قيمة المنتج للعقد {contract}:\nالمتبقي على العقد {remaining}\nإعفاء فائدة الأشهر التي لم تبدأ {exempt}\nخصم إضافي {extra}\nالمبلغ المطلوب لإغلاق العقد: {due}\nالفاتورة صالحة حتى {valid}.\nللموافقة والسداد: صفحة طلبكم في منصة تيرا.',
@@ -17695,15 +17814,15 @@ function esFromR(R, Q) {
   const ex = Number(R.exempt_amount) || 0, nx = (R.payments || []).filter(function (p) { return String(p.due) >= String(R.date); }).sort(function (a, b) { return String(a.due) < String(b.due) ? -1 : 1; })[0];
   return { no: Q ? Q.quote_no : 'مسودة', contract: R.contract, client: R.client_name || '—', date: R.date, valid: (Q && Q.valid_until) || R.valid_until || R.date,
     remaining: Number(R.before), exempt: ex, extra: qr2(Number(R.discount) - ex), due: Number(R.after),
-    items: (R.items || []).filter(function (it) { return Number(it.disc) > 0; }).map(function (it) { return { k: it.k, name: it.t, disc: Number(it.disc), full: Number(it.after) === 0 }; }),
-    next: nx ? { no: nx.seq, due: nx.due, amount: Number(nx.left) } : null,
+    items: (R.items || []).filter(function (it) { return Number(it.disc) > 0; }).map(function (it) { return { k: it.k, name: it.t, disc: Number(it.disc), full: Number(it.after) === 0, before: Number(it.before) || 0, why: (it.why || []).join(' · ') }; }),
+    next: nx ? { no: nx.seq, due: nx.due, amount: Number(nx.left) } : null, od: stlOd(R), /* v565 */
     sign: Q && Q.client_sign && Q.client_sign.decision === 'accepted' ? Object.assign({}, Q.client_sign) : null, addr: Q ? Q.addr : null, approved_at: Q ? Q.decided_at : null, accepted_at: Q ? Q.client_accepted_at : null, executed_at: Q ? Q.executed_at : null, doc: Q ? Q.doc || null : null, pay_method: Q ? Q.pay_method || null : null };
 }
 function esFromOffer(o) {
   const ex = Number(o.exempt_amount) || 0;
   return { no: o.quote_no, contract: o.contract_no, client: (ME && ME.name) || '—', date: o.settle_date, valid: o.valid_until,
     remaining: Number(o.remaining), exempt: ex, extra: qr2(Number(o.discount) - ex), due: Number(o.amount),
-    items: (o.items || []).filter(function (it) { return Number(it.disc) > 0; }).map(function (it) { return { k: it.k, name: it.t, disc: Number(it.disc), full: Number(it.after) === 0 }; }), next: null, aud: false,
+    items: (o.items || []).filter(function (it) { return Number(it.disc) > 0; }).map(function (it) { return { k: it.k, name: it.t, disc: Number(it.disc), full: Number(it.after) === 0, before: Number(it.before) || 0, why: (it.why || []).join(' · ') }; }), next: null, aud: false,
     sign: o.sign && o.sign.decision === 'accepted' ? Object.assign({}, o.sign) : null, addr: o.addr || null, approved_at: o.approved_at || null, accepted_at: o.accepted_at || null, executed_at: o.executed_at || null, doc: o.doc || null, pay_method: o.pay_method || null };
 }
 function esFromCalc(r) {
@@ -17731,14 +17850,14 @@ function dcSettleDoc(L, draft, Tp) {
     /* v564: اسم العميل مرة واحدة هنا، مع تواريخ الاعتماد والموافقة والتنفيذ */
     B.push(d3Card('بيانات العقد والعميل', 'user', [d3KV([['اسم العميل', (L.addr === 'f' ? 'السيدة ' : L.addr === 'm' ? 'السيد ' : '') + L.client], ['رقم العقد', L.contract, true], ['رقم الفاتورة', L.no, true], ['تاريخ السداد', qDmy(L.date)],
       ['تاريخ اعتماد الفاتورة', L.approved_at ? stlD(L.approved_at) : '—'], ['تاريخ موافقة العميل', L.accepted_at ? stlD(L.accepted_at) : 'بانتظار التوقيع'], ['تاريخ التنفيذ', L.executed_at ? stlD(L.executed_at) : 'عند السداد'], ['وسيلة السداد', L.pay_method === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع'], ['صالحة حتى', qDmy(L.valid)]])]));
-    B.push(d3Card('مبلغ السداد', 'receipt', [T.intro ? e('p', { class: 'd3-p' }, T.intro) : null, d3KV([], tots.filter(Boolean))]));
-    if (on('items') && its.length) B.push(d3Card('البنود المخصومة', 'list', [d3KV(its)]));
-    if (on('valid')) B.push(d3Card('صلاحية الفاتورة', 'clock', [e('div', { class: 'd3-exec' }, [e('b', {}, 'صالحة حتى ' + qDmy(L.valid)), e('span', {}, esNextLine(L))])]));
+    B.push(d3Card('مبلغ السداد', 'receipt', [T.intro ? e('p', { class: 'd3-p' }, T.intro) : null, d3KV([], tots.filter(Boolean)), stlDueBox(L)])); /* v565: مستحق عليكم */
+    if (on('items') && its.length) B.push(d3Card('البنود المخصومة', 'list', [stlDiscTbl(L.items)])); /* v565: النسبة وسبب الخصم */
+    if (on('valid') && !L.next && !L.od) B.push(d3Card('صلاحية الفاتورة', 'clock', [e('div', { class: 'd3-exec' }, [e('b', {}, 'صالحة حتى ' + qDmy(L.valid)), e('span', {}, esNextLine(L))])]));
     if (on('steps') && steps.length) B.push(d3Card('خطوات القبول والسداد', 'shield', [d3List(steps, 0, false)], 'is-terms'));
     if (on('note') && T.note) B.push(d3Card('تنويه', 'info', [e('p', { class: 'd3-p' }, T.note)], 'is-note', true));
     B.push(d3Card('توقيع العميل', 'shield', [stlSignBox(L)], 'is-sign')); /* v564: المكان المخصص للتوقيع */
     if (on('appr')) B.push(d3ApprWide(L.no, 'pq', {}));
-    return Object.assign(base, { dsn: 2, cls: 'is-pq is-stl', en: 'PRODUCT VALUE PAYMENT', slogan0: T.slogan || QT0.slogan, blocks: B, stk: null, meta: [['رقم المستند', L.no], ['تاريخ الإصدار', qDmy(L.date)]], meta3: [] }); /* v564: كترويسة عرض السعر — رقم المستند وباركوده · تاريخ الإصدار */
+    return Object.assign(base, { dsn: 2, cls: 'is-pq is-stl', en: 'PRODUCT VALUE PAYMENT', slogan0: T.slogan || QT0.slogan, blocks: B, stk: null, meta: [['رقم المستند', L.no], ['تاريخ الإصدار', qDmy(L.date)]], meta3: [['صالحة حتى', qDmy(L.valid), false]] }); /* v565: ترويسة عرض السعر نفسها — الباركود بالمقاس نفسه */ /* v564: كترويسة عرض السعر — رقم المستند وباركوده · تاريخ الإصدار */
   }
   B.push(dcKV([['العميل', L.client], ['رقم العقد', L.contract], ['صالحة حتى', qDmy(L.valid)]], 'is-3'));
   if (T.intro) B.push(dcPar(T.intro));
@@ -17810,11 +17929,11 @@ function sysEsPage() {
   const save = function () {
     const c = tpl(); if (String(c.issuer || '').trim().length < 2 || String(c.title || '').trim().length < 2) { snack('اكتب الجهة المُصدِرة وعنوان المستند'); return; }
     if (JSON.stringify(c) === JSON.stringify(JSON.parse(JSON.stringify(ES)))) { snack('لا تغيير'); return; }
-    Object.keys(ES).forEach(function (k) { delete ES[k]; }); Object.assign(ES, c); ADM.esD = esDraft(); cuSetLog('عدّل قالب سداد قيمة المنتج'); snack('حُفظ القالب — يُطبَّق على كل فاتورة سداد قيمة المنتج جديد'); draw();
+    Object.keys(ES).forEach(function (k) { delete ES[k]; }); Object.assign(ES, c); ADM.esD = esDraft(); cuSetLog('عدّل قالب سداد قيمة المنتج'); snack('حُفظ القالب — يُطبَّق على كل فاتورة سداد قيمة المنتج جديدة'); draw();
   };
   const msg = L ? esFill(T, L) : '';
   const bub = function (t, x) { return e('div', { class: 'stl-lns' }, [e('b', {}, t), e('div', { class: 't2-input', style: 'white-space:pre-wrap;line-height:1.8;height:auto' }, x)]); };
-  return [DS.note('info', 'قالب سداد قيمة المنتج — على ورق عرض سعر الشركاء وختمه', 'يصدر عن ' + (ES.issuer || 'قسم التحصيل') + '. تُعفى فائدة الأشهر التي لم تبدأ، والخصم الإضافي على البنود المختارة فقط، والضريبة محصّلة ولا تنقص، والعرض صالح حتى تاريخ الدفعة القادمة (شاملًا). العروض الصادرة تبقى كما صدرت.'),
+  return [DS.note('info', 'قالب سداد قيمة المنتج — على ورق عرض سعر الشركاء وختمه', 'يصدر عن ' + (ES.issuer || 'قسم التحصيل') + '. تُعفى فائدة الأشهر التي لم تبدأ، والخصم الإضافي على البنود المختارة فقط، والضريبة محصّلة ولا تنقص، والفاتورة صالحة حتى تاريخ الدفعة القادمة (شاملًا). الفواتير الصادرة تبقى كما صدرت.'),
     can ? null : cuRO('settings.qtpl'),
     e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, T.title), e('small', {}, T.org + ' · ' + T.issuer)]), e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('معاينة PDF', { ui: 'file-text', onClick: prev })), can ? liveOk(DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save })) : null])]),
     e('div', { class: 'ax-form' }, [
@@ -26053,7 +26172,7 @@ const STL_C = { offers: [] };
 function stlClientPanel(o) {
   if (!o) return null;
   const D = o.doc || {}, HID = D.hide || [], LB = D.labels || {};
-  const rows = (o.items || []).filter(function (it) { return !it.k || HID.indexOf(it.k) < 0; }).map(function (it) { return e('tr', { class: Number(it.disc) ? 'is-disc' : null }, [e('th', { scope: 'row' }, e('span', {}, [e('b', {}, (it.k && LB[it.k]) || it.t), (it.why || []).length ? e('small', {}, it.why.join(' · ')) : null])), e('td', {}, stlN(it.before)), e('td', {}, Number(it.disc) ? '− ' + stlN(it.disc) : 'لا يطبق'), e('td', {}, stlN(it.after))]); });
+  const rows = (o.items || []).filter(function (it) { return !it.k || HID.indexOf(it.k) < 0; }).map(function (it) { return e('tr', { class: Number(it.disc) ? 'is-disc' : null }, [e('th', { scope: 'row' }, e('span', {}, [e('b', {}, (it.k && LB[it.k]) || it.t), (it.why || []).length ? e('small', {}, it.why.join(' · ')) : null])), e('td', {}, stlN(it.before)), e('td', {}, Number(it.disc) ? '− ' + stlN(it.disc) + ' (' + stlPctV(it.disc, it.before) + ')' : 'لا يطبق'), e('td', {}, stlN(it.after))]); });
   const V = o.vat || {};
   rows.push(e('tr', { class: 'is-vat' }, [e('th', { scope: 'row' }, 'ضريبة المنتج'), e('td', {}, stlN(V.product_before)), e('td', {}, qr2(V.product_before - V.product_after) ? '− ' + stlN(qr2(V.product_before - V.product_after)) : '—'), e('td', {}, stlN(V.product_after))]),
     e('tr', { class: 'is-vat' }, [e('th', { scope: 'row' }, 'ضريبة الخدمات'), e('td', {}, stlN(V.fees_before)), e('td', {}, qr2(V.fees_before - V.fees_after) ? '− ' + stlN(qr2(V.fees_before - V.fees_after)) : '—'), e('td', {}, stlN(V.fees_after))]));
