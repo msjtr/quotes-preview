@@ -2893,7 +2893,7 @@ function reqPage() { if (typeof isCus === 'function') { cusInit(); const cr = RE
   const qSec = QS.length ? sec('عرض السعر المرفق' + (QS.length > 1 ? ' (' + QS.length + ' إصدارات)' : ''), 'راجع العرض واختر: قبول أو طلب تعديل أو رفض. صالح ' + QCFG.validityHours + ' ساعة من الإصدار.', [e('div', { class: 'qcs' }, QS.map(qCard))], true, 'r-q')
     : r.type === 'elig' && r.wantQuote ? sec('عرض السعر المرفق', 'طلبت إرفاق عرض سعر — يصدر بعد دراسة الأهلية ويصلك في الإشعارات.', [e('div', { class: 'fx-adm' }, [e('span', {}, [e('span', { class: 'fx-mini-ic' }, frag(tile('payshield'))), 'معاينة لوحة الإدارة — لا يظهر للعميل']), e('div', { class: 'fx-adm-b' }, [DS.button('إصدار عرض السعر', { size: 'sm', tone: 'primary', onClick: function () { const x = r.qin; QUOTES.unshift(mkQuote({ req: r.no, type: x.type, denom: x.denom, value: x.value, n: x.n, firstDue: x.firstDue, recv: x.recv })); draw(); } })])])], true, 'r-q') : null;
   return [head, nt, tmActClient(r), okP ? thanksCard(okP) : lateP, preview, rfAdm, qSec, pRf ? DS.button('تفاصيل الدفعة ' + pRf.i + ' · ' + pRf.c.no, { size: 'sm', onClick: function () { FX.pid = r.pid; go('payment'); } }) : null, sec('مسار الطلب', r.status === 'fix' ? 'بانتظار تعديلك وإعادة الإرسال.' : r.status === 'rejected' ? 'انتهى الطلب بالرفض.' : at >= r.path.length ? 'اكتمل الطلب.' : 'المرحلة ' + (at + 1) + ' من ' + r.path.length, [path]), secC('r-facts', 'تفاصيل الطلب', null, [factTiles(r.fields)]),
-    DS.actionBar({ buttons: [DS.button('رجوع إلى طلبات خدماتي', { onClick: function () { go('reqs'); } }), r.contract && cByNo(r.contract) ? DS.button('عرض العقد ' + r.contract, { tone: 'primary', onClick: function () { FX.cid = r.contract; go('contract'); } }) : null, DS.button('مراسلة بخصوص الطلب', { onClick: function () { go('msg'); } })] })];
+    DS.actionBar({ buttons: [DS.button('رجوع إلى طلبات خدماتي', { onClick: function () { go('reqs'); } }), r.contract && cByNo(r.contract) && !(r.sr && r.sr.kind === 'settle') ? DS.button('عرض العقد ' + r.contract, /* v573: طلب سداد العقد يعرض فاتورته وتوقيعها لا العقد القديم */ { tone: 'primary', onClick: function () { FX.cid = r.contract; go('contract'); } }) : null, DS.button('مراسلة بخصوص الطلب', { onClick: function () { go('msg'); } })] })];
 }
 /* بلوك الدفع في الصفحة الرئيسية */
 function payBlock() {
@@ -16318,7 +16318,7 @@ function lvRole(k) { return !!(LIVE.allow && LIVE.allow.indexOf(k) >= 0 && (LIVE
 /* v496: تسجيل التبديل في سجل الجلسة في الاتجاهين — يُنتظر تحميل جزء سجل الجلسة إن تأخّر (حتى 20 ثانية) */
 function liveRoleNote(n) { try { if (window.TeraSession && typeof window.TeraSession.noteRoleSwitch === 'function') { window.TeraSession.noteRoleSwitch(); return; } } catch (err) { void err; return; } if (n > 0) setTimeout(function () { liveRoleNote(n - 1); }, 1000); }
 function liveRoleSync() {
-  const want = S.role === 'admin' ? 'staff' : 'client';
+  const want = (S.role === 'admin' || window.__cpvUid) ? 'staff' : 'client'; /* v573: «صفحة العميل» من حساب الموظف تبقى بدور الموظف — كان يتحوّل لدور العميل فتُرفض قراءات الفريق (فاتورة العميل · بياناته الوظيفية) */
   if (!LIVE.roles || LIVE.roles.indexOf(want) < 0) return Promise.resolve();
   return liveSb('rpc/active_role', { body: {} }).then(function (cur) {
     if (cur === want) return;
@@ -26333,7 +26333,8 @@ if (LIVE.on) {
       return r;
     };
     const lvSrLoadStl = lvSrLoad;
-    lvSrLoad = async function () { await Promise.all([lvSrLoadStl.apply(this, arguments), lvRole('client') ? stlClientLoad() : null]); };
+    /* v573: الفاتورة أولًا ثم الطلبات — كانت تُحمَّل معًا فتُبنى حالة الطلب قبل وصول الفاتورة («بانتظار سدادك» بدل «بانتظار توقيعك») */
+    lvSrLoad = async function () { if (lvRole('client')) await stlClientLoad().catch(function () { /* */ }); await lvSrLoadStl.apply(this, arguments); };
     const liveReqCancelStl = liveReqCancel;
     liveReqCancel = function () {
       liveReqCancelStl.apply(this, arguments);
