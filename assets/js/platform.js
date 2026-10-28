@@ -490,6 +490,7 @@ const PROFK = ['work_type', 'job_title', 'job_title_other', 'employer', 'employe
   'salary', 'income_sources', 'total_monthly_income', 'has_obligations', 'total_obligations', 'has_additional_income', 'additional_income_value', 'additional_income_source', 'other_income_sources', 'monthly_expenses', 'docs', '_seeded', '_at', '_docReview'];
 function profSeed() {
   if (F._seeded) return; F._seeded = true;
+  try { if (LIVE.on) return; } catch (err) { void err; } /* v572: لا قيم تجريبية في النسخة الحقيقية — البيانات الوظيفية من القاعدة */
   /* البيانات الثابتة تبقى بعد تحديث الصفحة (للجلسة) */
   try { const o = JSON.parse(sessionStorage.getItem('tera-preview-prof') || 'null'); if (o && o.work_type !== undefined) { Object.assign(F, o); F._seeded = true; return; } } catch (err) { void err; }
   const units = typeof unitsFor === 'function' ? unitsFor('gov_civil', CIVIL[0]) : null;
@@ -13653,10 +13654,11 @@ function infPage(key) {
     out.push(docNote('info'));
     out.push(formSec('تحديث ' + d.t, null, d.form()));
     out.push(DS.actionBar({ buttons: [DS.button('إلغاء', { onClick: function () { Object.keys(INF.snap || {}).forEach(function (k) { F[k] = INF.snap[k]; }); INF.edit = ''; INF.snap = null; S.miss = []; draw(); } }),
-      DS.button('حفظ التغييرات', { tone: 'primary', ui: 'check', onClick: function () {
+      liveOk(DS.button('حفظ التغييرات', { tone: 'primary', ui: 'check', onClick: function () {
         S.miss = d.miss(); if (S.miss.length) { draw(); const f = document.querySelector('.t2-field.is-missing'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+        if (LIVE.on && key === 'job') { lvJobSave(d); return; } /* v572: تُحفظ في القاعدة */
         F._at = F._at || {}; F._at[key] = iso(today0()); F._docReview = key;
-        INF.edit = ''; INF.snap = null; S.toast = 'حُفظت ' + d.t + ' — راجع مرفقاتي للتأكد من مطابقتها'; draw(); toTop(); } })] }));
+        INF.edit = ''; INF.snap = null; S.toast = 'حُفظت ' + d.t + ' — راجع مرفقاتي للتأكد من مطابقتها'; draw(); toTop(); } }))] }));
   } else {
     out.push(lvSec('بياناتي', fmtNum(done) + ' من ' + fmtNum(rows.length) + ' مكتمل', [e('div', { class: 'lx-fs' }, rows.map(function (r) { const v = infTxt(r[1]); return lvFieldLux(['_inf', r[0], 1, v]); }))], 'lv:' + d.k));
     if (key === 'job') out.push(lvRow(DS.button('مرفقاتي حسب حالتك الوظيفية', { ui: 'caret-left', onClick: function () { go('other', 'my-docs'); } })));
@@ -26340,6 +26342,94 @@ if (LIVE.on) {
       const o = STL_C.offers.filter(function (y) { return y.request_id === r.sr.id; })[0];
       if (o) ROOT.appendChild(stlClientPanel(o));
     };
+  } catch (err) { void err; }
+}
+/* ═════ v572: «بياناتي الوظيفية» و«مرفقاتي» (مرفقات الوظيفة) من القاعدة — للعميل، وللعرض فقط في «صفحة العميل» ═════
+ * كانت «بياناتي الوظيفية» قيمًا تجريبية لا تُحفظ، و«مرفقاتي» تعرض مستندات الملف الشخصي. مستندات الهوية والعنوان والآيبان تبقى في «ملفي الشخصي». */
+const LVJ = { ok: false, rules: [], docs: [], up: '', busy: false };
+const LVJ_KEYS = ['work_type', 'job_title', 'job_title_other', 'employer', 'employer_other', 'sector', 'sector_other', 'sector_text', 'department', 'work_region', 'join_date'];
+async function lvJobLoad() {
+  const cpv = window.__cpvUid || '';
+  const j = await liveSb(cpv ? 'rpc/admin_client_job' : 'rpc/my_job_info', { body: cpv ? { p_user: cpv } : {} }).catch(function () { return null; });
+  LVJ_KEYS.forEach(function (k) { F[k] = ''; });
+  if (!j || j.ok !== true) { LVJ.ok = false; LVJ.rules = []; LVJ.docs = []; return; }
+  const v = j.values || {};
+  LVJ_KEYS.forEach(function (k) { if (typeof v[k] === 'string') F[k] = v[k]; });
+  F._at = F._at || {}; F._at.job = j.updated_at ? String(j.updated_at).slice(0, 10) : '';
+  LVJ.rules = Array.isArray(j.rules) ? j.rules : []; LVJ.docs = Array.isArray(j.docs) ? j.docs : []; LVJ.ok = true;
+}
+async function lvJobSave(d) {
+  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — التحديث من حساب العميل نفسه.'); return; }
+  if (LVJ.busy) return; LVJ.busy = true;
+  const v = {}; LVJ_KEYS.forEach(function (k) { const x = F[k]; if (x != null && x !== '') v[k] = String(x); });
+  const j = await liveSb('rpc/my_job_info_save', { body: { p_values: v } }).catch(function () { return null; });
+  LVJ.busy = false;
+  if (!j || j.ok !== true) { snack((j && j.message) || 'تعذّر الحفظ — تحقق من الحقول وحاول مرة أخرى.'); return; }
+  await lvJobLoad();
+  F._docReview = 'job'; INF.edit = ''; INF.snap = null;
+  S.toast = 'حُفظت ' + d.t + ' — راجع مرفقاتي للتأكد من مطابقتها'; draw(); toTop();
+}
+async function lvJobUpload(t, file) {
+  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — الرفع من حساب العميل نفسه.'); return; }
+  if (!file || LVJ.up) return;
+  if (['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0 || file.size > 2 * 1024 * 1024) { snack('المرفق PDF أو صورة، حتى 2 ميغابايت.'); return; }
+  LVJ.up = t; draw();
+  try {
+    const u = await clPost('/api/account/profile/upload-url', { block: 'docs', field: t, type: file.type, size: file.size });
+    if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز الرفع.');
+    let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
+    let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
+    if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
+    if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن.');
+    const j = await liveSb('rpc/my_job_doc_attach', { body: { p_doc_type: t, p_path: u.path, p_name: String(file.name || '').slice(0, 120) } });
+    if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر حفظ المرفق.');
+    LVJ.docs = Array.isArray(j.docs) ? j.docs : LVJ.docs; LVJ.up = '';
+    snack('رُفع المرفق — بانتظار مراجعة الفريق.'); draw();
+  } catch (err) { LVJ.up = ''; snack((err && err.message) || 'تعذّر الرفع.'); draw(); }
+}
+function lvJobOpen(d) {
+  if (!window.__cpvUid) { clOpenDoc(d.id); return; }
+  window.tqView(async function () {
+    if (!d.path) throw new Error('لا يوجد ملف.');
+    const tk = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
+    const p = String(d.path).split('/').map(encodeURIComponent).join('/');
+    const r = await fetch(cfg.supabaseUrl + '/storage/v1/object/sign/' + encodeURIComponent(d.bucket || 'attachments') + '/' + p, { method: 'POST', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 }) });
+    const s = await r.json().catch(function () { return null; });
+    const u = s && (s.signedURL || s.signedUrl);
+    if (!r.ok || !u) throw new Error('تعذّر فتح المرفق — تحقق من صلاحية الاطلاع على المستندات.');
+    return /^https?:/i.test(u) ? u : cfg.supabaseUrl + '/storage/v1' + (u.charAt(0) === '/' ? '' : '/') + u;
+  }, d.label || 'المرفق');
+}
+function lvJobNote(tone, t, x, b) { return b ? DS.note(tone, t, x, b) : DS.note(tone, t, x); }
+function lvJobRow(r, d) {
+  const st = d ? (CL_DOC[d.status] || [d.status, 'info']) : ['لم يُرفع', null];
+  const cpv = !!window.__cpvUid, busy = LVJ.up === r.doc_type;
+  const acts = [DS.badge(st[0], st[1])];
+  if (d) { const o = DS.button('فتح', { size: 'sm', ui: 'files', onClick: function () { lvJobOpen(d); } }); o.setAttribute('data-live-ok', ''); acts.push(o); }
+  if (!cpv) {
+    const inp = e('input', { type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.webp', style: 'display:none', onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; lvJobUpload(r.doc_type, f); } });
+    acts.push(inp, liveOk(DS.button(busy ? 'جارٍ الرفع…' : d ? 'استبدال' : 'رفع', { size: 'sm', tone: d ? null : 'primary', disabled: !!LVJ.up, onClick: function () { inp.click(); } })));
+  }
+  return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, r.label), e('small', {}, d ? ['رُفع ', bdiD(String(d.uploaded_at || '').slice(0, 10)), d.reject_reason ? ' — ' + d.reject_reason : ''] : (r.note || 'اختياري'))]),
+    e('span', { class: 'adm-doc-a' }, acts)]);
+}
+function lvJobDocsPage() {
+  const wt = F.work_type || '', wn = wt ? nameOf(WORK, wt) : '', R = LVJ.rules, D = LVJ.docs, cpv = !!window.__cpvUid;
+  const cur = function (t) { return D.filter(function (x) { return x.doc_type === t; })[0] || null; };
+  const up = R.filter(function (r) { return cur(r.doc_type); }).length;
+  const out = [lvHero({ ic: 'files', eye: 'خدماتي', t: 'مرفقاتي', sub: wn ? 'حسب حالتك الوظيفية: ' + wn : '', tiles: [['المرفقات', fmtNum(R.length), 'files'], ['المرفوعة', fmtNum(up) + ' / ' + fmtNum(R.length), 'check-circle'], ['الحالة الوظيفية', wn || '—', 'briefcase']] })];
+  if (!LVJ.ok) out.push(DS.note('warn', 'تعذّر تحميل المرفقات', 'أعد تحميل الصفحة بعد قليل.'));
+  else if (!wt) out.push(lvJobNote('info', cpv ? 'لم يحفظ العميل بياناته الوظيفية بعد' : 'احفظ «بياناتي الوظيفية» أولًا', 'تظهر مرفقات الوظيفة حسب الحالة الوظيفية بعد حفظها.', cpv ? null : DS.button('بياناتي الوظيفية', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: function () { go('other', 'job-info'); } })));
+  else if (!R.length) out.push(DS.note('info', 'لا مرفقات لحالتك الوظيفية الآن', ''));
+  else out.push(lvPanel('مرفقات الوظيفة — ' + wn, null, R.map(function (r) { return lvJobRow(r, cur(r.doc_type)); }).concat([DS.note('info', 'رفع المرفقات', cpv ? 'عرض فقط — الرفع من حساب العميل نفسه.' : 'PDF أو صورة حتى 2 ميغابايت. يُحفظ المرفق فورًا ويراجعه فريق تيرا.')])));
+  out.push(lvJobNote('info', 'مستندات الهوية والعنوان والآيبان', 'تُدار من «ملفي الشخصي» ولا تظهر هنا.', cpv ? null : DS.button('ملفي الشخصي', { size: 'sm', ui: 'caret-left', onClick: function () { go('other', 'profile'); } })));
+  return out;
+}
+if (LIVE.on) {
+  try {
+    if (LP['my-docs']) LP['my-docs'].run = lvJobDocsPage;
+    const liveDataJob = liveData;
+    liveData = async function () { await Promise.all([liveDataJob.apply(this, arguments), lvRole('client') ? lvJobLoad().catch(function () { /* تبقى فارغة */ }) : null]); };
   } catch (err) { void err; }
 }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
