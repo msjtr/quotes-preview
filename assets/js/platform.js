@@ -7166,7 +7166,7 @@ function cuPfRegister() {
   try { Object.assign(ICON, { 'cu-pf': ['identification-card', 'teal'], 'cu-pf-files': ['identification-card', 'teal'], 'cu-pf-file': ['user-circle', 'teal'], 'cu-pf-req': ['note-pencil', 'saffron'], 'cu-pf-sec': ['shield-check', 'teal'], 'cu-pf-ver': ['seal-check', 'teal'], 'cu-pf-acct': ['gear-six', 'navy'], 'cu-pf-launch': ['rocket-launch', 'saffron'], 'cu-pf-mig': ['arrows-clockwise', 'teal'] }); } catch (err) { void err; }
   lp('cu-pf', 'الملف الشخصي', 'cu', 'cu-pf', cuPfHubPage);
   lp('cu-pf-files', 'ملفات العملاء', 'cu-pf', 'cu-pf-files', cuPfFilesPage);
-  lp('cu-pf-file', 'ملف العميل', 'cu-pf-files', 'cu-pf-file', cuPfFilePage);
+  lp('cu-pf-file', 'ملف العميل', 'cu-pf-files', 'cu-pf-file', function () { const r = cuPfFilePage(); return LIVE.on && typeof cuPaidOpenNote === 'function' ? cuPaidOpenNote(r) : r; }); /* v561 */
   lp('cu-pf-req', 'طلبات الملف الشخصي', 'cu-pf', 'cu-pf-req', function () { return cuPfList(cuPfReqItems(), 'req', 'لا طلبات هنا'); });
   lp('cu-pf-ver', 'طلبات توثيق الملف', 'cu-pf', 'cu-pf-ver', function () { return cuPfList(cuPfVfyItems(), 'ver', 'لا طلبات توثيق هنا'); });
   lp('cu-pf-acct', 'حسابات العملاء', 'cu-acc', 'cu-pf-acct', function () { return cuPfList(cuPfAcctItems(), 'acct', 'لا حسابات هنا'); });
@@ -13714,7 +13714,7 @@ const waitDevs = () => lvDevs().filter(function (d) { return d.st === 'wait'; })
 
 /* ---------- لوحة المشرف ---------- */
 function admHome() {
-  const T = allTickets(), nw = T.filter(function (t) { return tkFit(t, 'new'); }).length, wk = T.filter(function (t) { return tkFit(t, 'work'); }).length, late = T.filter(function (t) { return tkSla(t)[1] === 'danger'; }).length;
+  const T = LIVE.on && typeof deskTickets === 'function' ? deskTickets() : allTickets(), /* v561 */ nw = T.filter(function (t) { return tkFit(t, 'new'); }).length, wk = T.filter(function (t) { return tkFit(t, 'work'); }).length, late = T.filter(function (t) { return tkSla(t)[1] === 'danger'; }).length;
   const comp = T.filter(function (t) { return t.kind === 'شكوى' && t.status[1]; }).length, up = pendUpd().length, dv = waitDevs().length;
   const acts = [nw ? ['rrev', 'تذاكر بانتظار الرد', fmtNum(nw) + ' تذكرة', 'warn', function () { ADM.tst = 'new'; go('other', 'cs-tickets'); }] : null,
     up ? ['note', 'طلبات تحديث ملف بانتظار الاعتماد', fmtNum(up) + ' طلب', 'warn', goP('cs-updates')] : null,
@@ -13834,7 +13834,7 @@ lp('adm-home', 'لوحة المشرف', null, 'adm', admHome);
 function admHomeT() { try { if (LIVE.on) return LIVE.sup === false ? 'لوحة الموظف' : 'لوحة المشرف'; return cuAs() === 'sup' ? 'لوحة المشرف' : 'لوحة الموظف'; } catch (err) { return 'لوحة المشرف'; } }
 try { Object.defineProperty(LP['adm-home'], 't', { get: admHomeT, configurable: true }); } catch (err) { void err; }
 lp('cs', 'خدمات العملاء', null, 'headset', csHub);
-lp('cs-tickets', 'التذاكر والمراسلات', 'cs', 'headset', csTickets);
+lp('cs-tickets', 'التذاكر والمراسلات', null, 'headset', function () { return LIVE.on && typeof deskTicketsPage === 'function' ? deskTicketsPage() : csTickets(); }); /* v561 */
 lp('cs-ticket', 'التذكرة', 'cs-tickets', 'ticket', csTicket);
 lp('cs-complaints', 'الشكاوى', 'cs', 'warn', csComplaints);
 lp('cs-updates', 'طلبات تحديث الملف', 'cs', 'note', csUpdates);
@@ -13966,7 +13966,7 @@ function dashPage() {
 
 /* ===== الغلاف ===== */
 /* حُذف «الرئيسية» (كان يخرج إلى الصفحة العامة)، و«لوحتي» صارت «لوحتي الرئيسية» */
-const NAV_ADM = [['الأساسي', [['adm-home', 'لوحة المشرف']]], ['الأقسام', [['cu', 'قسم العملاء'], ['fin', 'قسم المالية'], ['cpg', 'صفحة العميل'], ['comm', 'التواصل المباشر'], ['soon-emp', 'الموظفون'], ['soon-par', 'الشركاء'], ['soon-mkt', 'المسوّقون']]], ['الإعدادات', [['sys', 'إعدادات النظام']]]];
+const NAV_ADM = [['الأساسي', [['adm-home', 'لوحة المشرف']]], ['الأقسام', [['cu', 'قسم العملاء'], ['fin', 'قسم المالية'], ['cpg', 'صفحة العميل'], ['comm', 'التواصل المباشر'], ['cs-tickets', 'التذاكر والمراسلات'], ['soon-emp', 'الموظفون'], ['soon-par', 'الشركاء'], ['soon-mkt', 'المسوّقون']]], ['الإعدادات', [['sys', 'إعدادات النظام']]]];
 const NAV = [['الأساسي', [['dash', 'لوحتي الرئيسية'], ['profile', 'ملفي الشخصي'], ['shield', 'مركزُ الأمان']]], [null, [['store', 'المتجر'], ['devices', 'سوق الأجهزة'], ['services', 'خدماتي'], ['picks', 'مختاراتي'], ['mail', 'مركز المراسلات'], ['bell', 'مركز الإشعارات'], ['member', 'العضوية']]]];
 const PAGES = { dash: 'لوحتي الرئيسية', profile: 'ملفي الشخصي', shield: 'مركزُ الأمان', bell: 'مركز الإشعارات', member: 'العضوية', points: 'نقاطي', more: 'الأقسام', 'tq-account': 'حسابك' };
 /* =============================== v329 — «للمراجعة» (المعاينة فقط) ===============================
@@ -23155,10 +23155,10 @@ const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف �
 function commHubPage() {
 /* v513: مساحة واحدة — الإرسال · تقرير الإرسال · الدليل — بتبويبات في الصفحة نفسها (القوالب في الإعدادات) */
 if (LIVE.on && !COMM.ctAt) commReady('التواصل المباشر');
-const tabs = [['send', 'الإرسال', 'paper-plane-tilt'], ['desk', 'مراسلات العملاء', 'chat-circle-dots'], ['rep', 'تقرير الإرسال', 'list-checks'], ['dir', 'دليل الهواتف والبريد', 'users-three'], ['rem', 'إدارة التذكير', 'bell-ringing']];
+const tabs = [['send', 'الإرسال', 'paper-plane-tilt'], ['rep', 'تقرير الإرسال', 'list-checks'], ['dir', 'دليل الهواتف والبريد', 'users-three'], ['rem', 'إدارة التذكير', 'bell-ringing']];
 const cur = COMMT.t || 'send';
 const bar = e('div', { class: 'sc-seg sc-tabs' }, tabs.map(function (t) { return liveOk(DS.button(t[1], { tone: cur === t[0] ? 'primary' : null, ui: t[2], onClick: function () { COMMT.t = t[0]; draw(); } })); }));
-const body = cur === 'desk' ? deskBoardPage() : cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : scPage();
+const body = cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : scPage();
 return [bar].concat(body || []);
 }
 /* ---------- v315: نموذج استيراد جهات الاتصال — تنزيل النموذج (Excel/CSV) ← الكتابة فيه ← رفعه ← مطابقة الأعمدة والتحقق ← القبول ← حفظ الملف للتنزيل ---------- */
@@ -24478,6 +24478,35 @@ function deskMineView(ref) {
         }).catch(function (err) { DSK.sending = false; snack((err && err.message) || 'تعذّر الإرسال.'); draw(); });
       } }))])]);
   return [top, head, need, conv, reply].filter(Boolean);
+}
+/* v561: «التذاكر والمراسلات» قسمٌ مستقل في القائمة الجانبية = مراسلات العملاء الحقيقية (مركز المراسلات)،
+ * وخانات لوحة المشرف تُقرأ منها، وملاحظة أعلى ملف العميل للعقود المسدَّدة بالكامل غير المُقفلة. */
+function deskTickets() {
+  deskLoad(false);
+  const K = { request: 'طلب', complaint: 'شكوى', support: 'دعم' };
+  const TN = { new: 'warn', review: 'warn', processing: 'info', waiting_customer: 'info', waiting_other: 'info', replied: 'ok', resolved: 'ok', closed: '' };
+  return (DSK.rows || []).filter(function (r) { return r && r.status !== 'draft'; }).map(function (r) {
+    return { ref: r.ref, kind: K[r.kind] || 'طلب', status: [DSK_ST[r.status] || r.status, Object.prototype.hasOwnProperty.call(TN, r.status) ? TN[r.status] : 'info'], created: new Date(r.created_at || Date.now()), cust: r.name || '', subject: r.subject || '' };
+  });
+}
+function deskTicketsPage() {
+  if (ADM.tst) { DSK.st = ADM.tst === 'new' ? 'new' : ADM.tst === 'all' ? 'all' : 'open'; ADM.tst = ''; }
+  return deskBoardPage();
+}
+const CPO = {};
+function cuPaidOpenNote(r) {
+  try {
+    const c = cuOf(ADM.pfc || 'me'), id = String((c && c.id) || '');
+    if (!Array.isArray(r) || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) return r;
+    if (!Object.prototype.hasOwnProperty.call(CPO, id)) {
+      CPO[id] = null;
+      admRpc('admin_contracts_paid_open', { p_user: id }).then(function (j) { CPO[id] = (j && j.rows) || []; if (CPO[id].length) draw(); }).catch(function () { CPO[id] = []; });
+    }
+    const L = CPO[id] || [];
+    if (!L.length) return r;
+    const n = DS.note('warn', 'عقود مسدَّدة بالكامل بانتظار الإقفال', L.map(function (x) { return x.contract_no + (x.last_paid ? ' (آخر سداد ' + x.last_paid + ')' : ''); }).join('، ') + ' — اكتمل سدادها ولم تُقفل بعد، بانتظار قرار الإقفال.');
+    return [r[0], n].concat(r.slice(1));
+  } catch (err) { return r; }
 }
 function deskLoad(force) {
   if (DSK.busy || (!force && DSK.rows && Date.now() - DSK.at < 30000)) return;
