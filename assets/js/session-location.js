@@ -602,6 +602,7 @@ function locPanel() {
             msg.textContent = "اعتُمد موقعك: " + (b.address || "");
             inp.disabled = true;
             stage("done");
+            beatNow();   /* v570 */
             return;
           }
           msg.textContent = (b.address || "") + " · نقطة عنوان مسحية";
@@ -763,7 +764,7 @@ function manualPick(seed) {
     if (!pt.picked) { res.textContent = "اضغط على مكانك في الخريطة أو ابحث عنه أولًا."; return; }
     busy = true;
     res.textContent = "جارٍ اعتماد الموقع…";
-    var body = { source: "manual_selection", latitude: pt.lat, longitude: pt.lon, captured_at: new Date().toISOString() };
+    var body = { source: "manual_selection", latitude: pt.lat, longitude: pt.lon };   /* v570: بلا زمنِ الجهاز — ساعةٌ متقدّمةٌ دقيقتَين كانت تُرفَضُ «تعذّر اعتماد الموقع» */
     post("/api/account/session/location", body, false).then(function (r) {
       busy = false;
       if (r && r.status === 200 && r.body && r.body.ok === true) {
@@ -773,6 +774,7 @@ function manualPick(seed) {
         state.errCode = null;
         if (mapH) { try { mapH.close(); } catch (_e) {} }
         notify({ kind: "ok", icon: "map-pin:teal", title: "تم اعتماد موقعك", text: "سُجّل الموقع الذي اخترته على الخريطة لهذه الجلسة." });
+        beatNow();   /* v570 */
         return;
       }
       res.textContent = (r && r.status === 401) ? "انتهت الجلسة. سجّل الدخول ثم حاول." : "تعذّر اعتماد الموقع الآن. حاول بعد قليل.";
@@ -1045,6 +1047,34 @@ function showGeoAsk(kind) {
     });
   }
 
+  /* v570: يُرسَلُ الموقعُ المعتمَدُ فورًا فتُغلَقُ نافذةُ «تحديد الموقع متوقف» دونَ انتظارِ النبضةِ التالية. */
+  function beatNow() { if (state.stopped || state.closing) return; state.lastBeat = Date.now(); beat(); }
+
+  /* v570: الموقعُ المعتمَدُ يدويًّا (الخريطة أو العنوانُ الوطني) لهذه الجلسةِ نفسِها يُقرأُ من الخادمِ عندَ فتحِ الصفحة —
+   * كان يضيعُ بإعادةِ التحميلِ فتنتهي الجلسةُ «توقّف تحديد الموقع» رغمَ أنَّ العميلَ حدّده. جلسةٌ أخرى لا يُؤخَذُ منها شيء. */
+  function restoreSel() {
+    var t = bearer(), sid0 = state.sid;
+    if (!t) return Promise.resolve();
+    var q = fetch("/api/account/session/log", { headers: { "Content-Type": "application/json", Authorization: "Bearer " + t } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var list = (j && j.sessions) || [], me = null, i;
+        for (i = 0; i < list.length; i++) {
+          if (list[i] && (list[i].is_current === true || list[i].current === true)) { me = list[i]; break; }
+        }
+        if (!me || typeof me.selected_latitude !== "number" || typeof me.selected_longitude !== "number") return;
+        /* auth_72: مسلكُ السجلِّ محدودُ المعدّل — تُعيدُ الخريطةُ استعمالَ هذه القراءةِ بدلَ طلبٍ ثانٍ */
+        if (typeof locSeedCache === "undefined") locSeedCache = { lat: me.selected_latitude, lon: me.selected_longitude, zoom: 18, why: "confirmed" };
+        /* ردٌّ متأخّرٌ بعدَ خروجٍ ودخولٍ في الصفحةِ نفسِها لا يُنقَلُ إلى الجلسةِ الجديدة */
+        if (state.stopped || state.sid !== sid0) return;
+        if (typeof state.lat === "number" && typeof state.lon === "number") return;
+        state.lat = me.selected_latitude; state.lon = me.selected_longitude;
+        state.locSource = "manual_selection"; state.errCode = null;
+      })
+      .catch(function () {});
+    return Promise.race([q, new Promise(function (ok) { setTimeout(ok, 4000); })]);
+  }
+
   function beat() {
     if (state.stopped || state.closing) return;
     state.beats += 1;
@@ -1241,6 +1271,7 @@ function showGeoAsk(kind) {
     locate();
     fingerprint().then(function (fp) { state.fp = fp; return localIp(); })
       .then(function (ip) { state.localIp = ip; })
+      .then(function () { return restoreSel(); })   /* v570 */
       .then(function () { return send(true); })
       .then(function () { state.lastBeat = Date.now(); });
     /* قراءةٌ ثانيةٌ بعدَ عشرِ ثوانٍ: أوّلُ إصلاحٍ يكونُ غالبًا من الشبكةِ
