@@ -18696,6 +18696,7 @@ function cfPilotPage(id, D, P, hero, pi, ok, all, C, BD, RF) {
 
 /* ===== طلبات توثيق الملف (cu-pf-ver) ===== */
 function admVerPage() {
+  try { ADM_VER_ST.draft = ['لم يُرسل بعد', 'warn']; } catch (err) { void err; } /* v566: التسجيل الجديد قبل إرسال طلب التوثيق */
   return admMount('ver', 'طلبات توثيق الملف', function () { return admRpc('admin_verification_list', { p: { status: 'all' } }); }, function (j, st, paint, refetch) { if (tqLive() && !MIG2.rows && MIG2.st === 'idle') mig2Load(); const L = j.rows || [], by = function (s) { return L.filter(function (r) { return r.status === s; }).length; };
     const states = Object.keys(L.reduce(function (o, r) { o[r.status] = 1; return o; }, {}));
     const chips = [['all', 'الكل', L.length]].concat(states.map(function (s) { return [s, (ADM_VER_ST[s] || [s])[0], by(s)]; }));
@@ -18704,7 +18705,7 @@ function admVerPage() {
         e('span', { class: 'adm-cnt' }, [DS.badge(fmtNum(r.match || 0) + ' مطابق', 'ok'), r.mismatch ? DS.badge(fmtNum(r.mismatch) + ' غير مطابق', 'danger') : null, r.missing_required ? DS.badge(fmtNum(r.missing_required) + ' ناقص', 'warn') : null]), r.assigned_to_name || DS.badge('غير مُسند', 'warn')],
         function () { admVerOpen(r); }, [r.name, r.role, r.status, r.assigned_to_name].join(' '));
     });
-    return [admKpis([['طلب توثيق', L.length, '', 'seal-check'], ['بانتظار الاستلام', by('submitted'), by('submitted') ? 'warn' : '', 'clock'], ['قيد المراجعة', by('received') + by('in_review'), '', 'list-checks'], ['معتمد', by('approved'), 'ok', 'check-circle']]),
+    return [admKpis([['طلب توثيق', L.length - by('draft'), '', 'seal-check'], ['تسجيل لم يُرسل', by('draft'), by('draft') ? 'warn' : '', 'clock'], ['بانتظار الاستلام', by('submitted'), by('submitted') ? 'warn' : '', 'clock'], ['قيد المراجعة', by('received') + by('in_review'), '', 'list-checks'], ['معتمد', by('approved'), 'ok', 'check-circle']]),
       DS.panel('طلبات توثيق الملف', 'من القاعدة بصلاحياتك · للاطلاع', [admTools(st, chips, paint, refetch, 'ابحث بالاسم أو المسؤول'), admTable(['صاحب الطلب', 'الدور', 'نوع العميل', 'الحالة', 'أُرسل', 'البنود', 'المسؤول'], rows, L.length, 'لا طلبات توثيق بهذه الحالة')]),
       DS.note('info', 'اتخاذ القرار', 'افتح الطلب لاستلامه أو اعتماده أو إعادته أو رفضه — القرار يُسجَّل في القاعدة مباشرة.')];
   });
@@ -20207,7 +20208,7 @@ async function liveUpload(field, file, st, host) {
   let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
   if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
   if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن.');
-  const v = {}; v[field] = /#back$/.test(field) ? { path: u.path, name: file.name } : u.path; /* v508: الوجه الخلفي «المفتاح#back» */
+  const v = {}; v[field] = { path: u.path, name: file.name, type: file.type }; /* v566: الوجهان بشكل واحد — القاعدة لا تقبل مسار الملف نصًّا فكان الحفظ يُرفض */ /* v508: الوجه الخلفي «المفتاح#back» */
 return liveSaveBlock('docs', v, st, host);
 }
 function liveDocActions(d) {
