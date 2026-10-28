@@ -11547,7 +11547,7 @@ let TM_DSN_FORCE = 0;
 const D3_BARS = ["11011001100","11001101100","11001100110","10010011000","10010001100","10001001100","10011001000","10011000100","10001100100","11001001000","11001000100","11000100100","10110011100","10011011100","10011001110","10111001100","10011101100","10011100110","11001110010","11001011100","11001001110","11011100100","11001110100","11101101110","11101001100","11100101100","11100100110","11101100100","11100110100","11100110010","11011011000","11011000110","11000110110","10100011000","10001011000","10001000110","10110001000","10001101000","10001100010","11010001000","11000101000","11000100010","10110111000","10110001110","10001101110","10111011000","10111000110","10001110110","11101110110","11010001110","11000101110","11011101000","11011100010","11011101110","11101011000","11101000110","11100010110","11101101000","11101100010","11100011010","11101111010","11001000010","11110001010","10100110000","10100001100","10010110000","10010000110","10000101100","10000100110","10110010000","10110000100","10011010000","10011000010","10000110100","10000110010","11000010010","11001010000","11110111010","11000010100","10001111010","10100111100","10010111100","10010011110","10111100100","10011110100","10011110010","11110100100","11110010100","11110010010","11011011110","11011110110","11110110110","10101111000","10100011110","10001011110","10111101000","10111100010","11110101000","11110100010","10111011110","10111101110","11101011110","11110101110","11010000100","11010010000","11010011100","1100011101011"];
 /* Code 128-B حقيقي يُقرأ بالماسح */
 function d3Bar(txt) {
-  const s = String(txt).replace(/[^\x20-\x7e]/g, ''), v = [104].concat(s.split('').map(function (ch) { return ch.charCodeAt(0) - 32; }));
+  const s = String(txt).replace(/[^\x20-\x7e]/g, '') || 'TERA-DRAFT-PREVIEW', v = [104] /* v567: المسودة باركود كامل كعرض السعر */.concat(s.split('').map(function (ch) { return ch.charCodeAt(0) - 32; }));
   const ck = v.reduce(function (a, x, i) { return a + x * (i || 1); }, 0) % 103, bits = v.concat([ck]).map(function (x) { return D3_BARS[x]; }).join('') + D3_BARS[106];
   let x = 0, r = '';
   for (let i = 0; i < bits.length; i++) { if (bits[i] === '1') { let w = 1; while (bits[i + 1] === '1') { w++; i++; } r += '<rect x="' + x + '" y="0" width="' + w + '" height="40"/>'; x += w; } else x++; }
@@ -11589,7 +11589,7 @@ function d3Mk(o, first) {
     e('div', { class: 'd3-ttl' }, [o.en ? e('small', {}, o.en) : null, H.title ? e('h1', { class: String(o.title || '').length > 10 ? 'is-long' : null }, o.title) : null, o.pill ? e('span', {}, o.pill) : null])]), e('i', { class: 'd3-gold' })]);
   if (first) {
     const MK = ['no', 'date', 'client'], meta = (o.meta || []).map(function (m, i) { return m && H[m[3] || MK[i]] !== false ? m : null; }).filter(Boolean).concat(o.meta3 || []);
-    const no = o.meta && o.meta[0] && H.no !== false ? o.meta[0][1] : '';
+    const no = o.meta && o.meta[0] && H.no !== false && !o.nobar ? o.meta[0][1] : ''; /* v567: إخفاء الباركود وحده */
     body.appendChild(e('div', { class: 'd3-meta is-' + (meta.length + (no ? 1 : 0)) }, meta.map(function (m) { return e('div', { class: 'd3-chip' }, [e('span', { class: 'd3-ic' }, frag(d2Icon(d2IcMeta(m[0]), /صالح|صلاحية/.test(m[0])))), e('div', {}, [e('small', {}, m[0]), e('b', { dir: m[2] === false ? null : 'ltr', class: String(m[1]).length > 16 ? 'is-long' : null }, m[1])])]); })
       .concat(no ? [e('div', { class: 'd3-chip is-bar' }, [frag(d3Bar(no)), e('small', { dir: 'ltr' }, no)])] : [])));
   }
@@ -17464,37 +17464,33 @@ function stlDocT(T, L) {
 try { Object.assign(ADM_ERR, { not_open: 'الفاتورة منفّذة أو ملغاة — لا تُعدَّل أدواتها.' }); } catch (err) { void err; }
 function stlTools(Q, R, RF, W) {
   if (Q.executed_at || (Q.status !== 'pending' && Q.status !== 'approved')) return null;
-  const T = W.tl || (W.tl = { on: false, pm: Q.pay_method || 'gateway', doc: JSON.parse(JSON.stringify(Q.doc || {})) });
-  const d = T.doc; d.hide = d.hide || []; d.labels = d.labels || {}; d.texts = d.texts || {};
-  const sum = 'وسيلة السداد: ' + (T.pm === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع') + ' · ' + (d.hide.length ? 'مخفي ' + fmtNum(d.hide.length) + (d.hide.length === 1 ? ' بند' : ' بنود') : 'كل البنود ظاهرة') + (Object.keys(d.labels).length ? ' · مسميات معدّلة' : '') + (Object.keys(d.texts).length ? ' · نصوص معدّلة' : '');
+  /* v567: أدوات الفاتورة — وسيلة السداد وحساب التحويل · «صالحة حتى» · كل عناصر المستند (إخفاء · تسمية · إضافة) */
+  const T = W.tl || (W.tl = { on: false, pm: Q.pay_method || 'gateway', acct: Q.pay_account || '', valid: Q.valid_until || '', doc: stlDocNorm(JSON.parse(JSON.stringify(Q.doc || {}))) });
+  const d = stlDocNorm(T.doc);
+  const sum = 'وسيلة السداد: ' + (T.pm === 'bank' ? 'تحويل بنكي' + (Q.doc && Q.doc.bank ? ' — ' + Q.doc.bank : '') : 'بوابة الدفع') + ' · صالحة حتى ' + (Q.valid_until || '—') + ' · ' + (d.hide.length ? 'مخفي ' + fmtNum(d.hide.length) + (d.hide.length === 1 ? ' عنصر' : ' عناصر') : 'كل العناصر ظاهرة') + (Object.keys(d.labels).length ? ' · مسميات معدّلة' : '') + (Object.keys(d.texts).length ? ' · نصوص معدّلة' : '') + (d.adds.length ? ' · إضافات' : '');
   const head = e('button', { type: 'button', class: 'stl-tl-h', 'aria-expanded': T.on ? 'true' : 'false', onClick: function () { T.on = !T.on; RF.paint(); } }, [e('span', { class: 'stl-tl-ic' }, frag(ui('sliders-horizontal', 18))), e('span', { class: 'stl-tl-t' }, [e('b', {}, 'أدوات الفاتورة'), e('small', {}, sum)]), e('span', { class: 'stl-tl-cv' }, frag(ui(T.on ? 'caret-up' : 'caret-down', 16)))]);
   if (!T.on) return e('section', { class: 'stl-tl' }, [head]);
-  const seg = e('div', { class: 'stl-tl-seg', role: 'radiogroup', 'aria-label': 'وسيلة السداد' }, [['gateway', 'بوابة الدفع', 'credit-card'], ['bank', 'تحويل بنكي', 'bank']].map(function (m) {
-    return e('button', { type: 'button', role: 'radio', 'aria-checked': T.pm === m[0] ? 'true' : 'false', class: 'stl-tl-pm' + (T.pm === m[0] ? ' is-on' : ''), onClick: function () { T.pm = m[0]; RF.paint(); } }, [frag(ui(m[2], 16)), e('span', {}, m[1])]); }));
-  const items = (R.items || []).map(function (it) {
-    const hid = d.hide.indexOf(it.k) >= 0;
-    return e('div', { class: 'stl-tl-it' + (hid ? ' is-off' : '') }, [
-      e('label', { class: 'stl-sg-ck' }, [e('input', { type: 'checkbox', checked: hid ? null : 'checked', 'aria-label': 'إظهار ' + it.t, onChange: function (ev) { if (ev.target.checked) d.hide = d.hide.filter(function (x) { return x !== it.k; }); else if (d.hide.indexOf(it.k) < 0) d.hide.push(it.k); RF.paint(); } }), e('span', {}, hid ? 'مخفي' : 'ظاهر')]),
-      e('input', { class: 't2-input', type: 'text', maxlength: '60', value: d.labels[it.k] || '', placeholder: it.t, 'aria-label': 'مسمى البند ' + it.t, onInput: function (ev) { const v = ev.target.value.trim(); if (v.length >= 2) d.labels[it.k] = v; else delete d.labels[it.k]; } }),
-      e('small', {}, Number(it.disc) ? 'خصم ' + stlN(it.disc) : 'بلا خصم')]); });
-  const tx = function (k, lbl, rows, def) { return DS.editField(lbl, e('textarea', { class: 't2-input', rows: String(rows), maxlength: '700', placeholder: def || '', onInput: function (ev) { const v = ev.target.value; if (v.trim().length >= 2) d.texts[k] = v; else delete d.texts[k]; } }, d.texts[k] || '')); };
+  const acts = stlBanks(RF), mark = function () { void 0; }, onCh = function () { RF.paint(); };
+  const VR = stlVRange(R, Q.settle_date), locked = !!Q.client_accepted_at;
+  const docOut = function () { const o = stlDocClean(d) || {}; const bn = T.pm === 'bank' ? stlBankName(acts, T.acct) : ''; if (bn) o.bank = bn; return o; };
   const save = async function () {
     if (W.busy) return; W.busy = true; W.err = ''; RF.paint();
     try {
-      const j = await admRpc('admin_settle_quote_meta', { p_id: Q.id, p_pay_method: T.pm, p_doc: d });
+      const p = stlDocClean(d) || {}; p.hide = p.hide || []; /* مفتاح المستند دائمًا — فيُحفظ الإرجاع للافتراضي */
+      if (!locked && T.valid && T.valid !== Q.valid_until) p.valid = T.valid;
+      if (T.pm === 'bank' && T.acct) p.acct = T.acct;
+      const j = await admRpc('admin_settle_quote_meta', { p_id: Q.id, p_pay_method: T.pm, p_doc: p });
       W.busy = false; if (j && j.ok === false) throw new Error(ADM_ERR[j.error] || 'تعذّر الحفظ.');
       W.tl = null; cfRe(RF, 'حُفظت أدوات الفاتورة ' + Q.quote_no + '.');
     } catch (err) { W.busy = false; W.err = (err && err.message) || 'تعذّر الحفظ.'; RF.paint(); }
   };
-  const ES0 = (typeof ES !== 'undefined' && ES) || {};
   return e('section', { class: 'stl-tl is-open' }, [head, e('div', { class: 'stl-tl-b' }, [
-    e('div', { class: 'stl-tl-c' }, [e('h5', {}, 'وسيلة السداد'), seg, e('small', { class: 'cu-dr-hint' }, T.pm === 'bank' ? 'بعد توقيع العميل يصله طلب التحويل البنكي ببيانات الحساب ورابط إرفاق الإيصال.' : 'بعد توقيع العميل يصله رابط السداد عبر بوابة الدفع.')]),
-    e('div', { class: 'stl-tl-c' }, [e('h5', {}, 'البنود الظاهرة في الفاتورة ومسمياتها'), e('div', { class: 'stl-tl-its' }, items), e('small', { class: 'cu-dr-hint' }, 'الإخفاء والمسميات تخص هذه الفاتورة وحدها — الحساب والإجمالي والضريبة لا تتغيّر.')]),
-    e('div', { class: 'stl-tl-c' }, [e('h5', {}, 'نصوص الفاتورة'), tx('title', 'العنوان', 1, ES0.title), tx('intro', 'المقدمة', 3, ES0.intro), tx('steps', 'الخطوات (سطر لكل خطوة)', 3, (ES0.steps || []).join('\n')), tx('note', 'التنويه', 2, ES0.note),
-      e('small', { class: 'cu-dr-hint' }, 'الحقل الفارغ يأخذ النص الافتراضي.')]),
+    e('div', { class: 'stl-one-2' }, [e('div', { class: 'stl-tl-c' }, [e('h5', {}, 'وسيلة السداد')].concat(stlPmBox(T, acts, onCh, mark))),
+      e('div', { class: 'stl-tl-c' }, [e('h5', {}, 'صالحة حتى'), locked ? e('b', {}, qDmy(Q.valid_until)) : datePick({ value: T.valid || VR.max, min: VR.min, max: VR.max, onChange: function (v) { T.valid = v; } }),
+        e('small', { class: 'cu-dr-hint' }, locked ? 'وقّع العميل على الفاتورة — لا تتغيّر صلاحيتها.' : 'من ' + qDmy(VR.min) + ' حتى ' + qDmy(VR.max) + ' (موعد الدفعة القادمة) — لا يتغيّر المبلغ.')])]),
+    e('div', { class: 'stl-tl-c' }, [e('h5', {}, 'محتوى المستند — الإظهار والتسمية والإضافة')].concat(stlDocAll(d, R, onCh, mark, T.pm))),
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ أدوات الفاتورة', { size: 'sm', tone: 'primary', ui: 'check', disabled: !!W.busy, onClick: save })),
-      DS.button('معاينة الفاتورة', { size: 'sm', ui: 'file-pdf', onClick: function () { stlNoticeQ(R, Object.assign({}, Q, { doc: d, pay_method: T.pm })); } }),
-      DS.button('إرجاع الافتراضي', { size: 'sm', ui: 'x', onClick: function () { T.doc = {}; RF.paint(); } })])])]);
+      DS.button('معاينة الفاتورة', { size: 'sm', ui: 'file-pdf', onClick: function () { stlNoticeQ(R, Object.assign({}, Q, { doc: docOut(), pay_method: T.pm, valid_until: locked ? Q.valid_until : (T.valid || Q.valid_until) })); } })])])]);
 }
 function stlLineRow(S, l, i, R, ctx, onCh) {
   const cat = l.cat, set = function (k, v, re) { l[k] = v; if (re) onCh(); };
@@ -17567,10 +17563,26 @@ function stlQuoteCard(Q, ctx, c, RF) {
     W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
     e('div', { class: 't2-pb-actions' }, acts)]);
 }
-/* ═════ v565: نموذج إعداد فاتورة سداد قيمة المنتج بخطوات واضحة — وسيلة السداد والمستند عند الإعداد · حفظ مسودة · نسبة الخصم وسببه · الدفعة المستحقة ═════ */
-try { Object.assign(ADM_ERR, { draft_big: 'المسودة أكبر من المسموح — احذف بعض النصوص.' }); } catch (err) { void err; }
-const STL_WZ = ['الأساسيات ووسيلة السداد', 'الخصومات', 'المستند', 'المراجعة والحفظ'];
+/* ═════ v567: فاتورة سداد قيمة المنتج — الإعداد في صفحة واحدة · كل ما يظهر في المستند يُخفى ويُعدَّل ويُضاف · «صالحة حتى» وحساب التحويل من الصفحة ═════ */
+try { Object.assign(ADM_ERR, { draft_big: 'المسودة أكبر من المسموح — احذف بعض النصوص.', bad_valid: 'تاريخ «صالحة حتى» خارج المسموح — بين اليوم وموعد الدفعة القادمة.', bad_account: 'حساب التحويل غير متاح — اختر حسابًا فعّالًا من إعدادات المنشأة.', valid_locked: 'وقّع العميل على الفاتورة — لا تتغيّر صلاحيتها الآن.' }); } catch (err) { void err; }
 const stlPctV = function (d, b) { const x = Number(b) > 0 ? Math.round(Number(d) / Number(b) * 1000) / 10 : 0; return fmtNum(x) + '%'; };
+/* ── خطوط ملف PDF: تُضمَّن في الصفحات قبل التصوير — من مصدر مكتبتي PDF نفسه (المسموح في سياسة المنصة) ── */
+const AX_FSRC = 'https://cdn.jsdelivr.net/npm/@fontsource/';
+const AX_FSET = [['Alexandria', 'alexandria@5.3.0', 'alexandria', [400, 500, 600, 700, 800]], ['IBM Plex Sans Arabic', 'ibm-plex-sans-arabic@5.3.0', 'ibm-plex-sans-arabic', [400, 500, 600, 700]]];
+const AX_FUR = { arabic: 'U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC',
+  latin: 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD' };
+async function axFontSelf() {
+  const J = [];
+  AX_FSET.forEach(function (f) { f[3].forEach(function (w) { ['arabic', 'latin'].forEach(function (s) { J.push([f[0], w, s, AX_FSRC + f[1] + '/files/' + f[2] + '-' + s + '-' + w + '-normal.woff2']); }); }); });
+  const out = await Promise.all(J.map(async function (j) {
+    const r = await fetch(j[3], { mode: 'cors', credentials: 'omit' });
+    if (!r.ok) throw new Error('font ' + r.status);
+    const b = await r.blob();
+    const u = await new Promise(function (ok, no) { const fr = new FileReader(); fr.onload = function () { ok(fr.result); }; fr.onerror = no; fr.readAsDataURL(b); });
+    return "@font-face{font-family:'" + j[0] + "';font-style:normal;font-weight:" + j[1] + ';font-display:block;src:url(' + u + ") format('woff2');unicode-range:" + AX_FUR[j[2]] + ';}';
+  }));
+  return out.join('\n');
+}
 /* الدفعات المتأخرة قبل تاريخ السداد والدفعة القادمة — من نتيجة المحرّك */
 function stlOd(R) {
   const P = (R && R.payments) || [], od = P.filter(function (p) { return String(p.due) < String(R.date) && Number(p.left) > 0; });
@@ -17579,59 +17591,153 @@ function stlOd(R) {
 function stlDueNote(R) {
   if (!R) return null;
   const od = stlOd(R), L = esFromR(R, null), nx = L.next;
+  if (!od && !nx) return null;
   return e('div', { class: 'stl-due' }, [od ? e('div', { class: 'stl-due-r is-late' }, [e('span', { class: 'stl-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'دفعات متأخرة ' + SR(od.amount)), e('small', {}, 'الدفعات ' + od.nos.join('، ') + ' — مشمولة في مبلغ الفاتورة.')])]) : null,
-    nx ? e('div', { class: 'stl-due-r' }, [e('span', { class: 'stl-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'في ' + qDmy(nx.due) + ': مبلغ الفاتورة ' + SR(R.after) + ' أو الدفعة رقم ' + nx.no + ' بقيمة ' + SR(nx.amount)), e('small', {}, 'الفاتورة صالحة حتى هذا اليوم؛ ويُسدّد العميل في يومه أحدهما، وبعده يُعاد احتساب الفاتورة.')])]) : null]);
+    nx ? e('div', { class: 'stl-due-r' }, [e('span', { class: 'stl-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'في ' + qDmy(nx.due) + ': مبلغ الفاتورة ' + SR(R.after) + ' أو الدفعة رقم ' + nx.no + ' بقيمة ' + SR(nx.amount)), e('small', {}, 'أقصى صلاحية للفاتورة هذا اليوم؛ ويُسدّد العميل في يومه أحدهما، وبعده يُعاد احتساب الفاتورة.')])]) : null]);
 }
 /* في المستند: جدول البنود المخصومة بالنسبة والسبب · ومربّع «مستحق عليكم» */
 function stlDiscTbl(I) {
   return e('table', { class: 'd3-dt' }, [e('thead', {}, e('tr', {}, ['البند', 'قبل الخصم', 'الخصم', 'النسبة', 'سبب الخصم'].map(function (h) { return e('th', {}, h); }))),
     e('tbody', {}, I.map(function (x) { return e('tr', {}, [e('th', {}, x.name), e('td', {}, x.before ? esMoney(x.before) : '—'), e('td', { class: 'is-neg' }, '− ' + esMoney(x.disc)), e('td', {}, x.full ? '100%' : stlPctV(x.disc, x.before)), e('td', { class: 'is-why' }, x.why || (x.full ? 'إعفاء كامل' : '—'))]); }))]);
 }
-function stlDueBox(L) {
-  const od = L.od, nx = L.next;
+function stlDueBox(L, lb) {
+  const od = L.od, nx = L.next, t = lb || function (k, d) { return d; };
   if (!od && !nx) return null;
-  return e('div', { class: 'd3-due' }, [od ? e('div', { class: 'd3-due-r is-late' }, [e('span', { class: 'd3-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'دفعات متأخرة ' + esMoney(od.amount)), e('small', {}, 'الدفعات ' + od.nos.join('، ') + ' — مشمولة في مبلغ الفاتورة')])]) : null,
-    nx ? e('div', { class: 'd3-due-r' }, [e('span', { class: 'd3-due-st' }, 'مستحق عليكم'), e('div', {}, [e('b', {}, 'في ' + qDmy(nx.due) + ': مبلغ الفاتورة ' + esMoney(L.due) + ' أو الدفعة المستحقة رقم ' + nx.no + ' بقيمة ' + esMoney(nx.amount)), e('small', {}, 'يُسدَّد أحدهما في اليوم نفسه')])]) : null]);
+  return e('div', { class: 'd3-due' }, [od ? e('div', { class: 'd3-due-r is-late' }, [e('span', { class: 'd3-due-st' }, t('d_m_od', 'مستحق عليكم')), e('div', {}, [e('b', {}, 'دفعات متأخرة ' + esMoney(od.amount)), e('small', {}, 'الدفعات ' + od.nos.join('، ') + ' — مشمولة في مبلغ الفاتورة')])]) : null,
+    nx ? e('div', { class: 'd3-due-r' }, [e('span', { class: 'd3-due-st' }, t('d_m_next', 'مستحق عليكم')), e('div', {}, [e('b', {}, 'في ' + qDmy(nx.due) + ': مبلغ الفاتورة ' + esMoney(L.due) + ' أو الدفعة المستحقة رقم ' + nx.no + ' بقيمة ' + esMoney(nx.amount)), e('small', {}, 'يُسدَّد أحدهما في اليوم نفسه')])]) : null]);
 }
-/* وسيلة السداد: زرّان */
-function stlPmSeg(S, onCh) {
-  return e('div', { class: 'stl-tl-seg', role: 'radiogroup', 'aria-label': 'وسيلة السداد' }, [['gateway', 'بوابة الدفع', 'credit-card'], ['bank', 'تحويل بنكي', 'bank']].map(function (m) {
-    return e('button', { type: 'button', role: 'radio', 'aria-checked': S.pm === m[0] ? 'true' : 'false', class: 'stl-tl-pm' + (S.pm === m[0] ? ' is-on' : ''), onClick: function () { S.pm = m[0]; onCh(); } }, [frag(ui(m[2], 16)), e('span', {}, m[1])]); }));
+/* ── المستند (التصميم الثالث): كل عنصر بمفتاح — يُخفى ويُعاد تسميته لهذه الفاتورة، والأسطر والأقسام المضافة ── */
+function stlDoc3(L, T, base, on, steps) {
+  const D = L.doc || {}, HD = D.hide || [], LB = D.labels || {}, AD = Array.isArray(D.adds) ? D.adds : [];
+  const sh = function (k) { return HD.indexOf(k) < 0; }, lb = function (k, d) { return LB[k] || d; };
+  const row = function (k, t, v, ltr) { return sh(k) ? [lb(k, t), v, ltr] : null; };
+  const tot = function (k, t, v, cls, keep) { return keep || sh(k) ? [lb(k, t), v, cls] : null; };
+  const pm = L.pay_method === 'bank' ? 'تحويل بنكي' + (D.bank ? ' — ' + D.bank : '') : 'بوابة الدفع';
+  const B = [];
+  const kv = [row('d_f_client', 'اسم العميل', (L.addr === 'f' ? 'السيدة ' : L.addr === 'm' ? 'السيد ' : '') + L.client), row('d_f_contract', 'رقم العقد', L.contract, true), row('d_f_no', 'رقم الفاتورة', L.no, true), row('d_f_date', 'تاريخ السداد', qDmy(L.date)),
+    row('d_f_appr', 'تاريخ اعتماد الفاتورة', L.approved_at ? stlD(L.approved_at) : '—'), row('d_f_acc', 'تاريخ موافقة العميل', L.accepted_at ? stlD(L.accepted_at) : 'بانتظار التوقيع'), row('d_f_exec', 'تاريخ التنفيذ', L.executed_at ? stlD(L.executed_at) : 'عند السداد'),
+    row('d_f_pm', 'وسيلة السداد', pm), row('d_f_valid', 'صالحة حتى', qDmy(L.valid))].concat(AD.filter(function (a) { return a && a.at === 'kv'; }).map(function (a) { return [a.t, a.v]; })).filter(Boolean);
+  if (sh('d_c_data') && kv.length) B.push(d3Card(lb('d_c_data', 'بيانات العقد والعميل'), 'user', [d3KV(kv)]));
+  const tots = [tot('d_t_rem', 'المتبقي على العقد', esMoney(L.remaining)), L.exempt ? tot('d_t_ex', 'إعفاء فائدة الأشهر التي لم تبدأ', '− ' + esMoney(L.exempt), 'neg') : null, L.extra ? tot('d_t_extra', 'خصم إضافي', '− ' + esMoney(L.extra), 'neg') : null, tot('d_t_due', 'المبلغ المطلوب لإغلاق العقد', esMoney(L.due), 'gt', true)];
+  const LD = Object.assign({}, L, { od: sh('d_m_od') ? L.od : null, next: sh('d_m_next') ? L.next : null });
+  if (sh('d_c_amt')) B.push(d3Card(lb('d_c_amt', 'مبلغ السداد'), 'receipt', [T.intro && sh('d_m_intro') ? e('p', { class: 'd3-p' }, T.intro) : null, d3KV([], tots.filter(Boolean)), stlDueBox(LD, lb)]));
+  if (on('items') && sh('d_c_items') && L.items.length) B.push(d3Card(lb('d_c_items', 'البنود المخصومة'), 'list', [stlDiscTbl(L.items)]));
+  AD.filter(function (a) { return a && a.at === 'sec'; }).forEach(function (a) { B.push(d3Card(a.t, 'info', [e('p', { class: 'd3-p' }, a.v)])); });
+  if (on('valid') && sh('d_c_valid') && !L.next && !L.od) B.push(d3Card(lb('d_c_valid', 'صلاحية الفاتورة'), 'clock', [e('div', { class: 'd3-exec' }, [e('b', {}, 'صالحة حتى ' + qDmy(L.valid)), e('span', {}, esNextLine(L))])]));
+  if (on('steps') && sh('d_c_steps') && steps.length) B.push(d3Card(lb('d_c_steps', 'خطوات القبول والسداد'), 'shield', [d3List(steps, 0, false)], 'is-terms'));
+  if (on('note') && sh('d_c_note') && T.note) B.push(d3Card(lb('d_c_note', 'تنويه'), 'info', [e('p', { class: 'd3-p' }, T.note)], 'is-note', true));
+  if (sh('d_c_sign')) B.push(d3Card(lb('d_c_sign', 'توقيع العميل'), 'shield', [stlSignBox(L)], 'is-sign'));
+  if (on('appr') && sh('d_c_appr') && (sh('d_a_qr') || sh('d_a_bar') || sh('d_a_seal'))) {
+    const ap = d3ApprWide(L.no, 'pq', { a_qr: sh('d_a_qr') ? undefined : false, a_bar: sh('d_a_bar') ? undefined : false, a_seal: sh('d_a_seal') ? undefined : false });
+    if (LB.d_c_appr) { const tb = ap.querySelector('.d3-ch b'); if (tb) tb.textContent = LB.d_c_appr; }
+    B.push(ap);
+  }
+  const H0 = base.hdr || {};
+  const hdr = Object.assign({}, H0, { stl_no: H0.no !== false && sh('d_h_no'), stl_date: H0.date !== false && sh('d_h_date') });
+  return Object.assign(base, { dsn: 2, cls: 'is-pq is-stl', en: 'PRODUCT VALUE PAYMENT', slogan0: T.slogan || QT0.slogan, blocks: B, stk: null, hdr: hdr, pill: sh('d_h_pill') ? lb('d_h_pill', 'نسخة العميل') : null, nobar: !sh('d_h_bar'),
+    meta: [[lb('d_h_no', 'رقم المستند'), L.no, undefined, 'stl_no'], [lb('d_h_date', 'تاريخ الإصدار'), qDmy(L.date), undefined, 'stl_date']], meta3: sh('d_h_valid') ? [[lb('d_h_valid', 'صالحة حتى'), qDmy(L.valid), false]] : [] });
 }
-/* إعداد المستند: البنود الظاهرة ومسمياتها ونصوص الفاتورة — لهذه الفاتورة وحدها */
-function stlDocEd(d, R, onCh, mark, pm) {
-  d.hide = d.hide || []; d.labels = d.labels || {}; d.texts = d.texts || {};
+/* ── محرّر المستند: كل العناصر في مكان واحد — إظهار/إخفاء · تسمية · إضافة ── */
+/* [المفتاح، الاسم في المحرّر، المسمى الافتراضي، 1 = إخفاء فقط · 2 = تسمية فقط] */
+const STL_EL = [
+  { g: 'الترويسة', ic: 'layout', k: [['d_h_no', 'رقم المستند', 'رقم المستند'], ['d_h_date', 'تاريخ الإصدار', 'تاريخ الإصدار'], ['d_h_valid', 'صالحة حتى', 'صالحة حتى'], ['d_h_bar', 'الباركود', '', 1], ['d_h_pill', 'شارة النسخة', 'نسخة العميل']], tx: [['title', 'عنوان المستند', 1]] },
+  { g: 'بيانات العقد والعميل', c: 'd_c_data', ic: 'user', k: [['d_f_client', 'اسم العميل', 'اسم العميل'], ['d_f_contract', 'رقم العقد', 'رقم العقد'], ['d_f_no', 'رقم الفاتورة', 'رقم الفاتورة'], ['d_f_date', 'تاريخ السداد', 'تاريخ السداد'], ['d_f_appr', 'تاريخ اعتماد الفاتورة', 'تاريخ اعتماد الفاتورة'], ['d_f_acc', 'تاريخ موافقة العميل', 'تاريخ موافقة العميل'], ['d_f_exec', 'تاريخ التنفيذ', 'تاريخ التنفيذ'], ['d_f_pm', 'وسيلة السداد', 'وسيلة السداد'], ['d_f_valid', 'صالحة حتى', 'صالحة حتى']], add: 'kv' },
+  { g: 'مبلغ السداد', c: 'd_c_amt', ic: 'receipt', k: [['d_m_intro', 'المقدمة', '', 1], ['d_t_rem', 'المتبقي على العقد', 'المتبقي على العقد'], ['d_t_ex', 'إعفاء فائدة الأشهر التي لم تبدأ', 'إعفاء فائدة الأشهر التي لم تبدأ'], ['d_t_extra', 'خصم إضافي', 'خصم إضافي'], ['d_t_due', 'المبلغ المطلوب لإغلاق العقد', 'المبلغ المطلوب لإغلاق العقد', 2], ['d_m_od', 'مستحق عليكم: الدفعات المتأخرة', 'مستحق عليكم'], ['d_m_next', 'مستحق عليكم: الدفعة القادمة', 'مستحق عليكم']], tx: [['intro', 'نص المقدمة', 2]] },
+  { g: 'البنود المخصومة', c: 'd_c_items', ic: 'list', items: 1 },
+  { g: 'صلاحية الفاتورة', c: 'd_c_valid', ic: 'clock', hint: 'تظهر حين لا توجد دفعة قادمة ولا متأخرة.' },
+  { g: 'خطوات القبول والسداد', c: 'd_c_steps', ic: 'shield', tx: [['steps', 'الخطوات (سطر لكل خطوة)', 3]] },
+  { g: 'تنويه', c: 'd_c_note', ic: 'info', tx: [['note', 'نص التنويه', 2]] },
+  { g: 'توقيع العميل', c: 'd_c_sign', ic: 'signature' },
+  { g: 'الاعتماد', c: 'd_c_appr', ic: 'award', k: [['d_a_qr', 'رمز بيانات المستند', '', 1], ['d_a_bar', 'باركود الاعتماد', '', 1], ['d_a_seal', 'الختم الرسمي', '', 1]] }];
+const stlDocNorm = function (d) { d.hide = Array.isArray(d.hide) ? d.hide : []; d.labels = d.labels && typeof d.labels === 'object' ? d.labels : {}; d.texts = d.texts && typeof d.texts === 'object' ? d.texts : {}; d.adds = Array.isArray(d.adds) ? d.adds : []; return d; };
+function stlDocAll(d, R, onCh, mark, pm) {
+  stlDocNorm(d);
   const ES1 = (typeof ES !== 'undefined' && ES) || {}, st0 = (ES1.steps || []).slice();
   if (pm === 'bank' && st0.length > 1) st0[1] = STL_BANK_STEP;
-  const items = ((R && R.items) || []).map(function (it) {
-    const hid = d.hide.indexOf(it.k) >= 0;
-    return e('div', { class: 'stl-tl-it' + (hid ? ' is-off' : '') }, [
-      e('label', { class: 'stl-sg-ck' }, [e('input', { type: 'checkbox', checked: hid ? null : 'checked', 'aria-label': 'إظهار ' + it.t, onChange: function (ev) { if (ev.target.checked) d.hide = d.hide.filter(function (x) { return x !== it.k; }); else if (d.hide.indexOf(it.k) < 0) d.hide.push(it.k); onCh(); } }), e('span', {}, hid ? 'مخفي' : 'ظاهر')]),
-      e('input', { class: 't2-input', type: 'text', maxlength: '60', value: d.labels[it.k] || '', placeholder: it.t, 'aria-label': 'مسمى البند ' + it.t, onInput: function (ev) { const v = ev.target.value.trim(); if (v.length >= 2) d.labels[it.k] = v; else delete d.labels[it.k]; mark(); } }),
-      e('small', {}, Number(it.disc) ? 'خصم ' + stlN(it.disc) + ' (' + stlPctV(it.disc, it.before) + ')' : 'بلا خصم')]); });
-  const tx = function (k, lbl, rows, def) { return DS.editField(lbl, e('textarea', { class: 't2-input', rows: String(rows), maxlength: '700', placeholder: def || '', onInput: function (ev) { const v = ev.target.value; if (v.trim().length >= 2) d.texts[k] = v; else delete d.texts[k]; mark(); } }, d.texts[k] || '')); };
-  return [e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'البنود الظاهرة في الفاتورة ومسمياتها'), R ? e('div', { class: 'stl-tl-its' }, items) : e('small', { class: 'cu-dr-hint' }, 'تظهر البنود بعد اكتمال الحساب.'),
-      e('small', { class: 'cu-dr-hint' }, 'أزل العلامة لإخفاء البند، واكتب مسمى جديدًا ليظهر بدل الأصلي. الحساب والإجمالي والضريبة لا تتغيّر.')]),
-    e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'نصوص الفاتورة'), tx('title', 'العنوان', 1, ES1.title), tx('intro', 'المقدمة', 2, ES1.intro), tx('steps', 'خطوات القبول والسداد (سطر لكل خطوة)', 3, st0.join('\n')), tx('note', 'التنويه', 2, ES1.note),
-      e('small', { class: 'cu-dr-hint' }, 'الحقل الفارغ يأخذ النص الافتراضي المكتوب بداخله.'),
-      e('div', { class: 't2-pb-actions' }, [DS.button('إرجاع الافتراضي', { size: 'sm', ui: 'x', onClick: function () { d.hide = []; d.labels = {}; d.texts = {}; onCh(); } })])])];
+  const TXD = { title: ES1.title, intro: ES1.intro, steps: st0.join('\n'), note: ES1.note };
+  const hid = function (k) { return d.hide.indexOf(k) >= 0; };
+  const ck = function (k, nm) {
+    return e('label', { class: 'stl-sg-ck' }, [e('input', { type: 'checkbox', checked: hid(k) ? null : 'checked', 'aria-label': 'إظهار ' + nm, onChange: function (ev) { if (ev.target.checked) d.hide = d.hide.filter(function (x) { return x !== k; }); else if (!hid(k)) d.hide.push(k); onCh(); } }), e('span', {}, hid(k) ? 'مخفي' : 'ظاهر')]);
+  };
+  const nm = function (k, def, aria) { return e('input', { class: 't2-input', type: 'text', maxlength: '60', value: d.labels[k] || '', placeholder: def, 'aria-label': 'مسمى ' + aria, onInput: function (ev) { const v = ev.target.value.trim(); if (v.length >= 2) d.labels[k] = v; else delete d.labels[k]; mark(); } }); };
+  const rowEl = function (x) {
+    const k = x[0], only = x[3];
+    return e('div', { class: 'stl-dc-r' + (hid(k) ? ' is-off' : '') }, [only === 2 ? e('span', { class: 'stl-dc-fix' }, 'ثابت') : ck(k, x[1]), e('span', { class: 'stl-dc-n' }, x[1]), only === 1 ? e('span', {}) : nm(k, x[2], x[1])]);
+  };
+  const tx = function (t) { const k = t[0]; return DS.editField(t[1], e('textarea', { class: 't2-input', rows: String(t[2]), maxlength: '700', placeholder: TXD[k] || '', onInput: function (ev) { const v = ev.target.value; if (v.trim().length >= 2) d.texts[k] = v; else delete d.texts[k]; mark(); } }, d.texts[k] || '')); };
+  const addEl = function (a, i) {
+    return e('div', { class: 'stl-dc-add' }, [e('input', { class: 't2-input', type: 'text', maxlength: '60', value: a.t || '', placeholder: a.at === 'kv' ? 'المسمى' : 'عنوان القسم', 'aria-label': 'المسمى', onInput: function (ev) { a.t = ev.target.value; mark(); } }),
+      a.at === 'kv' ? e('input', { class: 't2-input', type: 'text', maxlength: '120', value: a.v || '', placeholder: 'القيمة', 'aria-label': 'القيمة', onInput: function (ev) { a.v = ev.target.value; mark(); } })
+        : e('textarea', { class: 't2-input', rows: '2', maxlength: '700', placeholder: 'نص القسم', 'aria-label': 'نص القسم', onInput: function (ev) { a.v = ev.target.value; mark(); } }, a.v || ''),
+      DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { d.adds.splice(i, 1); onCh(); } })]);
+  };
+  const cards = STL_EL.map(function (G) {
+    const off = G.c && hid(G.c);
+    const head = e('div', { class: 'stl-dc-h' }, [G.c ? ck(G.c, G.g) : e('span', { class: 'stl-dc-fix' }, 'ثابت'), e('b', {}, G.g), G.c ? nm(G.c, G.g, 'عنوان ' + G.g) : null]);
+    const kids = [head];
+    if (!off) {
+      if (G.k) kids.push(e('div', { class: 'stl-dc-rows' }, G.k.map(rowEl)));
+      if (G.items) kids.push(R && (R.items || []).length ? e('div', { class: 'stl-dc-rows' }, (R.items || []).map(function (it) { return rowEl([it.k, it.t + (Number(it.disc) ? ' · خصم ' + stlN(it.disc) + ' (' + stlPctV(it.disc, it.before) + ')' : ' · بلا خصم'), it.t]); }))
+        : e('small', { class: 'cu-dr-hint' }, 'تظهر البنود بعد اكتمال الحساب.'));
+      if (G.add) {
+        d.adds.forEach(function (a, i) { if (a.at === G.add) kids.push(addEl(a, i)); });
+        kids.push(e('div', { class: 't2-pb-actions' }, [DS.button('إضافة سطر', { size: 'sm', ui: 'plus', onClick: function () { if (d.adds.length >= 12) { snack('الحد 12 إضافة'); return; } d.adds.push({ at: 'kv', t: '', v: '' }); onCh(); } })]));
+      }
+      (G.tx || []).forEach(function (t) { kids.push(tx(t)); });
+      if (G.hint) kids.push(e('small', { class: 'cu-dr-hint' }, G.hint));
+    }
+    return e('section', { class: 'stl-dc' + (off ? ' is-off' : '') }, kids);
+  });
+  const secs = d.adds.map(function (a, i) { return a.at === 'sec' ? addEl(a, i) : null; }).filter(Boolean);
+  cards.push(e('section', { class: 'stl-dc is-add' }, [e('div', { class: 'stl-dc-h' }, [e('span', { class: 'stl-dc-fix' }, 'جديد'), e('b', {}, 'أقسام مضافة')])].concat(secs.length ? secs : [e('small', { class: 'cu-dr-hint' }, 'أضف قسمًا بعنوان ونص يظهر بعد مبلغ السداد.')],
+    [e('div', { class: 't2-pb-actions' }, [DS.button('إضافة قسم', { size: 'sm', ui: 'plus', onClick: function () { if (d.adds.length >= 12) { snack('الحد 12 إضافة'); return; } d.adds.push({ at: 'sec', t: '', v: '' }); onCh(); } })])])));
+  return [e('div', { class: 'stl-dc-g' }, cards),
+    e('div', { class: 't2-pb-actions' }, [e('small', { class: 'cu-dr-hint' }, 'الإخفاء والمسميات والإضافات لهذه الفاتورة وحدها — الحساب والمبلغ لا يتغيّران. الحقل الفارغ يأخذ المسمى الافتراضي.'),
+      DS.button('إرجاع المستند الافتراضي', { size: 'sm', ui: 'x', onClick: function () { d.hide = []; d.labels = {}; d.texts = {}; d.adds = []; onCh(); } })])];
 }
-const stlDocClean = function (d) { const o = {}; if (d && (d.hide || []).length) o.hide = d.hide.slice(); if (d && Object.keys(d.labels || {}).length) o.labels = Object.assign({}, d.labels); if (d && Object.keys(d.texts || {}).length) o.texts = Object.assign({}, d.texts); return Object.keys(o).length ? o : null; };
-const stlDraftOf = function (S) { return { v: 1, date: S.date, ex: !!S.ex, note: S.note || '', addr: S.addr || '', pm: S.pm, step: S.step, doc: stlDocClean(S.doc) || {},
+const stlDocClean = function (d) {
+  const o = {}; if (!d) return null;
+  if ((d.hide || []).length) o.hide = d.hide.slice();
+  if (Object.keys(d.labels || {}).length) o.labels = Object.assign({}, d.labels);
+  if (Object.keys(d.texts || {}).length) o.texts = Object.assign({}, d.texts);
+  const A = (d.adds || []).filter(function (a) { return a && String(a.t || '').trim().length >= 2 && String(a.v || '').trim().length >= 1; }).map(function (a) { return { at: a.at === 'sec' ? 'sec' : 'kv', t: String(a.t).trim().slice(0, 60), v: String(a.v).trim().slice(0, 700) }; });
+  if (A.length) o.adds = A.slice(0, 12);
+  return Object.keys(o).length ? o : null;
+};
+/* حسابات الاستلام البنكية (من إعدادات المنشأة) */
+const stlBanks = function (RF) {
+  if (!BTR_BANKS.at) { BTR_BANKS.at = 1; clApi('/admin/api/banks').then(function (j) { BTR_BANKS.L = j.banks || []; BTR_BANKS.at = Date.now(); RF.paint(); }).catch(function () { BTR_BANKS.at = 0; }); }
+  return BTR_BANKS.L.filter(function (a) { return a.active; });
+};
+const stlBankName = function (acts, id) { const a = acts.filter(function (x) { return x.id === id; })[0]; return a ? a.bank + (a.label ? ' — ' + a.label : '') : ''; };
+/* وسيلة السداد وحساب التحويل */
+function stlPmBox(S, acts, onCh, mark) {
+  if (S.pm === 'bank' && acts.length && (!S.acct || !acts.some(function (a) { return a.id === S.acct; }))) S.acct = (acts.filter(function (a) { return a.default; })[0] || acts[0]).id;
+  return [e('div', { class: 'stl-tl-seg', role: 'radiogroup', 'aria-label': 'وسيلة السداد' }, [['gateway', 'بوابة الدفع', 'credit-card'], ['bank', 'تحويل بنكي', 'bank']].map(function (m) {
+      return e('button', { type: 'button', role: 'radio', 'aria-checked': S.pm === m[0] ? 'true' : 'false', class: 'stl-tl-pm' + (S.pm === m[0] ? ' is-on' : ''), onClick: function () { S.pm = m[0]; onCh(); } }, [frag(ui(m[2], 16)), e('span', {}, m[1])]); })),
+    S.pm === 'bank' ? DS.editField('حساب التحويل', acts.length ? DS.select({ value: S.acct, options: acts.map(function (a) { return [a.id, a.bank + (a.label ? ' · ' + a.label : '') + ' · ' + String(a.iban || '').slice(-4) + (a.default ? ' (الافتراضي)' : '')]; }), onChange: function (v) { S.acct = v; mark(); } })
+      : e('small', { class: 'cu-dr-hint' }, BTR_BANKS.at === 1 ? 'جارٍ تحميل الحسابات…' : 'لا يوجد حساب استلام فعّال — أضفه من إعدادات المنشأة، وإلا يُستعمل الحساب الافتراضي عند إضافته.')) : null,
+    e('small', { class: 'cu-dr-hint' }, S.pm === 'bank' ? 'بعد توقيع العميل يصله طلب التحويل ببيانات الحساب المختار هنا ورابط إرفاق الإيصال.' : 'بعد توقيع العميل يصله رابط السداد عبر بوابة الدفع.')];
+}
+/* «صالحة حتى»: من اليوم (أو تاريخ السداد) حتى موعد الدفعة القادمة */
+const stlVRange = function (R, date) { const t = lvToday(), mn = String(date || '') > t ? String(date) : t, mx0 = String((R && R.valid_until) || date || t); return { min: mn, max: mx0 > mn ? mx0 : mn }; };
+const stlDraftOf = function (S) { return { v: 2, date: S.date, ex: !!S.ex, note: S.note || '', addr: S.addr || '', pm: S.pm, acct: S.acct || '', valid: S.valid || '', doc: stlDocClean(S.doc) || {},
   lines: S.lines.map(function (l) { return { cat: l.cat, item: l.item, calc: l.calc, val: l.val === undefined ? '' : String(l.val), pts: l.pts === undefined ? '' : String(l.pts), reason: l.reason || '', xid: l.xid || null, rsO: !!l.rsO }; }) }; };
 function stlDraftUse(S, d) {
   if (!d || typeof d !== 'object') return;
   if (/^\d{4}-\d{2}-\d{2}$/.test(String(d.date || ''))) S.date = d.date;
   S.ex = d.ex !== false; S.note = String(d.note || ''); S.addr = d.addr === 'm' || d.addr === 'f' ? d.addr : S.addr; S.pm = d.pm === 'bank' ? 'bank' : 'gateway';
+  S.acct = /^[0-9a-f-]{36}$/.test(String(d.acct || '')) ? d.acct : ''; S.valid = /^\d{4}-\d{2}-\d{2}$/.test(String(d.valid || '')) ? d.valid : '';
   S.lines = Array.isArray(d.lines) ? d.lines.map(function (l) { return Object.assign({}, l); }) : [];
-  const D = d.doc || {}; S.doc = { hide: Array.isArray(D.hide) ? D.hide.slice() : [], labels: Object.assign({}, D.labels || {}), texts: Object.assign({}, D.texts || {}) };
-  S.step = Math.max(0, Math.min(3, Number(d.step) || 0)); S.rk = '';
+  const D = d.doc || {}; S.doc = stlDocNorm({ hide: Array.isArray(D.hide) ? D.hide.slice() : [], labels: Object.assign({}, D.labels || {}), texts: Object.assign({}, D.texts || {}), adds: Array.isArray(D.adds) ? D.adds.map(function (a) { return Object.assign({}, a); }) : [] });
+  S.rk = '';
 }
 function stlForm(c, r, RF) {
   const ctx = LIVE_ADM.stx || {}, QL = ((LIVE_ADM.sq || {})[r.id] || []), Q = QL.filter(function (q) { return q.status === 'pending' || q.status === 'approved'; })[0], last = QL[0];
   if (!LIVE_ADM.stx) return [DS.note('warn', 'محرّك سداد قيمة المنتج غير متاح', 'تعذّر تحميل إعدادات سداد قيمة المنتج من القاعدة — حدّث الصفحة.')];
-  const S = cfSt('stl:' + c.no, { date: lvToday(), ex: ctx.exempt_default !== false, lines: [], note: '', res: null, rk: '', cerr: '', calc: false, edit: false, step: 0, pm: 'gateway', doc: { hide: [], labels: {}, texts: {} }, dft: null, dfl: 0,
+  const S = cfSt('stl:' + c.no, { date: lvToday(), ex: ctx.exempt_default !== false, lines: [], note: '', res: null, rk: '', cerr: '', calc: false, edit: false, pm: 'gateway', acct: '', valid: '', doc: stlDocNorm({}), dft: null, dfl: 0,
     addr: (QL.filter(function (q) { return q.addr; })[0] || {}).addr || '' });
+  stlDocNorm(S.doc);
   const out = [];
   if (Q) out.push(stlQuoteCard(Q, ctx, c, RF));
   else if (last && (last.status === 'rejected' || last.status === 'executed')) out.push(DS.note(last.status === 'rejected' ? 'warn' : 'info', 'آخر فاتورة: ' + last.quote_no + ' — ' + (STL_ST[last.status] || [last.status])[0], last.decide_note || null));
@@ -17651,10 +17757,12 @@ function stlForm(c, r, RF) {
       .catch(function (err) { if (S.rk !== key) return; S.cerr = (err && err.message) || 'تعذّر الحساب.'; S.calc = false; RF.paint(); });
   }
   const R = S.res && !S.cerr ? S.res : null;
-  const go = function (i) { S.step = Math.max(0, Math.min(3, i)); RF.paint(); };
-  const wz = e('ol', { class: 'stl-wz', 'aria-label': 'خطوات إعداد الفاتورة' }, STL_WZ.map(function (t, i) {
-    return e('li', {}, e('button', { type: 'button', class: 'stl-wz-b' + (i === S.step ? ' is-on' : i < S.step ? ' is-done' : ''), 'aria-current': i === S.step ? 'step' : null, onClick: function () { go(i); } }, [e('i', {}, String(i + 1)), e('span', {}, t)])); }));
-  const bar = R ? e('div', { class: 'stl-wz-sum' }, [['المتبقي على العقد', SR(R.before)], ['إجمالي الخصم', SR(R.discount) + ' · ' + fmtNum(R.discount_pct) + '%'], ['مبلغ الفاتورة', SR(R.after)], ['وسيلة السداد', S.pm === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع']].map(function (x, i) {
+  const acts = stlBanks(RF);
+  const VR = stlVRange(R, S.date);
+  if (S.valid && (S.valid < VR.min || S.valid > VR.max)) S.valid = '';
+  const vEff = S.valid || (R ? VR.max : '');
+  const docOut = function () { const dd = stlDocClean(S.doc) || {}; const bn = S.pm === 'bank' ? stlBankName(acts, S.acct) : ''; if (bn) dd.bank = bn; return dd; };
+  const bar = R ? e('div', { class: 'stl-wz-sum' }, [['المتبقي على العقد', SR(R.before)], ['إجمالي الخصم', SR(R.discount) + ' · ' + fmtNum(R.discount_pct) + '%'], ['مبلغ الفاتورة', SR(R.after)], ['صالحة حتى', vEff ? qDmy(vEff) : '—']].map(function (x, i) {
     return e('div', { class: i === 2 ? 'is-due' : null }, [e('small', {}, x[0]), e('b', {}, x[1])]); })) : null;
   const saveDraft = async function () {
     if (S.dbusy) return; S.dbusy = true; S.err = ''; RF.paint();
@@ -17671,59 +17779,50 @@ function stlForm(c, r, RF) {
     try { await admRpc('admin_settle_draft_drop', { p_contract: r.id }); } catch (err) { void err; }
     S.dft = null; snack('حُذفت المسودة'); RF.paint();
   };
-  const prev = function () { if (!R) return; const L = esFromR(R, null); L.doc = stlDocClean(S.doc); L.pay_method = S.pm; L.addr = S.addr || null; try { dcPdf(dcSettleDoc(L, true)); } catch (err) { stlNotice(R, null); } };
+  const prev = function () { if (!R) return; const L = esFromR(R, null); L.doc = docOut(); L.pay_method = S.pm; L.addr = S.addr || null; if (vEff) L.valid = vEff; try { dcPdf(dcSettleDoc(L, true)); } catch (err) { stlNotice(R, null); } };
   const save = async function () {
     if (S.busy || !R) return;
-    if (!S.addr) { S.err = 'اختر صيغة المخاطبة (السيد أو السيدة) — تظهر في المستند والشهادة.'; S.step = 0; RF.paint(); return; }
+    if (!S.addr) { S.err = 'اختر صيغة المخاطبة (السيد أو السيدة) — تظهر في المستند والشهادة.'; RF.paint(); return; }
     S.busy = true; S.err = ''; RF.paint();
     try {
       const j = await admRpc('admin_settle_quote_save', { p_contract: r.id, p_date: S.date, p_exempt: S.ex, p_lines: JSON.parse(S.rk)[2].map(stlLn), p_note: S.note });
       let warn = '';
       try { await admRpc('admin_settle_quote_addr', { p_id: j.id, p_addr: S.addr }); } catch (err) { void err; }
-      const dd = stlDocClean(S.doc);
-      if (S.pm !== 'gateway' || dd) { try { const m = await admRpc('admin_settle_quote_meta', { p_id: j.id, p_pay_method: S.pm, p_doc: dd || {} }); if (m && m.ok === false) warn = ' — تعذّر حفظ وسيلة السداد أو إعداد المستند، عدّلها من «أدوات الفاتورة».'; } catch (err) { warn = ' — تعذّر حفظ وسيلة السداد أو إعداد المستند، عدّلها من «أدوات الفاتورة».'; } }
+      const dd = stlDocClean(S.doc) || {}; dd.hide = dd.hide || [];
+      if (S.valid && S.valid !== VR.max) dd.valid = S.valid;
+      if (S.pm === 'bank' && S.acct) dd.acct = S.acct;
+      if (S.pm !== 'gateway' || Object.keys(dd).length) { try { const m = await admRpc('admin_settle_quote_meta', { p_id: j.id, p_pay_method: S.pm, p_doc: dd }); if (m && m.ok === false) warn = ' — ' + (ADM_ERR[m.error] || 'تعذّر حفظ إعداد المستند') + ' عدّلها من «أدوات الفاتورة».'; } catch (err) { warn = ' — تعذّر حفظ وسيلة السداد أو إعداد المستند، عدّلها من «أدوات الفاتورة».'; } }
       if (S.dft) { try { await admRpc('admin_settle_draft_drop', { p_contract: r.id }); } catch (err) { void err; } }
-      S.busy = false; S.edit = false; S.lines = []; S.note = ''; S.rk = ''; S.res = null; S.step = 0; S.pm = 'gateway'; S.doc = { hide: [], labels: {}, texts: {} }; S.dft = null; S.touched = false;
+      S.busy = false; S.edit = false; S.lines = []; S.note = ''; S.rk = ''; S.res = null; S.pm = 'gateway'; S.acct = ''; S.valid = ''; S.doc = stlDocNorm({}); S.dft = null; S.touched = false;
       cfRe(RF, 'حُفظت فاتورة سداد قيمة المنتج ' + j.quote_no + (j.status === 'pending' ? ' — بانتظار اعتماد المشرف.' : ' — جاهزة للتنفيذ.') + warn);
     } catch (err) { S.busy = false; S.err = (err && err.message) || 'تعذّر الحفظ.'; RF.paint(); }
   };
-  let body;
-  if (S.step === 0) {
-    const ex = e('input', { type: 'checkbox', checked: S.ex ? 'checked' : null, onChange: function (ev) { S.ex = ev.target.checked; onCh(); } });
-    body = [e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'بيانات الفاتورة'),
-        e('div', { class: 'stl-ln-g' }, [DS.editField('تاريخ السداد', datePick({ value: S.date, onChange: function (v) { S.date = v; onCh(); } })),
+  const ex = e('input', { type: 'checkbox', checked: S.ex ? 'checked' : null, onChange: function (ev) { S.ex = ev.target.checked; onCh(); } });
+  const sec = function (n, t, kids, cls) { return e('section', { class: 'stl-one-s' + (cls ? ' ' + cls : '') }, [e('h5', { class: 'stl-one-h' }, [e('i', {}, String(n)), e('span', {}, t)])].concat(kids)); };
+  const body = [
+    sec(1, 'بيانات الفاتورة ووسيلة السداد', [e('div', { class: 'stl-one-2' }, [
+      e('div', { class: 'stl-wz-c' }, [e('div', { class: 'stl-ln-g' }, [DS.editField('تاريخ السداد', datePick({ value: S.date, onChange: function (v) { S.date = v; onCh(); } })),
+          DS.editField('صالحة حتى', R ? datePick({ value: vEff, min: VR.min, max: VR.max, onChange: function (v) { S.valid = v === VR.max ? '' : v; onCh(); } }) : e('small', { class: 'cu-dr-hint' }, 'بعد اكتمال الحساب')),
           DS.editField('المخاطبة في المستند والشهادة', DS.select({ value: S.addr || '', options: [['', 'اختر'], ['m', 'السيد'], ['f', 'السيدة']], onChange: function (v) { S.addr = v; onCh(); } })),
           DS.editField('إعفاء ربح الأشهر التي لم تبدأ', e('label', { class: 'stl-sg-ck' }, [ex, e('span', {}, S.ex ? 'مُعفاة' : 'غير مُعفاة')]))]),
-        R ? e('small', { class: 'cu-dr-hint' }, 'ربح الشهر ' + SR(R.interest_month) + ' على ' + fmtNum(R.months) + ' شهرًا · أشهر لم تبدأ: ' + fmtNum(R.future_months) + ' · الدفعات المفتوحة ' + (R.payments || []).map(function (p) { return p.seq; }).join('، ')) : null]),
-      e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'وسيلة السداد'), stlPmSeg(S, onCh),
-        e('small', { class: 'cu-dr-hint' }, S.pm === 'bank' ? 'بعد توقيع العميل يصله طلب التحويل البنكي ببيانات الحساب الافتراضي ورابط إرفاق الإيصال.' : 'بعد توقيع العميل يصله رابط السداد عبر بوابة الدفع.')]),
-      R ? stlDueNote(R) : null];
-  } else if (S.step === 1) {
-    body = [e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'بنود الخصم')].concat(S.lines.length ? S.lines.map(function (l, i) { return stlLineRow(S, l, i, R || S.res, ctx, onCh); }) : [e('small', { class: 'cu-dr-hint' }, 'لا بنود خصم بعد — تُطبَّق بالترتيب لكل بند: العضوية ثم النقاط ثم الإضافي ثم الاستثنائي. سبب الخصم الإضافي يُختار من القائمة.')],
-        [e('div', { class: 't2-pb-actions' }, [DS.button('إضافة بند خصم', { size: 'sm', ui: 'plus', onClick: function () { S.lines.push({ cat: 'extra', item: 'margin', calc: 'pct', val: '', reason: (ctx.extra_reasons || [])[0] || '' }); onCh(); } })]), R ? stlRound(S, R, onCh) : null])),
-      R ? stlTable(R) : null].concat(R ? stlFlags(R) : []);
-  } else if (S.step === 2) {
-    body = stlDocEd(S.doc, R, onCh, mark, S.pm).concat([e('div', { class: 't2-pb-actions' }, [R ? DS.button('معاينة الفاتورة', { size: 'sm', ui: 'file-pdf', onClick: prev }) : null])]);
-  } else {
-    const dd = stlDocClean(S.doc);
-    body = [R ? stlTable(R) : null].concat(R ? stlFlags(R) : [], [R ? stlDueNote(R) : null,
-      DS.fields([['وسيلة السداد', S.pm === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع'], ['المخاطبة', S.addr === 'f' ? 'السيدة' : S.addr === 'm' ? 'السيد' : 'لم تُحدَّد'], ['تاريخ السداد', S.date],
-        ['إعداد المستند', dd ? [(dd.hide || []).length ? 'مخفي ' + fmtNum(dd.hide.length) + ' بند' : null, dd.labels ? 'مسميات معدّلة' : null, dd.texts ? 'نصوص معدّلة' : null].filter(Boolean).join(' · ') : 'افتراضي']]),
-      DS.editField('ملاحظة الفاتورة (اختيارية)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; mark(); } }, S.note))]);
-  }
-  const nav = e('div', { class: 'stl-wz-nav' }, [
-    S.step > 0 ? DS.button('السابق', { size: 'sm', ui: 'caret-right', onClick: function () { go(S.step - 1); } }) : null,
-    S.step < 3 ? liveOk(DS.button('التالي', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: function () { go(S.step + 1); } })) : null,
-    S.step === 3 ? liveOk(DS.button(S.busy ? 'جارٍ الحفظ…' : R && R.needs_approval ? 'حفظ الفاتورة وطلب اعتماد المشرف' : 'حفظ الفاتورة', { tone: 'primary', ui: 'check', disabled: S.busy || S.calc || !R, onClick: save })) : null,
-    S.step === 3 && R ? DS.button('معاينة الفاتورة', { size: 'sm', ui: 'file-pdf', onClick: prev }) : null,
+        R ? e('small', { class: 'cu-dr-hint' }, 'الصلاحية من ' + qDmy(VR.min) + ' حتى ' + qDmy(VR.max) + ' (موعد الدفعة القادمة) · ربح الشهر ' + SR(R.interest_month) + ' على ' + fmtNum(R.months) + ' شهرًا · أشهر لم تبدأ: ' + fmtNum(R.future_months)) : null]),
+      e('div', { class: 'stl-wz-c' }, [e('h5', {}, 'وسيلة السداد')].concat(stlPmBox(S, acts, onCh, mark)))]), R ? stlDueNote(R) : null]),
+    sec(2, 'الخصومات', [e('div', { class: 'stl-wz-c' }, (S.lines.length ? S.lines.map(function (l, i) { return stlLineRow(S, l, i, R || S.res, ctx, onCh); }) : [e('small', { class: 'cu-dr-hint' }, 'لا بنود خصم بعد — تُطبَّق بالترتيب لكل بند: العضوية ثم النقاط ثم الإضافي ثم الاستثنائي. سبب الخصم الإضافي يُختار من القائمة.')])
+        .concat([e('div', { class: 't2-pb-actions' }, [DS.button('إضافة بند خصم', { size: 'sm', ui: 'plus', onClick: function () { S.lines.push({ cat: 'extra', item: 'margin', calc: 'pct', val: '', reason: (ctx.extra_reasons || [])[0] || '' }); onCh(); } })]), R ? stlRound(S, R, onCh) : null])),
+      R ? stlTable(R) : null].concat(R ? stlFlags(R) : [])),
+    sec(3, 'محتوى المستند — الإظهار والتسمية والإضافة', stlDocAll(S.doc, R, onCh, mark, S.pm)),
+    sec(4, 'ملاحظة داخلية', [DS.editField('ملاحظة الفاتورة (اختيارية، لا تظهر في المستند)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; mark(); } }, S.note))])];
+  const nav = e('div', { class: 'stl-wz-nav stl-one-nav' }, [
+    liveOk(DS.button(S.busy ? 'جارٍ الحفظ…' : R && R.needs_approval ? 'حفظ الفاتورة وطلب اعتماد المشرف' : 'حفظ الفاتورة', { tone: 'primary', ui: 'check', disabled: S.busy || S.calc || !R, onClick: save })),
+    R ? DS.button('معاينة الفاتورة', { size: 'sm', ui: 'file-pdf', onClick: prev }) : null,
     e('span', { class: 'sp' }),
     liveOk(DS.button(S.dbusy ? 'جارٍ الحفظ…' : 'حفظ مسودة', { size: 'sm', ui: 'file-text', disabled: !!S.dbusy, onClick: saveDraft })),
     Q ? DS.button('إلغاء', { size: 'sm', ui: 'x', onClick: function () { S.edit = false; RF.paint(); } }) : null]);
-  out.push(e('div', { class: 'stl-ed stl-wzf' }, [
+  out.push(e('div', { class: 'stl-ed stl-one' }, [
     Q ? DS.note('info', 'فاتورة جديدة', 'حفظها يلغي الفاتورة ' + Q.quote_no + ' وتحلّ محلّها.') : null,
     S.dft ? e('div', { class: 'stl-dft' }, [e('span', {}, 'مسودة محفوظة' + (S.dft.by ? ' — ' + S.dft.by : '') + (S.dft.at ? ' · ' + stlD(S.dft.at) : '') + (S.touched ? ' · تعديلات لم تُحفظ' : '')), DS.button('حذف المسودة', { size: 'sm', ui: 'trash', onClick: dropDraft })]) : null,
-    wz, bar, S.calc ? e('small', { class: 'cu-dr-hint', role: 'status' }, 'جارٍ الحساب…') : null, S.cerr ? DS.note('warn', 'تعذّر الحساب', S.cerr) : null,
-    e('div', { class: 'stl-wz-p' }, body),
+    bar, S.calc ? e('small', { class: 'cu-dr-hint', role: 'status' }, 'جارٍ الحساب…') : null, S.cerr ? DS.note('warn', 'تعذّر الحساب', S.cerr) : null,
+    e('div', { class: 'stl-one-p' }, body),
     S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null, nav]));
   return out;
 }
@@ -17846,19 +17945,7 @@ function dcSettleDoc(L, draft, Tp) {
   const its = L.items.map(function (x) { return [x.name, '− ' + esMoney(x.disc) + (x.full ? ' · إعفاء كامل' : '')]; });
   const base = { hdr: Object.assign({}, QT.hdr), label: 'فاتورة سداد قيمة المنتج', title: T.title, sub: T.org + ' · ' + T.issuer, org: T.org, issuer: T.issuer, foot: T.org + ' · ' + T.auto, pill: 'نسخة العميل', auto: T.auto, slogan: d2Slogan(T),
     fname: 'سداد-قيمة-المنتج-' + L.contract + '.pdf', draft: draft, aud: draft || L.aud === false ? null : 'تنزيل فاتورة سداد قيمة المنتج PDF — ' + L.no };
-  if (DOCDSN.pq === 2) {
-    /* v564: اسم العميل مرة واحدة هنا، مع تواريخ الاعتماد والموافقة والتنفيذ */
-    B.push(d3Card('بيانات العقد والعميل', 'user', [d3KV([['اسم العميل', (L.addr === 'f' ? 'السيدة ' : L.addr === 'm' ? 'السيد ' : '') + L.client], ['رقم العقد', L.contract, true], ['رقم الفاتورة', L.no, true], ['تاريخ السداد', qDmy(L.date)],
-      ['تاريخ اعتماد الفاتورة', L.approved_at ? stlD(L.approved_at) : '—'], ['تاريخ موافقة العميل', L.accepted_at ? stlD(L.accepted_at) : 'بانتظار التوقيع'], ['تاريخ التنفيذ', L.executed_at ? stlD(L.executed_at) : 'عند السداد'], ['وسيلة السداد', L.pay_method === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع'], ['صالحة حتى', qDmy(L.valid)]])]));
-    B.push(d3Card('مبلغ السداد', 'receipt', [T.intro ? e('p', { class: 'd3-p' }, T.intro) : null, d3KV([], tots.filter(Boolean)), stlDueBox(L)])); /* v565: مستحق عليكم */
-    if (on('items') && its.length) B.push(d3Card('البنود المخصومة', 'list', [stlDiscTbl(L.items)])); /* v565: النسبة وسبب الخصم */
-    if (on('valid') && !L.next && !L.od) B.push(d3Card('صلاحية الفاتورة', 'clock', [e('div', { class: 'd3-exec' }, [e('b', {}, 'صالحة حتى ' + qDmy(L.valid)), e('span', {}, esNextLine(L))])]));
-    if (on('steps') && steps.length) B.push(d3Card('خطوات القبول والسداد', 'shield', [d3List(steps, 0, false)], 'is-terms'));
-    if (on('note') && T.note) B.push(d3Card('تنويه', 'info', [e('p', { class: 'd3-p' }, T.note)], 'is-note', true));
-    B.push(d3Card('توقيع العميل', 'shield', [stlSignBox(L)], 'is-sign')); /* v564: المكان المخصص للتوقيع */
-    if (on('appr')) B.push(d3ApprWide(L.no, 'pq', {}));
-    return Object.assign(base, { dsn: 2, cls: 'is-pq is-stl', en: 'PRODUCT VALUE PAYMENT', slogan0: T.slogan || QT0.slogan, blocks: B, stk: null, meta: [['رقم المستند', L.no], ['تاريخ الإصدار', qDmy(L.date)]], meta3: [['صالحة حتى', qDmy(L.valid), false]] }); /* v565: ترويسة عرض السعر نفسها — الباركود بالمقاس نفسه */ /* v564: كترويسة عرض السعر — رقم المستند وباركوده · تاريخ الإصدار */
-  }
+  if (DOCDSN.pq === 2) return stlDoc3(L, T, base, on, steps); /* v567: كل عناصر المستند تُخفى وتُسمّى وتُضاف */
   B.push(dcKV([['العميل', L.client], ['رقم العقد', L.contract], ['صالحة حتى', qDmy(L.valid)]], 'is-3'));
   if (T.intro) B.push(dcPar(T.intro));
   B.push(dcTbl('1 · مبلغ السداد', ['البيان', 'المبلغ'], tots.filter(Boolean).map(function (t) { return t[2] === 'gt' ? dcGT([t[0], t[1]]) : [t[0], t[1]]; })));
@@ -21484,6 +21571,7 @@ function axFontCSS() {
   if (AX_FONT.css) return Promise.resolve(AX_FONT.css);
   if (AX_FONT.p) return AX_FONT.p;
   AX_FONT.p = (async function () {
+    try { const s0 = await axFontSelf(); if (s0) { AX_FONT.css = s0; return s0; } } catch (err) { void err; } /* v567: خطوط الهوية في ملف PDF — كان جلبها من Google ممنوعًا فيُرسم بخط بديل وتتداخل النصوص */
     const link = [].slice.call(document.querySelectorAll('link[rel=stylesheet]')).filter(function (l) { return /fonts\.googleapis\.com/.test(l.href); })[0];
     if (!link) return '';
     const css = await fetch(link.href, { mode: 'cors' }).then(function (r) { return r.text(); });

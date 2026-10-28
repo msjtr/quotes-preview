@@ -9239,3 +9239,29 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .is-stl .d3-meta.is-4 .d3-chip b{font-size:12.5px;letter-spacing:0}
 .d3-card>.d3-due{margin:10px 14px 12px}
 .d3-dt th,.d3-dt td{padding:5px 8px}.d3-card>.d3-due{margin:8px 14px 10px;gap:5px}.d3-due-r{padding:5px 10px;gap:8px}.d3-due-r b{font-size:12px}.d3-due-r small{font-size:10.5px}
+/* v567: إعداد فاتورة سداد قيمة المنتج في صفحة واحدة · محرّر المستند (إظهار · تسمية · إضافة) */
+.stl-one-p{display:grid;gap:14px}
+.stl-one-s{border:1px solid #e3e8f2;border-radius:16px;padding:12px 14px;background:#fbfcfe}
+.stl-one-h{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:15px;color:#0B2552}
+.stl-one-h>i{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#0AA5AD;color:#fff;font-style:normal;font-size:13px}
+.stl-one-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.stl-one-2>.stl-wz-c,.stl-one-2>.stl-tl-c{margin:0}
+.stl-one-nav{position:sticky;bottom:0;z-index:2;background:#fff;padding-bottom:8px}
+.stl-dc-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.stl-dc{border:1px solid #e3e8f2;border-radius:14px;background:#fff;padding:10px 12px;min-width:0;display:grid;gap:8px}
+.stl-dc.is-off{background:#f5f6f9}
+.stl-dc.is-off .stl-dc-h b{color:#8792a8;text-decoration:line-through}
+.stl-dc.is-add{border-style:dashed;border-color:#c9b37a;background:#fffdf7}
+.stl-dc-h{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid #eef1f6}
+.stl-dc-h>b{font-size:14px;color:#0B2552;white-space:nowrap}
+.stl-dc-h>.t2-input{min-width:0}
+.stl-dc-rows{display:grid;gap:6px}
+.stl-dc-r{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1.1fr);align-items:center;gap:8px;font-size:13px}
+.stl-dc-r.is-off .stl-dc-n{color:#8792a8;text-decoration:line-through}
+.stl-dc-n{color:#14213D;min-width:0;overflow-wrap:anywhere}
+.stl-dc input.t2-input{min-height:34px;height:34px;padding-block:4px;font-size:13px}
+.stl-dc-fix{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef3fb;color:#5d6a86;font-size:11.5px;font-weight:700;white-space:nowrap}
+.stl-dc-add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;gap:6px;align-items:start}
+.stl-dc .t2-pb-actions{margin:0}
+@media (max-width:52rem){.stl-dc-g,.stl-one-2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:30rem){.stl-dc-r{grid-template-columns:auto minmax(0,1fr)}.stl-dc-r>.t2-input,.stl-dc-r>span:last-child:empty{grid-column:1/-1}.stl-dc-add{grid-template-columns:minmax(0,1fr)}}
