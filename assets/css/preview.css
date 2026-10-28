@@ -31,4 +31,4 @@ html.pv-dark #pv-site{background:#06122B}
 /* v266: المنفذ الحقيقي في منصتي العملاء والموظفين — بلا مساحة شريط العيّنة، وبلا عدّادات تنبيهات تجريبية */
 .tq-live #pv-host>.t2-app>.t2-head{top:0!important}
 .tq-live #pv-host>.t2-app>.t2-side{top:var(--t2-hh)!important;height:calc(100dvh - var(--t2-hh))!important}
-.tq-live #pv-host .t2-nbadge,.tq-live #pv-host [data-nsc]{display:none!important}
+/* v574: عدّادات التنبيهات تظهر في المنفذ الحقيقي — تُحسب من الإشعارات الفعلية وحدها */
