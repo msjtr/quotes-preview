@@ -3170,7 +3170,7 @@ function dbNotifs() {
     return DBN.rows.filter(dbRole).map(function (x) {
       const staffK = DBN_STAFF.indexOf(x.kind) >= 0 && S.role === 'admin' && x.uid;
       return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: DBN_STAFF.indexOf(x.kind) >= 0 ? 'system' : 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '',
-        act: x.kind === 'profile_review' ? (x.mine ? ['حالة طلبي', function () { go('other', 'me-verify'); }] : ['فتح طلبات التوثيق', function () { go('other', 'cu-pf-ver'); }]) : staffK ? ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }] : undefined };
+        act: x.kind === 'profile_review' ? (x.mine ? ['حالة طلبي', function () { go('other', 'me-verify'); }] : ['فتح طلبات التوثيق', function () { go('other', 'cu-pf-ver'); }]) : x.kind === 'service_request' ? ['طلباتي', function () { go('other', 'me-requests'); }] /* v568 */ : staffK ? ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }] : undefined };
     });
   } catch (err) { return []; }
 }
@@ -16886,6 +16886,7 @@ function srCard(x, RF, o) {
     acts.push(DS.button(x.executed_at && x.kind === 'settle' ? 'تعديل السبب' : 'تعديل', { size: 'sm', ui: 'note-pencil', onClick: function () { W.mode = 'edit'; W.nos = null; W.err = ''; RF.paint(); } }));
   }
   if (W.err) body.push(e('span', { class: 'cu-err', role: 'alert' }, W.err));
+  if (W.mode !== 'edit' && ['approved', 'rejected', 'in_review'].indexOf(x.status) >= 0 && !x.executed_at) acts.push(liveOk(DS.button('إرسال إشعار للعميل', { size: 'sm', ui: 'paper-plane-tilt', disabled: W.busy, onClick: function () { go('admin_sr_notify', { p_id: x.id }, 'أُرسل للعميل إشعار بحالة الطلب ' + x.req_no + ' — داخل المنصة والبريد وواتساب.', 'إرسال إشعار للعميل بحالة الطلب ' + x.req_no + ' (داخل المنصة والبريد وواتساب)؟'); } }))); /* v568: الرد يصل العميل تلقائيًا عند القرار، وهذا لإعادة الإرسال */
   if (acts.length) body.push(e('div', { class: 't2-pb-actions' }, acts));
   if ((x.log || []).length) body.push(lvSec('مسار الطلب', fmtNum(x.log.length), [e('ol', { class: 'cu-log' }, x.log.slice().reverse().map(function (l) { return e('li', {}, [e('b', {}, lvBidi(l.t)), e('small', {}, [l.by === x.user_id ? 'العميل' : (l.by_name || 'فريق تيرا'), ' · ', bdiD(iso(new Date(l.at)))])]); }))], 'sr:' + x.id + ':log'));
   const s = lvSec(K[1] + ' · ' + x.req_no, st[0] + ' · ' + (x.contract_nos || []).join(' + ') + (o.who ? ' · ' + srName(x.user_id) : ''), body, 'sr:' + (o.kp || '') + x.id, ADM.svFocus === x.id);
