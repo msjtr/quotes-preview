@@ -1,0 +1,39 @@
+/* v564 — صفحة التحويل البنكي (رابط لمرة واحدة) فوق إطار الدفع tera-pay.css */
+.tt .tt-main{display:flex;flex-direction:column;gap:16px}
+.tt-what{color:#d7deea;font-size:14px;margin-top:6px}
+.tt-steps{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.tt-steps span{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.08);color:#c9d2e3;font-size:13px}
+.tt-steps span i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700}
+.tt-steps span.on{background:#E6C77A;color:#0B2552;font-weight:700}.tt-steps span.on i{background:#0B2552;color:#E6C77A}
+.tt-steps span.done{background:rgba(31,179,154,.22);color:#c9f1e8}.tt-steps span.done i{background:#1FB39A}
+.tt-card{background:#fff;border:1px solid #e3e8f2;border-radius:18px;padding:18px;box-shadow:0 10px 26px rgba(11,37,82,.06)}
+.tt-card h2{margin:0 0 12px;font-family:Alexandria,"IBM Plex Sans Arabic",sans-serif;font-size:17px;color:#0B2552}
+.tt-bank{border-color:#d9c99f;background:linear-gradient(180deg,#fffdf7,#fff)}
+.tt-acct{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tt-acct>div{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:12px;background:#fff;border:1px solid #efe6cf}
+.tt-acct small{color:#7a6a45;font-size:12px}.tt-acct b{color:#0B2552;font-size:15px;word-break:break-word}
+.tt-iban{grid-column:1/-1;flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:8px 12px!important}
+.tt-iban small{flex-basis:100%}.tt-iban b{font-size:17px;letter-spacing:.06em;flex:1;min-width:0}
+.tt-copy{appearance:none;border:1.5px solid #0B2552;background:#0B2552;color:#fff;border-radius:10px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer}
+.tt-copy.is-done{background:#1FB39A;border-color:#1FB39A}
+.tt-note{margin:12px 0 0;color:#5d6a86;font-size:13px;line-height:1.8}
+.tt-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+.tt-kv div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:#f7f9fc}
+.tt-kv dt{color:#5d6a86;font-size:12px}.tt-kv dd{margin:0;color:#14213D;font-weight:600;font-size:14px}
+.tt-drop{display:flex;flex-direction:column;align-items:center;gap:6px;padding:22px 14px;border:2px dashed #c9b37a;border-radius:16px;background:#fffdf7;cursor:pointer;text-align:center}
+.tt-drop input{position:absolute;opacity:0;width:1px;height:1px}
+.tt-drop-ic{width:44px;height:44px;border-radius:12px;background:#0B2552 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E6C77A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 16V4M7 9l5-5 5 5M5 20h14'/%3E%3C/svg%3E") center/22px no-repeat}
+.tt-drop b{color:#0B2552}.tt-drop small{color:#7a6a45}
+.tt-drop.is-on{border-style:solid;border-color:#1FB39A;background:#effaf7}
+.tt-up .tp-cta{margin-top:12px;width:100%}
+.tt-up .tp-cta[disabled]{opacity:.55;cursor:not-allowed}
+.tt-msg{margin:8px 0 0;font-size:13.5px;color:#0B2552;min-height:1.2em}.tt-msg.is-err{color:#B3262F}
+.tt-res{background:#fff;border:1px solid #e3e8f2;border-radius:20px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.tt-res h2{margin:6px 0 0;font-family:Alexandria,"IBM Plex Sans Arabic",sans-serif;font-size:20px;color:#0B2552}
+.tt-res p{margin:0;color:#5d6a86;line-height:1.9;max-width:520px}
+.tt-res-ic{width:72px;height:72px;border-radius:50%;background:#E2F4F5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23067A82' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/34px no-repeat;box-shadow:0 0 0 6px #f3fbfb,0 0 0 8px #bfe7e6}
+.tt-res.is-warn .tt-res-ic{background-color:#fff4e5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B86E00' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M12 7v6M12 17h.01'/%3E%3C/svg%3E");box-shadow:0 0 0 6px #fffaf2,0 0 0 8px #f1d9b0}
+.tt-res.is-info .tt-res-ic{background-color:#eef3fb;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B2552' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M12 11v6M12 7h.01'/%3E%3C/svg%3E");box-shadow:0 0 0 6px #f6f9fd,0 0 0 8px #cdd8ea}
+.tt-acts{margin-top:10px}
+@media (max-width:40rem){.tt-acct,.tt-kv{grid-template-columns:1fr}.tt-card{padding:14px}}
+.tt .tp-amt{flex-wrap:wrap;max-width:100%}.tt .tp-amt b{font-size:clamp(40px,4.4vw,60px);letter-spacing:-1px}

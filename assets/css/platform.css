@@ -8935,7 +8935,7 @@ html.cpv-on .t2-head{top:48px}
 .ard-cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ard-cmp div{display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--t2-surface-2)}.ard-cmp small{color:var(--t2-muted)}
 .cf-pick.is-on{border-color:var(--t2-brand)}
 @media (max-width:520px){.ard-cmp{grid-template-columns:1fr}}
-/* v462: التسوية المبكرة بمحرّك القاعدة */
+/* v462: سداد قيمة المنتج بمحرّك القاعدة */
 .stl-ed,.stl-q{display:grid;gap:12px}
 .stl-q{padding:14px 16px;border:1px solid var(--t2-line);border-radius:16px;background:var(--t2-surface,#fff)}
 .stl-q.is-pending{border-color:var(--t2-warn,#e0a100)}.stl-q.is-approved{border-color:var(--t2-brand)}
@@ -8962,7 +8962,7 @@ html.cpv-on .t2-head{top:48px}
 .sr-new,.sr-pick,.sr-stl{display:grid;gap:10px}
 .sr-stl{padding:12px;border:1px dashed var(--t2-line-2);border-radius:14px}
 .sr-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
-/* v464: عرض التسوية في حساب العميل */
+/* v464: فاتورة سداد قيمة المنتج في حساب العميل */
 .stl-cl-amt{display:grid;gap:4px;padding:14px 16px;border-radius:16px;background:var(--navy,#0A1F44);color:#fff}
 .stl-cl-amt b{font-size:1.6rem;color:var(--gold,#FFC861);font-variant-numeric:tabular-nums}
 .stl-cl-amt small{opacity:.85}
@@ -9124,3 +9124,70 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .sc-p:has(> .ct-lpick){flex-wrap:wrap}
 .ct-lform{margin-bottom:10px}
 .ct-lbar{margin-bottom:10px}
+
+/* ═════ v564: سداد قيمة المنتج — قرار العميل والتوقيع · مكان التوقيع في المستند ═════ */
+.stl-sg{margin-top:12px;padding:14px;border:1px solid var(--line,#e3e8f2);border-radius:16px;background:#fff;display:flex;flex-direction:column;gap:12px}
+.stl-sg-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.stl-sg-h>b{font-family:Alexandria,"IBM Plex Sans Arabic",sans-serif;font-size:15px;color:#0B2552}
+.stl-sg-st{display:flex;gap:6px;margin:0;padding:0;list-style:none}
+.stl-sg-st li{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#f2f5fa;color:#5d6a86;font-size:12.5px}
+.stl-sg-st li i{font-style:normal;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#dfe5ef;color:#0B2552;font-size:11px;font-weight:700}
+.stl-sg-st li.is-on{background:#E2F4F5;color:#067A82;font-weight:600}.stl-sg-st li.is-on i{background:#0AA5AD;color:#fff}
+.stl-sg-st li.is-done{background:#EAF7EF;color:#1d7a46}.stl-sg-st li.is-done i{background:#2e9e5b;color:#fff}
+.stl-sg-ck{display:flex;align-items:center;gap:8px;font-size:14px;color:#14213D;cursor:pointer}
+.stl-sg-ck input{width:18px;height:18px;accent-color:#0AA5AD}
+.stl-sg-code{max-width:220px;letter-spacing:.35em;font-size:18px;text-align:center}
+.stl-sg-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.stl-sg-tab{appearance:none;border:1px solid #dfe5ef;background:#fff;color:#0B2552;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
+.stl-sg-tab.is-on{background:#0B2552;border-color:#0B2552;color:#fff}
+.stl-sg-box{position:relative;display:grid;place-items:center;min-height:150px;border:1.5px dashed #c9b37a;border-radius:14px;background:linear-gradient(180deg,#fffdf7,#fff);overflow:hidden}
+.stl-sg-box::after{content:"";position:absolute;inset:auto 18px 30px;border-bottom:1px solid #d9c99f;pointer-events:none}
+.stl-sg-box>span{color:#9aa3b8;font-size:13px}
+.stl-sg-box img{max-width:100%;max-height:150px;object-fit:contain;position:relative;z-index:1}
+.stl-sg-cv{display:block;width:100%;height:auto;aspect-ratio:3/1;cursor:crosshair;position:relative;z-index:1;touch-action:none}
+.stl-sg-prev{font-family:Alexandria,"IBM Plex Sans Arabic",sans-serif;font-size:30px;font-weight:700;color:#0B2552;font-style:italic;position:relative;z-index:1}
+.stl-sg-typed,.stl-sg-up,.stl-sg-draw{display:flex;flex-direction:column;gap:8px}
+.stl-rs{display:flex;flex-direction:column;gap:6px}
+.stl-addr{display:inline-flex;align-items:center;gap:6px}.stl-addr small{color:#5d6a86}
+/* مكان التوقيع في مستند فاتورة سداد قيمة المنتج (القالب 2) */
+.dc3 .d3-sign{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:14px;align-items:center}
+.dc3 .d3-sign-pad{height:92px;border:1px dashed #c9b37a;border-radius:12px;background:#fffdf7;display:grid;place-items:center;overflow:hidden;position:relative}
+.dc3 .d3-sign-pad::after{content:"";position:absolute;inset:auto 14px 18px;border-bottom:1px solid #d9c99f}
+.dc3 .d3-sign-pad img{max-width:96%;max-height:84px;object-fit:contain;position:relative;z-index:1}
+.dc3 .d3-sign-pad span{color:#9aa3b8;font-size:12px}
+.dc3 .d3-sign-typed{font-family:Alexandria,"IBM Plex Sans Arabic",sans-serif;font-size:24px;font-style:italic;color:#0f1d4a;position:relative;z-index:1}
+.dc3 .d3-sign-m b{display:block;font-size:14px;color:#0f1d4a}
+.dc3 .d3-sign-m small{display:block;margin-top:4px;font-size:11.5px;line-height:1.7;color:#5d6a86}
+@media (max-width:40rem){.dc3 .d3-sign{grid-template-columns:1fr}}
+.stl-sg .t2-pb-actions{gap:10px;align-items:center;flex-wrap:wrap}
+.dc3.is-stl .d3-ttl h1{font-size:23px;white-space:nowrap}.dc3.is-stl .d3-brand h2{white-space:nowrap;font-size:21px}
+.stl-sg .t2-pb-actions small{margin-inline-start:8px}
+/* ═════ v564: أدوات الفاتورة · وسيلة السداد · التحويل البنكي ═════ */
+.stl-tl{margin-top:12px;border:1px solid #d9c99f;border-radius:16px;background:linear-gradient(180deg,#fffdf7,#fff);overflow:hidden}
+.stl-tl-h{appearance:none;border:0;background:transparent;width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font:inherit;text-align:start;color:#0B2552}
+.stl-tl-ic{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#0B2552;color:#E6C77A;flex:none}
+.stl-tl-t{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}.stl-tl-t b{font-family:Alexandria,"IBM Plex Sans Arabic",sans-serif;font-size:14.5px}.stl-tl-t small{color:#5d6a86;font-size:12px}
+.stl-tl-cv{color:#8A6A1F}
+.stl-tl-b{display:flex;flex-direction:column;gap:12px;padding:0 14px 14px}
+.stl-tl-c{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e9edf4;border-radius:12px;background:#fff}
+.stl-tl-c h5{margin:0;font-size:13.5px;color:#0B2552;font-family:Alexandria,"IBM Plex Sans Arabic",sans-serif}
+.stl-tl-seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.stl-tl-pm{appearance:none;display:inline-flex;align-items:center;gap:6px;border:1.5px solid #dfe5ef;background:#fff;color:#0B2552;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer}
+.stl-tl-pm.is-on{background:#0B2552;border-color:#0B2552;color:#fff}
+.stl-tl-its{display:flex;flex-direction:column;gap:6px}
+.stl-tl-it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 8px;border-radius:10px;background:#f7f9fc}
+.stl-tl-it.is-off{opacity:.62}.stl-tl-it small{color:#5d6a86;font-size:12px;white-space:nowrap}
+@media (max-width:40rem){.stl-tl-it{grid-template-columns:1fr}.stl-tl-it small{white-space:normal}}
+.btr-bank-list{display:flex;flex-direction:column;gap:8px}
+.btr-bank{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e3e8f2;border-radius:14px;background:#fff}
+.btr-bank.is-off{opacity:.6}
+.btr-bank-ic{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#E2F4F5;color:#067A82;flex:none}
+.btr-bank-t{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}.btr-bank-t b{color:#0B2552}.btr-bank-t small{color:#5d6a86}
+.btr-iban{font-family:"IBM Plex Sans Arabic",monospace;letter-spacing:.04em;color:#14213D;font-size:13px;align-self:flex-start}
+.btr-bank-a{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btr-bank-f{margin-top:10px}
+.btr-flow{margin:8px 0 4px}
+.btr-rv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.btr-nm{display:flex;flex-direction:column;gap:8px}.btr-nm:not(.is-no)>:last-child{display:none}
+@media (max-width:40rem){.btr-rv{grid-template-columns:1fr}}
+.rm-pm{margin-inline-end:6px}.rm-pm .stl-tl-pm{padding:5px 10px;font-size:12px}
