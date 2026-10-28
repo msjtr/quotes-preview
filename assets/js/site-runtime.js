@@ -3,7 +3,7 @@
   var CFG=window.__TERA||{}, LINKS=CFG.links||{};
   var page=CFG.start||'app', C=null, loading=null, PP={}, cur={path:'/',hash:''}, first=true;
   /* v366: رابط مباشر لصفحات الدليل من المنصة والبوابة: home/#/guide/<طريقة> */
-  var GD=/^#(\/guide(?:\/[a-z]+)?)$/, gm=GD.exec(location.hash||''); if(gm){ cur={path:gm[1],hash:''}; if(page==='portal') page='home'; }
+  var GD=/^#(\/guide(?:\/[a-z]+)?|\/faq|\/policies(?:\/[a-z-]+)?)$/, /* v562: روابط مباشرة للأسئلة الشائعة والسياسات بالشكل الجديد */ gm=GD.exec(location.hash||''); if(gm){ cur={path:gm[1],hash:''}; if(page==='portal') page='home'; }
   var dv=document.createElement('div'); dv.className='ts-dev'; fr.parentNode.insertBefore(dv,fr); dv.appendChild(fr);
   /* شاشة الانتظار الموحّدة: تظهر في كل تحميل وانتقال وتحديث، ومدتها 3 ثوانٍ على الأقل */
   var LG=['sym','tera','ar','lines','tagtx','en'];

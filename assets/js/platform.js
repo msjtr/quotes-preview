@@ -24405,8 +24405,8 @@ const dskTone = function (s) { return s === 'new' || s === 'waiting_customer' ? 
 const dskDate = function (v) { try { return v ? iso(new Date(v)) : '—'; } catch (err) { return '—'; } };
 const dskOpts = function (o) { return Object.keys(o || {}).filter(function (k) { return k !== 'draft'; }).map(function (k) { return [k, o[k]]; }); };
 function deskMine() {
-  if (DSK.cur) return deskMineView(DSK.cur); /* v560 */
-  const head = e('div', { class: 'mt-top' }, [e('span'), liveOk(DS.button('مراسلة جديدة', { tone: 'primary', ui: 'plus', size: 'sm', onClick: function () { location.href = '/desk'; } }))]);
+  if (DSK.cur) return DSK.cur === 'new' ? deskMineForm() : deskMineView(DSK.cur); /* v560 · v562 */
+  const head = e('div', { class: 'mt-top' }, [e('span'), liveOk(DS.button('مراسلة جديدة', { tone: 'primary', ui: 'plus', size: 'sm', onClick: function () { DSK.cur = 'new'; DSK.nf = null; draw(); toTop(); } }))]);
   if (!DSK.mine && !DSK.mineErr && !DSK.mineBusy) {
     DSK.mineBusy = true;
     clApi('/api/desk/threads').then(function (j) { DSK.mine = (j && j.threads) || []; DSK.mineBusy = false; draw(); })
@@ -24507,6 +24507,54 @@ function cuPaidOpenNote(r) {
     const n = DS.note('warn', 'عقود مسدَّدة بالكامل بانتظار الإقفال', L.map(function (x) { return x.contract_no + (x.last_paid ? ' (آخر سداد ' + x.last_paid + ')' : ''); }).join('، ') + ' — اكتمل سدادها ولم تُقفل بعد، بانتظار قرار الإقفال.');
     return [r[0], n].concat(r.slice(1));
   } catch (err) { return r; }
+}
+/* v562: «مراسلة جديدة» داخل حساب العميل بهوية المنصة (بدل صفحة /desk القديمة) — الاسم والبريد والجوال من الحساب نفسه */
+function deskMineForm() {
+  const F = DSK.nf || (DSK.nf = { kind: 'request', subject: '', details: '', order_ref: '', request_type: '', service: '', complaint_type: '', support_type: '', prof: null, perr: '', pbusy: false, sending: false });
+  const back = DS.button('رجوع إلى مراسلاتي', { size: 'sm', ui: 'caret-right', onClick: function () { DSK.cur = ''; DSK.nf = null; draw(); toTop(); } });
+  const top = e('div', { class: 'mt-top' }, [back, e('span')]);
+  if (!F.prof && !F.perr && !F.pbusy) {
+    F.pbusy = true;
+    Promise.all([clApi('/api/desk/session'), DSK.meta ? Promise.resolve(DSK.meta) : fetch('/api/desk/meta', { cache: 'no-store' }).then(function (r) { return r.json(); })]).then(function (r) {
+      F.pbusy = false;
+      if (r[1] && r[1].catalog) DSK.meta = r[1];
+      if (!r[0] || !r[0].signed_in || !r[0].profile) F.perr = 'تعذّر التحقق من حسابك — أعد تسجيل الدخول ثم حاول مرة أخرى.';
+      else F.prof = r[0].profile;
+      draw();
+    }).catch(function (err) { F.pbusy = false; F.perr = (err && err.message) || 'تعذّر تجهيز النموذج.'; draw(); });
+  }
+  if (F.perr) return [top, DS.note('warn', 'تعذّر فتح نموذج المراسلة', F.perr, liveOk(DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { F.perr = ''; draw(); } })))];
+  if (!F.prof || !DSK.meta) return [top, DS.note('info', 'جارٍ تجهيز النموذج…', '')];
+  const cat = DSK.meta.catalog || {}, P = F.prof;
+  const list = function (arr) { return (arr || []).map(function (x) { return [x, x]; }); };
+  const first = function (k, arr) { if (!F[k] && arr && arr.length) F[k] = arr[0]; };
+  first('request_type', cat.requestTypes); first('service', cat.services); first('complaint_type', cat.complaintTypes); first('support_type', cat.supportTypes);
+  const sel = function (k, arr) { return DS.select({ value: F[k], options: list(arr), onChange: function (v) { F[k] = v; } }); };
+  const inp = function (k, ph, max) { return e('input', { class: 't2-input', type: 'text', maxlength: String(max || 160), placeholder: ph || '', value: F[k] || '', onInput: function (ev) { F[k] = ev.target.value; } }); };
+  const kinds = [['request', 'طلب'], ['complaint', 'شكوى'], ['support', 'دعم']];
+  const typeFields = F.kind === 'request' ? [DS.editField('نوع الطلب', sel('request_type', cat.requestTypes)), DS.editField('الخدمة', sel('service', cat.services))]
+    : F.kind === 'complaint' ? [DS.editField('نوع الشكوى', sel('complaint_type', cat.complaintTypes))] : [DS.editField('نوع الدعم', sel('support_type', cat.supportTypes))];
+  const noPhone = !P.phone;
+  return [top,
+    cuSec('مراسلة جديدة', 'chat-circle-dots', [
+      DS.note('info', 'بياناتك من حسابك', 'تصل الردود والتحديثات إلى بريدك وجوالك المسجّلين، ويمكنك متابعتها من «مركز المراسلات».'),
+      DS.fields([['الاسم', P.name || '—'], ['البريد الإلكتروني', P.email ? ltr(P.email) : '—'], ['رقم الجوال', P.phone ? ltr(P.phone) : '—']]),
+      noPhone ? DS.note('warn', 'رقم الجوال غير مسجّل في حسابك', 'أكمل رقم جوالك من «ملفي الشخصي» أولًا، ثم أرسل المراسلة.') : null,
+      e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('نوع المراسلة', DS.select({ value: F.kind, options: kinds, onChange: function (v) { F.kind = v; draw(); } }))].concat(typeFields).concat([
+        DS.editField('رقم الطلب أو العقد (اختياري)', inp('order_ref', 'مثال: TRA-20260101-001', 40))])),
+      DS.editField('الموضوع', inp('subject', 'موضوع مختصر وواضح', 160)),
+      DS.editField('التفاصيل', e('textarea', { class: 't2-input', rows: '5', maxlength: '4000', placeholder: 'اكتب تفاصيل مراسلتك…', onInput: function (ev) { F.details = ev.target.value; } }, F.details || '')),
+      e('div', { class: 'mt-r-a' }, [liveOk(DS.button(F.sending ? 'جارٍ الإرسال…' : 'إرسال المراسلة', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !!F.sending || noPhone, onClick: function () {
+        const subj = String(F.subject || '').trim(), det = String(F.details || '').trim();
+        if (subj.length < 3) { snack('اكتب موضوعًا مختصرًا وواضحًا.'); return; }
+        if (det.length < 10) { snack('اكتب تفاصيل المراسلة بشكل واضح.'); return; }
+        F.sending = true; draw();
+        clPost('/api/desk/threads', { kind: F.kind, subject: subj, details: det, order_ref: String(F.order_ref || '').trim(), request_type: F.request_type, service: F.service, complaint_type: F.complaint_type, support_type: F.support_type, name: P.name, email: P.email, phone: P.phone }).then(function (j) {
+          if (!j || j.ok === false || !j.ref) throw new Error((j && j.message) || 'تعذّر إرسال المراسلة.');
+          DSK.nf = null; DSK.mine = null; snack('أُرسلت مراسلتك برقم ' + j.ref + '.'); deskMineGo(j.ref);
+        }).catch(function (err) { F.sending = false; snack((err && err.message) || 'تعذّر إرسال المراسلة.'); draw(); });
+      } }))])
+    ])].filter(Boolean);
 }
 function deskLoad(force) {
   if (DSK.busy || (!force && DSK.rows && Date.now() - DSK.at < 30000)) return;
