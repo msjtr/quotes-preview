@@ -19012,13 +19012,15 @@ function liveContract(r) {
       flag: !!p.paid, noDate: paid > 0 && !p.paid_date, rvNote: p.review_note || '' });
     const q = c.payments[c.payments.length - 1], fl = (p.client_contract_files || []).filter(function (f) { return f.kind === 'receipt' || f.kind === 'transfer'; })[0];
     if (fl) { q.file = fl.file_name || 'إيصال التحويل'; q.fid = fl.id; }
+      /* v580: دفعة قُبضت ضمن سداد قيمة المنتج (العقد مغلق به) — تظهر كذلك لا تحويلًا منفصلًا */
+      if (!p.settle_kind && p.settle_request && paid > 0 && r.closed && r.close_reason === 'settled') q.method = (q.method || 'سداد') + ' — ضمن سداد قيمة المنتج';
     /* تسوية بالتوحيد أو التأجيل (stf_23): الدفعة انتقلت إلى عقد آخر — بدل إثبات السداد يظهر نص التسوية، ولا إيصال سداد لها */
     if (p.settle_kind === 'round') { q.round = qr2(amt - paid); q.paid = amt; q.roundNote = p.settle_note || ''; }
     if (p.settle_kind && p.settle_ref && p.settle_kind !== 'round') { q.cash = paid; q.cashM = q.method; q.cashTxn = q.txn; q.deferTo = p.settle_ref; q.method = p.settle_kind === 'merge' ? 'توحيد' : p.settle_kind === 'settle' ? 'سداد قيمة المنتج' : p.settle_kind === 'waive' ? 'إعفاء' : 'تأجيل'; q.settleNote = p.settle_note || ''; q.sreq = p.settle_request || ''; q.file = ''; q.fid = ''; if (p.settle_kind === 'merge') c.mergedTo = p.settle_ref; }
     else if (paid > 0 && !('receipt_no' in p)) q.rc = { no: 'RC-' + String(q.at.getFullYear()).slice(-2) + '-' + String(p.id || '').replace(/[^0-9a-f]/gi, '').slice(0, 8).toUpperCase(), file: 'receipt-' + no + '-' + (p.seq || i + 1) + '.pdf', at: q.at, void: false };
     /* v456: الإيصال برقمه الثابت من المنصة (stf_66) — يصدر لكل مبلغ مقبوض بعد اعتماده، وقالبه من طريقة السداد (بوابة · تحويل · نقدًا) */
     /* المسوّاة بالتوحيد أو التأجيل أو التسوية لا إيصال لها إلا لجزء نقدي قُبض قبلها */
-    if (p.receipt_no && paid > 0 && !(q.deferTo && !(paid < amt - 0.005))) q.rc = { no: p.receipt_no, file: p.receipt_no + '.pdf', at: parseIso(p.receipt_at) || q.at || due, void: false, kind: p.receipt_kind || 'tr', live: true };
+    if (p.receipt_no && paid > 0 && !(q.deferTo && !(paid < amt - 0.005))) q.rc = { no: p.receipt_group || p.receipt_no, file: (p.receipt_group || p.receipt_no) + '.pdf', /* v580: عملية غطّت عدة دفعات ← إيصال واحد (stf_147) */ at: parseIso(p.receipt_at) || q.at || due, void: false, kind: p.receipt_kind || 'tr', live: true };
   });
   c.n = c.payments.length; c.amount = c.n ? c.payments[0].amount : 0; c.start = c.n ? c.payments[0].due : c.req;
   return c;
