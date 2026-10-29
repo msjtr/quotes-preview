@@ -7180,7 +7180,7 @@ function cuPfHubPage() {
   const w = function (k) { return k ? fmtNum(k) + ' بانتظار إجراء' : 'لا شيء معلّق'; }, lt = function (L) { const n = L.filter(function (x) { return x.open && x.sla && x.sla[1] === 'danger'; }).length; return n ? [fmtNum(n) + ' متأخر', 'danger'] : null; };
   const H = secHub('cupf', { t: 'الملف الشخصي', s: 'بيانات العملاء وطلبات ملفاتهم وتوثيقها — كل بطاقة تعرض ما يخصها فقط.', ic: 'identification-card:teal' }, [
     ['pf', 'الملف الشخصي', 'identification-card:teal', [
-      LIVE.on ? (function () { const nn = cunCount(); return { ic: 'user-circle:teal', t: 'العملاء الجدد', d: 'المسجّلون حديثًا ودورتهم: التسجيل ← التوثيق ← المراجعة ← الاعتماد ← التدشين ← أول طلب', n: nn ? fmtNum(nn) + ' خلال 14 يومًا' : 'لا عملاء جدد', badge: nn ? [fmtNum(nn) + ' جديد', 'warn'] : null, go: function () { go('other', 'cu-new'); } }; })() : null, /* v578 */
+      LIVE.on ? (function () { const nn = cunCount(); return { ic: 'user-circle:teal', t: 'العملاء الجدد', d: 'سجّلوا في المنصة خلال آخر 14 يومًا — ومتابعة إكمال ملفاتهم', n: nn ? fmtNum(nn) + ' عميل' : 'لا عملاء جدد', badge: null, /* v586: بلا تكرار الرقم */ go: function () { go('other', 'cu-new'); } }; })() : null, /* v578 */
       { ic: 'identification-card:teal', t: 'ملفات العملاء', d: LIVE.on ? 'قائمة واحدة: الملف والحساب والأمان لكل عميل، والتصفية بحالة الحساب' : 'محتوى الملفات وبياناتها كاملة — عرض فقط', n: fmtNum(cuList().length) + ' ملفات', go: function () { ADM.clF = 'all'; ADM.clFrom = ''; go('other', 'cu-pf-files'); } },
       LIVE.on ? null : { ic: 'note-pencil:saffron', t: 'طلبات الملف الشخصي', d: 'تحديث البيانات واستبدال المستندات', n: w(cnt(R)), badge: lt(R), go: function () { go('other', 'cu-pf-req'); } }, /* v584: في المنفذ الحي تحديث الملف يصل «طلبات توثيق الملف» — البطاقة مكررة */
       { ic: 'seal-check:teal', t: 'طلبات توثيق الملف', d: 'مراجعة المستندات واعتماد التوثيق', n: w(cnt(V)), badge: lt(V), go: function () { go('other', 'cu-pf-ver'); } },
@@ -14035,22 +14035,22 @@ function admHomeLive() {
     nw ? ['rrev', 'تذاكر بانتظار الرد', fmtNum(nw) + ' تذكرة', 'warn', tkGo('new'), nw] : null,
     late ? ['clock', 'تذاكر تجاوزت موعد الرد', fmtNum(late) + ' تذكرة', 'danger', tkGo('all'), late] : null].filter(Boolean) : [];
   const nav = [cuOk ? ['cu', 'قسم العملاء', 'الطلبات والإجراءات والأدوات', null, goP('cu')] : null,
-    cuOk ? ['cu-list', 'ملفات العملاء', fmtNum(nC) + ' عميل' + (nn ? ' · ' + fmtNum(nn) + ' جديد خلال 14 يومًا' : ''), null, goP('cu-pf-files')] : null,
+    cuOk ? ['cu-list', 'ملفات العملاء', fmtNum(nC) + ' عميل', null, goP('cu-pf-files')] : null,
     cuOk ? ['headset', 'التذاكر والمراسلات', fmtNum(opn.length) + ' مفتوحة · ' + fmtNum(T.length) + ' الكل', null, tkGo('all')] : null,
     cuSecOk('fin') ? ['wallet', 'قسم المالية', 'الاستحقاق والمدفوعات وعمليات الدفع', null, goP('fin')] : null].filter(Boolean);
   const N = typeof lvSrNames === 'function' ? lvSrNames() : {};
   const recent = SRA.filter(Boolean).slice().sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); }).slice(0, 6).map(function (x) {
     const s = ADM_SR_ST[x.status] || [x.status || '', 'info'];
-    return ['services', (ADM_SR_K[x.kind] || 'طلب خدمة') + ' — ' + (N[x.user_id] || 'عميل'), [x.req_no || '', s[0], x.created_at ? iso(new Date(x.created_at)) : ''].filter(Boolean).join(' · '), s[1], goP('cu-svc')];
+    return ['services', (ADM_SR_K[x.kind] || 'طلب خدمة') + ' — ' + (N[x.user_id] || 'عميل'), [x.req_no || '', s[0], x.created_at ? iso(new Date(x.created_at)) : ''].filter(Boolean).join(' · '), s[1], function () { ADM.svF = 'all'; ADM.svC = ''; ADM.svFocus = x.id; go('other', 'cu-svc'); }]; /* v586: يفتح الطلب نفسه بإجراءاته */
   });
   return [lvHero({ avatar: 'م', eye: admHomeT() + ' · خدمات العملاء', t: LIVE.sup === false ? (ME.name || 'الموظف') : 'المشرف العام', sub: AR_DAY[new Date().getDay()] + ' ' + iso(new Date()),
     pill: [acts.length ? fmtNum(acts.length) + ' إجراءات مطلوبة' : 'لا إجراءات معلّقة', acts.length ? 'warn' : 'ok'],
     ring: [opn.length ? Math.round(opn.filter(function (t) { return tkSla(t)[1] !== 'danger'; }).length / opn.length * 100) : 100, 'ضمن موعد الرد'],
     tiles: cuOk ? [['تذاكر مفتوحة', fmtNum(opn.length), 'ticket', opn.length ? 'warn' : null, tkGo('all')], ['بانتظار الرد', fmtNum(nw), 'chats-circle', nw ? 'warn' : 'ok', tkGo('new')],
       ['شكاوى مفتوحة', fmtNum(comp), 'warning', comp ? 'warn' : 'ok', tkGo('all')], ['طلبات التوثيق', fmtNum(VER), 'note-pencil', VER ? 'warn' : 'ok', goP('cu-pf-ver')]] : [] }),
-    cuOk ? sec('إجراءات مطلوبة', null, [acts.length ? lvHub(acts) : LDS.emptyState({ icon: 'ok', title: 'لا إجراءات معلّقة', compact: true })], true, 'adm:acts') : null,
-    nav.length ? sec('الأقسام', null, [lvHub(nav)], true, 'adm:nav') : null,
-    cuOk && recent.length ? sec('أحدث طلبات العملاء', null, [lvHub(recent)], true, 'adm:recent') : null];
+    cuOk ? sec('إجراءات مطلوبة', null, [acts.length ? e('div', { 'data-live-ok': '' }, lvHub(acts)) : LDS.emptyState({ icon: 'ok', title: 'لا إجراءات معلّقة', compact: true })], true, 'adm:acts') : null,
+    nav.length ? sec('الأقسام', null, [e('div', { 'data-live-ok': '' }, lvHub(nav))], true, 'adm:nav') : null,
+    cuOk && recent.length ? sec('أحدث طلبات العملاء', null, [e('div', { 'data-live-ok': '' }, lvHub(recent))], true, 'adm:recent') : null]; /* v586: البطاقات مسموحة في المنفذ الحي (كان حارس الأزرار يمنع «سداد قيمة المنتج…») */
 }
 function csHubCards() {
   const T = allTickets(), nw = T.filter(function (t) { return tkFit(t, 'new'); }).length, comp = T.filter(function (t) { return t.kind === 'شكوى' && t.status[1]; }).length;
@@ -17198,7 +17198,11 @@ function srCard(x, RF, o) {
     x.action_note ? DS.note('ok', 'الإجراء الذي تم', lvBidi(x.action_note)) : null];
   /* التسوية: عرض المحرّك داخل الطلب (الإعداد والاعتماد والتنفيذ) */
   if (x.kind === 'settle' && (srOpenSt(x) || srWaitExec(x)) && (x.contract_nos || [])[0]) body.push(e('div', { class: 'sr-stl' }, [e('b', {}, 'فاتورة سداد قيمة المنتج')].concat(stlForm({ no: x.contract_nos[0] }, { id: x.contract_ids[0] }, RF))));
-  else if (x.kind === 'settle' && Q.length) body.push(e('small', { class: 'cu-dr-hint' }, 'فواتير سداد قيمة المنتج: ' + Q.map(function (q) { return q.quote_no + ' (' + (STL_ST[q.status] || [q.status])[0] + ')'; }).join(' · ')));
+  else if (x.kind === 'settle' && Q.length) {
+    body.push(e('small', { class: 'cu-dr-hint' }, 'فواتير سداد قيمة المنتج: ' + Q.map(function (q) { return q.quote_no + ' (' + (STL_ST[q.status] || [q.status])[0] + ')'; }).join(' · ')));
+    /* v586: الطلب المنفّذ يعرض فاتورته المنفّذة ببطاقتها وأزرارها — كانت سطرًا نصيًا فلا يجد الموظف «معاينة على رقمي» ولا «إرسال الشهادة» */
+    Q.filter(function (q) { return q.status === 'executed'; }).forEach(function (q) { try { body.push(e('div', { class: 'sr-stl' }, [e('b', {}, 'فاتورة سداد قيمة المنتج المنفّذة'), stlQuoteCard(q, LIVE_ADM.stx || {}, { no: (x.contract_nos || [])[0] || '' }, RF)])); } catch (err) { void err; } });
+  }
   /* v574: إيصال التحويل داخل الطلب */
   if (x.kind === 'settle' && Q.length) { const trS = srTrSec(x, Q, RF); if (trS) body.push(trS); }
   if (x.kind === 'elig') body.push(eligAdmBox(x)); /* v576 */
@@ -18125,6 +18129,7 @@ function stlForm(c, r, RF) {
   stlDocNorm(S.doc);
   const out = [];
   if (Q) out.push(stlQuoteCard(Q, ctx, c, RF));
+  else if (last && last.status === 'executed') out.push(stlQuoteCard(last, ctx, c, RF)); /* v586: الفاتورة المنفّذة ببطاقتها وأزرارها (الشهادة · معاينة على رقمي · الإرسال للعميل) */
   else if (last && (last.status === 'rejected' || last.status === 'executed')) out.push(DS.note(last.status === 'rejected' ? 'warn' : 'info', 'آخر فاتورة: ' + last.quote_no + ' — ' + (STL_ST[last.status] || [last.status])[0], last.decide_note || null));
   if (Q && !S.edit) { out.push(e('div', { class: 't2-pb-actions' }, [DS.button('إعداد فاتورة جديدة بدلًا منها', { size: 'sm', ui: 'plus', onClick: function () { S.edit = true; RF.paint(); } })])); return out; }
   /* المسودة المحفوظة لهذا العقد — تُحمَّل مرة واحدة */
@@ -27266,7 +27271,7 @@ function lvNewClientsPage() {
     const V = {}; (LIVE_DATA.ver || []).forEach(function (v) { const p = V[v.user_id]; if (!p || String(v.submitted_at || v.created_at || '') > String(p.submitted_at || p.created_at || '')) V[v.user_id] = v; });
     const LC = {}; ((D && D.lch) || []).forEach(function (x) { LC[x.user_id || x.id] = x; });
     const SR0 = {}; (LV_SR.all || []).forEach(function (x) { if (x && x.origin !== 'staff') SR0[x.user_id] = (SR0[x.user_id] || 0) + 1; });
-    const rows = reg.filter(function (r) { return r.at && new Date(r.at).getTime() >= since; }).map(function (r) { const v = V[r.id]; return { r: r, v: v, st: cunStage(v, LC[r.id], !!SR0[r.id]) }; });
+    const rows = reg.filter(function (r) { return r.at && new Date(r.at).getTime() >= since && !cunMig(r.id); }).map(function (r) { const v = V[r.id]; /* v586: المنقولون من النظام السابق لهم بطاقتهم — لا يُعدّون عملاء جددًا */ return { r: r, v: v, st: cunStage(v, LC[r.id], !!SR0[r.id]) }; });
     const cnt = function (k) { return rows.filter(function (x) { return x.st === k; }).length; };
     const L = rows.filter(function (x) { return CUN.st === 'all' || (CUN.st === 'act' ? ['reg', 'sent', 'review', 'returned', 'approved'].indexOf(x.st) >= 0 : x.st === CUN.st); });
     const stOf = function (k) { return CUN_ST.filter(function (s) { return s[0] === k; })[0] || [k, k, null]; };
@@ -27288,7 +27293,9 @@ function lvNewClientsPage() {
       e('div', { class: 't2-pb-actions' }, [DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { refetch(); } }), DS.button('طلبات توثيق الملف', { size: 'sm', ui: 'seal-check', onClick: function () { go('other', 'cu-pf-ver'); } })])];
   });
 }
-function cunCount() { try { const reg = (LIVE_DATA.clients && LIVE_DATA.clients.reg) || [], since = Date.now() - 14 * 864e5; return reg.filter(function (r) { return r.at && new Date(r.at).getTime() >= since; }).length; } catch (err) { return 0; } }
+/* v586: العميل المنقول من النظام السابق ليس «جديدًا» — قائمة المنقولين تُحمَّل مرة واحدة */
+function cunMig(uid) { try { if (typeof MIG2 === 'undefined' || typeof mig2Of !== 'function') return false; if (!MIG2.rows && MIG2.st !== 'loading' && MIG2.st !== 'err' && typeof mig2Load === 'function') { window.__cunMigTry = (window.__cunMigTry || 0) + 1; if (window.__cunMigTry <= 2) mig2Load().catch(function () { /* */ }); } return !!mig2Of(uid); } catch (err) { return false; } }
+function cunCount() { try { const reg = (LIVE_DATA.clients && LIVE_DATA.clients.reg) || [], since = Date.now() - 14 * 864e5; return reg.filter(function (r) { return r.at && new Date(r.at).getTime() >= since && !cunMig(r.id); }).length; } catch (err) { return 0; } }
 if (LIVE.on) {
   try {
     Object.assign(ICON, { 'cu-new': ['user-circle', 'teal'] });
