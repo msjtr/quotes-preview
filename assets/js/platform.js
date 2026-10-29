@@ -27311,22 +27311,96 @@ function cunStage(v, lch, hasReq) {
   if (s === 'submitted') return 'sent';
   return 'reg';
 }
+/* v589: متابعة إكمال الملف للعميل الجديد — آخر دخول، الناقص، التذكيرات، و«طلب إكمال الملف» بعد معاينته على رقم الموظف */
+const CUN_RM = {};
+const CUN_CLOSE = { idle: 'خمول', silent: 'انقطاع الاتصال', superseded: 'دخول من جهاز آخر', location: 'تعذّر تحديد الموقع', vpn: 'شبكة خاصة', logout: 'تسجيل خروج', expired: 'انتهاء المدة', revoked: 'إنهاء من الإدارة' };
+const CUN_STG = { manual: 'يدوي', '1h': 'بعد ساعة', '1d': 'بعد يوم', '3d': 'بعد 3 أيام' };
+const CUN_RMERR = { recent: 'أُرسل له طلب الإكمال خلال آخر 20 ساعة.', no_phone: 'لا يوجد رقم جوال صالح.', no_contact: 'الرقم غير مسجّل في واتساب المنصة بعد.',
+  opted_out: 'أوقف صاحب الرقم استقبال رسائل المنصة.', not_allowed: 'الرقم لم يوافق على استقبال الرسائل.', already_submitted: 'أرسل العميل ملفه للتوثيق — لا حاجة للتذكير.',
+  rate_limited: 'بلغت حد الإرسال لهذه الساعة — حاول لاحقًا.', too_soon: 'أُرسل له طلب الإكمال خلال آخر ساعة — انتظر قليلًا.', day_cap: 'أُرسلت له 3 رسائل خلال 24 ساعة — يكفي اليوم، تواصل معه هاتفيًا.',
+  migrated: 'عميل منقول من النظام السابق — له رسالته الخاصة.', session_invalid: 'انتهت الجلسة — أعد الدخول.', not_authenticated: 'انتهت الجلسة — أعد الدخول.', config: 'إعدادات الرابط غير مكتملة.', no_permission: 'لا تملك صلاحية الإرسال.', not_found: 'الحساب غير موجود.' };
+/* استدعاء يُبقي رمز الخطأ (recent وغيره) ليُعرض بصياغته */
+async function cunRpc(fn, args) {
+  const t = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
+  const r = await fetch(cfg.supabaseUrl + '/rest/v1/rpc/' + fn, { method: 'POST', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(args || {}) });
+  if (r.status === 401) { toLogin(); throw new Error('auth'); }
+  const j = await r.json().catch(function () { return null; });
+  if (!r.ok) return { ok: false, error: r.status === 403 ? 'no_permission' : 'http' };
+  return j || { ok: false, error: 'http' };
+}
+function cunWhen(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (err) { return String(d).slice(0, 16).replace('T', ' '); }
+}
+function cunFollow(r, o, paint, refetch) {
+  if (!o || (o.ver_status && o.ver_status !== 'draft')) return null;
+  const W = CUN_RM[r.id] || (CUN_RM[r.id] = { busy: '', msg: '', tone: 'info', prev: '' });
+  const ageD = Math.floor((Date.now() - new Date(o.created_at || r.at).getTime()) / 864e5);
+  const late = (o.missing > 0 || !o.ver_status || o.ver_status === 'draft') && (ageD >= 3 || Number(o.reminders) >= 3);
+  const lastFail = o.last_result && String(o.last_result).indexOf('failed:') === 0 ? String(o.last_result).slice(7) : '';
+  const send = async function (to, force) {
+    if (W.busy) return;
+    if (to === 'client' && !force && !tqConfirm('إرسال «طلب إكمال الملف» للعميل الآن في واتساب؟ تصله الرسالة نفسها التي تظهر في المعاينة.')) return;
+    W.busy = to; W.msg = ''; W.prev = ''; paint();
+    let j = null;
+    try { j = await cunRpc('admin_profile_remind', { p_user: r.id, p_to: to, p_force: !!force }); } catch (err) { j = { ok: false, error: (err && err.message) === 'auth' ? 'not_authenticated' : '', message: '' }; }
+    W.busy = '';
+    if (j && j.ok === false && j.error === 'recent' && to === 'client' && !force) {
+      paint();
+      if (tqConfirm('أُرسل طلب الإكمال لهذا العميل خلال آخر 20 ساعة. إرساله مرة أخرى الآن؟')) return send('client', true);
+      return;
+    }
+    if (!j || j.ok === false) { W.tone = 'danger'; W.msg = CUN_RMERR[j && j.error] || (j && j.message) || 'تعذّر الإرسال.'; paint(); return; }
+    W.tone = 'ok'; W.prev = j.preview || '';
+    W.msg = to === 'me' ? 'أُرسلت المعاينة إلى رقمك (' + (j.to || '') + ') — تصلك خلال دقيقة.' : 'أُرسل «طلب إكمال الملف» للعميل في واتساب.';
+    if (to === 'client') refetch(); else paint();
+  };
+  const L = [];
+  L.push(e('span', { class: 'nr-s' }, ['آخر دخول: ', o.last_seen ? e('bdi', {}, cunWhen(o.last_seen)) : 'لم يدخل بعد', ' · الجلسات: ' + fmtNum(o.sessions || 0),
+    o.last_close ? ' · آخر إغلاق: ' + (CUN_CLOSE[o.last_close] || 'أُغلقت') : '']));
+  L.push(e('span', { class: 'nr-s' }, o.missing_txt ? 'الناقص: ' + o.missing_txt + ' (' + fmtNum(o.missing || 0) + ')' : 'الملف مكتمل — لم يضغط «إرسال للتوثيق» بعد'));
+  L.push(e('span', { class: 'nr-s' }, ['التذكيرات المرسلة: ' + fmtNum(o.reminders || 0),
+    o.last_remind ? ' · آخرها: ' : '', o.last_remind ? e('bdi', {}, cunWhen(o.last_remind)) : null, o.last_stage && CUN_STG[o.last_stage] ? ' (' + CUN_STG[o.last_stage] + ')' : '',
+    lastFail ? ' · تعذّر آخر إرسال: ' + (CUN_RMERR[lastFail] || 'خطأ') : ''].filter(Boolean)));
+  if (late) L.push(e('span', { class: 'nr-k is-warn' }, 'يحتاج اتصالًا من الفريق'));
+  if (W.msg) L.push(DS.note(W.tone === 'danger' ? 'danger' : 'info', W.tone === 'danger' ? 'لم يُرسل' : 'تم', W.msg));
+  if (W.prev) L.push(e('pre', { class: 'nr-s', style: 'white-space:pre-wrap;margin:0;font:inherit' }, W.prev.replace(/\{\{\d\}\} /g, '')));
+  L.push(e('div', { class: 't2-pb-actions' }, [
+    liveOk(DS.button(W.busy === 'me' ? 'جارٍ الإرسال…' : 'معاينة على رقمي', { size: 'sm', ui: 'file-text', disabled: !!W.busy, onClick: function () { send('me'); } })),
+    liveOk(DS.button(W.busy === 'client' ? 'جارٍ الإرسال…' : 'إرسال طلب إكمال الملف', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: !!W.busy, onClick: function () { send('client'); } }))]));
+  return e('div', { class: 'nr-fu', style: 'display:grid;gap:6px;padding:4px 14px 12px;grid-column:1/-1' }, L);
+}
+function cunAutoBox(ob, refetch) {
+  if (!ob || ob.ok === false) return null;
+  const on = !!ob.auto;
+  const kids = [DS.note(on ? 'info' : 'warn', 'التذكير الآلي لإكمال الملف: ' + (on ? 'مفعّل' : 'موقوف'),
+    'للعميل الجديد الذي لم يرسل ملفه للتوثيق: تذكير بعد ساعة، ثم بعد يوم، ثم بعد 3 أيام — من 9 صباحًا إلى 9 مساءً، ويتوقف فور إرسال الملف. يصله في واتساب ما ينقصه بالتحديد.')];
+  if (ob.can_toggle) kids.push(e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('التذكير الآلي', DS.select({ value: on ? 'on' : 'off', options: [['off', 'موقوف'], ['on', 'مفعّل']], onChange: async function (v) {
+    if ((v === 'on') === on) return;
+    if (v === 'on' && !tqConfirm('تفعيل التذكير الآلي؟ يبدأ الإرسال للعملاء الجدد الذين لم يرسلوا ملفاتهم خلال 15 دقيقة.')) { refetch(); return; }
+    try { const j = await admRpc('admin_profile_remind_auto', { p_on: v === 'on' }); snack(j && j.on ? 'فُعّل التذكير الآلي.' : 'أُوقف التذكير الآلي.'); } catch (err) { snack((err && err.message) || 'تعذّر الحفظ.'); }
+    refetch();
+  } }))]));
+  return e('div', { style: 'display:grid;gap:8px' }, kids);
+}
 function lvNewClientsPage() {
   return admMount('cunew', 'العملاء الجدد', async function () {
     const R = await Promise.all([admClients('').then(function (j) { LIVE_DATA.clients = j; }).catch(function () { return liveNames().catch(function () { return null; }); }), admRpc('admin_verification_list', { p: { status: 'all' } }).then(function (j) { LIVE_DATA.ver = j.rows || []; }).catch(function () { return null; }),
-      admRpc('admin_launch_list', {}).catch(function () { return { rows: [] }; }), (LV_SR.ok ? Promise.resolve(null) : lvSrLoad().catch(function () { return null; }))]);
-    return { lch: (R[2] && R[2].rows) || [] };
+      admRpc('admin_launch_list', {}).catch(function () { return { rows: [] }; }), (LV_SR.ok ? Promise.resolve(null) : lvSrLoad().catch(function () { return null; })), admRpc('admin_onboarding_list', { p_days: 365 }).catch(function () { return null; })]);
+    return { lch: (R[2] && R[2].rows) || [], ob: R[4] || null };
   }, function (D, st, paint, refetch) {
     const reg = ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []), days = Number(CUN.days) || 14, since = Date.now() - days * 864e5;
     const V = {}; (LIVE_DATA.ver || []).forEach(function (v) { const p = V[v.user_id]; if (!p || String(v.submitted_at || v.created_at || '') > String(p.submitted_at || p.created_at || '')) V[v.user_id] = v; });
     const LC = {}; ((D && D.lch) || []).forEach(function (x) { LC[x.user_id || x.id] = x; });
     const SR0 = {}; (LV_SR.all || []).forEach(function (x) { if (x && x.origin !== 'staff') SR0[x.user_id] = (SR0[x.user_id] || 0) + 1; });
+    const OB = {}; ((D && D.ob && D.ob.rows) || []).forEach(function (o) { OB[o.user_id] = o; }); /* v589 */
     const rows = reg.filter(function (r) { return r.at && new Date(r.at).getTime() >= since && !cunMig(r.id); }).map(function (r) { const v = V[r.id]; /* v586: المنقولون من النظام السابق لهم بطاقتهم — لا يُعدّون عملاء جددًا */ return { r: r, v: v, st: cunStage(v, LC[r.id], !!SR0[r.id]) }; });
     const cnt = function (k) { return rows.filter(function (x) { return x.st === k; }).length; };
     const L = rows.filter(function (x) { return CUN.st === 'all' || (CUN.st === 'act' ? ['reg', 'sent', 'review', 'returned', 'approved'].indexOf(x.st) >= 0 : x.st === CUN.st); });
     const stOf = function (k) { return CUN_ST.filter(function (s) { return s[0] === k; })[0] || [k, k, null]; };
     const act = cnt('reg') + cnt('sent') + cnt('review') + cnt('returned') + cnt('approved');
     return [DS.note('info', 'دورة العميل الجديد', 'التسجيل ← إرسال التوثيق ← المراجعة ← الاعتماد ← التدشين ← أول طلب. افتح العميل لملفه، ومن «طلبات توثيق الملف» تستلم توثيقه وتعتمده.'),
+      cunAutoBox(D && D.ob, refetch),
       e('div', { class: 'sys-form is-2 cu-bd-form' }, [
         DS.editField('المدة', DS.select({ value: CUN.days, options: [['7', 'آخر 7 أيام'], ['14', 'آخر 14 يومًا'], ['30', 'آخر 30 يومًا'], ['90', 'آخر 90 يومًا'], ['365', 'آخر سنة']], onChange: function (v) { CUN.days = v; paint(); } })),
         DS.editField('المرحلة', DS.select({ value: CUN.st, options: [['all', 'كل المراحل'], ['act', 'بانتظار إجراء منّا']].concat(CUN_ST.map(function (s) { return [s[0], s[1]]; })), onChange: function (v) { CUN.st = v; paint(); } }))]),
@@ -27338,7 +27412,7 @@ function lvNewClientsPage() {
           e('span', { class: 'nr-b' }, [e('span', { class: 'nr-top' }, [e('b', {}, r.name || '—'), e('time', {}, bdiD(String(r.at).slice(0, 10)))]),
             e('span', { class: 'nr-txt' }, [r.no ? e('bdi', { dir: 'ltr' }, String(r.no)) : null, r.phone ? ' · ' : '', r.phone ? e('bdi', { dir: 'ltr' }, String(r.phone)) : null, v && v.assigned_to_name ? ' · المسؤول: ' + v.assigned_to_name : ''].filter(Boolean)),
             e('span', { class: 'nr-meta' }, [e('span', { class: 'nr-k is-' + (s[2] || 'info') }, s[1]), e('span', { class: 'nr-s' }, 'منذ ' + fmtNum(Math.max(0, Math.floor((Date.now() - new Date(r.at).getTime()) / 864e5))) + ' يوم')])]),
-          e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))])]);
+          e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]), x.st === 'reg' ? cunFollow(r, OB[r.id], paint, refetch) : null]);
       })) : CF_EMPTY('لا عملاء جدد بهذا الاختيار.'),
       e('div', { class: 't2-pb-actions' }, [DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { refetch(); } }), DS.button('طلبات توثيق الملف', { size: 'sm', ui: 'seal-check', onClick: function () { go('other', 'cu-pf-ver'); } })])];
   });
