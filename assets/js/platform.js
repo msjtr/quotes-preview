@@ -7425,7 +7425,8 @@ function cuHubPage() {
     ['sc', 'مركز الأمن', 'shield-check:teal', [{ ic: 'shield-check:teal', t: 'مركز الأمن', d: 'النشاط والدخول · التنبيهات · العمليات الحساسة · التنبيهات الأمنية · الأجهزة · سجل التدقيق', n: secN ? fmtNum(secN) + ' تنبيهًا أمنيًا هذا الأسبوع' : 'لا تنبيهات أمنية', big: true, go: function () { go('other', 'cu-secc'); } }]],
     ['pf', 'الملف الشخصي', 'identification-card:teal', [{ ic: 'identification-card:teal', t: 'الملف الشخصي', d: LIVE.on ? 'ملفات العملاء وحساباتها وأمانها · طلبات الملف الشخصي · طلبات التوثيق · تدشين الحساب' : 'ملفات العملاء · طلبات الملف الشخصي · طلبات التوثيق · العملاء المرحّلون · التدشين', n: w(pfOpen), big: true, go: function () { go('other', 'cu-pf'); } }]],
     ['ct', 'العقود وعروض الأسعار', 'contract', CC.p],
-    ['wk', 'الطلبات والإجراءات', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: LIVE.on ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — الإنشاء والقرار والتنفيذ' : 'سداد كامل · تأجيل · توحيد · تحويل بنكي · استرداد · أهلية', n: w(LIVE.on ? (LV_SR.all || []).filter(function (x) { return srOpenSt(x) || srWaitExec(x); }).length : n('svc')), go: function () { if (LIVE.on) go('other', 'cu-svc'); else { ADM.cuf = 'svc'; go('other', 'cu-inbox'); } } }].concat(LIVE.on ? [(function () {
+    /* v579: عمليات الدفع في «قسم المالية» وحده؛ تظهر هنا فقط لمن يملك صلاحية العملاء دون المالية — مكان واحد لكل مستخدم */
+    ['wk', 'الطلبات والإجراءات', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: LIVE.on ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — الإنشاء والقرار والتنفيذ' : 'سداد كامل · تأجيل · توحيد · تحويل بنكي · استرداد · أهلية', n: w(LIVE.on ? (LV_SR.all || []).filter(function (x) { return srOpenSt(x) || srWaitExec(x); }).length : n('svc')), go: function () { if (LIVE.on) go('other', 'cu-svc'); else { ADM.cuf = 'svc'; go('other', 'cu-inbox'); } } }].concat(LIVE.on && (typeof cuSecOk !== 'function' || (cuSecOk('cu-trin') && !cuSecOk('fin'))) ? [(function () {
       if (!LV_PAY.at && !LV_PAY.busy) lvPayLoad().then(function () { draw(); }).catch(function () { /* */ });
       const k = LV_PAY.TR.filter(function (t) { return t.status === 'submitted'; }).length;
       return { ic: 'bank:teal', t: 'إيصالات التحويل البنكي', d: 'تحويلات العملاء لدفعاتهم — اعتماد أو رفض، ثم تنتقل إلى ملف العميل بحالتها', n: LV_PAY.at ? w(k) : null, badge: k ? [fmtNum(k) + ' بانتظار الاعتماد', 'warn'] : null, go: function () { go('other', 'cu-trin'); } }; })(),
@@ -18968,7 +18969,7 @@ function admContractsPage() {
 const ADM_LINKS = [['cu-pf-files', 'ملفات العملاء', 'الملف والحساب والأمان والمرفقات لكل عميل', 'users:teal'],
   ['cu-pf-ver', 'طلبات توثيق الملف', 'الطلبات المرسلة للمراجعة وبنودها', 'seal-check:teal'], ['cs-requests', 'طلبات العملاء', 'الطلبات وعروض الأسعار وحالاتها', 'receipt:saffron'],
   ['cu-pf', 'الملف الشخصي للعملاء', 'ملفات العملاء وطلبات التوثيق', 'user:teal'], ['cu-admx', 'إجراءات الإدارة', 'السندات والحوالات والرسوم والمصاريف ومركز الدفع', 'briefcase:teal'],
-  ['cu-admx-bd', 'السندات التنفيذية', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'الرسوم والمصاريف والضرائب', 'لكل عقد: المحمَّل على العميل والضريبة والرسوم والعمولات والمصاريف', 'coins:gold'], ['cu-admx-tr', 'الحوالات الصادرة', 'من حساب المنصة إلى العميل أو نيابةً عنه — للاطلاع', 'paper-plane-tilt:sky'], ['pay-center', 'إعدادات الدفع الإلكتروني', 'الخدمات ووسائل الدفع وروابط الدفع لغير العملاء والاشتراكات والبطاقات', 'card:teal']];
+  ['cu-admx-bd', 'السندات التنفيذية', 'سندات العملاء: الحالة ومحكمة التنفيذ والإمهال والمرفقات', 'file-text:teal'], ['cu-admx-fee', 'الرسوم والمصاريف والضرائب', 'لكل عقد: المحمَّل على العميل والضريبة والرسوم والعمولات والمصاريف', 'coins:gold'], ['cu-admx-tr', 'الحوالات الصادرة', 'من حساب المنصة إلى العميل أو نيابةً عنه — للاطلاع', 'paper-plane-tilt:sky'], ['pay-center', 'إعدادات الدفع الإلكتروني', 'الخدمات ووسائل الدفع والاشتراكات والبطاقات', 'card:teal']];
 /* كل محور يعرض أقسامه فقط — العقود في «العقود» وحدها، فلا تكرار بين الأقسام */
 const ADM_HUBS = { cu: ['cu-pf', 'cs-requests', 'cu-admx'], 'cu-pf': ['cu-pf-files', 'cu-pf-ver'], 'cu-admx': ['cu-admx-bd', 'cu-admx-tr', 'cu-admx-fee'] };
 function admHubPage(title, hub) {
@@ -21363,7 +21364,7 @@ function admSysPage() {
     ['acc', 'الوصول والصلاحيات', 'key:navy', [c('key:navy', 'الأدوار والصلاحيات', 'الأدوار وصلاحيات كل دور كما في القاعدة', 'sys-roles'), c('identification-badge:teal', 'المسمّيات الوظيفية', 'المسمّيات وتصنيفاتها', 'sys-titles'),
       c('users-three:teal', 'دليل الحسابات', 'الهويات وأدوارها — مع قسم الموظفين', null), c('paper-plane-tilt:teal', 'دعوات الحسابات', 'الدعوات وحالتها', 'sys-invites')]],
     /* v315: إعدادات كل قسم في مجموعة باسمه — ولا إعدادات داخل الأقسام نفسها */
-    ['fin', 'قسم المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم والنسب والمصاريف والعمولات — إضافة وتفعيل وإيقاف', 'sys-fees'), c('credit-card:teal', 'إعدادات الدفع الإلكتروني', 'الخدمات ووسائل الدفع · روابط الدفع لغير العملاء · الاشتراكات · البطاقات المحفوظة', 'sys-pay')]],
+    ['fin', 'قسم المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم والنسب والمصاريف والعمولات — إضافة وتفعيل وإيقاف', 'sys-fees'), c('credit-card:teal', 'إعدادات الدفع الإلكتروني', 'الخدمات ووسائل الدفع · الاشتراكات · البطاقات المحفوظة', 'sys-pay')]],
     ['cu', 'قسم العملاء', 'users-three:teal', [c('rocket-launch:teal', 'إعدادات تدشين الحساب', 'المستوى الافتراضي ونقاط التدشين لكل مستوى وفيلم التدشين', 'sys-launch'),
       c('list-checks:navy', 'قرارات مراجعة الترحيل', 'مقارنة العقود بالنظام السابق — القرار في كل فرق وملاحظته وما نُفّذ منه', 'sys-review'),
       c('handshake:teal', 'سداد قيمة المنتج', 'نسب خصم العضوية · سقف خصم الرسوم قبل اعتماد المشرف · صلاحية العرض · الإعفاء من ربح الأشهر التي لم تبدأ', 'sys-settle'), c('files:teal', 'مرفقات الوظيفة', 'المرفقات المطلوبة والاختيارية لكل حالة وظيفية — إضافة وإيقاف', 'sys-jobdocs'), c('clock-countdown:teal', 'مدة الجلسة', 'عدم النشاط للعميل والموظف · الانقطاع وإغلاق الصفحة · الجلسة الواحدة والموقع — للمشرف العام', 'sys-session')]],
@@ -21467,7 +21468,9 @@ function admOrgPage() {
   });
 }
 const PAY_TABS = [['svc', 'الخدمات ووسائل الدفع'], ['links', 'روابط الدفع لغير العملاء'], ['subs', 'الاشتراكات'], ['cards', 'البطاقات المحفوظة'], ['wait', 'محاولات لم يصل إشعارها']];
-const payTab = (st, D) => PAY_TABS.some(function (t) { return t[0] === st.tab && (t[0] !== 'links' || D.can.links); }) ? st.tab : 'svc';
+/* v579: روابط الدفع مكانها «قسم المالية ‹ عمليات الدفع ‹ روابط الدفع» — يبقى تبويبها هنا فقط لمن لا يصل إلى ذلك المكان (فلا تنقص صلاحية أحد) */
+const payLinksHere = (D) => !!D.can.links && !(typeof cuSecOk === 'function' && cuSecOk('cu-paylinks'));
+const payTab = (st, D) => PAY_TABS.some(function (t) { return t[0] === st.tab && (t[0] !== 'links' || payLinksHere(D)); }) ? st.tab : 'svc';
 /* v472: قسم «الدفع الإلكتروني» في قسم العملاء — صندوقان: روابط الدفع (الإنشاء والإرسال والمتابعة) · الاسترداد والإلغاء (عمليات بوابة الدفع).
    روابط دفعات العملاء واسترداد عملياتهم تبقى أيضًا في ملف العميل نفسه. */
 function admPayView(key, title, part) {
@@ -21505,7 +21508,7 @@ function admPayPage() {
       g.keys ? null : DS.note('warn', 'مفاتيح Paymob غير مضافة على الخادم', 'الناقص: ' + ((g.missing || []).join('، ') || 'غير محدد') + '. تُضاف في ملف بيئة الخادم، ولا تُكتب هنا ولا في المستودع.'),
       g.keys && g.mode === 'test' ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي، ولا تتغير دفعات العقود. للتحويل إلى الحي تُستبدل المفاتيح على الخادم.') : null,
       /* v452: إعدادات الدفع وحدها — العمليات في «سجل المدفوعات» و«عمليات بوابة الدفع» (اطلاع)، والاعتماد والاسترداد وروابط دفعات العملاء من ملف العميل */
-      e('div', { class: 'adm-chips', role: 'tablist', 'aria-label': 'أقسام إعدادات الدفع' }, PAY_TABS.filter(function (t) { return t[0] !== 'links' || D.can.links; }).map(function (t) {
+      e('div', { class: 'adm-chips', role: 'tablist', 'aria-label': 'أقسام إعدادات الدفع' }, PAY_TABS.filter(function (t) { return t[0] !== 'links' || payLinksHere(D); }).map(function (t) {
         const cur = payTab(st, D) === t[0];
         return e('button', { type: 'button', role: 'tab', class: 'adm-chip' + (cur ? ' is-on' : ''), 'aria-selected': String(cur), onClick: function () { st.tab = t[0]; paint(); } }, t[1]); }))]
       .concat((function (tab) {
@@ -26041,20 +26044,31 @@ if (LIVE.on) {
   lp('fin-fee', 'الرسوم والمصاريف والضرائب', 'fin', 'fin-fee', lvFeeHub);
   lp('fin-fee-i', 'بند الرسوم', 'fin-fee', 'fin-fee-i', lvFeeItem);
   if (LP['cu-admx-fee']) { LP['cu-admx-fee'].up = 'fin-fee'; LP['cu-admx-fee'].t = 'الملخص العام والخاص'; }
+  /* v579: مدخل الرسوم الواحد «الرسوم والمصاريف والضرائب» (كل بند ببطاقة مع الملخص العام والخاص) — لا مدخل ثانٍ للملخص وحده */
+  try { ADM_LINKS.forEach(function (l) { if (l[0] === 'cu-admx') { l[1] = 'تقرير الإجراءات'; l[2] = 'السندات والاستقطاع والحوالات الصادرة والشيكات'; } if (l[0] === 'cu-admx-fee') { l[0] = 'fin-fee'; l[2] = 'الضريبة والرسوم والعمولات والمصاريف — كل بند ببطاقة، مع الملخص العام والخاص'; } }); ADM_HUBS['cu-admx'] = ADM_HUBS['cu-admx'].map(function (k) { return k === 'cu-admx-fee' ? 'fin-fee' : k; }); } catch (err) { void err; }
   if (LP['cu-admx-rp']) LP['cu-admx-rp'].up = 'fin';
   /* قسم المالية: تقارير — تقرير الإجراءات · الرسوم والمصاريف والضرائب · تقرير العملاء (قسم خاص خارج البطاقة) */
   const lvFinHub = function () {
     const P = dcPays(finCts()), late = P.due.filter(function (r) { return r.k === 'late'; }), t0 = P.due.filter(function (r) { return r.k === 'today'; });
     if (!LV_PAY.at && !LV_PAY.busy) lvPayLoad().then(function () { draw(); }).catch(function () { /* */ });
     const cashN = P.rec.filter(function (r) { return r.cash; }), pendT = LV_PAY.TR.filter(function (t) { return t.status === 'submitted'; });
-    return secHub('fin', { t: 'قسم المالية', s: 'تقارير عامة للعملاء قابلة للتخصيص — للاطلاع، وكل تسجيل وتعديل من ملف العميل.', ic: 'fin' }, [
-      ['due', 'الاستحقاق', 'calendar-blank:saffron', [{ ic: 'fin-due', t: 'الدفعات المستحقة والقادمة', d: 'الدفعات غير المسددة حسب موعد استحقاقها: المتأخرة · اليوم · خلال 7 أيام · خلال 30 يومًا', n: fmtNum(P.due.length) + ' دفعة', badge: late.length ? [fmtNum(late.length) + ' متأخرة', 'danger'] : t0.length ? [fmtNum(t0.length) + ' تستحق اليوم', 'warn'] : null, go: function () { go('other', 'fin-due'); } }]],
+    /* v579: عمليات الدفع (إيصالات التحويل · طلبات الإلغاء والاسترداد · الاسترداد والإلغاء · روابط الدفع) هنا وحدها — نُقلت من «قسم العملاء» فلا تتكرر،
+       وصلاحية فتحها كما كانت (إدارة العملاء) */
+    const canOps = typeof cuSecOk !== 'function' || cuSecOk('cu-trin');
+    const opK = (LV_PAY.OP || []).filter(function (o) { return o.status === 'submitted' || o.status === 'failed'; }).length;
+    const OPS = canOps ? [['ops', 'عمليات الدفع', 'wallet:gold', [
+      { ic: 'bank:teal', t: 'إيصالات التحويل البنكي', d: 'تحويلات العملاء لدفعاتهم — اعتماد أو رفض، ثم تنتقل إلى ملف العميل بحالتها', n: LV_PAY.at ? fmtNum(LV_PAY.TR.length) + ' إيصال' : null, badge: pendT.length ? [fmtNum(pendT.length) + ' بانتظار الاعتماد', 'warn'] : null, go: function () { go('other', 'cu-trin'); } },
+      { ic: 'arrows-clockwise:gold', t: 'طلبات الإلغاء والاسترداد', d: 'طلبات العملاء على عمليات بوابة الدفع بأسبابها — الاعتماد يُنفَّذ في Paymob، والرفض بسبب يراه العميل', n: LV_PAY.at ? fmtNum((LV_PAY.OP || []).length) + ' طلب' : null, badge: opK ? [fmtNum(opK) + ' بانتظار القرار', 'warn'] : null, go: function () { go('other', 'cu-opin'); } },
+      { ic: 'credit-card:gold', t: 'الاسترداد والإلغاء', d: 'عمليات بوابة الدفع — استرداد كلي أو جزئي، أو إلغاء قبل التسوية، وإعادة إشعار الدافع', go: function () { go('other', 'cu-payops'); } },
+      { ic: 'link:teal', t: 'روابط الدفع', d: 'إنشاء رابط دفع وإرساله بكل القنوات ومتابعة حالته — وروابط دفعات العملاء أيضًا من ملف العميل', go: function () { go('other', 'cu-paylinks'); } }]]] : [];
+    return secHub('fin', { t: 'قسم المالية', s: 'الاستحقاق والمدفوعات وعمليات الدفع والتقارير — وتسجيل الدفعات وتعديلها من ملف العميل.', ic: 'fin' }, [
+      ['due', 'الاستحقاق', 'calendar-blank:saffron', [{ ic: 'fin-due', t: 'الدفعات المستحقة والقادمة', d: 'الدفعات غير المسددة حسب موعد استحقاقها: المتأخرة · اليوم · خلال 7 أيام · خلال 30 يومًا', n: fmtNum(P.due.length) + ' دفعة', badge: late.length ? [fmtNum(late.length) + ' متأخرة', 'danger'] : t0.length ? [fmtNum(t0.length) + ' تستحق اليوم', 'warn'] : null, go: function () { go('other', 'fin-due'); } }]]].concat(OPS, [
       ['rec', 'سجل المدفوعات', 'receipt:teal', [{ ic: 'fin-pay', t: 'سجل المدفوعات', d: 'كل عملية سداد مرة واحدة بطريقتها وحالتها: بوابة · تحويل بنكي · توحيد · تأجيل · سداد قيمة المنتج · إعفاء · فرق تقريب', big: true,
-          n: fmtNum(P.rec.length) + ' عملية · المحصَّل نقدًا ' + sar(qr2(cashN.reduce(function (a, r) { return a + r.amt; }, 0))), badge: pendT.length ? [fmtNum(pendT.length) + ' تحويل بانتظار الاعتماد', 'warn'] : null, go: function () { ADM.fpM = 'all'; ADM.fpS = 'all'; ADM.fpC = ''; ADM.fpFrom = ''; go('other', 'fin-pay'); } },
+          n: fmtNum(P.rec.length) + ' عملية · المحصَّل نقدًا ' + sar(qr2(cashN.reduce(function (a, r) { return a + r.amt; }, 0))), badge: !canOps && pendT.length ? [fmtNum(pendT.length) + ' تحويل بانتظار الاعتماد', 'warn'] : null, go: function () { ADM.fpM = 'all'; ADM.fpS = 'all'; ADM.fpC = ''; ADM.fpFrom = ''; go('other', 'fin-pay'); } },
         { ic: 'fin-gw', t: 'عمليات بوابة الدفع', d: 'كل ما ورد من بوابة الدفع: الناجحة والفاشلة والمعلّقة والمستردة — للمطابقة', n: LV_PAY.at ? fmtNum(LV_PAY.GW.length) + ' عملية' : null, go: function () { go('other', 'fin-gw'); } }]],
       ['ax', 'تقرير الإجراءات', 'gavel:navy', [{ ic: 'gavel:navy', t: 'تقرير الإجراءات', d: 'السندات · الاستقطاع · الحوالات الصادرة · الشيكات — للاطلاع', go: function () { go('other', 'cu-admx'); } }]],
       ['ffee', 'الرسوم والمصاريف والضرائب', 'coins:gold', [{ ic: 'coins:gold', t: 'الرسوم والمصاريف والضرائب', d: 'الضريبة · الرسوم · العمولات والمصاريف — كل بند ببطاقة، مع الملخص العام والخاص', go: function () { go('other', 'fin-fee'); } }]],
-      ['rp', 'تقرير العملاء', 'chart-bar:navy', [{ ic: 'chart-bar:navy', t: 'تقرير العملاء', d: 'العقود والمبالغ والالتزام والمخاطرة — سجل ائتماني لكل عميل وتقرير PDF', go: function () { go('other', 'cu-admx-rp'); } }]]]);
+      ['rp', 'تقرير العملاء', 'chart-bar:navy', [{ ic: 'chart-bar:navy', t: 'تقرير العملاء', d: 'العقود والمبالغ والالتزام والمخاطرة — سجل ائتماني لكل عميل وتقرير PDF', go: function () { go('other', 'cu-admx-rp'); } }]]]));
   };
   if (LP.fin) LP.fin.run = lvFinHub;
 }
@@ -26133,7 +26147,7 @@ if (LIVE.on) {
     if (o.k === 'round') F.push(['الملاحظة', p0.roundNote || 'فرق هللات سُجّل عند إغلاق العقد']);
     if (o.k === 'oth') F.push(['الطريقة', 'غير مسجّلة']);
     const body = [DS.fields(F.filter(Boolean)), o.k === 'tr' && (t || p0.fid) ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(o.st === 'ok' && p0.fid ? 'إيصال التحويل' : 'فتح الإيصال', { size: 'sm', ui: 'file-pdf', onClick: function () { if (o.st === 'ok' && p0.fid) liveOpenCtFile(p0.fid, true); else cfTrFile(t.id); } }))]) : null,
-      o.st === 'pend' ? e('small', { class: 'cu-dr-hint' }, 'يُعتمد أو يُرفض من ملف العميل (جدول سداد العقد) أو من «إيصالات التحويل البنكي» في قسم العملاء، ثم يظهر هنا بحالته.') : null,
+      o.st === 'pend' ? e('small', { class: 'cu-dr-hint' }, 'يُعتمد أو يُرفض من ملف العميل (جدول سداد العقد) أو من «إيصالات التحويل البنكي» في «عمليات الدفع»، ثم يظهر هنا بحالته.') : null,
       o.st === 'nolink' ? DS.note('warn', 'عملية بوابة لم تُربط بدفعة', 'نجحت لدى بوابة الدفع لهذا العميل' + (gw && gw.class_label ? ' (' + gw.class_label + ')' : '') + ' ولم تُسجَّل على أي دفعة، فلا تُحسب في المحصَّل حتى تُطابق.') : null,
       o.st === 'ok' && o.chk ? e('small', { class: 'cu-dr-hint' }, 'للاطلاع — التصحيح من ملف العميل (جدول سداد العقد).') : null];
     return lvSec(K[1] + ' — ' + o.no + (pays.length === 1 ? ' · الدفعة ' + pays[0] : pays.length > 1 ? ' · ' + fmtNum(pays.length) + ' دفعات' : o.seq ? ' · الدفعة ' + o.seq : ''), SR(o.amt) + ' · ' + s[0], body, 'fp:' + o.key);
@@ -26356,6 +26370,8 @@ if (LIVE.on) {
   lp('fin-pay', 'سجل المدفوعات', 'fin', 'fin-pay', lvFinPay);
   lp('fin-gw', 'عمليات بوابة الدفع', 'fin', 'fin-gw', lvFinGw);
   lp('cu-trin', 'إيصالات التحويل البنكي', 'cu', 'cu-trin', lvTrInbox);
+  /* v579: صفحات عمليات الدفع صارت في «قسم المالية» — الرجوع إليه، ومن لا يملك صلاحية المالية يرجع إلى «قسم العملاء» */
+  ['cu-trin', 'cu-opin', 'cu-payops', 'cu-paylinks'].forEach(function (k) { try { if (LP[k]) Object.defineProperty(LP[k], 'up', { configurable: true, enumerable: true, get: function () { return typeof cuSecOk !== 'function' || cuSecOk('fin') ? 'fin' : 'cu'; }, set: function () { /* */ } }); } catch (err) { void err; } });
   if (LP['fin-due']) LP['fin-due'].run = lvFinDue;
   /* المسارات القديمة لسجل السداد (لكل طريقة صفحة) تفتح السجل الموحّد مصفًّى بالطريقة */
   const fpGo = function (k) { return function () { if (ADM.fpFrom !== (k || '*')) { ADM.fpFrom = k || '*'; ADM.fpM = k || 'all'; ADM.fpS = 'all'; ADM.fpC = (k && ADM['frC' + k]) || ''; } return lvFinPay(); }; };
