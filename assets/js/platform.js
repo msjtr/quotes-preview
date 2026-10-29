@@ -624,18 +624,26 @@ function stepMoney() {
   return kids;
 }
 function stepGeneral() {
-  const kids = [req('هل يوجد إيقاف خدمات ساري؟', 'service_suspension', sel('service_suspension', YESNO, true))];
+  const sus = [req('هل يوجد إيقاف خدمات ساري؟', 'service_suspension', sel('service_suspension', YESNO, true))];
   if (F.service_suspension === 'yes') {
-    kids.push(req('ما نوع إيقاف الخدمات؟', 'service_suspension_type', multi('service_suspension_type', SUSP), 'اختر نوعًا أو أكثر، ثم أدخل قيمة كلٍّ منها.'));
-    if (F.service_suspension_type.indexOf('traffic_violations') >= 0) kids.push(req('قيمة المخالفات المرورية (ريال)', 'suspension_traffic_value', txt('suspension_traffic_value', { numeric: 'decimal' })));
-    if (F.service_suspension_type.indexOf('financial_claims') >= 0) kids.push(req('قيمة المطالبات المالية (ريال)', 'suspension_claims_value', txt('suspension_claims_value', { numeric: 'decimal' })));
+    sus.push(req('ما نوع إيقاف الخدمات؟', 'service_suspension_type', multi('service_suspension_type', SUSP), 'اختر نوعًا أو أكثر، ثم أدخل قيمة كلٍّ منها.'));
+    if (F.service_suspension_type.indexOf('traffic_violations') >= 0) sus.push(req('قيمة المخالفات المرورية (ريال)', 'suspension_traffic_value', txt('suspension_traffic_value', { numeric: 'decimal' })));
+    if (F.service_suspension_type.indexOf('financial_claims') >= 0) sus.push(req('قيمة المطالبات المالية (ريال)', 'suspension_claims_value', txt('suspension_claims_value', { numeric: 'decimal' })));
   }
+  const ref = [req('ودنا نعرف كيف عرفت عنا؟', 'referral_source', sel('referral_source', opts(REF), true), null, true)];
+  if (F.referral_source === 'employee') ref.push(req('رمز الموظف', 'employee_code', txt('employee_code', { dir: 'ltr' })));
+  if (F.referral_source === 'marketer') ref.push(req('رمز المسوق', 'marketer_code', txt('marketer_code', { dir: 'ltr' })));
+  /* v576: نموذج الأهلية بمجموعات مرتّبة — الإيقاف ← الدخل والمصروفات ← الحساب البنكي لاستلام المبلغ ← كيف عرفت عنا */
+  if (S.tab === 'elig') {
+    const RK = relKids();
+    return [eligGrp('إيقاف الخدمات', null, sus),
+      eligGrp('الدخل والمصروفات', 'مصادر الدخل الأخرى وقيمة كلٍّ منها، والمصروفات الشهرية', tmGenKids()),
+      eligGrp('الحساب البنكي لاستلام المبلغ', 'حسابك المسجّل لدينا أو حساب أحد الأقارب', [RK[0]].concat(F.rel === 'no' ? ownAcctKids() : []))]
+      .concat(RK.slice(1)).concat([eligGrp('كيف عرفت عنا', null, ref)]);
+  }
+  const kids = sus;
   if (S.tab !== 'qreq') kids.push.apply(kids, tmGenKids());
-  if (S.tab === 'elig') kids.push.apply(kids, relKids());
-  kids.push(req('ودنا نعرف كيف عرفت عنا؟', 'referral_source', sel('referral_source', opts(REF), true), null, true));
-  if (F.referral_source === 'employee') kids.push(req('رمز الموظف', 'employee_code', txt('employee_code', { dir: 'ltr' })));
-  if (F.referral_source === 'marketer') kids.push(req('رمز المسوق', 'marketer_code', txt('marketer_code', { dir: 'ltr' })));
-  return kids;
+  return kids.concat(ref);
 }
 function itemTitle(it) { const p = it.sku && it.sku !== OTHERP ? prodOf(it.sku) : null; if (p) return p.t; if (it.carrier) return 'بطاقات مسبقة الدفع — ' + nameOf(CARRIERS, it.carrier); return nameOf(PTYPES, it.type) + ' — ' + it.name; }
 function itemQty(it) { return (it.type === 'prepaid' ? 'الكمية ' : 'العدد ') + fmtNum(Number(it.qty)); }
@@ -654,6 +662,8 @@ function saveItem() {
   draw();
 }
 function stepProduct() {
+  /* v576: نموذج الأهلية — المنتجات وخياراتها والبديل تضيفها الإدارة بعد قبول الأهلية وصدور النتيجة */
+  if (S.tab === 'elig') return payKids([DS.note('info', 'المنتجات بعد قبول الأهلية', 'تُضاف المنتجات وخياراتها إلى طلبك من الإدارة بعد قبول الأهلية وصدور النتيجة. حدّد هنا القيمة والمدة وموعد الدفع وطريقة الاستلام.')], true);
   const d = S.draft, dm = S.dmiss, kids = [];
   /* قائمة المنتجات المضافة */
   if (F.items.length) {
@@ -783,7 +793,9 @@ function payKids(kids, withRecv) {
     kids.push(e('div', { class: 'pf-src' }, [e('div', { class: 'pf-src-h' }, [e('span', { class: 'pf-src-ic' }, frag(tile('pin'))), e('b', {}, 'عنوان الشحن من ملفي الشخصي')]),
       DS.fields([['المنطقة', F.ship_region || '—'], ['المدينة والحي', F.ship_city || '—'], ['العنوان الوطني', F.ship_addr || '—']]),
       e('button', { type: 'button', class: 'fx-link', onClick: function () { go('other', 'me-address'); } }, 'تحديث العنوان من ملفي الشخصي')]));
-  } else if (F.recv === 'proxy') {
+  } else if (F.recv === 'proxy' && S.tab === 'elig') {
+      kids.push(DS.note('info', 'الاستلام بوكالة', 'تُطلب بيانات الوكيل (الاسم ورقم الجوال) بعد قبول الأهلية وصدور النتيجة، ويحضر الوكيل بوكالة سارية تتضمن الاستلام.'));
+    } else if (F.recv === 'proxy') {
     kids.push(req('اسم الوكيل', 'proxy_name', txt('proxy_name'), 'كما في الهوية.'));
     kids.push(req('رقم جوال الوكيل', 'proxy_phone', txt('proxy_phone', { dir: 'ltr', numeric: 'tel', placeholder: '05XXXXXXXX' }), 'يُرسل إليه رمز الاستلام.'));
     kids.push(DS.note('info', 'وكالة الاستلام', 'يحضر الوكيل بوكالة سارية تتضمن الاستلام، ويُتحقق منها قبل التسليم.'));
@@ -884,8 +896,8 @@ function required(i) {
   if (i === 0 && S.tab === 'qreq') { F.call_t = callTime(); APP.push('call_t'); F.svc_needs_ok = (F.svc_needs || []).length ? 'y' : ''; }
   if (i === 0 && qMode() === 'svc') r.push.apply(r, ['svc_type', 'svc_desc'].concat(APP));
   else if (i === 0 && S.tab === 'qreq') { r.push.apply(r, (F.q_type === 'unlisted' ? ['q_type', 'q_name'] : ['q_type', 'q_br', 'q_sku']).concat([qLinesP() ? 'q_lines_ok' : 'q_qty', 'q_kind']).concat(APP)); if (qLinesP()) qSync(qLinesP()); if (F.q_type !== 'unlisted' && F.q_sku === OTHERP) r.push('q_name'); if (F.q_qty && !(Number(F.q_qty) > 0)) F.q_qty = ''; }
-  else if (i === 0) { r.push('items', 'alt_ok', 'product_value', 'payment_duration_months', 'payment_date', 'recv'); if (F.product_value === 'custom') r.push('product_value_custom'); if (F.recv === 'ship') r.push('ship_region', 'ship_city', 'ship_addr'); if (F.recv === 'proxy') r.push('proxy_name', 'proxy_phone'); }
-  if (i === 1 && S.tab !== 'qreq') { r.push('service_suspension'); if (F.service_suspension === 'yes') { r.push('service_suspension_type'); if (F.service_suspension_type.indexOf('traffic_violations') >= 0) r.push('suspension_traffic_value'); if (F.service_suspension_type.indexOf('financial_claims') >= 0) r.push('suspension_claims_value'); } r.push('has_additional_income', 'monthly_expenses'); if (F.has_additional_income === 'yes') r.push('other_income_sources', 'additional_income_value'); if (F.referral_source === 'employee') r.push('employee_code'); if (F.referral_source === 'marketer') r.push('marketer_code'); }
+  else if (i === 0) { r.push.apply(r, (S.tab === 'elig' ? [] : ['items', 'alt_ok']).concat(['product_value', 'payment_duration_months', 'payment_date', 'recv'])); /* v576: المنتجات وبديلها تضيفها الإدارة بعد قبول الأهلية */ if (F.product_value === 'custom') r.push('product_value_custom'); if (F.recv === 'ship') r.push('ship_region', 'ship_city', 'ship_addr'); if (F.recv === 'proxy' && S.tab !== 'elig') r.push('proxy_name', 'proxy_phone'); }
+  if (i === 1 && S.tab !== 'qreq') { r.push('service_suspension'); if (F.service_suspension === 'yes') { r.push('service_suspension_type'); if (F.service_suspension_type.indexOf('traffic_violations') >= 0) r.push('suspension_traffic_value'); if (F.service_suspension_type.indexOf('financial_claims') >= 0) r.push('suspension_claims_value'); } r.push('has_additional_income', 'monthly_expenses'); if (F.has_additional_income === 'yes') { oincSync(); r.push('other_income_sources', 'income_proof'); (F.other_income_sources || []).forEach(function (s) { r.push('oinc_' + s); }); } if (F.referral_source === 'employee') r.push('employee_code'); if (F.referral_source === 'marketer') r.push('marketer_code'); }
   if (i === LAST) r.push('confirm');
   const out = emptyOf(r);
   if (i === 1 && S.tab === 'elig') relMiss().forEach(function (k) { if (out.indexOf(k) < 0) out.push(k); });
@@ -901,7 +913,7 @@ function sectorVal() { return sectorKey() === 'sector' ? val('sector') : (F.sect
 function rs(n) { return n ? fmtNum(Number(n)) + ' ريال' : ''; }
 const yn = (v) => v === 'yes' ? 'نعم' : v === 'no' ? 'لا' : '';
 function jobFields() { return [['الحالة الوظيفية', nameOf(WORK, F.work_type)]].concat(employed() ? [['المسمى الوظيفي', val('job_title')], ['الجهة', val('employer')], [F.work_type === 'company' ? 'القطاع' : 'القطاع (الجهة التابعة)', sectorVal()], ['الإدارة التابع لها', F.department], ['منطقة العمل', F.work_region], ['تاريخ الالتحاق', F.join_date || ''], ['مدة الخدمة', service()]] : []); }
-function finFields() { return (employed() ? [['الراتب المودع', rs(F.salary)]] : []).concat([['مصدر الدخل', F.income_sources.map(function (x) { return nameOf(INCOME, x); }).join('، ')], ['إجمالي الدخل الشهري', rs(F.total_monthly_income)], ['التزامات شهرية', yn(F.has_obligations)], F.has_obligations === 'yes' ? ['قيمة الالتزامات', rs(F.total_obligations)] : null, ['مصادر دخل أخرى', F.has_additional_income === 'yes' ? ((F.other_income_sources || []).map(function (x) { return nameOf(INCOME, x); }).join('، ') || F.additional_income_source || 'نعم') : yn(F.has_additional_income)], F.has_additional_income === 'yes' ? ['الدخل الآخر الشهري', rs(F.additional_income_value)] : null, ['المصروفات الشهرية', F.monthly_expenses ? rs(F.monthly_expenses) : '']]); }
+function finFields() { return (employed() ? [['الراتب المودع', rs(F.salary)]] : []).concat([['مصدر الدخل', F.income_sources.map(function (x) { return nameOf(INCOME, x); }).join('، ')], ['إجمالي الدخل الشهري', rs(F.total_monthly_income)], ['التزامات شهرية', yn(F.has_obligations)], F.has_obligations === 'yes' ? ['قيمة الالتزامات', rs(F.total_obligations)] : null, ['مصادر دخل أخرى', F.has_additional_income === 'yes' ? (oincTxt() || F.additional_income_source || 'نعم') : yn(F.has_additional_income)], F.has_additional_income === 'yes' ? ['الدخل الآخر الشهري', rs(F.additional_income_value)] : null, F.has_additional_income === 'yes' && F.income_proof ? ['إثبات مصدر الدخل', yn(F.income_proof)] : null, ['المصروفات الشهرية', F.monthly_expenses ? rs(F.monthly_expenses) : '']]); }
 function docFields() { return docsFor(F.work_type).map(function (k) { const x = F.docs[k] || {}; const D = DOCS[k]; return [D.t, x.file ? x.file.name + ' · ' + (D.kind === 'letter' ? 'صدر ' + x.date : x.from + ' – ' + x.to) : '']; }); }
 function review() {
   const go2 = function (k) { return DS.button('تحديث', { size: 'sm', ui: 'pencil-simple', onClick: function () { go('other', k); } }); };
@@ -912,7 +924,7 @@ function review() {
     ['المعلومات الوظيفية — من معلوماتي الوظيفية', jobFields(), 'job-info'],
     ['المعلومات المالية — من معلوماتي المالية', finFields(), 'fin-info'],
     ['المرفقات — من مرفقاتي', docFields(), 'my-docs']];
-  const own = [qMode() === 'svc' ? ['تفاصيل الخدمة', [['نوع الطلب', 'خدمة حسب الطلب'], ['نوع الخدمة', nameOf(SVC_TYPES, F.svc_type)], ['وصف الخدمة', F.svc_desc || ''], F.svc_date ? ['الموعد المفضل', F.svc_date] : null, ['القيمة التقديرية', rs(money())], ['مدة السداد', F.payment_duration_months ? fmtNum(Number(F.payment_duration_months)) + ' شهرًا' : ''], ['موعد الدفع', F.payment_date || '']]] : ['تفاصيل المنتج', F.items.map(function (it, i) { return ['المنتج ' + fmtNum(i + 1), itemTitle(it) + ' · ' + itemQty(it) + (it.details ? ' · ' + it.details : '')]; }).concat([['إجمالي قيمة المنتجات', rs(money())], ['مدة السداد', F.payment_duration_months ? fmtNum(Number(F.payment_duration_months)) + ' شهرًا' : ''], ['موعد الدفع', F.payment_date || ''], ['طريقة الاستلام', F.recv ? recvName(F.recv) + ' — ' + recvDetail(recvOf()) : ''], ['عند عدم توفر المنتج', relAltT()]])], ['المعلومات العامة', [['إيقاف خدمات', yn(F.service_suspension)], F.service_suspension === 'yes' ? ['النوع', F.service_suspension_type.map(function (x) { return nameOf(SUSP, x); }).join('، ')] : null, F.service_suspension === 'yes' && F.service_suspension_type.indexOf('traffic_violations') >= 0 ? ['قيمة المخالفات المرورية', rs(F.suspension_traffic_value)] : null, F.service_suspension === 'yes' && F.service_suspension_type.indexOf('financial_claims') >= 0 ? ['قيمة المطالبات المالية', rs(F.suspension_claims_value)] : null, ['كيف عرفت عنا', nameOf(REF, F.referral_source)]].concat(relReview())]];
+  const own = [qMode() === 'svc' ? ['تفاصيل الخدمة', [['نوع الطلب', 'خدمة حسب الطلب'], ['نوع الخدمة', nameOf(SVC_TYPES, F.svc_type)], ['وصف الخدمة', F.svc_desc || ''], F.svc_date ? ['الموعد المفضل', F.svc_date] : null, ['القيمة التقديرية', rs(money())], ['مدة السداد', F.payment_duration_months ? fmtNum(Number(F.payment_duration_months)) + ' شهرًا' : ''], ['موعد الدفع', F.payment_date || '']]] : ['تفاصيل المنتج', F.items.map(function (it, i) { return ['المنتج ' + fmtNum(i + 1), itemTitle(it) + ' · ' + itemQty(it) + (it.details ? ' · ' + it.details : '')]; }).concat([['إجمالي قيمة المنتجات', rs(money())], ['مدة السداد', F.payment_duration_months ? fmtNum(Number(F.payment_duration_months)) + ' شهرًا' : ''], ['موعد الدفع', F.payment_date || ''], ['طريقة الاستلام', F.recv ? recvName(F.recv) + (S.tab === 'elig' && F.recv === 'proxy' ? ' — تُطلب بيانات الوكيل بعد قبول الأهلية' : ' — ' + recvDetail(recvOf())) : ''], S.tab === 'elig' ? null : ['عند عدم توفر المنتج', relAltT()]])], ['المعلومات العامة', [['إيقاف خدمات', yn(F.service_suspension)], F.service_suspension === 'yes' ? ['النوع', F.service_suspension_type.map(function (x) { return nameOf(SUSP, x); }).join('، ')] : null, F.service_suspension === 'yes' && F.service_suspension_type.indexOf('traffic_violations') >= 0 ? ['قيمة المخالفات المرورية', rs(F.suspension_traffic_value)] : null, F.service_suspension === 'yes' && F.service_suspension_type.indexOf('financial_claims') >= 0 ? ['قيمة المطالبات المالية', rs(F.suspension_claims_value)] : null, ['كيف عرفت عنا', nameOf(REF, F.referral_source)]].concat(relReview())]];
   if (S.tab === 'qreq') { const A = profAddr(); own.length = 0;
     own.push(qMode() === 'svc' ? ['تفاصيل الخدمة', [['نوع الطلب', 'خدمة حسب الطلب'], ['نوع الخدمة', nameOf(SVC_TYPES, F.svc_type)], ].concat((F.svc_needs || []).filter(function (n) { return String(n.t).trim(); }).map(function (n, k) { return ['الاحتياج ' + fmtNum(k + 1), String(n.t).trim() + (n.f ? ' · مرفق: ' + n.f.name : '')]; })).concat([['وصف الخدمة', F.svc_desc || '']])]
       : ['تفاصيل المنتج', [['نوع المنتج', nameOf(PQ_TYPES, F.q_type)], ['اسم المنتج', qProdName()], F.q_opts ? ['خيارات المنتج', F.q_opts] : null, ['الكمية', F.q_qty ? fmtNum(Number(F.q_qty)) : ''], ['نوع الطلب', nameOf(QKIND, F.q_kind)], F.q_more ? ['تفاصيل إضافية', F.q_more] : null]]);
@@ -923,14 +935,15 @@ function review() {
 function resetForm() { Object.keys(F).forEach(function (k) { if (PROFK.indexOf(k) < 0) delete F[k]; }); if (!F.income_sources) F.income_sources = []; F.service_suspension_type = []; if (!F.docs) F.docs = {}; F.items = []; S.draft = {}; S.dmiss = []; S.editItem = -1; S.step = 0; S.sent = null; S.miss = []; S.fsOpen = {}; S.fsOne = 'det'; S.ndDraft = { t: '', f: null }; S.ndEdit = -1; S.ndJust = -1; S.ndErr = false; }
 function eligPage() {
   const QM = S.tab === 'qreq';
+  if (LIVE.on && !QM) { try { lvEnsure(); } catch (err) { void err; } } /* v576: البيانات الوظيفية والمالية ومرفقاتي من القاعدة */
   if (S.sent && QM) {
     return [DS.note('ok', 'أُرسل طلب عرض السعر', 'رقم الطلب ' + S.sent + ' — يصدر عرض السعر بعد مراجعة البيانات، ويصلك في «طلبات متجري» والإشعارات.'),
       DS.fields(qMode() === 'svc' ? [['نوع الطلب', 'خدمة حسب الطلب'], ['نوع الخدمة', nameOf(SVC_TYPES, F.svc_type)], ['احتياجات الخدمة', fmtNum((F.svc_needs || []).filter(function (n) { return String(n.t).trim(); }).length) + ' بند'], ['وقت التواصل', callTime()], ['الحالة', DS.badge('تم الإرسال', 'info')]] : [['نوع الطلب', nameOf(QKIND, F.q_kind)], ['المنتج', qProdName() + ' · ' + fmtNum(Number(F.q_qty))], ['وقت التواصل', callTime()], ['الحالة', DS.badge('تم الإرسال', 'info')]]),
       DS.actionBar({ buttons: [DS.button('طلب جديد', { onClick: function () { resetForm(); draw(); } }), DS.button('متابعة الطلب', { tone: 'primary', onClick: function () { FX.rid = S.sent; go('req'); } })] })];
   }
   if (S.sent) {
-    return [DS.note('ok', 'أُرسل طلبك إلى الشركاء', 'رقم الطلب ' + S.sent + ' — يظهر الآن في «طلبات خدماتي»، وتصلك العروض في التنبيهات ومركز المراسلات. (معاينة: لم يُرسل شيء فعليًا)'),
-      DS.fields([['المنتج', F.items.map(itemTitle).join('، ')], ['القيمة', rs(money())], ['مدة السداد', fmtNum(Number(F.payment_duration_months)) + ' شهرًا'], ['الحالة', DS.badge('بانتظار الاستلام', 'info')]]),
+    return [DS.note('ok', 'أُرسل طلبك إلى الشركاء', 'رقم الطلب ' + S.sent + ' — يظهر الآن في «طلبات خدماتي»، وتصلك النتيجة في التنبيهات ومركز المراسلات.' + (LIVE.on ? ' تقديم الطلب لا يعني قبوله.' : ' (معاينة: لم يُرسل شيء فعليًا)')),
+      DS.fields([[F.items.length ? 'المنتج' : 'المنتجات', F.items.length ? F.items.map(itemTitle).join('، ') : 'تُضاف بعد قبول الأهلية'], ['القيمة', rs(money())], ['مدة السداد', fmtNum(Number(F.payment_duration_months)) + ' شهرًا'], ['الحالة', DS.badge('بانتظار الاستلام', 'info')]]),
       DS.actionBar({ buttons: [DS.button('طلب جديد', { onClick: function () { resetForm(); draw(); } }), DS.button('متابعة الطلب في طلبات خدماتي', { tone: 'primary', onClick: function () { FX.rid = S.sent; go('reqs'); } })] })];
   }
   const kids = [];
@@ -938,6 +951,7 @@ function eligPage() {
   /* بياناتك الثابتة تُرفق تلقائيًا من أقسامها — لا تُعاد تعبئتها مع كل طلب */
   const RD = [['profile', 'ملفي الشخصي', 'profile', 0], ['job-info', 'معلوماتي الوظيفية', 'briefcase:navy', jobMiss().length], ['fin-info', 'معلوماتي المالية', 'coins:teal', finMiss().length], ['my-docs', 'مرفقاتي', 'files', docsMiss().length]];
   const ELIG = S.tab === 'elig', XP = ELIG ? docsExpired() : [];
+  if (ELIG) kids.push(eligTermsNote()); /* v576 */
   /* مرفق منتهي: لا يمكن التقديم — يُوجَّه العميل إلى «مرفقاتي» مباشرة على بطاقة المرفق */
   if (XP.length) kids.push(DS.note('danger', 'لا يمكن تقديم الطلب الآن', 'انتهت صلاحية ' + XP.map(function (k) { return '«' + DOCS[k].t + '»'; }).join(' و') + ' في مرفقاتي. حدّثه ثم عد لإكمال طلبك.', DS.button('تحديث المرفق في مرفقاتي', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: function () { goDoc(XP[0]); } })));
   else if (ELIG && F._docReview) kids.push(DS.note('warn', 'راجع مرفقاتك قبل التقديم', 'حدّثت معلوماتك مؤخرًا — تأكد أن مرفقاتك مطابقة لها.', DS.button('مراجعة مرفقاتي', { size: 'sm', tone: 'primary', onClick: function () { goDoc(''); } })));
@@ -973,7 +987,8 @@ function eligPage() {
       const TL = [['تم إرسال الطلب', today0()], ['مراجعة البيانات', null], ['إصدار عرض السعر'], ['قرارك على العرض'], ['توقيع العقد']], APPF = [['صفة طالب الخدمة', F.applicant_type === 'org' ? 'مؤسسة' : 'فرد'], F.company_name ? ['اسم المتجر أو الشركة', F.company_name] : null, F.site_url ? ['رابط الموقع', F.site_url] : null, ['وقت التواصل', callTime()]];
       if (last && QM && qMode() === 'svc') { const r = addReq('quote', [['نوع الطلب', 'خدمة حسب الطلب'], ['نوع الخدمة', nameOf(SVC_TYPES, F.svc_type)], ].concat(F.svc_needs.filter(function (n) { return String(n.t).trim(); }).map(function (n, k) { return ['الاحتياج ' + fmtNum(k + 1), String(n.t).trim() + (n.f ? ' · مرفق: ' + n.f.name : '')]; })).concat([['وصف الخدمة', F.svc_desc]]).concat(APPF).filter(Boolean), TL); r.wantQuote = true; r.qin = { type: nameOf(SVC_TYPES, F.svc_type), denom: null, value: 0, n: 1, firstDue: iso(addMonths(T0, 1)), recv: { m: 'pickup' } }; S.sent = r.no; }
       else if (last && QM) { const r = addReq('quote', [['نوع الطلب', nameOf(QKIND, F.q_kind)], ['المنتج', qProdName() + ' · ' + fmtNum(Number(F.q_qty))], F.q_opts ? ['خيارات المنتج', F.q_opts] : null, F.q_more ? ['تفاصيل إضافية', F.q_more] : null].concat(APPF).filter(Boolean), TL); r.wantQuote = true; r.qin = { type: qProdName(), denom: null, value: qPrice(), n: 1, firstDue: iso(addMonths(T0, 1)), recv: { m: 'pickup' } }; r.sku = F.q_sku && F.q_sku !== OTHERP ? F.q_sku : ''; S.sent = r.no; }
-      else if (last) { const r = addReq('elig', [['المنتج', F.items.map(function (it) { return itemTitle(it) + ' · ' + itemQty(it); }).join('، ')], ['إجمالي قيمة المنتجات', rs(money())], ['مدة السداد', fmtNum(Number(F.payment_duration_months)) + ' شهرًا'], ['موعد أول دفعة', F.payment_date || '—'], ['طريقة الاستلام', recvName(F.recv) + ' — ' + recvDetail(recvOf())], ['عرض السعر', F.quote === 'no' ? 'غير مطلوب' : 'مطلوب إرفاقه'], ['عند عدم توفر المنتج', relAltT()]].concat(relReqFields()), [['تم إرسال الطلب', today0()], ['استلام الطلب ومراجعة البيانات', null], ['دراسة الأهلية'], ['عروض الشركاء'], ['اختيار العرض'], ['توقيع العقد']]); if (F.quote !== 'no') { r.wantQuote = true; r.qin = { type: F.items.map(itemTitle).join('، '), denom: null, value: money(), n: Math.max(1, Number(F.payment_duration_months) || 1), firstDue: F.payment_date && F.payment_date >= iso(T0) ? F.payment_date : iso(addMonths(T0, 1)), recv: recvOf() }; } r.sku = skus; relOnSubmit(r); S.sent = r.no; } else S.step++;
+      else if (last && LIVE.on) { lvEligSubmit(); return; } /* v576: الطلب إلى الخادم */
+else if (last) { const r = addReq('elig', [['المنتج', F.items.map(function (it) { return itemTitle(it) + ' · ' + itemQty(it); }).join('، ')], ['إجمالي قيمة المنتجات', rs(money())], ['مدة السداد', fmtNum(Number(F.payment_duration_months)) + ' شهرًا'], ['موعد أول دفعة', F.payment_date || '—'], ['طريقة الاستلام', recvName(F.recv) + ' — ' + recvDetail(recvOf())], ['عرض السعر', F.quote === 'no' ? 'غير مطلوب' : 'مطلوب إرفاقه'], ['عند عدم توفر المنتج', relAltT()]].concat(relReqFields()), [['تم إرسال الطلب', today0()], ['استلام الطلب ومراجعة البيانات', null], ['دراسة الأهلية'], ['عروض الشركاء'], ['اختيار العرض'], ['توقيع العقد']]); if (F.quote !== 'no') { r.wantQuote = true; r.qin = { type: F.items.map(itemTitle).join('، '), denom: null, value: money(), n: Math.max(1, Number(F.payment_duration_months) || 1), firstDue: F.payment_date && F.payment_date >= iso(T0) ? F.payment_date : iso(addMonths(T0, 1)), recv: recvOf() }; } r.sku = skus; relOnSubmit(r); S.sent = r.no; } else S.step++;
       draw(); toTop();
     } }),
   ] }));
@@ -1223,7 +1238,7 @@ function morePage() {
   const rs = function (k) { return function () { Object.assign(FX, { cid: '', lock: false, ok: false, done: null, miss: [], payPid: '', dpid: '' }); if (k === 'merge') Object.assign(FX, { mg: [] }); go(k); }; };
   const G = [['الأساسي', [['dash', 'لوحتي الرئيسية', function () { go('dash'); }], ['profile', 'ملفي الشخصي', function () { go('other', 'profile'); }], ['shield', 'مركزُ الأمان', function () { go('other', 'shield'); }]]],
     ['خدماتي', [['contract', 'عقودي', function () { go('contracts'); }], ['wallet', 'مدفوعاتي لعقودي', function () { go('pay'); }], ['orders', 'الطلبات', function () { go('reqs'); }], ['receipt', 'سجلات مدفوعاتي لعقودي', function () { go('payrec'); }],
-      ['people', 'طلب عرض سعر من الشركاء', function () { go('other', 'cl-partners'); }], ['bank', 'سداد عقد كامل', rs('settle')], ['clock', 'طلب تأجيل دفعة', rs('defer')], ['merge', 'توحيد عقودي في عقد واحد', rs('merge')], ['briefcase:navy', 'معلوماتي الوظيفية', function () { go('other', 'job-info'); }], ['coins:teal', 'معلوماتي المالية', function () { go('other', 'fin-info'); }], ['files', 'مرفقاتي', function () { go('other', 'my-docs'); }]]],
+      ['people', 'تحقق من أهليتك مع شركائنا', function () { go('other', 'cl-partners'); }], ['bank', 'سداد عقد كامل', rs('settle')], ['clock', 'طلب تأجيل دفعة', rs('defer')], ['merge', 'توحيد عقودي في عقد واحد', rs('merge')], ['briefcase:navy', 'معلوماتي الوظيفية', function () { go('other', 'job-info'); }], ['coins:teal', 'معلوماتي المالية', function () { go('other', 'fin-info'); }], ['files', 'مرفقاتي', function () { go('other', 'my-docs'); }]]],
     ['المتجر', STORE_ITEMS().map(function (x) { return [x[0], x[1], x[3]]; })],
     
     
@@ -1281,7 +1296,7 @@ function svcPage() { if (typeof svcHubPage === 'function') return svcHubPage();
   return [DS.cardGrid([
     DS.card({ icon: 'contract', title: 'عقودي', onClick: function () { go('contracts'); } }),
     DS.card({ icon: 'wallet', title: 'مدفوعاتي', onClick: function () { go('pay'); } }),
-    DS.card({ icon: 'people', title: 'طلب عرض سعر من الشركاء', onClick: function () { go('other', 'cl-partners'); } }),
+    DS.card({ icon: 'people', title: 'تحقق من أهليتك مع شركائنا', onClick: function () { go('other', 'cl-partners'); } }),
     DS.card({ icon: 'bank', title: 'سداد عقد كامل', onClick: rs('settle') }),
     DS.card({ icon: 'clock', title: 'طلب تأجيل دفعة', onClick: rs('defer') }),
     DS.card({ icon: 'orders', title: 'الطلبات', onClick: function () { go('reqs'); } }),
@@ -1388,7 +1403,7 @@ const REQS = [
     path: [['رفع إيصال التحويل', C1.payments[4].at], ['مطابقة التحويل', null], ['اعتماد الدفعة']] }),
   mkR({ no: 'RQ-50231', type: 'elig', at: addDays(T0, -3), status: 'offers', fields: [['المنتج', 'بطاقات مسبقة الدفع — زين · الكمية 5'], ['إجمالي قيمة المنتجات', SR(2500)], ['مدة السداد', '6 أشهر']],
     path: [['تم إرسال الطلب', addDays(T0, -3)], ['استلام الطلب ومراجعة البيانات', addDays(T0, -3)], ['دراسة الأهلية', addDays(T0, -2)], ['عروض الشركاء', null], ['اختيار العرض'], ['توقيع العقد']] }),
-  mkR({ no: 'RQ-50262', type: 'elig', at: T0, status: 'offers', fields: [['المنتج', 'جوال Samsung Galaxy S25 · العدد 1'], ['إجمالي قيمة المنتجات', SR(4199)], ['مدة السداد', '6 أشهر'], ['طريقة الاستلام', 'شحن — حائل'], ['عرض السعر', 'مطلوب من الشركاء'], ['المصدر', 'صفحة «طلب عرض سعر من الشركاء»']],
+  mkR({ no: 'RQ-50262', type: 'elig', at: T0, status: 'offers', fields: [['المنتج', 'جوال Samsung Galaxy S25 · العدد 1'], ['إجمالي قيمة المنتجات', SR(4199)], ['مدة السداد', '6 أشهر'], ['طريقة الاستلام', 'شحن — حائل'], ['عرض السعر', 'مطلوب من الشركاء'], ['المصدر', 'صفحة «تحقق من أهليتك مع شركائنا»']],
     path: [['تم إرسال الطلب', T0], ['استلام الطلب ومراجعة البيانات', T0], ['دراسة الأهلية', T0], ['عروض الشركاء', null], ['اختيار العرض'], ['توقيع العقد']] }),
   mkR({ no: 'RQ-50198', type: 'defer', at: addDays(C1.payments[3].due, -6), status: 'done', contract: 'TC-26-0142', fields: [['العقد', 'TC-26-0142'], ['الدفعة المؤجلة', '4 من 12 · ' + SR(541)], ['حالة الدفعة', 'تم الدفع بنظام التأجيل'], ['العقد الجديد', 'TC-26-0150 — دفعتان × ' + SR(270.5)]],
     path: [['تم إرسال الطلب', addDays(C1.payments[3].due, -6)], ['مراجعة الإدارة', addDays(C1.payments[3].due, -5)], ['الموافقة على التأجيل', addDays(C1.payments[3].due, -4)], ['إنشاء عقد التأجيل TC-26-0150', addDays(C1.payments[3].due, -4)]] }),
@@ -4980,7 +4995,7 @@ function svcHubPage() {
       { ic: 'card', t: 'طلبات الدفع المباشر', d: 'طلبات الدفع المرسلة إليك من منصة تيرا — تسدّدها إلكترونيًا', n: LIVE.on && PRQ.rows && PRQ.rows.length ? fmtNum(PRQ.rows.length) + (PRQ.rows.length === 1 ? ' طلب' : ' طلبات') : null, go: function () { go('other', 'pay-req'); } },
       { ic: 'file-text', t: 'سجلات طلبات الدفع المباشر', d: 'سجل كل طلبات الدفع المباشر: المدفوعة والمنتهية والملغاة', go: function () { go('other', 'pay-req-rec'); } }]],
     ['rq', 'طلبات خدماتي', 'orders', [{ ic: 'orders', t: 'طلبات خدماتي', d: 'طلبات العقود والشركاء ومراحلها', n: (function (n) { return fmtNum(n) + (n <= 10 ? ' طلبات' : ' طلبًا'); })(REQS.filter(function (r) { return !isStoreReq(r); }).length), go: function () { FX.rs = ''; go('reqs'); } }]],
-    ['pt', 'الشركاء', 'people', [{ ic: 'people', t: 'طلب عرض سعر من الشركاء', d: 'عروض أسعار من شركائنا', go: function () { go('other', 'cl-partners'); } }]],
+    ['pt', 'الشركاء', 'people', [{ ic: 'people', t: 'تحقق من أهليتك مع شركائنا', d: 'دراسة أهليتك لدى شركائنا', go: function () { go('other', 'cl-partners'); } }]],
     ['me', 'بياناتي', 'files', [{ ic: 'briefcase:navy', t: 'معلوماتي الوظيفية', go: function () { go('other', 'job-info'); } }, { ic: 'coins:teal', t: 'معلوماتي المالية', go: function () { go('other', 'fin-info'); } }, { ic: 'files', t: 'مرفقاتي', go: function () { goDoc(docsExpired()[0] || ''); }, badge: nx ? ['منتهي الصلاحية ' + fmtNum(nx), 'danger'] : null }]]]);
 }
 function ordHubPage() {
@@ -5164,7 +5179,7 @@ function svNewPage() {
 
 /* ===== v133 خدماتي: رأس مضغوط موحّد للصفحات، وفلتر الشريط بدل بطاقات «عرض/إخفاء»، واختيار العقود بقائمة منسدلة واحدة ===== */
 const PH_IC = { contracts: 'contract', contract: 'contract', pay: 'wallet', payment: 'wallet', paynow: 'wallet', rcpt: 'receipt', rfreq: 'receipt', payrec: 'receipt', reqs: 'orders', req: 'orders', quote: 'letter', settle: 'bank', defer: 'clock', merge: 'merge', msg: 'mail', notif: 'bell', elig: 'people', qreq: 'note-pencil' };
-const PH_SUB = { 'cl-partners': 'اطلب عرض سعر من شركائنا بعد التحقق من أهليتك.', 'job-info': 'بيانات عملك التي تُرفق بطلباتك تلقائيًا.', 'fin-info': 'دخلك والتزاماتك الشهرية التي تُرفق بطلباتك.', 'my-docs': 'مستنداتك المرفوعة وصلاحية كل منها.' };
+const PH_SUB = { 'cl-partners': 'قدّم طلبك ليتحقق شركاؤنا من أهليتك، ثم تصلك النتيجة.', 'job-info': 'بيانات عملك التي تُرفق بطلباتك تلقائيًا.', 'fin-info': 'دخلك والتزاماتك الشهرية التي تُرفق بطلباتك.', 'my-docs': 'مستنداتك المرفوعة وصلاحية كل منها.' };
 function phSync(sub) {
   GS_N = 0;
   const tt = document.getElementById('pv-title'), tx = document.querySelector('.t2-phead-tx'), ic = document.getElementById('pv-ic'), sb = document.getElementById('pv-sub');
@@ -9279,21 +9294,22 @@ function relPreview(f) {
     f.url ? (isImg ? e('img', { src: f.url, alt: f.name }) : e('iframe', { src: f.url, title: f.name })) : e('p', { class: 'rel-pv-na' }, 'المعاينة غير متاحة لمرفق محفوظ سابقًا — أعد إرفاقه إن احتجت التحقق منه.')])]);
   host.appendChild(m); document.addEventListener('keydown', onKey, true);
 }
-function relFileBox(label, optional) {
-  const f = F.rel_file;
+function relFileBox(label, optional, fk) {
+  fk = fk || fk; const fe = fk + 'Err'; /* v576: لحساب العميل الآخر أيضًا */
+  const f = F[fk];
   const pick = e('input', { type: 'file', accept: DOC_ACCEPT, 'aria-label': label, onChange: function (ev) {
     const x = (ev.target.files || [])[0]; if (!x) return;
-    if (!DOC_EXT.test(x.name)) { S.relFileErr = 'نوع الملف غير مقبول — PDF أو صورة (JPG · PNG · WEBP).'; draw(); return; }
-    if (x.size > 2 * 1024 * 1024) { S.relFileErr = 'حجم الملف ' + sizeOf(x.size) + ' — الحد 2 ميجابايت.'; draw(); return; }
-    if (F.rel_file && F.rel_file.url) { try { URL.revokeObjectURL(F.rel_file.url); } catch (err) { void err; } }
-    F.rel_file = { name: x.name, size: x.size, type: x.type, url: URL.createObjectURL(x) }; S.relFileErr = ''; S.miss = S.miss.filter(function (k) { return k !== 'rel_file'; }); draw(); } });
+    if (!DOC_EXT.test(x.name)) { S[fe] = 'نوع الملف غير مقبول — PDF أو صورة (JPG · PNG · WEBP).'; draw(); return; }
+    if (x.size > 2 * 1024 * 1024) { S[fe] = 'حجم الملف ' + sizeOf(x.size) + ' — الحد 2 ميجابايت.'; draw(); return; }
+    if (F[fk] && F[fk].url) { try { URL.revokeObjectURL(F[fk].url); } catch (err) { void err; } }
+    F[fk] = { name: x.name, size: x.size, type: x.type, url: URL.createObjectURL(x), obj: x }; S[fe] = ''; S.miss = S.miss.filter(function (k) { return k !== fk; }); draw(); } });
   pick.style.display = f ? 'none' : '';
   const isImg = f && (/^image\//.test(f.type || '') || /\.(jpe?g|png|webp)$/i.test(f.name));
   const box = f ? e('div', { class: 'rel-file' }, [e('span', { class: 'rel-file-th' }, isImg && f.url ? e('img', { src: f.url, alt: '' }) : frag(ui('file-text', 22))), e('span', { class: 'rel-file-n' }, [e('b', {}, e('bdi', {}, f.name)), e('small', {}, sizeOf(f.size || 0))]),
-      e('span', { class: 'rel-file-a' }, [DS.button('معاينة', { size: 'sm', ui: 'file-text', onClick: function () { relPreview(f); } }), DS.button('استبدال', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { pick.click(); } }), DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { if (f.url) { try { URL.revokeObjectURL(f.url); } catch (err) { void err; } } F.rel_file = null; draw(); } })])])
+      e('span', { class: 'rel-file-a' }, [DS.button('معاينة', { size: 'sm', ui: 'file-text', onClick: function () { relPreview(f); } }), DS.button('استبدال', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { pick.click(); } }), DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { if (f.url) { try { URL.revokeObjectURL(f.url); } catch (err) { void err; } } F[fk] = null; draw(); } })])])
     : e('div', { class: 't2-drop' }, [e('span', { class: 't2-drop-ic', 'aria-hidden': 'true' }, frag(ui('upload-simple', 20))), e('span', { class: 't2-drop-b' }, [e('span', { class: 't2-drop-t' }, 'اسحبِ الملفَّ هنا أو اخترْه'), e('span', { class: 't2-drop-h' }, 'PDF أو صورة · حتى 2 ميجابايت · تُعاين قبل الإرسال')]), e('span', { class: 't2-drop-btn', 'aria-hidden': 'true' }, 'اختيارُ ملفّ'), pick]);
-  const fld = req(label, 'rel_file', e('div', {}, [box, f ? pick : null]), S.relFileErr || null, optional, true);
-  if (S.relFileErr) { fld.classList.add('is-missing'); }
+  const fld = req(label, fk, e('div', {}, [box, f ? pick : null]), S[fe] || null, optional, true);
+  if (S[fe]) { fld.classList.add('is-missing'); }
   return fld;
 }
 /* التحقق: رمز مستقل لكل قناة */
@@ -9311,13 +9327,13 @@ function relOtp(ch, label, dest) {
 }
 const relBlk = (n, t, h, kids) => e('section', { class: 't2-subf rel-blk' }, [e('div', { class: 't2-subf-h' }, [e('b', {}, n + '. ' + t), h ? e('span', {}, h) : null]), e('div', { class: 't2-subf-g' }, kids.filter(Boolean))]);
 function relKids() {
-  const out = [req('هل سيكون التحويل إلى حساب أحد الأقارب؟', 'rel', DS.select({ value: F.rel || '', options: [['', 'اختر'], ['no', 'لا — إلى حسابي'], ['yes', 'نعم — إلى حساب أحد الأقارب']], onChange: function (v) { F.rel = v; S.miss = []; draw(); } }), null, false, true)];
+  const out = [req('الحساب البنكي لاستلام المبلغ', 'rel', DS.select({ value: F.rel || '', options: [['', 'اختر'], ['no', 'حسابك المسجّل لدينا'], ['yes', 'حساب أحد الأقارب']], onChange: function (v) { F.rel = v; S.miss = []; draw(); } }), null, false, true)];
   if (F.rel !== 'yes') return out;
   if (F.rel_ack && !relAckOk()) { F.rel_v_mail = false; F.rel_v_wa = false; S.relV = {}; }
   const wal = F.rel_m === 'wallet', ack = relAckText(), sv = REL_SAVED;
-  const pickSaved = sv.length ? req('مستفيد محفوظ', 'rel_sid', DS.select({ value: F.rel_sid || '', options: [['', 'مستفيد جديد']].concat(sv.map(function (b) { return [b.id, b.d.rel_name, 'user-circle', { sub: nameOf(REL_KIN, b.d.rel_kin) + ' · ' + (b.d.rel_m === 'wallet' ? 'محفظة' : 'حساب بنكي') }]; })), onChange: function (v) {
+  const pickSaved = sv.length && !LIVE.on ? req('مستفيد محفوظ', 'rel_sid', DS.select({ value: F.rel_sid || '', options: [['', 'مستفيد جديد']].concat(sv.map(function (b) { return [b.id, b.d.rel_name, 'user-circle', { sub: nameOf(REL_KIN, b.d.rel_kin) + ' · ' + (b.d.rel_m === 'wallet' ? 'محفظة' : 'حساب بنكي') }]; })), onChange: function (v) {
     const b = sv.filter(function (x) { return x.id === v; })[0]; F.rel_sid = v; REL_K.forEach(function (k) { F[k] = b ? b.d[k] || '' : ''; }); F.rel_file = b && b.f ? Object.assign({}, b.f) : null; F.rel_ack = false; F.rel_save = !!b; S.miss = []; draw(); } }), F.rel_sid ? 'راجع البيانات وحدّثها إن لزم — تُحفظ التحديثات عند الإرسال.' : 'اختر مستفيدًا محفوظًا لتعبئة بياناته، أو أدخل مستفيدًا جديدًا.', true, true) : null;
-  out.push(e('div', { class: 'rel-wrap is-wide' }, [DS.note('info', 'التحويل إلى حساب أحد الأقارب', 'تظهر الحقول بحسب اختيارك. الحقول كلها مطلوبة عدا ما كُتب بجانبه (اختياري)، ولا يكتمل الطلب قبل الإقرار والتحقق.'),
+  out.push(e('div', { class: 'rel-wrap is-wide' }, [DS.note('danger', 'التحويل إلى حساب أحد الأقارب', 'تظهر الحقول بحسب اختيارك. الحقول كلها مطلوبة عدا ما كُتب بجانبه (اختياري)، ولا يكتمل الطلب قبل الإقرار والتحقق. ولا يُقبل التحويل إلا إلى حساب أحد الأقارب المذكورين في «صلة القرابة» (الأب أو الابن أو البنت أو الأخ أو الأخت)، ولا يُقبل إلى حساب أي شخص آخر.'),
     relBlk(1, 'بيانات المستفيد', null, [pickSaved,
       req('اسم المستفيد', 'rel_name', txt('rel_name', { placeholder: 'الاسم الرباعي كما في الهوية' })),
       req('صلة القرابة', 'rel_kin', sel('rel_kin', opts(REL_KIN), true)),
@@ -9342,29 +9358,29 @@ function relKids() {
       e('p', { class: 'rel-ack-t' + (ack ? '' : ' is-empty') }, ack || 'أكمل بيانات المستفيد ووسيلة الاستقبال ليكتمل نص الإقرار.'),
       (function () { const c = e('input', { type: 'checkbox', 'aria-label': 'أوافق على الإقرار', onChange: function (ev) { F.rel_ack = ev.target.checked; F.rel_ack_txt = ev.target.checked ? relAckText() : ''; if (!ev.target.checked) { F.rel_v_mail = false; F.rel_v_wa = false; S.relV = {}; } S.miss = S.miss.filter(function (k) { return k !== 'rel_ack'; }); draw(); } }); c.checked = relAckOk(); if (!ack) c.disabled = true; return e('label', { class: 'rel-ack-c' }, [c, e('span', {}, 'أوافق على الإقرار وأؤكد صحة البيانات')]); })(),
       F.rel_ack && !relAckOk() ? e('small', { class: 'rel-otp-err' }, 'تغيّرت البيانات بعد الموافقة — راجع الإقرار ووافق عليه من جديد.') : null])]),
-    relBlk(4, 'التحقق', 'رمز مستقل لكل قناة', [e('div', { class: 'rel-otps is-wide' }, [relOtp('mail', 'البريد الإلكتروني', prof('contact', 'email') || ME.email), relOtp('wa', 'واتساب', prof('contact', 'phone') || ME.phone)])]),
-    relBlk(5, 'حفظ المستفيد', null, [(function () { const c = e('input', { type: 'checkbox', 'aria-label': 'حفظ بيانات المستفيد للعمليات المستقبلية', onChange: function (ev) { F.rel_save = ev.target.checked; } }); c.checked = !!F.rel_save; return DS.editField('حفظ بيانات المستفيد للعمليات المستقبلية (اختياري)', c); })(),
+    LIVE.on ? relBlk(4, 'التحقق', 'رمز يصل إلى وسيلة تحققك', [relAckOk() ? eligVerifyBox() : e('small', { class: 'rel-otp-hint' }, 'وافق على الإقرار أولًا ليُرسل الرمز.')]) : relBlk(4, 'التحقق', 'رمز مستقل لكل قناة', [e('div', { class: 'rel-otps is-wide' }, [relOtp('mail', 'البريد الإلكتروني', prof('contact', 'email') || ME.email), relOtp('wa', 'واتساب', prof('contact', 'phone') || ME.phone)])]),
+    LIVE.on ? null : relBlk(5, 'حفظ المستفيد', null, [(function () { const c = e('input', { type: 'checkbox', 'aria-label': 'حفظ بيانات المستفيد للعمليات المستقبلية', onChange: function (ev) { F.rel_save = ev.target.checked; } }); c.checked = !!F.rel_save; return DS.editField('حفظ بيانات المستفيد للعمليات المستقبلية (اختياري)', c); })(),
       e('small', { class: 'rel-hint' }, F.rel_sid ? 'المستفيد محفوظ — تُحدَّث بياناته بما أدخلته الآن.' : 'تختاره لاحقًا من «مستفيد محفوظ» مع إمكانية مراجعة بياناته وتحديثها.')])]));
   return out;
 }
 /* الحقول المطلوبة لهذه المرحلة */
 function relMiss() {
   if (!F.rel) return ['rel'];
-  if (F.rel !== 'yes') return [];
+  if (F.rel !== 'yes') return ownMiss(); /* v576: حسابك المسجّل أو حساب آخر باسمك */
   const m = [], need = function (k) { if (!String(F[k] || '').trim()) m.push(k); };
   ['rel_name', 'rel_kin', 'rel_why', 'rel_m'].forEach(need); if (F.rel_why === OTHER) need('rel_why_other');
   if (F.rel_m === 'bank') { need('rel_bank'); if (F.rel_bank === OTHER) need('rel_bank_other'); need('rel_holder'); if (!relIbanOk(F.rel_iban)) { m.push('rel_iban'); MISS_MSG.rel_iban = F.rel_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (F.rel_phone && !relPhoneOk(F.rel_phone)) { m.push('rel_phone'); MISS_MSG.rel_phone = 'رقم جوال غير صالح — يبدأ بـ 05 من 10 أرقام.'; } if (!F.rel_file) m.push('rel_file'); }
   if (F.rel_m === 'wallet') { need('rel_wallet'); if (F.rel_wallet === OTHER) need('rel_wallet_other'); need('rel_holder'); if (!relPhoneOk(F.rel_phone)) { m.push('rel_phone'); MISS_MSG.rel_phone = F.rel_phone ? 'رقم جوال غير صالح — يبدأ بـ 05 من 10 أرقام.' : 'هذا الحقل مطلوب.'; } if (F.rel_iban && !relIbanOk(F.rel_iban)) { m.push('rel_iban'); MISS_MSG.rel_iban = 'آيبان غير صالح — SA ثم 22 رقمًا.'; } }
   if (!relAckOk()) { m.push('rel_ack'); MISS_MSG.rel_ack = 'وافق على الإقرار.'; }
-  if (!F.rel_v_mail) m.push('rel_v_mail'); if (!F.rel_v_wa) m.push('rel_v_wa');
+  if (LIVE.on) { if (!eligGrantOk()) { m.push('eg_grant'); MISS_MSG.eg_grant = 'أكمل التحقق بالرمز.'; } } else { if (!F.rel_v_mail) m.push('rel_v_mail'); if (!F.rel_v_wa) m.push('rel_v_wa'); }
   return m;
 }
 function relReview() {
-  if (F.rel !== 'yes') return [['التحويل إلى حساب أحد الأقارب', F.rel === 'no' ? 'لا — إلى حسابي' : '']];
+  if (F.rel !== 'yes') return F.rel === 'no' ? ownReview() : [['الحساب البنكي لاستلام المبلغ', '']];
   const wal = F.rel_m === 'wallet';
-  return [['التحويل إلى حساب أحد الأقارب', 'نعم'], ['المستفيد', String(F.rel_name || '').trim() + ' (' + nameOf(REL_KIN, F.rel_kin) + ')'], ['سبب التحويل', relWhy()], ['وسيلة الاستقبال', (wal ? 'محفظة — ' : 'حساب بنكي — ') + relVia()], [wal ? 'صاحب المحفظة' : 'صاحب الحساب', String(F.rel_holder || '').trim()],
+  return [['الحساب البنكي لاستلام المبلغ', 'حساب أحد الأقارب'], ['المستفيد', String(F.rel_name || '').trim() + ' (' + nameOf(REL_KIN, F.rel_kin) + ')'], ['سبب التحويل', relWhy()], ['وسيلة الاستقبال', (wal ? 'محفظة — ' : 'حساب بنكي — ') + relVia()], [wal ? 'صاحب المحفظة' : 'صاحب الحساب', String(F.rel_holder || '').trim()],
     F.rel_iban ? ['الآيبان', e('bdi', { dir: 'ltr' }, relIbanT(F.rel_iban))] : null, F.rel_phone ? ['الجوال المرتبط', e('bdi', { dir: 'ltr' }, relPhone(F.rel_phone))] : null, F.rel_file ? ['المرفق', F.rel_file.name] : null,
-    ['الإقرار والتحقق', relAckOk() && F.rel_v_mail && F.rel_v_wa ? 'وافق على الإقرار وتحقق بالبريد وواتساب' : 'غير مكتمل'], F.rel_save ? ['حفظ المستفيد', 'نعم'] : null];
+    ['الإقرار والتحقق', relAckOk() && (LIVE.on ? eligGrantOk() : F.rel_v_mail && F.rel_v_wa) ? (LIVE.on ? 'وافق على الإقرار وتحقق بالرمز' : 'وافق على الإقرار وتحقق بالبريد وواتساب') : 'غير مكتمل'], F.rel_save ? ['حفظ المستفيد', 'نعم'] : null];
 }
 const relReqFields = () => relReview().filter(Boolean).map(function (x) { return [x[0], x[1] && x[1].nodeType ? x[1].textContent : x[1]]; });
 function relOnSubmit() {
@@ -9374,6 +9390,65 @@ function relOnSubmit() {
   const b = REL_SAVED.filter(function (x) { return x.id === F.rel_sid; })[0];
   if (b) { b.d = d; b.f = f; b.at = iso(T0); } else REL_SAVED.push({ id: 'B' + Date.now(), d: d, f: f, at: iso(T0) });
   relStore();
+}
+/* ===================== v576 — «تحقق من أهليتك مع شركائنا»: تنبيه الشركاء أعلى النموذج · الحساب البنكي لاستلام المبلغ · قيمة كل مصدر دخل ===================== */
+function eligTermsNote() {
+  return DS.note('warn', 'عزيزنا العميل — قبل التقديم', 'هذه الخدمة تُقدَّم من خلال شركائنا من مزوّدي الخدمة، لا من منصة تيرا.',
+    e('ol', { class: 'elig-terms', style: 'margin:8px 0 0;padding-inline-start:20px;display:grid;gap:4px;font-weight:600' }, [
+      e('li', {}, 'الموافقة والقبول لدى مزوّد الخدمة وحده، وفق شروطه وسياساته.'),
+      e('li', {}, 'تقديم الطلب لا يعني قبوله.'),
+      e('li', {}, 'قد يطلب الفريق بيانات أو مستندات إضافية إذا احتاج الأمر.')]));
+}
+/* مجموعة حقول بعنوان (بلا ترقيم) — بقالب أقسام النموذج نفسه */
+const eligGrp = (t, h, kids) => e('div', { class: 'rel-wrap is-wide' }, [e('section', { class: 't2-subf rel-blk' }, [e('div', { class: 't2-subf-h' }, [e('b', {}, t), h ? e('span', {}, h) : null]), e('div', { class: 't2-subf-g' }, kids.filter(Boolean))])]);
+/* مجموع قيم مصادر الدخل الأخرى = «الدخل الآخر الشهري» (يدخل في احتساب القدرة على السداد) */
+function oincSync() {
+  if (F.has_additional_income !== 'yes') return;
+  let t = 0; (F.other_income_sources || []).forEach(function (s) { const v = Number(relNum(F['oinc_' + s]).replace(/[^\d.]/g, '')); if (v > 0) t += v; });
+  F.additional_income_value = t > 0 ? String(Math.round(t * 100) / 100) : '';
+}
+const oincTxt = () => (F.other_income_sources || []).map(function (s) { return nameOf(INCOME, s) + (F['oinc_' + s] ? ' ' + rs(relNum(F['oinc_' + s]).replace(/[^\d.]/g, '')) : ''); }).join('، ');
+/* «حسابك المسجّل لدينا» من «ملفي الشخصي» — مع إضافة حساب آخر باسمك (بنك أو محفظة معتمدة) بمرفق الآيبان */
+function ownAcctKids() {
+  const bk = prof('bank', 'bank'), ib = prof('bank', 'iban'), has = !!(bk || ib), wal = F.own_m === 'wallet';
+  const kids = [e('div', { class: 'pf-src is-wide' }, [e('div', { class: 'pf-src-h' }, [e('span', { class: 'pf-src-ic' }, frag(tile('bank'))), e('b', {}, 'حسابك المسجّل لدينا — من ملفي الشخصي')]),
+    has ? DS.fields([['البنك', bk || '—'], ['الآيبان', ib ? e('bdi', { dir: 'ltr' }, relIbanT(ib)) : '—'], ['صاحب الحساب', relMe()]])
+      : DS.note('warn', 'لا يوجد حساب بنكي مسجّل في ملفك الشخصي', 'أضفه من «ملفي الشخصي»، أو أضف حسابًا آخر باسمك أدناه.'),
+    e('button', { type: 'button', class: 'fx-link', onClick: function () { go('other', 'profile'); } }, 'تحديث الحساب من ملفي الشخصي')]),
+    req('هل ترغب بإضافة حساب آخر لك غير هذا؟', 'own_add', DS.select({ value: F.own_add || '', options: [['', 'اختر'], ['no', 'لا — التحويل إلى حسابي المسجّل'], ['yes', 'نعم — أضيف حسابًا آخر باسمي']], onChange: function (v) { F.own_add = v; S.miss = []; draw(); } }), null, false, true)];
+  if (F.own_add !== 'yes') return kids;
+  kids.push(req('نوع الحساب', 'own_m', DS.select({ value: F.own_m || '', options: opts(REL_M), onChange: function (v) { F.own_m = v; S.miss = []; draw(); } }), 'حساب بنكي أو محفظة إلكترونية معتمدة — باسمك.', false, true));
+  if (!F.own_m) return kids;
+  return kids.concat(wal ? [
+    req('المحفظة الإلكترونية', 'own_wallet', sel('own_wallet', opts(AX_WALLETS).concat([[OTHER, 'محفظة أخرى']]), true)),
+    F.own_wallet === OTHER ? req('اسم المحفظة', 'own_wallet_other', txt('own_wallet_other', { placeholder: 'اكتب اسم المحفظة' })) : null,
+    req('رقم الجوال المرتبط بالمحفظة', 'own_phone', txt('own_phone', { dir: 'ltr', placeholder: '05xxxxxxxx', numeric: 'int' })),
+    req('رقم الآيبان', 'own_iban', txt('own_iban', { dir: 'ltr', placeholder: 'SA00 0000 0000 0000 0000 0000' }), 'إذا كانت المحفظة توفّر آيبانًا للتحويلات البنكية.', true, true),
+    relFileBox('شهادة الآيبان أو مستند يوضح بيانات المحفظة', true, 'own_file')]
+  : [
+    req('البنك', 'own_bank', sel('own_bank', opts(AX_BANKS).concat([[OTHER, 'بنك آخر']]), true)),
+    F.own_bank === OTHER ? req('اسم البنك', 'own_bank_other', txt('own_bank_other', { placeholder: 'اكتب اسم البنك' })) : null,
+    req('رقم الآيبان', 'own_iban', txt('own_iban', { dir: 'ltr', placeholder: 'SA00 0000 0000 0000 0000 0000' }), null, false, true),
+    relFileBox('شهادة الآيبان باسمك', false, 'own_file')]).concat([LIVE.on ? eligVerifyBox() : null]);
+}
+function ownMiss() {
+  const m = [], need = function (k) { if (!String(F[k] || '').trim()) m.push(k); };
+  need('own_add');
+  if (F.own_add === 'no' && !(prof('bank', 'bank') || prof('bank', 'iban'))) { m.push('own_add'); MISS_MSG.own_add = 'لا يوجد حساب مسجّل في ملفك الشخصي — أضفه من «ملفي الشخصي» أو اختر «نعم» لإضافة حساب آخر باسمك.'; }
+  else MISS_MSG.own_add = 'هذا الحقل مطلوب.';
+  if (F.own_add !== 'yes') return m;
+  need('own_m');
+  if (F.own_m === 'bank') { need('own_bank'); if (F.own_bank === OTHER) need('own_bank_other'); if (!relIbanOk(F.own_iban)) { m.push('own_iban'); MISS_MSG.own_iban = F.own_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!F.own_file) m.push('own_file'); }
+  if (LIVE.on && F.own_m && !eligGrantOk()) { m.push('eg_grant'); MISS_MSG.eg_grant = 'أكمل التحقق بالرمز.'; }
+  if (F.own_m === 'wallet') { need('own_wallet'); if (F.own_wallet === OTHER) need('own_wallet_other'); if (!relPhoneOk(F.own_phone)) { m.push('own_phone'); MISS_MSG.own_phone = F.own_phone ? 'رقم جوال غير صالح — يبدأ بـ 05 من 10 أرقام.' : 'هذا الحقل مطلوب.'; } if (F.own_iban && !relIbanOk(F.own_iban)) { m.push('own_iban'); MISS_MSG.own_iban = 'آيبان غير صالح — SA ثم 22 رقمًا.'; } }
+  return m;
+}
+function ownReview() {
+  const bk = prof('bank', 'bank'), ib = prof('bank', 'iban');
+  const rows = [['الحساب البنكي لاستلام المبلغ', 'حسابك المسجّل لدينا' + (bk ? ' — ' + bk : '')], ib ? ['الآيبان المسجّل', e('bdi', { dir: 'ltr' }, relIbanT(ib))] : null];
+  if (F.own_add !== 'yes') return rows;
+  const wal = F.own_m === 'wallet', via = wal ? (F.own_wallet === OTHER ? String(F.own_wallet_other || '').trim() : F.own_wallet || '') : (F.own_bank === OTHER ? String(F.own_bank_other || '').trim() : F.own_bank || '');
+  return rows.concat([['حساب آخر باسمك', (wal ? 'محفظة — ' : 'حساب بنكي — ') + via], F.own_iban ? ['آيبان الحساب الآخر', e('bdi', { dir: 'ltr' }, relIbanT(F.own_iban))] : null, F.own_phone ? ['الجوال المرتبط', e('bdi', { dir: 'ltr' }, relPhone(F.own_phone))] : null, F.own_file ? ['المرفق', F.own_file.name] : null]);
 }
 /* ===================== v187 — قالب عرض السعر في «إعدادات النظام»: يُطبَّق على كل عرض سعر جديد (الأهلية · المتجر · حسب الطلب) ===================== */
 const QT_NUMK = ['vatRate', 'unit', 'processingPerUnit', 'marginPerUnit', 'bondFee', 'validityHours', 'prefix'];
@@ -11113,7 +11188,7 @@ function tmSign(q) {
 const TM_DEMO = [['جوال Samsung Galaxy S25 · العدد 1', 4199, 6], ['لابتوب Lenovo IdeaPad Slim 5 · العدد 1', 3299, 6], ['بطاقات مسبقة الدفع — STC · الكمية 10', 1000, 4], ['مكيف سبليت Gree 18 ألف وحدة · العدد 1', 2850, 8]];
 function tmDemoReq() {
   const n = REQS.reduce(function (m, r) { const k = parseInt(String(r.no).replace(/\D/g, ''), 10) || 0; return /^RQ-/.test(r.no) && k > m ? k : m; }, 50250) + 1, x = TM_DEMO[n % TM_DEMO.length], no = 'RQ-' + n;
-  REQS.unshift(mkR({ no: no, type: 'elig', at: new Date(), status: 'offers', fields: [['المنتج', x[0]], ['إجمالي قيمة المنتجات', SR(x[1])], ['مدة السداد', x[2] + ' أشهر'], ['طريقة الاستلام', 'شحن — ' + (profAddr().city || 'حائل')], ['عرض السعر', 'مطلوب من الشركاء'], ['المصدر', 'صفحة «طلب عرض سعر من الشركاء»']],
+  REQS.unshift(mkR({ no: no, type: 'elig', at: new Date(), status: 'offers', fields: [['المنتج', x[0]], ['إجمالي قيمة المنتجات', SR(x[1])], ['مدة السداد', x[2] + ' أشهر'], ['طريقة الاستلام', 'شحن — ' + (profAddr().city || 'حائل')], ['عرض السعر', 'مطلوب من الشركاء'], ['المصدر', 'صفحة «تحقق من أهليتك مع شركائنا»']],
     path: [['تم إرسال الطلب', T0], ['استلام الطلب ومراجعة البيانات', T0], ['دراسة الأهلية', T0], ['عروض الشركاء', null], ['اختيار العرض'], ['توقيع العقد']] }));
   cuAud('معاينة: وصل طلب شركاء جديد ' + no, null, 'العقود', 'ملاحظة'); snack('وصل طلب الشركاء ' + no + ' — بانتظار الاستلام'); draw();
 }
@@ -11192,7 +11267,13 @@ function tmAffordSec(r) {
 /* «المعلومات العامة» في نموذج العميل: مصادر الدخل الأخرى (بلا «راتب» للموظف) والمصروفات الشهرية — و«كيف عرفت عنا» آخرها */
 function tmGenKids() {
   const L = INCOME.filter(function (x) { return !(employed() && x[0] === 'salary'); }), k = [req('هل لديك مصادر دخل أخرى؟', 'has_additional_income', sel('has_additional_income', YESNO, true))];
-  if (F.has_additional_income === 'yes') { k.push(req('مصادر الدخل الأخرى', 'other_income_sources', multi('other_income_sources', L), 'يمكن اختيار أكثر من مصدر.')); k.push(req('إجمالي الدخل الآخر الشهري (ريال)', 'additional_income_value', txt('additional_income_value', { numeric: 'decimal' }))); }
+  if (F.has_additional_income === 'yes') {
+    /* v576: يختار المصادر ثم يحدد قيمة كل مصدر — ومجموعها «الدخل الآخر الشهري» */
+    k.push(req('مصادر الدخل الأخرى', 'other_income_sources', multi('other_income_sources', L), 'اختر مصدرًا أو أكثر، ثم أدخل قيمة كلٍّ منها.'));
+    (F.other_income_sources || []).forEach(function (s) { k.push(req('القيمة الشهرية — ' + nameOf(INCOME, s) + ' (ريال)', 'oinc_' + s, txt('oinc_' + s, { numeric: 'decimal' }))); });
+    k.push(req('هل لديك إثبات لمصدر الدخل؟', 'income_proof', sel('income_proof', YESNO, true), 'مثل كشف حساب أو عقد أو مستند رسمي — قد يُطلب إرفاقه لاحقًا.'));
+    oincSync();
+  }
   k.push(req('المصروفات الشهرية (ريال)', 'monthly_expenses', txt('monthly_expenses', { numeric: 'decimal' }), 'تقديرية: السكن والمعيشة والنقل والفواتير — تدخل مع الالتزامات في احتساب القدرة على السداد.'));
   return k;
 }
@@ -12300,13 +12381,13 @@ function requestPage(title, subtitle, what) {
 const CL_PAYOFF = requestPage('سداد عقد كامل', 'طلبُ سدادِ المتبقّي من عقدٍ دفعةً واحدة.', 'طلبِ السداد');
 const CL_DEFER = requestPage('طلب تأجيل دفعة', 'طلبُ تأجيلِ دفعةٍ مستحقّةٍ ضمنَ المدّةِ المسموحة.', 'طلبِ التأجيل');
 const CL_PARTNERS = {
-  title: 'طلب عرض سعر من الشركاء',
+  title: 'تحقق من أهليتك مع شركائنا',
   subtitle: 'عروضٌ من الموردينَ والشركاءِ المعتمدينَ لدى تيرا.',
   async run(host, ctx) {
     mount(host, e('div', { class: 't2-stack' },
       DS.note('info', 'كيف يعمل', 'تقدّمُ طلبَك مرّةً واحدة، ويعرضُه فريقُ تيرا على الشركاءِ المعتمدين، ثم تصلُك العروضُ في «الطلبات» لتقارنَ وتختار.'),
       DS.cardGrid([
-        DS.card({ title: 'طلب عرض سعر جديد', desc: 'النموذجُ نفسُه، ويُحالُ إلى الشركاءِ المناسبين.', icon: 'orders', onClick: function () { ctx.openPage('sv-new'); } }),
+        DS.card({ title: 'تقديم طلب التحقق من الأهلية', desc: 'النموذجُ نفسُه، ويُحالُ إلى الشركاءِ المناسبين.', icon: 'orders', onClick: function () { ctx.openPage('sv-new'); } }),
         DS.card({ title: 'الطلبات', desc: 'متابعةُ العروضِ الواردةِ من الشركاء.', icon: 'list', onClick: function () { ctx.openPage('sv-mine'); } }),
         DS.card({ title: 'مركز المراسلات', desc: 'استفسارٌ عن شريكٍ أو خدمةٍ بعينِها.', icon: 'mail', onClick: function () { go('msg'); } }),
       ])));
@@ -13414,7 +13495,7 @@ lp('points', 'نقاطي', 'member', 'points', function () { return tmPage('mem-
 
 /* =============================== خدماتي — من المنصة =============================== */
 function partnersPage() {
-  return [DS.cardGrid([lvCard('orders', 'طلب عرض سعر جديد', function () { go('elig'); })])];
+  return [DS.cardGrid([lvCard('orders', 'تقديم طلب التحقق من الأهلية', function () { go('elig'); })])];
 }
 const SVK = {};
 /* ===== طلب عرض سعر لخدمة أو منتج: إحصاء ← خياران ← دليل المنتجات (الأقسام ثم منتجاتها) ===== */
@@ -13489,7 +13570,7 @@ function svPage(k) {
   return [has ? lvPanel('المسودة المرتبطة', DS.badge('مسودة', 'warn'), [lvRow(DS.button('استئناف المسودة', { tone: 'primary', onClick: function () { go('qreq'); } }))])
     : LDS.emptyState({ icon: 'note', title: 'لا مسودةَ مرتبطةً بهذه الوسيلة', action: DS.button('خدمة حسب الطلب', { tone: 'primary', size: 'sm', onClick: function () { go('other', 'sv-new'); } }) })];
 }
-lp('cl-partners', 'طلب عرض سعر من الشركاء', 'svc', 'people', partnersPage);
+lp('cl-partners', 'تحقق من أهليتك مع شركائنا', 'svc', 'people', partnersPage);
 
 lp('digital', 'سوق الحلول الرقمية', 'store', 'digital', dgMarketPage);
 
@@ -13656,7 +13737,8 @@ function infPage(key) {
     out.push(DS.actionBar({ buttons: [DS.button('إلغاء', { onClick: function () { Object.keys(INF.snap || {}).forEach(function (k) { F[k] = INF.snap[k]; }); INF.edit = ''; INF.snap = null; S.miss = []; draw(); } }),
       liveOk(DS.button('حفظ التغييرات', { tone: 'primary', ui: 'check', onClick: function () {
         S.miss = d.miss(); if (S.miss.length) { draw(); const f = document.querySelector('.t2-field.is-missing'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
-        if (LIVE.on && key === 'job') { lvJobSave(d); return; } /* v572: تُحفظ في القاعدة */
+        if (LIVE.on && key === 'job') { lvJobSave(d); return; }
+          if (LIVE.on && key === 'fin') { lvFinSave(d); return; } /* v576 */ /* v572: تُحفظ في القاعدة */
         F._at = F._at || {}; F._at[key] = iso(today0()); F._docReview = key;
         INF.edit = ''; INF.snap = null; S.toast = 'حُفظت ' + d.t + ' — راجع مرفقاتي للتأكد من مطابقتها'; draw(); toTop(); } }))] }));
   } else {
@@ -15167,7 +15249,7 @@ function accRows(A) {
   return [['لوحتي الرئيسية', true, pre || unl ? 'رحلة الحساب: ' + (A.stage === 'start' ? 'استكمل ملفك وأرسله' : A.stage === 'review' ? 'ملفك قيد المراجعة ومسارها' : 'تمّت الموافقة — بانتظار التدشين') : A.full ? 'اللوحة الكاملة بالعقود والمدفوعات' : 'اللوحة بلا كتل العقود والمدفوعات'],
     ['ملفي الشخصي', true, A.stage === 'start' ? 'تعديل مباشر — الملف مسودة' : A.stage === 'back' ? 'البنود المعادة مفتوحة للتعديل' : A.stage === 'review' ? 'للاطلاع — مقفل حتى القرار' : 'التعديل بطلب تحديث'],
     ['مركز الأمان', true, 'الواتساب ووسائل المصادقة والبريد وكلمة المرور'],
-    ['خدماتي', !pre, pre ? 'تظهر بعد قبول الملف' : A.full ? 'كل الخدمات' : 'طلباتي · بياناتي الوظيفية · طلب عرض سعر من الشركاء'],
+    ['خدماتي', !pre, pre ? 'تظهر بعد قبول الملف' : A.full ? 'كل الخدمات' : 'طلباتي · بياناتي الوظيفية · تحقق من أهليتك مع شركائنا'],
     ['عقودي · مدفوعاتي · سجلات المدفوعات', !pre && A.full, A.full && !pre ? 'ظاهرة' : 'لمن لديه عقد أو شراكة'],
     ['سداد عقد كامل · تأجيل دفعة · توحيد العقود', !pre && A.full, A.full && !pre ? 'ظاهرة' : 'لمن لديه عقد أو شراكة'],
     ['المتجر', true, 'متاح للجميع'], ['مختاراتي', !pre, pre ? 'بعد قبول الملف' : 'السلة والمفضلة'], ['التواصل', true, 'المراسلات والإشعارات'],
@@ -15660,7 +15742,7 @@ function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(
   if (S.role !== 'admin' && S.tab === 'other' && /^(adm-|cs|cu$|cu-|soon-|sys|ctr$|fin$|fin-(due|rec)|cpg$|cpg-|comm$|comm-|cx$|cx-|pay-center$)/.test(S.other || '')) { S.tab = 'dash'; S.other = ''; }
   const toSvc = function () { go('svc'); }, toMsg = function () { go('msg'); };
   let title, sub, path, nav = null;
-  if (S.tab === 'elig' || S.tab === 'qreq') { const PRD = S.qfrom === 'pr' && qMode() === 'prod' && catOf(FX.catk); title = S.tab === 'qreq' ? (qMode() === 'svc' ? 'طلب خدمة' : PRD ? 'طلب عرض سعر' : 'طلب عرض سعر منتج') : 'تحقق من أهليتك مع شركائنا'; sub = ''; path = (S.tab === 'qreq' ? (S.qfrom === 'pr' && catOf(FX.catk) ? (function (s) { return [[SECT[s], function () { go('other', s); }, s, 'other:' + s], [catOf(FX.catk).t, function () { go('other', 'pr-dept'); }, null, 'other:pr-dept']].concat(S.qitem && prodOf(S.qitem) && S.qitem === F.q_sku ? [[prodOf(S.qitem).t, function () { openItem(S.qitem); }, null, 'other:pr-item']] : []); })(secOf(FX.catk)) : [['المتجر', function () { go('other', 'store'); }, 'store', 'other:store'], ['خدمة حسب الطلب', function () { go('other', 'sv-new'); }, null, 'other:sv-new']]) : [['خدماتي', toSvc, 'services', 'svc'], ['طلب عرض سعر من الشركاء', function () { go('other', 'cl-partners'); }, null, 'other:cl-partners']]).concat([[title, S.sent ? function () { resetForm(); draw(); toTop(); } : null, null, S.tab]]).concat(S.sent ? [['تم إرسال الطلب']] : []); }
+  if (S.tab === 'elig' || S.tab === 'qreq') { const PRD = S.qfrom === 'pr' && qMode() === 'prod' && catOf(FX.catk); title = S.tab === 'qreq' ? (qMode() === 'svc' ? 'طلب خدمة' : PRD ? 'طلب عرض سعر' : 'طلب عرض سعر منتج') : 'تحقق من أهليتك مع شركائنا'; sub = ''; path = (S.tab === 'qreq' ? (S.qfrom === 'pr' && catOf(FX.catk) ? (function (s) { return [[SECT[s], function () { go('other', s); }, s, 'other:' + s], [catOf(FX.catk).t, function () { go('other', 'pr-dept'); }, null, 'other:pr-dept']].concat(S.qitem && prodOf(S.qitem) && S.qitem === F.q_sku ? [[prodOf(S.qitem).t, function () { openItem(S.qitem); }, null, 'other:pr-item']] : []); })(secOf(FX.catk)) : [['المتجر', function () { go('other', 'store'); }, 'store', 'other:store'], ['خدمة حسب الطلب', function () { go('other', 'sv-new'); }, null, 'other:sv-new']]) : [['خدماتي', toSvc, 'services', 'svc'], ['تحقق من أهليتك مع شركائنا', function () { go('other', 'cl-partners'); }, null, 'other:cl-partners']]).concat([[title, S.sent ? function () { resetForm(); draw(); toTop(); } : null, null, S.tab]]).concat(S.sent ? [['تم إرسال الطلب']] : []); }
   else if (S.tab === 'msg') {
     title = S.msg === 'new' ? 'مراسلة جديدة' : S.msg === 'thread' && THREADS[S.thread] ? 'المراسلة ' + THREADS[S.thread].ref : 'مركز المراسلات'; sub = 'مراسلاتك مع فرق تيرا داخل حسابك، مع إرفاق ملفات حتى 2 ميجابايت.';
     path = [['التواصل', function () { go('other', 'contact'); }, 'mail', 'other:contact']].concat(S.msg === 'list' ? [[title]] : [['مركز المراسلات', toMsg, null, 'msg'], [S.msg === 'new' ? 'مراسلة جديدة' : 'المراسلة ' + THREADS[S.thread].ref]]); if (S.msg === 'list' && MSTL[S.mst]) path = [path[0], ['مركز المراسلات', function () { S.mst = ''; draw(); toTop(); }, null, 'msg'], [MSTL[S.mst]]];
@@ -16758,20 +16840,20 @@ const cfRe = async function (RF, msg) { snack(msg); LIVE_ADM.at = 0; CF_ED.at = 
 /* ===== v463: طلبات الخدمة منظومة واحدة (stf_75) =====
    بطاقة الطلب نفسها في «طلبات الخدمات» وفي ملف العميل — القرار والتعديل والإلغاء والتنفيذ داخلها، بلا أدراج.
    الإنشاء من الفريق: العميل ← نوع الطلب ← العقود حسب النوع (والدفعات للتأجيل). التسوية بعرض المحرّك لا بمبلغ يدوي. */
-const SR_K = [['settle', 'سداد قيمة المنتج', 'bank', 'سداد العقد كاملًا قبل موعده بمبلغ فاتورة سداد قيمة المنتج'], ['defer', 'تأجيل دفعة', 'rfreq', 'نقل دفعة أو أكثر إلى عقد تأجيل'], ['merge', 'توحيد العقود', 'merge', 'نقل متبقي أكثر من عقد إلى عقد موحّد']];
+const SR_K = [['settle', 'سداد قيمة المنتج', 'bank', 'سداد العقد كاملًا قبل موعده بمبلغ فاتورة سداد قيمة المنتج'], ['elig', 'التحقق من الأهلية', 'people', 'دراسة الأهلية لدى شركائنا'], ['defer', 'تأجيل دفعة', 'rfreq', 'نقل دفعة أو أكثر إلى عقد تأجيل'], ['merge', 'توحيد العقود', 'merge', 'نقل متبقي أكثر من عقد إلى عقد موحّد']];
 const srKind = (k) => SR_K.filter(function (x) { return x[0] === k; })[0] || [k, k, 'note', ''];
 try { Object.assign(ADM_ERR, { contract_required: 'اختر العقد.', contract_count: 'عدد العقود لا يناسب نوع الطلب — سداد قيمة المنتج والتأجيل لعقد واحد، والتوحيد لعقدين فأكثر.', contract_mismatch: 'من العقود ما لا يخص العميل أو مغلق.',
   payment_required: 'اختر دفعة غير مسدَّدة واحدة على الأقل من العقد.', pending_exists: 'على العقد طلب من النوع نفسه لم يُنفَّذ بعد — عدّله بدل إنشاء طلب جديد.', not_open: 'الطلب ليس مفتوحًا.',
   quote_required: 'أعدّ فاتورة سداد قيمة المنتج ويُعتمد أولًا — لا اعتماد لسداد قيمة المنتج بمبلغ يدوي.', quote_live: 'للطلب فاتورة سداد قيمة المنتج قائم على عقده — ألغِ العرض قبل تغيير العقد.', not_approved: 'اعتمد الطلب أولًا.',
   already_executed: 'نُفّذ الطلب من قبل.', target_type: 'العقد الهدف ليس من نوع الطلب — للتأجيل «عقد تأجيل» وللتوحيد «عقد توحيد».', ref_not_found: 'العقد الهدف غير موجود لهذا العميل.', bad_kind: 'نوع الطلب غير صالح.', bad_step: 'إجراء غير صالح.' }); } catch (err) { void err; }
 const srOpenSt = (x) => x.status === 'submitted' || x.status === 'in_review';
-const srWaitExec = (x) => x.status === 'approved' && !x.executed_at;
+const srWaitExec = (x) => x.status === 'approved' && !x.executed_at && x.kind !== 'elig';
 const srName = (cid) => lvSrNames()[cid] || cuBdName(cid);
 const srRow = (no) => ((LIVE_ADM.rows || {})[no] || {}).r || {};
 const srOpenCts = (cid) => ((LIVE_ADM.ct || {})[cid] || []).filter(function (c) { return !srRow(c.no).closed && c.n && cInfo(c).remain > 0.004; });
 function srStat(x) {
   if (x.status === 'cancelled') return [x.internal ? 'ملغى — تصحيح داخلي' : x.origin === 'client' && !x.decided_by ? 'ألغاه العميل' : 'ملغى', null];
-  if (x.status === 'approved') return x.executed_at ? ['منفّذ', 'ok'] : x.kind === 'settle' ? ['معتمد — أُرسل المبلغ للعميل', 'info'] : ['معتمد — بانتظار التنفيذ', 'info'];
+  if (x.status === 'approved') return x.kind === 'elig' ? ['مؤهَّل — صدرت النتيجة', 'ok'] : x.executed_at ? ['منفّذ', 'ok'] : x.kind === 'settle' ? ['معتمد — أُرسل المبلغ للعميل', 'info'] : ['معتمد — بانتظار التنفيذ', 'info'];
   return { submitted: ['جديد — لم يُستلم', 'warn'], in_review: ['قيد المراجعة', 'warn'], rejected: ['مرفوض', 'danger'] }[x.status] || [x.status, null];
 }
 /* اختيار العقود والدفعات حسب نوع الطلب — للإنشاء والتعديل */
@@ -16802,7 +16884,7 @@ function srCreate(RF, o) {
   const reset = function () { S.nos = []; S.pids = []; S.err = ''; };
   return e('div', { class: 'cf-form sr-new' }, [
     o.cid ? null : DS.editField('العميل', DS.select({ value: S.cid, ph: '— اختر العميل —', options: ids, onChange: function (v) { S.cid = v; reset(); RF.paint(); } })),
-    o.kind ? null : DS.editField('نوع الطلب', DS.select({ value: S.kind, ph: '— اختر النوع —', options: SR_K.map(function (k) { return [k[0], k[1] + ' — ' + k[3]]; }), onChange: function (v) { S.kind = v; reset(); RF.paint(); } })),
+    o.kind ? null : DS.editField('نوع الطلب', DS.select({ value: S.kind, ph: '— اختر النوع —', options: SR_K.filter(function (k) { return k[0] !== 'elig'; }).map(function (k) { return [k[0], k[1] + ' — ' + k[3]]; }), onChange: function (v) { S.kind = v; reset(); RF.paint(); } })),
     S.cid && S.kind ? e('div', { class: 'sr-pick' }, [e('b', {}, S.kind === 'merge' ? 'العقود' : 'العقد')].concat(srPick(S, S.cid, S.kind, RF))) : null,
     S.cid && S.kind ? DS.editField('السبب (يُسجَّل في الطلب)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; } }, S.note)) : null,
     S.kind === 'settle' ? e('small', { class: 'cu-dr-hint' }, 'بعد الإنشاء يُعدّ فاتورة سداد قيمة المنتج من بطاقة الطلب، ثم يُعتمد ويُرسل مبلغه للعميل.') : null,
@@ -16867,6 +16949,7 @@ function srCard(x, RF, o) {
   else if (x.kind === 'settle' && Q.length) body.push(e('small', { class: 'cu-dr-hint' }, 'فواتير سداد قيمة المنتج: ' + Q.map(function (q) { return q.quote_no + ' (' + (STL_ST[q.status] || [q.status])[0] + ')'; }).join(' · ')));
   /* v574: إيصال التحويل داخل الطلب */
   if (x.kind === 'settle' && Q.length) { const trS = srTrSec(x, Q, RF); if (trS) body.push(trS); }
+  if (x.kind === 'elig') body.push(eligAdmBox(x)); /* v576 */
   const acts = [];
   if (W.mode === 'edit') {
     /* v466: التعديل في كل الحالات — المعتمد والمرفوض والملغى يعود «قيد المراجعة»، والمنفّذ يُتراجع عن ربطه أولًا، والتسوية المنفّذة سببها وحده */
@@ -16894,13 +16977,13 @@ function srCard(x, RF, o) {
     body.push(DS.editField(x.kind === 'settle' ? 'ملاحظة للعميل مع المبلغ (إلزامية عند الرفض)' : 'ملاحظة للعميل (إلزامية عند الرفض)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { W.note = ev.target.value; } }, W.note)));
     if (x.status === 'submitted') acts.push(liveOk(DS.button('استلام الطلب', { size: 'sm', ui: 'tray', disabled: W.busy, onClick: function () { go('admin_sr_decide', { p_id: x.id, p_act: 'review', p_note: null }, 'استُلم الطلب ' + x.req_no + '.'); } })));
     const qok = liveQ && liveQ.status === 'approved';
-    acts.push(liveOk(DS.button(x.kind === 'settle' ? 'اعتماد وإرسال المبلغ للعميل' : 'اعتماد الطلب', { size: 'sm', tone: 'primary', ui: 'check', disabled: W.busy || (x.kind === 'settle' && !qok), onClick: function () {
-        go('admin_sr_decide', { p_id: x.id, p_act: 'approve', p_note: W.note }, x.kind === 'settle' ? 'اعتُمد الطلب وأُرسل مبلغ السداد ' + SR(liveQ.amount) + ' للعميل.' : 'اعتُمد الطلب ' + x.req_no + ' — نفّذه بربط الدفعات.',
+    acts.push(liveOk(DS.button(x.kind === 'settle' ? 'اعتماد وإرسال المبلغ للعميل' : x.kind === 'elig' ? 'اعتماد: مؤهَّل' : 'اعتماد الطلب', { size: 'sm', tone: 'primary', ui: 'check', disabled: W.busy || (x.kind === 'settle' && !qok), onClick: function () {
+        go('admin_sr_decide', { p_id: x.id, p_act: 'approve', p_note: W.note }, x.kind === 'settle' ? 'اعتُمد الطلب وأُرسل مبلغ السداد ' + SR(liveQ.amount) + ' للعميل.' : x.kind === 'elig' ? 'صدرت نتيجة الأهلية للطلب ' + x.req_no + ': مؤهَّل.' : 'اعتُمد الطلب ' + x.req_no + ' — نفّذه بربط الدفعات.',
           x.kind === 'settle' ? 'اعتماد الطلب وإرسال مبلغ السداد ' + SR(liveQ.amount) + ' للعميل؟' : 'اعتماد ' + K[1] + ' ' + x.req_no + '؟'); } })),
       liveOk(DS.button('رفض بسبب', { size: 'sm', tone: 'danger', ui: 'x-circle', disabled: W.busy, onClick: function () {
         if (String(W.note).trim().length < 4) { W.err = 'اكتب سبب الرفض — يصل العميل كما هو.'; RF.paint(); return; }
         go('admin_sr_decide', { p_id: x.id, p_act: 'reject', p_note: W.note }, 'رُفض الطلب ' + x.req_no + '.', 'رفض الطلب ' + x.req_no + '؟'); } })),
-      DS.button('تعديل', { size: 'sm', ui: 'note-pencil', onClick: function () { W.mode = 'edit'; W.nos = null; W.err = ''; RF.paint(); } }),
+      x.kind === 'elig' ? null : DS.button('تعديل', { size: 'sm', ui: 'note-pencil', onClick: function () { W.mode = 'edit'; W.nos = null; W.err = ''; RF.paint(); } }),
       DS.button('إلغاء الطلب', { size: 'sm', ui: 'x', onClick: function () { W.mode = 'cancel'; W.note = ''; W.err = ''; RF.paint(); } }));
     if (x.kind === 'settle' && !qok) body.push(e('small', { class: 'cu-dr-hint' }, liveQ ? 'العرض بانتظار اعتماد المشرف — بعده يُعتمد الطلب ويُرسل المبلغ.' : 'أعدّ فاتورة سداد قيمة المنتج أعلاه، ثم اعتمد الطلب لإرسال المبلغ للعميل.'));
   } else if (srWaitExec(x)) {
@@ -16914,11 +16997,11 @@ function srCard(x, RF, o) {
       acts.push(liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'تنفيذ الربط', { size: 'sm', tone: 'primary', ui: 'arrows-clockwise', disabled: W.busy || !W.tgt, onClick: function () {
         go('admin_sr_link', { p_id: x.id, p_target: W.tgt, p_note: W.note }, 'نُفّذ الطلب ' + x.req_no + ' وانعكس على العقود.', 'ربط دفعات الطلب ' + x.req_no + ' بالعقد ' + W.tgt + '؟'); } })));
     }
-    acts.push(DS.button('تعديل', { size: 'sm', ui: 'note-pencil', onClick: function () { W.mode = 'edit'; W.nos = null; W.err = ''; RF.paint(); } }),
+    acts.push(x.kind === 'elig' ? null : DS.button('تعديل', { size: 'sm', ui: 'note-pencil', onClick: function () { W.mode = 'edit'; W.nos = null; W.err = ''; RF.paint(); } }),
       DS.button('إلغاء الطلب', { size: 'sm', ui: 'x', onClick: function () { W.mode = 'cancel'; W.note = ''; W.err = ''; RF.paint(); } }));
   } else {
     /* v466: المنفّذ والمرفوض والملغى — التعديل متاح أيضًا */
-    acts.push(DS.button(x.executed_at && x.kind === 'settle' ? 'تعديل السبب' : 'تعديل', { size: 'sm', ui: 'note-pencil', onClick: function () { W.mode = 'edit'; W.nos = null; W.err = ''; RF.paint(); } }));
+    if (x.kind !== 'elig') acts.push(DS.button(x.executed_at && x.kind === 'settle' ? 'تعديل السبب' : 'تعديل', { size: 'sm', ui: 'note-pencil', onClick: function () { W.mode = 'edit'; W.nos = null; W.err = ''; RF.paint(); } }));
   }
   if (W.err) body.push(e('span', { class: 'cu-err', role: 'alert' }, W.err));
   if (W.mode !== 'edit' && ['approved', 'rejected', 'in_review'].indexOf(x.status) >= 0 && !x.executed_at) acts.push(liveOk(DS.button('إرسال إشعار للعميل', { size: 'sm', ui: 'paper-plane-tilt', disabled: W.busy, onClick: function () { go('admin_sr_notify', { p_id: x.id }, 'أُرسل للعميل إشعار بحالة الطلب ' + x.req_no + ' — داخل المنصة والبريد وواتساب.', 'إرسال إشعار للعميل بحالة الطلب ' + x.req_no + ' (داخل المنصة والبريد وواتساب)؟'); } }))); /* v568: الرد يصل العميل تلقائيًا عند القرار، وهذا لإعادة الإرسال */
@@ -16940,7 +17023,7 @@ function cfReqCard(id, kind, RF) {
 }
 /* قسم «طلبات الخدمات»: صندوق وارد — بطاقة لكل نوع فيها طلباتها، والإنشاء في أعلاه */
 const SR_F = [['open', 'بانتظار قرار', 'tray'], ['exec', 'بانتظار التنفيذ', 'hourglass-medium'], ['done', 'منفّذة', 'check-circle'], ['closed', 'مرفوضة أو ملغاة', 'x-circle'], ['all', 'الكل', 'list']];
-const srFit = (x, f) => f === 'all' ? true : f === 'open' ? srOpenSt(x) : f === 'exec' ? srWaitExec(x) : f === 'done' ? (x.status === 'approved' && !!x.executed_at) : (x.status === 'rejected' || x.status === 'cancelled');
+const srFit = (x, f) => f === 'all' ? true : f === 'open' ? srOpenSt(x) : f === 'exec' ? srWaitExec(x) : f === 'done' ? (x.status === 'approved' && (!!x.executed_at || x.kind === 'elig')) : (x.status === 'rejected' || x.status === 'cancelled');
 function lvSvcPage() {
   return admMount('svc', 'طلبات الخدمات', async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else if (!LV_SR.ok) await lvSrLoad(); return { at: Date.now() }; }, function (D, st, paint) {
     const RF = function () { paint(); }; RF.paint = paint;
@@ -16950,7 +17033,7 @@ function lvSvcPage() {
       return e('button', { type: 'button', class: 'cu-kpi is-pick' + (on ? ' is-on' : '') + (k[0] === 'open' && n ? ' is-warn' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { ADM.svF = k[0]; paint(); } },
         [e('span', { class: 'cu-kpi-ic' }, frag(ui(k[2], 18))), e('b', {}, fmtNum(n)), e('small', {}, k[1])]); });
     const opts = []; A.forEach(function (x) { if (!opts.some(function (o) { return o[0] === x.user_id; })) opts.push([x.user_id, srName(x.user_id)]); }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
-    return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'طلبات الخدمات'), e('small', {}, 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
+    return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'طلبات الخدمات'), e('small', {}, 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
       e('div', { class: 'cu-kpis sr-kpis' }, kp),
       e('div', { class: 'm3-tools ax-tools' }, [e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM.svC = v === '*' ? '' : v; paint(); } }))])]),
       lvSec('إنشاء طلب', null, [srCreate(RF, {})], 'svc:new')].concat(SR_K.map(function (k) { const L = R.filter(function (x) { return x.kind === k[0]; });
@@ -19483,8 +19566,8 @@ e('div', { class: 'rv-acc' }, secs),
 }
 /* أيقونات «خدماتي» حسب العقد أو الشراكة */
 function jrSvc(J) {
-  const L = J.full ? [['contract', 'عقودي', function () { go('contracts'); }], ['wallet', 'مدفوعاتي', function () { go('pay'); }], ['orders', 'طلباتي', function () { FX.rs = 'all'; go('reqs'); }], ['people', 'طلب عرض سعر من الشركاء', function () { go('other', 'cl-partners'); }], ['briefcase:navy', 'بياناتي الوظيفية', function () { go('other', 'job-info'); }]]
-    : [['orders', 'طلباتي', function () { FX.rs = 'all'; go('reqs'); }], ['briefcase:navy', 'بياناتي الوظيفية', function () { go('other', 'job-info'); }], ['people', 'طلب عرض سعر من الشركاء', function () { go('other', 'cl-partners'); }]];
+  const L = J.full ? [['contract', 'عقودي', function () { go('contracts'); }], ['wallet', 'مدفوعاتي', function () { go('pay'); }], ['orders', 'طلباتي', function () { FX.rs = 'all'; go('reqs'); }], ['people', 'تحقق من أهليتك مع شركائنا', function () { go('other', 'cl-partners'); }], ['briefcase:navy', 'بياناتي الوظيفية', function () { go('other', 'job-info'); }]]
+    : [['orders', 'طلباتي', function () { FX.rs = 'all'; go('reqs'); }], ['briefcase:navy', 'بياناتي الوظيفية', function () { go('other', 'job-info'); }], ['people', 'تحقق من أهليتك مع شركائنا', function () { go('other', 'cl-partners'); }]];
   return sec(J.full ? 'خدماتي' : 'الخدمات المتاحة لك', J.full ? null : 'تظهر بقية الخدمات بعد توقيع عقدك وتنفيذه.', [DS.cardGrid(L.map(function (x) { return DS.card({ icon: x[0], title: x[1], onClick: x[2] }); }))], true, 'jr:svc');
 }
 
@@ -19497,7 +19580,7 @@ svcHubPage = function () { if (S.role !== 'client' || !LIVE.me || liveFull()) re
   const n = REQS.filter(function (r) { return !isStoreReq(r) && ['settle', 'defer', 'merge', 'pay'].indexOf(r.kind || r.type) < 0; }).length;
   return secHub('svc', { t: 'خدماتي', s: 'تظهر خدمات العقود والمدفوعات بعد توقيع عقدك وتنفيذه.', ic: 'services' }, [
     ['rq', 'طلباتي', 'orders', [{ ic: 'orders', t: 'طلباتي', d: 'طلباتك ومراحلها', n: fmtNum(n) + (n <= 10 ? ' طلبات' : ' طلبًا'), go: function () { FX.rs = 'all'; go('reqs'); } }]],
-    ['pt', 'الشركاء', 'people', [{ ic: 'people', t: 'طلب عرض سعر من الشركاء', d: 'عروض أسعار من شركائنا', go: function () { go('other', 'cl-partners'); } }]],
+    ['pt', 'الشركاء', 'people', [{ ic: 'people', t: 'تحقق من أهليتك مع شركائنا', d: 'دراسة أهليتك لدى شركائنا', go: function () { go('other', 'cl-partners'); } }]],
     ['me', 'بياناتي', 'files', [{ ic: 'briefcase:navy', t: 'بياناتي الوظيفية', go: function () { go('other', 'job-info'); } }]]]); };
 lvSecPage = function (k) { return liveSecPage(k); };
 try { ['personal', 'address', 'contact', 'emergency', 'bank'].forEach(function (s) { if (LP['upd-' + s]) { LP['upd-' + s].run = function () { return liveUpdPage(s); }; LP['upd-' + s].up = LVP[s].k; LP['upd-' + s].t = 'تحديث ' + String(LVP[s].t).replace(/[ً-ْ]/g, ''); } }); } catch (err) { void err; }
@@ -26379,6 +26462,161 @@ if (LIVE.on) {
     };
   } catch (err) { try { console.warn('[tq-v564]', err && err.message); } catch (x) { void x; } }
 }
+/* ═════ v576: «معلوماتي المالية» من القاعدة (قسم cfin) — كانت لا تُحفظ في المنفذ الحقيقي ═════ */
+const LVF = { ok: false, busy: false };
+const LVF_KEYS = ['salary', 'income_sources', 'total_monthly_income', 'has_obligations', 'total_obligations'];
+async function lvFinLoad() {
+  const cpv = window.__cpvUid || '';
+  const j = await liveSb(cpv ? 'rpc/admin_client_fin' : 'rpc/my_fin_info', { body: cpv ? { p_user: cpv } : {} }).catch(function () { return null; });
+  F.salary = ''; F.income_sources = []; F.total_monthly_income = ''; F.has_obligations = ''; F.total_obligations = '';
+  if (!j || j.ok !== true) { LVF.ok = false; return; }
+  const v = j.values || {};
+  ['salary', 'total_monthly_income', 'has_obligations', 'total_obligations'].forEach(function (k) { if (typeof v[k] === 'string') F[k] = v[k]; });
+  if (Array.isArray(v.income_sources)) F.income_sources = v.income_sources.filter(function (x) { return typeof x === 'string'; });
+  F._at = F._at || {}; F._at.fin = j.updated_at ? String(j.updated_at).slice(0, 10) : '';
+  LVF.ok = true;
+}
+async function lvFinSave(d) {
+  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — التحديث من حساب العميل نفسه.'); return; }
+  if (LVF.busy) return; LVF.busy = true;
+  const num = function (x) { return relNum(x).replace(/[^\d.]/g, ''); };
+  const v = { income_sources: (F.income_sources || []).slice(), total_monthly_income: num(F.total_monthly_income), has_obligations: F.has_obligations || '' };
+  if (employed()) v.salary = num(F.salary);
+  if (F.has_obligations === 'yes') v.total_obligations = num(F.total_obligations);
+  const j = await liveSb('rpc/my_fin_info_save', { body: { p_values: v } }).catch(function () { return null; });
+  LVF.busy = false;
+  if (!j || j.ok !== true) { snack((j && j.message) || 'تعذّر الحفظ — تحقق من الحقول وحاول مرة أخرى.'); return; }
+  await lvFinLoad();
+  INF.edit = ''; INF.snap = null;
+  S.toast = 'حُفظت ' + d.t; draw(); toTop();
+}
+/* ═════ v576: طلب «تحقق من أهليتك مع شركائنا» إلى الخادم — التحقق برمز للحساب غير المسجّل، والمرفق إلى المخزن الخاص ═════ */
+const EG_F = { totp: 'تطبيق المصادقة', extra_code: 'الرمز الإضافي', email_code: 'رمز عبر البريد الإلكتروني', whatsapp_code: 'رمز عبر واتساب' };
+const eligGrantOk = () => !!(S.eg && S.eg.grant && S.eg.exp > Date.now());
+function eligVerifyBox() {
+  if (!LIVE.on) return null;
+  if (window.__cpvUid) return e('small', { class: 'rel-otp-hint is-wide' }, 'التحقق بالرمز من حساب العميل نفسه.');
+  const V = S.eg || (S.eg = {}), miss = S.miss.indexOf('eg_grant') >= 0;
+  if (eligGrantOk()) return e('div', { class: 'rel-otp is-ok is-wide' }, [e('span', { class: 'rel-otp-ic' }, frag(ui('check-circle', 20))), e('span', {}, [e('b', {}, 'تم التحقق'), e('small', {}, 'أرسل الطلب خلال ' + fmtNum(Math.max(1, Math.ceil((V.exp - Date.now()) / 60000))) + ' دقائق، وإلا أعد التحقق.')])]);
+  if (!V.facs && !V.fbusy && !V.ferr) {
+    V.fbusy = true;
+    clApi('/api/security/gateway/factors?purpose=elig_account').then(function (j) { V.fbusy = false; V.facs = (j.factors || []).filter(function (x) { return x && EG_F[x.factor]; }); if (!V.fac && V.facs.length) V.fac = V.facs[0].factor; draw(); })
+      .catch(function (err) { V.fbusy = false; if (err && err.message === 'auth') return; V.ferr = (err && err.message) || 'تعذّر تحميل وسائل التحقق.'; draw(); });
+  }
+  const facs = V.facs || [], send = V.fac === 'email_code' || V.fac === 'whatsapp_code';
+  const code = e('input', { class: 't2-input rel-otp-i', type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '16', dir: 'ltr', placeholder: '••••••', 'aria-label': 'رمز التحقق', value: V.code || '', onInput: function (ev) { V.code = ev.target.value; } });
+  const doSend = async function () {
+    if (V.sbusy) return; V.sbusy = true; V.err = ''; draw();
+    const j = await clPost('/api/security/gateway/' + (V.fac === 'email_code' ? 'email' : 'whatsapp'), { purpose: 'elig_account' }).catch(function () { return null; });
+    V.sbusy = false;
+    if (!j || j.ok === false) { V.err = (j && j.message) || 'تعذّر إرسال الرمز.'; draw(); return; }
+    V.sent = j.sent ? 'أُرسل الرمز ' + (V.fac === 'email_code' ? 'إلى بريدك' : 'إلى واتساب') + ' — صالح ' + fmtNum(Math.round((Number(j.expires_in_seconds) || 300) / 60)) + ' دقائق.' : 'أُرسل رمز قبل قليل — يمكنك إعادة الإرسال بعد ' + fmtNum(Number(j.retry_after_seconds) || 60) + ' ثانية.';
+    draw();
+  };
+  const doVerify = async function () {
+    if (V.vbusy) return;
+    const c = relNum(V.code || '').replace(/\D/g, '');
+    if (c.length < 4) { V.err = 'اكتب الرمز كما وصلك.'; draw(); return; }
+    V.vbusy = true; V.err = ''; draw();
+    const j = await clPost('/api/security/gateway/verify', { purpose: 'elig_account', factor: V.fac, code: c }).catch(function () { return null; });
+    V.vbusy = false;
+    if (!j || !j.ok || !j.grant_id) { V.err = (j && j.message) || 'الرمز غير صحيح.'; draw(); return; }
+    V.grant = j.grant_id; V.exp = Date.now() + (Number(j.expires_in) || 300) * 1000 - 5000; V.code = '';
+    S.miss = S.miss.filter(function (k) { return k !== 'eg_grant'; }); snack('تم التحقق.'); draw();
+  };
+  return e('div', { class: 'rel-otp is-wide' + (miss ? ' is-missing' : ''), 'data-ak': 'f:eg_grant' }, [
+    e('div', { class: 'rel-otp-h' }, [e('span', { class: 'rel-otp-ic' }, frag(ui('shield-check', 20))), e('span', {}, [e('b', {}, 'التحقق برمز'), e('small', {}, 'حساب الاستلام غير المسجّل لدينا يلزمه تحققك قبل الإرسال.')])]),
+    V.fbusy ? e('small', { class: 'rel-otp-hint' }, 'جارٍ تحميل وسائل التحقق…') : null,
+    V.ferr ? e('small', { class: 'rel-otp-err', role: 'alert' }, V.ferr) : null,
+    V.facs && !facs.length ? e('small', { class: 'rel-otp-err' }, 'لا وسيلة تحقق متاحة — أكمل بريدك أو اربط واتساب من «مركز الأمان» ثم عد.') : null,
+    facs.length > 1 ? DS.select({ value: V.fac, options: facs.map(function (x) { return [x.factor, x.label || EG_F[x.factor]]; }), onChange: function (v) { V.fac = v; V.sent = ''; V.code = ''; V.err = ''; draw(); } })
+      : facs.length ? e('small', { class: 'rel-otp-hint' }, facs[0].label || EG_F[facs[0].factor]) : null,
+    facs.length && send ? e('div', { class: 'rel-otp-f' }, [liveOk(DS.button(V.sbusy ? 'جارٍ الإرسال…' : V.sent ? 'إعادة الإرسال' : 'إرسال الرمز', { size: 'sm', tone: V.sent ? null : 'primary', ui: 'paper-plane-tilt', disabled: !!V.sbusy, onClick: doSend }))]) : null,
+    V.sent ? e('small', { class: 'rel-otp-hint', role: 'status' }, V.sent) : null,
+    facs.length ? e('div', { class: 'rel-otp-f' }, [code, liveOk(DS.button(V.vbusy ? 'جارٍ التحقق…' : 'تحقق', { size: 'sm', tone: 'primary', ui: 'check', disabled: !!V.vbusy, onClick: doVerify }))]) : null,
+    V.err ? e('small', { class: 'rel-otp-err', role: 'alert' }, V.err) : null]);
+}
+/* رفع مرفق برابط موقّع إلى المخزن الخاص (نفس طريقة إيصال التحويل) */
+async function lvUploadSigned(ep, f) {
+  const u = await clPost(ep, { type: f.type, size: f.size });
+  if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز رفع المرفق.');
+  let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
+  let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': f.type, 'x-upsert': 'false' }, body: f }).catch(function () { return null; });
+  if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': f.type, 'x-upsert': 'false' }, body: f }).catch(function () { return null; });
+  if (!put || !put.ok) throw new Error('تعذّر رفع المرفق — أعد المحاولة.');
+  return u.path;
+}
+/* بنود الطلب كما يراها الفريق: البيانات الأساسية والوظيفية والمالية ثم تفاصيل الطلب والمعلومات العامة وحساب الاستلام */
+function eligFields() {
+  const T = function (v) { return v == null ? '' : typeof v === 'string' ? v : v.nodeType ? v.textContent : Array.isArray(v) ? v.map(T).join('') : String(v); };
+  const A = profAddr(), out = [];
+  const add = function (rows) { (rows || []).filter(Boolean).forEach(function (r) { const v = T(r[1]).replace(/\s+/g, ' ').trim(); if (r[0] && v) out.push([String(r[0]), v]); }); };
+  add([['الاسم', prof('personal', 'name_ar') || ME.name], ['الجوال', prof('contact', 'phone') || ME.phone], ['البريد الإلكتروني', prof('contact', 'email') || ME.email], ['العنوان', [A.region, A.city, A.dist ? 'حي ' + A.dist : ''].filter(Boolean).join(' · ')]]);
+  add(jobFields()); add(finFields());
+  add([['القيمة الإجمالية للطلب', rs(money())], ['مدة السداد', F.payment_duration_months ? fmtNum(Number(F.payment_duration_months)) + ' شهرًا' : ''], ['موعد الدفع المناسب', F.payment_date || ''],
+    ['طريقة الاستلام', F.recv ? recvName(F.recv) + (F.recv === 'proxy' ? ' — تُطلب بيانات الوكيل بعد قبول الأهلية' : ' — ' + recvDetail(recvOf())) : ''], ['عرض السعر مع النتيجة', F.quote === 'no' ? 'لا — النتيجة فقط' : 'نعم'],
+    ['إيقاف خدمات', yn(F.service_suspension)], F.service_suspension === 'yes' ? ['نوع الإيقاف', (F.service_suspension_type || []).map(function (x) { return nameOf(SUSP, x); }).join('، ')] : null,
+    F.suspension_traffic_value ? ['قيمة المخالفات المرورية', rs(F.suspension_traffic_value)] : null, F.suspension_claims_value ? ['قيمة المطالبات المالية', rs(F.suspension_claims_value)] : null,
+    ['كيف عرفت عنا', nameOf(REF, F.referral_source)], F.employee_code ? ['رمز الموظف', F.employee_code] : null, F.marketer_code ? ['رمز المسوق', F.marketer_code] : null]);
+  return out.slice(0, 90);
+}
+/* بنود حساب الاستلام (حساب آخر للعميل أو حساب أحد الأقارب) — تُرسل منفصلة وتُقبل بعد تحقق الرمز وحده؛ والحساب المسجّل يأخذه الخادم من «ملفي الشخصي» */
+function eligRows() {
+  const T = function (v) { return v == null ? '' : typeof v === 'string' ? v : v.nodeType ? v.textContent : Array.isArray(v) ? v.map(T).join('') : String(v); };
+  const out = [];
+  (relReview() || []).concat(F.rel === 'yes' ? [['نص الإقرار', relAckText()]] : []).filter(Boolean).forEach(function (r) { const v = T(r[1]).replace(/\s+/g, ' ').trim(); if (r[0] && v) out.push([String(r[0]), v]); });
+  return out.slice(0, 20);
+}
+const LVE2 = { busy: false };
+async function lvEligSubmit() {
+  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — يُقدَّم الطلب من حساب العميل نفسه.'); return; }
+  if (LVE2.busy) return;
+  const acct = F.rel === 'yes' ? 'relative' : F.own_add === 'yes' ? 'own_other' : 'registered';
+  if (acct !== 'registered' && !eligGrantOk()) { S.step = 1; S.miss = ['eg_grant']; MISS_MSG.eg_grant = 'أكمل التحقق بالرمز.'; draw(); toTop(); snack('أكمل التحقق بالرمز قبل الإرسال — صلاحيته 5 دقائق.'); return; }
+  LVE2.busy = true; snack('جارٍ إرسال طلبك…');
+  try {
+    const files = [], fk = acct === 'relative' ? 'rel_file' : acct === 'own_other' ? 'own_file' : '';
+    if (fk && F[fk]) {
+      const ff = F[fk].obj; if (!ff) throw new Error('أعد إرفاق الملف ثم أرسل الطلب.');
+      files.push({ k: fk, path: await lvUploadSigned('/api/account/elig/upload-url', ff), name: ff.name });
+    }
+    const j = await clPost('/api/account/elig', { acct: acct, fields: eligFields(), rows: acct === 'registered' ? [] : eligRows(), files: files, grant: acct === 'registered' ? '' : S.eg.grant });
+    if (!j || j.ok !== true) { if (j && j.error === 'need_verify') { S.eg = null; S.step = 1; } throw new Error((j && j.message) || 'تعذّر إرسال الطلب.'); }
+    S.sent = j.req_no; S.eg = null;
+    await lvSrLoad().catch(function () { /* */ });
+  } catch (err) { if (err && err.message === 'auth') return; snack((err && err.message) || 'تعذّر إرسال الطلب.'); }
+  finally { LVE2.busy = false; draw(); toTop(); }
+}
+/* الفريق: حساب الاستلام وحالة التحقق ومرفق الآيبان داخل طلب الأهلية */
+function eligAdmBox(x) {
+  const m = x.meta || {}, AC = { registered: 'حسابه المسجّل في ملفه', own_other: 'حساب آخر باسمه', relative: 'حساب أحد الأقارب' }, fl = Array.isArray(x.files) ? x.files : [], B = m.bank || {};
+  /* المسجّل: من «ملفه الشخصي» في القاعدة وقت الإرسال · غيره: بنوده بعد تحقق الرمز (لا تُقبل ضمن البنود العامة) */
+  const rows = m.acct === 'registered'
+    ? [['البنك', B.bank || '—'], B.iban ? ['الآيبان', e('bdi', { dir: 'ltr' }, relIbanT(B.iban))] : null, B.holder ? ['صاحب الحساب', B.holder] : null, B.wallet ? ['المحفظة', B.wallet] : null]
+    : (Array.isArray(m.rows) ? m.rows : []).map(function (r) { return [String(r[0]), e('span', {}, lvBidi(String(r[1] || '')))]; });
+  return e('div', { class: 'sr-stl' }, [e('b', {}, 'حساب الاستلام والتحقق'),
+    DS.fields([['حساب الاستلام', AC[m.acct] || '—'], ['التحقق برمز', m.acct === 'registered' ? 'غير مطلوب' : m.verified ? DS.badge('تحقق العميل برمز', 'ok') : DS.badge('غير متحقق', 'danger')]].concat(rows)),
+    m.acct === 'registered' ? e('small', { class: 'cu-dr-hint' }, 'من «ملفه الشخصي» وقت إرسال الطلب' + (B.at ? ' — آخر تحديث للحساب في الملف ' + iso(new Date(B.at)) : '') + '.') : null,
+    m.acct === 'registered' && B.at && Date.now() - new Date(B.at).getTime() < 3 * 864e5 ? DS.note('warn', 'عُدّل الحساب في الملف خلال آخر 3 أيام', 'تأكد من العميل قبل اعتماد التحويل إليه.') : null,
+    DS.note('info', 'التحويل إلى الحساب المبيَّن هنا فقط', 'البنود العامة أعلاه كما أدخلها العميل، ولا يُعتمد منها أي حساب للتحويل.'),
+    fl.length ? e('div', { class: 'cu-mgr-docs' }, fl.map(function (f) {
+      return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, f.k === 'rel_file' ? 'شهادة آيبان المستفيد' : 'شهادة آيبان الحساب الآخر'), e('small', {}, f.name || '')]),
+        liveOk(DS.button('فتح', { size: 'sm', ui: 'files', onClick: function () { window.tqView(async function () { const j = await clApi('/admin/api/service-requests/' + encodeURIComponent(x.id) + '/file/' + encodeURIComponent(f.k)); return j.url; }, 'مرفق طلب الأهلية'); } }))]);
+    })) : null]);
+}
+if (LIVE.on) {
+  /* المرفقات المطلوبة من «مرفقاتي» (مرفقات الوظيفة) — بلا عيّنات منتهية الصلاحية */
+  try {
+    docsExpired = function () { return []; };
+    docsMiss = function () {
+      if (!F.work_type) return ['work_type'];
+      const D = LVJ.docs || [];
+      return (LVJ.rules || []).filter(function (r) { if (r.requirement !== 'required') return false; const d = D.filter(function (x) { return x.doc_type === r.doc_type; })[0]; return !d || d.status === 'rejected'; }).map(function (r) { return 'doc_' + r.doc_type; });
+    };
+  } catch (err) { try { console.warn('[tq-v576d]', err && err.message); } catch (x) { void x; } }
+  try { if (LP['fin-info']) { const fr0 = LP['fin-info'].run; LP['fin-info'].run = function () { lvEnsure(); return fr0.apply(this, arguments); }; } } catch (err) { try { console.warn('[tq-v576f]', err && err.message); } catch (x) { void x; } }
+  try { const liveDataFin = liveData; liveData = async function () { await Promise.all([liveDataFin.apply(this, arguments), lvRole('client') ? lvFinLoad().catch(function () { /* تبقى فارغة */ }) : null]); }; } catch (err) { try { console.warn('[tq-v576l]', err && err.message); } catch (x) { void x; } }
+}
 /* ═════ v572: «بياناتي الوظيفية» و«مرفقاتي» (مرفقات الوظيفة) من القاعدة — للعميل، وللعرض فقط في «صفحة العميل» ═════
  * كانت «بياناتي الوظيفية» قيمًا تجريبية لا تُحفظ، و«مرفقاتي» تعرض مستندات الملف الشخصي. مستندات الهوية والعنوان والآيبان تبقى في «ملفي الشخصي». */
 const LVJ = { ok: false, rules: [], docs: [], up: '', busy: false };
@@ -26463,7 +26701,7 @@ function lvEnsure() {
     if (!uid || LVE.busy || LVE.uid === uid) return;
     if (!window.__cpvUid && !lvRole('client')) return;
     LVE.busy = true;
-    Promise.all([stlClientLoad().catch(function () { /* */ }), lvJobLoad().catch(function () { /* */ })]).then(function () {
+    Promise.all([stlClientLoad().catch(function () { /* */ }), lvJobLoad().catch(function () { /* */ }), lvFinLoad().catch(function () { /* */ })]).then(function () {
       LVE.busy = false; LVE.uid = uid;
       for (let i = 0; i < REQS.length; i++) { if (REQS[i] && REQS[i].sr) REQS[i] = lvSrReq(REQS[i].sr); }
       try { draw(); } catch (err) { void err; }
@@ -26561,7 +26799,7 @@ function lvJobDocsPage() {
   else if (!wt) out.push(lvJobNote('info', cpv ? 'لم يحفظ العميل بياناته الوظيفية بعد' : 'احفظ «بياناتي الوظيفية» أولًا', 'تظهر مرفقات الوظيفة حسب الحالة الوظيفية بعد حفظها.', cpv ? null : DS.button('بياناتي الوظيفية', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: function () { go('other', 'job-info'); } })));
   else if (!R.length) out.push(DS.note('info', 'لا مرفقات لحالتك الوظيفية الآن', ''));
   else out.push(lvPanel('مرفقات الوظيفة — ' + wn, null, R.map(function (r) { return lvJobRow(r, cur(r.doc_type)); }).concat([DS.note('info', 'رفع المرفقات', cpv ? 'الرفع من حساب العميل نفسه. القبول والرفض من هنا، ويصل العميلَ سبب الرفض في حسابه وبالواتساب.' : 'PDF أو صورة حتى 2 ميغابايت. يُحفظ المرفق فورًا ويراجعه فريق تيرا.')])));
-  out.push(lvJobNote('info', 'مستندات الهوية والعنوان والآيبان', 'تُدار من «ملفي الشخصي» ولا تظهر هنا.', cpv ? null : DS.button('ملفي الشخصي', { size: 'sm', ui: 'caret-left', onClick: function () { go('other', 'profile'); } })));
+  /* v576: لا تكرار — مستندات الهوية والعنوان والآيبان في «ملفي الشخصي» */
   return out;
 }
 if (LIVE.on) {
