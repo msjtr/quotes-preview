@@ -7426,6 +7426,7 @@ function cuFilePage() {
   return [hero, acts, tabs].concat(body);
 }
 function cuHubPage() {
+  if (LIVE.on && typeof cuHubLive === 'function') return cuHubLive(); /* v588 — المرحلة 2 */
   cuSeedPf();
   const IB = cuInbox(), n = function (g) { return IB.filter(function (x) { return x.grp === g; }).length; }, C = cuList();
   const pfOpen = LIVE.on ? (n('ver') + (function () { if (typeof lvLchCount === 'function') lvLchCount(); return (typeof LV_LCHN !== 'undefined' && LV_LCHN.w) || 0; })()) /* v584: في المنفذ الحي من التوثيق الفعلي والحسابات بانتظار التدشين */ : cuPfReqItems().concat(cuPfVfyItems()).concat(cuPfMigItems()).concat(cuPfLaunchItems()).filter(function (x) { return x.open; }).length, acOpen = cuPfAcctItems().filter(function (x) { return x.open; }).length, secN = cuAuditAll().filter(function (x) { return x.sec && T0 - x.at < 7 * 864e5; }).length;
@@ -27362,6 +27363,77 @@ if (LIVE.on) {
         ['identification-card', 'ملفات العملاء', fmtNum(cuList().length) + ' عميل', null, function () { go('other', 'cu-pf-files'); }]]);
     };
   } catch (err) { try { console.warn('[tq-v578c]', err && err.message); } catch (x) { void x; } }
+}
+
+/* ═════ v588 — المرحلة 2 من الهيكل الجديد: قسم العملاء بمجموعات واضحة بلا تكرار، وقسمان جديدان «التواصل» و«الفريق والشركاء» في القائمة الجانبية ═════
+   كل إجراء في مكان واحد: الملف الشخصي (الملفات · الجدد · التوثيق · المنقولون · التدشين) داخل قسم العملاء مباشرة،
+   و«صفحة العميل» مع «مركز الأمن»، والتذاكر ومركز الإرسال وتجربة العملاء في «التواصل». الروابط القديمة تبقى تعمل. */
+if (LIVE.on) {
+  try {
+    window.cuHubLive = function () {
+      cuSeedPf();
+      const IB = cuInbox(), n = function (g) { return IB.filter(function (x) { return x.grp === g; }).length; };
+      const w = function (k) { return k ? fmtNum(k) + ' بانتظار إجراء' : 'لا شيء معلّق'; };
+      const lt = function (L) { const k = L.filter(function (x) { return x.open && x.sla && x.sla[1] === 'danger'; }).length; return k ? [fmtNum(k) + ' متأخر', 'danger'] : null; };
+      const V = IB.filter(function (x) { return x.grp === 'ver'; });
+      let Mg = []; try { Mg = cuPfMigItems(); } catch (err) { Mg = []; }
+      try { if (typeof lvLchCount === 'function') lvLchCount(); } catch (err) { void err; }
+      const LCH = (typeof LV_LCHN !== 'undefined') ? LV_LCHN : { at: 0, w: 0, d: 0 };
+      const nn = typeof cunCount === 'function' ? cunCount() : 0;
+      let CC = { p: [], s: [] }; try { CC = ctCards(); } catch (err) { void err; }
+      let secN = 0; try { secN = cuAuditAll().filter(function (x) { return x.sec && T0 - x.at < 7 * 864e5; }).length; } catch (err) { secN = 0; }
+      const showPay = typeof cuSecOk !== 'function' || (cuSecOk('cu-trin') && !cuSecOk('fin'));
+      const payCards = [];
+      if (showPay) {
+        if (!LV_PAY.at && !LV_PAY.busy) lvPayLoad().then(function () { draw(); }).catch(function () { /* */ });
+        const k1 = LV_PAY.TR.filter(function (t) { return t.status === 'submitted'; }).length, k2 = (LV_PAY.OP || []).filter(function (o) { return o.status === 'submitted' || o.status === 'failed'; }).length;
+        payCards.push({ ic: 'bank:teal', t: 'إيصالات التحويل البنكي', d: 'تحويلات العملاء لدفعاتهم — اعتماد أو رفض', n: LV_PAY.at ? w(k1) : null, badge: k1 ? [fmtNum(k1) + ' بانتظار الاعتماد', 'warn'] : null, go: function () { go('other', 'cu-trin'); } },
+          { ic: 'arrows-clockwise:gold', t: 'طلبات الإلغاء والاسترداد', d: 'طلبات العملاء على عمليات بوابة الدفع', n: LV_PAY.at ? w(k2) : null, badge: k2 ? [fmtNum(k2) + ' بانتظار القرار', 'warn'] : null, go: function () { go('other', 'cu-opin'); } },
+          { ic: 'link:teal', t: 'روابط الدفع', d: 'إنشاء رابط دفع وإرساله ومتابعة حالته', go: function () { go('other', 'cu-paylinks'); } });
+      }
+      const svcN = (LV_SR.all || []).filter(function (x) { return srOpenSt(x) || srWaitExec(x); }).length;
+      const groups = [
+        ['cl', 'العملاء والتوثيق', 'identification-card:teal', [
+          { ic: 'identification-card:teal', t: 'ملفات العملاء', d: 'كل عميل في قائمة واحدة: ملفه وحسابه وأمانه وعقوده', n: fmtNum(cuList().length) + ' عميل', go: function () { ADM.clF = 'all'; ADM.clFrom = ''; go('other', 'cu-pf-files'); } },
+          { ic: 'user-circle:teal', t: 'العملاء الجدد', d: 'سجّلوا خلال آخر 14 يومًا — ومتابعة إكمال ملفاتهم', n: nn ? fmtNum(nn) + ' عميل' : 'لا عملاء جدد', go: function () { go('other', 'cu-new'); } },
+          { ic: 'seal-check:teal', t: 'طلبات توثيق الملف', d: 'استلام الطلب ومراجعة بنوده واعتماده أو إعادته', n: w(V.length), badge: lt(V), go: function () { go('other', 'cu-pf-ver'); } },
+          { ic: 'arrows-clockwise:teal', t: 'المنقولون من النظام السابق', d: 'رسالة «تدشين الهوية الجديدة» وحالة الدخول والتوثيق', n: w(Mg.filter(function (x) { return x.open; }).length), badge: lt(Mg), go: function () { go('other', 'cu-pf-mig'); } },
+          { ic: 'rocket-launch:teal', t: 'تدشين الحساب', d: 'الحسابات المعتمدة بانتظار التدشين', n: LCH.at ? fmtNum(LCH.w) + ' بانتظار · ' + fmtNum(LCH.d) + ' مدشّنة' : null, badge: LCH.w ? ['بانتظار ' + fmtNum(LCH.w), 'warn'] : null, go: function () { ADM.lchF = 'wait'; go('other', 'cu-pf-launch'); } },
+          { ic: 'crown-simple:gold', t: 'العضويات والنقاط', d: 'المستوى والنقاط وحالة العضوية', n: (typeof LIVE_LOY !== 'undefined' && LIVE_LOY.mem) ? fmtNum(LIVE_LOY.mem.length) + ' أعضاء' : 'الأعضاء والنقاط', go: function () { go('other', 'cu-mem'); } }]],
+        ['rq', 'الطلبات والعقود', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · تحقق من الأهلية', n: w(svcN), go: function () { go('other', 'cu-svc'); } }].concat(CC.p || [], payCards)],
+        ['st', 'المتجر', 'store', [{ ic: 'store', t: 'طلبات المتجر', d: 'الطلبات والشحن · حسب الطلب · الخدمات الرقمية', n: w(n('store')), go: function () { ADM.cuf = 'store'; go('other', 'cu-inbox'); } }].concat(CC.s || [])],
+        ['sc', 'الأمن والوصول', 'shield-check:teal', [{ ic: 'shield-check:teal', t: 'مركز الأمن', d: 'النشاط والدخول · التنبيهات · العمليات الحساسة · الأجهزة · سجل التدقيق', n: secN ? fmtNum(secN) + ' تنبيهًا هذا الأسبوع' : 'لا تنبيهات أمنية', go: function () { go('other', 'cu-secc'); } },
+          (typeof cuSecOk !== 'function' || cuSecOk('cpg')) ? { ic: 'user-circle:navy', t: 'صفحة العميل', d: 'الدخول إلى صفحة العميل كما يراها بسبب مُسجَّل · سجل توثيق الوصول', go: function () { go('other', 'cpg'); } } : null].filter(Boolean)]];
+      return secHub('cu', { t: 'قسم العملاء', s: 'الملفات والتوثيق والطلبات والمتجر والأمن — كل إجراء في مكان واحد.', ic: 'cu' }, groups.filter(function (g) { return g[3] && g[3].length; }));
+    };
+    /* قسم «التواصل» و«الفريق والشركاء»: رأس ثم بطاقات مباشرة — بلا مجموعة تكرر عنوان الصفحة */
+    const commHub = function () {
+      let k = 0, all = 0; try { const T = deskTickets(); all = T.length; k = T.filter(function (t) { return tkFit(t, 'new'); }).length; } catch (err) { void err; }
+      const L = [['ticket', 'التذاكر والمراسلات', k ? fmtNum(k) + ' بانتظار الرد' : fmtNum(all) + ' مراسلة', k ? 'warn' : null, function () { ADM.tst = ''; go('other', 'cs-tickets'); }, k || null],
+        (typeof cuSecOk !== 'function' || cuSecOk('comm')) ? ['mail', 'مركز الإرسال', 'رسالة لعميل أو لفئة بالقوالب المعتمدة', null, function () { go('other', 'comm'); }] : null,
+        (typeof cuSecOk !== 'function' || cuSecOk('cx')) ? ['star:gold', 'تجربة العملاء والجودة', 'المؤشرات · التقييمات · الاستبانات', null, function () { go('other', 'cx'); }] : null].filter(Boolean);
+      return [lvHero({ ic: 'comm-hub', eye: 'الأقسام', t: 'التواصل', sub: 'مراسلات العملاء والإرسال لهم وتجربتهم — في مكان واحد.' }), e('div', { 'data-live-ok': '' }, lvHub(L))];
+    };
+    const teamHub = function () {
+      const L = [(typeof cuSecOk !== 'function' || cuSecOk('soon-emp')) ? ['users:navy', 'الموظفون', 'حسابات الفريق وأدوارهم ومسمّياتهم', null, function () { go('other', 'soon-emp'); }] : null,
+        (typeof cuSecOk !== 'function' || cuSecOk('soon-par')) ? ['handshake:teal', 'الشركاء', 'الشركاء وعروضهم وعقودهم ومالياتهم', null, function () { go('other', 'soon-par'); }] : null,
+        (typeof cuSecOk !== 'function' || cuSecOk('soon-mkt')) ? ['megaphone-simple:gold', 'المسوّقون', 'المسوّقون ورموزهم وعمولاتهم', null, function () { go('other', 'soon-mkt'); }] : null].filter(Boolean);
+      return [lvHero({ ic: 'team-hub', eye: 'الأقسام', t: 'الفريق والشركاء', sub: 'الموظفون والشركاء والمسوّقون.' }), L.length ? e('div', { 'data-live-ok': '' }, lvHub(L)) : LDS.emptyState({ icon: 'info', title: 'لا أقسام متاحة لصلاحيتك هنا', compact: true })];
+    };
+    Object.assign(ICON, { 'comm-hub': ['chat-circle-dots', 'sky'], 'team-hub': ['users', 'navy'] });
+    lp('comm-hub', 'التواصل', null, 'comm-hub', commHub);
+    lp('team-hub', 'الفريق والشركاء', null, 'team-hub', teamHub);
+    const uni = function (keys) { const L = []; for (let i = 0; i < keys.length; i++) { const p = CU_NAV_PERM[keys[i]]; if (!p) return null; p.forEach(function (x) { if (L.indexOf(x) < 0) L.push(x); }); } return L; };
+    const cp = uni(['cu', 'comm', 'cx']), tp = uni(['soon-emp', 'soon-par', 'soon-mkt']);
+    if (cp) CU_NAV_PERM['comm-hub'] = cp; if (tp) CU_NAV_PERM['team-hub'] = tp;
+    /* الصفحات الأم: «رجوع إلى …» والتمييز في القائمة */
+    ['cs-tickets', 'comm', 'cx'].forEach(function (k) { if (LP[k] && !LP[k].up) LP[k].up = 'comm-hub'; });
+    ['soon-emp', 'soon-par', 'soon-mkt'].forEach(function (k) { if (LP[k] && !LP[k].up) LP[k].up = 'team-hub'; });
+    if (LP.cpg && !LP.cpg.up) LP.cpg.up = 'cu';
+    /* القائمة الجانبية: ستة أقسام */
+    NAV_ADM.length = 0;
+    NAV_ADM.push(['الأساسي', [['adm-home', 'لوحة المشرف']]], ['الأقسام', [['cu', 'قسم العملاء'], ['fin', 'قسم المالية'], ['comm-hub', 'التواصل'], ['team-hub', 'الفريق والشركاء']]], ['الإعدادات', [['sys', 'إعدادات النظام']]]);
+  } catch (err) { try { console.warn('[tq-v588]', err && err.message); } catch (x) { void x; } }
 }
 
 })();
