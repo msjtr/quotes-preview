@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'580',d:'2026-10-29'};
+window.TQ_VERSION={v:'581',d:'2026-10-29'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -12,12 +12,15 @@ window.TQ_VERSION={v:'580',d:'2026-10-29'};
     var V = window.TQ_VERSION, s = document.currentScript, src = ((s && s.src) || '').split('?')[0]; if (!src) return;
     var last = 0, hid = 0, latest = null, bar = null;
     /* v503: لا يُعاد التحميل تلقائيًا بعد أن يبدأ المستخدم التنقّل في الصفحة — يظهر شريط «يتوفر تحديث» بدلًا منه، والعودة بعد غياب طويل (30 دقيقة) تُحدِّث */
-    var acted = false; ['pointerdown', 'keydown', 'touchstart'].forEach(function (k) { document.addEventListener(k, function () { acted = true; }, { capture: true, passive: true }); });
+    /* v581: آخر تفاعل — يُحدَّث تلقائيًا بعد دقيقتين بلا تفاعل وبلا كتابة في حقل (فلا يبقى العميل على إصدار قديم) */
+    var acted = false, lastAct = 0; ['pointerdown', 'keydown', 'touchstart', 'wheel', 'scroll', 'input'].forEach(function (k) { document.addEventListener(k, function () { acted = true; lastAct = Date.now(); }, { capture: true, passive: true }); });
+    /* التحديث عند الخمول لصفحات العميل والموقع فقط — لوحة الموظفين تبقى على السلوك السابق */
+    var IDLE_OK = !/^\/(staff|admin|security|portal)(\/|$)/.test(location.pathname);
     function typing() {
       var on = false;
       try {
         var ds = [document], f = document.getElementById('pv-site-f'); if (f && f.contentDocument) ds.push(f.contentDocument);
-        ds.forEach(function (d) { d.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea').forEach(function (i) { if (i.value && !i.readOnly && i.offsetParent !== null) on = true; }); });
+        ds.forEach(function (d) { d.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea').forEach(function (i) { if (i.value && !i.readOnly && i.offsetParent !== null) on = true; }); d.querySelectorAll('[data-ak^="f:"]').forEach(function (x) { if (x.offsetParent !== null) on = true; }); var ae = d.activeElement; if (ae && (ae.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) on = true; /* v581: نموذج مفتوح (حقول اختيار أيضًا) — لا تحديث تلقائي يُضيّع ما أُدخل */ });
       } catch (e) { void e; }
       return on;
     }
@@ -74,7 +77,7 @@ window.TQ_VERSION={v:'580',d:'2026-10-29'};
       var n = Date.now(); if (n - last < 20000) return; last = n;
       fetchV().then(function () {
         if (!newer()) return;
-        if (auto && (auto === 'return' || !acted) && !typing() && !tried(latest.v)) return go(latest.v);
+        if (auto && (auto === 'return' || !acted || (IDLE_OK && Date.now() - lastAct > 120000)) && !typing() && !tried(latest.v)) return go(latest.v);
         paintBar();
       }).catch(function () { /* بلا اتصال — يُعاد الفحص لاحقًا */ });
     }
@@ -141,10 +144,10 @@ window.TQ_VERSION={v:'580',d:'2026-10-29'};
       var c = e.target && e.target.closest && e.target.closest('[data-tq-close]'); if (c) { e.preventDefault(); closeApp(); return; }
       var t = e.target && e.target.closest && e.target.closest('[data-tq-app]'); if (t) { e.preventDefault(); open(); }
     });
-    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') { hid = Date.now(); return; } check(!!hid && Date.now() - hid > 1800000 ? 'return' : false); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') { hid = Date.now(); return; } check(!!hid && Date.now() - hid > (IDLE_OK ? 60000 : 1800000) ? 'return' : 'idle'); });
     window.addEventListener('pageshow', function (e) { if (e.persisted) check('return'); });
     window.addEventListener('focus', function () { check(false); });
-    setInterval(function () { check(false); }, 300000); setTimeout(function () { check(true); }, 4000);
+    setInterval(function () { check('idle'); }, 120000); setTimeout(function () { check(true); }, 4000);
     /* v387: الضغط على إشعار الجوال/الويب يفتح التطبيق ويعرض الإشعار نفسه (العنوان والنص) — يصل محتواه في #tqn= (لا يُرسل إلى الخادم)،
        ثم «عرض التفاصيل» ينقل إلى القسم المرتبط إن كان العميل داخل حسابه. ويُحفظ آخر 30 إشعارًا على الجهاز. */
     var NK = { ok: /^(offers|member|approved|paid|thanks|qaccepted|qextok|cudok)$/, bad: /^(defaulted|late|rejected|rfrej|qexpired|qrejected|qextno|cudrej)$/, warn: /^(sec|doc|today|fix|refund|qexpire|qmod|cudfix)$/ };
