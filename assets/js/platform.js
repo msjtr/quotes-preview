@@ -17786,6 +17786,20 @@ function stlQuoteCard(Q, ctx, c, RF) {
     cfRe(RF, (j.bank ? 'أُرسل طلب التحويل ' : 'صدر رابط السداد ') + j.ref_no + (j.sent ? ' للعميل.' : ' — تعذّر الإرسال، شارك الرابط يدويًا.')); } })));
   if (Q.status === 'executed') acts.push(DS.button('شهادة تقدير ووفاء', { size: 'sm', ui: 'seal-check', onClick: async function () {
     try { const j = await clApi('/admin/api/settle/' + encodeURIComponent(Q.id) + '/cert'); window.open(j.url, '_blank', 'noopener'); } catch (err) { snack((err && err.message) || 'الشهادة غير متاحة.'); } } }));
+      /* v583: إرسال الشهادة وطلب «تقييم المنتج» للعميل — بعد معاينتهما على جوال الموظف */
+      if (Q.status === 'executed') acts.push(liveOk(DS.button(W.cs === 'me' ? 'جارٍ الإرسال…' : 'معاينة على رقمي', { size: 'sm', ui: 'file-text', disabled: !!W.cs, onClick: async function () {
+        if (W.cs) return; W.cs = 'me'; W.err = ''; RF.paint();
+        const j = await clPost('/admin/api/settle/' + encodeURIComponent(Q.id) + '/close-send', { to: 'me' }).catch(function () { return null; });
+        W.cs = ''; if (!j || j.ok === false) { W.err = (j && j.message) || 'تعذّر الإرسال.'; RF.paint(); return; }
+        snack((j.out && j.out.cert && j.out.cert.ok ? 'أُرسلت الشهادة' : 'تعذّر إرسال الشهادة') + ' · ' + (j.out && j.out.rating && j.out.rating.ok ? 'وطلب تقييم المنتج' : 'وتعذّر طلب التقييم') + ' إلى جوالك للمعاينة.'); RF.paint(); } })),
+        liveOk(DS.button(W.cs === 'client' ? 'جارٍ الإرسال…' : 'إرسال الشهادة وتقييم المنتج للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: !!W.cs, onClick: async function () {
+          if (W.cs || !tqConfirm('إرسال شهادة «تقدير ووفاء» للعميل الآن في واتساب، وطلب «تقييم المنتج» بعدها بثلاث دقائق؟ يُرسل طلب التقييم مرة واحدة للعقد.')) return;
+          W.cs = 'client'; W.err = ''; RF.paint();
+          let j = await clPost('/admin/api/settle/' + encodeURIComponent(Q.id) + '/close-send', { to: 'client' }).catch(function () { return null; });
+          if (j && j.error === 'already_sent' && tqConfirm('أُرسلت الشهادة لهذا العميل سابقًا. إعادة إرسالها الآن؟ (طلب تقييم المنتج لا يتكرر)')) j = await clPost('/admin/api/settle/' + encodeURIComponent(Q.id) + '/close-send', { to: 'client', resend: true }).catch(function () { return null; });
+          W.cs = ''; if (!j || j.ok === false) { W.err = (j && j.message) || 'تعذّر الإرسال.'; RF.paint(); return; }
+          const o = j.out || {};
+          cfRe(RF, (o.cert && o.cert.ok ? 'أُرسلت الشهادة للعميل' : 'تعذّر إرسال الشهادة') + (o.rating && o.rating.already ? '، وطلب تقييم المنتج أُرسل له سابقًا.' : o.rating && o.rating.ok ? '، ويصله طلب تقييم المنتج بعد ثلاث دقائق.' : '، وتعذّر إنشاء طلب التقييم.')); } })));
   if (Q.status === 'pending' || Q.status === 'approved') acts.push(e('span', { class: 'stl-addr' }, [e('small', {}, 'المخاطبة'), DS.select({ value: Q.addr || '', options: [['', 'اختر'], ['m', 'السيد'], ['f', 'السيدة']], onChange: function (v) { if (!v) return; go('admin_settle_quote_addr', { p_id: Q.id, p_addr: v }, 'حُدّثت صيغة المخاطبة.'); } })]));
   if (Q.status === 'pending' || Q.status === 'approved') acts.push(liveOk(DS.button('إلغاء الفاتورة', { size: 'sm', ui: 'x', disabled: W.busy, onClick: function () { go('admin_settle_quote_cancel', { p_id: Q.id, p_note: W.note }, 'أُلغيت فاتورة سداد قيمة المنتج ' + Q.quote_no + '.', 'إلغاء فاتورة سداد قيمة المنتج ' + Q.quote_no + '؟'); } })));
   return e('article', { class: 'stl-q is-' + Q.status }, [

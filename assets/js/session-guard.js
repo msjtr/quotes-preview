@@ -122,7 +122,7 @@
     if (window.TeraSession) { clearInterval(boot); return; }
     if (!token()) { if (tries > 400) clearInterval(boot); return; }
     clearInterval(boot);
-    var s = document.createElement('script'); s.src = '/assets/js/session-location.js?v=570'; s.async = true;
+    var s = document.createElement('script'); s.src = '/assets/js/session-location.js?v=' + ((window.TQ_VERSION && window.TQ_VERSION.v) || '583'); s.async = true;
     (document.head || document.documentElement).appendChild(s);
   }, 1500);
 })();
