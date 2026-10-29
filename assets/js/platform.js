@@ -3154,7 +3154,7 @@ function goNotifOnce() {
 }
 function nbSync() {
   goNotifOnce();
-  const L = (S.role === 'admin' || LIVE.on ? dbNotifs() : buildNotifs()).filter(isNew), c = {}; /* v574: في المنفذ الحقيقي تُعدّ الإشعارات الفعلية وحدها */ NSEC.forEach(function (x) { c[x[0]] = nIn(L, x[0]).length; });
+  const L = (S.role === 'admin' ? dbNotifs() : buildNotifs()).filter(isNew), c = {}; /* v577: العميل يرى عدد تنبيهاته كاملًا (المدفوعات والطلبات والإشعارات الفعلية) — كان يُعدّ إشعارات القاعدة وحدها فتختفي الأرقام */ NSEC.forEach(function (x) { c[x[0]] = nIn(L, x[0]).length; });
   document.querySelectorAll('[data-nsc]').forEach(function (b) { const v = c[b.dataset.nsc] || 0; b.innerHTML = v > 9 ? '<bdi dir="ltr">9+</bdi>' : String(v); b.hidden = !v; const t = b.closest('[data-ns]'); if (t) t.classList.toggle('has-new', !!v); });
   document.querySelectorAll('[data-nsh]').forEach(function (b) { const v = c[b.dataset.nsh] || 0; b.querySelector('b').textContent = String(v); b.hidden = !v; });
   document.querySelectorAll('[data-nav=bell]').forEach(function (b) { b.classList.toggle('has-new', !!c.all); let i = b.querySelector('.t2-nbadge'); if (!i) { i = document.createElement('i'); i.className = 't2-nbadge'; b.appendChild(i); } i.innerHTML = c.all > 9 ? '<bdi dir="ltr">9+</bdi>' : String(c.all); i.hidden = !c.all; });
@@ -3164,7 +3164,7 @@ const openNs = (k) => { FX.ns = k; FX.nv = 'client'; go('notif'); };
    (my_inbox · stf_38 — إشعارات صاحب الجلسة وحده). في العيّنة لا شيء. */
 const DBN = { at: 0, busy: false, rows: [] };
 const DBN_STAFF = ['pay_received', 'pay_refund', 'pay_failed', 'pay_op_request', 'transfer_submitted', 'service_request', 'profile_review']; /* v537: + إشعارات التوثيق */
-const DBN_KINDS = ['direct_message', 'pay_op_decision', 'transfer_decision'].concat(DBN_STAFF);
+const DBN_KINDS = ['direct_message', 'pay_op_decision', 'transfer_decision', 'client_event', 'bank_transfer'].concat(DBN_STAFF); /* v577: + أحداث العميل وروابط التحويل البنكي */
 function dbNotifs() {
   try {
     if (!LIVE.on || !LIVE.me) return [];
@@ -3177,7 +3177,7 @@ function dbNotifs() {
         (S.role === 'admin' && typeof admRpc === 'function' ? admRpc('my_notifications', { p_only_open: false, p_limit: 30, p_offset: 0 }).catch(function () { return null; }) : Promise.resolve(null)).then(function (n) {
           const N = (n && n.ok !== false && Array.isArray(n.rows)) ? n.rows.filter(function (x) { return x && x.kind === 'profile_review'; }).map(function (x) { return { id: x.id, kind: 'profile_review', title: x.title, body: x.body, created_at: x.created_at, read_at: x.is_read ? x.created_at : null, role: 'staff', aud: null, uid: null, mine: !x.is_role_wide }; }) : [];
           if (N.length) DBN.rows = DBN.rows.concat(N).sort(function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); });
-          if (DBN.rows.length) { dbFresh(); draw(); }
+          if (DBN.rows.length) { dbFresh(); if (S.tab === 'notif' || S.other === 'tq-notif' || (S.role !== 'admin' && S.tab === 'dash')) draw(); else nbSync(); } /* v577: لا إعادة رسم كاملة للصفحة مع كل تحديث للإشعارات — الأرقام وحدها */
         });
       }).catch(function () { DBN.at = Date.now(); DBN.busy = false; });
     }
@@ -3186,7 +3186,7 @@ function dbNotifs() {
     return DBN.rows.filter(dbRole).map(function (x) {
       const staffK = DBN_STAFF.indexOf(x.kind) >= 0 && S.role === 'admin' && x.uid;
       return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: DBN_STAFF.indexOf(x.kind) >= 0 ? 'system' : 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '',
-        act: x.kind === 'profile_review' ? (x.mine ? ['حالة طلبي', function () { go('other', 'me-verify'); }] : ['فتح طلبات التوثيق', function () { go('other', 'cu-pf-ver'); }]) : x.kind === 'service_request' ? ['طلباتي', function () { go('other', 'me-requests'); }] /* v568 */ : staffK ? ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }] : undefined };
+        act: x.kind === 'profile_review' ? (x.mine ? ['حالة طلبي', function () { go('other', 'me-verify'); }] : ['فتح طلبات التوثيق', function () { go('other', 'cu-pf-ver'); }]) : x.kind === 'service_request' ? (S.role === 'admin' ? ['طلبات الخدمات', function () { go('other', 'cu-svc'); }] : ['طلبات خدماتي', function () { go('reqs'); }]) /* v577: لكل دور صفحته */ : staffK ? ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }] : undefined };
     });
   } catch (err) { return []; }
 }
@@ -3194,7 +3194,7 @@ function dbNotifs() {
    فيصل محتواه حتى لو فُتح التطبيق دون الضغط على الإشعار أو بعد تسجيل الدخول. */
 const DBN_K = 'tq.inbox.seen';
 /* v469: كل دور يرى إشعاراته فقط — بلا دور = إشعار عميل (لا يظهر في لوحة الإدارة)، وإشعارات الإدارة لا تظهر في حساب العميل */
-function dbRole(x) { const adm = S.role === 'admin'; if (x.aud === 'all') return true; if (DBN_STAFF.indexOf(x.kind) >= 0) return adm; return adm ? x.role === 'staff' : x.role !== 'staff'; }
+function dbRole(x) { const adm = S.role === 'admin'; if (x.aud === 'all') return true; if (x.role === 'client') return !adm; /* v577: إشعار موجّه للعميل (طلباته) يظهر في حسابه */ if (DBN_STAFF.indexOf(x.kind) >= 0) return adm; return adm ? x.role === 'staff' : x.role !== 'staff'; }
 function dbSeen() { try { return JSON.parse(localStorage.getItem(DBN_K) || '{}') || {}; } catch (err) { return {}; } }
 function dbMark(ids) { try { const m = dbSeen(); ids.forEach(function (i) { if (!m[i]) m[i] = 1; }); const k = Object.keys(m); if (k.length > 300) k.slice(0, k.length - 300).forEach(function (x) { delete m[x]; }); localStorage.setItem(DBN_K, JSON.stringify(m)); } catch (err) { void err; } }
 function dbFresh() {
@@ -15636,12 +15636,15 @@ const SCRK = 'tera-scroll-v1';
 let SCR_RESTORE = null; try { SCR_RESTORE = JSON.parse(sessionStorage.getItem(SCRK) || 'null'); } catch (err) { SCR_RESTORE = null; }
 let SCR_T = 0, SCR_USER = 0;
 window.addEventListener('scroll', function () { clearTimeout(SCR_T); SCR_T = setTimeout(function () { try { if (!SCR_RESTORE) sessionStorage.setItem(SCRK, JSON.stringify({ k: anchKey(), y: Math.round(window.scrollY) })); } catch (err) { void err; } }, 250); }, { passive: true });
-['wheel', 'touchstart', 'keydown'].forEach(function (ev) { window.addEventListener(ev, function () { SCR_USER = Date.now(); }, { passive: true }); });
+['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (ev) { window.addEventListener(ev, function () { SCR_USER = Date.now(); }, { passive: true }); });
 function scrRestore() {
   const r = SCR_RESTORE; if (!r || SCROLLER !== window) return false;
-  if (r.k !== anchKey() || (LIVE.on && !LIVE.me)) return r.k === anchKey();
-  const t0 = Date.now(), y = r.y;
-  [0, 250, 700, 1400, 2400].forEach(function (ms) { setTimeout(function () { if (SCR_USER > t0) return; if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); if (ms === 2400) SCR_RESTORE = null; }, ms); });
+  if (LIVE.on && !LIVE.me) return r.k === anchKey();
+  /* v577: الاستعادة مرة واحدة بعد التحديث — كانت تبقى مفعّلة فتعيد الصفحة لموضع قديم مع كل إعادة رسم */
+  if (r.k !== anchKey()) { if (!r.t0) r.t0 = Date.now(); if (Date.now() - r.t0 > 8000) SCR_RESTORE = null; return false; }
+  SCR_RESTORE = null;
+  const t0 = Date.now(), y = r.y, k0 = r.k;
+  [0, 250, 700, 1400, 2400].forEach(function (ms) { setTimeout(function () { if (SCR_USER > t0 || anchKey() !== k0) return; if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); }, ms); });
   return true;
 }
 function toTop() { try { if (SCROLLER === window) window.scrollTo(0, 0); else SCROLLER.scrollTop = 0; } catch (err) { void err; } }
@@ -15675,7 +15678,10 @@ window.addEventListener('popstate', function (ev) { const st = ev.state; if (!st
 function saveNav() { try { saveNav0(); } finally { navHist(); } }
 function saveNav0() {
   try { const pf = {}; PROFK.forEach(function (k) { if (k in F) pf[k] = F[k]; }); sessionStorage.setItem('tera-preview-prof', JSON.stringify(pf)); } catch (err) { void err; }
+  try { if (typeof ADM !== 'undefined' && ADM.pfc && S.other === 'cu-pf-file') FX.pfc = ADM.pfc; } catch (err) { void err; } /* v577 */
+  try { if (typeof LIVE !== 'undefined' && LIVE.on && LIVE.sup === true && typeof ADM !== 'undefined' && ADM.as) sessionStorage.setItem('tera-adm-as', ADM.as); } catch (err) { void err; } /* v577: «العمل بصفة» يبقى بعد التحديث */
   try { const fx = {}; NAV_FX.forEach(function (k) { fx[k] = FX[k]; }); sessionStorage.setItem(NAVKEY, JSON.stringify({ tab: S.tab, other: S.other, msg: S.msg === 'new' ? 'list' : S.msg, thread: S.thread, mst: S.mst, fx: fx, sec: SECST, trail: (FX.trail ? Object.keys(FX.trail) : []), q: S.tab === 'qreq' || S.tab === 'elig' ? { m: S.qmode, fr: S.qfrom, it: S.qitem, st: S.step, F: JSON.parse(JSON.stringify(F, function (k, v) { return (typeof Blob !== 'undefined' && v instanceof Blob) || typeof v === 'function' ? undefined : v; })) } : null })); } catch (err) { void err; }
+  try { if (window.__cpvUid) sessionStorage.setItem('tera-cpv-nav', sessionStorage.getItem(NAVKEY) || ''); } catch (err) { void err; } /* v577 */
 }
 function loadNav() {
   try {
@@ -15684,6 +15690,7 @@ function loadNav() {
     if (!window.__navRaw) { try { window.__navRaw = raw || sessionStorage.getItem(NAVKEY) || ''; } catch (err) { void err; } }
     const o = JSON.parse(raw || sessionStorage.getItem(NAVKEY) || 'null'); if (!o || !o.tab) return;
     Object.keys(o.fx || {}).forEach(function (k) { FX[k] = o.fx[k]; }); Object.assign(SECST, o.sec || {});
+    try { if (FX.pfc) ADM.pfc = FX.pfc; } catch (err) { void err; } /* v577: الرجوع والتحديث يفتحان ملف العميل نفسه */
     /* أصل الدخول يُستعاد بعد التحديث (بلا دوال المسار المحفوظة) */
     if (FX.pfrom && typeof FX.pfrom === 'object') delete FX.pfrom.path; else FX.pfrom = null;
     /* صفحات تعتمد على عنصر غير موجود (طلب أُنشئ في المعاينة) تعود لصفحتها الأم */
@@ -16390,7 +16397,7 @@ function liveStaffRole() {
     const ids = (Array.isArray(R) ? R : []).map(function (x) { return x.role_id; }).filter(Boolean);
     if (!ids.length) { LIVE.sup = false; liveAsStaff([]); return; }
     return liveSb('roles?select=key,label_ar&id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (K) { if (Array.isArray(K)) { LIVE.sup = K.some(function (x) { return x.key === 'super_admin'; }); LIVE.roleAr = K.map(function (x) { return x.label_ar || ''; }).filter(Boolean).join('، '); }
-    if (LIVE.sup === true) { ADM.as = 'sup'; return; }
+    if (LIVE.sup === true) { let as0 = ''; try { as0 = sessionStorage.getItem('tera-adm-as') || ''; } catch (err) { void err; } let okAs = false; try { okAs = !!as0 && as0 !== 'live' && as0 !== 'sup' && typeof cuStaffOpts === 'function' && cuStaffOpts().some(function (x) { return x && x[0] === as0; }); } catch (err) { okAs = false; } ADM.as = okAs ? as0 : 'sup'; ADM.pff = ADM.as === 'sup' ? 'open' : 'mine'; return; } /* v577: يبقى الدور الذي اخترته بعد التحديث */
     return liveSb('role_permissions?select=permission_key&role_id=in.(' + ids.map(encodeURIComponent).join(',') + ')').then(function (P) { liveAsStaff((Array.isArray(P) ? P : []).map(function (x) { return x.permission_key; }).filter(function (k, i, a) { return k && a.indexOf(k) === i; })); }); });
   }).catch(function () { /* يبقى العنوان الافتراضي */ });
 }
@@ -16575,12 +16582,14 @@ function admMount(key, title, load, render) {
     box.innerHTML = ''; (render(st.data, st, paint, refetch) || []).filter(Boolean).forEach(function (n) { box.appendChild(n); }); admFilter(box, st.q);
     requestAnimationFrame(function () { box.style.minHeight = ''; });
   };
-  const refetch = function () {
-    box.innerHTML = ''; box.appendChild(clWait(title));
-    load().then(function (d) { st.data = d; st.at = Date.now(); paint(); })
-      .catch(function (err) { if (err && err.message === 'auth') return; try { console.error('[adm]', key, err && err.stack || err); } catch (x) { void x; } box.innerHTML = ''; box.appendChild(clFail(title, err && err.message, refetch)); });
+  /* v577: طلب واحد في الطريق لكل صفحة، والبيانات الحالية تبقى ظاهرة وتُحدَّث في الخلفية — كانت الصفحة تُفرَّغ وتعود لأعلاها كل دقيقة */
+  const run = function (bg) {
+    if (!st.p) { const tok = st.tok = (st.tok || 0) + 1; st.p = load().then(function (d) { if (st.tok === tok) { st.p = null; st.data = d; st.at = Date.now(); } return d; }, function (err) { if (st.tok === tok) st.p = null; throw err; }); }
+    st.p.then(function () { if (box.isConnected || !bg) paint(); })
+      .catch(function (err) { if (err && err.message === 'auth') return; try { console.error('[adm]', key, err && err.stack || err); } catch (x) { void x; } if (bg && st.data) return; box.innerHTML = ''; box.appendChild(clFail(title, err && err.message, refetch)); });
   };
-  if (st.data && Date.now() - st.at < 60000) paint(); else refetch();
+  const refetch = function () { box.innerHTML = ''; box.appendChild(clWait(title)); st.p = null; run(false); };
+  if (st.data) { paint(); if (Date.now() - st.at >= 60000) run(true); } else if (st.p) { box.appendChild(clWait(title)); run(false); } else refetch();
   return box;
 }
 function admFilter(root, q) {
@@ -17043,7 +17052,7 @@ function lvSvcPage() {
 /* فتح طلب من أي مكان: ملف العميل نفسه وبطاقة الطلب مفتوحة */
 function lvSrOpen(id) {
   const x = (LV_SR.all || []).filter(function (y) { return y.id === id; })[0]; if (!x) { snack('الطلب غير موجود.'); return; }
-  document.querySelectorAll('.cu-dh').forEach(function (m) { m.remove(); }); ADM.svFocus = id; ADM.pfc = x.user_id; go('other', 'cu-pf-file');
+  document.querySelectorAll('.cu-dh').forEach(function (m) { m.remove(); }); ADM.svFocus = id; ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); /* v577: يبقى بعد التحديث */
 }
 
 /* جدول السداد: شريط التقدّم والمفتاح ثم الجدول — الإيصال في صفّ دفعته فقط */
@@ -18911,7 +18920,7 @@ function admVerPage() {
         e('span', { class: 'adm-cnt' }, [DS.badge(fmtNum(r.match || 0) + ' مطابق', 'ok'), r.mismatch ? DS.badge(fmtNum(r.mismatch) + ' غير مطابق', 'danger') : null, r.missing_required ? DS.badge(fmtNum(r.missing_required) + ' ناقص', 'warn') : null]), r.assigned_to_name || DS.badge('غير مُسند', 'warn')],
         function () { admVerOpen(r); }, [r.name, r.role, r.status, r.assigned_to_name].join(' '));
     });
-    return [admKpis([['طلب توثيق', L.length - by('draft'), '', 'seal-check'], ['تسجيل لم يُرسل', by('draft'), by('draft') ? 'warn' : '', 'clock'], ['بانتظار الاستلام', by('submitted'), by('submitted') ? 'warn' : '', 'clock'], ['قيد المراجعة', by('received') + by('in_review'), '', 'list-checks'], ['معتمد', by('approved'), 'ok', 'check-circle']]),
+    return [admKpis([['طلب توثيق', L.length - by('draft'), '', 'seal-check'], ['تسجيل لم يُرسل', by('draft'), by('draft') ? 'warn' : '', 'clock'], ['بانتظار الاستلام', by('submitted'), by('submitted') ? 'warn' : '', 'clock'], ['قيد المراجعة', by('received') + by('in_review') + by('under_review'), '', 'list-checks'] /* v577: + under_review */, ['معتمد', by('approved'), 'ok', 'check-circle']]),
       DS.panel('طلبات توثيق الملف', 'من القاعدة بصلاحياتك · للاطلاع', [admTools(st, chips, paint, refetch, 'ابحث بالاسم أو المسؤول'), admTable(['صاحب الطلب', 'الدور', 'نوع العميل', 'الحالة', 'أُرسل', 'البنود', 'المسؤول'], rows, L.length, 'لا طلبات توثيق بهذه الحالة')]),
       DS.note('info', 'اتخاذ القرار', 'افتح الطلب لاستلامه أو اعتماده أو إعادته أو رفضه — القرار يُسجَّل في القاعدة مباشرة.')];
   });
@@ -19107,7 +19116,8 @@ jobs.push(liveSb('rpc/my_profile_confirms', { body: {} }).then(function (v) { LI
     jobs.push(admClients('').then(function (j) { LIVE_DATA.clients = j; ADMS.cl = ADMS.cl || { q: '', f: 'all' }; ADMS.cl.data = j; ADMS.cl.at = Date.now(); }).catch(function () { LIVE_DATA.clients = null; }));
     jobs.push(admRpc('admin_quotes_list', { p_status: null, p_search: null, p_sort: null, p_limit: 100, p_offset: 0 }).then(function (j) { LIVE_DATA.quotes = j; ADMS.quotes = { q: '', f: 'all', data: j, at: Date.now() }; }).catch(function () { LIVE_DATA.quotes = null; }));
     jobs.push(admRpc('admin_verification_list', { p: { status: 'all' } }).then(function (j) { LIVE_DATA.ver = j.rows || []; ADMS.ver = { q: '', f: 'all', data: j, at: Date.now() }; }).catch(function () { LIVE_DATA.ver = null; }));
-    jobs.push(Promise.resolve().then(function () { return liveAdmLoad(); }).catch(function () { /* الأقسام فارغة */ }));
+    /* v577: عقود كل العملاء وسنداتهم تُحمَّل في الخلفية بعد ظهور اللوحة — كانت تؤخّر فتح اللوحة كلها حتى تكتمل */
+    Promise.resolve().then(function () { return liveAdmLoad(); }).then(function () { try { const ae = document.activeElement; if (LIVE.me && S.role === 'admin' && !window.__cpvUid && !(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) && !document.querySelector('.cu-dh')) draw(); } catch (err) { void err; } }).catch(function () { /* الأقسام فارغة */ });
   }
   if (!window.__cpvUid) jobs.push(clApi('/api/security/overview').then(function (o) { LIVE_DATA.sec = o; liveSec(o); }).catch(function () { LVS.devs = []; LVS.sess = []; }));
   if (!window.__cpvUid) jobs.push(clApi('/api/security/gateway/factors').then(function (j) { LIVE_DATA.factors = liveFactorKeys(j); }).catch(function () { LIVE_DATA.factors = null; }));
@@ -19618,7 +19628,7 @@ cuList = function () {
 };
 cuInbox = function () {
   const out = [];
-  (LIVE_DATA.ver || []).filter(function (v) { return v.status === 'submitted' || v.status === 'received' || v.status === 'in_review'; }).forEach(function (v) {
+  (LIVE_DATA.ver || []).filter(function (v) { return v.status === 'submitted' || v.status === 'received' || v.status === 'in_review' || v.status === 'under_review'; }).forEach(function (v) { /* v577: + under_review */
     const at = v.submitted_at ? new Date(v.submitted_at) : T0;
     out.push({ grp: 'ver', ic: 'seal-check:teal', t: 'طلب توثيق الملف — ' + (v.name || ''), act: v.status === 'submitted' ? 'استلام الطلب' : 'مراجعة الطلب', cust: v.user_id, custN: v.name || '', no: String(v.id).slice(0, 8).toUpperCase(), at: at,
       due: new Date(at.getTime() + 2 * CU_DAY), st: (ADM_VER_ST[v.status] || [v.status, 'info']), open: function () { go('other', 'cu-pf-ver'); } });
@@ -19721,7 +19731,8 @@ function liveEvents() {
   });
 }
 /* ===== للموظف: عقود العملاء والسندات وعمليات بوابة الدفع ===== */
-async function liveNames() { if (!LIVE_DATA.clients) { try { LIVE_DATA.clients = await admClients(''); } catch (err) { void err; } } const M = {}; ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).forEach(function (r) { M[r.id] = r.name; }); return M; }
+let LN_P = null; /* v577: طلب واحد لقائمة العملاء مهما تعدد الطالبون */
+async function liveNames() { if (!LIVE_DATA.clients) { if (!LN_P) LN_P = admClients('').then(function (j) { LIVE_DATA.clients = j; }).catch(function () { /* */ }).then(function () { LN_P = null; }); await LN_P; } const M = {}; ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []).forEach(function (r) { M[r.id] = r.name; }); return M; }
 const LIVE_RV = (r) => r === 'needs_review' ? DS.badge('يحتاج مراجعة', 'warn') : DS.badge('سليم', 'ok');
 function admCtPage() {
   return admMount('ct', 'عقود العملاء', async function () {
@@ -19948,7 +19959,12 @@ function liveBondMap(b, N) {
   return { id: b.id, cid: b.user_id, no: String(b.bond_no || '—'), date: b.bond_date || iso(at), amt: Number(b.value) || 0, st: S[0], cst: S[1], ct: ct.contract_no || ct.legacy_no || '', f: F[0] ? { name: F[0].file_name || 'سند', size: 0, fid: F[0].id } : null, files: F,
     note: b.note || '', at: at, by: 'النظام', log: log, cno: b.court_no || '', cdate: b.court_date || '', gFrom: b.grace_from || '', gTo: b.grace_to || '', live: b, name: N[b.user_id] || '' };
 }
-async function liveAdmLoad() {
+let LIVE_ADM_P = null, LIVE_ADM_Q = null; /* v577: تحميل واحد في الطريق — ومن يطلبه أثناء تحميل سابق ينتظره ثم يُحمَّل مرة جديدة واحدة (فلا تضيع تعديلات حُفظت أثناءه، ولا يكتب تحميل قديم فوق أحدث) */
+function liveAdmLoad() {
+  if (LIVE_ADM_P) { if (!LIVE_ADM_Q) LIVE_ADM_Q = LIVE_ADM_P.catch(function () { /* */ }).then(function () { LIVE_ADM_Q = null; return liveAdmLoad(); }); return LIVE_ADM_Q; }
+  LIVE_ADM_P = liveAdmLoad0().then(function (x) { LIVE_ADM_P = null; return x; }, function (e) { LIVE_ADM_P = null; throw e; }); return LIVE_ADM_P;
+}
+async function liveAdmLoad0() {
   /* الأسماء والعقود والسندات معًا لا واحدًا بعد الآخر */
   const AB = await Promise.all([liveNames(),
     liveSb('client_contracts?select=*,client_contract_payments(*,client_contract_files(id,kind,file_name)),client_contract_files(id,kind,file_name,payment_id)&kind=in.(contract,request_history)&order=order_date.desc').catch(function () { return null; }),
@@ -21332,7 +21348,7 @@ function admSysPage() {
     ['fin', 'قسم المالية', 'coins:gold', [c('coins:gold', 'الرسوم والضرائب والعمولات', 'ضريبة القيمة المضافة وبنود الرسوم والنسب والمصاريف والعمولات — إضافة وتفعيل وإيقاف', 'sys-fees'), c('credit-card:teal', 'إعدادات الدفع الإلكتروني', 'الخدمات ووسائل الدفع · روابط الدفع لغير العملاء · الاشتراكات · البطاقات المحفوظة', 'sys-pay')]],
     ['cu', 'قسم العملاء', 'users-three:teal', [c('rocket-launch:teal', 'إعدادات تدشين الحساب', 'المستوى الافتراضي ونقاط التدشين لكل مستوى وفيلم التدشين', 'sys-launch'),
       c('list-checks:navy', 'قرارات مراجعة الترحيل', 'مقارنة العقود بالنظام السابق — القرار في كل فرق وملاحظته وما نُفّذ منه', 'sys-review'),
-      c('handshake:teal', 'سداد قيمة المنتج', 'نسب خصم العضوية · سقف خصم الرسوم قبل اعتماد المشرف · صلاحية العرض · الإعفاء من ربح الأشهر التي لم تبدأ', 'sys-settle'), c('files:teal', 'مرفقات الوظيفة', 'المرفقات المطلوبة والاختيارية لكل حالة وظيفية — إضافة وإيقاف', 'sys-jobdocs')]],
+      c('handshake:teal', 'سداد قيمة المنتج', 'نسب خصم العضوية · سقف خصم الرسوم قبل اعتماد المشرف · صلاحية العرض · الإعفاء من ربح الأشهر التي لم تبدأ', 'sys-settle'), c('files:teal', 'مرفقات الوظيفة', 'المرفقات المطلوبة والاختيارية لكل حالة وظيفية — إضافة وإيقاف', 'sys-jobdocs'), c('clock-countdown:teal', 'مدة الجلسة', 'عدم النشاط للعميل والموظف · الانقطاع وإغلاق الصفحة · الجلسة الواحدة والموقع — للمشرف العام', 'sys-session')]],
     /* v405: كل مهمة في مكان واحد — المراسلة والإشعارات مجتمعة، وبيانات المنشأة والضريبة معًا، والخصم والنقاط مع نظام النقاط،
        والقوالب والمستندات للمستندات وحدها، والتشغيل للمدد والسجل */
     ['comm', 'المراسلة والإشعارات', 'chat-circle-dots:sky', [c('squares-four:navy', 'مركز القوالب', 'كل القوالب في مكان واحد: واتساب المعتمدة في Meta وأين تُستخدم · مراحل التوثيق · التقييمات · مركز الإرسال · الردود — بحث وتصفية ومعاينة كما يصل', 'sys-msg'),
@@ -21638,7 +21654,7 @@ if (LIVE.on) {
       if (/^عرض (الطلب )?كما يراه العميل/.test(t)) b.remove(); });
   };
   const liveData1 = liveData;
-  liveData = async function () { await Promise.all([liveData1(), liveSoLoad().catch(function () { /* الطلبات تبقى فارغة */ })]); };
+  liveData = async function () { await Promise.all([liveData1.apply(this, arguments), liveSoLoad().catch(function () { /* الطلبات تبقى فارغة */ })]); }; /* v577: يُمرَّر الدور المطلوب */
   /* صفحة إتمام الطلب: انتظار الخادم، ثم الدفع أو بيانات التحويل */
   const ckRun0 = LP.checkout.run;
   LP.checkout.run = function () {
@@ -21882,7 +21898,7 @@ if (LIVE.on) {
     return r;
   };
   const liveData2 = liveData;
-  liveData = async function () { await Promise.all([liveData2(), lvSrLoad().catch(function () { /* */ })]); REQS.sort(function (a, b) { return b.at - a.at; }); };
+  liveData = async function () { await Promise.all([liveData2.apply(this, arguments), lvSrLoad().catch(function () { /* */ })]); REQS.sort(function (a, b) { return b.at - a.at; }); }; /* v577: يُمرَّر الدور المطلوب */
   /* إلغاء طلب لم يستلمه الفريق بعد */
   const liveReqCancel0 = liveReqCancel;
   liveReqCancel = function () {
@@ -22623,7 +22639,7 @@ if (LIVE.on) {
     liveRoleSync().then(function () { return liveData(); }).catch(function () { /* الأقسام تبقى فارغة بلا بيانات تجريبية */ }).then(function () {
       /* التحديث يُبقي الصفحة نفسها: يُعاد استرجاع موضع التنقل بعد وصول البيانات الحقيقية (العقد والدفعة والإيصال وملف العميل) */
       try { if (window.__navRaw) { sessionStorage.setItem(NAVKEY, window.__navRaw); window.__navRaw = ''; loadNav(); navFit(); if (FX.pfc) ADM.pfc = FX.pfc; } } catch (err) { void err; }
-      return S.role === 'client' ? livePayReturn().catch(function () { /* */ }).then(function () { if (typeof deskLinkTake === 'function') deskLinkTake(); /* v560 */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); liveFilmAuto(); navReady(); });
+      return S.role === 'client' ? livePayReturn().catch(function () { /* */ }).then(function () { if (typeof deskLinkTake === 'function') deskLinkTake(); /* v560 */ }) : null; }).then(function () { return liveStaffRole(); }).then(function () { boot(S.dev || 'web'); liveFilmAuto(); navReady(); try { if (window.__cpgResume) return window.__cpgResume(); } catch (err) { void err; } }); /* v577 */
   }).catch(function (err) {
     if (err && err.message === 'auth') { toLogin(); return; }
     LIVE.err = 'تعذّر الاتصال بالخادم. أعد المحاولة.'; draw();
@@ -23652,6 +23668,7 @@ async function cpgEnter(c, why) {
   let prof = null; try { const j = await admClients('/reg/' + encodeURIComponent(c.id)); prof = j && j.profile; } catch (err) { prof = null; }
   try { if (!LIVE_LOY.mem) await lvMemLoad(); } catch (err) { void err; }
   CPV.on = true; CPV.name = c.name || ''; CPV.no = c.no || ''; CPV.reason = why; CPV.at = Date.now(); CPV.prof = prof; CPV.blk = {}; CPV.last = '';
+  try { sessionStorage.setItem('tera-cpv-v1', JSON.stringify({ c: { id: c.id, name: c.name || '', no: c.no || '', status: c.status || '', at: c.at || null }, why: String(why || '').replace(/ — استئناف بعد تحديث الصفحة$/, ''), by: (CPV.staff && CPV.staff.me && CPV.staff.me.id) || '', t: Date.now() })); } catch (err) { void err; } /* v577: التحديث يُبقيك في صفحة العميل */
   CPV.staff = { me: LIVE.me, allow: LIVE.allow.slice(), name: ME.name, email: ME.email, phone: ME.phone };
   LIVE.me = { id: c.id, full_name: (prof && prof.name) || c.name || '', tera_id: (prof && prof.no) || c.no || '', status: (prof && prof.status) || c.status || 'active', created_at: (prof && prof.at) || c.at || null, email: (prof && prof.email) || '', phone: (prof && prof.phone) || '', user_type: 'client' };
   LIVE.allow = ['client'];
@@ -23670,8 +23687,19 @@ async function cpgExit(to) {
   roleKeep('admin');
   S.role = 'admin'; S.tab = 'other'; S.other = to || 'cpg-access';
   try { saveNav(); } catch (err) { void err; }
+  try { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } catch (err) { void err; }
   location.reload();
 }
+/* v577: التحديث أثناء «صفحة العميل» يعيدك إليها وإلى الموضع نفسه (يُسجَّل دخول جديد بالسبب نفسه) — بعد الخروج أو الدخول من جديد لا تُستأنف */
+function cpgResume() {
+  let o = null, nv = ''; const nt = ((performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {}).type;
+  try { o = JSON.parse(sessionStorage.getItem('tera-cpv-v1') || 'null'); nv = sessionStorage.getItem('tera-cpv-nav') || ''; if (nt !== 'reload') { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } } catch (err) { o = null; }
+  /* للموظف نفسه وخلال ساعتين فقط، ويُسجَّل استئنافًا */
+  if (!o || !o.c || !o.c.id || nt !== 'reload' || CPV.on || S.role !== 'admin' || !LIVE.me || o.by !== LIVE.me.id || !(Date.now() - (Number(o.t) || 0) < 72e5)) { try { if (o && nt === 'reload') { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } } catch (err) { void err; } return Promise.resolve(); }
+  return cpgEnter(o.c, String(o.why || '') + ' — استئناف بعد تحديث الصفحة').then(function () { if (nv) { try { sessionStorage.setItem(NAVKEY, nv); loadNav(); draw(); } catch (err) { void err; } } })
+    .catch(function () { try { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } catch (err) { void err; } });
+}
+window.__cpgResume = cpgResume;
 /* شريط الجلسة: اسم العميل ومدة الزيارة، وإجراءات الموظف، والخروج */
 function cpgBar() {
   let b = document.getElementById('cpv-bar');
@@ -26375,6 +26403,53 @@ if (LIVE.on) {
     LIVE_PAGES.admin['sys-settle'] = sysSettlePage; /* v575 */ Object.assign(ICON, { 'sys-jobdocs': ['files', 'teal'] }); lp('sys-jobdocs', 'مرفقات الوظيفة', 'sys', 'sys-jobdocs', sysJobDocsPage); LIVE_PAGES.admin['sys-jobdocs'] = sysJobDocsPage;
   } catch (err) { void err; }
 }
+/* ═════ v577: «مدة الجلسة» — سياسة الجلسة من الإعدادات (المشرف العام وحده) · stf_145 ═════ */
+const SSP_OPT = {
+  idle_client_min: [[15, '15 دقيقة'], [30, '30 دقيقة'], [45, '45 دقيقة'], [60, 'ساعة'], [90, 'ساعة ونصف'], [120, 'ساعتان'], [180, '3 ساعات'], [240, '4 ساعات']],
+  idle_staff_min: [[30, '30 دقيقة'], [60, 'ساعة'], [90, 'ساعة ونصف'], [120, 'ساعتان'], [180, '3 ساعات'], [240, '4 ساعات'], [360, '6 ساعات'], [480, '8 ساعات'], [720, '12 ساعة']],
+  silent_min: [[0, 'لا تُنهى بانقطاع الاتصال'], [5, 'بعد 5 دقائق'], [10, 'بعد 10 دقائق'], [15, 'بعد 15 دقيقة'], [30, 'بعد 30 دقيقة'], [60, 'بعد ساعة']],
+  leave_s: [[60, 'بعد دقيقة'], [300, 'بعد 5 دقائق'], [900, 'بعد 15 دقيقة'], [1800, 'بعد 30 دقيقة'], [3600, 'بعد ساعة']],
+  location_grace_s: [[60, 'دقيقة'], [180, '3 دقائق'], [300, '5 دقائق'], [600, '10 دقائق'], [1800, '30 دقيقة']]
+};
+const SSP_YN = [['1', 'نعم'], ['0', 'لا']];
+function sysSessionPage() {
+  return admMount('sesspol', 'مدة الجلسة', function () { return admRpc('admin_session_policy', {}); }, function (X, st, paint) {
+    if (!X || X.ok !== true) return [DS.note('warn', 'للمشرف العام وحده', 'ضبط مدة الجلسة وقواعد إنهائها من صلاحية المشرف العام.')];
+    const V = st.v || (st.v = Object.assign({}, X.values || {})), D = X.defaults || {};
+    const changed = Object.keys(V).filter(function (k) { return JSON.stringify(V[k]) !== JSON.stringify((X.values || {})[k]); });
+    const sel = function (k) { return DS.select({ value: String(V[k]), options: (SSP_OPT[k] || []).map(function (o) { return [String(o[0]), o[1]]; }), onChange: function (v) { V[k] = Number(v); paint(); } }); };
+    const yn = function (k) { return DS.select({ value: V[k] === false ? '0' : '1', options: SSP_YN, onChange: function (v) { V[k] = v === '1'; paint(); } }); };
+    const lbl = function (k, v) { const o = (SSP_OPT[k] || []).filter(function (x) { return x[0] === v; })[0]; return o ? o[1] : String(v); };
+    const def = function (k) { return 'الافتراضي: ' + lbl(k, D[k]); };
+    const fld = function (label, ctl, hint) { return e('div', { class: 't2-pb-cell' }, [DS.editField(label, ctl), hint ? e('span', { class: 't2-field-h' }, hint) : null]); };
+    const save = async function () {
+      if (st.busy) return; if (!changed.length) { snack('لا تعديلات للحفظ.'); return; }
+      const p = {}; changed.forEach(function (k) { p[k] = V[k]; });
+      st.busy = true; st.err = ''; paint();
+      try {
+        const j = await admRpc('admin_session_policy_save', { p_values: p });
+        if (!j || j.ok !== true) throw new Error({ forbidden: 'للمشرف العام وحده.', bad_value: 'قيمة غير مسموحة — اختر من القائمة.', bad_key: 'إعداد غير معروف.' }[j && j.error] || 'تعذّر الحفظ.');
+        st.busy = false; st.v = null; st.data = Object.assign({}, X, { values: j.values }); snack('حُفظت سياسة الجلسة — تُطبَّق خلال دقيقة على كل الجلسات.'); paint();
+      } catch (err) { st.busy = false; st.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
+    };
+    return [DS.note('info', 'كيف تعمل', 'تنتهي الجلسة بعدم النشاط بعد المدة المحددة لكل نوع حساب، ويظهر قبلها بدقيقتين تنبيه «تمديد الجلسة». التغيير يُطبَّق على كل الجلسات خلال دقيقة ويُسجَّل في سجل التدقيق. حساب المشرف العام معفى من الإنهاء الآلي.'),
+      DS.panel('عدم النشاط', 'المدة قبل إنهاء الجلسة', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+        fld('حسابات العملاء', sel('idle_client_min'), def('idle_client_min')),
+        fld('حسابات الموظفين', sel('idle_staff_min'), def('idle_staff_min'))])]),
+      DS.panel('الانقطاع وإغلاق الصفحة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+        fld('انقطاع الاتصال (الجهاز نائم أو الصفحة في الخلفية)', sel('silent_min'), def('silent_min') + ' — أكثر أسباب انتهاء الجلسات'),
+        fld('إغلاق التبويب أو المتصفح دون تسجيل خروج', sel('leave_s'), def('leave_s') + ' — العودة قبلها تُبقي الجلسة')])]),
+      DS.panel('الحماية', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+        fld('جلسة واحدة لكل حساب (الدخول من جهاز آخر ينهي السابقة)', yn('single_session'), 'الافتراضي: نعم'),
+        fld('ربط الجلسة بدولة الدخول', yn('country_bind'), 'الافتراضي: نعم — استخدامها من دولة أخرى ينهيها'),
+        fld('تحديد الموقع شرط لاستمرار الجلسة', yn('location_required'), 'الافتراضي: نعم'),
+        V.location_required === false ? null : fld('مهلة الموقع المتوقف قبل الإنهاء', sel('location_grace_s'), def('location_grace_s'))].filter(Boolean))]),
+      st.err ? e('span', { class: 'cu-err', role: 'alert' }, st.err) : null,
+      e('div', { class: 't2-pb-actions' }, [DS.button(st.busy ? 'جارٍ الحفظ…' : changed.length ? 'حفظ التعديلات (' + fmtNum(changed.length) + ')' : 'حفظ', { tone: 'primary', ui: 'check', disabled: st.busy, onClick: save }),
+        changed.length ? DS.button('تراجع', { ui: 'x', onClick: function () { st.v = null; st.err = ''; paint(); } }) : null])];
+  });
+}
+if (LIVE.on) { try { Object.assign(ICON, { 'sys-session': ['clock-countdown', 'teal'] }); lp('sys-session', 'مدة الجلسة', 'sys', 'sys-session', sysSessionPage); LIVE_PAGES.admin['sys-session'] = sysSessionPage; } catch (err) { try { console.warn('[tq-v577s]', err && err.message); } catch (x) { void x; } } }
 /* ===== v464: سداد قيمة المنتج في حساب العميل (stf_76) — العرض المعتمد ← موافقة العميل ← السداد عبر بوابة الدفع ← التنفيذ آليًا ===== */
 const STL_C = { offers: [] };
 function stlClientPanel(o) {
@@ -26825,6 +26900,8 @@ if (LIVE.on) {
   } catch (err) { try { console.warn('[tq-v574c]', err && err.message); } catch (x) { void x; } }
 }
 boot(window.matchMedia('(max-width: 40rem)').matches ? 'web' : 'web');
+/* v577: الغلاف الأخير لتحميل عقود العملاء (بعد كل الأغلفة: الأسماء والعقود والسندات وفواتير السداد) — تحميل واحد في الطريق، ومن يطلبه أثناءه ينتظره ثم يُحمَّل مرة جديدة واحدة */
+if (LIVE.on) { try { const lalOuter = liveAdmLoad; let lalP = null, lalQ = null; liveAdmLoad = function () { if (lalP) { if (!lalQ) lalQ = lalP.catch(function () { /* */ }).then(function () { lalQ = null; return liveAdmLoad(); }); return lalQ; } lalP = Promise.resolve().then(function () { return lalOuter(); }).then(function (x) { lalP = null; return x; }, function (e) { lalP = null; throw e; }); return lalP; }; } catch (err) { try { console.warn('[tq-v577a]', err && err.message); } catch (x) { void x; } } }
 })();
   /* ---------- v263: حقول الجوال ذات مفتاح الدولة لا تقبل صفرًا في أوله ---------- */
   (function () {
