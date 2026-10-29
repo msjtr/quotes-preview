@@ -9,7 +9,10 @@
   var HOSTS = ['staging.tera-services.com.sa', 'quotes.tera-services.com.sa'];
   if (HOSTS.indexOf(location.hostname) < 0) return;
   var SESSION_KEY = 'tera.admin.session';
+  /* v584: الصفحة الرئيسية عامة — انتهاء الجلسة فيها يمسحها بهدوء دون حجب ولا تحويل إلى بوابة الدخول، ولا يُطلب فيها تحديد الموقع */
+  var PUBLIC = !!(window.__TERA && window.__TERA.section === 'home');
   function token() { try { var s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return s && s.access_token ? s.access_token : ''; } catch (e) { return ''; } }
+  var TOK0 = (function () { try { return token(); } catch (e) { return ''; } })();
 
   var ended = false, locEl = null, endEl = null, lastCode = null, lastMsg = null;
   var CSS = 'position:fixed;inset:0;z-index:2147482000;background:rgba(7,18,38,.72);display:flex;align-items:center;justify-content:center;padding:16px;font:15px/1.8 "IBM Plex Sans Arabic",sans-serif';
@@ -29,12 +32,13 @@
   function goLogin() { try { localStorage.removeItem(SESSION_KEY); } catch (e) { void e; } location.replace('/portal/'); }
   function showEnded(code, msg) {
     if (ended) return; ended = true;
+    if (PUBLIC) { if (locEl && locEl.parentNode) locEl.parentNode.removeChild(locEl); locEl = null; try { if (token() === TOK0) localStorage.removeItem(SESSION_KEY); } catch (e) { void e; } return; } /* لا يُمسح رمز أحدث من دخول جديد في تبويب آخر */
     if (locEl && locEl.parentNode) locEl.parentNode.removeChild(locEl);
     endEl = card(TITLES[code] || 'انتهت الجلسة', msg || 'انتهت جلستك. سجّل الدخول من جديد.', [['تسجيل الدخول', goLogin, true]]);
     (document.body || document.documentElement).appendChild(endEl);
   }
   function showLocation(left) {
-    if (ended) return;
+    if (ended || PUBLIC) return;
     var t = 'تحديد الموقع شرط لاستمرار الجلسة. شغّل الموقع للمتصفح (أيقونة القفل بجانب العنوان ← الموقع ← سماح)، أو إن تعذّر جلب موقعك فحدّده على الخريطة أو بالعنوان الوطني.'
       + (left > 0 ? ' ستنتهي الجلسة بعد ' + left + ' ثانية إن بقي متوقفًا.' : '');
     if (!locEl) {
@@ -99,7 +103,7 @@
   }
   function logout() { hideWarn(); try { if (window.TQ_APP && window.TQ_APP.logout) return window.TQ_APP.logout(function () { location.replace('/portal/'); }); } catch (e) { void e; } goLogin(); }
   function idleTick() {
-    if (ended || !token()) { hideWarn(); return; }
+    if (ended || PUBLIC || !token()) { hideWarn(); return; }
     var left = IDLE_MIN * 60 - (Date.now() - lastAct) / 1000;
     if (left > WARN_S) { if (warnEl) hideWarn(); return; }
     if (warnEl) return;
@@ -122,7 +126,7 @@
     if (window.TeraSession) { clearInterval(boot); return; }
     if (!token()) { if (tries > 400) clearInterval(boot); return; }
     clearInterval(boot);
-    var s = document.createElement('script'); s.src = '/assets/js/session-location.js?v=' + ((window.TQ_VERSION && window.TQ_VERSION.v) || '583'); s.async = true;
+    var s = document.createElement('script'); s.src = '/assets/js/session-location.js?v=' + ((window.TQ_VERSION && window.TQ_VERSION.v) || '584'); s.async = true;
     (document.head || document.documentElement).appendChild(s);
   }, 1500);
 })();

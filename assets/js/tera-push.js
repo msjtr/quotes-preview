@@ -423,7 +423,7 @@
   function mountBar() {
     if (barHidden() || FIREFOX) return;
     var cfg = W.__TERA || {}, sec = cfg.section;
-    if (sec === 'home') {
+    if (sec === 'home' || sec === 'portal') {
       /* الموقع داخل إطار (نفس الأصل): الشريط أعلى صفحته، ويُعاد إن أُعيد رسم الصفحة */
       var tick = function () {
         var f = D.getElementById('pv-site-f'), d = null;
