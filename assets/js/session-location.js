@@ -46,16 +46,23 @@
   };
 
   function bearer() {
+    /* v591: رمز جلسة المنصة (tera.admin.session) أولًا ما دام ساريًا؛ وإلا أحدث رمز ساري لنفس المستخدم فقط.
+     * كان يُختار أول رمز في التخزين أيًّا كان (قد يكون منتهيًا أو من مفتاح آخر) فيُرفض اعتماد الموقع. */
+    var now = Date.now() + 30000;
+    function pl(t) { try { var p = String(t).split(".")[1].replace(/-/g, "+").replace(/_/g, "/"); while (p.length % 4) p += "="; return JSON.parse(atob(p)) || {}; } catch (_e) { return null; } }
+    function tokOf(raw) { if (!raw || raw.charAt(0) !== "{") return ""; var j = null; try { j = JSON.parse(raw); } catch (_e) { return ""; } var t = (j && j.access_token) || (j && j.session && j.session.access_token) || ""; return (t && String(t).split(".").length === 3) ? String(t) : ""; }
     try {
+      var adm = tokOf(localStorage.getItem("tera.admin.session")), ap = adm ? pl(adm) : null;
+      if (adm && ap && Number(ap.exp) * 1000 > now) return adm;
+      var sub = ap && ap.sub ? String(ap.sub) : "", best = "", bestExp = 0;
       for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        var raw = localStorage.getItem(k);
-        if (!raw || raw.charAt(0) !== "{") continue;
-        var j = null;
-        try { j = JSON.parse(raw); } catch (_e) { continue; }
-        var t = (j && j.access_token) || (j && j.session && j.session.access_token) || "";
-        if (t && String(t).split(".").length === 3) return String(t);
+        var k = localStorage.key(i); if (k === "tera.admin.session") continue;
+        var t = tokOf(localStorage.getItem(k)); if (!t) continue;
+        var p = pl(t); if (!p || p.role !== "authenticated" || (sub && String(p.sub) !== sub)) continue;
+        var exp = Number(p.exp) || 0;
+        if (exp * 1000 > now && exp > bestExp) { best = t; bestExp = exp; }
       }
+      return best || adm || "";
     } catch (_e) {}
     return "";
   }
@@ -755,13 +762,13 @@ function manualPick(seed) {
     navigator.geolocation.getCurrentPosition(function (p) {
       move(p.coords.latitude, p.coords.longitude, 17);
     }, function () {
-      res.textContent = "تعذّرت قراءة موقع الجهاز. اضغط على مكانك في الخريطة.";
+      res.textContent = "جهازك لا يتيح قراءة الموقع الآن (قد تكون خدمة الموقع مغلقة في إعدادات الجهاز). قرّب الخريطة واضغط على مكانك، أو ابحث بالحي، ثم «اعتمد هذا الموقع».";
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   });
 
   function commit() {
     if (busy) return;
-    if (!pt.picked) { res.textContent = "اضغط على مكانك في الخريطة أو ابحث عنه أولًا."; return; }
+    if (!pt.picked) { res.textContent = "اضغط على مكانك في الخريطة (بعد تقريبها إلى حيّك) أو ابحث عنه أولًا، ثم «اعتمد هذا الموقع»."; return; }
     busy = true;
     res.textContent = "جارٍ اعتماد الموقع…";
     var body = { source: "manual_selection", latitude: pt.lat, longitude: pt.lon };   /* v570: بلا زمنِ الجهاز — ساعةٌ متقدّمةٌ دقيقتَين كانت تُرفَضُ «تعذّر اعتماد الموقع» */
@@ -777,7 +784,9 @@ function manualPick(seed) {
         beatNow();   /* v570 */
         return;
       }
-      res.textContent = (r && r.status === 401) ? "انتهت الجلسة. سجّل الدخول ثم حاول." : "تعذّر اعتماد الموقع الآن. حاول بعد قليل.";
+      /* v591: سبب الرفض ظاهر لتشخيصه */
+      var why = (r && r.body && r.body.error) ? String(r.body.error) : (r && r.status ? "HTTP " + r.status : "بلا اتصال");
+      res.textContent = (r && r.status === 401) ? "انتهت الجلسة على هذه الصفحة — حدّث الصفحة ثم اعتمد الموقع." : (r && r.status === 0 && !bearer()) ? "تعذّر قراءة جلستك — حدّث الصفحة ثم حاول." : "تعذّر اعتماد الموقع (" + why + "). حاول مرة أخرى.";
     });
   }
 
@@ -825,6 +834,9 @@ function manualPick(seed) {
     pin.on("dragend", function () { var p = pin.getLatLng(); move(p.lat, p.lng); });
     map.on("click", function (ev) { move(ev.latlng.lat, ev.latlng.lng); });
     setTimeout(function () { try { if (map) map.invalidateSize(); } catch (_e) {} }, 120);
+    /* v591: النافذة تُرسم بحركة — يُعاد حساب حجم الخريطة بعد اكتمالها ومع كل تغيّر في حجمها فتستجيب للضغط في مكانه */
+    [400, 1000].forEach(function (ms) { setTimeout(function () { try { if (map) map.invalidateSize(); } catch (_e) {} }, ms); });
+    try { if (window.ResizeObserver) new ResizeObserver(function () { try { if (map) map.invalidateSize(); } catch (_e) {} }).observe(mapEl); } catch (_e) {}
     if (pt.picked) rev();
   }).catch(function () {
     res.textContent = "تعذّر تحميل الخريطة الآن. جرّب العنوان الوطني أو أعد المحاولة.";

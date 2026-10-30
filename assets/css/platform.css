@@ -9285,3 +9285,7 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .lv-txt-r{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;background:var(--t2-surface-2)}
 .lv-txt-c{unicode-bidi:plaintext;user-select:text;-webkit-user-select:text;cursor:copy;padding:2px 8px;border-radius:6px;border:1px solid var(--t2-line);background:var(--t2-surface);color:var(--t2-ink);font-size:var(--t2-fs-sm);line-height:1.7}
 .lv-txt-c:hover{border-color:var(--t2-brand);background:var(--t2-brand-wash)}
+/* v591: محرّر قيمة البند في التوثيق — عنوان لكل خانة والقيمة الحالية ظاهرة */
+.vr3-ed-l{font:700 var(--t2-fs-sm)/1.6 var(--t2-ff-display);color:var(--t2-ink);margin-top:2px}
+.vr3-ed-cur{display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--t2-surface-2);border:1px solid var(--t2-line)}
+.vr3-ed-cur b{color:var(--t2-ink);overflow-wrap:anywhere}

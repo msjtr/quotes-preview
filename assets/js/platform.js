@@ -8171,6 +8171,13 @@ function mhStagesFill() {
   if ((MH.stages || []).length && (MH.status || []).length) return;
   admRpc('admin_msg_stage_templates', {}).then(function (j) { if (!(MH.stages || []).length) MH.stages = (j && j.stages) || []; if (!(MH.status || []).length) MH.status = (j && j.status) || []; draw(); }).catch(function () { /* تبقى البطاقات الأخرى كما هي */ });
 }
+/* v591: وصف بطاقة المجموعة في الإعدادات — أسماء رسائلها */
+function mhGrpDesc(k) {
+  if (k === 'off') return 'قوالب واتساب معتمدة في Meta لا يرسلها أي حدث الآن';
+  const L = MH_MSG.filter(function (m) { return m.g === k; }).map(function (m) { return m.t; });
+  if (k === 'ver') L.push('مراحل التوثيق: الاستلام · الإعادة · الاعتماد · الرفض');
+  return L.length ? L.slice(0, 4).join(' · ') + (L.length > 4 ? ' · و' + fmtNum(L.length - 4) + ' أخرى' : '') : 'رسائل هذه المجموعة';
+}
 function msgHubPage() {
   if (!LIVE.on) return [liveEmptyNote('مركز القوالب')];
   mhCss(); mhLoad(false);
@@ -20854,7 +20861,7 @@ function admTwoStep(label, tone, run, icon) {
 /* v537: نافذة مراجعة التوثيق الكاملة — كانت تقرأ «items» والقاعدة ترجع «blocks» فتظهر «لا بنود»، وبلا مطابقة ولا إسناد ولا مرفقات.
  * الآن: الملخص · الإسناد · الأقسام وبنودها (مطابق/غير مطابق + المرفق) · الملاحظات الداخلية · سجل المراحل · القرار.
  * كل إجراء عبر دوال القاعدة نفسها وصلاحياتها (verification_view · admin_verification_*). */
-const VER_EVK = { created: 'أُنشئ الطلب', submitted: 'أُرسل للتوثيق', resubmitted: 'أُعيد إرساله', received: 'استُلم للمراجعة', assigned: 'إسناد', unassigned: 'إلغاء الإسناد', item_match: 'بند مطابق', item_mismatch: 'بند غير مطابق', approved: 'اعتُمد', returned: 'أُعيد للتعديل', rejected: 'رُفض', note: 'ملاحظة داخلية', reopened: 'أُعيد فتحه', seed_refill: 'تحديث البنود' };
+const VER_EVK = { item_edit: 'تعديل قيمة من المراجِع', item_reset: 'إلغاء مطابقة بند', section_reset: 'إلغاء مطابقة قسم', created: 'أُنشئ الطلب', submitted: 'أُرسل للتوثيق', resubmitted: 'أُعيد إرساله', received: 'استُلم للمراجعة', assigned: 'إسناد', unassigned: 'إلغاء الإسناد', item_match: 'بند مطابق', item_mismatch: 'بند غير مطابق', approved: 'اعتُمد', returned: 'أُعيد للتعديل', rejected: 'رُفض', note: 'ملاحظة داخلية', reopened: 'أُعيد فتحه', seed_refill: 'تحديث البنود' };
 const VER_ST2 = { draft: ['مسودة', null], submitted: ['بانتظار الاستلام', 'warn'], received: ['قيد المراجعة', 'info'], under_review: ['قيد المراجعة', 'info'], approved: ['معتمد', 'ok'], returned: ['معاد للتعديل', 'warn'], rejected: ['مرفوض', 'danger'] };
 const VER_ERR = { not_pending: 'الطلب ليس قيد المراجعة.', self_decision: 'لا يراجع صاحب الملف ملفه بنفسه.', staff_required: 'الإسناد لموظف نشط فقط.', no_permission: 'لا تملك صلاحية هذا الإجراء.', not_received: 'استلم الطلب أولًا.', note_required: 'اكتب الملاحظة أولًا.', not_found: 'الطلب غير موجود.', session_invalid: 'انتهت الجلسة — سجّل الدخول من جديد.', items_pending: 'بقيت بنود لم تُطابق بعد.', has_mismatch: 'يوجد بند غير مطابق — أعد الطلب للتعديل بدل الاعتماد.', no_file: 'لا يوجد ملف مرفق لهذا البند.' };
 /* v590 */
@@ -21038,10 +21045,12 @@ function admVerOpen2(r) {
       if (canAct && U.mode === 'edit') {
         const E = U.ed;
         box.push(e('div', { class: 'vr3-box' }, !E ? [e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل الحقل…')] : E.err ? [DS.note('warn', 'لا يُعدَّل هذا البند من هنا', E.err), e('div', { class: 'vr3-acts' }, [vr3Btn('إغلاق', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])] : [
-          e('small', {}, 'القيمة الصحيحة — تُحفظ في ملف العميل ويُطابَق البند:'),
+          e('div', { class: 'vr3-ed-cur' }, [e('small', { class: 'cu-dr-hint' }, 'القيمة الحالية في الملف'), e('b', { dir: 'auto' }, it.value_ar || it.value || '—')]),
+          e('label', { class: 'vr3-ed-l' }, 'القيمة الصحيحة — تُحفظ في ملف العميل ويُطابَق البند'),
           E.opts.length && !E.other ? DS.select({ value: E.val, options: (E.val ? [] : [['', '— اختر القيمة الصحيحة —']]).concat(E.opts), onChange: function (x) { E.val = x; } })
-            : e('input', { class: 't2-input', type: E.kind === 'date' ? 'date' : 'text', dir: 'auto', value: E.val || '', 'aria-label': 'القيمة الجديدة', onInput: function (ev) { E.val = ev.target.value; } }),
-          e('input', { class: 't2-input', type: 'text', value: E.why || '', placeholder: 'سبب التعديل (مثال: حسب صورة الهوية)', 'aria-label': 'سبب التعديل', onInput: function (ev) { E.why = ev.target.value; } }),
+            : e('input', { class: 't2-input', type: E.kind === 'date' ? 'date' : 'text', dir: 'auto', value: E.val || '', placeholder: 'اكتب القيمة الصحيحة هنا', 'aria-label': 'القيمة الصحيحة', onInput: function (ev) { E.val = ev.target.value; } }),
+          e('label', { class: 'vr3-ed-l' }, 'سبب التعديل — يُسجَّل باسمك'),
+          e('input', { class: 't2-input', type: 'text', value: E.why || '', placeholder: 'مثال: حسب صورة الهوية', 'aria-label': 'سبب التعديل', onInput: function (ev) { E.why = ev.target.value; } }),
           e('div', { class: 'vr3-acts' }, [vr3Btn('حفظ التعديل', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () {
             const nv = String(E.val == null ? '' : E.val).trim(), why = String(E.why || '').trim();
             if (!nv) { S.msg['it:' + it.id] = ['warn', 'أدخل القيمة الجديدة.']; paint(); return; }
@@ -21073,7 +21082,7 @@ function admVerOpen2(r) {
               const j = await admRpc('admin_verification_item_options', { p_item: it.id });
               const op = (Array.isArray(j && j.options) ? j.options : []).map(function (o) { return o && typeof o === 'object' ? [String(o.value != null ? o.value : o.label), String(o.label != null ? o.label : o.value)] : [String(o), String(o)]; }).filter(function (o) { return o[0] && o[0] !== 'undefined'; });
               const v0 = (j && j.value) || '';
-              U.ed = j && j.editable ? { kind: j.kind, other: !!j.allow_other, val: op.length && !j.allow_other && !op.some(function (o) { return o[0] === v0; }) ? '' : v0, why: '', opts: op }
+              U.ed = j && j.editable ? { kind: j.kind, other: !!j.allow_other, val: op.length && !j.allow_other ? (op.some(function (o) { return o[0] === v0; }) ? v0 : '') : '', why: '', opts: op }
                 : { err: VER_EDIT_WHY[j && j.why] || 'هذا البند لا يُعدَّل من هنا.' };
             } catch (err) { U.ed = { err: (err && err.message) || 'تعذّر تحميل الحقل.' }; }
             paint();
@@ -21106,7 +21115,7 @@ function admVerOpen2(r) {
             e('div', { class: 'vr3-sec-m' }, [e('span', {}, m + ' من ' + items.length + ' مطابق'), x ? DS.badge(x + ' غير مطابق', 'danger') : null, items.length - m - x ? DS.badge((items.length - m - x) + ' بانتظار', 'warn') : null, done ? DS.badge('مكتمل', 'ok') : null])])]),
           e('div', { class: 'vr3-acts' }, [
             canAct && pendOk.length ? vr3Btn('مطابقة القسم (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
-            canAct && m > 0 ? vr3Btn('إلغاء مطابقة القسم (' + m + ')', { size: 'sm', onClick: function () { if (!tqConfirm('إلغاء مطابقة ' + m + ' بند في «' + (b.title || b.block) + '»؟ تعود البنود «بانتظار المطابقة».')) return; act('sec:' + b.block, 'admin_verification_reset', { p_id: r.id, p_block: b.block, p_item: null }, 'أُلغيت المطابقة في «' + (b.title || b.block) + '» — البنود بانتظار المطابقة.'); } }) : null,
+            canAct && m > 0 ? admTwoStep('إلغاء مطابقة القسم (' + m + ')', null, function () { return act('sec:' + b.block, 'admin_verification_reset', { p_id: r.id, p_block: b.block, p_item: null }, 'أُلغيت المطابقة في «' + (b.title || b.block) + '» — البنود بانتظار المطابقة.'); }) : null,
             vr3Btn(fold ? 'عرض البنود' : 'طيّ', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
           ].filter(Boolean))]),
         miss.length ? DS.note('warn', 'حقول مطلوبة ناقصة في هذا القسم', miss.join('، ')) : null,
@@ -21715,9 +21724,10 @@ function admSysPage() {
       c('handshake:teal', 'سداد قيمة المنتج', 'نسب خصم العضوية · سقف خصم الرسوم قبل اعتماد المشرف · صلاحية العرض · الإعفاء من ربح الأشهر التي لم تبدأ', 'sys-settle'), c('files:teal', 'مرفقات الوظيفة', 'المرفقات المطلوبة والاختيارية لكل حالة وظيفية — إضافة وإيقاف', 'sys-jobdocs'), c('clock-countdown:teal', 'مدة الجلسة', 'عدم النشاط للعميل والموظف · الانقطاع وإغلاق الصفحة · الجلسة الواحدة والموقع — للمشرف العام', 'sys-session')]],
     /* v405: كل مهمة في مكان واحد — المراسلة والإشعارات مجتمعة، وبيانات المنشأة والضريبة معًا، والخصم والنقاط مع نظام النقاط،
        والقوالب والمستندات للمستندات وحدها، والتشغيل للمدد والسجل */
-    ['comm', 'المراسلة والإشعارات', 'chat-circle-dots:sky', [c('squares-four:navy', 'مركز القوالب', 'كل القوالب في مكان واحد: واتساب المعتمدة في Meta وأين تُستخدم · مراحل التوثيق · التقييمات · مركز الإرسال · الردود — بحث وتصفية ومعاينة كما يصل', 'sys-msg'),
-      c('file-text:gold', 'قوالب مركز الإرسال', 'قوالب البريد وواتساب بالهوية لمركز الإرسال — إنشاء وتعديل، وتظهر مباشرة في «مركز الإرسال»', 'comm-tpl'),
-      c('star:gold', 'قوالب التقييم', 'الاستبانات وأسئلتها ونص واتساب والبريد ومتى تُرسل', 'sys-cx-tpl'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'),
+    /* v591: القوالب بطاقةً لكل مجموعة (عنوان المجموعة ورسائلها) تفتح مركز القوالب على مجموعتها — بدل بطاقة جامعة، وأدوات التحرير والإرسال في مجموعة مستقلة بلا تكرار */
+    ['comm', 'قوالب الرسائل', 'squares-four:navy', MH_GRP.filter(function (g) { return g[0] !== 'rep'; }).map(function (g) { return { ic: g[2] + ':navy', t: g[1], d: mhGrpDesc(g[0]), go: function () { ADM.mh2 = { g: g[0], q: '', ch: 'all' }; go('other', 'sys-msg'); } }; })],
+    ['commset', 'الإرسال والإشعارات', 'paper-plane-tilt:sky', [c('file-text:gold', 'رسائل مركز الإرسال', 'إنشاء وتعديل الرسائل التي تختارها في «مركز الإرسال» — البريد وواتساب بالهوية', 'comm-tpl'),
+      c('star:gold', 'تعديل الاستبانات', 'أسئلة التقييم ونص واتساب والبريد ومتى تُرسل', 'sys-cx-tpl'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'),
       c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة، والرسالة المباشرة بكل القنوات', 'sys-push'),
       c('clock:teal', 'إعدادات الإرسال للعملاء', 'متى تصل رسائل العملاء الآلية (ساعات الإرسال) · تقييم السداد فورًا بعد كل دفعة', 'sys-csend')]],
     ['cx', 'تجربة العملاء والجودة', 'star:gold', [c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة', 'sys-cx')]] /* v541: قوالب التقييم في «المراسلة والإشعارات» */,
@@ -23341,6 +23351,24 @@ async function lvPdfMount(box, buf, st) {
   };
   return doc.numPages;
 }
+/* v591: «نص الملف» لكل مرفق — نص الـPDF صفوفًا كما في الصفحة؛ والصورة والملف الممسوح بلا نص تظهر لهما رسالة واضحة.
+ * القراءة الآلية من الصور تحتاج السماح بتشغيل WebAssembly في سياسة أمان المحتوى على الخادم — لم تُفعَّل. */
+function lvTxtBtn(box, tools, dlBtn, getRows) {
+  const tb = DS.button('نص الملف', { size: 'sm', ui: 'copy', onClick: async function () {
+    let pn = box.querySelector('.lv-pdf-txt'); if (pn) { pn.remove(); return; }
+    const cp = function (t) { const ok = function () { snack('نُسخ: ' + (t.length > 40 ? t.slice(0, 40) + '…' : t)); }; try { navigator.clipboard.writeText(t).then(ok, function () { snack('تعذّر النسخ — حدّد النص وانسخه.'); }); } catch (err) { snack('تعذّر النسخ — حدّد النص وانسخه.'); } };
+    pn = e('div', { class: 'lv-pdf-txt' }, [e('small', { class: 'cu-dr-hint' }, 'جارٍ قراءة نص الملف…')]);
+    box.insertBefore(pn, box.firstChild); tb.disabled = true;
+    let G = { rows: [] }, fail = '';
+    try { G = (await getRows()) || { rows: [] }; } catch (err) { fail = 'تعذّرت قراءة النص الآن — أعد المحاولة.'; }
+    tb.disabled = false; if (!pn.isConnected) return;
+    const R = G.rows || [], all = R.map(function (r) { return r.join('\t'); }).join('\n');
+    const list = R.length ? e('div', { class: 'lv-txt-rows', 'data-live-ok': '' }, R.map(function (r) { return e('div', { class: 'lv-txt-r' }, r.map(function (c) { return e('span', { class: 'lv-txt-c', title: 'اضغط للنسخ', onClick: function () { const sel = window.getSelection && String(window.getSelection() || ''); if (!sel) cp(c); } }, c); })); }))
+      : DS.note(fail ? 'warn' : 'info', fail ? 'لم يُقرأ النص' : (G.img ? 'هذا المرفق صورة' : 'هذا الملف ممسوح ضوئيًا'), fail || ((G.img ? 'الصورة لا تحوي' : 'الملف لا يحوي') + ' نصًا قابلًا للنسخ — انقل الرقم أو الاسم يدويًا، أو اطلب من العميل ملف PDF أصليًا من الجهة المصدرة.'));
+    pn.replaceChildren.apply(pn, [R.length ? e('div', { class: 'lv-txt-h' }, [e('small', { class: 'cu-dr-hint' }, 'كل سطر كما في الملف — اضغط أي قيمة لنسخها، أو حدّد ما تريد.'), liveOk(DS.button('نسخ الكل', { size: 'sm', ui: 'copy', onClick: function () { cp(all); } }))]) : null, list].filter(Boolean));
+  } });
+  tools.insertBefore(tb, dlBtn);
+}
 async function lvFileView(getUrl, name) {
   document.querySelectorAll('.lv-fv').forEach(function (x) { if (x.__close) x.__close(); });
   const root = document.querySelector('#pv-host .t2') || document.querySelector('.t2');
@@ -23377,18 +23405,9 @@ wrap.__close = close; document.body.appendChild(wrap); document.addEventListener
 if (!b) { const r = await fetch(u); if (!r.ok) throw new Error('تعذّر جلب الملف.'); b = await r.blob(); } if (!document.body.contains(wrap)) return;
 url = URL.createObjectURL(b); fvBlob = b; dlBtn.disabled = false; const mime = b.type || '', pdf = /pdf/i.test(mime) || /\.pdf(\?|$)/i.test(u);
     const zbar = tools.querySelector('.lv-fv-z');
-    if (/^image\//.test(mime)) { box.replaceChildren(e('img', { src: url, alt: name || '' })); box.classList.add('is-img'); if (zbar) zbar.hidden = false; }
+    if (/^image\//.test(mime)) { box.replaceChildren(e('img', { src: url, alt: name || '' })); box.classList.add('is-img'); if (zbar) zbar.hidden = false; lvTxtBtn(box, tools, dlBtn, async function () { return { rows: [], img: true }; }); /* v591 */ }
     else if (pdf) {
-      try { await lvPdfMount(box, await b.arrayBuffer(), st); if (zbar) zbar.hidden = false; if (st.rows) { const tb = DS.button('نص الملف', { size: 'sm', ui: 'copy', onClick: async function () {
-        let pn = box.querySelector('.lv-pdf-txt'); if (pn) { pn.remove(); return; }
-        tb.disabled = true; let R = []; try { R = await st.rows(); } catch (err) { R = []; } tb.disabled = false;
-        const cp = function (t) { const ok = function () { snack('نُسخ: ' + (t.length > 40 ? t.slice(0, 40) + '…' : t)); }; try { navigator.clipboard.writeText(t).then(ok, function () { snack('تعذّر النسخ — حدّد النص وانسخه.'); }); } catch (err) { snack('تعذّر النسخ — حدّد النص وانسخه.'); } };
-        const all = R.map(function (r) { return r.join('\t'); }).join('\n');
-        const list = R.length ? e('div', { class: 'lv-txt-rows', 'data-live-ok': '' }, R.map(function (r) { return e('div', { class: 'lv-txt-r' }, r.map(function (c) { return e('span', { class: 'lv-txt-c', title: 'اضغط للنسخ', onClick: function () { const sel = window.getSelection && String(window.getSelection() || ''); if (!sel) cp(c); } }, c); })); }))
-          : DS.note('info', 'لا يوجد نص قابل للنسخ', 'قد يكون الملف صورة ممسوحة.');
-        pn = e('div', { class: 'lv-pdf-txt' }, [e('div', { class: 'lv-txt-h' }, [e('small', { class: 'cu-dr-hint' }, 'كل سطر كما في الملف — اضغط أي قيمة لنسخها، أو حدّد ما تريد.'), R.length ? liveOk(DS.button('نسخ الكل', { size: 'sm', ui: 'copy', onClick: function () { cp(all); } })) : null]), list]);
-        box.insertBefore(pn, box.firstChild);
-      } }); tools.insertBefore(tb, dlBtn); } /* v590 */ let t = 0; onRs = function () { clearTimeout(t); t = setTimeout(function () { if (st.repaint) st.repaint(); }, 150); }; window.addEventListener('resize', onRs); }
+      try { await lvPdfMount(box, await b.arrayBuffer(), st); if (zbar) zbar.hidden = false; lvTxtBtn(box, tools, dlBtn, async function () { let R = []; try { R = st.rows ? await st.rows() : []; } catch (err) { R = []; } return R.length ? { rows: R } : { rows: [], scan: true }; }); /* v591 */ let t = 0; onRs = function () { clearTimeout(t); t = setTimeout(function () { if (st.repaint) st.repaint(); }, 150); }; window.addEventListener('resize', onRs); }
       catch (err) { box.replaceChildren(e('iframe', { src: url, title: name || 'المرفق' })); }
     } else box.replaceChildren(e('iframe', { src: url, title: name || 'المرفق' }));
   } catch (err) { box.replaceChildren(DS.note('danger', 'تعذّر فتح الملف', (err && err.message) || '')); }
@@ -24733,6 +24752,35 @@ function scTpls() {
 if (SC.TS === null) { SC.TS = 'loading'; admRpc('admin_comm_templates_list', {}).then(function (j) { SC.TS = ((j && j.rows) || []).filter(function (t) { return t && !t.archived; }); }).catch(function () { SC.TS = []; }).then(draw); }
 if (SC.SV === null) { SC.SV = 'loading'; admRpc('admin_survey_settings', {}).then(function (j) { SC.SV = ((j && j.templates) || []).filter(function (t) { return t && t.active; }); }).catch(function () { SC.SV = []; }).then(draw); }
 }
+/* v591: قائمة القوالب في مركز الإرسال مصنّفة بمجموعات مركز القوالب (عنوان المجموعة ثم رسائلها).
+ * رسائل مركز الإرسال تُختار وتُرسل من هنا، والرسائل التي يرسلها حدثها تظهر في مجموعتها ويُوجَّه الموظف إلى مكان إرسالها — فلا ازدواج. */
+const SC_ROUTE = { 'pay-link': ['cu-paylinks', 'روابط الدفع'], 'pay-due': ['comm', 'إدارة التذكير في مركز التواصل'], 'ver-remind': ['cu-new', 'العملاء الجدد'] };
+function scTplOpts(TS, SV) {
+  const out = [['', TS.length || SV.length ? '— اختر القالب —' : 'جارٍ تحميل القوالب…']], used = {}, byName = {};
+  TS.forEach(function (t) { byName[t.name] = t; });
+  MH_GRP.forEach(function (g) {
+    if (g[0] === 'off' || g[0] === 'rep') return;
+    const M = MH_MSG.filter(function (m) { return m.g === g[0]; });
+    if (g[0] === 'ver') M.push({ id: 'ver-remind', g: 'ver', t: 'طلب إكمال الملف للعميل الجديد', w: 'من «العملاء الجدد» — معاينة على رقمك ثم إرسال' });
+    M.forEach(function (m) {
+      const C = (m.comm || []).map(function (n) { return byName[n]; }).filter(Boolean);
+      const S = m.sv ? SV.filter(function (t) { return t.key === m.sv; })[0] : null;
+      if (S && !used['sv:' + S.key]) { used['sv:' + S.key] = 1; out.push(['sv:' + S.key, m.t, null, { grp: g[1], sub: 'استبانة — يُرسل من هنا، وتلقائيًا ' + m.w }]); }
+      else if (C.length) C.forEach(function (t) { if (used[t.id]) return; used[t.id] = 1; out.push([t.id, t.name, null, { grp: g[1], sub: 'يُرسل من هنا' }]); });
+      else out.push(['ev:' + m.id, m.t, null, { grp: g[1], sub: (SC_ROUTE[m.id] ? 'يُرسل من «' + SC_ROUTE[m.id][1] + '»' : 'يُرسل تلقائيًا') + ' — ' + m.w }]);
+    });
+    if (g[0] === 'rate') SV.forEach(function (t) { if (used['sv:' + t.key]) return; used['sv:' + t.key] = 1; out.push(['sv:' + t.key, 'استبانة: ' + t.name, null, { grp: g[1], sub: 'يُرسل من هنا' }]); });
+    if (g[0] === 'gen') TS.forEach(function (t) { if (used[t.id]) return; used[t.id] = 1; out.push([t.id, t.name, null, { grp: g[1], sub: 'يُرسل من هنا' }]); });
+  });
+  return out;
+}
+function scEvNote() {
+  const id = String(SC.tpl || ''); if (!/^ev:/.test(id)) return null;
+  const k = id.slice(3), m = MH_MSG.filter(function (x) { return x.id === k; })[0], R = SC_ROUTE[k];
+  const w = m ? m.w : 'من «العملاء الجدد» — معاينة على رقمك ثم إرسال';
+  return e('div', { class: 't2-stack-tight' }, [DS.note('info', R ? 'تُرسل هذه الرسالة من «' + R[1] + '»' : 'هذه الرسالة يرسلها حدثها تلقائيًا', w + ' — لا تُرسل من مركز الإرسال حتى لا تتكرر.'),
+    R ? e('div', { class: 't2-pb-actions' }, [DS.button('اذهب إلى «' + R[1] + '»', { size: 'sm', ui: 'arrow-square-out', onClick: function () { go('other', R[0]); } })]) : null]);
+}
 function scTpl() {
 const id = SC.tpl || '';
 if (/^sv:/.test(id)) { const k = id.slice(3), t = (Array.isArray(SC.SV) ? SC.SV : []).filter(function (x) { return x.key === k; })[0]; return t ? { kind: 'survey', key: k, name: t.name, subject: t.email_subject || t.name, body: t.wa_body || t.email_body || '', channel: 'both' } : null; }
@@ -24810,9 +24858,9 @@ const custom = SC.ch === 'custom' ? e('div', { class: 'sc-seg' }, [['whatsapp', 
 const s2 = scStep(2, 'الوسيلة', [chSeg, custom], 'ونسخة من كل رسالة في مركز إشعارات المستلم داخل المنصة دائمًا.');
 /* 3) القالب */
 const TS = Array.isArray(SC.TS) ? SC.TS : [], SV = Array.isArray(SC.SV) ? SC.SV : [];
-const tOpts = [['', TS.length || SV.length ? '— اختر القالب —' : 'جارٍ تحميل القوالب…']].concat(TS.map(function (t) { return [t.id, t.name]; })).concat(SV.map(function (t) { return ['sv:' + t.key, 'استبانة: ' + t.name]; }));
-const s3 = scStep(3, 'القالب', [DS.select({ value: SC.tpl, options: tOpts, onChange: function (v) { SC.tpl = v; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; draw(); } }),
-e('div', { class: 't2-pb-actions' }, [DS.button('إدارة القوالب في الإعدادات', { size: 'sm', ui: 'gear-six', onClick: function () { go('other', 'comm-tpl'); } })])], 'القوالب من الإعدادات وحدها — لا يُرسل نص حر.');
+const tOpts = scTplOpts(TS, SV);
+const s3 = scStep(3, 'القالب', [DS.select({ value: SC.tpl, options: tOpts, title: 'اختر القالب', ph: '— اختر القالب —', onChange: function (v) { SC.tpl = v; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; draw(); } }),
+scEvNote(), e('div', { class: 't2-pb-actions' }, [DS.button('إدارة القوالب في الإعدادات', { size: 'sm', ui: 'gear-six', onClick: function () { go('other', 'comm-tpl'); } })])], 'القوالب مصنّفة بمجموعاتها — ما يُرسل من مكان آخر يدلّك عليه، ولا يُرسل نص حر.');
 /* 4) المعاينة — كما تصل فعلًا */
 const uid = SC.ids[0] || (rows[0] && rows[0].id) || '';
 const smpName = (SC.PD[uid] && SC.PD[uid].name) || (rows[0] && rows[0].name) || 'اسم العميل';
