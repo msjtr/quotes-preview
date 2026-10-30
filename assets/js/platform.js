@@ -8247,7 +8247,7 @@ function mh3Dec(src, key, label, body, use) {
     const i = L.findIndex(function (y) { return y.src === src && y.key === key; }); if (i >= 0) L[i] = nd; else L.push(nd);
     snack('حُفظ القرار: ' + lab(S.c)); draw();
   };
-  return e('div', { class: 'mh3-dec' + (d0.decision ? ' is-' + d0.decision : '') }, [
+  return e('div', { class: 'mh3-dec' + (d0.decision ? ' is-' + d0.decision : ''), 'data-live-ok': '' }, [ /* v604: حفظ القرار مربوط بالخادم — لا يوقفه حارس الإجراءات */
     e('div', { class: 'mh3-dec-h' }, [e('b', {}, label), d0.decision ? DS.badge(lab(d0.decision), MH3_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn')]),
     (use || []).length ? e('ul', { class: 'mh3-use' }, use.map(function (u) { return e('li', {}, u); })) : null,
     e('div', { class: 'mh3-dec-f' }, [
@@ -8396,7 +8396,7 @@ function msgHubPage() {
       DS.editField('القناة', DS.select({ value: F.ch, options: [['all', 'كل القنوات'], ['wa', 'واتساب'], ['mail', 'البريد'], ['app', 'إشعار المنصة'], ['comm', 'مركز الإرسال']], onChange: function (v) { F.ch = v; F.lim = 10; draw(); } })),
       DS.editField('القرار', DS.select({ value: F.d, options: [['all', 'الكل'], ['none', 'فيها قالب بلا قرار'], ['approve', 'اعتماد'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق']], onChange: function (v) { F.d = v; F.lim = 10; draw(); } })),
       DS.editField('بحث في الاسم أو النص', e('input', { class: 't2-input', type: 'search', value: F.q || '', placeholder: 'اكتب ثم اضغط إدخال', onChange: function (ev) { F.q = ev.target.value; F.lim = 10; draw(); } }))]),
-    e('div', { class: 'mh3-top' }, [e('small', { class: 'cu-dr-hint' }, 'يظهر ' + fmtNum(Math.min(F.lim, R.length)) + ' من ' + fmtNum(R.length) + ' بطاقة'), DS.button('إنشاء رسالة لمركز الإرسال', { size: 'sm', ui: 'plus', onClick: function () { go('other', 'comm-tpl'); } })]),
+    e('div', { class: 'mh3-top', 'data-live-ok': '' }, [e('small', { class: 'cu-dr-hint' }, 'يظهر ' + fmtNum(Math.min(F.lim, R.length)) + ' من ' + fmtNum(R.length) + ' بطاقة'), DS.button('إنشاء رسالة لمركز الإرسال', { size: 'sm', ui: 'plus', onClick: function () { go('other', 'comm-tpl'); } })]),
     MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : null,
     R.length ? e('div', { class: 'mh3-list' }, list) : DS.note('info', 'لا رسائل بهذا الاختيار', ''),
     R.length > F.lim ? e('div', { class: 'mh3-more' }, [DS.button('عرض المزيد (' + fmtNum(R.length - F.lim) + ')', { ui: 'caret-down', onClick: function () { F.lim += 10; draw(); } })]) : null].filter(Boolean);
