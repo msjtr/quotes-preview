@@ -9325,3 +9325,15 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .rvm-mask.is-app .rvm-box.is-v2 .rvm-tiles{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
 .rvm-box.is-v2 .rvm-q.is-code:placeholder-shown{font-family:inherit !important;font-weight:500}
 .rvm-box.is-v2 .rvm-q.is-code::placeholder{font-family:var(--t2-ff-text,inherit)}
+
+/* v597: قسم المالية — القوائم المنسدلة في صف واحد بأحجام متساوية، وأزرار الإجراء بحجمها لا بعرض الصفحة، و«العرض» أعلى الصفحة */
+.lv-page.is-fin .fin-filters{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;margin:0}
+.lv-page.is-fin .fin-filters>.st-sel{flex:1 1 200px;max-width:300px;min-width:0}
+.lv-page.is-fin .st-sel{max-width:420px}
+.lv-page.is-fin .st-sel .t2-field,.lv-page.is-fin .fin-view .t2-field{margin:0}
+.lv-page.is-fin .fin-act{display:flex;justify-content:flex-start;align-items:center}
+.lv-page.is-fin .fin-act .t2-btn{inline-size:auto}
+.lv-page.is-fin .fin-view{max-width:420px;margin:0}
+.lv-page.is-fin .ax-top-t:empty{display:none}
+.hc-g.is-solo{margin-top:4px}
+@media (max-width:640px){.lv-page.is-fin .fin-filters>.st-sel{flex:1 1 100%;max-width:none}.lv-page.is-fin .st-sel,.lv-page.is-fin .fin-view{max-width:none}}
