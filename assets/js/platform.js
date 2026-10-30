@@ -26729,7 +26729,7 @@ if (LIVE.on) {
           ['مسوّى دون نقد', sar(sum(non)), '', 'stack'], ['تحتاج مراجعة', fmtNum(chk.length) + ' عملية', chk.length ? 'warn' : '', 'list-checks']].concat(rfT > 0 ? [['المسترد', sar(rfT), '', 'arrows-clockwise']] : [])),
         /* v599: مبالغ سجلات الطلبات (خارج العقود) — لا تدخل في المحصَّل حتى تُراجع */ (function () {
           let a = 0, n = 0; try { Object.keys(LIVE_ADM.rh || {}).forEach(function (u) { if (isTestUid(u)) return; (LIVE_ADM.rh[u] || []).forEach(function (c) { (c.payments || []).forEach(function (p) { const v = Number(p.paid) || 0; if (v > 0) { a += v; n++; } }); }); }); } catch (err) { a = 0; }
-          return a > 0 ? DS.note('warn', 'مبالغ على سجلات طلبات خارج العقود: ' + sar(qr2(a)) + ' في ' + fmtNum(n) + ' دفعة', 'سُجّلت في النظام السابق على سجلات طلبات لا على عقود، فلا تدخل في «إجمالي المحصَّل» حتى تُراجع وتُربط بعقدها — من «عقود العملاء» ← «تحتاج مراجعة».') : null; })(),
+          return a > 0 ? DS.note('warn', 'مبالغ على سجلات طلبات خارج العقود: ' + sar(qr2(a)) + ' في ' + (n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتين' : n <= 10 ? fmtNum(n) + ' دفعات' : fmtNum(n) + ' دفعة'), 'سُجّلت في النظام السابق على سجلات طلبات لا على عقود، فلا تدخل في «إجمالي المحصَّل» حتى تُراجع وتُربط بعقدها — من «عقود العملاء» ← «تحتاج مراجعة».') : null; })(),
         fpReview((j && j.D) || [], st, paint, refetch),
         fpTools(A, ks, paint),
         G.length ? e('div', { class: 't2-stack' }, G.slice(0, 200).map(function (g) { return lvSec(g.name || '—', fmtNum(g.L.length) + ' · ' + sar(sum(g.L)), g.L.map(fpCard), 'fp:c:' + g.cid, !!cq); }).concat(G.length > 200 ? [e('small', { class: 'cu-dr-hint' }, 'يظهر أول 200 عميل — اختر العميل أو الفترة لتضييق التقرير.')] : []))
@@ -26833,7 +26833,7 @@ if (LIVE.on) {
           return e('div', { class: 't2-stack' }, [axKpis([['ناجحة', kv(ok), 'ok', 'check-circle'], ['رسوم البوابة', sar(fee), '', 'coins'], ['تحتاج مطابقة', fmtNum(real.filter(function (t) { return t.review_state === 'needs_review' || gwMism(t, PX); }).length), '', 'warning']]),
             axKpis([['مسجّلة على دفعات العقود', kv(inP), 'ok', 'list-checks'], ['على سجلات طلبات', kv(inR), inR.length ? 'warn' : '', 'files'], ['مربوطة بعقد بلا دفعة', kv(ctO), ctO.length ? 'warn' : '', 'link']]),
             axKpis([['دفع مباشر برابط — بلا عقد', kv(dir), dir.length ? 'warn' : '', 'link'], ['بلا عميل ولا عقد', kv(non), non.length ? 'warn' : '', 'warning']]),
-            vd.length ? e('small', { class: 'cu-dr-hint' }, 'عمليات إلغاء مسجّلة «ناجحة» في البوابة لا تُحتسب تحصيلًا: ' + fmtNum(vd.length) + ' بمبلغ ' + sar(sm(vd)) + '.') : null].filter(Boolean)); })(),
+            vd.length ? e('small', { class: 'cu-dr-hint' }, (vd.length === 1 ? 'عملية إلغاء واحدة مسجّلة «ناجحة» في البوابة لا تُحتسب تحصيلًا، بمبلغ ' : 'عمليات إلغاء مسجّلة «ناجحة» في البوابة لا تُحتسب تحصيلًا: ' + fmtNum(vd.length) + ' بمبلغ ') + sar(sm(vd)) + '.') : null].filter(Boolean)); })(),
         e('div', { class: 't2-stack' }, [
           e('div', { class: 'm3-tools ax-tools' }, [chipRow(GW_F.map(function (x) { return [x[0], x[1], x[2], A.filter(function (t) { return gwFit(t, x[0], PX) && finPerFit(at(t), per) && (!cq || t.user_id === cq); }).length]; }).filter(function (x) { return x[0] === 'all' || x[3]; }), f, function (v) { ADM.fgF = v; paint(); }, 'الحالة'),
             chipRow(FIN_PER.map(function (x) { return [x[0], x[1], x[2], A.filter(function (t) { return gwFit(t, f, PX) && finPerFit(at(t), x[0]) && (!cq || t.user_id === cq); }).length]; }), per, function (v) { ADM.fgP = v; paint(); }, 'الفترة'),
