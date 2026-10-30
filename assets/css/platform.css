@@ -9337,3 +9337,27 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .lv-page.is-fin .ax-top-t:empty{display:none}
 .hc-g.is-solo{margin-top:4px}
 @media (max-width:640px){.lv-page.is-fin .fin-filters>.st-sel{flex:1 1 100%;max-width:none}.lv-page.is-fin .st-sel,.lv-page.is-fin .fin-view{max-width:none}}
+
+/* v602: «قرار القوالب» — بطاقة مسطّحة لكل قالب بلا أدراج: الرأس والصورة والنص والاستخدامات ثم القرار */
+.tplr-list{display:grid;gap:12px}
+.tplr-sec{margin:16px 0 2px;font-size:15px;font-weight:700;color:var(--t2-ink)}
+.tplr-c{border:1px solid var(--t2-line);border-radius:12px;padding:14px;background:var(--t2-surface);display:grid;gap:10px;min-width:0}
+.tplr-c.is-approve{border-inline-start:4px solid var(--t2-ok)}
+.tplr-c.is-edit{border-inline-start:4px solid var(--t2-warn)}
+.tplr-c.is-delete{border-inline-start:4px solid var(--t2-danger)}
+.tplr-c.is-hold{border-inline-start:4px solid var(--t2-info)}
+.tplr-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.tplr-h b{display:block;font-size:15px;color:var(--t2-ink)}
+.tplr-h small{display:block;color:var(--t2-muted);font-size:12px;overflow-wrap:anywhere}
+.tplr-tags{display:flex;gap:6px;flex-wrap:wrap}
+.tplr-media{display:flex;gap:8px;flex-wrap:wrap}
+.tplr-img{max-height:180px;max-width:100%;border-radius:8px;border:1px solid var(--t2-line);object-fit:contain;background:var(--t2-surface-2)}
+.tplr-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;background:var(--t2-surface-2);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--t2-ink)}
+.tplr-subj{font-size:14px;color:var(--t2-ink-2)}
+.tplr-use{margin:0;padding-inline-start:18px;font-size:13px;color:var(--t2-muted);display:grid;gap:2px}
+.tplr-dec{display:grid;gap:8px;border-top:1px dashed var(--t2-line);padding-top:10px}
+.tplr-dec textarea{width:100%;resize:vertical}
+.tplr-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tplr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tplr-more{display:flex;justify-content:center;padding:8px 0}
+@media (min-width:900px){.tplr-dec{grid-template-columns:240px 1fr}.tplr-dec>*:nth-child(n+3){grid-column:1/-1}}

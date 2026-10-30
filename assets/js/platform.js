@@ -8238,6 +8238,115 @@ function msgHubPage() {
     MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : body];
 }
 
+/* v602: «قرار القوالب» — كل قوالب الرسائل والإرسال والإشعارات في صفحة واحدة بلا أدراج: القالب بنصه وصورته واستخداماته،
+   وأمامه القرار (اعتماد · تعديل · حذف · تعليق) والملاحظة والنص المقترح. القرار يُسجَّل مرجعًا لإعادة التنظيم — لا يُحذف ولا يُعدَّل قالب من هنا. */
+const TPLR_SRC = [['comm', 'قوالب مركز الإرسال'], ['wa', 'قوالب واتساب المعتمدة من Meta'], ['review', 'رسائل مراجعة الملف والتوثيق'], ['status', 'بريد حالات الطلب'], ['survey', 'الاستبيانات'],
+  ['ntpl', 'قوالب الإشعارات الجاهزة'], ['rep', 'الردود الجاهزة'], ['bot', 'نصوص بوت واتساب'], ['email', 'قوالب البريد في الخادم']];
+const TPLR_DEC = [['', 'بلا قرار'], ['approve', 'اعتماد كما هو'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق — يُراجع لاحقًا']];
+const TPLR_TONE = { approve: 'ok', edit: 'warn', delete: 'danger', hold: 'info' };
+const TPLR = { txt: {} };
+function tplrDay(v) { return v ? String(v).slice(0, 10) : ''; }
+function tplrItems(D) {
+  const L = [], dec = {};
+  (D.dec || []).forEach(function (d) { dec[d.src + '|' + d.key] = d; });
+  const add = function (src, key, o) { const k = String(key); L.push(Object.assign({ src: src, key: k, d: dec[src + '|' + k] || null, media: [], use: [] }, o)); };
+  (D.comm || []).forEach(function (t) {
+    add('comm', t.id, { name: t.name || '—', sub: (t.channel === 'both' ? 'واتساب وبريد' : t.channel === 'wa' ? 'واتساب' : t.channel === 'email' ? 'بريد' : (t.channel || '')) + (t.archived ? ' · مؤرشف' : ''), subject: t.subject || '', body: t.body || '', media: t.media || [],
+      use: [t.sent ? 'أُرسل في ' + fmtNum(t.sent) + ' رسالة' + (t.last ? ' — آخرها ' + tplrDay(t.last) : '') : 'لم يُرسل به شيء من مركز الإرسال', (t.rem || []).length ? 'قاعدة التذكير: ' + t.rem.join('، ') : ''] });
+  });
+  (D.wa || []).forEach(function (t) {
+    let M = null; try { M = MH_T[t.name] || null; } catch (err) { M = null; }
+    const h = M && M[1];
+    add('wa', t.name, { name: M ? M[0] : t.name, sub: t.name + ' · ' + (t.category || '—') + ' · ' + (t.status === 'MISSING' ? 'غير موجود في Meta' : t.status === 'APPROVED' ? 'معتمد من Meta' : (t.status || '—')), lang: t.lang || 'ar', meta: t.status !== 'MISSING',
+      media: h && h !== 'doc' && h !== 'video' ? [{ kind: 'image', url: h }] : h ? [{ kind: h }] : [], vars: M ? M[2] : null,
+      use: [(t.rules || []).length ? 'قواعد الإرسال: ' + t.rules.map(function (r) { return (r.name || r.event) + (r.on ? '' : ' (موقوفة)'); }).join('، ') : '',
+        (t.events || []).length ? 'أحداث المنصة: ' + t.events.map(function (r) { return r.event + (r.on ? '' : ' (موقوف)'); }).join('، ') : '',
+        M && M[5] ? 'يُرسل من: ' + M[5] : '', t.tries ? 'أُرسل ' + fmtNum(t.sent || 0) + ' من ' + fmtNum(t.tries) + ' محاولة' + (t.last ? ' — آخرها ' + tplrDay(t.last) : '') : 'لم يُرسل به شيء'] });
+  });
+  (D.review || []).forEach(function (t) { add('review', t.event_key, { name: t.title || t.subject || t.event_key, sub: 'الحدث: ' + t.event_key, subject: t.subject || '', body: [t.lead, t.note].filter(Boolean).join('\n\n'), use: [t.wa_event_label ? 'واتساب: ' + t.wa_event_label : '', 'يُرسل عند حدث مراجعة الملف «' + t.event_key + '»'] }); });
+  (D.status || []).forEach(function (t) { add('status', t.status, { name: t.title || t.subject || t.status, sub: 'حالة الطلب: ' + t.status, subject: t.subject || '', body: [t.lead, t.note].filter(Boolean).join('\n\n'), use: ['يُرسل بالبريد عند تغيّر حالة الطلب إلى «' + t.status + '»'] }); });
+  (D.survey || []).forEach(function (t) { add('survey', t.key, { name: t.name || t.key, sub: (t.active ? 'مفعّل' : 'غير مفعّل') + (t.auto ? ' · تلقائي' : ''), subject: t.email_subject || '', body: [t.wa_body ? 'واتساب:\n' + t.wa_body : '', t.email_body ? 'البريد:\n' + t.email_body : ''].filter(Boolean).join('\n\n'), use: [t.purpose || '', (t.channels || []).length ? 'القنوات: ' + t.channels.join('، ') : ''] }); });
+  try { Object.keys(CU_NTPLX).forEach(function (k) { const T = CU_NTPLX[k]; add('ntpl', k, { name: T[0], sub: 'في كود المنصة', body: T[1], use: ['قائمة «قالب جاهز» عند إرسال إشعار من «الإشعارات والإعلانات»'] }); }); } catch (err) { void err; }
+  try { cuTplLists().forEach(function (g) { g[2].forEach(function (x) { (Array.isArray(x[1]) ? x[1] : []).forEach(function (t) { add('rep', g[0] + '|' + x[0] + '|' + String(t).slice(0, 120), { name: x[0], sub: g[1] + ' · في كود المنصة', body: String(t), use: ['قائمة «اختر ردًا جاهزًا» — ' + g[1]] }); }); }); }); } catch (err) { void err; }
+  (D.bot || []).forEach(function (t) { add('bot', t.key + '|' + (t.lang || 'ar'), { name: t.key, sub: 'بوت واتساب · ' + (t.lang || 'ar'), body: t.body || '', use: ['ردّ البوت الآلي في واتساب'] }); });
+  (D.email || []).forEach(function (t) { add('email', t.key, { name: t.key, sub: 'نصه في كود الخادم', body: '', use: ['أُرسل ' + fmtNum(t.n) + ' مرة' + (t.last ? ' — آخرها ' + tplrDay(t.last) : '')] }); });
+  /* النص المتكرر: نفس النص (بعد إزالة المسافات) في أكثر من قالب */
+  const N = {}, nz = function (s) { return String(s || '').replace(/\{[^}]*\}/g, '').replace(/\s+/g, '').slice(0, 240); };
+  L.forEach(function (x) { const k = nz(x.body); if (k.length > 12) (N[k] = N[k] || []).push(x); });
+  L.forEach(function (x) { const g = N[nz(x.body)]; x.dup = g && g.length > 1 ? g.filter(function (y) { return y !== x; }).map(function (y) { return y.name; }) : []; });
+  return L;
+}
+function tplrWaText(t) {
+  if (!t) return '';
+  if (typeof t === 'string') return t;
+  const b = (t.buttons || []).map(function (x) { return typeof x === 'string' ? x : (x && (x.text || x.url || x.phone_number)) || ''; }).filter(Boolean);
+  return [t.header && t.header.text ? t.header.text : (t.header && t.header.format ? '[ترويسة: ' + t.header.format + ']' : ''), t.body || '', t.footer || '', b.length ? 'الأزرار: ' + b.join(' · ') : ''].filter(Boolean).join('\n\n');
+}
+function tplrCard(x, st, paint, j) {
+  const id = x.src + '|' + x.key, d0 = x.d || {}, S = st[id] || (st[id] = { c: d0.decision || '', n: d0.note || '', p: d0.proposed || '', busy: false });
+  const save = async function () {
+    if (S.busy) return; S.busy = true; paint();
+    const r = await liveSb('rpc/admin_tpl_decide', { body: { p_src: x.src, p_key: x.key, p_decision: S.c || null, p_note: S.n || '', p_proposed: S.c === 'edit' ? (S.p || '') : '' } }).catch(function () { return null; });
+    S.busy = false;
+    if (!r || r.ok !== true) { snack((r && (r.message || r.error)) || 'تعذّر حفظ القرار.'); paint(); return; }
+    const L = j.D.dec || (j.D.dec = []), nd = { src: x.src, key: x.key, decision: S.c || null, note: S.n || null, proposed: S.c === 'edit' ? (S.p || null) : null, by_name: 'أنت', updated_at: new Date().toISOString() };
+    const i = L.findIndex(function (y) { return y.src === x.src && y.key === x.key; }); if (i >= 0) L[i] = nd; else L.push(nd);
+    snack('حُفظ القرار.'); paint();
+  };
+  const txt = x.src === 'wa' ? TPLR.txt[x.key] : null;
+  const body = x.src === 'wa'
+    ? (txt ? e('div', { class: 'tplr-body' }, tplrWaText(txt)) : x.meta ? DS.button('عرض نص القالب من Meta', { size: 'sm', ui: 'file-text', onClick: async function () {
+        const r = await clPost('/admin/api/send-center/template-text', { name: x.key, lang: x.lang || 'ar' }).catch(function () { return null; });
+        if (!r || !r.ok) { snack((r && r.message) || 'تعذّر جلب نص القالب من Meta الآن.'); return; }
+        TPLR.txt[x.key] = r.tpl; paint(); } }) : e('small', { class: 'cu-dr-hint' }, 'القالب غير موجود في Meta — مذكور في قواعد المنصة فقط.'))
+    : x.body ? e('div', { class: 'tplr-body' }, x.body) : e('small', { class: 'cu-dr-hint' }, 'النص غير محفوظ في القاعدة — في كود الخادم.');
+  const media = (x.media || []).length ? e('div', { class: 'tplr-media' }, x.media.map(function (m) {
+    return m.kind === 'image' && m.url ? e('img', { class: 'tplr-img', src: m.url, alt: m.caption || x.name, loading: 'lazy' }) : DS.badge(m.kind === 'doc' ? 'ترويسة: مستند PDF' : m.kind === 'video' ? 'ترويسة: فيديو' : 'مرفق: ' + (m.kind || '—'), 'info');
+  })) : null;
+  const use = (x.use || []).filter(Boolean);
+  const dec = e('div', { class: 'tplr-dec' }, [
+    DS.editField('القرار', DS.select({ value: S.c, options: TPLR_DEC, onChange: function (v) { S.c = v || ''; if (S.c === 'edit' && !S.p) S.p = x.body || ''; paint(); } })),
+    DS.editField('ملاحظات على القالب', e('textarea', { class: 't2-input', rows: '2', placeholder: 'سبب القرار أو ما يجب تصحيحه…', onInput: function (ev) { S.n = ev.target.value; } }, S.n)),
+    S.c === 'edit' ? DS.editField('النص المقترح بعد التعديل', e('textarea', { class: 't2-input', rows: '4', placeholder: 'اكتب النص كما يجب أن يكون…', onInput: function (ev) { S.p = ev.target.value; } }, S.p || x.body || '')) : null,
+    e('div', { class: 'tplr-act' }, [DS.button(S.busy ? 'جارٍ الحفظ…' : 'حفظ القرار', { size: 'sm', tone: 'primary', ui: 'check', onClick: save }),
+      d0.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر قرار: ' + (TPLR_DEC.filter(function (z) { return z[0] === (d0.decision || ''); })[0] || ['', 'بلا قرار'])[1] + (d0.by_name ? ' — ' + d0.by_name : '') + ' · ' + tplrDay(d0.updated_at)) : null])].filter(Boolean));
+  return e('article', { class: 'tplr-c' + (d0.decision ? ' is-' + d0.decision : '') }, [
+    e('div', { class: 'tplr-h' }, [e('div', {}, [e('b', {}, x.name), e('small', {}, x.sub || '')]),
+      e('div', { class: 'tplr-tags' }, [DS.badge((TPLR_SRC.filter(function (z) { return z[0] === x.src; })[0] || ['', x.src])[1], null), d0.decision ? DS.badge((TPLR_DEC.filter(function (z) { return z[0] === d0.decision; })[0] || ['', d0.decision])[1], TPLR_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn'),
+        x.dup.length ? DS.badge('نصه مكرر في ' + fmtNum(x.dup.length + 1) + ' قوالب', 'warn') : null].filter(Boolean))]),
+    media, x.subject ? e('div', { class: 'tplr-subj' }, ['العنوان: ', e('b', {}, x.subject)]) : null, body,
+    x.vars && x.vars.length ? e('small', { class: 'cu-dr-hint' }, 'المتغيرات: ' + x.vars.map(function (v, i) { return '{{' + (i + 1) + '}} ' + v; }).join(' · ')) : null,
+    x.dup.length ? e('small', { class: 'cu-dr-hint' }, 'النص نفسه في: ' + x.dup.slice(0, 6).join('، ') + (x.dup.length > 6 ? '…' : '')) : null,
+    use.length ? e('ul', { class: 'tplr-use' }, use.map(function (u) { return e('li', {}, u); })) : null,
+    dec].filter(Boolean));
+}
+function lvTplReview() {
+  return admMount('tplr', 'قرار القوالب', async function () {
+    const D = await liveSb('rpc/admin_tpl_inventory', { body: {} });
+    if (!D || D.ok !== true) throw new Error(D && D.error === 'forbidden' ? 'هذه الصفحة لمن يملك صلاحية إعدادات النظام.' : 'تعذّر تحميل القوالب الآن.');
+    return { D: D, at: Date.now() };
+  }, function (j, st, paint, refetch) {
+    const A = tplrItems(j.D), s = ADM.tpS || 'all', dk = ADM.tpD || 'all', q = String(ADM.tpQ || '').trim(), lim = ADM.tpN || 40;
+    const fitD = function (x, k) { const v = (x.d && x.d.decision) || ''; return k === 'all' || (k === 'none' ? !v : k === 'dup' ? x.dup.length > 0 : v === k); };
+    const R = A.filter(function (x) { return (s === 'all' || x.src === s) && fitD(x, dk) && (!q || (x.name + ' ' + x.sub + ' ' + x.key + ' ' + (x.subject || '') + ' ' + (x.body || '')).indexOf(q) >= 0); });
+    const cnt = function (f) { return A.filter(f).length; };
+    const out = [
+      DS.note('info', 'كيف تستخدم الصفحة', 'كل القوالب هنا بنصها وصورتها وأين تُستخدم. اختر لكل قالب قرارًا: اعتماد كما هو · يحتاج تعديل (واكتب النص المقترح) · حذف · تعليق، وأضف ملاحظتك، ثم «حفظ القرار». القرار يُسجَّل مرجعًا لإعادة تنظيم القوالب وتنفيذها لاحقًا — لا يُحذف ولا يُعدَّل قالب من هذه الصفحة.'),
+      axKpis([['كل القوالب', fmtNum(A.length), '', 'files'], ['بلا قرار', fmtNum(cnt(function (x) { return !(x.d && x.d.decision); })), 'warn', 'hourglass-medium'], ['اعتماد', fmtNum(cnt(function (x) { return x.d && x.d.decision === 'approve'; })), 'ok', 'check-circle'],
+        ['تعديل', fmtNum(cnt(function (x) { return x.d && x.d.decision === 'edit'; })), 'warn', 'pencil-simple'], ['حذف', fmtNum(cnt(function (x) { return x.d && x.d.decision === 'delete'; })), 'danger', 'trash'], ['نصه مكرر', fmtNum(cnt(function (x) { return x.dup.length > 0; })), '', 'copy']]),
+      e('div', { class: 'sys-form is-2 cu-bd-form tplr-filters' }, [
+        DS.editField('المصدر', DS.select({ value: s, options: [['all', 'كل المصادر (' + fmtNum(A.length) + ')']].concat(TPLR_SRC.map(function (z) { return [z[0], z[1] + ' (' + fmtNum(cnt(function (x) { return x.src === z[0]; })) + ')']; })), onChange: function (v) { ADM.tpS = v; ADM.tpN = 40; paint(); } })),
+        DS.editField('القرار', DS.select({ value: dk, options: [['all', 'الكل'], ['none', 'بلا قرار'], ['approve', 'اعتماد'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق'], ['dup', 'نصه مكرر']], onChange: function (v) { ADM.tpD = v; ADM.tpN = 40; paint(); } })),
+        DS.editField('بحث في الاسم أو النص', e('input', { class: 't2-input', type: 'search', value: q, placeholder: 'اكتب ثم اضغط إدخال', onChange: function (ev) { ADM.tpQ = ev.target.value; ADM.tpN = 40; paint(); } }))]),
+      e('div', { class: 'tplr-top' }, [e('small', { class: 'cu-dr-hint' }, 'يظهر ' + fmtNum(Math.min(lim, R.length)) + ' من ' + fmtNum(R.length) + ' قالبًا'), DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { refetch(); } })])];
+    let last = '';
+    const list = [];
+    R.slice(0, lim).forEach(function (x) { if (s === 'all' && x.src !== last) { last = x.src; list.push(e('h3', { class: 'tplr-sec' }, (TPLR_SRC.filter(function (z) { return z[0] === x.src; })[0] || ['', x.src])[1])); } list.push(tplrCard(x, st, paint, j)); });
+    out.push(R.length ? e('div', { class: 'tplr-list' }, list) : LDS.emptyState({ icon: 'ok', title: 'لا قوالب بهذا الاختيار', compact: true }));
+    if (R.length > lim) out.push(e('div', { class: 'tplr-more' }, [DS.button('عرض المزيد (' + fmtNum(R.length - lim) + ')', { ui: 'caret-down', onClick: function () { ADM.tpN = lim + 40; paint(); } })]));
+    return out;
+  });
+}
 function sysRepliesPage() {
   const can = cuCan('settings.replies'), OP = ADM.sysT || (ADM.sysT = {}), NW = ADM.sysTn || (ADM.sysTn = {});
   const list = function (gk, x, i) { const id = gk + i, L = x[1], op = !!OP[id];
@@ -8406,6 +8515,8 @@ function sysRegister() {
   lp('sys-ntpl', 'قوالب الإشعارات', 'sys', 'sys-ntpl', sysNtplPage);
   lp('sys-push', 'إشعارات الجوال والويب', 'sys', 'sys-push', sysPushPage);
   lp('sys-msg', 'مركز القوالب', 'sys', 'sys-msg', msgHubPage);
+  lp('sys-tpl', 'قرار القوالب', 'sys', 'sys-tpl', lvTplReview); /* v602 */
+  try { Object.assign(ICON, { 'sys-tpl': ['list-checks', 'navy'] }); } catch (err) { void err; }
   lp('sys-csend', 'إعدادات الإرسال للعملاء', 'sys', 'sys-csend', sysCliSendPage); /* v551 */
   try { Object.assign(ICON, { 'sys-csend': ['clock', 'teal'] }); } catch (err) { void err; } /* v541 */
   lp('sys-log', 'سجل الإعدادات', 'sys', 'sys-log', sysLogPage);
@@ -21794,7 +21905,7 @@ function admSysPage() {
     /* v405: كل مهمة في مكان واحد — المراسلة والإشعارات مجتمعة، وبيانات المنشأة والضريبة معًا، والخصم والنقاط مع نظام النقاط،
        والقوالب والمستندات للمستندات وحدها، والتشغيل للمدد والسجل */
     /* v591: القوالب بطاقةً لكل مجموعة (عنوان المجموعة ورسائلها) تفتح مركز القوالب على مجموعتها — بدل بطاقة جامعة، وأدوات التحرير والإرسال في مجموعة مستقلة بلا تكرار */
-    ['comm', 'قوالب الرسائل', 'squares-four:navy', MH_GRP.filter(function (g) { return g[0] !== 'rep'; }).map(function (g) { return { ic: g[2] + ':navy', t: g[1], d: mhGrpDesc(g[0]), go: function () { ADM.mh2 = { g: g[0], q: '', ch: 'all' }; go('other', 'sys-msg'); } }; })],
+    ['comm', 'قوالب الرسائل', 'squares-four:navy', [{ ic: 'list-checks:navy', t: 'قرار القوالب', d: 'كل القوالب في صفحة واحدة بنصها وصورتها واستخداماتها: اعتماد · تعديل · حذف · ملاحظات — مرجع إعادة التنظيم', go: function () { go('other', 'sys-tpl'); } }].concat(MH_GRP.filter(function (g) { return g[0] !== 'rep'; }).map(function (g) { return { ic: g[2] + ':navy', t: g[1], d: mhGrpDesc(g[0]), go: function () { ADM.mh2 = { g: g[0], q: '', ch: 'all' }; go('other', 'sys-msg'); } }; }))],
     ['commset', 'الإرسال والإشعارات', 'paper-plane-tilt:sky', [c('file-text:gold', 'رسائل مركز الإرسال', 'إنشاء وتعديل الرسائل التي تختارها في «مركز الإرسال» — البريد وواتساب بالهوية', 'comm-tpl'),
       c('star:gold', 'تعديل الاستبانات', 'أسئلة التقييم ونص واتساب والبريد ومتى تُرسل', 'sys-cx-tpl'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'),
       c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة، والرسالة المباشرة بكل القنوات', 'sys-push'),
