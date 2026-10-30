@@ -7452,7 +7452,7 @@ function cuHubPage() {
       (function () { const k = (LV_PAY.OP || []).filter(function (o) { return o.status === 'submitted' || o.status === 'failed'; }).length;
         return { ic: 'arrows-clockwise:gold', t: 'طلبات الإلغاء والاسترداد', d: 'طلبات العملاء على عمليات بوابة الدفع بأسبابها — الاعتماد يُنفَّذ في Paymob، والرفض بسبب يراه العميل', n: LV_PAY.at ? w(k) : null, badge: k ? [fmtNum(k) + ' بانتظار القرار', 'warn'] : null, go: function () { go('other', 'cu-opin'); } }; })(),
       /* v472: إدارة الاسترداد والإلغاء وروابط الدفع */
-      { ic: 'credit-card:gold', t: 'الاسترداد والإلغاء', d: 'عمليات بوابة الدفع — استرداد كلي أو جزئي، أو إلغاء قبل التسوية، وإعادة إشعار الدافع', go: function () { go('other', 'cu-payops'); } },
+      { ic: 'credit-card:gold', t: 'عمليات بوابة الدفع', d: 'كل عمليات البوابة بعقدها ودفعتها — والاسترداد الكلي أو الجزئي والإلغاء وإعادة إشعار الدافع على العملية نفسها', go: function () { go('other', 'cu-payops'); } },
       { ic: 'link:teal', t: 'روابط الدفع', d: 'إنشاء رابط دفع وإرساله بكل القنوات ومتابعة حالته — وروابط دفعات العملاء أيضًا من ملف العميل', go: function () { go('other', 'cu-paylinks'); } }] : [])],
     ['st', 'المتجر', 'store', [{ ic: 'store', t: 'طلبات المتجر', d: 'الطلبات والشحن · حسب الطلب · الخدمات الرقمية', n: w(n('store')), go: function () { ADM.cuf = 'store'; go('other', 'cu-inbox'); } }].concat(CC.s)],
     /* v578: في المنفذ الحقيقي — التذاكر بأرقامها الفعلية، والإرسال من مكانه الوحيد «مركز الإرسال» (لا بطاقة مكررة «الإرسال موقوف») */
@@ -9071,7 +9071,7 @@ function axRepPage() {
   return [cuBdInt(true),
     e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مؤشرات المحفظة'), e('small', {}, 'من دفعات العقود — والإجراءات أحداث مستقلة لا تُحسب مرتين')])]),
     axKpis([['إجمالي قيمة العقود', sar(sum('prod')), '', 'files'], ['إجمالي المستلم (المدفوع)', sar(sum('recv')), 'ok', 'check-circle'], ['إجمالي المتبقي', sar(sum('remain')), 'warn', 'coins'], ['إجمالي المبالغ المحوَّلة', sar(sum('tr')), '', 'paper-plane-tilt']]),
-    axKpis([['المتأخر', sar(sum('overdue')), 'danger', 'alarm'], ['نسبة الانتظام في السداد', axPct(rate), rate !== null && rate < 80 ? 'warn' : 'ok', 'trend-up'], ['عقود متأخرة أو متعثرة', fmtNum(sum('ctLate') + sum('ctDef')), 'danger', 'warning'], ['عملاء متعثرون', fmtNum(RA.filter(function (r) { return r.cls === 'risk'; }).length), 'danger', 'users-three']]),
+    axKpis([[(function () { /* v598: ما على العقود المغلقة داخل «المتأخر» يُذكر صراحة — كما في «الدفعات المستحقة والقادمة» */ let cl = 0; try { cl = qr2((dcPays(finCts()).cl || []).reduce(function (a, r) { return a + (r.left || 0); }, 0)); } catch (err) { cl = 0; } return cl > 0 ? 'المتأخر — منه ' + sar(cl) + ' على عقود مغلقة' : 'المتأخر'; })(), sar(sum('overdue')), 'danger', 'alarm'], ['نسبة الانتظام في السداد', axPct(rate), rate !== null && rate < 80 ? 'warn' : 'ok', 'trend-up'], ['عقود متأخرة أو متعثرة', fmtNum(sum('ctLate') + sum('ctDef')), 'danger', 'warning'], ['عملاء متعثرون', fmtNum(RA.filter(function (r) { return r.cls === 'risk'; }).length), 'danger', 'users-three']]),
     /* v597: مؤشرات الرسوم ورابط تقريرها أُزيلت من تقرير العملاء — مكانها «الرسوم والمصاريف والضرائب» وحده */
     e('div', { class: 'ax-card' }, e('div', { class: 'ax-mts' }, [e('div', {}, [e('b', { class: 'ax-mt-t' }, 'حالات العقود'), axMeter([['مسددة', sum('ctDone'), 'ok'], ['منتظمة', sum('ctReg'), 'info'], ['متأخرة', sum('ctLate'), 'warn'], ['متعثرة', sum('ctDef'), 'danger']], 'حالات العقود')]),
       e('div', {}, [e('b', { class: 'ax-mt-t' }, 'تصنيف العملاء'), axMeter([['ملتزم', RA.filter(function (r) { return r.cls === 'ok'; }).length, 'ok'], ['يحتاج متابعة', RA.filter(function (r) { return r.cls === 'watch'; }).length, 'warn'], ['متعثر', RA.filter(function (r) { return r.cls === 'risk'; }).length, 'danger']], 'تصنيف العملاء')])])),
@@ -21636,12 +21636,10 @@ function payLinksPanel(D, st, paint, refetch) {
   return DS.panel('روابط الدفع', 'آخر 300 رابط', [admTools(st, chips, paint, refetch, 'ابحث برقم الرابط أو الاسم أو الوصف'), admTable(['الرابط', 'الدافع', 'المبلغ', 'الحالة', 'الدفع / الانتهاء', ''], rows, L.length, 'لا روابط بعد', true)]);
 }
 const PAY_RS = { none: null, partial: ['مسترد جزئيًا', 'warn'], full: ['مسترد كاملًا', 'danger'], void: ['ملغاة', 'danger'] };
-function payTxnsPanel(D, refetch) {
-  const L = D.txns || [], can = D.can.methods && D.gateway.keys, S2 = D.settings || {};
-  const rows = L.map(function (t) {
-    const child = t.class_label === 'online_refund', left = Math.round(((Number(t.amount) || 0) - (Number(t.refunded_amount) || 0)) * 100) / 100;
-    const kind = child ? (t.status === 'void' ? ['إلغاء', 'danger'] : t.status === 'capture' ? ['تحصيل', 'ok'] : t.status === 'unknown' ? ['فرعية — للمراجعة', 'warn'] : t.status === 'failed' ? ['فشل العملية', 'danger'] : ['استرداد', 'warn'])
-      : (t.status === 'success' ? ['ناجحة', 'ok'] : t.status === 'pending' ? ['معلّقة', 'warn'] : ['فاشلة', 'danger']);
+/* v598: أزرار عملية بوابة الدفع (تحصيل · إلغاء التفويض · استرداد · إلغاء · إشعار الدافع) في دالة واحدة — تظهر على العملية نفسها في «عمليات بوابة الدفع» */
+function payTxnActs(t, D, refetch) {
+  const can = D.can.methods && D.gateway.keys, S2 = D.settings || {};
+  const child = t.class_label === 'online_refund', left = Math.round(((Number(t.amount) || 0) - (Number(t.refunded_amount) || 0)) * 100) / 100;
     let acts = '—';
     if (can && !child && t.status === 'success' && t.auth_state === 'authorized' && S2.capture) {
       acts = e('div', { class: 't2-pb-actions' }, [admTwoStep('تحصيل المبلغ (Capture)', 'primary', async function () { const j = await clPost('/admin/api/pay/txns/' + t.trx + '/capture', {}); snack(j.ok ? (j.pending ? j.message : 'تم التحصيل.') : (j.message || 'تعذّر التحصيل.')); if (j.ok) refetch(); }),
@@ -21660,6 +21658,15 @@ function payTxnsPanel(D, refetch) {
     /* v414: إشعار نتيجة العملية للدافع (مدفوع · فشل · استرداد) — يُرسل تلقائيًا، وهذا لإعادة الإرسال */
     if (!child && D.can.links) { const nb = liveOk(DS.button('إشعار الدافع', { size: 'sm', ui: 'bell-ringing', onClick: async function (ev) { ev.stopPropagation(); const j = await clPost('/admin/api/pay/txns/' + t.trx + '/notify', {}); snack(j.ok ? 'أُرسل إشعار ' + ({ paid: 'السداد', failed: 'الفشل', refund: 'الاسترداد' }[j.kind] || 'النتيجة') + ' للدافع.' : (j.message || 'تعذّر الإرسال.')); } }));
       acts = acts === '—' ? e('div', { class: 't2-pb-actions' }, [nb]) : (acts.appendChild(nb), acts); }
+    return acts;
+}
+function payTxnsPanel(D, refetch) {
+  const L = D.txns || [], can = D.can.methods && D.gateway.keys, S2 = D.settings || {};
+  const rows = L.map(function (t) {
+    const child = t.class_label === 'online_refund', left = Math.round(((Number(t.amount) || 0) - (Number(t.refunded_amount) || 0)) * 100) / 100;
+    const kind = child ? (t.status === 'void' ? ['إلغاء', 'danger'] : t.status === 'capture' ? ['تحصيل', 'ok'] : t.status === 'unknown' ? ['فرعية — للمراجعة', 'warn'] : t.status === 'failed' ? ['فشل العملية', 'danger'] : ['استرداد', 'warn'])
+      : (t.status === 'success' ? ['ناجحة', 'ok'] : t.status === 'pending' ? ['معلّقة', 'warn'] : ['فاشلة', 'danger']);
+    const acts = payTxnActs(t, D, refetch);
     return admRow([admName(ltr(String(t.trx)), child ? 'من العملية ' + t.parent_trx : (t.class_label === 'online_test' ? 'اختبار' : 'حي')), admName(t.users ? t.users.full_name : '—', t.link_ref ? 'رابط دفع مرسل · ' + t.link_ref : t.client_contracts ? 'عقد ' + (t.client_contracts.contract_no || '—') : null),
       admMoney(t.amount), DS.badge(kind[0], kind[1]), PAY_RS[t.refund_state] ? DS.badge(PAY_RS[t.refund_state][0], PAY_RS[t.refund_state][1]) : t.auth_state === 'authorized' ? DS.badge('مفوَّضة — بانتظار التحصيل', 'warn') : (child ? '—' : 'لا يوجد'),
       bdiD(String(t.txn_at || t.created_at || '').slice(0, 16).replace('T', ' ')), acts], null, [t.trx, t.users && t.users.full_name, t.parent_trx].join(' '));
@@ -26561,11 +26568,11 @@ if (LIVE.on) {
        «الإلغاء والاسترداد» بطاقة واحدة (طلبات العملاء · التنفيذ)، و«سجل المدفوعات» بطاقة واحدة (ومنه عمليات بوابة الدفع) */
     const OPS = canOps ? [
       { ic: 'bank:teal', t: 'إيصالات التحويل البنكي', d: 'تحويلات العملاء لدفعاتهم — اعتماد أو رفض، ثم تنتقل إلى ملف العميل بحالتها', n: LV_PAY.at ? fmtNum(LV_PAY.TR.length) + ' إيصال' : null, badge: pendT.length ? [fmtNum(pendT.length) + ' بانتظار الاعتماد', 'warn'] : null, go: function () { go('other', 'cu-trin'); } },
-      { ic: 'arrows-clockwise:gold', t: 'الإلغاء والاسترداد', d: 'طلبات العملاء بأسبابها، وتنفيذ الاسترداد أو الإلغاء في بوابة الدفع — صفحة واحدة باختيار «العرض»', n: LV_PAY.at ? fmtNum((LV_PAY.OP || []).length) + ' طلب' : null, badge: opK ? [fmtNum(opK) + ' بانتظار القرار', 'warn'] : null, go: function () { go('other', 'cu-opin'); } },
+      { ic: 'arrows-clockwise:gold', t: 'طلبات الإلغاء والاسترداد', d: 'طلبات العملاء بأسبابها — الاعتماد يُنفَّذ في بوابة الدفع، والاسترداد أو الإلغاء المباشر على العملية في «عمليات بوابة الدفع»', n: LV_PAY.at ? fmtNum((LV_PAY.OP || []).length) + ' طلب' : null, badge: opK ? [fmtNum(opK) + ' بانتظار القرار', 'warn'] : null, go: function () { go('other', 'cu-opin'); } },
       { ic: 'link:teal', t: 'روابط الدفع', d: 'إنشاء رابط دفع وإرساله بكل القنوات ومتابعة حالته — وروابط دفعات العملاء أيضًا من ملف العميل', go: function () { go('other', 'cu-paylinks'); } }] : [];
     return secHub('fin', { t: 'قسم المالية', s: 'العمليات اليومية والمدفوعات والتقارير — وتسجيل الدفعات وتعديلها من ملف العميل.', ic: 'fin' }, [
       ['ops', 'العمليات اليومية', 'wallet:gold', OPS],
-      ['pay', 'المدفوعات', 'receipt:teal', [{ ic: 'fin-due', t: 'الدفعات المستحقة والقادمة', d: 'الدفعات غير المسددة حسب موعد استحقاقها: المتأخرة · اليوم · خلال 7 أيام · خلال 30 يومًا', n: fmtNum(P.due.length) + ' دفعة', badge: late.length ? [fmtNum(late.length) + ' متأخرة', 'danger'] : t0.length ? [fmtNum(t0.length) + ' تستحق اليوم', 'warn'] : null, go: function () { go('other', 'fin-due'); } }, { ic: 'fin-pay', t: 'سجل المدفوعات', d: 'كل عملية سداد مرة واحدة بطريقتها وحالتها — ومنه «عمليات بوابة الدفع» للمطابقة باختيار «العرض»', big: true,
+      ['pay', 'المدفوعات', 'receipt:teal', [{ ic: 'fin-due', t: 'الدفعات المستحقة والقادمة', d: 'الدفعات غير المسددة حسب موعد استحقاقها: المتأخرة · اليوم · خلال 7 أيام · خلال 30 يومًا', n: fmtNum(P.due.length) + ' دفعة', badge: late.length ? [fmtNum(late.length) + ' متأخرة', 'danger'] : t0.length ? [fmtNum(t0.length) + ' تستحق اليوم', 'warn'] : null, go: function () { go('other', 'fin-due'); } }, { ic: 'fin-pay', t: 'سجل المدفوعات', d: 'كل عملية سداد مرة واحدة بطريقتها وحالتها — ومنه «عمليات بوابة الدفع» للمطابقة والاسترداد والإلغاء باختيار «العرض»', big: true,
           n: 'المحصَّل نقدًا ' + sar(qr2(cashN.reduce(function (a, r) { return a + r.amt; }, 0))), badge: !canOps && pendT.length ? [fmtNum(pendT.length) + ' تحويل بانتظار الاعتماد', 'warn'] : null, go: function () { ADM.fpM = 'all'; ADM.fpS = 'all'; ADM.fpC = ''; ADM.fpFrom = ''; go('other', 'fin-pay'); } }]],
       ['rep', 'التقارير', 'chart-bar:navy', [
         { ic: 'chart-bar:navy', t: 'تقرير العملاء', d: 'العقود والمبالغ والالتزام والمخاطرة — سجل ائتماني لكل عميل وتقرير PDF', go: function () { go('other', 'cu-admx-rp'); } },
@@ -26720,7 +26727,7 @@ if (LIVE.on) {
     if (k === 'test') return ts; if (ts) return false;
     return k === 'all' || (k === 'rf' ? Number(t.refunded_amount) > 0 : k === 'rv' ? t.review_state === 'needs_review' : k === 'nouser' ? !t.user_id
       : k === 'ln' ? !!(t.payment_id || t.contract_id) : k === 'nl' ? t.status === 'success' && !t.payment_id && !t.contract_id && Number(t.amount) > 0 : k === 'mm' ? !!gwMism(t, PX) : t.status === k); };
-  const gwCard = function (t, PX) {
+  const gwCard = function (t, PX, ax) {
     const d = t.details || {}, g = ADM_GS[t.status] || [t.status || '—', null], nm = t.user_id ? cuBdName(t.user_id) : 'غير مرتبطة بعميل', L = gwLink(t, PX), mm = gwMism(t, PX), ts = isTestUid(t.user_id);
     const lk = L ? e('span', {}, [ltr(L.no), L.i ? ' · الدفعة ' + L.i + (L.n ? ' من ' + L.n : '') : ' · بلا دفعة محددة']) : DS.badge('غير مرتبطة بعقد', t.status === 'success' && Number(t.amount) > 0 && !ts ? 'warn' : null);
     return lvSec('العملية ' + t.trx + ' — ' + nm, SR(Number(t.amount) || 0) + ' · ' + g[0] + (L ? ' · ' + L.no : ''), [DS.fields([['رقم العملية', ltr(String(t.trx))], ['العميل', nm], ['مرتبطة بـ', lk], ['المبلغ', SR(Number(t.amount) || 0)],
@@ -26737,7 +26744,7 @@ if (LIVE.on) {
       t.parent_trx ? ['العملية الأصل', ltr(String(t.parent_trx))] : null,
       t.review_state === 'needs_review' ? ['المطابقة', DS.badge('تحتاج مطابقة', 'warn')] : mm ? ['المطابقة', DS.badge('الوصف يخالف الربط', 'warn')] : null, t.review_note ? ['ملاحظة', t.review_note] : null].filter(Boolean)),
       Array.isArray(d.pmx_file) && d.pmx_file.length ? e('details', { class: 'fx-doc-more' }, [e('summary', {}, 'كامل بيانات العملية في تقرير Paymob (' + fmtNum(d.pmx_file.length) + ' بندًا)'), DS.fields(gwFileRows({ file: d.pmx_file }, true))]) : null,
-      e('small', { class: 'cu-dr-hint' }, 'الاسترداد والإلغاء والتحصيل والربط بالدفعة من ملف العميل ← إجراء على العقد.')].filter(Boolean), 'fgw:' + t.trx);
+      ax || null, e('small', { class: 'cu-dr-hint' }, ax ? 'الربط بالدفعة من ملف العميل ← إجراء على العقد.' : 'الاسترداد والإلغاء والتحصيل والربط بالدفعة من ملف العميل ← إجراء على العقد.')].filter(Boolean), 'fgw:' + t.trx);
   };
   /* روابط الدفع وعملياتها تحتها: روابط المنصة (payment_links ← محاولات الدفع ← عمليات البوابة)، وروابط Paymob السريعة في النظام السابق بحسب جوال الدافع */
   const PL_ST = { open: ['مفتوح', 'info'], paid: ['مدفوع', 'ok'], expired: ['منتهي', null], cancelled: ['ملغى', null] };
@@ -26767,7 +26774,14 @@ if (LIVE.on) {
     return out.length ? e('div', { class: 't2-stack' }, out) : LDS.emptyState({ icon: 'ok', title: 'لا روابط دفع', compact: true });
   };
   const lvFinGw = function () {
-    return admMount('fingw', 'عمليات بوابة الدفع', async function () { await lvPayLoad(); return { at: Date.now() }; }, function (j, st, paint, refetch) {
+    return admMount('fingw', 'عمليات بوابة الدفع', async function () { await lvPayLoad();
+      /* v598: بيانات أزرار العملية (الصلاحية · إعداد الخدمات · حالة التفويض) — تعذّرها لا يُسقط الصفحة، تبقى للاطلاع */
+      let ov = null; try { ov = await clApi('/admin/api/pay/overview'); } catch (err) { ov = null; }
+      if (ov && ov.ok) { ov.can = ov.can || {}; ov.gateway = ov.gateway || {}; ov.txns = Array.isArray(ov.txns) ? ov.txns : []; } else ov = null;
+      return { at: Date.now(), ov: ov }; }, function (j, st, paint, refetch) {
+      const OV = j.ov, OX = {}; if (OV) OV.txns.forEach(function (x) { if (x.trx != null) OX[String(x.trx)] = x; });
+      const rf = function () { LV_PAY.at = 0; refetch(); };
+      const gwActs = function (t) { const x = OV && OX[String(t.trx)]; if (!x) return null; const a = payTxnActs(x, OV, rf); return a === '—' ? null : a; };
       const PX = gwPidx(); Object.keys(LIVE_ADM.ct || {}).forEach(function (u) { (LIVE_ADM.ct[u] || []).forEach(function (c) { const r = ((LIVE_ADM.rows || {})[c.no] || {}).r || {}; (c.payments || []).forEach(function (p) { if (PX[p.pid]) PX[p.pid].cid = r.id; }); }); });
       const A = LV_PAY.GW, f = ADM.fgF || 'all', per = ADM.fgP || 'all', cq = ADM.fgC || '', vw = ADM.fgV || 'ops';
       const at = function (t) { return t.txn_at ? new Date(t.txn_at) : null; };
@@ -26775,7 +26789,7 @@ if (LIVE.on) {
       const opts = []; A.forEach(function (t) { if (t.user_id && !opts.some(function (x) { return x[0] === t.user_id; })) opts.push([t.user_id, cuBdName(t.user_id)]); }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
       const real = R.filter(function (t) { return !isTestUid(t.user_id); }), ok = real.filter(function (t) { return t.status === 'success' && t.class_label !== 'online_refund' && !/اختبار/.test(t.class_label || ''); });
       const lnk = ok.filter(function (t) { return t.payment_id || t.contract_id; }), fee = qr2(axSum(ok, function (t) { const d = t.details || {}; return (Number(d.pmx_fee) || 0) + (Number(d.pmx_vat) || 0); }));
-      return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'عمليات بوابة الدفع'), e('small', {}, 'كل ما ورد من بوابة الدفع (المنصة والنظام السابق) بعقده ودفعته، ومطابقته لملف البوابة — للاطلاع. الحسابات التجريبية لا تُحتسب.')]),
+      return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'عمليات بوابة الدفع'), e('small', {}, 'كل ما ورد من بوابة الدفع (المنصة والنظام السابق) بعقده ودفعته ومطابقته لملف البوابة — والاسترداد والإلغاء على عملية المنصة نفسها. الحسابات التجريبية لا تُحتسب.')]),
           DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LV_PAY.at = 0; refetch(); } })]),
         axKpis([['ناجحة', fmtNum(ok.length) + ' · ' + sar(qr2(axSum(ok, function (t) { return Number(t.amount) || 0; }))), 'ok', 'check-circle'], ['مرتبطة بعقد', fmtNum(lnk.length) + ' من ' + fmtNum(ok.length), lnk.length < ok.length ? 'warn' : 'ok', 'list-checks'],
           ['رسوم البوابة', sar(fee), '', 'coins'], ['تحتاج مطابقة', fmtNum(real.filter(function (t) { return t.review_state === 'needs_review' || gwMism(t, PX); }).length), '', 'warning']]),
@@ -26784,7 +26798,7 @@ if (LIVE.on) {
           e('div', { class: 'm3-tools ax-tools' }, [chipRow(GW_F.map(function (x) { return [x[0], x[1], x[2], A.filter(function (t) { return gwFit(t, x[0], PX) && finPerFit(at(t), per) && (!cq || t.user_id === cq); }).length]; }).filter(function (x) { return x[0] === 'all' || x[3]; }), f, function (v) { ADM.fgF = v; paint(); }, 'الحالة'),
             chipRow(FIN_PER.map(function (x) { return [x[0], x[1], x[2], A.filter(function (t) { return gwFit(t, f, PX) && finPerFit(at(t), x[0]) && (!cq || t.user_id === cq); }).length]; }), per, function (v) { ADM.fgP = v; paint(); }, 'الفترة'),
             e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM.fgC = v === '*' ? '' : v; paint(); } }))])]),
-          R.length ? e('div', { class: 't2-stack' }, R.slice(0, 300).map(function (t) { return gwCard(t, PX); }).concat(R.length > 300 ? [e('small', { class: 'cu-dr-hint' }, 'يظهر أحدث 300 عملية — ضيّق بالفترة أو العميل.')] : []))
+          R.length ? e('div', { class: 't2-stack' }, R.slice(0, 300).map(function (t) { return gwCard(t, PX, gwActs(t)); }).concat(R.length > 300 ? [e('small', { class: 'cu-dr-hint' }, 'يظهر أحدث 300 عملية — ضيّق بالفترة أو العميل.')] : []))
             : LDS.emptyState({ icon: 'ok', title: 'لا عمليات بهذا الاختيار', compact: true })])];
     });
   };
@@ -26869,7 +26883,8 @@ if (LIVE.on) {
   try { Object.assign(ICON, { 'fin-pay': ['receipt', 'teal'], 'fin-gw': ['credit-card', 'teal'], 'cu-trin': ['bank', 'teal'], 'cu-opin': ['arrows-clockwise', 'gold'] }); } catch (err) { void err; }
   lp('cu-opin', 'طلبات الإلغاء والاسترداد', 'cu', 'cu-opin', lvOpInbox);
   try { Object.assign(ICON, { 'cu-payops': ['credit-card', 'gold'], 'cu-paylinks': ['link', 'teal'] }); } catch (err) { void err; }
-  lp('cu-payops', 'الاسترداد والإلغاء', 'cu', 'cu-payops', function () { return admPayView('payops', 'الاسترداد والإلغاء', 'ops'); });
+  /* v598: «الاسترداد والإلغاء» دُمجت في «عمليات بوابة الدفع» — العملية تظهر مرة واحدة وأزرارها عليها؛ المفتاح باقٍ لمن يصلها من «قسم العملاء» */
+  lp('cu-payops', 'عمليات بوابة الدفع', 'cu', 'cu-payops', function () { return lvFinGw(); });
   lp('cu-paylinks', 'روابط الدفع', 'cu', 'cu-paylinks', function () { return admPayView('paylinks', 'روابط الدفع', 'links'); });
   lp('fin-pay', 'سجل المدفوعات', 'fin', 'fin-pay', lvFinPay);
   lp('fin-gw', 'عمليات بوابة الدفع', 'fin', 'fin-gw', lvFinGw);
@@ -26880,7 +26895,7 @@ if (LIVE.on) {
   /* v596: موضوع واحد = بطاقة واحدة — «الإلغاء والاسترداد» (طلبات العملاء · التنفيذ) و«سجل المدفوعات» (كل المدفوعات · عمليات بوابة الدفع)
      صفحتان قائمتان كما هما، وأعلى كل منهما قائمة «العرض» للانتقال بينهما؛ وصفحات العمليات اليومية تعود إلى «قسم المالية» */
   try {
-    [[['cu-opin', 'طلبات العملاء'], ['cu-payops', 'التنفيذ في بوابة الدفع']], [['fin-pay', 'كل المدفوعات'], ['fin-gw', 'عمليات بوابة الدفع — للمطابقة']]].forEach(function (pair) {
+    [[['fin-pay', 'كل المدفوعات'], ['fin-gw', 'عمليات بوابة الدفع']]].forEach(function (pair) {
       pair.forEach(function (x) {
         const L = LP[x[0]]; if (!L || L.v596) return;
         const run0 = L.run; L.v596 = true; L.up = 'fin';
@@ -26892,9 +26907,9 @@ if (LIVE.on) {
         };
       });
     });
-    if (LP['cu-opin']) LP['cu-opin'].t = 'الإلغاء والاسترداد';
+    if (LP['cu-opin']) LP['cu-opin'].t = 'طلبات الإلغاء والاسترداد';
     if (LP['fin-gw']) LP['fin-gw'].t = 'سجل المدفوعات — بوابة الدفع';
-    ['cu-trin', 'cu-paylinks'].forEach(function (k) { if (LP[k]) LP[k].up = 'fin'; });
+    ['cu-trin', 'cu-opin', 'cu-paylinks'].forEach(function (k) { if (LP[k]) LP[k].up = 'fin'; });
   } catch (err) { void err; }
   /* المسارات القديمة لسجل السداد (لكل طريقة صفحة) تفتح السجل الموحّد مصفًّى بالطريقة */
   const fpGo = function (k) { return function () { if (ADM.fpFrom !== (k || '*')) { ADM.fpFrom = k || '*'; ADM.fpM = k || 'all'; ADM.fpS = 'all'; ADM.fpC = (k && ADM['frC' + k]) || ''; } return lvFinPay(); }; };
