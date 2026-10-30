@@ -7989,8 +7989,8 @@ const MH_MSG = [
   { id: 'pay-failed', g: 'pay', t: 'عملية دفع لم تكتمل', w: 'عند فشل عملية الدفع', wa: ['tera_payment_failed'] },
   { id: 'pay-refund', g: 'pay', t: 'استرداد مبلغ', w: 'عند تنفيذ الاسترداد', wa: ['tera_payment_refunded'] },
   { id: 'pay-link', g: 'pay', t: 'رابط الدفع', w: 'عند إصدار رابط دفع وإرساله للعميل', wa: ['tera_payment_link'] },
-  { id: 'pay-due', g: 'pay', t: 'دفعة مستحقة — تذكير', w: 'تذكير السداد من «إدارة التذكير»، ويدويًا من مركز الإرسال', wa: ['tera_payment_due'], comm: ['تذكير بموعد الدفعة'] },
-  { id: 'pay-late', g: 'pay', t: 'دفعة متأخرة', w: 'يدويًا من مركز الإرسال', comm: ['تنبيه دفعة متأخرة'] },
+  { id: 'pay-due', g: 'pay', t: 'دفعة مستحقة — تذكير', w: 'تذكير السداد من «إدارة التذكير» — مع مبلغ الدفعة وتاريخها ورابط السداد', wa: ['tera_payment_due'], comm: ['تذكير بموعد الدفعة'] },
+  { id: 'pay-late', g: 'pay', t: 'دفعة متأخرة', w: 'من «إدارة التذكير» — اختر العميل ودفعته المتأخرة، وتُرسل مع المبلغ ورابط السداد', comm: ['تنبيه دفعة متأخرة'] },
   { id: 'rate-pay', g: 'rate', t: 'تقييم بعد سداد الدفعة', w: 'بعد كل دفعة تُسدَّد — بخمسة أزرار', wa: ['tera_rating_pay'], sv: 'pay' },
   { id: 'rate-launch', g: 'rate', t: 'استبانة المنصة بعد التدشين', w: 'بعد التدشين والدخول — بخمسة أزرار', wa: ['tera_rating_v2', 'tera_rating'], sv: 'launch' },
   { id: 'rate-service', g: 'rate', t: 'تقييم الخدمة', w: '', sv: 'service' },
@@ -23353,19 +23353,61 @@ async function lvPdfMount(box, buf, st) {
 }
 /* v591: «نص الملف» لكل مرفق — نص الـPDF صفوفًا كما في الصفحة؛ والصورة والملف الممسوح بلا نص تظهر لهما رسالة واضحة.
  * القراءة الآلية من الصور تحتاج السماح بتشغيل WebAssembly في سياسة أمان المحتوى على الخادم — لم تُفعَّل. */
+/* v592: القراءة الآلية من الصور والملفات الممسوحة (Tesseract من cdn.jsdelivr.net، يُحمَّل عند أول طلب فقط).
+ * تعمل حين تسمح سياسة أمان المحتوى بتشغيل WebAssembly ('wasm-unsafe-eval' في script-src) — وإلا تظهر رسالة واضحة.
+ * عاملان: العربية والإنجليزية؛ تُؤخذ الكلمات العربية من الأول واللاتينية والأرقام من الثاني بثقة 70 فأكثر، ثم تُرتَّب صفوفًا. */
+let OCR_OK = null, OCR_P = null, OCR_W = null;
+function ocrOk() {
+  if (OCR_OK !== null) return OCR_OK;
+  try { new WebAssembly.Module(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])); OCR_OK = true; } catch (err) { OCR_OK = false; }
+  return OCR_OK;
+}
+function ocrLib() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  if (OCR_P) return OCR_P;
+  OCR_P = new Promise(function (ok, no) { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; sc.async = true;
+    sc.onload = function () { if (window.Tesseract) ok(window.Tesseract); else { OCR_P = null; no(new Error('ocr')); } }; sc.onerror = function () { OCR_P = null; no(new Error('ocr')); }; document.head.appendChild(sc); });
+  return OCR_P;
+}
+async function ocrWorkers() {
+  if (OCR_W) return OCR_W;
+  const T = await ocrLib(), D = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/';
+  const O = { workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js', corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1', cacheMethod: 'none' };
+  const W = await Promise.all([T.createWorker('ara', 1, Object.assign({ langPath: D + 'ara/4.0.0_best_int' }, O)), T.createWorker('eng', 1, Object.assign({ langPath: D + 'eng/4.0.0_best_int' }, O))]);
+  OCR_W = W; return W;
+}
+async function ocrRows(srcs) {
+  const W = await ocrWorkers(), out = [];
+  for (const src of srcs) {
+    const R = await Promise.all([W[0].recognize(src), W[1].recognize(src)]), ws = [];
+    const add = function (r, keep) { ((r && r.data && r.data.words) || []).forEach(function (x) { const t = String(x.text || '').trim(); if (t && keep(t) && (x.confidence == null || x.confidence >= 70)) ws.push({ s: t, x0: x.bbox.x0, x1: x.bbox.x1, y: (x.bbox.y0 + x.bbox.y1) / 2, h: (x.bbox.y1 - x.bbox.y0) || 12 }); }); };
+    add(R[0], function (t) { return /[؀-ۿ]/.test(t) && !/[A-Za-z]/.test(t); });
+    add(R[1], function (t) { return /[A-Za-z0-9]/.test(t) && !/[؀-ۿ]/.test(t); });
+    ws.sort(function (a, b) { return a.y - b.y; });
+    const rows = [];
+    ws.forEach(function (o) { const r = rows.filter(function (q) { return Math.abs(q.y - o.y) <= Math.max(6, Math.min(q.h, o.h) * 0.6); })[0]; if (r) r.c.push(o); else rows.push({ y: o.y, h: o.h, c: [o] }); });
+    rows.forEach(function (r) {
+      r.c.sort(function (a, b) { return b.x1 - a.x1; });
+      const cells = [];
+      r.c.forEach(function (o) { const l = cells[cells.length - 1]; if (l && l.x0 - o.x1 < Math.max(8, o.h * 1.2)) { l.s = /[؀-ۿ]/.test(o.s) ? l.s + ' ' + o.s : o.s + ' ' + l.s; l.x0 = o.x0; } else cells.push({ s: o.s, x0: o.x0 }); });
+      out.push(cells.map(function (c) { return c.s; }));
+    });
+  }
+  return out;
+}
 function lvTxtBtn(box, tools, dlBtn, getRows) {
   const tb = DS.button('نص الملف', { size: 'sm', ui: 'copy', onClick: async function () {
     let pn = box.querySelector('.lv-pdf-txt'); if (pn) { pn.remove(); return; }
     const cp = function (t) { const ok = function () { snack('نُسخ: ' + (t.length > 40 ? t.slice(0, 40) + '…' : t)); }; try { navigator.clipboard.writeText(t).then(ok, function () { snack('تعذّر النسخ — حدّد النص وانسخه.'); }); } catch (err) { snack('تعذّر النسخ — حدّد النص وانسخه.'); } };
-    pn = e('div', { class: 'lv-pdf-txt' }, [e('small', { class: 'cu-dr-hint' }, 'جارٍ قراءة نص الملف…')]);
+    pn = e('div', { class: 'lv-pdf-txt' }, [e('small', { class: 'cu-dr-hint' }, 'جارٍ قراءة نص الملف… الصور تُقرأ آليًا، وقد تستغرق أول مرة دقيقة.')]);
     box.insertBefore(pn, box.firstChild); tb.disabled = true;
     let G = { rows: [] }, fail = '';
     try { G = (await getRows()) || { rows: [] }; } catch (err) { fail = 'تعذّرت قراءة النص الآن — أعد المحاولة.'; }
     tb.disabled = false; if (!pn.isConnected) return;
     const R = G.rows || [], all = R.map(function (r) { return r.join('\t'); }).join('\n');
     const list = R.length ? e('div', { class: 'lv-txt-rows', 'data-live-ok': '' }, R.map(function (r) { return e('div', { class: 'lv-txt-r' }, r.map(function (c) { return e('span', { class: 'lv-txt-c', title: 'اضغط للنسخ', onClick: function () { const sel = window.getSelection && String(window.getSelection() || ''); if (!sel) cp(c); } }, c); })); }))
-      : DS.note(fail ? 'warn' : 'info', fail ? 'لم يُقرأ النص' : (G.img ? 'هذا المرفق صورة' : 'هذا الملف ممسوح ضوئيًا'), fail || ((G.img ? 'الصورة لا تحوي' : 'الملف لا يحوي') + ' نصًا قابلًا للنسخ — انقل الرقم أو الاسم يدويًا، أو اطلب من العميل ملف PDF أصليًا من الجهة المصدرة.'));
-    pn.replaceChildren.apply(pn, [R.length ? e('div', { class: 'lv-txt-h' }, [e('small', { class: 'cu-dr-hint' }, 'كل سطر كما في الملف — اضغط أي قيمة لنسخها، أو حدّد ما تريد.'), liveOk(DS.button('نسخ الكل', { size: 'sm', ui: 'copy', onClick: function () { cp(all); } }))]) : null, list].filter(Boolean));
+      : DS.note(fail ? 'warn' : 'info', fail ? 'لم يُقرأ النص' : (G.img ? 'هذا المرفق صورة' : 'هذا الملف ممسوح ضوئيًا'), fail || (G.noocr ? 'القراءة الآلية من الصور غير مفعّلة بعد على الخادم — انقل الرقم أو الاسم يدويًا.' : (G.img ? 'لم يُتعرّف على نص في الصورة' : 'لم يُتعرّف على نص في الملف') + ' — انقل الرقم أو الاسم يدويًا، أو اطلب من العميل ملف PDF أصليًا من الجهة المصدرة.'));
+    pn.replaceChildren.apply(pn, [R.length ? e('div', { class: 'lv-txt-h' }, [e('small', { class: 'cu-dr-hint' }, G.ocr ? 'قُرئ النص من الصورة آليًا — راجع الأرقام والأسماء قبل استخدامها. اضغط أي قيمة لنسخها.' : 'كل سطر كما في الملف — اضغط أي قيمة لنسخها، أو حدّد ما تريد.'), liveOk(DS.button('نسخ الكل', { size: 'sm', ui: 'copy', onClick: function () { cp(all); } }))]) : null, list].filter(Boolean));
   } });
   tools.insertBefore(tb, dlBtn);
 }
@@ -23405,9 +23447,9 @@ wrap.__close = close; document.body.appendChild(wrap); document.addEventListener
 if (!b) { const r = await fetch(u); if (!r.ok) throw new Error('تعذّر جلب الملف.'); b = await r.blob(); } if (!document.body.contains(wrap)) return;
 url = URL.createObjectURL(b); fvBlob = b; dlBtn.disabled = false; const mime = b.type || '', pdf = /pdf/i.test(mime) || /\.pdf(\?|$)/i.test(u);
     const zbar = tools.querySelector('.lv-fv-z');
-    if (/^image\//.test(mime)) { box.replaceChildren(e('img', { src: url, alt: name || '' })); box.classList.add('is-img'); if (zbar) zbar.hidden = false; lvTxtBtn(box, tools, dlBtn, async function () { return { rows: [], img: true }; }); /* v591 */ }
+    if (/^image\//.test(mime)) { box.replaceChildren(e('img', { src: url, alt: name || '' })); box.classList.add('is-img'); if (zbar) zbar.hidden = false; const ib = b; lvTxtBtn(box, tools, dlBtn, async function () { if (!ocrOk()) return { rows: [], img: true, noocr: true }; return { rows: await ocrRows([ib]), ocr: true, img: true }; }); /* v592 */ }
     else if (pdf) {
-      try { await lvPdfMount(box, await b.arrayBuffer(), st); if (zbar) zbar.hidden = false; lvTxtBtn(box, tools, dlBtn, async function () { let R = []; try { R = st.rows ? await st.rows() : []; } catch (err) { R = []; } return R.length ? { rows: R } : { rows: [], scan: true }; }); /* v591 */ let t = 0; onRs = function () { clearTimeout(t); t = setTimeout(function () { if (st.repaint) st.repaint(); }, 150); }; window.addEventListener('resize', onRs); }
+      try { await lvPdfMount(box, await b.arrayBuffer(), st); if (zbar) zbar.hidden = false; lvTxtBtn(box, tools, dlBtn, async function () { let R = []; try { R = st.rows ? await st.rows() : []; } catch (err) { R = []; } if (R.length) return { rows: R }; const cv = [].slice.call(box.querySelectorAll('canvas.lv-pdf-c')).slice(0, 3); if (!cv.length || !ocrOk()) return { rows: [], scan: true, noocr: !ocrOk() }; return { rows: await ocrRows(cv), ocr: true }; }); /* v592 */ let t = 0; onRs = function () { clearTimeout(t); t = setTimeout(function () { if (st.repaint) st.repaint(); }, 150); }; window.addEventListener('resize', onRs); }
       catch (err) { box.replaceChildren(e('iframe', { src: url, title: name || 'المرفق' })); }
     } else box.replaceChildren(e('iframe', { src: url, title: name || 'المرفق' }));
   } catch (err) { box.replaceChildren(DS.note('danger', 'تعذّر فتح الملف', (err && err.message) || '')); }
@@ -24754,7 +24796,8 @@ if (SC.SV === null) { SC.SV = 'loading'; admRpc('admin_survey_settings', {}).the
 }
 /* v591: قائمة القوالب في مركز الإرسال مصنّفة بمجموعات مركز القوالب (عنوان المجموعة ثم رسائلها).
  * رسائل مركز الإرسال تُختار وتُرسل من هنا، والرسائل التي يرسلها حدثها تظهر في مجموعتها ويُوجَّه الموظف إلى مكان إرسالها — فلا ازدواج. */
-const SC_ROUTE = { 'pay-link': ['cu-paylinks', 'روابط الدفع'], 'pay-due': ['comm', 'إدارة التذكير في مركز التواصل'], 'ver-remind': ['cu-new', 'العملاء الجدد'] };
+/* v592: رسائل الدفعات (التذكير والمتأخرة) تُرسل من «إدارة التذكير» وحدها — بمبلغ دفعة العميل وتاريخها ورابط السداد */
+const SC_ROUTE = { 'pay-link': ['cu-paylinks', 'روابط الدفع'], 'pay-due': ['comm', 'إدارة التذكير في مركز التواصل'], 'pay-late': ['comm', 'إدارة التذكير في مركز التواصل'], 'ver-remind': ['cu-new', 'العملاء الجدد'] };
 function scTplOpts(TS, SV) {
   const out = [['', TS.length || SV.length ? '— اختر القالب —' : 'جارٍ تحميل القوالب…']], used = {}, byName = {};
   TS.forEach(function (t) { byName[t.name] = t; });
@@ -24765,8 +24808,9 @@ function scTplOpts(TS, SV) {
     M.forEach(function (m) {
       const C = (m.comm || []).map(function (n) { return byName[n]; }).filter(Boolean);
       const S = m.sv ? SV.filter(function (t) { return t.key === m.sv; })[0] : null;
+      if (SC_ROUTE[m.id]) C.forEach(function (t) { used[t.id] = 1; }); /* v592 */
       if (S && !used['sv:' + S.key]) { used['sv:' + S.key] = 1; out.push(['sv:' + S.key, m.t, null, { grp: g[1], sub: 'استبانة — يُرسل من هنا، وتلقائيًا ' + m.w }]); }
-      else if (C.length) C.forEach(function (t) { if (used[t.id]) return; used[t.id] = 1; out.push([t.id, t.name, null, { grp: g[1], sub: 'يُرسل من هنا' }]); });
+      else if (C.length && !SC_ROUTE[m.id]) C.forEach(function (t) { if (used[t.id]) return; used[t.id] = 1; out.push([t.id, t.name, null, { grp: g[1], sub: 'يُرسل من هنا' }]); });
       else out.push(['ev:' + m.id, m.t, null, { grp: g[1], sub: (SC_ROUTE[m.id] ? 'يُرسل من «' + SC_ROUTE[m.id][1] + '»' : 'يُرسل تلقائيًا') + ' — ' + m.w }]);
     });
     if (g[0] === 'rate') SV.forEach(function (t) { if (used['sv:' + t.key]) return; used['sv:' + t.key] = 1; out.push(['sv:' + t.key, 'استبانة: ' + t.name, null, { grp: g[1], sub: 'يُرسل من هنا' }]); });
