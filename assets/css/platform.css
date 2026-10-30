@@ -9372,3 +9372,11 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 @media (max-width:640px){.mh3-dec-f{grid-template-columns:1fr}.mh3-pv{grid-template-columns:1fr}}
 /* v606: التعديل المقترح بعد حفظه — نص البريد والحالة */
 .mh3-prop{white-space:pre-wrap;border:1px dashed var(--t2-line,#d4deea);border-radius:12px;padding:10px 12px;background:#fffcf5;color:#0A1F44;font-size:14px;line-height:1.8}
+/* v607: وسائل الإرسال لكل قرار — أيقونات واختيار واتساب · البريد · الإشعارات · الجميع */
+.mh3-dec-ics{display:inline-flex;gap:4px;margin-inline-end:6px;vertical-align:middle}
+.mh3-ic{display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:8px;background:#E8F7F5;color:#0B6E63}
+.mh3-code{font-size:12px;opacity:.7;margin-inline-start:6px;direction:ltr;unicode-bidi:isolate}
+.mh3-chs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.mh3-chs>small{opacity:.8;margin-inline-end:2px}
+.mh3-ch{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border:1px solid var(--t2-line,#d4deea);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.mh3-ch.is-on{background:#0A1F44;color:#fff;border-color:#0A1F44}

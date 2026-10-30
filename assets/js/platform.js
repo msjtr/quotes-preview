@@ -8233,30 +8233,58 @@ function mh3UseWa(n) {
 }
 function mh3UseComm(id) { const t = mh3InvComm(id); if (!t) return []; return [t.sent ? 'أُرسل من مركز الإرسال في ' + fmtNum(t.sent) + ' رسالة' + (t.last ? ' — آخرها ' + String(t.last).slice(0, 10) : '') : 'لم يُرسل به شيء من مركز الإرسال', (t.rem || []).length ? 'قاعدة التذكير: ' + t.rem.join('، ') : ''].filter(Boolean); }
 /* صف القرار لقالب واحد */
+/* v607: وسائل الإرسال لكل قرار (واتساب · البريد · الإشعارات · الجميع) واسم القالب كما هو بلا بادئة */
+const MH3_CHS = [['wa', 'واتساب', 'chat-circle-dots'], ['mail', 'البريد', 'envelope-simple'], ['app', 'الإشعارات', 'bell']];
+function mh3DefCh(src, key) {
+if (src === 'wa' || src === 'bot') return ['wa'];
+if (src === 'email' || src === 'status') return ['mail'];
+if (src === 'ntpl') return ['app'];
+if (src === 'comm') { const T = mh3InvComm(key) || {}, c = String(T.channel || ''); return c === 'email' ? ['mail'] : c === 'whatsapp' ? ['wa'] : ['wa', 'mail']; }
+if (src === 'survey') { const s = mhSurv(key) || {}, C = s.channels || [], o = []; if (C.indexOf('whatsapp') >= 0) o.push('wa'); if (C.indexOf('email') >= 0) o.push('mail'); return o.length ? o : ['wa']; }
+if (src === 'review') return ['wa', 'mail', 'app'];
+return [];
+}
+function mh3Name(label) {
+let s = String(label || ''), code = '';
+const m = /^([^:]{2,40}):\s+(.+)$/.exec(s); if (m && !/\d/.test(m[1])) s = m[2];
+const k = / — ([a-z0-9_]{3,})$/.exec(s); if (k) { code = k[1]; s = s.slice(0, k.index); }
+return { name: s, code: code };
+}
+const mh3ChName = function (L) { return L.length === 3 ? 'الجميع' : MH3_CHS.filter(function (c) { return L.indexOf(c[0]) >= 0; }).map(function (c) { return c[1]; }).join(' · ') || 'بلا وسيلة'; };
+const mh3ChIcons = function (L) { return e('span', { class: 'mh3-dec-ics', title: mh3ChName(L) }, (L.length === 3 ? [['all', 'الجميع', 'squares-four']] : MH3_CHS.filter(function (c) { return L.indexOf(c[0]) >= 0; })).map(function (c) { return e('span', { class: 'mh3-ic', title: c[1] }, frag(ui(c[2], 16))); })); };
 function mh3Dec(src, key, label, body, use) {
-  key = String(key);
-  const d0 = mh3Find(src, key) || {}, SS = ADM.mh3d || (ADM.mh3d = {}), id = src + '|' + key, S = SS[id] || (SS[id] = { c: d0.decision || '', n: d0.note || '', p: d0.proposed || '', busy: false });
-  const lab = function (k) { return (MH3_DEC.filter(function (z) { return z[0] === (k || ''); })[0] || ['', k])[1]; };
-  const save = async function () {
-    if (S.busy) return; S.busy = true; draw();
-    const r = await liveSb('rpc/admin_tpl_decide', { body: { p_src: src, p_key: key, p_decision: S.c || null, p_note: S.n || '', p_proposed: S.c === 'edit' ? (S.p || '') : '' } }).catch(function () { return null; });
-    S.busy = false;
-    if (!r || r.ok !== true) { snack(r && r.error === 'forbidden' ? 'حفظ القرار لمن يملك صلاحية إعدادات النظام.' : 'تعذّر حفظ القرار.'); draw(); return; }
-    const L = (MH3.inv && MH3.inv.dec) || []; if (MH3.inv && !MH3.inv.dec) MH3.inv.dec = L;
-    const nd = { src: src, key: key, decision: S.c || null, note: S.n || null, proposed: S.c === 'edit' ? (S.p || null) : null, by_name: 'أنت', updated_at: new Date().toISOString() };
-    const i = L.findIndex(function (y) { return y.src === src && y.key === key; }); if (i >= 0) L[i] = nd; else L.push(nd);
-    snack('حُفظ القرار: ' + lab(S.c)); draw();
-  };
-  return e('div', { class: 'mh3-dec' + (d0.decision ? ' is-' + d0.decision : ''), 'data-live-ok': '' }, [ /* v604: حفظ القرار مربوط بالخادم — لا يوقفه حارس الإجراءات */
-    e('div', { class: 'mh3-dec-h' }, [e('b', {}, label), d0.decision ? DS.badge(lab(d0.decision), MH3_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn')]),
-    (use || []).length ? e('ul', { class: 'mh3-use' }, use.map(function (u) { return e('li', {}, u); })) : null,
-    e('div', { class: 'mh3-dec-f' }, [
-      DS.select({ value: S.c, options: MH3_DEC, onChange: function (v) { S.c = v || ''; if (S.c === 'edit' && !S.p) S.p = body || ''; draw(); } }),
-      e('input', { class: 't2-input', type: 'text', value: S.n, placeholder: 'ملاحظة على القالب (اختيارية)', 'aria-label': 'ملاحظة — ' + label, onInput: function (ev) { S.n = ev.target.value; } }),
-      DS.button(S.busy ? 'جارٍ الحفظ…' : 'حفظ القرار', { size: 'sm', tone: 'primary', ui: 'check', onClick: save })]),
-    S.c === 'edit' ? e('textarea', { class: 't2-input', rows: '4', placeholder: 'النص كما يجب أن يكون بعد التعديل', 'aria-label': 'النص المقترح — ' + label, onInput: function (ev) { S.p = ev.target.value; } }, S.p || '') : null,
-    (d0.decision === 'edit' && d0.proposed) ? mh3Fig('النص بعد التعديل — مقترح محفوظ، ويُطبَّق على القالب بعد موافقتك', src === 'ntpl' ? mhApp(label, d0.proposed) : (src === 'email' || src === 'status') ? e('div', { class: 'mh3-prop' }, d0.proposed) : mh3Bubble(d0.proposed)) : null, /* v606: التعديل المقترح ظاهر بعد الحفظ */
-d0.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر قرار: ' + lab(d0.decision) + (d0.by_name ? ' — ' + d0.by_name : '') + ' · ' + String(d0.updated_at).slice(0, 10) + (d0.note ? ' · ' + d0.note : '')) : null].filter(Boolean));
+key = String(key);
+const d0 = mh3Find(src, key) || {}, SS = ADM.mh3d || (ADM.mh3d = {}), id = src + '|' + key, S = SS[id] || (SS[id] = { c: d0.decision || '', n: d0.note || '', p: d0.proposed || '', busy: false });
+if (!S.ch) S.ch = Array.isArray(d0.channels) && d0.channels.length ? d0.channels.slice() : mh3DefCh(src, key);
+const N = mh3Name(label);
+const lab = function (k) { return (MH3_DEC.filter(function (z) { return z[0] === (k || ''); })[0] || ['', k])[1]; };
+const save = async function () {
+if (S.busy) return; S.busy = true; draw();
+const r = await liveSb('rpc/admin_tpl_decide', { body: { p_src: src, p_key: key, p_decision: S.c || null, p_note: S.n || '', p_proposed: S.c === 'edit' ? (S.p || '') : '', p_channels: S.ch.length ? S.ch : null } }).catch(function () { return null; });
+S.busy = false;
+if (!r || r.ok !== true) { snack(r && r.error === 'forbidden' ? 'حفظ القرار لمن يملك صلاحية إعدادات النظام.' : 'تعذّر حفظ القرار.'); draw(); return; }
+const L = (MH3.inv && MH3.inv.dec) || []; if (MH3.inv && !MH3.inv.dec) MH3.inv.dec = L;
+const nd = { src: src, key: key, decision: S.c || null, note: S.n || null, proposed: S.c === 'edit' ? (S.p || null) : null, channels: S.ch.slice(), by_name: 'أنت', updated_at: new Date().toISOString() };
+const i = L.findIndex(function (y) { return y.src === src && y.key === key; }); if (i >= 0) L[i] = nd; else L.push(nd);
+snack('حُفظ القرار: ' + lab(S.c) + ' · ' + mh3ChName(S.ch)); draw();
+};
+const chBtn = function (c) {
+const on = c[0] === 'all' ? S.ch.length === 3 : S.ch.indexOf(c[0]) >= 0;
+return e('button', { type: 'button', class: 'mh3-ch' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () {
+if (c[0] === 'all') S.ch = on ? [] : ['wa', 'mail', 'app']; else { const j = S.ch.indexOf(c[0]); if (j >= 0) S.ch.splice(j, 1); else S.ch.push(c[0]); }
+draw(); } }, [frag(ui(c[2], 16)), c[1]]);
+};
+return e('div', { class: 'mh3-dec' + (d0.decision ? ' is-' + d0.decision : ''), 'data-live-ok': '' }, [ /* v604: حفظ القرار مربوط بالخادم — لا يوقفه حارس الإجراءات */
+e('div', { class: 'mh3-dec-h' }, [mh3ChIcons(S.ch), e('b', {}, N.name), N.code ? e('code', { class: 'mh3-code' }, N.code) : null, d0.decision ? DS.badge(lab(d0.decision), MH3_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn')]),
+(use || []).filter(Boolean).length ? e('ul', { class: 'mh3-use' }, use.filter(Boolean).map(function (u) { return e('li', {}, u); })) : null,
+e('div', { class: 'mh3-chs' }, [e('small', {}, 'يُرسل عبر:')].concat(MH3_CHS.concat([['all', 'الجميع', 'squares-four']]).map(chBtn))),
+e('div', { class: 'mh3-dec-f' }, [
+DS.select({ value: S.c, options: MH3_DEC, onChange: function (v) { S.c = v || ''; if (S.c === 'edit' && !S.p) S.p = body || ''; draw(); } }),
+e('input', { class: 't2-input', type: 'text', value: S.n, placeholder: 'ملاحظة على القالب (اختيارية)', 'aria-label': 'ملاحظة — ' + N.name, onInput: function (ev) { S.n = ev.target.value; } }),
+DS.button(S.busy ? 'جارٍ الحفظ…' : 'حفظ القرار', { size: 'sm', tone: 'primary', ui: 'check', onClick: save })]),
+S.c === 'edit' ? e('textarea', { class: 't2-input', rows: '4', placeholder: 'النص كما يجب أن يكون بعد التعديل', 'aria-label': 'النص المقترح — ' + N.name, onInput: function (ev) { S.p = ev.target.value; } }, S.p || '') : null,
+(d0.decision === 'edit' && d0.proposed) ? mh3Fig('النص بعد التعديل — مقترح محفوظ، ويُطبَّق على القالب بعد موافقتك', src === 'ntpl' ? mhApp(N.name, d0.proposed) : (src === 'email' || src === 'status') ? e('div', { class: 'mh3-prop' }, d0.proposed) : mh3Bubble(d0.proposed)) : null, /* v606: التعديل المقترح ظاهر بعد الحفظ */
+d0.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر قرار: ' + lab(d0.decision) + (Array.isArray(d0.channels) && d0.channels.length ? ' · ' + mh3ChName(d0.channels) : '') + (d0.by_name ? ' — ' + d0.by_name : '') + ' · ' + String(d0.updated_at).slice(0, 10) + (d0.note ? ' · ' + d0.note : '')) : null].filter(Boolean));
 }
 function mh3WaBody(n) { const T = MH.txt[n]; return T && !T.err ? [T.header && T.header.text ? T.header.text : '', T.body || '', T.footer || ''].filter(Boolean).join('\n\n') : ''; }
 function mh3Card(o) {
