@@ -14741,6 +14741,12 @@ const GEO_LAYERS = [['map', 'الخريطة', 'map-trifold'], ['sat', 'قمر ص
 function geoLayerSet(j) {
   const L = (j && j.layers) || {};
   const tpl = j && j.template && /\{z\}/.test(j.template) ? j.template : (j && j.token ? '/api/geo/tile/{z}/{x}/{y}.png?t=' + encodeURIComponent(j.token) : '');
+  /* v595: الخادم يعيد توكن البلاطات وحده — تُبنى الطبقات منه (الخريطة · القمر الصناعي · التضاريس · حركة المرور) فلا تُعطَّل */
+  if (!GEO_SAMPLE() && !L.map && j && j.token) {
+    const tk = encodeURIComponent(j.token), ts = Number(j.tile_size) === 512 ? 512 : 256, b = '/api/geo/tile/{z}/{x}/{y}.png?t=' + tk + '&style=';
+    const one2 = function (u) { return { url: u, max: 20, attr: '© HERE', ts: ts }; };
+    return { map: one2(tpl), sat: one2(b + 'satellite.day'), topo: one2(b + 'topo.day'), traffic: { url: '/api/geo/traffic/{z}/{x}/{y}.png?t=' + tk, max: 20, attr: '© HERE', ts: ts }, prov: 'here' };
+  }
   if (GEO_SAMPLE() && !L.map) return { map: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max: 19, attr: '© OpenStreetMap' },
     sat: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', max: 19, attr: '© Esri' },
     topo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', max: 17, attr: '© OpenTopoMap · © OpenStreetMap' }, traffic: null, prov: 'osm' };
@@ -14773,12 +14779,15 @@ function rvPick(o) {
   const attr = e('div', { class: 'rvm-attr', dir: 'ltr' });
   const bOk = e('button', { type: 'button', class: 'rvm-ok' }, [frag(ui('check', 18)), e('span', {}, 'تأكيد الموقع')]), bNo = e('button', { type: 'button', class: 'rvm-no' }, 'إلغاء');
   const xBtn = e('button', { type: 'button', class: 'rvm-x', title: 'إغلاق', 'aria-label': 'إغلاق' }, frag(ui(app ? 'caret-right' : 'x', 20)));
-  const box = e('div', { class: 'rvm-box', role: 'dialog', 'aria-modal': 'true', 'aria-label': o.title || 'تحديد موقع العنوان' }, [
+  const box = e('div', { class: 'rvm-box is-v2', role: 'dialog', 'aria-modal': 'true', 'aria-label': o.title || 'تحديد موقع العنوان' }, [
     e('div', { class: 'rvm-head' }, [xBtn, e('div', { class: 'rvm-head-t' }, [e('b', {}, o.title || 'تحديد موقع العنوان'), e('small', {}, o.shortAddr ? 'العنوان الوطني — بالخريطة أو العنوان المختصر' : 'حدّد مكانك ويُعبّأ العنوان')]), frag(tile('map-trifold:teal'))]),
-    e('div', { class: 'rvm-stage' }, [mapEl,
+    /* v595: الأدوات خارج الخريطة ومنفصلة عنها — البحث والاختيارات أعلاها، والتكبير والطبقات وموقعي الآن أسفلها، ثم العنوان، والتأكيد في الذيل؛ لا شيء يطفو فوق الخريطة */
+    e('div', { class: 'rvm-body' }, [
       e('div', { class: 'rvm-top' }, [e('div', { class: 'rvm-find' }, [q, qBtn]), e('div', { class: 'rvm-sels' }, [bShort, selC, selR, freeR, bAddr, bPoi]), list]),
+      e('div', { class: 'rvm-stage' }, [mapEl]),
       e('div', { class: 'rvm-fabs' }, [bIn, bOut, bLay, bMe]), lay,
-      e('div', { class: 'rvm-card' }, [e('div', { class: 'rvm-card-h' }, [note, bMin]), e('div', { class: 'rvm-card-b' }, [addr, tiles]), e('div', { class: 'rvm-btns' }, [bOk, bNo]), attr])])]);
+      e('div', { class: 'rvm-card' }, [e('div', { class: 'rvm-card-h' }, [note, bMin]), e('div', { class: 'rvm-card-b' }, [addr, tiles]), attr])]),
+    e('div', { class: 'rvm-btns rvm-foot' }, [bOk, bNo])]);
   const mask = e('div', { class: 'rvm-mask' + (app ? ' is-app' : '') + (dev ? ' is-dev' : '') }, box); host.appendChild(mask);
   /* الشاشة ثابتة أثناء الخريطة: لا تتحرك الصفحة خلفها (ولا إطار الجوال في العيّنة) */
   const unlock = (function () {

@@ -9289,3 +9289,39 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .vr3-ed-l{font:700 var(--t2-fs-sm)/1.6 var(--t2-ff-display);color:var(--t2-ink);margin-top:2px}
 .vr3-ed-cur{display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:var(--t2-surface-2);border:1px solid var(--t2-line)}
 .vr3-ed-cur b{color:var(--t2-ink);overflow-wrap:anywhere}
+
+/* v595: نافذة الخريطة المعتمدة — الأدوات خارج الخريطة ومنفصلة عنها: البحث والاختيارات أعلاها، والتكبير والطبقات و«موقعي الآن» أسفلها،
+   ثم بطاقة العنوان، والتأكيد في الذيل. لا شيء يطفو فوق الخريطة ولا يتداخل — في الحاسوب والجوال وتطبيق الجوال. */
+.rvm-box.is-v2{display:flex !important;flex-direction:column;height:min(860px,calc(100dvh - 72px))}
+.rvm-box.is-v2 .rvm-head{flex:0 0 auto}
+.rvm-box.is-v2 .rvm-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:12px 14px;background:var(--t2-surface,#fff)}
+.rvm-box.is-v2 .rvm-top{position:static !important;inset:auto !important;z-index:auto;pointer-events:auto;display:grid;gap:8px;margin:0}
+.rvm-box.is-v2 .rvm-top *{pointer-events:auto}
+.rvm-box.is-v2 .rvm-find{box-shadow:none;border:1px solid var(--t2-line,#d9e2ec)}
+.rvm-box.is-v2 .rvm-sels{align-items:center}
+.rvm-box.is-v2 .rvm-list{position:static !important;max-height:220px;box-shadow:none;border:1px solid var(--t2-line,#d9e2ec)}
+.rvm-box.is-v2 .rvm-stage{position:relative;flex:0 0 auto;height:clamp(240px,44vh,440px);min-height:240px;border-radius:16px;overflow:hidden;border:1px solid var(--t2-line,#d9e2ec)}
+.rvm-box.is-v2 .rvm-map{position:absolute;inset:0}
+.rvm-box.is-v2 .rvm-fabs{position:static !important;inset:auto !important;display:flex !important;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-start;margin:0}
+.rvm-box.is-v2 .rvm-fb{box-shadow:none;border:1px solid var(--t2-line,#d9e2ec)}
+.rvm-box.is-v2 .rvm-lay{position:static !important;inset:auto !important;inline-size:auto !important;max-inline-size:none;box-shadow:none;border:1px solid var(--t2-line,#d9e2ec);margin:0}
+.rvm-box.is-v2 .rvm-card{position:static !important;inset:auto !important;transform:none !important;max-height:none !important;inline-size:auto !important;box-shadow:none;border:1px solid var(--t2-line,#d9e2ec);border-radius:16px;margin:0}
+.rvm-box.is-v2 .rvm-foot{flex:0 0 auto;display:flex;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--t2-line,#d9e2ec);background:var(--t2-surface,#fff)}
+.rvm-box.is-v2 .rvm-foot .rvm-ok{flex:1}
+.rvm-box.is-v2 .rvm-q.is-code::placeholder{letter-spacing:normal;direction:rtl}
+.rvm-box.is-v2 .rvm-q.is-code:placeholder-shown{direction:rtl;text-align:right;letter-spacing:normal}
+.rvm-mask.is-app .rvm-box.is-v2{height:100% !important}
+.rvm-mask.is-app .rvm-box.is-v2 .rvm-body{padding:10px 12px}
+.rvm-mask.is-app .rvm-box.is-v2 .rvm-stage{height:clamp(220px,40vh,380px)}
+@media (max-width:640px){.rvm-box.is-v2 .rvm-stage{height:clamp(220px,40vh,380px)}.rvm-box.is-v2 .rvm-sels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.rvm-box.is-v2 .rvm-sels>*{min-width:0}}
+.rvm-box.is-v2 .rvm-body>*{flex-shrink:0}
+.rvm-box.is-v2 .rvm-card-b{overflow:visible !important;max-height:none !important}
+.rvm-box.is-v2 .rvm-tiles{display:grid !important;grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) !important;overflow:visible !important;flex-wrap:wrap}
+.rvm-box.is-v2 .rvm-tiles>*{min-width:0 !important;inline-size:auto !important}
+.rvm-box.is-v2 .rvm-card{overflow:visible !important;box-sizing:border-box}
+.rvm-box.is-v2 .rvm-card>*{min-width:0;max-width:100%;box-sizing:border-box}
+.rvm-mask.is-app .rvm-box.is-v2 .rvm-sels{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible !important;flex-wrap:wrap}
+.rvm-mask.is-app .rvm-box.is-v2 .rvm-sels>*{min-width:0;inline-size:100%}
+.rvm-mask.is-app .rvm-box.is-v2 .rvm-tiles{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+.rvm-box.is-v2 .rvm-q.is-code:placeholder-shown{font-family:inherit !important;font-weight:500}
+.rvm-box.is-v2 .rvm-q.is-code::placeholder{font-family:var(--t2-ff-text,inherit)}
