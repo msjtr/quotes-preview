@@ -9370,3 +9370,5 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .mh3-tools,.mh3-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .mh3-more{display:flex;justify-content:center;padding:8px 0}
 @media (max-width:640px){.mh3-dec-f{grid-template-columns:1fr}.mh3-pv{grid-template-columns:1fr}}
+/* v606: التعديل المقترح بعد حفظه — نص البريد والحالة */
+.mh3-prop{white-space:pre-wrap;border:1px dashed var(--t2-line,#d4deea);border-radius:12px;padding:10px 12px;background:#fffcf5;color:#0A1F44;font-size:14px;line-height:1.8}
