@@ -684,13 +684,21 @@ function manualPick(seed) {
   /* auth_69: لا تُفتَحُ الخريطةُ على قراءةِ الجهازِ إلّا إذا كانت مقبولةً فعلاً */
   var okDev = (state.locSource === "browser_geolocation" || state.locSource === "search_selection"
                || state.locSource === "manual_selection");
-  var cy = (seed && typeof seed.lat === "number") ? seed.lat
-         : ((okDev && typeof state.lat === "number") ? state.lat : 24.7136);
-  var cx = (seed && typeof seed.lon === "number") ? seed.lon
-         : ((okDev && typeof state.lon === "number") ? state.lon : 46.6753);
-  var cz = (seed && typeof seed.zoom === "number") ? seed.zoom : 16;
+  /* v593: المزوّدُ الأساسُ لتحديدِ الموقعِ قراءةُ الجهاز (وعناوينُ HERE وخرائطُه)، وموقعُ عنوانِ
+   * الإنترنت (FindIP) تكميليٌّ فقط: يوسِّطُ الخريطةَ عند غيابِ قراءةِ الجهاز ولا يُعتمَدُ موقعاً. */
+  var devOk = okDev && Number.isFinite(state.lat) && Number.isFinite(state.lon) && Math.abs(state.lat) <= 90 && Math.abs(state.lon) <= 180;
+  var hasSeed = !!(seed && Number.isFinite(seed.lat) && Number.isFinite(seed.lon) && Math.abs(seed.lat) <= 90 && Math.abs(seed.lon) <= 180);
+  var cy, cx, cz, pk;
+  if (hasSeed && seed.why !== "ip_city") { cy = seed.lat; cx = seed.lon; cz = (typeof seed.zoom === "number") ? seed.zoom : 16; pk = true; }
+  else if (devOk) {
+    cy = state.lat; cx = state.lon;
+    cz = !(Number.isFinite(state.acc) && state.acc > 0) ? 16 : state.acc > 3000 ? 13 : state.acc > 800 ? 14 : state.acc > 150 ? 16 : 18;
+    pk = Number.isFinite(state.acc) && state.acc > 0 && state.acc <= 25; /* قراءةٌ شبكيةٌ أوسع تحتاج نقرةَ تأكيد */
+  }
+  else if (hasSeed) { cy = seed.lat; cx = seed.lon; cz = (typeof seed.zoom === "number") ? seed.zoom : 12; pk = false; }
+  else { cy = 24.7136; cx = 46.6753; cz = 16; pk = false; }
 
-  var pt = { lat: cy, lon: cx, picked: !!seed }, busy = false, map = null, pin = null, tokT = null, revN = 0;
+  var pt = { lat: cy, lon: cx, picked: pk }, busy = false, map = null, pin = null, tokT = null, revN = 0;
   var FONT = "font:14px 'IBM Plex Sans Arabic',sans-serif";
 
   var box = document.createElement("div");
