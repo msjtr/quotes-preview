@@ -13294,33 +13294,27 @@ function geoPaint() {
     e('small', { class: 'cu-dr-hint' }, 'راجع الحقول بعد التعبئة وأكمل الناقص (مثل رقم المبنى) — قد لا تتوفر كل التفاصيل لكل موقع.')]));
 }
 /* o: { key, center:[lat,lng], ccode, onUse(addr) } */
+/* v594: الخريطة المعتمدة (خريطة «عنوان التواصل» rvPick بطبقات HERE وأدواتها) هي خريطة كل قسم — هذه الواجهة تفتحها
+   وتعيد العنوان بالشكل نفسه الذي تتوقعه الأقسام (geoAddr)، فلا خريطة ثانية في المنصة. */
 function geoPick(o) {
   GEO.onUse = o.onUse; GEO.ccode = o.ccode === undefined ? 'sa' : o.ccode;
-  if (GEO.el && GEO.key === o.key) { setTimeout(function () { try { GEO.map && GEO.map.invalidateSize(); } catch (err) { void err; } }, 60); return GEO.el; }
-  GEO.key = o.key; GEO.res = null; GEO.list = []; GEO.err = ''; GEO.q = ''; GEO.map = null;
-  const mapEl = e('div', { class: 'geo-map', role: 'application', 'aria-label': 'خريطة تحديد الموقع — حرّك الدبوس أو اضغط على مكانك' }, [e('small', { class: 'cu-dr-hint geo-wait' }, 'جارٍ تحميل الخريطة…')]);
-  const qi = e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث بالحي أو الشارع أو المعلم أو العنوان المختصر', 'aria-label': 'البحث عن العنوان', onInput: function (ev) { GEO.q = ev.target.value; }, onKeydown: function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); geoSearch(); } } });
-  GEO.el = e('div', { class: 'geo t2-stack-tight' }, [
-    e('div', { class: 'geo-bar' }, [qi, liveOk(DS.button('بحث', { size: 'sm', ui: 'magnifying-glass', onClick: geoSearch })), liveOk(DS.button('موقعي الآن', { size: 'sm', tone: 'primary', ui: 'map-pin', onClick: geoMe }))]),
-    mapEl, e('div', { class: 'geo-res', 'aria-live': 'polite' }),
-    e('small', { class: 'cu-dr-hint' }, 'اضغط على مكانك في الخريطة أو اسحب الدبوس، أو ابحث باسم الحي أو العنوان المختصر، أو استخدم «موقعي الآن».')]);
-  geoLib().then(function (L) {
-    mapEl.innerHTML = '';
-    const c = o.center || [24.7136, 46.6753];
-    const m = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView(c, o.center ? 16 : 11);
-    /* بلاطات HERE عبر وسيط الخادم بتوكن قصير العمر — يُجدَّد قبل انتهائه */
-    const tl = L.tileLayer('', { maxZoom: GEO_SAMPLE() ? 19 : 20, attribution: GEO_SAMPLE() && GEO_HERE_OFF ? '© OpenStreetMap — للعيّنة' : '© HERE' }).addTo(m);
-    const tok = function () { geoFetch('map-token', { minutes: 30 }).then(function (j) { let u = j.template && /\{z\}/.test(j.template) ? j.template : '/api/geo/tile/{z}/{x}/{y}.png?t=' + encodeURIComponent(j.token || ''); if (Number(j.tile_size) === 512) { tl.options.tileSize = 512; tl.options.zoomOffset = -1; } tl.setUrl(u); setTimeout(tok, 25 * 60 * 1000); })
-      .catch(function () { GEO.err = 'تعذّر تحميل صور الخريطة الآن — يمكنك البحث أو استخدام «موقعي الآن».'; geoPaint(); }); };
-    tok();
-    const icon = L.divIcon({ className: 'geo-pin', html: '<span>' + ui('map-pin', 26) + '</span>', iconSize: [40, 40], iconAnchor: [20, 38] });
-    const pin = L.marker(c, { draggable: true, icon: icon, keyboard: true, title: 'موقعك' }).addTo(m);
-    pin.on('dragend', function () { const p = pin.getLatLng(); geoMove(p.lat, p.lng); });
-    m.on('click', function (ev) { geoMove(ev.latlng.lat, ev.latlng.lng); });
-    GEO.map = m; GEO.pin = pin; setTimeout(function () { m.invalidateSize(); }, 80);
-    try { new ResizeObserver(function () { m.invalidateSize(); }).observe(mapEl); } catch (err) { void err; }
-  }).catch(function (err) { mapEl.innerHTML = ''; mapEl.appendChild(DS.note('warn', 'تعذّر تحميل الخريطة', (err && err.message) || 'أدخل حقول العنوان يدويًا.')); });
-  return GEO.el;
+  const open = function () {
+    GEO.openKey = o.key;
+    const c = Array.isArray(o.center) && isFinite(o.center[0]) && isFinite(o.center[1]) ? o.center : null;
+    const RV = typeof rvPick === 'function' ? rvPick : window.TeraMapPick;
+    RV({ title: o.title || 'تحديد الموقع على الخريطة', lat: c ? c[0] : undefined, lon: c ? c[1] : undefined, shortAddr: GEO.ccode === 'sa',
+      onPick: function (out) {
+        if (!out || !isFinite(Number(out.lat)) || !isFinite(Number(out.lon))) return;
+        const R = geoAddr(Object.assign({}, out.place || {}, { latitude: out.lat, longitude: out.lon }));
+        if (out.short_address) R.short = String(out.short_address);
+        GEO.at = [R.lat, R.lng]; GEO.res = R; GEO.openKey = null;
+        if (typeof o.onUse === 'function') o.onUse(Object.assign({ src: out.source === 'short_address' ? 'search_selection' : 'manual_selection', acc: null }, R));
+      } });
+  };
+  if (GEO.openKey !== o.key) setTimeout(open, 0);
+  return e('div', { class: 'geo t2-stack-tight' }, [
+    liveOk(DS.button('فتح الخريطة', { size: 'sm', tone: 'primary', ui: 'map-trifold', onClick: open })),
+    e('small', { class: 'cu-dr-hint' }, 'في الخريطة: ابحث بالحي أو الشارع، أو أدخل العنوان المختصر، أو استخدم «موقعي الآن» وحرّك الدبوس، ثم أكّد الموقع لتُعبّأ الحقول.')]);
 }
 /* تعبئة الحقول من نتيجة الخريطة — كل حقل باسمه، والقوائم بأقرب خيار مطابق */
 const GEO_KEYS = { short: ['short', 'short_address', 'national_short'], country: ['country'], state: ['state', 'region'], city: ['city'], district: ['district', 'dist'], street: ['street'], building: ['building_number', 'bno'], postal: ['postal_code', 'zip'] };
@@ -14962,6 +14956,8 @@ function rvPick(o) {
   paintTiles(null, null);
   if (!app) setTimeout(function () { q.focus(); }, 60);
 }
+/* v594: الخريطة المعتمدة (خريطة «عنوان التواصل») واحدة لكل قسم يطلب خريطة — منها تحديد موقع الجلسة */
+window.TeraMapPick = function (o) { return rvPick(o || {}); };
 /* حالة القسم في التحديث: ناقص (حقل مطلوب فارغ) · بانتظار اعتماد (عُدّل أو استُكمل) · يحتاج مراجعة (مكتمل ولم يُعدَّل — راجعه وأكّده) */
 function rvuSecTag(need, t) {
   if (need) return rvBadge('مطلوب تعديله', 'danger');

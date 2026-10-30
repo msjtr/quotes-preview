@@ -676,6 +676,25 @@ function geoLabel(h) {
   return String(h.display_name || h.name || "").replace(/[\u2066-\u2069\u202A-\u202E]/g, "").trim();
 }
 
+/* v594: اعتمادُ النقطةِ المختارةِ من الخريطةِ المعتمدةِ في المنصّة */
+function sendPicked(lat, lon) {
+  post("/api/account/session/location", { source: "manual_selection", latitude: lat, longitude: lon }, false).then(function (r) {
+    if (r && r.status === 200 && r.body && r.body.ok === true) {
+      state.lat = lat; state.lon = lon; state.locSource = "manual_selection"; state.errCode = null;
+      notify({ kind: "ok", icon: "map-pin:teal", title: "تم اعتماد موقعك", text: "سُجّل الموقع الذي اخترته على الخريطة لهذه الجلسة." });
+      beatNow();
+      return;
+    }
+    var why = (r && r.body && r.body.error) ? String(r.body.error) : (r && r.status ? "HTTP " + r.status : "بلا اتصال");
+    pickFail((r && r.status === 401) ? "انتهت الجلسة على هذه الصفحة — حدّث الصفحة ثم اعتمد الموقع."
+        : (r && r.status === 0 && !bearer()) ? "تعذّر قراءة جلستك — حدّث الصفحة ثم حاول." : "تعذّر اعتماد الموقع (" + why + "). حاول مرة أخرى.");
+  }).catch(function () { pickFail("تعذّر الاتصال الآن — تحقّق من الشبكة ثم حاول مرة أخرى."); });
+}
+function pickFail(text) {
+  notify({ kind: "warn", icon: "map-pin:teal", ms: 0, title: "لم يُعتمد الموقع", text: text,
+    actions: [{ label: "حدّد موقعك مرة أخرى", primary: true, run: function () { openMap(); } }, { label: "لاحقًا" }] });
+}
+
 var mapH = null;
 function manualPick(seed) {
   hideGeoAsk();
@@ -699,6 +718,29 @@ function manualPick(seed) {
   else { cy = 24.7136; cx = 46.6753; cz = 16; pk = false; }
 
   var pt = { lat: cy, lon: cx, picked: pk }, busy = false, map = null, pin = null, tokT = null, revN = 0;
+
+  /* v594: الخريطةُ المعتمدةُ في المنصّة — خريطةُ «عنوان التواصل» بطبقاتِ HERE وأدواتِها (البحث · العنوان المختصر ·
+   * موقعي الآن) — هي خريطةُ كلِّ قسمٍ يطلبُ خريطة. تُفتَحُ على قراءةِ الجهاز (المزوّدِ الأساس) أو نقطةٍ مؤكَّدة،
+   * ولا تُفتَحُ على موقعِ عنوانِ الإنترنت (التكميلي). الخريطةُ الداخليّةُ أدناه احتياطٌ إن لم تتوفّر. */
+  if (typeof window.TeraMapPick === "function") {
+    var useAt = (hasSeed && seed.why !== "ip_city") || devOk;
+    try {
+      window.TeraMapPick({
+        title: "حدّد موقعك على الخريطة",
+        lat: useAt ? pt.lat : undefined, lon: useAt ? pt.lon : undefined,
+        shortAddr: true,
+        onPick: function (out) {
+          if (!out || out.lat == null || out.lon == null) return;
+          var la = Number(out.lat), lo = Number(out.lon);
+          if (!Number.isFinite(la) || !Number.isFinite(lo)) return;
+          /* بلا قراءةٍ ولا نقطةٍ مؤكَّدة تُفتَحُ الخريطةُ على وسطِ المملكة — لا يُعتمَدُ قبل تحريكِ الدبوسِ إلى المكان */
+          if (!useAt && Math.abs(la - 24.7136) < 1e-6 && Math.abs(lo - 46.6753) < 1e-6) { pickFail("حرّك الدبوس إلى مكانك أو استخدم «موقعي الآن» أو العنوان المختصر، ثم اعتمد الموقع."); return; }
+          sendPicked(la, lo);
+        }
+      });
+      return;
+    } catch (_e) { /* احتياط: الخريطة الداخلية */ }
+  }
   var FONT = "font:14px 'IBM Plex Sans Arabic',sans-serif";
 
   var box = document.createElement("div");
