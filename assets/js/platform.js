@@ -8276,7 +8276,8 @@ function mh3Items() {
     const sv = m.sv ? mhSurv(m.sv) : null; if (m.sv && !sv) return;
     const comm = (m.comm || []).map(mhComm).filter(Boolean), st = (m.st || []).map(mhStat).filter(Boolean);
     if (!(m.wa || []).length && !sv && !comm.length && !st.length) return;
-    const keys = (m.wa || []).map(function (n) { return 'wa|' + n; }).concat(comm.map(function (t) { return 'comm|' + t.id; }), sv ? ['survey|' + sv.key] : [], st.map(function (x) { return 'status|' + x.status; }));
+    const svMail = !!(sv && (sv.channels || []).indexOf('email') >= 0); /* v605: لنسخة البريد قرارها المستقل */
+const keys = (m.wa || []).map(function (n) { return 'wa|' + n; }).concat(comm.map(function (t) { return 'comm|' + t.id; }), comm.filter(function (t) { return t.subject; }).map(function (t) { return 'email|comm:' + t.id; }), sv ? ['survey|' + sv.key] : [], svMail ? ['email|survey:' + sv.key] : [], st.map(function (x) { return 'status|' + x.status; }));
     L.push({ g: m.g, t: m.t || (sv && sv.name) || '—', ch: mhMsgCh(m), keys: keys, hit: [m.t, m.w].concat(m.wa || [], m.comm || [], sv ? [sv.name, sv.wa_body] : [], (m.wa || []).map(tWa), comm.map(function (t) { return t.body; })), build: function () {
       const pv = [], dec = [], tools = [];
       (m.wa || []).forEach(function (n, i) { mh3Txt(n); pv.push(mh3Fig('واتساب — ' + (m.wa.length > 1 ? (i ? 'احتياطي ' + i : 'الأساسي') + ' · ' : '') + mhT(n).label, mhWaPhone(n)));
@@ -8284,11 +8285,13 @@ function mh3Items() {
       comm.forEach(function (t) { const T = mh3InvComm(t.id), img = T && (T.media || []).filter(function (x) { return x.kind === 'image' && x.url; })[0];
         pv.push(mh3Fig('مركز الإرسال — واتساب · ' + t.name, mh3Bubble(mhFillComm(t.body), img ? img.url : null)));
         if (t.subject) pv.push(mh3Fig('مركز الإرسال — البريد · ' + t.name, mhMail(t.subject, '', t.body, '')));
-        dec.push(mh3Dec('comm', t.id, 'قالب مركز الإرسال: ' + t.name, t.body, mh3UseComm(t.id))); });
+        dec.push(mh3Dec('comm', t.id, 'قالب مركز الإرسال: ' + t.name, t.body, mh3UseComm(t.id)));
+if (t.subject) dec.push(mh3Dec('email', 'comm:' + t.id, 'بريد مركز الإرسال: ' + t.name, 'الموضوع: ' + t.subject + '\n\n' + (t.body || ''), ['نسخة البريد من قالب مركز الإرسال — الموضوع والنص'])); });
       if (sv) { const C = sv.channels || [];
         if (C.indexOf('whatsapp') >= 0 && sv.wa_body) pv.push(mh3Fig('واتساب — الاستبانة', mh3Bubble(mhFillComm(sv.wa_body))));
         if (C.indexOf('email') >= 0) pv.push(mh3Fig('البريد — الاستبانة', mhMail(sv.email_subject, sv.name, sv.email_body, '')));
         dec.push(mh3Dec('survey', sv.key, 'الاستبانة: ' + sv.name, sv.wa_body || sv.email_body || '', [(sv.active ? 'مفعّلة' : 'موقوفة') + ' · ' + (sv.auto ? 'آلية' : 'يدوية'), sv.trigger_note || ''].filter(Boolean)));
+if (svMail) dec.push(mh3Dec('email', 'survey:' + sv.key, 'بريد الاستبانة: ' + sv.name, 'الموضوع: ' + (sv.email_subject || '') + '\n\n' + (sv.email_body || ''), ['نسخة البريد من الاستبانة — الموضوع والنص']));
         tools.push(DS.button('فتح محرر الاستبانة', { size: 'sm', ui: 'pencil-simple', onClick: function () { cxTplOpen(sv); } })); }
       st.forEach(function (x) { pv.push(mh3Fig('البريد — ' + (x.title || x.status), mhMail(x.subject, x.title, x.lead, x.note)));
         dec.push(mh3Dec('status', x.status, 'بريد حالة الطلب: ' + (x.title || x.status), [x.lead, x.note].filter(Boolean).join('\n\n'), ['يُرسل عند تغيّر حالة الطلب إلى «' + x.status + '»'])); });
@@ -8301,13 +8304,16 @@ function mh3Items() {
     const k = s.event_key, off = MH_PV_OFF[k] || (MH_PV_STAFF[k] ? 'إشعار للفريق داخل المنصة — لا يصل صاحب الملف' : ''), C = off ? ['app'] : ['wa', 'mail', 'app'];
     const img = MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, tpl = img ? 'tera_profile_review_img' : 'tera_profile_review_update';
     const ttl = s.title || s.subject || s.wa_event_label || k;
-    L.push({ g: (k === 'launched' || k === 'film_ready') ? 'acct' : 'ver', t: ttl, ch: C, keys: ['review|' + k], hit: [k, s.wa_event_label, s.subject, s.title, s.lead, s.note], build: function () {
+    L.push({ g: (k === 'launched' || k === 'film_ready') ? 'acct' : 'ver', t: ttl, ch: C, keys: off ? ['review|' + k] : ['review|' + k, 'email|review:' + k, 'ntpl|review:' + k], hit: [k, s.wa_event_label, s.subject, s.title, s.lead, s.note], build: function () {
       const vals = ['محمد الشمري', 'REQ-10458', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', 'tera-services.com.sa/clients'];
       const pv = [];
       if (!off) { mh3Txt(tpl); pv.push(mh3Fig('واتساب — ' + (img ? 'بصورة المرحلة' : 'نصي'), mhWaPhone(tpl, img, vals))); pv.push(mh3Fig('البريد', mhMail(s.subject, s.title, s.lead, s.note))); }
       pv.push(mh3Fig('إشعار المنصة', mhApp(s.wa_event_label || ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''))));
       return mh3Card({ t: ttl, w: (s.wa_event_label ? 'المرحلة: ' + s.wa_event_label + ' · ' : '') + 'الحدث ' + k, ch: C, tag: MH_PV_STAFF[k] ? 'للفريق' : null, note: off ? DS.note('info', 'ملاحظة', off) : null, pv: pv,
-        dec: [mh3Dec('review', k, 'رسالة المرحلة: ' + ttl, [s.lead, s.note].filter(Boolean).join('\n\n'), [off ? off : 'يُرسل عند حدث «' + k + '» بواتساب (' + tpl + ') والبريد وإشعار المنصة'])] });
+        dec: off ? [mh3Dec('review', k, 'إشعار المنصة: ' + ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''), [off])] /* v605: قرار لكل وسيلة — واتساب · البريد · إشعار المنصة */
+: [mh3Dec('review', k, 'واتساب — رسالة المرحلة: ' + ttl, [s.wa_event_label, s.wa_task, s.wa_action].filter(Boolean).join('\n'), ['يُرسل عند حدث «' + k + '» بقالب ' + tpl]),
+mh3Dec('email', 'review:' + k, 'البريد — رسالة المرحلة: ' + ttl, ['الموضوع: ' + (s.subject || ''), s.title, s.lead, s.note].filter(Boolean).join('\n\n'), ['يُرسل بالبريد عند حدث «' + k + '»']),
+mh3Dec('ntpl', 'review:' + k, 'إشعار المنصة — رسالة المرحلة: ' + ttl, (s.wa_event_label || ttl) + '\n' + (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''), ['يظهر في إشعارات المنصة عند حدث «' + k + '»'])] });
     } });
   });
   /* قوالب Meta المعتمدة غير المفعّلة — ومعها الرسالة المفعّلة التي تكررها إن وُجدت */
