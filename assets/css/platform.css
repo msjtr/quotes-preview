@@ -9338,26 +9338,35 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .hc-g.is-solo{margin-top:4px}
 @media (max-width:640px){.lv-page.is-fin .fin-filters>.st-sel{flex:1 1 100%;max-width:none}.lv-page.is-fin .st-sel,.lv-page.is-fin .fin-view{max-width:none}}
 
-/* v602: «قرار القوالب» — بطاقة مسطّحة لكل قالب بلا أدراج: الرأس والصورة والنص والاستخدامات ثم القرار */
-.tplr-list{display:grid;gap:12px}
-.tplr-sec{margin:16px 0 2px;font-size:15px;font-weight:700;color:var(--t2-ink)}
-.tplr-c{border:1px solid var(--t2-line);border-radius:12px;padding:14px;background:var(--t2-surface);display:grid;gap:10px;min-width:0}
-.tplr-c.is-approve{border-inline-start:4px solid var(--t2-ok)}
-.tplr-c.is-edit{border-inline-start:4px solid var(--t2-warn)}
-.tplr-c.is-delete{border-inline-start:4px solid var(--t2-danger)}
-.tplr-c.is-hold{border-inline-start:4px solid var(--t2-info)}
-.tplr-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
-.tplr-h b{display:block;font-size:15px;color:var(--t2-ink)}
-.tplr-h small{display:block;color:var(--t2-muted);font-size:12px;overflow-wrap:anywhere}
-.tplr-tags{display:flex;gap:6px;flex-wrap:wrap}
-.tplr-media{display:flex;gap:8px;flex-wrap:wrap}
-.tplr-img{max-height:180px;max-width:100%;border-radius:8px;border:1px solid var(--t2-line);object-fit:contain;background:var(--t2-surface-2)}
-.tplr-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;background:var(--t2-surface-2);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--t2-ink)}
-.tplr-subj{font-size:14px;color:var(--t2-ink-2)}
-.tplr-use{margin:0;padding-inline-start:18px;font-size:13px;color:var(--t2-muted);display:grid;gap:2px}
-.tplr-dec{display:grid;gap:8px;border-top:1px dashed var(--t2-line);padding-top:10px}
-.tplr-dec textarea{width:100%;resize:vertical}
-.tplr-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.tplr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.tplr-more{display:flex;justify-content:center;padding:8px 0}
-@media (min-width:900px){.tplr-dec{grid-template-columns:240px 1fr}.tplr-dec>*:nth-child(n+3){grid-column:1/-1}}
+/* v603: مركز القوالب صفحة القرار الواحدة — بطاقة مفتوحة لكل رسالة: المعاينات جنبًا إلى جنب كما تصل، ثم قرار كل قالب. بلا أدراج */
+.mh3-list{display:grid;gap:14px}
+.mh3-sec{margin-top:10px}
+.mh3-c{border:1px solid var(--t2-line);border-radius:14px;background:var(--t2-surface);padding:14px;display:grid;gap:12px;min-width:0}
+.mh3-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.mh3-h b{display:block;font-size:16px;color:var(--t2-ink)}
+.mh3-h small{display:block;color:var(--t2-muted);font-size:12.5px;overflow-wrap:anywhere}
+.mh3-tags{display:flex;gap:6px;flex-wrap:wrap}
+.mh3-pv{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;align-items:start}
+.mh3-f{margin:0;display:grid;gap:6px;min-width:0}
+.mh3-f figcaption{font-size:12.5px;font-weight:700;color:var(--t2-ink-2)}
+.mh3-fb{background:var(--t2-surface-2);border:1px solid var(--t2-line);border-radius:12px;padding:10px;min-width:0;overflow:hidden}
+.mh3-mailbox{display:grid;gap:6px}
+.mh3-mailsj{font-size:12.5px;color:var(--t2-ink-2)}
+.mh3-mailf{width:100%;height:460px;border:0;border-radius:8px;background:#fff}
+.mh3-btns{display:flex;flex-wrap:wrap;gap:6px}
+.mh3-btn{display:inline-block;padding:6px 12px;border:1px solid var(--t2-line);border-radius:999px;background:var(--t2-surface);font-size:13px;color:var(--t2-brand)}
+.mh3-rep{margin:0;padding-inline-start:20px;display:grid;gap:4px;font-size:13.5px;color:var(--t2-ink)}
+.mh3-decs{display:grid;gap:10px;border-top:1px dashed var(--t2-line);padding-top:12px}
+.mh3-dec{display:grid;gap:6px;padding:10px;border:1px solid var(--t2-line);border-radius:10px;background:var(--t2-surface)}
+.mh3-dec.is-approve{border-inline-start:4px solid var(--t2-ok)}
+.mh3-dec.is-edit{border-inline-start:4px solid var(--t2-warn)}
+.mh3-dec.is-delete{border-inline-start:4px solid var(--t2-danger)}
+.mh3-dec.is-hold{border-inline-start:4px solid var(--t2-info)}
+.mh3-dec-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.mh3-dec-h b{font-size:13.5px;color:var(--t2-ink);overflow-wrap:anywhere}
+.mh3-use{margin:0;padding-inline-start:18px;font-size:12.5px;color:var(--t2-muted);display:grid;gap:2px}
+.mh3-dec-f{display:grid;grid-template-columns:minmax(150px,210px) 1fr auto;gap:8px;align-items:center}
+.mh3-dec textarea{width:100%;resize:vertical}
+.mh3-tools,.mh3-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.mh3-more{display:flex;justify-content:center;padding:8px 0}
+@media (max-width:640px){.mh3-dec-f{grid-template-columns:1fr}.mh3-pv{grid-template-columns:1fr}}

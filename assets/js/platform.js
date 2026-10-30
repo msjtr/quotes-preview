@@ -7953,7 +7953,7 @@ const MH = { wa: null, rules: [], stages: [], status: [], at: 0, busy: false, er
 const MH_CDN = 'https://media.tera-services.com.sa/msg', MH_IMG = '/assets/brand/wa/';
 const MH_GRP = [['pay', 'السداد والإيصالات', 'credit-card'], ['rate', 'التقييم', 'star'], ['acct', 'الحساب والتدشين', 'rocket-launch'], ['ver', 'توثيق الملف', 'seal-check'],
   ['order', 'الطلبات والعروض', 'clipboard-text'], ['contract', 'العقود', 'file-text'], ['support', 'الدعم', 'headset'], ['sec', 'الأمان والتحقق', 'shield-check'], ['gen', 'رسائل عامة', 'megaphone-simple'],
-  ['rep', 'الردود الجاهزة', 'chat-circle-dots'], ['off', 'معتمدة وغير مفعّلة', 'clock']];
+  ['app', 'إشعارات المنصة الجاهزة', 'bell'], ['mail', 'بريد الخادم', 'envelope-simple'], ['bot', 'ردود بوت واتساب', 'chat-circle-dots'], ['rep', 'الردود الجاهزة', 'chat-circle-dots'], ['off', 'معتمدة وغير مفعّلة', 'clock']];
 /* قوالب Meta: [الاسم · الترويسة (رابط صورة | 'doc' | 'video' | null) · معاني المتغيرات · عيّنة لكل متغير · يرسلها كود المنصة (من الجرد) · أين تُرسل] */
 const MH_T = {
   tera_payment_received: ['إيصال استلام الدفعة', 'doc', ['اسم العميل', 'المبلغ', 'رقم العملية', 'مصدر الدفع', 'التاريخ'], ['محمد الشمري', '1,250.00 ريال', 'TRX-482193', 'بطاقة مدى', '27-10-2026'], 1, 'بوابة الدفع آليًا بعد كل سداد ناجح'],
@@ -8005,6 +8005,7 @@ const MH_MSG = [
   { id: 'rate-support', g: 'rate', t: 'تقييم الدعم', w: '', sv: 'support' },
   { id: 'rate-settle', g: 'rate', t: 'استبانة بعد السداد الكامل', w: '', sv: 'settle' },
   { id: 'rate-nps', g: 'rate', t: 'مؤشر الولاء (NPS)', w: '', sv: 'nps' },
+  { id: 'rate-product', g: 'rate', t: 'تقييم المنتج', w: '', sv: 'product' }, /* v603: كانت مفعّلة في القاعدة بلا بطاقة */
   { id: 'acct-launch', g: 'acct', t: 'تدشين الهوية مع الفيلمين', w: 'أول رسالة في دورة رسائل العميل', wa: ['tera_launch_films', 'tera_launch'], comm: ['تدشين الهوية الجديدة — رسالة التدشين مع الفيلمين'] },
   { id: 'acct-access', g: 'acct', t: 'بيانات الدخول', w: 'بعد رسالة التدشين — عند ضغط «بيانات دخولي»', wa: ['tera_account_access'] },
   { id: 'acct-ready', g: 'acct', t: 'تحديث الحساب — العملاء المنقولون', w: 'حملة مركز الإرسال للعملاء المنقولين', wa: ['tera_account_ready'], comm: ['تحديث الحساب — العملاء المنقولون'] },
@@ -8027,7 +8028,12 @@ const MH_PV_IMG = ['submitted', 'resubmitted', 'received', 'returned', 'approved
 const MH_PV_OFF = { under_review: 'داخل المنصة فقط — توقفت في واتساب والبريد لأنها تكرار «استُلم طلبك»' };
 const MH_PV_STAFF = { rv_submitted: 1, rv_resubmitted: 1 };
 const MH_CH = { wa: ['واتساب', 'chat-circle-dots'], mail: ['البريد', 'envelope-simple'], app: ['إشعار المنصة', 'bell'], comm: ['مركز الإرسال', 'paper-plane-tilt'] };
-const MH_SAMPLE = { 'الاسم': 'محمد الشمري', 'التاريخ': '27-10-2026', 'رقم_تيرا': 'TR-100458', 'المبلغ': '1,250.00 ريال', 'رقم_العقد': 'C-2026-0142', 'رقم_الطلب': 'R-10458' };
+const MH_SAMPLE = { 'الاسم': 'محمد الشمري', 'التاريخ': '27-10-2026', 'رقم_تيرا': 'TR-100458', 'المبلغ': '1,250.00 ريال', 'رقم_العقد': 'C-2026-0142', 'رقم_الطلب': 'R-10458',
+  /* v603: كل متغيرات القوالب الفعلية بعيّنة — لا «متغير» ظاهر في المعاينة */
+  'البريد_المقنع': 'm•••••@gmail.com', 'الجوال_المقنع': '05••••••21', 'الدفعة': '3 من 12', 'تاريخ_الاستحقاق': '27-11-2026', 'رابط_الدخول': 'tera-services.com.sa/login', 'رابط_السداد': 'tera-services.com.sa/pay/PL-261030', 'رابط_الدفع': 'tera-services.com.sa/pay/PL-261030', 'العقد': 'C-2026-0142', 'اسم_العميل': 'محمد الشمري',
+  name: 'محمد الشمري', link: 'tera-services.com.sa/clients', service: 'تأجيل دفعة', team: 'فريق تيرا', cat: 'إلكترونيات', contracts: 'C-2026-0142', created: '27-10-2026', dur: '12 شهرًا', end: '27-10-2027', extra: '—', first_day: '01-11-2026', hint: 'أرفق المستند المطلوب',
+  last_day: '30-11-2026', lines: 'جهاز آيفون 17 برو · 12 دفعة', months: '12', next: '27-11-2026', no: 'R-10458', number: 'R-10458', off_days: 'الجمعة', prod: 'آيفون 17 برو', product: 'آيفون 17 برو', ref: 'REQ-10458', site: 'tera-services.com.sa', start: '27-10-2026',
+  status: 'قيد المراجعة', status_note: 'نراجع طلبك وسنعود إليك قريبًا', tera: 'TR-100458', title: 'طلب تأجيل دفعة', type: 'تأجيل دفعة', updated: '27-10-2026', val: '1,250.00 ريال', value: '1,250.00 ريال' };
 function mhCss() {
   const o = document.getElementById('mh2-css'); if (o && o.getAttribute('data-v') === '546') return; if (o) o.remove();
   const s = document.createElement('style'); s.id = 'mh2-css'; s.setAttribute('data-v', '546');
@@ -8186,166 +8192,214 @@ function mhGrpDesc(k) {
   if (k === 'ver') L.push('مراحل التوثيق: الاستلام · الإعادة · الاعتماد · الرفض');
   return L.length ? L.slice(0, 4).join(' · ') + (L.length > 4 ? ' · و' + fmtNum(L.length - 4) + ' أخرى' : '') : 'رسائل هذه المجموعة';
 }
-function msgHubPage() {
-  if (!LIVE.on) return [liveEmptyNote('مركز القوالب')];
-  mhCss(); mhLoad(false);
-  try { commReady('قوالب الإرسال', ['tpl']); } catch (e0) { void e0; }
-  try { cxReady('قوالب الاستبانات', ['set']); } catch (e1) { void e1; }
-  const F = ADM.mh2 || (ADM.mh2 = { g: 'all', q: '', ch: 'all' });
-  const q = String(F.q || '').trim().toLowerCase();
-  const hit = function (a) { return !q || a.some(function (x) { return String(x || '').toLowerCase().indexOf(q) >= 0; }); };
-  const chOk = function (C) { return F.ch === 'all' || C.indexOf(F.ch) >= 0; };
-  /* البطاقات */
-  const cards = [];
-  MH_MSG.forEach(function (m) {
-    const sv = m.sv ? mhSurv(m.sv) : null; if (m.sv && !sv) return;
-    const comm = (m.comm || []).filter(mhComm); if (!(m.wa || []).length && !sv && !comm.length) return;
-    const C = mhMsgCh(m), first = (m.wa || [])[0], img = first ? mhImg(first) : null;
-    const allUsed = (m.wa || []).every(function (n) { const M = mhMeta(n); return !M || M.status === 'APPROVED'; });
-    const meta = (m.wa || []).length ? (m.wa.length > 1 ? 'قالب + ' + fmtNum(m.wa.length - 1) + ' احتياطي' : 'قالب واحد') : comm.length ? 'مركز الإرسال' : 'استبانة';
-    if (!hit([m.t, m.w].concat(m.wa || [], m.comm || [], sv ? [sv.name] : [])) || !chOk(C)) return;
-    cards.push([m.g, mhCard({ t: sv && !m.t ? sv.name : m.t, w: m.w || (sv && sv.trigger_note) || '', img: img, ic: (MH_GRP.filter(function (g) { return g[0] === m.g; })[0] || [])[2], ch: C, meta: meta,
-      tag: sv ? (sv.active ? (sv.auto ? 'آلية' : 'يدوية') : 'موقوفة') : (comm.length && !(m.wa || []).length ? 'يدوية' : null), badge: allUsed ? null : DS.badge('بانتظار Meta', 'warn'), go: function () { mhMsgOpen(m); } })]);
-  });
-  (MH.stages || []).forEach(function (s) { const k = s.event_key, off = MH_PV_OFF[k] || MH_PV_STAFF[k], C = off ? ['app'] : ['wa', 'mail', 'app'];
-    if (!hit([k, s.wa_event_label, s.subject, s.title]) || !chOk(C)) return;
-    cards.push([(k === 'launched' || k === 'film_ready') ? 'acct' : 'ver', mhCard({ t: s.wa_event_label || k, /* v550: رسالتا «تم تدشين حسابكم» و«فيلم التدشين جاهز» في قسم الحساب والتدشين */ w: s.subject || s.title || '', img: MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, ic: 'seal-check', ch: C, meta: MH_PV_STAFF[k] ? 'للفريق' : 'مرحلة توثيق', tag: MH_PV_STAFF[k] ? 'للفريق' : null, go: function () { mhPvOpen(s); } })]); });
-  Object.keys(MH_T).filter(function (n) { return !MH_T[n][4]; }).forEach(function (n) { const I = mhT(n);
-    if (!hit([n, I.label]) || !chOk(['wa'])) return;
-    cards.push(['off', mhCard({ t: I.label, w: 'معتمد في Meta — لا يرسله أي حدث الآن', img: null, ic: 'chat-circle-dots', ch: ['wa'], meta: n, tag: 'غير مفعّل', go: function () { mhOffOpen(n); } })]); });
-  const RP = (function () { try { return cuTplLists(); } catch (e2) { return []; } })();
-  RP.forEach(function (g) { if (!hit([g[1]].concat(g[2].map(function (x) { return x[0]; }))) || F.ch !== 'all') return;
-    cards.push(['rep', mhCard({ t: g[1], w: g[2].map(function (x) { return x[0]; }).slice(0, 4).join(' · '), ic: 'chat-circle-dots', ch: [], meta: fmtNum(g[2].reduce(function (a, x) { return a + (x[1] || []).length; }, 0)) + ' ردًا', go: function () { go('other', 'sys-replies'); } })]); });
-  const cnt = function (g) { return cards.filter(function (c) { return c[0] === g; }).length; };
-  const groups = MH_GRP.filter(function (g) { return (F.g === 'all' || F.g === g[0]) && cnt(g[0]); });
-  const body = !cards.length ? DS.note('info', 'لا رسائل بهذا البحث أو الفلتر', '') : e('div', { class: 't2-stack', style: 'display:grid;gap:18px' }, groups.map(function (g) {
-    return e('section', { class: 'mh2-sec' }, [e('div', { class: 'mh2-sec-h' }, [frag(ui(g[2], 18)), g[1], e('span', { class: 'n' }, fmtNum(cnt(g[0])))]), e('div', { class: 'mh2-grid' }, cards.filter(function (c) { return c[0] === g[0]; }).map(function (c) { return c[1]; }))]); }));
-  const WA = MH.wa || [], nOff = Object.keys(MH_T).filter(function (n) { return !MH_T[n][4]; }).length, nPend = WA.filter(function (t) { return t.status !== 'APPROVED'; }).length;
-  const qIn = e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث باسم الرسالة أو القالب…', 'aria-label': 'بحث في القوالب', value: F.q || '',
-    onInput: function (ev) { F.q = ev.target.value; clearTimeout(MH.qt); MH.qt = setTimeout(function () { draw(); const x = document.querySelector('.mh2-tools .q input'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 250); } });
-  const sync = DS.button(MH.syncing ? 'جارٍ المزامنة…' : 'مزامنة الحالة من Meta', { size: 'sm', ui: 'arrows-clockwise', disabled: MH.syncing, onClick: function () {
-    MH.syncing = true; draw();
-    clPost('/admin/api/send-center/templates-sync', {}).then(function (j) { MH.syncing = false; MH.txt = {}; snack('تمت المزامنة — ' + fmtNum(j.count || 0) + ' قالبًا من Meta.'); mhLoad(true); })
-      .catch(function (err) { MH.syncing = false; snack((err && err.message) || 'تعذّرت المزامنة.'); draw(); }); } });
-  const gChips = [['all', 'الكل', 'squares-four:navy', cards.length]].concat(MH_GRP.filter(function (g) { return cnt(g[0]); }).map(function (g) { return [g[0], g[1], g[2] + ':teal', cnt(g[0])]; }));
-  return [cuBdInt(true),
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل رسالة بطاقة واحدة فيها قنواتها ونسخها — واتساب والبريد وإشعار المنصة ومركز الإرسال — بمعاينة كما تصل وبعيّنات حقيقية.')]), e('div', { class: 'ax-top-a' }, [sync])]),
-    MH.err ? DS.note('warn', 'تعذّر تحميل قوالب واتساب', MH.err) : null,
-    axKpis([['الرسائل', fmtNum(cards.filter(function (c) { return c[0] !== 'off' && c[0] !== 'rep'; }).length), '', 'squares-four'], ['قوالب واتساب في Meta', fmtNum(WA.length), '', 'chat-circle-dots'], ['مفعّلة في المنصة', fmtNum(Math.max(0, WA.length - nOff)), 'ok', 'check-circle'], ['معتمدة وغير مفعّلة', fmtNum(nOff), '', 'clock'], ['بانتظار Meta أو مرفوضة', fmtNum(nPend), nPend ? 'warn' : '', 'timer']]),
-    e('div', { class: 'm3-tools ax-tools', style: 'display:grid;gap:8px' }, [
-      chipRow(gChips, F.g, function (v) { F.g = v; draw(); }, 'قسم الرسائل'),
-      e('div', { class: 'mh2-tools' }, [e('div', { class: 'q' }, [qIn]), DS.select({ value: F.ch, options: [['all', 'كل القنوات'], ['wa', 'واتساب'], ['mail', 'البريد'], ['app', 'إشعار المنصة'], ['comm', 'مركز الإرسال']], onChange: function (v) { F.ch = v; draw(); } })])]),
-    MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : body];
+/* v603: «مركز القوالب» صفحة القرار الواحدة — كل رسالة بطاقة مفتوحة بلا درج: معاينتها كما تصل (كل القنوات والنسخ معًا بعيّنات حقيقية)،
+   وتحتها قرار كل قالب فيها (اعتماد · تعديل بنص مقترح · حذف · تعليق) وملاحظته واستخداماته. القرار يُسجَّل مرجعًا للتنفيذ — لا يُحذف ولا يُعدَّل قالب من هنا. */
+const MH3 = { inv: null, invAt: 0, invBusy: false, q: [], qBusy: 0, rt: 0, mail: {}, mailBusy: {} };
+const MH3_DEC = [['', 'بلا قرار'], ['approve', 'اعتماد كما هو'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق — يُراجع لاحقًا']];
+const MH3_TONE = { approve: 'ok', edit: 'warn', delete: 'danger', hold: 'info' };
+const MH3_BOT = { first: 'الترحيب الأول', back: 'العودة والقائمة', btn: 'أزرار البوت', closed: 'خارج أوقات العمل', handoff: 'التحويل لموظف', menu: 'القائمة الرئيسية', pin: 'الرمز السري', order: 'الطلبات', pay: 'السداد', faq: 'الأسئلة الشائعة', err: 'الأخطاء', help: 'المساعدة', rate: 'التقييم', verify: 'التحقق', acct: 'الحساب' };
+const MH3_MAIL = [['action_required', 'إجراء مطلوب لاستكمال الملف الوظيفي', 'للموظف عند طلب إجراء على ملفه'], ['action_verified', 'تم التحقق من الإجراء', 'للموظف بعد تحقق المشرف من الإجراء'], ['action_rejected', 'الإجراء يحتاج تعديلًا', 'للموظف عند إعادة الإجراء'],
+  ['staff_approved', 'اعتماد ملف الموظف', 'للموظف عند اعتماد ملفه'], ['staff_returned', 'إعادة ملف الموظف', 'للموظف عند إعادة ملفه للاستكمال'], ['contract_expiring', 'عقد موظف يقارب الانتهاء', 'للمشرف قبل انتهاء عقد موظف وبعده'], ['profile_review', 'غلاف بريد مراجعة الملف', 'الغلاف الذي تصل به رسائل مراجعة الملف بالبريد']];
+function mh3Inv(force) {
+  if (MH3.invBusy || (MH3.invAt && !force)) return;
+  MH3.invBusy = true;
+  liveSb('rpc/admin_tpl_inventory', { body: {} }).then(function (j) { MH3.invBusy = false; MH3.invAt = Date.now(); MH3.inv = j && j.ok ? j : { err: (j && j.error) === 'forbidden' ? 'القرارات لمن يملك صلاحية إعدادات النظام.' : 'تعذّر تحميل القرارات.', dec: [] }; draw(); })
+    .catch(function () { MH3.invBusy = false; MH3.invAt = Date.now(); MH3.inv = { err: 'تعذّر تحميل القرارات.', dec: [] }; draw(); });
 }
-
-/* v602: «قرار القوالب» — كل قوالب الرسائل والإرسال والإشعارات في صفحة واحدة بلا أدراج: القالب بنصه وصورته واستخداماته،
-   وأمامه القرار (اعتماد · تعديل · حذف · تعليق) والملاحظة والنص المقترح. القرار يُسجَّل مرجعًا لإعادة التنظيم — لا يُحذف ولا يُعدَّل قالب من هنا. */
-const TPLR_SRC = [['comm', 'قوالب مركز الإرسال'], ['wa', 'قوالب واتساب المعتمدة من Meta'], ['review', 'رسائل مراجعة الملف والتوثيق'], ['status', 'بريد حالات الطلب'], ['survey', 'الاستبيانات'],
-  ['ntpl', 'قوالب الإشعارات الجاهزة'], ['rep', 'الردود الجاهزة'], ['bot', 'نصوص بوت واتساب'], ['email', 'قوالب البريد في الخادم']];
-const TPLR_DEC = [['', 'بلا قرار'], ['approve', 'اعتماد كما هو'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق — يُراجع لاحقًا']];
-const TPLR_TONE = { approve: 'ok', edit: 'warn', delete: 'danger', hold: 'info' };
-const TPLR = { txt: {} };
-function tplrDay(v) { return v ? String(v).slice(0, 10) : ''; }
-function tplrItems(D) {
-  const L = [], dec = {};
-  (D.dec || []).forEach(function (d) { dec[d.src + '|' + d.key] = d; });
-  const add = function (src, key, o) { const k = String(key); L.push(Object.assign({ src: src, key: k, d: dec[src + '|' + k] || null, media: [], use: [] }, o)); };
-  (D.comm || []).forEach(function (t) {
-    add('comm', t.id, { name: t.name || '—', sub: (t.channel === 'both' ? 'واتساب وبريد' : t.channel === 'wa' ? 'واتساب' : t.channel === 'email' ? 'بريد' : (t.channel || '')) + (t.archived ? ' · مؤرشف' : ''), subject: t.subject || '', body: t.body || '', media: t.media || [],
-      use: [t.sent ? 'أُرسل في ' + fmtNum(t.sent) + ' رسالة' + (t.last ? ' — آخرها ' + tplrDay(t.last) : '') : 'لم يُرسل به شيء من مركز الإرسال', (t.rem || []).length ? 'قاعدة التذكير: ' + t.rem.join('، ') : ''] });
-  });
-  (D.wa || []).forEach(function (t) {
-    let M = null; try { M = MH_T[t.name] || null; } catch (err) { M = null; }
-    const h = M && M[1];
-    add('wa', t.name, { name: M ? M[0] : t.name, sub: t.name + ' · ' + (t.category || '—') + ' · ' + (t.status === 'MISSING' ? 'غير موجود في Meta' : t.status === 'APPROVED' ? 'معتمد من Meta' : (t.status || '—')), lang: t.lang || 'ar', meta: t.status !== 'MISSING',
-      media: h && h !== 'doc' && h !== 'video' ? [{ kind: 'image', url: h }] : h ? [{ kind: h }] : [], vars: M ? M[2] : null,
-      use: [(t.rules || []).length ? 'قواعد الإرسال: ' + t.rules.map(function (r) { return (r.name || r.event) + (r.on ? '' : ' (موقوفة)'); }).join('، ') : '',
-        (t.events || []).length ? 'أحداث المنصة: ' + t.events.map(function (r) { return r.event + (r.on ? '' : ' (موقوف)'); }).join('، ') : '',
-        M && M[5] ? 'يُرسل من: ' + M[5] : '', t.tries ? 'أُرسل ' + fmtNum(t.sent || 0) + ' من ' + fmtNum(t.tries) + ' محاولة' + (t.last ? ' — آخرها ' + tplrDay(t.last) : '') : 'لم يُرسل به شيء'] });
-  });
-  (D.review || []).forEach(function (t) { add('review', t.event_key, { name: t.title || t.subject || t.event_key, sub: 'الحدث: ' + t.event_key, subject: t.subject || '', body: [t.lead, t.note].filter(Boolean).join('\n\n'), use: [t.wa_event_label ? 'واتساب: ' + t.wa_event_label : '', 'يُرسل عند حدث مراجعة الملف «' + t.event_key + '»'] }); });
-  (D.status || []).forEach(function (t) { add('status', t.status, { name: t.title || t.subject || t.status, sub: 'حالة الطلب: ' + t.status, subject: t.subject || '', body: [t.lead, t.note].filter(Boolean).join('\n\n'), use: ['يُرسل بالبريد عند تغيّر حالة الطلب إلى «' + t.status + '»'] }); });
-  (D.survey || []).forEach(function (t) { add('survey', t.key, { name: t.name || t.key, sub: (t.active ? 'مفعّل' : 'غير مفعّل') + (t.auto ? ' · تلقائي' : ''), subject: t.email_subject || '', body: [t.wa_body ? 'واتساب:\n' + t.wa_body : '', t.email_body ? 'البريد:\n' + t.email_body : ''].filter(Boolean).join('\n\n'), use: [t.purpose || '', (t.channels || []).length ? 'القنوات: ' + t.channels.join('، ') : ''] }); });
-  try { Object.keys(CU_NTPLX).forEach(function (k) { const T = CU_NTPLX[k]; add('ntpl', k, { name: T[0], sub: 'في كود المنصة', body: T[1], use: ['قائمة «قالب جاهز» عند إرسال إشعار من «الإشعارات والإعلانات»'] }); }); } catch (err) { void err; }
-  try { cuTplLists().forEach(function (g) { g[2].forEach(function (x) { (Array.isArray(x[1]) ? x[1] : []).forEach(function (t) { add('rep', g[0] + '|' + x[0] + '|' + String(t).slice(0, 120), { name: x[0], sub: g[1] + ' · في كود المنصة', body: String(t), use: ['قائمة «اختر ردًا جاهزًا» — ' + g[1]] }); }); }); }); } catch (err) { void err; }
-  (D.bot || []).forEach(function (t) { add('bot', t.key + '|' + (t.lang || 'ar'), { name: t.key, sub: 'بوت واتساب · ' + (t.lang || 'ar'), body: t.body || '', use: ['ردّ البوت الآلي في واتساب'] }); });
-  (D.email || []).forEach(function (t) { add('email', t.key, { name: t.key, sub: 'نصه في كود الخادم', body: '', use: ['أُرسل ' + fmtNum(t.n) + ' مرة' + (t.last ? ' — آخرها ' + tplrDay(t.last) : '')] }); });
-  /* النص المتكرر: نفس النص (بعد إزالة المسافات) في أكثر من قالب */
-  const N = {}, nz = function (s) { return String(s || '').replace(/\{[^}]*\}/g, '').replace(/\s+/g, '').slice(0, 240); };
-  L.forEach(function (x) { const k = nz(x.body); if (k.length > 12) (N[k] = N[k] || []).push(x); });
-  L.forEach(function (x) { const g = N[nz(x.body)]; x.dup = g && g.length > 1 ? g.filter(function (y) { return y !== x; }).map(function (y) { return y.name; }) : []; });
+function mh3Redraw() { clearTimeout(MH3.rt); MH3.rt = setTimeout(function () { draw(); }, 350); }
+/* جلب نصوص Meta بالدور (اثنان في وقت واحد) — لا ضغط على الخادم */
+function mh3Txt(n) { if (!n || MH.txt[n] || MH.txtBusy[n] || MH3.q.indexOf(n) >= 0) return; MH3.q.push(n); mh3Pump(); }
+function mh3Pump() { while (MH3.qBusy < 2 && MH3.q.length) { const n = MH3.q.shift(); MH3.qBusy++; mhTxt(n, function () { MH3.qBusy = Math.max(0, MH3.qBusy - 1); mh3Redraw(); mh3Pump(); }); } }
+/* بريد الخادم كما يصل: القالب الحقيقي من الخادم بعيّنة */
+function mh3Mail(key) {
+  const R = MH3.mail[key];
+  if (!R && !MH3.mailBusy[key]) { MH3.mailBusy[key] = true; clPost('/admin/api/send-center/mail-preview', { key: key }).then(function (j) { MH3.mailBusy[key] = false; MH3.mail[key] = j; mh3Redraw(); }).catch(function (err) { MH3.mailBusy[key] = false; MH3.mail[key] = { err: (err && err.message) || 'تعذّرت المعاينة.' }; mh3Redraw(); }); }
+  if (!R) return DS.note('info', 'جارٍ تجهيز معاينة البريد…', '');
+  if (R.err || !R.html) return DS.note('warn', 'تعذّرت معاينة البريد', R.err || '');
+  return e('div', { class: 'mh3-mailbox' }, [e('div', { class: 'mh3-mailsj' }, 'الموضوع: ' + (R.subject || '—')), e('iframe', { class: 'mh3-mailf', title: R.subject || 'البريد', sandbox: '', srcdoc: R.html, loading: 'lazy' })]);
+}
+const mh3Fig = function (cap, node) { return node ? e('figure', { class: 'mh3-f' }, [e('figcaption', {}, cap), e('div', { class: 'mh3-fb' }, [node])]) : null; };
+const mh3Bubble = function (text, img) { return e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: img || null, text: text || '', foot: '', buttons: [] })]); };
+const mh3Find = function (src, key) { const D = (MH3.inv && MH3.inv.dec) || []; return D.filter(function (x) { return x.src === src && x.key === String(key); })[0] || null; };
+const mh3InvComm = function (id) { return ((MH3.inv && MH3.inv.comm) || []).filter(function (t) { return t.id === id; })[0] || null; };
+const mh3InvWa = function (n) { return ((MH3.inv && MH3.inv.wa) || []).filter(function (t) { return t.name === n; })[0] || null; };
+function mh3UseWa(n) {
+  const t = mh3InvWa(n), I = mhT(n), L = [];
+  if (I.where) L.push('يُرسل من: ' + I.where);
+  if (t) { if ((t.rules || []).length) L.push('قواعد الإرسال: ' + t.rules.map(function (r) { return (r.name || r.event) + (r.on ? '' : ' (موقوفة)'); }).join('، '));
+    if ((t.events || []).length) L.push('أحداث المنصة: ' + t.events.map(function (r) { return r.event + (r.on ? '' : ' (موقوف)'); }).join('، '));
+    L.push(t.tries ? 'أُرسل ' + fmtNum(t.sent || 0) + ' من ' + fmtNum(t.tries) + ' محاولة' + (t.last ? ' — آخرها ' + String(t.last).slice(0, 10) : '') : 'لم يُرسل به شيء بعد'); }
   return L;
 }
-function tplrWaText(t) {
-  if (!t) return '';
-  if (typeof t === 'string') return t;
-  const b = (t.buttons || []).map(function (x) { return typeof x === 'string' ? x : (x && (x.text || x.url || x.phone_number)) || ''; }).filter(Boolean);
-  return [t.header && t.header.text ? t.header.text : (t.header && t.header.format ? '[ترويسة: ' + t.header.format + ']' : ''), t.body || '', t.footer || '', b.length ? 'الأزرار: ' + b.join(' · ') : ''].filter(Boolean).join('\n\n');
-}
-function tplrCard(x, st, paint, j) {
-  const id = x.src + '|' + x.key, d0 = x.d || {}, S = st[id] || (st[id] = { c: d0.decision || '', n: d0.note || '', p: d0.proposed || '', busy: false });
+function mh3UseComm(id) { const t = mh3InvComm(id); if (!t) return []; return [t.sent ? 'أُرسل من مركز الإرسال في ' + fmtNum(t.sent) + ' رسالة' + (t.last ? ' — آخرها ' + String(t.last).slice(0, 10) : '') : 'لم يُرسل به شيء من مركز الإرسال', (t.rem || []).length ? 'قاعدة التذكير: ' + t.rem.join('، ') : ''].filter(Boolean); }
+/* صف القرار لقالب واحد */
+function mh3Dec(src, key, label, body, use) {
+  key = String(key);
+  const d0 = mh3Find(src, key) || {}, SS = ADM.mh3d || (ADM.mh3d = {}), id = src + '|' + key, S = SS[id] || (SS[id] = { c: d0.decision || '', n: d0.note || '', p: d0.proposed || '', busy: false });
+  const lab = function (k) { return (MH3_DEC.filter(function (z) { return z[0] === (k || ''); })[0] || ['', k])[1]; };
   const save = async function () {
-    if (S.busy) return; S.busy = true; paint();
-    const r = await liveSb('rpc/admin_tpl_decide', { body: { p_src: x.src, p_key: x.key, p_decision: S.c || null, p_note: S.n || '', p_proposed: S.c === 'edit' ? (S.p || '') : '' } }).catch(function () { return null; });
+    if (S.busy) return; S.busy = true; draw();
+    const r = await liveSb('rpc/admin_tpl_decide', { body: { p_src: src, p_key: key, p_decision: S.c || null, p_note: S.n || '', p_proposed: S.c === 'edit' ? (S.p || '') : '' } }).catch(function () { return null; });
     S.busy = false;
-    if (!r || r.ok !== true) { snack((r && (r.message || r.error)) || 'تعذّر حفظ القرار.'); paint(); return; }
-    const L = j.D.dec || (j.D.dec = []), nd = { src: x.src, key: x.key, decision: S.c || null, note: S.n || null, proposed: S.c === 'edit' ? (S.p || null) : null, by_name: 'أنت', updated_at: new Date().toISOString() };
-    const i = L.findIndex(function (y) { return y.src === x.src && y.key === x.key; }); if (i >= 0) L[i] = nd; else L.push(nd);
-    snack('حُفظ القرار.'); paint();
+    if (!r || r.ok !== true) { snack(r && r.error === 'forbidden' ? 'حفظ القرار لمن يملك صلاحية إعدادات النظام.' : 'تعذّر حفظ القرار.'); draw(); return; }
+    const L = (MH3.inv && MH3.inv.dec) || []; if (MH3.inv && !MH3.inv.dec) MH3.inv.dec = L;
+    const nd = { src: src, key: key, decision: S.c || null, note: S.n || null, proposed: S.c === 'edit' ? (S.p || null) : null, by_name: 'أنت', updated_at: new Date().toISOString() };
+    const i = L.findIndex(function (y) { return y.src === src && y.key === key; }); if (i >= 0) L[i] = nd; else L.push(nd);
+    snack('حُفظ القرار: ' + lab(S.c)); draw();
   };
-  const txt = x.src === 'wa' ? TPLR.txt[x.key] : null;
-  const body = x.src === 'wa'
-    ? (txt ? e('div', { class: 'tplr-body' }, tplrWaText(txt)) : x.meta ? DS.button('عرض نص القالب من Meta', { size: 'sm', ui: 'file-text', onClick: async function () {
-        const r = await clPost('/admin/api/send-center/template-text', { name: x.key, lang: x.lang || 'ar' }).catch(function () { return null; });
-        if (!r || !r.ok) { snack((r && r.message) || 'تعذّر جلب نص القالب من Meta الآن.'); return; }
-        TPLR.txt[x.key] = r.tpl; paint(); } }) : e('small', { class: 'cu-dr-hint' }, 'القالب غير موجود في Meta — مذكور في قواعد المنصة فقط.'))
-    : x.body ? e('div', { class: 'tplr-body' }, x.body) : e('small', { class: 'cu-dr-hint' }, 'النص غير محفوظ في القاعدة — في كود الخادم.');
-  const media = (x.media || []).length ? e('div', { class: 'tplr-media' }, x.media.map(function (m) {
-    return m.kind === 'image' && m.url ? e('img', { class: 'tplr-img', src: m.url, alt: m.caption || x.name, loading: 'lazy' }) : DS.badge(m.kind === 'doc' ? 'ترويسة: مستند PDF' : m.kind === 'video' ? 'ترويسة: فيديو' : 'مرفق: ' + (m.kind || '—'), 'info');
-  })) : null;
-  const use = (x.use || []).filter(Boolean);
-  const dec = e('div', { class: 'tplr-dec' }, [
-    DS.editField('القرار', DS.select({ value: S.c, options: TPLR_DEC, onChange: function (v) { S.c = v || ''; if (S.c === 'edit' && !S.p) S.p = x.body || ''; paint(); } })),
-    DS.editField('ملاحظات على القالب', e('textarea', { class: 't2-input', rows: '2', placeholder: 'سبب القرار أو ما يجب تصحيحه…', onInput: function (ev) { S.n = ev.target.value; } }, S.n)),
-    S.c === 'edit' ? DS.editField('النص المقترح بعد التعديل', e('textarea', { class: 't2-input', rows: '4', placeholder: 'اكتب النص كما يجب أن يكون…', onInput: function (ev) { S.p = ev.target.value; } }, S.p || x.body || '')) : null,
-    e('div', { class: 'tplr-act' }, [DS.button(S.busy ? 'جارٍ الحفظ…' : 'حفظ القرار', { size: 'sm', tone: 'primary', ui: 'check', onClick: save }),
-      d0.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر قرار: ' + (TPLR_DEC.filter(function (z) { return z[0] === (d0.decision || ''); })[0] || ['', 'بلا قرار'])[1] + (d0.by_name ? ' — ' + d0.by_name : '') + ' · ' + tplrDay(d0.updated_at)) : null])].filter(Boolean));
-  return e('article', { class: 'tplr-c' + (d0.decision ? ' is-' + d0.decision : '') }, [
-    e('div', { class: 'tplr-h' }, [e('div', {}, [e('b', {}, x.name), e('small', {}, x.sub || '')]),
-      e('div', { class: 'tplr-tags' }, [DS.badge((TPLR_SRC.filter(function (z) { return z[0] === x.src; })[0] || ['', x.src])[1], null), d0.decision ? DS.badge((TPLR_DEC.filter(function (z) { return z[0] === d0.decision; })[0] || ['', d0.decision])[1], TPLR_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn'),
-        x.dup.length ? DS.badge('نصه مكرر في ' + fmtNum(x.dup.length + 1) + ' قوالب', 'warn') : null].filter(Boolean))]),
-    media, x.subject ? e('div', { class: 'tplr-subj' }, ['العنوان: ', e('b', {}, x.subject)]) : null, body,
-    x.vars && x.vars.length ? e('small', { class: 'cu-dr-hint' }, 'المتغيرات: ' + x.vars.map(function (v, i) { return '{{' + (i + 1) + '}} ' + v; }).join(' · ')) : null,
-    x.dup.length ? e('small', { class: 'cu-dr-hint' }, 'النص نفسه في: ' + x.dup.slice(0, 6).join('، ') + (x.dup.length > 6 ? '…' : '')) : null,
-    use.length ? e('ul', { class: 'tplr-use' }, use.map(function (u) { return e('li', {}, u); })) : null,
-    dec].filter(Boolean));
+  return e('div', { class: 'mh3-dec' + (d0.decision ? ' is-' + d0.decision : '') }, [
+    e('div', { class: 'mh3-dec-h' }, [e('b', {}, label), d0.decision ? DS.badge(lab(d0.decision), MH3_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn')]),
+    (use || []).length ? e('ul', { class: 'mh3-use' }, use.map(function (u) { return e('li', {}, u); })) : null,
+    e('div', { class: 'mh3-dec-f' }, [
+      DS.select({ value: S.c, options: MH3_DEC, onChange: function (v) { S.c = v || ''; if (S.c === 'edit' && !S.p) S.p = body || ''; draw(); } }),
+      e('input', { class: 't2-input', type: 'text', value: S.n, placeholder: 'ملاحظة على القالب (اختيارية)', 'aria-label': 'ملاحظة — ' + label, onInput: function (ev) { S.n = ev.target.value; } }),
+      DS.button(S.busy ? 'جارٍ الحفظ…' : 'حفظ القرار', { size: 'sm', tone: 'primary', ui: 'check', onClick: save })]),
+    S.c === 'edit' ? e('textarea', { class: 't2-input', rows: '4', placeholder: 'النص كما يجب أن يكون بعد التعديل', 'aria-label': 'النص المقترح — ' + label, onInput: function (ev) { S.p = ev.target.value; } }, S.p || '') : null,
+    d0.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر قرار: ' + lab(d0.decision) + (d0.by_name ? ' — ' + d0.by_name : '') + ' · ' + String(d0.updated_at).slice(0, 10) + (d0.note ? ' · ' + d0.note : '')) : null].filter(Boolean));
 }
-function lvTplReview() {
-  return admMount('tplr', 'قرار القوالب', async function () {
-    const D = await liveSb('rpc/admin_tpl_inventory', { body: {} });
-    if (!D || D.ok !== true) throw new Error(D && D.error === 'forbidden' ? 'هذه الصفحة لمن يملك صلاحية إعدادات النظام.' : 'تعذّر تحميل القوالب الآن.');
-    return { D: D, at: Date.now() };
-  }, function (j, st, paint, refetch) {
-    const A = tplrItems(j.D), s = ADM.tpS || 'all', dk = ADM.tpD || 'all', q = String(ADM.tpQ || '').trim(), lim = ADM.tpN || 40;
-    const fitD = function (x, k) { const v = (x.d && x.d.decision) || ''; return k === 'all' || (k === 'none' ? !v : k === 'dup' ? x.dup.length > 0 : v === k); };
-    const R = A.filter(function (x) { return (s === 'all' || x.src === s) && fitD(x, dk) && (!q || (x.name + ' ' + x.sub + ' ' + x.key + ' ' + (x.subject || '') + ' ' + (x.body || '')).indexOf(q) >= 0); });
-    const cnt = function (f) { return A.filter(f).length; };
-    const out = [
-      DS.note('info', 'كيف تستخدم الصفحة', 'كل القوالب هنا بنصها وصورتها وأين تُستخدم. اختر لكل قالب قرارًا: اعتماد كما هو · يحتاج تعديل (واكتب النص المقترح) · حذف · تعليق، وأضف ملاحظتك، ثم «حفظ القرار». القرار يُسجَّل مرجعًا لإعادة تنظيم القوالب وتنفيذها لاحقًا — لا يُحذف ولا يُعدَّل قالب من هذه الصفحة.'),
-      axKpis([['كل القوالب', fmtNum(A.length), '', 'files'], ['بلا قرار', fmtNum(cnt(function (x) { return !(x.d && x.d.decision); })), 'warn', 'hourglass-medium'], ['اعتماد', fmtNum(cnt(function (x) { return x.d && x.d.decision === 'approve'; })), 'ok', 'check-circle'],
-        ['تعديل', fmtNum(cnt(function (x) { return x.d && x.d.decision === 'edit'; })), 'warn', 'pencil-simple'], ['حذف', fmtNum(cnt(function (x) { return x.d && x.d.decision === 'delete'; })), 'danger', 'trash'], ['نصه مكرر', fmtNum(cnt(function (x) { return x.dup.length > 0; })), '', 'copy']]),
-      e('div', { class: 'sys-form is-2 cu-bd-form tplr-filters' }, [
-        DS.editField('المصدر', DS.select({ value: s, options: [['all', 'كل المصادر (' + fmtNum(A.length) + ')']].concat(TPLR_SRC.map(function (z) { return [z[0], z[1] + ' (' + fmtNum(cnt(function (x) { return x.src === z[0]; })) + ')']; })), onChange: function (v) { ADM.tpS = v; ADM.tpN = 40; paint(); } })),
-        DS.editField('القرار', DS.select({ value: dk, options: [['all', 'الكل'], ['none', 'بلا قرار'], ['approve', 'اعتماد'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق'], ['dup', 'نصه مكرر']], onChange: function (v) { ADM.tpD = v; ADM.tpN = 40; paint(); } })),
-        DS.editField('بحث في الاسم أو النص', e('input', { class: 't2-input', type: 'search', value: q, placeholder: 'اكتب ثم اضغط إدخال', onChange: function (ev) { ADM.tpQ = ev.target.value; ADM.tpN = 40; paint(); } }))]),
-      e('div', { class: 'tplr-top' }, [e('small', { class: 'cu-dr-hint' }, 'يظهر ' + fmtNum(Math.min(lim, R.length)) + ' من ' + fmtNum(R.length) + ' قالبًا'), DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { refetch(); } })])];
-    let last = '';
-    const list = [];
-    R.slice(0, lim).forEach(function (x) { if (s === 'all' && x.src !== last) { last = x.src; list.push(e('h3', { class: 'tplr-sec' }, (TPLR_SRC.filter(function (z) { return z[0] === x.src; })[0] || ['', x.src])[1])); } list.push(tplrCard(x, st, paint, j)); });
-    out.push(R.length ? e('div', { class: 'tplr-list' }, list) : LDS.emptyState({ icon: 'ok', title: 'لا قوالب بهذا الاختيار', compact: true }));
-    if (R.length > lim) out.push(e('div', { class: 'tplr-more' }, [DS.button('عرض المزيد (' + fmtNum(R.length - lim) + ')', { ui: 'caret-down', onClick: function () { ADM.tpN = lim + 40; paint(); } })]));
-    return out;
+function mh3WaBody(n) { const T = MH.txt[n]; return T && !T.err ? [T.header && T.header.text ? T.header.text : '', T.body || '', T.footer || ''].filter(Boolean).join('\n\n') : ''; }
+function mh3Card(o) {
+  return e('article', { class: 'mh3-c' }, [
+    e('div', { class: 'mh3-h' }, [e('div', {}, [e('b', {}, o.t), o.w ? e('small', {}, o.w) : null]),
+      e('div', { class: 'mh3-tags' }, (o.ch || []).map(function (c) { return DS.badge(MH_CH[c] ? MH_CH[c][0] : c, null); }).concat(o.tag ? [DS.badge(o.tag, o.tagTone || 'info')] : []))]),
+    o.note || null,
+    (o.pv || []).filter(Boolean).length ? e('div', { class: 'mh3-pv' }, o.pv.filter(Boolean)) : null,
+    o.info || null,
+    (o.dec || []).length ? e('div', { class: 'mh3-decs' }, o.dec) : null,
+    (o.tools || []).filter(Boolean).length ? e('div', { class: 'mh3-tools' }, o.tools.filter(Boolean)) : null].filter(Boolean));
+}
+/* أوصاف خفيفة لكل البطاقات أولًا (للتصفية والعدّ)، والبناء الثقيل (المعاينات) للظاهر منها فقط */
+function mh3Items() {
+  const L = [], inv = MH3.inv || {};
+  const tWa = function (n) { const T = MH.txt[n]; return T && !T.err ? (T.body || '') : ''; };
+  MH_MSG.forEach(function (m) {
+    const sv = m.sv ? mhSurv(m.sv) : null; if (m.sv && !sv) return;
+    const comm = (m.comm || []).map(mhComm).filter(Boolean), st = (m.st || []).map(mhStat).filter(Boolean);
+    if (!(m.wa || []).length && !sv && !comm.length && !st.length) return;
+    const keys = (m.wa || []).map(function (n) { return 'wa|' + n; }).concat(comm.map(function (t) { return 'comm|' + t.id; }), sv ? ['survey|' + sv.key] : [], st.map(function (x) { return 'status|' + x.status; }));
+    L.push({ g: m.g, t: m.t || (sv && sv.name) || '—', ch: mhMsgCh(m), keys: keys, hit: [m.t, m.w].concat(m.wa || [], m.comm || [], sv ? [sv.name, sv.wa_body] : [], (m.wa || []).map(tWa), comm.map(function (t) { return t.body; })), build: function () {
+      const pv = [], dec = [], tools = [];
+      (m.wa || []).forEach(function (n, i) { mh3Txt(n); pv.push(mh3Fig('واتساب — ' + (m.wa.length > 1 ? (i ? 'احتياطي ' + i : 'الأساسي') + ' · ' : '') + mhT(n).label, mhWaPhone(n)));
+        dec.push(mh3Dec('wa', n, 'قالب واتساب: ' + mhT(n).label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))); });
+      comm.forEach(function (t) { const T = mh3InvComm(t.id), img = T && (T.media || []).filter(function (x) { return x.kind === 'image' && x.url; })[0];
+        pv.push(mh3Fig('مركز الإرسال — واتساب · ' + t.name, mh3Bubble(mhFillComm(t.body), img ? img.url : null)));
+        if (t.subject) pv.push(mh3Fig('مركز الإرسال — البريد · ' + t.name, mhMail(t.subject, '', t.body, '')));
+        dec.push(mh3Dec('comm', t.id, 'قالب مركز الإرسال: ' + t.name, t.body, mh3UseComm(t.id))); });
+      if (sv) { const C = sv.channels || [];
+        if (C.indexOf('whatsapp') >= 0 && sv.wa_body) pv.push(mh3Fig('واتساب — الاستبانة', mh3Bubble(mhFillComm(sv.wa_body))));
+        if (C.indexOf('email') >= 0) pv.push(mh3Fig('البريد — الاستبانة', mhMail(sv.email_subject, sv.name, sv.email_body, '')));
+        dec.push(mh3Dec('survey', sv.key, 'الاستبانة: ' + sv.name, sv.wa_body || sv.email_body || '', [(sv.active ? 'مفعّلة' : 'موقوفة') + ' · ' + (sv.auto ? 'آلية' : 'يدوية'), sv.trigger_note || ''].filter(Boolean)));
+        tools.push(DS.button('فتح محرر الاستبانة', { size: 'sm', ui: 'pencil-simple', onClick: function () { cxTplOpen(sv); } })); }
+      st.forEach(function (x) { pv.push(mh3Fig('البريد — ' + (x.title || x.status), mhMail(x.subject, x.title, x.lead, x.note)));
+        dec.push(mh3Dec('status', x.status, 'بريد حالة الطلب: ' + (x.title || x.status), [x.lead, x.note].filter(Boolean).join('\n\n'), ['يُرسل عند تغيّر حالة الطلب إلى «' + x.status + '»'])); });
+      if (comm.length) tools.push(DS.button('فتح محرر رسائل مركز الإرسال', { size: 'sm', ui: 'paper-plane-tilt', onClick: function () { go('other', 'comm-tpl'); } }));
+      return mh3Card({ t: m.t || (sv && sv.name) || '—', w: m.w || (sv && sv.trigger_note) || '', ch: mhMsgCh(m), tag: sv ? (sv.active ? (sv.auto ? 'آلية' : 'يدوية') : 'موقوفة') : null, pv: pv, dec: dec, tools: tools });
+    } });
   });
+  /* مراحل التوثيق وطلبات الخدمة: العنوان من عنوان الرسالة نفسها لا من اسم الحدث المختصر */
+  (MH.stages || []).forEach(function (s) {
+    const k = s.event_key, off = MH_PV_OFF[k] || (MH_PV_STAFF[k] ? 'إشعار للفريق داخل المنصة — لا يصل صاحب الملف' : ''), C = off ? ['app'] : ['wa', 'mail', 'app'];
+    const img = MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, tpl = img ? 'tera_profile_review_img' : 'tera_profile_review_update';
+    const ttl = s.title || s.subject || s.wa_event_label || k;
+    L.push({ g: (k === 'launched' || k === 'film_ready') ? 'acct' : 'ver', t: ttl, ch: C, keys: ['review|' + k], hit: [k, s.wa_event_label, s.subject, s.title, s.lead, s.note], build: function () {
+      const vals = ['محمد الشمري', 'REQ-10458', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', 'tera-services.com.sa/clients'];
+      const pv = [];
+      if (!off) { mh3Txt(tpl); pv.push(mh3Fig('واتساب — ' + (img ? 'بصورة المرحلة' : 'نصي'), mhWaPhone(tpl, img, vals))); pv.push(mh3Fig('البريد', mhMail(s.subject, s.title, s.lead, s.note))); }
+      pv.push(mh3Fig('إشعار المنصة', mhApp(s.wa_event_label || ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''))));
+      return mh3Card({ t: ttl, w: (s.wa_event_label ? 'المرحلة: ' + s.wa_event_label + ' · ' : '') + 'الحدث ' + k, ch: C, tag: MH_PV_STAFF[k] ? 'للفريق' : null, note: off ? DS.note('info', 'ملاحظة', off) : null, pv: pv,
+        dec: [mh3Dec('review', k, 'رسالة المرحلة: ' + ttl, [s.lead, s.note].filter(Boolean).join('\n\n'), [off ? off : 'يُرسل عند حدث «' + k + '» بواتساب (' + tpl + ') والبريد وإشعار المنصة'])] });
+    } });
+  });
+  /* قوالب Meta المعتمدة غير المفعّلة — ومعها الرسالة المفعّلة التي تكررها إن وُجدت */
+  Object.keys(MH_T).filter(function (n) { return !MH_T[n][4]; }).forEach(function (n) {
+    const I = mhT(n), nz = function (x) { return String(x || '').replace(/[\s—\-·]+/g, ''); };
+    const twin = MH_MSG.filter(function (m) { return nz(m.t) === nz(I.label) || (m.comm || []).some(function (c) { return nz(c) === nz(I.label); }) || (nz(m.t).length > 4 && (nz(I.label).indexOf(nz(m.t)) >= 0 || nz(m.t).indexOf(nz(I.label)) >= 0)); })[0];
+    L.push({ g: 'off', t: I.label, ch: ['wa'], keys: ['wa|' + n], hit: [n, I.label, tWa(n)], build: function () {
+      mh3Txt(n);
+      return mh3Card({ t: I.label, w: n + ' — معتمد في Meta ولا يرسله أي حدث الآن', ch: ['wa'], tag: twin ? 'يكرر رسالة مفعّلة' : 'غير مفعّل', tagTone: twin ? 'warn' : 'info',
+        note: twin ? DS.note('warn', 'يكرر رسالة مفعّلة', 'الرسالة المفعّلة «' + twin.t + '» (' + ((MH_GRP.filter(function (g) { return g[0] === twin.g; })[0] || [])[1] || '') + ') تؤدي الغرض نفسه — المقترح: حذفه من Meta أو ربطه بدلها.') : null,
+        pv: [mh3Fig('واتساب — كما يصل', mhWaPhone(n))], dec: [mh3Dec('wa', n, 'قالب واتساب: ' + I.label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))] });
+    } });
+  });
+  /* قوالب واتساب في Meta لا تخص رسالة بعينها (قالبا مراحل التوثيق وما يرسله الكود مباشرة) — كل قالب مرة واحدة */
+  const usedWa = {}; MH_MSG.forEach(function (m) { (m.wa || []).forEach(function (n) { usedWa[n] = 1; }); }); Object.keys(MH_T).forEach(function (n) { if (!MH_T[n][4]) usedWa[n] = 1; });
+  ((inv.wa || []).map(function (t) { return t.name; }).concat(Object.keys(MH_T))).filter(function (n, i, a) { return n && !usedWa[n] && a.indexOf(n) === i; }).forEach(function (n) {
+    const I = mhT(n);
+    L.push({ g: /^tera_profile_review/.test(n) ? 'ver' : 'gen', t: I.label, ch: ['wa'], keys: ['wa|' + n], hit: [n, I.label, I.where, tWa(n)], build: function () {
+      mh3Txt(n);
+      return mh3Card({ t: I.label, w: n + (I.where ? ' — ' + I.where : ''), ch: ['wa'], tag: /^tera_profile_review/.test(n) ? 'قالب مراحل التوثيق' : 'يرسله الكود', pv: [mh3Fig('واتساب — كما يصل', mhWaPhone(n))], dec: [mh3Dec('wa', n, 'قالب واتساب: ' + I.label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))] });
+    } });
+  });
+  /* إشعارات المنصة الجاهزة (قائمة «قالب جاهز» عند إرسال إشعار) */
+  try { Object.keys(CU_NTPLX).forEach(function (k) { const T = CU_NTPLX[k];
+    L.push({ g: 'app', t: T[0], ch: ['app'], keys: ['ntpl|' + k], hit: [T[0], T[1]], build: function () {
+      return mh3Card({ t: T[0], w: 'قالب جاهز عند إرسال إشعار من «الإشعارات والإعلانات»' + (T[2] ? ' — برابط إلى ' + ({ store: 'المتجر', profile: 'الملف الشخصي', pay: 'المدفوعات' }[T[2]] || T[2]) : ''), ch: ['app'],
+        pv: [mh3Fig('إشعار المنصة — كما يصل', mhApp(T[0], T[1]))], dec: [mh3Dec('ntpl', k, 'قالب الإشعار: ' + T[0], T[1], ['في كود المنصة — يُعدَّل بإصدار'])] });
+    } }); }); } catch (err) { void err; }
+  /* بريد الخادم (يُبنى في الخادم من قالبه) */
+  MH3_MAIL.forEach(function (x) { const u = ((inv.email || []).filter(function (y) { return y.key === x[0]; })[0]);
+    L.push({ g: 'mail', t: x[1], ch: ['mail'], keys: ['email|' + x[0]], hit: [x[0], x[1], x[2]], build: function () {
+      return mh3Card({ t: x[1], w: x[2] + ' — ' + x[0], ch: ['mail'], pv: [mh3Fig('البريد — كما يصل (من قالب الخادم بعيّنة)', mh3Mail(x[0]))],
+        dec: [mh3Dec('email', x[0], 'بريد الخادم: ' + x[1], '', [u ? 'أُرسل ' + fmtNum(u.n) + ' مرة' + (u.last ? ' — آخرها ' + String(u.last).slice(0, 10) : '') : 'لم يُرسل بعد', 'نصه في كود الخادم — يُعدَّل بإصدار'])] });
+    } }); });
+  /* ردود بوت واتساب: مجموعة لكل نوع، وكل رد فقاعة كما يصل */
+  const BF = {}; (inv.bot || []).forEach(function (b) { const f = String(b.key || '').split(/[_.]/)[0] || 'other'; (BF[f] = BF[f] || []).push(b); });
+  Object.keys(BF).sort().forEach(function (f) { const B = BF[f], isBtn = f === 'btn';
+    L.push({ g: 'bot', t: MH3_BOT[f] || ('ردود «' + f + '»'), ch: ['wa'], keys: B.map(function (b) { return 'bot|' + b.key + '|' + (b.lang || 'ar'); }), hit: [f].concat(B.map(function (b) { return b.key + ' ' + b.body; })), build: function () {
+      return mh3Card({ t: MH3_BOT[f] || ('ردود «' + f + '»'), w: fmtNum(B.length) + (isBtn ? ' زرًا في قوائم البوت' : ' ردًا آليًا'), ch: ['wa'],
+        pv: isBtn ? [mh3Fig('أسماء الأزرار كما تظهر', e('div', { class: 'mh3-btns' }, B.map(function (b) { return e('span', { class: 'mh3-btn' }, b.body || b.key); })))] : B.slice(0, 40).map(function (b) { return mh3Fig(b.key + (b.lang && b.lang !== 'ar' ? ' · ' + b.lang : ''), mh3Bubble(b.body || '')); }),
+        dec: B.map(function (b) { return mh3Dec('bot', b.key + '|' + (b.lang || 'ar'), (isBtn ? 'زر: ' : 'رد: ') + b.key + ' — ' + String(b.body || '').slice(0, 60), b.body || '', null); }) });
+    } }); });
+  /* الردود الجاهزة: كل قائمة بنصوصها */
+  (function () { try { return cuTplLists(); } catch (e2) { return []; } })().forEach(function (g) {
+    L.push({ g: 'rep', t: g[1], ch: [], keys: g[2].map(function (x) { return 'rep|' + g[0] + '|' + x[0]; }), hit: [g[1]].concat(g[2].map(function (x) { return x[0] + ' ' + (x[1] || []).join(' '); })), build: function () {
+      return mh3Card({ t: 'الردود الجاهزة — ' + g[1], w: g[2].map(function (x) { return x[0]; }).join(' · '),
+        pv: g[2].map(function (x) { return mh3Fig(x[0] + ' (' + fmtNum((x[1] || []).length) + ')', e('ol', { class: 'mh3-rep' }, (x[1] || []).map(function (t) { return e('li', {}, String(t)); }))); }),
+        dec: g[2].map(function (x) { return mh3Dec('rep', g[0] + '|' + x[0], 'القائمة: ' + x[0], (x[1] || []).join('\n'), ['قائمة «اختر ردًا جاهزًا» — ' + g[1]]); }),
+        tools: [DS.button('فتح محرر الردود الجاهزة', { size: 'sm', ui: 'pencil-simple', onClick: function () { go('other', 'sys-replies'); } })] });
+    } });
+  });
+  /* ترتيب البطاقات بترتيب الأقسام — كل قسم في مكان واحد */
+  const gi = function (g) { const i = MH_GRP.findIndex(function (x) { return x[0] === g; }); return i < 0 ? 99 : i; };
+  return L.map(function (x, i) { return [x, i]; }).sort(function (a, b) { return gi(a[0].g) - gi(b[0].g) || a[1] - b[1]; }).map(function (x) { return x[0]; });
+}
+function msgHubPage() {
+  if (!LIVE.on) return [liveEmptyNote('مركز القوالب')];
+  mhCss(); mhLoad(false); mh3Inv(false);
+  try { commReady('قوالب الإرسال', ['tpl']); } catch (e0) { void e0; }
+  try { cxReady('قوالب الاستبانات', ['set']); } catch (e1) { void e1; }
+  const F = ADM.mh2 || (ADM.mh2 = { g: 'all', q: '', ch: 'all' }); if (!F.d) F.d = 'all'; if (!F.lim) F.lim = 10;
+  const q = String(F.q || '').trim().toLowerCase();
+  const A = mh3Items();
+  const dOf = function (k) { const i = k.indexOf('|'), d = mh3Find(k.slice(0, i), k.slice(i + 1)); return (d && d.decision) || ''; };
+  const fitD = function (o) { if (F.d === 'all') return true; const D = o.keys.map(dOf); return F.d === 'none' ? D.some(function (x) { return !x; }) : D.indexOf(F.d) >= 0; };
+  const R = A.filter(function (o) { return (F.g === 'all' || o.g === F.g) && (F.ch === 'all' || (o.ch || []).indexOf(F.ch) >= 0) && fitD(o) && (!q || o.hit.some(function (x) { return String(x || '').toLowerCase().indexOf(q) >= 0; })); });
+  const K = [].concat.apply([], A.map(function (o) { return o.keys; })).filter(function (k, i, a) { return a.indexOf(k) === i; }), KD = K.map(dOf), nD = function (v) { return KD.filter(function (x) { return x === v; }).length; };
+  const cntG = function (g) { return A.filter(function (o) { return o.g === g; }).length; };
+  const sync = DS.button(MH.syncing ? 'جارٍ المزامنة…' : 'مزامنة الحالة من Meta', { size: 'sm', ui: 'arrows-clockwise', disabled: MH.syncing, onClick: function () {
+    MH.syncing = true; draw();
+    clPost('/admin/api/send-center/templates-sync', {}).then(function (j) { MH.syncing = false; MH.txt = {}; snack('تمت المزامنة — ' + fmtNum(j.count || 0) + ' قالبًا من Meta.'); mhLoad(true); mh3Inv(true); })
+      .catch(function (err) { MH.syncing = false; snack((err && err.message) || 'تعذّرت المزامنة.'); draw(); }); } });
+  const list = []; let last = '';
+  R.slice(0, F.lim).forEach(function (o) { if (o.g !== last) { last = o.g; const G = MH_GRP.filter(function (g) { return g[0] === o.g; })[0] || [o.g, o.g, 'squares-four'];
+    list.push(e('div', { class: 'mh2-sec-h mh3-sec' }, [frag(ui(G[2], 18)), G[1], e('span', { class: 'n' }, fmtNum(R.filter(function (x) { return x.g === o.g; }).length))])); }
+    list.push(o.build()); });
+  const WA = MH.wa || [];
+  return [cuBdInt(true),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل رسائل المنصة وقوالبها في مكان واحد: المعاينة كما تصل للعميل أو الموظف، وقرار كل قالب.')]), e('div', { class: 'ax-top-a' }, [sync])]),
+    DS.note('info', 'كيف تستخدم الصفحة', 'كل بطاقة رسالة واحدة، وفيها معاينتها كما تصل بكل قنواتها ونسخها بعيّنات حقيقية، ثم قرار كل قالب فيها: اعتماد كما هو · يحتاج تعديل (واكتب النص المقترح) · حذف · تعليق، مع ملاحظتك، ثم «حفظ القرار». القرار يُسجَّل مرجعًا لإعادة التنظيم والتنفيذ بعد موافقتك — لا يُحذف ولا يُعدَّل قالب من هذه الصفحة.'),
+    MH.err ? DS.note('warn', 'تعذّر تحميل قوالب واتساب', MH.err) : null, MH3.inv && MH3.inv.err ? DS.note('warn', 'القرارات', MH3.inv.err) : null,
+    axKpis([['الرسائل والقوالب', fmtNum(A.length) + ' بطاقة · ' + fmtNum(K.length) + ' قالبًا', '', 'squares-four'], ['بلا قرار', fmtNum(nD('')), 'warn', 'hourglass-medium'], ['اعتماد', fmtNum(nD('approve')), 'ok', 'check-circle'],
+      ['تعديل', fmtNum(nD('edit')), 'warn', 'pencil-simple'], ['حذف', fmtNum(nD('delete')), 'danger', 'trash'], ['قوالب واتساب في Meta', fmtNum(WA.length) + ' · بانتظار ' + fmtNum(WA.filter(function (t) { return t.status !== 'APPROVED'; }).length), '', 'chat-circle-dots']]),
+    e('div', { class: 'sys-form is-2 cu-bd-form mh3-filters' }, [
+      DS.editField('القسم', DS.select({ value: F.g, options: [['all', 'كل الأقسام (' + fmtNum(A.length) + ')']].concat(MH_GRP.filter(function (g) { return cntG(g[0]); }).map(function (g) { return [g[0], g[1] + ' (' + fmtNum(cntG(g[0])) + ')']; })), onChange: function (v) { F.g = v; F.lim = 10; draw(); } })),
+      DS.editField('القناة', DS.select({ value: F.ch, options: [['all', 'كل القنوات'], ['wa', 'واتساب'], ['mail', 'البريد'], ['app', 'إشعار المنصة'], ['comm', 'مركز الإرسال']], onChange: function (v) { F.ch = v; F.lim = 10; draw(); } })),
+      DS.editField('القرار', DS.select({ value: F.d, options: [['all', 'الكل'], ['none', 'فيها قالب بلا قرار'], ['approve', 'اعتماد'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق']], onChange: function (v) { F.d = v; F.lim = 10; draw(); } })),
+      DS.editField('بحث في الاسم أو النص', e('input', { class: 't2-input', type: 'search', value: F.q || '', placeholder: 'اكتب ثم اضغط إدخال', onChange: function (ev) { F.q = ev.target.value; F.lim = 10; draw(); } }))]),
+    e('div', { class: 'mh3-top' }, [e('small', { class: 'cu-dr-hint' }, 'يظهر ' + fmtNum(Math.min(F.lim, R.length)) + ' من ' + fmtNum(R.length) + ' بطاقة'), DS.button('إنشاء رسالة لمركز الإرسال', { size: 'sm', ui: 'plus', onClick: function () { go('other', 'comm-tpl'); } })]),
+    MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : null,
+    R.length ? e('div', { class: 'mh3-list' }, list) : DS.note('info', 'لا رسائل بهذا الاختيار', ''),
+    R.length > F.lim ? e('div', { class: 'mh3-more' }, [DS.button('عرض المزيد (' + fmtNum(R.length - F.lim) + ')', { ui: 'caret-down', onClick: function () { F.lim += 10; draw(); } })]) : null].filter(Boolean);
 }
 function sysRepliesPage() {
   const can = cuCan('settings.replies'), OP = ADM.sysT || (ADM.sysT = {}), NW = ADM.sysTn || (ADM.sysTn = {});
@@ -8515,7 +8569,7 @@ function sysRegister() {
   lp('sys-ntpl', 'قوالب الإشعارات', 'sys', 'sys-ntpl', sysNtplPage);
   lp('sys-push', 'إشعارات الجوال والويب', 'sys', 'sys-push', sysPushPage);
   lp('sys-msg', 'مركز القوالب', 'sys', 'sys-msg', msgHubPage);
-  lp('sys-tpl', 'قرار القوالب', 'sys', 'sys-tpl', lvTplReview); /* v602 */
+  lp('sys-tpl', 'مركز القوالب', 'sys', 'sys-tpl', msgHubPage); /* v603: «قرار القوالب» صار داخل «مركز القوالب» — المفتاح باقٍ للروابط القديمة */
   try { Object.assign(ICON, { 'sys-tpl': ['list-checks', 'navy'] }); } catch (err) { void err; }
   lp('sys-csend', 'إعدادات الإرسال للعملاء', 'sys', 'sys-csend', sysCliSendPage); /* v551 */
   try { Object.assign(ICON, { 'sys-csend': ['clock', 'teal'] }); } catch (err) { void err; } /* v541 */
@@ -21905,10 +21959,9 @@ function admSysPage() {
     /* v405: كل مهمة في مكان واحد — المراسلة والإشعارات مجتمعة، وبيانات المنشأة والضريبة معًا، والخصم والنقاط مع نظام النقاط،
        والقوالب والمستندات للمستندات وحدها، والتشغيل للمدد والسجل */
     /* v591: القوالب بطاقةً لكل مجموعة (عنوان المجموعة ورسائلها) تفتح مركز القوالب على مجموعتها — بدل بطاقة جامعة، وأدوات التحرير والإرسال في مجموعة مستقلة بلا تكرار */
-    ['comm', 'قوالب الرسائل', 'squares-four:navy', [{ ic: 'list-checks:navy', t: 'قرار القوالب', d: 'كل القوالب في صفحة واحدة بنصها وصورتها واستخداماتها: اعتماد · تعديل · حذف · ملاحظات — مرجع إعادة التنظيم', go: function () { go('other', 'sys-tpl'); } }].concat(MH_GRP.filter(function (g) { return g[0] !== 'rep'; }).map(function (g) { return { ic: g[2] + ':navy', t: g[1], d: mhGrpDesc(g[0]), go: function () { ADM.mh2 = { g: g[0], q: '', ch: 'all' }; go('other', 'sys-msg'); } }; }))],
-    ['commset', 'الإرسال والإشعارات', 'paper-plane-tilt:sky', [c('file-text:gold', 'رسائل مركز الإرسال', 'إنشاء وتعديل الرسائل التي تختارها في «مركز الإرسال» — البريد وواتساب بالهوية', 'comm-tpl'),
-      c('star:gold', 'تعديل الاستبانات', 'أسئلة التقييم ونص واتساب والبريد ومتى تُرسل', 'sys-cx-tpl'), c('chat-circle-dots:teal', 'الردود الجاهزة', 'أسباب الإعادة والرفض وردود التذاكر', 'sys-replies'),
-      c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة، والرسالة المباشرة بكل القنوات', 'sys-push'),
+    ['comm', 'قوالب الرسائل', 'squares-four:navy', [{ ic: 'squares-four:navy', t: 'مركز القوالب', d: 'كل رسائل المنصة وقوالبها في صفحة واحدة: المعاينة كما تصل · الاعتماد والتعديل والحذف والملاحظات · الاستخدامات', go: function () { ADM.mh2 = { g: 'all', q: '', ch: 'all' }; go('other', 'sys-msg'); } }]],
+    ['commset', 'الإرسال والإشعارات', 'paper-plane-tilt:sky', /* v603: محرّرات القوالب تُفتح من بطاقة القالب في «مركز القوالب» — لا بطاقات مكررة هنا */
+      [c('device-mobile:teal', 'إشعارات الجوال والويب', 'إرسال إشعار يصل حتى والمنصة مغلقة، والرسالة المباشرة بكل القنوات', 'sys-push'),
       c('clock:teal', 'إعدادات الإرسال للعملاء', 'متى تصل رسائل العملاء الآلية (ساعات الإرسال) · تقييم السداد فورًا بعد كل دفعة', 'sys-csend')]],
     ['cx', 'تجربة العملاء والجودة', 'star:gold', [c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة', 'sys-cx')]] /* v541: قوالب التقييم في «المراسلة والإشعارات» */,
     ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والعنوان والتواصل والحساب البنكي', 'sys-org'),
