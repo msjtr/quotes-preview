@@ -9267,3 +9267,21 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 @media (max-width:30rem){.stl-dc-r{grid-template-columns:auto minmax(0,1fr)}.stl-dc-r>.t2-input,.stl-dc-r>span:last-child:empty{grid-column:1/-1}.stl-dc-add{grid-template-columns:minmax(0,1fr)}}
 /* v581: عناصر النموذج العريضة (بطاقة الحساب · التحقق · الأقسام الفرعية) بعرض المجموعة، والآيبان لا يُقصّ */
 .t2-subf-g>.is-wide{grid-column:1/-1}
+
+/* v590: متابعة إكمال الملف (العملاء الجدد) — بطاقة منظمة بدل الشرائح */
+.nr-fu{grid-column:1/-1;margin:0 14px 14px;padding:12px 14px;border:1px solid var(--t2-line);border-radius:var(--t2-r);background:var(--t2-surface);display:grid;gap:10px}
+.nr-fu-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font:800 var(--t2-fs-sm)/1.5 var(--t2-ff-display);color:var(--t2-ink)}
+.nr-fu-kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 16px;margin:0;font-size:var(--t2-fs-sm);line-height:1.7}
+.nr-fu-kv dt{color:var(--t2-muted);font-weight:700}
+.nr-fu-kv dd{margin:0;color:var(--t2-ink);overflow-wrap:anywhere}
+.nr-fu-msg{display:grid;gap:6px}
+.nr-fu-bub{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--t2-surface-2);border:1px solid var(--t2-line);border-radius:12px;padding:10px 12px;line-height:1.9;font-size:var(--t2-fs-sm);color:var(--t2-ink)}
+.nr-fu-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
+@media (max-width:640px){.nr-fu{margin:0 10px 12px}.nr-fu-kv{grid-template-columns:1fr;gap:2px}.nr-fu-kv dd{margin-bottom:6px}}
+/* v590: «نص الملف» صفوفًا مرتبة كما في الملف */
+.lv-pdf-txt{position:sticky;top:0;z-index:2;background:var(--t2-surface);padding:10px 12px;border-bottom:1px solid var(--t2-line);display:grid;gap:8px;max-height:46vh;overflow:auto}
+.lv-txt-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.lv-txt-rows{display:grid;gap:4px;direction:rtl}
+.lv-txt-r{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;background:var(--t2-surface-2)}
+.lv-txt-c{unicode-bidi:plaintext;user-select:text;-webkit-user-select:text;cursor:copy;padding:2px 8px;border-radius:6px;border:1px solid var(--t2-line);background:var(--t2-surface);color:var(--t2-ink);font-size:var(--t2-fs-sm);line-height:1.7}
+.lv-txt-c:hover{border-color:var(--t2-brand);background:var(--t2-brand-wash)}

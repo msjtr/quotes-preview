@@ -20857,6 +20857,9 @@ function admTwoStep(label, tone, run, icon) {
 const VER_EVK = { created: 'أُنشئ الطلب', submitted: 'أُرسل للتوثيق', resubmitted: 'أُعيد إرساله', received: 'استُلم للمراجعة', assigned: 'إسناد', unassigned: 'إلغاء الإسناد', item_match: 'بند مطابق', item_mismatch: 'بند غير مطابق', approved: 'اعتُمد', returned: 'أُعيد للتعديل', rejected: 'رُفض', note: 'ملاحظة داخلية', reopened: 'أُعيد فتحه', seed_refill: 'تحديث البنود' };
 const VER_ST2 = { draft: ['مسودة', null], submitted: ['بانتظار الاستلام', 'warn'], received: ['قيد المراجعة', 'info'], under_review: ['قيد المراجعة', 'info'], approved: ['معتمد', 'ok'], returned: ['معاد للتعديل', 'warn'], rejected: ['مرفوض', 'danger'] };
 const VER_ERR = { not_pending: 'الطلب ليس قيد المراجعة.', self_decision: 'لا يراجع صاحب الملف ملفه بنفسه.', staff_required: 'الإسناد لموظف نشط فقط.', no_permission: 'لا تملك صلاحية هذا الإجراء.', not_received: 'استلم الطلب أولًا.', note_required: 'اكتب الملاحظة أولًا.', not_found: 'الطلب غير موجود.', session_invalid: 'انتهت الجلسة — سجّل الدخول من جديد.', items_pending: 'بقيت بنود لم تُطابق بعد.', has_mismatch: 'يوجد بند غير مطابق — أعد الطلب للتعديل بدل الاعتماد.', no_file: 'لا يوجد ملف مرفق لهذا البند.' };
+/* v590 */
+Object.assign(VER_ERR, { reason_required: 'اكتب السبب أولًا.', value_required: 'أدخل القيمة الجديدة.', same_value: 'القيمة لم تتغيّر.', bad_option: 'القيمة ليست من خيارات الحقل.', bad_date: 'التاريخ غير صالح.', apply_failed: 'تعذّر حفظ القيمة في ملف العميل.', identity_field: 'حقول الدخول (الجوال والبريد) يعدّلها صاحب الحساب.', bank_admin_only: 'تعديل الحساب البنكي للمشرف العام فقط.', not_editable: 'هذا البند لا يُعدَّل من هنا.', nothing_to_reset: 'لا توجد بنود مطابقة لإلغائها.', bank_locked: 'الحساب البنكي يصحّحه العميل نفسه — اجعل البند «غير مطابق» ليُعاد إليه.', edit_not_applied: 'لم تُحفظ القيمة في ملف العميل — لم يتغيّر شيء.', too_long: 'النص أطول من المسموح.' });
+const VER_EDIT_WHY = { identity_field: VER_ERR.identity_field, bank_admin_only: VER_ERR.bank_admin_only, bank_locked: VER_ERR.bank_locked, self_decision: VER_ERR.self_decision, not_received: VER_ERR.not_received, not_editable: 'المرفقات تُستبدل من صاحب الملف — لا تُعدَّل من هنا.', not_found: 'البند غير موجود.' };
 function verErr(j) { return (j && (VER_ERR[j.error] || (typeof ADM_ERR !== 'undefined' && ADM_ERR[j.error]) || j.message || j.error)) || 'تعذّر تنفيذ الإجراء.'; }
 function verDate(s) { return s ? bdiD(String(s).slice(0, 16).replace('T', ' ')) : '—'; }
 async function admVerDoc(it) {
@@ -21031,6 +21034,22 @@ function admVerOpen2(r) {
             U.mode = ''; act('it:' + it.id, 'admin_verification_item_decide', { p_item: it.id, p_verdict: 'mismatch', p_reason: why }, 'سُجّل: غير مطابق.');
           } }), vr3Btn('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
       }
+      /* v590: تعديل القيمة من المراجِع — تُحفظ في ملف العميل ويُطابَق البند، مع سبب يُسجَّل */
+      if (canAct && U.mode === 'edit') {
+        const E = U.ed;
+        box.push(e('div', { class: 'vr3-box' }, !E ? [e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل الحقل…')] : E.err ? [DS.note('warn', 'لا يُعدَّل هذا البند من هنا', E.err), e('div', { class: 'vr3-acts' }, [vr3Btn('إغلاق', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])] : [
+          e('small', {}, 'القيمة الصحيحة — تُحفظ في ملف العميل ويُطابَق البند:'),
+          E.opts.length && !E.other ? DS.select({ value: E.val, options: (E.val ? [] : [['', '— اختر القيمة الصحيحة —']]).concat(E.opts), onChange: function (x) { E.val = x; } })
+            : e('input', { class: 't2-input', type: E.kind === 'date' ? 'date' : 'text', dir: 'auto', value: E.val || '', 'aria-label': 'القيمة الجديدة', onInput: function (ev) { E.val = ev.target.value; } }),
+          e('input', { class: 't2-input', type: 'text', value: E.why || '', placeholder: 'سبب التعديل (مثال: حسب صورة الهوية)', 'aria-label': 'سبب التعديل', onInput: function (ev) { E.why = ev.target.value; } }),
+          e('div', { class: 'vr3-acts' }, [vr3Btn('حفظ التعديل', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () {
+            const nv = String(E.val == null ? '' : E.val).trim(), why = String(E.why || '').trim();
+            if (!nv) { S.msg['it:' + it.id] = ['warn', 'أدخل القيمة الجديدة.']; paint(); return; }
+            if (nv === String(it.value || '')) { S.msg['it:' + it.id] = ['warn', 'القيمة لم تتغيّر.']; paint(); return; }
+            if (why.length < 3) { S.msg['it:' + it.id] = ['warn', 'اكتب سبب التعديل.']; paint(); return; }
+            act('it:' + it.id, 'admin_verification_item_edit', { p_item: it.id, p_value: nv, p_reason: why }, 'عُدّلت القيمة في ملف العميل وطوبق البند.').then(function () { const m = S.msg['it:' + it.id]; if (m && m[0] === 'ok') { U.mode = ''; paint(); } });
+          } }), vr3Btn('إلغاء', { size: 'sm', onClick: function () { U.mode = ''; paint(); } })])]));
+      }
       if (canRev && U.mode === 'note') {
         box.push(e('div', { class: 'vr3-box' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية على هذا البند (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة على البند', onInput: function (ev) { U.note = ev.target.value; } }, U.note),
           e('div', { class: 'vr3-acts' }, [vr3Btn('حفظ الملاحظة', { size: 'sm', tone: 'primary', onClick: function () {
@@ -21048,6 +21067,18 @@ function admVerOpen2(r) {
         .concat(box)
         .concat([e('div', { class: 'vr3-acts' }, [
           it.doc_id ? vr3Btn('عرض المرفق', { size: 'sm', ui: 'file-text', onClick: function () { admVerDoc(it); } }) : null,
+          canAct && !it.doc_id && it.kind !== 'file' && U.mode !== 'edit' ? vr3Btn('تعديل القيمة', { size: 'sm', ui: 'pencil-simple', onClick: async function () {
+            U.mode = 'edit'; U.ed = null; delete S.msg['it:' + it.id]; paint();
+            try {
+              const j = await admRpc('admin_verification_item_options', { p_item: it.id });
+              const op = (Array.isArray(j && j.options) ? j.options : []).map(function (o) { return o && typeof o === 'object' ? [String(o.value != null ? o.value : o.label), String(o.label != null ? o.label : o.value)] : [String(o), String(o)]; }).filter(function (o) { return o[0] && o[0] !== 'undefined'; });
+              const v0 = (j && j.value) || '';
+              U.ed = j && j.editable ? { kind: j.kind, other: !!j.allow_other, val: op.length && !j.allow_other && !op.some(function (o) { return o[0] === v0; }) ? '' : v0, why: '', opts: op }
+                : { err: VER_EDIT_WHY[j && j.why] || 'هذا البند لا يُعدَّل من هنا.' };
+            } catch (err) { U.ed = { err: (err && err.message) || 'تعذّر تحميل الحقل.' }; }
+            paint();
+          } }) : null,
+          canAct && v === 'match' ? vr3Btn('إلغاء المطابقة', { size: 'sm', onClick: function () { act('it:' + it.id, 'admin_verification_reset', { p_id: r.id, p_block: null, p_item: it.id }, 'أُلغيت المطابقة — البند بانتظار المطابقة.'); } }) : null,
           canAct && v !== 'match' && U.mode !== 'why' ? vr3Btn(v === 'mismatch' ? 'تراجع: مطابق' : 'مطابق', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () { act('it:' + it.id, 'admin_verification_item_decide', { p_item: it.id, p_verdict: 'match', p_reason: null }, v === 'mismatch' ? 'أُلغي «غير مطابق» — البند الآن مطابق.' : ''); } }) : null,
           canAct && v === 'mismatch' && U.mode !== 'why' ? vr3Btn('تعديل السبب', { size: 'sm', onClick: function () { const L0 = vr3Why(it), known = L0.indexOf(it.reason || '') >= 0; U.mode = 'why'; U.pick = known ? it.reason : 'أخرى'; U.txt = known ? '' : (it.reason || ''); delete S.msg['it:' + it.id]; paint(); } }) : null,
           canAct && v !== 'mismatch' && U.mode !== 'why' ? vr3Btn('غير مطابق', { size: 'sm', tone: 'danger', onClick: function () { U.mode = 'why'; U.pick = ''; U.txt = ''; delete S.msg['it:' + it.id]; paint(); } }) : null,
@@ -21075,6 +21106,7 @@ function admVerOpen2(r) {
             e('div', { class: 'vr3-sec-m' }, [e('span', {}, m + ' من ' + items.length + ' مطابق'), x ? DS.badge(x + ' غير مطابق', 'danger') : null, items.length - m - x ? DS.badge((items.length - m - x) + ' بانتظار', 'warn') : null, done ? DS.badge('مكتمل', 'ok') : null])])]),
           e('div', { class: 'vr3-acts' }, [
             canAct && pendOk.length ? vr3Btn('مطابقة القسم (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
+            canAct && m > 0 ? vr3Btn('إلغاء مطابقة القسم (' + m + ')', { size: 'sm', onClick: function () { if (!tqConfirm('إلغاء مطابقة ' + m + ' بند في «' + (b.title || b.block) + '»؟ تعود البنود «بانتظار المطابقة».')) return; act('sec:' + b.block, 'admin_verification_reset', { p_id: r.id, p_block: b.block, p_item: null }, 'أُلغيت المطابقة في «' + (b.title || b.block) + '» — البنود بانتظار المطابقة.'); } }) : null,
             vr3Btn(fold ? 'عرض البنود' : 'طيّ', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
           ].filter(Boolean))]),
         miss.length ? DS.note('warn', 'حقول مطلوبة ناقصة في هذا القسم', miss.join('، ')) : null,
@@ -23288,6 +23320,25 @@ async function lvPdfMount(box, buf, st) {
   st.stop = function () { try { if (io) io.disconnect(); doc.destroy(); } catch (err) { void err; } };
   /* v578: نص الملف قابلًا للتحديد والنسخ (رقم العملية والمبلغ والاسم…) */
   st.text = async function () { const out = []; for (let i = 1; i <= doc.numPages; i++) { const pg = i === 1 ? first : await doc.getPage(i), tc = await pg.getTextContent(), lines = []; let line = ''; (tc.items || []).forEach(function (it) { line += it.str || ''; if (it.hasEOL) { lines.push(line); line = ''; } else if (it.str && !/\s$/.test(it.str)) line += ' '; }); if (line.trim()) lines.push(line); out.push(lines.map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean).join('\n')); } return out.join('\n\n').trim(); };
+  /* v590: نص الملف صفوفًا كما تظهر في الصفحة — من الأعلى للأسفل، والخانات من اليمين لليسار */
+  st.rows = async function () {
+    const out = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const pg = i === 1 ? first : await doc.getPage(i), tc = await pg.getTextContent();
+      const its = (tc.items || []).filter(function (x) { return x && x.str && x.str.trim(); }).map(function (x) { const t = x.transform || [1, 0, 0, 1, 0, 0]; return { s: x.str.replace(/\s+/g, ' ').trim(), x: t[4], y: t[5], w: x.width || 0, h: Math.abs(t[3]) || x.height || 10 }; });
+      its.sort(function (a, b) { return b.y - a.y; });
+      const rows = [];
+      its.forEach(function (o) { const r = rows.filter(function (q) { return Math.abs(q.y - o.y) <= Math.max(2, Math.min(q.h, o.h) * 0.45); })[0]; if (r) r.c.push(o); else rows.push({ y: o.y, h: o.h, c: [o] }); });
+      rows.sort(function (a, b) { return b.y - a.y; });
+      rows.forEach(function (r) {
+        r.c.sort(function (a, b) { return (b.x + b.w) - (a.x + a.w); });
+        const cells = [];
+        r.c.forEach(function (o) { const l = cells[cells.length - 1]; if (l && l.x - (o.x + o.w) < Math.max(3, o.h * 0.5)) { l.s = /[؀-ۿ]/.test(o.s) ? l.s + ' ' + o.s : o.s + ' ' + l.s; l.x = o.x; } else cells.push({ s: o.s, x: o.x }); });
+        const L = cells.map(function (c) { return c.s; }).filter(Boolean); if (L.length) out.push(L);
+      });
+    }
+    return out;
+  };
   return doc.numPages;
 }
 async function lvFileView(getUrl, name) {
@@ -23328,7 +23379,16 @@ url = URL.createObjectURL(b); fvBlob = b; dlBtn.disabled = false; const mime = b
     const zbar = tools.querySelector('.lv-fv-z');
     if (/^image\//.test(mime)) { box.replaceChildren(e('img', { src: url, alt: name || '' })); box.classList.add('is-img'); if (zbar) zbar.hidden = false; }
     else if (pdf) {
-      try { await lvPdfMount(box, await b.arrayBuffer(), st); if (zbar) zbar.hidden = false; if (st.text) { const tb = DS.button('نص الملف', { size: 'sm', ui: 'copy', onClick: async function () { let pn = box.querySelector('.lv-pdf-txt'); if (pn) { pn.remove(); return; } tb.disabled = true; let txt = ''; try { txt = await st.text(); } catch (err) { txt = ''; } tb.disabled = false; const ta = e('textarea', { class: 't2-input', readonly: 'readonly', rows: '7', dir: 'auto', 'aria-label': 'نص الملف', style: 'width:100%;user-select:text;-webkit-user-select:text' }); ta.value = txt || 'لا يوجد نص قابل للنسخ في هذا الملف — قد يكون صورة ممسوحة.'; pn = e('div', { class: 'lv-pdf-txt', style: 'position:sticky;top:0;z-index:2;background:var(--t2-card,#fff);padding:10px;border-bottom:1px solid var(--t2-line,#e5e7eb);display:grid;gap:8px' }, [e('small', { class: 'cu-dr-hint' }, 'حدّد ما تريد من النص وانسخه، أو انسخه كاملًا.'), ta, e('div', { class: 't2-pb-actions' }, [DS.button('نسخ الكل', { size: 'sm', ui: 'copy', onClick: function () { const ok = function () { snack('نُسخ النص.'); }; try { navigator.clipboard.writeText(ta.value).then(ok, function () { ta.select(); try { document.execCommand('copy'); ok(); } catch (x) { void x; } }); } catch (err) { ta.select(); try { document.execCommand('copy'); ok(); } catch (x) { void x; } } } })])]); box.insertBefore(pn, box.firstChild); } }); tools.insertBefore(tb, dlBtn); } /* v578 */ let t = 0; onRs = function () { clearTimeout(t); t = setTimeout(function () { if (st.repaint) st.repaint(); }, 150); }; window.addEventListener('resize', onRs); }
+      try { await lvPdfMount(box, await b.arrayBuffer(), st); if (zbar) zbar.hidden = false; if (st.rows) { const tb = DS.button('نص الملف', { size: 'sm', ui: 'copy', onClick: async function () {
+        let pn = box.querySelector('.lv-pdf-txt'); if (pn) { pn.remove(); return; }
+        tb.disabled = true; let R = []; try { R = await st.rows(); } catch (err) { R = []; } tb.disabled = false;
+        const cp = function (t) { const ok = function () { snack('نُسخ: ' + (t.length > 40 ? t.slice(0, 40) + '…' : t)); }; try { navigator.clipboard.writeText(t).then(ok, function () { snack('تعذّر النسخ — حدّد النص وانسخه.'); }); } catch (err) { snack('تعذّر النسخ — حدّد النص وانسخه.'); } };
+        const all = R.map(function (r) { return r.join('\t'); }).join('\n');
+        const list = R.length ? e('div', { class: 'lv-txt-rows', 'data-live-ok': '' }, R.map(function (r) { return e('div', { class: 'lv-txt-r' }, r.map(function (c) { return e('span', { class: 'lv-txt-c', title: 'اضغط للنسخ', onClick: function () { const sel = window.getSelection && String(window.getSelection() || ''); if (!sel) cp(c); } }, c); })); }))
+          : DS.note('info', 'لا يوجد نص قابل للنسخ', 'قد يكون الملف صورة ممسوحة.');
+        pn = e('div', { class: 'lv-pdf-txt' }, [e('div', { class: 'lv-txt-h' }, [e('small', { class: 'cu-dr-hint' }, 'كل سطر كما في الملف — اضغط أي قيمة لنسخها، أو حدّد ما تريد.'), R.length ? liveOk(DS.button('نسخ الكل', { size: 'sm', ui: 'copy', onClick: function () { cp(all); } })) : null]), list]);
+        box.insertBefore(pn, box.firstChild);
+      } }); tools.insertBefore(tb, dlBtn); } /* v590 */ let t = 0; onRs = function () { clearTimeout(t); t = setTimeout(function () { if (st.repaint) st.repaint(); }, 150); }; window.addEventListener('resize', onRs); }
       catch (err) { box.replaceChildren(e('iframe', { src: url, title: name || 'المرفق' })); }
     } else box.replaceChildren(e('iframe', { src: url, title: name || 'المرفق' }));
   } catch (err) { box.replaceChildren(DS.note('danger', 'تعذّر فتح الملف', (err && err.message) || '')); }
@@ -27355,20 +27415,19 @@ function cunFollow(r, o, paint, refetch) {
     W.msg = to === 'me' ? 'أُرسلت المعاينة إلى رقمك (' + (j.to || '') + ') — تصلك خلال دقيقة.' : 'أُرسل «طلب إكمال الملف» للعميل في واتساب.';
     if (to === 'client') refetch(); else paint();
   };
-  const L = [];
-  L.push(e('span', { class: 'nr-s' }, ['آخر دخول: ', o.last_seen ? e('bdi', {}, cunWhen(o.last_seen)) : 'لم يدخل بعد', ' · الجلسات: ' + fmtNum(o.sessions || 0),
-    o.last_close ? ' · آخر إغلاق: ' + (CUN_CLOSE[o.last_close] || 'أُغلقت') : '']));
-  L.push(e('span', { class: 'nr-s' }, o.missing_txt ? 'الناقص: ' + o.missing_txt + ' (' + fmtNum(o.missing || 0) + ')' : 'الملف مكتمل — لم يضغط «إرسال للتوثيق» بعد'));
-  L.push(e('span', { class: 'nr-s' }, ['التذكيرات المرسلة: ' + fmtNum(o.reminders || 0),
-    o.last_remind ? ' · آخرها: ' : '', o.last_remind ? e('bdi', {}, cunWhen(o.last_remind)) : null, o.last_stage && CUN_STG[o.last_stage] ? ' (' + CUN_STG[o.last_stage] + ')' : '',
-    lastFail ? ' · تعذّر آخر إرسال: ' + (CUN_RMERR[lastFail] || 'خطأ') : ''].filter(Boolean)));
-  if (late) L.push(e('span', { class: 'nr-k is-warn' }, 'يحتاج اتصالًا من الفريق'));
-  if (W.msg) L.push(DS.note(W.tone === 'danger' ? 'danger' : 'info', W.tone === 'danger' ? 'لم يُرسل' : 'تم', W.msg));
-  if (W.prev) L.push(e('pre', { class: 'nr-s', style: 'white-space:pre-wrap;margin:0;font:inherit' }, W.prev.replace(/\{\{\d\}\} /g, '')));
-  L.push(e('div', { class: 't2-pb-actions' }, [
+  const kv = function (k, v) { return [e('dt', {}, k), e('dd', {}, v)]; };
+  const rows = [].concat(
+    kv('آخر دخول', [o.last_seen ? e('bdi', {}, cunWhen(o.last_seen)) : 'لم يدخل بعد', ' · الجلسات: ' + fmtNum(o.sessions || 0), o.last_close ? ' · آخر إغلاق: ' + (CUN_CLOSE[o.last_close] || 'أُغلقت') : '']),
+    kv('الناقص', o.missing_txt ? o.missing_txt + ' (' + fmtNum(o.missing || 0) + ')' : 'الملف مكتمل — لم يضغط «إرسال للتوثيق» بعد'),
+    kv('التذكيرات', [fmtNum(o.reminders || 0) + ' مرسلة', o.last_remind ? ' · آخرها ' : '', o.last_remind ? e('bdi', {}, cunWhen(o.last_remind)) : null,
+      o.last_stage && CUN_STG[o.last_stage] ? ' (' + CUN_STG[o.last_stage] + ')' : '', lastFail ? ' · تعذّر آخر إرسال: ' + (CUN_RMERR[lastFail] || 'خطأ') : ''].filter(Boolean)));
+  const L = [e('div', { class: 'nr-fu-h' }, [e('b', {}, 'متابعة إكمال الملف'), late ? e('span', { class: 'nr-k is-warn' }, 'يحتاج اتصالًا من الفريق') : null]), e('dl', { class: 'nr-fu-kv' }, rows)];
+  if (W.msg) L.push(DS.note(W.tone === 'danger' ? 'warn' : 'ok', W.tone === 'danger' ? 'لم يُرسل' : 'تم', W.msg));
+  if (W.prev) L.push(e('div', { class: 'nr-fu-msg' }, [e('small', { class: 'cu-dr-hint' }, 'نص الرسالة كما تصل العميل:'), e('div', { class: 'nr-fu-bub', dir: 'rtl' }, W.prev.replace(/\{\{\d\}\} /g, '').split('\n').map(function (t) { return e('div', { dir: /^https?:/.test(t) ? 'ltr' : 'auto' }, t); }))]));
+  L.push(e('div', { class: 't2-pb-actions nr-fu-acts' }, [
     liveOk(DS.button(W.busy === 'me' ? 'جارٍ الإرسال…' : 'معاينة على رقمي', { size: 'sm', ui: 'file-text', disabled: !!W.busy, onClick: function () { send('me'); } })),
     liveOk(DS.button(W.busy === 'client' ? 'جارٍ الإرسال…' : 'إرسال طلب إكمال الملف', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: !!W.busy, onClick: function () { send('client'); } }))]));
-  return e('div', { class: 'nr-fu', style: 'display:grid;gap:6px;padding:4px 14px 12px;grid-column:1/-1' }, L);
+  return e('div', { class: 'nr-fu' }, L);
 }
 function cunAutoBox(ob, refetch) {
   if (!ob || ob.ok === false) return null;
