@@ -8689,7 +8689,7 @@ function mh3IdxView(A, q, gName) {
     const t = ['الرقم,القالب,القسم,الوسيلة,المصدر,المفتاح التقني,الحالة'].concat(rows.map(function (r) { return [r.code, r.name, r.sec + ' · ' + mh3SecName(r.sec), MH3_CHN[r.ch] || r.ch, r.origin, r.tk, live[r.tk] ? 'قائم' : 'غير قائم'].map(Q).join(','); })).join('\r\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + t], { type: 'text/csv;charset=utf-8' })); a.download = 'فهرس-القوالب.csv'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   };
-  const inMeta = (MH.wa || []).map(function (t) { return t.name; }).filter(function (n) { return MH3_DEL[n]; });
+  const inMeta = (MH.wa || []).map(function (t) { return t.template_name || t.name; }).filter(function (n, i, x) { return MH3_DEL[n] && x.indexOf(n) === i; }); /* v614: اسم القالب في قائمة Meta هو template_name */
   const delOne = function (n) {
     if (MH3.delBusy || !window.confirm('حذف القالب «' + n + '» من Meta نهائيًا؟ لا يمكن التراجع، ولا يُعاد إنشاء قالب بالاسم نفسه قبل مدة تحددها Meta.')) return;
     MH3.delBusy = n; mh3Draw();
