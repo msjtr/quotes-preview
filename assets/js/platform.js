@@ -7953,7 +7953,7 @@ const MH = { wa: null, rules: [], stages: [], status: [], at: 0, busy: false, er
 const MH_CDN = 'https://media.tera-services.com.sa/msg', MH_IMG = '/assets/brand/wa/';
 const MH_GRP = [['pay', 'السداد والإيصالات', 'credit-card'], ['docs', 'المستندات المرفقة — الشهادة والشكر والإيصال', 'file-text'], ['rate', 'التقييم', 'star'], ['acct', 'الحساب والتدشين', 'rocket-launch'], ['ver', 'توثيق الملف', 'seal-check'],
   ['order', 'الطلبات والعروض', 'clipboard-text'], ['contract', 'العقود', 'file-text'], ['support', 'الدعم', 'headset'], ['sec', 'الأمان والتحقق', 'shield-check'], ['gen', 'رسائل عامة', 'megaphone-simple'],
-  ['app', 'إشعارات المنصة الجاهزة', 'bell'], ['mail', 'بريد الخادم', 'envelope-simple'], ['bot', 'ردود بوت واتساب', 'chat-circle-dots'], ['rep', 'الردود الجاهزة', 'chat-circle-dots'], ['srv', 'إشعارات الدفع والطلبات (من الخادم)', 'bell'], ['staffn', 'إشعارات الفريق', 'headset'], ['push', 'إشعار الجوال — أنواع النظام', 'bell'], ['off', 'معتمدة وغير مفعّلة', 'clock'], ['sent', 'المرسل فعليًا — كما وصل', 'clock']];
+  ['app', 'إشعارات المنصة الجاهزة', 'bell'], ['mail', 'بريد الخادم', 'envelope-simple'], ['bot', 'ردود بوت واتساب', 'chat-circle-dots'], ['rep', 'الردود الجاهزة', 'chat-circle-dots'], ['srv', 'إشعارات الدفع والطلبات (من الخادم)', 'bell'], ['staffn', 'إشعارات الفريق', 'headset'], ['off', 'معتمدة وغير مفعّلة', 'clock'], ['push', 'إشعار الجوال — أنواع النظام', 'bell'], ['sent', 'المرسل فعليًا — كما وصل', 'clock']];
 /* قوالب Meta: [الاسم · الترويسة (رابط صورة | 'doc' | 'video' | null) · معاني المتغيرات · عيّنة لكل متغير · يرسلها كود المنصة (من الجرد) · أين تُرسل] */
 const MH_T = {
   tera_payment_received: ['إيصال استلام الدفعة', 'doc', ['اسم العميل', 'المبلغ', 'رقم العملية', 'مصدر الدفع', 'التاريخ'], ['محمد الشمري', '1,250.00 ريال', 'TRX-482193', 'بطاقة مدى', '27-10-2026'], 1, 'بوابة الدفع آليًا بعد كل سداد ناجح'],
@@ -8226,7 +8226,7 @@ function mh3Mail(key) {
   if (R.err || !R.html) return DS.note('warn', 'تعذّرت معاينة البريد', R.err || '');
   return e('div', { class: 'mh3-mailbox' }, [e('div', { class: 'mh3-mailsj' }, 'الموضوع: ' + (R.subject || '—')), e('iframe', { class: 'mh3-mailf', title: R.subject || 'البريد', sandbox: '', srcdoc: R.html, loading: 'lazy' })]);
 }
-const mh3Fig = function (cap, node) { return node ? e('figure', { class: 'mh3-f' }, [e('figcaption', {}, cap), e('div', { class: 'mh3-fb' }, [node])]) : null; };
+const mh3Fig = function (cap, node, k) { if (!node) return null; const n = k && MH3.num ? MH3.num[k] : 0; /* v609: رقم القالب على المعاينة نفسه الذي على قراره */ return e('figure', { class: 'mh3-f' + (n ? ' has-n' : '') }, [e('figcaption', {}, n ? [e('span', { class: 'mh3-n', title: 'رقم القالب — يطابق رقم قراره' }, '#' + n), ' ', cap] : cap), e('div', { class: 'mh3-fb' }, [node])]); };
 const mh3Bubble = function (text, img) { return e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: img || null, text: text || '', foot: '', buttons: [] })]); };
 const mh3Find = function (src, key) { const D = (MH3.inv && MH3.inv.dec) || []; return D.filter(function (x) { return x.src === src && x.key === String(key); })[0] || null; };
 const mh3InvComm = function (id) { return ((MH3.inv && MH3.inv.comm) || []).filter(function (t) { return t.id === id; })[0] || null; };
@@ -8285,7 +8285,7 @@ if (c[0] === 'all') S.ch = on ? [] : ['wa', 'mail', 'app']; else { const j = S.c
 mh3Draw(); } }, [frag(ui(c[2], 16)), c[1]]);
 };
 return e('div', { class: 'mh3-dec' + (d0.decision ? ' is-' + d0.decision : ''), 'data-live-ok': '' }, [ /* v604: حفظ القرار مربوط بالخادم — لا يوقفه حارس الإجراءات */
-e('div', { class: 'mh3-dec-h' }, [mh3ChIcons(S.ch), e('b', {}, N.name), N.code ? e('code', { class: 'mh3-code' }, N.code) : null, d0.decision ? DS.badge(lab(d0.decision), MH3_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn')]),
+e('div', { class: 'mh3-dec-h' }, [(MH3.num && MH3.num[src + '|' + key]) ? e('span', { class: 'mh3-n', title: 'رقم القالب — يطابق رقم معاينته' }, '#' + MH3.num[src + '|' + key]) : null, mh3ChIcons(S.ch), e('b', {}, N.name), N.code ? e('code', { class: 'mh3-code' }, N.code) : null, d0.decision ? DS.badge(lab(d0.decision), MH3_TONE[d0.decision] || null) : DS.badge('بلا قرار', 'warn')]),
 (use || []).filter(Boolean).length ? e('ul', { class: 'mh3-use' }, use.filter(Boolean).map(function (u) { return e('li', {}, u); })) : null,
 e('div', { class: 'mh3-chs' }, [e('small', {}, 'يُرسل عبر:')].concat(MH3_CHS.concat([['all', 'الجميع', 'squares-four']]).map(chBtn))),
 e('div', { class: 'mh3-dec-f' }, [
@@ -8361,14 +8361,14 @@ const mh3SrvKeys = function (x) { const C = x[4].split(' '), K = []; if (C.index
 function mh3SrvCard(x) {
   const C = x[4].split(' '), T = x[2], B = x[3], staff = x[1] === 'staffn', pv = [], dec = [], short = T.replace(/ · [\d,.]+ ريال$/, '');
   if (C.indexOf('app') >= 0 || C.indexOf('push') >= 0) {
-    if (C.indexOf('app') >= 0) pv.push(mh3Fig((staff ? 'مركز إشعارات لوحة الإدارة' : 'مركز الإشعارات في حساب العميل') + ' — كما يصل', mhApp(T, B)));
-    if (C.indexOf('push') >= 0) pv.push(mh3Fig('إشعار الجوال والويب', mhApp(staff ? T : short, String(B).slice(0, 240))));
+    if (C.indexOf('app') >= 0) pv.push(mh3Fig((staff ? 'مركز إشعارات لوحة الإدارة' : 'مركز الإشعارات في حساب العميل') + ' — كما يصل', mhApp(T, B), 'ntpl|srv:' + x[0]));
+    if (C.indexOf('push') >= 0) pv.push(mh3Fig('إشعار الجوال والويب', mhApp(staff ? T : short, String(B).slice(0, 240)), 'ntpl|srv:' + x[0]));
     dec.push(mh3Dec('ntpl', 'srv:' + x[0], (staff ? 'إشعار الفريق: ' : 'إشعار المنصة والجوال: ') + short, T + '\n' + B, [x[7]]));
   }
-  if (C.indexOf('mail') >= 0) { pv.push(mh3Fig('البريد', mhMail(short, short, B, ''))); dec.push(mh3Dec('email', 'srv:' + x[0], 'البريد: ' + short, 'الموضوع: ' + short + '\n\n' + B, null)); }
+  if (C.indexOf('mail') >= 0) { pv.push(mh3Fig('البريد', mhMail(short, short, B, ''), 'email|srv:' + x[0])); dec.push(mh3Dec('email', 'srv:' + x[0], 'البريد: ' + short, 'الموضوع: ' + short + '\n\n' + B, null)); }
   if (C.indexOf('wa') >= 0) {
-    if (x[5]) { mh3Txt('tera_update'); pv.push(mh3Fig('واتساب — قالب tera_update بصورة الحدث', mhWaPhone('tera_update', MH_IMG + x[5] + '.jpg', ['محمد الشمري', short, x[6] || '', B, 'TR-100458', '30 أكتوبر 2026']))); }
-    else pv.push(mh3Fig('واتساب — رسالة نصية', mh3Bubble(B)));
+    if (x[5]) { mh3Txt('tera_update'); pv.push(mh3Fig('واتساب — قالب tera_update بصورة الحدث', mhWaPhone('tera_update', MH_IMG + x[5] + '.jpg', ['محمد الشمري', short, x[6] || '', B, 'TR-100458', '30 أكتوبر 2026']), 'wa|srv:' + x[0])); }
+    else pv.push(mh3Fig('واتساب — رسالة نصية', mh3Bubble(B), 'wa|srv:' + x[0]));
     dec.push(mh3Dec('wa', 'srv:' + x[0], 'واتساب: ' + short, B, null));
   }
   return mh3Card({ t: short, w: x[7], ch: mh3SrvCh(x), tag: staff ? 'للفريق' : 'من الخادم', tagTone: staff ? 'warn' : 'info', pv: pv, dec: dec });
@@ -8393,14 +8393,14 @@ function mh3SentItems(L) {
     L.push({ g: 'sent', t: t, ch: ['app'], keys: R.map(function (x) { return 'ntpl|sent:' + kind + '|' + x.norm; }), hit: [kind, t].concat(R.map(function (x) { return x.title + ' ' + x.body; })), build: function () {
       return mh3Card({ t: t, w: fmtNum(R.length) + ' عنوانًا مختلفًا وصل فعلًا · ' + fmtNum(R.reduce(function (a, x) { return a + Number(x.n || 0); }, 0)) + ' إشعارًا — النوع ' + kind, ch: ['app'], tag: /^legacy_/.test(kind) ? 'قديم' : 'وصل فعلًا', tagTone: /^legacy_/.test(kind) ? 'warn' : 'ok',
         note: DS.note('info', 'كما وصل فعلًا', 'آخر نص وصل من كل عنوان — اسم المستلم مستبدل بعيّنة، والأرقام الطويلة مخفية.'),
-        pv: R.slice(0, 30).map(function (x) { return mh3Fig(mh3When(x), mhApp(x.title, x.body)); }),
+        pv: R.slice(0, 30).map(function (x) { return mh3Fig(mh3When(x), mhApp(x.title, x.body), 'ntpl|sent:' + kind + '|' + x.norm); }),
         dec: R.slice(0, 30).map(function (x) { return mh3Dec('ntpl', 'sent:' + kind + '|' + x.norm, 'الإشعار: ' + x.title, (x.title || '') + '\n' + (x.body || ''), [mh3When(x)]); }) });
     } });
   });
   /* أحداث العميل (طابور القاعدة) */
   if ((S.events || []).length) L.push({ g: 'sent', t: 'أحداث العميل — كما وصلت', ch: ['app', 'wa'], keys: S.events.map(function (x) { return 'ntpl|ev:' + x.ev + '|' + x.norm; }), hit: ['أحداث'].concat(S.events.map(function (x) { return x.ev + ' ' + x.subject + ' ' + x.body; })), build: function () {
     return mh3Card({ t: 'أحداث العميل — كما وصلت', w: 'صدور عقد · حالة الطلب · تأكيد الجوال · دعوات التقييم · التدشين — المنصة والجوال وواتساب بصورة الحدث', ch: ['app', 'wa'], tag: 'وصل فعلًا', tagTone: 'ok',
-      pv: S.events.map(function (x) { return mh3Fig(x.ev + ' · ' + mh3When(x), mhApp(x.subject, (x.label ? x.label + ' — ' : '') + (x.body || ''))); }),
+      pv: S.events.map(function (x) { return mh3Fig(x.ev + ' · ' + mh3When(x), mhApp(x.subject, (x.label ? x.label + ' — ' : '') + (x.body || '')), 'ntpl|ev:' + x.ev + '|' + x.norm); }),
       dec: S.events.map(function (x) { return mh3Dec('ntpl', 'ev:' + x.ev + '|' + x.norm, 'الحدث: ' + x.subject, (x.subject || '') + '\n' + (x.body || ''), [x.ev + ' · ' + mh3When(x)]); }) });
   } });
   /* واتساب كما وصل: آخر رسالة من كل قالب بمتغيراتها الفعلية، والرسائل النصية بنصها */
@@ -8411,8 +8411,8 @@ function mh3SentItems(L) {
       if (nm) { let C = []; try { C = JSON.parse(x.comp || '[]') || []; } catch (_e) { C = []; }
         const H = C.filter(function (c) { return c && c.type === 'header'; })[0], Bd = C.filter(function (c) { return c && c.type === 'body'; })[0];
         const hp = H && (H.parameters || [])[0], img = hp && hp.image ? hp.image.link : null, vals = Bd ? (Bd.parameters || []).map(function (p) { return p && p.text != null ? String(p.text) : ''; }) : null;
-        mh3Txt(nm); pv = [mh3Fig('آخر رسالة وصلت بمتغيراتها الفعلية · ' + mh3When(x), mhWaPhone(nm, img, vals && vals.length ? vals : null))]; }
-      else pv = [mh3Fig('آخر رسالة نصية وصلت · ' + mh3When(x), mh3Bubble(x.body || ''))];
+        mh3Txt(nm); pv = [mh3Fig('آخر رسالة وصلت بمتغيراتها الفعلية · ' + mh3When(x), mhWaPhone(nm, img, vals && vals.length ? vals : null), key)]; }
+      else pv = [mh3Fig('آخر رسالة نصية وصلت · ' + mh3When(x), mh3Bubble(x.body || ''), key)];
       return mh3Card({ t: t, w: (nm ? nm + ' · ' : '') + 'أُرسل ' + fmtNum(x.sent || 0) + ' من ' + fmtNum(x.n || 0) + (x.kind ? ' · ' + x.kind : ''), ch: ['wa'], tag: 'وصل فعلًا', tagTone: 'ok', pv: pv,
         dec: [nm ? mh3Dec('wa', nm, 'قالب واتساب: ' + mhT(nm).label + ' — ' + nm, mh3WaBody(nm), mh3UseWa(nm)) : mh3Dec('wa', 'sent:' + x.kind + '|' + String(x.body || '').slice(0, 40), 'رسالة واتساب نصية: ' + String(x.body || '').slice(0, 60), x.body || '', [mh3When(x)])] });
     } });
@@ -8427,7 +8427,7 @@ function mh3SentItems(L) {
   (MH3.push || []).forEach(function (g) {
     L.push({ g: 'push', t: 'إشعار الجوال — ' + g.name, ch: ['app'], keys: (g.items || []).map(function (x) { return 'ntpl|push:' + x.id; }), hit: [g.name].concat((g.items || []).map(function (x) { return x.title + ' ' + x.text; })), build: function () {
       return mh3Card({ t: 'إشعار الجوال — ' + g.name, w: 'أنواع إشعار الجوال المعرّفة في الخادم — تُرسل في «تجربة كل الأنواع» من إشعارات الجوال والويب', ch: ['app'], tag: 'عيّنة الخادم', tagTone: 'info',
-        pv: (g.items || []).map(function (x) { return mh3Fig(x.id + (x.button ? ' · زر «' + x.button + '»' : ''), mhApp(x.title, x.text)); }),
+        pv: (g.items || []).map(function (x) { return mh3Fig(x.id + (x.button ? ' · زر «' + x.button + '»' : ''), mhApp(x.title, x.text), 'ntpl|push:' + x.id); }),
         dec: (g.items || []).map(function (x) { return mh3Dec('ntpl', 'push:' + x.id, 'إشعار الجوال: ' + x.title, x.title + '\n' + x.text, null); }) });
     } });
   });
@@ -8462,20 +8462,20 @@ function mh3Items() {
 const keys = (m.wa || []).map(function (n) { return 'wa|' + n; }).concat(comm.map(function (t) { return 'comm|' + t.id; }), comm.filter(function (t) { return t.subject; }).map(function (t) { return 'email|comm:' + t.id; }), sv ? ['survey|' + sv.key] : [], svMail ? ['email|survey:' + sv.key] : [], st.map(function (x) { return 'status|' + x.status; }));
     L.push({ g: m.g, t: m.t || (sv && sv.name) || '—', ch: mhMsgCh(m), keys: keys, hit: [m.t, m.w].concat(m.wa || [], m.comm || [], sv ? [sv.name, sv.wa_body] : [], (m.wa || []).map(tWa), comm.map(function (t) { return t.body; })), build: function () {
       const pv = [], dec = [], tools = [];
-      (m.wa || []).forEach(function (n, i) { mh3Txt(n); pv.push(mh3Fig('واتساب — ' + (m.wa.length > 1 ? (i ? 'احتياطي ' + i : 'الأساسي') + ' · ' : '') + mhT(n).label, mhWaPhone(n)));
+      (m.wa || []).forEach(function (n, i) { mh3Txt(n); pv.push(mh3Fig('واتساب — ' + (m.wa.length > 1 ? (i ? 'احتياطي ' + i : 'الأساسي') + ' · ' : '') + mhT(n).label, mhWaPhone(n), 'wa|' + n));
         dec.push(mh3Dec('wa', n, 'قالب واتساب: ' + mhT(n).label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))); });
       comm.forEach(function (t) { const T = mh3InvComm(t.id), img = T && (T.media || []).filter(function (x) { return x.kind === 'image' && x.url; })[0];
-        pv.push(mh3Fig('مركز الإرسال — واتساب · ' + t.name, mh3Bubble(mhFillComm(t.body), img ? img.url : null)));
-        if (t.subject) pv.push(mh3Fig('مركز الإرسال — البريد · ' + t.name, mhMail(t.subject, '', t.body, '')));
+        pv.push(mh3Fig('مركز الإرسال — واتساب · ' + t.name, mh3Bubble(mhFillComm(t.body), img ? img.url : null), 'comm|' + t.id));
+        if (t.subject) pv.push(mh3Fig('مركز الإرسال — البريد · ' + t.name, mhMail(t.subject, '', t.body, ''), 'email|comm:' + t.id));
         dec.push(mh3Dec('comm', t.id, 'قالب مركز الإرسال: ' + t.name, t.body, mh3UseComm(t.id)));
 if (t.subject) dec.push(mh3Dec('email', 'comm:' + t.id, 'بريد مركز الإرسال: ' + t.name, 'الموضوع: ' + t.subject + '\n\n' + (t.body || ''), ['نسخة البريد من قالب مركز الإرسال — الموضوع والنص'])); });
       if (sv) { const C = sv.channels || [];
-        if (C.indexOf('whatsapp') >= 0 && sv.wa_body) pv.push(mh3Fig('واتساب — الاستبانة', mh3Bubble(mhFillComm(sv.wa_body))));
-        if (C.indexOf('email') >= 0) pv.push(mh3Fig('البريد — الاستبانة', mhMail(sv.email_subject, sv.name, sv.email_body, '')));
+        if (C.indexOf('whatsapp') >= 0 && sv.wa_body) pv.push(mh3Fig('واتساب — الاستبانة', mh3Bubble(mhFillComm(sv.wa_body)), 'survey|' + sv.key));
+        if (C.indexOf('email') >= 0) pv.push(mh3Fig('البريد — الاستبانة', mhMail(sv.email_subject, sv.name, sv.email_body, ''), 'email|survey:' + sv.key));
         dec.push(mh3Dec('survey', sv.key, 'الاستبانة: ' + sv.name, sv.wa_body || sv.email_body || '', [(sv.active ? 'مفعّلة' : 'موقوفة') + ' · ' + (sv.auto ? 'آلية' : 'يدوية'), sv.trigger_note || ''].filter(Boolean)));
 if (svMail) dec.push(mh3Dec('email', 'survey:' + sv.key, 'بريد الاستبانة: ' + sv.name, 'الموضوع: ' + (sv.email_subject || '') + '\n\n' + (sv.email_body || ''), ['نسخة البريد من الاستبانة — الموضوع والنص']));
         tools.push(DS.button('فتح محرر الاستبانة', { size: 'sm', ui: 'pencil-simple', onClick: function () { cxTplOpen(sv); } })); }
-      st.forEach(function (x) { pv.push(mh3Fig('البريد — ' + (x.title || x.status), mhMail(x.subject, x.title, x.lead, x.note)));
+      st.forEach(function (x) { pv.push(mh3Fig('البريد — ' + (x.title || x.status), mhMail(x.subject, x.title, x.lead, x.note), 'status|' + x.status));
         dec.push(mh3Dec('status', x.status, 'بريد حالة الطلب: ' + (x.title || x.status), [x.lead, x.note].filter(Boolean).join('\n\n'), ['يُرسل عند تغيّر حالة الطلب إلى «' + x.status + '»'])); });
       if (comm.length) tools.push(DS.button('فتح محرر رسائل مركز الإرسال', { size: 'sm', ui: 'paper-plane-tilt', onClick: function () { go('other', 'comm-tpl'); } }));
       return mh3Card({ t: m.t || (sv && sv.name) || '—', w: m.w || (sv && sv.trigger_note) || '', ch: mhMsgCh(m), tag: sv ? (sv.active ? (sv.auto ? 'آلية' : 'يدوية') : 'موقوفة') : null, pv: pv, dec: dec, tools: tools });
@@ -8489,8 +8489,8 @@ if (svMail) dec.push(mh3Dec('email', 'survey:' + sv.key, 'بريد الاستب�
     L.push({ g: (k === 'launched' || k === 'film_ready') ? 'acct' : 'ver', t: ttl, ch: C, keys: off ? ['review|' + k] : ['review|' + k, 'email|review:' + k, 'ntpl|review:' + k], hit: [k, s.wa_event_label, s.subject, s.title, s.lead, s.note], build: function () {
       const vals = ['محمد الشمري', 'REQ-10458', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', 'tera-services.com.sa/clients'];
       const pv = [];
-      if (!off) { mh3Txt(tpl); pv.push(mh3Fig('واتساب — ' + (img ? 'بصورة المرحلة' : 'نصي'), mhWaPhone(tpl, img, vals))); pv.push(mh3Fig('البريد', mhMail(s.subject, s.title, s.lead, s.note))); }
-      pv.push(mh3Fig('إشعار المنصة', mhApp(s.wa_event_label || ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''))));
+      if (!off) { mh3Txt(tpl); pv.push(mh3Fig('واتساب — ' + (img ? 'بصورة المرحلة' : 'نصي'), mhWaPhone(tpl, img, vals), 'review|' + k)); pv.push(mh3Fig('البريد', mhMail(s.subject, s.title, s.lead, s.note), 'email|review:' + k)); }
+      pv.push(mh3Fig('إشعار المنصة', mhApp(s.wa_event_label || ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : '')), off ? 'review|' + k : 'ntpl|review:' + k));
       return mh3Card({ t: ttl, w: (s.wa_event_label ? 'المرحلة: ' + s.wa_event_label + ' · ' : '') + 'الحدث ' + k, ch: C, tag: MH_PV_STAFF[k] ? 'للفريق' : null, note: off ? DS.note('info', 'ملاحظة', off) : null, pv: pv,
         dec: off ? [mh3Dec('review', k, 'إشعار المنصة: ' + ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''), [off])] /* v605: قرار لكل وسيلة — واتساب · البريد · إشعار المنصة */
 : [mh3Dec('review', k, 'واتساب — رسالة المرحلة: ' + ttl, [s.wa_event_label, s.wa_task, s.wa_action].filter(Boolean).join('\n'), ['يُرسل عند حدث «' + k + '» بقالب ' + tpl]),
@@ -8506,7 +8506,7 @@ mh3Dec('ntpl', 'review:' + k, 'إشعار المنصة — رسالة المرح
       mh3Txt(n);
       return mh3Card({ t: I.label, w: n + ' — معتمد في Meta ولا يرسله أي حدث الآن', ch: ['wa'], tag: twin ? 'يكرر رسالة مفعّلة' : 'غير مفعّل', tagTone: twin ? 'warn' : 'info',
         note: twin ? DS.note('warn', 'يكرر رسالة مفعّلة', 'الرسالة المفعّلة «' + twin.t + '» (' + ((MH_GRP.filter(function (g) { return g[0] === twin.g; })[0] || [])[1] || '') + ') تؤدي الغرض نفسه — المقترح: حذفه من Meta أو ربطه بدلها.') : null,
-        pv: [mh3Fig('واتساب — كما يصل', mhWaPhone(n))], dec: [mh3Dec('wa', n, 'قالب واتساب: ' + I.label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))] });
+        pv: [mh3Fig('واتساب — كما يصل', mhWaPhone(n), 'wa|' + n)], dec: [mh3Dec('wa', n, 'قالب واتساب: ' + I.label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))] });
     } });
   });
   /* قوالب واتساب في Meta لا تخص رسالة بعينها (قالبا مراحل التوثيق وما يرسله الكود مباشرة) — كل قالب مرة واحدة */
@@ -8515,19 +8515,19 @@ mh3Dec('ntpl', 'review:' + k, 'إشعار المنصة — رسالة المرح
     const I = mhT(n);
     L.push({ g: /^tera_profile_review/.test(n) ? 'ver' : 'gen', t: I.label, ch: ['wa'], keys: ['wa|' + n], hit: [n, I.label, I.where, tWa(n)], build: function () {
       mh3Txt(n);
-      return mh3Card({ t: I.label, w: n + (I.where ? ' — ' + I.where : ''), ch: ['wa'], tag: /^tera_profile_review/.test(n) ? 'قالب مراحل التوثيق' : 'يرسله الكود', pv: [mh3Fig('واتساب — كما يصل', mhWaPhone(n))], dec: [mh3Dec('wa', n, 'قالب واتساب: ' + I.label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))] });
+      return mh3Card({ t: I.label, w: n + (I.where ? ' — ' + I.where : ''), ch: ['wa'], tag: /^tera_profile_review/.test(n) ? 'قالب مراحل التوثيق' : 'يرسله الكود', pv: [mh3Fig('واتساب — كما يصل', mhWaPhone(n), 'wa|' + n)], dec: [mh3Dec('wa', n, 'قالب واتساب: ' + I.label + ' — ' + n, mh3WaBody(n), mh3UseWa(n))] });
     } });
   });
   /* إشعارات المنصة الجاهزة (قائمة «قالب جاهز» عند إرسال إشعار) */
   try { Object.keys(CU_NTPLX).forEach(function (k) { const T = CU_NTPLX[k];
     L.push({ g: 'app', t: T[0], ch: ['app'], keys: ['ntpl|' + k], hit: [T[0], T[1]], build: function () {
       return mh3Card({ t: T[0], w: 'قالب جاهز عند إرسال إشعار من «الإشعارات والإعلانات»' + (T[2] ? ' — برابط إلى ' + ({ store: 'المتجر', profile: 'الملف الشخصي', pay: 'المدفوعات' }[T[2]] || T[2]) : ''), ch: ['app'],
-        pv: [mh3Fig('إشعار المنصة — كما يصل', mhApp(T[0], T[1]))], dec: [mh3Dec('ntpl', k, 'قالب الإشعار: ' + T[0], T[1], ['في كود المنصة — يُعدَّل بإصدار'])] });
+        pv: [mh3Fig('إشعار المنصة — كما يصل', mhApp(T[0], T[1]), 'ntpl|' + k)], dec: [mh3Dec('ntpl', k, 'قالب الإشعار: ' + T[0], T[1], ['في كود المنصة — يُعدَّل بإصدار'])] });
     } }); }); } catch (err) { void err; }
   /* بريد الخادم (يُبنى في الخادم من قالبه) */
   MH3_MAIL.forEach(function (x) { const u = ((inv.email || []).filter(function (y) { return y.key === x[0]; })[0]);
     L.push({ g: 'mail', t: x[1], ch: ['mail'], keys: ['email|' + x[0]], hit: [x[0], x[1], x[2]], build: function () {
-      return mh3Card({ t: x[1], w: x[2] + ' — ' + x[0], ch: ['mail'], pv: [mh3Fig('البريد — كما يصل (من قالب الخادم بعيّنة)', mh3Mail(x[0]))],
+      return mh3Card({ t: x[1], w: x[2] + ' — ' + x[0], ch: ['mail'], pv: [mh3Fig('البريد — كما يصل (من قالب الخادم بعيّنة)', mh3Mail(x[0]), 'email|' + x[0])],
         dec: [mh3Dec('email', x[0], 'بريد الخادم: ' + x[1], '', [u ? 'أُرسل ' + fmtNum(u.n) + ' مرة' + (u.last ? ' — آخرها ' + String(u.last).slice(0, 10) : '') : 'لم يُرسل بعد', 'نصه في كود الخادم — يُعدَّل بإصدار'])] });
     } }); });
   /* ردود بوت واتساب: مجموعة لكل نوع، وكل رد فقاعة كما يصل */
@@ -8535,20 +8535,20 @@ mh3Dec('ntpl', 'review:' + k, 'إشعار المنصة — رسالة المرح
   Object.keys(BF).sort().forEach(function (f) { const B = BF[f], isBtn = f === 'btn';
     L.push({ g: 'bot', t: MH3_BOT[f] || ('ردود «' + f + '»'), ch: ['wa'], keys: B.map(function (b) { return 'bot|' + b.key + '|' + (b.lang || 'ar'); }), hit: [f].concat(B.map(function (b) { return b.key + ' ' + b.body; })), build: function () {
       return mh3Card({ t: MH3_BOT[f] || ('ردود «' + f + '»'), w: fmtNum(B.length) + (isBtn ? ' زرًا في قوائم البوت' : ' ردًا آليًا'), ch: ['wa'],
-        pv: isBtn ? [mh3Fig('أسماء الأزرار كما تظهر', e('div', { class: 'mh3-btns' }, B.map(function (b) { return e('span', { class: 'mh3-btn' }, b.body || b.key); })))] : B.slice(0, 40).map(function (b) { return mh3Fig(b.key + (b.lang && b.lang !== 'ar' ? ' · ' + b.lang : ''), mh3Bubble(b.body || '')); }),
+        pv: isBtn ? [mh3Fig('أسماء الأزرار كما تظهر', e('div', { class: 'mh3-btns' }, B.map(function (b) { return e('span', { class: 'mh3-btn' }, b.body || b.key); })))] : B.slice(0, 40).map(function (b) { return mh3Fig(b.key + (b.lang && b.lang !== 'ar' ? ' · ' + b.lang : ''), mh3Bubble(b.body || ''), 'bot|' + b.key + '|' + (b.lang || 'ar')); }),
         dec: B.map(function (b) { return mh3Dec('bot', b.key + '|' + (b.lang || 'ar'), (isBtn ? 'زر: ' : 'رد: ') + b.key + ' — ' + String(b.body || '').slice(0, 60), b.body || '', null); }) });
     } }); });
   /* الردود الجاهزة: كل قائمة بنصوصها */
   (function () { try { return cuTplLists(); } catch (e2) { return []; } })().forEach(function (g) {
     L.push({ g: 'rep', t: g[1], ch: [], keys: g[2].map(function (x) { return 'rep|' + g[0] + '|' + x[0]; }), hit: [g[1]].concat(g[2].map(function (x) { return x[0] + ' ' + (x[1] || []).join(' '); })), build: function () {
       return mh3Card({ t: 'الردود الجاهزة — ' + g[1], w: g[2].map(function (x) { return x[0]; }).join(' · '),
-        pv: g[2].map(function (x) { return mh3Fig(x[0] + ' (' + fmtNum((x[1] || []).length) + ')', e('ol', { class: 'mh3-rep' }, (x[1] || []).map(function (t) { return e('li', {}, String(t)); }))); }),
+        pv: g[2].map(function (x) { return mh3Fig(x[0] + ' (' + fmtNum((x[1] || []).length) + ')', e('ol', { class: 'mh3-rep' }, (x[1] || []).map(function (t) { return e('li', {}, String(t)); })), 'rep|' + g[0] + '|' + x[0]); }),
         dec: g[2].map(function (x) { return mh3Dec('rep', g[0] + '|' + x[0], 'القائمة: ' + x[0], (x[1] || []).join('\n'), ['قائمة «اختر ردًا جاهزًا» — ' + g[1]]); }),
         tools: [DS.button('فتح محرر الردود الجاهزة', { size: 'sm', ui: 'pencil-simple', onClick: function () { go('other', 'sys-replies'); } })] });
     } });
   });
   MH3_DOCS.forEach(function (x) { L.push({ g: 'docs', t: x[1], ch: ['wa', 'mail', 'app'], keys: ['ntpl|' + x[0]], hit: [x[1], x[2], 'شهادة شكر وفاء تقدير إيصال مستند PDF'], build: function () {
-return mh3Card({ t: x[1], w: x[2], ch: ['wa', 'mail', 'app'], tag: 'مستند PDF', tagTone: 'info', note: DS.note('info', 'كما يصل', 'المستند نفسه الذي يولّده الخادم ويُرفق للعميل — ببيانات عيّنة لا ببيانات عميل.'), pv: x[3].map(function (d) { return mh3Fig(x[1] + ' — ' + d[1], mh3Pdf(d[0])); }), dec: [mh3Dec('ntpl', x[0], x[1], '', [x[2]])] });
+return mh3Card({ t: x[1], w: x[2], ch: ['wa', 'mail', 'app'], tag: 'مستند PDF', tagTone: 'info', note: DS.note('info', 'كما يصل', 'المستند نفسه الذي يولّده الخادم ويُرفق للعميل — ببيانات عيّنة لا ببيانات عميل.'), pv: x[3].map(function (d) { return mh3Fig(x[1] + ' — ' + d[1], mh3Pdf(d[0]), 'ntpl|' + x[0]); }), dec: [mh3Dec('ntpl', x[0], x[1], '', [x[2]])] });
 } }); });
 /* v606: إشعارات الخادم (الدفع والطلبات والفريق) والمرسل فعليًا */
 MH3_SRV.forEach(function (x) { L.push({ g: x[1], t: x[2].replace(/ · [\d,.]+ ريال$/, ''), ch: mh3SrvCh(x), keys: mh3SrvKeys(x), hit: [x[0], x[2], x[3], x[7]], build: function () { return mh3SrvCard(x); } }); });
@@ -8557,78 +8557,124 @@ try { mh3SentItems(L); } catch (err) { void err; }
   const gi = function (g) { const i = MH_GRP.findIndex(function (x) { return x[0] === g; }); return i < 0 ? 99 : i; };
   return L.map(function (x, i) { return [x, i]; }).sort(function (a, b) { return gi(a[0].g) - gi(b[0].g) || a[1] - b[1]; }).map(function (x) { return x[0]; });
 }
+/* v609: تجميع المتشابه — كل قسم يضم البطاقات ذات المحتوى نفسه أو المشابه (تطبيع عربي + تشابه الكلمات، بقائد لكل مجموعة بلا تسلسل) */
+const MH3_STOP = { 'منصه': 1, 'تيرا': 1, 'عميل': 1, 'عميلنا': 1, 'الذي': 1, 'التي': 1, 'هذا': 1, 'هذه': 1, 'بعد': 1, 'قبل': 1, 'عند': 1, 'كما': 1, 'يصل': 1, 'وصل': 1, 'فعلا': 1, 'قالب': 1, 'رساله': 1, 'اشعار': 1, 'واتساب': 1, 'بريد': 1, 'نصي': 1, 'جوال': 1, 'حسابك': 1, 'حساب': 1, 'محمد': 1, 'الشمري': 1, 'شمري': 1, 'ريال': 1, 'عيّنه': 1, 'للعميل': 1, 'للفريق': 1, 'المنصه': 1, 'خلال': 1, 'منذ': 1, 'لدي': 1, 'عبر': 1 };
+function mh3Tok(s) { const o = {}; String(s || '').replace(/[ً-ْٰـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[^ء-يa-z]+/gi, ' ').split(' ').forEach(function (w) { w = w.replace(/^(وال|بال|فال|كال|لل|ال|و|ب|ل)(?=.{3,})/, '').replace(/(كم|هم|ها|نا|ات|ون|ين|ك|ه)$/, function (s, x, i, all) { return all.length - s.length >= 3 ? '' : s; }); w = MH3_SYN[w] || w; if (w.length >= 3 && !MH3_STOP[w]) o[w] = 1; }); return o; }
+/* مرادفات المجال — تجمع «إيصال استلام الدفعة» مع «تم استلام سدادك» و«سداد ناجح» */
+const MH3_SYN = { 'دفع': 'سداد', 'دفعت': 'سداد', 'مدفوع': 'سداد', 'سدد': 'سداد', 'تسديد': 'سداد', 'ايصال': 'سداد', 'ايصالات': 'سداد', 'تحويل': 'تحويل', 'حواله': 'تحويل', 'مسترد': 'استرداد', 'استرجاع': 'استرداد', 'تقييمك': 'تقييم', 'قيم': 'تقييم', 'استبانه': 'تقييم', 'استبيان': 'تقييم', 'تذكير': 'تذكير', 'متاخره': 'تاخر', 'متاخر': 'تاخر', 'تدشين': 'تدشين', 'معتمد': 'اعتماد', 'اعتمد': 'اعتماد', 'مرفوض': 'رفض' };
+function mh3Jac(a, b) { let i = 0, u = 0; Object.keys(a).forEach(function (k) { u++; if (b[k]) i++; }); Object.keys(b).forEach(function (k) { if (!a[k]) u++; }); return u ? i / u : 0; }
+const mh3Clean = function (t) { return String(t || '').replace(/^(واتساب كما وصل|واتساب نصي|إشعار المنصة|إشعار الجوال|البريد كما أُرسل|الردود الجاهزة)\s*—\s*/, ''); };
+function mh3Clusters(L) {
+const S0 = L.map(function (o) { return { o: o, t: mh3Tok(mh3Clean(o.t)), a: mh3Tok(mh3Clean(o.t) + ' ' + (o.hit || []).slice(0, 4).map(function (h) { return String(h || '').slice(0, 180); }).join(' ')) }; });
+const order = S0.slice().sort(function (x, y) { return (y.o.keys || []).length - (x.o.keys || []).length; });
+const C = [];
+order.forEach(function (x) { let best = null, bs = 0; C.forEach(function (c) { const s = Math.max(mh3Jac(x.t, c.lead.t), 0.85 * mh3Jac(x.a, c.lead.a)); if (s > bs) { bs = s; best = c; } });
+if (best && bs >= 0.34) best.items.push(x.o); else C.push({ lead: x, items: [x.o] }); });
+return C;
+}
 function msgHubPage() {
 if (!LIVE.on) return [liveEmptyNote('مركز القوالب')];
 mhCss(); mhLoad(false); mh3Inv(false); mh3Sent(false);
 try { commReady('قوالب الإرسال', ['tpl']); } catch (e0) { void e0; }
 try { cxReady('قوالب الاستبانات', ['set']); } catch (e1) { void e1; }
-const F = ADM.mh2 || (ADM.mh2 = { g: 'all', q: '', ch: 'all' }); if (!F.d) F.d = 'all'; if (!F.s) F.s = 'grp'; if (!F.lim) F.lim = 20;
-const OPEN = ADM.mh3o || (ADM.mh3o = {});
+const F = ADM.mh2 || (ADM.mh2 = { g: 'all', q: '', ch: 'all' }); if (!F.d) F.d = 'all'; if (!F.s) F.s = 'grp'; if (!F.v) F.v = 'sim';
+const OPEN = ADM.mh3o || (ADM.mh3o = {}), SEC = ADM.mh3s || (ADM.mh3s = {});
 const q = String(F.q || '').trim().toLowerCase();
-MH3.fd = F.d; /* v609: داخل البطاقة تظهر قرارات التصفية وحدها */
+MH3.fd = F.d;
 const A = mh3Items();
+/* v609: ترقيم ثابت لكل قالب — الرقم نفسه على معاينته وعلى قراره، والقالب المكرر في أكثر من بطاقة له رقم واحد */
+const NUM = {}; let ni = 0; A.forEach(function (o) { (o.keys || []).forEach(function (k) { if (!NUM[k]) NUM[k] = ++ni; }); }); MH3.num = NUM;
 const sk = function (k) { const i = k.indexOf('|'); return [k.slice(0, i), k.slice(i + 1)]; };
-const dOf = function (k) { const x = sk(k), d = mh3Find(x[0], x[1]); return (d && d.decision) || ''; };
-const atOf = function (k) { const x = sk(k), d = mh3Find(x[0], x[1]); return (d && d.updated_at) || ''; };
-/* v609: القناة = قنوات البطاقة + الوسائل المختارة في قراراتها (أو وسيلة القالب الأصلية) */
-const chOf = function (o) { const S0 = {}; (o.ch || []).forEach(function (c) { S0[c] = 1; }); (o.keys || []).forEach(function (k) { const x = sk(k), d = mh3Find(x[0], x[1]); ((d && Array.isArray(d.channels) && d.channels.length) ? d.channels : mh3DefCh(x[0], x[1])).forEach(function (c) { S0[c] = 1; }); }); return Object.keys(S0); };
+const decOf = function (k) { const x = sk(k); return mh3Find(x[0], x[1]); };
+const dOf = function (k) { const d = decOf(k); return (d && d.decision) || ''; };
+const atOf = function (k) { const d = decOf(k); return (d && d.updated_at) || ''; };
+const chOf = function (o) { const S0 = {}; (o.ch || []).forEach(function (c) { S0[c] = 1; }); (o.keys || []).forEach(function (k) { const x = sk(k), d = decOf(k); ((d && Array.isArray(d.channels) && d.channels.length) ? d.channels : mh3DefCh(x[0], x[1])).forEach(function (c) { S0[c] = 1; }); }); return Object.keys(S0); };
 const fitD = function (o) { if (F.d === 'all') return true; const D = o.keys.map(dOf); return F.d === 'none' ? D.some(function (x) { return !x; }) : D.indexOf(F.d) >= 0; };
-const fitO = function (o) { return (F.ch === 'all' || chOf(o).indexOf(F.ch) >= 0) && fitD(o) && (!q || o.hit.some(function (x) { return String(x || '').toLowerCase().indexOf(q) >= 0; })); };
-let R = A.filter(function (o) { return (F.g === 'all' || o.g === F.g) && fitO(o); });
+const qNum = /^#?\d+$/.test(q) ? Number(q.replace('#', '')) : 0;
+const fitQ = function (o) { if (!q) return true; if (qNum) return o.keys.some(function (k) { return NUM[k] === qNum; }); return o.hit.concat([o.t]).some(function (x) { return String(x || '').toLowerCase().indexOf(q) >= 0; }); };
+const fitO = function (o) { return (F.ch === 'all' || chOf(o).indexOf(F.ch) >= 0) && fitD(o) && fitQ(o); };
+const R = A.filter(function (o) { return (F.g === 'all' || o.g === F.g) && fitO(o); });
 const nNone = function (o) { return o.keys.map(dOf).filter(function (x) { return !x; }).length; };
 const lastAt = function (o) { return o.keys.map(atOf).sort().pop() || ''; };
-if (F.s === 'name') R = R.slice().sort(function (a, b) { return String(a.t).localeCompare(String(b.t), 'ar'); });
-else if (F.s === 'pending') R = R.slice().sort(function (a, b) { return nNone(b) - nNone(a); });
-else if (F.s === 'recent') R = R.slice().sort(function (a, b) { return lastAt(b) < lastAt(a) ? -1 : lastAt(b) > lastAt(a) ? 1 : 0; });
-else if (F.s === 'most') R = R.slice().sort(function (a, b) { return b.keys.length - a.keys.length; });
+const sortL = function (L) { if (F.s === 'name') return L.slice().sort(function (a, b) { return String(a.t).localeCompare(String(b.t), 'ar'); }); if (F.s === 'pending') return L.slice().sort(function (a, b) { return nNone(b) - nNone(a); }); if (F.s === 'recent') return L.slice().sort(function (a, b) { return lastAt(b) < lastAt(a) ? -1 : lastAt(b) > lastAt(a) ? 1 : 0; }); if (F.s === 'most') return L.slice().sort(function (a, b) { return b.keys.length - a.keys.length; }); return L; };
 const keysOf = function (L) { const S0 = {}; L.forEach(function (o) { (o.keys || []).forEach(function (k) { S0[k] = 1; }); }); return Object.keys(S0); };
 const K = keysOf(R), KD = K.map(dOf), nD = function (v) { return KD.filter(function (x) { return x === v; }).length; };
 const cntG = function (g) { return A.filter(function (o) { return o.g === g && fitO(o); }).length; };
 const oid = function (o) { return o.g + '|' + o.t + '|' + (o.keys[0] || ''); };
+const gName = function (g) { return (MH_GRP.filter(function (x) { return x[0] === g; })[0] || [g, g])[1]; };
 const sync = DS.button(MH.syncing ? 'جارٍ المزامنة…' : 'مزامنة الحالة من Meta', { size: 'sm', ui: 'arrows-clockwise', disabled: MH.syncing, onClick: function () {
 MH.syncing = true; draw();
 clPost('/admin/api/send-center/templates-sync', {}).then(function (j) { MH.syncing = false; MH.txt = {}; snack('تمت المزامنة — ' + fmtNum(j.count || 0) + ' قالبًا من Meta.'); mhLoad(true); mh3Inv(true); })
 .catch(function (err) { MH.syncing = false; snack((err && err.message) || 'تعذّرت المزامنة.'); draw(); }); } });
-/* v609: بطاقة مطوية — العنوان والوسائل وعدد القوالب وحالة قراراتها؛ تُفتح بالضغط فتظهر المعاينات والقرارات */
 const DSUM = [['', 'بلا قرار', 'warn'], ['approve', 'اعتماد', 'ok'], ['edit', 'تعديل', 'warn'], ['delete', 'حذف', 'danger'], ['hold', 'تعليق', 'info']];
-const summary = function (o, open) {
-const D = o.keys.map(dOf), cnt = function (v) { return D.filter(function (x) { return x === v; }).length; };
-return e('button', { type: 'button', class: 'mh3-sum', 'aria-expanded': open ? 'true' : 'false', onClick: function () { OPEN[oid(o)] = !open; mh3Draw(); } }, [
-e('span', { class: 'mh3-sum-t' }, [mh3ChIcons(chOf(o).filter(function (c) { return c !== 'comm'; })), e('b', {}, o.t), e('small', {}, fmtNum(o.keys.length) + (o.keys.length === 1 ? ' قالب' : ' قوالب'))]),
-e('span', { class: 'mh3-sum-s' }, DSUM.filter(function (c) { return cnt(c[0]); }).map(function (c) { return DS.badge(c[1] + ' ' + fmtNum(cnt(c[0])), c[2]); })),
-e('span', { class: 'mh3-sum-c' }, [frag(ui(open ? 'caret-up' : 'caret-down', 18)), open ? 'طي' : 'فتح'])]);
+const chips = function (keys) { const D = keys.map(dOf), cnt = function (v) { return D.filter(function (x) { return x === v; }).length; }; return DSUM.filter(function (c) { return cnt(c[0]); }).map(function (c) { return DS.badge(c[1] + ' ' + fmtNum(cnt(c[0])), c[2]); }); };
+const nums = function (keys) { const N = keys.map(function (k) { return NUM[k]; }).filter(Boolean).sort(function (a, b) { return a - b; }); return N.length > 6 ? '#' + N.slice(0, 5).join(' #') + ' … #' + N[N.length - 1] : (N.length ? '#' + N.join(' #') : ''); };
+/* v609: قرار واحد لكل قوالب البطاقة (اعتماد · حذف · تعليق) — يحفظ كل قالب بقراره ووسائله الحالية */
+const bulk = function (o) {
+const B = ADM.mh3b || (ADM.mh3b = {}), id = oid(o), v = B[id] || '';
+const run = async function () {
+if (!v || MH3.bulkBusy) return; MH3.bulkBusy = true; mh3Draw(); let ok = 0;
+for (const k of o.keys) { const x = sk(k), d = decOf(k) || {}, ch = (Array.isArray(d.channels) && d.channels.length) ? d.channels : mh3DefCh(x[0], x[1]);
+const r = await liveSb('rpc/admin_tpl_decide', { body: { p_src: x[0], p_key: x[1], p_decision: v, p_note: d.note || '', p_proposed: '', p_channels: ch.length ? ch : null } }).catch(function () { return null; });
+if (r && r.ok === true) { ok++; const L = (MH3.inv && MH3.inv.dec) || []; const nd = { src: x[0], key: x[1], decision: v, note: d.note || null, proposed: null, channels: ch.slice(), by_name: 'أنت', updated_at: new Date().toISOString() }; const i = L.findIndex(function (y) { return y.src === x[0] && y.key === x[1]; }); if (i >= 0) L[i] = nd; else L.push(nd); const SS = ADM.mh3d || {}; if (SS[k]) SS[k].c = v; } }
+MH3.bulkBusy = false; B[id] = ''; snack('حُفظ القرار لـ ' + fmtNum(ok) + ' من ' + fmtNum(o.keys.length) + ' قوالب.'); mh3Draw(); };
+return e('div', { class: 'mh3-bulk' }, [e('small', {}, 'قرار واحد لكل قوالب البطاقة (' + fmtNum(o.keys.length) + '):'),
+DS.select({ value: v, options: [['', 'اختر'], ['approve', 'اعتماد الكل كما هو'], ['hold', 'تعليق الكل'], ['delete', 'حذف الكل']], onChange: function (x) { B[id] = x || ''; mh3Draw(); } }),
+DS.button(MH3.bulkBusy ? 'جارٍ الحفظ…' : 'تطبيق على كل القوالب', { size: 'sm', tone: 'primary', ui: 'check', disabled: !v || MH3.bulkBusy, onClick: run })]);
 };
-const page = R.slice(0, F.lim), list = []; let last = '';
-page.forEach(function (o) {
-if (F.s === 'grp' && o.g !== last) { last = o.g; const G = MH_GRP.filter(function (g) { return g[0] === o.g; })[0] || [o.g, o.g, 'squares-four'];
-const RG = R.filter(function (x) { return x.g === o.g; }), shown = page.filter(function (x) { return x.g === o.g; }).length;
-list.push(e('div', { class: 'mh2-sec-h mh3-sec' }, [frag(ui(G[2], 18)), G[1], e('span', { class: 'n' }, fmtNum(RG.length) + ' بطاقة · ' + fmtNum(keysOf(RG).length) + ' قالبًا' + (shown < RG.length ? ' · يظهر منها ' + fmtNum(shown) : ''))])); }
+const cardEl = function (o) {
 const open = !!OPEN[oid(o)];
-list.push(e('div', { class: 'mh3-cw' + (open ? ' is-open' : '') }, [summary(o, open), open ? o.build() : null].filter(Boolean)));
+return e('div', { class: 'mh3-cw' + (open ? ' is-open' : '') }, [
+e('button', { type: 'button', class: 'mh3-sum', 'aria-expanded': open ? 'true' : 'false', onClick: function () { OPEN[oid(o)] = !open; mh3Draw(); } }, [
+e('span', { class: 'mh3-sum-t' }, [mh3ChIcons(chOf(o).filter(function (c) { return c !== 'comm'; })), e('b', {}, o.t), e('small', {}, fmtNum(o.keys.length) + (o.keys.length === 1 ? ' قالب' : ' قوالب') + ' · ' + nums(o.keys) + ' · ' + gName(o.g))]),
+e('span', { class: 'mh3-sum-s' }, chips(o.keys)),
+e('span', { class: 'mh3-sum-c' }, [frag(ui(open ? 'caret-up' : 'caret-down', 18)), open ? 'طي' : 'فتح'])]),
+open && o.keys.length > 1 ? bulk(o) : null,
+open ? o.build() : null].filter(Boolean));
+};
+/* الأقسام: «المتشابه معًا» (افتراضي) أو «حسب الأقسام» — كل قسم يُطوى ويُفتح، وفيه كل بطاقاته */
+let secs = [];
+if (F.v === 'sim') {
+const C = mh3Clusters(R), multi = C.filter(function (c) { return c.items.length > 1; }), single = C.filter(function (c) { return c.items.length === 1; });
+multi.sort(function (a, b) { return b.items.length - a.items.length; }).forEach(function (c) { secs.push({ id: 'c:' + oid(c.lead.o), t: mh3Clean(c.lead.o.t), sub: 'محتوى متشابه — ' + fmtNum(c.items.length) + ' بطاقات من ' + c.items.map(function (o) { return gName(o.g); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(' · '), items: c.items, ic: 'stack' }); });
+const byG = {}; single.forEach(function (c) { const o = c.items[0]; (byG[o.g] = byG[o.g] || []).push(o); });
+MH_GRP.forEach(function (g) { if (byG[g[0]]) secs.push({ id: 'u:' + g[0], t: g[1], sub: 'بلا تشابه — بطاقة فريدة لكل رسالة', items: byG[g[0]], ic: g[2] }); });
+} else {
+MH_GRP.forEach(function (g) { const L = R.filter(function (o) { return o.g === g[0]; }); if (L.length) secs.push({ id: 'g:' + g[0], t: g[1], sub: '', items: L, ic: g[2] }); });
+}
+const autoOpen = !!q || R.length <= 12;
+const list = secs.map(function (S1) {
+const open = autoOpen || !!SEC[S1.id], ks = keysOf(S1.items);
+return e('section', { class: 'mh3-sx' + (open ? ' is-open' : '') }, [
+e('button', { type: 'button', class: 'mh3-sxh', 'aria-expanded': open ? 'true' : 'false', onClick: function () { SEC[S1.id] = !open; mh3Draw(); } }, [
+e('span', { class: 'mh3-sxt' }, [frag(ui(S1.ic || 'squares-four', 18)), e('b', {}, S1.t), e('small', {}, fmtNum(S1.items.length) + ' بطاقة · ' + fmtNum(ks.length) + ' قالبًا' + (S1.sub ? ' — ' + S1.sub : ''))]),
+e('span', { class: 'mh3-sum-s' }, chips(ks)),
+e('span', { class: 'mh3-sum-c' }, [frag(ui(open ? 'caret-up' : 'caret-down', 18)), open ? 'طي القسم' : 'فتح القسم'])]),
+open ? e('div', { class: 'mh3-sxb' }, sortL(S1.items).map(cardEl)) : null].filter(Boolean));
 });
 const WA = MH.wa || [];
 const grpOpts = [['all', 'كل الأقسام (' + fmtNum(A.filter(fitO).length) + ')']].concat(MH_GRP.filter(function (g) { return cntG(g[0]) || g[0] === F.g; }).map(function (g) { return [g[0], g[1] + ' (' + fmtNum(cntG(g[0])) + ')']; }));
-const setAll = function (v) { page.forEach(function (o) { OPEN[oid(o)] = v; }); mh3Draw(); };
-const reset = function () { F.g = 'all'; F.ch = 'all'; F.d = 'all'; F.q = ''; F.s = 'grp'; F.lim = 20; mh3Draw(); };
+const setSecs = function (v) { secs.forEach(function (s) { SEC[s.id] = v; }); if (!v) Object.keys(OPEN).forEach(function (k) { OPEN[k] = false; }); mh3Draw(); };
+const reset = function () { F.g = 'all'; F.ch = 'all'; F.d = 'all'; F.q = ''; F.s = 'grp'; mh3Draw(); };
 return [cuBdInt(true),
-e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل رسائل المنصة وقوالبها في مكان واحد: المعاينة كما تصل للعميل أو الموظف، وقرار كل قالب.')]), e('div', { class: 'ax-top-a' }, [sync])]),
-DS.note('info', 'كيف تستخدم الصفحة', 'البطاقات مطوية: يظهر لكل رسالة اسمها ووسائلها وعدد قوالبها وحالة قراراتها. اضغط البطاقة لفتحها فتظهر معاينتها كما تصل ثم قرار كل قالب فيها (اعتماد · يحتاج تعديل مع النص المقترح · حذف · تعليق) والوسائل، ثم «حفظ القرار». التصفية والترتيب أعلى القائمة، وكل الأرقام تتبعها. لا يُحذف ولا يُعدَّل قالب من هذه الصفحة — القرار مرجع للتنفيذ بعد موافقتك.'),
+e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل رسائل المنصة وقوالبها في مكان واحد: المعاينة كما تصل، وقرار كل قالب برقمه.')]), e('div', { class: 'ax-top-a' }, [sync])]),
+DS.note('info', 'كيف تستخدم الصفحة', 'الأقسام تجمع البطاقات ذات المحتوى نفسه أو المشابه معًا — افتح القسم لترى كل البطاقات المتشابهة، ثم افتح البطاقة لترى معايناتها وقراراتها. لكل قالب رقم ثابت (#) يظهر على معاينته وعلى قراره نفسه، وتستطيع البحث بالرقم. في البطاقة المفتوحة: قرار لكل قالب، أو «قرار واحد لكل قوالب البطاقة». لا يُحذف ولا يُعدَّل قالب من هذه الصفحة — القرار مرجع للتنفيذ بعد موافقتك.'),
 MH.err ? DS.note('warn', 'تعذّر تحميل قوالب واتساب', MH.err) : null, MH3.inv && MH3.inv.err ? DS.note('warn', 'القرارات', MH3.inv.err) : null,
 axKpis([['حسب التصفية', fmtNum(R.length) + ' بطاقة · ' + fmtNum(K.length) + ' قالبًا', '', 'squares-four'], ['بلا قرار', fmtNum(nD('')), 'warn', 'hourglass-medium'], ['اعتماد', fmtNum(nD('approve')), 'ok', 'check-circle'],
 ['تعديل', fmtNum(nD('edit')), 'warn', 'pencil-simple'], ['حذف', fmtNum(nD('delete')), 'danger', 'trash'], ['قوالب واتساب في Meta', fmtNum(WA.length) + ' · بانتظار ' + fmtNum(WA.filter(function (t) { return t.status !== 'APPROVED'; }).length), '', 'chat-circle-dots']]),
 e('div', { class: 'sys-form is-2 cu-bd-form mh3-filters' }, [
-DS.editField('القسم', DS.select({ value: F.g, options: grpOpts, onChange: function (v) { F.g = v || 'all'; F.lim = 20; mh3Draw(); } })),
-DS.editField('القناة', DS.select({ value: F.ch, options: [['all', 'كل القنوات'], ['wa', 'واتساب'], ['mail', 'البريد'], ['app', 'الإشعارات'], ['comm', 'مركز الإرسال']], onChange: function (v) { F.ch = v || 'all'; F.lim = 20; mh3Draw(); } })),
-DS.editField('القرار', DS.select({ value: F.d, options: [['all', 'كل القرارات'], ['none', 'بلا قرار'], ['approve', 'اعتماد'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق']], onChange: function (v) { F.d = v || 'all'; F.lim = 20; mh3Draw(); } })),
-DS.editField('الترتيب', DS.select({ value: F.s, options: [['grp', 'حسب الأقسام'], ['pending', 'الأكثر قوالب بلا قرار'], ['recent', 'آخر قرار أولًا'], ['most', 'الأكثر قوالب'], ['name', 'أبجديًا']], onChange: function (v) { F.s = v || 'grp'; mh3Draw(); } })),
-DS.editField('بحث في الاسم أو النص', e('input', { class: 't2-input', type: 'search', value: F.q || '', placeholder: 'اكتب للبحث', 'data-fk': 'mh3-q', onInput: function (ev) { F.q = ev.target.value; clearTimeout(MH3.qt); MH3.qt = setTimeout(function () { F.lim = 20; mh3Draw(); }, 450); } }))]),
-e('div', { class: 'mh3-top', 'data-live-ok': '' }, [e('small', { class: 'cu-dr-hint' }, 'يظهر ' + fmtNum(page.length) + ' من ' + fmtNum(R.length) + ' بطاقة، وفيها ' + fmtNum(K.length) + ' قالبًا — كل الأرقام حسب التصفية الحالية'),
-e('div', { class: 'mh3-top-a' }, [DS.button('فتح الكل', { size: 'sm', ui: 'caret-down', onClick: function () { setAll(true); } }), DS.button('طي الكل', { size: 'sm', ui: 'caret-up', onClick: function () { setAll(false); } }),
+DS.editField('العرض', DS.select({ value: F.v, options: [['sim', 'المتشابه معًا'], ['grp', 'حسب الأقسام']], onChange: function (v) { F.v = v || 'sim'; mh3Draw(); } })),
+DS.editField('القسم', DS.select({ value: F.g, options: grpOpts, onChange: function (v) { F.g = v || 'all'; mh3Draw(); } })),
+DS.editField('القناة', DS.select({ value: F.ch, options: [['all', 'كل القنوات'], ['wa', 'واتساب'], ['mail', 'البريد'], ['app', 'الإشعارات'], ['comm', 'مركز الإرسال']], onChange: function (v) { F.ch = v || 'all'; mh3Draw(); } })),
+DS.editField('القرار', DS.select({ value: F.d, options: [['all', 'كل القرارات'], ['none', 'بلا قرار'], ['approve', 'اعتماد'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق']], onChange: function (v) { F.d = v || 'all'; mh3Draw(); } })),
+DS.editField('الترتيب داخل القسم', DS.select({ value: F.s, options: [['grp', 'الافتراضي'], ['pending', 'الأكثر قوالب بلا قرار'], ['recent', 'آخر قرار أولًا'], ['most', 'الأكثر قوالب'], ['name', 'أبجديًا']], onChange: function (v) { F.s = v || 'grp'; mh3Draw(); } })),
+DS.editField('بحث بالاسم أو النص أو رقم القالب', e('input', { class: 't2-input', type: 'search', value: F.q || '', placeholder: 'مثال: سداد · أو #27', 'data-fk': 'mh3-q', onInput: function (ev) { F.q = ev.target.value; clearTimeout(MH3.qt); MH3.qt = setTimeout(function () { mh3Draw(); }, 450); } }))]),
+e('div', { class: 'mh3-top', 'data-live-ok': '' }, [e('small', { class: 'cu-dr-hint' }, fmtNum(secs.length) + ' قسمًا · ' + fmtNum(R.length) + ' بطاقة · ' + fmtNum(K.length) + ' قالبًا — كل الأرقام حسب التصفية الحالية'),
+e('div', { class: 'mh3-top-a' }, [DS.button('فتح كل الأقسام', { size: 'sm', ui: 'caret-down', onClick: function () { setSecs(true); } }), DS.button('طي الكل', { size: 'sm', ui: 'caret-up', onClick: function () { setSecs(false); } }),
 (F.g !== 'all' || F.ch !== 'all' || F.d !== 'all' || F.q || F.s !== 'grp') ? DS.button('مسح التصفية', { size: 'sm', ui: 'x', onClick: reset }) : null,
 DS.button('إنشاء رسالة لمركز الإرسال', { size: 'sm', ui: 'plus', onClick: function () { go('other', 'comm-tpl'); } })].filter(Boolean))]),
 MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : null,
-R.length ? e('div', { class: 'mh3-list', 'data-live-ok': '' }, list) : DS.note('info', 'لا رسائل بهذا الاختيار', 'غيّر التصفية أو اضغط «مسح التصفية».'),
-R.length > F.lim ? e('div', { class: 'mh3-more' }, [DS.button('عرض المزيد (' + fmtNum(R.length - F.lim) + ')', { ui: 'caret-down', onClick: function () { F.lim += 20; mh3Draw(); } })]) : null].filter(Boolean);
+R.length ? e('div', { class: 'mh3-list', 'data-live-ok': '' }, list) : DS.note('info', 'لا رسائل بهذا الاختيار', 'غيّر التصفية أو اضغط «مسح التصفية».')].filter(Boolean);
 }
 
 function sysRepliesPage() {

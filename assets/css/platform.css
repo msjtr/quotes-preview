@@ -9406,3 +9406,15 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .mh3-dec{padding:14px;border-width:1.5px;background:var(--t2-bg,#F7F9FC)}
 .mh3-dec+.mh3-dec{margin-top:4px}
 .mh3-top-a{display:flex;gap:8px;flex-wrap:wrap}
+/* v609: أقسام المتشابه تُطوى وتُفتح · رقم القالب على معاينته وقراره · قرار واحد لكل البطاقة */
+.mh3-n{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:22px;padding:0 6px;border-radius:6px;background:#0A1F44;color:#fff;font-size:12px;font-weight:700;direction:ltr;margin-inline-end:6px;vertical-align:middle}
+.mh3-sx{border:1px solid var(--t2-line,#d4deea);border-radius:16px;background:var(--t2-bg,#F7F9FC);overflow:hidden}
+.mh3-sx.is-open{border-color:#0B6E63}
+.mh3-sxh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding:14px 16px;border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer}
+.mh3-sxh:hover{background:rgba(11,110,99,.05)}
+.mh3-sxt{display:flex;align-items:center;gap:8px;flex:1 1 280px;min-width:0;flex-wrap:wrap}
+.mh3-sxt b{font-size:15.5px;color:var(--t2-ink)}
+.mh3-sxt small{opacity:.75}
+.mh3-sxb{display:grid;gap:10px;padding:0 12px 14px}
+.mh3-bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-top:1px dashed var(--t2-line,#d4deea);background:rgba(11,110,99,.04)}
+.mh3-bulk>small{font-weight:600}
