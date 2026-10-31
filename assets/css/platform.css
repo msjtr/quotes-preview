@@ -9380,3 +9380,29 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .mh3-chs>small{opacity:.8;margin-inline-end:2px}
 .mh3-ch{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border:1px solid var(--t2-line,#d4deea);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
 .mh3-ch.is-on{background:#0A1F44;color:#fff;border-color:#0A1F44}
+/* v608: المستندات المرفقة كما تصل — معاينة PDF بعرض البطاقة */
+.mh3-pv .mh3-f:has(.mh3-pdf){grid-column:1/-1}
+.mh3-pdf{display:block;width:100%;height:560px;border:1px solid var(--t2-line,#d4deea);border-radius:12px;background:#fff}
+.mh3-pdfa{display:inline-block;margin-top:8px;font-size:13px;font-weight:600}
+@media (max-width:640px){.mh3-pdf{height:420px}}
+/* v608: النص المقترح — خانة واسعة وتكبر مع النص، والكتابة لا تنقطع */
+.mh3-plab{font-size:12.5px;font-weight:600;color:var(--t2-ink)}
+.mh3-pta{min-height:130px;line-height:1.8;font-size:14px}
+/* v608: بطاقات مطوية تُفتح بالضغط، ومسافة واضحة بين القرارات */
+.mh3-list{gap:12px}
+.mh3-cw{border:1px solid var(--t2-line,#d4deea);border-radius:14px;background:var(--t2-surface,#fff);overflow:hidden}
+.mh3-cw.is-open{box-shadow:0 2px 10px rgba(10,31,68,.08);border-color:#0A1F44}
+.mh3-cw>.mh3-c{border:0;border-radius:0;border-top:1px solid var(--t2-line,#d4deea)}
+.mh3-cw.is-open>.mh3-c>.mh3-h>div:first-child>b{display:none}
+.mh3-sum{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding:12px 14px;border:0;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer}
+.mh3-sum:hover{background:rgba(10,31,68,.03)}
+.mh3-sum-t{display:flex;align-items:center;gap:8px;flex:1 1 260px;min-width:0}
+.mh3-sum-t b{font-size:14.5px;color:var(--t2-ink);overflow-wrap:anywhere}
+.mh3-sum-t small{opacity:.7;white-space:nowrap}
+.mh3-sum-s{display:flex;gap:6px;flex-wrap:wrap}
+.mh3-sum-c{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:#0B6E63;margin-inline-start:auto}
+.mh3-decs{gap:18px;padding-top:16px}
+.mh3-decs-t{font-weight:700;font-size:14px;color:var(--t2-ink)}
+.mh3-dec{padding:14px;border-width:1.5px;background:var(--t2-bg,#F7F9FC)}
+.mh3-dec+.mh3-dec{margin-top:4px}
+.mh3-top-a{display:flex;gap:8px;flex-wrap:wrap}
