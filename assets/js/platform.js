@@ -8226,7 +8226,7 @@ function mh3Mail(key) {
   if (R.err || !R.html) return DS.note('warn', 'تعذّرت معاينة البريد', R.err || '');
   return e('div', { class: 'mh3-mailbox' }, [e('div', { class: 'mh3-mailsj' }, 'الموضوع: ' + (R.subject || '—')), e('iframe', { class: 'mh3-mailf', title: R.subject || 'البريد', sandbox: '', srcdoc: R.html, loading: 'lazy' })]);
 }
-const mh3Fig = function (cap, node, k) { if (!node) return null; const n = k && MH3.num ? MH3.num[k] : 0; /* v609: رقم القالب على المعاينة نفسه الذي على قراره */ return e('figure', Object.assign({ class: 'mh3-f' + (n ? ' has-n' : '') }, k ? { 'data-k': k } : {}), [ /* v615: مفتاح القالب على معاينته — لتقسيم البطاقة ودمجها برقم الفهرس */e('figcaption', {}, n ? [e('span', { class: 'mh3-n', title: 'رقم القالب — يطابق رقم قراره' }, n), ' ', cap] : cap), e('div', { class: 'mh3-fb' }, [node])]); };
+const mh3Fig = function (cap, node, k) { if (!node) return null; if (k && k.indexOf('wa|') === 0 && MH3_DEL[k.slice(3)]) return null; /* v617: لا معاينة لقالب حُذف من Meta */ const n = k && MH3.num ? MH3.num[k] : 0; /* v609: رقم القالب على المعاينة نفسه الذي على قراره */ return e('figure', Object.assign({ class: 'mh3-f' + (n ? ' has-n' : '') }, k ? { 'data-k': k } : {}), [ /* v615: مفتاح القالب على معاينته — لتقسيم البطاقة ودمجها برقم الفهرس */e('figcaption', {}, n ? [e('span', { class: 'mh3-n', title: 'رقم القالب — يطابق رقم قراره' }, n), ' ', cap] : cap), e('div', { class: 'mh3-fb' }, [node])]); };
 const mh3Bubble = function (text, img) { return e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: img || null, text: text || '', foot: '', buttons: [] })]); };
 const mh3Find = function (src, key) { const D = (MH3.inv && MH3.inv.dec) || []; return D.filter(function (x) { return x.src === src && x.key === String(key); })[0] || null; };
 const mh3InvComm = function (id) { return ((MH3.inv && MH3.inv.comm) || []).filter(function (t) { return t.id === id; })[0] || null; };
@@ -8271,6 +8271,7 @@ Array.prototype.forEach.call(fb.querySelectorAll('.hd, .sc-wa-ft, .ic'), functio
 return t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 function mh3Dec(src, key, label, body, use) {
+if (src === 'wa' && MH3_DEL[String(key)]) return null; /* v617: لا قرار لقالب حُذف من Meta */
 key = String(key);
 const d0 = mh3Find(src, key) || {}, SS = ADM.mh3d || (ADM.mh3d = {}), id = src + '|' + key, S = SS[id] || (SS[id] = { c: d0.decision || '', n: d0.note || '', p: d0.proposed || '', busy: false });
 if (MH3.fd && MH3.fd !== 'all' && (MH3.fd === 'none' ? !!d0.decision : d0.decision !== MH3.fd)) return null; /* v609: تصفية القرار داخل البطاقة */
@@ -8494,7 +8495,7 @@ if (svMail) dec.push(mh3Dec('email', 'survey:' + sv.key, 'بريد الاستب�
   /* مراحل التوثيق وطلبات الخدمة: العنوان من عنوان الرسالة نفسها لا من اسم الحدث المختصر */
   (MH.stages || []).forEach(function (s) {
     const k = s.event_key, off = MH_PV_OFF[k] || (MH_PV_STAFF[k] ? 'إشعار للفريق داخل المنصة — لا يصل صاحب الملف' : ''), C = off ? ['app'] : ['wa', 'mail', 'app'];
-    const img = MH_PV_IMG.indexOf(k) >= 0 ? MH_IMG + 'pv-' + k + '.jpg' : null, tpl = img ? 'tera_profile_review_img' : 'tera_profile_review_update';
+    const img = MH_IMG + (MH_PV_IMG.indexOf(k) >= 0 ? 'pv-' + k : 'ev-profile') + '.jpg', tpl = 'tera_profile_review_img'; /* v617: كل مراحل التوثيق تصل بقالب الصورة (stf_158) — لا قالب نصي محذوف في المعاينة */
     const ttl = s.title || s.subject || s.wa_event_label || k;
     L.push({ g: (k === 'launched' || k === 'film_ready') ? 'acct' : 'ver', t: ttl, ch: C, keys: off ? ['review|' + k] : ['review|' + k, 'email|review:' + k, 'ntpl|review:' + k], hit: [k, s.wa_event_label, s.subject, s.title, s.lead, s.note], build: function () {
       const vals = ['محمد الشمري', 'REQ-10458', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', 'tera-services.com.sa/clients'];
