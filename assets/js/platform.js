@@ -8261,6 +8261,15 @@ return { name: s, code: code };
 }
 const mh3ChName = function (L) { return L.length === 3 ? 'الجميع' : MH3_CHS.filter(function (c) { return L.indexOf(c[0]) >= 0; }).map(function (c) { return c[1]; }).join(' · ') || 'بلا وسيلة'; };
 const mh3ChIcons = function (L) { return e('span', { class: 'mh3-dec-ics', title: mh3ChName(L) }, (L.length === 3 ? [['all', 'الجميع', 'squares-four']] : MH3_CHS.filter(function (c) { return L.indexOf(c[0]) >= 0; })).map(function (c) { return e('span', { class: 'mh3-ic', title: c[1] }, frag(ui(c[2], 16))); })); };
+/* v611: نص التعديل يبدأ كما يظهر في العينة نفسها (المعاينة التي تحمل رقم القالب) — لا من المتغيرات وحدها */
+function mh3PvText(k) {
+const n = MH3.num && MH3.num[k]; if (!n) return '';
+const f = Array.prototype.filter.call(document.querySelectorAll('figure.mh3-f'), function (x) { const s = x.querySelector('figcaption .mh3-n'); return s && s.textContent === '#' + n; })[0];
+const fb = f && f.querySelector('.mh3-fb'); if (!fb) return '';
+let t = fb.innerText || '';
+Array.prototype.forEach.call(fb.querySelectorAll('.hd, .sc-wa-ft, .ic'), function (s) { const x = String(s.innerText || '').trim(); if (x) t = t.replace(x, ''); });
+return t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
 function mh3Dec(src, key, label, body, use) {
 key = String(key);
 const d0 = mh3Find(src, key) || {}, SS = ADM.mh3d || (ADM.mh3d = {}), id = src + '|' + key, S = SS[id] || (SS[id] = { c: d0.decision || '', n: d0.note || '', p: d0.proposed || '', busy: false });
@@ -8289,10 +8298,10 @@ e('div', { class: 'mh3-dec-h' }, [(MH3.num && MH3.num[src + '|' + key]) ? e('spa
 (use || []).filter(Boolean).length ? e('ul', { class: 'mh3-use' }, use.filter(Boolean).map(function (u) { return e('li', {}, u); })) : null,
 e('div', { class: 'mh3-chs' }, [e('small', {}, 'يُرسل عبر:')].concat(MH3_CHS.concat([['all', 'الجميع', 'squares-four']]).map(chBtn))),
 e('div', { class: 'mh3-dec-f' }, [
-DS.select({ value: S.c, options: MH3_DEC, onChange: function (v) { S.c = v || ''; if (S.c === 'edit' && !S.p) S.p = body || ''; mh3Draw(); } }),
+DS.select({ value: S.c, options: MH3_DEC, onChange: function (v) { S.c = v || ''; if (S.c === 'edit' && !S.p) S.p = mh3PvText(id) || body || ''; mh3Draw(); } }),
 e('input', { class: 't2-input', type: 'text', value: S.n, placeholder: 'ملاحظة على القالب (اختيارية)', 'aria-label': 'ملاحظة — ' + N.name, 'data-fk': id + '|n', onInput: function (ev) { S.n = ev.target.value; MH3.typing = Date.now(); } }),
 DS.button(S.busy ? 'جارٍ الحفظ…' : 'حفظ القرار', { size: 'sm', tone: 'primary', ui: 'check', onClick: save })]),
-S.c === 'edit' ? e('small', { class: 'mh3-plab' }, 'النص المقترح — عدّله متى شئت ثم اضغط «حفظ القرار» (يمكن التعديل والحفظ أكثر من مرة)') : null,
+S.c === 'edit' ? e('div', { class: 'mh3-plab-r' }, [e('small', { class: 'mh3-plab' }, 'النص المقترح يبدأ كما في العينة أعلاه — عدّله ثم اضغط «حفظ القرار» (يمكن التعديل والحفظ أكثر من مرة)'), DS.button('إعادة النص كما في العينة', { size: 'sm', ui: 'arrow-counter-clockwise', onClick: function () { S.p = mh3PvText(id) || body || ''; MH3.typing = 0; mh3Draw(); } })]) : null,
 S.c === 'edit' ? e('textarea', { class: 't2-input mh3-pta', rows: String(Math.min(18, Math.max(5, String(S.p || '').split('\n').length + 2))), placeholder: 'النص كما يجب أن يكون بعد التعديل', 'aria-label': 'النص المقترح — ' + N.name, 'data-fk': id + '|p', onInput: function (ev) { S.p = ev.target.value; MH3.typing = Date.now(); } }, S.p || '') : null,
 (d0.decision === 'edit' && d0.proposed) ? mh3Fig('النص المحفوظ بعد التعديل — يُطبَّق على القالب بعد موافقتك', src === 'ntpl' ? mhApp(N.name, d0.proposed) : (src === 'email' || src === 'status') ? e('div', { class: 'mh3-prop' }, d0.proposed) : mh3Bubble(d0.proposed)) : null, /* v606: التعديل المقترح ظاهر بعد الحفظ */
 d0.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر قرار: ' + lab(d0.decision) + (Array.isArray(d0.channels) && d0.channels.length ? ' · ' + mh3ChName(d0.channels) : '') + (d0.by_name ? ' — ' + d0.by_name : '') + ' · ' + String(d0.updated_at).slice(0, 10) + (d0.note ? ' · ' + d0.note : '')) : null].filter(Boolean));
@@ -8584,21 +8593,21 @@ function mh3Hum(o) { let t = String((o && o.t) || ''); const m = /^واتساب 
 const MH3_TOP = [
   ['docs', 'المستندات المرفقة — الشهادة والشكر والإيصال', 'file-pdf', [['شهاده', 4], ['تقدير ووفاء', 4], ['شكر وتقدير', 4]]],
   ['legacy', 'رسائل النظام السابق', 'clock-counter-clockwise', [['النظام السابق', 6]]],
-  ['sec', 'الأمان ورموز التحقق', 'shield-check', [['رمز', 3], ['otp', 3], ['تحقق', 1], ['امان', 3], ['امني', 3], ['جهاز جديد', 3], ['كلمه المرور', 3], ['تسجيل الدخول', 2], ['تاكيد رقم الجوال', 4], ['استعاده الحساب', 3]]],
+  ['sec', 'الأمان ورموز التحقق', 'shield-check', [['رمز', 3], ['otp', 3], ['تحقق', 1], ['امان', 3], ['امني', 3], ['جهاز جديد', 3], ['كلمه المرور', 3], ['تسجيل الدخول', 2], ['تاكيد رقم الجوال', 4], ['استعاده الحساب', 3], ['البريد الالكتروني المسجل', 4]]],
   ['payok', 'السداد الناجح والإيصالات', 'receipt', [['سداد ناجح', 4], ['تم استلام', 1], ['استلام الدفعه', 4], ['استلام دفعت', 4], ['استلام سداد', 4], ['ايصال', 3], ['تاكيد السداد', 4], ['تم سداد', 4], ['سداد', 1], ['دفع', 1]]],
   ['due', 'تذكير الدفعات والتأخر', 'bell-ringing', [['تذكير', 4], ['مستحق', 4], ['متاخر', 4], ['قريبه الموعد', 4], ['تستحق', 4], ['موعد السداد', 4], ['موعد الدفعه', 4]]],
   ['bank', 'التحويل البنكي', 'bank', [['تحويل بنكي', 5], ['التحويل البنكي', 5], ['تحويلك', 5], ['ايصال التحويل', 6], ['حواله', 4], ['تحويلات', 5], ['التحويل', 2], ['الحساب البنكي', 4]]],
   ['fail', 'الدفع غير المكتمل والإلغاء والاسترداد', 'arrow-counter-clockwise', [['لم تكتمل', 5], ['لم يكتمل', 5], ['الغاء', 4], ['الغيت', 4], ['استرداد', 5]]],
   ['link', 'روابط الدفع والفواتير', 'link', [['رابط دفع', 6], ['رابط الدفع', 6], ['فاتوره', 4], ['فاتورتك', 4]]],
   ['defer', 'تأجيل الدفعات والتحقق من الأهلية', 'calendar-blank', [['تاجيل', 6], ['اهليه', 6]]],
-  ['eval', 'التقييم والاستبانات', 'star', [['تقييم', 5], ['استبانه', 5], ['nps', 5], ['الولاء', 4]]],
+  ['eval', 'التقييم والاستبانات', 'star', [['تقييم', 5], ['استبانه', 5], ['nps', 5], ['الولاء', 4], ['السؤال', 4], ['قبل ان نودعك', 4]]],
   ['verify', 'توثيق الملف ومراجعته', 'identification-card', [['توثيق', 4], ['ملفك', 3], ['مراجعه', 3], ['بند', 2], ['استكمال', 3], ['مرفق', 3], ['اعاده رفع', 4], ['مستند', 3], ['اعيد', 3], ['التحديث', 3], ['حدث بياناتك', 4], ['الملف الشخصي', 4], ['تسجيل جديد', 3]]],
   ['orders', 'الطلبات وعروض الأسعار', 'clipboard-text', [['طلب', 1], ['الطلبات', 3], ['عرض السعر', 5], ['عرض سعر', 5], ['quote', 4], ['quotation', 4], ['طلبات الخدمه', 4], ['شرط', 4]]],
   ['contract', 'العقود', 'signature', [['عقد', 3], ['العقود', 4], ['توقيع', 4], ['وقع', 2]]],
   ['launch', 'الحساب والتدشين والترحيب', 'rocket-launch', [['تدشين', 5], ['فيلم', 5], ['ترحيب', 4], ['الترحيب', 4], ['بيانات الدخول', 4], ['انشاء حسابك', 4], ['تم انشاء', 3]]],
   ['staff', 'شؤون الفريق والموظفين', 'users-three', [['موظف', 4], ['الوظيفي', 4], ['اجراء', 2], ['اسناد', 3], ['اعتماد مالي', 4], ['اجراء مالي', 4]]],
   ['support', 'الدعم والمحادثات', 'headset', [['دعم', 4], ['تذكره', 4], ['التذاكر', 4], ['التحويل لموظف', 5], ['محادثه', 3]]],
-  ['bot', 'قوائم بوت واتساب', 'chat-circle-dots', [['القائمه', 3], ['ازرار البوت', 5], ['اوقات العمل', 4], ['العوده', 3], ['ردود بوت', 1], ['البوت', 3]]],
+  ['bot', 'قوائم بوت واتساب', 'chat-circle-dots', [['القائمه', 3], ['ازرار البوت', 5], ['اوقات العمل', 4], ['العوده', 3], ['ردود بوت', 1], ['البوت', 3], ['قائمه الخدمات', 5], ['ماذا ترغبون', 5], ['اختيار اللغه', 5], ['كيف يمكننا خدمتكم', 5], ['سعداء بتواصلكم', 5], ['بطاقه منصه تيرا', 4]]],
   ['mkt', 'العروض والإعلانات والصيانة', 'storefront', [['عرض خاص', 6], ['متجر', 4], ['صيانه', 6], ['تسويقي', 3], ['تجريبيه', 4]]]
 ];
 function mh3Norm(s) { return String(s || '').toLowerCase().replace(/[ً-ْٰـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي'); }
