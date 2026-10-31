@@ -8665,14 +8665,14 @@ function mh3IdxLoad() {
 function mh3IdxSync(A, gName) {
   if (!MH3.idx) { mh3IdxLoad(); return; }
   if (MH3.idx.err || MH3.idxBusy || !MH3.inv || MH3.inv.err || !MH3.sent || !MH.wa || !MH.stages) return;
-  const M = MH3.idx.map, items = [];
+  const M = MH3.idx.map, items = [], seen = {}; /* v613: يُرسل الجديد وحده مرة واحدة — لا تحديث للأسماء عند كل عرض */
   MH3_SECS.forEach(function (s) {
     const L = A.filter(function (o) { return o.sn === s[0]; });
     mh3Clusters(L).sort(function (a, b) { return b.items.length - a.items.length; }).forEach(function (c) { c.items.forEach(function (o) {
       o.keys.forEach(function (k) { const r = M[k], nm = String(o.t || '').slice(0, 200), ch = mh3ChOf(k), og = gName(o.g);
-        if (!r || r.name !== nm || r.ch !== ch || r.origin !== og) items.push({ tk: k, grp: o.grp, sec: s[0], name: nm, ch: ch, origin: og }); }); }); });
+        if (!r && !seen[k]) { seen[k] = 1; items.push({ tk: k, grp: o.grp, sec: s[0], name: nm, ch: ch, origin: og }); } }); }); });
   });
-  const sig = items.map(function (x) { return x.tk + '=' + x.name; }).join('\n');
+  const sig = items.map(function (x) { return x.tk; }).sort().join('\n');
   if (!items.length || MH3.idxSig === sig) return;
   MH3.idxSig = sig; MH3.idxBusy = true;
   liveSb('rpc/admin_tpl_index_sync', { body: { p_items: items } }).then(function (r) { MH3.idxBusy = false; if (r && r.ok === true) { mh3IdxSet(r.rows); mh3Draw(); } })
