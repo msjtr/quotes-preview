@@ -8661,7 +8661,7 @@ L.forEach(function (o) { if (o.ix) { o.tp = 'ix'; return; } o.t = mh3Hum(o); o.t
 function mh3IxGroup(L, M) {
 const parts = [], byC = {}, out = [];
 L.forEach(function (o) { const G = {}, cs = [], rest = [];
-o.keys.forEach(function (k) { const r = M[k]; if (r && r.dup) return; if (!r) { rest.push(k); return; } if (!G[r.code]) { G[r.code] = []; cs.push(r.code); } G[r.code].push(k); });
+o.keys.forEach(function (k) { const r = M[k]; if (r && r.dup) return; if (!r) { if (k.indexOf('wa|sent:') === 0) return; rest.push(k); return; } /* v616: رسالة البوت كما وصلت بلا رقم تُخفى — ردود البوت مفهرسة في القسم 15، فلا تأخذ رقمًا جديدًا */ if (!G[r.code]) { G[r.code] = []; cs.push(r.code); } G[r.code].push(k); });
 cs.forEach(function (c, i) { parts.push({ o: o, keys: G[c], first: i === 0, code: c }); });
 if (rest.length) parts.push({ o: o, keys: rest, first: !cs.length, code: '' }); });
 parts.forEach(function (p) {
