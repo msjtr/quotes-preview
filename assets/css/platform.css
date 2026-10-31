@@ -9418,3 +9418,15 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .mh3-sxb{display:grid;gap:10px;padding:0 12px 14px}
 .mh3-bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-top:1px dashed var(--t2-line,#d4deea);background:rgba(11,110,99,.04)}
 .mh3-bulk>small{font-weight:600}
+/* v610: القائمة المنسدلة للقرار لا تُقص داخل الأقسام والبطاقات + عناوين «متشابهة» داخل القسم */
+.mh3-sx,.mh3-cw{overflow:visible}
+.mh3-sx>.mh3-sxh{border-radius:15px}
+.mh3-sx.is-open>.mh3-sxh{border-radius:15px 15px 0 0}
+.mh3-cw>.mh3-sum{border-radius:13px}
+.mh3-cw.is-open>.mh3-sum{border-radius:13px 13px 0 0}
+.mh3-sx:focus-within{position:relative;z-index:6}
+.mh3-cw:focus-within{position:relative;z-index:5}
+.mh3-simh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 2px 2px;padding:7px 12px;border-radius:10px;background:var(--t2-surface-2,#eef3f8);color:var(--t2-ink);font-size:13px}
+.mh3-simh b{font-weight:700}
+.mh3-simh span{color:var(--t2-muted);overflow-wrap:anywhere}
+.mh3-simh.is-solo{background:transparent;border:1px dashed var(--t2-line,#d4deea)}

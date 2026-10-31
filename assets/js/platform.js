@@ -8300,7 +8300,7 @@ d0.updated_at ? e('small', { class: 'cu-dr-hint' }, 'آخر قرار: ' + lab(d0
 function mh3WaBody(n) { const T = MH.txt[n]; return T && !T.err ? [T.header && T.header.text ? T.header.text : '', T.body || '', T.footer || ''].filter(Boolean).join('\n\n') : ''; }
 function mh3Card(o) {
   return e('article', { class: 'mh3-c' }, [
-    e('div', { class: 'mh3-h' }, [e('div', {}, [e('b', {}, o.t), o.w ? e('small', {}, o.w) : null]),
+    e('div', { class: 'mh3-h' }, [e('div', {}, [e('b', {}, mh3Hum({ t: o.t })), o.w ? e('small', {}, o.w) : null]),
       e('div', { class: 'mh3-tags' }, (o.ch || []).map(function (c) { return DS.badge(MH_CH[c] ? MH_CH[c][0] : c, null); }).concat(o.tag ? [DS.badge(o.tag, o.tagTone || 'info')] : []))]),
     o.note || null,
     (o.pv || []).filter(Boolean).length ? e('div', { class: 'mh3-pv' }, o.pv.filter(Boolean)) : null,
@@ -8572,16 +8572,55 @@ order.forEach(function (x) { let best = null, bs = 0; C.forEach(function (c) { c
 if (best && bs >= 0.34) best.items.push(x.o); else C.push({ lead: x, items: [x.o] }); });
 return C;
 }
+/* v610: أسماء عربية بدل الرموز التقنية في عناوين البطاقات، وموضوع ثابت لكل بطاقة يجمع كل ما يخصه من كل المصادر */
+const MH3_KL = { interactive: 'بأزرار', text: 'نصي', image: 'بصورة', document: 'بمستند', video: 'بفيديو', audio: 'بصوت' };
+const MH3_EN = { tera_new_device_otp: 'رمز التحقق — جهاز جديد', tera_recovery_otp: 'رمز استعادة الحساب', tera_register_otp: 'رمز التسجيل', tera_auth_otp: 'رمز التحقق', tera_login_otp: 'رمز الدخول', tera_verification: 'التحقق من الجوال', tera_account_launched: 'تدشين الحساب', tera_account_launched_v2: 'تدشين الحساب (الإصدار الثاني)', tara: 'رسالة تجريبية «تيرا»', hello_world: 'رسالة تجريبية من Meta',
+  system: 'النظام', financial: 'المالية', security: 'الأمان', general: 'عام', deposit: 'الإيداع',
+  action_verified: 'تم التحقق من الإجراء', action_done: 'اكتمال الإجراء', action_required: 'إجراء مطلوب', quote_closed: 'إغلاق عرض السعر', quote_assigned_direct: 'إسناد عرض سعر مباشر', condition_pending: 'شرط بانتظار الاستكمال', pay_item_pending: 'دفعة بانتظار الاعتماد', quotation_rejected: 'رفض عرض السعر', quotation_awaiting_approval: 'عرض سعر بانتظار الاعتماد', contract_expiring: 'عقد يقارب الانتهاء', assignment_sent: 'إرسال إسناد', withdrawal_requested: 'طلب سحب رصيد', staff_submitted: 'تقديم ملف موظف', bank_change_approved: 'اعتماد تغيير الحساب البنكي',
+  v2: 'الإصدار الثاني', track: 'تتبع الطلب', m: 'القائمة', status: 'حالة الطلب', product: 'المنتجات', ord: 'الطلب', orders: 'الطلبات', scope: 'نطاق الخدمة', link: 'الروابط', welcome: 'الترحيب', hours: 'أوقات العمل', intro: 'التعريف', lang: 'اللغة', need: 'الاحتياج', received: 'الاستلام', staff: 'التحويل لموظف', unknown: 'رسالة غير مفهومة', verified: 'بعد التحقق' };
+function mh3Gist(b) { const L = String(b || '').split(/\n+/).map(function (s) { return s.replace(/[^؀-ۿa-zA-Z0-9#«»()\-—:.،؟! ]+/g, ' ').replace(/\s+/g, ' ').trim(); }).filter(function (s) { return s.length >= 8 && !/^(مرحب|أهل|اهل|السلام|عزيز|حيا|هلا|عميلنا)/.test(s); }); const s = L[0] || ''; return s.length > 60 ? s.slice(0, 58) + '…' : s; }
+function mh3Hum(o) { let t = String((o && o.t) || ''); const m = /^واتساب نصي — ([a-z_]+)$/.exec(t); if (m) { const g = mh3Gist((o.hit || [])[2]); t = 'واتساب ' + (MH3_KL[m[1]] || 'نصي') + (g ? ' — ' + g : ''); }
+  return t.replace(/«([a-z0-9_]+)»/g, function (s, k) { return MH3_EN[k] ? '«' + MH3_EN[k] + '»' : s; }).replace(/\b(?:[a-z][a-z0-9]*(?:_[a-z0-9]+)+|tara|system|financial|security|general|deposit)\b/g, function (k) { return MH3_EN[k] || k; }); }
+const MH3_TOP = [
+  ['docs', 'المستندات المرفقة — الشهادة والشكر والإيصال', 'file-pdf', [['شهاده', 4], ['تقدير ووفاء', 4], ['شكر وتقدير', 4]]],
+  ['legacy', 'رسائل النظام السابق', 'clock-counter-clockwise', [['النظام السابق', 6]]],
+  ['sec', 'الأمان ورموز التحقق', 'shield-check', [['رمز', 3], ['otp', 3], ['تحقق', 1], ['امان', 3], ['امني', 3], ['جهاز جديد', 3], ['كلمه المرور', 3], ['تسجيل الدخول', 2], ['تاكيد رقم الجوال', 4], ['استعاده الحساب', 3]]],
+  ['payok', 'السداد الناجح والإيصالات', 'receipt', [['سداد ناجح', 4], ['تم استلام', 1], ['استلام الدفعه', 4], ['استلام دفعت', 4], ['استلام سداد', 4], ['ايصال', 3], ['تاكيد السداد', 4], ['تم سداد', 4], ['سداد', 1], ['دفع', 1]]],
+  ['due', 'تذكير الدفعات والتأخر', 'bell-ringing', [['تذكير', 4], ['مستحق', 4], ['متاخر', 4], ['قريبه الموعد', 4], ['تستحق', 4], ['موعد السداد', 4], ['موعد الدفعه', 4]]],
+  ['bank', 'التحويل البنكي', 'bank', [['تحويل بنكي', 5], ['التحويل البنكي', 5], ['تحويلك', 5], ['ايصال التحويل', 6], ['حواله', 4], ['تحويلات', 5], ['التحويل', 2], ['الحساب البنكي', 4]]],
+  ['fail', 'الدفع غير المكتمل والإلغاء والاسترداد', 'arrow-counter-clockwise', [['لم تكتمل', 5], ['لم يكتمل', 5], ['الغاء', 4], ['الغيت', 4], ['استرداد', 5]]],
+  ['link', 'روابط الدفع والفواتير', 'link', [['رابط دفع', 6], ['رابط الدفع', 6], ['فاتوره', 4], ['فاتورتك', 4]]],
+  ['defer', 'تأجيل الدفعات والتحقق من الأهلية', 'calendar-blank', [['تاجيل', 6], ['اهليه', 6]]],
+  ['eval', 'التقييم والاستبانات', 'star', [['تقييم', 5], ['استبانه', 5], ['nps', 5], ['الولاء', 4]]],
+  ['verify', 'توثيق الملف ومراجعته', 'identification-card', [['توثيق', 4], ['ملفك', 3], ['مراجعه', 3], ['بند', 2], ['استكمال', 3], ['مرفق', 3], ['اعاده رفع', 4], ['مستند', 3], ['اعيد', 3], ['التحديث', 3], ['حدث بياناتك', 4], ['الملف الشخصي', 4], ['تسجيل جديد', 3]]],
+  ['orders', 'الطلبات وعروض الأسعار', 'clipboard-text', [['طلب', 1], ['الطلبات', 3], ['عرض السعر', 5], ['عرض سعر', 5], ['quote', 4], ['quotation', 4], ['طلبات الخدمه', 4], ['شرط', 4]]],
+  ['contract', 'العقود', 'signature', [['عقد', 3], ['العقود', 4], ['توقيع', 4], ['وقع', 2]]],
+  ['launch', 'الحساب والتدشين والترحيب', 'rocket-launch', [['تدشين', 5], ['فيلم', 5], ['ترحيب', 4], ['الترحيب', 4], ['بيانات الدخول', 4], ['انشاء حسابك', 4], ['تم انشاء', 3]]],
+  ['staff', 'شؤون الفريق والموظفين', 'users-three', [['موظف', 4], ['الوظيفي', 4], ['اجراء', 2], ['اسناد', 3], ['اعتماد مالي', 4], ['اجراء مالي', 4]]],
+  ['support', 'الدعم والمحادثات', 'headset', [['دعم', 4], ['تذكره', 4], ['التذاكر', 4], ['التحويل لموظف', 5], ['محادثه', 3]]],
+  ['bot', 'قوائم بوت واتساب', 'chat-circle-dots', [['القائمه', 3], ['ازرار البوت', 5], ['اوقات العمل', 4], ['العوده', 3], ['ردود بوت', 1], ['البوت', 3]]],
+  ['mkt', 'العروض والإعلانات والصيانة', 'storefront', [['عرض خاص', 6], ['متجر', 4], ['صيانه', 6], ['تسويقي', 3], ['تجريبيه', 4]]]
+];
+function mh3Norm(s) { return String(s || '').toLowerCase().replace(/[ً-ْٰـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي'); }
+/* العنوان أولًا (×3) ثم اسم المصدر (×1)؛ وإن لم يدلّا على موضوع فالنص */
+function mh3Topic(o, gn) {
+  if (o.g === 'docs') return 'docs';
+  const score = function (s, w) { const R = {}; MH3_TOP.forEach(function (tp) { let n = 0; tp[3].forEach(function (k) { if (s.indexOf(k[0]) >= 0) n += k[1] * w; }); if (n) R[tp[0]] = n; }); return R; };
+  const pick = function (R) { let best = '', bs = 0; MH3_TOP.forEach(function (tp) { if ((R[tp[0]] || 0) > bs) { bs = R[tp[0]]; best = tp[0]; } }); return best; };
+  const A = score(mh3Norm(o.t), 3), G = score(mh3Norm(gn), 1); Object.keys(G).forEach(function (k) { A[k] = (A[k] || 0) + G[k]; });
+  return pick(A) || pick(score(mh3Norm((o.hit || []).join(' ').slice(0, 600)), 1)) || 'other';
+}
 function msgHubPage() {
 if (!LIVE.on) return [liveEmptyNote('مركز القوالب')];
 mhCss(); mhLoad(false); mh3Inv(false); mh3Sent(false);
 try { commReady('قوالب الإرسال', ['tpl']); } catch (e0) { void e0; }
 try { cxReady('قوالب الاستبانات', ['set']); } catch (e1) { void e1; }
-const F = ADM.mh2 || (ADM.mh2 = { g: 'all', q: '', ch: 'all' }); if (!F.d) F.d = 'all'; if (!F.s) F.s = 'grp'; if (!F.v) F.v = 'sim';
+const F = ADM.mh2 || (ADM.mh2 = { g: 'all', q: '', ch: 'all' }); if (!F.d) F.d = 'all'; if (!F.s) F.s = 'grp'; if (!F.v) F.v = 'sim'; if (!F.tp) F.tp = 'all';
 const OPEN = ADM.mh3o || (ADM.mh3o = {}), SEC = ADM.mh3s || (ADM.mh3s = {});
 const q = String(F.q || '').trim().toLowerCase();
 MH3.fd = F.d;
-const A = mh3Items();
+const gName = function (g) { return (MH_GRP.filter(function (x) { return x[0] === g; })[0] || [g, g])[1]; };
+const A = mh3Items(); A.forEach(function (o) { o.t = mh3Hum(o); o.tp = mh3Topic(o, gName(o.g)); });
 /* v609: ترقيم ثابت لكل قالب — الرقم نفسه على معاينته وعلى قراره، والقالب المكرر في أكثر من بطاقة له رقم واحد */
 const NUM = {}; let ni = 0; A.forEach(function (o) { (o.keys || []).forEach(function (k) { if (!NUM[k]) NUM[k] = ++ni; }); }); MH3.num = NUM;
 const sk = function (k) { const i = k.indexOf('|'); return [k.slice(0, i), k.slice(i + 1)]; };
@@ -8593,7 +8632,7 @@ const fitD = function (o) { if (F.d === 'all') return true; const D = o.keys.map
 const qNum = /^#?\d+$/.test(q) ? Number(q.replace('#', '')) : 0;
 const fitQ = function (o) { if (!q) return true; if (qNum) return o.keys.some(function (k) { return NUM[k] === qNum; }); return o.hit.concat([o.t]).some(function (x) { return String(x || '').toLowerCase().indexOf(q) >= 0; }); };
 const fitO = function (o) { return (F.ch === 'all' || chOf(o).indexOf(F.ch) >= 0) && fitD(o) && fitQ(o); };
-const R = A.filter(function (o) { return (F.g === 'all' || o.g === F.g) && fitO(o); });
+const R = A.filter(function (o) { return (F.g === 'all' || o.g === F.g) && (F.tp === 'all' || o.tp === F.tp) && fitO(o); });
 const nNone = function (o) { return o.keys.map(dOf).filter(function (x) { return !x; }).length; };
 const lastAt = function (o) { return o.keys.map(atOf).sort().pop() || ''; };
 const sortL = function (L) { if (F.s === 'name') return L.slice().sort(function (a, b) { return String(a.t).localeCompare(String(b.t), 'ar'); }); if (F.s === 'pending') return L.slice().sort(function (a, b) { return nNone(b) - nNone(a); }); if (F.s === 'recent') return L.slice().sort(function (a, b) { return lastAt(b) < lastAt(a) ? -1 : lastAt(b) > lastAt(a) ? 1 : 0; }); if (F.s === 'most') return L.slice().sort(function (a, b) { return b.keys.length - a.keys.length; }); return L; };
@@ -8601,7 +8640,7 @@ const keysOf = function (L) { const S0 = {}; L.forEach(function (o) { (o.keys ||
 const K = keysOf(R), KD = K.map(dOf), nD = function (v) { return KD.filter(function (x) { return x === v; }).length; };
 const cntG = function (g) { return A.filter(function (o) { return o.g === g && fitO(o); }).length; };
 const oid = function (o) { return o.g + '|' + o.t + '|' + (o.keys[0] || ''); };
-const gName = function (g) { return (MH_GRP.filter(function (x) { return x[0] === g; })[0] || [g, g])[1]; };
+
 const sync = DS.button(MH.syncing ? 'جارٍ المزامنة…' : 'مزامنة الحالة من Meta', { size: 'sm', ui: 'arrows-clockwise', disabled: MH.syncing, onClick: function () {
 MH.syncing = true; draw();
 clPost('/admin/api/send-center/templates-sync', {}).then(function (j) { MH.syncing = false; MH.txt = {}; snack('تمت المزامنة — ' + fmtNum(j.count || 0) + ' قالبًا من Meta.'); mhLoad(true); mh3Inv(true); })
@@ -8635,13 +8674,17 @@ open ? o.build() : null].filter(Boolean));
 /* الأقسام: «المتشابه معًا» (افتراضي) أو «حسب الأقسام» — كل قسم يُطوى ويُفتح، وفيه كل بطاقاته */
 let secs = [];
 if (F.v === 'sim') {
-const C = mh3Clusters(R), multi = C.filter(function (c) { return c.items.length > 1; }), single = C.filter(function (c) { return c.items.length === 1; });
-multi.sort(function (a, b) { return b.items.length - a.items.length; }).forEach(function (c) { secs.push({ id: 'c:' + oid(c.lead.o), t: mh3Clean(c.lead.o.t), sub: 'محتوى متشابه — ' + fmtNum(c.items.length) + ' بطاقات من ' + c.items.map(function (o) { return gName(o.g); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(' · '), items: c.items, ic: 'stack' }); });
-const byG = {}; single.forEach(function (c) { const o = c.items[0]; (byG[o.g] = byG[o.g] || []).push(o); });
-MH_GRP.forEach(function (g) { if (byG[g[0]]) secs.push({ id: 'u:' + g[0], t: g[1], sub: 'بلا تشابه — بطاقة فريدة لكل رسالة', items: byG[g[0]], ic: g[2] }); });
+/* v610: قسم لكل موضوع يضم كل بطاقاته من كل المصادر، والمتشابهة داخله متجاورة تحت «متشابهة» */
+const TOP = {}; R.forEach(function (o) { (TOP[o.tp] = TOP[o.tp] || []).push(o); });
+MH3_TOP.concat([['other', 'رسائل عامة أخرى', 'squares-four', []]]).forEach(function (tp) { const L = TOP[tp[0]]; if (!L) return;
+const C = mh3Clusters(L), multi = C.filter(function (c) { return c.items.length > 1; }).sort(function (a, b) { return b.items.length - a.items.length; }), single = C.filter(function (c) { return c.items.length === 1; });
+const groups = multi.map(function (c) { return { t: mh3Clean(c.lead.o.t), items: c.items }; }); if (single.length) groups.push({ t: '', items: single.map(function (c) { return c.items[0]; }) });
+const src = L.map(function (o) { return gName(o.g); }).filter(function (x, i, a) { return a.indexOf(x) === i; });
+secs.push({ id: 't:' + tp[0], t: tp[1], sub: (multi.length ? fmtNum(multi.length) + ' مجموعة متشابهة · ' : '') + 'من ' + fmtNum(src.length) + (src.length === 1 ? ' مصدر' : ' مصادر'), items: L, ic: tp[2], groups: groups }); });
 } else {
 MH_GRP.forEach(function (g) { const L = R.filter(function (o) { return o.g === g[0]; }); if (L.length) secs.push({ id: 'g:' + g[0], t: g[1], sub: '', items: L, ic: g[2] }); });
 }
+const secBody = function (S1) { const out = []; S1.groups.forEach(function (g) { if (g.t) out.push(e('div', { class: 'mh3-simh' }, [frag(ui('stack', 16)), e('b', {}, 'متشابهة (' + fmtNum(g.items.length) + ')'), e('span', {}, g.t)])); else if (S1.groups.length > 1) out.push(e('div', { class: 'mh3-simh is-solo' }, [frag(ui('squares-four', 16)), e('b', {}, 'بطاقات منفردة (' + fmtNum(g.items.length) + ')')])); sortL(g.items).forEach(function (o) { out.push(cardEl(o)); }); }); return out; };
 const autoOpen = !!q || R.length <= 12;
 const list = secs.map(function (S1) {
 const open = autoOpen || !!SEC[S1.id], ks = keysOf(S1.items);
@@ -8650,28 +8693,31 @@ e('button', { type: 'button', class: 'mh3-sxh', 'aria-expanded': open ? 'true' :
 e('span', { class: 'mh3-sxt' }, [frag(ui(S1.ic || 'squares-four', 18)), e('b', {}, S1.t), e('small', {}, fmtNum(S1.items.length) + ' بطاقة · ' + fmtNum(ks.length) + ' قالبًا' + (S1.sub ? ' — ' + S1.sub : ''))]),
 e('span', { class: 'mh3-sum-s' }, chips(ks)),
 e('span', { class: 'mh3-sum-c' }, [frag(ui(open ? 'caret-up' : 'caret-down', 18)), open ? 'طي القسم' : 'فتح القسم'])]),
-open ? e('div', { class: 'mh3-sxb' }, sortL(S1.items).map(cardEl)) : null].filter(Boolean));
+open ? e('div', { class: 'mh3-sxb' }, S1.groups ? secBody(S1) : sortL(S1.items).map(cardEl)) : null].filter(Boolean));
 });
 const WA = MH.wa || [];
-const grpOpts = [['all', 'كل الأقسام (' + fmtNum(A.filter(fitO).length) + ')']].concat(MH_GRP.filter(function (g) { return cntG(g[0]) || g[0] === F.g; }).map(function (g) { return [g[0], g[1] + ' (' + fmtNum(cntG(g[0])) + ')']; }));
+const fitGo = function (o) { return (F.g === 'all' || o.g === F.g) && fitO(o); };
+const tpOpts = [['all', 'كل المواضيع (' + fmtNum(A.filter(fitGo).length) + ')']].concat(MH3_TOP.concat([['other', 'رسائل عامة أخرى']]).map(function (tp) { const n = A.filter(function (o) { return o.tp === tp[0] && fitGo(o); }).length; return (n || tp[0] === F.tp) ? [tp[0], tp[1] + ' (' + fmtNum(n) + ')'] : null; }).filter(Boolean));
+const grpOpts = [['all', 'كل المصادر (' + fmtNum(A.filter(fitO).length) + ')']].concat(MH_GRP.filter(function (g) { return cntG(g[0]) || g[0] === F.g; }).map(function (g) { return [g[0], g[1] + ' (' + fmtNum(cntG(g[0])) + ')']; }));
 const setSecs = function (v) { secs.forEach(function (s) { SEC[s.id] = v; }); if (!v) Object.keys(OPEN).forEach(function (k) { OPEN[k] = false; }); mh3Draw(); };
-const reset = function () { F.g = 'all'; F.ch = 'all'; F.d = 'all'; F.q = ''; F.s = 'grp'; mh3Draw(); };
+const reset = function () { F.g = 'all'; F.tp = 'all'; F.ch = 'all'; F.d = 'all'; F.q = ''; F.s = 'grp'; mh3Draw(); };
 return [cuBdInt(true),
 e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'مركز القوالب'), e('small', {}, 'كل رسائل المنصة وقوالبها في مكان واحد: المعاينة كما تصل، وقرار كل قالب برقمه.')]), e('div', { class: 'ax-top-a' }, [sync])]),
-DS.note('info', 'كيف تستخدم الصفحة', 'الأقسام تجمع البطاقات ذات المحتوى نفسه أو المشابه معًا — افتح القسم لترى كل البطاقات المتشابهة، ثم افتح البطاقة لترى معايناتها وقراراتها. لكل قالب رقم ثابت (#) يظهر على معاينته وعلى قراره نفسه، وتستطيع البحث بالرقم. في البطاقة المفتوحة: قرار لكل قالب، أو «قرار واحد لكل قوالب البطاقة». لا يُحذف ولا يُعدَّل قالب من هذه الصفحة — القرار مرجع للتنفيذ بعد موافقتك.'),
+DS.note('info', 'كيف تستخدم الصفحة', 'كل قسم موضوع واحد (السداد · التذكير · التحويل البنكي · التقييم · التوثيق …) ويضم كل بطاقاته من كل المصادر، والبطاقات المتشابهة داخله متجاورة تحت «متشابهة». افتح القسم، ثم افتح البطاقة لترى معايناتها وقراراتها. لكل قالب رقم ثابت (#) يظهر على معاينته وعلى قراره نفسه، وتستطيع البحث بالرقم. في البطاقة المفتوحة: قرار لكل قالب، أو «قرار واحد لكل قوالب البطاقة». لا يُحذف ولا يُعدَّل قالب من هذه الصفحة — القرار مرجع للتنفيذ بعد موافقتك.'),
 MH.err ? DS.note('warn', 'تعذّر تحميل قوالب واتساب', MH.err) : null, MH3.inv && MH3.inv.err ? DS.note('warn', 'القرارات', MH3.inv.err) : null,
 axKpis([['حسب التصفية', fmtNum(R.length) + ' بطاقة · ' + fmtNum(K.length) + ' قالبًا', '', 'squares-four'], ['بلا قرار', fmtNum(nD('')), 'warn', 'hourglass-medium'], ['اعتماد', fmtNum(nD('approve')), 'ok', 'check-circle'],
 ['تعديل', fmtNum(nD('edit')), 'warn', 'pencil-simple'], ['حذف', fmtNum(nD('delete')), 'danger', 'trash'], ['قوالب واتساب في Meta', fmtNum(WA.length) + ' · بانتظار ' + fmtNum(WA.filter(function (t) { return t.status !== 'APPROVED'; }).length), '', 'chat-circle-dots']]),
 e('div', { class: 'sys-form is-2 cu-bd-form mh3-filters' }, [
-DS.editField('العرض', DS.select({ value: F.v, options: [['sim', 'المتشابه معًا'], ['grp', 'حسب الأقسام']], onChange: function (v) { F.v = v || 'sim'; mh3Draw(); } })),
-DS.editField('القسم', DS.select({ value: F.g, options: grpOpts, onChange: function (v) { F.g = v || 'all'; mh3Draw(); } })),
+DS.editField('العرض', DS.select({ value: F.v, options: [['sim', 'حسب الموضوع — المتشابه معًا'], ['grp', 'حسب المصدر']], onChange: function (v) { F.v = v || 'sim'; mh3Draw(); } })),
+DS.editField('الموضوع', DS.select({ value: F.tp, options: tpOpts, onChange: function (v) { F.tp = v || 'all'; mh3Draw(); } })),
+DS.editField('المصدر', DS.select({ value: F.g, options: grpOpts, onChange: function (v) { F.g = v || 'all'; mh3Draw(); } })),
 DS.editField('القناة', DS.select({ value: F.ch, options: [['all', 'كل القنوات'], ['wa', 'واتساب'], ['mail', 'البريد'], ['app', 'الإشعارات'], ['comm', 'مركز الإرسال']], onChange: function (v) { F.ch = v || 'all'; mh3Draw(); } })),
 DS.editField('القرار', DS.select({ value: F.d, options: [['all', 'كل القرارات'], ['none', 'بلا قرار'], ['approve', 'اعتماد'], ['edit', 'يحتاج تعديل'], ['delete', 'حذف'], ['hold', 'تعليق']], onChange: function (v) { F.d = v || 'all'; mh3Draw(); } })),
 DS.editField('الترتيب داخل القسم', DS.select({ value: F.s, options: [['grp', 'الافتراضي'], ['pending', 'الأكثر قوالب بلا قرار'], ['recent', 'آخر قرار أولًا'], ['most', 'الأكثر قوالب'], ['name', 'أبجديًا']], onChange: function (v) { F.s = v || 'grp'; mh3Draw(); } })),
 DS.editField('بحث بالاسم أو النص أو رقم القالب', e('input', { class: 't2-input', type: 'search', value: F.q || '', placeholder: 'مثال: سداد · أو #27', 'data-fk': 'mh3-q', onInput: function (ev) { F.q = ev.target.value; clearTimeout(MH3.qt); MH3.qt = setTimeout(function () { mh3Draw(); }, 450); } }))]),
 e('div', { class: 'mh3-top', 'data-live-ok': '' }, [e('small', { class: 'cu-dr-hint' }, fmtNum(secs.length) + ' قسمًا · ' + fmtNum(R.length) + ' بطاقة · ' + fmtNum(K.length) + ' قالبًا — كل الأرقام حسب التصفية الحالية'),
 e('div', { class: 'mh3-top-a' }, [DS.button('فتح كل الأقسام', { size: 'sm', ui: 'caret-down', onClick: function () { setSecs(true); } }), DS.button('طي الكل', { size: 'sm', ui: 'caret-up', onClick: function () { setSecs(false); } }),
-(F.g !== 'all' || F.ch !== 'all' || F.d !== 'all' || F.q || F.s !== 'grp') ? DS.button('مسح التصفية', { size: 'sm', ui: 'x', onClick: reset }) : null,
+(F.g !== 'all' || F.tp !== 'all' || F.ch !== 'all' || F.d !== 'all' || F.q || F.s !== 'grp') ? DS.button('مسح التصفية', { size: 'sm', ui: 'x', onClick: reset }) : null,
 DS.button('إنشاء رسالة لمركز الإرسال', { size: 'sm', ui: 'plus', onClick: function () { go('other', 'comm-tpl'); } })].filter(Boolean))]),
 MH.busy && !MH.wa ? DS.note('info', 'جارٍ تحميل القوالب…', '') : null,
 R.length ? e('div', { class: 'mh3-list', 'data-live-ok': '' }, list) : DS.note('info', 'لا رسائل بهذا الاختيار', 'غيّر التصفية أو اضغط «مسح التصفية».')].filter(Boolean);
