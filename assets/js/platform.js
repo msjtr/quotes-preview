@@ -25057,10 +25057,11 @@ const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف �
  * المعاينة من الخادم نفسه (lib/msgcat.js) كما تُرسل: إشعار المنصة · إشعار الجوال · البريد · واتساب (tera_update_v2)،
  * وأزرار التجربة ترسل لصاحب الجلسة وحده. التعديل والاعتماد للمشرف العام وحده. الإرسال الفعلي للعملاء لا يتغيّر في هذا الإصدار. */
 const MSGC = { at: 0, rows: null, sup: false, err: '', sec: '', key: '', ed: null, pv: null, pvKey: '', pvBusy: false, pvErr: '', busy: '' };
-const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير', 3: 'الدفع غير المكتمل والاسترداد', 4: 'التحويل البنكي', 5: 'روابط الدفع والفواتير', 6: 'طلبات الخدمة والأهلية', 7: 'المستندات', 8: 'التقييم', 9: 'الحساب والتدشين', 10: 'توثيق الملف', 11: 'الطلبات وعروض الأسعار', 13: 'الدعم', 14: 'الأمان', 16: 'الفريق', 17: 'العروض والصيانة' };
-const MSGC_IMG = ['acct-ready', 'acct-step-2-login', 'ev-contract-new', 'ev-contract-signed', 'ev-launch-v2', 'ev-launch', 'ev-login', 'ev-mobile', 'ev-order-approved', 'ev-order-new', 'ev-order-rejected', 'ev-order-status', 'ev-pay-due', 'ev-pay-link', 'ev-pay-overdue', 'ev-pay-thanks', 'ev-profile', 'ev-quote', 'ev-rate-thanks-v2', 'ev-rate-thanks', 'ev-store-offer', 'ev-support', 'ev-survey-launch', 'ev-survey-service', 'ev-survey-settle', 'ev-survey-support', 'ev-transfer-approved', 'ev-transfer-fix', 'ev-transfer-received', 'ev-transfer-rejected', 'ev-transfer-request', 'pv-approved', 'pv-film_ready', 'pv-launched', 'pv-received', 'pv-registered', 'pv-rejected', 'pv-resubmitted', 'pv-returned', 'pv-submitted', 'receipt-failed', 'receipt-paid', 'receipt-refund'];
+const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير بالدفعات', 3: 'التحصيل والمتأخرات', 4: 'الإجراءات القانونية والنظامية', 5: 'الدفع غير المكتمل والاسترداد', 6: 'التحويل البنكي', 7: 'روابط الدفع والفواتير', 8: 'طلبات الخدمة والأهلية', 10: 'التقييم والاستبانات', 11: 'الحساب والتدشين', 12: 'توثيق الملف الشخصي', 13: 'الطلبات وعروض الأسعار', 14: 'الدعم والتواصل', 15: 'العروض والصيانة', 16: 'إشعارات الفريق', 17: 'ردود جاهزة للفريق' }; /* v627: الفهرس المعتمد (stf_169) — 16 قسمًا، والقسم 9 (المستندات) أُلغي: المرفق يصل مع قالبه */
+const MSGC_COL = { 1: '#1F8A5B', 2: '#C99A2E', 3: '#8A1C2B', 4: '#2B2B2B', 5: '#A16207', 6: '#1E5AA8', 7: '#0B6E99', 8: '#6D4BC2', 10: '#B8860B', 11: '#2563EB', 12: '#0F766E', 13: '#9333EA', 14: '#0891B2', 15: '#DB2777', 16: '#475569', 17: '#0369A1' };
+const MSGC_IMG = ['acct-ready', 'ev-collect-demand', 'ev-elig-received', 'ev-final-notice', 'ev-launch-v2', 'ev-legal-start', 'ev-login', 'ev-maint', 'ev-order-approved', 'ev-order-changes', 'ev-order-done', 'ev-order-expired', 'ev-order-new', 'ev-order-rejected', 'ev-order-status', 'ev-pay-deferred', 'ev-pay-due', 'ev-pay-link', 'ev-pay-overdue', 'ev-pay-partial', 'ev-profile', 'ev-quote', 'ev-rate-pay', 'ev-rate-thanks-v2', 'ev-refund-rejected', 'ev-refund-request', 'ev-service-approved', 'ev-service-rejected', 'ev-settle-done', 'ev-settle-invoice', 'ev-store-offer', 'ev-support', 'ev-survey-launch', 'ev-survey-nps', 'ev-survey-service', 'ev-survey-settle', 'ev-survey-support', 'ev-transfer-approved', 'ev-transfer-fix', 'ev-transfer-received', 'ev-transfer-rejected', 'ev-transfer-remind', 'ev-transfer-request', 'pv-approved', 'pv-complete', 'pv-data', 'pv-doc-fix', 'pv-doc-ok', 'pv-film_ready', 'pv-item', 'pv-job-fix', 'pv-launched', 'pv-received', 'pv-registered', 'pv-rejected', 'pv-resubmitted', 'pv-returned', 'pv-review', 'pv-submitted', 'receipt-failed', 'receipt-paid', 'receipt-refund', 'receipt-void', 'upd-approved', 'upd-received', 'upd-rejected']; /* v627: 66 صورة — لكل رسالة صورتها بالتصميم المعتمد */
 const MSGC_CH = [['app', 'إشعار المنصة'], ['push', 'إشعار الجوال'], ['email', 'البريد'], ['wa', 'واتساب']];
-const MSGC_ATT = { '': 'بلا مرفق', pdf_receipt: 'إيصال PDF', pdf_thanks: 'خطاب شكر PDF', pdf_cert: 'شهادة PDF', video_film: 'الفيلم', rating_buttons: 'أزرار التقييم الخمسة' };
+const MSGC_ATT = { '': 'بلا مرفق', pdf_receipt: 'إيصال PDF — مرفق مع الرسالة نفسها (رأس واتساب ومرفق البريد)', pdf_thanks: 'خطاب الشكر — داخل الإيصال PDF', pdf_cert: 'شهادة «تقدير ووفاء» PDF — مرفقة مع الرسالة نفسها', video_film: 'الفيلم — يرسله البوت ملف فيديو عند الضغط', rating_buttons: 'أزرار التقييم بالوجوه — مع الرسالة نفسها' };
 function msgcCss() {
   const o = document.getElementById('msgc-css'); if (o && o.getAttribute('data-v') === '623') return; if (o) o.remove();
   const s = document.createElement('style'); s.id = 'msgc-css'; s.setAttribute('data-v', '623');
@@ -25151,11 +25152,14 @@ function msgcPv() {
   return e('div', { class: 'msgc-pv' }, [
     sec('app', 'bell', 'إشعار المنصة', function () { return mhApp(P.app && P.app.title, P.app && P.app.text); }),
     sec('push', 'device-mobile', 'إشعار الجوال', function () { return mhApp(P.push && P.push.title, P.push && P.push.text); }),
-    sec('wa', 'whatsapp-logo', 'واتساب', function () { return e('div', { style: 'display:grid;gap:8px' }, [
-      wa.header === 'image' && !wa.approved ? DS.note('warn', 'القالب الجديد بانتظار Meta', 'تجربة واتساب تعمل بعد اعتماد tera_update_v2 في WhatsApp Manager — المتن في docs/HANDOFF.md.') : null,
-      wa.header === 'document' ? DS.note('info', 'يصل واتساب بالمستند نفسه', 'رأس الرسالة ملف PDF: ' + (wa.doc || 'المستند') + ' — لا صورة.') : null,
-      wa.header === 'none' ? DS.note('warn', 'لا صورة لهذه الرسالة', 'اختر صورة تطابق المحتوى من «الصورة» أعلاه قبل اعتمادها.') : null,
-      e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: wa.header === 'image' ? wa.img : '', text: (wa.header === 'document' ? '📄 ' + (wa.doc || 'مستند PDF') + '\n\n' : '') + (wa.text || ''), buttons: wa.button ? [wa.button] : [] })])]); }),
+    sec('wa', 'whatsapp-logo', 'واتساب', function () { const H = wa.header; /* v627: رأس الرسالة مستندها PDF إن كان لها مرفق (رسالة واحدة)، وإلا صورتها أو فيلمها */
+      return e('div', { style: 'display:grid;gap:8px' }, [
+      H === 'image' && !wa.approved ? DS.note('warn', 'القالب الجديد بانتظار Meta', 'تجربة واتساب تعمل بعد اعتماد tera_update_v2 في WhatsApp Manager — المتن في docs/HANDOFF.md.') : null,
+      H === 'video' ? DS.note('info', 'يصل واتساب بالفيلم نفسه', 'رأس الرسالة فيلم التدشين — لا صورة.') : null,
+      H === 'document' ? DS.note(wa.approved ? 'info' : 'warn', 'رسالة واحدة: المستند PDF رأسها والتفاصيل في متنها', 'المرفق: ' + (wa.doc || 'المستند') + (wa.approved ? '' : ' — القالب الموحّد tera_update_doc بانتظار إنشائه واعتماده من Meta؛ التجربة الآن بالقالب المعتمد ' + (wa.fallback || 'tera_payment_document') + ' (متنه مختصر).')) : null,
+      H === 'none' ? DS.note('warn', 'لا صورة لهذه الرسالة', 'اختر صورة تطابق المحتوى من «الصورة» أعلاه قبل اعتمادها.') : null,
+      e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: H === 'image' ? wa.img : '', text: (H === 'document' ? '📄 ' + (wa.doc || 'مستند PDF') + '\n\n' : H === 'video' ? '🎬 فيلم التدشين\n\n' : '') + (wa.text || ''), buttons: wa.button ? [wa.button] : [] }),
+        null])]); }),
     sec('email', 'envelope-simple', 'البريد' + (P.email && P.email.subject ? ' — ' + P.email.subject : ''), function () {
       return P.email && P.email.html ? e('iframe', { class: 'msgc-mail', title: 'معاينة البريد كما يصل', sandbox: 'allow-same-origin', srcdoc: String(P.email.html) })
         : DS.note('warn', 'معاينة البريد غير متاحة', (P.email && P.email.error) || ''); })
@@ -25176,16 +25180,16 @@ function msgcPage() {
     e('li', {}, 'كل معلومة في سطرها — لا تجمع معلومتين في سطر واحد.'),
     e('li', {}, '«معاينة» تعرض الوسائل الأربع من الخادم كما تُرسل.'),
     e('li', {}, 'أزرار التجربة ترسل إلى جوالك وبريدك وحسابك أنت فقط.'),
-    e('li', {}, '«حفظ» للمشرف العام، وحالة «معتمدة» تعني جاهزة للنقل.'),
-    e('li', {}, 'الإرسال الفعلي للعملاء لا يتغيّر حتى يُعتمد الكتالوج كاملًا، ثم يُنقل إليه ويُحذف القديم.')]),
+    e('li', {}, '«حفظ» للمشرف العام وحده، وكل القوالب معتمدة وفق الفهرس (16 قسمًا) ورقم القالب بلون قسمه.'),
+    e('li', {}, 'المرفق PDF يصل مع الرسالة نفسها: رأس رسالة واتساب، ومرفق البريد مع الصورة.')]),
     e('div', { class: 'msgc-stat' }, [e('span', {}, 'الرسائل: ' + fmtNum(R.length)), e('span', {}, 'معتمدة: ' + fmtNum(nA)), e('span', {}, 'مسودة: ' + fmtNum(R.length - nA))])]);
   const pick = DS.panel('اختيار الرسالة', null, [
     e('div', { class: 'msgc-ed' }, [
-      DS.editField('القسم', DS.select({ value: MSGC.sec, options: [['', 'كل الأقسام']].concat(secs.map(function (s) { return [s, s + ' — ' + MSGC_SEC[s]]; })), onChange: function (v) { MSGC.sec = v; draw(); } })),
+      DS.editField('القسم', DS.select({ value: MSGC.sec || 'all', options: [['all', 'كل الأقسام']].concat(secs.map(function (s) { return [s, s + ' — ' + MSGC_SEC[s]]; })), onChange: function (v) { MSGC.sec = v === 'all' ? '' : v; draw(); } })),
       DS.editField('الرسالة', DS.select({ value: MSGC.key, options: [['', 'اختر رسالة']].concat(list.map(function (r) { return [r.key, r.code + ' — ' + r.title]; })), onChange: function (v) { msgcPick(v); } }))]),
     e('div', { class: 'msgc-list' }, list.map(function (r) {
       return e('button', { type: 'button', class: 'msgc-row' + (r.key === MSGC.key ? ' is-on' : ''), onClick: function () { msgcPick(r.key); } },
-        [e('code', {}, r.code), e('b', {}, r.title), r.state === 'approved' ? DS.badge('معتمدة', 'ok') : DS.badge('مسودة', 'warn')]); }))]);
+        [e('code', { style: 'color:' + (MSGC_COL[r.sec] || 'inherit') + ';font-weight:700' }, r.code), e('b', {}, r.title), r.state === 'approved' ? DS.badge('معتمدة', 'ok') : DS.badge('مسودة', 'warn')]); }))]);
   const out = [help, pick];
   const E = MSGC.ed, cur = msgcRow(MSGC.key);
   if (!E || !cur) return out;
@@ -25200,6 +25204,8 @@ function msgcPage() {
       DS.editField('الصورة', DS.select({ value: E.img || '', options: [['', 'بلا صورة']].concat(MSGC_IMG.map(function (x) { return [x, x]; })), onChange: function (v) { E.img = v; draw(); } })),
       DS.field('المرفق', MSGC_ATT[E.attach || ''] || E.attach)]),
     E.img ? e('div', { class: 'msgc-img' }, [e('img', { src: '/assets/brand/wa/' + E.img + '.jpg', alt: '', loading: 'lazy' }), e('small', { class: 'cu-dr-hint' }, 'صورة الترويسة في واتساب')]) : null,
+    (function () { const D = (MSGC.rows || []).filter(function (r) { return E.img && r.key !== MSGC.key && r.code !== cur.code && r.img === E.img; }); /* v627: لا تتكرر صورة بين رسالتين */
+      return D.length ? e('div', { class: 'msgc-bad' }, 'هذه الصورة مستخدمة في: ' + D.map(function (r) { return r.code + ' ' + r.title; }).join('، ') + ' — اختر صورة خاصة بهذه الرسالة.') : null; })(),
     e('div', { class: 'msgc-ch' }, MSGC_CH.map(function (c) { const on = E.channels.indexOf(c[0]) >= 0;
       return DS.editField(c[1], DS.select({ value: on ? '1' : '0', options: [['1', 'يُرسل'], ['0', 'لا يُرسل']], onChange: function (v) {
         E.channels = E.channels.filter(function (x) { return x !== c[0]; }); if (v === '1') E.channels.push(c[0]); draw(); } })); })),
