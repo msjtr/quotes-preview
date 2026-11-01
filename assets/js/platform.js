@@ -8044,6 +8044,9 @@ const MH_MSG = [
 const MH_ST = { APPROVED: ['معتمد', 'ok'], PENDING: ['بانتظار اعتماد Meta', 'warn'], IN_APPEAL: ['قيد الاعتراض', 'warn'], REJECTED: ['مرفوض من Meta', 'danger'], PAUSED: ['موقوف مؤقتًا', 'warn'], DISABLED: ['معطّل', 'danger'] };
 const MH_CAT = { UTILITY: 'أداة مساعدة', MARKETING: 'تسويقي', AUTHENTICATION: 'مصادقة' };
 const MH_PV_IMG = ['submitted', 'resubmitted', 'received', 'returned', 'approved', 'rejected', 'registered', 'launched', 'film_ready'];
+/* v621: مراحل التحديث بصور التوثيق نفسها، وطلبات الخدمة بصورة الطلب وحالته كما يرسلها sr_notify (stf_164) */
+const MH_PV_MAP = { upd_pending: 'received', upd_approved: 'approved', upd_rejected: 'rejected' }; /* الملاحظة والبند غير المطابق تبقى بالصورة العامة ev-profile — قرار المشرف العام */
+const MH_SR_IMG = { sr_received: ['ev-order-new', 'قيد المراجعة'], sr_settle: ['ev-contract-new', 'جاهزة للتوقيع'], sr_approved: ['ev-order-approved', 'معتمد'], sr_rejected: ['ev-order-rejected', 'غير معتمد'] };
 const MH_PV_OFF = { under_review: 'داخل المنصة فقط — توقفت في واتساب والبريد لأنها تكرار «استُلم طلبك»', received: 'داخل المنصة فقط — توقفت في واتساب والبريد لأنها تكرار «وصلَنا طلبُك» (v619)' };
 const MH_PV_STAFF = { rv_submitted: 1, rv_resubmitted: 1 };
 const MH_CH = { wa: ['واتساب', 'chat-circle-dots'], mail: ['البريد', 'envelope-simple'], app: ['إشعار المنصة', 'bell'], comm: ['مركز الإرسال', 'paper-plane-tilt'] };
@@ -8116,7 +8119,15 @@ function mhWaPhone(n, imgOver, valsOver) {
   return e('div', { class: 'comm-wa sc-wa' }, [fmt === 'IMAGE' && !img ? box('image', 'صورة الحدث تُرفق بالرسالة', '') : null, head, scWaMsg({ img: img, text: mhFill(T.body, vals), foot: T.footer || '', buttons: T.buttons || [] })]);
 }
 function mhMail(subject, title, lead, note) {
-  return e('div', { class: 'mh2-mail' }, [e('div', { class: 'hd' }, 'منصة تيرا للخدمات المتكاملة'), e('div', { class: 'bd' }, [e('div', { class: 'sj' }, 'الموضوع: ' + (subject || '—')), title ? e('b', {}, title) : null, lead ? e('div', {}, mhFillComm(lead)) : null, note ? e('div', { class: 'sj' }, mhFillComm(note)) : null])]);
+  return e('div', { class: 'mh2-mail' }, [e('div', { class: 'hd' }, 'منصة تيرا للخدمات المتكاملة'), e('div', { class: 'bd' }, [e('div', { class: 'sj' }, 'الموضوع: ' + (subject || '—')), title ? e('b', {}, title) : null, lead ? e('div', { class: 'nt-ls' }, ntBlock(mhFillComm(lead))) : null /* v621: فقرة لكل معلومة كما في البريد الفعلي */, note ? e('div', { class: 'sj' }, mhFillComm(note)) : null])]);
+}
+/* v621: قالب التحديث العام — متى اعتمدت Meta القالب tera_update_v2 تُعرض التفاصيل سطرًا لكل معلومة كما تُرسل (lib/whatsapp.js)، وإلا tera_update كما هو */
+function mhUpdPhone(img, vals) {
+  const m = mhMeta('tera_update_v2');
+  if (!m || m.status !== 'APPROVED') { mh3Txt('tera_update'); return mhWaPhone('tera_update', img, vals); }
+  const a = ntLines(vals[3]), L = a.length > 3 ? [a[0], a[1], a.slice(2).join(' · ')] : a.slice(), PAD = ['التفاصيل كاملة في حسابك بمنصة تيرا', 'لأي استفسار تواصل معنا من حسابك'];
+  for (let i = 0; L.length < 3; i++) L.push(PAD[i] || '—');
+  mh3Txt('tera_update_v2'); return mhWaPhone('tera_update_v2', img, [vals[0], vals[1], vals[2], L[0], L[1], L[2], vals[4], vals[5]]);
 }
 function mhApp(title, text) { return e('div', { class: 'mh2-app' }, [e('span', { class: 'ic' }, frag(ui('bell', 18))), e('div', {}, [e('b', {}, title || '—'), e('div', { class: 'nt-ls', style: 'font-size:13px;color:var(--t2-muted,#566A88)' }, ntBlock(text || ''))])]); }
 const mhComm = function (name) { return (COMM.tpl || []).filter(function (t) { return !t.archived && t.name === name; })[0] || null; };
@@ -8348,9 +8359,9 @@ const MH3_SRV = [
 ['pay_void', 'srv', 'تم إلغاء عملية الدفع · 1,250.00 ريال', 'أُلغيت العملية قبل تسويتها لدى البنك، فلا يُخصم المبلغ من حسابك أو يُعكس خلال أيام قليلة حسب البنك. · بطاقة مدى · المبلغ 1,250.00 ريال · رقم العملية TRX-482193 · الحالة: ملغاة', 'app push mail', '', '', 'عند إلغاء العملية قبل التسوية'],
 ['pay_link', 'srv', 'رابط دفع من منصة تيرا', 'رابط سداد 1,250.00 ريال — الدفعة 3 من 12 · رقم الرابط PL-261030 · صالح حتى 01/11/2026 9:00 م. ادفع عبر بوابة الدفع الآمنة، ولا تشارك الرابط مع أحد.', 'app push mail', '', '', 'عند إرسال رابط دفع للعميل — ومعه واتساب tera_payment_link'],
 ['pay_due', 'srv', 'تذكير: دفعتك تستحق بعد 3 أيام', 'نذكّرك بأن دفعتك تستحق بعد 3 أيام — الدفعة 3 من 12 · العقد TRA-20260819-011 · المبلغ 1,250.00 ريال. ادفعها الآن من صفحة السداد الآمنة.', 'app push mail', '', '', 'تذكير السداد الآلي أو من «إدارة التذكير» (إن لم يُختر نص قالب) — ومعه واتساب tera_payment_due'],
-['pay_late', 'srv', 'تذكير: دفعتك متأخرة 5 أيام', 'نذكّرك بأن دفعتك متأخرة 5 أيام — الدفعة 3 من 12 · العقد TRA-20260819-011 · المبلغ 1,250.00 ريال. ادفعها الآن من صفحة السداد الآمنة.', 'app push mail', '', '', 'تذكير الدفعة المتأخرة (من اليوم 1 إلى 60) — ومعه واتساب tera_payment_due'],
+['pay_late', 'srv', 'تذكير: دفعتك متأخرة 5 أيام', 'نذكّرك بأن دفعتك متأخرة 5 أيام — الدفعة 3 من 12 · العقد TRA-20260819-011 · المبلغ 1,250.00 ريال. ادفعها الآن من صفحة السداد الآمنة.', 'app push mail', 'ev-pay-overdue', 'دفعة متأخرة', 'تذكير الدفعة المتأخرة (من اليوم 1 إلى 60) — ومعه واتساب tera_payment_due بصورة «دفعة متأخرة»', 'tera_payment_due', ['محمد الشمري', 'دفعتك متأخرة 5 أيام', '1,250.00', 'TRA-20260819-011', 'الدفعة 3 من 12', '22-10-2026']],
 ['bt_request', 'srv', 'طلب تحويل بنكي', 'حوّل 1,250.00 ريال (الدفعة 3 · العقد TRA-20260819-011) إلى البنك المختار · المستفيد: منصة تيرا · الآيبان: SA•••• (مخفي)، ثم أرفق الإيصال من الرابط: tera-services.com.sa/t/…', 'app push mail wa', 'ev-transfer-request', 'بانتظار إيصالك', 'عند طلب السداد بالتحويل البنكي برابط إرفاق الإيصال'],
-['bt_remind', 'srv', 'تذكير بالسداد بالتحويل البنكي', 'نذكّرك بسداد الدفعة 3 · العقد TRA-20260819-011 (27-11-2026). حوّل 1,250.00 ريال إلى البنك المختار · المستفيد: منصة تيرا · الآيبان: SA•••• (مخفي)، ثم أرفق الإيصال من الرابط: tera-services.com.sa/t/…', 'app push mail wa', 'ev-transfer-request', 'بانتظار إيصالك', 'تذكير بطلب التحويل قبل إرفاق الإيصال'],
+['bt_remind', 'srv', 'تذكير بالسداد بالتحويل البنكي', 'لم يصلنا إيصال تحويلك بعد. الدفعة 3 · العقد TRA-20260819-011 · موعدها 27-11-2026 · المبلغ 1,250.00 ريال. أرفق الإيصال من الرابط: tera-services.com.sa/t/…', 'app push mail wa', 'ev-transfer-request', 'بانتظار إيصالك', 'تذكير بطلب التحويل قبل إرفاق الإيصال — نص قصير يختلف عن الطلب (v621)'],
 ['bt_received', 'srv', 'تم استلام إيصال التحويل', 'إيصال تحويل بمبلغ 1,250.00 ريال · الدفعة 3 · العقد TRA-20260819-011 — نراجعه ونبلغك بالنتيجة.', 'app push mail wa', 'ev-transfer-received', 'جارٍ التدقيق', 'عند إرفاق العميل إيصال التحويل'],
 ['bt_approved', 'srv', 'تم استلام دفعتكم بنجاح', 'تحويل بنكي 1,250.00 ريال · الدفعة 3 · العقد TRA-20260819-011 · إيصال السداد في حسابك.', 'app push mail wa', 'ev-transfer-approved', 'معتمد', 'اعتماد التحويل البنكي — برابط التحويل أو بإيصال رفعه العميل من حسابه (v620: مسار واحد)'],
 ['bt_settle', 'srv', 'تم سداد قيمة المنتج وإغلاق العقد', 'تحويل بنكي 4,800.00 ريال · سُدّدت قيمة المنتج وأُغلق العقد TRA-20260819-011 · شهادة «تقدير ووفاء» في حسابك.', 'app push mail wa', 'ev-transfer-approved', 'معتمد', 'اعتماد تحويل سداد قيمة المنتج'],
@@ -8361,8 +8372,8 @@ const MH3_SRV = [
 ['op_no', 'srv', 'لم يُعتمد طلب استرداد العملية 11434693', 'طلبك OP-261030-01 — السبب: (سبب الرفض)', 'app push wa', 'ev-order-rejected', 'غير معتمد', 'رفض طلب الاسترداد أو الإلغاء'],
 ['sr_new', 'srv', 'استلمنا طلب تأجيل دفعة SR-261030-01', 'طلبك قيد مراجعة الإدارة، وسنبلغك بالقرار هنا وعلى جوالك.', 'app push', '', '', 'عند إنشاء طلب خدمة: سداد قيمة المنتج · تأجيل دفعة · توحيد عقود'],
 ['elig_new', 'srv', 'استلمنا طلب التحقق من الأهلية EL-261030-01', 'يدرس شركاؤنا طلبك، وسنبلغك بالنتيجة هنا وعلى جوالك. تقديم الطلب لا يعني قبوله.', 'app push', '', '', 'عند تقديم «تحقق من أهليتك مع شركائنا»'],
-['sr_ok', 'srv', 'اعتُمد طلب تأجيل الدفعة SR-261030-01', 'افتح الطلب في حسابك لمتابعة الخطوة التالية.', 'app push wa', 'ev-order-approved', 'معتمد', 'اعتماد طلب الخدمة (سداد قيمة المنتج · تأجيل الدفعة · توحيد العقود · التحقق من الأهلية)'],
-['sr_no', 'srv', 'لم يُعتمد طلب تأجيل الدفعة SR-261030-01', 'السبب: (سبب الرفض)', 'app push wa', 'ev-order-rejected', 'غير معتمد', 'رفض طلب الخدمة'],
+/* v621: حُذف sr_ok — مسار الخادم غير مستخدم؛ الاعتماد من sr_notify (بطاقة 6.02) */
+/* v621: حُذف sr_no — الرفض من sr_notify (بطاقة 6.03) */
 ['job_fix', 'srv', 'مرفق «صورة الهوية» يحتاج إعادة رفع', 'الملاحظة: (سبب الرفض) — أعد رفعه من «خدماتي · مرفقاتي».', 'app wa', 'ev-profile', 'يحتاج تعديلًا', 'رفض مرفق من مرفقات الوظيفة'],
 ['rate5', 'srv', 'رد التقييم — 5 من 5', 'شكرًا محمد الشمري على تقييمك ★★★★★\nسعداء أن تجربتك مع تيرا ممتازة، ونعدك بالأفضل دائمًا 💙', 'wa', '', '', 'رد واتساب بعد ضغط زر التقييم'],
 ['rate4', 'srv', 'رد التقييم — 4 من 5', 'شكرًا محمد الشمري على تقييمك ★★★★☆\nيسعدنا رضاك، وسنعمل لتكون تجربتك القادمة ممتازة 💙', 'wa', '', '', 'رد واتساب بعد ضغط زر التقييم'],
@@ -8391,12 +8402,13 @@ function mh3SrvCard(x) {
     dec.push(mh3Dec('ntpl', 'srv:' + x[0], (staff ? 'إشعار الفريق: ' : 'إشعار المنصة والجوال: ') + short, T + '\n' + B, [x[7]]));
   }
   if (C.indexOf('mail') >= 0) { pv.push(mh3Fig('البريد', mhMail(short, short, B, ''), 'email|srv:' + x[0])); dec.push(mh3Dec('email', 'srv:' + x[0], 'البريد: ' + short, 'الموضوع: ' + short + '\n\n' + B, null)); }
+  if (x[8]) { mh3Txt(x[8]); pv.push(mh3Fig('واتساب — القالب ' + x[8] + ' بصورة «' + (x[6] || x[5]) + '»', mhWaPhone(x[8], MH_IMG + x[5] + '.jpg', x[9]), 'wa|' + x[8])); } /* v621: قالب Meta آخر بصورة هذه الرسالة (رقمه رقم القالب نفسه) */
   if (C.indexOf('wa') >= 0) {
-    if (x[5]) { mh3Txt('tera_update'); pv.push(mh3Fig('واتساب — قالب tera_update بصورة الحدث', mhWaPhone('tera_update', MH_IMG + x[5] + '.jpg', ['محمد الشمري', short, x[6] || '', B, 'TR-100458', '30 أكتوبر 2026']), 'wa|srv:' + x[0])); }
+    if (x[5]) { pv.push(mh3Fig('واتساب — قالب tera_update بصورة الحدث', mhUpdPhone(MH_IMG + x[5] + '.jpg', ['محمد الشمري', short, x[6] || '', B, 'TR-100458', '30 أكتوبر 2026']), 'wa|srv:' + x[0])); }
     else pv.push(mh3Fig('واتساب — رسالة نصية', mh3Bubble(B), 'wa|srv:' + x[0]));
     dec.push(mh3Dec('wa', 'srv:' + x[0], 'واتساب: ' + short, B, null));
   }
-  return mh3Card({ t: short, w: x[7], ch: mh3SrvCh(x), tag: staff ? 'للفريق' : 'من الخادم', tagTone: staff ? 'warn' : 'info', pv: pv, dec: dec });
+  return mh3Card({ t: short, w: x[7], ch: mh3SrvCh(x).concat(x[8] && mh3SrvCh(x).indexOf('wa') < 0 ? ['wa'] : []), tag: staff ? 'للفريق' : 'من الخادم', tagTone: staff ? 'warn' : 'info', pv: pv, dec: dec });
 }
 /* v606: «المرسل فعليًا — كما وصل» (stf_156) وأنواع إشعار الجوال من الخادم — للقراءة */
 function mh3Sent(force) {
@@ -8509,12 +8521,13 @@ if (svMail) dec.push(mh3Dec('email', 'survey:' + sv.key, 'بريد الاستب�
   /* مراحل التوثيق وطلبات الخدمة: العنوان من عنوان الرسالة نفسها لا من اسم الحدث المختصر */
   (MH.stages || []).forEach(function (s) {
     const k = s.event_key, off = MH_PV_OFF[k] || (MH_PV_STAFF[k] ? 'إشعار للفريق داخل المنصة — لا يصل صاحب الملف' : ''), C = off ? ['app'] : ['wa', 'mail', 'app'];
-    const img = MH_IMG + (MH_PV_IMG.indexOf(k) >= 0 ? 'pv-' + k : 'ev-profile') + '.jpg', tpl = 'tera_profile_review_img'; /* v617: كل مراحل التوثيق تصل بقالب الصورة (stf_158) — لا قالب نصي محذوف في المعاينة */
+    const srI = MH_SR_IMG[k], pvk = MH_PV_IMG.indexOf(k) >= 0 ? k : MH_PV_MAP[k]; /* v621: صورة تطابق المرحلة (stf_164) */
+    const img = MH_IMG + (srI ? srI[0] : pvk ? 'pv-' + pvk : 'ev-profile') + '.jpg', tpl = srI ? 'tera_update' : 'tera_profile_review_img'; /* v617: كل مراحل التوثيق تصل بقالب الصورة (stf_158) — لا قالب نصي محذوف في المعاينة */
     const ttl = s.title || s.subject || s.wa_event_label || k;
     L.push({ g: (k === 'launched' || k === 'film_ready') ? 'acct' : 'ver', t: ttl, ch: C, keys: off ? ['review|' + k] : ['review|' + k, 'email|review:' + k, 'ntpl|review:' + k], hit: [k, s.wa_event_label, s.subject, s.title, s.lead, s.note], build: function () {
       const vals = ['محمد الشمري', 'REQ-10458', s.wa_event_label || '', s.wa_task || '', s.wa_action || '', 'tera-services.com.sa/clients'];
       const pv = [];
-      if (!off) { mh3Txt(tpl); pv.push(mh3Fig('واتساب — ' + (img ? 'بصورة المرحلة' : 'نصي'), mhWaPhone(tpl, img, vals), 'review|' + k)); pv.push(mh3Fig('البريد', mhMail(s.subject, s.title, s.lead, s.note), 'email|review:' + k)); }
+      if (!off) { mh3Txt(tpl); pv.push(mh3Fig(srI ? 'واتساب — قالب tera_update بصورة الطلب' : 'واتساب — ' + (img ? 'بصورة المرحلة' : 'نصي'), srI ? mhUpdPhone(img, ['محمد الشمري', s.wa_event_label || ttl, srI[1], (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''), 'SR-261030-01', '30 أكتوبر 2026']) : mhWaPhone(tpl, img, vals), 'review|' + k)); pv.push(mh3Fig('البريد', mhMail(s.subject, s.title, s.lead, s.note), 'email|review:' + k)); }
       pv.push(mh3Fig('إشعار المنصة', mhApp(s.wa_event_label || ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : '')), off ? 'review|' + k : 'ntpl|review:' + k));
       return mh3Card({ t: ttl, w: (s.wa_event_label ? 'المرحلة: ' + s.wa_event_label + ' · ' : '') + 'الحدث ' + k, ch: C, tag: MH_PV_STAFF[k] ? 'للفريق' : null, note: off ? DS.note('info', 'ملاحظة', off) : null, pv: pv,
         dec: off ? [mh3Dec('review', k, 'إشعار المنصة: ' + ttl, (s.wa_task || '') + (s.wa_action ? ' — ' + s.wa_action : ''), [off])] /* v605: قرار لكل وسيلة — واتساب · البريد · إشعار المنصة */
@@ -8814,7 +8827,7 @@ const cardEl = function (o) {
 const open = !!OPEN[oid(o)];
 return e('div', { class: 'mh3-cw' + (open ? ' is-open' : '') }, [
 e('button', { type: 'button', class: 'mh3-sum', 'aria-expanded': open ? 'true' : 'false', onClick: function () { OPEN[oid(o)] = !open; mh3Draw(); } }, [
-e('span', { class: 'mh3-sum-t' }, [mh3ChIcons(chOf(o).filter(function (c) { return c !== 'comm'; })), e('b', {}, o.t), e('small', {}, fmtNum(o.keys.length) + (o.keys.length === 1 ? ' قالب' : ' قوالب') + ' · ' + nums(o.keys) + ' · ' + gName(o.g))]),
+e('span', { class: 'mh3-sum-t' }, [mh3ChIcons(chOf(o).filter(function (c) { return c !== 'comm'; })), e('b', {}, o.t), e('small', {}, fmtNum(o.keys.length) + (o.keys.length === 1 ? ' قالب' : ' قوالب') + ' · ' + nums(o.keys)) /* v621: بلا اسم المصدر — كان يتكرر بين الأقسام */]),
 e('span', { class: 'mh3-sum-s' }, chips(o.keys)),
 e('span', { class: 'mh3-sum-c' }, [frag(ui(open ? 'caret-up' : 'caret-down', 18)), open ? 'طي' : 'فتح'])]),
 open && o.keys.length > 1 ? bulk(o) : null,
@@ -8826,10 +8839,9 @@ if (F.v === 'sim') {
 /* v610: قسم لكل موضوع يضم كل بطاقاته من كل المصادر، والمتشابهة داخله متجاورة تحت «متشابهة» */
 const TOP = {}; R.forEach(function (o) { (TOP[o.sn] = TOP[o.sn] || []).push(o); });
 MH3_SECS.forEach(function (tp) { const L = (TOP[tp[0]] || []).slice().sort(function (a, b) { return (a.seq || 999) - (b.seq || 999); }); if (!L.length) return;
-const C = mh3Clusters(L), multi = C.filter(function (c) { return c.items.length > 1; }).sort(function (a, b) { return b.items.length - a.items.length; }), single = C.filter(function (c) { return c.items.length === 1; });
-const groups = multi.map(function (c) { return { t: mh3Clean(c.lead.o.t), items: c.items }; }); if (single.length) groups.push({ t: '', items: single.map(function (c) { return c.items[0]; }) });
-const src = L.map(function (o) { return gName(o.g); }).filter(function (x, i, a) { return a.indexOf(x) === i; });
-secs.push({ id: 's:' + tp[0], t: tp[0] + ' · ' + tp[1], sub: (multi.length ? fmtNum(multi.length) + ' مجموعة متشابهة · ' : '') + 'من ' + fmtNum(src.length) + (src.length === 1 ? ' مصدر' : ' مصادر'), items: L, ic: tp[2], groups: groups }); });
+/* v621: بطاقات القسم بالرقم وحده (4.01، 4.02…) — بلا «متشابهة» ولا «مصادر» تتداخل مع الأقسام الأخرى */
+const groups = [{ t: '', items: L }];
+secs.push({ id: 's:' + tp[0], t: tp[0] + ' · ' + tp[1], sub: '', items: L, ic: tp[2], groups: groups }); });
 } else {
 MH_GRP.forEach(function (g) { const L = R.filter(function (o) { return o.g === g[0]; }); if (L.length) secs.push({ id: 'g:' + g[0], t: g[1], sub: '', items: L, ic: g[2] }); });
 }
@@ -22318,7 +22330,7 @@ function payTxnActs(t, D, refetch) {
       acts = e('div', { class: 't2-pb-actions' }, [S2.refunds ? amt : null, S2.refunds ? admTwoStep('استرداد', 'danger', function () { return run('refund'); }, 'arrows-clockwise') : null, S2.voids ? admTwoStep('إلغاء', null, function () { return run('void'); }, 'x') : null]);
     }
     /* v414: إشعار نتيجة العملية للدافع (مدفوع · فشل · استرداد) — يُرسل تلقائيًا، وهذا لإعادة الإرسال */
-    if (!child && D.can.links) { const nb = liveOk(DS.button('إشعار الدافع', { size: 'sm', ui: 'bell-ringing', onClick: async function (ev) { ev.stopPropagation(); const j = await clPost('/admin/api/pay/txns/' + t.trx + '/notify', {}); snack(j.ok ? 'أُرسل إشعار ' + ({ paid: 'السداد', failed: 'الفشل', refund: 'الاسترداد' }[j.kind] || 'النتيجة') + ' للدافع.' : (j.message || 'تعذّر الإرسال.')); } }));
+    if (!child && D.can.links) { let nOnly = ''; /* v621: إعادة الإشعار بكل القنوات أو بواتساب وحده (لما رفضته Meta بعد القبول) */ const nb = e('span', { class: 't2-row', onClick: function (ev) { ev.stopPropagation(); } }, [DS.select({ value: 'all', options: [['all', 'بكل القنوات'], ['whatsapp', 'واتساب فقط']], onChange: function (v) { nOnly = v === 'whatsapp' ? 'whatsapp' : ''; } }), liveOk(DS.button('إشعار الدافع', { size: 'sm', ui: 'bell-ringing', onClick: async function (ev) { ev.stopPropagation(); const j = await clPost('/admin/api/pay/txns/' + t.trx + '/notify' + (nOnly ? '?only=' + nOnly : ''), {}); snack(j.ok ? 'أُرسل إشعار ' + ({ paid: 'السداد', failed: 'الفشل', refund: 'الاسترداد' }[j.kind] || 'النتيجة') + ' للدافع' + (j.only ? ' بواتساب' : '') + '.' : (j.message || 'تعذّر الإرسال.')); } }))]);
       acts = acts === '—' ? e('div', { class: 't2-pb-actions' }, [nb]) : (acts.appendChild(nb), acts); }
     return acts;
 }
@@ -25767,7 +25779,7 @@ async function rmSend(items, label, force) {
   for (let i = 0; i < items.length; i += 30) {
     const part = items.slice(i, i + 30);
     try {
-      const r = await clPost('/admin/api/reminders/send-now', { items: part, force: !!force });
+      const r = await clPost('/admin/api/reminders/send-now', { items: part, force: !!force, only: RM.only || '' }); /* v621: واتساب فقط لإعادة ما لم يصل */
       if (r && r.error === 'quiet_hours') { RM.busy = false; RM.prog = ''; RM.pend = { items: items.slice(i), label: label }; RM.ask = 'force'; draw(); return; }
       if (!r || r.ok !== true) { RM.err = (r && r.message) || 'تعذّر الإرسال.'; break; }
       RM.res = RM.res.concat(r.rows || []);
@@ -25868,6 +25880,7 @@ function rmListView(L, tab) {
       e('small', {}, fmtNum(Math.round(selAmt)) + ' ريال' + (nSel > items.length ? ' · ' + fmtNum(nSel - items.length) + ' لا يُرسل الآن' : '') + ' · لا تتكرر الدفعة نفسها في اليوم')]),
     e('div', { class: 'rm-sb-a' }, [
       rmPmSeg(),
+      DS.select({ value: RM.only || 'all', options: [['all', 'بقنوات القاعدة'], ['whatsapp', 'واتساب فقط — لإعادة ما لم يصل']], onChange: function (v) { RM.only = v === 'whatsapp' ? 'whatsapp' : ''; draw(); } }), /* v621 */
       liveOk(DS.button('إرسال الآن', { tone: 'primary', size: 'sm', ui: 'paper-plane-tilt', disabled: RM.busy || !items.length, onClick: function () { rmSend(items, 'أُرسل للمحددين'); } })),
       DS.button('جدولة', { size: 'sm', ui: 'calendar-plus', disabled: RM.busy || !items.length, onClick: function () { sched(items); } }),
       DS.button(RM.det ? 'إخفاء التفاصيل' : 'التفاصيل', { size: 'sm', ui: 'list-bullets', onClick: function () { RM.det = !RM.det; draw(); } }),
