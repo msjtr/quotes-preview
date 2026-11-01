@@ -25218,7 +25218,8 @@ function msgcPage() {
  * كل رد يُعرض كما يصل، وأزراره وقوائمه قابلة للضغط، والرد المأخوذ من نصوص البوت يُعدَّل من مكانه (المشرف العام) ثم تُعاد المحادثة. */
 const BSIM = { as: 'guest', msgs: [], turns: [], busy: false, err: '', txt: '', T: null, tAt: 0, sup: false, edit: '', val: '', saving: false };
 function bsimTexts() {
-  if (BSIM.tAt) return; BSIM.tAt = -1;
+  /* v625: إن تعذّرت قراءة نصوص البوت تُعاد المحاولة بعد دقيقة (لا تبقى الردود «نصًا ثابتًا» حتى إعادة فتح الصفحة) */
+  if (BSIM.tAt < 0 || (BSIM.tAt && ((BSIM.T && BSIM.T.length) || Date.now() - BSIM.tAt < 60000))) return; BSIM.tAt = -1;
   admRpc('admin_bot_texts', {}).then(function (j) { BSIM.T = (j && j.rows) || []; BSIM.sup = !!(j && j.super); BSIM.tAt = Date.now(); draw(); })
     .catch(function () { BSIM.T = []; BSIM.tAt = Date.now(); draw(); });
 }
