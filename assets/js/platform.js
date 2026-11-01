@@ -26913,11 +26913,12 @@ const CX_ST = { new: ['جديدة', 'info'], approved: ['معتمدة', 'ok'], r
 const CX_INV = { held: ['محجوزة — الإرسال موقوف', 'warn'], sent: ['أُرسلت', 'info'], answered: ['أُجيبت', 'ok'], expired: ['انتهت', null], cancelled: ['ملغاة', null] };
 const CX_REC = { promoter: ['مروّج', 'ok'], passive: ['محايد', 'info'], detractor: ['منتقد', 'danger'] };
 const CX_SCALE = { 5: 'ممتاز', 4: 'جيد جداً', 3: 'جيد', 2: 'مقبول', 1: 'يحتاج إلى تحسين' };
+const CX_FACE = { 5: '😍', 4: '🙂', 3: '😐', 2: '😕', 1: '😞' }; /* v634: الوجوه بدل النجوم (قرار المشرف العام) */
 const CX_CH = { whatsapp: ['واتساب', 'whatsapp-logo:teal'], email: ['البريد', 'envelope-simple:sky'] };
 const cxTpl = (k) => ((CX.set && CX.set.templates) || []).filter(function (t) { return t.key === k; })[0] || { key: k, name: k, questions: [] };
 const cxTeam = () => (CX.set && CX.set.settings && CX.set.settings.team_title) || 'إدارة تجربة العملاء والجودة';
 const cxNum = (v, d) => v === null || v === undefined || v === '' || isNaN(Number(v)) ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d === undefined ? 1 : d });
-function cxStars(v, big) { const n = Number(v) || 0; return e('span', { class: 'cx-stars' + (big ? ' is-big' : ''), role: 'img', 'aria-label': cxNum(n, 1) + ' من 5' }, [e('span', { class: 'cx-stars-b' }, '★★★★★'), e('span', { class: 'cx-stars-f', style: 'width:' + Math.max(0, Math.min(100, n / 5 * 100)) + '%' }, '★★★★★')]); }
+function cxStars(v, big) { const n = Number(v) || 0; return e('span', { class: 'cx-stars' + (big ? ' is-big' : ''), role: 'img', 'aria-label': cxNum(n, 1) + ' من 5' }, [e('span', { style: 'font-size:1.25em' }, CX_FACE[Math.max(1, Math.min(5, Math.round(n) || 3))]), ' ', e('small', {}, cxNum(n, 1))]); }
 function cxErr(err) { const m = (err && err.message) || ''; return /forbidden/.test(m) ? 'لا تملك صلاحية هذا الإجراء.' : m || 'تعذّر الإجراء.'; }
 function cxLoad(what, p) {
   if (what === 'set') return admRpc('admin_survey_settings', {}).then(function (j) { if (j && j.ok === false) throw new Error(j.error); CX.set = j; CX.setAt = Date.now(); });
@@ -27052,7 +27053,7 @@ function cxWaPreview(text, nm) {
       e('div', { class: 'cx-wa-cta' }, [e('span', {}, [frag(ui('star', 14)), 'قيّم الآن']), e('span', {}, [frag(ui('chat-circle-dots', 14)), 'تواصل معنا'])])])])]);
 }
 function cxMailPreview(W, nm) {
-  const sub = cxFill(W.subject, nm), body = cxFill(W.body, nm) + '\n\n⭐ قيّم الآن: ' + cxFill('{link}') + '\n\n' + cxTeam() + ' · منصة تيرا', sig = sub + '|' + body;
+  const sub = cxFill(W.subject, nm), body = cxFill(W.body, nm) + '\n\n😍 قيّم الآن: ' + cxFill('{link}') + '\n\n' + cxTeam() + ' · منصة تيرا', sig = sub + '|' + body;
   const box = e('div', { class: 'comm-mail' });
   if (W.html && W.hAt === sig) { const f = e('iframe', { class: 'comm-mail-f', title: 'معاينة البريد', sandbox: 'allow-same-origin' }) /* v541: صور البريد تظهر في المعاينة */; f.srcdoc = W.html; box.appendChild(DS.fields([['إلى', nm], ['الموضوع', sub], ['من', cxTeam()]])); box.appendChild(f); return box; }
   box.appendChild(e('small', { class: 'cu-dr-hint' }, W.hErr && W.hAt === sig ? W.hErr : 'جارٍ تجهيز المعاينة بالقالب الرسمي للبريد…'));
@@ -27170,7 +27171,7 @@ function cxClientBanner() {
 }
 function cxAnswer(x) {
   const D = CXC[x.id] || (CXC[x.id] = { a: {}, c: '', pub: false, nm: false, busy: false, err: '', bad: '' }), Q = x.questions || [];
-  const scale = function (q) { return e('div', { class: 'cx-sc', role: 'radiogroup', 'aria-label': q.t }, [5, 4, 3, 2, 1].map(function (v) { const on = String(D.a[q.k]) === String(v); return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), class: 'cx-sc-b' + (on ? ' is-on' : ''), onClick: function () { D.a[q.k] = String(v); D.bad = ''; draw2(); } }, [e('b', {}, '★ ' + v), e('small', {}, CX_SCALE[v])]); })); };
+  const scale = function (q) { return e('div', { class: 'cx-sc', role: 'radiogroup', 'aria-label': q.t }, [5, 4, 3, 2, 1].map(function (v) { const on = String(D.a[q.k]) === String(v); return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), class: 'cx-sc-b' + (on ? ' is-on' : ''), onClick: function () { D.a[q.k] = String(v); D.bad = ''; draw2(); } }, [e('b', { style: 'font-size:1.5em' }, CX_FACE[v]), e('small', {}, CX_SCALE[v])]); })); };
   const nps = function (q) { return e('div', { class: 'cx-nps10', role: 'radiogroup', 'aria-label': q.t }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (v) { const on = String(D.a[q.k]) === String(v); return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on), class: 'cx-n-b' + (on ? ' is-on' : '') + (v >= 9 ? ' is-p' : v >= 7 ? ' is-n' : ' is-d'), onClick: function () { D.a[q.k] = String(v); D.bad = ''; draw2(); } }, String(v)); }).concat([e('span', { class: 'cx-n-l' }, [e('small', {}, 'غير محتمل'), e('small', {}, 'محتمل جدًا')])])); };
   const yn = function (q) { return e('div', { class: 'cx-yn' }, [['yes', 'نعم'], ['no', 'لا']].map(function (o) { const on = D.a[q.k] === o[0]; return e('button', { type: 'button', class: 'cx-sc-b' + (on ? ' is-on' : ''), 'aria-pressed': String(on), onClick: function () { D.a[q.k] = o[0]; D.bad = ''; draw2(); } }, e('b', {}, o[1])); })); };
   const draw2 = function () {
