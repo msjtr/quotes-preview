@@ -25144,17 +25144,21 @@ function msgcPv() {
   if (MSGC.pvErr) return DS.note('warn', 'تعذّرت المعاينة', MSGC.pvErr);
   const P = MSGC.pv; if (!P) return null;
   const ch = (MSGC.ed && MSGC.ed.channels) || [];
-  const off = function (c) { return ch.indexOf(c) < 0 ? e('small', { class: 'cu-dr-hint' }, 'هذه الوسيلة غير مفعّلة لهذه الرسالة — المعاينة للاطلاع فقط.') : null; };
+  /* v626: الوسيلة غير المفعّلة لا تُعرض لها معاينة (كانت تظهر بصورة عامة لا تطابق المحتوى) */
+  const sec = function (c, ic, t, body) { const on = ch.indexOf(c) >= 0;
+    return e('section', {}, [e('h3', {}, [frag(ui(ic, 16)), t]), on ? body() : e('small', { class: 'cu-dr-hint' }, 'لا تُرسل هذه الرسالة بهذه الوسيلة — فعّلها من «يُرسل» أعلاه لتظهر معاينتها.')]); };
   const wa = P.wa || {};
   return e('div', { class: 'msgc-pv' }, [
-    e('section', {}, [e('h3', {}, [frag(ui('bell', 16)), 'إشعار المنصة']), off('app'), mhApp(P.app && P.app.title, P.app && P.app.text)]),
-    e('section', {}, [e('h3', {}, [frag(ui('device-mobile', 16)), 'إشعار الجوال']), off('push'), mhApp(P.push && P.push.title, P.push && P.push.text)]),
-    e('section', {}, [e('h3', {}, [frag(ui('whatsapp-logo', 16)), 'واتساب — قالب ' + (wa.template || 'tera_update_v2')]), off('wa'),
-      wa.approved ? null : DS.note('warn', 'القالب الجديد بانتظار Meta', 'تجربة واتساب تعمل بعد اعتماد tera_update_v2 في WhatsApp Manager — المتن في docs/HANDOFF.md.'),
-      e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: wa.img, text: wa.text || '', buttons: wa.button ? [wa.button] : [] })])]),
-    e('section', {}, [e('h3', {}, [frag(ui('envelope-simple', 16)), 'البريد' + (P.email && P.email.subject ? ' — ' + P.email.subject : '')]), off('email'),
-      P.email && P.email.html ? e('iframe', { class: 'msgc-mail', title: 'معاينة البريد كما يصل', sandbox: 'allow-same-origin', srcdoc: String(P.email.html) })
-        : DS.note('warn', 'معاينة البريد غير متاحة', (P.email && P.email.error) || '')])
+    sec('app', 'bell', 'إشعار المنصة', function () { return mhApp(P.app && P.app.title, P.app && P.app.text); }),
+    sec('push', 'device-mobile', 'إشعار الجوال', function () { return mhApp(P.push && P.push.title, P.push && P.push.text); }),
+    sec('wa', 'whatsapp-logo', 'واتساب', function () { return e('div', { style: 'display:grid;gap:8px' }, [
+      wa.header === 'image' && !wa.approved ? DS.note('warn', 'القالب الجديد بانتظار Meta', 'تجربة واتساب تعمل بعد اعتماد tera_update_v2 في WhatsApp Manager — المتن في docs/HANDOFF.md.') : null,
+      wa.header === 'document' ? DS.note('info', 'يصل واتساب بالمستند نفسه', 'رأس الرسالة ملف PDF: ' + (wa.doc || 'المستند') + ' — لا صورة.') : null,
+      wa.header === 'none' ? DS.note('warn', 'لا صورة لهذه الرسالة', 'اختر صورة تطابق المحتوى من «الصورة» أعلاه قبل اعتمادها.') : null,
+      e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: wa.header === 'image' ? wa.img : '', text: (wa.header === 'document' ? '📄 ' + (wa.doc || 'مستند PDF') + '\n\n' : '') + (wa.text || ''), buttons: wa.button ? [wa.button] : [] })])]); }),
+    sec('email', 'envelope-simple', 'البريد' + (P.email && P.email.subject ? ' — ' + P.email.subject : ''), function () {
+      return P.email && P.email.html ? e('iframe', { class: 'msgc-mail', title: 'معاينة البريد كما يصل', sandbox: 'allow-same-origin', srcdoc: String(P.email.html) })
+        : DS.note('warn', 'معاينة البريد غير متاحة', (P.email && P.email.error) || ''); })
   ]);
 }
 function msgcPage() {
