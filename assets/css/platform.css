@@ -9443,3 +9443,8 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .mh3-ix tr.is-off td{opacity:.55}
 .mh3-ix .mh3-n{white-space:nowrap}
 .mh3-n{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+
+/* v620: نص الإشعار سطرًا لكل معلومة مع مسافة بين الأسطر (ntBlock في platform.js) */
+.nt-ls{white-space:normal}
+.nt-ls .nt-ln{display:block}
+.nt-ls .nt-ln+.nt-ln{margin-top:6px}

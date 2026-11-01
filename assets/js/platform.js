@@ -47,6 +47,25 @@ function e(tag, attrs, kids) {
   return n;
 }
 function mount(host, node) { host.textContent = ''; host.appendChild(node); }
+/* v620: نص الإشعار سطرًا لكل معلومة مع مسافة بين الأسطر — يُقسَّم عند « · » و« — » ونهاية الجملة (خارج الأقواس والعلامات «»)،
+   والنص الذي كُتب بأسطره (رسائل مركز الإرسال) يبقى كما كُتب. القاعدة نفسها في الخادم: البريد (lib/teramail.js · lines) وإشعار الجوال (lib/pushapi.js) */
+function ntLines(t) {
+  const s = String(t == null ? '' : t).replace(/\r/g, '').trim();
+  if (!s) return [];
+  if (s.indexOf('\n') >= 0) return s.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+  const out = []; let cur = '', d = 0;
+  const put = function () { const x = cur.trim(); if (x) out.push(x); cur = ''; };
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charAt(i);
+    if (c === '(' || c === '[' || c === '«') d++; else if ((c === ')' || c === ']' || c === '»') && d > 0) d--;
+    if (d === 0 && (c === '·' || c === '—') && s.charAt(i - 1) === ' ' && s.charAt(i + 1) === ' ') { put(); i++; continue; }
+    cur += c;
+    if (d === 0 && (c === '.' || c === '؟' || c === '!') && i >= 2 && s.charAt(i - 2) !== ' ' && s.charAt(i + 1) === ' ' && /[\u0621-\u064A]/.test(s.charAt(i + 2))) { put(); i++; }
+  }
+  put();
+  return out;
+}
+function ntBlock(t) { if (t && (t.nodeType || Array.isArray(t))) return t; return ntLines(t).map(function (x) { return e('span', { class: 'nt-ln' }, x); }); }
 const fmtNum = (n) => Number(n).toLocaleString('en-US');
 
 
@@ -3226,7 +3245,7 @@ function tqNotifPage() {
   const L = dbNotifs(), rd = FX.nread || (FX.nread = {});
   const when = function (d) { try { return d.toLocaleString('ar-SA-u-nu-latn-ca-gregory', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }); } catch (err) { return ''; } };
   const list = L.length ? e('div', { class: 'tqn-list' }, L.map(function (n) { const nw = isNew(n);
-    return e('article', { class: 'tqn-row' + (nw ? ' is-new' : '') }, [e('div', { class: 'tqn-h' }, [e('b', {}, n.title), nw ? DS.badge('جديد', 'warn') : null]), n.text ? e('p', {}, n.text) : null, e('small', {}, when(n.at)),
+    return e('article', { class: 'tqn-row' + (nw ? ' is-new' : '') }, [e('div', { class: 'tqn-h' }, [e('b', {}, n.title), nw ? DS.badge('جديد', 'warn') : null]), n.text ? e('p', { class: 'nt-ls' }, ntBlock(n.text)) : null, e('small', {}, when(n.at)),
       n.act ? e('div', { class: 't2-pb-actions' }, [DS.button(n.act[0], { size: 'sm', ui: 'user', onClick: n.act[1] })]) : null]); }))
     : LDS.emptyState({ icon: 'bell', title: 'لا إشعارات بعد', body: 'تظهر هنا الرسائل والإشعارات المرسلة إلى حسابك من الإدارة والنظام.' });
   const ids = L.map(function (n) { return n.id; }); ids.forEach(function (i) { rd[i] = true; }); try { const m = dbSeen(); ids.forEach(function (i) { m[i] = 2; }); localStorage.setItem(DBN_K, JSON.stringify(m)); } catch (err) { void err; }
@@ -3322,7 +3341,7 @@ function notifPage() {
           e('span', { class: 'nr-txt' }, short),
           e('span', { class: 'nr-meta' }, [e('span', { class: 'nr-k is-' + kd[1] }, kd[0]), FX.ns === 'all' ? e('span', { class: 'nr-s' }, sc[4]) : null, n.count && n.k === 'late' ? e('span', { class: 'nr-s' }, 'التذكير ' + n.count) : null, n.paused ? e('span', { class: 'nr-k is-warn' }, 'مُعلَّق: تحويل قيد المراجعة') : null])]),
         unread ? e('i', { class: 'nr-dot', 'aria-label': 'جديد' }) : null]),
-      open ? e('div', { class: 'nr-x' }, [e('p', {}, n.text), e('div', { class: 'nr-ch' }, [e('small', {}, 'وصل عبر:')].concat(CH.filter(function (c) { return chOn(n.cat, c[0]); }).map(function (c) { return e('span', {}, [e('span', { class: 'fx-mini-ic' }, frag(tile(c[2]))), c[1]]); }))), n.next ? e('small', { class: 'nr-nx' }, n.next) : null]) : null,
+      open ? e('div', { class: 'nr-x' }, [e('p', { class: 'nt-ls' }, ntBlock(n.text)), e('div', { class: 'nr-ch' }, [e('small', {}, 'وصل عبر:')].concat(CH.filter(function (c) { return chOn(n.cat, c[0]); }).map(function (c) { return e('span', {}, [e('span', { class: 'fx-mini-ic' }, frag(tile(c[2]))), c[1]]); }))), n.next ? e('small', { class: 'nr-nx' }, n.next) : null]) : null,
       act ? e('div', { class: 'nr-a' }, act) : null]);
   };
   const up = openPaysSorted().filter(function (p) { const d = daysBetween(T0, p.due); return d > NRULE.before && d <= 45; });
@@ -3442,7 +3461,7 @@ function adminView() {
       const l = lv[x.lvl];
       return e('article', { class: 'fx-ncard is-' + l[1] }, [
         e('div', { class: 'fx-ncard-h' }, [e('span', { class: 'fx-card-ic' }, frag(tile(ic[x.k] || 'info'))), e('div', { class: 'fx-ncard-t' }, [e('span', { class: 'fx-ncard-k' }, [DS.badge(l[0], l[1]), e('small', {}, x.sla)]), e('b', {}, x.title)]), e('time', {}, isoT(x.at))]),
-        e('p', { class: 'fx-ncard-m' }, x.text),
+        e('p', { class: 'fx-ncard-m nt-ls' }, ntBlock(x.text)),
         e('div', { class: 'fx-ncard-f' }, [e('span', { class: 'fx-ncard-ch' }, [['ring', 'لوحة الإدارة'], ['email', 'البريد']].concat(x.lvl === 'danger' ? [['wa', 'واتساب']] : []).map(function (c) { return e('span', { class: 'fx-chip' }, [e('span', { class: 'fx-mini-ic' }, frag(tile(c[0]))), c[1], e('i', {}, '✓')]); })), DS.button(x.act, { size: 'sm', tone: x.lvl === 'danger' || x.lvl === 'warn' ? 'primary' : null, onClick: function (ev) { const b = ev.currentTarget; b.textContent = 'يُنفَّذ في لوحة الإدارة'; b.disabled = true; } })])]);
     }))], true, 'n-adm')];
 }
@@ -8099,7 +8118,7 @@ function mhWaPhone(n, imgOver, valsOver) {
 function mhMail(subject, title, lead, note) {
   return e('div', { class: 'mh2-mail' }, [e('div', { class: 'hd' }, 'منصة تيرا للخدمات المتكاملة'), e('div', { class: 'bd' }, [e('div', { class: 'sj' }, 'الموضوع: ' + (subject || '—')), title ? e('b', {}, title) : null, lead ? e('div', {}, mhFillComm(lead)) : null, note ? e('div', { class: 'sj' }, mhFillComm(note)) : null])]);
 }
-function mhApp(title, text) { return e('div', { class: 'mh2-app' }, [e('span', { class: 'ic' }, frag(ui('bell', 18))), e('div', {}, [e('b', {}, title || '—'), e('div', { style: 'font-size:13px;color:var(--t2-muted,#566A88)' }, text || '')])]); }
+function mhApp(title, text) { return e('div', { class: 'mh2-app' }, [e('span', { class: 'ic' }, frag(ui('bell', 18))), e('div', {}, [e('b', {}, title || '—'), e('div', { class: 'nt-ls', style: 'font-size:13px;color:var(--t2-muted,#566A88)' }, ntBlock(text || ''))])]); }
 const mhComm = function (name) { return (COMM.tpl || []).filter(function (t) { return !t.archived && t.name === name; })[0] || null; };
 const mhSurv = function (k) { return ((CX.set && CX.set.templates) || []).filter(function (t) { return t.key === k; })[0] || null; };
 const mhStat = function (k) { return (MH.status || []).filter(function (x) { return x.status === k; })[0] || null; };
@@ -8330,14 +8349,12 @@ const MH3_SRV = [
 ['pay_link', 'srv', 'رابط دفع من منصة تيرا', 'رابط سداد 1,250.00 ريال — الدفعة 3 من 12 · رقم الرابط PL-261030 · صالح حتى 01/11/2026 9:00 م. ادفع عبر بوابة الدفع الآمنة، ولا تشارك الرابط مع أحد.', 'app push mail', '', '', 'عند إرسال رابط دفع للعميل — ومعه واتساب tera_payment_link'],
 ['pay_due', 'srv', 'تذكير: دفعتك تستحق بعد 3 أيام', 'نذكّرك بأن دفعتك تستحق بعد 3 أيام — الدفعة 3 من 12 · العقد TRA-20260819-011 · المبلغ 1,250.00 ريال. ادفعها الآن من صفحة السداد الآمنة.', 'app push mail', '', '', 'تذكير السداد الآلي أو من «إدارة التذكير» (إن لم يُختر نص قالب) — ومعه واتساب tera_payment_due'],
 ['pay_late', 'srv', 'تذكير: دفعتك متأخرة 5 أيام', 'نذكّرك بأن دفعتك متأخرة 5 أيام — الدفعة 3 من 12 · العقد TRA-20260819-011 · المبلغ 1,250.00 ريال. ادفعها الآن من صفحة السداد الآمنة.', 'app push mail', '', '', 'تذكير الدفعة المتأخرة (من اليوم 1 إلى 60) — ومعه واتساب tera_payment_due'],
-['tr_ok', 'srv', 'تم اعتماد تحويلك البنكي', '1,250.00 ريال · العقد TRA-20260819-011 · الدفعة 3 — صدر إيصال السداد في حسابك.', 'app push wa', 'ev-order-approved', 'معتمد', 'اعتماد إيصال تحويل رفعه العميل لدفعة'],
-['tr_no', 'srv', 'لم يُعتمد تحويلك البنكي', '1,250.00 ريال · العقد TRA-20260819-011 · الدفعة 3 — السبب: راجع الإيصال وأعد الإرسال.', 'app push wa', 'ev-order-rejected', 'غير معتمد', 'رفض إيصال تحويل رفعه العميل'],
 ['bt_request', 'srv', 'طلب تحويل بنكي', 'حوّل 1,250.00 ريال (الدفعة 3 · العقد TRA-20260819-011) إلى البنك المختار · المستفيد: منصة تيرا · الآيبان: SA•••• (مخفي)، ثم أرفق الإيصال من الرابط: tera-services.com.sa/t/…', 'app push mail wa', 'ev-transfer-request', 'بانتظار إيصالك', 'عند طلب السداد بالتحويل البنكي برابط إرفاق الإيصال'],
 ['bt_remind', 'srv', 'تذكير بالسداد بالتحويل البنكي', 'نذكّرك بسداد الدفعة 3 · العقد TRA-20260819-011 (27-11-2026). حوّل 1,250.00 ريال إلى البنك المختار · المستفيد: منصة تيرا · الآيبان: SA•••• (مخفي)، ثم أرفق الإيصال من الرابط: tera-services.com.sa/t/…', 'app push mail wa', 'ev-transfer-request', 'بانتظار إيصالك', 'تذكير بطلب التحويل قبل إرفاق الإيصال'],
 ['bt_received', 'srv', 'تم استلام إيصال التحويل', 'إيصال تحويل بمبلغ 1,250.00 ريال · الدفعة 3 · العقد TRA-20260819-011 — نراجعه ونبلغك بالنتيجة.', 'app push mail wa', 'ev-transfer-received', 'جارٍ التدقيق', 'عند إرفاق العميل إيصال التحويل'],
-['bt_approved', 'srv', 'تم اعتماد تحويلك البنكي', 'تحويل بنكي 1,250.00 ريال · الدفعة 3 · العقد TRA-20260819-011 · إيصال السداد في حسابك.', 'app push mail wa', 'ev-transfer-approved', 'معتمد', 'اعتماد التحويل البنكي'],
+['bt_approved', 'srv', 'تم استلام دفعتكم بنجاح', 'تحويل بنكي 1,250.00 ريال · الدفعة 3 · العقد TRA-20260819-011 · إيصال السداد في حسابك.', 'app push mail wa', 'ev-transfer-approved', 'معتمد', 'اعتماد التحويل البنكي — برابط التحويل أو بإيصال رفعه العميل من حسابه (v620: مسار واحد)'],
 ['bt_settle', 'srv', 'تم سداد قيمة المنتج وإغلاق العقد', 'تحويل بنكي 4,800.00 ريال · سُدّدت قيمة المنتج وأُغلق العقد TRA-20260819-011 · شهادة «تقدير ووفاء» في حسابك.', 'app push mail wa', 'ev-transfer-approved', 'معتمد', 'اعتماد تحويل سداد قيمة المنتج'],
-['bt_rejected', 'srv', 'لم يُعتمد تحويلك البنكي', 'تحويل بمبلغ 1,250.00 ريال · الدفعة 3 · العقد TRA-20260819-011 — لم يُعتمد. السبب: (سبب الرفض). تواصل معنا من حسابك في المنصة.', 'app push mail wa', 'ev-transfer-rejected', 'غير معتمد', 'رفض التحويل البنكي'],
+['bt_rejected', 'srv', 'لم يُعتمد التحويل', 'تحويل بمبلغ 1,250.00 ريال · الدفعة 3 · العقد TRA-20260819-011 — لم يُعتمد. السبب: (سبب الرفض). تواصل معنا من حسابك في المنصة.', 'app push mail wa', 'ev-transfer-rejected', 'غير معتمد', 'رفض التحويل البنكي — برابط التحويل أو بإيصال رفعه العميل من حسابه (v620: مسار واحد)'],
 ['bt_fix', 'srv', 'مطلوب تعديل إيصال التحويل', 'راجعنا إيصال تحويلك بمبلغ 1,250.00 ريال (الدفعة 3 · العقد TRA-20260819-011) ونحتاج تعديلًا: (الملاحظة). أرفق الإيصال الصحيح من الرابط: tera-services.com.sa/t/…', 'app push mail wa', 'ev-transfer-fix', 'بانتظار التعديل', 'طلب تعديل إيصال التحويل'],
 ['cert', 'srv', 'شهادة تقدير ووفاء', 'صدرت شهادة «تقدير ووفاء» لعقدك TRA-20260819-011 — شكرًا لالتزامك. تجدها في حسابك.', 'app', '', '', 'بعد إقفال العقد بسداد قيمة المنتج'],
 ['op_req', 'srv', 'استلمنا طلب استرداد العملية 11434693', 'طلبك OP-261030-01 قيد مراجعة الإدارة، وسنبلغك بالنتيجة.', 'app wa', 'ev-order-new', 'قيد المراجعة', 'طلب العميل استرداد أو إلغاء عملية دفع من الإيصال'],
@@ -8356,8 +8373,7 @@ const MH3_SRV = [
 ['st_fail', 'staffn', 'عملية دفع لم تكتمل · 1,250.00 ريال', 'محمد الشمري · بطاقة مدى · العملية 11434693', 'app push', '', '', 'عند فشل عملية دفع'],
 ['st_refund', 'staffn', 'استرداد مبلغ عبر بوابة الدفع · 1,250.00 ريال', 'محمد الشمري · بطاقة مدى · العملية 11434693 · المسترد 1,250.00 ريال', 'app push', '', '', 'عند الاسترداد'],
 ['st_void', 'staffn', 'إلغاء عملية دفع عبر البوابة · 1,250.00 ريال', 'محمد الشمري · بطاقة مدى · العملية 11434693 · أُلغيت العملية 1,250.00 ريال', 'app push', '', '', 'عند الإلغاء'],
-['st_tr', 'staffn', 'إيصال تحويل بنكي بانتظار الاعتماد · 1,250.00 ريال', 'محمد الشمري · العقد TRA-20260819-011 · الدفعة 3', 'app push', '', '', 'رفع العميل إيصال تحويل لدفعة'],
-['st_bt', 'staffn', 'إيصال تحويل بنكي بانتظار المراجعة · 1,250.00 ريال', 'محمد الشمري · الدفعة 3 · العقد TRA-20260819-011 · BT-261030-01', 'app push', '', '', 'إرفاق إيصال من رابط التحويل البنكي'],
+['st_bt', 'staffn', 'إيصال تحويل بنكي بانتظار المراجعة · 1,250.00 ريال', 'محمد الشمري · الدفعة 3 · العقد TRA-20260819-011 · BT-261030-01', 'app push', '', '', 'إرفاق إيصال من رابط التحويل البنكي أو من حساب العميل (v620: عنوان واحد)'],
 ['st_inv_ok', 'staffn', 'وقّع العميل على فاتورة سداد قيمة المنتج', 'محمد الشمري · (نص قرار العميل)', 'app push', '', '', 'موافقة العميل على فاتورة سداد قيمة المنتج'],
 ['st_inv_no', 'staffn', 'رفض العميل فاتورة سداد قيمة المنتج', 'محمد الشمري · (نص قرار العميل)', 'app push', '', '', 'رفض العميل الفاتورة'],
 ['st_op', 'staffn', 'طلب استرداد عملية دفع من عميل · 1,250.00 ريال', 'محمد الشمري · العملية 11434693 · OP-261030-01 · السبب: (سبب العميل)', 'app push', '', '', 'طلب العميل استرداد أو إلغاء عملية'],
