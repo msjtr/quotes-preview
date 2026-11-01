@@ -25053,13 +25053,257 @@ function commReady(title, what) {
   return null;
 }
 const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف بقرار الإدارة', 'تُكتب الرسالة وتُعايَن وتُحفظ في «تقرير الإرسال» بحالة «محجوزة» — لا يخرج بريد ولا واتساب لأي أحد حتى يُفعَّل الإرسال.');
+/* v623: «الرسائل الموحّدة» — كتالوج واحد (msg_catalog · stf_165) لكل رسائل المنصة: عنوان + حالة + أربعة أسطر ثابتة (كل معلومة بسطر) + زر + صورة.
+ * المعاينة من الخادم نفسه (lib/msgcat.js) كما تُرسل: إشعار المنصة · إشعار الجوال · البريد · واتساب (tera_update_v2)،
+ * وأزرار التجربة ترسل لصاحب الجلسة وحده. التعديل والاعتماد للمشرف العام وحده. الإرسال الفعلي للعملاء لا يتغيّر في هذا الإصدار. */
+const MSGC = { at: 0, rows: null, sup: false, err: '', sec: '', key: '', ed: null, pv: null, pvKey: '', pvBusy: false, pvErr: '', busy: '' };
+const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير', 3: 'الدفع غير المكتمل والاسترداد', 4: 'التحويل البنكي', 5: 'روابط الدفع والفواتير', 6: 'طلبات الخدمة والأهلية', 7: 'المستندات', 8: 'التقييم', 9: 'الحساب والتدشين', 10: 'توثيق الملف', 11: 'الطلبات وعروض الأسعار', 13: 'الدعم', 14: 'الأمان', 16: 'الفريق', 17: 'العروض والصيانة' };
+const MSGC_IMG = ['acct-ready', 'acct-step-2-login', 'ev-contract-new', 'ev-contract-signed', 'ev-launch-v2', 'ev-launch', 'ev-login', 'ev-mobile', 'ev-order-approved', 'ev-order-new', 'ev-order-rejected', 'ev-order-status', 'ev-pay-due', 'ev-pay-link', 'ev-pay-overdue', 'ev-pay-thanks', 'ev-profile', 'ev-quote', 'ev-rate-thanks-v2', 'ev-rate-thanks', 'ev-store-offer', 'ev-support', 'ev-survey-launch', 'ev-survey-service', 'ev-survey-settle', 'ev-survey-support', 'ev-transfer-approved', 'ev-transfer-fix', 'ev-transfer-received', 'ev-transfer-rejected', 'ev-transfer-request', 'pv-approved', 'pv-film_ready', 'pv-launched', 'pv-received', 'pv-registered', 'pv-rejected', 'pv-resubmitted', 'pv-returned', 'pv-submitted', 'receipt-failed', 'receipt-paid', 'receipt-refund'];
+const MSGC_CH = [['app', 'إشعار المنصة'], ['push', 'إشعار الجوال'], ['email', 'البريد'], ['wa', 'واتساب']];
+const MSGC_ATT = { '': 'بلا مرفق', pdf_receipt: 'إيصال PDF', pdf_thanks: 'خطاب شكر PDF', pdf_cert: 'شهادة PDF', video_film: 'الفيلم', rating_buttons: 'أزرار التقييم الخمسة' };
+function msgcCss() {
+  const o = document.getElementById('msgc-css'); if (o && o.getAttribute('data-v') === '623') return; if (o) o.remove();
+  const s = document.createElement('style'); s.id = 'msgc-css'; s.setAttribute('data-v', '623');
+  s.textContent = [
+    '.msgc-steps{margin:0;padding-inline-start:20px;display:grid;gap:4px;font-size:13.5px;line-height:1.8}',
+    '.msgc-stat{display:flex;flex-wrap:wrap;gap:8px}.msgc-stat span{padding:4px 10px;border-radius:999px;border:1px solid var(--t2-line,#D4DEEA);font-size:12.5px}',
+    '.msgc-list{display:grid;gap:6px;max-height:420px;overflow:auto}',
+    '.msgc-row{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:8px 10px;border-radius:10px;border:1px solid var(--t2-line,#D4DEEA);background:var(--t2-surface,#fff);cursor:pointer;font:inherit;color:inherit}',
+    '.msgc-row.is-on{border-color:var(--t2-brand,#0AA5AD);box-shadow:0 0 0 2px rgba(10,165,173,.18)}',
+    '.msgc-row code{direction:ltr;font-size:12px;color:var(--t2-muted,#566A88);flex:none;min-width:44px}.msgc-row b{flex:1;min-width:0;font-weight:600}',
+    '.msgc-ed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.msgc-ed .is-full{grid-column:1/-1}',
+    '.msgc-ln{display:grid;gap:8px}.msgc-ln small{color:var(--t2-muted,#566A88)}',
+    '.msgc-ch{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}',
+    '.msgc-img{display:flex;gap:10px;align-items:center}.msgc-img img{width:120px;height:auto;border-radius:10px;border:1px solid var(--t2-line,#D4DEEA)}',
+    '.msgc-acts{display:flex;flex-wrap:wrap;gap:8px}',
+    '.msgc-pv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.msgc-pv>section{min-width:0;display:grid;gap:8px;align-content:start}',
+    '.msgc-pv h3{margin:0;font-size:14px;display:flex;align-items:center;gap:6px}',
+    '.msgc-mail{width:100%;min-height:720px;border:1px solid var(--t2-line,#D4DEEA);border-radius:12px;background:#fff}',
+    '.msgc-bad{color:var(--t2-danger,#C0392B);font-size:12.5px}',
+    '.bsim{display:grid;gap:10px;max-height:640px;overflow:auto;padding:12px;border-radius:14px;background:#EFE7DD;border:1px solid var(--t2-line,#D4DEEA)}',
+    '.bsim-in{justify-self:start;max-width:78%;background:#D9FDD3;border-radius:12px;padding:8px 12px;white-space:pre-wrap;font-size:13.5px;line-height:1.7}',
+    '.bsim-out{justify-self:end;max-width:86%;display:grid;gap:6px}',
+    '.bsim-b{background:#fff;border-radius:12px;padding:8px 12px;white-space:pre-wrap;font-size:13.5px;line-height:1.7;box-shadow:0 1px 1px rgba(0,0,0,.08)}',
+    '.bsim-b img{display:block;max-width:100%;border-radius:8px;margin-bottom:6px}',
+    '.bsim-opts{display:flex;flex-wrap:wrap;gap:6px}.bsim-opts button{font:inherit;font-size:13px;padding:6px 10px;border-radius:10px;border:1px solid #CFE3E4;background:#fff;color:#0A7F86;cursor:pointer}',
+    '.bsim-opts button small{display:block;color:var(--t2-muted,#566A88);font-size:11.5px}',
+    '.bsim-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--t2-muted,#566A88)}',
+    '.bsim-ed{display:grid;gap:6px}.bsim-ed textarea{width:100%;min-height:110px;font:inherit;font-size:13.5px;line-height:1.7;padding:8px;border-radius:10px;border:1px solid var(--t2-line,#D4DEEA)}',
+    '.bsim-send{display:flex;gap:8px;align-items:center}.bsim-send>*:first-child{flex:1}',
+    '@media (max-width:900px){.msgc-ed,.msgc-pv{grid-template-columns:minmax(0,1fr)}.msgc-ch{grid-template-columns:repeat(2,minmax(0,1fr))}}'
+  ].join('\n');
+  document.head.appendChild(s);
+}
+function msgcLoad() {
+  MSGC.at = -1; MSGC.err = '';
+  admRpc('admin_msg_list', {}).then(function (j) { MSGC.rows = (j && j.rows) || []; MSGC.sup = !!(j && j.super); MSGC.at = Date.now(); draw(); })
+    .catch(function (err) { MSGC.rows = null; MSGC.err = (err && err.message) || 'تعذّر التحميل.'; MSGC.at = Date.now(); draw(); });
+}
+const msgcRow = function (k) { return (MSGC.rows || []).filter(function (r) { return r.key === k; })[0] || null; };
+function msgcPick(k) {
+  const r = msgcRow(k); MSGC.key = r ? r.key : ''; MSGC.pv = null; MSGC.pvKey = ''; MSGC.pvErr = '';
+  MSGC.ed = r ? { title: r.title, status: r.status, l1: r.l1, l2: r.l2, l3: r.l3, l4: r.l4, btn_label: r.btn_label, btn_path: r.btn_path, img: r.img, attach: r.attach, channels: (r.channels || []).slice(), state: r.state } : null;
+  if (r) msgcPreview();
+  draw();
+}
+function msgcCheck(E) {
+  const bad = [];
+  ['l1', 'l2', 'l3', 'l4'].forEach(function (k, i) { const v = String(E[k] || '').trim();
+    if (!v) bad.push('السطر ' + (i + 1) + ' فارغ.');
+    else if (v.length > 160) bad.push('السطر ' + (i + 1) + ' أطول من 160 حرفًا.');
+    if (v.indexOf('·') >= 0) bad.push('السطر ' + (i + 1) + ' فيه «·» — كل معلومة بسطر مستقل.'); });
+  if (!String(E.title || '').trim()) bad.push('العنوان مطلوب.');
+  return bad;
+}
+function msgcPreview() {
+  if (!MSGC.key || !MSGC.ed || MSGC.pvBusy) return;
+  MSGC.pvBusy = true; MSGC.pvErr = '';
+  clPost('/admin/api/msg/preview', { key: MSGC.key, row: MSGC.ed }).then(function (j) { MSGC.pvBusy = false;
+    if (j && j.ok) { MSGC.pv = j.preview; MSGC.pvKey = MSGC.key; } else { MSGC.pv = null; MSGC.pvErr = (j && j.message) || 'تعذّرت المعاينة.'; } draw(); })
+    .catch(function (err) { MSGC.pvBusy = false; MSGC.pv = null; MSGC.pvErr = (err && err.message) || 'تعذّرت المعاينة.'; draw(); });
+}
+function msgcTest(ch) {
+  if (!MSGC.key || MSGC.busy) return;
+  const bad = msgcCheck(MSGC.ed); if (bad.length) { snack(bad[0]); return; }
+  MSGC.busy = ch; draw();
+  clPost('/admin/api/msg/test', { key: MSGC.key, row: MSGC.ed, ch: ch }).then(function (j) { MSGC.busy = ''; snack((j && j.message) || (j && j.ok ? 'تم.' : 'تعذّر الإرسال.')); draw(); })
+    .catch(function (err) { MSGC.busy = ''; snack((err && err.message) || 'تعذّر الإرسال.'); draw(); });
+}
+function msgcSave() {
+  if (!MSGC.sup || !MSGC.key || MSGC.busy) return;
+  const bad = msgcCheck(MSGC.ed); if (bad.length) { snack(bad[0]); return; }
+  MSGC.busy = 'save'; draw();
+  admRpc('admin_msg_save', { p: Object.assign({ key: MSGC.key }, MSGC.ed) }).then(function (j) {
+    MSGC.busy = ''; const n = j && j.row;
+    if (n) { MSGC.rows = (MSGC.rows || []).map(function (r) { return r.key === n.key ? n : r; }); }
+    snack(MSGC.ed.state === 'approved' ? 'حُفظت الرسالة واعتُمدت.' : 'حُفظت الرسالة مسودة.'); draw(); msgcPreview(); })
+    .catch(function (err) { MSGC.busy = ''; snack((err && err.message) || 'تعذّر الحفظ.'); draw(); });
+}
+function msgcPv() {
+  if (MSGC.pvBusy && !MSGC.pv) return DS.note('info', 'جارٍ تجهيز المعاينة من الخادم…', '');
+  if (MSGC.pvErr) return DS.note('warn', 'تعذّرت المعاينة', MSGC.pvErr);
+  const P = MSGC.pv; if (!P) return null;
+  const ch = (MSGC.ed && MSGC.ed.channels) || [];
+  const off = function (c) { return ch.indexOf(c) < 0 ? e('small', { class: 'cu-dr-hint' }, 'هذه الوسيلة غير مفعّلة لهذه الرسالة — المعاينة للاطلاع فقط.') : null; };
+  const wa = P.wa || {};
+  return e('div', { class: 'msgc-pv' }, [
+    e('section', {}, [e('h3', {}, [frag(ui('bell', 16)), 'إشعار المنصة']), off('app'), mhApp(P.app && P.app.title, P.app && P.app.text)]),
+    e('section', {}, [e('h3', {}, [frag(ui('device-mobile', 16)), 'إشعار الجوال']), off('push'), mhApp(P.push && P.push.title, P.push && P.push.text)]),
+    e('section', {}, [e('h3', {}, [frag(ui('whatsapp-logo', 16)), 'واتساب — قالب ' + (wa.template || 'tera_update_v2')]), off('wa'),
+      wa.approved ? null : DS.note('warn', 'القالب الجديد بانتظار Meta', 'تجربة واتساب تعمل بعد اعتماد tera_update_v2 في WhatsApp Manager — المتن في docs/HANDOFF.md.'),
+      e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: wa.img, text: wa.text || '', buttons: wa.button ? [wa.button] : [] })])]),
+    e('section', {}, [e('h3', {}, [frag(ui('envelope-simple', 16)), 'البريد' + (P.email && P.email.subject ? ' — ' + P.email.subject : '')]), off('email'),
+      P.email && P.email.html ? e('iframe', { class: 'msgc-mail', title: 'معاينة البريد كما يصل', sandbox: 'allow-same-origin', srcdoc: String(P.email.html) })
+        : DS.note('warn', 'معاينة البريد غير متاحة', (P.email && P.email.error) || '')])
+  ]);
+}
+function msgcPage() {
+  if (!LIVE.on) return [liveEmptyNote('الرسائل الموحّدة')];
+  msgcCss(); mhCss();
+  if (!MSGC.at) msgcLoad();
+  if (MSGC.at < 0) return [clWait('الرسائل الموحّدة')];
+  if (!MSGC.rows) return [DS.note('warn', 'تعذّر تحميل الرسائل الموحّدة', MSGC.err || 'لمن يملك صلاحية إعدادات النظام.'), liveOk(DS.button('إعادة المحاولة', { ui: 'arrows-clockwise', onClick: function () { MSGC.at = 0; draw(); } }))];
+  const R = MSGC.rows, nA = R.filter(function (r) { return r.state === 'approved'; }).length;
+  const secs = Object.keys(MSGC_SEC).filter(function (s) { return R.some(function (r) { return String(r.sec) === s; }); });
+  const list = R.filter(function (r) { return !MSGC.sec || String(r.sec) === MSGC.sec; });
+  const help = DS.panel('طريقة العمل', 'رسالة واحدة لكل حدث — تُبنى منها كل الوسائل', [e('ol', { class: 'msgc-steps' }, [
+    e('li', {}, 'اختر القسم، ثم الرسالة من القائمة.'),
+    e('li', {}, 'عدّل العنوان والحالة والأسطر الأربعة.'),
+    e('li', {}, 'كل معلومة في سطرها — لا تجمع معلومتين في سطر واحد.'),
+    e('li', {}, '«معاينة» تعرض الوسائل الأربع من الخادم كما تُرسل.'),
+    e('li', {}, 'أزرار التجربة ترسل إلى جوالك وبريدك وحسابك أنت فقط.'),
+    e('li', {}, '«حفظ» للمشرف العام، وحالة «معتمدة» تعني جاهزة للنقل.'),
+    e('li', {}, 'الإرسال الفعلي للعملاء لا يتغيّر حتى يُعتمد الكتالوج كاملًا، ثم يُنقل إليه ويُحذف القديم.')]),
+    e('div', { class: 'msgc-stat' }, [e('span', {}, 'الرسائل: ' + fmtNum(R.length)), e('span', {}, 'معتمدة: ' + fmtNum(nA)), e('span', {}, 'مسودة: ' + fmtNum(R.length - nA))])]);
+  const pick = DS.panel('اختيار الرسالة', null, [
+    e('div', { class: 'msgc-ed' }, [
+      DS.editField('القسم', DS.select({ value: MSGC.sec, options: [['', 'كل الأقسام']].concat(secs.map(function (s) { return [s, s + ' — ' + MSGC_SEC[s]]; })), onChange: function (v) { MSGC.sec = v; draw(); } })),
+      DS.editField('الرسالة', DS.select({ value: MSGC.key, options: [['', 'اختر رسالة']].concat(list.map(function (r) { return [r.key, r.code + ' — ' + r.title]; })), onChange: function (v) { msgcPick(v); } }))]),
+    e('div', { class: 'msgc-list' }, list.map(function (r) {
+      return e('button', { type: 'button', class: 'msgc-row' + (r.key === MSGC.key ? ' is-on' : ''), onClick: function () { msgcPick(r.key); } },
+        [e('code', {}, r.code), e('b', {}, r.title), r.state === 'approved' ? DS.badge('معتمدة', 'ok') : DS.badge('مسودة', 'warn')]); }))]);
+  const out = [help, pick];
+  const E = MSGC.ed, cur = msgcRow(MSGC.key);
+  if (!E || !cur) return out;
+  const inp = function (k, ph) { return DS.input({ value: E[k], placeholder: ph || null, onInput: function (v) { E[k] = v; } }); };
+  const bad = msgcCheck(E);
+  out.push(DS.panel('تحرير الرسالة ' + cur.code, cur.audience === 'staff' ? 'للفريق' : 'للعملاء', [
+    e('div', { class: 'msgc-ed' }, [DS.editField('العنوان', inp('title')), DS.editField('الحالة', inp('status'))]),
+    e('div', { class: 'msgc-ln' }, [e('small', {}, 'الأسطر الأربعة — معلومة واحدة في كل سطر. المتغيرات بين { } تُملأ عند الإرسال، مثل {amount} و{due} و{req}.'),
+      DS.editField('السطر 1', inp('l1')), DS.editField('السطر 2', inp('l2')), DS.editField('السطر 3', inp('l3')), DS.editField('السطر 4', inp('l4'))]),
+    e('div', { class: 'msgc-ed' }, [DS.editField('نص الزر', inp('btn_label', 'بلا زر')), DS.editField('رابط الزر', inp('btn_path', '/clients/'))]),
+    e('div', { class: 'msgc-ed' }, [
+      DS.editField('الصورة', DS.select({ value: E.img || '', options: [['', 'بلا صورة']].concat(MSGC_IMG.map(function (x) { return [x, x]; })), onChange: function (v) { E.img = v; draw(); } })),
+      DS.field('المرفق', MSGC_ATT[E.attach || ''] || E.attach)]),
+    E.img ? e('div', { class: 'msgc-img' }, [e('img', { src: '/assets/brand/wa/' + E.img + '.jpg', alt: '', loading: 'lazy' }), e('small', { class: 'cu-dr-hint' }, 'صورة الترويسة في واتساب')]) : null,
+    e('div', { class: 'msgc-ch' }, MSGC_CH.map(function (c) { const on = E.channels.indexOf(c[0]) >= 0;
+      return DS.editField(c[1], DS.select({ value: on ? '1' : '0', options: [['1', 'يُرسل'], ['0', 'لا يُرسل']], onChange: function (v) {
+        E.channels = E.channels.filter(function (x) { return x !== c[0]; }); if (v === '1') E.channels.push(c[0]); draw(); } })); })),
+    DS.editField('الحالة في الكتالوج', DS.select({ value: E.state, options: [['draft', 'مسودة'], ['approved', 'معتمدة']], onChange: function (v) { E.state = v; draw(); } })),
+    bad.length ? e('div', { class: 'msgc-bad' }, bad.map(function (x) { return e('div', {}, x); })) : null,
+    cur.src ? e('small', { class: 'cu-dr-hint' }, 'المصدر الحالي: ' + cur.src) : null,
+    e('div', { class: 'msgc-acts' }, [
+      liveOk(DS.button(MSGC.pvBusy ? 'جارٍ المعاينة…' : 'معاينة', { tone: 'primary', ui: 'magnifying-glass', disabled: MSGC.pvBusy, onClick: msgcPreview })),
+      MSGC.sup ? liveOk(DS.button(MSGC.busy === 'save' ? 'جارٍ الحفظ…' : 'حفظ', { ui: 'check', disabled: !!MSGC.busy, onClick: msgcSave })) : null,
+      liveOk(DS.button(MSGC.busy === 'whatsapp' ? 'جارٍ الإرسال…' : 'أرسل لجوالي (واتساب)', { ui: 'whatsapp-logo', disabled: !!MSGC.busy, onClick: function () { msgcTest('whatsapp'); } })),
+      liveOk(DS.button(MSGC.busy === 'email' ? 'جارٍ الإرسال…' : 'أرسل لبريدي', { ui: 'envelope-simple', disabled: !!MSGC.busy, onClick: function () { msgcTest('email'); } })),
+      liveOk(DS.button(MSGC.busy === 'push' ? 'جارٍ الإرسال…' : 'إشعار جوال لي', { ui: 'device-mobile', disabled: !!MSGC.busy, onClick: function () { msgcTest('push'); } })),
+      liveOk(DS.button(MSGC.busy === 'inbox' ? 'جارٍ الإرسال…' : 'إشعار المنصة لي', { ui: 'bell', disabled: !!MSGC.busy, onClick: function () { msgcTest('inbox'); } }))]),
+    MSGC.sup ? null : e('small', { class: 'cu-dr-hint' }, 'الحفظ والاعتماد للمشرف العام — لك المعاينة والتجربة بالتعديلات قبل حفظها.')]));
+  out.push(DS.panel('المعاينة كما تُرسل', 'من الخادم بقيم عيّنة — بعد أي تعديل اضغط «معاينة»', [msgcPv()]));
+  return out;
+}
+
+/* v623: «الرد الآلي» — محادثة تفاعلية مع بوت واتساب الحقيقي (whatsapp_bot_handle) داخل معاملة تُلغى: لا يخرج شيء للعميل ولا يتغيّر شيء.
+ * كل رد يُعرض كما يصل، وأزراره وقوائمه قابلة للضغط، والرد المأخوذ من نصوص البوت يُعدَّل من مكانه (المشرف العام) ثم تُعاد المحادثة. */
+const BSIM = { as: 'guest', msgs: [], turns: [], busy: false, err: '', txt: '', T: null, tAt: 0, sup: false, edit: '', val: '', saving: false };
+function bsimTexts() {
+  if (BSIM.tAt) return; BSIM.tAt = -1;
+  admRpc('admin_bot_texts', {}).then(function (j) { BSIM.T = (j && j.rows) || []; BSIM.sup = !!(j && j.super); BSIM.tAt = Date.now(); draw(); })
+    .catch(function () { BSIM.T = []; BSIM.tAt = Date.now(); draw(); });
+}
+function bsimTok(t) { return mh3Norm(String(t || '').replace(/\{[^}]*\}/g, ' ').replace(/[*_~━👋✅👇🤔]/g, ' ')).split(/[^ء-يa-z0-9]+/).filter(function (w) { return w.length > 1; }); }
+function bsimMatch(body) {
+  const A = bsimTok(body); if (A.length < 2 || !BSIM.T) return null;
+  const SA = {}; A.forEach(function (w) { SA[w] = 1; });
+  let best = null, bs = 0;
+  BSIM.T.forEach(function (t) { const B = bsimTok(t.body); if (!B.length) return; let hit = 0; const SB = {};
+    B.forEach(function (w) { if (!SB[w]) { SB[w] = 1; if (SA[w]) hit++; } });
+    const sc = hit / Math.max(1, Object.keys(SB).length); if (sc > bs) { bs = sc; best = t; } });
+  return bs >= 0.6 ? best : null;
+}
+function bsimRun(m) {
+  if (BSIM.busy) return;
+  const msgs = m ? BSIM.msgs.concat([m]).slice(-20) : BSIM.msgs.slice();
+  if (!msgs.length) return;
+  BSIM.busy = true; BSIM.err = ''; draw();
+  clPost('/admin/api/msg/bot', { msgs: msgs, as_me: BSIM.as === 'me' }).then(function (j) { BSIM.busy = false;
+    if (j && j.ok) { BSIM.msgs = msgs; BSIM.turns = j.turns || []; } else BSIM.err = (j && (j.message || j.detail || j.error)) || 'تعذّرت المحاكاة.';
+    draw(); const b = document.querySelector('.bsim'); if (b) b.scrollTop = b.scrollHeight; })
+    .catch(function (err) { BSIM.busy = false; BSIM.err = (err && err.message) || 'تعذّرت المحاكاة.'; draw(); });
+}
+function bsimSave(t) {
+  if (!BSIM.sup || BSIM.saving) return;
+  const v = String(BSIM.val || '').trim(); if (!v) { snack('نص الرد مطلوب.'); return; }
+  BSIM.saving = true; draw();
+  admRpc('admin_bot_text_save', { p: { key: t.key, lang: t.lang, body: v } }).then(function () {
+    BSIM.saving = false; BSIM.edit = ''; t.body = v; snack('حُفظ الرد — أُعيدت المحادثة بالنص الجديد.'); bsimRun(null); })
+    .catch(function (err) { BSIM.saving = false; snack((err && err.message) || 'تعذّر الحفظ.'); draw(); });
+}
+function bsimOut(o, last) {
+  const p = o.payload || {}, kind = o.kind || p.type || 'text';
+  let img = '', text = '', opts = [], head = '';
+  if (kind === 'image') { img = p.link || ''; text = p.caption || o.body || ''; }
+  else if (kind === 'interactive') {
+    text = (p.body && p.body.text) || o.body || '';
+    if (p.header && p.header.type === 'image' && p.header.image) img = p.header.image.link || '';
+    else if (p.header && p.header.text) head = p.header.text;
+    const A = p.action || {};
+    (A.buttons || []).forEach(function (b) { const r = b.reply || b; if (r && r.id) opts.push({ id: r.id, title: r.title || r.id }); });
+    (A.sections || []).forEach(function (s) { (s.rows || []).forEach(function (r) { if (r && r.id) opts.push({ id: r.id, title: r.title || r.id, desc: r.description || '' }); }); });
+    if (p.footer && p.footer.text) text += '\n\n' + p.footer.text;
+  } else text = o.body || p.body || p.text || '';
+  const t = bsimMatch(text), key = t ? t.key + '|' + t.lang : '';
+  const ed = t && BSIM.edit === key;
+  return e('div', { class: 'bsim-out' }, [
+    e('div', { class: 'bsim-b' }, [img ? e('img', { src: img, alt: '', loading: 'lazy' }) : null, head ? e('b', {}, head) : null, head ? e('br', {}) : null].concat(scWaTxt(text))),
+    opts.length ? e('div', { class: 'bsim-opts' }, opts.map(function (x) {
+      return e('button', { type: 'button', disabled: !last || BSIM.busy ? true : null, onClick: function () { bsimRun({ text: x.title, reply_id: x.id }); } }, [x.title, x.desc ? e('small', {}, x.desc) : null]); })) : null,
+    e('div', { class: 'bsim-meta' }, [t ? 'النص: ' + t.key + (t.lang !== 'ar' ? ' (' + t.lang + ')' : '') : 'نص ثابت في دالة البوت — يُعدَّل بإصدار',
+      t && BSIM.sup && !ed ? liveOk(DS.button('تعديل هذا الرد', { size: 'sm', ui: 'pencil-simple', onClick: function () { BSIM.edit = key; BSIM.val = t.body; draw(); } })) : null]),
+    ed ? e('div', { class: 'bsim-ed' }, [
+      e('textarea', { onInput: function (ev) { BSIM.val = ev.target.value; } }, BSIM.val),
+      e('small', { class: 'cu-dr-hint' }, 'المتغيرات بين { } تبقى كما هي. يُحفظ النص في ردود البوت فورًا ويصل به العملاء.'),
+      e('div', { class: 'msgc-acts' }, [liveOk(DS.button(BSIM.saving ? 'جارٍ الحفظ…' : 'حفظ الرد وإعادة المحادثة', { tone: 'primary', ui: 'check', disabled: BSIM.saving, onClick: function () { bsimSave(t); } })),
+        liveOk(DS.button('إلغاء', { onClick: function () { BSIM.edit = ''; draw(); } }))])]) : null]);
+}
+function botSimPage() {
+  if (!LIVE.on) return [liveEmptyNote('الرد الآلي')];
+  msgcCss(); bsimTexts();
+  const help = DS.panel('الرد الآلي — محادثة تجريبية مع البوت', 'البوت الحقيقي نفسه، ولا يُرسل شيء', [e('ol', { class: 'msgc-steps' }, [
+    e('li', {}, 'اختر المحاكاة: زائر برقم وهمي، أو رقمك كما يراه عميل مرتبط.'),
+    e('li', {}, 'اكتب رسالة كما يكتبها العميل، أو اضغط زرًا من أزرار البوت.'),
+    e('li', {}, 'كل رد يظهر كما يصل في واتساب، وتحته اسم نصّه.'),
+    e('li', {}, '«تعديل هذا الرد» يحفظ النص الجديد ثم يعيد المحادثة به (للمشرف العام).'),
+    e('li', {}, 'المحادثة لا تُحفظ ولا تصل لأحد — «بدء من جديد» يمسحها.')])]);
+  const ctl = DS.panel('المحادثة', null, [
+    e('div', { class: 'msgc-ed' }, [DS.editField('المحاكاة باسم', DS.select({ value: BSIM.as, options: [['guest', 'زائر — رقم وهمي'], ['me', 'رقمي — كما يراه عميل مرتبط']], onChange: function (v) { BSIM.as = v; BSIM.msgs = []; BSIM.turns = []; draw(); } }))]),
+    e('div', { class: 'bsim' }, BSIM.turns.length ? BSIM.turns.map(function (tn, i) { const last = i === BSIM.turns.length - 1;
+      return [e('div', { class: 'bsim-in' }, (tn.in && (tn.in.text || tn.in.reply_id)) || '')].concat((tn.out || []).length ? tn.out.map(function (o) { return bsimOut(o, last); }) : [e('div', { class: 'bsim-meta' }, 'لا رد من البوت على هذه الرسالة.')]); })
+      : [e('div', { class: 'bsim-meta' }, 'ابدأ بكتابة «مرحبا».')]),
+    BSIM.err ? DS.note('warn', 'تعذّرت المحاكاة', BSIM.err) : null,
+    e('div', { class: 'bsim-send' }, [DS.input({ value: BSIM.txt, placeholder: 'اكتب رسالة العميل…', onInput: function (v) { BSIM.txt = v; } }),
+      liveOk(DS.button(BSIM.busy ? 'جارٍ…' : 'إرسال', { tone: 'primary', ui: 'paper-plane-tilt', disabled: BSIM.busy, onClick: function () { const t = String(BSIM.txt || '').trim(); if (!t) return; BSIM.txt = ''; bsimRun({ text: t }); } })),
+      liveOk(DS.button('بدء من جديد', { ui: 'arrows-clockwise', disabled: BSIM.busy, onClick: function () { BSIM.msgs = []; BSIM.turns = []; BSIM.err = ''; BSIM.edit = ''; draw(); } }))])]);
+  return [help, ctl];
+}
 function commHubPage() {
 /* v513: مساحة واحدة — الإرسال · تقرير الإرسال · الدليل — بتبويبات في الصفحة نفسها (القوالب في الإعدادات) */
 if (LIVE.on && !COMM.ctAt) commReady('التواصل المباشر');
-const tabs = [['send', 'الإرسال', 'paper-plane-tilt'], ['rep', 'تقرير الإرسال', 'list-checks'], ['dir', 'دليل الهواتف والبريد', 'users-three'], ['rem', 'إدارة التذكير', 'bell-ringing']];
+const tabs = [['send', 'الإرسال', 'paper-plane-tilt'], ['rep', 'تقرير الإرسال', 'list-checks'], ['dir', 'دليل الهواتف والبريد', 'users-three'], ['rem', 'إدارة التذكير', 'bell-ringing'], ['msg', 'الرسائل الموحّدة', 'file-text'], ['bot', 'الرد الآلي', 'chat-circle-dots']];
 const cur = COMMT.t || 'send';
 const bar = e('div', { class: 'sc-seg sc-tabs' }, tabs.map(function (t) { return liveOk(DS.button(t[1], { tone: cur === t[0] ? 'primary' : null, ui: t[2], onClick: function () { COMMT.t = t[0]; draw(); } })); }));
-const body = cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : scPage();
+const body = cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : cur === 'msg' ? msgcPage() : cur === 'bot' ? botSimPage() : scPage();
 return [bar].concat(body || []);
 }
 /* ---------- v315: نموذج استيراد جهات الاتصال — تنزيل النموذج (Excel/CSV) ← الكتابة فيه ← رفعه ← مطابقة الأعمدة والتحقق ← القبول ← حفظ الملف للتنزيل ---------- */
