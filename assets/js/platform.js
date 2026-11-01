@@ -25764,12 +25764,39 @@ clPost('/admin/api/send-center/people', { ids: SC.ids }).then(function (j) { ((j
 function scTpls() {
 if (SC.TS === null) { SC.TS = 'loading'; admRpc('admin_comm_templates_list', {}).then(function (j) { SC.TS = ((j && j.rows) || []).filter(function (t) { return t && !t.archived; }); }).catch(function () { SC.TS = []; }).then(draw); }
 if (SC.SV === null) { SC.SV = 'loading'; admRpc('admin_survey_settings', {}).then(function (j) { SC.SV = ((j && j.templates) || []).filter(function (t) { return t && t.active; }); }).catch(function () { SC.SV = []; }).then(draw); }
+if (SC.CT === undefined || SC.CT === null) { SC.CT = 'loading'; admRpc('admin_msg_list', {}).then(function (j) { SC.CT = ((j && j.rows) || []).filter(function (r) { return r && r.state === 'approved' && r.audience === 'client'; }); }).catch(function () { SC.CT = []; }).then(draw); } /* v628: الكتالوج المعتمد */
 }
 /* v591: قائمة القوالب في مركز الإرسال مصنّفة بمجموعات مركز القوالب (عنوان المجموعة ثم رسائلها).
  * رسائل مركز الإرسال تُختار وتُرسل من هنا، والرسائل التي يرسلها حدثها تظهر في مجموعتها ويُوجَّه الموظف إلى مكان إرسالها — فلا ازدواج. */
 /* v592: رسائل الدفعات (التذكير والمتأخرة) تُرسل من «إدارة التذكير» وحدها — بمبلغ دفعة العميل وتاريخها ورابط السداد */
 const SC_ROUTE = { 'pay-link': ['cu-paylinks', 'روابط الدفع'], 'pay-due': ['comm', 'إدارة التذكير في مركز التواصل'], 'pay-late': ['comm', 'إدارة التذكير في مركز التواصل'], 'ver-remind': ['cu-new', 'العملاء الجدد'] };
+/* v628: قوالب الكتالوج المعتمد في مركز الإرسال — ما يُرسل من هنا، وما يرسله حدثه، وما يُرسل من «إدارة التذكير» */
+const SC_CMAN = { final_notice: [], legal_start: [], collect_demand: [], direct: ['l1', 'l2', 'l3', 'l4'], maint: ['due', 'note'], offer: ['due', 'note', 'product'] };
+const SC_CREM = ['pay_due', 'pay_deferred', 'pay_partial', 'pay_late'];
+const SC_CLB = { l1: 'السطر 1', l2: 'السطر 2', l3: 'السطر 3', l4: 'السطر 4', due: 'الموعد', note: 'الملاحظة', product: 'العرض أو المنتج' };
+function scCatOpts(CT, SV) {
+const o2 = [['', '— اختر القالب —']], usedSv = {};
+Object.keys(MSGC_SEC).forEach(function (s) {
+CT.filter(function (r) { return String(r.sec) === s; }).sort(function (a, b) { return String(a.code).localeCompare(String(b.code), 'en', { numeric: true }); }).forEach(function (r) {
+const g = s + '. ' + MSGC_SEC[s];
+const sv = /^survey:/.test(String(r.src || '')) ? SV.filter(function (t) { return t.key === String(r.src).slice(7); })[0] : null;
+if (sv) { usedSv[sv.key] = 1; o2.push(['sv:' + sv.key, r.code + ' — ' + r.title, null, { grp: g, sub: 'استبانة — يُرسل من هنا' }]); return; }
+o2.push(['cat:' + r.key, r.code + ' — ' + r.title, null, { grp: g, sub: SC_CMAN.hasOwnProperty(r.key) ? 'يُرسل من هنا' : SC_CREM.indexOf(r.key) >= 0 ? 'يُرسل من «إدارة التذكير»' : 'يُرسل تلقائيًا عند حدثه' }]);
+});
+});
+SV.forEach(function (t) { if (!usedSv[t.key]) o2.push(['sv:' + t.key, 'استبانة: ' + t.name, null, { grp: '10. ' + MSGC_SEC[10], sub: 'يُرسل من هنا' }]); });
+return o2;
+}
+function scCatFields() {
+const T = scTpl(); if (!T || T.kind !== 'cat') return null;
+if (!T.manual) return DS.note('info', T.remind ? 'تُرسل هذه الرسالة من «إدارة التذكير»' : 'هذه الرسالة يرسلها حدثها تلقائيًا', T.remind ? 'بمبلغ دفعة كل عميل ورابط سداده — والنص نفسه من الكتالوج المعتمد.' : 'تصل العميل عند وقوع الحدث بالنص المعتمد نفسه — لا تُرسل من هنا حتى لا تتكرر.');
+if (!T.fields.length) return T.key === 'collect_demand' ? DS.note('info', 'تُملأ تلقائيًا لكل عميل', 'عدد الدفعات المتأخرة وإجماليها والعقد — ومن لا متأخرات عليه لا تصله.') : null;
+SC.CV = SC.CV || {};
+return e('div', { class: 't2-stack-tight' }, T.fields.map(function (k) { return DS.editField(SC_CLB[k] || k, DS.input({ value: SC.CV[k] || '', placeholder: SC_CLB[k] || k, onInput: function (v) { SC.CV[k] = v; } })); })
+.concat([e('div', { class: 't2-pb-actions' }, [DS.button('تحديث المعاينة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { SC.pvAt = ''; SC.PV = null; draw(); } })])]));
+}
 function scTplOpts(TS, SV) {
+if (Array.isArray(SC.CT) && SC.CT.length) return scCatOpts(SC.CT, SV); /* v628: القوالب من الكتالوج المعتمد — القديمة لم تعد في القائمة */
   const out = [['', TS.length || SV.length ? '— اختر القالب —' : 'جارٍ تحميل القوالب…']], used = {}, byName = {};
   TS.forEach(function (t) { byName[t.name] = t; });
   MH_GRP.forEach(function (g) {
@@ -25798,6 +25825,7 @@ function scEvNote() {
 }
 function scTpl() {
 const id = SC.tpl || '';
+if (/^cat:/.test(id)) { const k = id.slice(4), r = (Array.isArray(SC.CT) ? SC.CT : []).filter(function (x) { return x.key === k; })[0]; return r ? { kind: 'cat', id: id, key: k, name: r.code + ' — ' + r.title, subject: r.title, body: '', channel: 'both', manual: SC_CMAN.hasOwnProperty(k), remind: SC_CREM.indexOf(k) >= 0, fields: SC_CMAN[k] || [] } : null; } /* v628 */
 if (/^sv:/.test(id)) { const k = id.slice(3), t = (Array.isArray(SC.SV) ? SC.SV : []).filter(function (x) { return x.key === k; })[0]; return t ? { kind: 'survey', key: k, name: t.name, subject: t.email_subject || t.name, body: t.wa_body || t.email_body || '', channel: 'both' } : null; }
 const t = (Array.isArray(SC.TS) ? SC.TS : []).filter(function (x) { return x.id === id; })[0];
 return t ? { kind: 'msg', id: t.id, name: t.name, subject: t.subject || t.name, body: t.body || '', channel: t.channel || 'both' } : null;
@@ -25814,7 +25842,7 @@ if (T.kind === 'survey') {
 const j = await admRpc('admin_survey_send', { p: { template: T.key, channels: C.filter(function (x) { return x === 'email' || x === 'whatsapp'; }), users: (SC.P.ids || []) } });
 SC.res = { ok: true, survey: true, n: j.created || 0, skip: j.skipped || 0 };
 } else {
-const r = await clPost('/admin/api/send-center/send', { groups: scGrps(), ids: scAllIds(), exclude: SC.ex, tpl_id: T.id, channels: C.length ? C : ['inbox'] });
+const r = await clPost('/admin/api/send-center/send', { groups: scGrps(), ids: scAllIds(), exclude: SC.ex, tpl_id: T.id, vars: T.kind === 'cat' ? (SC.CV || {}) : undefined, channels: C.length ? C : ['inbox'] });
 if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الإرسال.');
 SC.res = { ok: true, batch: r.batch, n: r.total };
 }
@@ -25837,9 +25865,9 @@ W.first ? scWaMsg(W.first) : null,
 W.after && W.after.length ? e('div', { class: 'sc-wa-tap' }, [e('b', {}, 'بعد ضغط العميل «' + (W.tap || 'الزر') + '»'), ' يرسل البوت بالترتيب:']) : null].concat((W.after || []).map(scWaMsg)));
 }
 function scPvLoad(T, uid) {
-const k = T.id + '|' + (uid || ''); if (SC.pvAt === k || SC.pvBusy) return;
+const k = T.id + '|' + (uid || '') + (T.kind === 'cat' ? '|' + JSON.stringify(SC.CV || {}) : ''); if (SC.pvAt === k || SC.pvBusy) return;
 SC.pvBusy = true; SC.pvErr = '';
-clPost('/admin/api/send-center/preview', { tpl_id: T.id, user_id: uid || null }).then(function (j) { SC.pvBusy = false; SC.pvAt = k; if (j && j.ok) SC.PV = j; else { SC.PV = null; SC.pvErr = (j && j.message) || 'تعذّرت المعاينة.'; } draw(); })
+clPost('/admin/api/send-center/preview', { tpl_id: T.id, user_id: uid || null, vars: T.kind === 'cat' ? (SC.CV || {}) : undefined }).then(function (j) { SC.pvBusy = false; SC.pvAt = k; if (j && j.ok) SC.PV = j; else { SC.PV = null; SC.pvErr = (j && j.message) || 'تعذّرت المعاينة.'; } draw(); })
 .catch(function (err) { SC.pvBusy = false; SC.pvAt = k; SC.PV = null; SC.pvErr = (err && err.message) || 'تعذّرت المعاينة.'; draw(); });
 }
 function scChBadges(p) {
@@ -25874,8 +25902,8 @@ const s2 = scStep(2, 'الوسيلة', [chSeg, custom], 'ونسخة من كل ر
 /* 3) القالب */
 const TS = Array.isArray(SC.TS) ? SC.TS : [], SV = Array.isArray(SC.SV) ? SC.SV : [];
 const tOpts = scTplOpts(TS, SV);
-const s3 = scStep(3, 'القالب', [DS.select({ value: SC.tpl, options: tOpts, title: 'اختر القالب', ph: '— اختر القالب —', onChange: function (v) { SC.tpl = v; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; draw(); } }),
-scEvNote(), e('div', { class: 't2-pb-actions' }, [DS.button('إدارة القوالب في الإعدادات', { size: 'sm', ui: 'gear-six', onClick: function () { go('other', 'comm-tpl'); } })])], 'القوالب مصنّفة بمجموعاتها — ما يُرسل من مكان آخر يدلّك عليه، ولا يُرسل نص حر.');
+const s3 = scStep(3, 'القالب', [DS.select({ value: SC.tpl, options: tOpts, title: 'اختر القالب', ph: '— اختر القالب —', onChange: function (v) { SC.tpl = v; SC.CV = {}; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; draw(); } }),
+scEvNote(), scCatFields(), e('div', { class: 't2-pb-actions' }, [DS.button('إدارة القوالب في الإعدادات', { size: 'sm', ui: 'gear-six', onClick: function () { go('other', 'comm-tpl'); } })])], 'القوالب مصنّفة بمجموعاتها — ما يُرسل من مكان آخر يدلّك عليه، ولا يُرسل نص حر.');
 /* 4) المعاينة — كما تصل فعلًا */
 const uid = SC.ids[0] || (rows[0] && rows[0].id) || '';
 const smpName = (SC.PD[uid] && SC.PD[uid].name) || (rows[0] && rows[0].name) || 'اسم العميل';
@@ -25901,7 +25929,7 @@ pv = e('div', { class: 't2-stack-tight' }, [tabs, e('small', { class: 'cu-dr-hin
 }
 const s4 = scStep(4, 'المعاينة', [pv]);
 /* 5) الإرسال */
-const ready = !!(T && n);
+const ready = !!(T && n) && !(T.kind === 'cat' && (!T.manual || T.fields.some(function (k) { return !String((SC.CV || {})[k] || '').trim(); }))); /* v628 */
 const s5 = scStep(5, 'الإرسال', [DS.fields([['المستلمون', fmtNum(n)], ['الوسيلة', C.map(function (k) { return SC_CHT[k]; }).concat(['داخل المنصة']).join(' · ')], ['القالب', T ? T.name : '—']]),
 SC.err ? DS.note('warn', 'لم يُرسل', SC.err) : null,
 SC.ask ? DS.note('warn', 'تأكيد الإرسال', 'سيُرسل «' + (T ? T.name : '') + '» إلى ' + fmtNum(n) + ' مستلم الآن، ولا يمكن التراجع بعد الإرسال.') : null,
