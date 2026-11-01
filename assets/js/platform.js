@@ -26820,6 +26820,25 @@ function deskBoardPage() {
   })) : e('p', { class: 'fx-empty' }, 'لا توجد مراسلات بهذه الحالة.');
   return [DS.note('info', 'مراسلات العملاء', 'الطلبات والشكاوى وطلبات الدعم الواردة من «مركز المراسلات» — افتح المراسلة للرد عليها أو تغيير حالتها أو إسنادها. الرد وتغيير الحالة يصلان العميل بالبريد وواتساب.'), whoBar, chips, tools, list, stats]; /* v578 */
 }
+/* v631: «رد جاهز» من الكتالوج المعتمد (17.x) — يملأ مربع الرد فقط، فيراجعه الموظف ويكمل ما بين { } ثم يرسله بزر «إرسال الرد» */
+function dskRp(D, t, ref, redraw) {
+if (DSK.rp === undefined) {
+DSK.rp = null;
+admRpc('admin_msg_list', {}).then(function (j) { DSK.rp = ((j && j.rows) || []).filter(function (r) { return r && r.state === 'approved' && /^rp_/.test(r.key || ''); }); }).catch(function () { DSK.rp = []; }).then(redraw);
+}
+const R = DSK.rp || [];
+if (!R.length) return null;
+return DS.editField('رد جاهز', DS.select({ value: D.rpk || '', options: [['', 'اختر ردًا جاهزًا']].concat(R.map(function (r) { return [r.key, (r.code ? r.code + ' — ' : '') + r.title]; })), onChange: function (k) {
+D.rpk = k;
+const r = R.filter(function (x) { return x.key === k; })[0];
+if (!r) return;
+if (String(D.reply || '').trim() && !window.confirm('سيحلّ الرد الجاهز محل ما كتبته في مربع الرد. متابعة؟')) { D.rpk = ''; redraw(); return; }
+const v = { name: t && t.customer_name ? t.customer_name : '', req: ref || '' };
+const f = function (s) { return String(s || '').replace(/\{([a-z0-9_]+)\}/g, function (m, n) { return v[n] ? v[n] : m; }); };
+D.reply = [r.title, r.l1, r.l2, r.l3, r.l4].map(f).filter(function (x) { return x.trim(); }).join('\n');
+redraw();
+} }));
+}
 function deskOpen(ref) {
   const D = DSKD[ref] || (DSKD[ref] = { t: null, err: '', busy: false, reply: '', patch: {}, sending: false, saving: false });
   const redraw = function () { if (DSKD[ref] === D) deskOpen(ref); };
@@ -26846,9 +26865,10 @@ function deskOpen(ref) {
         const st = m.role === 'staff';
         return e('li', { class: 'mt-m ' + (st ? 'is-staff' : 'is-me') }, [e('div', { class: 'mt-bub' }, [e('div', { class: 'mt-who' }, [e('b', {}, st ? ('فريق تيرا' + (m.staff_name ? ' — ' + m.staff_name : '')) : (t.customer_name || 'العميل')), e('time', {}, ltr(dskDate(m.at)))]), e('p', { style: 'white-space:pre-wrap' }, m.body || '')])]);
       })) : e('small', { class: 'cu-dr-hint' }, 'لا ردود بعد — رسالة العميل في «التفاصيل».'),
-        e('textarea', { class: 't2-input cu-why', rows: '3', placeholder: 'اكتب الرد للعميل — يصله بالبريد وواتساب ويظهر في مراسلته', onInput: function (ev) { D.reply = ev.target.value; } }, D.reply || ''),
+        dskRp(D, t, ref, redraw),
+ e('textarea', { class: 't2-input cu-why', rows: '3', placeholder: 'اكتب الرد للعميل — يصله بالبريد وواتساب ويظهر في مراسلته', onInput: function (ev) { D.reply = ev.target.value; } }, D.reply || ''),
         e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.sending ? 'جارٍ الإرسال…' : 'إرسال الرد', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !!D.sending, onClick: function () {
-          const v = String(D.reply || '').trim(); if (v.length < 2) { snack('اكتب الرد أولًا.'); return; }
+          const v = String(D.reply || '').trim(); if (v.length < 2) { snack('اكتب الرد أولًا.'); return; } if (/\{[a-z0-9_]+\}/.test(v)) { snack('أكمل ما بين القوسين { } في الرد قبل الإرسال.'); return; } /* v631 */
           D.sending = true; redraw();
           clPost('/api/desk/admin/threads/' + encodeURIComponent(ref) + '/reply', { text: v }).then(function (j) {
             if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.');
