@@ -6854,7 +6854,7 @@ const CU_MG_GAPS = { new: ['حقول جديدة في المنصة', 'لم تكن
 const CU_MG_ST = { conf: ['تعارض هوية', 'danger'], new: ['بانتظار الإرسال', 'warn'], sent: ['بانتظار العميل', 'info'], pw: ['عيّن كلمة المرور', 'info'], sub: ['أرسل التحديث', 'ok'], done: ['موثَّق', 'ok'], out: ['مستبعَد', null] };
 const CU_MG_CH = [['both', 'واتساب والبريد'], ['wa', 'واتساب فقط'], ['mail', 'البريد فقط']];
 const CU_MG = [];
-const cuMgNew = ['الاسم بالإنجليزية', 'مكان الميلاد', 'الحي', 'جهة اتصال للطوارئ'];
+const cuMgNew = ['الاسم بالإنجليزية', 'دولة الميلاد', 'الحي', 'جهة اتصال للطوارئ'];
 const CU_MG_L = [];
 /* ---------- v498: العملاء المنقولون (حساباتهم في المنصة نفسها) — من الخادم /admin/api/mig، والإرسال «محاكاة» حتى يُفعَّل بقرار الإدارة ---------- */
 const MIG2 = { st: 'idle', rows: null, mode: 'simulated', err: '', at: 0, pv: {} };
@@ -7108,7 +7108,7 @@ const MGR_DET = {};
 /* ملاحظة «متطلب تحديث» بجانب كل خانة — من نواقص الترحيل نفسها التي تُرسل للعميل */
 const MGR_ALIAS = { 'الاسم الكامل': 'الاسم', 'تاريخ انتهاء الهوية': 'انتهاء الهوية', 'رقم الهوية / الإقامة': 'رقم الهوية', 'رقم الآيبان': 'الآيبان', 'شهادة الآيبان': 'الآيبان', 'الحساب البنكي': 'الآيبان' };
 const MGR_NOTE = { old: ['ناقص — يُطلب', 'danger'], exp: ['منتهٍ — يُطلب تحديثه', 'warn'], fix: ['يحتاج تصحيحًا', 'warn'], new: ['حقل جديد — يُطلب', 'info'] };
-const MGR_NEWBLK = { 'الاسم بالإنجليزية': 'personal', 'مكان الميلاد': 'personal', 'منطقة الميلاد': 'personal', 'الحي': 'address', 'الشارع': 'address' };
+const MGR_NEWBLK = { 'الاسم بالإنجليزية': 'personal', 'مكان الميلاد': 'personal', 'دولة الميلاد': 'personal', 'منطقة الميلاد': 'personal', 'الحي': 'address', 'الشارع': 'address' };
 function mgrNotes(g) { const N = {}; ['old', 'exp', 'fix', 'new'].forEach(function (k) { (g && Array.isArray(g[k]) ? g[k] : []).forEach(function (t) { const l = MGR_ALIAS[t] || t; if (!N[l]) N[l] = k; }); }); return N; }
 const mgrNoteB = (k) => k ? DS.badge(MGR_NOTE[k][0], MGR_NOTE[k][1]) : null;
 function mgrFieldSecs(x) {
@@ -12846,12 +12846,12 @@ function lvSum(label, pill, tone, extra) { return e('section', { class: 't2-sc i
 
 /* =============================== ملفي الشخصي =============================== */
 /* [مفتاح، الاسم، مطلوب، القيمة، خيارات التعديل] — بيانات تجريبية مجهّلة */
-/* أسماء الدول الرسمية كما في النظام السابق (V1): الجنسية ومكان الميلاد ودولة العنوان */
+/* أسماء الدول الرسمية كما في النظام السابق (V1): الجنسية ودولة الميلاد ودولة العنوان */
 const NATS = ['المملكة العربية السعودية', 'الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', 'جمهورية مصر العربية'];
 const NATS_ADDR = ['المملكة العربية السعودية', 'دولة الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', 'جمهورية مصر العربية'];
 const BANKS = ['البنك الأهلي السعودي', 'مصرف الراجحي', 'بنك الرياض', 'البنك السعودي الأول', 'بنك البلاد', 'بنك الجزيرة', 'مصرف الإنماء', 'البنك العربي الوطني'];
 const LVP = {
-  personal: { t: 'المعلومات الشخصية', ic: 'profile', k: 'me-personal', groups: [['المعلومات الأساسية', [['name_ar', 'الاسم الكامل بالعربية', 1, 'عميل تجريبي'], ['name_en', 'الاسم الكامل بالإنجليزية', 0, 'Demo Client'], ['nat', 'الجنسية', 1, 'المملكة العربية السعودية', NATS], ['dob', 'تاريخ الميلاد', 1, '1992-03-14', 'date'], ['pob', 'مكان الميلاد', 1, 'المملكة العربية السعودية', NATS], ['rob', 'منطقة الميلاد', 1, 'منطقة حائل', REGIONS]]],
+  personal: { t: 'المعلومات الشخصية', ic: 'profile', k: 'me-personal', groups: [['المعلومات الأساسية', [['name_ar', 'الاسم الكامل بالعربية', 1, 'عميل تجريبي'], ['name_en', 'الاسم الكامل بالإنجليزية', 0, 'Demo Client'], ['nat', 'الجنسية', 1, 'المملكة العربية السعودية', NATS], ['dob', 'تاريخ الميلاد', 1, '1992-03-14', 'date'], ['pob', 'دولة الميلاد', 1, 'المملكة العربية السعودية', NATS], ['rob', 'منطقة الميلاد', 1, 'منطقة حائل', REGIONS]]],
     ['الوثيقة', [['doc_type', 'نوع الوثيقة', 1, 'الهوية الوطنية', ['الهوية الوطنية', 'هوية مقيم', 'الهوية الخليجية', 'إثبات الهوية الوطنية', 'جواز السفر']], ['doc_no', 'رقم الوثيقة', 1, '1••• ••• •001'], ['doc_exp', 'تاريخ انتهاء الوثيقة', 1, '2030-05-20', 'date']]]] },
   address: { t: 'العنوان', ic: 'pin', k: 'me-address', groups: [['العنوان الوطني', [['country', 'الدولة', 1, 'المملكة العربية السعودية', NATS_ADDR], ['region', 'المنطقة', 0, 'منطقة حائل', REGIONS], ['city', 'المدينة', 1, 'حائل'], ['dist', 'الحي', 1, 'النقرة'], ['street', 'الشارع', 0, 'طريق الملك عبدالعزيز'], ['bno', 'رقم المبنى', 1, '4821'], ['zip', 'الرمز البريدي', 1, '55431'], ['ext', 'الرقم الإضافي', 1, '7316'], ['short', 'العنوان المختصر', 0, '']]]] },
   contact: { t: 'بيانات التواصل', ic: 'phone', k: 'me-contact', groups: [['التواصل المباشر', [['phone', 'رقم الجوال', 1, '+966 5•• ••• •100', null, ['غير موثّق', 'warn']], ['email', 'البريد الإلكتروني', 1, 'cl•••@example.com', null, ['غير موثّق', 'warn']]]]] },
@@ -14179,7 +14179,7 @@ const V1_FIELDS = [
     { kind: 'required_if', match: 'all', when: [v1W('residency_type', 'neq', 'saudi', 'personal'), v1W('residency_type', 'neq', 'resident', 'personal'), v1W('residency_type', 'neq', 'gcc', 'personal')], msg: 'الاسمُ بالإنجليزيةِ مطلوبٌ لغيرِ المقيمِ وحدَه.' }], { ltr: true }],
   ['personal', 'nationality', 'الجنسية', 'select', 1, 'المعلومات الأساسية', V1_NAT_L, []],
   ['personal', 'birth_date', 'تاريخ الميلاد', 'date', 1, 'المعلومات الأساسية', null, [{ kind: 'age', min: 18, max: 100, msg_min: 'العمرُ أقلُّ من 18 سنة.', msg_max: 'تاريخُ الميلاد غيرُ منطقي.' }]],
-  ['personal', 'birth_place', 'مكان الميلاد', 'select', 1, 'المعلومات الأساسية', V1_NAT_L, []],
+  ['personal', 'birth_place', 'دولة الميلاد', 'select', 1, 'المعلومات الأساسية', V1_NAT_L, []],
   ['personal', 'birth_region', 'منطقة الميلاد', 'select', 1, 'المعلومات الأساسية', V1_STATES[V1_KSA], [{ kind: 'visible_if', match: 'all', when: [v1W('birth_place', 'eq', V1_KSA, 'personal')] }]],
   ['personal', 'residency_type', 'نوع الإقامة', 'select', 1, 'الوثيقة', [['saudi', 'سعودي'], ['gcc', 'خليجي'], ['resident', 'مقيم'], ['non_resident', 'غير مقيم']], [
     { kind: 'allow_if', match: 'all', when: [v1W('nationality', 'eq', V1_KSA, 'personal')], values: ['saudi'], msg: 'الجنسيَّةُ السعوديَّةُ وثيقتُها الهُويَّةُ الوطنيَّة.' },
@@ -19019,7 +19019,7 @@ function admVerPage() {
     const states = Object.keys(L.reduce(function (o, r) { o[r.status] = 1; return o; }, {}));
     const chips = [['all', 'الكل', L.length]].concat(states.map(function (s) { return [s, (ADM_VER_ST[s] || [s])[0], by(s)]; }));
     const rows = L.filter(function (r) { return st.f === 'all' || r.status === st.f; }).map(function (r) {
-      return admRow([admName(r.name, r.job_title || null), ADM_ROLE[r.role] || r.role || '—', r.role === 'client' ? mig2Type(r.user_id) : (r.job_title || 'موظف'), admB(ADM_VER_ST, r.status), r.submitted_at ? bdiD(String(r.submitted_at).slice(0, 10)) : '—',
+      return admRow([admName(r.name, r.job_title || null), ADM_ROLE[r.role] || r.role || '—', r.role === 'client' ? mig2Type(r.user_id) : (r.job_title || 'موظف'), (r.resubmitted && r.status !== 'approved' ? e('span', { class: 'adm-cnt' }, [admB(ADM_VER_ST, r.status), DS.badge('أُعيد بعد التصحيح والاستكمال', 'info')]) : admB(ADM_VER_ST, r.status)), r.submitted_at ? bdiD(String(r.submitted_at).slice(0, 10)) : '—',
         e('span', { class: 'adm-cnt' }, [DS.badge(fmtNum(r.match || 0) + ' مطابق', 'ok'), r.mismatch ? DS.badge(fmtNum(r.mismatch) + ' غير مطابق', 'danger') : null, r.missing_required ? DS.badge(fmtNum(r.missing_required) + ' ناقص', 'warn') : null]), r.assigned_to_name || DS.badge('غير مُسند', 'warn')],
         function () { admVerOpen(r); }, [r.name, r.role, r.status, r.assigned_to_name].join(' '));
     });
@@ -20874,9 +20874,9 @@ function admVerOpen2(r) {
       }
       return e('div', { class: 'vr3-it is-' + (v || 'pend'), id: 'vr3-' + it.id }, [
         e('div', { class: 'vr3-it-h' }, [e('div', { class: 'vr3-it-l' }, [e('b', {}, it.label || it.field_key || '—'), it.required ? ' · مطلوب' : null]),
-          v === 'match' ? DS.badge('مطابق', 'ok') : v === 'mismatch' ? DS.badge('غير مطابق', 'danger') : DS.badge('بانتظار', 'warn')]),
+          v === 'match' ? DS.badge('مطابق', 'ok') : v === 'mismatch' ? DS.badge('غير مطابق', 'danger') : it.reason ? DS.badge('عدّله العميل · بانتظار المراجعة', 'info') : DS.badge('بانتظار', 'warn')]),
         (it.kind === 'file' || it.doc_id) && val ? e('div', { class: 'vr3-file', title: val }, val) : e('div', { class: 'vr3-it-v' }, [val ? ltrIf(val) : DS.badge(it.required ? 'غير مُدخل — مطلوب' : 'غير مُدخل', it.required ? 'danger' : null), it.value_off ? e('small', { class: 'cu-dr-hint' }, ' (قيمة خارج القائمة)') : null]),
-        v === 'mismatch' && it.reason ? e('div', { class: 'vr3-why' }, 'السبب: ' + it.reason) : null
+        v === 'mismatch' && it.reason ? e('div', { class: 'vr3-why' }, 'السبب: ' + it.reason) : (!v && it.reason ? e('div', { class: 'vr3-why' }, 'السبب السابق (قبل التصحيح): ' + it.reason) : null)
       ].concat(notes.map(function (n) { return e('div', { class: 'vr3-nt' }, [String(n.body || ''), e('small', { class: 'cu-dr-hint' }, ' — ' + (n.actor || '') + ' · ' + String(n.at || '').slice(0, 16).replace('T', ' '))]); }))
         .concat([msgOf('it:' + it.id)])
         .concat(box)
