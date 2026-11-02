@@ -582,16 +582,16 @@ function req(label, k, control, h, optional, wide, missList) {
 /* قسم النموذج كما يرسمه DS.section في المنصة: رأس قابل للطي ثم شبكة حقول */
 function formSec(title, note, kids, o) {
   o = o || {};
-  if (o.one) { o.closed = (S.fsOne === undefined ? 'det' : S.fsOne) !== o.one; }
+  if (o.one) { S.fsOpenOne = S.fsOpenOne || {}; o.closed = !S.fsOpenOne[o.one]; } /* v646: لا يُفتح قسم ولا يُغلق إلا بيد المستخدم */
   else if (o.key) { S.fsOpen = S.fsOpen || {}; o.closed = !S.fsOpen[o.key]; }
   const body = e('div', { class: 't2-sec-b' }, e('div', { class: 't2-stack-tight' }, (kids || []).filter(Boolean)));
   const box = e('section', { class: 't2-sec' + (o.closed ? ' is-closed' : '') + (o.ic ? ' has-ic' : '') + (o.one ? ' is-one' : ''), 'data-ak': 'sec:' + (o.one || o.key || title), 'data-one': o.one || null });
   const head = e('button', { type: 'button', class: 't2-group-h t2-sec-h', 'aria-expanded': o.closed ? 'false' : 'true', onClick: function () {
       const t0 = head.getBoundingClientRect().top, c = !box.classList.contains('is-closed');
       /* أكورديون: فتح قسم يغلق المفتوح — ويبقى رأس القسم المضغوط في مكانه */
-      if (o.one && !c) document.querySelectorAll('#pv-root .t2-sec.is-one:not(.is-closed)').forEach(function (s) { if (s !== box) { s.classList.add('is-closed'); const h = s.querySelector(':scope > .t2-sec-h'); if (h) h.setAttribute('aria-expanded', 'false'); } });
+      
       box.classList.toggle('is-closed', c); head.setAttribute('aria-expanded', c ? 'false' : 'true');
-      if (o.one) S.fsOne = c ? '' : o.one; else if (o.key) S.fsOpen[o.key] = !c;
+      if (o.one) S.fsOpenOne[o.one] = !c; else if (o.key) S.fsOpen[o.key] = !c;
       const d = head.getBoundingClientRect().top - t0; if (Math.abs(d) > 1) { if (SCROLLER === window) window.scrollBy(0, d); else SCROLLER.scrollTop += d; }
     } },
     [o.ic ? e('span', { class: 'fs-ic' }, frag(tile(o.ic))) : null, e('span', { class: 't2-sec-tx' }, [e('h2', { class: 't2-group-t' }, title), o.sub ? e('span', { class: 't2-group-n' }, o.sub) : null]), e('span', { class: 't2-chev t2-sec-c', 'aria-hidden': 'true' })]);
@@ -3197,6 +3197,13 @@ const openNs = (k) => { FX.ns = k; FX.nv = 'client'; go('notif'); };
 const DBN = { at: 0, busy: false, rows: [] };
 const DBN_STAFF = ['pay_received', 'pay_refund', 'pay_failed', 'pay_op_request', 'transfer_submitted', 'service_request', 'profile_review']; /* v537: + إشعارات التوثيق */
 const DBN_KINDS = ['direct_message', 'pay_op_decision', 'transfer_decision', 'client_event', 'bank_transfer'].concat(DBN_STAFF); /* v577: + أحداث العميل وروابط التحويل البنكي */
+/* v646: كل إشعار للفريق يفتح صفحة إجرائه — إيصال التحويل يفتح مراجعته نفسها، وطلب الإلغاء أو الاسترداد صندوقه، وفشل الدفع عمليات البوابة؛ والسداد والاسترداد ملف العميل */
+function ntStaffAct(x) {
+if (x.kind === 'transfer_submitted') return ['مراجعة الإيصال', function () { ADM.tiF = 'all'; ADM.tiC = x.uid; FX.trOpen = x.uid; try { LV_PAY.at = 0; } catch (err) { void err; } go('other', 'cu-trin'); }];
+if (x.kind === 'pay_op_request') return ['طلبات الإلغاء والاسترداد', function () { ADM.opF = 'open'; go('other', 'cu-opin'); }];
+if (x.kind === 'pay_failed') return ['عمليات بوابة الدفع', function () { go('other', 'fin-gw'); }];
+return ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }];
+}
 function dbNotifs() {
   try {
     if (!LIVE.on || !LIVE.me) return [];
@@ -3218,7 +3225,7 @@ function dbNotifs() {
     return DBN.rows.filter(dbRole).map(function (x) {
       const staffK = DBN_STAFF.indexOf(x.kind) >= 0 && S.role === 'admin' && x.uid;
       return { id: 'db:' + x.id, cat: 'admin', k: 'admin', ns: DBN_STAFF.indexOf(x.kind) >= 0 ? 'system' : 'admin', at: new Date(x.created_at), title: x.title || 'إشعار من تيرا', text: x.body || '',
-        act: x.kind === 'profile_review' ? (x.mine ? ['حالة طلبي', function () { go('other', 'me-verify'); }] : ['فتح طلبات التوثيق', function () { go('other', 'cu-pf-ver'); }]) : x.kind === 'service_request' ? (S.role === 'admin' ? ['طلبات الخدمات', function () { go('other', 'cu-svc'); }] : ['طلبات خدماتي', function () { go('reqs'); }]) /* v577: لكل دور صفحته */ : staffK ? ['ملف العميل', function () { FX.pfc = x.uid; ADM.pfc = x.uid; go('other', 'cu-file'); }] : undefined };
+        act: x.kind === 'profile_review' ? (x.mine ? ['حالة طلبي', function () { go('other', 'me-verify'); }] : ['فتح طلبات التوثيق', function () { go('other', 'cu-pf-ver'); }]) : x.kind === 'service_request' ? (S.role === 'admin' ? ['طلبات الخدمات', function () { go('other', 'cu-svc'); }] : ['طلبات خدماتي', function () { go('reqs'); }]) /* v577: لكل دور صفحته */ : staffK ? ntStaffAct(x) : undefined };
     });
   } catch (err) { return []; }
 }
@@ -13747,9 +13754,32 @@ function admHome() {
    «إجراءات مطلوبة» لما ينتظر إجراءً فقط · «الأقسام» للتنقل · «أحدث طلبات العملاء» بأي حالة (فيظهر الطلب المنفّذ أيضًا). المربعات العلوية قابلة للضغط. */
 const ADM_SR_ST = { submitted: ['بانتظار الاستلام', 'warn'], in_review: ['قيد المراجعة', 'info'], approved: ['معتمد', 'ok'], executed: ['منفّذ', 'ok'], done: ['منفّذ', 'ok'], rejected: ['مرفوض', 'danger'], cancelled: ['ملغى', null] };
 const ADM_SR_K = { settle: 'سداد قيمة المنتج', defer: 'تأجيل دفعة', merge: 'توحيد العقود', elig: 'تحقق من الأهلية' };
+/* v646: لوحة المشرف تتحدّث وحدها — عند فتحها إن مضت دقيقتان، وكل دقيقتين أثناء بقائها مفتوحة، وعند العودة إلى التبويب.
+   تُحدَّث الأرقام من مصادرها (التحويلات والمدفوعات · التوثيق · طلبات الخدمة · التذاكر) دون مسح البيانات القائمة، ولا تُعاد الرسمة أثناء الكتابة */
+const HOMEF = { at: Date.now(), busy: false };
+function admHomeFresh(force) {
+try {
+if (HOMEF.busy || !LIVE.on || !LIVE.me || S.role !== 'admin') return;
+if (!force && Date.now() - HOMEF.at < 120000) return;
+HOMEF.busy = true; HOMEF.at = Date.now();
+const J = [];
+try { if (typeof LV_PAY !== 'undefined' && typeof lvPayLoad === 'function' && !LV_PAY.busy) { LV_PAY.at = 0; J.push(lvPayLoad()); } } catch (err) { void err; }
+try { if (typeof admRpc === 'function') J.push(admRpc('admin_verification_list', { p: { status: 'all' } }).then(function (j) { if (j && Array.isArray(j.rows)) { LIVE_DATA.ver = j.rows; ADMS.ver = { q: '', f: 'all', data: j, at: Date.now() }; } })); } catch (err) { void err; }
+try { if (typeof lvSrLoad === 'function') J.push(lvSrLoad()); } catch (err) { void err; }
+try { if (typeof deskLoad === 'function') deskLoad(true); } catch (err) { void err; }
+Promise.all(J.map(function (p) { return Promise.resolve(p).catch(function () { return null; }); })).then(function () {
+HOMEF.busy = false; HOMEF.at = Date.now();
+const a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+if (S.tab === 'other' && S.other === 'adm-home' && !typing) draw();
+});
+} catch (err) { HOMEF.busy = false; }
+}
+document.addEventListener('visibilitychange', function () { try { if (document.visibilityState === 'visible' && S.tab === 'other' && S.other === 'adm-home') admHomeFresh(false); } catch (err) { void err; } });
+setInterval(function () { try { if (document.visibilityState === 'visible' && S.tab === 'other' && S.other === 'adm-home') admHomeFresh(false); } catch (err) { void err; } }, 60000);
 function admHomeLive() {
   /* v587 — المرحلة 1 من الهيكل الجديد: لوحة واحدة للمشرف والموظف — مهامي · بحث موحّد · ما ينتظر قرارًا · أدوات سريعة · الأقسام · أحدث الطلبات */
-  const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup !== false;
+  admHomeFresh(false); /* v646 */
+const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup !== false;
   const cuOk = cuSecOk('cu'), finOk = cuSecOk('fin'), payOk = cuSecOk('cu-trin');
   const T = typeof deskTickets === 'function' ? deskTickets() : [], DR = (typeof DSK !== 'undefined' && Array.isArray(DSK.rows)) ? DSK.rows : [];
   const opn = T.filter(function (t) { return tkFit(t, 'new') || tkFit(t, 'work'); });
@@ -13762,7 +13792,7 @@ function admHomeLive() {
   const srx = SRA.filter(function (x) { try { return typeof srWaitExec === 'function' && srWaitExec(x); } catch (err) { return false; } }).length;
   if (payOk && typeof LV_PAY !== 'undefined' && !LV_PAY.at && !LV_PAY.busy && typeof lvPayLoad === 'function') lvPayLoad().then(function () { draw(); }).catch(function () { /* */ });
   const TR = (payOk && typeof LV_PAY !== 'undefined') ? (LV_PAY.TR || []) : [];
-  const trn = TR.filter(function (t) { return t.status === 'submitted'; }).length;
+  const trn = TR.filter(function (t) { return t.status === 'submitted' || t.status === 'review'; }).length; /* v646: المستلَمة للمراجعة لم تُعتمد بعد */
   const opk = (payOk && typeof LV_PAY !== 'undefined') ? (LV_PAY.OP || []).filter(function (o) { return o.status === 'submitted' || o.status === 'failed'; }).length : 0;
   let sto = 0; try { sto = cuOk ? cuInbox().filter(function (x) { return x.grp === 'store'; }).length : 0; } catch (err) { sto = 0; }
   let lateP = 0; try { if (finOk && typeof dcPays === 'function' && typeof finCts === 'function') lateP = dcPays(finCts()).due.filter(function (r) { return r.k === 'late'; }).length; } catch (err) { lateP = 0; }
@@ -13770,7 +13800,7 @@ function admHomeLive() {
   const TOPEN = ['new', 'review', 'processing', 'waiting_customer', 'waiting_other'];
   const myV = meId ? VL.filter(function (v) { return v.assigned_to === meId; }).length : 0;
   const myT = meId ? DR.filter(function (r) { return r && r.assignee_id === meId && TOPEN.indexOf(r.status) >= 0; }).length : 0;
-  const myTr = meId ? TR.filter(function (t) { return t.claimed_by === meId && t.status === 'submitted'; }).length : 0;
+  const myTr = meId ? TR.filter(function (t) { return t.claimed_by === meId && t.status === 'review'; }).length : 0;
   const tkGo = function (k) { return function () { ADM.tst = k; go('other', 'cs-tickets'); }; };
   const srGo = function (id) { return function () { ADM.svF = 'all'; ADM.svC = ''; ADM.svFocus = id || ''; go('other', 'cu-svc'); }; };
   const pfGo = function (r) { return function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name || ''; go('other', 'cu-pf-file'); }; };
@@ -13961,9 +13991,8 @@ function sec(title, note, body, open, key) { if (typeof gsecOf === 'function') {
   void open; const on = (k in SECST) ? SECST[k] : (navCards || window.__OPENALL === true);
   b.hidden = !on;
   const h = e('button', { type: 'button', class: 't2-group-h t2-sec-h', 'aria-expanded': on ? 'true' : 'false', onClick: function () { const x = h.getAttribute('aria-expanded') === 'true'; h.setAttribute('aria-expanded', x ? 'false' : 'true'); b.hidden = x; SECST[k] = !x;
-      /* فتح قائمة يغلق المفتوحة قبلها في الصفحة نفسها */
-      if (!x) { const me = h.parentNode; document.querySelectorAll('#pv-root .t2-sec').forEach(function (o) { if (o === me || o.contains(me) || me.contains(o)) return; const oh = o.querySelector(':scope > .t2-sec-h'), ob = o.querySelector(':scope > .t2-sec-b'); if (oh && ob && oh.getAttribute('aria-expanded') === 'true') { oh.setAttribute('aria-expanded', 'false'); ob.hidden = true; if (o.dataset.k) SECST[o.dataset.k] = false; } }); }
-      saveNav(); if (!x) appify(); keepAnchor(); } },
+      /* v646: الفتح والإغلاق بيد المستخدم وحده — لا يُغلق قسم تلقائيًا عند فتح غيره (قرار المشرف العام) */
+saveNav(); if (!x) appify(); keepAnchor(); } },
     [e('span', { class: 't2-sec-tx' }, [e('h2', { class: 't2-group-t' }, title)]), e('span', { class: 't2-chev', 'aria-hidden': 'true' })]);
   return e('section', { class: 't2-sec', 'data-k': k }, [h, b]);
 }
@@ -15765,6 +15794,17 @@ function restorePage(o) {
   go(o.tab, o.other);
   if (o.tab === 'msg' && o.msg !== 'list') { S.msg = o.msg; S.thread = o.thread; draw(); }
 }
+/* v646: ثبات مكان الصفحة — عند الخروج من صفحة يُحفظ موضعها، وعند الرجوع إليها تعود إلى المكان نفسه (لا إلى أعلاها) */
+const SCRMEM = {};
+function scrMemSave() { try { SCRMEM[anchKey()] = SCROLLER === window ? window.scrollY : SCROLLER.scrollTop; } catch (err) { void err; } }
+function scrMemGo() {
+try {
+const k = anchKey(), y = SCRMEM[k];
+if (!y) { toTop(); return; }
+const t0 = Date.now(), set = function () { if (anchKey() !== k) return; if (typeof SCR_USER !== 'undefined' && SCR_USER > t0) return; if (SCROLLER === window) window.scrollTo(0, y); else SCROLLER.scrollTop = y; };
+set(); [150, 450, 1000, 1800].forEach(function (ms) { setTimeout(set, ms); });
+} catch (err) { toTop(); }
+}
 function go(tab, other) {
   /* أصل الدخول إلى تفاصيل الدفعة — للمسار وزر الرجوع */
   if (tab === 'payment' && ['payment', 'paynow', 'defer', 'rcpt', 'rfreq'].indexOf(S.tab) < 0) { const t = document.getElementById('pv-title'); FX.pfrom = { tab: S.tab, other: S.other, view: FX.view, cid: FX.cid, ns: FX.ns, title: t ? t.textContent : '', path: originTrail(null) }; }
@@ -15773,7 +15813,7 @@ function go(tab, other) {
   if ((tab === 'elig' || tab === 'qreq') && S.formTab !== tab) { if (S.formTab) resetForm(); S.formTab = tab; }
   S.toast = null;
   if (typeof LVS !== 'undefined' && (tab !== S.tab || other !== S.other)) { LVS.flow = ''; if (['gate', 'code', 'num', 'otp', 'pin'].indexOf(LVS.wa) >= 0) LVS.wa = LVS.waN && LVS.waN.was ? 'on' : ''; S.otpAt = null; S.whoOpen = false; }
-  S.tab = tab; S.other = other || ''; S.msg = 'list'; S.miss = []; S.files = []; S.fileErr = ''; draw(); toTop(); }
+  scrMemSave(); S.tab = tab; S.other = other || ''; S.msg = 'list'; S.miss = []; S.files = []; S.fileErr = ''; draw(); scrMemGo(); }
 window.__teraApp = { keys: function () { return { fin: Object.keys(FIN), acct: Object.keys(ACCT) }; }, role: function () { return S.role; }, go: function (k, o) { go(k, o); }, pay: function (pid, k) { FX.pid = String(pid || ''); go(k || 'payment'); }, pdf: function (o) { return dcPdf(o); }, home: function () { S.out = ''; S.cmd = false; if (typeof showOverlay === 'function') showOverlay(); go('dash'); } };
 const MSTL = { reply: 'بانتظار الرد', open: 'المفتوحة', done: 'المغلقة' };
 function draw() { if (typeof m2Migrate === 'function') { m2Migrate(); m3Migrate(); }
@@ -18412,7 +18452,7 @@ window.tqView(async function () { const j = await clApi('/admin/api/pay/transfer
 /* بطاقة إيصال تحويل من العميل: بياناته وإيصاله، والقرار إن كان بانتظار الاعتماد */
 function cfTrCard(t, RF, o) {
   o = o || {};
-  const ct = t.client_contracts || {}, pp = t.client_contract_payments || {}, s = CF_TRS[t.status] || [t.status || '—', null], W = cfSt('trw:' + t.id, { note: '' }), live = t.status === 'submitted';
+  const ct = t.client_contracts || {}, pp = t.client_contract_payments || {}, s = CF_TRS[t.status] || [t.status || '—', null], W = cfSt('trw:' + t.id, { note: '' }), btr = !!t.channel && t.channel !== 'account', live = t.status === 'submitted' || (btr && t.status === 'review'); /* v646: طلب التحويل البنكي (برابط) يُراجَع في درج المراجعة نفسه */
   const act = function (a) {
     if (W.busy) return;
     const n = String(W.note || '').trim();
@@ -18426,7 +18466,8 @@ function cfTrCard(t, RF, o) {
       t.from_iban ? ['من حساب', ltr(t.from_iban)] : null, t.to_account ? ['إلى حساب', t.to_account] : null, ['أُرسل', bdiD(String(t.created_at || '').slice(0, 10))], ['الحالة', DS.badge(s[0], s[1])],
       t.review_note ? [t.status === 'rejected' ? 'سبب الرفض' : 'ملاحظة القرار', e('span', {}, lvBidi(t.review_note))] : null].filter(Boolean)),
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('فتح الإيصال', { size: 'sm', ui: 'file-pdf', onClick: function () { cfTrFile(t.id); } }))])];
-  if (live) body.push(e('div', { class: 'cf-form' }, [
+  if (live && btr) body.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('مراجعة الإيصال والقرار', { size: 'sm', tone: 'primary', ui: 'list-checks', onClick: function () { if (typeof admTrOpen === 'function') admTrOpen(Object.assign({ name: cuBdName(t.user_id) }, t), RF); } }))]));
+else if (live) body.push(e('div', { class: 'cf-form' }, [
     DS.editField('ملاحظة القرار (إلزامية عند الرفض)', e('textarea', { class: 't2-input', rows: '2', placeholder: 'طابِق الإيصال مع كشف الحساب أولًا', onInput: function (ev) { W.note = ev.target.value; } }, W.note || '')),
     cfErr(W),
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ التنفيذ…' : 'اعتماد التحويل', { size: 'sm', tone: 'primary', ui: 'check', disabled: W.busy, onClick: function () { act('approve'); } })),
@@ -19907,6 +19948,31 @@ function admTrPage() {
       DS.note('info', 'المراحل', 'الاستلام: افتح الطلب واضغط «استلام للمراجعة». المراجعة: طابق الإيصال مع كشف الحساب ودوّن البنود ومنها المبلغ المستلم فعلًا. القرار: اعتماد يضيف المبلغ ويُصدر الإيصال، أو طلب تعديل يرسل للعميل رابطًا جديدًا، أو رفض بسبب يصله.')];
   });
 }
+/* v646: الحساب الذي حوّل إليه العميل — يُعدَّل قبل الاعتماد من حسابات المنشأة؛ رقم الطلب لا يتغيّر، والتعديل مسجّل في سجل التدقيق */
+const TRB = { L: null, busy: false };
+function admTrAcct(t) {
+const box = e('div', { class: 'btr-acct' });
+const paint = function (msg) {
+const L = Array.isArray(TRB.L) ? TRB.L : [];
+const nm = function (b) { const ib = String(b.iban || ''); return (b.bank_name || b.bank || '—') + ' · ' + (b.holder_name || b.holder || '') + (ib ? ' · ****' + ib.slice(-4) : '') + (b.active === false ? ' (موقوف)' : ''); };
+const opts = L.map(function (b) { return [b.id, nm(b)]; });
+if (t.account_id && !L.some(function (b) { return b.id === t.account_id; })) opts.unshift([t.account_id, t.acct && t.acct.bank ? t.acct.bank + ' · ****' + String(t.acct.iban || '').slice(-4) : 'الحساب الحالي']);
+box.replaceChildren.apply(box, [
+TRB.L === null ? clWait('حسابات الاستلام') : DS.editField('الحساب الذي حوّل إليه العميل', DS.select({ value: t.account_id || '', options: (t.account_id ? [] : [['', '— غير محدد —']]).concat(opts), onChange: async function (v) {
+if (!v || v === t.account_id) return;
+const r = await clPost('/admin/api/btr/' + encodeURIComponent(t.id) + '/account', { account_id: v }).catch(function (err) { return { ok: false, message: (err && err.message) || '' }; });
+if (!r || r.ok !== true) { snack('لم يُعدَّل الحساب — ' + ((r && r.message) || 'حاول مرة أخرى.')); paint(); return; }
+t.account_id = r.account_id || v; if (r.acct) t.acct = r.acct;
+try { if (ADMS.tr) ADMS.tr.at = 0; LV_PAY.at = 0; } catch (err) { void err; }
+snack('عُدّل حساب الاستلام — رقم الطلب كما هو، والتعديل مسجّل.'); paint('ok');
+} })),
+e('small', { class: 'cu-dr-hint' }, msg === 'ok' ? 'حُفظ الحساب الجديد، ويُعتمد التحويل عليه.' : 'إن حوّل العميل إلى حساب آخر من حسابات المنشأة فاختره هنا قبل الاعتماد. رقم الطلب لا يتغيّر.')]);
+};
+if (!TRB.busy && TRB.at && Date.now() - TRB.at > 60000) TRB.L = null; /* حسابات أُضيفت حديثًا تظهر */
+if (TRB.L === null && !TRB.busy) { TRB.busy = true; clApi('/admin/api/banks').then(function (j) { TRB.L = (j && j.banks) || []; TRB.at = Date.now(); }).catch(function () { TRB.L = []; }).then(function () { TRB.busy = false; paint(); }); }
+paint();
+return box;
+}
 function admTrOpen(t, refetch) {
   const ct = t.client_contracts || {}, pp = t.client_contract_payments || {}, qq = t.contract_settle_quotes || {}, a = t.acct || {}, rv = t.review || {};
   const today = iso(new Date());
@@ -19961,7 +20027,7 @@ function admTrOpen(t, refetch) {
       t.status === 'review' ? cuSec('المرحلة 2 · المراجعة', 'list-checks', [e('div', { class: 'btr-rv' }, [
         DS.editField('المبلغ المستلم فعلًا (كما في كشف الحساب)', fld('received', String(t.amount || ''), { dir: 'ltr', inputmode: 'decimal' })),
         DS.editField('تاريخ التحويل', datePick({ value: S.transfer_date, max: today, onChange: function (v) { S.transfer_date = v; } })),
-        DS.editField('الاسم مطابق للعميل؟', nm),
+        DS.editField('الاسم مطابق للعميل؟', nm), admTrAcct(t),
         ]), mb,
         rv.draft ? e('small', { class: 'cu-dr-hint' }, ['مسودة محفوظة', rv.draft_at ? ' · ' + String(rv.draft_at).slice(0, 16).replace('T', ' ') : '']) : null,
         e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('حفظ المسودة', { size: 'sm', ui: 'check', onClick: saveDraft }))])]) : null, /* v578 */
@@ -24835,18 +24901,18 @@ const l = g.querySelector('.sc-tp-l'); if (l) l.hidden = qn ? !any : !g.classLis
 function scTplPick(opts) {
 const cur = opts.filter(function (o) { return o[0] && o[0] === SC.tpl; })[0];
 if (cur) return e('div', { class: 'sc-tp-cur', 'data-sk': 'tp' }, [scCodeTag(cur[1]), e('span', {}, [e('small', {}, cur[3].grp), e('b', {}, scCodeSplit(cur[1])[1]), cur[3].sub ? e('small', {}, cur[3].sub) : null]),
-DS.button('تغيير القالب', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { SC.tg = cur[3].grp; SC.tpl = ''; SC.CV = {}; SC.sel = {}; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.ask = false; scDrawKeep('tp'); } })]);
+DS.button('تغيير القالب', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { SC.tgs = SC.tgs || {}; SC.tgs[cur[3].grp] = true; SC.tpl = ''; SC.CV = {}; SC.sel = {}; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.ask = false; scDrawKeep('tp'); } })]);
 if (!opts.length) return !Array.isArray(SC.CT) || !Array.isArray(SC.SV) ? clWait('القوالب') : DS.note('warn', 'تعذّر تحميل القوالب', 'أعد فتح الصفحة بعد قليل.');
 const G = [], by = {};
 opts.forEach(function (o) { const g = o[3] && o[3].grp; if (!o[0] || !g) return; if (!by[g]) { by[g] = []; G.push(g); } by[g].push(o); });
 const q = String(SC.tq || '').trim().toLowerCase();
 const pick = function (v) { SC.tpl = v; SC.CV = {}; SC.sel = {}; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.quiet = false; SC.ask = false; scDrawKeep('tp'); };
 const groups = G.map(function (g) {
-const open = SC.tg === g, L = by[g];
+SC.tgs = SC.tgs || {}; const open = !!SC.tgs[g], L = by[g]; /* v646: كل قسم يُفتح ويُغلق بيد المستخدم */
 const hit = function (o) { return !q || (String(o[1]) + ' ' + g).toLowerCase().indexOf(q) >= 0; };
 const anyHit = L.some(hit);
 return e('div', { class: 'sc-tp-g' + (open ? ' is-open' : ''), hidden: q && !anyHit ? 'hidden' : null }, [
-e('button', { type: 'button', class: 'sc-tp-h', 'data-sk': 'g:' + g, 'aria-expanded': open ? 'true' : 'false', onClick: function () { SC.tg = SC.tg === g ? '' : g; SC.tq = ''; scDrawKeep('g:' + g); } }, [e('b', {}, g), e('small', {}, fmtNum(L.length) + ' قالب'), frag(ui(open ? 'caret-up' : 'caret-down', 16))]),
+e('button', { type: 'button', class: 'sc-tp-h', 'data-sk': 'g:' + g, 'aria-expanded': open ? 'true' : 'false', onClick: function () { SC.tgs = SC.tgs || {}; SC.tgs[g] = !SC.tgs[g]; SC.tq = ''; scDrawKeep('g:' + g); } }, [e('b', {}, g), e('small', {}, fmtNum(L.length) + ' قالب'), frag(ui(open ? 'caret-up' : 'caret-down', 16))]),
 e('div', { class: 'sc-tp-l', hidden: (q ? !anyHit : !open) ? 'hidden' : null }, L.map(function (o) {
 return e('button', { type: 'button', class: 'sc-tp-i' + (o[3].off ? ' is-off' : ''), 'data-q': (String(o[1]) + ' ' + g).toLowerCase(), hidden: hit(o) ? null : 'hidden', onClick: function () { pick(o[0]); } }, [scCodeTag(o[1]), e('span', { class: 'sc-tp-tt' }, [e('b', {}, scCodeSplit(o[1])[1]), o[3].sub ? e('small', {}, o[3].sub) : null])]);
 }))]);
@@ -25046,7 +25112,7 @@ function scPage() {
 scOverrides(); scTpls(); scLoad(); scPeople();
 const P = SC.P || {}, n = Number(P.count) || 0, T = scTpl(), C = scChans(), G = P.groups || {};
 if (SC.res) return [axTop('مركز الإرسال', SC.res.survey ? 'أُنشئت دعوات الاستبانة' : SC.res.rem ? 'أُرسلت رسالة التذكير' : 'بدأ الإرسال'), DS.note('ok', SC.res.survey ? 'أُنشئت ' + fmtNum(SC.res.n) + ' دعوة استبانة' + (SC.res.skip ? ' (تُخطّي ' + fmtNum(SC.res.skip) + ')' : '') : SC.res.rem ? 'أُرسلت ' + fmtNum(SC.res.n) + ' رسالة تذكير' + (SC.res.skip ? ' (لم تُرسل ' + fmtNum(SC.res.skip) + ')' : '') : 'بدأ الإرسال إلى ' + fmtNum(SC.res.n) + ' مستلم', SC.res.survey ? 'تظهر في «سجل الدعوات».' : SC.res.rem ? 'تظهر في سجل «إدارة التذكير».' : 'تتابع حالة كل مستلم في «تقرير الإرسال».'),
-e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(SC.res.rem ? 'إدارة التذكير' : 'تقرير الإرسال', { tone: 'primary', ui: SC.res.rem ? 'bell-ringing' : 'list-checks', onClick: function () { const rem = SC.res.rem; SC.res = null; COMMT.t = rem ? 'rem' : 'rep'; go('other', 'comm'); } })), liveOk(DS.button('إرسال جديد', { ui: 'paper-plane-tilt', onClick: function () { SC.res = null; SC.ids = []; SC.ex = []; SC.grp = ''; SC.tpl = ''; SC.sel = {}; SC.CV = {}; SC.PYM = {}; SC.pAt = ''; SC.PV = null; SC.pvAt = ''; draw(); } }))])];
+e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(SC.res.rem ? 'إدارة التذكير' : 'تقرير الإرسال', { tone: 'primary', ui: SC.res.rem ? 'bell-ringing' : 'list-checks', onClick: function () { const rem = SC.res.rem; SC.res = null; COMMT.t = rem ? 'rem' : 'rep'; go('other', 'comm'); } })), liveOk(DS.button('إرسال جديد', { ui: 'paper-plane-tilt', onClick: function () { SC.res = null; SC.mstep = 1; SC.ids = []; SC.ex = []; SC.grp = ''; SC.tpl = ''; SC.sel = {}; SC.CV = {}; SC.PYM = {}; SC.pAt = ''; SC.PV = null; SC.pvAt = ''; draw(); } }))])];
 /* 1) المستهدفون: فئة جاهزة أو أشخاص بالبحث المباشر */
 const seg = e('div', { class: 'sc-seg' }, [['grp', 'فئة جاهزة'], ['pick', 'أشخاص محددون']].map(function (m) { return liveOk(DS.button(m[1], { size: 'sm', tone: SC.mode === m[0] ? 'primary' : null, onClick: function () { SC.mode = m[0]; SC.ex = []; SC.pAt = ''; SC.ask = false; draw(); } })); }));
 const grpSel = SC.mode === 'grp' ? DS.editField('الفئة', DS.select({ value: SC.grp, options: [['', '— اختر الفئة —']].concat(SC_GRP.map(function (g) { return [g[0], g[1] + (G[g[0]] != null ? ' (' + fmtNum(G[g[0]]) + ')' : '')]; })).concat(scCtGroups().map(function (g) { return [g.k, g.t + ' (' + fmtNum(g.ids.length) + (g.ids.length < g.n ? ' من ' + fmtNum(g.n) + ' لهم حساب' : '') + ')']; })), onChange: function (v) { SC.grp = v; SC.ex = []; SC.pAt = ''; SC.ask = false; draw(); } })) : null;
@@ -25108,7 +25174,16 @@ SC.ask ? DS.note('warn', 'تأكيد الإرسال', 'سيُرسل «' + (T ? T
 e('div', { class: 't2-pb-actions' }, SC.ask ? [liveOk(DS.button(SC.busy ? 'جارٍ الإرسال…' : 'نعم، أرسل الآن', { tone: 'primary', ui: 'paper-plane-tilt', disabled: SC.busy || !ready, onClick: scSend })), DS.button('إلغاء', { disabled: SC.busy, onClick: function () { SC.ask = false; draw(); } })]
 : [liveOk(DS.button(ready ? (NI ? 'إرسال ' + fmtNum(NI) + ' رسالة' : 'إرسال إلى ' + fmtNum(n) + ' مستلم') : 'أكمل الخطوات للإرسال', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !ready, onClick: function () { SC.ask = true; SC.err = ''; SC.quiet = false; draw(); } }))])]);
 /* v645: سبب عدم الإرسال ظاهر أعلى الصفحة (ثابت أثناء التمرير) لا في آخرها وحدها */
-return [SC.err ? e('div', { class: 'sc-flash', role: 'alert' }, [DS.note('warn', 'لم يُرسل', SC.err)]) : null, e('div', { class: 'sc-grid' }, [e('div', { class: 'sc-main' }, [s1, s2, s3]), e('aside', { class: 'sc-side' }, [s4, s5])])].filter(Boolean);
+/* v646: الجوال خطوة في كل شاشة — «التالي» و«السابق» يضغطهما المستخدم، والإرسال في الخطوة الأخيرة */
+const SCN = ['المستهدفون', 'الوسيلة', 'القالب', 'المعاينة', 'الإرسال']; SC.mstep = Math.min(5, Math.max(1, SC.mstep || 1));
+[s1, s2, s3, s4, s5].forEach(function (x, i) { if (x && x.classList) x.classList.toggle('is-mcur', i + 1 === SC.mstep); });
+const mprog = e('div', { class: 'sc-mprog' }, [e('span', {}, SCN.map(function (x, i) { return e('i', { class: i < SC.mstep ? 'is-on' : null }); })), e('b', {}, 'الخطوة ' + SC.mstep + ' من 5 · ' + SCN[SC.mstep - 1])]);
+const mgo = function (d) { SC.mstep = Math.min(5, Math.max(1, SC.mstep + d)); SC.ask = false; draw(); try { const g = document.querySelector('.sc-mprog'); if (g) g.scrollIntoView({ block: 'start' }); } catch (err) { void err; } };
+const mnav = SC.mstep < 5 ? [SC.mstep > 1 ? DS.button('السابق', { size: 'sm', onClick: function () { mgo(-1); } }) : null, liveOk(DS.button('التالي', { size: 'sm', tone: 'primary', onClick: function () { mgo(1); } }))] : null;
+const mbar = e('div', { class: 'sc-mbar' + (mnav ? ' is-step' : '') }, mnav ? [e('span', { class: 'sc-mbar-t' }, [e('b', {}, SCN[SC.mstep - 1]), e('small', {}, ready ? (NI ? fmtNum(NI) + ' رسالة جاهزة' : fmtNum(n) + ' مستلم') : 'أكمل الخطوات للإرسال')])].concat(mnav) : [e('span', { class: 'sc-mbar-t' }, [e('b', {}, ready ? (NI ? 'إرسال ' + fmtNum(NI) + ' رسالة' : 'إرسال إلى ' + fmtNum(n) + ' مستلم') : 'أكمل الخطوات للإرسال'), e('small', {}, SC.ask ? 'سيُرسل ' + (NI ? fmtNum(NI) + ' رسالة' : fmtNum(n) + ' مستلم') + ' الآن — لا يمكن التراجع' : T ? T.name : 'اختر المستلمين ثم القالب')]),
+SC.ask ? DS.button('إلغاء', { size: 'sm', disabled: SC.busy, onClick: function () { SC.ask = false; draw(); } }) : null,
+SC.ask ? liveOk(DS.button(SC.busy ? 'جارٍ…' : 'تأكيد الإرسال', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: SC.busy || !ready, onClick: function () { if (Date.now() - (SC.askAt || 0) < 700) return; scSend(); } })) : liveOk(DS.button('إرسال', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: !ready, onClick: function () { SC.ask = true; SC.askAt = Date.now(); SC.err = ''; SC.quiet = false; draw(); } }))]); /* المراجعة المستقلة: لا إرسال بضغطتين متتاليتين، والتحذير ظاهر في الشريط */ /* v646: شريط الإرسال الثابت في الجوال */
+return [SC.err ? e('div', { class: 'sc-flash', role: 'alert' }, [DS.note('warn', 'لم يُرسل', SC.err)]) : null, mprog, e('div', { class: 'sc-grid' }, [e('div', { class: 'sc-main' }, [s1, s2, s3]), e('aside', { class: 'sc-side' }, [s4, s5])]), mbar].filter(Boolean);
 }
 function axTop(t, d) { return e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, t), e('small', {}, d)])]); }
 /* تقرير الإرسال — دفعات مركز الإرسال ومستلموها */
@@ -27019,10 +27094,12 @@ if (LIVE.on) {
   const lvTrInbox = function () {
     return admMount('trin', 'إيصالات التحويل البنكي', async function () { await lvPayLoad(); return { at: Date.now() }; }, function (j, st, paint, refetch) {
       const RF = function () { LV_PAY.at = 0; refetch(); }; RF.paint = paint;
-      const A = LV_PAY.TR, by = function (s) { return A.filter(function (t) { return t.status === s; }); }, f = ADM.tiF || (by('submitted').length ? 'submitted' : 'all'), cq = ADM.tiC || '';
-      const R = A.filter(function (t) { return (f === 'all' || t.status === f) && (!cq || t.user_id === cq); });
+      const A = LV_PAY.TR, by = function (s) { return A.filter(function (t) { return t.status === s || (s === 'submitted' && t.status === 'review'); }); } /* v646: «بانتظار الاعتماد» يشمل المستلَمة للمراجعة */, f = ADM.tiF || (by('submitted').length ? 'submitted' : 'all'), cq = ADM.tiC || '';
+      const R = A.filter(function (t) { return (f === 'all' || t.status === f || (f === 'submitted' && t.status === 'review')) && (!cq || t.user_id === cq); });
       const opts = []; A.forEach(function (t) { if (!opts.some(function (x) { return x[0] === t.user_id; })) opts.push([t.user_id, cuBdName(t.user_id)]); }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
       const pend = by('submitted');
+if (FX.trOpen) { const u0 = FX.trOpen; FX.trOpen = ''; const t0 = A.filter(function (t) { return t.user_id === u0 && (t.status === 'submitted' || t.status === 'review'); })[0]; /* v646: الإشعار يفتح مراجعة الإيصال نفسه */
+if (t0 && t0.channel && t0.channel !== 'account' && typeof admTrOpen === 'function') setTimeout(function () { admTrOpen(Object.assign({ name: cuBdName(t0.user_id) }, t0), RF); }, 0); }
       return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'إيصالات التحويل البنكي'), e('small', {}, 'تحويلات العملاء لدفعاتهم: طابِق الإيصال ثم اعتمد أو ارفض — يُسجَّل في الدفعة وينتقل إلى ملف العميل بحالته.')]),
           DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: RF })]),
         axKpis([['بانتظار الاعتماد', pend.length ? fmtNum(pend.length) + ' · ' + sar(qr2(axSum(pend, function (t) { return Number(t.amount) || 0; }))) : 'لا إيصالات', pend.length ? 'warn' : 'ok', 'hourglass-medium'], ['معتمدة', fmtNum(by('approved').length), 'ok', 'check-circle'], ['مرفوضة', fmtNum(by('rejected').length), '', 'x-circle']]),
