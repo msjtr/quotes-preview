@@ -9562,3 +9562,19 @@ html:has(.cu-dr[data-r^="desk:"]) .t2-main{padding-left:min(34rem,40vw)!importan
 .sc-mprog{display:none}
 @media (max-width:720px){.sc-grid .cx-step:not(.is-mcur){display:none!important}
 .sc-mprog{display:grid;gap:6px;margin:0 0 4px}.sc-mprog>span{display:flex;gap:4px}.sc-mprog>span>i{flex:1;block-size:4px;border-radius:99px;background:var(--t2-line)}.sc-mprog>span>i.is-on{background:var(--t2-brand)}.sc-mprog>b{font:800 .95rem/1.4 var(--t2-ff-display);color:var(--t2-ink)}}
+
+/* v647: لا تكرار ولا نص يخرج من مكانه */
+/* درج التفاصيل: مسار واحد — الويب: المسار وحده · الجوال: زر الرجوع وحده (كالصفحات) */
+@media (min-width:64.01rem){.cu-dr-nav>.t2-back{display:none!important}}
+/* بطاقات التصفية في المنصة: النص يلتف داخل البطاقة ولا يُقص */
+.hf-c.hf-c{height:auto;min-width:0}
+.hf-c.hf-c .hf-tx{min-width:0;flex:1}
+.hf-c.hf-c .hf-tx b,.hf-c.hf-c .hf-tx small{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;display:block;line-height:1.35}
+.is-comm-hub .rm-tg,.is-comm-hub .st-chips,.is-comm-hub>.sc-seg{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important}
+.is-comm-hub .rm-tab,.is-comm-hub .st-chip,.is-comm-hub>.sc-seg>.t2-btn{white-space:normal!important;line-height:1.35!important;height:auto!important;overflow:visible!important;text-overflow:clip!important;flex-wrap:wrap;gap:6px;min-width:0}
+.is-comm-hub .st-chip>span:not(.st-chip-ic),.is-comm-hub .rm-tab>span{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+.is-comm-hub .st-chip small{color:var(--t2-ink)!important;background:color-mix(in srgb,var(--t2-brand) 14%,var(--t2-surface))!important;border-radius:99px;padding:0 8px}
+@media (max-width:720px){.is-comm-hub .rm-tg,.is-comm-hub .st-chips,.is-comm-hub>.sc-seg{grid-template-columns:none!important;grid-auto-columns:minmax(140px,1fr)}}
+/* لا تكرار داخل «التواصل»: عنوان القسم الفرعي (العنوان في شريط الأقسام)، وأرقام جهات الاتصال المكررة في بطاقات التصفية */
+.is-comm-hub>.shb{display:none!important}
+.is-comm-hub .cu-bd-k4{display:none!important}
