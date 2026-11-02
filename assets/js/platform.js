@@ -3199,6 +3199,10 @@ const DBN_STAFF = ['pay_received', 'pay_refund', 'pay_failed', 'pay_op_request',
 const DBN_KINDS = ['direct_message', 'pay_op_decision', 'transfer_decision', 'client_event', 'bank_transfer'].concat(DBN_STAFF); /* v577: + أحداث العميل وروابط التحويل البنكي */
 /* v646: كل إشعار للفريق يفتح صفحة إجرائه — إيصال التحويل يفتح مراجعته نفسها، وطلب الإلغاء أو الاسترداد صندوقه، وفشل الدفع عمليات البوابة؛ والسداد والاسترداد ملف العميل */
 function ntStaffAct(x) {
+  /* v649: إشعار إسناد التوثيق يفتح الطلب، وإسناد المراسلة يفتح المراسلة */
+  { const xm = x.meta || x.data || {}, ver = x.ver || xm.ver, desk = x.desk || xm.desk;
+    if (ver && typeof admVerOpen2 === 'function') return ['فتح طلب التوثيق', function () { admVerOpen2({ id: ver, name: '' }); }];
+    if (desk && typeof deskOpen === 'function') return ['فتح المراسلة', function () { deskOpen(desk); }]; }
 if (x.kind === 'transfer_submitted') return ['مراجعة الإيصال', function () { ADM.tiF = 'all'; ADM.tiC = x.uid; FX.trOpen = x.uid; try { LV_PAY.at = 0; } catch (err) { void err; } go('other', 'cu-trin'); }];
 if (x.kind === 'pay_op_request') return ['طلبات الإلغاء والاسترداد', function () { ADM.opF = 'open'; go('other', 'cu-opin'); }];
 if (x.kind === 'pay_failed') return ['عمليات بوابة الدفع', function () { go('other', 'fin-gw'); }];
@@ -17182,7 +17186,7 @@ function cfRcOpen(p, c) {
       ['online', 'online_test'].indexOf(t.class_label) >= 0 ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تحديث من Paymob', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { cfGwRefresh(t, null); } }))]) : null].filter(Boolean))
     : k === 'gw' ? cuSec('بيانات الدفع الإلكتروني', 'shield', [DS.fields([['رقم العملية', ltr(p.txn || '—')]]), DS.note('info', 'بلا تفاصيل من البوابة', 'لم تُحفظ تفاصيل هذه العملية لدى بوابة الدفع في المنصة.')]) : null;
   const trS = k === 'tr' ? cuSec('بيانات التحويل البنكي', 'bank', [DS.fields(tr ? [['رقم العملية البنكي', ltr(tr.bank_ref || '—')], ['تاريخ التحويل', bdiD(String(tr.transfer_date || ''))], ['المبلغ المحوَّل', admMoney(tr.amount)],
-      ['من آيبان', ltr(tr.from_iban || '—')], ['إلى الحساب', ltr(tr.to_account || '—')], ['ملاحظة المراجعة', tr.review_note || '—']]
+      ['من آيبان', ltr(tr.from_iban || '—')], ['إلى الحساب', (tr.acct && tr.acct.bank ? tr.acct.bank + ' · ' + String(tr.acct.iban || '').replace(/\s/g, '').slice(-4) : ltr(tr.to_account || '—'))] /* v649: الحساب بعد تعديله */, ['ملاحظة المراجعة', tr.review_note || '—']]
     : [['الطريقة', p.method || 'تحويل بنكي'], ['رقم العملية البنكي', ltr(p.txn || '—')], ['الإثبات', p.fid ? 'مرفق' : 'بلا مرفق']])]) : null;
   const cashS = k === 'cash' ? cuSec('بيانات السداد النقدي', 'coins', [DS.fields([['الطريقة', 'نقدًا'], ['تاريخ القبض', p.at ? isoT(p.at) : isoT(rc.at)], ['المبلغ', SR(amt)]])]) : null;
   cuDrawer({ key: 'rc:' + rc.no, ic: 'receipt:teal', title: 'الإيصال ' + rc.no, sub: c.no + ' · الدفعة ' + p.i, body: [
@@ -18465,7 +18469,7 @@ function cfTrCard(t, RF, o) {
   };
   const body = [DS.fields([o.who ? ['العميل', cuBdName(t.user_id)] : null, ['العقد', ltr(ct.contract_no || ct.legacy_no || '—')], (t.kind === 'settle' || t.settle_quote_id) && !pp.seq ? ['الغرض', 'سداد قيمة المنتج — كامل المتبقي من العقد'] : ['الدفعة', pp.seq ? 'الدفعة ' + pp.seq + ' · قيمتها ' + SR(Number(pp.amount) || 0) + ' · المسدَّد ' + SR(Number(pp.paid_amount) || 0) : '—'], /* v584 */
       ['المبلغ المحوَّل', SR(Number(t.amount) || 0)], ['تاريخ التحويل', t.transfer_date ? bdiD(String(t.transfer_date).slice(0, 10)) : '—'], t.bank_ref ? ['رقم العملية البنكي', ltr(t.bank_ref)] : null,
-      t.from_iban ? ['من حساب', ltr(t.from_iban)] : null, t.to_account ? ['إلى حساب', t.to_account] : null, ['أُرسل', bdiD(String(t.created_at || '').slice(0, 10))], ['الحالة', DS.badge(s[0], s[1])],
+      t.from_iban ? ['من حساب', ltr(t.from_iban)] : null, (t.acct && t.acct.bank) || t.to_account ? ['إلى حساب', (t.acct && t.acct.bank ? t.acct.bank + ' · ' + String(t.acct.iban || '').replace(/\s/g, '').slice(-4) : t.to_account)] : null, ['أُرسل', bdiD(String(t.created_at || '').slice(0, 10))], ['الحالة', DS.badge(s[0], s[1])],
       t.review_note ? [t.status === 'rejected' ? 'سبب الرفض' : 'ملاحظة القرار', e('span', {}, lvBidi(t.review_note))] : null].filter(Boolean)),
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('فتح الإيصال', { size: 'sm', ui: 'file-pdf', onClick: function () { cfTrFile(t.id); } }))])];
   if (live && btr) body.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('مراجعة الإيصال والقرار', { size: 'sm', tone: 'primary', ui: 'list-checks', onClick: function () { if (typeof admTrOpen === 'function') admTrOpen(Object.assign({ name: cuBdName(t.user_id) }, t), RF); } }))]));
@@ -24149,7 +24153,7 @@ const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف �
  * المعاينة من الخادم نفسه (lib/msgcat.js) كما تُرسل: إشعار المنصة · إشعار الجوال · البريد · واتساب (tera_update_v2)،
  * وأزرار التجربة ترسل لصاحب الجلسة وحده. التعديل والاعتماد للمشرف العام وحده. الإرسال الفعلي للعملاء لا يتغيّر في هذا الإصدار. */
 const MSGC = { at: 0, rows: null, sup: false, err: '', sec: '', key: '', ed: null, pv: null, pvKey: '', pvBusy: false, pvErr: '', busy: '' };
-const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير بالدفعات', 3: 'التحصيل والمتأخرات', 4: 'الإجراءات القانونية والنظامية', 5: 'الدفع غير المكتمل والاسترداد', 6: 'التحويل البنكي', 7: 'روابط الدفع والفواتير', 8: 'طلبات الخدمة والأهلية', 10: 'التقييم والاستبانات', 11: 'الحساب', 12: 'التدشين', 13: 'توثيق الملف الشخصي', 14: 'تحديث البيانات', 15: 'المستندات والمرفقات', 16: 'الطلبات وعروض الأسعار', 17: 'الدعم والتواصل', 18: 'العروض والصيانة', 19: 'إشعارات الفريق', 20: 'ردود جاهزة للفريق' }; /* v648 (stf_180): الحساب وحده والتدشين وحده، وتوثيق الملف مقسوم */ /* v627: الفهرس المعتمد (stf_169) — 16 قسمًا، والقسم 9 (المستندات) أُلغي: المرفق يصل مع قالبه */
+const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير بالدفعات', 3: 'التحصيل والمتأخرات', 4: 'الإجراءات القانونية والنظامية', 5: 'الدفع غير المكتمل والاسترداد', 6: 'التحويل البنكي', 7: 'روابط الدفع والفواتير', 8: 'طلبات الخدمة والأهلية', 9: 'التقييم والاستبانات', 10: 'الحساب', 11: 'التدشين', 12: 'توثيق الملف الشخصي', 13: 'تحديث البيانات', 14: 'المستندات والمرفقات', 15: 'الطلبات وعروض الأسعار', 16: 'الدعم والتواصل', 17: 'العروض والصيانة', 18: 'إشعارات الفريق', 19: 'ردود جاهزة للفريق' }; /* v649 (stf_182): فهرسة بلا فراغ */ /* v648 (stf_180): الحساب وحده والتدشين وحده، وتوثيق الملف مقسوم */ /* v627: الفهرس المعتمد (stf_169) — 16 قسمًا، والقسم 9 (المستندات) أُلغي: المرفق يصل مع قالبه */
 const MSGC_COL = { 1: '#1F8A5B', 2: '#C99A2E', 3: '#8A1C2B', 4: '#2B2B2B', 5: '#A16207', 6: '#1E5AA8', 7: '#0B6E99', 8: '#6D4BC2', 10: '#B8860B', 11: '#2563EB', 12: '#0F766E', 13: '#9333EA', 14: '#0891B2', 15: '#DB2777', 16: '#475569', 17: '#0369A1' };
 const MSGC_IMG = ['acct-ready', 'ev-collect-demand', 'ev-elig-received', 'ev-final-notice', 'ev-launch-v2', 'ev-legal-start', 'ev-login', 'ev-maint', 'ev-order-approved', 'ev-order-changes', 'ev-order-done', 'ev-order-expired', 'ev-order-new', 'ev-order-rejected', 'ev-order-status', 'ev-pay-deferred', 'ev-pay-due', 'ev-pay-link', 'ev-pay-overdue', 'ev-pay-partial', 'ev-profile', 'ev-quote', 'ev-rate-pay', 'ev-rate-thanks-v2', 'ev-refund-rejected', 'ev-refund-request', 'ev-service-approved', 'ev-service-rejected', 'ev-settle-done', 'ev-settle-invoice', 'ev-store-offer', 'ev-support', 'ev-survey-launch', 'ev-survey-nps', 'ev-survey-service', 'ev-survey-settle', 'ev-survey-support', 'ev-transfer-approved', 'ev-transfer-fix', 'ev-transfer-received', 'ev-transfer-rejected', 'ev-transfer-remind', 'ev-transfer-request', 'pv-approved', 'pv-complete', 'pv-data', 'pv-doc-fix', 'pv-doc-ok', 'pv-film_ready', 'pv-item', 'pv-job-fix', 'pv-launched', 'pv-received', 'pv-registered', 'pv-rejected', 'pv-resubmitted', 'pv-returned', 'pv-review', 'pv-submitted', 'receipt-failed', 'receipt-paid', 'receipt-refund', 'receipt-void', 'upd-approved', 'upd-received', 'upd-rejected']; /* v627: 66 صورة — لكل رسالة صورتها بالتصميم المعتمد */
 const MSGC_CH = [['app', 'إشعار المنصة'], ['push', 'إشعار الجوال'], ['email', 'البريد'], ['wa', 'واتساب']];
@@ -24898,7 +24902,7 @@ const sub = SC_REM.indexOf(r.key) >= 0 ? 'لعميل أو أكثر — تختا�
 o2.push(['cat:' + r.key, r.code + ' — ' + r.title, null, { grp: g, sub: sub }]);
 });
 });
-SV.forEach(function (t) { if (!usedSv[t.key]) o2.push(['sv:' + t.key, 'استبانة: ' + t.name, null, { grp: '10. ' + MSGC_SEC[10], sub: 'استبانة' }]); });
+SV.forEach(function (t) { if (!usedSv[t.key]) o2.push(['sv:' + t.key, 'استبانة: ' + t.name, null, { grp: '9. ' + MSGC_SEC[9], sub: 'استبانة' }]); });
 return o2;
 }
 function scTplOpts(TS, SV) { void TS; void SV; return Array.isArray(SC.CT) && Array.isArray(SC.SV) ? scCatOpts(SC.CT, SC.SV) : []; } /* المراجعة المستقلة: لا تظهر الاستبانات «موقوفة» أثناء التحميل */
