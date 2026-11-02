@@ -9465,3 +9465,21 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .sc-tp [hidden]{display:none!important}
 .sc-tp-cur{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid color-mix(in srgb,#0AA5AD 45%,var(--t2-line));border-radius:14px;background:color-mix(in srgb,#0AA5AD 5%,var(--t2-surface))}
 .sc-tp-cur>span{display:grid;gap:2px;min-width:0}.sc-tp-cur small{color:var(--t2-muted)}.sc-tp-cur b{color:var(--t2-ink);overflow-wrap:anywhere}
+/* v642: العقود والدفعات في مركز الإرسال — كل عميل ثم عقوده (فتح وإغلاق) ودفعاتها، واختيار أكثر من دفعة */
+.sc-py{display:grid;gap:10px}
+.sc-py-u{display:grid;gap:8px;padding:10px;border:1px dashed var(--t2-line);border-radius:16px}
+.sc-py-n{font:800 .95rem/1.4 var(--t2-ff-display);color:var(--t2-ink)}
+.sc-py-c{border:1px solid var(--t2-line);border-radius:14px;background:var(--t2-surface);overflow:hidden}
+.sc-py-c.is-open,.sc-py-c.is-on{border-color:color-mix(in srgb,#0AA5AD 45%,var(--t2-line))}
+.sc-py-h{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;inline-size:100%;padding:11px 14px;font:800 .92rem/1.4 var(--t2-ff-display);color:var(--t2-ink)}
+.sc-py-h small{font-weight:600;font-size:.8rem;color:var(--t2-muted)}
+.sc-py-c.is-open>.sc-py-h{background:color-mix(in srgb,#0AA5AD 6%,var(--t2-surface))}
+.sc-py-h:focus-visible{outline:2px solid var(--t2-brand);outline-offset:-2px;border-radius:12px}
+.sc-py-l{display:grid;gap:6px;padding:8px 10px 12px}
+.sc-py-p,.sc-py-c.is-pick{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-width:0}
+.sc-py-p{border:1px solid var(--t2-line);border-radius:12px;background:var(--t2-surface)}
+.sc-py-p.is-on,.sc-py-c.is-pick.is-on{background:color-mix(in srgb,#0AA5AD 6%,var(--t2-surface));border-color:color-mix(in srgb,#0AA5AD 45%,var(--t2-line))}
+.sc-py-p span,.sc-py-c.is-pick span{display:grid;gap:2px;min-width:0}
+.sc-py-p b,.sc-py-c.is-pick b{font-weight:700;color:var(--t2-ink);overflow-wrap:anywhere}
+.sc-py-p small,.sc-py-c.is-pick small{color:var(--t2-muted);font-size:.8rem}
+.sc-py-p input,.sc-py-c.is-pick input{inline-size:18px;block-size:18px;accent-color:#0AA5AD}
