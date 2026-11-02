@@ -25064,6 +25064,22 @@ return [e('div', { class: 'sc-grid' }, [e('div', { class: 'sc-main' }, [s1, s2, 
 function axTop(t, d) { return e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, t), e('small', {}, d)])]); }
 /* تقرير الإرسال — دفعات مركز الإرسال ومستلموها */
 const SCR = { L: null, at: 0, open: '', items: {} };
+/* v644: «إعادة الإرسال» من تقرير الإرسال — القالب نفسه للعنصر نفسه (الدفعة أو العقد) ولمستلمه نفسه؛
+   وطلب التحويل يُعاد بالرقم نفسه (لا يتكرر الرقم) برابط جديد */
+const SCRS = {};
+function scResendBtn(x, I) {
+const k = x.user_id + ':' + (I.pid || I.cid || '') + ':' + (x.at || ''), st = SCRS[k]; /* المراجعة المستقلة: لكل صف في التقرير */
+if (st && st.done) return DS.badge(st.ok ? 'أُعيد الإرسال' : 'لم يُعد الإرسال', st.ok ? 'ok' : 'danger');
+return liveOk(DS.button(st && st.busy ? 'جارٍ…' : 'إعادة الإرسال', { size: 'sm', ui: 'arrows-clockwise', disabled: !!(st && st.busy), onClick: async function () {
+if (!tqConfirm('إعادة إرسال الرسالة نفسها إلى «' + (x.name || '') + '»؟' + (/^bt_/.test(I.key) ? ' (طلب التحويل بالرقم نفسه)' : ''))) return;
+SCRS[k] = { busy: true }; draw();
+const it = I.cid ? { user_id: x.user_id, cid: I.cid } : I.pid ? { user_id: x.user_id, pid: I.pid } : null;
+const r = await clPost('/admin/api/send-center/send', { groups: [], ids: [x.user_id], exclude: [], tpl_id: 'cat:' + I.key, vars: I.vars || {}, items: it ? [it] : undefined, channels: Array.isArray(I.channels) && I.channels.length ? I.channels : ['whatsapp', 'email', 'push', 'inbox'] }).catch(function (err) { return { ok: false, message: (err && err.message) || '' }; });
+SCRS[k] = r && r.ok ? { done: true, ok: true } : undefined; /* عند الفشل يبقى الزر لإعادة المحاولة */
+if (r && r.ok) snack('بدأت إعادة الإرسال — تظهر في أعلى التقرير.'); else snack((r && r.message) || 'تعذّرت إعادة الإرسال.');
+SCR.at = 0; draw();
+} }));
+}
 function scRepPage() {
 scOverrides();
 if (SCR.L === null || Date.now() - SCR.at > 30000) { if (SCR.L === null) SCR.L = 'loading'; SCR.at = Date.now(); clApi('/admin/api/send-center/batches').then(function (j) { SCR.L = (j && j.rows) || []; draw(); }).catch(function () { SCR.L = []; draw(); }); }
@@ -25073,7 +25089,8 @@ const sec = L.map(function (b) {
 const ok = b.ok || {}, items = SCR.items[b.id];
 const body = [DS.fields([['التاريخ', iso(new Date(b.created_at)) + ' ' + hm(new Date(b.created_at))], ['القالب', b.tpl_name || '—'], ['الوسيلة', (b.channels || []).map(function (k) { return SC_CHT[k] || k; }).join(' · ')], ['المستلمون', fmtNum(b.done || 0) + ' من ' + fmtNum(b.total || 0)]].concat(Object.keys(ok).map(function (k) { return ['نجح عبر ' + (SC_CHT[k] || k), fmtNum(ok[k])]; }))),
 items === undefined ? liveOk(DS.button('عرض المستلمين', { size: 'sm', onClick: function () { SCR.items[b.id] = 'loading'; draw(); clApi('/admin/api/send-center/batch/' + encodeURIComponent(b.id)).then(function (j) { SCR.items[b.id] = (j && j.rows) || []; draw(); }).catch(function () { SCR.items[b.id] = []; draw(); }); } }))
-: items === 'loading' ? clWait('المستلمين') : e('div', { class: 'ci-pk-l' }, items.map(function (x) { const R = x.results || {}; return e('div', { class: 'ci-pk-r' }, [e('span', { class: 'ci-pk-t' }, [e('b', {}, x.name || '—'), e('small', {}, Object.keys(R).map(function (k) { return (SC_CHT[k] || k) + ': ' + (R[k] && R[k].state ? R[k].state : R[k] && R[k].ok ? 'وصل' : (R[k] && R[k].off ? 'أوقفه المستلم' : 'لم يصل' + (R[k] && R[k].message ? ' — ' + R[k].message : ''))); }).join(' · '))])]); }))];
+: items === 'loading' ? clWait('المستلمين') : e('div', { class: 'ci-pk-l' }, items.map(function (x) { const R = x.results || {}, I = R._it || null; return e('div', { class: 'ci-pk-r' }, [e('span', { class: 'ci-pk-t' }, [e('b', {}, x.name || '—'), e('small', {}, Object.keys(R).filter(function (k) { return k.charAt(0) !== '_'; }).map(function (k) { return (SC_CHT[k] || k) + ': ' + (R[k] && R[k].state ? R[k].state : R[k] && R[k].ok ? 'وصل' : (R[k] && R[k].off ? 'أوقفه المستلم' : 'لم يصل' + (R[k] && R[k].message ? ' — ' + R[k].message : ''))); }).join(' · '))]),
+I && I.key && x.user_id ? scResendBtn(x, I) : null]); }))];
 const s = ST[b.status] || [b.status, null];
 return typeof rvSec === 'function' ? rvSec((b.tpl_name || 'إرسال') + ' · ' + fmtNum(b.total || 0) + ' مستلم', body, { one: 'scr-' + b.id, ic: 'paper-plane-tilt' }, null, DS.badge(s[0], s[1]))
 : DS.panel((b.tpl_name || 'إرسال') + ' · ' + fmtNum(b.total || 0) + ' مستلم', s[0], body);
