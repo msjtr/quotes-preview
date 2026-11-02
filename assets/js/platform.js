@@ -8085,6 +8085,8 @@ function sysRegister() {
   lp('sys-ntpl', 'قوالب الرسائل', 'sys', 'sys-msgc', msgcPage);
   lp('sys-push', 'مركز الإرسال', 'comm', 'comm-send', function () { COMMT.t = 'send'; return commHubPage(); });
   lp('sys-csend', 'إعدادات الإرسال للعملاء', 'sys', 'sys-csend', sysCliSendPage); /* v551 */
+lp('sys-bot', 'الرد الآلي', 'sys', 'sys-bot', function () { return typeof botSimPage === 'function' ? botSimPage() : DS.note('warn', 'الرد الآلي غير متاح الآن', 'حدّث الصفحة ثم حاول مرة أخرى.'); }); /* v645 */
+try { Object.assign(ICON, { 'sys-bot': ['chat-circle-dots', 'teal'] }); } catch (err) { void err; }
   try { Object.assign(ICON, { 'sys-csend': ['clock', 'teal'] }); } catch (err) { void err; } /* v541 */
   lp('sys-log', 'سجل الإعدادات', 'sys', 'sys-log', sysLogPage);
   qtRegister();
@@ -21455,7 +21457,8 @@ function admSysPage() {
     ['comm', 'التواصل', 'chat-circle-dots:teal', /* v641: كل إعدادات التواصل في مجموعة واحدة — القوالب (الرسائل الموحّدة) وإعدادات الإرسال وتجربة العملاء — بلا مجموعات مكررة ولا صفحات قديمة */
       [c('file-text:navy', 'قوالب الرسائل', 'كل رسائل المنصة بأقسامها: التعديل · المعاينة كما تصل · التجربة على جوالك وبريدك', 'sys-msgc'),
       c('clock:teal', 'إعدادات الإرسال للعملاء', 'متى تصل رسائل العملاء الآلية (ساعات الإرسال) · تقييم السداد فورًا بعد كل دفعة', 'sys-csend'),
-      c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة · قوالب الاستبانات', 'sys-cx')]],
+      c('star:gold', 'إعدادات تجربة العملاء والجودة', 'مسمّى الفريق · النشر على الصفحة الرئيسية وشروطه · مدد الدعوات والمتابعة · قوالب الاستبانات', 'sys-cx'),
+c('chat-circle-dots:teal', 'الرد الآلي', 'محادثة تجريبية مع بوت واتساب: تجربة الردود كما يراها العميل', 'sys-bot')]] /* v645: «الرد الآلي» انتقل من «التواصل» إلى إعداداته */,
     ['org', 'المنشأة', 'buildings:teal', [c('buildings:teal', 'بيانات المنشأة', 'الاسم والسجل والعنوان والتواصل والحساب البنكي', 'sys-org'),
       c('receipt:navy', 'الضريبة ومواضعها في المستندات', 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', 'sys-tax')]],
     ['ops', 'التشغيل', 'sliders-horizontal:teal', [c('timer:saffron', 'مدد الإنجاز', 'المدة المسموحة لكل نوع عمل', 'sys-sla'), c('clock-counter-clockwise:navy', 'سجل الإعدادات', 'ماذا تغيّر ومن غيّره ومتى', 'sys-log')]],
@@ -24318,12 +24321,20 @@ function botSimPage() {
   return [help, ctl];
 }
 function commHubPage() {
-/* v513: مساحة واحدة — الإرسال · تقرير الإرسال · الدليل — بتبويبات في الصفحة نفسها (القوالب في الإعدادات) */
+/* v645: «التواصل» صفحة واحدة بأقسامها — الإرسال · التذكير · تقرير الإرسال · التذاكر والمراسلات · جهات الاتصال · تجربة العملاء؛ و«الرد الآلي» في إعدادات التواصل */
 if (LIVE.on && !COMM.ctAt) commReady('التواصل المباشر');
-const tabs = [['send', 'الإرسال', 'paper-plane-tilt'], ['rep', 'تقرير الإرسال', 'list-checks'], ['dir', 'دليل الهواتف والبريد', 'users-three'], ['rem', 'إدارة التذكير', 'bell-ringing'], ['bot', 'الرد الآلي', 'chat-circle-dots']];
-const cur = COMMT.t || 'send';
-const bar = e('div', { class: 'sc-seg sc-tabs' }, tabs.map(function (t) { return liveOk(DS.button(t[1], { tone: cur === t[0] ? 'primary' : null, ui: t[2], onClick: function () { COMMT.t = t[0]; draw(); } })); }));
-const body = cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : cur === 'bot' ? botSimPage() : scPage();
+const okc = function (k) { return typeof cuSecOk !== 'function' || cuSecOk(k); };
+let nk = 0; try { nk = deskTickets().filter(function (t) { return tkFit(t, 'new'); }).length; } catch (err) { void err; }
+const tabs = [okc('comm') ? ['send', 'الإرسال', 'paper-plane-tilt'] : null, okc('comm') ? ['rem', 'التذكير', 'bell-ringing'] : null, okc('comm') ? ['rep', 'تقرير الإرسال', 'list-checks'] : null,
+['tk', 'التذاكر والمراسلات', 'chat-circle-dots', nk], okc('comm') ? ['dir', 'جهات الاتصال', 'users-three'] : null, okc('cx') ? ['cx', 'تجربة العملاء', 'star'] : null].filter(Boolean);
+let cur = COMMT.t === 'bot' ? 'send' : (COMMT.t || tabs[0][0]);
+if (!tabs.some(function (t) { return t[0] === cur; })) cur = tabs[0][0];
+const runLp = function (k) { try { return LP[k] && typeof LP[k].run === 'function' ? LP[k].run() : null; } catch (err) { console.error('[comm] ' + k, err); return DS.note('warn', 'تعذّر فتح القسم', 'حدّث الصفحة ثم حاول مرة أخرى.'); } };
+const bar = e('nav', { class: 'cm-tabs', 'aria-label': 'أقسام التواصل' }, tabs.map(function (t) {
+const on = cur === t[0];
+return liveOk(e('button', { type: 'button', class: 'cm-tab' + (on ? ' is-on' : ''), 'aria-current': on ? 'page' : null, onClick: function () { if (COMMT.t === t[0]) return; COMMT.t = t[0]; draw(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }, [frag(ui(t[2], 16)), e('span', {}, t[1]), t[3] ? e('i', { class: 'cm-n' }, fmtNum(t[3])) : null]));
+}));
+const body = cur === 'rep' ? scRepPage() : cur === 'dir' ? commDirPage() : cur === 'rem' ? remPage() : cur === 'tk' ? runLp('cs-tickets') : cur === 'cx' ? runLp('cx') : scPage();
 return [bar].concat(body || []);
 }
 /* ---------- v315: نموذج استيراد جهات الاتصال — تنزيل النموذج (Excel/CSV) ← الكتابة فيه ← رفعه ← مطابقة الأعمدة والتحقق ← القبول ← حفظ الملف للتنزيل ---------- */
@@ -24823,24 +24834,24 @@ const l = g.querySelector('.sc-tp-l'); if (l) l.hidden = qn ? !any : !g.classLis
 }
 function scTplPick(opts) {
 const cur = opts.filter(function (o) { return o[0] && o[0] === SC.tpl; })[0];
-if (cur) return e('div', { class: 'sc-tp-cur' }, [e('span', {}, [e('small', {}, cur[3].grp), e('b', {}, cur[1]), cur[3].sub ? e('small', {}, cur[3].sub) : null]),
-DS.button('تغيير القالب', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { SC.tg = cur[3].grp; SC.tpl = ''; SC.CV = {}; SC.sel = {}; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.ask = false; draw(); } })]);
+if (cur) return e('div', { class: 'sc-tp-cur', 'data-sk': 'tp' }, [scCodeTag(cur[1]), e('span', {}, [e('small', {}, cur[3].grp), e('b', {}, scCodeSplit(cur[1])[1]), cur[3].sub ? e('small', {}, cur[3].sub) : null]),
+DS.button('تغيير القالب', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { SC.tg = cur[3].grp; SC.tpl = ''; SC.CV = {}; SC.sel = {}; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.ask = false; scDrawKeep('tp'); } })]);
 if (!opts.length) return !Array.isArray(SC.CT) || !Array.isArray(SC.SV) ? clWait('القوالب') : DS.note('warn', 'تعذّر تحميل القوالب', 'أعد فتح الصفحة بعد قليل.');
 const G = [], by = {};
 opts.forEach(function (o) { const g = o[3] && o[3].grp; if (!o[0] || !g) return; if (!by[g]) { by[g] = []; G.push(g); } by[g].push(o); });
 const q = String(SC.tq || '').trim().toLowerCase();
-const pick = function (v) { SC.tpl = v; SC.CV = {}; SC.sel = {}; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.quiet = false; SC.ask = false; draw(); };
+const pick = function (v) { SC.tpl = v; SC.CV = {}; SC.sel = {}; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.quiet = false; SC.ask = false; scDrawKeep('tp'); };
 const groups = G.map(function (g) {
 const open = SC.tg === g, L = by[g];
 const hit = function (o) { return !q || (String(o[1]) + ' ' + g).toLowerCase().indexOf(q) >= 0; };
 const anyHit = L.some(hit);
 return e('div', { class: 'sc-tp-g' + (open ? ' is-open' : ''), hidden: q && !anyHit ? 'hidden' : null }, [
-e('button', { type: 'button', class: 'sc-tp-h', 'aria-expanded': open ? 'true' : 'false', onClick: function () { SC.tg = SC.tg === g ? '' : g; SC.tq = ''; draw(); } }, [e('b', {}, g), e('small', {}, fmtNum(L.length) + ' قالب'), frag(ui(open ? 'caret-up' : 'caret-down', 16))]),
+e('button', { type: 'button', class: 'sc-tp-h', 'data-sk': 'g:' + g, 'aria-expanded': open ? 'true' : 'false', onClick: function () { SC.tg = SC.tg === g ? '' : g; SC.tq = ''; scDrawKeep('g:' + g); } }, [e('b', {}, g), e('small', {}, fmtNum(L.length) + ' قالب'), frag(ui(open ? 'caret-up' : 'caret-down', 16))]),
 e('div', { class: 'sc-tp-l', hidden: (q ? !anyHit : !open) ? 'hidden' : null }, L.map(function (o) {
-return e('button', { type: 'button', class: 'sc-tp-i' + (o[3].off ? ' is-off' : ''), 'data-q': (String(o[1]) + ' ' + g).toLowerCase(), hidden: hit(o) ? null : 'hidden', onClick: function () { pick(o[0]); } }, [e('b', {}, o[1]), o[3].sub ? e('small', {}, o[3].sub) : null]);
+return e('button', { type: 'button', class: 'sc-tp-i' + (o[3].off ? ' is-off' : ''), 'data-q': (String(o[1]) + ' ' + g).toLowerCase(), hidden: hit(o) ? null : 'hidden', onClick: function () { pick(o[0]); } }, [scCodeTag(o[1]), e('span', { class: 'sc-tp-tt' }, [e('b', {}, scCodeSplit(o[1])[1]), o[3].sub ? e('small', {}, o[3].sub) : null])]);
 }))]);
 });
-return e('div', { class: 'sc-tp' }, [e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث باسم القالب أو رقمه', value: SC.tq || '', autocomplete: 'off', onInput: function (ev) { SC.tq = ev.target.value; scTpFilter(ev.target.parentNode, SC.tq); } })].concat(groups));
+return e('div', { class: 'sc-tp', 'data-sk': 'tp' }, [e('input', { class: 't2-input', type: 'search', placeholder: 'ابحث باسم القالب أو رقمه', value: SC.tq || '', autocomplete: 'off', onInput: function (ev) { SC.tq = ev.target.value; scTpFilter(ev.target.parentNode, SC.tq); } })].concat(groups));
 }
 /* v642: دفعات كل عميل مختار (عقوده ودفعاته) — تُحمَّل مرة لكل عميل */
 function scPays(uid) {
@@ -24862,43 +24873,78 @@ function scPMode(k) { return k === 'settle_done' ? 'contract' : SC_PAIDK.indexOf
 function scPayFit(T, p) { const m = T.pmode; return m === 'paid' ? p.paid && (T.key !== 'pay_ok' || p.receipt) : m === 'contract' ? p.closed && p.settle : !p.paid && !p.closed; }
 function scSelKey(it) { return it.cid ? 'c:' + it.cid : 'p:' + it.pid; }
 /* العناصر المختارة للمستلمين الحاليين — رسالة مستقلة لكل عنصر */
-function scItems() { const S = SC.sel || {}; return Object.keys(S).map(function (k) { return S[k]; }).filter(function (it) { return SC.mode === 'pick' && SC.ids.indexOf(it.user_id) >= 0; }); }
+function scItems() { const S = SC.sel || {}, T = scTpl(); return Object.keys(S).map(function (k) { return S[k]; }).filter(function (it) { if (!(SC.mode === 'pick' && SC.ids.indexOf(it.user_id) >= 0)) return false; const D = SC.PYM && SC.PYM[it.user_id]; if (!T || !T.pmode || !D || !D.rows) return true; const r = D.rows.filter(function (p) { return it.pid ? p.pid === it.pid : p.cid === it.cid; })[0]; return !!r && scPayFit(T, r); }); } /* v645 المراجعة المستقلة: لا يُرسل إلا ما يطابق القالب الحالي */
 function scSelSet(it, on) { SC.sel = SC.sel || {}; const k = scSelKey(it); if (on) SC.sel[k] = it; else delete SC.sel[k]; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.ask = false; }
+/* v645: الدفعات بحسب الاستحقاق من كل العقود معًا والأقرب أولًا — المتأخرة ثم ما يستحق خلال 30 يومًا، وما بعدها خلف «الدفعات اللاحقة»؛
+   ولكل دفعة صف بأعمدة ثابتة: الدفعة والعقد · المبلغ · الاستحقاق · الحالة */
+const SC_SOON = 30;
+function scDays(d) { const t = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }); const a = Date.parse(String(d || '').slice(0, 10) + 'T00:00:00Z'), b = Date.parse(t + 'T00:00:00Z'); return isNaN(a) ? null : Math.round((a - b) / 86400000); }
+function scDN(n) { return n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? fmtNum(n) + ' أيام' : fmtNum(n) + ' يومًا'; }
+function scDayTxt(n, paid) { if (paid) return ['مسدّدة', 'ok']; if (n == null) return ['—', null]; if (n < 0) return ['متأخرة ' + scDN(-n), 'danger']; if (n === 0) return ['تستحق اليوم', 'warn']; return ['بعد ' + scDN(n), n <= 7 ? 'warn' : 'info']; }
+function scCodeSplit(s) { const m = String(s || '').match(/^(\d+(?:\.\d+)?)\s+—\s+([\s\S]*)$/); return m ? [m[1], m[2]] : ['', String(s || '')]; }
+function scCodeTag(s) { const c = scCodeSplit(s)[0]; return c ? e('span', { class: 'sc-code' }, c) : null; }
+function scPayRow(uid, p) {
+const it = { user_id: uid, pid: p.pid }, on = !!(SC.sel || {})[scSelKey(it)], st = scDayTxt(scDays(p.due), p.paid);
+return e('label', { class: 'sc-pr' + (on ? ' is-on' : ''), 'data-sk': 'p:' + p.pid }, [
+e('input', { type: 'checkbox', checked: on ? 'checked' : null, onChange: function (ev) { scSelSet(it, ev.target.checked); scDrawKeep('p:' + p.pid); } }),
+e('span', { class: 'sc-pr-no' }, [e('b', {}, 'الدفعة ' + p.seq + ' من ' + p.n), e('small', {}, ['العقد ', ltr(p.contract || '—')])]),
+e('span', { class: 'sc-pr-amt' }, [scMoney(p.paid ? p.amount : p.left), e('small', {}, ' ريال')]),
+e('span', { class: 'sc-pr-due' }, ltr(p.due || '—')),
+e('span', { class: 'sc-pr-st' }, DS.badge(st[0], st[1]))]);
+}
 function scPayPick(T) {
 if (SC.mode !== 'pick' || !SC.ids.length) return DS.note('info', T.pmode === 'contract' ? 'قالب مرتبط بعقد' : T.rem ? 'رسالة تذكير بدفعة' : 'قالب مرتبط بعقد ودفعة', 'اختر في «المستهدفون» ← «أشخاص محددون» عميلًا أو أكثر، ثم اختر هنا العقود أو الدفعات — تصل كل واحدة في رسالة مستقلة.');
-SC.co = SC.co || {};
+SC.pmore = SC.pmore || {};
+const S = SC.sel || {};
 const blocks = SC.ids.map(function (uid) {
 const nm = (SC.PD[uid] && SC.PD[uid].name) || SC.nm[uid] || '—';
+const head = function (x) { return e('div', { class: 'sc-pu-h' }, [e('span', { class: 'ci-pk-av' }, String(nm || '؟').charAt(0)), e('b', { class: 'sc-py-n' }, nm), x || null]); };
 const D = scPays(uid);
-if (!D) return e('div', { class: 'sc-py-u' }, [e('b', { class: 'sc-py-n' }, nm), clWait('العقود والدفعات')]);
+if (!D) return e('div', { class: 'sc-py-u' }, [head(), clWait('العقود والدفعات')]);
 const rows = D.rows.filter(function (p) { return scPayFit(T, p); });
-if (!rows.length) return e('div', { class: 'sc-py-u' }, [e('b', { class: 'sc-py-n' }, nm), e('small', { class: 'cu-dr-hint' }, D.err || (T.pmode === 'paid' ? 'لا دفعات مسدّدة' + (T.key === 'pay_ok' ? ' لها إيصال' : '') + ' لهذا العميل.' : T.pmode === 'contract' ? 'لا عقد مغلق بسداد قيمة المنتج لهذا العميل.' : 'لا دفعات غير مسدّدة في عقود قائمة لهذا العميل.')),
+if (!rows.length) return e('div', { class: 'sc-py-u' }, [head(), e('small', { class: 'cu-dr-hint' }, D.err || (T.pmode === 'paid' ? 'لا دفعات مسدّدة' + (T.key === 'pay_ok' ? ' لها إيصال' : '') + ' لهذا العميل.' : T.pmode === 'contract' ? 'لا عقد مغلق بسداد قيمة المنتج لهذا العميل.' : 'لا دفعات غير مسدّدة في عقود قائمة لهذا العميل.')),
 D.err ? e('div', { class: 't2-pb-actions' }, [DS.button('إعادة المحاولة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { delete SC.PYM[uid]; draw(); } })]) : null]);
+if (T.pmode === 'contract') {
 const C = [], byC = {};
 rows.forEach(function (p) { const k = p.cid || p.contract; if (!byC[k]) { byC[k] = []; C.push(k); } byC[k].push(p); });
-const S = SC.sel || {};
-const cards = C.map(function (cid) {
-const L = byC[cid], p0 = L[0], no = p0.contract || '—';
-if (T.pmode === 'contract') {
-const it = { user_id: uid, cid: p0.cid }, on = !!S[scSelKey(it)];
-return e('label', { class: 'sc-py-c is-pick' + (on ? ' is-on' : '') }, [e('input', { type: 'checkbox', checked: on ? 'checked' : null, onChange: function (ev) { scSelSet(it, ev.target.checked); draw(); } }), e('span', {}, [e('b', {}, 'العقد ' + no), e('small', {}, 'مغلق بسداد قيمة المنتج · ' + fmtNum(L.length) + ' دفعة')])]);
+return e('div', { class: 'sc-py-u' }, [head()].concat(C.map(function (cid) {
+const L = byC[cid], p0 = L[0], it = { user_id: uid, cid: p0.cid }, on = !!S[scSelKey(it)];
+return e('label', { class: 'sc-py-c is-pick' + (on ? ' is-on' : ''), 'data-sk': 'k:' + p0.cid }, [e('input', { type: 'checkbox', checked: on ? 'checked' : null, onChange: function (ev) { scSelSet(it, ev.target.checked); scDrawKeep('k:' + p0.cid); } }), e('span', {}, [e('b', {}, ['العقد ', ltr(p0.contract || '—')]), e('small', {}, 'مغلق بسداد قيمة المنتج · ' + fmtNum(L.length) + ' دفعة')])]);
+})));
 }
-const its = L.map(function (p) { return { user_id: uid, pid: p.pid }; });
-const nOn = its.filter(function (it) { return !!S[scSelKey(it)]; }).length;
-const open = SC.co[uid + ':' + cid] !== undefined ? SC.co[uid + ':' + cid] : C.length === 1;
-return e('div', { class: 'sc-py-c' + (open ? ' is-open' : '') }, [
-e('button', { type: 'button', class: 'sc-py-h', 'aria-expanded': open ? 'true' : 'false', onClick: function () { SC.co[uid + ':' + cid] = !open; draw(); } }, [e('b', {}, 'العقد ' + no), e('small', {}, fmtNum(L.length) + ' دفعة' + (nOn ? ' · المختار ' + fmtNum(nOn) : '')), frag(ui(open ? 'caret-up' : 'caret-down', 16))]),
-open ? e('div', { class: 'sc-py-l' }, [e('div', { class: 't2-pb-actions' }, [DS.button(nOn === its.length ? 'إلغاء تحديد الكل' : 'تحديد الكل', { size: 'sm', onClick: function () { const all = nOn !== its.length; its.forEach(function (it) { scSelSet(it, all); }); draw(); } })])].concat(L.map(function (p, i) {
-const it = its[i], on = !!S[scSelKey(it)];
-return e('label', { class: 'sc-py-p' + (on ? ' is-on' : '') }, [e('input', { type: 'checkbox', checked: on ? 'checked' : null, onChange: function (ev) { scSelSet(it, ev.target.checked); draw(); } }),
-e('span', {}, [e('b', {}, 'الدفعة ' + p.seq + ' من ' + p.n + ' · ' + scMoney(p.paid ? p.amount : p.left) + ' ريال'), e('small', {}, 'الاستحقاق ' + p.due + ' · ' + (p.paid ? 'مسدّدة' : p.late ? 'متأخرة' : 'قادمة'))])]);
-}))) : null]);
-});
-return e('div', { class: 'sc-py-u' }, [e('b', { class: 'sc-py-n' }, nm)].concat(cards));
+const G = [];
+let vis = [], rest = [], restT = '';
+if (T.pmode === 'paid') {
+const L = rows.slice().sort(function (a, b) { return String(b.due).localeCompare(String(a.due)) || (b.seq - a.seq); });
+vis = L.slice(0, 6); rest = L.slice(6); restT = 'الدفعات الأقدم';
+G.push(['المسدّدة — الأحدث أولًا', 'ok', vis]);
+} else {
+const L = rows.slice().sort(function (a, b) { return String(a.due || '9999').localeCompare(String(b.due || '9999')) || (a.seq - b.seq); });
+const dd = function (p) { return scDays(p.due); };
+const late = L.filter(function (p) { const d = dd(p); return d != null && d < 0; });
+const soon = L.filter(function (p) { const d = dd(p); return d == null || (d >= 0 && d <= SC_SOON); });
+const later = L.filter(function (p) { const d = dd(p); return d != null && d > SC_SOON; });
+G.push(['متأخرة', 'danger', late]);
+if (T.key === 'pay_late') { vis = late; rest = []; } /* المراجعة المستقلة: قالب المتأخرة للمتأخرة وحدها */
+else { G.push(['تستحق خلال ' + fmtNum(SC_SOON) + ' يومًا', 'info', soon]); vis = late.concat(soon); rest = later; restT = 'الدفعات اللاحقة'; }
+}
+const more = !!SC.pmore[uid];
+const shown = vis.concat(more ? rest : []);
+const its = shown.map(function (p) { return { user_id: uid, pid: p.pid }; });
+const nOn = rows.filter(function (p) { return !!S[scSelKey({ user_id: uid, pid: p.pid })]; }).length;
+const allOn = its.length > 0 && its.every(function (it) { return !!S[scSelKey(it)]; });
+const kids = [head(nOn ? DS.badge('المختار ' + fmtNum(nOn), 'info') : null)];
+G.forEach(function (g) { if (!g[2].length) return; kids.push(e('div', { class: 'sc-pg-h is-' + g[1] }, g[0] + ' · ' + fmtNum(g[2].length))); g[2].forEach(function (p) { kids.push(scPayRow(uid, p)); }); });
+if (!vis.length) kids.push(e('small', { class: 'cu-dr-hint' }, T.key === 'pay_late' ? 'لا دفعات متأخرة لهذا العميل.' : 'لا دفعات متأخرة أو مستحقة خلال ' + fmtNum(SC_SOON) + ' يومًا لهذا العميل.'));
+if (more && rest.length) { kids.push(e('div', { class: 'sc-pg-h' }, restT + ' · ' + fmtNum(rest.length))); rest.forEach(function (p) { kids.push(scPayRow(uid, p)); }); }
+if (rest.length) kids.push(e('button', { type: 'button', class: 'sc-pmore', 'data-sk': 'm:' + uid, 'aria-expanded': more ? 'true' : 'false', onClick: function () { SC.pmore[uid] = !more; scDrawKeep('m:' + uid); } }, [more ? 'إخفاء ' + restT : restT + ' (' + fmtNum(rest.length) + ')', frag(ui(more ? 'caret-up' : 'caret-down', 16))]));
+if (its.length > 1) kids.push(e('div', { class: 't2-pb-actions' }, [DS.button(allOn ? 'إلغاء تحديد الظاهر' : 'تحديد الظاهر (' + fmtNum(its.length) + ')', { size: 'sm', onClick: function () { its.forEach(function (it) { scSelSet(it, !allOn); }); draw(); } })]));
+return e('div', { class: 'sc-py-u' }, kids);
 });
 const n = scItems().length;
 const cap = T.rem ? 30 : 100;
-return e('div', { class: 'sc-py' }, blocks.concat([n > cap ? DS.note('warn', 'المختار أكثر من الحد', 'الحد ' + fmtNum(cap) + ' في المرة الواحدة — قلّل المختار.') : e('small', { class: 'cu-dr-hint' }, n ? 'المختار ' + fmtNum(n) + ' — تصل كل واحدة في رسالة مستقلة.' : 'لم تختر شيئًا بعد.')]));
+return e('div', { class: 'sc-py' }, blocks.concat([n > cap ? DS.note('warn', 'المختار أكثر من الحد', 'الحد ' + fmtNum(cap) + ' في المرة الواحدة — قلّل المختار.')
+: e('div', { class: 'sc-selbar' + (n ? '' : ' is-empty') }, n ? [e('b', {}, 'المختار ' + fmtNum(n) + (T.pmode === 'contract' ? ' عقد' : ' دفعة')), e('small', {}, 'كل واحدة في رسالة مستقلة')] : [e('small', {}, 'لم تختر شيئًا بعد.')])]));
 }
 function scCatFields() {
 const T = scTpl(); if (!T) return null;
@@ -24967,6 +25013,8 @@ if (/خارج أوقات الإرسال/.test(SC.err)) SC.quiet = true;
 SC.force = false;
 }
 SC.busy = false; draw(); try { window.scrollTo(0, 0); } catch (err) { void err; }
+/* v645: إشعار واضح بالنتيجة في منتصف الشاشة — نجح الإرسال أو سبب عدم الإرسال */
+try { snack(SC.err ? 'تعذّر الإرسال — ' + SC.err : SC.res ? (SC.res.rem ? 'أُرسلت ' + fmtNum(SC.res.n) + ' رسالة تذكير' : SC.res.survey ? 'أُنشئت ' + fmtNum(SC.res.n) + ' دعوة استبانة' : 'بدأ الإرسال إلى ' + fmtNum(SC.res.n) + ' — تتابعه في «تقرير الإرسال»') : ''); } catch (err) { void err; }
 }
 /* نص واتساب بتنسيقه: *عريض* وأسطر */
 function scWaTxt(t) { return String(t || '').split('\n').map(function (ln, i, a) { return [].concat(ln.split(/\*([^*\n]+)\*/).map(function (p, j) { return j % 2 ? e('b', {}, p) : p; }), i < a.length - 1 ? [e('br', {})] : []); }); }
@@ -25059,7 +25107,8 @@ SC.quiet && !SC.busy ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('�
 SC.ask ? DS.note('warn', 'تأكيد الإرسال', 'سيُرسل «' + (T ? T.name : '') + '» ' + (NI ? fmtNum(NI) + ' رسالة مستقلة' : 'إلى ' + fmtNum(n) + ' مستلم') + ' الآن، ولا يمكن التراجع بعد الإرسال.') : null,
 e('div', { class: 't2-pb-actions' }, SC.ask ? [liveOk(DS.button(SC.busy ? 'جارٍ الإرسال…' : 'نعم، أرسل الآن', { tone: 'primary', ui: 'paper-plane-tilt', disabled: SC.busy || !ready, onClick: scSend })), DS.button('إلغاء', { disabled: SC.busy, onClick: function () { SC.ask = false; draw(); } })]
 : [liveOk(DS.button(ready ? (NI ? 'إرسال ' + fmtNum(NI) + ' رسالة' : 'إرسال إلى ' + fmtNum(n) + ' مستلم') : 'أكمل الخطوات للإرسال', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !ready, onClick: function () { SC.ask = true; SC.err = ''; SC.quiet = false; draw(); } }))])]);
-return [e('div', { class: 'sc-grid' }, [e('div', { class: 'sc-main' }, [s1, s2, s3]), e('aside', { class: 'sc-side' }, [s4, s5])])];
+/* v645: سبب عدم الإرسال ظاهر أعلى الصفحة (ثابت أثناء التمرير) لا في آخرها وحدها */
+return [SC.err ? e('div', { class: 'sc-flash', role: 'alert' }, [DS.note('warn', 'لم يُرسل', SC.err)]) : null, e('div', { class: 'sc-grid' }, [e('div', { class: 'sc-main' }, [s1, s2, s3]), e('aside', { class: 'sc-side' }, [s4, s5])])].filter(Boolean);
 }
 function axTop(t, d) { return e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, t), e('small', {}, d)])]); }
 /* تقرير الإرسال — دفعات مركز الإرسال ومستلموها */
@@ -25070,32 +25119,65 @@ const SCRS = {};
 function scResendBtn(x, I) {
 const k = x.user_id + ':' + (I.pid || I.cid || '') + ':' + (x.at || ''), st = SCRS[k]; /* المراجعة المستقلة: لكل صف في التقرير */
 if (st && st.done) return DS.badge(st.ok ? 'أُعيد الإرسال' : 'لم يُعد الإرسال', st.ok ? 'ok' : 'danger');
-return liveOk(DS.button(st && st.busy ? 'جارٍ…' : 'إعادة الإرسال', { size: 'sm', ui: 'arrows-clockwise', disabled: !!(st && st.busy), onClick: async function () {
+const rb = liveOk(DS.button(st && st.busy ? 'جارٍ…' : 'إعادة الإرسال', { size: 'sm', ui: 'arrows-clockwise', disabled: !!(st && st.busy), onClick: async function () {
 if (!tqConfirm('إعادة إرسال الرسالة نفسها إلى «' + (x.name || '') + '»؟' + (/^bt_/.test(I.key) ? ' (طلب التحويل بالرقم نفسه)' : ''))) return;
-SCRS[k] = { busy: true }; draw();
+SCRS[k] = { busy: true }; scDrawKeep('r:' + k);
 const it = I.cid ? { user_id: x.user_id, cid: I.cid } : I.pid ? { user_id: x.user_id, pid: I.pid } : null;
 const r = await clPost('/admin/api/send-center/send', { groups: [], ids: [x.user_id], exclude: [], tpl_id: 'cat:' + I.key, vars: I.vars || {}, items: it ? [it] : undefined, channels: Array.isArray(I.channels) && I.channels.length ? I.channels : ['whatsapp', 'email', 'push', 'inbox'] }).catch(function (err) { return { ok: false, message: (err && err.message) || '' }; });
 SCRS[k] = r && r.ok ? { done: true, ok: true } : undefined; /* عند الفشل يبقى الزر لإعادة المحاولة */
-if (r && r.ok) snack('بدأت إعادة الإرسال — تظهر في أعلى التقرير.'); else snack((r && r.message) || 'تعذّرت إعادة الإرسال.');
-SCR.at = 0; draw();
+if (r && r.ok) snack('أُعيد الإرسال إلى «' + (x.name || '') + '» — يظهر في التقرير بعد «تحديث».'); else snack('تعذّرت إعادة الإرسال — ' + ((r && r.message) || 'حاول مرة أخرى.'));
+scDrawKeep('r:' + k);
 } }));
+rb.setAttribute('data-sk', 'r:' + k); return rb;
+}
+/* v645: ثبات الشاشة — بعد فتح قسم أو عقد أو اختيار دفعة يبقى العنصر الذي ضغطته في مكانه نفسه على الشاشة (لا قفز) */
+function scDrawKeep(sk) {
+const q = function () { return sk ? document.querySelector('[data-sk="' + String(sk).replace(/"/g, '') + '"]') : null; };
+const a = q(), top = a ? a.getBoundingClientRect().top : null;
+draw();
+if (top == null) return;
+const fix = function () { const b = q(); if (!b) return; const d = b.getBoundingClientRect().top - top; if (Math.abs(d) < 1) return; if (typeof SCROLLER !== 'undefined' && SCROLLER && SCROLLER !== window) SCROLLER.scrollTop += d; else window.scrollBy(0, d); };
+fix(); try { requestAnimationFrame(fix); } catch (err) { void err; }
 }
 function scRepPage() {
 scOverrides();
-if (SCR.L === null || Date.now() - SCR.at > 30000) { if (SCR.L === null) SCR.L = 'loading'; SCR.at = Date.now(); clApi('/admin/api/send-center/batches').then(function (j) { SCR.L = (j && j.rows) || []; draw(); }).catch(function () { SCR.L = []; draw(); }); }
+if (SCR.L === null || SCR.at === 0 || (Date.now() - SCR.at > 30000 && !Object.keys(SCR.items).length)) { /* v645: لا تحديث تلقائي والمستلمون مفتوحون — لا يتغير المكان؛ «تحديث» يدويًا */ if (SCR.L === null) SCR.L = 'loading'; SCR.at = Date.now(); clApi('/admin/api/send-center/batches').then(function (j) { SCR.L = (j && j.rows) || []; draw(); }).catch(function () { SCR.L = []; draw(); }); }
 if (SCR.L === 'loading') return [axTop('تقرير الإرسال', 'كل ما أُرسل من مركز الإرسال'), clWait('تقرير الإرسال')];
 const L = SCR.L || [], ST = { running: ['جارٍ الإرسال', 'info'], done: ['اكتمل', 'ok'], failed: ['تعذّر', 'danger'] };
+/* v645: عرض أوضح — نسبة الوصول لكل وسيلة، ولكل مستلم دفعته وعقده، وشارة لكل وسيلة، وسبب عدم الوصول في سطر مستقل (بلا الأسماء التقنية) */
+const lab = function (k) { return SC_CHT[k] || (k === 'error' ? 'الإرسال' : k === 'skipped' ? 'تخطٍّ' : k); };
+const good = function (r) { return !!(r && (r.ok || (r.state && !/فشل|لم ي|تعذّر|مرفوض|failed|undeliver|error/i.test(String(r.state))))); };
+const stTxt = function (r) { return r && r.state ? String(r.state).replace(/\s*·\s*[a-z0-9_]+\s*$/i, '').trim() : ''; };
+const itLbl = function (x, I) {
+if (!I || !x.user_id || !(I.pid || I.cid)) return null;
+const D = scPays(x.user_id), R = D && D.rows ? D.rows : null;
+if (!R) return null;
+if (I.pid) { const p = R.filter(function (r) { return r.pid === I.pid; })[0]; return p ? ['العقد ', ltr(p.contract || '—'), ' · الدفعة ' + p.seq + ' من ' + p.n + ' · ' + scMoney(p.amount) + ' ريال'] : null; }
+const c = R.filter(function (r) { return r.cid === I.cid; })[0]; return c ? ['العقد ', ltr(c.contract || '—')] : null;
+};
 const sec = L.map(function (b) {
-const ok = b.ok || {}, items = SCR.items[b.id];
-const body = [DS.fields([['التاريخ', iso(new Date(b.created_at)) + ' ' + hm(new Date(b.created_at))], ['القالب', b.tpl_name || '—'], ['الوسيلة', (b.channels || []).map(function (k) { return SC_CHT[k] || k; }).join(' · ')], ['المستلمون', fmtNum(b.done || 0) + ' من ' + fmtNum(b.total || 0)]].concat(Object.keys(ok).map(function (k) { return ['نجح عبر ' + (SC_CHT[k] || k), fmtNum(ok[k])]; }))),
-items === undefined ? liveOk(DS.button('عرض المستلمين', { size: 'sm', onClick: function () { SCR.items[b.id] = 'loading'; draw(); clApi('/admin/api/send-center/batch/' + encodeURIComponent(b.id)).then(function (j) { SCR.items[b.id] = (j && j.rows) || []; draw(); }).catch(function () { SCR.items[b.id] = []; draw(); }); } }))
-: items === 'loading' ? clWait('المستلمين') : e('div', { class: 'ci-pk-l' }, items.map(function (x) { const R = x.results || {}, I = R._it || null; return e('div', { class: 'ci-pk-r' }, [e('span', { class: 'ci-pk-t' }, [e('b', {}, x.name || '—'), e('small', {}, Object.keys(R).filter(function (k) { return k.charAt(0) !== '_'; }).map(function (k) { return (SC_CHT[k] || k) + ': ' + (R[k] && R[k].state ? R[k].state : R[k] && R[k].ok ? 'وصل' : (R[k] && R[k].off ? 'أوقفه المستلم' : 'لم يصل' + (R[k] && R[k].message ? ' — ' + R[k].message : ''))); }).join(' · '))]),
-I && I.key && x.user_id ? scResendBtn(x, I) : null]); }))];
+const ok = b.ok || {}, items = SCR.items[b.id], tot = Number(b.total) || 0;
+const keys = (b.channels || []).slice(); Object.keys(ok).forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); });
+const tiles = e('div', { class: 'sc-rt' }, keys.map(function (k) {
+const v = Number(ok[k]) || 0, pc = tot ? Math.min(100, Math.round(v * 100 / tot)) : 0, fill = e('i', {});
+fill.style.inlineSize = Math.max(pc, v ? 4 : 0) + '%';
+return e('div', { class: 'sc-rt-i' + (tot && v < tot ? ' is-bad' : '') }, [e('span', { class: 'sc-rt-t' }, lab(k)), e('b', {}, fmtNum(v) + ' / ' + fmtNum(tot)), e('span', { class: 'sc-rt-bar' }, fill)]);
+}));
+const meta = e('small', { class: 'sc-rt-meta' }, iso(new Date(b.created_at)) + ' · ' + hm(new Date(b.created_at)) + ' · ' + fmtNum(b.done || 0) + ' من ' + fmtNum(tot) + ' مستلم');
+const list = items === undefined ? liveOk(DS.button('عرض المستلمين (' + fmtNum(tot) + ')', { size: 'sm', onClick: function () { SCR.items[b.id] = 'loading'; draw(); clApi('/admin/api/send-center/batch/' + encodeURIComponent(b.id)).then(function (j) { SCR.items[b.id] = (j && j.rows) || []; draw(); }).catch(function () { SCR.items[b.id] = []; draw(); }); } }))
+: items === 'loading' ? clWait('المستلمين') : e('div', { class: 'sc-rr-l' }, items.map(function (x) {
+const R = x.results || {}, I = R._it || null, ks = Object.keys(R).filter(function (k) { return k.charAt(0) !== '_'; }), lb = items.length <= 10 ? itLbl(x, I) : null;
+return e('div', { class: 'sc-rr' }, [
+e('div', { class: 'sc-rr-h' }, [e('span', { class: 'sc-rr-t' }, [e('b', {}, x.name || '—'), lb ? e('small', {}, lb) : null]), I && I.key && x.user_id ? scResendBtn(x, I) : null]),
+e('div', { class: 'sc-rr-c' }, ks.map(function (k) { const r = R[k], g = good(r), s = g ? stTxt(r) : ''; return DS.badge((g ? '✓ ' : '✕ ') + lab(k) + (s ? ' · ' + s : ''), g ? 'ok' : (r && r.off) || k === 'skipped' ? 'warn' : 'danger'); }))]
+.concat(ks.filter(function (k) { return !good(R[k]) && R[k] && R[k].message; }).map(function (k) { return e('small', { class: 'sc-rr-why' }, lab(k) + ': ' + R[k].message); })));
+}));
+const body = [meta, keys.length ? tiles : null, list].filter(Boolean);
 const s = ST[b.status] || [b.status, null];
-return typeof rvSec === 'function' ? rvSec((b.tpl_name || 'إرسال') + ' · ' + fmtNum(b.total || 0) + ' مستلم', body, { one: 'scr-' + b.id, ic: 'paper-plane-tilt' }, null, DS.badge(s[0], s[1]))
-: DS.panel((b.tpl_name || 'إرسال') + ' · ' + fmtNum(b.total || 0) + ' مستلم', s[0], body);
+return typeof rvSec === 'function' ? rvSec((b.tpl_name || 'إرسال') + ' · ' + fmtNum(tot) + ' مستلم', body, { one: 'scr-' + b.id, ic: 'paper-plane-tilt' }, null, DS.badge(s[0], s[1]))
+: DS.panel((b.tpl_name || 'إرسال') + ' · ' + fmtNum(tot) + ' مستلم', s[0], body);
 });
-return [axTop('تقرير الإرسال', 'كل ما أُرسل من مركز الإرسال — اضغط الدفعة لعرض تفاصيلها'), e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إرسال جديد', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { COMMT.t = 'send'; go('other', 'comm'); } })), DS.button('تحديث', { ui: 'arrows-clockwise', onClick: function () { SCR.at = 0; draw(); } })]),
+return [axTop('تقرير الإرسال', 'كل ما أُرسل من مركز الإرسال — اضغط الإرسال لعرض تفاصيله'), e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إرسال جديد', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { COMMT.t = 'send'; go('other', 'comm'); } })), DS.button('تحديث', { ui: 'arrows-clockwise', onClick: function () { SCR.at = 0; SCR.items = {}; draw(); } })]),
 L.length ? e('div', { class: 'rv-acc' }, sec) : DS.note('info', 'لا إرسال بعد', 'كل إرسال من مركز الإرسال يظهر هنا مع حالة كل مستلم.')];
 }
 /* v522: إدارة التذكير — v531: الإرسال اليدوي لأي عميل · مفضلة مستقلة عن الدليل · واجهة أوضح: الدفعات ظاهرة وتُحدَّد بضغطة، وشريط المحدد ثابت أسفل الشاشة، والتقييم بعد السداد في السجل · v530: الإرسال يطابق الدفعة المحددة بالضبط · v529: قوائم المتأخرين والمتعثرين والمنتظمين والمفضلة، إرسال الآن أو مجدول، وقواعد تلقائية متعددة متناسقة (مستلمون · فئات · استبعاد · وقت كامل) لا تعمل قبل الاعتماد (reminders.js · stf_106–110) */
@@ -27790,13 +27872,7 @@ if (LIVE.on) {
       return secHub('cu', { t: 'قسم العملاء', s: 'الملفات والتوثيق والطلبات والمتجر والأمن — كل إجراء في مكان واحد.', ic: 'cu' }, groups.filter(function (g) { return g[3] && g[3].length; }));
     };
     /* قسم «التواصل» و«الفريق والشركاء»: رأس ثم بطاقات مباشرة — بلا مجموعة تكرر عنوان الصفحة */
-    const commHub = function () {
-      let k = 0, all = 0; try { const T = deskTickets(); all = T.length; k = T.filter(function (t) { return tkFit(t, 'new'); }).length; } catch (err) { void err; }
-      const L = [['ticket', 'التذاكر والمراسلات', k ? fmtNum(k) + ' بانتظار الرد' : fmtNum(all) + ' مراسلة', k ? 'warn' : null, function () { ADM.tst = ''; go('other', 'cs-tickets'); }, k || null],
-        (typeof cuSecOk !== 'function' || cuSecOk('comm')) ? ['mail', 'مركز الإرسال', 'رسالة لعميل أو لفئة بالقوالب المعتمدة', null, function () { go('other', 'comm'); }] : null,
-        (typeof cuSecOk !== 'function' || cuSecOk('cx')) ? ['star:gold', 'تجربة العملاء والجودة', 'المؤشرات · التقييمات · الاستبانات', null, function () { go('other', 'cx'); }] : null].filter(Boolean);
-      return [lvHero({ ic: 'comm-hub', eye: 'الأقسام', t: 'التواصل', sub: 'مراسلات العملاء والإرسال لهم وتجربتهم — في مكان واحد.' }), e('div', { 'data-live-ok': '' }, lvHub(L))];
-    };
+    const commHub = function () { /* v645: «التواصل» صفحة واحدة بأقسامها — بلا صفحة بطاقات وسيطة */ return typeof commHubPage === 'function' ? commHubPage() : []; };
     const teamHub = function () {
       const L = [(typeof cuSecOk !== 'function' || cuSecOk('soon-emp')) ? ['users:navy', 'الموظفون', 'حسابات الفريق وأدوارهم ومسمّياتهم', null, function () { go('other', 'soon-emp'); }] : null,
         (typeof cuSecOk !== 'function' || cuSecOk('soon-par')) ? ['handshake:teal', 'الشركاء', 'الشركاء وعروضهم وعقودهم ومالياتهم', null, function () { go('other', 'soon-par'); }] : null,
