@@ -20915,11 +20915,28 @@ function admVerOpen2(r) {
         } catch (err) { if (err && err.message === 'auth') { S.busy = false; return; } await load().catch(function () {}); S.msg['sec:' + b.block] = ['warn', 'توقفت المطابقة بعد ' + n + ' بند', (err && err.message) || '']; }
         S.busy = false; paint();
       };
+      /* v650: «القسم كله غير مطابق» بسبب واحد يُسجَّل على كل بنوده — ويبقى تعديل أي بند بعدها */
+      const notX = items.filter(function (i) { return i.verdict !== 'mismatch'; });
+      S.secX = S.secX || {};
+      const misAll = async function () {
+        const why = String((S.secX[b.block] || {}).txt || '').trim();
+        if (!why) { S.msg['sec:' + b.block] = ['warn', 'اكتب سبب عدم المطابقة — يُسجَّل على كل بنود القسم']; paint(); return; }
+        if (S.busy || !notX.length) return; S.busy = true; let n = 0;
+        S.msg['sec:' + b.block] = ['info', 'جارٍ تسجيل ' + notX.length + ' بند غير مطابق…']; paint();
+        try {
+          for (const it of notX) { const j = await admRpc('admin_verification_item_decide', { p_item: it.id, p_verdict: 'mismatch', p_reason: why }); if (j && j.ok === false) throw new Error(verErr(j)); n += 1; }
+          delete S.secX[b.block]; refreshList(); await load(); S.msg['sec:' + b.block] = ['ok', 'سُجّل ' + n + ' بند غير مطابق في «' + (b.title || b.block) + '».'];
+        } catch (err) { if (err && err.message === 'auth') { S.busy = false; return; } await load().catch(function () {}); S.msg['sec:' + b.block] = ['warn', 'توقف التسجيل بعد ' + n + ' بند', (err && err.message) || '']; }
+        S.busy = false; paint();
+      };
+      const secXBox = canAct && S.secX[b.block] ? e('div', { class: 'vr3-box', style: 'flex-basis:100%' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'سبب عدم مطابقة القسم (يُسجَّل على كل بنوده)', 'aria-label': 'سبب عدم مطابقة القسم', onInput: function (ev) { S.secX[b.block].txt = ev.target.value; } }, S.secX[b.block].txt || ''),
+        e('div', { class: 'vr3-acts' }, [vr3Btn('تأكيد: القسم غير مطابق (' + notX.length + ')', { size: 'sm', tone: 'danger', onClick: misAll }), vr3Btn('إلغاء', { size: 'sm', onClick: function () { delete S.secX[b.block]; paint(); } })])]) : null;
       return e('section', { class: 'vr3-sec', id: 'vr3-s-' + b.block }, [
         e('div', { class: 'vr3-sec-h' }, [
           e('div', { class: 'vr3-sec-t' }, [e('span', { class: 'vr3-sec-ic' }, frag(ui(VR3_IC[b.block] || 'list-checks', 18))), e('div', {}, [e('h3', {}, b.title || b.block),
             e('div', { class: 'vr3-sec-m' }, [e('span', {}, m + ' من ' + items.length + ' مطابق'), x ? DS.badge(x + ' غير مطابق', 'danger') : null, items.length - m - x ? DS.badge((items.length - m - x) + ' بانتظار', 'warn') : null, done ? DS.badge('مكتمل', 'ok') : null])])]),
           e('div', { class: 'vr3-acts' }, [
+            canAct && notX.length && !S.secX[b.block] ? vr3Btn('القسم غير مطابق (' + notX.length + ')', { size: 'sm', tone: 'danger', onClick: function () { S.secX[b.block] = { txt: '' }; paint(); } }) : null, secXBox,
             canAct && pendOk.length ? vr3Btn('مطابقة القسم (' + pendOk.length + ')', { size: 'sm', tone: 'primary', ui: 'check', onClick: matchAll }) : null,
             canAct && m > 0 ? admTwoStep('إلغاء مطابقة القسم (' + m + ')', null, function () { return act('sec:' + b.block, 'admin_verification_reset', { p_id: r.id, p_block: b.block, p_item: null }, 'أُلغيت المطابقة في «' + (b.title || b.block) + '» — البنود بانتظار المطابقة.'); }) : null,
             vr3Btn(fold ? 'عرض البنود' : 'طيّ', { size: 'sm', onClick: function () { S.fold[b.block] = !fold; paint(); } })
@@ -20938,7 +20955,7 @@ function admVerOpen2(r) {
     let dec = null;
     if (canRev && inRev) {
       const tabs = e('div', { class: 'vr3-tabs', role: 'tablist' }, [['approve', 'اعتماد الملف', 'primary'], ['return', 'إعادة للتعديل', null], ['reject', 'رفض', 'danger']].filter(function (t) { return canDecide || t[0] === 'return'; }).concat(canDecide ? [] : [['escalate', 'رفع للاعتماد النهائي', 'primary']]).map(function (t) {
-        return vr3Btn(t[1], { size: 'sm', tone: D.mode === t[0] ? (t[2] || 'primary') : null, onClick: function () { if (D.mode !== t[0]) { D.mode = t[0]; D.pick = {}; D.txt = t[0] === 'return' ? misText() : ''; delete S.msg.dec; } paint(); } });
+        return vr3Btn(t[1], { size: 'sm', tone: D.mode === t[0] ? (t[2] || 'primary') : null, onClick: function () { if (D.mode !== t[0]) { D.mode = t[0]; D.pick = {}; D.ask = null; D.txt = t[0] === 'return' ? misText() : ''; delete S.msg.dec; } paint(); } });
       }));
       let body = [];
       if (D.mode === 'approve') {
@@ -20963,11 +20980,14 @@ function admVerOpen2(r) {
           e('small', {}, isRet ? 'سبب الإعادة (يصل ' + who + '):' : 'سبب الرفض (يصل ' + who + '):'),
           chips(isRet ? VR3_RET : VR3_REJ, isRet),
           e('textarea', { class: 't2-input', rows: '4', placeholder: D.pick['أخرى'] ? 'اكتب السبب' : 'تفاصيل إضافية (اختيارية)', 'aria-label': 'تفاصيل السبب', onInput: function (ev) { D.txt = ev.target.value; } }, D.txt),
-          e('div', { class: 'vr3-acts' }, [admTwoStep(isRet ? 'إعادة الطلب للتعديل' : 'رفض الطلب', isRet ? null : 'danger', function () {
+          e('div', { class: 'vr3-acts' }, [(D.ask ? e('div', { class: 'vr3-box' }, [DS.note(isRet ? 'warn' : 'danger', 'هذا ما يصل ' + who + (isRet ? ' — ويُعاد الملف للاستكمال' : ' — ويُرفض الطلب'), String(D.ask)), vr3Btn('تعديل النص', { size: 'sm', onClick: function () { D.ask = null; paint(); } })]) : null), vr3Btn(D.ask ? (isRet ? 'تأكيد: أرسل الإعادة' : 'تأكيد: أرسل الرفض') : (isRet ? 'مراجعة رسالة الإعادة' : 'مراجعة رسالة الرفض'), { size: 'sm', tone: isRet ? 'primary' : 'danger', onClick: function () {
             const note = noteOf();
             if (!note) { S.msg.dec = ['warn', 'اختر سببًا أو اكتبه', 'الإعادة والرفض يحتاجان سببًا يصل ' + who + '.']; paint(); return; }
+            if (D.ask !== note) { D.ask = note; D.askAt = Date.now(); paint(); return; } /* v650: يُعرض نص الرسالة أولًا ثم التأكيد — لا تنفيذ بضغطة مزدوجة */
+            if (Date.now() - (D.askAt || 0) < 900) return;
+            D.ask = null;
             return act('dec', isRet ? 'admin_verification_return' : 'admin_verification_reject', { p_id: r.id, p_note: note }, isRet ? 'أُعيد الطلب لـ' + who + '.' : 'رُفض الطلب.', true);
-          })])
+          } })])
         ];
       } else body = canDecide ? [e('small', { class: 'cu-dr-hint' }, 'اختر القرار. الضغطة الأولى على زر التأكيد للتنبيه والثانية للتنفيذ، ويصل ' + who + ' إشعار بالنتيجة.')]
         : [DS.note('info', 'الاعتماد والرفض النهائي للمشرف العام', 'طابق البنود ثم اختر «رفع للاعتماد النهائي»، أو «إعادة للتعديل» عند وجود نقص.')];
