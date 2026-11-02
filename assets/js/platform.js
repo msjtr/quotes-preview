@@ -18295,7 +18295,7 @@ function cfCtActs(id, c, r, f, C, RF) {
     /* v452: رابط الدفع وعمليات البوابة من العقد نفسه — لا من المالية */
     ['pset', 'ok', 'تسوية دفعة (سداد نقدي أو تحويل خارجي)', psetL.length ? fmtNum(psetL.length) + ' دفعات عليها متبقٍّ' : 'لا دفعات عليها متبقٍّ', !closed && psetL.length > 0, 'ok'],
     ['plink', 'card', 'رابط دفع لدفعة', linkable.length ? fmtNum(linkable.length) + ' دفعات قابلة للدفع' : 'لا دفعات قابلة للدفع', !closed && linkable.length > 0, 'brand'],
-    ['btr', 'bank', 'طلب تحويل بنكي لدفعة', linkable.length ? fmtNum(linkable.length) + ' دفعات قابلة للسداد' : 'لا دفعات قابلة للسداد', !closed && linkable.length > 0, 'brand'], /* v564 */
+    ['btr', 'bank', 'طلب تحويل بنكي لدفعة — من مركز الإرسال', linkable.length ? fmtNum(linkable.length) + ' دفعات قابلة للسداد' : 'لا دفعات قابلة للسداد', !closed && linkable.length > 0, 'brand'], /* v564 */
     ['gwop', 'arrows-clockwise', 'استرداد أو إلغاء عملية بوابة', gwOps.length ? fmtNum(gwOps.length) + ' عمليات بوابة قابلة للإجراء' : 'لا عمليات بوابة قابلة للإجراء', !closed && gwOps.length > 0, 'warn']].filter(function (t) { return t[0] === 'edit' || (closed ? ['reopen', 'cedit'].indexOf(t[0]) >= 0 : ['reopen', 'cedit'].indexOf(t[0]) < 0); });
   /* v448: إجراء واحد — تدخل وتحدد المهمة المطلوبة، فيظهر نموذجها وحده */
   const avail = tiles.filter(function (t) { return t[4]; }), cur = avail.filter(function (t) { return t[0] === W.a; })[0];
@@ -19966,31 +19966,11 @@ function admTrOpen(t, refetch) {
       t.status === 'review' ? cuSec('المرحلة 3 · القرار', 'seal-check', [note, e('div', { class: 't2-pb-actions' }, [admTwoStep('اعتماد التحويل', 'primary', function () { return act('approve'); }), admTwoStep('طلب تعديل', null, function () { return act('fix'); }), admTwoStep('رفض', 'danger', function () { return act('reject'); })]),
         e('small', { class: 'cu-dr-hint' }, 'الضغطة الأولى للتأكيد والثانية للتنفيذ. تصل للعميل رسالة بالقرار بكل القنوات.'), out]) : null])] });
 }
-/* ═════ من العقد: طلب تحويل بنكي لدفعة — يُرسل للعميل ببيانات الحساب والعقد ورابط إرفاق الإيصال ═════ */
-function cfBtrForm(id, c, L, W, RF) {
-  const S = cfSt('btr:' + c.no, { p: String(L[0].i), amt: '', acct: '', hours: '72', made: null }), p0 = L.filter(function (p) { return String(p.i) === S.p; })[0] || L[0], left = cfLeft(p0);
-  if (!BTR_BANKS.at) { BTR_BANKS.at = 1; clApi('/admin/api/banks').then(function (j) { BTR_BANKS.L = j.banks || []; BTR_BANKS.at = Date.now(); RF.paint(); }).catch(function () { BTR_BANKS.at = 0; }); }
-  const acts = BTR_BANKS.L.filter(function (a) { return a.active; });
-  if ((!S.acct || !acts.some(function (a) { return a.id === S.acct; })) && acts.length) S.acct = (acts.filter(function (a) { return a.default; })[0] || acts[0]).id;
-  if (S.made) return [DS.note('ok', 'أُرسل طلب التحويل — ' + S.made.ref, ['الدفعة ', String(S.made.i), ' · ', SR(S.made.amt), S.made.sent ? '. وصل العميل ببيانات الحساب ورابط إرفاق الإيصال.' : '. تعذّر الإرسال — انسخ الرابط وأرسله للعميل.']),
-    e('div', { class: 'cf-cell2' }, [e('bdi', { dir: 'ltr', class: 'cu-nw' }, String(S.made.url || ''))]),
-    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('نسخ الرابط', { size: 'sm', tone: 'primary', ui: 'copy', onClick: function () { payCopy(S.made.url); } })), DS.button('طلب آخر', { size: 'sm', ui: 'plus', onClick: function () { S.made = null; S.amt = ''; RF.paint(); } })])];
-  const make = async function () {
-    if (W.busy) return; const a = S.amt === '' ? left : Number(S.amt);
-    if (!(a > 0) || a > left + 0.001) { W.err = 'المبلغ أكبر من صفر ولا يتجاوز المتبقي من الدفعة ' + SR(left) + '.'; RF.paint(); return; }
-    if (!acts.length) { W.err = 'أضف حساب استلام بنكيًا من إعدادات المنشأة أولًا.'; RF.paint(); return; }
-    if (!tqConfirm('إرسال طلب تحويل بنكي للدفعة ' + p0.i + ' بمبلغ ' + SR(a) + ' إلى العميل؟')) return;
-    W.busy = true; W.err = ''; RF.paint();
-    const j = await clPost('/admin/api/btr', { kind: 'payment', user_id: id, payment_id: p0.pid, amount: a, account_id: S.acct || null, hours: Number(S.hours) || 72 }).catch(function () { return null; });
-    W.busy = false;
-    if (!j || j.ok !== true) { W.err = (j && j.message) || 'تعذّر إرسال الطلب.'; RF.paint(); return; }
-    S.made = { url: j.url, ref: j.ref_no || '', i: p0.i, amt: a, sent: !!j.sent }; RF.paint();
-  };
-  return [DS.editField('الدفعة', DS.select({ value: S.p, options: L.map(function (p) { return [String(p.i), 'الدفعة ' + p.i + ' · ' + iso(p.due) + ' · المتبقي ' + SR(cfLeft(p))]; }), onChange: function (v) { S.p = v; S.amt = ''; RF.paint(); } })),
-    DS.editField('المبلغ (فارغ = المتبقي ' + SR(left) + ')', DS.input({ value: S.amt, numeric: true, placeholder: String(left), onInput: function (v) { S.amt = v; } })),
-    DS.editField('الحساب المحوَّل إليه', acts.length ? DS.select({ value: S.acct, options: acts.map(function (a) { return [a.id, a.bank + (a.label ? ' · ' + a.label : '') + ' · ' + String(a.iban).slice(-4) + (a.default ? ' (الافتراضي)' : '')]; }), onChange: function (v) { S.acct = v; } }) : e('small', { class: 'cu-dr-hint' }, 'لا يوجد حساب استلام — أضفه من إعدادات المنشأة.')),
-    DS.editField('صلاحية الرابط', DS.select({ value: S.hours, options: [['24', 'يوم واحد'], ['72', '3 أيام'], ['168', 'أسبوع']], onChange: function (v) { S.hours = v; } })),
-    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الإرسال…' : 'إرسال طلب التحويل', { tone: 'primary', ui: 'paper-plane-tilt', disabled: W.busy, onClick: make }))])];
+/* v643: طلب التحويل البنكي يُرسل من مركز الإرسال وحده — المالية للتوثيق والمراجعة فقط (قرار المشرف العام 2/11).
+   في مركز الإرسال يُعاد إرسال الطلب القائم للدفعة برابط جديد، ولا يُنشأ طلب جديد إلا أول مرة. */
+function cfBtrForm(id, c, L) {
+return e('div', { class: 't2-stack-tight' }, [DS.note('info', 'طلب التحويل من مركز الإرسال', 'المالية للتوثيق والمراجعة فقط. اختر الدفعة في مركز الإرسال: يصل العميل زر «إرفاق الإيصال» برابطه، ويُعاد إرسال الطلب القائم بدل إنشاء طلب جديد.'),
+e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إرسال طلب التحويل من مركز الإرسال', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !L.length, onClick: function () { try { SC.sel = {}; SC.CV = {}; } catch (err) { void err; } scGo({ ids: [id], tpl: 'cat:bt_request' }); } }))])]);
 }
 /* ═════ إدارة التذكير: وسيلة السداد في الرسالة — بوابة الدفع (رابط السداد) أو تحويل بنكي (طلب تحويل ببيانات الحساب ورابط الإيصال) ═════ */
 function rmPmItems(items) { const m = RM.pm === 'bank' ? 'bank' : 'gateway'; return (items || []).map(function (x) { return Object.assign({}, x, { method: m }); }); }
@@ -24932,7 +24912,7 @@ if (T.bad && T.bad.length) kids.push(DS.note('warn', 'لا يُرسل يدويً
 if (T.key === 'collect_demand') kids.push(DS.note('info', 'تُملأ تلقائيًا لكل عميل', 'عدد الدفعات المتأخرة وإجماليها والعقد — ومن لا متأخرات عليه لا تصله.'));
 if (T.key === 'pay_failed' || T.key === 'pay_link') kids.push(DS.note('info', 'رابط السداد', 'يصل العميل زر «ادفع الآن» برابط سداد الدفعة المختارة الآمن (صالح 7 أيام) — كما في رسائل التذكير.'));
 if (/^rp_/.test(T.key)) kids.push(DS.note('info', 'رد نصي في واتساب', 'الردود الجاهزة بلا صورة تصل واتساب نصًا داخل نافذة المحادثة (24 ساعة من آخر رسالة للعميل)، وتصل البريد ومركز الإشعارات دائمًا.'));
-if (SC_BTK[T.key]) kids.push(DS.note('info', 'رابط «إرفاق الإيصال»', 'يُصدر لكل دفعة طلب تحويل بحساب الاستلام المعتمد، ويصل العميل زر «إرفاق الإيصال» برابطه الخاص — وبكل الوسائل.'));
+if (SC_BTK[T.key]) kids.push(DS.note('info', 'رابط «إرفاق الإيصال»', 'يُعاد إرسال طلب التحويل القائم للدفعة برابط جديد (ولا يُنشأ طلب جديد إلا أول مرة)، ويصل العميل زر «إرفاق الإيصال» برابطه الخاص — وبكل الوسائل. والدفعة التي عليها إيصال قيد المراجعة لا يُرسل لها.'));
 if (T.attach) kids.push(DS.note('info', 'المستند المرفق', T.attach === 'pdf_cert' ? 'شهادة «تقدير ووفاء» PDF للعقد المختار — مع الرسالة نفسها في واتساب ومرفقة بالبريد.' : T.key === 'pay_ok' ? 'إيصال كل دفعة PDF برقمه الثابت — مع الرسالة نفسها في واتساب ومرفقًا بالبريد. الدفعة بلا إيصال لا تُرسل.' : 'إيصال العملية PDF متى توفّر للدفعة.'));
 T.fields.forEach(function (k) { kids.push(DS.editField(SC_CLB[k] || k, DS.input({ value: SC.CV[k] || '', placeholder: SC_CLB[k] || k, onInput: function (v) { SC.CV[k] = v; } }))); });
 if (T.fields.length) kids.push(e('div', { class: 't2-pb-actions' }, [DS.button('تحديث المعاينة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { SC.pvAt = ''; SC.PV = null; draw(); } })]));
