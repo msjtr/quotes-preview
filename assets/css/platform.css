@@ -9585,3 +9585,30 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .is-comm-hub .cu-bd-k4{display:none!important}
 /* v661: نقاط الياء الأخيرة (ي) وكل ما ينزل تحت السطر كانت تُقصّ في اسم العضو على البطاقة والفيلم (overflow:hidden مع line-height 1.3) فتظهر «المسعودى» — ارتفاع سطر يتسع للنقاط */
 .tm .mcard .mc-name b, .tm-lv .mcard .mc-name b { line-height: 1.75 !important; }
+
+/* v662: طلبات الخدمات — سطر مختصر وصفحة داخلية · خطوات الأهلية · منشئ الإعادة للاستكمال · معاينة المرفق */
+.sr-brief { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 12px 14px; margin: 8px 0; border: 1px solid rgba(11, 42, 74, .12); border-inline-start: 4px solid #8aa0b8; border-radius: 12px; background: rgba(255, 255, 255, .6); }
+.sr-brief.is-warn { border-inline-start-color: #c98a00; } .sr-brief.is-ok { border-inline-start-color: #0f7a5c; } .sr-brief.is-danger { border-inline-start-color: #a3262c; } .sr-brief.is-info { border-inline-start-color: #1f5f9e; }
+.sr-brief-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .sr-brief-t b { font-size: 15px; } .sr-brief-t small { opacity: .75; }
+.sr-brief-i { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; } .sr-brief-i small { opacity: .85; }
+.sr-brief > button, .sr-brief > .t2-btn { grid-row: 1; grid-column: 2; }
+.sr-full-top { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; margin-bottom: 12px; border-radius: 14px; background: rgba(11, 42, 74, .05); border: 1px solid rgba(11, 42, 74, .1); }
+.sr-full-h { display: flex; flex-direction: column; flex: 1 1 220px; min-width: 0; } .sr-full-h b { font-size: 17px; } .sr-full-h small { opacity: .75; }
+.sr-full { display: flex; flex-direction: column; gap: 12px; }
+.eg-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 4px 0 10px; }
+.eg-tile { padding: 10px 12px; border-radius: 12px; background: rgba(11, 42, 74, .05); display: flex; flex-direction: column; gap: 2px; } .eg-tile small { opacity: .75; } .eg-tile b { font-size: 16px; }
+.eg-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; margin-bottom: 10px; }
+.eg-step { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: start; padding: 8px 10px; border-radius: 12px; border: 1px solid rgba(11, 42, 74, .14); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.eg-step b { font-size: 14px; } .eg-step small { grid-column: 2; opacity: .75; font-size: 12px; }
+.eg-step-n { grid-row: 1 / span 2; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; background: rgba(11, 42, 74, .08); }
+.eg-step.is-ok .eg-step-n { background: #0f7a5c; color: #fff; } .eg-step.is-now .eg-step-n { background: #c98a00; color: #fff; } .eg-step.is-wait .eg-step-n { background: #1f5f9e; color: #fff; } .eg-step.is-bad .eg-step-n { background: #a3262c; color: #fff; }
+.eg-step.is-on { border-color: #0b2a4a; box-shadow: 0 0 0 2px rgba(11, 42, 74, .18); background: rgba(11, 42, 74, .04); }
+.eg-pane > .sr-stl { margin-top: 0; }
+.eg-how { margin: 6px 0; padding-inline-start: 22px; display: flex; flex-direction: column; gap: 4px; } .eg-how li small { display: block; opacity: .8; } .eg-how.is-steps li { line-height: 1.8; }
+.eg-fix-form { padding: 10px 12px; border: 1px dashed rgba(11, 42, 74, .25); border-radius: 12px; margin: 8px 0; }
+.eg-sub { display: block; margin-top: 8px; }
+.eg-preview { padding: 10px 12px; border-radius: 12px; background: rgba(15, 122, 92, .07); margin: 8px 0; } .eg-preview ol { margin: 6px 0 0; padding-inline-start: 22px; } .eg-preview small { display: block; margin-top: 4px; }
+.eg-ask { display: flex; flex-direction: column; gap: 10px; } .eg-ask-i { padding: 8px 10px; border-radius: 10px; background: rgba(201, 138, 0, .08); display: flex; flex-direction: column; gap: 4px; } .eg-ask-i > small { opacity: .85; }
+.tq-fprev { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .tq-fprev img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(11, 42, 74, .15); }
+.tq-fprev-ic { width: 56px; height: 56px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #a3262c; background: rgba(163, 38, 44, .08); } .tq-fprev small { overflow-wrap: anywhere; }
+@media (max-width: 560px) { .sr-brief { grid-template-columns: 1fr; } .sr-brief > button, .sr-brief > .t2-btn { grid-row: auto; grid-column: 1; justify-self: start; } .eg-steps { grid-template-columns: 1fr 1fr; } }
