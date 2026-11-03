@@ -2941,7 +2941,7 @@ function reqPage() { if (typeof isCus === 'function') { cusInit(); const cr = RE
   const QS = qOfReq(r.no);
   const qSec = QS.length ? sec('عرض السعر المرفق' + (QS.length > 1 ? ' (' + QS.length + ' إصدارات)' : ''), 'راجع العرض واختر: قبول أو طلب تعديل أو رفض. صالح ' + QCFG.validityHours + ' ساعة من الإصدار.', [e('div', { class: 'qcs' }, QS.map(qCard))], true, 'r-q')
     : r.type === 'elig' && r.wantQuote ? sec('عرض السعر المرفق', 'طلبت إرفاق عرض سعر — يصدر بعد دراسة الأهلية ويصلك في الإشعارات.', [e('div', { class: 'fx-adm' }, [e('span', {}, [e('span', { class: 'fx-mini-ic' }, frag(tile('payshield'))), 'معاينة لوحة الإدارة — لا يظهر للعميل']), e('div', { class: 'fx-adm-b' }, [DS.button('إصدار عرض السعر', { size: 'sm', tone: 'primary', onClick: function () { const x = r.qin; QUOTES.unshift(mkQuote({ req: r.no, type: x.type, denom: x.denom, value: x.value, n: x.n, firstDue: x.firstDue, recv: x.recv })); draw(); } })])])], true, 'r-q') : null;
-  return [head, nt, tmActClient(r), okP ? thanksCard(okP) : lateP, preview, rfAdm, qSec, pRf ? DS.button('تفاصيل الدفعة ' + pRf.i + ' · ' + pRf.c.no, { size: 'sm', onClick: function () { FX.pid = r.pid; go('payment'); } }) : null, sec('مسار الطلب', r.status === 'fix' ? 'بانتظار تعديلك وإعادة الإرسال.' : r.status === 'rejected' ? 'انتهى الطلب بالرفض.' : at >= r.path.length ? 'اكتمل الطلب.' : 'المرحلة ' + (at + 1) + ' من ' + r.path.length, [path]), secC('r-facts', 'تفاصيل الطلب', null, [factTiles(r.fields)]),
+  return [head, nt, tmActClient(r), okP ? thanksCard(okP) : lateP, preview, rfAdm, qSec, pRf ? DS.button('تفاصيل الدفعة ' + pRf.i + ' · ' + pRf.c.no, { size: 'sm', onClick: function () { FX.pid = r.pid; go('payment'); } }) : null, sec('مسار الطلب', r.status === 'fix' ? 'بانتظار تعديلك وإعادة الإرسال.' : r.status === 'rejected' ? 'انتهى الطلب بالرفض.' : at >= r.path.length ? 'اكتمل الطلب.' : 'المرحلة ' + (at + 1) + ' من ' + r.path.length, [path]), (r.sr && r.sr.kind === 'elig' ? eligClientPanel(r.sr) : null), secC('r-facts', 'تفاصيل الطلب', null, [factTiles((r.fields || []).filter(function (y) { return !(y && y[1] && y[1].nodeType); }))]) /* v667 */,
     DS.actionBar({ buttons: [DS.button('رجوع إلى طلبات خدماتي', { onClick: function () { go('reqs'); } }), r.contract && cByNo(r.contract) && !(r.sr && r.sr.kind === 'settle') ? DS.button('عرض العقد ' + r.contract, /* v573: طلب سداد العقد يعرض فاتورته وتوقيعها لا العقد القديم */ { tone: 'primary', onClick: function () { FX.cid = r.contract; go('contract'); } }) : null, DS.button('مراسلة بخصوص الطلب', { onClick: function () { go('msg'); } })] })];
 }
 /* بلوك الدفع في الصفحة الرئيسية */
@@ -17535,6 +17535,15 @@ function eligAskField(x, i) {
   const b = DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ التصحيح', { size: 'sm', tone: 'primary', ui: 'check', disabled: !!W.busy, onClick: save }); b.setAttribute('data-live-ok', '');
   return e('div', { class: 'eg-ask-f' }, [e('small', {}, 'القيمة الحالية في طلبك: ' + (cur ? String(cur[1] || '—') : '—')),
     i.changed_at ? e('small', { class: 'cu-dr-hint' }, '✓ صحّحته: ' + (i.prev || '—') + ' ← ' + (i.val || '')) : null, inp, b]);
+}
+/* v667: المطلوب من العميل وتقرير الأهلية لوحةً ظاهرة في صفحة الطلب — كانت تُعرض داخل «تفاصيل الطلب» نصًّا فيظهر «[object HTMLDivElement]» ولا يظهر للعميل شيء يفعله */
+function eligClientPanel(x) {
+  try {
+    const rows = eligClientRows(x); if (!rows.length) return null;
+    const fx = (x.meta || {}).fix, open = !!(fx && fx.open && x.status === 'in_review');
+    return DS.panel(open ? 'مطلوب منك لإكمال طلبك' : 'تقرير الأهلية', open ? 'أكمل كل بند هنا: ارفع المرفق في خانته، وصحّح الحقل ثم «حفظ التصحيح»، ثم «إعادة الإرسال بعد الاستكمال».' : null,
+      rows.map(function (r) { return e('div', { class: 'eg-cp-r' }, [e('b', {}, r[0]), r[1] && r[1].nodeType ? r[1] : e('span', { style: 'white-space:pre-line' }, String(r[1] == null ? '' : r[1]))]); }));
+  } catch (err) { return null; }
 }
 function eligAskDoc(i) {
   try {

@@ -9614,3 +9614,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 @media (max-width: 560px) { .sr-brief { grid-template-columns: 1fr; } .sr-brief > button, .sr-brief > .t2-btn { grid-row: auto; grid-column: 1; justify-self: start; } .eg-steps { grid-template-columns: 1fr 1fr; } }
 
 /* v665 */ .eg-ask-f { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; } .eg-ask-f .t2-input { max-width: 320px; }
+
+/* v667 */ .eg-cp-r { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-bottom: 1px solid rgba(11, 42, 74, .08); } .eg-cp-r:last-child { border-bottom: 0; } .eg-cp-r > b { font-size: 15px; }
