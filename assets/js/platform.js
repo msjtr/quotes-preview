@@ -13766,7 +13766,7 @@ const ADM_SR_ST = { submitted: ['بانتظار الاستلام', 'warn'], in_r
 const ADM_SR_K = { settle: 'سداد قيمة المنتج', defer: 'تأجيل دفعة', merge: 'توحيد العقود', elig: 'تحقق من الأهلية' };
 /* v646: لوحة المشرف تتحدّث وحدها — عند فتحها إن مضت دقيقتان، وكل دقيقتين أثناء بقائها مفتوحة، وعند العودة إلى التبويب.
    تُحدَّث الأرقام من مصادرها (التحويلات والمدفوعات · التوثيق · طلبات الخدمة · التذاكر) دون مسح البيانات القائمة، ولا تُعاد الرسمة أثناء الكتابة */
-const HOMEF = { at: Date.now(), busy: false };
+const HOMEF = { at: 0, busy: false }; /* v656: بنود «ما ينتظر قرارًا» تُجلب فور فتح اللوحة */
 function admHomeFresh(force) {
 try {
 if (HOMEF.busy || !LIVE.on || !LIVE.me || S.role !== 'admin') return;
@@ -19322,7 +19322,7 @@ LIVE_DATA.conf = r; clSay('تم تأكيد القسم.'); draw();
 }
 async function clSubmit() {
 const PG = clProg();
-if (!PG.ready) { const n = PG.items.filter(function (x) { return !x.done; })[0]; clSay('أكمل «' + n.label + '» أولًا — المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total) + '.'); go('other', JR_PG[n.key] || 'profile'); toTop(); return; }
+if (!PG.ready) { /* v656: لا ننقل العميل إلى صفحة أخرى بتنبيه عابر (كان يظن أن ملفه أُرسل) — تبقى الصفحة ويظهر بيان ثابت بالأقسام غير المؤكَّدة */ CLS.miss = true; try { window.alert('لم يُرسَل ملفك بعد.\n\n' + PG.items.filter(function (x) { return !x.done; }).map(function (x) { return '• ' + x.label + (x.filled && !x.confirmed ? ' — افتح القسم واضغط «حفظ» لتأكيده' : ' — أكمل الناقص ثم «حفظ»'); }).join('\n') + '\n\nبعد تأكيد الأقسام كلها اضغط «إرسال الملف للتوثيق» من جديد.'); } catch (e) { void e; } draw(); return; }
 if (CLS.busy) return; CLS.busy = true;
 try {
 const o = await liveSb('rpc/my_verification_open', { body: {} });
@@ -19542,7 +19542,7 @@ body = [back, cfMissLine(b)].concat(cfDocs())
 return rvSec(it.label, body.filter(Boolean), { one: 'cf-' + it.key, ic: CF_IC[it.key] || 'profile' }, null, cfBadge(st));
 });
 const foot = sub ? null : DS.panel(J.returned ? 'إعادة إرسال الملف' : 'إرسال الملف للتوثيق', PG.ready ? 'ملفك مكتمل — أرسله للتوثيق، ويمكنك تعديله حتى يستلمه الفريق.' : 'المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total) + ' — أكمل الأقسام الناقصة ثم أرسل ملفك.',
-[DS.note(PG.ready ? 'ok' : 'info', PG.ready ? 'ملفك مكتمل' : 'المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total), PG.ready ? 'أرسله للتوثيق، ويمكنك تعديله حتى يستلمه الفريق.' : 'أكمل الأقسام الناقصة ثم أرسل ملفك.')], [liveOk(DS.button(J.returned ? 'أعد الإرسال' : 'إرسال الملف للتوثيق', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } }))]);
+[DS.note(PG.ready ? 'ok' : 'info', PG.ready ? 'ملفك مكتمل' : 'المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total), PG.ready ? 'أرسله للتوثيق، ويمكنك تعديله حتى يستلمه الفريق.' : (PG.items.filter(function (x) { return !x.done; }).map(function (x) { return x.label + (x.filled && !x.confirmed ? ' (ممتلئ — افتحه واضغط «حفظ» لتأكيده)' : ' (ناقص)'); }).join(' · ') + ' — بعدها أرسل ملفك.'))], [liveOk(DS.button(J.returned ? 'أعد الإرسال' : 'إرسال الملف للتوثيق', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } }))]);
 const box = e('div', { class: 't2-dash jr cf' }, [hero, e('div', { class: 'rv-acc' }, secs), foot]);
 jrCount(box);
 return [box];
