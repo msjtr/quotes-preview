@@ -3204,7 +3204,9 @@ function ntStaffAct(x) {
   /* v649: إشعار إسناد التوثيق يفتح الطلب، وإسناد المراسلة يفتح المراسلة */
   { const xm = x.meta || x.data || {}, ver = x.ver || xm.ver, desk = x.desk || xm.desk;
     if (ver && typeof admVerOpen2 === 'function') return ['فتح طلب التوثيق', function () { admVerOpen2({ id: ver, name: '' }); }];
-    if (desk && typeof deskOpen === 'function') return ['فتح المراسلة', function () { deskOpen(desk); }]; }
+    if (desk && typeof deskOpen === 'function') return ['فتح المراسلة', function () { deskOpen(desk); }];
+    /* v655: الإشعار الذي يحمل صفحته يفتحها مباشرة (طلبات تحديث الملف، الطلبات الجديدة…) */
+    const pg = x.page || xm.page; if (pg && /^[a-z0-9-]{2,30}$/.test(String(pg))) return ['فتح الصفحة', function () { if (xm.uid || x.uid) { FX.pfc = xm.uid || x.uid; ADM.pfc = xm.uid || x.uid; } go('other', String(pg)); }]; }
 if (x.kind === 'transfer_submitted') return ['مراجعة الإيصال', function () { ADM.tiF = 'all'; ADM.tiC = x.uid; FX.trOpen = x.uid; try { LV_PAY.at = 0; } catch (err) { void err; } go('other', 'cu-trin'); }];
 if (x.kind === 'pay_op_request') return ['طلبات الإلغاء والاسترداد', function () { ADM.opF = 'open'; go('other', 'cu-opin'); }];
 if (x.kind === 'pay_failed') return ['عمليات بوابة الدفع', function () { go('other', 'fin-gw'); }];
@@ -13774,6 +13776,8 @@ const J = [];
 try { if (typeof LV_PAY !== 'undefined' && typeof lvPayLoad === 'function' && !LV_PAY.busy) { LV_PAY.at = 0; J.push(lvPayLoad()); } } catch (err) { void err; }
 try { if (typeof admRpc === 'function') J.push(admRpc('admin_verification_list', { p: { status: 'all' } }).then(function (j) { if (j && Array.isArray(j.rows)) { LIVE_DATA.ver = j.rows; ADMS.ver = { q: '', f: 'all', data: j, at: Date.now() }; } })); } catch (err) { void err; }
 try { if (typeof lvSrLoad === 'function') J.push(lvSrLoad()); } catch (err) { void err; }
+    /* v655: ما لا تعرضه اللوحة: تحديث الملف بعد الاعتماد، طلبات الانضمام، طلبات عروض الأسعار */
+    try { if (typeof admRpc === 'function') J.push(admRpc('admin_pending_extra', {}).then(function (j) { if (j && j.ok !== false) LIVE_DATA.px = j; })); } catch (err) { void err; }
 try { if (typeof deskLoad === 'function') deskLoad(true); } catch (err) { void err; }
 Promise.all(J.map(function (p) { return Promise.resolve(p).catch(function () { return null; }); })).then(function () {
 HOMEF.busy = false; HOMEF.at = Date.now();
@@ -13827,6 +13831,8 @@ const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup 
     cuOk && nw ? ['rrev', 'تذاكر بانتظار الرد', fmtNum(nw) + ' تذكرة', 'warn', tkGo('new'), nw] : null,
     cuOk && late ? ['clock', 'تذاكر تجاوزت موعد الرد', fmtNum(late) + ' تذكرة', 'danger', tkGo('all'), late] : null,
     lateP ? ['clock', 'دفعات متأخرة السداد', fmtNum(lateP) + ' دفعة', 'danger', goP('fin-due'), lateP] : null].filter(Boolean);
+  /* v655: كل ما ينتظر القرار في مكان واحد — تحديث الملف بعد الاعتماد وطلبات الانضمام وعروض الأسعار */
+  try { const PX = LIVE_DATA.px || {}; [PX.upd ? ['note', 'طلبات تحديث الملف بعد الاعتماد', fmtNum(PX.upd) + ' طلب', 'warn', goP('cu-pf-req'), PX.upd] : null, PX.app ? ['users', 'طلبات انضمام بانتظار القبول', fmtNum(PX.app) + ' طلب', 'warn', goP('cu-new'), PX.app] : null, PX.quote ? ['services', 'طلبات عروض أسعار بانتظار المراجعة', fmtNum(PX.quote) + ' طلب', 'warn', goP('cs-requests'), PX.quote] : null].forEach(function (x) { if (x) acts.push(x); }); } catch (err) { void err; }
   /* البحث الموحّد: عميل · طلب · عقد · تذكرة · إيصال — النتائج تُرسم في مكانها دون إعادة رسم الصفحة */
   const sBox = e('div', { class: 't2-stack-tight' });
   const runS = function (q0) {
@@ -20050,8 +20056,28 @@ function admTrOpen(t, refetch) {
         ]), mb,
         dh,
         e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('حفظ المسودة', { size: 'sm', ui: 'check', onClick: saveDraft }))])]) : null, /* v578 */
-      t.status === 'review' ? cuSec('المرحلة 3 · القرار', 'seal-check', [note, e('div', { class: 't2-pb-actions' }, [admTwoStep('اعتماد التحويل', 'primary', function () { return act('approve'); }), admTwoStep('طلب تعديل', null, function () { return act('fix'); }), admTwoStep('رفض', 'danger', function () { return act('reject'); })]),
-        e('small', { class: 'cu-dr-hint' }, 'الضغطة الأولى للتأكيد والثانية للتنفيذ. تصل للعميل رسالة بالقرار بكل القنوات.'), out]) : null, cuSec('سجل الإجراءات', 'list-checks', [logBox])])] });
+      t.status === 'review' && (!LIVE.on || cuCan('transfers.approve')) ? cuSec('المرحلة 3 · القرار', 'seal-check', [note, e('div', { class: 't2-pb-actions' }, [admTwoStep('اعتماد التحويل', 'primary', function () { return act('approve'); }), admTwoStep('طلب تعديل', null, function () { return act('fix'); }), admTwoStep('رفض', 'danger', function () { return act('reject'); })]),
+        e('small', { class: 'cu-dr-hint' }, 'الضغطة الأولى للتأكيد والثانية للتنفيذ. تصل للعميل رسالة بالقرار بكل القنوات.'), out]) : null, (t.status === 'submitted' || t.status === 'review') ? admTrFlow(t, refetch) : null, cuSec('سجل الإجراءات', 'list-checks', [logBox])])] });
+}
+/* v655: إسناد الإيصال (لمن لديه صلاحية «اعتماد إيصالات التحويل البنكي») ورفعه للمعتمد (للموظف المستلم) */
+function admTrFlow(t, refetch) {
+  const canA = !LIVE.on || cuCan('transfers.approve');
+  const box = e('div', {}), out = e('div', { role: 'status', class: 'cu-dr-hint' });
+  const post = async function (path, body, okMsg) { out.textContent = 'جارٍ التنفيذ…'; try { const j = await clPost(path, body); if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر التنفيذ.'); out.textContent = ''; snack(okMsg); if (refetch) refetch(); } catch (err) { out.textContent = (err && err.message) || 'تعذّر التنفيذ.'; } };
+  box.appendChild(e('small', { class: 'cu-dr-hint' }, [t.assigned_to ? 'مُسند' + (t.assigned_at ? ' منذ ' + String(t.assigned_at).slice(0, 10) : '') : 'غير مُسند', t.escalated_at ? 'مرفوع للمعتمد ' + String(t.escalated_at).slice(0, 10) + (t.escalate_note ? ' — ' + t.escalate_note : '') : null].filter(Boolean).join(' · ')));
+  if (canA) {
+    const sel = e('select', { class: 't2-input', 'aria-label': 'الموظف المسؤول' }, [e('option', { value: '' }, 'جارٍ تحميل الموظفين…')]);
+    clApi('/admin/api/btr-staff').then(function (j) { sel.textContent = ''; sel.appendChild(e('option', { value: '' }, 'اختر الموظف المسؤول')); ((j && j.staff) || []).forEach(function (s) { sel.appendChild(e('option', { value: s.id, selected: s.id === t.assigned_to ? 'selected' : null }, s.name)); }); }).catch(function () { sel.textContent = ''; sel.appendChild(e('option', { value: '' }, 'تعذّر تحميل الموظفين')); });
+    box.appendChild(sel);
+    box.appendChild(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إسناد', { size: 'sm', ui: 'check', onClick: function () { if (!sel.value) { out.textContent = 'اختر الموظف أولًا.'; return; } post('/admin/api/btr/' + encodeURIComponent(t.id) + '/assign', { user: sel.value }, 'أُسند الإيصال ووصل الموظف إشعار.'); } }))]));
+  } else {
+    const ta = e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظتك للمعتمد (اختياري)', 'aria-label': 'ملاحظة للمعتمد' });
+    box.appendChild(ta);
+    box.appendChild(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('رفع للمعتمد', { size: 'sm', tone: 'primary', ui: 'check', onClick: function () { post('/admin/api/btr/' + encodeURIComponent(t.id) + '/escalate', { note: ta.value }, 'رُفع الإيصال للمعتمد ووصله إشعار.'); } }))]));
+    box.appendChild(e('small', { class: 'cu-dr-hint' }, 'الاعتماد والرفض وطلب التعديل لمن لديه صلاحية «اعتماد إيصالات التحويل البنكي».'));
+  }
+  box.appendChild(out);
+  return cuSec('الإسناد والرفع للمعتمد', 'users', [box]);
 }
 /* v643: طلب التحويل البنكي يُرسل من مركز الإرسال وحده — المالية للتوثيق والمراجعة فقط (قرار المشرف العام 2/11).
    في مركز الإرسال يُعاد إرسال الطلب القائم للدفعة برابط جديد، ولا يُنشأ طلب جديد إلا أول مرة. */
@@ -27979,6 +28005,8 @@ if (LIVE.on) {
           { ic: 'identification-card:teal', t: 'ملفات العملاء', d: 'كل عميل في قائمة واحدة: ملفه وحسابه وأمانه وعقوده', n: fmtNum(cuList().length) + ' عميل', go: function () { ADM.clF = 'all'; ADM.clFrom = ''; go('other', 'cu-pf-files'); } },
           { ic: 'user-circle:teal', t: 'العملاء الجدد', d: 'سجّلوا خلال آخر 14 يومًا — ومتابعة إكمال ملفاتهم', n: nn ? fmtNum(nn) + ' عميل' : 'لا عملاء جدد', go: function () { go('other', 'cu-new'); } },
           { ic: 'seal-check:teal', t: 'طلبات توثيق الملف', d: 'استلام الطلب ومراجعة بنوده واعتماده أو إعادته', n: w(V.length), badge: lt(V), go: function () { go('other', 'cu-pf-ver'); } },
+          /* v654: طلبات تحديث الملف المعتمد (profile_update_requests) تظهر في قسم العملاء بجانب طلبات التوثيق */
+          { ic: 'note-pencil:saffron', t: 'طلبات تحديث الملف بعد الاعتماد', d: 'تعديلات العميل على ملف معتمد (العنوان، الوظيفة، المستندات) — اعتماد أو رفض', go: function () { go('other', 'cu-pf-req'); } },
           { ic: 'arrows-clockwise:teal', t: 'المنقولون من النظام السابق', d: 'رسالة «تدشين الهوية الجديدة» وحالة الدخول والتوثيق', n: w(Mg.filter(function (x) { return x.open; }).length), badge: lt(Mg), go: function () { go('other', 'cu-pf-mig'); } },
           { ic: 'rocket-launch:teal', t: 'تدشين الحساب', d: 'الحسابات المعتمدة بانتظار التدشين', n: LCH.at ? fmtNum(LCH.w) + ' بانتظار · ' + fmtNum(LCH.d) + ' مدشّنة' : null, badge: LCH.w ? ['بانتظار ' + fmtNum(LCH.w), 'warn'] : null, go: function () { ADM.lchF = 'wait'; go('other', 'cu-pf-launch'); } },
           { ic: 'crown-simple:gold', t: 'العضويات والنقاط', d: 'المستوى والنقاط وحالة العضوية', n: (typeof LIVE_LOY !== 'undefined' && LIVE_LOY.mem) ? fmtNum(LIVE_LOY.mem.length) + ' أعضاء' : 'الأعضاء والنقاط', go: function () { go('other', 'cu-mem'); } }]],
