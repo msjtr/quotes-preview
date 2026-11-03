@@ -2941,7 +2941,7 @@ function reqPage() { if (typeof isCus === 'function') { cusInit(); const cr = RE
   const QS = qOfReq(r.no);
   const qSec = QS.length ? sec('عرض السعر المرفق' + (QS.length > 1 ? ' (' + QS.length + ' إصدارات)' : ''), 'راجع العرض واختر: قبول أو طلب تعديل أو رفض. صالح ' + QCFG.validityHours + ' ساعة من الإصدار.', [e('div', { class: 'qcs' }, QS.map(qCard))], true, 'r-q')
     : r.type === 'elig' && r.wantQuote ? sec('عرض السعر المرفق', 'طلبت إرفاق عرض سعر — يصدر بعد دراسة الأهلية ويصلك في الإشعارات.', [e('div', { class: 'fx-adm' }, [e('span', {}, [e('span', { class: 'fx-mini-ic' }, frag(tile('payshield'))), 'معاينة لوحة الإدارة — لا يظهر للعميل']), e('div', { class: 'fx-adm-b' }, [DS.button('إصدار عرض السعر', { size: 'sm', tone: 'primary', onClick: function () { const x = r.qin; QUOTES.unshift(mkQuote({ req: r.no, type: x.type, denom: x.denom, value: x.value, n: x.n, firstDue: x.firstDue, recv: x.recv })); draw(); } })])])], true, 'r-q') : null;
-  return [head, (r.sr && r.sr.kind === 'elig' ? eligClientPanel(r.sr) : null) /* v668: البطاقة أول الطلب */, nt, tmActClient(r), okP ? thanksCard(okP) : lateP, preview, rfAdm, qSec, pRf ? DS.button('تفاصيل الدفعة ' + pRf.i + ' · ' + pRf.c.no, { size: 'sm', onClick: function () { FX.pid = r.pid; go('payment'); } }) : null, sec('مسار الطلب', r.status === 'fix' ? 'بانتظار تعديلك وإعادة الإرسال.' : r.status === 'rejected' ? 'انتهى الطلب بالرفض.' : at >= r.path.length ? 'اكتمل الطلب.' : 'المرحلة ' + (at + 1) + ' من ' + r.path.length, [path]), secC('r-facts', 'تفاصيل الطلب', null, [factTiles((r.fields || []).filter(function (y) { return !(y && y[1] && y[1].nodeType); }))]) /* v667 */,
+  return [head, (r.sr && r.sr.kind === 'elig' ? eligAcceptPanel(r.sr) : null) /* v673 */, (r.sr && r.sr.kind === 'elig' ? eligClientPanel(r.sr) : null) /* v668: البطاقة أول الطلب */, nt, tmActClient(r), okP ? thanksCard(okP) : lateP, preview, rfAdm, qSec, pRf ? DS.button('تفاصيل الدفعة ' + pRf.i + ' · ' + pRf.c.no, { size: 'sm', onClick: function () { FX.pid = r.pid; go('payment'); } }) : null, sec('مسار الطلب', r.status === 'fix' ? 'بانتظار تعديلك وإعادة الإرسال.' : r.status === 'rejected' ? 'انتهى الطلب بالرفض.' : at >= r.path.length ? 'اكتمل الطلب.' : 'المرحلة ' + (at + 1) + ' من ' + r.path.length, [path]), secC('r-facts', 'تفاصيل الطلب', null, [factTiles((r.fields || []).filter(function (y) { return !(y && y[1] && y[1].nodeType); }))]) /* v667 */,
     DS.actionBar({ buttons: [DS.button('رجوع إلى طلبات خدماتي', { onClick: function () { go('reqs'); } }), r.contract && cByNo(r.contract) && !(r.sr && r.sr.kind === 'settle') ? DS.button('عرض العقد ' + r.contract, /* v573: طلب سداد العقد يعرض فاتورته وتوقيعها لا العقد القديم */ { tone: 'primary', onClick: function () { FX.cid = r.contract; go('contract'); } }) : null, DS.button('مراسلة بخصوص الطلب', { onClick: function () { go('msg'); } })] })];
 }
 /* بلوك الدفع في الصفحة الرئيسية */
@@ -17166,7 +17166,8 @@ function eligQtPrep(x, done) {
   const D = CUD[key] || (CUD[key] = (function () {
     const n0 = Math.min(36, Math.max(1, Number(egNum(fv(/مدة السداد/))) || 12)), f0 = (fv(/موعد الدفع/).match(/\d{4}-\d{2}-\d{2}/) || [])[0];
     const tm = qAddMonths(lvToday(), 1);
-    return { type: fv(/^المنتج|نوع المنتج/), alt: '', altShow: true, agent: '', agentPh: '', agentShow: false, value: egNum(fv(/القيمة الإجمالية للطلب|قيمة المنتج/)), n: String(n0), first: f0 && f0 > lvToday() ? f0 : tm, ov: {}, lbl: {}, hide: [], cx: [], err: '', busy: false };
+    const R9 = (x.meta || {}).report || {}; /* v673: من التوصية */
+    return { type: R9.prod || fv(/^المنتج|نوع المنتج/), alt: '', altShow: true, agent: '', agentPh: '', agentShow: false, value: R9.elig_amt ? String(R9.elig_amt) : egNum(fv(/القيمة الإجمالية للطلب|قيمة المنتج/)), n: String(Number(R9.n) || n0), first: f0 && f0 > lvToday() ? f0 : tm, ov: {}, lbl: {}, hide: [], cx: [], err: '', busy: false };
   })());
   const rerun = function () { eligQtPrep(x, done); };
   if (!D.first || D.first < lvToday()) D.first = qAddMonths(lvToday(), 1);
@@ -17247,26 +17248,161 @@ function egNums(x) {
   try { if (typeof axRep === 'function') { const r = axRep(x.user_id); if (r && r.any) { out.score = Math.round(Number(r.score) || 0); out.cls = String(r.cls || ''); } } } catch (err) { void err; }
   return out;
 }
+/* v673: نتيجة الأهلية بالقالب الثابت (يتغير المتغيرات فقط) · التوصية بالمبالغ وعدد الدفعات والمنتج · موافقة العميل برمز تحقق · طريقة الاستلام */
+const EGP = { at: 0, busy: false, rows: [] };
+function egpLoad() {
+  if (EGP.busy || (EGP.at && Date.now() - EGP.at < 300000)) return;
+  EGP.busy = true;
+  admRpc('elig_products_list', {}).then(function (j) { EGP.busy = false; EGP.at = Date.now(); EGP.rows = (j && j.rows) || []; try { draw(); } catch (err) { void err; } })
+    .catch(function () { EGP.busy = false; EGP.at = Date.now(); });
+}
+function egAmt(v) { const n = Number(v); return isFinite(n) && n > 0 ? fmtNum(Math.round(n)) : '—'; }
+function egMsgText(v) {
+  return ['عزيزي العميل،', 'بعد التحقق من أهليتكم من خلال شركائنا، وردت إحدى النتائج التالية:', '',
+    'أولاً: مؤهَّل', 'تمت الموافقة على المبلغ المطلوب.', '* المبلغ المؤهَّل: ' + egAmt(v.amt) + ' ريال.', 'نأمل الدخول إلى حسابكم في منصة تيرا والموافقة على الأهلية لاستكمال إجراءات عرض السعر واعتماد شراء المنتج.', '',
+    'ثانياً: مؤهَّل بمبلغ أقل', 'تمت الموافقة على مبلغ أقل من المبلغ المطلوب.', '* المبلغ المطلوب: ' + egAmt(v.req) + ' ريال.', '* المبلغ المؤهَّل: ' + egAmt(v.elig) + ' ريال.', 'في حال قبولكم المبلغ المؤهَّل، نأمل الدخول إلى حسابكم والموافقة على الأهلية لاستكمال إجراءات عرض السعر واعتماد شراء المنتج.', '',
+    'ثالثاً: غير مؤهَّل حاليًا', 'لم تتحقق الأهلية في الوقت الحالي، بسبب ارتفاع الالتزامات المالية وعدم توافقها مع سياسات الأهلية المعتمدة لدى المنصة.', '',
+    'شاكرين لكم ثقتكم بمنصة تيرا.', 'فريق المبيعات – تيرا'].join('\n');
+}
+function egMsgVals(rec, req, elig) { return { amt: rec === 'eligible_less' ? elig : (elig || req), req: req, elig: rec === 'eligible_less' ? elig : (elig || req) }; }
+function egMsgBox(txt) { return e('div', { class: 'eg-msg', dir: 'rtl' }, txt); }
+function egReq(x) { return Number(egNum(egFv(x, /^القيمة الإجمالية للطلب/))) || 0; }
+function egRecv(x) { return egFv(x, /^طريقة الاستلام/) || ''; }
+/* حقول التوصية (للأهلية فقط): المطلوب تلقائي · المؤهَّل · عدد الدفعات (قابل للتعديل) · القسم ثم المنتج أو «أخرى» · طريقة الاستلام كما اختارها العميل · معاينة */
+function egRepFields(x, W, paint) {
+  if (W.rec !== 'eligible' && W.rec !== 'eligible_less') return W.rec === 'not_eligible' ? e('div', { class: 'eg-preview' }, [e('b', {}, 'ما يصل العميل'), egMsgBox(egMsgText(egMsgVals('not_eligible', egReq(x), 0)))]) : null;
+  egpLoad();
+  const req = egReq(x), rows = EGP.rows || [];
+  if (W.rec === 'eligible' && !W.amt) W.amt = req ? String(req) : '';
+  const secs = []; rows.forEach(function (r) { if (secs.indexOf(r.section) < 0) secs.push(r.section); });
+  const prods = rows.filter(function (r) { return r.section === W.sec; }).map(function (r) { return [r.name, r.name]; });
+  const num = function (key, ph) { const i = e('input', { class: 't2-input', type: 'text', inputmode: 'decimal', dir: 'ltr', placeholder: ph, value: W[key] || '', onInput: function (ev) { W[key] = ev.target.value; } }); return i; };
+  const oth = e('input', { class: 't2-input', type: 'text', maxlength: '120', placeholder: 'اكتب المنتج', value: W.otherTxt || '', onInput: function (ev) { W.otherTxt = ev.target.value; } });
+  const recv = egRecv(x);
+  return e('div', { class: 'eg-rep-f' }, [
+    DS.fields([['المبلغ المطلوب', req ? fmtNum(req) + ' ريال' : '—']]),
+    DS.editField(W.rec === 'eligible_less' ? 'المبلغ المؤهَّل (أقل من المطلوب)' : 'المبلغ المؤهَّل', num('amt', 'بالريال')),
+    DS.editField('عدد الدفعات', num('n', 'مثال: 12')),
+    DS.editField('قسم المنتج', DS.select({ value: W.sec || '', ph: '— اختر القسم —', options: secs.map(function (s) { return [s, s]; }).concat([['__other', 'أخرى (غير موجود)']]), onChange: function (v) { W.sec = v; W.prod = ''; paint(); } })),
+    W.sec && W.sec !== '__other' ? DS.editField('المنتج', DS.select({ value: W.prod || '', ph: '— اختر المنتج —', options: prods.concat([['__other', 'أخرى (غير موجود)']]), onChange: function (v) { W.prod = v; paint(); } })) : null,
+    W.sec === '__other' || W.prod === '__other' ? DS.editField('المنتج (أخرى)', oth) : null,
+    DS.note(recv ? 'info' : 'warn', 'طريقة الاستلام التي اختارها العميل', recv || 'لم يحدّد العميل طريقة الاستلام — يختارها من طلبه قبل الموافقة.'),
+    e('div', { class: 't2-pb-actions' }, [DS.button(W.pv ? 'إخفاء المعاينة' : 'معاينة ما يصل العميل', { size: 'sm', ui: 'eye', onClick: function () { W.pv = !W.pv; paint(); } })]),
+    W.pv ? e('div', { class: 'eg-preview' }, [e('b', {}, 'الرسالة (منصة · بريد) — نص ثابت يتغير المتغيرات فقط'), egMsgBox(egMsgText(egMsgVals(W.rec, req, Number(egNum(W.amt)) || 0))),
+      e('b', {}, 'في صفحة العميل'), DS.fields([['النتيجة', EG_REC[W.rec]], ['المبلغ المطلوب', req ? fmtNum(req) + ' ريال' : '—'], ['المبلغ المؤهَّل', egAmt(egNum(W.amt)) + ' ريال'], ['عدد الدفعات', W.n || '—'], ['المنتج', egRepProd(W) || '—'], ['طريقة الاستلام', recv || '—']]),
+      e('small', { class: 'cu-dr-hint' }, 'ويظهر للعميل: «هل ترغب بتغيير طريقة الاستلام؟» ثم الإقرار و«الموافقة على الأهلية» برمز تحقق.')]) : null]);
+}
+function egRepProd(W) { return W.sec === '__other' || W.prod === '__other' ? String(W.otherTxt || '').trim() : (W.prod || ''); }
+function egRepNums(x, W, N) {
+  const o = Object.assign({}, N, { req_amt: String(egReq(x) || ''), recv: egRecv(x) });
+  if (W.rec === 'eligible' || W.rec === 'eligible_less') Object.assign(o, { elig_amt: String(egNum(W.amt) || ''), n: String(egNum(W.n) || ''), prod_sec: W.sec === '__other' ? '' : (W.sec || ''), prod: egRepProd(W), prod_other: W.sec === '__other' || W.prod === '__other' });
+  return o;
+}
+function egRepSummary(x, R) {
+  if (!R || (R.rec !== 'eligible' && R.rec !== 'eligible_less')) return null;
+  const A = (x.meta || {}).accept;
+  return e('div', {}, [DS.fields([['المبلغ المطلوب', egAmt(R.req_amt) + ' ريال'], ['المبلغ المؤهَّل', egAmt(R.elig_amt) + ' ريال'], ['عدد الدفعات', R.n ? fmtNum(R.n) : '—'], ['المنتج', (R.prod_sec ? R.prod_sec + ' · ' : '') + (R.prod || '—')], ['طريقة الاستلام', egRecv(x) || R.recv || '—']]),
+    A ? DS.note('ok', 'وافق العميل على الأهلية ' + iso(new Date(A.at)), 'أصدر عرض السعر — المبلغ المؤهَّل وعدد الدفعات والمنتج تُعبّأ تلقائيًا.') : x.status === 'approved' ? DS.note('info', 'بانتظار موافقة العميل على الأهلية', 'يوافق العميل من طلبه برمز تحقق، ويصلك إشعار.') : null]);
+}
+/* بطاقة العميل: النتيجة بالنص الثابت · طريقة الاستلام وتغييرها · الإقرار والموافقة برمز تحقق */
+const EGAC = {};
+function eligAcceptPanel(x) {
+  try {
+    const R = (x.meta || {}).report || null;
+    if (!R || ['approved', 'rejected'].indexOf(x.status) < 0) return null;
+    const ok = x.status === 'approved' && (R.rec === 'eligible' || R.rec === 'eligible_less');
+    const req = Number(R.req_amt) || egReq(x);
+    const txt = egMsgText(egMsgVals(ok ? R.rec : 'not_eligible', req, Number(R.elig_amt) || 0));
+    const head = e('b', {}, 'نتيجة التحقق من الأهلية: ' + (ok ? EG_REC[R.rec] : 'غير مؤهَّل حاليًا'));
+    if (!ok) return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', 'غير مؤهَّل حاليًا', [egMsgBox(txt)]) : e('div', { class: 'eg-cp' }, [head, egMsgBox(txt)]);
+    const A = (x.meta || {}).accept, F = EGAC[x.id] || (EGAC[x.id] = { ack: false, step: 1, fac: '', facs: null, code: '', err: '', rv: false, mode: '' });
+    const recv = egRecv(x), cpv = !!window.__cpvUid;
+    const rd = function () { try { draw(); } catch (err) { void err; } };
+    const kids = [egMsgBox(txt), DS.fields([['المبلغ المطلوب', egAmt(req) + ' ريال'], ['المبلغ المؤهَّل', egAmt(R.elig_amt) + ' ريال'], ['عدد الدفعات', R.n ? fmtNum(R.n) : '—'], ['المنتج', R.prod || '—']])];
+    /* طريقة الاستلام بشكل مميز */
+    const rbox = [e('b', {}, 'طريقة الاستلام'), e('div', { class: 'eg-recv-v' }, recv || 'لم تُحدَّد')];
+    if (!A && !cpv) {
+      if (!F.rv) rbox.push(liveOk(DS.button('هل ترغب بتغيير طريقة الاستلام؟', { size: 'sm', ui: 'arrows-left-right', onClick: function () { F.rv = true; F.mode = ''; rd(); } })));
+      else rbox.push(DS.select({ value: F.mode, ph: '— اختر طريقة الاستلام —', options: RECV.map(function (r) { return [r[0], r[1]]; }), onChange: function (v) { F.mode = v; rd(); } }),
+        e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(F.rbusy ? 'جارٍ الحفظ…' : 'حفظ طريقة الاستلام', { size: 'sm', tone: 'primary', disabled: !F.mode || !!F.rbusy, onClick: async function () {
+          F.rbusy = true; rd();
+          const j = await liveSb('rpc/my_elig_recv_set', { body: { p_sr: x.id, p_mode: F.mode } }).catch(function () { return null; });
+          F.rbusy = false;
+          if (!j || j.ok !== true) { tqCenterNote('لم تتغيّر طريقة الاستلام', [(j && j.message) || 'أعد المحاولة.'], 'warn'); rd(); return; }
+          const L = x.fields || (x.fields = []); const f = L.filter(function (y) { return y && y[0] === 'طريقة الاستلام'; })[0]; if (f) f[1] = j.recv; else L.push(['طريقة الاستلام', j.recv]);
+          F.rv = false; tqCenterNote('تم تغيير طريقة الاستلام', [j.recv], 'ok'); rd(); } })), DS.button('إلغاء', { size: 'sm', onClick: function () { F.rv = false; rd(); } })]));
+    }
+    kids.push(e('div', { class: 'eg-recv' }, rbox));
+    if (A) { kids.push(DS.note('ok', 'وافقتَ على الأهلية ' + iso(new Date(A.at)), 'نجهّز لك عرض السعر بالمبلغ المؤهَّل ويصلك فور اعتماده.')); return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', EG_REC[R.rec], kids) : e('div', { class: 'eg-cp' }, [head].concat(kids)); }
+    if (cpv) { kids.push(DS.note('info', 'بانتظار موافقة العميل', 'يوافق العميل من حسابه برمز تحقق يصله هو.')); return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', EG_REC[R.rec], kids) : e('div', { class: 'eg-cp' }, [head].concat(kids)); }
+    /* الإقرار ثم وسيلة التحقق ثم الرمز */
+    const ack = e('input', { type: 'checkbox', checked: F.ack ? 'checked' : null, onChange: function (ev) { F.ack = !!ev.target.checked; rd(); } });
+    kids.push(e('label', { class: 'eg-ack' }, [ack, e('span', {}, 'أقرّ بموافقتي على نتيجة الأهلية والمبلغ المؤهَّل (' + egAmt(R.elig_amt) + ' ريال) وعدد الدفعات وطريقة الاستلام الموضّحة، لاستكمال إجراءات عرض السعر واعتماد شراء المنتج.')]));
+    if (F.step === 1) kids.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('الموافقة على الأهلية', { tone: 'primary', ui: 'check-circle', disabled: !F.ack, onClick: function () { if (!F.ack) return; F.step = 2; rd(); } }))]));
+    else {
+      if (!F.facs && !F.fbusy && !F.ferr) {
+        F.fbusy = true;
+        clApi('/api/security/gateway/factors?purpose=elig_account').then(function (j) { F.fbusy = false; F.facs = (j.factors || []).filter(function (y) { return y && STL_F[y.factor]; }); if (!F.fac && F.facs.length) F.fac = F.facs[0].factor; rd(); })
+          .catch(function (err) { F.fbusy = false; if (err && err.message === 'auth') return; F.ferr = (err && err.message) || 'تعذّر تحميل وسائل التحقق.'; rd(); });
+      }
+      const facs = F.facs || [], snd = F.fac === 'email_code' || F.fac === 'whatsapp_code';
+      kids.push(e('b', {}, 'تأكيد الموافقة برمز تحقق'),
+        F.fbusy ? DS.note('info', 'جارٍ تحميل وسائل التحقق…', '') : null,
+        F.ferr ? DS.note('warn', 'تعذّر تحميل وسائل التحقق', F.ferr) : null,
+        F.facs && !facs.length ? DS.note('warn', 'لا وسيلة تحقق متاحة', 'أكمل بريدك الإلكتروني أو اربط واتساب من «مركز الأمان» ثم أعد المحاولة.') : null,
+        facs.length ? DS.editField('طريقة التحقق', DS.select({ value: F.fac, options: facs.map(function (y) { return [y.factor, STL_F[y.factor] || y.factor]; }), onChange: function (v) { F.fac = v; F.sent = ''; F.code = ''; F.err = ''; rd(); } })) : null,
+        facs.length && snd ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(F.sbusy ? 'جارٍ الإرسال…' : F.sent ? 'إعادة إرسال الرمز' : 'إرسال الرمز', { size: 'sm', ui: 'paper-plane-tilt', disabled: !!F.sbusy, onClick: async function () {
+          if (F.sbusy) return; F.sbusy = true; F.err = ''; rd();
+          const j = await clPost('/api/security/gateway/' + (F.fac === 'email_code' ? 'email' : 'whatsapp'), { purpose: 'elig_account' }).catch(function () { return null; });
+          F.sbusy = false;
+          if (!j || j.ok === false) { F.err = (j && j.message) || 'تعذّر إرسال الرمز.'; rd(); return; }
+          F.sent = 'أُرسل الرمز ' + (F.fac === 'email_code' ? 'إلى بريدك' : 'إلى واتساب'); rd(); } })), F.sent ? e('small', { class: 'cu-dr-hint', role: 'status' }, F.sent) : null]) : null,
+        facs.length ? DS.editField('رمز التحقق', e('input', { class: 't2-input', type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', dir: 'ltr', maxlength: '16', value: F.code || '', onInput: function (ev) { F.code = ev.target.value; } })) : null,
+        F.err ? e('span', { class: 'cu-err', role: 'alert' }, F.err) : null,
+        e('div', { class: 't2-pb-actions' }, [facs.length ? liveOk(DS.button(F.vbusy ? 'جارٍ التأكيد…' : 'تأكيد الموافقة', { tone: 'primary', ui: 'shield-check', disabled: !!F.vbusy, onClick: async function () {
+          if (F.vbusy) return;
+          const code = String(F.code || '').replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/\D/g, '');
+          if (code.length < 4) { F.err = 'اكتب رمز التحقق.'; rd(); return; }
+          F.vbusy = true; F.err = ''; rd();
+          const v = await clPost('/api/security/gateway/verify', { purpose: 'elig_account', factor: F.fac, code: code }).catch(function () { return null; });
+          if (!v || !v.ok || !v.grant_id) { F.vbusy = false; F.err = (v && v.message) || 'الرمز غير صحيح.'; rd(); return; }
+          const j = await clPost('/api/account/elig/' + encodeURIComponent(x.id) + '/accept', { ack: true, grant_id: v.grant_id }).catch(function () { return null; });
+          F.vbusy = false;
+          if (!j || j.ok !== true) { F.err = (j && j.message) || 'تعذّر تسجيل موافقتك — أعد المحاولة.'; rd(); return; }
+          x.meta = Object.assign({}, x.meta, { accept: { at: new Date().toISOString() } });
+          tqCenterNote('تمت الموافقة على الأهلية', ['نجهّز لك عرض السعر بالمبلغ المؤهَّل (' + egAmt(R.elig_amt) + ' ريال) ويصلك فور اعتماده.'], 'ok');
+          try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } rd(); } })) : null,
+          DS.button('رجوع', { size: 'sm', onClick: function () { F.step = 1; F.err = ''; rd(); } })]));
+    }
+    return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', EG_REC[R.rec], kids) : e('div', { class: 'eg-cp' }, [head].concat(kids));
+  } catch (err) { return null; }
+}
 function eligReportBox(x, c, paint) {
   const m = x.meta || {}, R = m.report || null, N = egNums(x);
-  const W = c.rep || (c.rep = { rec: R ? R.rec : '', note: R ? (R.note || '') : '', busy: false, err: '', open: !R });
+  const W = c.rep || (c.rep = { rec: R ? R.rec : '', note: R ? (R.note || '') : '', busy: false, err: '', open: !R, amt: R && R.elig_amt ? String(R.elig_amt) : '', n: R && R.n ? String(R.n) : String(Number(egNum(egFv(x, /مدة السداد/))) || ''), sec: R ? (R.prod_other ? '__other' : (R.prod_sec || '')) : '', prod: R && !R.prod_other ? (R.prod || '') : '', otherTxt: R && R.prod_other ? (R.prod || '') : '', pv: false }); /* v673 */
   const rows = [['إجمالي الدخل الشهري', sar(N.inc)], ['الالتزامات الشهرية', sar(N.ob)], ['المصروفات الشخصية', sar(N.ex)], ['إجمالي المصاريف الشهرية', sar(N.exp)], ['الصافي الشهري', e('b', {}, sar(N.net))]]
     .concat(N.score != null ? [['سجل الالتزام في عقوده', fmtNum(N.score) + (N.cls ? ' · ' + ((typeof AX_CLS !== 'undefined' && AX_CLS[N.cls]) ? AX_CLS[N.cls][0] : N.cls) : '')]] : []);
   const head = [e('b', {}, 'تقرير الأهلية والتوصية'), DS.fields(rows), N.ex <= 0 ? DS.note('warn', 'المصروفات الشخصية صفر', 'المصروفات الشهرية إلزامية — اطلب تصحيحها بالإعادة للاستكمال.') : null];
-  if (R && !W.open) return e('div', { class: 'sr-stl' }, head.concat([DS.note(R.rec === 'not_eligible' ? 'danger' : R.rec === 'eligible' ? 'ok' : 'warn', 'التوصية: ' + (EG_REC[R.rec] || R.rec), R.note || ''),
+  if (R && !W.open) return e('div', { class: 'sr-stl' }, head.concat([DS.note(R.rec === 'not_eligible' ? 'danger' : R.rec === 'eligible' ? 'ok' : 'warn', 'التوصية: ' + (EG_REC[R.rec] || R.rec), R.note || ''), egRepSummary(x, R), /* v673 */
     ['submitted', 'in_review'].indexOf(x.status) >= 0 ? e('div', { class: 't2-pb-actions' }, [DS.button('تعديل التوصية', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.open = true; paint(); } })]) : null,
     e('small', { class: 'cu-dr-hint' }, 'يظهر التقرير للعميل في طلبه مع النتيجة.')]));
   if (['submitted', 'in_review'].indexOf(x.status) < 0) return e('div', { class: 'sr-stl' }, head.concat([e('small', { class: 'cu-dr-hint' }, 'لم تُسجَّل توصية لهذا الطلب.')]));
   const save = async function () {
     if (!W.rec) { W.err = 'اختر التوصية.'; paint(); return; }
+    if (W.rec === 'eligible' || W.rec === 'eligible_less') { /* v673 */ const am = Number(egNum(W.amt)) || 0, rq = egReq(x), nn = Number(egNum(W.n)) || 0;
+      if (!(am > 0)) { W.err = 'اكتب المبلغ المؤهَّل.'; paint(); return; }
+      if (W.rec === 'eligible_less' && !(rq > 0 && am < rq)) { W.err = 'المبلغ المؤهَّل يجب أن يكون أقل من المبلغ المطلوب (' + fmtNum(rq) + ').'; paint(); return; }
+      if (!(nn >= 1 && nn <= 60)) { W.err = 'اكتب عدد الدفعات (1 إلى 60).'; paint(); return; }
+      if (egRepProd(W).length < 2) { W.err = 'اختر المنتج أو اكتبه في «أخرى».'; paint(); return; } }
     if (W.busy) return; W.busy = true; W.err = ''; paint();
-    try { await admRpc('admin_elig_report', { p_sr: x.id, p_rec: W.rec, p_note: String(W.note || '').trim(), p_nums: N }); c.rep = null; snack('حُفظ تقرير الأهلية والتوصية.'); try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } c.reload(); }
+    try { await admRpc('admin_elig_report', { p_sr: x.id, p_rec: W.rec, p_note: String(W.note || '').trim(), p_nums: egRepNums(x, W, N) /* v673 */ }); c.rep = null; snack('حُفظ تقرير الأهلية والتوصية.'); try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } c.reload(); }
     catch (err) { W.busy = false; W.err = egErr(err); paint(); }
   };
   const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '600', placeholder: 'ملاحظة التوصية — تظهر للعميل في التقرير', onInput: function (ev) { W.note = ev.target.value; } });
   ta.value = W.note || '';
   return e('div', { class: 'sr-stl' }, head.concat([
     DS.editField('التوصية', DS.select({ value: W.rec, ph: '— اختر التوصية —', options: Object.keys(EG_REC).map(function (k) { return [k, EG_REC[k]]; }), onChange: function (v) { W.rec = v; paint(); } })),
+    egRepFields(x, W, paint), /* v673 */
     DS.editField('ملاحظة', ta),
     W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ التقرير والتوصية', { size: 'sm', tone: 'primary', ui: 'check', disabled: W.busy, onClick: save }))])]));
@@ -17438,7 +17574,7 @@ function eligFixBox(x, c, paint) {
   const W = c.fix || (c.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false });
   const rules = c.job && c.job.ok ? (c.job.rules || []) : [];
   const out = [e('b', {}, 'الإعادة للاستكمال — قبل إصدار النتيجة')];
-  const list = function (its) { return e('ol', { class: 'eg-how' }, (its || []).map(function (i) { return e('li', {}, [e('b', {}, (EG_IT[i.type] || '') + ': ' + i.label), i.note ? e('small', {}, i.note) : null, i.changed_at ? e('small', {}, 'صحّحه العميل: ' + (i.prev || '—') + ' ← ' + (i.val || '')) : null]); })); };
+  const list = function (its) { return e('ol', { class: 'eg-how' }, (its || []).map(function (i) { return e('li', {}, [e('b', {}, (EG_IT[i.type] || '') + ': ' + i.label), i.note ? e('small', {}, i.note) : null, i.changed_at ? e('small', {}, i.confirmed ? 'أكّده العميل كما هو: ' + (i.val || '') : 'صحّحه العميل: ' + (i.prev || '—') + ' ← ' + (i.val || '')) : null /* v673 */]); })); };
   if (fx && fx.open) out.push(DS.note('warn', 'أُعيد للعميل ' + iso(new Date(fx.at)) + ' — بانتظار استكماله', 'لا يعيد العميل الطلب حتى يرفع المرفقات المطلوبة.'), list(fx.items), fx.note ? e('small', { class: 'cu-dr-hint' }, 'ملاحظة عامة: ' + fx.note) : null);
   else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + iso(new Date(fx.done_at)), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
   if (fx && !fx.open && fx.reclaimed_at) out.push(DS.note('info', 'سحب الفريق الطلب من العميل ' + iso(new Date(fx.reclaimed_at)), 'يمكنك إعادته للاستكمال من جديد أو تسجيل التوصية وإصدار النتيجة.'));
@@ -17448,6 +17584,10 @@ function eligFixBox(x, c, paint) {
     catch (err) { snack(egErr(err)); }
   } }))])); /* v668: صلاحية customers.elig_reclaim */
   if (!open) { out.push(e('small', { class: 'cu-dr-hint' }, 'الإعادة متاحة قبل إصدار النتيجة فقط.')); return e('div', { class: 'sr-stl' }, out); }
+  if (!W.form && !W.items.length && fx && fx.done_at && !fx.open) { /* v673: بعد الاستكمال — الخطوة التالية التوصية */
+    out.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('سجّل التوصية الآن', { size: 'sm', tone: 'primary', ui: 'clipboard-text', onClick: function () { c.tab = 'rep'; paint(); } })), liveOk(DS.button('إعادة جديدة للاستكمال', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { W.form = true; paint(); } }))]));
+    return e('div', { class: 'sr-stl' }, out);
+  }
   if (!W.form && !W.items.length) {
     out.push(e('ol', { class: 'eg-how is-steps' }, [e('li', {}, 'اختر ما تطلبه من العميل: تصحيح حقل · مرفق · ملاحظة.'), e('li', {}, 'حدّد البند واكتب المطلوب ثم «إضافة إلى القائمة» — تضيف ما تشاء من البنود.'), e('li', {}, 'راجع «ما يصل العميل» ثم «إرسال للعميل». يصله إشعار بالمطلوب، ويرفع المرفقات من طلبه نفسه.')]));
     out.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(fx && fx.open ? 'تعديل المطلوب وإعادة الإرسال' : 'بدء الإعادة للاستكمال', { size: 'sm', tone: 'primary', ui: 'arrows-clockwise', onClick: function () { W.form = true; paint(); } }))]));
