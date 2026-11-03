@@ -12012,7 +12012,7 @@ function mcShortAr(s) {
   const raw = String(s || '').trim().split(/\s+/).filter(Boolean), w = [];
   /* الأسماء المركّبة كلمةٌ واحدة: عبد الله، أبو بكر، بن سعيد، آل سعود */
   for (let i = 0; i < raw.length; i++) { let x = raw[i]; while (/^(عبد|أبو|ابو|أبي|ابي|بن|بنت|آل)$/.test(raw[i]) && i + 1 < raw.length) { i++; x += ' ' + raw[i]; } w.push(x); }
-  return w.length > 3 ? [w[0], w[1], w[w.length - 1]].join(' ') : w.join(' ');
+  return w.join(' '); /* v660: الاسم كما سُجّل واعتُمد بلا اختصار — يصغر الخط للأطول */
 }
 function mcard(m, o) {
   o = o || {};
@@ -12027,7 +12027,7 @@ function mcard(m, o) {
     : cell('رقم العضوية', 'NO.', esc(no)) + cell('عضوٌ منذ', 'SINCE', mmyy(m.issued_at)) + cell('صالحة حتى', 'VALID', mmyy(m.expires_at));
   return '<div class="mcard ' + (t.k === 'plus' ? '' : t.k) + '" role="img" aria-label="بطاقة عضوية ' + t.en + ' — ' + esc(o.preview ? arName : (m.name_ar || arName)) + '"><span class="mc-guil"></span><img class="mc-wm" src="' + IMG.mark + '" alt="">' +
     '<div class="mc-top"><div class="mc-brand"><b>TERRA <em>' + t.k.toUpperCase() + '</em></b><span>' + t.ar + '</span></div><div class="mc-tr"><img class="mc-logo" src="' + IMG.logoWhite + '" alt="">' + st + '</div></div>' +
-    '<div class="mc-name"><small>اسم العضو · <em>MEMBER</em></small><b class="' + (arName.length > 24 ? 'xlong' : arName.length > 17 ? 'long' : '') + '">' + esc(arName) + '</b><i></i>' + (enName ? '<span class="' + (enName.length > 30 ? 'xlong' : enName.length > 22 ? 'long' : '') + '">' + esc(enName) + '</span>' : '') + '</div>' +
+    '<div class="mc-name"><small>اسم العضو · <em>MEMBER</em></small><b class="' + (arName.length > 38 ? 'x3long' : arName.length > 30 ? 'xxlong' : arName.length > 24 ? 'xlong' : arName.length > 17 ? 'long' : '') + '">' + esc(arName) + '</b><i></i>' + (enName ? '<span class="' + (enName.length > 30 ? 'xlong' : enName.length > 22 ? 'long' : '') + '">' + esc(enName) + '</span>' : '') + '</div>' +
     '<div class="mc-foot">' + foot + '</div></div>';
 }
 
@@ -17272,7 +17272,7 @@ function eligReportBox(x, c, paint) {
   const m = x.meta || {}, R = m.report || null, N = egNums(x);
   const W = c.rep || (c.rep = { rec: R ? R.rec : '', note: R ? (R.note || '') : '', busy: false, err: '', open: !R });
   const rows = [['إجمالي الدخل الشهري', sar(N.inc)], ['الالتزامات الشهرية', sar(N.ob)], ['المصروفات الشخصية', sar(N.ex)], ['إجمالي المصاريف الشهرية', sar(N.exp)], ['الصافي الشهري', e('b', {}, sar(N.net))]]
-    .concat(N.score != null ? [['سجل الالتزام في عقوده', fmtNum(N.score) + (N.cls ? ' · ' + N.cls : '')]] : []);
+    .concat(N.score != null ? [['سجل الالتزام في عقوده', fmtNum(N.score) + (N.cls ? ' · ' + ((typeof AX_CLS !== 'undefined' && AX_CLS[N.cls]) ? AX_CLS[N.cls][0] : N.cls) : '')]] : []);
   const head = [e('b', {}, 'تقرير الأهلية والتوصية'), DS.fields(rows), N.ex <= 0 ? DS.note('warn', 'المصروفات الشخصية صفر', 'المصروفات الشهرية إلزامية — اطلب تصحيحها بالإعادة للاستكمال.') : null];
   if (R && !W.open) return e('div', { class: 'sr-stl' }, head.concat([DS.note(R.rec === 'not_eligible' ? 'danger' : R.rec === 'eligible' ? 'ok' : 'warn', 'التوصية: ' + (EG_REC[R.rec] || R.rec), R.note || ''),
     ['submitted', 'in_review'].indexOf(x.status) >= 0 ? e('div', { class: 't2-pb-actions' }, [DS.button('تعديل التوصية', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.open = true; paint(); } })]) : null,
