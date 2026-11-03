@@ -17415,7 +17415,7 @@ function srBrief(x, RF) {
   } catch (err) { void err; }
   const openIt = function () { ADM.svOpen = x.id; ADM.svFocus = x.id; RF.paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } };
   return e('div', { class: 'sr-brief is-' + (st[1] || 'off') }, [
-    e('div', { class: 'sr-brief-t' }, [e('b', {}, K[1] + ' · ' + x.req_no), e('small', {}, srName(x.user_id) + ' · ' + bdiD(iso(new Date(x.created_at))))]),
+    e('div', { class: 'sr-brief-t' }, [e('b', {}, K[1] + ' · ' + x.req_no), e('small', {}, srName(x.user_id) + ' · ' + iso(new Date(x.created_at)))]),
     e('div', { class: 'sr-brief-i' }, [DS.badge(st[0], st[1] || null)].concat(info.map(function (t) { return e('small', {}, t); }))),
     liveOk(DS.button('فتح الطلب', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: openIt }))]);
 }
@@ -17424,7 +17424,7 @@ function srFullPage(x, RF) {
   ADM.svFocus = x.id;
   return [e('div', { class: 'sr-full-top' }, [
       liveOk(DS.button('كل الطلبات', { size: 'sm', ui: 'arrow-right', onClick: function () { ADM.svOpen = ''; RF.paint(); } })),
-      e('div', { class: 'sr-full-h' }, [e('b', {}, 'طلب ' + K[1] + ' · ' + x.req_no), e('small', {}, srName(x.user_id) + ' · ' + bdiD(iso(new Date(x.created_at))))]),
+      e('div', { class: 'sr-full-h' }, [e('b', {}, 'طلب ' + K[1] + ' · ' + x.req_no), e('small', {}, srName(x.user_id) + ' · ' + iso(new Date(x.created_at)))]),
       DS.badge(st[0], st[1] || null),
       DS.button('ملف العميل', { size: 'sm', ui: 'user-circle', onClick: function () { ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); } })]),
     srCard(x, RF, { who: false, kp: 'svp:', full: true })];
@@ -17438,8 +17438,8 @@ function eligFixBox(x, c, paint) {
   const rules = c.job && c.job.ok ? (c.job.rules || []) : [];
   const out = [e('b', {}, 'الإعادة للاستكمال — قبل إصدار النتيجة')];
   const list = function (its) { return e('ol', { class: 'eg-how' }, (its || []).map(function (i) { return e('li', {}, [e('b', {}, (EG_IT[i.type] || '') + ': ' + i.label), i.note ? e('small', {}, i.note) : null]); })); };
-  if (fx && fx.open) out.push(DS.note('warn', 'أُعيد للعميل ' + bdiD(iso(new Date(fx.at))) + ' — بانتظار استكماله', 'لا يعيد العميل الطلب حتى يرفع المرفقات المطلوبة.'), list(fx.items), fx.note ? e('small', { class: 'cu-dr-hint' }, 'ملاحظة عامة: ' + fx.note) : null);
-  else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + bdiD(iso(new Date(fx.done_at))), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
+  if (fx && fx.open) out.push(DS.note('warn', 'أُعيد للعميل ' + iso(new Date(fx.at)) + ' — بانتظار استكماله', 'لا يعيد العميل الطلب حتى يرفع المرفقات المطلوبة.'), list(fx.items), fx.note ? e('small', { class: 'cu-dr-hint' }, 'ملاحظة عامة: ' + fx.note) : null);
+  else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + iso(new Date(fx.done_at)), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
   if (!open) { out.push(e('small', { class: 'cu-dr-hint' }, 'الإعادة متاحة قبل إصدار النتيجة فقط.')); return e('div', { class: 'sr-stl' }, out); }
   if (!W.form && !W.items.length) {
     out.push(e('ol', { class: 'eg-how is-steps' }, [e('li', {}, 'اختر ما تطلبه من العميل: تصحيح حقل · مرفق · ملاحظة.'), e('li', {}, 'حدّد البند واكتب المطلوب ثم «إضافة إلى القائمة» — تضيف ما تشاء من البنود.'), e('li', {}, 'راجع «ما يصل العميل» ثم «إرسال للعميل». يصله إشعار بالمطلوب، ويرفع المرفقات من طلبه نفسه.')]));
@@ -21497,7 +21497,7 @@ function admVerOpen2(r) {
         e('div', { class: 'vr3-it-h' }, [e('div', { class: 'vr3-it-l' }, [e('b', {}, it.label || it.field_key || '—'), it.required ? ' · مطلوب' : null]),
           v === 'match' ? DS.badge('مطابق', 'ok') : v === 'mismatch' ? DS.badge('غير مطابق', 'danger') : it.prev_value != null && it.changed_at ? DS.badge('عدّله العميل · بانتظار المراجعة', 'info') : it.reason ? DS.badge('أعاده العميل دون تعديل', 'danger') : DS.badge('بانتظار', 'warn')]),
         (it.kind === 'file' || it.doc_id) && val ? e('div', { class: 'vr3-file', title: val }, val) : e('div', { class: 'vr3-it-v' }, [val ? ltrIf(val) : DS.badge(it.required ? 'غير مُدخل — مطلوب' : 'غير مُدخل', it.required ? 'danger' : null), it.value_off ? e('small', { class: 'cu-dr-hint' }, ' (قيمة خارج القائمة)') : null]),
-        it.client_note ? e('div', { class: 'vr3-why' }, 'أكّد العميل أن القيمة صحيحة: ' + it.client_note + (it.client_kept_at ? ' · ' + bdiD(iso(new Date(it.client_kept_at))) : '')) : null,
+        it.client_note ? e('div', { class: 'vr3-why' }, 'أكّد العميل أن القيمة صحيحة: ' + it.client_note + (it.client_kept_at ? ' · ' + iso(new Date(it.client_kept_at)) : '')) : null,
         v === 'mismatch' && it.reason ? e('div', { class: 'vr3-why' }, 'السبب: ' + it.reason) : (!v && it.prev_value != null && it.changed_at ? e('div', { class: 'vr3-why' }, 'القيمة السابقة: ' + (String(it.prev_value).trim() || 'فارغة') + '  ←  الجديدة: ' + (String(it.value || '').trim() || 'فارغة')) : null), /* v658: القديم والجديد */ (!v && it.reason ? e('div', { class: 'vr3-why' }, 'السبب السابق (قبل التصحيح): ' + it.reason + (it.prev_value != null && it.changed_at ? '' : ' — لم يغيّر العميل القيمة بعد الإعادة')) : null)
       ].concat(notes.map(function (n) { return e('div', { class: 'vr3-nt' }, [String(n.body || ''), e('small', { class: 'cu-dr-hint' }, ' — ' + (n.actor || '') + ' · ' + String(n.at || '').slice(0, 16).replace('T', ' '))]); }))
         .concat([msgOf('it:' + it.id)])
