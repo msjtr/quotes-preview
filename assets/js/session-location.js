@@ -931,7 +931,20 @@ var ASK_TEXT = {
   no_map: "تعذّر فتح الخريطة الآن. جرّب العنوان الوطني أو أعد المحاولة."
 };
 
+/* v664: نص الرفض حسب الجهاز — الآيفون · أندرويد · داخل تطبيق مثل واتساب */
+function geoAskText(why) {
+  if (why !== "permission_denied" && why !== "position_unavailable") return ASK_TEXT[why];
+  var ua = navigator.userAgent || "";
+  var ios = /iPhone|iPad|iPod/i.test(ua);
+  var inApp = /WhatsApp|Instagram|FBAN|FBAV|Snapchat|Line\/|TikTok|Twitter/i.test(ua) || (/Android/i.test(ua) && /; wv\)/.test(ua));
+  if (inApp) return "تفتح المنصة من داخل تطبيق (مثل واتساب) ولا يتيح قراءة الموقع. حدّد موقعك على الخريطة الآن، أو افتح الرابط في " + (ios ? "Safari" : "Chrome") + ".";
+  if (why === "position_unavailable") return ios ? "خدمات الموقع متوقفة في جهازك. فعّلها من: الإعدادات ← الخصوصية والأمان ← خدمات الموقع، أو حدّد موقعك على الخريطة." : "خدمات الموقع متوقفة في جهازك. فعّل «الموقع» من الإعدادات السريعة، أو حدّد موقعك على الخريطة.";
+  if (ios) return "الموقع محجوب لـSafari. فعّله من: الإعدادات ← الخصوصية والأمان ← خدمات الموقع ← Safari ← «أثناء الاستخدام»، أو حدّد موقعك على الخريطة الآن.";
+  return "الموقع محجوب للمتصفح. اضغط أيقونة القفل بجانب العنوان ← الأذونات ← الموقع ← «سماح»، أو حدّد موقعك على الخريطة الآن.";
+}
 function retryGeo(why) {
+  /* v664: «السماح» بطلب المستخدم — يُسمح بإعادة المطالبة إن تعذّر */
+  try { Object.keys(window.sessionStorage).forEach(function (k) { if (k.indexOf("tera.geoask.") === 0) window.sessionStorage.removeItem(k); }); } catch (_e) {}
   hideGeoAsk();
   state.geoRetries = 0;
   state.errCode = null;
@@ -960,7 +973,11 @@ function showGeoAsk(kind) {
   }
   var why = String(kind || "unknown");
   var soft = (why === "network_only");
-  var canRetry = !(why === "network_only" || why === "unsupported" || why === "insecure_context" || why === "no_map");
+  /* v664: المطالبة نفسها مرة واحدة في الجلسة — كانت تتكرّر على العميل مع كل محاولة فتعيق الدخول وإكمال العنوان (التحديد على الخريطة يبقى متاحًا) */
+  var sk = "tera.geoask." + (state.sid || "") + "." + why;
+  try { if (window.sessionStorage.getItem(sk)) return; } catch (_e) {}
+  /* v664: بعد رفض الإذن لا يعيد المتصفح السؤال — «السماح» لا يجدي، فالخريطة أولًا */
+  var canRetry = !(why === "network_only" || why === "unsupported" || why === "insecure_context" || why === "no_map" || why === "permission_denied");
   var actions = [];
   if (canRetry) actions.push({ label: "السماح", primary: true, run: function () { retryGeo(why); } });
   actions.push({ label: "تحديد على الخريطة", primary: !canRetry, run: openMap });
@@ -970,10 +987,11 @@ function showGeoAsk(kind) {
     icon: soft ? "map-pin:sky" : "map-pin:saffron",
     ms: 0,
     title: soft ? "حدّد موقعك بدقة" : "فعّل الموقع لمتابعة جلستك",
-    text: ASK_TEXT[why] || "اسمح للمتصفح بقراءة موقعك، أو حدّده على الخريطة.",
+    text: geoAskText(why) || "اسمح للمتصفح بقراءة موقعك، أو حدّده على الخريطة.",
     actions: actions,
     onClose: function () { askH = null; }
   });
+  if (askH) { try { window.sessionStorage.setItem(sk, String(Date.now())); } catch (_e) {} } /* v664: تُسجَّل بعد ظهورها فعلًا */
 }
 
   /* auth_56: سلسلةٌ واحدةٌ لقراءةِ الموقعِ على كلِّ الأجهزة: محاولةٌ بأعلى دقّةٍ

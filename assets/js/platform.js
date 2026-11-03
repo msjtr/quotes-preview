@@ -14702,10 +14702,10 @@ function rvPick(o) {
     if (locBusy) return; locBusy = true; bMe.classList.add('is-busy'); setNote('ok', 'جارٍ قراءة موقعك…');
     navigator.geolocation.getCurrentPosition(function (g) {
       locBusy = false; bMe.classList.remove('is-busy'); const c = g.coords, m = Math.round(c.accuracy || 1e9);
-      if (m > 5000) { if (map) map.setView([c.latitude, c.longitude], m > 100000 ? 6 : (m > 20000 ? 8 : 10)); setNote('warn', 'تعذّر تحديد موقعك بدقّة — أقرب تقدير من المتصفّح يغطي نحو ' + fmtAcc(m) + '، ولم يوضع دبوس. حرّك الدبوس إلى مكانك.'); return; }
+      if (m > 5000) { if (map) map.setView([c.latitude, c.longitude], m > 100000 ? 6 : (m > 20000 ? 8 : 12)); setNote('warn', 'موقعك تقريبي (نحو ' + fmtAcc(m) + ') — اضغط على مبناك في الخريطة ليُوضع الدبوس عليه، ثم أكّد.' + (/iPhone|iPad/i.test(navigator.userAgent || '') ? ' للدقة فعّل «الموقع الدقيق» لـSafari: الإعدادات ← الخصوصية والأمان ← خدمات الموقع ← Safari.' : '')); return; } /* v664 */
       short = null; setPin(c.latitude, c.longitude, m <= 50 ? 18 : (m <= 300 ? 16 : 14)); resolve(c.latitude, c.longitude);
       setNote(m > 300 ? 'warn' : 'ok', m > 300 ? 'أدق قراءة متاحة من المتصفّح ' + fmtAcc(m) + ' تقريبًا — حرّك الدبوس إلى مكانك بالضبط.' : 'تم تحديد موقعك بدقّة ' + fmtAcc(m) + ' تقريبًا — عدّل الدبوس إن لزم ثم أكّد.');
-    }, function () { locBusy = false; bMe.classList.remove('is-busy'); if (!auto) setNote('warn', 'تعذّرت قراءة موقعك من المتصفّح — حرّك الدبوس إلى مكانك.'); else setNote('ok', 'حرّك الدبوس إلى مكانك بالضبط، أو ابحث عنه، أو استعن بالأدوات.'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    }, function () { locBusy = false; bMe.classList.remove('is-busy'); if (!auto) setNote('warn', 'تعذّرت قراءة موقعك من الجهاز (الإذن محجوب أو الموقع متوقف) — ابحث باسم حيّك أو مدينتك في الأعلى، أو اضغط على مكانك في الخريطة، أو أدخل العنوان المختصر.'); /* v664 */ else setNote('ok', 'حرّك الدبوس إلى مكانك بالضبط، أو ابحث عنه، أو استعن بالأدوات.'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   }
   bMe.addEventListener('click', function () { locate(false); });
   bOk.addEventListener('click', function () {
