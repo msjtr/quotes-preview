@@ -9557,7 +9557,10 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 /* v646: التذاكر بجانب المحادثة في الويب — تبقى القائمة ظاهرة وتُفتح المراسلة بجانبها (لا تغطي الصفحة)، والضغط على مراسلة أخرى يفتحها مكانها */
 @media (min-width:64.01rem){.cu-dr[data-r^="desk:"]{background:transparent!important;pointer-events:none;top:var(--t2-hh,64px)!important}
 .cu-dr[data-r^="desk:"]>.cu-dr-p{pointer-events:auto;width:min(34rem,40vw)!important;margin-inline-start:auto!important;border-inline-end:1px solid var(--t2-line)}
-html:has(.cu-dr[data-r^="desk:"]) .t2-main{padding-left:min(34rem,40vw)!important}}
+html:has(.cu-dr[data-r^="desk:"]) .t2-main{padding-left:min(34rem,40vw)!important}
+/* v653: المراسلة بجانب القائمة — الصفحة تبقى قابلة للتمرير (كان قفل التمرير يحجب القائمة ويقصّ القائمة الجانبية)، ومسار التنقّل داخل اللوحة مخفي لأنه مكرّر مع مسار الصفحة فيتّسع محتوى المراسلة */
+html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) body{overflow:auto!important}
+.cu-dr[data-r^="desk:"]>.cu-dr-p>.cu-dr-nav{display:none!important}}
 /* v646: الإرسال في الجوال خطوة في كل شاشة — تنتقل بزرّي «التالي» و«السابق» */
 .sc-mprog{display:none}
 @media (max-width:720px){.sc-grid .cx-step:not(.is-mcur){display:none!important}
