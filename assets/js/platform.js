@@ -17443,7 +17443,7 @@ function eligFixBox(x, c, paint) {
   else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + iso(new Date(fx.done_at)), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
   if (fx && !fx.open && fx.reclaimed_at) out.push(DS.note('info', 'سحب الفريق الطلب من العميل ' + iso(new Date(fx.reclaimed_at)), 'يمكنك إعادته للاستكمال من جديد أو تسجيل التوصية وإصدار النتيجة.'));
   if (fx && fx.open && open) out.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('سحب الطلب من العميل', { size: 'sm', tone: 'danger', ui: 'arrow-u-up-left', onClick: async function () {
-    if (!tqConfirm('سحب الطلب ' + (x.req_no || '') + ' من العميل؟ يُغلق طلب الاستكمال ويعود الطلب للفريق، ولا يصل العميلَ إشعار.')) return;
+    if (window.__egRc !== x.id || Date.now() - (window.__egRcAt || 0) > 10000) { window.__egRc = x.id; window.__egRcAt = Date.now(); snack('للتأكيد اضغط «سحب الطلب من العميل» مرة ثانية خلال 10 ثوانٍ — يعود الطلب للفريق ولا يصل العميلَ إشعار.'); return; } window.__egRc = ''; /* v669 */
     try { const r = await admRpc('admin_elig_reclaim', { p_sr: x.id, p_note: '' }); if (r && r.ok === false) throw new Error(r.message || r.error || 'تعذّر السحب.'); snack('سُحب الطلب من العميل — عاد للفريق.'); c.fix = null; c.reload(); try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } }
     catch (err) { snack(egErr(err)); }
   } }))])); /* v668: صلاحية customers.elig_reclaim */
@@ -17558,14 +17558,17 @@ const EGD = { at: 0, busy: false, docs: null, rules: null, up: '' };
 function egdHM(t) { try { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); } catch (err) { return ''; } }
 function egdWhen(t) { try { return iso(new Date(t)) + ' · ' + egdHM(t); } catch (err) { return ''; } }
 function egdLoad(force) {
-  const who = window.__cpvUid || 'me'; if (EGD.uid !== who) { EGD.uid = who; EGD.at = 0; EGD.docs = null; EGD.rules = null; force = true; }
-  if (EGD.busy || (!force && EGD.at && Date.now() - EGD.at < 60000)) return;
+  const who = window.__cpvUid || 'me'; if (EGD.uid !== who) { EGD.uid = who; EGD.at = 0; EGD.docs = null; EGD.rules = null; EGD.err = ''; force = true; }
+  if (EGD.busy || (!force && EGD.at && Date.now() - EGD.at < (EGD.err ? 15000 : 60000))) return;
   EGD.busy = true;
-  const cpv = window.__cpvUid || '';
+  const cpv = window.__cpvFull ? '' : (window.__cpvUid || ''); /* v669: نيابةً عن العميل = بياناته كما يراها */
   const p = cpv ? admRpc('admin_client_job', { p_user: cpv }) : liveSb('rpc/my_job_info', { body: {} });
-  Promise.resolve(p).then(function (j) { EGD.busy = false; EGD.at = Date.now(); const ok = j && j.ok !== false; EGD.docs = ok ? (j.docs || []) : []; EGD.rules = ok ? (j.rules || []) : []; try { draw(); } catch (err) { void err; } })
-    .catch(function () { EGD.busy = false; EGD.at = Date.now(); EGD.docs = []; EGD.rules = []; try { draw(); } catch (err) { void err; } });
+  Promise.resolve(p).then(function (j) { EGD.busy = false; EGD.at = Date.now(); const ok = j && j.ok !== false; EGD.err = ok ? '' : ((j && (j.message || j.error)) || 'تعذّر التحقق'); EGD.docs = ok ? (j.docs || []) : (EGD.docs || []); EGD.rules = ok ? (j.rules || []) : (EGD.rules || []); /* v669 */ try { draw(); } catch (err) { void err; } })
+    .catch(function (er) { EGD.busy = false; EGD.at = Date.now(); EGD.err = (er && er.message) || 'تعذّر التحقق'; EGD.docs = EGD.docs || []; EGD.rules = EGD.rules || []; try { draw(); } catch (err) { void err; } }); /* v669 */
 }
+/* v669: مهلة لكل خطوة رفع — فلا تبقى «جارٍ الرفع» بلا نهاية */
+function egdTO(p, ms, msg) { let tm = null; return Promise.race([Promise.resolve(p).finally(function () { clearTimeout(tm); }), new Promise(function (ok, no) { tm = setTimeout(function () { no(new Error(msg)); }, ms); })]); }
+function egdPut(url, file) { const ac = typeof AbortController === 'function' ? new AbortController() : null; const tm = setTimeout(function () { try { if (ac) ac.abort(); } catch (err) { void err; } }, 120000); return fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file, signal: ac ? ac.signal : undefined }).catch(function () { return null; }).finally(function () { clearTimeout(tm); }); }
 async function egdUpload(x, i, file, mb, k) {
   if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — الرفع من حساب العميل نفسه.'); return; }
   if (EGD.up) return;
@@ -17574,13 +17577,13 @@ async function egdUpload(x, i, file, mb, k) {
   if (file.size > mb * 1024 * 1024) { tqCenterNote('لم يُرفق المرفق', ['«' + i.label + '»', 'حجم الملف ' + (Math.round(file.size / 104857.6) / 10) + ' ميغابايت — الحد المسموح ' + mb + ' ميغابايت.', 'صغّر الملف أو صوّره بالجوال ثم أعد المحاولة.'], 'danger'); return; }
   EGD.up = k; try { draw(); } catch (err) { void err; }
   try {
-    const u = await clPost('/api/account/profile/upload-url', { block: 'docs', field: i.doc_type, type: file.type, size: file.size });
+    const u = await egdTO(clPost('/api/account/profile/upload-url', { block: 'docs', field: i.doc_type, type: file.type, size: file.size }), 30000, 'انتهت مهلة تجهيز الرفع — تحقق من الاتصال، أو سجّل الدخول من جديد ثم أعد المحاولة.');
     if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز الرفع.');
     let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
-    let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
-    if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
+    let put = await egdPut(url, file);
+    if ((!put || !put.ok) && url !== u.url) put = await egdPut(u.url, file);
     if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن — تحقق من الاتصال وأعد المحاولة.');
-    const j = await liveSb('rpc/my_job_doc_attach', { body: { p_doc_type: i.doc_type, p_path: u.path, p_name: String(file.name || '').slice(0, 120) } });
+    const j = await egdTO(liveSb('rpc/my_job_doc_attach', { body: { p_doc_type: i.doc_type, p_path: u.path, p_name: String(file.name || '').slice(0, 120) } }), 30000, 'رُفع الملف ولم يُحفظ في طلبك — أعد المحاولة.');
     if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر حفظ المرفق.');
     EGD.up = ''; try { if (typeof LVJ !== 'undefined' && Array.isArray(j.docs)) LVJ.docs = j.docs; } catch (err) { void err; }
     egdLoad(true);
@@ -17599,12 +17602,13 @@ function eligDocSlot(x, i) {
     const k = x.id + ':' + i.doc_type, busy = EGD.up === k;
     const inp = e('input', { type: 'file', accept: 'application/pdf,image/jpeg,image/png,image/webp', hidden: true, onChange: function () {
       const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
-      if (fresh && !tqConfirm('استبدال «' + i.label + '» بالملف «' + f.name + '»؟')) return;
+      /* v669: الاستبدال مباشرة — نافذة التأكيد كانت تعيد فتح اختيار الملف على الآيفون */
       egdUpload(x, i, f, mb, k);
     } });
-    const st = !EGD.at ? ['جارٍ التحقق…', 'info'] : busy ? ['جارٍ الرفع…', 'info'] : fresh ? ['تم الإرفاق · ' + egdWhen(d.uploaded_at), 'ok'] : d && d.status === 'rejected' ? ['مرفوض — ارفعه من جديد', 'danger'] : ['لم يُرفع بعد', 'warn'];
+    const st = !EGD.at ? ['جارٍ التحقق…', 'info'] : busy ? ['جارٍ الرفع…', 'info'] : EGD.err && !d ? ['تعذّر التحقق من مرفقاتك — اضغط «تحديث»', 'danger'] : fresh ? ['تم الإرفاق · ' + egdWhen(d.uploaded_at), 'ok'] : d && d.status === 'rejected' ? ['مرفوض — ارفعه من جديد', 'danger'] : ['لم يُرفع بعد', 'warn'];
     const acts = [DS.badge(st[0], st[1])];
     if (d && (d.id || d.path)) acts.push(liveOk(DS.button('معاينة', { size: 'sm', ui: 'eye', onClick: function () { lvJobOpen(Object.assign({ label: i.label }, d)); } })));
+    if (EGD.err && !busy) acts.push(liveOk(DS.button('تحديث', { size: 'sm', ui: 'arrow-clockwise', onClick: function () { egdLoad(true); } }))); /* v669 */
     acts.push(liveOk(DS.button(busy ? 'جارٍ الرفع…' : fresh ? 'استبدال المرفق' : 'رفع المرفق', { size: 'sm', tone: fresh ? null : 'primary', ui: 'paperclip', disabled: busy, onClick: function () { inp.click(); } })));
     return e('div', { class: 'eg-slot is-' + (fresh ? 'ok' : 'wait') }, [e('div', { class: 't2-pb-actions' }, acts),
       e('small', { class: 'cu-dr-hint' }, 'PDF أو صورة · حتى ' + fmtNum(mb) + ' ميغابايت' + (d && !fresh ? ' · المرفوع سابقًا ' + egdWhen(d.uploaded_at) + ' — ارفع نسخة حديثة' : '')), inp]);
@@ -20205,7 +20209,7 @@ scan(document);
 function clForm(J) {
 const me = LIVE.me || {}, first = String(me.full_name || ME.name || '').split(' ')[0], C = clConf(), mig = C ? !!C.mig : !!J.mig, cb = (C && C.blocks) || {};
 const PG = clProg(), VS = liveVsec(), sub = J.st === 'submitted', LV = window.__LV || {};
-if (!window.__cpvUid) {
+if (!window.__cpvUid || window.__cpvFull) { /* v669 */
 if (Date.now() - CF.undoAt > 60000) { CF.undoAt = Date.now(); liveSb('rpc/my_profile_undo_list', { body: {} }).then(function (u) { const n = u && u.ok !== false ? u : null; if (JSON.stringify(n) !== JSON.stringify(CF.undo)) { CF.undo = n; draw(); } }).catch(function () { /* اختياري */ }); }
 if (Date.now() - CF.vsAt > 20000) { CF.vsAt = Date.now(); liveSb('rpc/my_verification_security', { body: {} }).then(function (s) { if (s && s.ok !== false && JSON.stringify(s) !== JSON.stringify(LIVE_DATA.vsec)) { LIVE_DATA.vsec = s; draw(); } }).catch(function () { /* اختياري */ }); }
 }
@@ -21219,6 +21223,7 @@ function liveUpdFields(s) {
 /* v316: حفظ موقع العنوان (الإحداثيات والعنوان المختصر) في عناوين الحساب عبر الخادم — تحديث العنوان الأساسي بدل تكراره */
 async function liveGeoSave(R) {
   if (!R || !isFinite(R.lat) || !isFinite(R.lng)) return;
+  if (window.__cpvUid) return; /* v669: في صفحة العميل يُحفظ العنوان نصًّا، والموقع على الخريطة يحدده العميل من جهازه */
   let id = null; try { const L = await clApi('/api/account/addresses'); const A = (L && (L.rows || L.addresses || L.items)) || (Array.isArray(L) ? L : []); const p = A.filter(function (a) { return a.is_primary; })[0] || A.filter(function (a) { return a.purpose === 'residential'; })[0]; id = p ? p.id : null; } catch (err) { void err; }
   const row = { id: id, purpose: 'residential', label: 'العنوان الوطني', line1: R.short || [R.building, R.street].filter(Boolean).join(' '), line2: R.street || null, quarter: R.district || null, city: R.city || null, county: null, state: R.state || null, postcode: R.postal || null,
     country: R.country || null, country_code: (R.cc || '').toUpperCase() || null, latitude: R.lat, longitude: R.lng, place_id: String(R.place_id || '').slice(0, 64) || null, location_source: R.src || 'manual_selection', accuracy_m: R.acc != null ? Math.round(R.acc) : null, is_primary: true };
@@ -22786,7 +22791,7 @@ function lvSrReq(x) {
   if (x.status === 'cancelled') f.push(['الحالة', 'ألغيتَ الطلب']);
   const path = (x.log || []).map(function (l) { return [l.t, D(l.at)]; });
   if (x.status === 'submitted' || x.status === 'in_review') path.push([x.kind === 'settle' ? 'تحديد مبلغ المخالصة' : 'قرار الإدارة', null]);
-  return mkR({ no: x.req_no, type: x.kind, at: at, status: LV_SR_ST[x.status] || 'sent', contract: (x.contract_nos || [])[0] || '', fields: f, path: path, live: true, sr: x });
+  return mkR({ no: x.req_no, type: x.kind, at: at, status: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === true) ? 'fix' : (LV_SR_ST[x.status] || 'sent'), /* v669 */ contract: (x.contract_nos || [])[0] || '', fields: f, path: path, live: true, sr: x });
 }
 async function lvSrLoad() {
   const uid = LIVE.me.id;
@@ -24680,7 +24685,7 @@ async function cpgEnter(c, why) {
   let prof = null; try { const j = await admClients('/reg/' + encodeURIComponent(c.id)); prof = j && j.profile; } catch (err) { prof = null; }
   try { if (!LIVE_LOY.mem) await lvMemLoad(); } catch (err) { void err; }
   try { CPV.full = (await admRpc('admin_cpv_can', {})) === true; } catch (err) { CPV.full = false; } window.__cpvFull = CPV.full; /* v666: تنفيذ نيابةً عن العميل لمن يملك الصلاحية */
-  CPV.on = true; CPV.name = c.name || ''; CPV.no = c.no || ''; CPV.reason = why; CPV.at = Date.now(); CPV.prof = prof; CPV.blk = {}; CPV.last = '';
+  CPV.on = true; CPV.name = c.name || ''; CPV.no = c.no || ''; CPV.reason = why; CPV.at = Date.now(); CPV.prof = prof; try { CF.undo = null; CF.undoAt = 0; CF.vsAt = 0; LIVE_DATA.verBad = null; LIVE_DATA.verChkAt = 0; } catch (e9) { void e9; } /* v669 */ CPV.blk = {}; CPV.last = '';
   try { sessionStorage.setItem('tera-cpv-v1', JSON.stringify({ c: { id: c.id, name: c.name || '', no: c.no || '', status: c.status || '', at: c.at || null }, why: String(why || '').replace(/ — استئناف بعد تحديث الصفحة$/, ''), by: (LIVE.me && LIVE.me.id) || '' /* v666: كان يُقرأ قبل تعيينه فلا يُستأنف بعد التحديث */, t: Date.now() })); } catch (err) { void err; } /* v577: التحديث يُبقيك في صفحة العميل */
   CPV.staff = { me: LIVE.me, allow: LIVE.allow.slice(), name: ME.name, email: ME.email, phone: ME.phone };
   LIVE.me = { id: c.id, full_name: (prof && prof.name) || c.name || '', tera_id: (prof && prof.no) || c.no || '', status: (prof && prof.status) || c.status || 'active', created_at: (prof && prof.at) || c.at || null, email: (prof && prof.email) || '', phone: (prof && prof.phone) || '', user_type: 'client' };
@@ -24694,6 +24699,7 @@ async function cpgEnter(c, why) {
 }
 async function cpgExit(to) {
   if (!CPV.on) return;
+  try { CF.undo = null; CF.undoAt = 0; CF.vsAt = 0; LIVE_DATA.verBad = null; LIVE_DATA.verChkAt = 0; } catch (e9) { void e9; } /* v669 */
   const b = document.getElementById('cpv-bar'); if (b) b.classList.add('is-busy');
   await Promise.race([cpgLog('exit', cpgPageLabel()[0], 'خروج من صفحة العميل · مدة الزيارة ' + cpgDur(Date.now() - CPV.at)), new Promise(function (res) { setTimeout(res, 3500); })]);
   CPV.on = false;
@@ -24790,11 +24796,15 @@ if (LIVE.on) {
   const cpgBlocked = function (what) { if (CPV.blk[what]) return; CPV.blk[what] = 1; cpgLog('blocked', cpgPageLabel()[0], what); };
   const liveSb0 = liveSb;
   /* v666: «صفحة العميل — تنفيذ نيابةً عن العميل»: إجراءات العميل (عدا الدفع والأمان) تُنفَّذ عبر admin_cpv_act وتُسجَّل باسم الموظف */
-  const CPV_ACT = ['my_job_info_save', 'my_fin_info_save', 'my_job_doc_attach', 'my_elig_fix_field', 'my_elig_resubmit', 'my_verification_item_keep', 'my_verification_submit', 'my_verification_submit_core', 'my_verification_open', 'my_profile_block_confirm'];
+  const CPV_ACT = ['my_job_info_save', 'my_fin_info_save', 'my_job_doc_attach', 'my_elig_fix_field', 'my_elig_resubmit', 'my_verification_item_keep', 'my_verification_submit', 'my_verification_submit_core', 'my_verification_open', 'my_profile_block_confirm', 'my_profile_undo_put', 'my_profile_undo_clear'];
+  /* v669: ما يراه العميل نفسه — قراءة بهوية العميل (للقراءة فقط) داخل جلسة دخول مفتوحة لمن يملك صلاحية التنفيذ نيابةً عنه */
+  const CPV_READ = ['my_job_info', 'my_fin_info', 'my_settle_offers', 'my_profile_value_errors', 'my_profile_undo_list', 'my_profile_verification', 'my_verification_security', 'my_profile_confirms'];
+  const cpvRead = function (fn) { return liveSb0('rpc/admin_cpv_read', { body: { p_user: CPV.uid, p_sess: CPV.sess, p_fn: fn } }).then(function (r) { if (r && r.ok === false && (r.error === 'no_session' || r.error === 'forbidden') && Date.now() - (CPV.rdAt || 0) > 20000) { CPV.rdAt = Date.now(); snack(r.message || 'جلسة صفحة العميل انتهت — اخرج وادخل من جديد.'); } return r; }); };
   const cpvAct = function (fn, args) { return liveSb0('rpc/admin_cpv_act', { body: { p_user: CPV.uid, p_sess: CPV.sess, p_fn: fn, p_args: args || {} } }).then(function (r) { if (r && r.ok === false && r.message) snack(r.message); return r; }); };
   liveSb = function (path, opt) {
     if (!CPV.on) return liveSb0(path, opt);
     const p = String(path || ''), o = opt || {};
+    if (CPV.full && CPV.uid && CPV.sess && /^rpc\//.test(p) && CPV_READ.indexOf(p.slice(4).split('?')[0]) >= 0) return cpvRead(p.slice(4).split('?')[0]); /* v669 */
     if (p === 'rpc/my_membership') { const m = (LIVE_LOY.mem || []).filter(function (x) { return x.user_id === CPV.uid; })[0]; return Promise.resolve(m ? { ok: true, exists: true, member_no: m.member_no, tier: m.tier, status: m.status, name_ar: m.name || CPV.name, issued_at: m.issued_at, expires_at: m.expires_at, launch_pending: !m.launched_at, pending: !m.launched_at, points: { balance: Number(m.balance) || 0, earned: 0, redeemed: 0, expiring_30: 0 }, ledger: (m.ledger || []).map(function (l) { return { created_at: l.at, points: l.n, kind: l.kind, note: l.note, ref: l.ref }; }) } : { ok: true, exists: false }); }
     if (p === 'rpc/my_profile_verification') { const v = (LIVE_DATA.ver || []).filter(function (x) { return x.user_id === CPV.uid; })[0]; return Promise.resolve(v ? Object.assign({ ok: true }, v) : { ok: true, status: 'none' }); }
     if (p === 'rpc/profile_notes') return Promise.resolve({ ok: true, rows: [] });
@@ -24813,6 +24823,7 @@ if (LIVE.on) {
     let m = /^\/api\/account\/contract-files\/(.+)$/.exec(p); if (m) return clApi0('/admin/api/contract-files/' + m[1]);
     m = /^\/api\/account\/profile\/doc\?id=(.+)$/.exec(p); if (m) return clApi0('/admin/api/clients/reg/' + encodeURIComponent(CPV.uid) + '/files/pd-' + m[1]);
     m = /^\/api\/account\/profile\/block\/([a-z_]+)$/.exec(p);
+    if (m) return clApi0('/admin/api/cpv/' + encodeURIComponent(CPV.uid) + '/block/' + encodeURIComponent(m[1])); /* v669: القسم كما يراه العميل الآن */
     if (m) { const P = CPV.prof || {}, B = P.blocks || {}; if (m[1] === 'docs') return { ok: true, fields: (P.files || []).filter(function (f) { return f.kind !== 'attachment'; }).map(function (f) { return { key: f.kind, label: f.label, kind: 'file', required: !!f.required, active: true, doc: f.name ? { id: String(f.fid || '').replace(/^pd-/, ''), name: f.name, status: f.status, uploaded_at: f.at, reject_reason: f.note } : null }; }) }; return { ok: true, fields: (B[m[1]] || []).map(function (f) { return Object.assign({ active: true }, f); }) }; }
     if (p === '/api/account/my-requests') return { ok: true, requests: [] };
     if (p === '/api/security/overview') return { ok: true, devices: [], sessions: [] };
@@ -24840,6 +24851,7 @@ if (LIVE.on) {
   const admRpc0 = admRpc;
   admRpc = async function (fn, args) {
     if (CPV.on && CPV.full && CPV.uid && CPV.sess && CPV_ACT.indexOf(fn) >= 0) { const r = await cpvAct(fn, args || {}); if (!r || r.ok === false) throw new Error((r && (r.message || r.error)) || 'تعذّر التنفيذ.'); return r; } /* v666 */
+    if (CPV.on && CPV.full && CPV.uid && CPV.sess && CPV_READ.indexOf(fn) >= 0) return cpvRead(fn); /* v669 */
     if (CPV.on && /^my_/.test(fn)) {
       if (fn === 'my_quotations') return { ok: true, rows: [] };
       cpgLog('blocked', cpgPageLabel()[0], 'إجراء باسم العميل: ' + fn); snack(CPV_MSG); throw new Error(CPV_MSG);
@@ -28110,7 +28122,7 @@ function stlClientPanel(o) {
 }
 async function stlClientLoad() {
   /* v571: في «صفحة العميل» من حساب الموظف تُقرأ فاتورة العميل نفسه للعرض (كانت تُقرأ للموظف فلا يظهر شيء وتبدو الحالة «بانتظار سدادك») */
-  const cpv = window.__cpvUid || '';
+  const cpv = window.__cpvFull ? '' : (window.__cpvUid || ''); /* v669: نيابةً عن العميل = بياناته كما يراها */
   const j = await liveSb(cpv ? 'rpc/admin_client_settle_offers' : 'rpc/my_settle_offers', { body: cpv ? { p_user: cpv } : {} }).catch(function () { return null; });
   STL_C.offers = Array.isArray(j) ? j : [];
 }
@@ -28145,7 +28157,7 @@ if (LIVE.on) {
 const LVF = { ok: false, busy: false };
 const LVF_KEYS = ['salary', 'income_sources', 'total_monthly_income', 'has_obligations', 'total_obligations'];
 async function lvFinLoad() {
-  const cpv = window.__cpvUid || '';
+  const cpv = window.__cpvFull ? '' : (window.__cpvUid || ''); /* v669: نيابةً عن العميل = بياناته كما يراها */
   const j = await liveSb(cpv ? 'rpc/admin_client_fin' : 'rpc/my_fin_info', { body: cpv ? { p_user: cpv } : {} }).catch(function () { return null; });
   F.salary = ''; F.income_sources = []; F.total_monthly_income = ''; F.has_obligations = ''; F.total_obligations = '';
   if (!j || j.ok !== true) { LVF.ok = false; return; }
@@ -28304,7 +28316,7 @@ if (LIVE.on) {
 const LVJ = { ok: false, rules: [], docs: [], up: '', busy: false };
 const LVJ_KEYS = ['work_type', 'job_title', 'job_title_other', 'employer', 'employer_other', 'sector', 'sector_other', 'sector_text', 'department', 'work_region', 'join_date'];
 async function lvJobLoad() {
-  const cpv = window.__cpvUid || '';
+  const cpv = window.__cpvFull ? '' : (window.__cpvUid || ''); /* v669: نيابةً عن العميل = بياناته كما يراها */
   const j = await liveSb(cpv ? 'rpc/admin_client_job' : 'rpc/my_job_info', { body: cpv ? { p_user: cpv } : {} }).catch(function () { return null; });
   LVJ_KEYS.forEach(function (k) { F[k] = ''; });
   if (!j || j.ok !== true) { LVJ.ok = false; LVJ.rules = []; LVJ.docs = []; return; }
@@ -28358,7 +28370,7 @@ function lvJobOpen(d) {
 function lvJobNote(tone, t, x, b) { return b ? DS.note(tone, t, x, b) : DS.note(tone, t, x); }
 function lvJobRow(r, d) {
   const st = d ? (CL_DOC[d.status] || [d.status, 'info']) : ['لم يُرفع', null];
-  const cpv = !!window.__cpvUid, busy = LVJ.up === r.doc_type;
+  const cpv = !!(window.__cpvUid && !window.__cpvFull), busy = LVJ.up === r.doc_type;
   const acts = [DS.badge(st[0], st[1])];
   if (d) { const o = DS.button('معاينة', { size: 'sm', ui: 'eye', onClick: function () { lvJobOpen(d); } }); o.setAttribute('data-live-ok', ''); acts.push(o); }
   /* v575: قرار الفريق من «صفحة العميل» — قبول أو رفض بسبب يصل للعميل */
@@ -28473,7 +28485,7 @@ function sysJobDocsPage() {
 }
 function lvJobDocsPage() {
   lvEnsure();
-  const wt = F.work_type || '', wn = wt ? nameOf(WORK, wt) : '', R = LVJ.rules, D = LVJ.docs, cpv = !!window.__cpvUid;
+  const wt = F.work_type || '', wn = wt ? nameOf(WORK, wt) : '', R = LVJ.rules, D = LVJ.docs, cpv = !!(window.__cpvUid && !window.__cpvFull);
   const cur = function (t) { return D.filter(function (x) { return x.doc_type === t; })[0] || null; };
   const up = R.filter(function (r) { return cur(r.doc_type); }).length;
   const out = [lvHero({ ic: 'files', eye: 'خدماتي', t: 'مرفقاتي', sub: wn ? 'حسب حالتك الوظيفية: ' + wn : '', tiles: [['المرفقات', fmtNum(R.length), 'files'], ['المرفوعة', fmtNum(up) + ' / ' + fmtNum(R.length), 'check-circle'], ['الحالة الوظيفية', wn || '—', 'briefcase']] })];
