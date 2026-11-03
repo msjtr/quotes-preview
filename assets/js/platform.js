@@ -17274,7 +17274,7 @@ function eligReportBox(x, c, paint) {
 /* العميل: المطلوب منه (عند الإعادة) وتقرير الأهلية (بعد النتيجة) داخل طلبه */
 const EGRS = { busy: false };
 function eligResubmit(x) {
-  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — يعيد العميل الطلب من حسابه.'); return; }
+  if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — يعيد العميل الطلب من حسابه.'); return; }
   if (EGRS.busy) return; EGRS.busy = true; setTimeout(function () { EGRS.busy = false; }, 8000);
   liveSb('rpc/my_elig_resubmit', { body: { p_sr: x.id } }).then(function (r) {
     if (!r || r.ok === false) {
@@ -17519,7 +17519,7 @@ function eligAskField(x, i) {
   const inp = e('input', { class: 't2-input', type: 'text', inputmode: money ? 'decimal' : 'text', placeholder: money ? 'المبلغ الصحيح بالريال' : 'القيمة الصحيحة', 'aria-label': 'القيمة الصحيحة: ' + i.label, onInput: function (ev) { W.v = ev.target.value; } });
   inp.value = W.v || '';
   const save = async function () {
-    if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — يصحّح العميل من حسابه.'); return; }
+    if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — يصحّح العميل من حسابه.'); return; }
     const v = String(W.v || '').trim();
     if (!v) { tqCenterNote('اكتب القيمة الصحيحة', ['«' + i.label + '»'], 'warn'); return; }
     if (W.busy) return; W.busy = true; try { draw(); } catch (er) { void er; }
@@ -17574,7 +17574,7 @@ function eligClientRows(x) {
 /* v662: طلب التوثيق المُعاد — بند لم تتغيّر قيمته: يعدّله العميل، أو يؤكّد أنها صحيحة بتوضيح للفريق (لا يُجبر على تغيير قيمة صحيحة) */
 function tqKeepDlg(items) {
   try {
-    if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — يؤكّد العميل من حسابه.'); return; }
+    if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — يؤكّد العميل من حسابه.'); return; }
     const old = document.getElementById('tq-keep'); if (old) old.remove();
     const box = document.createElement('div'); box.id = 'tq-keep'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
     box.style.cssText = 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(8,20,38,.45);padding:14px';
@@ -24547,6 +24547,7 @@ const CPV_MSG = 'هذا إجراء يخص العميل نفسه ولا يُنف�
 function cpgSess() { const a = new Uint8Array(9); try { crypto.getRandomValues(a); } catch (err) { for (let i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256); } return 'CP-' + Array.from(a).map(function (x) { return x.toString(16).padStart(2, '0'); }).join('').toUpperCase(); }
 function cpgLog(ev, page, detail, reason) {
   if (!CPV.sess || !CPV.uid) return Promise.resolve(null);
+  try { const so = JSON.parse(sessionStorage.getItem('tera-cpv-v1') || 'null'); if (so) { so.t = Date.now(); sessionStorage.setItem('tera-cpv-v1', JSON.stringify(so)); } } catch (err) { void err; } /* v666: المهلة ساعة من آخر نشاط */
   return admRpc('admin_client_page_log', { p_user: CPV.uid, p_session: CPV.sess, p_event: ev, p_page: page || null, p_detail: detail ? String(detail).slice(0, 480) : null, p_reason: reason || null }).catch(function (err) { return { ok: false, error: (err && err.message) || 'log' }; });
 }
 const cpgClients = () => ((LIVE_DATA.clients && LIVE_DATA.clients.reg) || []);
@@ -24604,8 +24605,9 @@ async function cpgEnter(c, why) {
   if (!r || r.ok !== true) { CPV.sess = ''; CPV.uid = ''; window.__cpvUid = ''; throw new Error(r && r.error === 'reason_required' ? 'اكتب سبب الدخول (6 أحرف على الأقل).' : r && /forbidden|صلاحية/.test(String(r.error)) ? 'لا تملك صلاحية الدخول إلى صفحات العملاء.' : 'تعذّر بدء الجلسة — لم يُفتح شيء. ' + ((r && r.error) || '')); }
   let prof = null; try { const j = await admClients('/reg/' + encodeURIComponent(c.id)); prof = j && j.profile; } catch (err) { prof = null; }
   try { if (!LIVE_LOY.mem) await lvMemLoad(); } catch (err) { void err; }
+  try { CPV.full = (await admRpc('admin_cpv_can', {})) === true; } catch (err) { CPV.full = false; } window.__cpvFull = CPV.full; /* v666: تنفيذ نيابةً عن العميل لمن يملك الصلاحية */
   CPV.on = true; CPV.name = c.name || ''; CPV.no = c.no || ''; CPV.reason = why; CPV.at = Date.now(); CPV.prof = prof; CPV.blk = {}; CPV.last = '';
-  try { sessionStorage.setItem('tera-cpv-v1', JSON.stringify({ c: { id: c.id, name: c.name || '', no: c.no || '', status: c.status || '', at: c.at || null }, why: String(why || '').replace(/ — استئناف بعد تحديث الصفحة$/, ''), by: (CPV.staff && CPV.staff.me && CPV.staff.me.id) || '', t: Date.now() })); } catch (err) { void err; } /* v577: التحديث يُبقيك في صفحة العميل */
+  try { sessionStorage.setItem('tera-cpv-v1', JSON.stringify({ c: { id: c.id, name: c.name || '', no: c.no || '', status: c.status || '', at: c.at || null }, why: String(why || '').replace(/ — استئناف بعد تحديث الصفحة$/, ''), by: (LIVE.me && LIVE.me.id) || '' /* v666: كان يُقرأ قبل تعيينه فلا يُستأنف بعد التحديث */, t: Date.now() })); } catch (err) { void err; } /* v577: التحديث يُبقيك في صفحة العميل */
   CPV.staff = { me: LIVE.me, allow: LIVE.allow.slice(), name: ME.name, email: ME.email, phone: ME.phone };
   LIVE.me = { id: c.id, full_name: (prof && prof.name) || c.name || '', tera_id: (prof && prof.no) || c.no || '', status: (prof && prof.status) || c.status || 'active', created_at: (prof && prof.at) || c.at || null, email: (prof && prof.email) || '', phone: (prof && prof.phone) || '', user_type: 'client' };
   LIVE.allow = ['client'];
@@ -24632,7 +24634,7 @@ function cpgResume() {
   let o = null, nv = ''; const nt = ((performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {}).type;
   try { o = JSON.parse(sessionStorage.getItem('tera-cpv-v1') || 'null'); nv = sessionStorage.getItem('tera-cpv-nav') || ''; if (nt !== 'reload') { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } } catch (err) { o = null; }
   /* للموظف نفسه وخلال ساعتين فقط، ويُسجَّل استئنافًا */
-  if (!o || !o.c || !o.c.id || nt !== 'reload' || CPV.on || S.role !== 'admin' || !LIVE.me || o.by !== LIVE.me.id || !(Date.now() - (Number(o.t) || 0) < 72e5)) { try { if (o && nt === 'reload') { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } } catch (err) { void err; } return Promise.resolve(); }
+  if (!o || !o.c || !o.c.id || nt !== 'reload' || CPV.on || S.role !== 'admin' || !LIVE.me || o.by !== LIVE.me.id || !(Date.now() - (Number(o.t) || 0) < 36e5)) { try { if (o && nt === 'reload') { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } } catch (err) { void err; } return Promise.resolve(); }
   return cpgEnter(o.c, String(o.why || '') + ' — استئناف بعد تحديث الصفحة').then(function () { if (nv) { try { sessionStorage.setItem(NAVKEY, nv); loadNav(); draw(); } catch (err) { void err; } } })
     .catch(function () { try { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } catch (err) { void err; } });
 }
@@ -24713,12 +24715,16 @@ if (LIVE.on) {
   const T_OK = /^(client_contracts|payment_transfers|payment_gateway_txns|client_service_requests|store_orders|client_contract_payments|client_bonds)\?/;
   const cpgBlocked = function (what) { if (CPV.blk[what]) return; CPV.blk[what] = 1; cpgLog('blocked', cpgPageLabel()[0], what); };
   const liveSb0 = liveSb;
+  /* v666: «صفحة العميل — تنفيذ نيابةً عن العميل»: إجراءات العميل (عدا الدفع والأمان) تُنفَّذ عبر admin_cpv_act وتُسجَّل باسم الموظف */
+  const CPV_ACT = ['my_job_info_save', 'my_fin_info_save', 'my_job_doc_attach', 'my_elig_fix_field', 'my_elig_resubmit', 'my_verification_item_keep', 'my_verification_submit', 'my_verification_submit_core', 'my_verification_open', 'my_profile_block_confirm'];
+  const cpvAct = function (fn, args) { return liveSb0('rpc/admin_cpv_act', { body: { p_user: CPV.uid, p_sess: CPV.sess, p_fn: fn, p_args: args || {} } }).then(function (r) { if (r && r.ok === false && r.message) snack(r.message); return r; }); };
   liveSb = function (path, opt) {
     if (!CPV.on) return liveSb0(path, opt);
     const p = String(path || ''), o = opt || {};
     if (p === 'rpc/my_membership') { const m = (LIVE_LOY.mem || []).filter(function (x) { return x.user_id === CPV.uid; })[0]; return Promise.resolve(m ? { ok: true, exists: true, member_no: m.member_no, tier: m.tier, status: m.status, name_ar: m.name || CPV.name, issued_at: m.issued_at, expires_at: m.expires_at, launch_pending: !m.launched_at, pending: !m.launched_at, points: { balance: Number(m.balance) || 0, earned: 0, redeemed: 0, expiring_30: 0 }, ledger: (m.ledger || []).map(function (l) { return { created_at: l.at, points: l.n, kind: l.kind, note: l.note, ref: l.ref }; }) } : { ok: true, exists: false }); }
     if (p === 'rpc/my_profile_verification') { const v = (LIVE_DATA.ver || []).filter(function (x) { return x.user_id === CPV.uid; })[0]; return Promise.resolve(v ? Object.assign({ ok: true }, v) : { ok: true, status: 'none' }); }
     if (p === 'rpc/profile_notes') return Promise.resolve({ ok: true, rows: [] });
+    if (CPV.full && CPV.uid && CPV.sess && /^rpc\//.test(p) && CPV_ACT.indexOf(p.slice(4).split('?')[0]) >= 0) return cpvAct(p.slice(4).split('?')[0], o.body || {}); /* v666 */
     if (o.body || /^rpc\//.test(p)) { cpgBlocked('قراءة أو كتابة خاصة بجلسة العميل: ' + p.split('?')[0]); return Promise.resolve(null); }
     if (T_OK.test(p) && p.indexOf('user_id=eq.' + CPV.uid) >= 0) return liveSb0(path, opt);
     if (/^client_contract_files\?/.test(p)) return liveSb0(path, opt);
@@ -24747,12 +24753,18 @@ if (LIVE.on) {
     const p = String(path || '');
     if (/^\/api\/geo\//.test(p)) return clPost0(path, body); /* الخريطة للعرض والبحث فقط */
     if (/^\/admin\/api\//.test(p)) { const j = await clPost0(path, body); if (j && j.ok !== false) cpgLog('edit', cpgPageLabel()[0], 'حُفظ: ' + p.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, '…')); return j; }
+    if (CPV.full && CPV.uid && CPV.sess) { /* v666: حفظ أقسام الملف (عدا الجوال والبريد والبنك) ورفع المرفقات نيابةً عن العميل */
+      const mb = /^\/api\/account\/profile\/(personal|address|emergency|docs)$/.exec(p);
+      if (mb) { const r = await cpvAct('profile_block', { block: mb[1], values: (body && body.values) || {} }); return r || { ok: false, message: 'تعذّر الحفظ — أعد المحاولة.' }; }
+      if (p === '/api/account/profile/upload-url') return clPost0('/admin/api/cpv/upload-url', Object.assign({}, body || {}, { uid: CPV.uid, sess: CPV.sess }));
+    }
     cpgLog('blocked', cpgPageLabel()[0], 'إجراء باسم العميل: ' + p.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, '…'));
     snack(CPV_MSG);
     return { ok: false, message: CPV_MSG };
   };
   const admRpc0 = admRpc;
   admRpc = async function (fn, args) {
+    if (CPV.on && CPV.full && CPV.uid && CPV.sess && CPV_ACT.indexOf(fn) >= 0) { const r = await cpvAct(fn, args || {}); if (!r || r.ok === false) throw new Error((r && (r.message || r.error)) || 'تعذّر التنفيذ.'); return r; } /* v666 */
     if (CPV.on && /^my_/.test(fn)) {
       if (fn === 'my_quotations') return { ok: true, rows: [] };
       cpgLog('blocked', cpgPageLabel()[0], 'إجراء باسم العميل: ' + fn); snack(CPV_MSG); throw new Error(CPV_MSG);
@@ -28069,7 +28081,7 @@ async function lvFinLoad() {
   LVF.ok = true;
 }
 async function lvFinSave(d, stay) {
-  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — التحديث من حساب العميل نفسه.'); return; }
+  if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — التحديث من حساب العميل نفسه.'); return; }
   if (LVF.busy) return; LVF.busy = true;
   const num = function (x) { return relNum(x).replace(/[^\d.]/g, ''); };
   const v = { income_sources: (F.income_sources || []).slice(), total_monthly_income: num(F.total_monthly_income), has_obligations: F.has_obligations || '' };
@@ -28162,7 +28174,7 @@ function eligRows() {
 }
 const LVE2 = { busy: false };
 async function lvEligSubmit() {
-  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — يُقدَّم الطلب من حساب العميل نفسه.'); return; }
+  if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — يُقدَّم الطلب من حساب العميل نفسه.'); return; }
   if (eligDocsMiss()) return; /* v659 */ if (LVE2.busy) return;
   const acct = F.rel === 'yes' ? 'relative' : F.own_add === 'yes' ? 'own_other' : 'registered';
   if (acct !== 'registered' && !eligGrantOk()) { S.step = 1; S.miss = ['eg_grant']; MISS_MSG.eg_grant = 'أكمل التحقق بالرمز.'; draw(); toTop(); snack('أكمل التحقق بالرمز قبل الإرسال — صلاحيته 5 دقائق.'); return; }
@@ -28227,7 +28239,7 @@ async function lvJobLoad() {
   LVJ.rules = Array.isArray(j.rules) ? j.rules : []; LVJ.docs = Array.isArray(j.docs) ? j.docs : []; LVJ.ok = true;
 }
 async function lvJobSave(d, stay) {
-  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — التحديث من حساب العميل نفسه.'); return; }
+  if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — التحديث من حساب العميل نفسه.'); return; }
   if (LVJ.busy) return; LVJ.busy = true;
   const v = {}; LVJ_KEYS.forEach(function (k) { const x = F[k]; if (x != null && x !== '') v[k] = String(x); });
   const j = await liveSb('rpc/my_job_info_save', { body: { p_values: v } }).catch(function () { return null; });
@@ -28238,7 +28250,7 @@ async function lvJobSave(d, stay) {
   S.toast = 'حُفظت ' + d.t + ' — راجع مرفقاتي للتأكد من مطابقتها'; draw(); if (!stay) toTop(); /* v584 */
 }
 async function lvJobUpload(t, file) {
-  if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — الرفع من حساب العميل نفسه.'); return; }
+  if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — الرفع من حساب العميل نفسه.'); return; }
   if (!file || LVJ.up) return;
   file = await tqShrink(file); /* v662 */ if (['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0 || file.size > 5 * 1024 * 1024) { tqCenterNote('لم يُرفع المرفق', ['المرفق PDF أو صورة، حتى 5 ميغابايت.', 'صوّر المستند بالجوال أو صغّر ملف PDF ثم أعد المحاولة.'], 'warn'); return; }
   LVJ.up = t; draw();
@@ -28279,7 +28291,7 @@ function lvJobRow(r, d) {
     if (d.status !== 'accepted') acts.push(liveOk(DS.button(LVJ.dec === d.id ? 'جارٍ…' : 'قبول', { size: 'sm', tone: 'primary', ui: 'check', disabled: !!LVJ.dec, onClick: function () { lvJobDecide(d, 'accepted'); } })));
     if (d.status !== 'rejected') acts.push(liveOk(DS.button('رفض', { size: 'sm', ui: 'x', disabled: !!LVJ.dec, onClick: function () { LVJ.rej = LVJ.rej === d.id ? '' : d.id; LVJ.why = ''; draw(); } })));
   }
-  if (!cpv) {
+  if (!cpv || window.__cpvFull) { /* v666 */
     const inp = e('input', { type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.webp', style: 'display:none', onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; lvJobUpload(r.doc_type, f); } });
     acts.push(inp, liveOk(DS.button(busy ? 'جارٍ الرفع…' : d ? 'استبدال' : 'رفع', { size: 'sm', tone: d ? null : 'primary', disabled: !!LVJ.up, onClick: function () { inp.click(); } })));
   }
