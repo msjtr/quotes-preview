@@ -17524,7 +17524,7 @@ function eligAskField(x, i) {
   const cur = (x.fields || []).filter(function (y) { return y && String(y[0]) === i.label; })[0];
   const money = cur ? /ريال/.test(String(cur[1] || '')) : /^(الراتب|المصروفات|قيمة|إجمالي|مبلغ)/.test(i.label);
   const k = x.id + ':' + (((x.meta || {}).fix || {}).at || '') + ':' + i.label, W = EGF[k] || (EGF[k] = { v: i.val ? (money ? egNum(i.val) : i.val) : '', busy: false });
-  const inp = e('input', { class: 't2-input', type: 'text', inputmode: money ? 'decimal' : 'text', placeholder: money ? 'المبلغ الصحيح بالريال' : 'القيمة الصحيحة', 'aria-label': 'القيمة الصحيحة: ' + i.label, onInput: function (ev) { W.v = ev.target.value; } });
+  const inp = e('input', { class: 't2-input', type: 'text', inputmode: money ? 'decimal' : 'text', placeholder: money ? 'المبلغ الصحيح بالريال — أو اكتبه كما هو إن كان صحيحًا' : 'القيمة الصحيحة — أو اكتبها كما هي إن كانت صحيحة', /* v671 */ 'aria-label': 'القيمة الصحيحة: ' + i.label, onInput: function (ev) { W.v = ev.target.value; } });
   inp.value = W.v || '';
   const save = async function () {
     if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — يصحّح العميل من حسابه.'); return; }
@@ -17534,8 +17534,8 @@ function eligAskField(x, i) {
     try {
       const r = await liveSb('rpc/my_elig_fix_field', { body: { p_sr: x.id, p_label: i.label, p_value: v } });
       if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الحفظ — أعد المحاولة بعد قليل.');
-      W.busy = false;
-      tqCenterNote('حُفظ التصحيح', ['«' + i.label + '»', 'القديم: ' + (r.old || '—'), 'الجديد: ' + r.new, 'بعد إكمال كل المطلوب اضغط «إعادة الإرسال بعد الاستكمال».'], 'ok');
+      W.busy = false; try { if (cur) cur[1] = r.new; else (x.fields = x.fields || []).push([i.label, r.new]); i.val = r.new; W.v = ''; } catch (er) { void er; } /* v671: القيمة الحالية تتحدّث فورًا */
+      tqCenterNote(r.same ? 'أكّدتَ أن القيمة صحيحة' : 'حُفظ التصحيح', ['«' + i.label + '»', r.same ? 'القيمة: ' + r.new + ' — صحيحة كما هي، ويراها الفريق مؤكَّدة.' : 'القديم: ' + (r.old || '—'), r.same ? '' : 'الجديد: ' + r.new, 'بعد إكمال كل المطلوب اضغط «إعادة الإرسال بعد الاستكمال».'].filter(Boolean), 'ok'); /* v671 */
       try { if (typeof liveLoad === 'function') liveLoad(); } catch (er) { void er; }
     } catch (err) { W.busy = false; tqCenterNote('لم يُحفظ التصحيح', ['«' + i.label + '»', (err && err.message) || 'أعد المحاولة.'], 'warn'); }
     try { draw(); } catch (er) { void er; }
@@ -28359,7 +28359,7 @@ async function lvJobUpload(t, file) {
 function lvJobOpen(d) {
   if (!window.__cpvUid) { clOpenDoc(d.id); return; }
   window.tqView(async function () {
-    if (!d.path && d.id) { const jj = await admRpc('admin_client_job', { p_user: window.__cpvUid }).catch(function () { return null; }); const xx = ((jj && jj.docs) || []).filter(function (y) { return y && y.id === d.id; })[0]; if (xx) d = Object.assign({}, d, { path: xx.path, bucket: xx.bucket }); } /* v670 */
+    if (!d.path && d.id) { const jj = await admRpc('admin_client_job', { p_user: window.__cpvUid }).catch(function () { return null; }); const L2 = (jj && jj.docs) || []; const xx = L2.filter(function (y) { return y && y.id === d.id; })[0] || L2.filter(function (y) { return y && d.doc_type && y.doc_type === d.doc_type; }).sort(function (a, b) { return String(b.uploaded_at || '').localeCompare(String(a.uploaded_at || '')); })[0]; try { if (typeof egdLoad === 'function') egdLoad(true); } catch (er) { void er; } /* v671 */ if (xx) d = Object.assign({}, d, { path: xx.path, bucket: xx.bucket }); } /* v670 */
     if (!d.path) throw new Error('لا يوجد ملف.');
     const tk = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
     const p = String(d.path).split('/').map(encodeURIComponent).join('/');
