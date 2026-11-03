@@ -9583,3 +9583,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 /* لا تكرار داخل «التواصل»: عنوان القسم الفرعي (العنوان في شريط الأقسام)، وأرقام جهات الاتصال المكررة في بطاقات التصفية */
 .is-comm-hub>.shb{display:none!important}
 .is-comm-hub .cu-bd-k4{display:none!important}
+/* v661: نقاط الياء الأخيرة (ي) وكل ما ينزل تحت السطر كانت تُقصّ في اسم العضو على البطاقة والفيلم (overflow:hidden مع line-height 1.3) فتظهر «المسعودى» — ارتفاع سطر يتسع للنقاط */
+.tm .mcard .mc-name b, .tm-lv .mcard .mc-name b { line-height: 1.75 !important; }
