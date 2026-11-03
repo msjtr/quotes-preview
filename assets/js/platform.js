@@ -17310,7 +17310,7 @@ function jobDocMetaPanel(paint) {
         e('span', { class: 't2-pb-actions' }, [DS.select({ value: d.stage, options: ST, onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { stage: v }); paint(); } }),
           DS.select({ value: d.validity_days, options: VD.some(function (o) { return o[0] === d.validity_days; }) ? VD : VD.concat([[d.validity_days, 'خلال ' + d.validity_days + ' يومًا']]), onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { validity_days: v }); paint(); } }),
           DS.select({ value: d.on_request || '0', options: [['0', 'متاح للعميل في مرفقاته'], ['1', 'يطلبه الفريق فقط']], onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { on_request: v }); paint(); } }),
-          DS.select({ value: d.max_mb || '5', options: [['2', 'حتى 2 ميغابايت'], ['5', 'حتى 5 ميغابايت'], ['10', 'حتى 10 ميغابايت'], ['20', 'حتى 20 ميغابايت'], ['30', 'حتى 30 ميغابايت']], onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { max_mb: v }); paint(); } })])]); /* v668 */
+          DS.select({ value: d.max_mb || '5', options: [['2', 'حتى 2 ميغابايت'], ['5', 'حتى 5 ميغابايت'], ['10', 'حتى 10 ميغابايت'], ['20', 'حتى 20 ميغابايت'], ['30', 'حتى 30 ميغابايت'], ['50', 'حتى 50 ميغابايت']], onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { max_mb: v }); paint(); } })])]); /* v668 */
     })),
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(JDM.busy ? 'جارٍ الحفظ…' : 'حفظ المراحل والصلاحية', { tone: 'primary', ui: 'check', disabled: JDM.busy || !Object.keys(JDM.dirty).length, onClick: save }))])]);
 }
@@ -17497,7 +17497,7 @@ function eligFixBox(x, c, paint) {
       DS.editField('1 · ما الذي تطلبه؟', typeSel),
       keySel ? DS.editField(W.type === 'doc' ? '2 · المرفق' : '2 · الحقل', keySel) : null,
       W.type === 'doc' && W.key === 'job_other' ? DS.editField('وصف المرفق (إلزامي)', lbi) : null,
-      W.type === 'doc' && W.key ? DS.editField('الحجم المسموح للمرفق', DS.select({ value: W.mb || '', options: [['', 'حسب إعداد المرفق'], ['5', '5 ميغابايت'], ['10', '10 ميغابايت'], ['20', '20 ميغابايت'], ['30', '30 ميغابايت']], onChange: function (v) { W.mb = v; paint(); } })) : null, /* v668 */
+      W.type === 'doc' && W.key ? DS.editField('الحجم المسموح للمرفق', DS.select({ value: W.mb || '', options: [['', 'حسب إعداد المرفق'], ['5', '5 ميغابايت'], ['10', '10 ميغابايت'], ['20', '20 ميغابايت'], ['30', '30 ميغابايت'], ['50', '50 ميغابايت']], onChange: function (v) { W.mb = v; paint(); } })) : null, /* v668 */
       W.type ? DS.editField(W.type === 'doc' ? 'ما المطلوب في المرفق (اختياري)' : W.type === 'field' ? 'المطلوب تصحيحه (إلزامي)' : 'الملاحظة (إلزامية)', ta) : null]),
     W.type === 'doc' && W.key === 'job_simah' ? DS.note('info', 'تقرير سمة (ملم)', EG_SIMAH) : null,
     W.type === 'doc' && W.key && EG_STAFF[W.key] ? e('small', { class: 'cu-dr-hint' }, 'هذا المرفق لا يظهر للعميل إلا بعد طلبه هنا، ويرفعه من داخل طلبه.') : null,
@@ -17568,7 +17568,7 @@ function egdLoad(force) {
 }
 /* v669: مهلة لكل خطوة رفع — فلا تبقى «جارٍ الرفع» بلا نهاية */
 function egdTO(p, ms, msg) { let tm = null; return Promise.race([Promise.resolve(p).finally(function () { clearTimeout(tm); }), new Promise(function (ok, no) { tm = setTimeout(function () { no(new Error(msg)); }, ms); })]); }
-function egdPut(url, file) { const ac = typeof AbortController === 'function' ? new AbortController() : null; const tm = setTimeout(function () { try { if (ac) ac.abort(); } catch (err) { void err; } }, 120000); return fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file, signal: ac ? ac.signal : undefined }).catch(function () { return null; }).finally(function () { clearTimeout(tm); }); }
+function egdPut(url, file) { const ac = typeof AbortController === 'function' ? new AbortController() : null; const tm = setTimeout(function () { try { if (ac) ac.abort(); } catch (err) { void err; } }, Math.min(900000, Math.max(120000, Math.round((file.size || 0) / 50)))); /* v670: بحسب الحجم */ return fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file, signal: ac ? ac.signal : undefined }).catch(function () { return null; }).finally(function () { clearTimeout(tm); }); }
 async function egdUpload(x, i, file, mb, k) {
   if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — الرفع من حساب العميل نفسه.'); return; }
   if (EGD.up) return;
@@ -17580,8 +17580,9 @@ async function egdUpload(x, i, file, mb, k) {
     const u = await egdTO(clPost('/api/account/profile/upload-url', { block: 'docs', field: i.doc_type, type: file.type, size: file.size }), 30000, 'انتهت مهلة تجهيز الرفع — تحقق من الاتصال، أو سجّل الدخول من جديد ثم أعد المحاولة.');
     if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز الرفع.');
     let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
-    let put = await egdPut(url, file);
-    if ((!put || !put.ok) && url !== u.url) put = await egdPut(u.url, file);
+    const big = file.size > 20 * 1024 * 1024; /* v670 */
+    let put = await egdPut(big ? u.url : url, file);
+    if ((!put || !put.ok) && url !== u.url) put = await egdPut(big ? url : u.url, file);
     if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن — تحقق من الاتصال وأعد المحاولة.');
     const j = await egdTO(liveSb('rpc/my_job_doc_attach', { body: { p_doc_type: i.doc_type, p_path: u.path, p_name: String(file.name || '').slice(0, 120) } }), 30000, 'رُفع الملف ولم يُحفظ في طلبك — أعد المحاولة.');
     if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر حفظ المرفق.');
@@ -28342,11 +28343,12 @@ async function lvJobUpload(t, file) {
   const mxj = Number((((typeof LVJ !== 'undefined' && LVJ.rules) || []).filter(function (y) { return y.doc_type === t; })[0] || {}).max_mb) || 5; /* v668 */ file = await tqShrink(file); /* v662 */ if (['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0 || file.size > mxj * 1024 * 1024) { tqCenterNote('لم يُرفع المرفق', ['المرفق PDF أو صورة، حتى ' + mxj + ' ميغابايت.', 'صوّر المستند بالجوال أو صغّر ملف PDF ثم أعد المحاولة.'], 'warn'); return; }
   LVJ.up = t; draw();
   try {
-    const u = await clPost('/api/account/profile/upload-url', { block: 'docs', field: t, type: file.type, size: file.size });
+    const u = await egdTO(clPost('/api/account/profile/upload-url', { block: 'docs', field: t, type: file.type, size: file.size }), 30000, 'انتهت مهلة تجهيز الرفع — تحقق من الاتصال ثم أعد المحاولة.');
     if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز الرفع.');
     let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
-    let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
-    if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
+    const big = file.size > 20 * 1024 * 1024; /* v670 */
+    let put = await egdPut(big ? u.url : url, file);
+    if ((!put || !put.ok) && url !== u.url) put = await egdPut(big ? url : u.url, file);
     if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن.');
     const j = await liveSb('rpc/my_job_doc_attach', { body: { p_doc_type: t, p_path: u.path, p_name: String(file.name || '').slice(0, 120) } });
     if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر حفظ المرفق.');
@@ -28357,6 +28359,7 @@ async function lvJobUpload(t, file) {
 function lvJobOpen(d) {
   if (!window.__cpvUid) { clOpenDoc(d.id); return; }
   window.tqView(async function () {
+    if (!d.path && d.id) { const jj = await admRpc('admin_client_job', { p_user: window.__cpvUid }).catch(function () { return null; }); const xx = ((jj && jj.docs) || []).filter(function (y) { return y && y.id === d.id; })[0]; if (xx) d = Object.assign({}, d, { path: xx.path, bucket: xx.bucket }); } /* v670 */
     if (!d.path) throw new Error('لا يوجد ملف.');
     const tk = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
     const p = String(d.path).split('/').map(encodeURIComponent).join('/');
