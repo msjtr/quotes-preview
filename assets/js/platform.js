@@ -2941,7 +2941,7 @@ function reqPage() { if (typeof isCus === 'function') { cusInit(); const cr = RE
   const QS = qOfReq(r.no);
   const qSec = QS.length ? sec('عرض السعر المرفق' + (QS.length > 1 ? ' (' + QS.length + ' إصدارات)' : ''), 'راجع العرض واختر: قبول أو طلب تعديل أو رفض. صالح ' + QCFG.validityHours + ' ساعة من الإصدار.', [e('div', { class: 'qcs' }, QS.map(qCard))], true, 'r-q')
     : r.type === 'elig' && r.wantQuote ? sec('عرض السعر المرفق', 'طلبت إرفاق عرض سعر — يصدر بعد دراسة الأهلية ويصلك في الإشعارات.', [e('div', { class: 'fx-adm' }, [e('span', {}, [e('span', { class: 'fx-mini-ic' }, frag(tile('payshield'))), 'معاينة لوحة الإدارة — لا يظهر للعميل']), e('div', { class: 'fx-adm-b' }, [DS.button('إصدار عرض السعر', { size: 'sm', tone: 'primary', onClick: function () { const x = r.qin; QUOTES.unshift(mkQuote({ req: r.no, type: x.type, denom: x.denom, value: x.value, n: x.n, firstDue: x.firstDue, recv: x.recv })); draw(); } })])])], true, 'r-q') : null;
-  return [head, nt, tmActClient(r), okP ? thanksCard(okP) : lateP, preview, rfAdm, qSec, pRf ? DS.button('تفاصيل الدفعة ' + pRf.i + ' · ' + pRf.c.no, { size: 'sm', onClick: function () { FX.pid = r.pid; go('payment'); } }) : null, sec('مسار الطلب', r.status === 'fix' ? 'بانتظار تعديلك وإعادة الإرسال.' : r.status === 'rejected' ? 'انتهى الطلب بالرفض.' : at >= r.path.length ? 'اكتمل الطلب.' : 'المرحلة ' + (at + 1) + ' من ' + r.path.length, [path]), (r.sr && r.sr.kind === 'elig' ? eligClientPanel(r.sr) : null), secC('r-facts', 'تفاصيل الطلب', null, [factTiles((r.fields || []).filter(function (y) { return !(y && y[1] && y[1].nodeType); }))]) /* v667 */,
+  return [head, (r.sr && r.sr.kind === 'elig' ? eligClientPanel(r.sr) : null) /* v668: البطاقة أول الطلب */, nt, tmActClient(r), okP ? thanksCard(okP) : lateP, preview, rfAdm, qSec, pRf ? DS.button('تفاصيل الدفعة ' + pRf.i + ' · ' + pRf.c.no, { size: 'sm', onClick: function () { FX.pid = r.pid; go('payment'); } }) : null, sec('مسار الطلب', r.status === 'fix' ? 'بانتظار تعديلك وإعادة الإرسال.' : r.status === 'rejected' ? 'انتهى الطلب بالرفض.' : at >= r.path.length ? 'اكتمل الطلب.' : 'المرحلة ' + (at + 1) + ' من ' + r.path.length, [path]), secC('r-facts', 'تفاصيل الطلب', null, [factTiles((r.fields || []).filter(function (y) { return !(y && y[1] && y[1].nodeType); }))]) /* v667 */,
     DS.actionBar({ buttons: [DS.button('رجوع إلى طلبات خدماتي', { onClick: function () { go('reqs'); } }), r.contract && cByNo(r.contract) && !(r.sr && r.sr.kind === 'settle') ? DS.button('عرض العقد ' + r.contract, /* v573: طلب سداد العقد يعرض فاتورته وتوقيعها لا العقد القديم */ { tone: 'primary', onClick: function () { FX.cid = r.contract; go('contract'); } }) : null, DS.button('مراسلة بخصوص الطلب', { onClick: function () { go('msg'); } })] })];
 }
 /* بلوك الدفع في الصفحة الرئيسية */
@@ -17302,14 +17302,15 @@ function jobDocMetaPanel(paint) {
     JDM.busy = false; paint();
   };
   const L = JDM.rows.filter(function (r) { return r.active; });
-  return DS.panel('مرحلة كل مستند وصلاحيته ومن يطلبه', 'متى يُطلب المستند، وكم يجب أن يكون حديثًا، وهل يظهر للعميل دائمًا أم يطلبه الفريق عند الإعادة للاستكمال', [
+  return DS.panel('إعداد كل مرفق: المرحلة والصلاحية ومن يطلبه والحجم', 'متى يُطلب المرفق، وكم يجب أن يكون حديثًا، وهل يظهر للعميل دائمًا أم يطلبه الفريق، والحجم المسموح (افتراضي 5 ميغابايت)', [
     JDM.err ? DS.note('warn', 'تعذّرت القراءة', JDM.err) : null,
     !L.length ? e('small', { class: 'cu-dr-hint' }, JDM.at > 1 ? 'لا مرفقات مفعّلة.' : 'جارٍ القراءة…') : e('div', { class: 'cu-mgr-docs' }, L.map(function (r) {
-      const d = JDM.dirty[r.id] || { id: r.id, stage: r.stage || 'apply', validity_days: r.validity_days == null ? '' : String(r.validity_days), on_request: r.on_request ? '1' : '0' };
+      const d = JDM.dirty[r.id] || { id: r.id, stage: r.stage || 'apply', validity_days: r.validity_days == null ? '' : String(r.validity_days), on_request: r.on_request ? '1' : '0', max_mb: String(r.max_mb || 5) };
       return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, r.label), e('small', {}, (WTN[r.work_type] || r.work_type) + ' · ' + (r.requirement === 'required' ? 'إلزامي' : 'اختياري') + (r.on_request ? ' · يطلبه الفريق فقط' : ''))]),
         e('span', { class: 't2-pb-actions' }, [DS.select({ value: d.stage, options: ST, onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { stage: v }); paint(); } }),
           DS.select({ value: d.validity_days, options: VD.some(function (o) { return o[0] === d.validity_days; }) ? VD : VD.concat([[d.validity_days, 'خلال ' + d.validity_days + ' يومًا']]), onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { validity_days: v }); paint(); } }),
-          DS.select({ value: d.on_request || '0', options: [['0', 'متاح للعميل في مرفقاته'], ['1', 'يطلبه الفريق فقط']], onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { on_request: v }); paint(); } })])]);
+          DS.select({ value: d.on_request || '0', options: [['0', 'متاح للعميل في مرفقاته'], ['1', 'يطلبه الفريق فقط']], onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { on_request: v }); paint(); } }),
+          DS.select({ value: d.max_mb || '5', options: [['2', 'حتى 2 ميغابايت'], ['5', 'حتى 5 ميغابايت'], ['10', 'حتى 10 ميغابايت'], ['20', 'حتى 20 ميغابايت'], ['30', 'حتى 30 ميغابايت']], onChange: function (v) { JDM.dirty[r.id] = Object.assign({}, d, { max_mb: v }); paint(); } })])]); /* v668 */
     })),
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(JDM.busy ? 'جارٍ الحفظ…' : 'حفظ المراحل والصلاحية', { tone: 'primary', ui: 'check', disabled: JDM.busy || !Object.keys(JDM.dirty).length, onClick: save }))])]);
 }
@@ -17327,7 +17328,7 @@ function eligDocsMiss() {
       return !(LVJ.docs || []).some(function (d) { return d.doc_type === r.doc_type && d.status !== 'rejected'; });
     }).map(function (r) { const m = meta[wt + ':' + r.doc_type] || {}; return '• ' + (r.label || r.doc_type) + VD(m.validity_days); });
     if (!miss.length) return false;
-    tqCenterNote('أرفق المستندات المطلوبة أولًا', miss.concat(['ارفعها من «خدماتي · مرفقاتي» ثم أرسل الطلب.']), 'warn');
+    tqCenterNote('أرفق المستندات المطلوبة أولًا', miss.concat(['ارفعها من «خدماتي - بياناتي - مرفقاتي» ثم أرسل الطلب.']), 'warn');
     return true;
   } catch (err) { return false; }
 }
@@ -17440,6 +17441,12 @@ function eligFixBox(x, c, paint) {
   const list = function (its) { return e('ol', { class: 'eg-how' }, (its || []).map(function (i) { return e('li', {}, [e('b', {}, (EG_IT[i.type] || '') + ': ' + i.label), i.note ? e('small', {}, i.note) : null, i.changed_at ? e('small', {}, 'صحّحه العميل: ' + (i.prev || '—') + ' ← ' + (i.val || '')) : null]); })); };
   if (fx && fx.open) out.push(DS.note('warn', 'أُعيد للعميل ' + iso(new Date(fx.at)) + ' — بانتظار استكماله', 'لا يعيد العميل الطلب حتى يرفع المرفقات المطلوبة.'), list(fx.items), fx.note ? e('small', { class: 'cu-dr-hint' }, 'ملاحظة عامة: ' + fx.note) : null);
   else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + iso(new Date(fx.done_at)), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
+  if (fx && !fx.open && fx.reclaimed_at) out.push(DS.note('info', 'سحب الفريق الطلب من العميل ' + iso(new Date(fx.reclaimed_at)), 'يمكنك إعادته للاستكمال من جديد أو تسجيل التوصية وإصدار النتيجة.'));
+  if (fx && fx.open && open) out.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('سحب الطلب من العميل', { size: 'sm', tone: 'danger', ui: 'arrow-u-up-left', onClick: async function () {
+    if (!tqConfirm('سحب الطلب ' + (x.req_no || '') + ' من العميل؟ يُغلق طلب الاستكمال ويعود الطلب للفريق، ولا يصل العميلَ إشعار.')) return;
+    try { const r = await admRpc('admin_elig_reclaim', { p_sr: x.id, p_note: '' }); if (r && r.ok === false) throw new Error(r.message || r.error || 'تعذّر السحب.'); snack('سُحب الطلب من العميل — عاد للفريق.'); c.fix = null; c.reload(); try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } }
+    catch (err) { snack(egErr(err)); }
+  } }))])); /* v668: صلاحية customers.elig_reclaim */
   if (!open) { out.push(e('small', { class: 'cu-dr-hint' }, 'الإعادة متاحة قبل إصدار النتيجة فقط.')); return e('div', { class: 'sr-stl' }, out); }
   if (!W.form && !W.items.length) {
     out.push(e('ol', { class: 'eg-how is-steps' }, [e('li', {}, 'اختر ما تطلبه من العميل: تصحيح حقل · مرفق · ملاحظة.'), e('li', {}, 'حدّد البند واكتب المطلوب ثم «إضافة إلى القائمة» — تضيف ما تشاء من البنود.'), e('li', {}, 'راجع «ما يصل العميل» ثم «إرسال للعميل». يصله إشعار بالمطلوب، ويرفع المرفقات من طلبه نفسه.')]));
@@ -17461,7 +17468,7 @@ function eligFixBox(x, c, paint) {
     if (W.items.some(function (i) { return i.type === W.type && (W.type === 'note' ? false : W.key === 'job_other' ? i.label === lb : (i.doc_type || i.label) === W.key); })) { W.err = 'البند مضاف مسبقًا.'; paint(); return; }
     const r = W.type === 'doc' ? ruleOf(W.key) : null;
     const lbl = W.type === 'field' ? W.key : W.type === 'doc' ? (W.key === 'job_other' ? lb.slice(0, 70) : (EG_STAFF[W.key] || (r && r.label) || W.key)) : 'ملاحظة';
-    W.items.push({ type: W.type, label: lbl, note: nt, doc_type: W.type === 'doc' ? W.key : null });
+    W.items.push({ type: W.type, label: lbl, note: nt, doc_type: W.type === 'doc' ? W.key : null, max_mb: W.type === 'doc' && W.mb ? Number(W.mb) : null });
     W.key = ''; W.lbl = ''; W.note = ''; W.err = ''; paint();
   };
   const send = async function () {
@@ -17490,6 +17497,7 @@ function eligFixBox(x, c, paint) {
       DS.editField('1 · ما الذي تطلبه؟', typeSel),
       keySel ? DS.editField(W.type === 'doc' ? '2 · المرفق' : '2 · الحقل', keySel) : null,
       W.type === 'doc' && W.key === 'job_other' ? DS.editField('وصف المرفق (إلزامي)', lbi) : null,
+      W.type === 'doc' && W.key ? DS.editField('الحجم المسموح للمرفق', DS.select({ value: W.mb || '', options: [['', 'حسب إعداد المرفق'], ['5', '5 ميغابايت'], ['10', '10 ميغابايت'], ['20', '20 ميغابايت'], ['30', '30 ميغابايت']], onChange: function (v) { W.mb = v; paint(); } })) : null, /* v668 */
       W.type ? DS.editField(W.type === 'doc' ? 'ما المطلوب في المرفق (اختياري)' : W.type === 'field' ? 'المطلوب تصحيحه (إلزامي)' : 'الملاحظة (إلزامية)', ta) : null]),
     W.type === 'doc' && W.key === 'job_simah' ? DS.note('info', 'تقرير سمة (ملم)', EG_SIMAH) : null,
     W.type === 'doc' && W.key && EG_STAFF[W.key] ? e('small', { class: 'cu-dr-hint' }, 'هذا المرفق لا يظهر للعميل إلا بعد طلبه هنا، ويرفعه من داخل طلبه.') : null,
@@ -17497,7 +17505,7 @@ function eligFixBox(x, c, paint) {
   if (W.items.length) {
     out.push(e('b', { class: 'eg-sub' }, 'البنود المضافة (' + fmtNum(W.items.length) + ')'));
     out.push(e('div', { class: 'cu-mgr-docs' }, W.items.map(function (i, k) {
-      return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, i.label), e('small', {}, i.note || '—')]),
+      return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, i.label), e('small', {}, (i.note || '—') + (i.max_mb ? ' · حتى ' + i.max_mb + ' ميغابايت' : ''))]),
         e('span', { class: 't2-pb-actions' }, [DS.badge(EG_IT[i.type], i.type === 'doc' ? 'info' : i.type === 'field' ? 'warn' : null), DS.button('حذف', { size: 'sm', ui: 'x', onClick: function () { W.items.splice(k, 1); paint(); } })])]);
     })));
     out.push(DS.editField('ملاحظة عامة للعميل', g));
@@ -17545,12 +17553,69 @@ function eligClientPanel(x) {
       rows.map(function (r) { return e('div', { class: 'eg-cp-r' }, [e('b', {}, r[0]), r[1] && r[1].nodeType ? r[1] : e('span', { style: 'white-space:pre-line' }, String(r[1] == null ? '' : r[1]))]); }));
   } catch (err) { return null; }
 }
+/* v668: مكان رفع المرفق المطلوب داخل بطاقة الطلب — الحجم المسموح · حالة ملوّنة · التاريخ والساعة · معاينة · استبدال · إشعار بارز بالنتيجة */
+const EGD = { at: 0, busy: false, docs: null, rules: null, up: '' };
+function egdHM(t) { try { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); } catch (err) { return ''; } }
+function egdWhen(t) { try { return iso(new Date(t)) + ' · ' + egdHM(t); } catch (err) { return ''; } }
+function egdLoad(force) {
+  const who = window.__cpvUid || 'me'; if (EGD.uid !== who) { EGD.uid = who; EGD.at = 0; EGD.docs = null; EGD.rules = null; force = true; }
+  if (EGD.busy || (!force && EGD.at && Date.now() - EGD.at < 60000)) return;
+  EGD.busy = true;
+  const cpv = window.__cpvUid || '';
+  const p = cpv ? admRpc('admin_client_job', { p_user: cpv }) : liveSb('rpc/my_job_info', { body: {} });
+  Promise.resolve(p).then(function (j) { EGD.busy = false; EGD.at = Date.now(); const ok = j && j.ok !== false; EGD.docs = ok ? (j.docs || []) : []; EGD.rules = ok ? (j.rules || []) : []; try { draw(); } catch (err) { void err; } })
+    .catch(function () { EGD.busy = false; EGD.at = Date.now(); EGD.docs = []; EGD.rules = []; try { draw(); } catch (err) { void err; } });
+}
+async function egdUpload(x, i, file, mb, k) {
+  if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — الرفع من حساب العميل نفسه.'); return; }
+  if (EGD.up) return;
+  if (['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0) { tqCenterNote('لم يُرفق المرفق', ['«' + i.label + '»', 'الصيغة غير مقبولة — PDF أو صورة (JPG · PNG).'], 'danger'); return; }
+  file = await tqShrink(file);
+  if (file.size > mb * 1024 * 1024) { tqCenterNote('لم يُرفق المرفق', ['«' + i.label + '»', 'حجم الملف ' + (Math.round(file.size / 104857.6) / 10) + ' ميغابايت — الحد المسموح ' + mb + ' ميغابايت.', 'صغّر الملف أو صوّره بالجوال ثم أعد المحاولة.'], 'danger'); return; }
+  EGD.up = k; try { draw(); } catch (err) { void err; }
+  try {
+    const u = await clPost('/api/account/profile/upload-url', { block: 'docs', field: i.doc_type, type: file.type, size: file.size });
+    if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز الرفع.');
+    let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
+    let put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
+    if ((!put || !put.ok) && url !== u.url) put = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file }).catch(function () { return null; });
+    if (!put || !put.ok) throw new Error('تعذّر رفع الملف إلى المخزن — تحقق من الاتصال وأعد المحاولة.');
+    const j = await liveSb('rpc/my_job_doc_attach', { body: { p_doc_type: i.doc_type, p_path: u.path, p_name: String(file.name || '').slice(0, 120) } });
+    if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر حفظ المرفق.');
+    EGD.up = ''; try { if (typeof LVJ !== 'undefined' && Array.isArray(j.docs)) LVJ.docs = j.docs; } catch (err) { void err; }
+    egdLoad(true);
+    tqCenterNote('تم الإرفاق', ['«' + i.label + '»', 'الملف: ' + String(file.name || ''), 'وقت الإرفاق: ' + egdWhen(new Date().toISOString()), 'يظهر في ملفك ومرفقاتك، ويراه الفريق الآن.'], 'ok');
+  } catch (err) { EGD.up = ''; tqCenterNote('لم يُرفق المرفق', ['«' + i.label + '»', (err && err.message) || 'تعذّر الرفع — أعد المحاولة.'], 'danger'); }
+  try { draw(); } catch (err) { void err; }
+}
+function eligDocSlot(x, i) {
+  try {
+    egdLoad(false);
+    const fx = (x.meta || {}).fix || {}, after = fx.at ? new Date(fx.at).getTime() : 0;
+    const rule = (EGD.rules || []).filter(function (r) { return r.doc_type === i.doc_type; })[0] || null;
+    const mb = Number(i.max_mb) || Number(rule && rule.max_mb) || 5;
+    const d = (EGD.docs || []).filter(function (y) { return y.doc_type === i.doc_type; }).sort(function (a, b) { return String(b.uploaded_at || '').localeCompare(String(a.uploaded_at || '')); })[0];
+    const fresh = !!(d && new Date(d.uploaded_at).getTime() > after && d.status !== 'rejected');
+    const k = x.id + ':' + i.doc_type, busy = EGD.up === k;
+    const inp = e('input', { type: 'file', accept: 'application/pdf,image/jpeg,image/png,image/webp', hidden: true, onChange: function () {
+      const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
+      if (fresh && !tqConfirm('استبدال «' + i.label + '» بالملف «' + f.name + '»؟')) return;
+      egdUpload(x, i, f, mb, k);
+    } });
+    const st = !EGD.at ? ['جارٍ التحقق…', 'info'] : busy ? ['جارٍ الرفع…', 'info'] : fresh ? ['تم الإرفاق · ' + egdWhen(d.uploaded_at), 'ok'] : d && d.status === 'rejected' ? ['مرفوض — ارفعه من جديد', 'danger'] : ['لم يُرفع بعد', 'warn'];
+    const acts = [DS.badge(st[0], st[1])];
+    if (d && (d.id || d.path)) acts.push(liveOk(DS.button('معاينة', { size: 'sm', ui: 'eye', onClick: function () { lvJobOpen(Object.assign({ label: i.label }, d)); } })));
+    acts.push(liveOk(DS.button(busy ? 'جارٍ الرفع…' : fresh ? 'استبدال المرفق' : 'رفع المرفق', { size: 'sm', tone: fresh ? null : 'primary', ui: 'paperclip', disabled: busy, onClick: function () { inp.click(); } })));
+    return e('div', { class: 'eg-slot is-' + (fresh ? 'ok' : 'wait') }, [e('div', { class: 't2-pb-actions' }, acts),
+      e('small', { class: 'cu-dr-hint' }, 'PDF أو صورة · حتى ' + fmtNum(mb) + ' ميغابايت' + (d && !fresh ? ' · المرفوع سابقًا ' + egdWhen(d.uploaded_at) + ' — ارفع نسخة حديثة' : '')), inp]);
+  } catch (err) { return null; }
+}
 function eligAskDoc(i) {
   try {
     if (typeof LVJ === 'undefined' || typeof lvJobRow !== 'function') return null;
     if (!LVJ.ok) {
       if (!EGA.ld && typeof lvJobLoad === 'function') { EGA.ld = 1; Promise.resolve(lvJobLoad()).then(function () { EGA.ld = 2; try { draw(); } catch (err) { void err; } }).catch(function () { EGA.ld = 2; }); }
-      return e('small', { class: 'cu-dr-hint' }, EGA.ld === 2 ? 'ارفعه من «خدماتي · مرفقاتي».' : 'جارٍ تجهيز مكان الرفع…');
+      return e('small', { class: 'cu-dr-hint' }, EGA.ld === 2 ? 'ارفعه من «خدماتي - بياناتي - مرفقاتي».' : 'جارٍ تجهيز مكان الرفع…');
     }
     const r = (LVJ.rules || []).filter(function (y) { return y.doc_type === i.doc_type; })[0];
     if (!r && EGA.rl !== i.doc_type && typeof lvJobLoad === 'function') { EGA.rl = i.doc_type; Promise.resolve(lvJobLoad()).then(function () { try { draw(); } catch (err) { void err; } }).catch(function () { void 0; }); return e('small', { class: 'cu-dr-hint' }, 'جارٍ تجهيز مكان الرفع…'); }
@@ -17565,7 +17630,7 @@ function eligClientRows(x) {
   if (fx && fx.open && x.status === 'in_review') {
     out.push(['مطلوب منك لإكمال طلبك', e('div', { class: 'eg-ask' }, (fx.items || []).map(function (i) {
       return e('div', { class: 'eg-ask-i' }, [e('b', {}, ({ field: 'صحّح: ', doc: 'ارفع: ', note: '' })[i.type] + i.label), i.note ? e('small', {}, i.note) : null,
-        i.type === 'doc' && i.doc_type ? eligAskDoc(i) : i.type === 'field' ? eligAskField(x, i) : null]);
+        i.type === 'doc' && i.doc_type ? eligDocSlot(x, i) : i.type === 'field' ? eligAskField(x, i) : null]);
     }))]);
     if (fx.note) out.push(['ملاحظة الفريق', fx.note]);
     const b = DS.button('إعادة الإرسال بعد الاستكمال', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { eligResubmit(x); } }); b.setAttribute('data-live-ok', '');
@@ -24733,6 +24798,7 @@ if (LIVE.on) {
     if (p === 'rpc/my_membership') { const m = (LIVE_LOY.mem || []).filter(function (x) { return x.user_id === CPV.uid; })[0]; return Promise.resolve(m ? { ok: true, exists: true, member_no: m.member_no, tier: m.tier, status: m.status, name_ar: m.name || CPV.name, issued_at: m.issued_at, expires_at: m.expires_at, launch_pending: !m.launched_at, pending: !m.launched_at, points: { balance: Number(m.balance) || 0, earned: 0, redeemed: 0, expiring_30: 0 }, ledger: (m.ledger || []).map(function (l) { return { created_at: l.at, points: l.n, kind: l.kind, note: l.note, ref: l.ref }; }) } : { ok: true, exists: false }); }
     if (p === 'rpc/my_profile_verification') { const v = (LIVE_DATA.ver || []).filter(function (x) { return x.user_id === CPV.uid; })[0]; return Promise.resolve(v ? Object.assign({ ok: true }, v) : { ok: true, status: 'none' }); }
     if (p === 'rpc/profile_notes') return Promise.resolve({ ok: true, rows: [] });
+    if (/^rpc\/admin_client_(job|fin|settle_offers)$/.test(p.split('?')[0])) return liveSb0(path, opt); /* v668: بيانات العميل الوظيفية والمالية ومرفقاته في صفحته (قراءة بصلاحية الموظف) */
     if (CPV.full && CPV.uid && CPV.sess && /^rpc\//.test(p) && CPV_ACT.indexOf(p.slice(4).split('?')[0]) >= 0) return cpvAct(p.slice(4).split('?')[0], o.body || {}); /* v666 */
     if (o.body || /^rpc\//.test(p)) { cpgBlocked('قراءة أو كتابة خاصة بجلسة العميل: ' + p.split('?')[0]); return Promise.resolve(null); }
     if (T_OK.test(p) && p.indexOf('user_id=eq.' + CPV.uid) >= 0) return liveSb0(path, opt);
@@ -28261,7 +28327,7 @@ async function lvJobSave(d, stay) {
 async function lvJobUpload(t, file) {
   if (window.__cpvUid && !window.__cpvFull) { snack('هذه صفحة العميل من حسابك — الرفع من حساب العميل نفسه.'); return; }
   if (!file || LVJ.up) return;
-  file = await tqShrink(file); /* v662 */ if (['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0 || file.size > 5 * 1024 * 1024) { tqCenterNote('لم يُرفع المرفق', ['المرفق PDF أو صورة، حتى 5 ميغابايت.', 'صوّر المستند بالجوال أو صغّر ملف PDF ثم أعد المحاولة.'], 'warn'); return; }
+  const mxj = Number((((typeof LVJ !== 'undefined' && LVJ.rules) || []).filter(function (y) { return y.doc_type === t; })[0] || {}).max_mb) || 5; /* v668 */ file = await tqShrink(file); /* v662 */ if (['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0 || file.size > mxj * 1024 * 1024) { tqCenterNote('لم يُرفع المرفق', ['المرفق PDF أو صورة، حتى ' + mxj + ' ميغابايت.', 'صوّر المستند بالجوال أو صغّر ملف PDF ثم أعد المحاولة.'], 'warn'); return; }
   LVJ.up = t; draw();
   try {
     const u = await clPost('/api/account/profile/upload-url', { block: 'docs', field: t, type: file.type, size: file.size });
@@ -28304,7 +28370,7 @@ function lvJobRow(r, d) {
     const inp = e('input', { type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.webp', style: 'display:none', onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; lvJobUpload(r.doc_type, f); } });
     acts.push(inp, liveOk(DS.button(busy ? 'جارٍ الرفع…' : d ? 'استبدال' : 'رفع', { size: 'sm', tone: d ? null : 'primary', disabled: !!LVJ.up, onClick: function () { inp.click(); } })));
   }
-  const row = e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, r.label + (r.ask ? ' · مطلوب لطلب الأهلية' : r.requirement === 'required' ? ' · مطلوب' : '')), e('small', {}, d ? ['رُفع ', bdiD(String(d.uploaded_at || '').slice(0, 10)), d.reject_reason ? ' — ' + d.reject_reason : ''] : (r.ask ? 'مطلوب منك: ' + r.ask : ((r.requirement === 'required' ? 'مطلوب' : 'اختياري') + (r.note ? ' · ' + r.note : ''))))]),
+  const row = e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, r.label + (r.ask ? ' · مطلوب لطلب الأهلية' : r.requirement === 'required' ? ' · مطلوب' : '')), e('small', {}, d ? ['رُفع ', bdiD(String(d.uploaded_at || '').slice(0, 10)), ' · ' + egdHM(d.uploaded_at), d.reject_reason ? ' — ' + d.reject_reason : ''] : (r.ask ? 'مطلوب منك: ' + r.ask : ((r.requirement === 'required' ? 'مطلوب' : 'اختياري') + (r.note ? ' · ' + r.note : ''))))]),
     e('span', { class: 'adm-doc-a' }, acts)]);
   return cpv && d && LVJ.rej === d.id ? e('div', {}, [row, lvJobRejBox(d)]) : row;
 }
@@ -28396,7 +28462,7 @@ function sysJobDocsPage() {
       } catch (err) { st.busy = false; st.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
     };
     const n = R.filter(dirty).length;
-    return [DS.note('info', 'مرفقات الوظيفة حسب الحالة الوظيفية', 'تظهر للعميل في «خدماتي · مرفقاتي» حسب حالته الوظيفية، ويظهر «مطلوب» بجانب المرفق المطلوب. الإيقاف يخفي المرفق عن العميل وتبقى ملفاته المرفوعة.'), jobDocMetaPanel(paint)]
+    return [DS.note('info', 'مرفقات الوظيفة حسب الحالة الوظيفية', 'تظهر للعميل في «خدماتي - بياناتي - مرفقاتي» حسب حالته الوظيفية، ويظهر «مطلوب» بجانب المرفق المطلوب. الإيقاف يخفي المرفق عن العميل وتبقى ملفاته المرفوعة.'), jobDocMetaPanel(paint)]
       .concat(WORK.filter(function (w) { return WTS.indexOf(w[0]) >= 0; }).map(function (w) {
         const L = R.filter(function (r) { return r.work_type === w[0]; }).sort(function (a, b) { return (Number(a.sort) || 0) - (Number(b.sort) || 0); });
         return DS.panel(w[1], fmtNum(L.length) + ' مرفق · ' + fmtNum(L.filter(function (r) { return r.active && r.requirement === 'required'; }).length) + ' مطلوب', L.map(rowEd).concat([addRow(w[0])]));
