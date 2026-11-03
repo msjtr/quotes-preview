@@ -3207,6 +3207,7 @@ function ntStaffAct(x) {
     if (desk && typeof deskOpen === 'function') return ['فتح المراسلة', function () { deskOpen(desk); }];
     /* v655: الإشعار الذي يحمل صفحته يفتحها مباشرة (طلبات تحديث الملف، الطلبات الجديدة…) */
     const pg = x.page || xm.page; if (pg && /^[a-z0-9-]{2,30}$/.test(String(pg))) return ['فتح الصفحة', function () { if (xm.uid || x.uid) { FX.pfc = xm.uid || x.uid; ADM.pfc = xm.uid || x.uid; } go('other', String(pg)); }]; }
+if (x.kind === 'service_request') { const rf = String(x.ref || (x.meta && x.meta.ref) || (x.data && x.data.ref) || ''); return ['فتح الطلب', function () { const r = ((typeof LV_SR !== 'undefined' && LV_SR.all) || []).filter(function (y) { return y && y.req_no === rf; })[0]; ADM.svF = 'all'; ADM.svC = ''; ADM.svFocus = r ? r.id : ''; go('other', 'cu-svc'); }]; } /* v657: إشعار طلب الخدمة يفتح الطلب نفسه */
 if (x.kind === 'transfer_submitted') return ['مراجعة الإيصال', function () { ADM.tiF = 'all'; ADM.tiC = x.uid; FX.trOpen = x.uid; try { LV_PAY.at = 0; } catch (err) { void err; } go('other', 'cu-trin'); }];
 if (x.kind === 'pay_op_request') return ['طلبات الإلغاء والاسترداد', function () { ADM.opF = 'open'; go('other', 'cu-opin'); }];
 if (x.kind === 'pay_failed') return ['عمليات بوابة الدفع', function () { go('other', 'fin-gw'); }];
@@ -17026,6 +17027,192 @@ function srTrSec(x, Q, RF) {
     })));
   } catch (err) { try { console.warn('[tq-v574t]', err && err.message); } catch (y) { void y; } return null; }
 }
+/* ═════ v657: طلب الأهلية للموظف — مراجعة المستندات ← القرار «مؤهَّل» ← إعداد عرض السعر وإصداره (بنود تُضاف وتُسمّى وتُخفى، ومعاينة ما يراه العميل)
+ * العرض يصدر «بانتظار الاعتماد» (admin_elig_quote_issue · stf_194) ولا يصل العميل شيء حتى يُعتمد ثم يُتاح له؛ عند الإتاحة يصله «عرض السعر جاهز» (15.01).
+ * البند المخفي عن العميل يُدمج له في سطر «رسوم الخدمة» — المبلغ داخل الإجمالي وظاهر، والتفصيل محفوظ للفريق وللعقد. ═════ */
+const EGW = {};
+const EGQ_ST = { pending_approval: ['بانتظار الاعتماد', 'warn'], approved: ['معتمد — أتحه للعميل', 'info'], sent: ['متاح للعميل — بانتظار ردّه', 'info'], accepted: ['قبله العميل — أُنشئ العقد', 'ok'], declined: ['رفضه العميل', 'danger'], rejected: ['رُفض داخليًا', 'danger'], cancelled: ['ملغى', null], expired: ['انتهت صلاحيته', null], draft: ['مسودة', null] };
+const EGQ_ERR = { not_eligible: 'أصدر نتيجة «مؤهَّل» أولًا ثم أعدّ العرض.', quote_exists: 'لهذا الطلب عرض قائم — افتحه من القائمة.', bad_product: 'اكتب اسم المنتج.', bad_item: 'راجع البنود — كل بند مضاف يحتاج مسمّى ومبلغًا.', bad_item_amount: 'قيمة بند من الإعدادات تغيّرت — أغلق الإعداد وافتحه من جديد.', bad_first_due: 'تاريخ أول دفعة مضى — اختر تاريخًا من اليوم فصاعدًا.', bad_plan: 'راجع خطة الدفع — كل دفعة بمبلغ وتاريخ بعد سابقتها.' };
+function egErr(err) {
+  const m = String((err && err.message) || '');
+  const k = (m.match(/\(([a-z_]+)\)/) || [])[1];
+  if (k && EGQ_ERR[k]) return EGQ_ERR[k];
+  try { return qtErrT(err); } catch (x) { return m || 'تعذّر تنفيذ الإجراء.'; }
+}
+/* العميل: البنود كما تظهر له — المخفي يُدمج في «رسوم الخدمة» (الخاضع وغير الخاضع للضريبة كلٌّ في سطر) */
+function qtClientItems(c) {
+  const L = Array.isArray(c && c.items) ? c.items : [], H = Array.isArray(c && c.hide) ? c.hide : [];
+  if (!H.length) return L;
+  const out = [], g = { id: 'svc', t: 'رسوم الخدمة', amt: 0, vat: true }, gn = { id: 'svc_n', t: 'رسوم الخدمة الأخرى', amt: 0, vat: false };
+  L.forEach(function (x) {
+    if (!x || H.indexOf(x.id) < 0) { if (x) out.push(x); return; }
+    const b = x.vat ? g : gn; b.amt = Math.round((b.amt + (Number(x.amt) || 0)) * 100) / 100;
+  });
+  if (g.amt > 0) out.push(g);
+  if (gn.amt > 0) out.push(gn);
+  return out;
+}
+function egDocOpen(d) {
+  window.tqView(async function () {
+    if (!d || !d.path) throw new Error('لا يوجد ملف.');
+    const tk = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
+    const p = String(d.path).split('/').map(encodeURIComponent).join('/');
+    const r = await fetch(cfg.supabaseUrl + '/storage/v1/object/sign/' + encodeURIComponent(d.bucket || 'attachments') + '/' + p, { method: 'POST', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 }) });
+    const s = await r.json().catch(function () { return null; });
+    const u = s && (s.signedURL || s.signedUrl);
+    if (!r.ok || !u) throw new Error('تعذّر فتح المرفق — تحقق من صلاحية الاطلاع على المستندات.');
+    return /^https?:/i.test(u) ? u : cfg.supabaseUrl + '/storage/v1' + (u.charAt(0) === '/' ? '' : '/') + u;
+  }, d.label || d.name || 'مرفق الوظيفة');
+}
+function eligWork(x, RF) {
+  try {
+    if (!LIVE.on || !x || x.kind !== 'elig') return null;
+    const c = EGW[x.id] || (EGW[x.id] = { at: 0, busy: false, job: null, qs: null, rej: '', why: '', dec: '' });
+    const paint = function () { try { RF.paint(); } catch (err) { void err; } };
+    const load = function () {
+      if (c.busy) return; c.busy = true;
+      Promise.all([
+        liveSb('rpc/admin_client_job', { body: { p_user: x.user_id } }).catch(function () { return null; }),
+        admRpc('admin_elig_quotes', { p_sr: x.id }).catch(function () { return null; })
+      ]).then(function (r) { c.job = r[0]; c.qs = r[1] && r[1].ok ? (r[1].rows || []) : null; c.at = Date.now(); c.busy = false; paint(); });
+    };
+    c.reload = function () { c.at = 0; load(); };
+    if (!c.at || (!c.busy && Date.now() - c.at > 60000)) load();
+    const out = [];
+    /* 1) مراجعة المستندات */
+    const J = c.job && c.job.ok ? c.job : null, rules = J ? (J.rules || []) : [], docs = J ? (J.docs || []) : [];
+    const decide = async function (d, verdict, reason) {
+      if (c.dec) return; c.dec = d.id; paint();
+      const r = await clPost('/admin/api/cjob/doc/' + encodeURIComponent(d.id) + '/decide', { verdict: verdict, reason: reason || '' }).catch(function () { return null; });
+      c.dec = '';
+      if (!r || r.ok !== true) { snack((r && r.message) || 'تعذّر تسجيل القرار.'); paint(); return; }
+      c.rej = ''; c.why = '';
+      snack(verdict === 'accepted' ? 'قُبل المرفق.' : 'رُفض المرفق ووصل العميلَ السبب في حسابه وبالواتساب.');
+      c.reload();
+    };
+    const DOCST = { uploaded: ['مرفوع — بانتظار المراجعة', 'warn'], pending: ['بانتظار المراجعة', 'warn'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض — بانتظار إعادة الرفع', 'danger'] };
+    const rowsDoc = rules.map(function (r) {
+      const d = docs.filter(function (y) { return y.doc_type === r.doc_type; })[0];
+      const st = d ? (DOCST[d.status] || [d.status, 'info']) : ['لم يرفعه العميل', null];
+      const acts = [DS.badge(st[0], st[1]), r.requirement === 'required' ? DS.badge('مطلوب', 'danger') : DS.badge('اختياري', null)];
+      if (d && d.path) acts.push(liveOk(DS.button('فتح', { size: 'sm', ui: 'files', onClick: function () { egDocOpen(Object.assign({ label: r.label }, d)); } })));
+      if (d && d.status !== 'accepted') acts.push(liveOk(DS.button(c.dec === d.id ? 'جارٍ…' : 'قبول', { size: 'sm', tone: 'primary', ui: 'check', disabled: !!c.dec, onClick: function () { decide(d, 'accepted'); } })));
+      if (d && d.status !== 'rejected') acts.push(liveOk(DS.button('رفض بسبب', { size: 'sm', ui: 'x', disabled: !!c.dec, onClick: function () { c.rej = c.rej === d.id ? '' : d.id; c.why = ''; paint(); } })));
+      const row = e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, r.label || r.doc_type), e('small', {}, d ? (d.name || '') + (d.reject_reason ? ' · السبب: ' + d.reject_reason : '') : (r.note || ''))]), e('span', { class: 't2-pb-actions' }, acts)]);
+      if (!(d && c.rej === d.id)) return row;
+      const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '300', placeholder: 'سبب الرفض — يصل للعميل', 'aria-label': 'سبب الرفض', onInput: function (ev) { c.why = ev.target.value; } });
+      ta.value = c.why || '';
+      return e('div', {}, [row, ta, e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('تأكيد الرفض', { size: 'sm', tone: 'danger', ui: 'x-circle', disabled: !!c.dec, onClick: function () { const w = String(c.why || '').trim(); if (w.length < 3) { snack('اكتب سبب الرفض — يصل للعميل.'); return; } decide(d, 'rejected', w); } })), DS.button('إلغاء', { size: 'sm', onClick: function () { c.rej = ''; c.why = ''; paint(); } })])]);
+    });
+    const missReq = rules.filter(function (r) { return r.requirement === 'required' && !docs.some(function (y) { return y.doc_type === r.doc_type && y.status === 'accepted'; }); }).length;
+    out.push(e('div', { class: 'sr-stl' }, [e('b', {}, '1 · مراجعة المستندات'),
+      !c.at ? e('small', { class: 'cu-dr-hint' }, 'جارٍ قراءة مستندات العميل…')
+        : !J ? DS.note('warn', 'تعذّرت قراءة مرفقات الوظيفة', 'تحتاج صلاحية إدارة العملاء.')
+          : rules.length ? e('div', { class: 'cu-mgr-docs' }, rowsDoc) : DS.note('info', 'لا مرفقات وظيفة لحالته الوظيفية', 'القائمة من «مرفقات الوظيفة» في الإعدادات.'),
+      missReq ? DS.note('warn', 'مستندات مطلوبة لم تُقبل بعد: ' + fmtNum(missReq), 'راجعها قبل إصدار النتيجة.') : null,
+      e('small', { class: 'cu-dr-hint' }, 'الهوية والعنوان والآيبان: من طلب «توثيق الملف» المعتمد — '),
+      DS.button('فتح ملف العميل', { size: 'sm', ui: 'user-circle', onClick: function () { ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); } })]));
+    /* 2) القرار — أزرار الطلب أسفله («اعتماد: مؤهَّل» · «رفض بسبب») */
+    out.push(e('div', { class: 'sr-stl' }, [e('b', {}, '2 · نتيجة الأهلية'),
+      x.status === 'approved' ? DS.note('ok', 'مؤهَّل — صدرت النتيجة', 'أعدّ عرض السعر أدناه.')
+        : x.status === 'rejected' ? DS.note('danger', 'غير مؤهَّل', x.decision_note || '')
+          : e('small', { class: 'cu-dr-hint' }, 'بعد المراجعة: «اعتماد: مؤهَّل» أو «رفض بسبب» من أزرار الطلب أدناه.')]));
+    /* 3) عرض السعر */
+    const Q = c.qs || [], live = Q.filter(function (q) { return ['rejected', 'cancelled', 'declined', 'expired'].indexOf(q.status) < 0; })[0];
+    const qList = Q.length ? e('div', { class: 'cu-mgr-docs' }, Q.map(function (q) {
+      const st = EGQ_ST[q.status] || [q.status, null];
+      return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, (q.product || 'عرض سعر') + ' · ' + sar(Number(q.total) || 0)), e('small', { dir: 'ltr' }, q.no || '')]),
+        e('span', { class: 't2-pb-actions' }, [DS.badge(st[0], st[1]), liveOk(DS.button('فتح العرض', { size: 'sm', ui: 'file-text', onClick: function () { lvQtOpen(q.id, function () { c.reload(); }); } }))])]);
+    })) : null;
+    out.push(e('div', { class: 'sr-stl' }, [e('b', {}, '3 · عرض السعر'),
+      c.qs === null && c.at ? DS.note('warn', 'تعذّرت قراءة العروض', 'تحتاج صلاحية عروض الأسعار.') : null,
+      qList,
+      x.status !== 'approved' ? e('small', { class: 'cu-dr-hint' }, 'يُعدّ العرض بعد نتيجة «مؤهَّل».')
+        : live ? e('small', { class: 'cu-dr-hint' }, live.status === 'pending_approval' ? 'العرض بانتظار الاعتماد — المُعِدّ لا يعتمد عرضه بنفسه. بعد الاعتماد: «إتاحة العرض للعميل» فيصله في حسابه وبالواتساب.' : live.status === 'approved' ? 'اعتُمد — افتحه واضغط «إتاحة العرض للعميل».' : '')
+          : (c.qs !== null && c.at ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إعداد عرض السعر', { tone: 'primary', ui: 'plus', onClick: function () { eligQtPrep(x, function () { c.reload(); }); } }))]) : null)]));
+    return e('div', { class: 'eg-work' }, out);
+  } catch (err) { try { console.warn('[elig-work]', err && err.message); } catch (y) { void y; } return null; }
+}
+/* إعداد العرض من الطلب: المنتج وبديله والوكيل، القيمة والدفعات، البنود (مبلغ · مسمّى في هذا العرض · ظاهر/مخفي) وبنود مضافة، ومعاينة ما يراه العميل */
+function egNum(t) { const m = String(t || '').replace(/[٠-٩]/g, function (d) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)); }).replace(/[٬,]/g, '').match(/\d+(\.\d+)?/); return m ? m[0] : ''; }
+function eligQtPrep(x, done) {
+  const key = 'egqt:' + x.id;
+  const fv = function (re) { const f = (x.fields || []).filter(function (y) { return y && re.test(String(y[0])); })[0]; return f ? String(f[1] || '') : ''; };
+  const D = CUD[key] || (CUD[key] = (function () {
+    const n0 = Math.min(36, Math.max(1, Number(egNum(fv(/مدة السداد/))) || 12)), f0 = (fv(/موعد الدفع/).match(/\d{4}-\d{2}-\d{2}/) || [])[0];
+    const tm = qAddMonths(lvToday(), 1);
+    return { type: fv(/^المنتج|نوع المنتج/), alt: '', altShow: true, agent: '', agentPh: '', agentShow: false, value: egNum(fv(/القيمة الإجمالية للطلب|قيمة المنتج/)), n: String(n0), first: f0 && f0 > lvToday() ? f0 : tm, ov: {}, lbl: {}, hide: [], cx: [], err: '', busy: false };
+  })());
+  const rerun = function () { eligQtPrep(x, done); };
+  if (!D.first || D.first < lvToday()) D.first = qAddMonths(lvToday(), 1);
+  if (!LIVE_FEE.at) { LIVE_FEE.at = 1; lvFeeLoad().then(rerun); }
+  const X = lvQtCalc(D);
+  const vr0 = (LIVE_FEE.st || {}).vat_rate, rate = (vr0 !== null && vr0 !== undefined && vr0 !== '' && isFinite(Number(vr0)) ? Number(vr0) : 15) / 100;
+  /* البنود النهائية: بنود الإعدادات بقيمتها ومسمّاها، ثم المضافة */
+  const items = [];
+  if (X) {
+    (X.c.items || []).forEach(function (it) { const a = qr2(Number(it.amt) || 0); if (a > 0) items.push({ id: it.id, t: String(D.lbl[it.id] || '').trim().length >= 2 ? String(D.lbl[it.id]).trim() : it.t, amt: a, vat: !!it.vat }); });
+    D.cx.forEach(function (y) { const a = qr2(Number(y.amt) || 0); if (a > 0 && String(y.t || '').trim().length >= 2) items.push({ id: y.id, t: String(y.t).trim(), amt: a, vat: y.vat !== 'no' }); });
+  }
+  const val = qr2(Number(D.value) || 0), n = Number(D.n) || 1;
+  const tax = items.reduce(function (a, y) { return a + (y.vat ? y.amt : 0); }, 0), fees = qr2(items.reduce(function (a, y) { return a + y.amt; }, 0));
+  const vat = qr2((val + tax) * rate), total = qr2(val + fees + vat);
+  const plan = [];
+  if (X) { const each = Math.floor(total / n * 100) / 100; let acc = 0; for (let i = 0; i < n; i++) { const a = i === n - 1 ? qr2(total - acc) : each; acc = qr2(acc + a); plan.push({ no: i + 1, due: i === 0 ? D.first : qAddMonths(D.first, i), amount: a }); } }
+  const hide = D.hide.filter(function (k) { return items.some(function (y) { return y.id === k; }); });
+  const submit = async function () {
+    if (!X) { D.err = 'أدخل قيمة المنتج.'; rerun(); return; }
+    if (String(D.type).trim().length < 2) { D.err = 'اكتب اسم المنتج.'; rerun(); return; }
+    if (D.busy) return; D.busy = true; D.err = ''; rerun();
+    try {
+      const j = await admRpc('admin_elig_quote_issue', { p_sr: x.id, p_data: { product_type: String(D.type).trim(), alt: String(D.alt || '').trim(), alt_show: !!D.altShow, agent: { name: String(D.agent || '').trim(), phone: String(D.agentPh || '').trim() }, agent_show: !!D.agentShow,
+        value: val, n: n, freq: 'monthly', first_due: D.first, items: items, hide: hide, fees: fees, vat: vat, vat_rate: rate, total: total, plan: plan } });
+      delete CUD[key]; admClose(); snack('صدر العرض ' + (j.quotation_number || '') + ' وأُحيل للاعتماد — لم يُرسل شيء للعميل بعد'); if (done) done();
+    } catch (err) { D.busy = false; D.err = egErr(err); rerun(); }
+  };
+  const fld = function (label, input, hint) { const f = DS.editField(label, input); if (hint) f.appendChild(e('small', { class: 'cu-dr-hint' }, hint)); return f; };
+  const inp = function (v, ph, set, num) { const i = DS.input({ value: v, numeric: !!num, placeholder: ph || '', onInput: set }); i.addEventListener('change', rerun); return i; };
+  const ck = function (on, set, aria) { return e('label', { class: 'stl-sg-ck' }, [e('input', { type: 'checkbox', checked: on ? 'checked' : null, 'aria-label': aria, onChange: function (ev) { set(!!ev.target.checked); rerun(); } }), e('span', {}, on ? 'ظاهر للعميل' : 'مخفي — يُدمج في «رسوم الخدمة»')]); };
+  const feeRows = X ? (X.c.items || []).map(function (it) {
+    const fixed = it.mode === 'fixed' || it.calc === 'pct';
+    const amt = fixed ? e('div', { class: 't2-input cu-bd-ro' }, sar(it.amt) + (it.calc === 'pct' ? ' — نسبة من الإعدادات' : ' — ثابت من الإعدادات')) : inp(D.ov[it.id] !== undefined ? D.ov[it.id] : String(it.v || ''), '0', function (v) { D.ov[it.id] = v; }, true);
+    const shown = D.hide.indexOf(it.id) < 0;
+    return e('div', { class: 'sys-form is-2 cu-bd-form' }, [fld(it.t + (it.calc === 'pct' ? ' (%)' : ' (ريال)'), amt, (it.vat ? 'خاضع للضريبة' : 'غير خاضع للضريبة') + ' · المبلغ ' + sar(it.amt)),
+      fld('المسمّى في هذا العرض', inp(D.lbl[it.id] || '', it.t, function (v) { D.lbl[it.id] = v; }), null), ck(shown, function (on) { D.hide = D.hide.filter(function (k) { return k !== it.id; }); if (!on) D.hide.push(it.id); }, 'إظهار ' + it.t)]);
+  }) : [];
+  const cxRows = D.cx.map(function (y, i) {
+    const shown = D.hide.indexOf(y.id) < 0;
+    return e('div', { class: 'sys-form is-2 cu-bd-form' }, [fld('مسمّى البند', inp(y.t, 'مثال: رسوم توصيل', function (v) { y.t = v; })), fld('المبلغ (ريال)', inp(y.amt, '0', function (v) { y.amt = v; }, true)),
+      fld('الضريبة', DS.select({ value: y.vat || 'yes', options: [['yes', 'خاضع للضريبة'], ['no', 'غير خاضع للضريبة']], onChange: function (v) { y.vat = v; rerun(); } })),
+      ck(shown, function (on) { D.hide = D.hide.filter(function (k) { return k !== y.id; }); if (!on) D.hide.push(y.id); }, 'إظهار البند المضاف'),
+      DS.button('حذف البند', { size: 'sm', ui: 'x', onClick: function () { D.cx.splice(i, 1); D.hide = D.hide.filter(function (k) { return k !== y.id; }); rerun(); } })]);
+  });
+  const cv = { items: items, hide: hide };
+  const body = [e('div', { class: 'cu-dr-st' }, [DS.badge('مسودة', null), DS.badge('من طلب الأهلية ' + (x.req_no || ''), 'info')]),
+    cuSec('المنتج', 'package', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+      fld('المنتج', inp(D.type, 'مثال: جوال آيفون 17 برو', function (v) { D.type = v; })),
+      fld('قيمة المنتج (ريال، بدون الضريبة)', inp(D.value, '0', function (v) { D.value = v; }, true), 'من الطلب: ' + (fv(/القيمة الإجمالية للطلب/) || '—')),
+      fld('المنتج البديل عند عدم التوفر', inp(D.alt, 'اختياري', function (v) { D.alt = v; })), ck(D.altShow, function (on) { D.altShow = on; }, 'إظهار المنتج البديل'),
+      fld('بيانات الوكيل', inp(D.agent, 'الاسم (اختياري)', function (v) { D.agent = v; })), fld('جوال الوكيل', inp(D.agentPh, 'اختياري', function (v) { D.agentPh = v; }, true)),
+      e('label', { class: 'stl-sg-ck' }, [e('input', { type: 'checkbox', checked: D.agentShow ? 'checked' : null, 'aria-label': 'إظهار بيانات الوكيل', onChange: function (ev) { D.agentShow = !!ev.target.checked; rerun(); } }), e('span', {}, D.agentShow ? 'الوكيل ظاهر للعميل' : 'الوكيل للفريق فقط')])])]),
+    cuSec('الدفع', 'calendar-blank', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+      fld('عدد الدفعات (شهريًا)', DS.select({ value: D.n, options: Array.from({ length: 36 }, function (_, i) { return [String(i + 1), qTerm(i + 1)]; }), onChange: function (v) { D.n = v; rerun(); } }), 'من الطلب: ' + (fv(/مدة السداد/) || '—')),
+      fld('أول دفعة', datePick({ value: D.first, min: lvToday(), onChange: function (v) { D.first = v; rerun(); } }), 'موعد العميل المناسب: ' + (fv(/موعد الدفع/) || '—'))])]),
+    X ? cuSec('البنود والرسوم — المبلغ والمسمّى وما يظهر للعميل', 'coins', feeRows.concat(cxRows, [
+      e('div', { class: 't2-pb-actions' }, [DS.button('إضافة بند', { size: 'sm', ui: 'plus', onClick: function () { let k = 1; while (D.cx.some(function (y) { return y.id === 'c_' + k; })) k++; D.cx.push({ id: 'c_' + k, t: '', amt: '', vat: 'yes' }); rerun(); } })]),
+      e('small', { class: 'cu-dr-hint' }, 'المخفي لا يظهر اسمه للعميل ويُضاف مبلغه إلى سطر «رسوم الخدمة» — الإجمالي لا يتغيّر. المسمّى الخاص يخص هذا العرض وحده.')])) : DS.note('info', 'أدخل قيمة المنتج', 'تظهر البنود والضريبة وخطة الدفع فور إدخال القيمة.'),
+    X ? cuSec('معاينة ما يراه العميل', 'eye', [DS.fields([['المنتج', String(D.type || '—')], D.alt && D.altShow ? ['المنتج البديل عند عدم التوفر', D.alt] : null, D.agentShow && D.agent ? ['الوكيل', D.agent + (D.agentPh ? ' · ' + D.agentPh : '')] : null].filter(Boolean)),
+      lvQtSummary(val, qtClientItems(cv), vat, total, plan, 'تفاصيل العرض وخطة الدفع', rate)]) : null,
+    D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
+  const foot = [e('div', { class: 'cu-dr-fa' }, [liveOk(DS.button(D.busy ? 'جارٍ الإصدار…' : 'إصدار العرض وإحالته للاعتماد', { tone: 'primary', ui: 'check', disabled: D.busy || !X, onClick: submit })), DS.button('إلغاء', { onClick: function () { delete CUD[key]; admClose(); } })])];
+  const old = document.querySelector('.cu-dr[data-r="' + key + '"]');
+  if (old) { const b = old.querySelector('.cu-dr-b'), y = b.scrollTop; b.replaceChildren.apply(b, body.filter(Boolean)); const f = old.querySelector('.cu-dr-f'); f.replaceChildren.apply(f, foot); b.scrollTop = y; return; }
+  cuDrawer({ key: key, ic: 'file-text:navy', title: 'إعداد عرض السعر', sub: (x.req_no || '') + ' · طلب الأهلية', body: body.filter(Boolean), foot: foot, onClose: function () { draw(); } });
+}
+/* بعد «إتاحة العرض للعميل»: إشعار «عرض السعر جاهز» (15.01) في حسابه وجواله وواتساب والبريد — مرة واحدة لكل عرض */
+function egQtNotify(id) {
+  try { clPost('/admin/api/quotations/' + encodeURIComponent(id) + '/notify', {}).then(function (r) { if (r && r.ok === false && r.message) snack(r.message); }).catch(function () { /* الإتاحة تمت؛ الإشعار وحده تعذّر */ }); } catch (err) { void err; }
+}
 function srCard(x, RF, o) {
   o = o || {};
   const K = srKind(x.kind), st = srStat(x), W = cfSt('srw:' + x.id, { mode: '', note: '', tgt: '', internal: false, nos: null, pids: null, key: 'e' + x.id });
@@ -17051,7 +17238,7 @@ function srCard(x, RF, o) {
   }
   /* v574: إيصال التحويل داخل الطلب */
   if (x.kind === 'settle' && Q.length) { const trS = srTrSec(x, Q, RF); if (trS) body.push(trS); }
-  if (x.kind === 'elig') body.push(eligAdmBox(x)); /* v576 */
+  if (x.kind === 'elig') body.push(eligAdmBox(x)); /* v576 */ if (x.kind === 'elig') { const ew = eligWork(x, RF); if (ew) body.push(ew); } /* v657 */
   const acts = [];
   if (W.mode === 'edit') {
     /* v466: التعديل في كل الحالات — المعتمد والمرفوض والملغى يعود «قيد المراجعة»، والمنفّذ يُتراجع عن ربطه أولًا، والتسوية المنفّذة سببها وحده */
@@ -23833,7 +24020,7 @@ function lvQtOpen(id, refetch) {
     const items = c ? (c.items || []) : (j.items || []).slice(1).map(function (x) { return { t: x.description, amt: x.line_total, vat: /خاضع للضريبة/.test(x.detail || '') && !/غير/.test(x.detail || '') }; });
     const run = async function (s) {
       if ((s === 'rejected' || s === 'cancelled') && String(W.why).trim().length < 4) { snack('اكتب السبب'); return; }
-      try { await admRpc('admin_quotation_set_status', { p_id: id, p_status: s, p_reason: String(W.why).trim() || null }); admClose(); snack(s === 'sent' ? 'أصبح العرض متاحًا في حساب العميل — لم تُرسل أي رسالة' : s === 'approved' ? 'اعتُمد العرض' : 'حُفظت الحالة'); if (refetch) refetch(); }
+      try { await admRpc('admin_quotation_set_status', { p_id: id, p_status: s, p_reason: String(W.why).trim() || null }); admClose(); if (s === 'sent') egQtNotify(id); snack(s === 'sent' ? 'أُتيح العرض للعميل — ويصله إشعار «عرض السعر جاهز» في حسابه وبالواتساب' : s === 'approved' ? 'اعتُمد العرض' : 'حُفظت الحالة'); if (refetch) refetch(); }
       catch (err) { snack(qtErrT(err)); }
     };
     cuDrawer({ key: key, ic: 'file-text:navy', title: 'عرض السعر', sub: (q.quotation_number || '') + ' · ' + (q.customer_name || ''), onClose: function () { draw(); },
@@ -23873,8 +24060,8 @@ function lvMyQuotes() {
     };
     box.appendChild(e('div', { class: 't2-row-wrap' }, [DS.button('كل العروض', { ui: 'caret-right', size: 'sm', onClick: function () { FX.myq = ''; paint(); } })]));
     box.appendChild(e('section', { class: 'lv-ch' }, [e('div', { class: 'lv-ch-id' }, [e('span', { class: 'cu-av' }, frag(ui('file-text', 20))), e('span', { class: 'lv-ch-t' }, [e('b', {}, cur.product || 'عرض سعر'), e('small', { dir: 'ltr' }, cur.no), e('span', { class: 'lv-ch-s' }, S0[0])])])]));
-    box.appendChild(DS.fields([['صادر', cur.issued ? bdiD(String(cur.issued)) : '—'], ['صالح حتى', cur.until ? bdiD(String(cur.until)) : '—'], cur.contract ? ['العقد', ltr(cur.contract)] : null, cur.reason ? ['سبب الرفض', cur.reason] : null].filter(Boolean)));
-    box.appendChild(lvQtSummary(c.value, c.items || [], c.vat, Number(cur.total) || 0, c.plan || [], 'تفاصيل العرض وخطة الدفع'));
+    box.appendChild(DS.fields([['صادر', cur.issued ? bdiD(String(cur.issued)) : '—'], ['صالح حتى', cur.until ? bdiD(String(cur.until)) : '—'], c.alt && c.alt_show !== false ? ['المنتج البديل عند عدم التوفر', c.alt] : null, c.agent_show && c.agent && c.agent.name ? ['الوكيل', c.agent.name + (c.agent.phone ? ' · ' + c.agent.phone : '')] : null, cur.contract ? ['العقد', ltr(cur.contract)] : null, cur.reason ? ['سبب الرفض', cur.reason] : null].filter(Boolean)));
+    box.appendChild(lvQtSummary(c.value, qtClientItems(c), c.vat, Number(cur.total) || 0, c.plan || [], 'تفاصيل العرض وخطة الدفع'));
     if (cur.terms) box.appendChild(DS.panel('الشروط', null, [e('p', { class: 'cu-dr-hint' }, cur.terms)]));
     if (cur.status === 'sent') box.appendChild(DS.panel('قرارك', null, [DS.note('info', 'بقبولك يُنشأ عقدك بالرقم نفسه', 'وتظهر دفعاته في «عقودي» حسب خطة الدفع أعلاه.'),
       DS.editField('سبب الرفض (عند الرفض)', e('textarea', { class: 't2-input cu-why', rows: '2', onInput: function (ev) { W.why = ev.target.value; } })),
