@@ -9612,3 +9612,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .tq-fprev { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .tq-fprev img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(11, 42, 74, .15); }
 .tq-fprev-ic { width: 56px; height: 56px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #a3262c; background: rgba(163, 38, 44, .08); } .tq-fprev small { overflow-wrap: anywhere; }
 @media (max-width: 560px) { .sr-brief { grid-template-columns: 1fr; } .sr-brief > button, .sr-brief > .t2-btn { grid-row: auto; grid-column: 1; justify-self: start; } .eg-steps { grid-template-columns: 1fr 1fr; } }
+
+/* v665 */ .eg-ask-f { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; } .eg-ask-f .t2-input { max-width: 320px; }

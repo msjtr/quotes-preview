@@ -17278,8 +17278,8 @@ function eligResubmit(x) {
   if (EGRS.busy) return; EGRS.busy = true; setTimeout(function () { EGRS.busy = false; }, 8000);
   liveSb('rpc/my_elig_resubmit', { body: { p_sr: x.id } }).then(function (r) {
     if (!r || r.ok === false) {
-      const M = { not_completed: 'لم يُرفع المطلوب بعد', nothing_to_resubmit: 'لا يوجد ما يُعاد — طلبك قيد المراجعة' };
-      tqCenterNote('لم يُعَد طلبك بعد', [(r && M[r.error]) || 'تعذّر الإرسال — أعد المحاولة بعد قليل.'].concat(r && Array.isArray(r.items) ? r.items.map(function (i) { return '• ' + i.label + ' — ' + (i.message || ''); }) : []).concat(r && r.error === 'not_completed' ? ['ارفع المستند من «مرفقاتي» في «خدماتي» ثم أعد الإرسال.'] : []), 'warn');
+      const M = { not_completed: 'لم يكتمل المطلوب بعد', nothing_to_resubmit: 'لا يوجد ما يُعاد — طلبك قيد المراجعة' };
+      tqCenterNote('لم يُعَد طلبك بعد', [(r && M[r.error]) || 'تعذّر الإرسال — أعد المحاولة بعد قليل.'].concat(r && Array.isArray(r.items) ? r.items.map(function (i) { return '• ' + i.label + ' — ' + (i.message || ''); }) : []).concat(r && r.error === 'not_completed' ? ['أكمل كل بند من داخل طلبك: ارفع المرفق في خانته، وصحّح الحقل ثم «حفظ التصحيح»، ثم أعد الإرسال.'] : []), 'warn');
       return;
     }
     tqCenterNote('أُعيد طلبك للفريق', ['استلم الفريق ما أكملته، وسيكمل دراسة طلبك.', 'يصلك إشعار بالنتيجة.'], 'ok');
@@ -17437,7 +17437,7 @@ function eligFixBox(x, c, paint) {
   const W = c.fix || (c.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false });
   const rules = c.job && c.job.ok ? (c.job.rules || []) : [];
   const out = [e('b', {}, 'الإعادة للاستكمال — قبل إصدار النتيجة')];
-  const list = function (its) { return e('ol', { class: 'eg-how' }, (its || []).map(function (i) { return e('li', {}, [e('b', {}, (EG_IT[i.type] || '') + ': ' + i.label), i.note ? e('small', {}, i.note) : null]); })); };
+  const list = function (its) { return e('ol', { class: 'eg-how' }, (its || []).map(function (i) { return e('li', {}, [e('b', {}, (EG_IT[i.type] || '') + ': ' + i.label), i.note ? e('small', {}, i.note) : null, i.changed_at ? e('small', {}, 'صحّحه العميل: ' + (i.prev || '—') + ' ← ' + (i.val || '')) : null]); })); };
   if (fx && fx.open) out.push(DS.note('warn', 'أُعيد للعميل ' + iso(new Date(fx.at)) + ' — بانتظار استكماله', 'لا يعيد العميل الطلب حتى يرفع المرفقات المطلوبة.'), list(fx.items), fx.note ? e('small', { class: 'cu-dr-hint' }, 'ملاحظة عامة: ' + fx.note) : null);
   else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + iso(new Date(fx.done_at)), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
   if (!open) { out.push(e('small', { class: 'cu-dr-hint' }, 'الإعادة متاحة قبل إصدار النتيجة فقط.')); return e('div', { class: 'sr-stl' }, out); }
@@ -17510,6 +17510,32 @@ function eligFixBox(x, c, paint) {
 }
 /* العميل: المطلوب منه داخل طلبه — ومكان رفع كل مرفق مطلوب — ثم إعادة الإرسال · وتقرير الأهلية بعد النتيجة */
 const EGA = { ld: 0, rl: '' };
+/* v665: الأهلية — العميل يصحّح الحقل المطلوب داخل طلبه نفسه (خانة + «حفظ التصحيح») — هذه الحقول ليست في «بياناتي» */
+const EGF = {};
+function eligAskField(x, i) {
+  const cur = (x.fields || []).filter(function (y) { return y && String(y[0]) === i.label; })[0];
+  const money = cur ? /ريال/.test(String(cur[1] || '')) : /^(الراتب|المصروفات|قيمة|إجمالي|مبلغ)/.test(i.label);
+  const k = x.id + ':' + (((x.meta || {}).fix || {}).at || '') + ':' + i.label, W = EGF[k] || (EGF[k] = { v: i.val ? (money ? egNum(i.val) : i.val) : '', busy: false });
+  const inp = e('input', { class: 't2-input', type: 'text', inputmode: money ? 'decimal' : 'text', placeholder: money ? 'المبلغ الصحيح بالريال' : 'القيمة الصحيحة', 'aria-label': 'القيمة الصحيحة: ' + i.label, onInput: function (ev) { W.v = ev.target.value; } });
+  inp.value = W.v || '';
+  const save = async function () {
+    if (window.__cpvUid) { snack('هذه صفحة العميل من حسابك — يصحّح العميل من حسابه.'); return; }
+    const v = String(W.v || '').trim();
+    if (!v) { tqCenterNote('اكتب القيمة الصحيحة', ['«' + i.label + '»'], 'warn'); return; }
+    if (W.busy) return; W.busy = true; try { draw(); } catch (er) { void er; }
+    try {
+      const r = await liveSb('rpc/my_elig_fix_field', { body: { p_sr: x.id, p_label: i.label, p_value: v } });
+      if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الحفظ — أعد المحاولة بعد قليل.');
+      W.busy = false;
+      tqCenterNote('حُفظ التصحيح', ['«' + i.label + '»', 'القديم: ' + (r.old || '—'), 'الجديد: ' + r.new, 'بعد إكمال كل المطلوب اضغط «إعادة الإرسال بعد الاستكمال».'], 'ok');
+      try { if (typeof liveLoad === 'function') liveLoad(); } catch (er) { void er; }
+    } catch (err) { W.busy = false; tqCenterNote('لم يُحفظ التصحيح', ['«' + i.label + '»', (err && err.message) || 'أعد المحاولة.'], 'warn'); }
+    try { draw(); } catch (er) { void er; }
+  };
+  const b = DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ التصحيح', { size: 'sm', tone: 'primary', ui: 'check', disabled: !!W.busy, onClick: save }); b.setAttribute('data-live-ok', '');
+  return e('div', { class: 'eg-ask-f' }, [e('small', {}, 'القيمة الحالية في طلبك: ' + (cur ? String(cur[1] || '—') : '—')),
+    i.changed_at ? e('small', { class: 'cu-dr-hint' }, '✓ صحّحته: ' + (i.prev || '—') + ' ← ' + (i.val || '')) : null, inp, b]);
+}
 function eligAskDoc(i) {
   try {
     if (typeof LVJ === 'undefined' || typeof lvJobRow !== 'function') return null;
@@ -17530,7 +17556,7 @@ function eligClientRows(x) {
   if (fx && fx.open && x.status === 'in_review') {
     out.push(['مطلوب منك لإكمال طلبك', e('div', { class: 'eg-ask' }, (fx.items || []).map(function (i) {
       return e('div', { class: 'eg-ask-i' }, [e('b', {}, ({ field: 'صحّح: ', doc: 'ارفع: ', note: '' })[i.type] + i.label), i.note ? e('small', {}, i.note) : null,
-        i.type === 'doc' && i.doc_type ? eligAskDoc(i) : i.type === 'field' ? e('small', { class: 'cu-dr-hint' }, 'صحّحه في بياناتك ثم أعد الإرسال.') : null]);
+        i.type === 'doc' && i.doc_type ? eligAskDoc(i) : i.type === 'field' ? eligAskField(x, i) : null]);
     }))]);
     if (fx.note) out.push(['ملاحظة الفريق', fx.note]);
     const b = DS.button('إعادة الإرسال بعد الاستكمال', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { eligResubmit(x); } }); b.setAttribute('data-live-ok', '');
