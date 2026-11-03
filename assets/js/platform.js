@@ -22792,7 +22792,8 @@ function lvSrReq(x) {
   if (x.status === 'cancelled') f.push(['الحالة', 'ألغيتَ الطلب']);
   const path = (x.log || []).map(function (l) { return [l.t, D(l.at)]; });
   if (x.status === 'submitted' || x.status === 'in_review') path.push([x.kind === 'settle' ? 'تحديد مبلغ المخالصة' : 'قرار الإدارة', null]);
-  return mkR({ no: x.req_no, type: x.kind, at: at, status: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === true) ? 'fix' : (LV_SR_ST[x.status] || 'sent'), /* v669 */ contract: (x.contract_nos || [])[0] || '', fields: f, path: path, live: true, sr: x });
+  return mkR({ no: x.req_no, type: x.kind, at: at, status: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === true) ? 'fix' : (LV_SR_ST[x.status] || 'sent'), /* v669 */ contract: (x.contract_nos || [])[0] || '', fields: f, path: path, live: true, sr: x,
+    note: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === false && x.meta.fix.done_at) ? ['info', 'قيد المراجعة — أُعيد الإرسال بعد الاستكمال', 'وصل طلبك بعد استكماله ' + iso(new Date(x.meta.fix.done_at)) + '، وعاد إلى مراجعة الفريق. يصلك الرد فور صدور النتيجة.'] : undefined }); /* v672 */
 }
 async function lvSrLoad() {
   const uid = LIVE.me.id;
