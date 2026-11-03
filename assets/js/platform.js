@@ -964,6 +964,8 @@ function review() {
     .concat(own.map(function (b, i) { return DS.panel(b[0], null, [DS.fields(b[1].filter(Boolean))], DS.button('تعديل', { size: 'sm', ui: 'pencil-simple', onClick: function () { S.step = S.tab === 'qreq' ? 0 : i; S.miss = []; draw(); toTop(); } })); }));
 }
 function resetForm() { Object.keys(F).forEach(function (k) { if (PROFK.indexOf(k) < 0) delete F[k]; }); if (!F.income_sources) F.income_sources = []; F.service_suspension_type = []; if (!F.docs) F.docs = {}; F.items = []; S.draft = {}; S.dmiss = []; S.editItem = -1; S.step = 0; S.sent = null; S.miss = []; S.fsOpen = {}; S.fsOne = 'det'; S.ndDraft = { t: '', f: null }; S.ndEdit = -1; S.ndJust = -1; S.ndErr = false; }
+/* v652: زر «إرسال الطلب» في طلب الأهلية مربوط بالخادم (lvEligSubmit) — يُعلَّم data-live-ok حتى لا يحجبه حارس الإجراءات غير المربوطة؛ طلب عرض السعر يبقى محجوبًا */
+function lvOkBtn(ok, l, o) { const b = DS.button(l, o); if (ok && typeof LIVE !== 'undefined' && LIVE.on) b.setAttribute('data-live-ok', ''); return b; }
 function eligPage() {
   const QM = S.tab === 'qreq';
   if (LIVE.on && !QM) { try { lvEnsure(); } catch (err) { void err; } } /* v576: البيانات الوظيفية والمالية ومرفقاتي من القاعدة */
@@ -1003,7 +1005,7 @@ function eligPage() {
   const last = S.step === LAST;
   kids.push(DS.actionBar({ buttons: [
     S.step ? DS.button('السابق', { onClick: function () { S.step--; S.miss = []; draw(); toTop(); } }) : QM ? DS.button('رجوع', { onClick: function () { if (S.qfrom === 'pr' && catOf(FX.catk)) go('other', 'pr-dept'); else go('other', 'sv-new'); } }) : DS.button('رجوع إلى خدماتي', { onClick: function () { go('svc'); } }),
-    DS.button(last ? 'إرسال الطلب' : 'التالي', { tone: 'primary', onClick: function () {
+    lvOkBtn(!QM, last ? 'إرسال الطلب' : 'التالي', { tone: 'primary', onClick: function () {
       S.miss = required(S.step);
       if (S.miss.length && QM && S.step === 0) {
         const APPK = ['applicant_type', 'company_name', 'site_url', 'call_t'];
@@ -7222,7 +7224,7 @@ function cuPfHubPage() {
     ['pf', 'الملف الشخصي', 'identification-card:teal', [
       LIVE.on ? (function () { const nn = cunCount(); return { ic: 'user-circle:teal', t: 'العملاء الجدد', d: 'سجّلوا في المنصة خلال آخر 14 يومًا — ومتابعة إكمال ملفاتهم', n: nn ? fmtNum(nn) + ' عميل' : 'لا عملاء جدد', badge: null, /* v586: بلا تكرار الرقم */ go: function () { go('other', 'cu-new'); } }; })() : null, /* v578 */
       { ic: 'identification-card:teal', t: 'ملفات العملاء', d: LIVE.on ? 'قائمة واحدة: الملف والحساب والأمان لكل عميل، والتصفية بحالة الحساب' : 'محتوى الملفات وبياناتها كاملة — عرض فقط', n: fmtNum(cuList().length) + ' ملفات', go: function () { ADM.clF = 'all'; ADM.clFrom = ''; go('other', 'cu-pf-files'); } },
-      LIVE.on ? null : { ic: 'note-pencil:saffron', t: 'طلبات الملف الشخصي', d: 'تحديث البيانات واستبدال المستندات', n: w(cnt(R)), badge: lt(R), go: function () { go('other', 'cu-pf-req'); } }, /* v584: في المنفذ الحي تحديث الملف يصل «طلبات توثيق الملف» — البطاقة مكررة */
+      LIVE.on ? { ic: 'note-pencil:saffron', t: 'طلبات تحديث الملف بعد الاعتماد', d: 'تعديلات العميل على ملف معتمد (العنوان، الوظيفة، المستندات) — اعتماد أو رفض', go: function () { go('other', 'cu-pf-req'); } } : { ic: 'note-pencil:saffron', t: 'طلبات الملف الشخصي', d: 'تحديث البيانات واستبدال المستندات', n: w(cnt(R)), badge: lt(R), go: function () { go('other', 'cu-pf-req'); } }, /* v584: في المنفذ الحي تحديث الملف يصل «طلبات توثيق الملف» — البطاقة مكررة */
       { ic: 'seal-check:teal', t: 'طلبات توثيق الملف', d: 'مراجعة المستندات واعتماد التوثيق', n: w(cnt(V)), badge: lt(V), go: function () { go('other', 'cu-pf-ver'); } },
       { ic: 'arrows-clockwise:teal', t: 'توثيق ملف العملاء المرحّلين', d: LIVE.on ? 'المنقولون من النظام السابق: رسالة «تدشين الهوية الجديدة» وحالة الدخول والتدشين والتوثيق' : 'المنقولون من النظام السابق: النواقص وطلب التحديث بالواتساب والبريد', n: w(cnt(Mg)), badge: lt(Mg), go: function () { go('other', 'cu-pf-mig'); } }].filter(Boolean).concat(LIVE.on ? [(function () { lvLchCount();
         return { ic: 'rocket-launch:teal', t: 'تدشين الحساب', d: 'الحسابات المعتمدة بانتظار التدشين — يُسجَّل التدشين في ملف العميل وعضويته', n: LV_LCHN.at ? fmtNum(LV_LCHN.w) + ' بانتظار · ' + fmtNum(LV_LCHN.d) + ' مدشّنة' : null, badge: LV_LCHN.w ? ['بانتظار ' + fmtNum(LV_LCHN.w), 'warn'] : null, go: function () { ADM.lchF = 'wait'; go('other', 'cu-pf-launch'); } }; })()] : [])]]);
@@ -20666,7 +20668,7 @@ function admTwoStep(label, tone, run, icon) {
 /* v537: نافذة مراجعة التوثيق الكاملة — كانت تقرأ «items» والقاعدة ترجع «blocks» فتظهر «لا بنود»، وبلا مطابقة ولا إسناد ولا مرفقات.
  * الآن: الملخص · الإسناد · الأقسام وبنودها (مطابق/غير مطابق + المرفق) · الملاحظات الداخلية · سجل المراحل · القرار.
  * كل إجراء عبر دوال القاعدة نفسها وصلاحياتها (verification_view · admin_verification_*). */
-const VER_EVK = { item_edit: 'تعديل قيمة من المراجِع', item_reset: 'إلغاء مطابقة بند', section_reset: 'إلغاء مطابقة قسم', created: 'أُنشئ الطلب', submitted: 'أُرسل للتوثيق', resubmitted: 'أُعيد إرساله', received: 'استُلم للمراجعة', assigned: 'إسناد', unassigned: 'إلغاء الإسناد', item_match: 'بند مطابق', item_mismatch: 'بند غير مطابق', approved: 'اعتُمد', returned: 'أُعيد للتعديل', rejected: 'رُفض', note: 'ملاحظة داخلية', reopened: 'أُعيد فتحه', seed_refill: 'تحديث البنود' };
+const VER_EVK = { item_edit: 'تعديل قيمة من المراجِع', item_reset: 'إلغاء مطابقة بند', section_reset: 'إلغاء مطابقة قسم', created: 'أُنشئ الطلب', submitted: 'أُرسل للتوثيق', resubmitted: 'أُعيد إرساله', received: 'استُلم للمراجعة', assigned: 'إسناد', unassigned: 'إلغاء الإسناد', item_match: 'بند مطابق', item_mismatch: 'بند غير مطابق', approved: 'اعتُمد', returned: 'أُعيد للتعديل', rejected: 'رُفض', note: 'ملاحظة داخلية', client_note: 'ملاحظة للعميل (دون إعادة)', reopened: 'أُعيد فتحه', seed_refill: 'تحديث البنود' };
 const VER_ST2 = { draft: ['مسودة', null], submitted: ['بانتظار الاستلام', 'warn'], received: ['قيد المراجعة', 'info'], under_review: ['قيد المراجعة', 'info'], approved: ['معتمد', 'ok'], returned: ['معاد للتعديل', 'warn'], rejected: ['مرفوض', 'danger'] };
 const VER_ERR = { not_pending: 'الطلب ليس قيد المراجعة.', self_decision: 'لا يراجع صاحب الملف ملفه بنفسه.', staff_required: 'الإسناد لموظف نشط فقط.', no_permission: 'لا تملك صلاحية هذا الإجراء.', not_received: 'استلم الطلب أولًا.', note_required: 'اكتب الملاحظة أولًا.', not_found: 'الطلب غير موجود.', session_invalid: 'انتهت الجلسة — سجّل الدخول من جديد.', items_pending: 'بقيت بنود لم تُطابق بعد.', has_mismatch: 'يوجد بند غير مطابق — أعد الطلب للتعديل بدل الاعتماد.', no_file: 'لا يوجد ملف مرفق لهذا البند.' };
 /* v590 */
@@ -20994,14 +20996,14 @@ function admVerOpen2(r) {
       dec = e('section', { class: 'vr3-sec', id: 'vr3-dec' }, [e('div', { class: 'vr3-sec-t' }, [e('span', { class: 'vr3-sec-ic' }, frag(ui('seal-check', 18))), e('h3', {}, 'القرار')]), tabs].concat(body).concat([msgOf('dec')]).filter(Boolean));
     } else if (V.decision_note) dec = e('section', { class: 'vr3-sec' }, [DS.note('info', 'ملاحظة القرار', String(V.decision_note))]);
     /* 5) السجل والملاحظات العامة — مطويّة */
-    const gnote = canRev ? e('div', { class: 'vr3-box' }, [e('textarea', { class: 't2-input', rows: '2', placeholder: 'ملاحظة داخلية عامة للفريق (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة داخلية', onInput: function (ev) { S.gnote = ev.target.value; } }, S.gnote),
-      e('div', { class: 'vr3-acts' }, [vr3Btn('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(S.gnote || '').trim(); if (!t) { S.msg.gn = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; } S.gnote = ''; act('gn', 'admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.'); } })]), msgOf('gn')]) : null;
+    const gnote = canRev ? e('div', { class: 'vr3-box' }, [e('select', { class: 't2-input', 'aria-label': 'نوع الملاحظة', onChange: function (ev) { S.gnTo = ev.target.value; paint(); } }, [e('option', { value: 'int', selected: S.gnTo !== 'client' ? 'selected' : null }, 'ملاحظة داخلية للفريق (لا يراها العميل)'), e('option', { value: 'client', selected: S.gnTo === 'client' ? 'selected' : null }, 'ملاحظة للعميل دون إعادة الملف')]), e('textarea', { class: 't2-input', rows: '2', placeholder: S.gnTo === 'client' ? 'نص الملاحظة كما يصل العميل في صندوق إشعاراته (الملف لا يُعاد)' : 'ملاحظة داخلية عامة للفريق (لا تظهر لصاحب الملف)', 'aria-label': 'ملاحظة داخلية', onInput: function (ev) { S.gnote = ev.target.value; } }, S.gnote),
+      e('div', { class: 'vr3-acts' }, [vr3Btn('إضافة الملاحظة', { size: 'sm', onClick: function () { const t = String(S.gnote || '').trim(); if (!t) { S.msg.gn = ['warn', 'اكتب الملاحظة أولًا']; paint(); return; } S.gnote = ''; (S.gnTo === 'client' ? act('gn', 'admin_verification_client_note', { p_id: r.id, p_body: t }, 'أُرسلت الملاحظة للعميل في صندوق إشعاراته، والملف لم يُعَد.') : act('gn', 'admin_verification_note', { p_id: r.id, p_body: t }, 'أُضيفت الملاحظة.')); } })]), msgOf('gn')]) : null;
     const logRows = evs.slice().sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); }).map(function (x) {
       return e('div', { class: 'vr3-ev' }, [e('b', {}, VER_EVK[x.kind] || x.kind || '—'), e('small', { class: 'cu-dr-hint' }, [' · ', verDate(x.at), x.actor ? ' · ' + x.actor : '', x.field_key ? ' · ' + x.field_key : '']), x.body ? e('div', { class: 'cu-dr-hint' }, String(x.body)) : null]);
     });
-    const log = e('details', { class: 'vr3-sec vr3-log', open: S.logOpen ? true : null, onToggle: function (ev) { S.logOpen = ev.target.open; } },  [e('summary', {}, 'السجل والملاحظات الداخلية (' + evs.length + ')'), gnote].concat(logRows.length ? logRows : [e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]).filter(Boolean));
+    const log = e('details', { class: 'vr3-sec vr3-log', open: S.logOpen ? true : null, onToggle: function (ev) { S.logOpen = ev.target.open; } },  [e('summary', {}, 'السجل والملاحظات (' + evs.length + ')'), gnote].concat(logRows.length ? logRows : [e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]).filter(Boolean));
     cuBdDraw({ key: key, ic: 'seal-check:teal', title: T, sub: (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st), foot: admFoot(),
-      body: [e('div', { class: 'vr3' }, [top].concat(secs).concat([dec, log]).filter(Boolean))] });
+      body: [e('div', { class: 'vr3' }, [top, dec].concat(secs).concat([log]).filter(Boolean))] });
     try { const hs = document.querySelector('.cu-dr[data-r="' + CSS.escape(key) + '"] .cu-dr-h > div > span'); if (hs) hs.textContent = (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st); } catch (e1) { void e1; }
   };
   cuDrawer({ key: key, ic: 'seal-check:teal', title: T, sub: (VER_ST2[r.status] ? VER_ST2[r.status][0] : 'طلب توثيق'), body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
