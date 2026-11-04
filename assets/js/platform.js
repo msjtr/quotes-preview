@@ -18344,23 +18344,32 @@ function tqKeepDlg(items) {
 function egQtNotify(id) {
   try { clPost('/admin/api/quotations/' + encodeURIComponent(id) + '/notify', {}).then(function (r) { if (r && r.ok === false && r.message) snack(r.message); }).catch(function () { /* الإتاحة تمت؛ الإشعار وحده تعذّر */ }); } catch (err) { void err; }
 }
-/* v683: المراسلة داخل طلب الخدمة — رسائل الفريق والعميل، و«طلب إضافي» بمرفق يحدد الموظف نوعه وحجمه؛ يرفعه العميل من طلبه في حسابه */
+/* v683: المراسلة داخل طلب الخدمة — رسائل الفريق والعميل، و«طلب إضافي» بمرفق يحدد الموظف نوعه وحجمه؛ يرفعه العميل من طلبه في حسابه
+   v684: الصندوق نفسه لطلب التوثيق (pv) — بين فريق التوثيق وصاحب الملف */
 const SRM = {};
+const SRM_K = {
+  sr: { title: 'المراسلة', ls: ['admin_sr_msgs', 'my_sr_msgs', 'p_sr'], snd: ['admin_sr_msg_send', 'my_sr_msg_send', 'p_sr'], up: function (x, m) { return '/api/account/service-requests/' + x.id + '/msg-file/' + m.id; }, vw: ['/admin/api/sr-msg-file/', '/api/account/sr-msg-file/'], who: 'العميل' },
+  pv: { title: 'المراسلة مع فريق التوثيق', ls: ['admin_pv_msgs', 'my_pv_msgs', 'p_pv'], snd: ['admin_pv_msg_send', 'my_pv_msg_send', 'p_pv'], up: function (x, m) { return '/api/account/verification/' + x.id + '/msg-file/' + m.id; }, vw: ['/admin/api/pv-msg-file/', '/api/account/pv-msg-file/'], who: 'صاحب الملف' }
+};
 const SRM_T = [['pdf', 'PDF'], ['image', 'صورة (JPG · PNG · WEBP)'], ['any', 'PDF أو صورة']];
 const SRM_MB = [['2', '2 ميجا'], ['5', '5 ميجا'], ['10', '10 ميجا'], ['20', '20 ميجا']];
 const SRM_TN = { pdf: 'PDF', image: 'صورة', any: 'PDF أو صورة' };
-function srMsgBox(x, RF, who) {
-  const staff = who === 'staff', c = SRM[x.id] || (SRM[x.id] = { at: 0, rows: [], busy: false, txt: '', ask: false, lbl: '', t: 'pdf', mb: '5', err: '' });
+function srMsgBox(x, RF, who) { return reqMsgBox('sr', x, RF, who); }
+function pvMsgBox(x, RF, who) { return reqMsgBox('pv', x, RF, who); }
+function reqMsgBox(kind, x, RF, who) {
+  const K = SRM_K[kind] || SRM_K.sr, ck = kind + ':' + x.id;
+  const staff = who === 'staff', c = SRM[ck] || (SRM[ck] = { at: 0, rows: [], busy: false, txt: '', ask: false, lbl: '', t: 'pdf', mb: '5', err: '' });
   const rep = function () { if (staff && RF && typeof RF.paint === 'function') RF.paint(); else draw(); };
   const load = function () {
     c.at = Date.now(); c.busy = true;
-    (staff ? admRpc('admin_sr_msgs', { p_sr: x.id }) : liveSb('rpc/my_sr_msgs', { body: { p_sr: x.id } })).then(function (j) {
+    const A = {}; A[K.ls[2]] = x.id;
+    (staff ? admRpc(K.ls[0], A) : liveSb('rpc/' + K.ls[1], { body: A })).then(function (j) {
       c.busy = false; c.rows = (j && j.ok !== false && Array.isArray(j.rows)) ? j.rows : c.rows; rep();
     }).catch(function () { c.busy = false; });
   };
   if (!c.busy && (!c.at || Date.now() - c.at > 60000)) setTimeout(load, 0);
   const view = function (m) {
-    clApi((staff ? '/admin/api/sr-msg-file/' : '/api/account/sr-msg-file/') + m.id).then(function (j) { if (j && j.url) window.open(j.url, '_blank', 'noopener'); })
+    clApi((staff ? K.vw[0] : K.vw[1]) + m.id).then(function (j) { if (j && j.url) window.open(j.url, '_blank', 'noopener'); })
       .catch(function (er) { snack((er && er.message) || 'تعذّر فتح المرفق.'); });
   };
   const upload = function (m) {
@@ -18372,7 +18381,7 @@ function srMsgBox(x, RF, who) {
       if (f.size > Number(m.ask.mb) * 1048576) { snack('حجم الملف أكبر من ' + m.ask.mb + ' ميجا.'); return; }
       c.busy = true; rep();
       try {
-        const base = '/api/account/service-requests/' + x.id + '/msg-file/' + m.id;
+        const base = K.up(x, m);
         const u = await clPost(base + '/url', { type: f.type, size: f.size });
         if (!u || u.ok !== true || !u.url) throw new Error((u && u.message) || 'تعذّر تجهيز الرفع.');
         let url = u.url; try { const cfg = LIVE.cfg || (LIVE.cfg = await liveCfg()); url = url.replace(/^https?:\/\/[^/]+(?:\/sb)?/, cfg.supabaseUrl); } catch (err) { void err; }
@@ -18394,26 +18403,27 @@ function srMsgBox(x, RF, who) {
     if (!ask && body.length < 2) { c.err = 'اكتب الرسالة.'; rep(); return; }
     if (c.busy) return; c.busy = true; c.err = ''; rep();
     try {
-      const j = staff ? await admRpc('admin_sr_msg_send', { p_sr: x.id, p_body: body, p_ask: ask }) : await liveSb('rpc/my_sr_msg_send', { body: { p_sr: x.id, p_body: body } });
+      const A = { p_body: body }; A[K.snd[2]] = x.id; if (staff) A.p_ask = ask;
+      const j = staff ? await admRpc(K.snd[0], A) : await liveSb('rpc/' + K.snd[1], { body: A });
       if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.');
       if (Array.isArray(j.rows)) c.rows = j.rows; c.txt = ''; c.lbl = ''; c.ask = false; c.at = Date.now();
-      snack(staff ? 'أُرسلت الرسالة — تصل العميل في طلبه وإشعاراته.' : 'أُرسلت رسالتك لفريق تيرا.');
+      snack(staff ? 'أُرسلت الرسالة — تصل ' + K.who + ' في حسابه وإشعاراته.' : 'أُرسلت رسالتك لفريق تيرا.');
     } catch (er) { c.err = (er && er.message) || 'تعذّر الإرسال.'; }
     c.busy = false; rep();
   };
   const when = function (s) { const d = new Date(s); return isNaN(d) ? '' : iso(d) + ' · ' + hm(d); };
   const list = c.rows.length ? e('ol', { class: 'srm-list', style: 'list-style:none;margin:0;padding:0;display:grid;gap:8px' }, c.rows.map(function (m) {
     const mine = staff ? m.who === 'staff' : m.who === 'client';
-    const kids = [e('small', { style: 'opacity:.75' }, (m.who === 'staff' ? 'فريق تيرا' : 'العميل') + ' · ' + when(m.at))];
+    const kids = [e('small', { style: 'opacity:.75' }, (m.who === 'staff' ? 'فريق تيرا' : K.who) + ' · ' + when(m.at))];
     if (m.body) kids.push(e('div', { style: 'white-space:pre-wrap;line-height:1.7' }, String(m.body)));
     if (m.ask) kids.push(DS.note(m.open ? 'warn' : 'ok', (m.open ? 'مطلوب مرفق: ' : 'طُلب مرفق: ') + m.ask.label, (SRM_TN[m.ask.types] || '') + ' · حتى ' + m.ask.mb + ' ميجا' + (m.open ? '' : ' · أُرفق')));
     if (m.ask && m.open && !staff) kids.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(c.busy ? 'جارٍ الرفع…' : 'إرفاق الملف', { size: 'sm', tone: 'primary', ui: 'paperclip', disabled: c.busy, onClick: function () { upload(m); } }))]));
     if (m.file) kids.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('عرض المرفق' + (m.file.name ? ' · ' + m.file.name : ''), { size: 'sm', ui: 'file-text', onClick: function () { view(m); } }))]));
     return e('li', { style: 'border-radius:12px;padding:10px 12px;border:1px solid rgba(15,23,42,.12);background:' + (mine ? 'rgba(15,76,129,.06)' : 'transparent') }, kids);
-  })) : e('small', { class: 'cu-dr-hint' }, c.busy ? 'جارٍ التحميل…' : (staff ? 'لا رسائل بعد — راسل العميل أو اطلب منه مرفقًا إضافيًا.' : 'لا رسائل بعد — راسل فريق تيرا عن طلبك من هنا.'));
-  const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '1000', placeholder: staff ? 'رسالة للعميل — تظهر في طلبه' : 'رسالتك لفريق تيرا', onInput: function (ev) { c.txt = ev.target.value; } });
+  })) : e('small', { class: 'cu-dr-hint' }, c.busy ? 'جارٍ التحميل…' : (staff ? 'لا رسائل بعد — راسل ' + K.who + ' أو اطلب منه مرفقًا إضافيًا.' : 'لا رسائل بعد — راسل فريق تيرا عن طلبك من هنا.'));
+  const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '1000', placeholder: staff ? 'رسالة إلى ' + K.who + ' — تظهر في حسابه' : 'رسالتك لفريق تيرا', onInput: function (ev) { c.txt = ev.target.value; } });
   ta.value = c.txt || '';
-  const form = [DS.editField(staff ? 'رسالة للعميل' : 'رسالتك', ta)];
+  const form = [DS.editField(staff ? 'رسالة إلى ' + K.who : 'رسالتك', ta)];
   if (staff) {
     form.push(DS.editField('نوع الرسالة', DS.select({ value: c.ask ? 'yes' : 'no', options: [['no', 'رسالة فقط'], ['yes', 'رسالة مع طلب مرفق إضافي']], onChange: function (v) { c.ask = v === 'yes'; rep(); } })));
     if (c.ask) {
@@ -18426,9 +18436,9 @@ function srMsgBox(x, RF, who) {
   }
   if (c.err) form.push(e('span', { class: 'cu-err', role: 'alert' }, c.err));
   form.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(c.busy ? 'جارٍ الإرسال…' : 'إرسال', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: c.busy, onClick: send }))]));
-  const closed = !staff && x.status === 'cancelled';
-  return e('section', { class: 'sr-msg', style: 'display:grid;gap:10px' }, [e('b', {}, 'المراسلة' + (c.rows.length ? ' (' + fmtNum(c.rows.length) + ')' : '')), list]
-    .concat(closed ? [e('small', { class: 'cu-dr-hint' }, 'الطلب ملغى — لا يمكن الرد.')] : form));
+  const closed = kind === 'sr' ? (!staff && x.status === 'cancelled') : (x.status === 'approved' || x.status === 'rejected');
+  return e('section', { class: 'sr-msg', style: 'display:grid;gap:10px' }, [e('b', {}, K.title + (c.rows.length ? ' (' + fmtNum(c.rows.length) + ')' : '')), list]
+    .concat(closed ? [e('small', { class: 'cu-dr-hint' }, kind === 'sr' ? 'الطلب ملغى — لا يمكن الرد.' : 'صدر القرار في طلب التوثيق — المراسلة للاطلاع.')] : form));
 }
 function srCard(x, RF, o) {
   o = o || {};
@@ -21196,6 +21206,7 @@ function journeyPage(J) {
       e('div', { class: 'jr-crown', 'aria-hidden': 'true' }, frag(tile('crown-simple:gold')))]);
   }
   const box = e('div', { class: 't2-dash jr' }, J.stage === 'start' ? [hero].concat(lvRegFlow(J, pct)) : [hero, e('div', { class: 'jr-grid' }, [jrProf(J)])] /* v548: قبل التدشين لا «خدماتي» — الملف الشخصي والمراسلات فقط حتى يُدشَّن الحساب */);
+  if (J.v && J.v.id) box.appendChild(pvMsgBox(J.v, null, 'client')); /* v684: المراسلة مع فريق التوثيق */
   jrCount(box);
   return [box];
 }
@@ -21372,14 +21383,18 @@ function liveNotesPage() {
   return [PH('ring', 'تنبيهات على ملفك الشخصي', [['التنبيهات', fmtNum(L.length), 'bell', L.length ? 'warn' : null], ['المصدر', 'توثيق الملف', 'seal-check'], ['الإجراء', 'طلب تحديث', 'note-pencil']], L.length ? ['تحتاج إجراء', 'warn'] : ['لا تنبيهات', 'ok']),
     lvPanel('التنبيهات', null, L.length ? [lvFields(L.map(function (n) { return lvField(n.label || n.title || n.field || 'تنبيه', n.note || n.text || n.reason || n.message || '—'); }))] : [DS.note('ok', 'لا تنبيهات على ملفك الشخصي.', '')])];
 }
+/* v684: قبل التدشين (عميل جديد أو مرحَّل) تعديل الملف جزء من طلب التوثيق — لا «طلب تحديث» ولا «متابعة الطلبات» */
+function lvPreV() { try { return typeof clPre === 'function' && clPre(); } catch (err) { return false; } }
+function lvPreJ() { try { return liveJourney(); } catch (err) { return { returned: false, st: '' }; } }
 function liveSecPage(s) {
   const P = LVP[s], all = lvFlds(s), nOk = all.filter(function (f) { return f[3]; }).length, miss = all.filter(function (f) { return f[2] && !f[3]; }).length;
   return [e('div', { class: 't2-stack t2-pb-page' }, [
     lvHero({ ic: P.ic, eye: 'ملفي الشخصي', t: P.t, pill: [miss ? 'القسم غير مكتمل' : 'القسم مكتمل', miss ? 'warn' : 'ok'], ring: [all.length ? Math.round(nOk / all.length * 100) : 0, 'مكتمل'],
-      tiles: [['الحقول المكتملة', fmtNum(nOk) + ' / ' + fmtNum(all.length), 'check-circle'], ['المطلوبة الناقصة', fmtNum(miss), 'list-checks', miss ? 'warn' : null], ['التحديث', 'بعد الاعتماد بتحقق أمني', 'note-pencil']] }),
+      tiles: [['الحقول المكتملة', fmtNum(nOk) + ' / ' + fmtNum(all.length), 'check-circle'], ['المطلوبة الناقصة', fmtNum(miss), 'list-checks', miss ? 'warn' : null], (lvPreV() ? ['التعديل', lvPreJ().returned ? 'احفظ ثم «أعد الإرسال»' : 'ضمن طلب التوثيق', 'note-pencil'] : ['التحديث', 'بعد الاعتماد بتحقق أمني', 'note-pencil'])] }),
     LIVE_EDIT[s] ? liveEditPanel(s) : P.groups.map(function (g) { const n = g[1].filter(function (f) { return f[3]; }).length; return lvSec(g[0], fmtNum(n) + ' من ' + fmtNum(g[1].length) + ' مكتمل', [e('div', { class: 'lx-fs' }, g[1].map(lvFieldLux))], 'lv:' + s + ':' + g[0]); }),
     all.length || LIVE_EDIT[s] ? null : DS.note('info', 'لا بيانات في هذا القسم بعد', 'تظهر هنا بياناتك كما أدخلتها في المنصة.'),
-    LIVE_EDIT[s] ? null : e('div', { class: 't2-pb-actions' }, liveOk(DS.button(all.length ? 'تحديث بيانات هذا القسم' : 'إضافة بيانات هذا القسم', { tone: 'primary', ui: 'note-pencil', onClick: function () { delete LIVE_UPD[s]; go('other', 'upd-' + s); } })))])];
+    LIVE_EDIT[s] ? null : e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(all.length ? (lvPreV() ? 'تعديل بيانات هذا القسم' : 'تحديث بيانات هذا القسم') : 'إضافة بيانات هذا القسم', { tone: 'primary', ui: 'note-pencil', onClick: function () { delete LIVE_UPD[s]; go('other', 'upd-' + s); } })),
+      lvPreV() && lvPreJ().returned ? liveOk(DS.button('أعد الإرسال', { ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } })) : null, lvPreV() ? DS.button('طلب التوثيق', { ui: 'seal-check', onClick: function () { go('dash'); } }) : null].filter(Boolean))])]; /* v684: قبل التدشين تعديل الطلب لا «تحديث» */
 }
 /* سجل الأمان الحقيقي */
 function liveEvents() {
@@ -22085,10 +22100,13 @@ function liveUpdPage(s) {
     e('div', { class: 't2-pb-prog' }, e('span', { class: 't2-pb-prog-i', style: 'width:' + pct + '%' })), e('p', { class: 't2-pb-upd-note' }, pct === 100 ? 'اكتملت بيانات هذا القسم.' : 'أكمل الحقول المطلوبة في هذا القسم.')]);
   if (!F.length) return [e('div', { class: 't2-stack t2-pb-page' }, [DS.note('info', 'لا حقول قابلة للتحديث في هذا القسم.', ''), e('div', { class: 't2-pb-actions' }, [DS.button('رجوع', { onClick: goP(LVP[s].k) })])])];
   const changes = F.filter(function (f) { return f.key in U.vals && String(U.vals[f.key]).trim() !== String(f.value).trim(); }).map(function (f) { return [f.key, f.label, nameOf(f, f.value), nameOf(f, U.vals[f.key])]; });
+  if (U.stage === 'sent' && lvPreV()) { const J0 = lvPreJ(); return [e('div', { class: 't2-stack t2-pb-page' }, [DS.note('ok', 'حُفظ التعديل في طلب توثيق ملفك', J0.returned ? 'لم يصل فريق التوثيق بعد — اضغط «أعد الإرسال» ليُستكمل طلبك.' : J0.st === 'draft' ? 'أكمل بقية الأقسام ثم اضغط «إرسال الملف للتوثيق».' : 'يظهر التعديل لفريق التوثيق في طلبك.'),
+    e('div', { class: 't2-pb-actions' }, [J0.returned ? liveOk(DS.button('أعد الإرسال الآن', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { delete LIVE_UPD[s]; clSubmit(); } })) : null,
+      DS.button('العودة إلى طلب التوثيق', { tone: J0.returned ? null : 'primary', onClick: function () { delete LIVE_UPD[s]; go('dash'); } }), DS.button(LVP[s].t, { onClick: function () { delete LIVE_UPD[s]; go('other', LVP[s].k); } })].filter(Boolean))])]; } /* v684 */
   if (U.stage === 'sent') return [e('div', { class: 't2-stack t2-pb-page' }, [DS.note('ok', U.res && (U.res.pending || U.res.request_no) ? 'أُرسل طلب التحديث' : 'حُفظ التحديث', (U.res && U.res.request_no ? 'رقم الطلب ' + U.res.request_no + ' — ' : '') + ((U.res && U.res.message) || 'يظهر في «متابعة الطلبات» حتى يعتمده فريق إدارة الحسابات.')),
     e('div', { class: 't2-pb-actions' }, [DS.button(LVP[s].t, { tone: 'primary', onClick: function () { delete LIVE_UPD[s]; go('other', LVP[s].k); } }), DS.button('ملفي الشخصي', { onClick: function () { delete LIVE_UPD[s]; go('other', 'profile'); } })])])];
   if (U.stage === 'review') {
-    const send = liveOk(DS.button(U.busy ? 'جارٍ الإرسال…' : 'إرسال طلب التحديث', { tone: 'primary', disabled: U.busy, onClick: async function () {
+    const send = liveOk(DS.button(U.busy ? 'جارٍ الإرسال…' : (lvPreV() ? 'حفظ التعديل' : 'إرسال طلب التحديث'), { tone: 'primary', disabled: U.busy, onClick: async function () {
       const values = {}; F.forEach(function (f) { if (f.key in U.vals && String(U.vals[f.key] == null ? '' : U.vals[f.key]).trim() !== String(f.value == null ? '' : f.value).trim()) values[f.key] = cur(f); }); /* v648 */
       try { ((LIVE_DATA.blocks[s] || {}).fields || []).forEach(function (f) { if (f && f.hidden && !(f.key in values) && f.value !== null && f.value !== undefined && typeof f.value !== 'object') values[f.key] = f.value; }); } catch (err) { void err; }
       U.busy = true; U.err = ''; draw();
@@ -22579,7 +22597,7 @@ function admVerOpen2(r) {
     });
     const log = e('details', { class: 'vr3-sec vr3-log', open: S.logOpen ? true : null, onToggle: function (ev) { S.logOpen = ev.target.open; } },  [e('summary', {}, 'السجل والملاحظات (' + evs.length + ')'), gnote].concat(logRows.length ? logRows : [e('small', { class: 'cu-dr-hint' }, 'لا أحداث بعد.')]).filter(Boolean));
     cuBdDraw({ key: key, ic: 'seal-check:teal', title: T, sub: (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st), foot: admFoot(),
-      body: [e('div', { class: 'vr3' }, [top, dec].concat(secs).concat([log]).filter(Boolean))] });
+      body: [e('div', { class: 'vr3' }, [top, dec].concat(secs).concat([pvMsgBox({ id: r.id, status: st }, { paint: paint }, 'staff') /* v684 */, log]).filter(Boolean))] });
     try { const hs = document.querySelector('.cu-dr[data-r="' + CSS.escape(key) + '"] .cu-dr-h > div > span'); if (hs) hs.textContent = (staff ? 'موظف' : 'عميل') + ' · ' + (VER_ST2[st] ? VER_ST2[st][0] : st); } catch (e1) { void e1; }
   };
   cuDrawer({ key: key, ic: 'seal-check:teal', title: T, sub: (VER_ST2[r.status] ? VER_ST2[r.status][0] : 'طلب توثيق'), body: [e('small', { class: 'cu-dr-hint' }, 'جارٍ التحميل…')], foot: admFoot() });
