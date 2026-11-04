@@ -531,7 +531,7 @@ function profSeed() {
   F.docs = { salary: { date: iso(addDays(today0(), -(FRESH + 4))), file: { name: 'تعريف-بالراتب.pdf', size: 184320 } }, stmt3: { from: iso(addDays(addMonths(today0(), -3), -2)), to: iso(addDays(today0(), -2)), file: { name: 'كشف-حساب-3-أشهر.pdf', size: 421888 } } };
 }
 /* طريقة الاستلام — في استمارة التحقق وفي عرض السعر */
-const RECV = [['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)']];
+const RECV = [['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم']]; /* v680 */
 const RECV_IC = { ship: 'rship', pickup: 'rpick', proxy: 'rproxy' };
 const recvName = (m) => (RECV.filter(function (x) { return x[0] === m; })[0] || ['', '—'])[1];
 function recvDetail(r) {
@@ -10622,7 +10622,7 @@ function taxSetPage() {
 }
 /* ---------- الإعدادات: قوالب عقد الشركاء (متعددة) ---------- */
 /* v679: صفحة توقيع العقد (رابط «صدر عقدك») — نصوصها وإظهارها من هنا، وقالب «full» يُحفظ في المنصة (adm_contract_tpl_save) ويُطبَّق على الرابط */
-const PCP0 = {"status": "بانتظار توقيعك", "show_status": true, "sign_title": "التوقيع", "ack": "أقرّ بأنني اطّلعت على العقد وجدول الدفعات ووافقت على جميع بنوده، وأن توقيعي الإلكتروني ملزم لي.", "hint": "العقد للاطلاع والتوقيع فقط، ويصلكم العقد النهائي من فريق تيرا بعد التوقيع.", "show_hint": true, "confirm_title": "تأكيد توقيع العقد", "confirm_note": "بعد التأكيد يُعتمد توقيعك على العقد، ويصلكم العقد النهائي من فريق تيرا.", "show_confirm_note": true, "done_title": "تم توقيع العقد", "done_status": "عقد معتمد", "done_text": "شكرًا لكم. تم توقيع عقدكم إلكترونيًا، ويصلكم العقد النهائي من فريق تيرا.", "show_done_text": true, "sig": "شاكرين لكم ثقتكم بمنصة تيرا.\nفريق التحقق من الأهلية – تيرا", "show_sig": true, "show_client": true, "show_prod": true, "show_date": true, "inv_title": "فاتورة المنتج", "inv_status": "بانتظار اعتمادك", "show_inv_status": true, "inv_note": "راجع تفاصيل المنتج وتكاليفه وخطة الدفع، ثم اعتمد الفاتورة ليصدر عقدكم للتوقيع.", "show_inv_note": true, "show_inv_recv": true, "show_inv_fees": true, "show_inv_plan": true, "inv_ack": "أقرّ باعتماد فاتورة المنتج الموضّحة بقيمتها وتكاليفها وخطة الدفع، وأوافق على إصدار العقد.", "inv_confirm_title": "تأكيد اعتماد فاتورة المنتج", "inv_confirm_note": "بعد التأكيد يصدر عقدكم، ويصلكم رابط الاطلاع عليه وتوقيعه.", "show_inv_confirm_note": true, "inv_done_title": "تم اعتماد فاتورة المنتج", "inv_done_status": "صدر عقدك", "inv_done_text": "شكرًا لكم. صدر عقدكم، ويصلكم الآن رابط الاطلاع عليه وتوقيعه.", "show_inv_done_text": true, "inv_decline_title": "تم الاعتذار عن الشراء", "inv_decline_text": "تم تسجيل اعتذاركم وأُغلق طلب الأهلية. يسعدنا تقييم تجربتكم."};
+const PCP0 = {"status": "بانتظار توقيعك", "show_status": true, "sign_title": "التوقيع", "ack": "أقرّ بأنني اطّلعت على العقد وجدول الدفعات ووافقت على جميع بنوده، وأن توقيعي الإلكتروني ملزم لي.", "hint": "العقد للاطلاع والتوقيع فقط، ويصلكم العقد النهائي من فريق تيرا بعد التوقيع.", "show_hint": true, "confirm_title": "تأكيد توقيع العقد", "confirm_note": "بعد التأكيد يُعتمد توقيعك على العقد، ويصلكم العقد النهائي من فريق تيرا.", "show_confirm_note": true, "done_title": "تم توقيع العقد", "done_status": "عقد معتمد", "done_text": "شكرًا لكم. تم توقيع عقدكم إلكترونيًا، ويصلكم العقد النهائي من فريق تيرا.", "show_done_text": true, "sig": "شاكرين لكم ثقتكم بمنصة تيرا.\nفريق تيرا", "show_sig": true, "show_client": true, "show_prod": true, "show_date": true, "inv_title": "فاتورة المنتج", "inv_status": "بانتظار اعتمادك", "show_inv_status": true, "inv_note": "راجع تفاصيل المنتج وتكاليفه وخطة الدفع، ثم اعتمد الفاتورة ليصدر عقدكم للتوقيع.", "show_inv_note": true, "show_inv_recv": true, "show_inv_fees": true, "show_inv_plan": true, "inv_ack": "أقرّ باعتماد فاتورة المنتج الموضّحة بقيمتها وتكاليفها وخطة الدفع، وأوافق على إصدار العقد.", "inv_confirm_title": "تأكيد اعتماد فاتورة المنتج", "inv_confirm_note": "بعد التأكيد يصدر عقدكم، ويصلكم رابط الاطلاع عليه وتوقيعه.", "show_inv_confirm_note": true, "inv_done_title": "تم اعتماد فاتورة المنتج", "inv_done_status": "صدر عقدك", "inv_done_text": "شكرًا لكم. صدر عقدكم، ويصلكم الآن رابط الاطلاع عليه وتوقيعه.", "show_inv_done_text": true, "inv_decline_title": "تم الاعتذار عن الشراء", "inv_decline_text": "تم تسجيل اعتذاركم وأُغلق طلب الأهلية. يسعدنا تقييم تجربتكم."};
 const pcDraft = (T) => Object.assign(tqDraftC(T), { name: T.name, hdr: Object.assign({}, TQH0, T.hdr), page: Object.assign({}, PCP0, T.page) });
 let PC_DB = 0;
 function pcDbLoad() {
@@ -16864,6 +16864,102 @@ function cfSched(c, pilot) {
   });
   return [payLegend(c.payments), e('div', { class: 'fx-table-w' }, e('table', { class: 'fx-table cf-tb' }, [e('thead', {}, e('tr', {}, cols.map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, rows)]))];
 }
+/* v680: «العقد النهائي» في بطاقة العقد بملف العميل — التوقيع الإلكتروني من رابط «صدر عقدك» ومعاينة العقد كما وُقّع،
+   ثم ملف العقد النهائي يرفعه الفريق (PDF): «معاينة على رقمي» أولًا ثم «إرسال للعميل» (واتساب مستندًا + البريد + مركز إشعاراته). لا إرسال تلقائي. */
+const CF_FIN = {};
+const CF_FIN_M = { draw: 'رسم التوقيع', type: 'كتابة الاسم', upload: 'صورة التوقيع' };
+const cfFinDt = (v) => { if (!v) return '—'; try { return new Date(v).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (err) { return String(v).slice(0, 16); } };
+function cfFinLoad(rid, force) {
+  const S = CF_FIN[rid] || (CF_FIN[rid] = { st: 'idle', d: null, err: '', busy: '', msg: '', at: 0 });
+  if (S.st === 'load' || (!force && S.st === 'ok' && Date.now() - S.at < 60000) || (!force && S.st === 'err')) return S;
+  S.st = 'load';
+  clApi('/admin/api/contracts/' + encodeURIComponent(rid) + '/final').then(function (j) { S.st = 'ok'; S.d = j; S.at = Date.now(); draw(); })
+    .catch(function (err) { S.st = 'err'; S.lerr = (err && err.message) || 'تعذّر التحميل.'; draw(); });
+  return S;
+}
+function cfFinSigned(d) {
+  const g = d.sign || {}, D = g.doc || {}, cls = Array.isArray(D.clauses) ? D.clauses : [];
+  const money = (v) => (Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ريال';
+  const rows = [['رقم العقد', D.contract_no || d.contract_no || '—'], ['تاريخ العقد', D.date || '—'], ['اسم العميل', d.client || '—'], ['المنتج', D.product || '—'],
+    ['قيمة المنتج', money(D.product_value)], ['إجمالي العقد', money(D.total)], ['عدد الدفعات', D.n ? String(D.n) : '—']];
+  const sched = Array.isArray(D.sched) ? D.sched : [];
+  let sh = null;
+  sh = cuDrawer({ key: 'cf-fin-sg', ic: 'file-text', title: 'العقد الموقّع ' + (d.contract_no || ''), sub: 'كما وقّعه العميل من رابط «صدر عقدك» — للاطلاع فقط',
+    body: [
+      e('h3', { class: 'cu-ds-h' }, D.title || 'عقد بيع منتج بالدفعات'),
+      D.pre ? e('p', { class: 'cu-dr-hint', style: 'white-space:pre-line' }, D.pre) : null,
+      e('div', { class: 'fx-facts' }, [factGrp('بيانات العقد', rows)]),
+      sched.length ? factGrp('جدول الدفعات', sched.map(function (p) { return ['الدفعة ' + p.no + ' · ' + (p.due || ''), money(p.amount)]; })) : null,
+      cls.length ? e('h3', { class: 'cu-ds-h' }, 'بنود العقد') : null].concat(cls.map(function (c) { return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, String(c[0] || '')), e('small', { style: 'white-space:pre-line' }, String(c[1] || ''))])]); }),
+      [D.sign ? e('p', { class: 'cu-dr-hint', style: 'white-space:pre-line' }, D.sign) : null,
+        e('h3', { class: 'cu-ds-h' }, 'التوقيع'),
+        e('div', { class: 'fx-facts' }, [factGrp('بيانات التوقيع', [['الاسم', g.name || '—'], ['الطريقة', CF_FIN_M[g.method] || g.method || '—'], ['وقت التوقيع', cfFinDt(g.signed_at)], ['التحقق', /email/.test(g.factor || '') ? 'رمز البريد' : /wa|whats/.test(g.factor || '') ? 'رمز واتساب' : (g.factor || '—')]])]),
+        /^data:image\/(png|jpeg);base64,/.test(g.image || '') ? e('div', { style: 'text-align:center;padding:12px;border:1px dashed var(--line,#ddd);border-radius:12px;background:#fff' }, [e('img', { src: g.image, alt: 'توقيع العميل', style: 'max-width:100%;max-height:160px' })])
+          : e('p', { style: 'text-align:center;font-size:22px;font-weight:800;padding:12px;border:1px dashed #ccc;border-radius:12px' }, g.name || '—'),
+        g.statement ? e('small', { class: 'cu-dr-hint' }, 'الإقرار: ' + g.statement) : null]),
+    foot: [DS.button('إغلاق', { onClick: function () { if (sh && sh.__close) sh.__close(); } })] });
+}
+function cfFinal(c, x) {
+  const r = (x && x.r) || {}, rid = r.id || c.rid, uid = r.user_id;
+  if (!rid || !uid) return null;
+  const k = 'cf-fin:' + rid, S = cfFinLoad(rid);
+  if (!S.d) {
+    return lvSec('العقد النهائي', S.st === 'err' ? 'تعذّر التحميل' : null, [S.st === 'err'
+      ? e('div', {}, [e('span', { class: 'cu-err', role: 'alert' }, S.lerr), ' ', liveOk(DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { cfFinLoad(rid, true); draw(); } }))])
+      : CF_EMPTY('جارٍ التحميل…')], k);
+  }
+  const d = S.d || {}, g = d.sign, f = d.final;
+  const busy = !!S.busy;
+  const act = async function (kind, fn) { if (S.busy) return; S.busy = kind; S.err = ''; S.msg = ''; draw(); try { await fn(); } catch (err) { S.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; } S.busy = ''; draw(); };
+  const reload = function (msg) { S.msg = msg || ''; if (msg) snack(msg); cfFinLoad(rid, true); };
+  const send = function (to, resend) {
+    if (to === 'client' && !tqConfirm((resend ? 'إعادة إرسال' : 'إرسال') + ' العقد النهائي ' + (d.contract_no || '') + ' إلى العميل ' + (d.client || '') + ' على واتساب وبريده، مع إشعار في حسابه؟')) return;
+    act(to === 'me' ? 'me' : 'cl', async function () {
+      const j = await clPost('/admin/api/contracts/' + encodeURIComponent(rid) + '/final-send', { to: to, resend: !!resend });
+      if (j && j.error === 'already_sent') { cfFinLoad(rid, true); throw new Error('أُرسل العقد النهائي لهذا العميل سابقًا — استخدم «إعادة الإرسال للعميل».'); }
+      if (j && j.error === 'preview_first') cfFinLoad(rid, true);
+      if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.');
+      const o = j.out || {}, ch = [o.wa && o.wa.ok ? 'واتساب' : null, o.mail && o.mail.ok ? 'البريد' : null].filter(Boolean).join(' و');
+      if (j.warn) S.err = j.warn;
+      reload(to === 'me' ? (j.current === false ? 'أُرسلت المعاينة، لكن الملف استُبدل أثناء الإرسال — عاين النسخة الجديدة.' : 'وصلتك المعاينة على ' + ch + ' — راجعها ثم «إرسال للعميل».') : 'أُرسل العقد النهائي للعميل على ' + ch + '.');
+    });
+  };
+  const inp = e('input', { type: 'file', accept: 'application/pdf,.pdf', 'aria-label': 'ملف العقد النهائي (PDF)', onChange: function (ev) {
+    const fl = ev.target.files && ev.target.files[0]; ev.target.value = '';
+    if (!fl) return;
+    if (fl.type !== 'application/pdf' || fl.size <= 0 || fl.size > 10 * 1024 * 1024) { S.err = 'العقد النهائي ملف PDF حتى 10 ميغابايت.'; draw(); return; }
+    act('up', async function () {
+      const u = await liveStaffUpload('final', uid, fl);
+      const j = await clPost('/admin/api/contracts/' + encodeURIComponent(rid) + '/final', u);
+      if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر حفظ الملف.');
+      reload(j.replaced ? 'استُبدل العقد النهائي — عاينه على رقمك ثم أرسله للعميل.' : 'رُفع العقد النهائي — عاينه على رقمك ثم أرسله للعميل.');
+    });
+  } });
+  inp.style.display = 'none';
+  const pick = function () {
+    if (busy) return;
+    if (f && f.sent_ok && !tqConfirm('أُرسلت هذه النسخة للعميل. استبدال الملف يتطلب معاينة جديدة على رقمك قبل الإرسال. متابعة؟')) return;
+    inp.click();
+  };
+  const signRow = g
+    ? cfRow('وقّع العميل إلكترونيًا', [CF_FIN_M[g.method] || g.method, cfFinDt(g.signed_at), g.name].filter(Boolean).join(' · '), [liveOk(DS.button('معاينة العقد الموقّع', { size: 'sm', ui: 'file-text', onClick: function () { cfFinSigned(d); } }))])
+    : cfRow('التوقيع الإلكتروني', 'لم يوقّع العميل من رابط «صدر عقدك».', null);
+  const fileRow = f
+    ? cfRow('العقد النهائي (PDF)', [f.file_name, 'رُفع ' + cfFinDt(f.uploaded_at) + (f.uploaded_by ? ' · ' + f.uploaded_by : '')].filter(Boolean).join(' · '),
+      [liveOk(DS.button('فتح', { size: 'sm', tone: 'primary', ui: 'files', onClick: function () { window.tqView(async function () { const j = await clApi('/admin/api/contracts/' + encodeURIComponent(rid) + '/final/file'); return j.url; }, 'العقد النهائي'); } })),
+        liveOk(DS.button(S.busy === 'up' ? 'جارٍ الرفع…' : 'استبدال الملف', { size: 'sm', ui: 'upload-simple', disabled: busy, onClick: pick }))])
+    : cfRow('العقد النهائي', 'لم يُرفع بعد. يجهّزه الفريق ويرفعه PDF، ثم يعاينه على رقمه ويرسله للعميل.', [liveOk(DS.button(S.busy === 'up' ? 'جارٍ الرفع…' : 'رفع العقد النهائي (PDF)', { size: 'sm', tone: 'primary', ui: 'upload-simple', disabled: busy, onClick: pick }))]);
+  const state = !f ? null : f.sent_ok ? 'أُرسلت هذه النسخة للعميل ' + cfFinDt(f.sent_at) + (f.sent_by ? ' · ' + f.sent_by : '') + (f.sent_n > 1 ? ' · ' + fmtNum(f.sent_n) + ' مرات' : '')
+    : f.preview_ok ? 'عاينه ' + (f.preview_by || '') + ' ' + cfFinDt(f.preview_at) + ' — جاهز للإرسال للعميل' + (f.sent_at ? ' (أُرسلت نسخة سابقة ' + cfFinDt(f.sent_at) + ')' : '')
+    : 'بانتظار المعاينة على رقمك قبل الإرسال للعميل' + (f.sent_at ? ' (أُرسلت نسخة سابقة ' + cfFinDt(f.sent_at) + ')' : '');
+  const acts = f ? e('div', { class: 't2-pb-actions' }, [
+    liveOk(DS.button(S.busy === 'me' ? 'جارٍ الإرسال…' : 'معاينة على رقمي', { size: 'sm', ui: 'file-text', disabled: busy, onClick: function () { send('me'); } })),
+    liveOk(DS.button(S.busy === 'cl' ? 'جارٍ الإرسال…' : f.sent_ok ? 'إعادة الإرسال للعميل' : 'إرسال للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy || !f.preview_ok, onClick: function () { send('client', !!f.sent_ok); } }))]) : null;
+  const badge = !f ? 'لم يُرفع' : f.sent_ok ? 'أُرسل للعميل' : f.preview_ok ? 'جاهز للإرسال' : 'بانتظار المعاينة';
+  return lvSec('العقد النهائي', badge, [signRow, fileRow, inp, state ? e('small', { class: 'cu-dr-hint' }, state) : null, acts,
+    S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null,
+    e('small', { class: 'cu-dr-hint' }, 'لا يُرسل شيء تلقائيًا: «معاينة على رقمي» يرسل الملف إلى واتسابك وبريدك كما يصل العميل، ثم يُفعَّل «إرسال للعميل». استبدال الملف يتطلب معاينة جديدة.')], k);
+}
 function cfContract(id, c, D) {
   const x = (LIVE_ADM.rows || {})[c.no] || {}, r = x.r || {}, f = c.n ? cInfo(c) : null, k = 'cf:' + id + ':' + c.no;
   const Qj = D.Q[c.no] || null, q = Qj ? (Qj.quotation || {}) : null, qc = q && q.calc ? q.calc : null;
@@ -16891,7 +16987,7 @@ function cfContract(id, c, D) {
     trF.length ? liveCtFiles(trF, true) : null], k + ':tr');
   const sched = lvSec('جدول السداد وطريقة السداد', c.n ? c.payments.filter(function (p) { return settled(p); }).length + ' من ' + c.n + ' مسدَّدة' : null, c.n ? cfSched(c) : [CF_EMPTY('لا دفعات.')], k + ':sched');
   const ev = cfEvents(c, r, q, T), log = lvSec('سجل الأحداث', fmtNum(ev.length), [cfLog(ev)], k + ':log');
-  return lvSec('العقد ' + c.no, f ? f.status + ' · ' + SR(f.remain) + ' متبقٍّ' : null, [head, money, facts, quote, att, tr, sched, log], k);
+  return lvSec('العقد ' + c.no, f ? f.status + ' · ' + SR(f.remain) + ' متبقٍّ' : null, [head, money, facts, quote, cfFinal(c, x), att, tr, sched, log], k); /* v680 */
 }
 function admPfFilePage() {
   const id = ADM.pfc || FX.pfc; if (id) ADM.pfc = id;
@@ -17169,7 +17265,8 @@ function eligWork(x, RF) {
       ['fix', 'الإعادة للاستكمال', fx && fx.open ? 'بانتظار العميل' : fx && fx.done_at ? 'أكمل العميل' : 'عند الحاجة', fx && fx.open ? 'wait' : fx && fx.done_at ? 'ok' : ''],
       ['rep', 'التقرير والتوصية', Rp ? (EG_REC[Rp.rec] || Rp.rec) : 'لم تُسجَّل', Rp ? 'ok' : open ? 'now' : ''],
       ['res', 'النتيجة', x.status === 'approved' ? 'مؤهَّل' : x.status === 'rejected' ? 'غير مؤهَّل' : 'لم تصدر', x.status === 'approved' ? 'ok' : x.status === 'rejected' ? 'bad' : ''],
-      ['qt', 'عرض السعر', live ? ((EGQ_ST[live.status] || [live.status])[0]) : x.status === 'approved' ? 'لم يُعدّ' : 'بعد النتيجة', live ? 'ok' : x.status === 'approved' ? 'now' : '']];
+      ['qt', 'عرض السعر', live ? ((EGQ_ST[live.status] || [live.status])[0]) : x.status === 'approved' ? 'لم يُعدّ' : 'بعد النتيجة', live ? 'ok' : x.status === 'approved' ? 'now' : ''],
+      ['jr', 'الإرسال والتوثيق', x.meta && x.meta.held ? 'محجوزة — عاين وأرسل' : x.meta && x.meta.released ? 'أُرسلت النتيجة' : 'المعاينة والسجل', x.meta && x.meta.held ? 'now' : x.meta && x.meta.released ? 'ok' : '']]; /* v680 */
     const tab = c.tab || (x.status === 'approved' ? 'qt' : !open ? 'res' : fx && fx.open ? 'fix' : (c.at && missReq) ? 'docs' : !Rp ? 'rep' : 'res');
     const N = egNums(x);
     const tiles = e('div', { class: 'eg-tiles' }, [['الدخل الشهري', sar(N.inc)], ['المصاريف الشهرية', sar(N.exp)], ['الصافي الشهري', sar(N.net)], ['التوصية', Rp ? (EG_REC[Rp.rec] || Rp.rec) : '—']].map(function (t) { return e('div', { class: 'eg-tile' }, [e('small', {}, t[0]), e('b', {}, t[1])]); }));
@@ -17190,6 +17287,7 @@ function eligWork(x, RF) {
       e('small', { class: 'cu-dr-hint' }, 'الهوية والعنوان والآيبان من طلب «توثيق الملف» المعتمد في ملف العميل.')]);
     else if (tab === 'fix') pane = eligFixBox(x, c, paint);
     else if (tab === 'rep') pane = eligReportBox(x, c, paint);
+    else if (tab === 'jr') pane = egJourney(x, c, paint, live); /* v680 */
     else if (tab === 'res') pane = e('div', { class: 'sr-stl' }, [e('b', {}, 'نتيجة الأهلية'),
       x.status === 'approved' ? DS.note('ok', 'مؤهَّل — صدرت النتيجة', 'أعدّ عرض السعر من تبويب «عرض السعر».')
         : x.status === 'rejected' ? DS.note('danger', 'غير مؤهَّل', x.decision_note || '')
@@ -17306,7 +17404,7 @@ const EGP = { at: 0, busy: false, rows: [] };
 function egpLoad() {
   if (EGP.busy || (EGP.at && Date.now() - EGP.at < 300000)) return;
   EGP.busy = true;
-  admRpc('elig_products_list', {}).then(function (j) { EGP.busy = false; EGP.at = Date.now(); EGP.rows = (j && j.rows) || []; try { draw(); } catch (err) { void err; } })
+  Promise.all([admRpc('elig_products_list', {}), clApi('/admin/api/elig/store-products').catch(function () { return null; })]).then(function (a) { const j = a[0]; EGP.busy = false; EGP.at = Date.now(); EGP.rows = ((j && j.rows) || []).concat((a[1] && a[1].rows) || []); try { draw(); } catch (err) { void err; } }) /* v680: البطاقات والأجهزة (من المتجر) و«أخرى» */
     .catch(function () { EGP.busy = false; EGP.at = Date.now(); });
 }
 function egAmt(v) { const n = Number(v); return isFinite(n) && n > 0 ? fmtNum(Math.round(n)) : '—'; }
@@ -17327,6 +17425,127 @@ function egMsgBox(txt) { return e('div', { class: 'eg-msg', dir: 'rtl' }, txt); 
 function egReq(x) { return Number(egNum(egFv(x, /^القيمة الإجمالية للطلب/))) || 0; }
 function egRecv(x) { return egFv(x, /^طريقة الاستلام/) || ''; }
 /* حقول التوصية (للأهلية فقط): المطلوب تلقائي · المؤهَّل · عدد الدفعات (قابل للتعديل) · القسم ثم المنتج أو «أخرى» · طريقة الاستلام كما اختارها العميل · معاينة */
+/* ═════ v680: رحلة الأهلية المُعدّة مسبقًا — «الإرسال والتوثيق» في طلب الأهلية للموظف ═════
+ * النتيجة تُحجز بعد القرار (الإعداد elig_hold) حتى يُجهَّز عرض السعر ويُعتمد، ويعاين الموظف على رقمه كل مرحلة كما تصل العميل:
+ * النتيجة · عرض السعر · فاتورة المنتج · العقد — ثم «إرسال النتيجة للعميل». بعدها تنتقل المراحل تلقائيًا بعد كل قبول، والاعتذار يوقف الرحلة ويصل التقييم.
+ * والسجل: متى أُرسل كل شيء وكيف (واتساب · البريد وحالتهما)، ومتى وافق العميل وبأي أدوات (رمز الدخول · رمزا التأكيد · الجهاز) باليوم والتاريخ والساعة. */
+const EGJ = {};
+const EGJ_ST = { result: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
+const EGJ_KEY = { elig_ok: 'نتيجة الأهلية (مؤهَّل)', elig_less: 'نتيجة الأهلية (مؤهَّل بمبلغ أقل)', elig_no: 'نتيجة الأهلية (غير مؤهَّل)', elig_quote: 'صدر عرض السعر', elig_purchase: 'فاتورة المنتج', elig_accepted: 'تأكيد الموافقة', elig_declined: 'تأكيد الاعتذار', contract_new: 'صدر عقدك', elig_new: 'استلام الطلب', elig_fix: 'الإعادة للاستكمال', elig_back: 'إعادة الإرسال' };
+const EGJ_PUR = { elig: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
+const EGJ_RECV = [['', '— كما اختار العميل —'], ['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم']];
+function egjDt(v) { if (!v) return ''; try { return new Date(v).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (err) { return String(v).slice(0, 16); } }
+function egjUa(ua) {
+  const u = String(ua || ''); if (!u) return '';
+  const dev = /iPhone/.test(u) ? 'آيفون' : /iPad/.test(u) ? 'آيباد' : /Android/.test(u) ? 'أندرويد' : /Windows/.test(u) ? 'ويندوز' : /Mac OS X|Macintosh/.test(u) ? 'ماك' : 'جهاز';
+  const app = /WhatsApp/i.test(u) ? 'متصفح واتساب' : /Instagram|FBAN|FBAV/.test(u) ? 'متصفح تطبيق' : /Edg\//.test(u) ? 'Edge' : /CriOS|Chrome\//.test(u) ? 'Chrome' : /Safari\//.test(u) ? 'Safari' : /Firefox/.test(u) ? 'Firefox' : 'متصفح';
+  return dev + ' · ' + app;
+}
+function egjFac(f) { return /whats|wa/i.test(String(f || '')) ? 'رمز واتساب' : /mail/i.test(String(f || '')) ? 'رمز البريد' : (f || ''); }
+async function egjRpc(fn, args) {
+  const t = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
+  const r = await fetch(cfg.supabaseUrl + '/rest/v1/rpc/' + fn, { method: 'POST', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(args || {}) });
+  if (r.status === 401) { toLogin(); throw new Error('auth'); }
+  const j = await r.json().catch(function () { return null; });
+  if (!r.ok) throw new Error(r.status === 403 ? 'تحتاج صلاحية إدارة العملاء.' : 'تعذّر الاتصال بالخادم.');
+  return j || { ok: false };
+}
+function egjLoad(x, paint, force) {
+  const S = EGJ[x.id] || (EGJ[x.id] = { st: 'idle', d: null, err: '', busy: '', msg: '', at: 0, note: '' });
+  if (S.st === 'load' || (!force && S.st === 'ok' && Date.now() - S.at < 30000) || (!force && S.st === 'err')) return S;
+  S.st = 'load';
+  egjRpc('adm_elig_journey', { p_sr: x.id }).then(function (j) { S.st = 'ok'; S.d = j; S.at = Date.now(); S.lerr = j && j.ok === false ? 'تعذّر قراءة السجل.' : ''; paint(); })
+    .catch(function (err) { S.st = 'err'; S.lerr = (err && err.message) || 'تعذّر التحميل.'; paint(); });
+  return S;
+}
+function egRecvBox(x, paint) {
+  const S = egjLoad(x, paint), d = S.d || {}, rs = d.recv_staff || null;
+  const locked = !!(d.purchase || x.status === 'cancelled');
+  const W = EGJ[x.id];
+  if (W.rv === undefined) { W.rv = rs ? rs.mode : ''; W.rn = rs ? (rs.note || '') : ''; }
+  const save = async function () {
+    if (W.busy) return; W.busy = 'recv'; W.err = ''; paint();
+    try { const j = await egjRpc('adm_elig_recv_set', { p_sr: x.id, p_mode: W.rv || '', p_note: W.rn || '' }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الحفظ.'); snack(W.rv ? 'رُشّحت طريقة الاستلام — تظهر للعميل في «فاتورة المنتج» ويعتمدها معها.' : 'تبقى طريقة الاستلام التي اختارها العميل.'); W.busy = ''; egjLoad(x, paint, true); }
+    catch (err) { W.busy = ''; W.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
+  };
+  return e('div', { class: 'sr-stl' }, [e('b', {}, 'طريقة الاستلام'),
+    DS.fields([['اختيار العميل', String(d.recv_client || egRecv(x) || '').split(' — ')[0] || 'لم يحدّدها'], ['ترشيح الفريق', rs ? rs.label : '—']]),
+    locked ? e('small', { class: 'cu-dr-hint' }, 'اعتُمدت فاتورة المنتج أو أُغلق الطلب — لا تغيير.') : e('div', {}, [
+      DS.editField('ترشيح طريقة أخرى', DS.select({ value: W.rv || '', options: EGJ_RECV, onChange: function (v) { W.rv = v; paint(); } })),
+      W.rv ? DS.editField('ملاحظة للعميل (اختياري)', e('input', { class: 't2-input', type: 'text', maxlength: '300', value: W.rn || '', placeholder: 'سبب الترشيح أو تفاصيله', onInput: function (ev) { W.rn = ev.target.value; } })) : null,
+      e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy === 'recv' ? 'جارٍ الحفظ…' : 'حفظ طريقة الاستلام', { size: 'sm', tone: 'primary', ui: 'truck', disabled: !!W.busy, onClick: save }))]),
+      e('small', { class: 'cu-dr-hint' }, 'تظهر الطريقة المرشّحة للعميل في «فاتورة المنتج» مع سببها، وتُعتمد عند اعتماده الفاتورة.')]),
+    W.err && W.busy !== 'pv' ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null]);
+}
+function egJourney(x, c, paint, live) {
+  const S = egjLoad(x, paint);
+  if (!S.d) return e('div', { class: 'sr-stl' }, [e('b', {}, 'الإرسال والتوثيق'), S.st === 'err' ? e('div', {}, [e('span', { class: 'cu-err', role: 'alert' }, S.lerr || 'تعذّر التحميل.'), ' ',
+    liveOk(DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { egjLoad(x, paint, true); } }))]) : CF_EMPTY('جارٍ التحميل…')]);
+  const d = S.d || {}, pv = d.pv || {}, held = d.held || null, appr = x.status === 'approved';
+  const stages = appr ? ['result', 'quote', 'purchase', 'contract'] : (x.status === 'rejected' ? ['result'] : []);
+  const pvOk = function (k) { const p = pv[k]; return !!(p && p.ok && (!held || new Date(p.at) >= new Date(held.at))); };
+  const qReady = !!(live && ['approved', 'sent', 'accepted'].indexOf(live.status) >= 0);
+  const preview = async function (k) {
+    if (S.busy) return; S.busy = 'pv:' + k; S.err = ''; paint();
+    const j = await clPost('/admin/api/elig/' + encodeURIComponent(x.id) + '/preview', { stage: k }).catch(function () { return null; });
+    S.busy = '';
+    if (!j || j.ok === false && !j.url) { S.err = (j && j.message) || 'تعذّر إرسال المعاينة.'; paint(); return; }
+    snack(j.ok ? 'وصلتك معاينة «' + EGJ_ST[k] + '» على واتساب وبريدك كما تصل العميل — افتح الرابط وراجع الصفحة.' : 'جُهّز رابط المعاينة، لكن تعذّر إرساله إلى رقمك — افتحه من «فتح المعاينة».');
+    S.lastUrl = j.url; S.lastStage = k; egjLoad(x, paint, true);
+  };
+  const release = async function () {
+    if (S.busy) return;
+    if (!tqConfirm('إرسال نتيجة الأهلية للعميل الآن؟ بعد موافقته تصله المراحل التالية تلقائيًا (عرض السعر ثم فاتورة المنتج ثم العقد).')) return;
+    S.busy = 'rel'; S.err = ''; paint();
+    try { const j = await egjRpc('adm_elig_release', { p_sr: x.id }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.'); snack('أُرسلت نتيجة الأهلية للعميل.'); S.busy = ''; egjLoad(x, paint, true); }
+    catch (err) { S.busy = ''; S.err = (err && err.message) || 'تعذّر الإرسال.'; paint(); }
+  };
+  const busy = !!S.busy;
+  /* 1) المراحل والمعاينة */
+  const rows = stages.map(function (k) {
+    const p = pv[k], need = k !== 'result' && !qReady;
+    return cfRow(EGJ_ST[k], need ? 'أعدّ عرض السعر واعتمده أولًا' : pvOk(k) ? 'عوين ' + egjDt(p.at) : p ? 'عوين قبل الحجز الحالي — أعد المعاينة' : 'لم يُعايَن بعد',
+      [pvOk(k) ? DS.badge('عوين', 'ok') : DS.badge('بانتظار المعاينة', need ? null : 'warn'),
+        liveOk(DS.button(S.busy === 'pv:' + k ? 'جارٍ الإرسال…' : 'معاينة على رقمي', { size: 'sm', ui: 'device-mobile', disabled: busy || need, onClick: function () { preview(k); } }))]);
+  });
+  const allPv = stages.length && stages.every(pvOk) && (!appr || qReady);
+  const head = held
+    ? DS.note(allPv ? 'info' : 'warn', 'النتيجة محجوزة — لم تصل العميل بعد', allPv ? 'عوينت المراحل كلها. أرسل النتيجة للعميل.' : 'عاين على رقمك كل مرحلة' + (appr ? ' بعد إعداد عرض السعر واعتماده' : '') + '، ثم أرسل النتيجة.')
+    : d.released ? DS.note('ok', 'أُرسلت النتيجة للعميل', egjDt(d.released.at)) : stages.length ? null : DS.note('info', 'بعد القرار', 'تُحجز النتيجة بعد القرار حتى تعاين المراحل على رقمك ثم ترسلها.');
+  const relBtn = held ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(S.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال النتيجة للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy || !allPv, onClick: release }))]) : null;
+  /* 2) السجل: الإرسال والموافقات */
+  const ev = [];
+  (d.sends || []).forEach(function (s) {
+    const ch = [s.wa_status ? 'واتساب: ' + s.wa_status + (s.wa_sent_at ? ' ' + egjDt(s.wa_sent_at) : '') : null, s.mail_status ? 'البريد: ' + s.mail_status : null].filter(Boolean).join(' · ');
+    const t = s.kind === 'preview' ? 'معاينة إلى ' + (s.by || 'الموظف') + ': ' + (EGJ_KEY[s.key] || s.key) : s.kind === 'send' ? 'أُرسل للعميل: ' + (EGJ_KEY[s.key] || s.key)
+      : s.kind === 'held' ? 'حُجزت ' + (EGJ_KEY[s.key] || s.key) : s.kind === 'release' ? 'أرسل ' + (s.by || 'الموظف') + ' النتيجة للعميل' : s.kind === 'auto_quote' ? 'أُرسل عرض السعر تلقائيًا بعد موافقة العميل'
+      : s.kind === 'recv' ? 'رشّح ' + (s.by || 'الفريق') + ' طريقة الاستلام' : s.kind;
+    ev.push([s.at, t, ch]);
+  });
+  (d.links || []).forEach(function (l) {
+    if (l.preview) return;
+    const nm = EGJ_PUR[l.purpose] || l.purpose;
+    if (l.opened_at) ev.push([l.opened_at, 'فتح العميل رابط ' + nm, 'دخل ب' + egjFac(l.factor)]);
+    if (l.cf_wa_at) ev.push([l.cf_wa_at, 'أكّد العميل قراره برمز واتساب (' + nm + ')', '']);
+    if (l.cf_mail_at) ev.push([l.cf_mail_at, 'أكّد العميل قراره برمز البريد (' + nm + ')', '']);
+    if (l.used_at && l.decision) ev.push([l.used_at, (l.decision === 'accept' ? (l.purpose === 'contract' ? 'وقّع العميل ' : l.purpose === 'purchase' ? 'اعتمد العميل ' : 'وافق العميل على ') : 'اعتذر العميل عن ') + nm,
+      [egjFac(l.factor) ? 'الدخول ب' + egjFac(l.factor) : null, l.cf_wa_at || l.cf_mail_at ? 'التأكيد: ' + [l.cf_wa_at ? 'واتساب' : null, l.cf_mail_at ? 'البريد' : null].filter(Boolean).join(' ثم ') : null, egjUa(l.ua)].filter(Boolean).join(' · ')]);
+  });
+  (d.quotes || []).forEach(function (q) {
+    if (q.approved_at) ev.push([q.approved_at, 'اعتُمد عرض السعر ' + q.no + (q.approved_by ? ' — اعتمده ' + q.approved_by : ''), q.prepared_by ? 'أعدّه ' + q.prepared_by : '']);
+    if (q.sent_at) ev.push([q.sent_at, 'أُتيح عرض السعر ' + q.no + ' للعميل', '']);
+  });
+  if (d.contract && d.contract.signed_at) ev.push([d.contract.signed_at, 'وقّع العميل العقد ' + (d.contract.no || ''), [d.contract.method === 'draw' ? 'رسم التوقيع' : d.contract.method === 'type' ? 'كتابة الاسم' : d.contract.method === 'upload' ? 'صورة التوقيع' : '', egjFac(d.contract.factor), egjUa(d.contract.ua)].filter(Boolean).join(' · ')]);
+  ev.sort(function (a, b) { return new Date(b[0]) - new Date(a[0]); });
+  const log = ev.length ? e('div', { class: 'cu-mgr-docs' }, ev.map(function (r) { return cfRow(r[1], [egjDt(r[0]), r[2]].filter(Boolean).join(' · '), null); })) : CF_EMPTY('لا أحداث بعد.');
+  return e('div', { class: 'sr-stl' }, [e('b', {}, 'الإرسال والتوثيق'), head,
+    stages.length ? e('div', { class: 'cu-mgr-docs' }, rows) : null, relBtn,
+    S.lastUrl ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('فتح معاينة «' + (EGJ_ST[S.lastStage] || '') + '»', { size: 'sm', ui: 'eye', onClick: function () { window.open(S.lastUrl, '_blank', 'noopener'); } }))]) : null,
+    S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null,
+    e('small', { class: 'cu-dr-hint' }, 'المعاينة تصل جوالك وبريدك كما تصل العميل، ورابطها للاطلاع فقط ورمزه إلى جوالك. لا يصل العميل شيء قبل «إرسال النتيجة للعميل»، وبعد كل قبول تصله المرحلة التالية تلقائيًا، والاعتذار يوقف الرحلة ويصله التقييم.'),
+    egRecvBox(x, paint),
+    e('b', {}, 'السجل — متى وكيف'), log]);
+}
 function egRepFields(x, W, paint) {
   if (W.rec !== 'eligible' && W.rec !== 'eligible_less') return W.rec === 'not_eligible' ? e('div', { class: 'eg-preview' }, [e('b', {}, 'ما يصل العميل'), egMsgBox(egMsgText(egMsgVals('not_eligible', egReq(x), 0)))]) : null;
   egpLoad();
@@ -17344,7 +17563,7 @@ function egRepFields(x, W, paint) {
     DS.editField('قسم المنتج', DS.select({ value: W.sec || '', ph: '— اختر القسم —', options: secs.map(function (s) { return [s, s]; }).concat([['__other', 'أخرى (غير موجود)']]), onChange: function (v) { W.sec = v; W.prod = ''; paint(); } })),
     W.sec && W.sec !== '__other' ? DS.editField('المنتج', DS.select({ value: W.prod || '', ph: '— اختر المنتج —', options: prods.concat([['__other', 'أخرى (غير موجود)']]), onChange: function (v) { W.prod = v; paint(); } })) : null,
     W.sec === '__other' || W.prod === '__other' ? DS.editField('المنتج (أخرى)', oth) : null,
-    DS.note(recv ? 'info' : 'warn', 'طريقة الاستلام التي اختارها العميل', recv || 'لم يحدّد العميل طريقة الاستلام — يختارها من طلبه قبل الموافقة.'),
+    egRecvBox(x, paint), /* v680: اختيار العميل وترشيح الفريق */
     e('div', { class: 't2-pb-actions' }, [DS.button(W.pv ? 'إخفاء المعاينة' : 'معاينة ما يصل العميل', { size: 'sm', ui: 'eye', onClick: function () { W.pv = !W.pv; paint(); } })]),
     W.pv ? e('div', { class: 'eg-preview' }, [e('b', {}, 'ما يصل العميل (المنصة · البريد · واتساب) — القالب المعتمد'), egMsgBox(egMsgText(egMsgVals(W.rec, req, Number(egNum(W.amt)) || 0, Number(egNum(W.n)) || 0, Number(egNum(egFv(x, /^مدة السداد/))) || 0))), /* v674 */
       e('b', {}, 'في صفحة العميل'), DS.fields([['النتيجة', EG_REC[W.rec]], ['المبلغ المطلوب', req ? fmtNum(req) + ' ريال' : '—'], ['المبلغ المؤهَّل', egAmt(egNum(W.amt)) + ' ريال'], ['عدد الدفعات', W.n || '—'], ['المنتج', egRepProd(W) || '—'], ['طريقة الاستلام', recv || '—']]),
@@ -22959,6 +23178,7 @@ async function lvSrLoad() {
   if (lvRole('admin')) { LV_SR.all = Array.isArray(P2[1]) ? P2[1] : []; LV_SR.ok = Array.isArray(P2[1]); }
   for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr) REQS.splice(i, 1);
   LV_SR.mine = LV_SR.mine.filter(function (x) { return !(x.status === 'cancelled' && x.origin === 'staff'); });
+  LV_SR.mine = LV_SR.mine.map(function (x) { return x.kind === 'elig' && x.meta && x.meta.held ? Object.assign({}, x, { status: 'in_review', decision_note: null, meta: Object.assign({}, x.meta, { report: null }) }) : x; }); /* v680: النتيجة المحجوزة لا تظهر للعميل قبل إرسالها */
   LV_SR.mine.forEach(function (x) { REQS.push(lvSrReq(x)); });
   REQS.sort(function (a, b) { return b.at - a.at; });
 }
