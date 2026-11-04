@@ -19018,13 +19018,13 @@ function cfReqCard(id, kind, RF) {
 }
 /* قسم «طلبات الخدمات»: صندوق وارد — بطاقة لكل نوع فيها طلباتها، والإنشاء في أعلاه */
 const SR_F = [['open', 'بانتظار قرار', 'tray'], ['exec', 'بانتظار التنفيذ', 'hourglass-medium'], ['done', 'منفّذة', 'check-circle'], ['closed', 'مرفوضة أو ملغاة', 'x-circle'], ['mine', 'مسندة إليّ', 'list-checks'] /* v684 */, ['all', 'الكل', 'list']];
-const srFit = (x, f) => f === 'all' ? true : f === 'mine' ? srAsMine(x) /* v684 */ : f === 'open' ? srOpenSt(x) : f === 'exec' ? srWaitExec(x) : f === 'done' ? (x.status === 'approved' && (!!x.executed_at || x.kind === 'elig')) : (x.status === 'rejected' || x.status === 'cancelled');
+const srFit = (x, f) => f === 'all' ? true : f === 'mine' ? srAsMine(x) /* v684 */ : f === 'open' ? srOpenSt(x) : f === 'exec' ? (srWaitExec(x) || (x.kind === 'elig' && x.status === 'approved' && !x.executed_at)) /* v689: الأهلية المؤهَّلة قيد العمل (عرض · فاتورة · عقد) */ : f === 'done' ? (x.status === 'approved' && !!x.executed_at) : (x.status === 'rejected' || x.status === 'cancelled');
 function lvSvcPage() {
   return admMount('svc', 'طلبات الخدمات', async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else if (!LV_SR.ok) await lvSrLoad(); return { at: Date.now() }; }, function (D, st, paint) {
     const RF = function () { paint(); }; RF.paint = paint;
     const A = (LV_SR.all || []).filter(function (x) { return !(x.status === 'cancelled' && x.internal); }), cq = ADM.svC || '';
     if (ADM.svOpen) { const xo = A.filter(function (y) { return y.id === ADM.svOpen; })[0]; if (xo) return srFullPage(xo, RF); ADM.svOpen = ''; } /* v662 */
-    const f = ADM.svF || (A.some(srOpenSt) ? 'open' : A.some(srWaitExec) ? 'exec' : 'all'), R = A.filter(function (x) { return srFit(x, f) && (!cq || x.user_id === cq); });
+    const f = ADM.svF || 'all' /* v689: الافتراضي «الكل» — كان يختار «بانتظار قرار» تلقائيًا فيخفي بقية الطلبات */, R = A.filter(function (x) { return srFit(x, f) && (!cq || x.user_id === cq); });
     const kp = SR_F.map(function (k) { const n = A.filter(function (x) { return srFit(x, k[0]) && (!cq || x.user_id === cq); }).length, on = f === k[0];
       return e('button', { type: 'button', class: 'cu-kpi is-pick' + (on ? ' is-on' : '') + (k[0] === 'open' && n ? ' is-warn' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { ADM.svF = k[0]; paint(); } },
         [e('span', { class: 'cu-kpi-ic' }, frag(ui(k[2], 18))), e('b', {}, fmtNum(n)), e('small', {}, k[1])]); });
