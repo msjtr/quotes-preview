@@ -53,7 +53,7 @@ jobs:
         run: |
           cd film && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --no-audit --no-fund --silent
           if google-chrome --version; then echo "PW_CHANNEL=chrome" >> "$GITHUB_ENV"; else npx playwright install --with-deps chromium >/dev/null; fi
-          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null; }
+          command -v ffmpeg >/dev/null || for i in 1 2 3; do timeout 300 sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=60 update -qq && timeout 420 sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=60 install -y -qq --no-install-recommends ffmpeg && break; echo "ffmpeg install retry $i"; sleep 15; done; command -v ffmpeg >/dev/null || { echo "ffmpeg unavailable"; exit 1; }  # v687: مهلة وإعادة محاولة بدل التعليق
       - name: التصوير (الجزء ${{ matrix.part.a }}–${{ matrix.part.b }} · ${{ matrix.ori }})
         env:
           CLIENT_B64: ${{ needs.claim.outputs.client }}
@@ -72,7 +72,7 @@ jobs:
   merge:
     needs: [claim, render]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     env:
       CDN: https://media.tera-services.com.sa
       TOK: ${{ needs.claim.outputs.tok }}
@@ -87,7 +87,7 @@ jobs:
           path: ${{ runner.temp }}/seg
       - name: وصل الأجزاء + الصوت
         run: |
-          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg >/dev/null; }
+          command -v ffmpeg >/dev/null || for i in 1 2 3; do timeout 300 sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=60 update -qq && timeout 420 sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o DPkg::Lock::Timeout=60 install -y -qq --no-install-recommends ffmpeg && break; echo "ffmpeg install retry $i"; sleep 15; done; command -v ffmpeg >/dev/null || { echo "ffmpeg unavailable"; exit 1; }  # v687: مهلة وإعادة محاولة بدل التعليق
           S="$RUNNER_TEMP/seg"; mkdir -p "$RUNNER_TEMP/out"
           for o in l p; do k=landscape; [ $o = p ] && k=portrait
             bash film/join.sh "$RUNNER_TEMP/out/$k.mp4" "$RUNNER_TEMP/out/$k.jpg" "$S/seg-$o-0.mp4" "$S/seg-$o-525.mp4" "$S/seg-$o-760.mp4"
@@ -122,7 +122,7 @@ jobs:
 
   failed:
     needs: [claim, render, merge]
-    if: failure()
+    if: ${{ always() && (needs.claim.result != 'success' || needs.render.result != 'success' || needs.merge.result != 'success') }}  # v687: يُسجَّل التعذّر عند الفشل أو انتهاء المهلة أو الإلغاء (كان failure() وحده فيبقى الطلب «قيد التوليد»)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
