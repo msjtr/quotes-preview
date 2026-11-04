@@ -65,7 +65,16 @@ function ntLines(t) {
   put();
   return out;
 }
-function ntBlock(t) { if (t && (t.nodeType || Array.isArray(t))) return t; return ntLines(t).map(function (x) { return e('span', { class: 'nt-ln' }, x); }); }
+const NT_ST = ['نتيجة الأهلية صدرت', 'بانتظار استكمالك', 'قيد المراجعة — أُعيد الإرسال', 'بانتظار عرض السعر', 'مغلق بناءً على رغبتكم', 'بانتظار اعتمادك', 'قيد المراجعة', 'معتمد']; /* v674 */
+function ntBlock(t) {
+  if (t && (t.nodeType || Array.isArray(t))) return t;
+  const L = ntLines(t);
+  /* v674: رسائل الأهلية — الحالة تحت العنوان، والتفاصيل في قسم قابل للطي */
+  if (L.length >= 3 && NT_ST.indexOf(String(L[0]).trim()) >= 0) {
+    return [e('span', { class: 'nt-st' }, L[0]), e('details', { class: 'nt-det' }, [e('summary', { onClick: function (ev) { ev.stopPropagation(); } }, 'التفاصيل')].concat(L.slice(1).map(function (x) { return e('span', { class: 'nt-ln' }, x); })))];
+  }
+  return L.map(function (x) { return e('span', { class: 'nt-ln' }, x); });
+}
 const fmtNum = (n) => Number(n).toLocaleString('en-US');
 
 
@@ -17167,7 +17176,7 @@ function eligQtPrep(x, done) {
     const n0 = Math.min(36, Math.max(1, Number(egNum(fv(/مدة السداد/))) || 12)), f0 = (fv(/موعد الدفع/).match(/\d{4}-\d{2}-\d{2}/) || [])[0];
     const tm = qAddMonths(lvToday(), 1);
     const R9 = (x.meta || {}).report || {}; /* v673: من التوصية */
-    return { type: R9.prod || fv(/^المنتج|نوع المنتج/), alt: '', altShow: true, agent: '', agentPh: '', agentShow: false, value: R9.elig_amt ? String(R9.elig_amt) : egNum(fv(/القيمة الإجمالية للطلب|قيمة المنتج/)), n: String(Number(R9.n) || n0), first: f0 && f0 > lvToday() ? f0 : tm, ov: {}, lbl: {}, hide: [], cx: [], err: '', busy: false };
+    return { type: ((x.meta || {}).client_product || {}).name || R9.prod || fv(/^المنتج|نوع المنتج/), alt: '', altShow: true, agent: '', agentPh: '', agentShow: false, value: R9.elig_amt ? String(R9.elig_amt) : egNum(fv(/القيمة الإجمالية للطلب|قيمة المنتج/)), n: String(Number(R9.n) || n0), first: f0 && f0 > lvToday() ? f0 : tm, ov: {}, lbl: {}, hide: [], cx: [], err: '', busy: false };
   })());
   const rerun = function () { eligQtPrep(x, done); };
   if (!D.first || D.first < lvToday()) D.first = qAddMonths(lvToday(), 1);
@@ -17257,14 +17266,19 @@ function egpLoad() {
     .catch(function () { EGP.busy = false; EGP.at = Date.now(); });
 }
 function egAmt(v) { const n = Number(v); return isFinite(n) && n > 0 ? fmtNum(Math.round(n)) : '—'; }
-function egMsgText(v) {
-  return ['عزيزي العميل،', 'بعد التحقق من أهليتكم من خلال شركائنا، وردت إحدى النتائج التالية:', '',
-    'أولاً: مؤهَّل', 'تمت الموافقة على المبلغ المطلوب.', '* المبلغ المؤهَّل: ' + egAmt(v.amt) + ' ريال.', 'نأمل الدخول إلى حسابكم في منصة تيرا والموافقة على الأهلية لاستكمال إجراءات عرض السعر واعتماد شراء المنتج.', '',
-    'ثانياً: مؤهَّل بمبلغ أقل', 'تمت الموافقة على مبلغ أقل من المبلغ المطلوب.', '* المبلغ المطلوب: ' + egAmt(v.req) + ' ريال.', '* المبلغ المؤهَّل: ' + egAmt(v.elig) + ' ريال.', 'في حال قبولكم المبلغ المؤهَّل، نأمل الدخول إلى حسابكم والموافقة على الأهلية لاستكمال إجراءات عرض السعر واعتماد شراء المنتج.', '',
-    'ثالثاً: غير مؤهَّل حاليًا', 'لم تتحقق الأهلية في الوقت الحالي، بسبب ارتفاع الالتزامات المالية وعدم توافقها مع سياسات الأهلية المعتمدة لدى المنصة.', '',
-    'شاكرين لكم ثقتكم بمنصة تيرا.', 'فريق المبيعات – تيرا'].join('\n');
+function egMsgText(v) { /* v674: نص القالب المعتمد لكل نتيجة — 9.04 «أنت مؤهَّل» · 9.05 «أنت مؤهَّل بمبلغ أقل» · 9.06 «أنت غير مؤهَّل حاليًا» */
+  const sig = ['شاكرين لكم ثقتكم بمنصة تيرا.', 'فريق التحقق من الأهلية – تيرا'];
+  const nl = ['الدفعات المطلوبة: ' + (v.nreq ? fmtNum(v.nreq) : (v.n ? fmtNum(v.n) : '—'))].concat(v.n && v.nreq && Number(v.n) !== Number(v.nreq) ? ['الدفعات الجديدة: ' + fmtNum(v.n)] : []);
+  const acts = ['المطلوب منكم:', '1. الموافقة على المبلغ المؤهَّل.', '2. الموافقة على المدة المحددة.', '3. الموافقة على المنتج أو تحديد المنتج المرشح للشراء.', '4. الموافقة على طريقة الاستلام المحددة مسبقًا أو تغييرها.',
+    'نأمل الدخول إلى حسابكم لاستكمال إجراءات اعتماد الأهلية من زر «عرض حسابي»، أو من المسار التالي:', 'طلبات خدماتي ← الكل ← اختيار رقم الطلب ← التفاصيل.'];
+  if (v.rec === 'not_eligible') return ['أنت غير مؤهَّل حاليًا', 'نتيجة الأهلية صدرت', '', 'بعد التحقق من أهليتكم من خلال شركائنا، صدرت نتيجة الأهلية بعدم الموافقة على الطلب في الوقت الحالي.',
+    'ويعود ذلك إلى ارتفاع الالتزامات المالية الحالية وعدم توافقها مع سياسات الأهلية المعتمدة لدى شركائنا.', ''].concat(sig).join('\n');
+  if (v.rec === 'eligible_less') return ['أنت مؤهَّل بمبلغ أقل', 'نتيجة الأهلية صدرت', '', 'بعد التحقق من أهليتكم من خلال شركائنا، صدرت نتيجة الأهلية بالموافقة على مبلغ أقل من قيمة المنتج المطلوب.',
+    'المبلغ المطلوب: ' + egAmt(v.req) + ' ريال.', 'المبلغ المؤهَّل: ' + egAmt(v.elig) + ' ريال.'].concat(nl, [''], acts, [''], sig).join('\n');
+  return ['أنت مؤهَّل', 'نتيجة الأهلية صدرت', '', 'بعد التحقق من أهليتكم من خلال شركائنا، صدرت نتيجة الأهلية بالموافقة على قيمة المنتج المطلوب.',
+    'المبلغ المؤهَّل: ' + egAmt(v.elig || v.req) + ' ريال.'].concat(nl, [''], acts, [''], sig).join('\n');
 }
-function egMsgVals(rec, req, elig) { return { amt: rec === 'eligible_less' ? elig : (elig || req), req: req, elig: rec === 'eligible_less' ? elig : (elig || req) }; }
+function egMsgVals(rec, req, elig, n, nreq) { return { rec: rec, req: req, elig: rec === 'eligible_less' ? elig : (elig || req), amt: rec === 'eligible_less' ? elig : (elig || req), n: n || 0, nreq: nreq || 0 }; }
 function egMsgBox(txt) { return e('div', { class: 'eg-msg', dir: 'rtl' }, txt); }
 function egReq(x) { return Number(egNum(egFv(x, /^القيمة الإجمالية للطلب/))) || 0; }
 function egRecv(x) { return egFv(x, /^طريقة الاستلام/) || ''; }
@@ -17288,7 +17302,7 @@ function egRepFields(x, W, paint) {
     W.sec === '__other' || W.prod === '__other' ? DS.editField('المنتج (أخرى)', oth) : null,
     DS.note(recv ? 'info' : 'warn', 'طريقة الاستلام التي اختارها العميل', recv || 'لم يحدّد العميل طريقة الاستلام — يختارها من طلبه قبل الموافقة.'),
     e('div', { class: 't2-pb-actions' }, [DS.button(W.pv ? 'إخفاء المعاينة' : 'معاينة ما يصل العميل', { size: 'sm', ui: 'eye', onClick: function () { W.pv = !W.pv; paint(); } })]),
-    W.pv ? e('div', { class: 'eg-preview' }, [e('b', {}, 'الرسالة (منصة · بريد) — نص ثابت يتغير المتغيرات فقط'), egMsgBox(egMsgText(egMsgVals(W.rec, req, Number(egNum(W.amt)) || 0))),
+    W.pv ? e('div', { class: 'eg-preview' }, [e('b', {}, 'ما يصل العميل (المنصة · البريد · واتساب) — القالب المعتمد'), egMsgBox(egMsgText(egMsgVals(W.rec, req, Number(egNum(W.amt)) || 0, Number(egNum(W.n)) || 0, Number(egNum(egFv(x, /^مدة السداد/))) || 0))), /* v674 */
       e('b', {}, 'في صفحة العميل'), DS.fields([['النتيجة', EG_REC[W.rec]], ['المبلغ المطلوب', req ? fmtNum(req) + ' ريال' : '—'], ['المبلغ المؤهَّل', egAmt(egNum(W.amt)) + ' ريال'], ['عدد الدفعات', W.n || '—'], ['المنتج', egRepProd(W) || '—'], ['طريقة الاستلام', recv || '—']]),
       e('small', { class: 'cu-dr-hint' }, 'ويظهر للعميل: «هل ترغب بتغيير طريقة الاستلام؟» ثم الإقرار و«الموافقة على الأهلية» برمز تحقق.')]) : null]);
 }
@@ -17306,75 +17320,33 @@ function egRepSummary(x, R) {
 }
 /* بطاقة العميل: النتيجة بالنص الثابت · طريقة الاستلام وتغييرها · الإقرار والموافقة برمز تحقق */
 const EGAC = {};
-function eligAcceptPanel(x) {
+function eligAcceptPanel(x) { /* v674: النتيجة بالقالب المعتمد، والقرار (موافقة أو اعتذار) من «عرض حسابي» برمز تحقق — رابط لمرة واحدة */
   try {
-    const R = (x.meta || {}).report || null;
-    if (!R || ['approved', 'rejected'].indexOf(x.status) < 0) return null;
+    const M = x.meta || {}, R = M.report || null;
+    if (!R) return null;
+    const pnl = function (sub, kids) { return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', sub, kids) : e('div', { class: 'eg-cp' }, kids); };
+    if (x.status === 'cancelled' && M.decline) return pnl('أُغلق الطلب', [DS.note('info', 'اعتذرتَ عن نتيجة الأهلية ' + iso(new Date(M.decline.at)), 'أُغلق الطلب بناءً على رغبتك، ويمكنك تقديم طلب تحقق جديد متى رغبت.')]);
+    if (['approved', 'rejected'].indexOf(x.status) < 0) return null;
     const ok = x.status === 'approved' && (R.rec === 'eligible' || R.rec === 'eligible_less');
-    const req = Number(R.req_amt) || egReq(x);
-    const txt = egMsgText(egMsgVals(ok ? R.rec : 'not_eligible', req, Number(R.elig_amt) || 0));
-    const head = e('b', {}, 'نتيجة التحقق من الأهلية: ' + (ok ? EG_REC[R.rec] : 'غير مؤهَّل حاليًا'));
-    if (!ok) return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', 'غير مؤهَّل حاليًا', [egMsgBox(txt)]) : e('div', { class: 'eg-cp' }, [head, egMsgBox(txt)]);
-    const A = (x.meta || {}).accept, F = EGAC[x.id] || (EGAC[x.id] = { ack: false, step: 1, fac: '', facs: null, code: '', err: '', rv: false, mode: '' });
+    const req = Number(R.req_amt) || egReq(x), nreq = Number(egNum(egFv(x, /^مدة السداد/))) || 0;
+    const txt = egMsgText(egMsgVals(ok ? R.rec : 'not_eligible', req, Number(R.elig_amt) || 0, Number(R.n) || 0, nreq));
+    if (!ok) return pnl('أنت غير مؤهَّل حاليًا', [egMsgBox(txt)]);
+    const A = M.accept, F = EGAC[x.id] || (EGAC[x.id] = { busy: false, err: '' });
     const recv = egRecv(x), cpv = !!window.__cpvUid;
     const rd = function () { try { draw(); } catch (err) { void err; } };
-    const kids = [egMsgBox(txt), DS.fields([['المبلغ المطلوب', egAmt(req) + ' ريال'], ['المبلغ المؤهَّل', egAmt(R.elig_amt) + ' ريال'], ['عدد الدفعات', R.n ? fmtNum(R.n) : '—'], ['المنتج', R.prod || '—']])];
-    /* طريقة الاستلام بشكل مميز */
-    const rbox = [e('b', {}, 'طريقة الاستلام'), e('div', { class: 'eg-recv-v' }, recv || 'لم تُحدَّد')];
-    if (!A && !cpv) {
-      if (!F.rv) rbox.push(liveOk(DS.button('هل ترغب بتغيير طريقة الاستلام؟', { size: 'sm', ui: 'arrows-left-right', onClick: function () { F.rv = true; F.mode = ''; rd(); } })));
-      else rbox.push(DS.select({ value: F.mode, ph: '— اختر طريقة الاستلام —', options: RECV.map(function (r) { return [r[0], r[1]]; }), onChange: function (v) { F.mode = v; rd(); } }),
-        e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(F.rbusy ? 'جارٍ الحفظ…' : 'حفظ طريقة الاستلام', { size: 'sm', tone: 'primary', disabled: !F.mode || !!F.rbusy, onClick: async function () {
-          F.rbusy = true; rd();
-          const j = await liveSb('rpc/my_elig_recv_set', { body: { p_sr: x.id, p_mode: F.mode } }).catch(function () { return null; });
-          F.rbusy = false;
-          if (!j || j.ok !== true) { tqCenterNote('لم تتغيّر طريقة الاستلام', [(j && j.message) || 'أعد المحاولة.'], 'warn'); rd(); return; }
-          const L = x.fields || (x.fields = []); const f = L.filter(function (y) { return y && y[0] === 'طريقة الاستلام'; })[0]; if (f) f[1] = j.recv; else L.push(['طريقة الاستلام', j.recv]);
-          F.rv = false; tqCenterNote('تم تغيير طريقة الاستلام', [j.recv], 'ok'); rd(); } })), DS.button('إلغاء', { size: 'sm', onClick: function () { F.rv = false; rd(); } })]));
-    }
-    kids.push(e('div', { class: 'eg-recv' }, rbox));
-    if (A) { kids.push(DS.note('ok', 'وافقتَ على الأهلية ' + iso(new Date(A.at)), 'نجهّز لك عرض السعر بالمبلغ المؤهَّل ويصلك فور اعتماده.')); return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', EG_REC[R.rec], kids) : e('div', { class: 'eg-cp' }, [head].concat(kids)); }
-    if (cpv) { kids.push(DS.note('info', 'بانتظار موافقة العميل', 'يوافق العميل من حسابه برمز تحقق يصله هو.')); return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', EG_REC[R.rec], kids) : e('div', { class: 'eg-cp' }, [head].concat(kids)); }
-    /* الإقرار ثم وسيلة التحقق ثم الرمز */
-    const ack = e('input', { type: 'checkbox', checked: F.ack ? 'checked' : null, onChange: function (ev) { F.ack = !!ev.target.checked; rd(); } });
-    kids.push(e('label', { class: 'eg-ack' }, [ack, e('span', {}, 'أقرّ بموافقتي على نتيجة الأهلية والمبلغ المؤهَّل (' + egAmt(R.elig_amt) + ' ريال) وعدد الدفعات وطريقة الاستلام الموضّحة، لاستكمال إجراءات عرض السعر واعتماد شراء المنتج.')]));
-    if (F.step === 1) kids.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('الموافقة على الأهلية', { tone: 'primary', ui: 'check-circle', disabled: !F.ack, onClick: function () { if (!F.ack) return; F.step = 2; rd(); } }))]));
-    else {
-      if (!F.facs && !F.fbusy && !F.ferr) {
-        F.fbusy = true;
-        clApi('/api/security/gateway/factors?purpose=elig_account').then(function (j) { F.fbusy = false; F.facs = (j.factors || []).filter(function (y) { return y && STL_F[y.factor]; }); if (!F.fac && F.facs.length) F.fac = F.facs[0].factor; rd(); })
-          .catch(function (err) { F.fbusy = false; if (err && err.message === 'auth') return; F.ferr = (err && err.message) || 'تعذّر تحميل وسائل التحقق.'; rd(); });
-      }
-      const facs = F.facs || [], snd = F.fac === 'email_code' || F.fac === 'whatsapp_code';
-      kids.push(e('b', {}, 'تأكيد الموافقة برمز تحقق'),
-        F.fbusy ? DS.note('info', 'جارٍ تحميل وسائل التحقق…', '') : null,
-        F.ferr ? DS.note('warn', 'تعذّر تحميل وسائل التحقق', F.ferr) : null,
-        F.facs && !facs.length ? DS.note('warn', 'لا وسيلة تحقق متاحة', 'أكمل بريدك الإلكتروني أو اربط واتساب من «مركز الأمان» ثم أعد المحاولة.') : null,
-        facs.length ? DS.editField('طريقة التحقق', DS.select({ value: F.fac, options: facs.map(function (y) { return [y.factor, STL_F[y.factor] || y.factor]; }), onChange: function (v) { F.fac = v; F.sent = ''; F.code = ''; F.err = ''; rd(); } })) : null,
-        facs.length && snd ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(F.sbusy ? 'جارٍ الإرسال…' : F.sent ? 'إعادة إرسال الرمز' : 'إرسال الرمز', { size: 'sm', ui: 'paper-plane-tilt', disabled: !!F.sbusy, onClick: async function () {
-          if (F.sbusy) return; F.sbusy = true; F.err = ''; rd();
-          const j = await clPost('/api/security/gateway/' + (F.fac === 'email_code' ? 'email' : 'whatsapp'), { purpose: 'elig_account' }).catch(function () { return null; });
-          F.sbusy = false;
-          if (!j || j.ok === false) { F.err = (j && j.message) || 'تعذّر إرسال الرمز.'; rd(); return; }
-          F.sent = 'أُرسل الرمز ' + (F.fac === 'email_code' ? 'إلى بريدك' : 'إلى واتساب'); rd(); } })), F.sent ? e('small', { class: 'cu-dr-hint', role: 'status' }, F.sent) : null]) : null,
-        facs.length ? DS.editField('رمز التحقق', e('input', { class: 't2-input', type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', dir: 'ltr', maxlength: '16', value: F.code || '', onInput: function (ev) { F.code = ev.target.value; } })) : null,
-        F.err ? e('span', { class: 'cu-err', role: 'alert' }, F.err) : null,
-        e('div', { class: 't2-pb-actions' }, [facs.length ? liveOk(DS.button(F.vbusy ? 'جارٍ التأكيد…' : 'تأكيد الموافقة', { tone: 'primary', ui: 'shield-check', disabled: !!F.vbusy, onClick: async function () {
-          if (F.vbusy) return;
-          const code = String(F.code || '').replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 0x660); }).replace(/\D/g, '');
-          if (code.length < 4) { F.err = 'اكتب رمز التحقق.'; rd(); return; }
-          F.vbusy = true; F.err = ''; rd();
-          const v = await clPost('/api/security/gateway/verify', { purpose: 'elig_account', factor: F.fac, code: code }).catch(function () { return null; });
-          if (!v || !v.ok || !v.grant_id) { F.vbusy = false; F.err = (v && v.message) || 'الرمز غير صحيح.'; rd(); return; }
-          const j = await clPost('/api/account/elig/' + encodeURIComponent(x.id) + '/accept', { ack: true, grant_id: v.grant_id }).catch(function () { return null; });
-          F.vbusy = false;
-          if (!j || j.ok !== true) { F.err = (j && j.message) || 'تعذّر تسجيل موافقتك — أعد المحاولة.'; rd(); return; }
-          x.meta = Object.assign({}, x.meta, { accept: { at: new Date().toISOString() } });
-          tqCenterNote('تمت الموافقة على الأهلية', ['نجهّز لك عرض السعر بالمبلغ المؤهَّل (' + egAmt(R.elig_amt) + ' ريال) ويصلك فور اعتماده.'], 'ok');
-          try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } rd(); } })) : null,
-          DS.button('رجوع', { size: 'sm', onClick: function () { F.step = 1; F.err = ''; rd(); } })]));
-    }
-    return DS.panel ? DS.panel('نتيجة التحقق من الأهلية', EG_REC[R.rec], kids) : e('div', { class: 'eg-cp' }, [head].concat(kids));
+    const prod = (M.client_product && M.client_product.name) || R.prod || '—';
+    const kids = [egMsgBox(txt), DS.fields([['المبلغ المطلوب', egAmt(req) + ' ريال'], ['المبلغ المؤهَّل', egAmt(R.elig_amt) + ' ريال'], ['عدد الدفعات', R.n ? fmtNum(R.n) : '—'], ['المنتج', prod]]),
+      e('div', { class: 'eg-recv' }, [e('b', {}, 'طريقة الاستلام'), e('div', { class: 'eg-recv-v' }, recv || 'لم تُحدَّد'), !A && !cpv ? e('small', {}, 'هل ترغب بتغيير طريقة الاستلام؟ غيّرها في خطوة الموافقة.') : null])];
+    if (A) { kids.push(DS.note('ok', 'وافقتَ على الأهلية ' + iso(new Date(A.at)), 'نجهّز لك عرض السعر بالمبلغ المؤهَّل ويصلك فور اعتماده.')); return pnl(EG_REC[R.rec], kids); }
+    if (cpv) { kids.push(DS.note('info', 'بانتظار قرار العميل', 'يوافق العميل أو يعتذر من «عرض حسابي» برمز تحقق يصله هو.')); return pnl(EG_REC[R.rec], kids); }
+    kids.push(F.err ? e('span', { class: 'cu-err', role: 'alert' }, F.err) : null,
+      e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(F.busy ? 'جارٍ الفتح…' : 'عرض حسابي — الموافقة أو الاعتذار', { tone: 'primary', ui: 'shield-check', disabled: !!F.busy, onClick: async function () {
+        if (F.busy) return; F.busy = true; F.err = ''; rd();
+        const j = await liveSb('rpc/my_elig_link_open', { body: { p_sr: x.id } }).catch(function () { return null; });
+        F.busy = false;
+        if (!j || j.ok !== true || !j.path) { F.err = j && j.error === 'already' ? 'سُجّل قرارك على هذا الطلب.' : 'تعذّر فتح صفحة الموافقة — أعد المحاولة.'; rd(); return; }
+        location.href = j.path; } }))]));
+    return pnl(EG_REC[R.rec], kids);
   } catch (err) { return null; }
 }
 function eligReportBox(x, c, paint) {
@@ -25062,9 +25034,9 @@ const commStop = () => DS.note('warn', 'الإرسال الفعلي موقوف �
  * المعاينة من الخادم نفسه (lib/msgcat.js) كما تُرسل: إشعار المنصة · إشعار الجوال · البريد · واتساب (tera_update_v2)،
  * وأزرار التجربة ترسل لصاحب الجلسة وحده. التعديل والاعتماد للمشرف العام وحده. الإرسال الفعلي للعملاء لا يتغيّر في هذا الإصدار. */
 const MSGC = { at: 0, rows: null, sup: false, err: '', sec: '', key: '', ed: null, pv: null, pvKey: '', pvBusy: false, pvErr: '', busy: '' };
-const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير بالدفعات', 3: 'التحصيل والمتأخرات', 4: 'الإجراءات القانونية والنظامية', 5: 'الدفع غير المكتمل والاسترداد', 6: 'التحويل البنكي', 7: 'روابط الدفع والفواتير', 8: 'طلبات الخدمة والأهلية', 9: 'التقييم والاستبانات', 10: 'الحساب', 11: 'التدشين', 12: 'توثيق الملف الشخصي', 13: 'تحديث البيانات', 14: 'المستندات والمرفقات', 15: 'الطلبات وعروض الأسعار', 16: 'الدعم والتواصل', 17: 'العروض والصيانة', 18: 'إشعارات الفريق', 19: 'ردود جاهزة للفريق' }; /* v649 (stf_182): فهرسة بلا فراغ */ /* v648 (stf_180): الحساب وحده والتدشين وحده، وتوثيق الملف مقسوم */ /* v627: الفهرس المعتمد (stf_169) — 16 قسمًا، والقسم 9 (المستندات) أُلغي: المرفق يصل مع قالبه */
-const MSGC_COL = { 1: '#1F8A5B', 2: '#C99A2E', 3: '#8A1C2B', 4: '#2B2B2B', 5: '#A16207', 6: '#1E5AA8', 7: '#0B6E99', 8: '#6D4BC2', 10: '#B8860B', 11: '#2563EB', 12: '#0F766E', 13: '#9333EA', 14: '#0891B2', 15: '#DB2777', 16: '#475569', 17: '#0369A1' };
-const MSGC_IMG = ['acct-ready', 'ev-collect-demand', 'ev-elig-received', 'ev-final-notice', 'ev-launch-v2', 'ev-legal-start', 'ev-login', 'ev-maint', 'ev-order-approved', 'ev-order-changes', 'ev-order-done', 'ev-order-expired', 'ev-order-new', 'ev-order-rejected', 'ev-order-status', 'ev-pay-deferred', 'ev-pay-due', 'ev-pay-link', 'ev-pay-overdue', 'ev-pay-partial', 'ev-profile', 'ev-quote', 'ev-rate-pay', 'ev-rate-thanks-v2', 'ev-refund-rejected', 'ev-refund-request', 'ev-service-approved', 'ev-service-rejected', 'ev-settle-done', 'ev-settle-invoice', 'ev-store-offer', 'ev-support', 'ev-survey-launch', 'ev-survey-nps', 'ev-survey-service', 'ev-survey-settle', 'ev-survey-support', 'ev-transfer-approved', 'ev-transfer-fix', 'ev-transfer-received', 'ev-transfer-rejected', 'ev-transfer-remind', 'ev-transfer-request', 'pv-approved', 'pv-complete', 'pv-data', 'pv-doc-fix', 'pv-doc-ok', 'pv-film_ready', 'pv-item', 'pv-job-fix', 'pv-launched', 'pv-received', 'pv-registered', 'pv-rejected', 'pv-resubmitted', 'pv-returned', 'pv-review', 'pv-submitted', 'receipt-failed', 'receipt-paid', 'receipt-refund', 'receipt-void', 'upd-approved', 'upd-received', 'upd-rejected']; /* v627: 66 صورة — لكل رسالة صورتها بالتصميم المعتمد */
+const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير بالدفعات', 3: 'التحصيل والمتأخرات', 4: 'الإجراءات القانونية والنظامية', 5: 'الدفع غير المكتمل والاسترداد', 6: 'التحويل البنكي', 7: 'روابط الدفع والفواتير', 8: 'طلبات الخدمة', 9: 'التحقق من الأهلية', 10: 'التقييم والاستبانات', 11: 'الحساب', 12: 'التدشين', 13: 'توثيق الملف الشخصي', 14: 'تحديث البيانات', 15: 'المستندات والمرفقات', 16: 'الطلبات وعروض الأسعار', 17: 'الدعم والتواصل', 18: 'العروض والصيانة', 19: 'إشعارات الفريق', 20: 'ردود جاهزة للفريق' }; /* v674 (stf_210): الأهلية قسم مستقل 9 والأقسام بعده +1 */ /* v649 (stf_182): فهرسة بلا فراغ */ /* v648 (stf_180): الحساب وحده والتدشين وحده، وتوثيق الملف مقسوم */ /* v627: الفهرس المعتمد (stf_169) — 16 قسمًا، والقسم 9 (المستندات) أُلغي: المرفق يصل مع قالبه */
+const MSGC_COL = { 1: '#1F8A5B', 2: '#C99A2E', 3: '#8A1C2B', 4: '#2B2B2B', 5: '#A16207', 6: '#1E5AA8', 7: '#0B6E99', 8: '#6D4BC2', 9: '#4D7C0F', 11: '#B8860B', 12: '#2563EB', 13: '#0F766E', 14: '#9333EA', 15: '#0891B2', 16: '#DB2777', 17: '#475569', 18: '#0369A1' }; /* v674 */
+const MSGC_IMG = ['acct-ready', 'ev-collect-demand', 'ev-elig-received', 'ev-elig-fix', 'ev-elig-back', 'ev-elig-ok', 'ev-elig-less', 'ev-elig-no', 'ev-elig-accepted', 'ev-elig-declined', 'ev-elig-quote', 'ev-elig-purchase', 'ev-final-notice', 'ev-launch-v2', 'ev-legal-start', 'ev-login', 'ev-maint', 'ev-order-approved', 'ev-order-changes', 'ev-order-done', 'ev-order-expired', 'ev-order-new', 'ev-order-rejected', 'ev-order-status', 'ev-pay-deferred', 'ev-pay-due', 'ev-pay-link', 'ev-pay-overdue', 'ev-pay-partial', 'ev-profile', 'ev-quote', 'ev-rate-pay', 'ev-rate-thanks-v2', 'ev-refund-rejected', 'ev-refund-request', 'ev-service-approved', 'ev-service-rejected', 'ev-settle-done', 'ev-settle-invoice', 'ev-store-offer', 'ev-support', 'ev-survey-launch', 'ev-survey-nps', 'ev-survey-service', 'ev-survey-settle', 'ev-survey-support', 'ev-transfer-approved', 'ev-transfer-fix', 'ev-transfer-received', 'ev-transfer-rejected', 'ev-transfer-remind', 'ev-transfer-request', 'pv-approved', 'pv-complete', 'pv-data', 'pv-doc-fix', 'pv-doc-ok', 'pv-film_ready', 'pv-item', 'pv-job-fix', 'pv-launched', 'pv-received', 'pv-registered', 'pv-rejected', 'pv-resubmitted', 'pv-returned', 'pv-review', 'pv-submitted', 'receipt-failed', 'receipt-paid', 'receipt-refund', 'receipt-void', 'upd-approved', 'upd-received', 'upd-rejected']; /* v627: 66 صورة — لكل رسالة صورتها بالتصميم المعتمد */
 const MSGC_CH = [['app', 'إشعار المنصة'], ['push', 'إشعار الجوال'], ['email', 'البريد'], ['wa', 'واتساب']];
 const MSGC_ATT = { '': 'بلا مرفق', pdf_receipt: 'إيصال PDF — مرفق مع الرسالة نفسها (رأس واتساب ومرفق البريد)', pdf_thanks: 'خطاب الشكر — داخل الإيصال PDF', pdf_cert: 'شهادة «تقدير ووفاء» PDF — مرفقة مع الرسالة نفسها', video_film: 'الفيلم — يرسله البوت ملف فيديو عند الضغط', rating_buttons: 'أزرار التقييم بالوجوه — مع الرسالة نفسها' };
 function msgcCss() {
