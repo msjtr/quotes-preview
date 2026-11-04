@@ -17484,7 +17484,7 @@ function egJourney(x, c, paint, live) {
   const d = S.d || {}, pv = d.pv || {}, held = d.held || null, appr = x.status === 'approved';
   const stages = appr ? ['result', 'quote', 'purchase', 'contract'] : (x.status === 'rejected' ? ['result'] : []);
   const pvOk = function (k) { const p = pv[k]; return !!(p && p.ok && (!held || new Date(p.at) >= new Date(held.at))); };
-  const qReady = !!(live && ['approved', 'sent', 'accepted'].indexOf(live.status) >= 0);
+  const qReady = !!(live && ['approved', 'sent', 'accepted'].indexOf(live.status) >= 0), qHas = qReady || !!(live && live.status === 'pending_approval'); /* v682: المعاينة قبل الاعتماد */
   const preview = async function (k) {
     if (S.busy) return; S.busy = 'pv:' + k; S.err = ''; paint();
     const j = await clPost('/admin/api/elig/' + encodeURIComponent(x.id) + '/preview', { stage: k }).catch(function () { return null; });
@@ -17503,16 +17503,17 @@ function egJourney(x, c, paint, live) {
   const busy = !!S.busy;
   /* 1) المراحل والمعاينة */
   const rows = stages.map(function (k) {
-    const p = pv[k], need = k !== 'result' && !qReady;
-    return cfRow(EGJ_ST[k], need ? 'أعدّ عرض السعر واعتمده أولًا' : pvOk(k) ? 'عوين ' + egjDt(p.at) : p ? 'عوين قبل الحجز الحالي — أعد المعاينة' : 'لم يُعايَن بعد',
+    const p = pv[k], need = k !== 'result' && !qHas;
+    return cfRow(EGJ_ST[k], need ? 'أعدّ عرض السعر أولًا' : pvOk(k) ? 'عوين ' + egjDt(p.at) : p ? 'عوين قبل الحجز الحالي — أعد المعاينة' : 'لم يُعايَن بعد',
       [pvOk(k) ? DS.badge('عوين', 'ok') : DS.badge('بانتظار المعاينة', need ? null : 'warn'),
         liveOk(DS.button(S.busy === 'pv:' + k ? 'جارٍ الإرسال…' : 'معاينة على رقمي', { size: 'sm', ui: 'device-mobile', disabled: busy || need, onClick: function () { preview(k); } }))]);
   });
   const allPv = stages.length && stages.every(pvOk) && (!appr || qReady);
   const head = held
-    ? DS.note(allPv ? 'info' : 'warn', 'النتيجة محجوزة — لم تصل العميل بعد', allPv ? 'عوينت المراحل كلها. أرسل النتيجة للعميل.' : 'عاين على رقمك كل مرحلة' + (appr ? ' بعد إعداد عرض السعر واعتماده' : '') + '، ثم أرسل النتيجة.')
+    ? DS.note(allPv ? 'info' : 'warn', 'النتيجة محجوزة — لم تصل العميل بعد', allPv ? 'عوينت المراحل كلها. أرسل النتيجة للعميل.' : 'عاين على رقمك كل مرحلة' + (appr ? ' (متاحة بعد إعداد عرض السعر وقبل اعتماده)' : '') + '، ثم يرسل النتيجة من لديه صلاحية اعتماد العروض' + (appr ? ' بعد اعتماد العرض' : '') + '.')
     : d.released ? DS.note('ok', 'أُرسلت النتيجة للعميل', egjDt(d.released.at)) : stages.length ? null : DS.note('info', 'بعد القرار', 'تُحجز النتيجة بعد القرار حتى تعاين المراحل على رقمك ثم ترسلها.');
-  const relBtn = held ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(S.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال النتيجة للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy || !allPv, onClick: release }))]) : null;
+  const relBtn = held ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(S.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال النتيجة للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy || !allPv, onClick: release })),
+    appr && !qReady ? e('small', { class: 'cu-dr-hint' }, 'الإرسال بعد اعتماد عرض السعر من غير مُعِدّه — لمن لديه صلاحية اعتماد العروض.') : null]) : null; /* v682 */
   /* 2) السجل: الإرسال والموافقات */
   const ev = [];
   (d.sends || []).forEach(function (s) {
