@@ -28214,7 +28214,7 @@ function deskOpen(ref) {
   const redraw = function () { if (DSKD[ref] === D) deskOpen(ref); };
   if (!D.t && !D.busy && !D.err) {
     D.busy = true;
-    clApi('/api/desk/admin/threads/' + encodeURIComponent(ref)).then(function (j) { D.t = j.thread; D.busy = false; redraw(); })
+    clApi('/api/desk/admin/threads/' + encodeURIComponent(ref)).then(function (j) { D.t = j.thread; D.wa = (j.thread && j.thread.wa) || []; D.waErr = !!(j.thread && j.thread.wa_err); D.busy = false; redraw(); }) /* v688 */
       .catch(function (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر فتح المراسلة.'; redraw(); });
   }
   const t = D.t, P = D.patch, cat = DSK.cat || {};
@@ -28222,7 +28222,8 @@ function deskOpen(ref) {
   if (D.err) body = [DS.note('warn', 'تعذّر فتح المراسلة', D.err)];
   else if (!t) body = [DS.note('info', 'جارٍ فتح المراسلة…', '')];
   else {
-    const msgs = t.messages || [];
+    const msgs = (t.messages || []).concat((t.wa || D.wa || []).map(function (w) { return Object.assign({}, w, { wa: true }); }))
+      .sort(function (a, b) { return String(a.at || '').localeCompare(String(b.at || '')); }); /* v688: رسائل واتساب العميل في المحادثة بترتيبها الزمني */
     body = [
       cuSec('المراسلة', 'file-text', [DS.fields([['رقم المراسلة', ltr(t.ref)], ['النوع', t.kind_label || DSK_KIND[t.kind] || '—'], ['الحالة', DS.badge(t.status_label || DSK_ST[t.status] || t.status, dskTone(t.status))], ['الموضوع', t.subject || '—'],
         ['التصنيف', t.request_type || t.complaint_type || t.support_type || t.service || '—'], ['الطلب المرتبط', t.order_ref ? ltr(t.order_ref) : '—'], ['أُرسلت', dskDate(t.created_at)], ['آخر تحديث', dskDate(t.updated_at)]])]),
@@ -28231,9 +28232,9 @@ function deskOpen(ref) {
         t.extra ? e('p', { style: 'white-space:pre-wrap;line-height:1.9' }, t.extra) : null,
         t.action_requested ? DS.note('info', 'الإجراء المطلوب', t.action_requested) : null,
         (t.attachments || []).length ? e('small', { class: 'cu-dr-hint' }, 'مرفقات العميل: ' + t.attachments.map(function (a) { return a.name || 'ملف'; }).join('، ')) : null]),
-      cuSec('المحادثة', 'chat-circle-dots', [msgs.length ? e('ol', { class: 'mt-c' }, msgs.map(function (m) {
+      cuSec('المحادثة', 'chat-circle-dots', [D.waErr ? e('small', { class: 'cu-dr-hint' }, 'تعذّر جلب رسائل واتساب العميل — أعد فتح المراسلة.') : null, msgs.length ? e('ol', { class: 'mt-c' }, msgs.map(function (m) {
         const st = m.role === 'staff';
-        return e('li', { class: 'mt-m ' + (st ? 'is-staff' : 'is-me') }, [e('div', { class: 'mt-bub' }, [e('div', { class: 'mt-who' }, [e('b', {}, st ? ('فريق تيرا' + (m.staff_name ? ' — ' + m.staff_name : '')) : (t.customer_name || 'العميل')), e('time', {}, ltr(dskDate(m.at)))]), e('p', { style: 'white-space:pre-wrap' }, m.body || '')])]);
+        return e('li', { class: 'mt-m ' + (st ? 'is-staff' : 'is-me') }, [e('div', { class: 'mt-bub' }, [e('div', { class: 'mt-who' }, [e('b', {}, st ? ('فريق تيرا' + (m.staff_name ? ' — ' + m.staff_name : '')) : (t.customer_name || 'العميل') + (m.wa ? ' · عبر واتساب' : '')), e('time', {}, ltr(dskDate(m.at) + (m.wa && m.time ? ' ' + m.time : '')))]), e('p', { style: 'white-space:pre-wrap' }, m.body || '')])]);
       })) : e('small', { class: 'cu-dr-hint' }, 'لا ردود بعد — رسالة العميل في «التفاصيل».'),
         dskRp(D, t, ref, redraw),
  e('textarea', { class: 't2-input cu-why', rows: '3', placeholder: 'اكتب الرد للعميل — يصله بالبريد وواتساب ويظهر في مراسلته', onInput: function (ev) { D.reply = ev.target.value; } }, D.reply || ''),
