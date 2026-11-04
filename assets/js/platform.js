@@ -10621,12 +10621,55 @@ function taxSetPage() {
     e('div', { class: 't2-pb-actions' }, [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM.taxD = taxDraft(TAX); draw(); } })])];
 }
 /* ---------- الإعدادات: قوالب عقد الشركاء (متعددة) ---------- */
-const pcDraft = (T) => Object.assign(tqDraftC(T), { name: T.name, hdr: Object.assign({}, TQH0, T.hdr) });
+/* v679: صفحة توقيع العقد (رابط «صدر عقدك») — نصوصها وإظهارها من هنا، وقالب «full» يُحفظ في المنصة (adm_contract_tpl_save) ويُطبَّق على الرابط */
+const PCP0 = {"status": "بانتظار توقيعك", "show_status": true, "sign_title": "التوقيع", "ack": "أقرّ بأنني اطّلعت على العقد وجدول الدفعات ووافقت على جميع بنوده، وأن توقيعي الإلكتروني ملزم لي.", "hint": "العقد للاطلاع والتوقيع فقط، ويصلكم العقد النهائي من فريق تيرا بعد التوقيع.", "show_hint": true, "confirm_title": "تأكيد توقيع العقد", "confirm_note": "بعد التأكيد يُعتمد توقيعك على العقد، ويصلكم العقد النهائي من فريق تيرا.", "show_confirm_note": true, "done_title": "تم توقيع العقد", "done_status": "عقد معتمد", "done_text": "شكرًا لكم. تم توقيع عقدكم إلكترونيًا، ويصلكم العقد النهائي من فريق تيرا.", "show_done_text": true, "sig": "شاكرين لكم ثقتكم بمنصة تيرا.\nفريق التحقق من الأهلية – تيرا", "show_sig": true, "show_client": true, "show_prod": true, "show_date": true, "inv_title": "فاتورة المنتج", "inv_status": "بانتظار اعتمادك", "show_inv_status": true, "inv_note": "راجع تفاصيل المنتج وتكاليفه وخطة الدفع، ثم اعتمد الفاتورة ليصدر عقدكم للتوقيع.", "show_inv_note": true, "show_inv_recv": true, "show_inv_fees": true, "show_inv_plan": true, "inv_ack": "أقرّ باعتماد فاتورة المنتج الموضّحة بقيمتها وتكاليفها وخطة الدفع، وأوافق على إصدار العقد.", "inv_confirm_title": "تأكيد اعتماد فاتورة المنتج", "inv_confirm_note": "بعد التأكيد يصدر عقدكم، ويصلكم رابط الاطلاع عليه وتوقيعه.", "show_inv_confirm_note": true, "inv_done_title": "تم اعتماد فاتورة المنتج", "inv_done_status": "صدر عقدك", "inv_done_text": "شكرًا لكم. صدر عقدكم، ويصلكم الآن رابط الاطلاع عليه وتوقيعه.", "show_inv_done_text": true, "inv_decline_title": "تم الاعتذار عن الشراء", "inv_decline_text": "تم تسجيل اعتذاركم وأُغلق طلب الأهلية. يسعدنا تقييم تجربتكم."};
+const pcDraft = (T) => Object.assign(tqDraftC(T), { name: T.name, hdr: Object.assign({}, TQH0, T.hdr), page: Object.assign({}, PCP0, T.page) });
+let PC_DB = 0;
+function pcDbLoad() {
+  if (PC_DB || typeof admRpc !== 'function') return; PC_DB = 1;
+  admRpc('adm_contract_tpl_get', {}).then(function (r) {
+    const c = r && r.cfg; if (!c) { PC_DB = 2; return; }
+    const T = pcTpl('full'); if (!T || T.id !== 'full') { PC_DB = 2; return; }
+    ['title', 'pre', 'sign'].forEach(function (k) { if (typeof c[k] === 'string') T[k] = c[k]; });
+    if (Array.isArray(c.clauses)) T.clauses = c.clauses.map(function (x) { return [String(x[0] || ''), String(x[1] || '')]; });
+    T.show = Object.assign({}, T.show, c.show || {}); T.page = Object.assign({}, PCP0, c.page || {});
+    delete ADM['tq_pc_full']; PC_DB = 3; try { draw(); } catch (x) { void x; }
+  }, function () { PC_DB = 2; });
+}
+function pcDbSave(c) {
+  if (typeof admRpc !== 'function') return;
+  admRpc('adm_contract_tpl_save', { p_cfg: { title: c.title, pre: c.pre, sign: c.sign, clauses: (c.clauses || []).filter(function (t) { return String(t[0] || '').trim() && String(t[1] || '').trim(); }), show: c.show, page: c.page } })
+    .then(function () { snack('حُفظ وطُبّق على رابط توقيع العقد'); }, function (x) { snack('حُفظ هنا وتعذّر حفظه في المنصة: ' + ((x && x.message) || 'خطأ')); });
+}
+function pcPageSec(D) {
+  const P = D.page || (D.page = Object.assign({}, PCP0)), I = tqInp(P), A = tqTa(P);
+  return tmFs('صفحات الرابط: فاتورة المنتج وتوقيع العقد', 'تُطبَّق على الروابط', [
+    DS.note('info', 'صفحة توقيع العقد', 'نص هذا القالب وبنوده وما يظهر منه هو ما يراه العميل في رابط «صدر عقدك»، ومعه نصوص الصفحة أدناه. عدّل وأظهر وأخفِ ثم «حفظ القالب».'),
+    e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+      tmCk(P, 'show_date', 'تاريخ العقد في بيانات العقد', false, true), tmCk(P, 'show_client', 'اسم العميل في بيانات العقد', false, true), tmCk(P, 'show_prod', 'المنتج في بيانات العقد', false, true),
+      tmCk(P, 'show_status', 'سطر الحالة تحت العنوان', false, true), DS.editField('سطر الحالة', I('status')),
+      DS.editField('عنوان خانة التوقيع', I('sign_title')), DS.editField('نص الإقرار عند التوقيع', A('ack', 2)),
+      tmCk(P, 'show_hint', 'الملاحظة أسفل التوقيع', false, true), DS.editField('الملاحظة أسفل التوقيع', A('hint', 2)),
+      DS.editField('عنوان نافذة تأكيد التوقيع', I('confirm_title')),
+      tmCk(P, 'show_confirm_note', 'نص نافذة التأكيد', false, true), DS.editField('نص نافذة التأكيد', A('confirm_note', 2)),
+      DS.editField('عنوان شاشة «تم التوقيع»', I('done_title')), DS.editField('حالة شاشة «تم التوقيع»', I('done_status')),
+      tmCk(P, 'show_done_text', 'نص شاشة «تم التوقيع»', false, true), DS.editField('نص شاشة «تم التوقيع»', A('done_text', 2)),
+      tmCk(P, 'show_sig', 'عبارة الختام', false, true), DS.editField('عبارة الختام', A('sig', 2))]),
+    DS.note('info', 'فاتورة المنتج (رسالة «صدرت موافقة شراء المنتج»)', 'يعتمدها العميل برمز تحقق فيصدر عقده للتوقيع، أو يعتذر عن الشراء فيُغلق الطلب.'),
+    e('div', { class: 'sys-form is-2 cu-bd-form' }, [
+      DS.editField('عنوان الفاتورة', I('inv_title')), tmCk(P, 'show_inv_status', 'سطر الحالة', false, true), DS.editField('سطر الحالة', I('inv_status')),
+      tmCk(P, 'show_inv_recv', 'طريقة الاستلام', false, true), tmCk(P, 'show_inv_fees', 'رسوم الخدمة والضريبة', false, true), tmCk(P, 'show_inv_plan', 'خطة الدفع', false, true),
+      tmCk(P, 'show_inv_note', 'الملاحظة', false, true), DS.editField('الملاحظة', A('inv_note', 2)), DS.editField('نص الإقرار عند الاعتماد', A('inv_ack', 2)),
+      DS.editField('عنوان نافذة تأكيد الاعتماد', I('inv_confirm_title')), tmCk(P, 'show_inv_confirm_note', 'نص نافذة التأكيد', false, true), DS.editField('نص نافذة التأكيد', A('inv_confirm_note', 2)),
+      DS.editField('عنوان شاشة «تم الاعتماد»', I('inv_done_title')), DS.editField('حالة شاشة «تم الاعتماد»', I('inv_done_status')),
+      tmCk(P, 'show_inv_done_text', 'نص شاشة «تم الاعتماد»', false, true), DS.editField('نص شاشة «تم الاعتماد»', A('inv_done_text', 2)),
+      DS.editField('عنوان شاشة الاعتذار عن الشراء', I('inv_decline_title')), DS.editField('نص شاشة الاعتذار عن الشراء', A('inv_decline_text', 2))])]);
+}
 function tqCtPage2() {
-  TM_FSP = 'pc';
+  TM_FSP = 'pc'; pcDbLoad(); /* v679 */
   const can = cuCan('settings.qtpl'), id = ADM.pcSel && QPCS.some(function (t) { return t.id === ADM.pcSel; }) ? ADM.pcSel : QPC_DEF, T = pcTpl(id), key = 'tq_pc_' + id, D = ADM[key] || (ADM[key] = pcDraft(T)), E = D.err;
   const F = tqF(D), inp = tqInp(D), ta = tqTa(D), shw = tqShw(D);
-  const cfg = function (X) { X = X || D; return { name: String(X.name).trim(), title: String(X.title).trim(), org: String(X.org).trim(), cr: String(X.cr).trim(), addr: String(X.addr).trim(), pre: String(X.pre).trim(), sign: String(X.sign).trim(), clauses: X.clauses.map(function (t) { return [String(t[0]).trim(), String(t[1]).trim()]; }), show: Object.assign({}, X.show), hdr: Object.assign({}, X.hdr) }; };
+  const cfg = function (X) { X = X || D; return { name: String(X.name).trim(), title: String(X.title).trim(), org: String(X.org).trim(), cr: String(X.cr).trim(), addr: String(X.addr).trim(), pre: String(X.pre).trim(), sign: String(X.sign).trim(), clauses: X.clauses.map(function (t) { return [String(t[0]).trim(), String(t[1]).trim()]; }), show: Object.assign({}, X.show), hdr: Object.assign({}, X.hdr), page: Object.assign({}, X.page) }; };
   const sample = function (TT) { const c = axCts('me').filter(function (x) { return !x.from; })[0] || axCts('me')[0]; dcPdf(dcCtDoc('me', c, true, Object.assign({ id: id }, TT))); };
   const pick = DS.editField('القالب', DS.select({ value: id, options: QPCS.map(function (t) { return [t.id, t.name, 'contract', { sub: (t.show.clauses !== false ? fmtNum(t.clauses.length) + ' بندًا' : 'بلا بنود') + (t.show.pre !== false ? ' · بتمهيد' : ' · بلا تمهيد'), badge: t.id === QPC_DEF ? ['الافتراضي', 'ok'] : null }]; }), onChange: function (v) { ADM.pcSel = v; draw(); } }));
   if (!can) return [cuRO('settings.qtpl'), pick, DS.panel(T.name, 'للعرض فقط', [DS.fields([['عنوان العقد', T.title], ['التمهيد', T.show.pre !== false ? 'ظاهر' : 'مخفي'], ['البنود', T.show.clauses !== false ? fmtNum(T.clauses.length) + ' بندًا' : 'مخفية']]), DS.button('معاينة PDF', { size: 'sm', ui: 'file-text', onClick: function () { sample(T); } })])];
@@ -10637,7 +10680,7 @@ function tqCtPage2() {
     if (QPCS.some(function (t) { return t.id !== id && t.name === String(D.name).trim(); })) E2.name = 'الاسم مستعمل لقالب آخر';
     D.err = E2; if (Object.keys(E2).length) { draw(); snack('راجع الحقول المظلّلة'); return; }
     const c = cfg(); if (JSON.stringify(c) === JSON.stringify(cfg(pcDraft(T)))) { snack('لا تغيير'); return; }
-    Object.assign(T, c); ADM[key] = pcDraft(T); cuSetLog('عدّل قالب العقد «' + T.name + '»'); snack('حُفظ القالب'); draw();
+    Object.assign(T, c); ADM[key] = pcDraft(T); if (id === 'full') pcDbSave(c); /* v679 */ cuSetLog('عدّل قالب العقد «' + T.name + '»'); snack('حُفظ القالب'); draw();
   };
   let sn = 2;
   const add = function () { const n = qtClone(T); n.id = 'c' + (++QPC_N); n.name = 'قالب عقد ' + fmtNum(QPCS.length + 1); QPCS.push(n); (TAX.at.trade || []).push('pc:' + n.id); ADM.pcSel = n.id; cuSetLog('أضاف قالب عقد «' + n.name + '»'); snack('أُضيف قالب جديد نسخةً من «' + T.name + '» — عدّله ثم احفظ'); draw(); };
@@ -10652,6 +10695,7 @@ function tqCtPage2() {
       tmVisSec('2. الإظهار والإخفاء', [['أقسام العقد', [tmCk(D.show, 'pre', 'التمهيد', true), tmCk(D.show, 'clauses', 'بنود العقد', true), tmCk(D.show, 'fees', 'مكوّنات قيمة العقد'), tmCk(D.show, 'sched', 'جدول الدفعات'), tmCk(D.show, 'bond', 'السند الإلكتروني'), tmCk(D.show, 'sign', 'خانات التوقيع', true)], ], tmHdrG(D)]),
       D.show.pre ? tmFs(fmtNum(++sn) + '. التمهيد', null, [F('pre', 'نص التمهيد', ta('pre', 3))]) : null,
       D.show.clauses ? tmFs(fmtNum(++sn) + '. بنود العقد', null, [e('div', { class: 'tm-dets' }, tqListEd(D.clauses))], { sub: fmtNum(D.clauses.length) + ' بنود' }) : null,
+      id === 'full' ? pcPageSec(D) : null,
       D.show.sign ? tmFs(fmtNum(++sn) + '. عبارة التوقيع', null, [F('sign', 'العبارة أسفل خانات التوقيع', ta('sign', 2))]) : null].filter(Boolean)),
     e('div', { class: 't2-pb-actions' }, [DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save }), DS.button('معاينة PDF', { ui: 'file-text', onClick: function () { sample(cfg()); } }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM[key] = pcDraft(T); draw(); } }),
       id === 'full' || id === 'short' ? DS.button('استعادة الافتراضي', { onClick: function () { ADM[key] = pcDraft(id === 'full' ? QPC0 : QPC_S0); snack('عُبّئ القالب الافتراضي — احفظ لتطبيقه'); draw(); } }) : null])];
@@ -24681,7 +24725,7 @@ function lvMyQuotes() {
     const decide = async function (ok) {
       if (!ok && String(W.why).trim().length < 4) { snack('اكتب سبب الرفض'); return; }
       try { const j = await admRpc('my_quotation_decide', { p_id: cur.id, p_accept: !!ok, p_reason: ok ? null : String(W.why).trim() }); await lvMyQLoad();
-        if (ok) { snack('قبلت العرض — أُنشئ عقدك ' + (j.contract_no || '') + ' بدفعاته'); try { if (typeof liveLoad === 'function') liveLoad(); } catch (err) { void err; } } else snack('سُجّل رفضك للعرض'); paint(); }
+        if (ok) { snack(j && j.next === 'purchase' ? 'قبلت العرض — تصلك «فاتورة المنتج» لاعتمادها، ثم يصدر عقدك للتوقيع' : 'قبلت العرض — أُنشئ عقدك ' + (j.contract_no || '') + ' بدفعاته'); /* v679 */ try { if (typeof liveLoad === 'function') liveLoad(); } catch (err) { void err; } } else snack('سُجّل رفضك للعرض'); paint(); }
       catch (err) { snack(qtErrT(err)); }
     };
     box.appendChild(e('div', { class: 't2-row-wrap' }, [DS.button('كل العروض', { ui: 'caret-right', size: 'sm', onClick: function () { FX.myq = ''; paint(); } })]));
