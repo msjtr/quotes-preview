@@ -17433,7 +17433,7 @@ const EGJ = {};
 const EGJ_ST = { result: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
 const EGJ_KEY = { elig_ok: 'نتيجة الأهلية (مؤهَّل)', elig_less: 'نتيجة الأهلية (مؤهَّل بمبلغ أقل)', elig_no: 'نتيجة الأهلية (غير مؤهَّل)', elig_quote: 'صدر عرض السعر', elig_purchase: 'فاتورة المنتج', elig_accepted: 'تأكيد الموافقة', elig_declined: 'تأكيد الاعتذار', contract_new: 'صدر عقدك', elig_new: 'استلام الطلب', elig_fix: 'الإعادة للاستكمال', elig_back: 'إعادة الإرسال' };
 const EGJ_PUR = { elig: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
-const EGJ_RECV = [['', '— كما اختار العميل —'], ['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم']];
+const EGJ_RECV = [['__client', 'كما اختار العميل (بلا ترشيح)'], /* v681 */ ['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم']];
 function egjDt(v) { if (!v) return ''; try { return new Date(v).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (err) { return String(v).slice(0, 16); } }
 function egjUa(ua) {
   const u = String(ua || ''); if (!u) return '';
@@ -17462,17 +17462,17 @@ function egRecvBox(x, paint) {
   const S = egjLoad(x, paint), d = S.d || {}, rs = d.recv_staff || null;
   const locked = !!(d.purchase || x.status === 'cancelled');
   const W = EGJ[x.id];
-  if (W.rv === undefined) { W.rv = rs ? rs.mode : ''; W.rn = rs ? (rs.note || '') : ''; }
+  if (W.rv === undefined) { W.rv = rs ? rs.mode : '__client'; W.rn = rs ? (rs.note || '') : ''; }
   const save = async function () {
     if (W.busy) return; W.busy = 'recv'; W.err = ''; paint();
-    try { const j = await egjRpc('adm_elig_recv_set', { p_sr: x.id, p_mode: W.rv || '', p_note: W.rn || '' }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الحفظ.'); snack(W.rv ? 'رُشّحت طريقة الاستلام — تظهر للعميل في «فاتورة المنتج» ويعتمدها معها.' : 'تبقى طريقة الاستلام التي اختارها العميل.'); W.busy = ''; egjLoad(x, paint, true); }
+    try { const j = await egjRpc('adm_elig_recv_set', { p_sr: x.id, p_mode: W.rv && W.rv !== '__client' ? W.rv : '', p_note: W.rv && W.rv !== '__client' ? (W.rn || '') : '' }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الحفظ.'); snack(W.rv && W.rv !== '__client' ? 'رُشّحت طريقة الاستلام — تظهر للعميل في «فاتورة المنتج» ويعتمدها معها.' : 'تبقى طريقة الاستلام التي اختارها العميل.'); W.busy = ''; egjLoad(x, paint, true); }
     catch (err) { W.busy = ''; W.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
   };
   return e('div', { class: 'sr-stl' }, [e('b', {}, 'طريقة الاستلام'),
     DS.fields([['اختيار العميل', String(d.recv_client || egRecv(x) || '').split(' — ')[0] || 'لم يحدّدها'], ['ترشيح الفريق', rs ? rs.label : '—']]),
     locked ? e('small', { class: 'cu-dr-hint' }, 'اعتُمدت فاتورة المنتج أو أُغلق الطلب — لا تغيير.') : e('div', {}, [
       DS.editField('ترشيح طريقة أخرى', DS.select({ value: W.rv || '', options: EGJ_RECV, onChange: function (v) { W.rv = v; paint(); } })),
-      W.rv ? DS.editField('ملاحظة للعميل (اختياري)', e('input', { class: 't2-input', type: 'text', maxlength: '300', value: W.rn || '', placeholder: 'سبب الترشيح أو تفاصيله', onInput: function (ev) { W.rn = ev.target.value; } })) : null,
+      W.rv && W.rv !== '__client' ? DS.editField('ملاحظة للعميل (اختياري)', e('input', { class: 't2-input', type: 'text', maxlength: '300', value: W.rn || '', placeholder: 'سبب الترشيح أو تفاصيله', onInput: function (ev) { W.rn = ev.target.value; } })) : null,
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy === 'recv' ? 'جارٍ الحفظ…' : 'حفظ طريقة الاستلام', { size: 'sm', tone: 'primary', ui: 'truck', disabled: !!W.busy, onClick: save }))]),
       e('small', { class: 'cu-dr-hint' }, 'تظهر الطريقة المرشّحة للعميل في «فاتورة المنتج» مع سببها، وتُعتمد عند اعتماده الفاتورة.')]),
     W.err && W.busy !== 'pv' ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null]);
@@ -17618,7 +17618,7 @@ function eligReportBox(x, c, paint) {
   const rows = [['إجمالي الدخل الشهري', sar(N.inc)], ['الالتزامات الشهرية', sar(N.ob)], ['المصروفات الشخصية', sar(N.ex)], ['إجمالي المصاريف الشهرية', sar(N.exp)], ['الصافي الشهري', e('b', {}, sar(N.net))]]
     .concat(N.score != null ? [['سجل الالتزام في عقوده', fmtNum(N.score) + (N.cls ? ' · ' + ((typeof AX_CLS !== 'undefined' && AX_CLS[N.cls]) ? AX_CLS[N.cls][0] : N.cls) : '')]] : []);
   const head = [e('b', {}, 'تقرير الأهلية والتوصية'), DS.fields(rows), N.ex <= 0 ? DS.note('warn', 'المصروفات الشخصية صفر', 'المصروفات الشهرية إلزامية — اطلب تصحيحها بالإعادة للاستكمال.') : null];
-  if (R && !W.open) return e('div', { class: 'sr-stl' }, head.concat([DS.note(R.rec === 'not_eligible' ? 'danger' : R.rec === 'eligible' ? 'ok' : 'warn', 'التوصية: ' + (EG_REC[R.rec] || R.rec), R.note || ''), egRepSummary(x, R), /* v673 */
+  if (R && (!W.open || ['submitted', 'in_review'].indexOf(x.status) < 0)) return e('div', { class: 'sr-stl' }, head.concat([ /* v681: بعد القرار تظهر التوصية المحفوظة */DS.note(R.rec === 'not_eligible' ? 'danger' : R.rec === 'eligible' ? 'ok' : 'warn', 'التوصية: ' + (EG_REC[R.rec] || R.rec), R.note || ''), egRepSummary(x, R), /* v673 */
     ['submitted', 'in_review'].indexOf(x.status) >= 0 ? e('div', { class: 't2-pb-actions' }, [DS.button('تعديل التوصية', { size: 'sm', ui: 'pencil-simple', onClick: function () { W.open = true; paint(); } })]) : null,
     e('small', { class: 'cu-dr-hint' }, 'يظهر التقرير للعميل في طلبه مع النتيجة.')]));
   if (['submitted', 'in_review'].indexOf(x.status) < 0) return e('div', { class: 'sr-stl' }, head.concat([e('small', { class: 'cu-dr-hint' }, 'لم تُسجَّل توصية لهذا الطلب.')]));
