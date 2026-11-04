@@ -18159,8 +18159,8 @@ function egJourney(x, c, paint, live, part) {
   const A = d.accept, Dc = d.decline, qa = qs.filter(function (q) { return q.status === 'accepted'; })[0], qsn = qs.filter(function (q) { return q.sent_at; })[0];
   const auto = !!(!held && !d.released && stages.length && d.hold_on === false);
   const chip = held ? DS.badge('محجوزة · عوين ' + fmtNum(stages.filter(pvOk).length) + ' من ' + fmtNum(stages.length), allPv ? 'info' : 'warn') : d.released ? DS.badge('أُرسلت ' + egjDt(d.released.at), 'ok') : auto ? DS.badge('أُرسلت تلقائيًا', 'ok') : DS.badge('بعد القرار', null);
-  const rel = held ? liveOk(DS.button(S.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال النتيجة للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy || !allPv, onClick: release })) : null;
-  if (rel && !allPv) rel.title = appr && !qReady ? 'بعد اعتماد عرض السعر من غير مُعِدّه ومعاينة المراحل كلها' : 'بعد معاينة المراحل كلها على رقمك';
+  const rel = held ? liveOk(DS.button(S.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال النتيجة للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy, onClick: function () { if (!allPv && !tqConfirm('لم تُعاين كل المراحل على رقمك — المعاينة اختيارية. إرسال النتيجة للعميل الآن؟')) return; release(); } })) : null; /* v690: المعاينة اختيارية لا تحجب الإرسال */
+  if (rel && !allPv) rel.title = 'المعاينة على رقمك اختيارية — يمكنك الإرسال مباشرة';
   const pb = function (t, lbl, tone) { return DS.badge(t + ': ' + lbl, tone); };
   const prog = d.released || auto || A || Dc ? e('div', { class: 't2-pb-actions eg-prog' }, [pb('النتيجة', A ? 'وافق' : Dc ? 'اعتذر' : 'بانتظار ردّه', A ? 'ok' : Dc ? 'danger' : 'warn'),
     appr ? pb('العرض', qa ? 'قبله' : d.quote_declined ? 'اعتذر' : qsn ? 'بانتظار ردّه' : '—', qa ? 'ok' : d.quote_declined ? 'danger' : qsn ? 'warn' : null) : null,
