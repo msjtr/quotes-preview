@@ -9208,6 +9208,11 @@ box-shadow:0 18px 40px rgba(11,31,58,.24),inset 0 1px 0 rgba(255,255,255,.08)}
 .stl-wz-sum>.is-due{background:#0B2552;border-color:#0B2552}
 .stl-wz-sum>.is-due small{color:#cfdcf3}
 .stl-wz-sum>.is-due b{color:#FFC861}
+.stl-wz-sum.eg-sum{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}
+.eg-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.eg-steps.eg-six .eg-step{flex:1 0 96px}
+.eg-more{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.eg-prog{margin-top:6px}
 .stl-wz-c{border:1px solid #e3e8f2;border-radius:14px;padding:12px 14px;margin:0 0 10px;background:#fff}
 .stl-wz-c>h5{margin:0 0 10px;font-size:14px;color:#0B2552}
 .stl-wz-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid #e3e8f2;padding-top:12px;margin-top:12px}
