@@ -1,4 +1,4 @@
-/* v702–v703 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v704 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -96,4 +96,78 @@
 .tqn-row.is-on .tqn-ic svg.t2-tile { transform: translateY(-2px); filter: drop-shadow(0 4px 6px rgba(6, 112, 122, .24)); }
 @media (prefers-reduced-motion: reduce) {
   .tq-next .tqn-ic svg.t2-tile { transition: none; }
+}
+
+/* v704: تبويبات ملف العميل — أقسام الملف نفسها موزّعة على تبويبات بدل صفحة طويلة */
+.tq-next .tqn-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+  padding: 4px 2px 12px;
+  border-bottom: 1px solid var(--t2-line, rgba(0, 0, 0, .1));
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.tq-next .tqn-tab {
+  flex: none;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 1px solid var(--t2-line, rgba(0, 0, 0, .12));
+  border-radius: 999px;
+  box-shadow: none;
+  background: var(--t2-surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tq-next .tqn-tab.is-on { background: #06707A; border-color: #06707A; color: #fff; }
+.tq-next .tqn-tab:focus-visible { outline: 2px solid #06707A; outline-offset: 2px; }
+@media (hover: hover) { .tq-next .tqn-tab:not(.is-on):hover { background: var(--t2-surface-2, rgba(0, 0, 0, .04)); } }
+
+/* v704: شريط مراحل الطلب والخطوة التالية */
+.tq-next .tqn-stage {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--t2-line, rgba(0, 0, 0, .1));
+  border-radius: var(--t2-radius-card, 16px);
+  background: var(--t2-surface, #fff);
+}
+.tq-next .tqn-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tq-next .tqn-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-size: 13px; line-height: 1.4; color: var(--t2-ink-2, inherit); }
+.tq-next .tqn-step::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  inset-inline-start: calc(50% + 20px);
+  inset-inline-end: calc(-50% + 12px);
+  height: 2px;
+  background: var(--t2-line-2, rgba(0, 0, 0, .18));
+}
+.tq-next .tqn-step:last-child::before { display: none; }
+.tq-next .tqn-step.is-done::before { background: #06707A; }
+.tq-next .tqn-sn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--t2-line-2, rgba(0, 0, 0, .18));
+  background: var(--t2-surface, #fff);
+  font-weight: 700;
+  font-size: 14px;
+}
+.tq-next .tqn-step b { font-weight: 600; }
+.tq-next .tqn-step.is-done .tqn-sn { background: #06707A; border-color: #06707A; color: #fff; }
+.tq-next .tqn-step.is-cur .tqn-sn { border-color: #06707A; color: #06707A; box-shadow: 0 0 0 4px rgba(6, 112, 122, .16); }
+.tq-next .tqn-step.is-cur b { color: var(--t2-ink, inherit); font-weight: 700; }
+.tq-next .tqn-step.is-bad .tqn-sn { background: #B42318; border-color: #B42318; color: #fff; }
+.tq-next .tqn-stage.is-bad { border-color: rgba(180, 35, 24, .35); }
+.tq-next .tqn-next { margin: 12px 0 0; font-size: 14px; }
+@media (max-width: 480px) {
+  .tq-next .tqn-stage { padding: 12px; }
+  .tq-next .tqn-step { font-size: 12px; }
 }
