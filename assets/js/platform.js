@@ -3949,13 +3949,13 @@ let TQ_CF_LAST = null, TQ_CF_PASS = null;
 try { document.addEventListener('click', function (ev) { const t = ev.target && ev.target.closest ? ev.target.closest('button, a, [role="button"], input[type="checkbox"], input[type="radio"]') : null; if (t && !t.closest('.tn-wrap')) TQ_CF_LAST = t; }, true); } catch (err) { void err; }
 function tqConfirm(msg) {
   const m = String(msg || ''), T = window.TeraNotify;
-  if (TQ_CF_PASS && TQ_CF_PASS.m === m && Date.now() < TQ_CF_PASS.until) { TQ_CF_PASS = null; return true; }
+  if (TQ_CF_PASS && Date.now() < TQ_CF_PASS.until) { const i = TQ_CF_PASS.ms.indexOf(m); if (i >= 0) { TQ_CF_PASS.ms.splice(i, 1); TQ_CF_PASS.used.push(m); return true; } } /* v697: تأكيدات متتالية في المسار نفسه */
   const el = TQ_CF_LAST;
   if (!T || !T.enabled || typeof T.show !== 'function' || !el || !el.isConnected) return window['confirm'](m);
   const q = m.indexOf('؟'), title = q > 0 ? m.slice(0, q + 1) : m, text = q > 0 ? m.slice(q + 1).trim() : '';
   try {
     T.show({ kind: 'warn', title: title, text: text, ms: 0, modal: true, now: true, actions: [
-      { label: 'نعم، تابع', primary: true, run: function () { if (!el.isConnected) { snack('تعذّرت المتابعة — أعد المحاولة.'); return; } TQ_CF_PASS = { m: m, until: Date.now() + 5000 }; el.click(); } },
+      { label: 'نعم، تابع', primary: true, run: function () { if (!el.isConnected) { snack('تعذّرت المتابعة — أعد المحاولة.'); return; } const prev = TQ_CF_PASS && TQ_CF_PASS.el === el && Date.now() < TQ_CF_PASS.until ? TQ_CF_PASS.used.concat(TQ_CF_PASS.ms) : []; TQ_CF_PASS = { el: el, ms: prev.concat([m]), used: [], until: Date.now() + 5000 }; el.click(); } },
       { label: 'تراجع' }] });
   } catch (err) { return window['confirm'](m); }
   return false;
@@ -18133,9 +18133,9 @@ function egJourney(x, c, paint, live, part) {
   const pvOk = function (k) { const p = pv[k]; return !!(p && p.ok && (!held || new Date(p.at) >= new Date(held.at))); };
   const qReady = !!(live && ['approved', 'sent', 'accepted'].indexOf(live.status) >= 0), qHas = qReady || !!(live && live.status === 'pending_approval'); /* v682: المعاينة قبل الاعتماد */
   const preview = function (k) { return egjPreview(x, k, paint); }; /* v684 */
-  const release = async function () {
+  const release = async function (noPv) {
     if (S.busy) return;
-    if (!tqConfirm('إرسال نتيجة الأهلية للعميل الآن؟ بعد موافقته تصله المراحل التالية تلقائيًا (عرض السعر ثم فاتورة المنتج ثم العقد).')) return;
+    if (!tqConfirm((noPv ? 'لم تُعاين كل المراحل على رقمك (المعاينة اختيارية) — ' : '') + 'إرسال نتيجة الأهلية للعميل الآن؟ بعد موافقته تصله المراحل التالية تلقائيًا (عرض السعر ثم فاتورة المنتج ثم العقد).')) return; /* v697: تأكيد واحد */
     S.busy = 'rel'; S.err = ''; paint();
     try { const j = await egjRpc('adm_elig_release', { p_sr: x.id }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.'); snack('أُرسلت نتيجة الأهلية للعميل.'); S.busy = ''; egjLoad(x, paint, true); }
     catch (err) { S.busy = ''; S.err = (err && err.message) || 'تعذّر الإرسال.'; paint(); }
@@ -18196,7 +18196,7 @@ function egJourney(x, c, paint, live, part) {
   const A = d.accept, Dc = d.decline, qa = qs.filter(function (q) { return q.status === 'accepted'; })[0], qsn = qs.filter(function (q) { return q.sent_at; })[0];
   const auto = !!(!held && !d.released && stages.length && d.hold_on === false);
   const chip = held ? DS.badge('محجوزة · عوين ' + fmtNum(stages.filter(pvOk).length) + ' من ' + fmtNum(stages.length), allPv ? 'info' : 'warn') : d.released ? DS.badge('أُرسلت ' + egjDt(d.released.at), 'ok') : auto ? DS.badge('أُرسلت تلقائيًا', 'ok') : DS.badge('بعد القرار', null);
-  const rel = held ? liveOk(DS.button(S.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال النتيجة للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy, onClick: function () { if (!allPv && !tqConfirm('لم تُعاين كل المراحل على رقمك — المعاينة اختيارية. إرسال النتيجة للعميل الآن؟')) return; release(); } })) : null; /* v690: المعاينة اختيارية لا تحجب الإرسال */
+  const rel = held ? liveOk(DS.button(S.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال النتيجة للعميل', { size: 'sm', tone: 'primary', ui: 'paper-plane-tilt', disabled: busy, onClick: function () { release(!allPv); } })) : null; /* v690: المعاينة اختيارية لا تحجب الإرسال */
   if (rel && !allPv) rel.title = 'المعاينة على رقمك اختيارية — يمكنك الإرسال مباشرة';
   const pb = function (t, lbl, tone) { return DS.badge(t + ': ' + lbl, tone); };
   const prog = d.released || auto || A || Dc ? e('div', { class: 't2-pb-actions eg-prog' }, [pb('النتيجة', A ? 'وافق' : Dc ? 'اعتذر' : 'بانتظار ردّه', A ? 'ok' : Dc ? 'danger' : 'warn'),
