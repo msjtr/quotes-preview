@@ -20748,29 +20748,44 @@ function ctAdmSec(uid, c, r, RF, k) {
       } }))])]));
     return out;
   };
-  const block = function (x) {
+  const block = function (x) { /* v694: كل إجراء يُعبّأ ويُحفظ في قسمه (تحويلات تيرا · السندات · الشيكات · الأوامر المستديمة) مرتبطًا بهذا العقد — وبعد الحفظ يظهر هنا «مكتمل» بملخّص فقط */
     const body = [cfRow(x.label, x.ok ? 'مكتمل' : 'بانتظار الاستكمال' + (x.required_by ? ' · حدّده ' + x.required_by : ''), [DS.badge(x.ok ? 'مكتمل' : 'متبقٍّ', x.ok ? 'ok' : 'warn'),
       can.m ? admTwoStep('إزالة من المطلوب', 'danger', function () { return rpc('admin_contract_admin_set', { p_kind: x.kind, p_required: false }, 'أُزيل من الإجراءات المطلوبة.'); }, 'x') : null])];
-    if (x.kind === 'payout') {
-      /* «نفس نموذج الحوالة في العقود» مع إرفاق إيصال التحويل — العقد محدَّد مسبقًا */
-      (A.payouts || []).filter(function (p) { return p.status === 'done'; }).forEach(function (p) {
-        body.push(cfRow('حوالة ' + SR(Number(p.amount) || 0), p.date ? bdiD(String(p.date).slice(0, 10)) : '', [p.file_id ? liveOk(DS.button('الإيصال', { size: 'sm', ui: 'file-pdf', onClick: function () { liveOpenCtFile(p.file_id, true); } })) : DS.badge('بلا إيصال', 'warn')]));
-      });
-      if (!x.ok && can.m) {
-        const kk = 'nlv:tr:ct:' + r.id, D = CF_ST[kk] || (CF_ST[kk] = Object.assign(lvNewD('tr', uid), { ct: r.id }));
-        body.push(e('div', { class: 'cf-form' }, lvNewFields('tr', D, RF.paint, { fixed: true }).concat([e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(D.busy ? 'جارٍ التسجيل…' : 'تسجيل الحوالة', { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: function () {
-          lvNewSave('tr', D, RF.paint, async function () { delete CF_ST[kk]; ADM.trAt = 0; await cfRe(RF, 'سُجّلت الحوالة ورُفع إيصالها.'); });
-        } }))])])));
-      }
-    } else if (x.kind === 'bond') {
-      const BL = A.bonds || [];
-      if (x.ref_id) body.push(cfRow('السند المختار لهذا العقد', ltr(x.ref_no || ''), [can.m ? admTwoStep('إلغاء الاختيار', 'danger', function () { return rpc('admin_contract_admin_bond', { p_bond: null }, 'أُلغي اختيار السند.'); }) : null]));
-      else if (can.m) body.push(e('div', { class: 'cf-form' }, [DS.editField('سند مسجّل للعميل', DS.select({ value: W.bond, ph: BL.length ? '— اختر السند —' : 'لا سندات — سجّله من قسم «السندات» في الملف', options: BL.map(function (b) { return [b.id, String(b.no || '—') + ' — ' + SR(Number(b.value) || 0)]; }), onChange: function (v) { W.bond = v; } })),
-        e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('اختيار السند لهذا العقد', { size: 'sm', tone: 'primary', disabled: W.busy || !BL.length, onClick: function () { if (!W.bond) { W.err = 'اختر السند.'; RF.paint(); return; } rpc('admin_contract_admin_bond', { p_bond: W.bond }, 'اختير السند لإجراءات العقد.'); } }))]),
-        e('small', { class: 'cu-dr-hint' }, 'السند للعميل ولا يُربط بالعقد — يُختار هنا لإجراءات هذا العقد فقط، أو يُرفع ملف السند الإلكتروني للعقد.')]));
-      fileBlock('contract_bond').forEach(function (n) { body.push(n); });
-    } else fileBlock(x.kind).forEach(function (n) { body.push(n); });
-    return e('div', { class: 't2-stack-tight' }, body);
+    const SEC = { payout: 'تحويلات تيرا', bond: 'السندات', cheque: 'الشيكات', standing_order: 'الأوامر المستديمة' };
+    const done = function () { return e('div', { class: 't2-stack-tight' }, body); };
+    if (x.ok) {
+      let d = '';
+      if (x.kind === 'payout') { const p = (A.payouts || []).filter(function (q) { return q.status === 'done'; }).slice(-1)[0]; if (p) d = 'حوالة ' + SR(Number(p.amount) || 0) + (p.date ? ' · ' + String(p.date).slice(0, 10) : ''); }
+      else if (x.kind === 'bond') { const b = (A.bonds || []).filter(function (q) { return q.contract_id === r.id || q.id === x.ref_id; })[0]; d = b ? 'السند ' + (b.no || '') + ' · ' + SR(Number(b.value) || 0) : (x.ref_no ? 'السند ' + x.ref_no : ''); }
+      else { const pk = x.kind === 'cheque' ? 'ck' : 'dd'; d = (A.plans || []).filter(function (q) { return q.kind === pk; }).map(function (q) { return fmtNum(q.n || 0) + (pk === 'ck' ? ' شيك' : ' دفعة') + ' · ' + SR(Number(q.total) || 0); }).join(' — '); }
+      body.push(e('small', { class: 'cu-dr-hint' }, (d ? d + ' — ' : '') + 'محفوظ في قسم «' + SEC[x.kind] + '» بملف العميل، ويُتابَع ويُعدَّل من هناك.'));
+      return done();
+    }
+    if (!can.m) return done();
+    const kk = 'ctadm:' + x.kind + ':' + r.id, hint = e('small', { class: 'cu-dr-hint' }, 'يُسجَّل في قسم «' + SEC[x.kind] + '» مرتبطًا بهذا العقد، ويكتمل هذا الإجراء تلقائيًا.');
+    if (x.kind === 'payout' || x.kind === 'bond') {
+      const nk = x.kind === 'payout' ? 'tr' : 'bd';
+      const D = CF_ST[kk] || (CF_ST[kk] = Object.assign(lvNewD(nk, uid), { ct: r.id, lnk: '' }));
+      D.cid = uid; D.ct = r.id;
+      /* السند كتسجيله المعتاد: للعميل، وربطه بالعقد اختياري — ويُعتمد لإجراءات هذا العقد بعد حفظه */
+      const lnk = nk === 'bd' ? [DS.editField('ربط السند بهذا العقد', DS.select({ value: D.lnk || '', options: [['', 'لا — السند للعميل (كالتسجيل المعتاد)'], ['1', 'نعم — اربطه بهذا العقد']], onChange: function (v) { D.lnk = v; } }))] : [];
+      body.push(e('div', { class: 'cf-form' }, lvNewFields(nk, D, RF.paint, { fixed: true }).concat(lnk, [e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(D.busy ? 'جارٍ التسجيل…' : (nk === 'tr' ? 'تسجيل الحوالة' : 'تسجيل السند'), { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: function () {
+        lvNewSave(nk, D, RF.paint, async function (j) {
+          if (nk === 'bd' && j && j.id) { try { await admRpc('admin_contract_admin_bond', { p_contract: r.id, p_bond: j.id }); } catch (err) { void err; } }
+          delete CF_ST[kk]; if (nk === 'tr') ADM.trAt = 0; await cfRe(RF, nk === 'tr' ? 'سُجّلت الحوالة في «تحويلات تيرا».' : 'سُجّل السند في «السندات» واعتُمد لإجراءات هذا العقد.');
+        });
+      } }))]), nk === 'bd' ? e('small', { class: 'cu-dr-hint' }, 'يُسجَّل في قسم «السندات» للعميل كالتسجيل المعتاد — ربطه بالعقد اختياري — ويُعتمد لإجراءات هذا العقد فيكتمل هذا الإجراء.') : hint])));
+    } else {
+      const pk = x.kind === 'cheque' ? 'ck' : 'dd', W2 = cfSt(kk + ':w', {});
+      const D = CF_ST[kk] || (CF_ST[kk] = Object.assign(axPlanNew(), { cid: uid, ct: A.contract_no || '' }));
+      if (!D.ct && A.contract_no) D.ct = A.contract_no;
+      body.push(e('div', { class: 'cf-form' }, [axPlanFields(pk, D, RF.paint, true), cfErr(W2),
+        e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W2.busy ? 'جارٍ التسجيل…' : (pk === 'ck' ? 'تسجيل الشيكات' : 'تسجيل الأمر المستديم'), { tone: 'primary', ui: 'plus', disabled: W2.busy, onClick: function () {
+          D.cid = uid; /* كالتسجيل المعتاد: الشيكات والأمر المستديم مرتبطة بعقد — العقد هذا محدَّد مسبقًا */
+          cfPlanSave(pk, D, W2, RF, null, pk === 'ck' ? 'سُجّلت الشيكات في «الشيكات».' : 'سُجّل الأمر المستديم في «الأوامر المستديمة».', function () { delete CF_ST[kk]; });
+        } }))]), hint]));
+    }
+    return done();
   };
   const nReq = items.length, nOk = items.filter(function (x) { return x.ok; }).length, ready = nOk === nReq;
   const left = CTADM_K.filter(function (z) { return !req[z[0]]; });
@@ -24122,10 +24137,10 @@ async function lvNewSave(kind, D, rerun, done) {
   D.busy = true; D.err = ''; rerun();
   try {
     const up = D.file ? await liveStaffUpload(isB ? 'bond' : 'payout', D.cid, D.file) : {};
-    const j = isB ? await clPost('/admin/api/bonds', Object.assign({ user_id: D.cid, bond_no: String(D.no).trim(), value: D.val, bond_date: D.date, note: D.note }, up))
+    const j = isB ? await clPost('/admin/api/bonds', Object.assign({ user_id: D.cid, contract_id: D.lnk ? (D.ct || '') : '' /* v694: ربط السند بالعقد اختياري (من إجراءات العقد) */, bond_no: String(D.no).trim(), value: D.val, bond_date: D.date, note: D.note }, up))
       : await clPost('/admin/api/payouts', Object.assign({ user_id: D.cid }, lvPoBody(D), up));
     if (!j || j.ok !== true) throw new Error((j && j.message) || 'تعذّر الحفظ.');
-    D.busy = false; await done();
+    D.busy = false; await done(j); /* v694: المعرّف لاعتماد السند لإجراءات العقد */
   } catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; rerun(); }
 }
 function lvNewForm(kind) {
