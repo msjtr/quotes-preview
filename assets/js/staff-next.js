@@ -1,4 +1,4 @@
-/* v702 — المنصة الجديدة للموظفين (staff/next/)
+/* v702–v703 — المنصة الجديدة للموظفين (staff/next/)
    قائمة تنقّل واحدة فوق محرك المنصة نفسه (platform.js): الخادم والقاعدة والصلاحيات والحسابات كما هي.
    لا يعمل هذا الملف إلا على المسار /staff/next/، ولا يغيّر شيئًا في /staff/ ولا في بوابة العميل.
    الظهور يتبع القائمة الأصلية التي رسمتها المنصة بعد فحص الصلاحيات: البند يظهر إن ظهر مفتاحه فيها،
@@ -20,15 +20,15 @@
     ]],
     ['الطلبات والعقود', [
       ['cu-svc', 'طلبات الخدمات', ['cu']],
-      ['cu-docs-pq', 'عروض أسعار الشركاء', ['cu']],
+      ['cu-docs-pq', 'عروض الشركاء', ['cu']],
       ['cu-docs-pc', 'عقود الشركاء', ['cu']],
-      ['cu-docs-sq', 'عروض أسعار المتاجر', ['cu']]
+      ['cu-docs-sq', 'عروض المتاجر', ['cu']]
     ]],
     ['المالية والتحصيل', [
-      ['fin-due', 'الدفعات المستحقة والقادمة', ['fin']],
+      ['fin-due', 'الدفعات المستحقة', ['fin']],
       /* مسجّلة في المنصة تحت قسم العملاء وتظهر في المالية — تلزمها الصلاحيتان معًا */
-      ['cu-trin', 'إيصالات التحويل البنكي', ['fin', 'cu']],
-      ['cu-opin', 'طلبات الإلغاء والاسترداد', ['fin', 'cu']],
+      ['cu-trin', 'إيصالات التحويل', ['fin', 'cu']],
+      ['cu-opin', 'الإلغاء والاسترداد', ['fin', 'cu']],
       ['cu-paylinks', 'روابط الدفع', ['fin', 'cu']],
       ['fin-pay', 'سجل المدفوعات', ['fin']],
       ['fin', 'كل صفحات المالية', ['fin']]
@@ -36,7 +36,7 @@
     ['التواصل', [
       ['comm-send', 'مركز الإرسال', ['comm-hub']],
       ['cs-tickets', 'التذاكر والمراسلات', ['comm-hub']],
-      ['cx', 'تجربة العملاء والجودة', ['comm-hub']],
+      ['cx', 'تجربة العملاء', ['comm-hub']],
       ['comm-hub', 'كل صفحات التواصل', ['comm-hub']]
     ]],
     ['الفريق والشركاء', [['team-hub', 'الفريق والشركاء', ['team-hub']]]],
@@ -65,6 +65,25 @@
     'cs-ticket': 'cs-tickets', 'cx-dash': 'cx', 'cx-review': 'cx', 'cx-send': 'cx', 'cx-log': 'cx',
     'soon-emp': 'team-hub', 'soon-par': 'team-hub', 'soon-mkt': 'team-hub', 'adm-more': 'adm-home'
   };
+
+  /* v703: بلاطة ثلاثية الأبعاد لكل بند — رمز من مكتبة رموز المنصة (window.__PGL) بوصفة البلاطة نفسها */
+  var GLY = {
+    'cu-list': 'identification-card', 'cu-new': 'user', 'cu-pf-ver': 'seal-check', 'cu-pf-launch': 'rocket-launch',
+    'cu-svc': 'clipboard-text', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront',
+    'fin-due': 'calendar-check', 'cu-trin': 'bank', 'cu-opin': 'arrow-counter-clockwise', 'cu-paylinks': 'link-simple',
+    'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'cs-tickets': 'ticket', 'cx': 'star'
+  };
+  function tile3d(glyph) {
+    var GL = window.__PGL || {}, d = GL[glyph];
+    if (!d || !/^[\w\s,.\-]+$/.test(d)) return '';
+    return '<svg class="t2-tile" viewBox="0 0 100 112" aria-hidden="true"><ellipse cx="50" cy="101" rx="38" ry="8" fill="url(#gshadow)"/>' +
+      '<rect x="10" y="17" width="80" height="80" rx="25" fill="#06707A"/><rect x="10" y="7" width="80" height="80" rx="25" fill="url(#top-teal)"/>' +
+      '<g clip-path="url(#tileclip)"><ellipse cx="34" cy="14" rx="58" ry="30" fill="#fff" opacity=".2"/></g>' +
+      '<rect x="11.5" y="8.5" width="77" height="77" rx="23.5" fill="none" stroke="url(#rim)" stroke-width="2"/>' +
+      '<g transform="translate(29.5,28) scale(0.171875)" fill="#06707A" opacity=".55"><path d="' + d + '"/></g>' +
+      '<g transform="translate(28,25) scale(0.171875)" fill="#fff"><path d="' + d + '"/></g></svg>';
+  }
+  function iconOf(A, k) { return (A && A.icon[k]) || tile3d(GLY[k] || '') || tile3d('info'); }
 
   var ITEMS = {}, COVER = { 'adm-more': true };
   TREE.forEach(function (g) {
@@ -142,16 +161,16 @@
       /* المنصة تمسح تمييز البنود في كل رسم — يُعاد التمييز بعده */
       new MutationObserver(mark).observe(nav, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
     }
-    var sig = A.order.join(',');
+    var sig = A.order.join(',') + (window.__PGL ? '|g' : '');
     if (nav.getAttribute('data-sig') !== sig) {
       var html = FLAG;
       groups(A).forEach(function (g) {
         html += '<div class="t2-side-g tqn-g">' +
           (g[0] ? '<button class="t2-side-gh tqn-gh" type="button" aria-expanded="true"><span>' + esc(g[0]) + '</span><span class="t2-chev" aria-hidden="true"></span></button>' : '') +
           '<div class="t2-side-gb">' + g[1].map(function (i) {
-            var ic = A.icon[i[0]] || '';
+            var ic = iconOf(A, i[0]);
             return '<button class="t2-side-i tqn-i' + (ic ? '' : ' tqn-sub') + '" type="button" data-next-nav="' + esc(i[0]) + '">' +
-              '<span class="t2-side-ic">' + (ic || '<i class="tqn-dot" aria-hidden="true"></i>') + '</span>' +
+              '<span class="t2-side-ic tqn-ic">' + (ic || '<i class="tqn-dot" aria-hidden="true"></i>') + '</span>' +
               '<span class="t2-side-l">' + esc(i[1]) + '</span></button>';
           }).join('') + '</div></div>';
       });
@@ -210,7 +229,8 @@
         '<div class="tqn-sl">' + g[1].map(function (i) {
           var on = i[0] === k;
           return '<button type="button" class="tqn-row' + (on ? ' is-on' : '') + '"' + (on ? ' aria-current="page"' : '') +
-            ' data-next-nav="' + esc(i[0]) + '"><span>' + esc(i[1]) + '</span><span class="tqn-chev" aria-hidden="true"></span></button>';
+            ' data-next-nav="' + esc(i[0]) + '"><span class="tqn-ric tqn-ic">' + iconOf(LAST, i[0]) + '</span>' +
+            '<span class="tqn-rl">' + esc(i[1]) + '</span><span class="tqn-chev" aria-hidden="true"></span></button>';
         }).join('') + '</div></section>';
     });
     var s = document.createElement('div');

@@ -1,4 +1,4 @@
-/* v702 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v703 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -63,7 +63,37 @@
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   width: 100%; min-height: 48px; padding: 12px 16px;
   border: 0; border-radius: 0; box-shadow: none; margin: 0; background: transparent; color: inherit; font: inherit; font-size: 15px; font-weight: 600; text-align: start; cursor: pointer;
+  justify-content: flex-start;
 }
+.tqn-rl { flex: 1; }
 .tqn-row + .tqn-row { border-top: 1px solid var(--t2-line, rgba(0, 0, 0, .1)); }
 .tqn-row.is-on { background: var(--t2-surface-2, rgba(0, 0, 0, .04)); }
 .tqn-chev { width: 8px; height: 8px; border-inline-end: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .5; }
+
+/* v703: البلاطات ثلاثية الأبعاد — رفع عند التمرير بالمؤشر، وضغط عند النقر، وارتفاع ثابت للبند الحالي */
+.tqn-ric { display: inline-grid; place-items: center; width: 36px; height: 40px; flex: none; }
+.tqn-ric svg.t2-tile { width: 34px; }
+.tq-next .tqn-ic svg.t2-tile {
+  transform-origin: 50% 85%;
+  transition: transform .28s cubic-bezier(.2, .8, .2, 1), filter .28s ease;
+}
+.tq-next .tqn-i:focus-visible .tqn-ic svg.t2-tile,
+.tqn-row:focus-visible .tqn-ic svg.t2-tile {
+  transform: translateY(-3px) scale(1.07);
+  filter: drop-shadow(0 6px 8px rgba(6, 112, 122, .28));
+}
+@media (hover: hover) {
+  .tq-next .tqn-i:hover .tqn-ic svg.t2-tile,
+  .tqn-row:hover .tqn-ic svg.t2-tile {
+    transform: translateY(-3px) scale(1.07);
+    filter: drop-shadow(0 6px 8px rgba(6, 112, 122, .28));
+  }
+  .tqn-row:hover { background: var(--t2-surface-2, rgba(0, 0, 0, .03)); }
+}
+.tq-next .tqn-i:active .tqn-ic svg.t2-tile,
+.tqn-row:active .tqn-ic svg.t2-tile { transform: translateY(0) scale(.95); filter: none; transition-duration: .08s; }
+.tq-next .tqn-i.is-on .tqn-ic svg.t2-tile,
+.tqn-row.is-on .tqn-ic svg.t2-tile { transform: translateY(-2px); filter: drop-shadow(0 4px 6px rgba(6, 112, 122, .24)); }
+@media (prefers-reduced-motion: reduce) {
+  .tq-next .tqn-ic svg.t2-tile { transition: none; }
+}
