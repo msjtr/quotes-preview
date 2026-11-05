@@ -1,0 +1,69 @@
+/* v702 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+
+/* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
+.tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
+
+.tq-next .tqn-flag {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  margin: 8px 12px 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.tq-next .tqn-flag b { font-weight: 700; }
+.tq-next .tqn-flag span { opacity: .78; }
+.tq-next .tqn-flag a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.tq-next .is-side-min .tqn-flag { display: none; }
+
+/* البنود الفرعية بلا بلاطة: نقطة صغيرة بحجم البلاطة نفسها لتبقى المحاذاة واحدة */
+.tq-next .tqn-sub .t2-side-ic { display: inline-flex; align-items: center; justify-content: center; }
+.tq-next .tqn-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .45;
+}
+.tq-next .tqn-sub.is-on .tqn-dot { opacity: 1; }
+
+/* التطبيق (الجوال): ورقة «الأقسام» السفلية — الشجرة نفسها بهوية التطبيق */
+.tq-next.tqn-lock, .tq-next.tqn-lock body { overflow: hidden; }
+.tqn-sheet { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-end; justify-content: center; }
+.tqn-back { position: absolute; inset: 0; background: rgba(7, 21, 46, .46); }
+.tqn-panel {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: 86vh;
+  max-height: 86dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--t2-surface, #fff);
+  color: var(--t2-ink, #0B2552);
+  border-radius: 24px 24px 0 0;
+  box-shadow: var(--t2-elev, 0 -8px 32px rgba(7, 21, 46, .18));
+  padding: 8px 0 calc(16px + env(safe-area-inset-bottom));
+  font-family: var(--t2-ff-text, inherit);
+}
+.tqn-grip { width: 40px; height: 4px; border-radius: 4px; margin: 4px auto 8px; background: var(--t2-line-2, rgba(0, 0, 0, .18)); }
+.tqn-head { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 8px; }
+.tqn-head h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.tqn-x { width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--t2-surface-2, transparent); color: inherit; font-size: 24px; line-height: 1; cursor: pointer; }
+.tqn-panel .tqn-flag { margin: 0 20px 12px; }
+.tqn-body { overflow-y: auto; padding: 0 20px 8px; -webkit-overflow-scrolling: touch; }
+.tqn-sg + .tqn-sg { margin-top: 16px; }
+.tqn-sh { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--t2-ink-2, inherit); }
+.tqn-sl { border: 1px solid var(--t2-line, rgba(0, 0, 0, .1)); border-radius: var(--t2-radius-card, 16px); overflow: hidden; }
+.tqn-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; min-height: 48px; padding: 12px 16px;
+  border: 0; border-radius: 0; box-shadow: none; margin: 0; background: transparent; color: inherit; font: inherit; font-size: 15px; font-weight: 600; text-align: start; cursor: pointer;
+}
+.tqn-row + .tqn-row { border-top: 1px solid var(--t2-line, rgba(0, 0, 0, .1)); }
+.tqn-row.is-on { background: var(--t2-surface-2, rgba(0, 0, 0, .04)); }
+.tqn-chev { width: 8px; height: 8px; border-inline-end: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .5; }
