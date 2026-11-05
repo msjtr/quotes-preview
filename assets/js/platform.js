@@ -17103,13 +17103,13 @@ try { Object.assign(ADM_ERR, { contract_required: 'اختر العقد.', contra
   quote_required: 'أعدّ فاتورة سداد قيمة المنتج ويُعتمد أولًا — لا اعتماد لسداد قيمة المنتج بمبلغ يدوي.', quote_live: 'للطلب فاتورة سداد قيمة المنتج قائم على عقده — ألغِ العرض قبل تغيير العقد.', not_approved: 'اعتمد الطلب أولًا.',
   already_executed: 'نُفّذ الطلب من قبل.', target_type: 'العقد الهدف ليس من نوع الطلب — للتأجيل «عقد تأجيل» وللتوحيد «عقد توحيد».', ref_not_found: 'العقد الهدف غير موجود لهذا العميل.', bad_kind: 'نوع الطلب غير صالح.', bad_step: 'إجراء غير صالح.' }); } catch (err) { void err; }
 const srOpenSt = (x) => x.status === 'submitted' || x.status === 'in_review';
-const srWaitExec = (x) => x.status === 'approved' && !x.executed_at && x.kind !== 'elig';
+const srWaitExec = (x) => x.status === 'approved' && !x.executed_at; /* v691: طلب الأهلية المعتمد قيد الإجراء حتى «إنهاء العقد» (يُغلق الطلب) — يظهر في لوحة المشرف */
 const srName = (cid) => lvSrNames()[cid] || cuBdName(cid);
 const srRow = (no) => ((LIVE_ADM.rows || {})[no] || {}).r || {};
 const srOpenCts = (cid) => ((LIVE_ADM.ct || {})[cid] || []).filter(function (c) { return !srRow(c.no).closed && c.n && cInfo(c).remain > 0.004; });
 function srStat(x) {
   if (x.status === 'cancelled') return [x.internal ? 'ملغى — تصحيح داخلي' : x.origin === 'client' && !x.decided_by ? 'ألغاه العميل' : 'ملغى', null];
-  if (x.status === 'approved') return x.kind === 'elig' ? ['مؤهَّل — صدرت النتيجة', 'ok'] : x.executed_at ? ['منفّذ', 'ok'] : x.kind === 'settle' ? ['معتمد — أُرسل المبلغ للعميل', 'info'] : ['معتمد — بانتظار التنفيذ', 'info'];
+  if (x.status === 'approved') return x.kind === 'elig' ? (x.executed_at ? ['مكتمل — أُغلق الطلب', 'ok'] : ['مؤهَّل — قيد الإجراء', 'ok']) : x.executed_at ? ['منفّذ', 'ok'] : x.kind === 'settle' ? ['معتمد — أُرسل المبلغ للعميل', 'info'] : ['معتمد — بانتظار التنفيذ', 'info'];
   return { submitted: ['جديد — لم يُستلم', 'warn'], in_review: ['قيد المراجعة', 'warn'], rejected: ['مرفوض', 'danger'] }[x.status] || [x.status, null];
 }
 /* اختيار العقود والدفعات حسب نوع الطلب — للإنشاء والتعديل */
@@ -17605,13 +17605,28 @@ function eqOpen(id, refetch, x) {
 }
 
 /* ═════ مراحل الموظف الست (eligWork): الترتيب الحقيقي · شريط ملخص واحد · القرار داخل مرحلته · المستندات داخل مراحلها ═════ */
-const EG6 = { docs: 'docs', fix: 'docs', rep: 'rep', res: 'rep', qt: 'qt', apv: 'qt', pv: 'pv', snd: 'pv', jr: 'pv', log: 'pv', inv: 'inv', ct: 'ct' };
+const EG6 = { docs: 'docs', fix: 'docs', rep: 'rep', res: 'rep', qt: 'qt', apv: 'qt', pv: 'pv', snd: 'pv', jr: 'pv', log: 'pv', inv: 'inv', ct: 'ct', adm: 'adm' }; /* v691: adm */
+/* v691: المرحلة السابعة — إجراءات الإدارة وإغلاق الطلب. الإجراءات نفسها في «ملفات الإدارة» ببطاقة العقد (ملف العميل)، و«إنهاء العقد» بعد توقيع العميل يُغلق الطلب */
+function egAdmPane(x, ctT, ctNo, ctj, paint) {
+  const out = [e('b', {}, 'إجراءات الإدارة وإغلاق الطلب')];
+  if (!ctNo) { out.push(CF_EMPTY('تظهر بعد صدور العقد.')); return e('div', { class: 'sr-stl' }, out); }
+  if (!CTADM.at && !CTADM.busy && !CTADM.tried && typeof ctAdmLoad === 'function') { CTADM.busy = true; CTADM.tried = true; ctAdmLoad().then(function () { CTADM.busy = false; paint(); }).catch(function () { CTADM.busy = false; }); }
+  const id = ctT && ctT.id, A = id ? CTADM.rows[id] : null, signed = !!((ctj && ctj.signed_at) || (A && A.signed_at));
+  const st = A ? ctAdmSt(A) : null;
+  if (x.executed_at) out.push(DS.note('ok', 'أُغلق الطلب ' + iso(new Date(x.executed_at)), 'أُنهي العقد ' + ctNo + ' بعد إجراءات الإدارة — العقد ودفعاته في ملف العميل ويظهر له في حسابه.'));
+  else if (!signed) out.push(DS.note('warn', 'بانتظار توقيع العميل على العقد ' + ctNo, 'يمكنك تحديد الإجراءات المطلوبة الآن؛ «إنهاء العقد» وإغلاق الطلب بعد التوقيع.'));
+  else if (A) out.push(DS.note(st[1] === 'ok' ? 'ok' : 'warn', 'العقد ' + ctNo + ' — ' + st[0], 'حدّد المطلوب وارفع ملفاته ثم «إنهاء العقد» — يُغلق الطلب تلقائيًا ويبقى العقد ودفعاته في ملف العميل.'));
+  else out.push(DS.note('info', 'العقد ' + ctNo, CTADM.at ? 'لا إجراءات معلّقة عليه.' : 'جارٍ قراءة إجراءات الإدارة…'));
+  if (A && (A.items || []).length) out.push(e('ol', { class: 'eg-how' }, A.items.map(function (i) { return e('li', {}, [e('b', {}, i.label || i.kind || ''), ' — ', i.ok ? 'مكتمل' : 'متبقٍّ']); })));
+  if (!x.executed_at) out.push(e('div', { class: 't2-pb-actions' }, [DS.button('فتح إجراءات الإدارة في ملف العميل', { size: 'sm', tone: 'primary', ui: 'user-circle', onClick: function () { ctAdmGo({ user_id: x.user_id, contract_no: ctNo, name: (A && A.name) || '' }); } })]));
+  return e('div', { class: 'sr-stl' }, out);
+}
 function egStages6(steps) {
   const S = {}; steps.forEach(function (s) { S[s[0]] = s; });
   const g = function (k) { return S[k] || [k, '', '', '']; };
   const docs = g('fix')[3] === 'wait' ? g('fix') : g('docs'), rep = g('res')[3] ? g('res') : g('rep');
   const qt = g('apv')[3] === 'now' ? ['qt', '', g('apv')[2], 'now'] : g('qt'), pv = g('snd')[3] ? g('snd') : g('pv');
-  return [['docs', 'المستندات', docs[2], docs[3]], ['rep', 'التوصية والقرار', rep[2], rep[3]], ['qt', 'عرض السعر', qt[2], qt[3]], ['pv', 'المعاينة والإرسال', pv[2], pv[3]], ['inv', 'فاتورة المنتج', g('inv')[2], g('inv')[3]], ['ct', 'العقد', g('ct')[2], g('ct')[3]]];
+  return [['docs', 'المستندات', docs[2], docs[3]], ['rep', 'التوصية والقرار', rep[2], rep[3]], ['qt', 'عرض السعر', qt[2], qt[3]], ['pv', 'المعاينة والإرسال', pv[2], pv[3]], ['inv', 'فاتورة المنتج', g('inv')[2], g('inv')[3]], ['ct', 'العقد', g('ct')[2], g('ct')[3]], ['adm', 'إجراءات الإدارة', g('adm')[2], g('adm')[3]]]; /* v691 */
 }
 function egSumBar(x, Rp, live, N) {
   const R = Rp || {}, M = x.meta || {}, ok = R.rec === 'eligible' || R.rec === 'eligible_less', rc = egRecvInfo(x), req = egReq(x);
@@ -17842,13 +17857,14 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
       ['qt', 'عرض السعر', live ? ((EGQ_ST[live.status] || [live.status])[0]) : appr ? 'لم يُعدّ' : 'بعد النتيجة', live ? 'ok' : appr ? 'now' : ''],
       ['inv', 'فاتورة المنتج', pur ? (pur.decision === 'accept' ? 'اعتمدها العميل' : 'اعتذر العميل') : live && live.status === 'accepted' ? 'بانتظار العميل' : qHas ? 'جاهزة للمعاينة' : 'بعد عرض السعر', pur ? (pur.decision === 'accept' ? 'ok' : 'bad') : live && live.status === 'accepted' ? 'wait' : ''],
       ['ct', 'العقد', ctF && ctF.sent_ok ? 'أُرسل النهائي' : ctj && ctj.signed_at ? 'وقّعه العميل' : ctNo ? 'بانتظار التوقيع' : 'بعد الفاتورة', ctF && ctF.sent_ok ? 'ok' : ctj && ctj.signed_at ? 'now' : ctNo ? 'wait' : ''],
+      ['adm', 'إجراءات الإدارة', x.executed_at ? 'أُغلق الطلب' : (ctj && ctj.signed_at) ? 'بانتظار الإنهاء' : ctNo ? 'بعد التوقيع' : 'بعد العقد', x.executed_at ? 'ok' : (ctj && ctj.signed_at) ? 'now' : ''], /* v691 */
       ['apv', 'الاعتماد', !live ? (appr ? 'بعد إعداد العرض' : '—') : live.status === 'pending_approval' ? 'بانتظار الاعتماد' : 'اعتُمد العرض', !live ? '' : live.status === 'pending_approval' ? 'now' : 'ok'],
       ['pv', 'المعاينة', auto ? 'الحجز متوقف' : pvSt.length ? fmtNum(pvN) + ' من ' + fmtNum(pvSt.length) : 'بعد القرار', mm.released || auto || (held && allPv) ? 'ok' : held && (!appr || qHas) ? 'now' : ''],
       ['snd', 'الإرسال', mm.released ? 'أُرسلت النتيجة' : auto ? 'أُرسلت تلقائيًا' : held ? (allPv ? 'جاهز للإرسال' : 'محجوزة') : 'بعد المعاينة', mm.released || auto ? 'ok' : held && allPv ? 'now' : ''],
       ['log', 'التوثيق', JD ? (evN ? fmtNum(evN) + ' حدث' : 'لا أحداث') : 'السجل', fin ? 'ok' : '', 'ما تم — سجل ما حصل']];
     const firstNow = function (keys) { for (let i = 0; i < steps.length; i++) { if (keys.indexOf(steps[i][0]) >= 0 && steps[i][3] === 'now') return steps[i][0]; } return ''; };
     const tab0 = c.tab || (open ? (fx && fx.open ? 'fix' : (c.at && missReq) ? 'docs' : !Rp ? 'rep' : 'res')
-      : firstNow(['qt', 'ct', 'apv', 'pv', 'snd']) || (mm.released || auto ? 'snd' : appr ? 'qt' : 'res'));
+      : firstNow(['qt', 'ct', 'adm', 'apv', 'pv', 'snd']) || (mm.released || auto ? 'snd' : appr ? 'qt' : 'res'));
     const tab = EG6[tab0] || 'docs', G6 = egStages6(steps); /* v686: ٦ مراحل بالترتيب الحقيقي — المفاتيح القديمة (fix · res · apv · snd · log · jr) تُحوَّل لمرحلتها */
     if (tab0 === 'log') c.logOpen = true;
     const N = egNums(x);
@@ -17866,6 +17882,7 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
           : rules.length ? e('div', { class: 'cu-mgr-docs' }, rowsDoc) : CF_EMPTY('لا مرفقات مطلوبة لحالته الوظيفية.'),
       e('div', { class: 't2-pb-actions' }, [DS.button('طلب مرفق من العميل', { size: 'sm', ui: 'paperclip', onClick: function () { c.tab = 'fix'; const W = c.fix || (c.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false }); W.form = true; W.type = 'doc'; paint(); } }),
         DS.button('فتح ملف العميل', { size: 'sm', ui: 'user-circle', onClick: function () { ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); } })])]);
+    else if (tab === 'adm') pane = egAdmPane(x, ctT, ctNo, ctj, paint); /* v691 */
     else if (tab === 'fix') pane = eligFixBox(x, c, paint);
     else if (tab === 'rep') pane = eligReportBox(x, c, paint);
     else if (['inv', 'ct', 'apv', 'pv', 'snd', 'log'].indexOf(tab) >= 0) pane = egJourney(x, c, paint, live, tab); /* v684: كانت «jr» واحدة — صارت 6 خطوات */
@@ -18546,10 +18563,10 @@ function srFullPage(x, RF) {
 const EG_STAFF = { job_simah: 'تقرير سمة (ملم)', job_ss_pension: 'إثبات تعريف بمعاش الضمان', job_citizen_acct: 'إثبات تعريف بحساب المواطن', job_other: 'مرفق آخر' };
 const EG_IT = { field: 'تصحيح حقل', doc: 'مرفق', note: 'ملاحظة' };
 function eligFixBox(x, c, paint) {
-  const m = x.meta || {}, fx = m.fix || null, open = ['submitted', 'in_review'].indexOf(x.status) >= 0;
+  const m = x.meta || {}, fx = m.fix || null, open = ['submitted', 'in_review'].indexOf(x.status) >= 0 || (['approved', 'rejected'].indexOf(x.status) >= 0 && !x.executed_at); /* v691: الإعادة للاستكمال في أي مرحلة قبل صدور العقد — الخادم يرفض بعد العقد */
   const W = c.fix || (c.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false });
   const rules = c.job && c.job.ok ? (c.job.rules || []) : [];
-  const out = [e('b', {}, 'الإعادة للاستكمال — قبل إصدار النتيجة')];
+  const out = [e('b', {}, 'الإعادة للاستكمال — في أي مرحلة قبل صدور العقد')];
   const list = function (its) { return e('ol', { class: 'eg-how' }, (its || []).map(function (i) { return e('li', {}, [e('b', {}, (EG_IT[i.type] || '') + ': ' + i.label), i.note ? e('small', {}, i.note) : null, i.changed_at ? e('small', {}, i.confirmed ? 'أكّده العميل كما هو: ' + (i.val || '') : 'صحّحه العميل: ' + (i.prev || '—') + ' ← ' + (i.val || '')) : null /* v673 */]); })); };
   if (fx && fx.open) out.push(DS.note('warn', 'أُعيد للعميل ' + iso(new Date(fx.at)) + ' — بانتظار استكماله', 'لا يعيد العميل الطلب حتى يرفع المرفقات المطلوبة.'), list(fx.items), fx.note ? e('small', { class: 'cu-dr-hint' }, 'ملاحظة عامة: ' + fx.note) : null);
   else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + iso(new Date(fx.done_at)), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
@@ -18559,7 +18576,7 @@ function eligFixBox(x, c, paint) {
     try { const r = await admRpc('admin_elig_reclaim', { p_sr: x.id, p_note: '' }); if (r && r.ok === false) throw new Error(r.message || r.error || 'تعذّر السحب.'); snack('سُحب الطلب من العميل — عاد للفريق.'); c.fix = null; c.reload(); try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } }
     catch (err) { snack(egErr(err)); }
   } }))])); /* v668: صلاحية customers.elig_reclaim */
-  if (!open) { out.push(e('small', { class: 'cu-dr-hint' }, 'الإعادة متاحة قبل إصدار النتيجة فقط.')); return e('div', { class: 'sr-stl' }, out); }
+  if (!open) { out.push(e('small', { class: 'cu-dr-hint' }, 'الطلب مغلق أو ملغى — لا إعادة.')); return e('div', { class: 'sr-stl' }, out); }
   if (!W.form && !W.items.length && fx && fx.done_at && !fx.open) { /* v673: بعد الاستكمال — الخطوة التالية التوصية */
     out.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('سجّل التوصية الآن', { size: 'sm', tone: 'primary', ui: 'clipboard-text', onClick: function () { c.tab = 'rep'; paint(); } })), liveOk(DS.button('إعادة جديدة للاستكمال', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { W.form = true; paint(); } }))]));
     return e('div', { class: 'sr-stl' }, out);
@@ -18590,11 +18607,11 @@ function eligFixBox(x, c, paint) {
   const send = async function () {
     if (!W.items.length) { W.err = 'أضف بندًا واحدًا على الأقل.'; paint(); return; }
     if (W.busy) return;
-    if (!tqConfirm('إرسال ' + fmtNum(W.items.length) + ' بند للعميل ' + srName(x.user_id) + '؟ يصله إشعار بالمطلوب ويبقى الطلب «قيد المراجعة» حتى يكمله.')) return;
+    if (!tqConfirm(((x.status === 'approved' || x.status === 'rejected') ? 'صدرت النتيجة — الإعادة تُرجع الطلب «قيد المراجعة» وتُلغي حجز النتيجة وإرسالها وروابط العرض والفاتورة غير المستخدمة، ثم تُصدر النتيجة من جديد بعد الاستكمال.\n' : '') + 'إرسال ' + fmtNum(W.items.length) + ' بند للعميل ' + srName(x.user_id) + '؟ يصله إشعار بالمطلوب ويبقى الطلب «قيد المراجعة» حتى يكمله.')) return;
     W.busy = true; W.err = ''; paint();
     try {
       const r = await admRpc('admin_elig_return', { p_sr: x.id, p_items: W.items, p_note: String(W.gnote || '').trim() });
-      if (r && r.ok === false) throw new Error(({ bad_doc: 'المرفق المختار غير مفعّل في «مرفقات الوظيفة».', bad_items: 'راجع البنود: لكل بند وصف واضح.', locked: 'صدرت النتيجة — لا تتاح الإعادة.' })[r.error] || r.error || 'تعذّر الإرسال.');
+      if (r && r.ok === false) throw new Error(({ bad_doc: 'المرفق المختار غير مفعّل في «مرفقات الوظيفة».', bad_items: 'راجع البنود: لكل بند وصف واضح.', locked: 'الطلب مغلق أو ملغى — لا إعادة.', has_contract: 'صدر العقد لهذا الطلب — الاستكمال بعده من ملف العميل.' })[r.error] || r.message || r.error || 'تعذّر الإرسال.');
       c.fix = null; c.tab = 'fix';
       tqCenterNote('أُعيد الطلب للعميل', ['الطلب ' + (x.req_no || '') + ' — ' + fmtNum(W.items.length) + ' بند.', 'وصل العميلَ إشعار بالمطلوب، ويظهر له داخل طلبه مع أماكن رفع المرفقات.'], 'ok');
       try { ADM.svFocus = x.id; } catch (er) { void er; }
@@ -20660,7 +20677,7 @@ const CTADM_K = [['payout', 'التحويل البنكي من تيرا'], ['bond
 const CTADM_FK = { cheque: 'الشيكات', standing_order: 'الأمر المستديم', contract_bond: 'السند الإلكتروني' };
 Object.assign(ADM_ERR, { ct_not_tracked: 'هذا العقد ليس عليه إجراءات إدارة.', ct_admin_done: 'أُنهي العقد — لا تُعدَّل إجراءاته.', ct_not_required: 'أضف «السند الإلكتروني» إلى المطلوب أولًا.',
   ct_bad_bond: 'السند غير صالح لهذا العميل أو ملغى.', ct_bad_file: 'الملف PDF أو صورة حتى 10 ميغابايت.', ct_upload_missing: 'لم يكتمل رفع الملف — أعد المحاولة.',
-  ct_no_finalize: 'لا تملك صلاحية إنهاء العقد.', ct_admin_missing: 'بقيت إجراءات إدارة لم تكتمل — راجع البنود «متبقٍّ».' });
+  ct_no_finalize: 'لا تملك صلاحية إنهاء العقد.', ct_not_signed: 'لم يوقّع العميل العقد بعد — «إنهاء العقد» بعد التوقيع.', /* v691 */ ct_admin_missing: 'بقيت إجراءات إدارة لم تكتمل — راجع البنود «متبقٍّ».' });
 function ctAdmLoad() {
   if (typeof admRpc !== 'function') return Promise.resolve();
   return admRpc('admin_contracts_pending_admin', {}).then(function (j) {
@@ -24134,7 +24151,7 @@ function lvSrReq(x) {
   if (x.action_note) f.push(['الإجراء الذي تم', x.action_note]); try { eligClientRows(x).forEach(function (r) { f.push(r); }); } catch (err) { void err; } /* v659 */
   if (x.origin === 'staff') f.unshift(['مصدر الطلب', 'سجّله فريق تيرا']);
   if (x.status === 'cancelled') f.push(['الحالة', 'ألغيتَ الطلب']);
-  const path = (x.log || []).map(function (l) { return [l.t, D(l.at)]; });
+  const path = (x.log || []).filter(function (l) { return !(l && l.int); }).map(function (l) { return [l.t, D(l.at)]; }); /* v691: سطور السجل الداخلية (int) لا تظهر للعميل */
   if (x.status === 'submitted' || x.status === 'in_review') path.push([x.kind === 'settle' ? 'تحديد مبلغ المخالصة' : 'قرار الإدارة', null]);
   return mkR({ no: x.req_no, type: x.kind, at: at, status: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === true) ? 'fix' : (LV_SR_ST[x.status] || 'sent'), /* v669 */ contract: (x.contract_nos || [])[0] || '', fields: f, path: path, live: true, sr: x,
     note: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === false && x.meta.fix.done_at) ? ['info', 'قيد المراجعة — أُعيد الإرسال بعد الاستكمال', 'وصل طلبك بعد استكماله ' + iso(new Date(x.meta.fix.done_at)) + '، وعاد إلى مراجعة الفريق. يصلك الرد فور صدور النتيجة.'] : undefined }); /* v672 */
