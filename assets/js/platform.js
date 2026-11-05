@@ -17894,6 +17894,7 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
     const pane6 = tab === 'docs' ? [P6('docs'), open || fx || c.fix ? P6('fix') : null]
       : tab === 'rep' ? [P6('rep'), P6('res')]
         : tab === 'qt' ? [P6('qt')]
+          : tab === 'adm' ? [P6('adm')] /* v692: المرحلة السابعة تعرض لوحتها لا لوحة المعاينة */
           : [egJourney(x, c, paint, live, tab)];
     return e('div', { class: 'eg-work' }, [tiles, tabs, e('div', { class: 'eg-pane', role: 'tabpanel' }, pane6), egBottom(x, c, paint, live, more, open)]); /* v686: «ملفات الطلب» داخل مراحلها، والسجل وبيانات الطلب والحساب مطويّة أسفلها */
   } catch (err) { try { console.warn('[elig-work]', err && err.message); } catch (y) { void y; } return null; }
