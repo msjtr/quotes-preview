@@ -13897,7 +13897,7 @@ const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup 
   const myTr = meId ? TR.filter(function (t) { return t.claimed_by === meId && t.status === 'review'; }).length : 0;
   const mySr = srAsMineN(SRA, meId); /* v684: طلبات الخدمات المسندة إليّ */
   const tkGo = function (k) { return function () { ADM.tst = k; go('other', 'cs-tickets'); }; };
-  const srGo = function (id) { return function () { ADM.svF = 'all'; ADM.svC = ''; ADM.svFocus = id || ''; ADM.svOpen = id || ''; go('other', 'cu-svc'); }; };
+  const srGo = function (id, pg) { return function () { ADM.svF = 'all'; ADM.svC = ''; ADM.svFocus = id || ''; ADM.svOpen = id || ''; go('other', tqnSrPage(id, pg)); /* v709 */ }; };
   const pfGo = function (r) { return function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name || ''; go('other', 'cu-pf-file'); }; };
   const ok = function (n) { return e('div', { 'data-live-ok': '' }, n); };
   /* مهامي */
@@ -13906,8 +13906,8 @@ const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup 
     myTr ? ['receipt', 'إيصالات تحويل استلمتُها', fmtNum(myTr) + ' إيصال', 'warn', goP('cu-trin'), myTr] : null,
     mySr ? ['services', 'طلبات خدمات مسندة إليّ', fmtNum(mySr) + ' طلب', 'warn', srAsGoMine, mySr] : null /* v684 */].filter(Boolean);
   /* ما ينتظر قرارًا — كل بند مرة واحدة، وغير الصفري فقط */
-  const acts = [cuOk && srn ? ['services', 'طلبات خدمات بانتظار القرار', fmtNum(srn) + ' طلب' + srAsUnTxt(SRA) /* v684 */, 'warn', srGo(''), srn] : null,
-    cuOk && srx ? ['services', 'طلبات معتمدة بانتظار التنفيذ', fmtNum(srx) + ' طلب', 'warn', srGo(''), srx] : null,
+  const acts = [...(TQN && LP['fin-req'] ? tqnSrActs(SRA, srGo, cuOk) /* v709 */ : [cuOk && srn ? ['services', 'طلبات خدمات بانتظار القرار', fmtNum(srn) + ' طلب' + srAsUnTxt(SRA) /* v684 */, 'warn', srGo(''), srn] : null,
+    cuOk && srx ? ['services', 'طلبات معتمدة بانتظار التنفيذ', fmtNum(srx) + ' طلب', 'warn', srGo(''), srx] : null]),
     cuOk && VER ? ['note', 'طلبات توثيق ملف', fmtNum(VER) + ' طلب' + (unV ? ' · ' + fmtNum(unV) + ' غير مسند' : ''), 'warn', goP('cu-pf-ver'), VER] : null,
     trn ? ['receipt', 'إيصالات تحويل بانتظار الاعتماد', fmtNum(trn) + ' إيصال', 'warn', goP('cu-trin'), trn] : null,
     opk ? ['rrev', 'طلبات إلغاء واسترداد', fmtNum(opk) + ' طلب', 'warn', goP('cu-opin'), opk] : null,
@@ -13937,7 +13937,7 @@ const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup 
   if (ADM.hq) runS(ADM.hq);
   /* أدوات سريعة */
   const tools = [cuOk ? ['cu-list', 'ملفات العملاء', fmtNum(nC) + ' عميل' + (nn ? ' · ' + fmtNum(nn) + ' جديد' : ''), null, goP('cu-pf-files')] : null,
-    cuOk ? ['services', 'طلب خدمة لعميل', 'سداد قيمة المنتج · تأجيل · توحيد', null, srGo('')] : null,
+    cuOk ? ['services', 'طلب خدمة لعميل', 'سداد قيمة المنتج · تأجيل · توحيد', null, srGo('', 'fin-req') /* v709 */] : null,
     cuOk ? ['mail', 'مركز الإرسال', 'رسالة لعميل أو لفئة بالقوالب المعتمدة', null, goP('comm-send')] : null,
     payOk ? ['link', 'روابط الدفع', 'إنشاء رابط دفع وإرساله', null, goP('cu-paylinks')] : null].filter(Boolean);
   const nav = [cuOk ? ['cu', 'قسم العملاء', 'الملفات والتوثيق والطلبات والمتجر', null, goP('cu')] : null,
@@ -19073,6 +19073,26 @@ function cfReqCard(id, kind, RF) {
 /* قسم «طلبات الخدمات»: صندوق وارد — بطاقة لكل نوع فيها طلباتها، والإنشاء في أعلاه */
 const SR_F = [['open', 'بانتظار قرار', 'tray'], ['exec', 'بانتظار التنفيذ', 'hourglass-medium'], ['done', 'منفّذة', 'check-circle'], ['closed', 'مرفوضة أو ملغاة', 'x-circle'], ['mine', 'مسندة إليّ', 'list-checks'] /* v684 */, ['all', 'الكل', 'list']];
 const srFit = (x, f) => f === 'all' ? true : f === 'mine' ? srAsMine(x) /* v684 */ : f === 'open' ? srOpenSt(x) : f === 'exec' ? (srWaitExec(x) || (x.kind === 'elig' && x.status === 'approved' && !x.executed_at)) /* v689: الأهلية المؤهَّلة قيد العمل (عرض · فاتورة · عقد) */ : f === 'done' ? (x.status === 'approved' && !!x.executed_at) : (x.status === 'rejected' || x.status === 'cancelled');
+/* v709: في staff/next/ — الطلب المالي يُفتح في «الطلبات المالية» وغيره في «طلبات الخدمات» */
+function tqnSrPage(id, pg) {
+  if (!TQN || !LP['fin-req']) return 'cu-svc';
+  if (pg) return pg;
+  const x = id ? (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0] : null;
+  return x && TQFK[x.kind] ? 'fin-req' : 'cu-svc';
+}
+/* v709: «ما ينتظر قرارًا» في رئيسية staff/next/: الطلبات المالية وطلبات الأهلية كلٌّ برقمه وصفحته */
+function tqnSrActs(SRA, srGo, ok) {
+  if (!ok) return [];
+  const fin = SRA.filter(function (x) { return TQFK[x.kind]; }), oth = SRA.filter(function (x) { return !TQFK[x.kind]; });
+  const op = function (L) { return L.filter(function (x) { return x.status === 'submitted' || x.status === 'in_review'; }); };
+  const ex = function (L) { return L.filter(function (x) { try { return typeof srWaitExec === 'function' && srWaitExec(x); } catch (err) { return false; } }).length; };
+  const un = function (L) { try { return typeof srAsUnTxt === 'function' ? srAsUnTxt(L) : ''; } catch (err) { return ''; } };
+  const a = op(fin), b = ex(fin), c = op(oth), d = ex(oth);
+  return [a.length ? ['services', 'طلبات مالية بانتظار القرار', fmtNum(a.length) + ' طلب' + un(fin), 'warn', srGo('', 'fin-req'), a.length] : null,
+    b ? ['services', 'طلبات مالية معتمدة بانتظار التنفيذ', fmtNum(b) + ' طلب', 'warn', srGo('', 'fin-req'), b] : null,
+    c.length ? ['services', 'طلبات الأهلية بانتظار القرار', fmtNum(c.length) + ' طلب' + un(oth), 'warn', srGo('', 'cu-svc'), c.length] : null,
+    d ? ['services', 'طلبات الأهلية بانتظار التنفيذ', fmtNum(d) + ' طلب', 'warn', srGo('', 'cu-svc'), d] : null].filter(Boolean);
+}
 /* v707: في staff/next/ — «الطلبات المالية» (fin-req) لسداد قيمة المنتج والتأجيل والتوحيد، و«طلبات الخدمات» لغيرها؛ خارج staff/next/ لا تصفية */
 const TQFK = { settle: 1, defer: 1, merge: 1 };
 function tqnSvFin() { return TQN && S.tab === 'other' && S.other === 'fin-req'; }
@@ -19095,7 +19115,7 @@ function lvSvcPage() {
     return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات'), e('small', {}, tqnSvFin() ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته، وينعكس في ملف العميل نفسه.' : TQN ? 'التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته. طلبات سداد قيمة المنتج والتأجيل والتوحيد في «الطلبات المالية».' : 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
       e('div', { class: 'cu-kpis sr-kpis' }, kp),
       e('div', { class: 'm3-tools ax-tools' }, [e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM.svC = v === '*' ? '' : v; paint(); } }))]), tqnSvLink(), TQN ? liveOk(DS.button(ADM.tqnTest ? 'إخفاء طلبات الاختبار' : 'إظهار طلبات الاختبار', { size: 'sm', ui: 'eye', onClick: function () { ADM.tqnTest = !ADM.tqnTest; paint(); } })) : null /* v705 */]),
-      lvSec('إنشاء طلب', null, [srCreate(RF, {})], 'svc:new')].concat(SR_K.filter(function (k) { return tqnSvK({ kind: k[0] }); }).map(function (k) { const L = R.filter(function (x) { return x.kind === k[0]; });
+      (!TQN || tqnSvFin()) ? lvSec('إنشاء طلب', null, [srCreate(RF, {})], 'svc:new') : null /* v709: الإنشاء (سداد · تأجيل · توحيد) في «الطلبات المالية» وحدها على staff/next/ */].concat(SR_K.filter(function (k) { return tqnSvK({ kind: k[0] }); }).map(function (k) { const L = R.filter(function (x) { return x.kind === k[0]; });
         return lvSec(k[1], fmtNum(L.length), [L.length ? e('div', { class: 'cf-srs' }, L.map(function (x) { return srBrief(x, RF); })) : CF_EMPTY('لا طلبات ' + k[1] + ' في هذا الاختيار.')], 'svc:k:' + k[0], L.length > 0); }));
   });
 }
