@@ -1,4 +1,4 @@
-/* v702–v707 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v710 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -293,4 +293,41 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 @media (hover: hover) {
   .tq-next .tqn-v:not(.is-on):hover { background: color-mix(in srgb, var(--t2-surface, #fff) 60%, transparent); }
   .tq-next .tqn-vc:not(.is-on):hover { background: var(--t2-surface-2, rgba(11, 37, 82, .04)); }
+}
+
+/* v710: صف «التحصيل» أعمدة — العميل والعقد · الدفعة · المبلغ · مدة التأخر · الحالة (بدل سطر نصي واحد) */
+.tq-next .tqn-due .t2-sec-tx { flex: 1 1 auto; min-width: 0; }
+.tq-next .tqn-dh {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.3fr) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: start;
+}
+.tq-next .tqn-dh-who { display: grid; gap: 2px; min-width: 0; }
+.tq-next .tqn-dh-who .t2-group-t { margin: 0; font-size: 15px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tq-next .tqn-dh-who small { font-size: 12px; color: var(--t2-muted, #667085); unicode-bidi: plaintext; font-variant-numeric: tabular-nums; }
+.tq-next .tqn-dh-pay { font-size: 13px; color: var(--t2-ink-2, #475467); min-width: 0; }
+.tq-next .tqn-dh-amt { font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--t2-ink, #0B2552); }
+.tq-next .tqn-dh-st { justify-self: start; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; white-space: nowrap; background: #EEF1F5; color: #344054; }
+.tq-next .tqn-dh-st.is-warn { background: #FEF0C7; color: #B54708; }
+.tq-next .tqn-dh-st.is-danger { background: #FEE4E2; color: #B42318; }
+.tq-next .tqn-dh-st.is-info { background: #D1E9FF; color: #175CD3; }
+.tq-next .t2.is-dark .tqn-dh-st { background: rgba(255, 255, 255, .08); color: inherit; }
+.tq-next .t2.is-dark .tqn-dh-st.is-warn { background: rgba(245, 194, 107, .16); color: #F5C26B; }
+.tq-next .t2.is-dark .tqn-dh-st.is-danger { background: rgba(255, 120, 110, .16); color: #FFA39B; }
+.tq-next .tqn-dh-band { font-size: 12px; color: var(--t2-muted, #667085); white-space: nowrap; }
+@media (max-width: 720px) {
+  .tq-next .tqn-dh { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; column-gap: 10px; }
+  .tq-next .tqn-dh-who { grid-column: 1 / -1; }
+  .tq-next .tqn-dh-band { grid-column: 1 / -1; }
+}
+.tq-next .pv-dev .tqn-dh { grid-template-columns: minmax(0, 1fr) auto; }
+.tq-next .pv-dev .tqn-dh-who, .tq-next .pv-dev .tqn-dh-band { grid-column: 1 / -1; }
+
+/* v710: المؤشر المختار (الأرقام هي الفلاتر) يُميَّز بخط سفلي وخلفية خفيفة */
+.tq-next .cu-kpis > button.cu-kpi.is-pick.is-on {
+  background: color-mix(in srgb, var(--t2-brand, #06707A) 7%, var(--t2-surface, #fff));
+  box-shadow: inset 0 -3px 0 var(--t2-brand, #06707A) !important;
 }
