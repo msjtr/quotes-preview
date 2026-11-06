@@ -5,6 +5,81 @@ const TQN = /^\/staff\/next(\/|$)/.test(location.pathname);
 const TQH = []; /* v705: سجل الصفحات التي فتحها الموظف في staff/next/ — زر الرجوع يعود إلى السابقة فعلًا */
 const TQRD = { fin: 'fin-due', 'fin-rec': 'fin-rec-gw', 'cu-admx': 'fin-due' }; /* v707: صفحات الفهرس المالية في staff/next/ تُفتح على أول صفحة عمل بدلها — لا صفحة داخل صفحة */
 const TQGO = { on: false }; /* v707: أثناء إغلاق لوحة التفاصيل عند الانتقال لا يُرسم شيء — الصفحة الجديدة وحدها تُرسم */
+/* v711: «سجل المتابعة» داخل صف العقد في «التحصيل» (staff/next/) — هجرة stf_236: admin_pay_follow_list · admin_pay_follow_add.
+   يُحمَّل عند ظهور الصف مفتوحًا أول مرة (لا طلبات للعقود المطويّة)، ويُحفظ في الذاكرة حتى إضافة بند. النص يُعرض نصًّا لا HTML.
+   السجل للإضافة فقط: لا تعديل ولا حذف. الكاتب والعقد يحدّدهما الخادم. */
+const TQFL_K = { call: ['اتصال', 'info'], no_answer: ['لم يرد', 'warn'], promise: ['وعد بالسداد', 'ok'], message: ['رسالة', 'info'], note: ['ملاحظة', 'part'] };
+const TQFL_E = { body_required: 'اكتب ما حدث في المتابعة.', promise_date_required: 'حدّد تاريخ الوعد بالسداد.', bad_date: 'تاريخ الوعد من اليوم وحتى سنة.', bad_amount: 'المبلغ غير صحيح.', body_long: 'النص أطول من 2000 حرف.', forbidden: 'لا تملك صلاحية سجل المتابعة.', not_found: 'الدفعة غير موجودة.', bad_input: 'البيانات غير مكتملة.' };
+const TQFL_C = {};
+function tqnFollowSec(g) {
+  try {
+    const UU = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const cid = g && g.c && g.c.rid;
+    const P = ((g && g.show) || []).filter(function (r) { return r && r.p && UU.test(String(r.p.pid || '')); });
+    if (!TQN || !UU.test(String(cid || '')) || !P.length) return null;
+    const S = { k: 'call', b: '', d: '', a: '', pid: P[0].p.pid, busy: false, msg: '', ok: '', err: '' };
+    const host = e('div', { class: 'tqn-fl', 'data-tqn-fl': String(g.c.no || '') });
+    const val = function (v) { return v && typeof v === 'object' && v.target ? v.target.value : v; };
+    const at = function (s) { const d = s ? new Date(s) : null; return d && !isNaN(d) ? iso(d) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) : ''; };
+    const load = function (force) {
+      if (!force && TQFL_C[cid]) { paint(); return; }
+      admRpc('admin_pay_follow_list', { p_contract: cid }).then(function (j) {
+        if (j && j.ok) { TQFL_C[cid] = Array.isArray(j.items) ? j.items : []; S.err = ''; }
+        else S.err = TQFL_E[j && j.error] || 'تعذّر تحميل سجل المتابعة.';
+        paint();
+      }).catch(function () { S.err = 'تعذّر تحميل سجل المتابعة.'; paint(); });
+    };
+    const save = function () {
+      if (S.busy) return;
+      const pr = S.k === 'promise', amt = pr && String(S.a || '').trim() !== '' ? Number(S.a) : null;
+      if (pr && !S.d) { S.msg = TQFL_E.promise_date_required; paint(); return; }
+      if ((S.k === 'call' || S.k === 'message' || S.k === 'note') && !String(S.b || '').trim()) { S.msg = TQFL_E.body_required; paint(); return; }
+      if (amt !== null && !(amt > 0)) { S.msg = TQFL_E.bad_amount; paint(); return; }
+      S.busy = true; S.msg = ''; S.ok = ''; paint();
+      admRpc('admin_pay_follow_add', { p_payment: S.pid, p_kind: S.k, p_body: String(S.b || '').trim() || null, p_promise_date: pr ? S.d : null, p_promise_amount: amt })
+        .then(function (j) {
+          S.busy = false;
+          if (j && j.ok) { S.b = ''; S.d = ''; S.a = ''; S.ok = 'أُضيف إلى السجل.'; delete TQFL_C[cid]; load(true); return; }
+          S.msg = TQFL_E[j && j.error] || 'تعذّر الحفظ.'; paint();
+        }).catch(function () { S.busy = false; S.msg = 'تعذّر الحفظ.'; paint(); });
+    };
+    const item = function (x) {
+      const K = TQFL_K[x.kind] || [String(x.kind || ''), 'info'];
+      return e('li', { class: 'tqn-fl-i' }, [
+        e('div', { class: 'tqn-fl-h' }, [DS.badge(K[0], K[1]), x.seq != null ? e('span', { class: 'tqn-fl-p' }, 'الدفعة ' + fmtNum(x.seq)) : null,
+          e('span', { class: 'tqn-fl-by' }, x.by_name || '—'), e('bdi', { class: 'tqn-fl-at', dir: 'ltr' }, at(x.at))]),
+        x.kind === 'promise' ? e('div', { class: 'tqn-fl-pr' }, ['يسدّد في ', bdiD(String(x.promise_date || '')), x.promise_amount != null ? ' · ' + sar(Number(x.promise_amount)) : null]) : null,
+        x.body ? e('p', { class: 'tqn-fl-b' }, String(x.body)) : null
+      ]);
+    };
+    function paint() {
+      const L = TQFL_C[cid], pr = S.k === 'promise', need = S.k === 'call' || S.k === 'message' || S.k === 'note';
+      const now = new Date(), max = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+      const lab = function (t, c) { return e('label', { class: 'tqn-fl-l' }, [e('span', {}, t), c]); };
+      host.textContent = '';
+      host.appendChild(e('div', { class: 'tqn-fl-t' }, [e('b', {}, 'سجل المتابعة'), L && L.length ? e('small', {}, fmtNum(L.length) + (L.length === 1 ? ' بند' : ' بنود')) : null]));
+      host.appendChild(e('div', { class: 'tqn-fl-f' }, [
+        e('div', { class: 'tqn-fl-row' }, [
+          lab('النوع', DS.select({ value: S.k, options: Object.keys(TQFL_K).map(function (k) { return [k, TQFL_K[k][0]]; }), onChange: function (v) { S.k = val(v) || 'call'; S.msg = ''; S.ok = ''; paint(); } })),
+          P.length > 1 ? lab('الدفعة', DS.select({ value: S.pid, options: P.map(function (r) { return [r.p.pid, 'الدفعة ' + fmtNum(r.p.i) + ' · ' + iso(r.p.due)]; }), onChange: function (v) { S.pid = val(v) || S.pid; } })) : null,
+          pr ? lab('يسدّد في', DS.input({ type: 'date', value: S.d, min: iso(now), max: iso(max), onInput: function (v) { S.d = val(v) || ''; } })) : null,
+          pr ? lab('المبلغ (اختياري)', DS.input({ numeric: true, value: S.a, placeholder: 'ر.س', onInput: function (v) { S.a = val(v) || ''; } })) : null
+        ]),
+        e('textarea', { class: 't2-input tqn-fl-ta', rows: '2', maxlength: '2000', placeholder: need ? 'ماذا حدث؟ (مطلوب)' : 'ملاحظة (اختيارية)', 'aria-label': 'نص المتابعة', onInput: function (ev) { S.b = ev.target.value; } }, S.b),
+        S.msg ? DS.note('warn', S.msg) : S.ok ? DS.note('ok', S.ok) : null,
+        e('div', { class: 'tqn-fl-act' }, [DS.button(S.busy ? 'جارٍ الحفظ…' : 'إضافة إلى السجل', { tone: 'primary', size: 'sm', ui: 'note-pencil', disabled: S.busy, onClick: save })])
+      ]));
+      host.appendChild(S.err ? DS.note('warn', S.err) : !L ? e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل السجل…')
+        : !L.length ? e('small', { class: 'cu-dr-hint' }, 'لا متابعة مسجّلة لهذا العقد بعد.') : e('ol', { class: 'tqn-fl-list' }, L.map(item)));
+    }
+    paint();
+    if (typeof IntersectionObserver === 'function') {
+      const io = new IntersectionObserver(function (en) { if (en.some(function (x) { return x.isIntersecting; })) { io.disconnect(); load(false); } });
+      io.observe(host);
+    } else load(false);
+    return host;
+  } catch (err) { void err; return null; }
+}
 /* v710: صف «التحصيل» في staff/next/ — العميل والعقد · الدفعة · المبلغ · مدة التأخر · الحالة، أعمدةً بدل سطر نصي واحد */
 function tqnDueHead(s, g, band, lf) {
   try {
@@ -29396,7 +29471,7 @@ if (LIVE.on) {
         const s = lvSec(g.x.name + ' — ' + g.c.no, BL[g.band] + ' · ' + (g.od.length ? 'متأخر ' + sar(lf(g.od)) + ' في ' + (g.od.length === 2 ? 'دفعتين' : pw(g.od.length)) + ' · أقدمها ' + stt(r0).replace('متأخرة ', 'منذ ') : pw(g.due.length) + ' · ' + sar(g.amt) + ' · ' + stt(r0)), [
           cuTbl(['الدفعة', 'الاستحقاق', 'المتبقي', 'الحالة'], g.show.map(function (r) { return e('tr', {}, [e('td', {}, fmtNum(r.p.i) + ' من ' + fmtNum(g.c.n)), e('td', {}, bdiD(iso(r.p.due))), e('td', {}, [sar(r.left), r.p.paid > 0 ? e('small', { class: 'cf-sub' }, ' مدفوعة جزئيًا') : null]), e('td', {}, DS.badge(stt(r), tone(r.d)))]); })),
           g.rows.length > g.show.length ? e('small', { class: 'cu-dr-hint' }, 'وبعدها ' + pw(g.rows.length - g.show.length) + ' بعد 30 يومًا · ' + sar(lf(g.rows.filter(function (r) { return r.d > 30; })))) : null,
-          CF_TRP_ALL(g.show)], 'fdue:' + g.c.no); return TQN ? tqnDueHead(s, g, f === 'all' ? BL[g.band] : '', lf) : s; /* v710 */ }))
+          CF_TRP_ALL(g.show), TQN ? tqnFollowSec(g) : null /* v711 */], 'fdue:' + g.c.no); return TQN ? tqnDueHead(s, g, f === 'all' ? BL[g.band] : '', lf) : s; /* v710 */ }))
         : LDS.emptyState({ icon: 'ok', title: 'لا عقود في هذا النطاق', compact: true })];
   };
   /* تنبيه في بطاقة الاستحقاق: تحويل رفعه العميل لدفعة منها ينتظر الاعتماد */
