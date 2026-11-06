@@ -1,4 +1,4 @@
-/* v702–v712 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v713 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -395,3 +395,27 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 @media (max-width: 980px) { .tq-next .tqn-pl { grid-template-columns: minmax(0, 1fr); } .tq-next .tqn-pl-pv { position: static; max-width: 340px; } }
 .pv-dev .tq-next .tqn-pl, .tq-next .pv-dev .tqn-pl { grid-template-columns: minmax(0, 1fr); }
 .tq-next .pv-dev .tqn-pl-pv { position: static; }
+
+/* v713: مراجعة التحويل البنكي — الرأس بالحقائق، ثم عمودا العمل و«الخطوة التالية»، ثم السجل */
+.tq-next .cu-dr-b.tqn-tr { gap: 14px; }
+.tq-next .tqn-tr-head { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 14px 16px; border: 1px solid var(--t2-line, #E4E7EC); border-radius: 14px; background: var(--t2-surface, #fff); }
+.tq-next .tqn-tr-f { display: grid; gap: 4px; min-width: 0; }
+.tq-next .tqn-tr-f small { font-size: 12px; color: var(--t2-muted, #667085); }
+.tq-next .tqn-tr-f b { font-size: 15px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tq-next .tqn-tr .cu-secs { display: grid; gap: 14px; }
+.tq-next .tqn-tr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.tq-next .tqn-tr-main, .tq-next .tqn-tr-side { display: grid; gap: 14px; min-width: 0; }
+.tq-next .tqn-tr-side { position: sticky; top: calc(var(--tqn-top, 72px) + 12px); }
+.tq-next .tqn-tr-next { border: 1.5px solid var(--t2-brand, #06707A); background: color-mix(in srgb, var(--t2-brand, #06707A) 5%, var(--t2-surface, #fff)); }
+.tq-next .tqn-tr-next p { margin: 0; font-size: 13px; line-height: 1.7; }
+.tq-next .tqn-tr-after { display: grid; gap: 6px; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--t2-line, #D0D5DD); }
+.tq-next .tqn-tr-after small { font-size: 12px; color: var(--t2-muted, #667085); }
+.tq-next .tqn-tr-after ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; font-size: 13px; }
+.tq-next .tqn-tr-match td { font-variant-numeric: tabular-nums; }
+.tq-next .t2.is-dark .tqn-tr-head { background: transparent; border-color: rgba(255, 255, 255, .14); }
+.tq-next .t2.is-dark .tqn-tr-next { background: rgba(6, 112, 122, .12); }
+@media (max-width: 980px) { .tq-next .tqn-tr-grid { grid-template-columns: minmax(0, 1fr); } .tq-next .tqn-tr-side { position: static; } }
+@media (max-width: 720px) { .tq-next .tqn-tr-head { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tq-next .cu-dr.is-dev .tqn-tr-grid { grid-template-columns: minmax(0, 1fr); }
+.tq-next .cu-dr.is-dev .tqn-tr-side { position: static; }
+.tq-next .cu-dr.is-dev .tqn-tr-head { grid-template-columns: repeat(2, minmax(0, 1fr)); }

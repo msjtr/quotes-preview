@@ -22459,6 +22459,64 @@ function admTrOpen(t, refetch) {
       t.status === 'review' && (!LIVE.on || cuCan('transfers.approve')) ? cuSec('المرحلة 3 · القرار', 'seal-check', [note, e('div', { class: 't2-pb-actions' }, [admTwoStep('اعتماد التحويل', 'primary', function () { return act('approve'); }), admTwoStep('طلب تعديل', null, function () { return act('fix'); }), admTwoStep('رفض', 'danger', function () { return act('reject'); })]),
         e('small', { class: 'cu-dr-hint' }, 'الضغطة الأولى للتأكيد والثانية للتنفيذ. تصل للعميل رسالة بالقرار بكل القنوات.'), out]) : null, (t.status === 'submitted' || t.status === 'review') ? admTrFlow(t, refetch) : null, cuSec('سجل الإجراءات', 'list-checks', [logBox])])] });
 }
+/* v713: مراجعة التحويل البنكي صفحةً نهائية بالقالب الواحد (staff/next/) — الحقائق في الرأس، ثم الطلب والإيصال وبنود المراجعة
+   وجدول المطابقة مع المستحق، و«الخطوة التالية» جانبًا (الاستلام أو القرار وما يحدث بعد الاعتماد)، ثم سجل الإجراءات.
+   إعادة ترتيب لعناصر admTrOpen نفسها بعد بنائها (العناصر تُنقل بأحداثها) — لا تغيير في منطق الاعتماد ولا في طلبات الخادم. */
+function tqnTrLayout(t) {
+  try {
+    if (!TQN || !t || !t.id) return;
+    const sh = [].slice.call(document.querySelectorAll('.cu-dr')).filter(function (x) { return x.getAttribute('data-r') === 'tr:' + t.id; })[0];
+    const b = sh && sh.querySelector('.cu-dr-b'), secs = b && b.querySelector(':scope > .cu-secs');
+    if (!secs || b.classList.contains('tqn-tr')) return;
+    const N = [].slice.call(secs.children);
+    const ttl = function (n) { const h = n.querySelector(':scope > .cu-ds-h'); return h ? h.textContent.trim() : ''; };
+    const by = function (re) { return N.filter(function (n) { return re.test(ttl(n)); }); };
+    const side = by(/^المرحلة (1|3)/), log = by(/^سجل الإجراءات/), rv = by(/^المرحلة 2/)[0] || null, req = by(/^الطلب$/)[0] || null;
+    N.forEach(function (n) { if (!n.classList.contains('cu-ds')) side.push(n); }); /* الإسناد والرفع للمعتمد (admTrFlow) */
+    const main = N.filter(function (n) { return side.indexOf(n) < 0 && log.indexOf(n) < 0; });
+    const pp = t.client_contract_payments || {}, ct = t.client_contracts || {}, qq = t.contract_settle_quotes || {}, R = t.review || {};
+    const r2 = function (n) { return Math.round((Number(n) || 0) * 100) / 100; };
+    const due = pp.seq ? r2((Number(pp.amount) || 0) - (Number(pp.paid_amount) || 0)) : r2(t.amount);
+    const cover = pp.seq ? 'الدفعة ' + fmtNum(pp.seq) + ' · ' + (ct.contract_no || ct.legacy_no || '—') : t.kind === 'settle' ? 'سداد قيمة المنتج' + (qq.quote_no ? ' · ' + qq.quote_no : '') : (TR_K[t.kind] || '—');
+    const st = TR_ST[t.status] || [t.status || '—', null];
+    const fact = function (k, v) { return e('div', { class: 'tqn-tr-f' }, [e('small', {}, k), e('b', {}, v)]); };
+    const head = e('div', { class: 'tqn-tr-head' }, [fact('المبلغ المطلوب', admMoney(t.amount)), fact('يغطي', cover),
+      fact(t.submitted_at ? 'أُرفق الإيصال' : 'أُرسل الطلب', bdiD(String(t.submitted_at || t.created_at || '').slice(0, 16).replace('T', ' '))), fact('الحالة', DS.badge(st[0], st[1]))]);
+    /* لكل معلومة مكان واحد: المبلغ والدفعة صارا في الرأس */
+    if (req) req.querySelectorAll('.t2-field').forEach(function (f) { const k = f.querySelector('.t2-field-k'); if (k && /^(المبلغ المطلوب|الدفعة)$/.test(k.textContent.trim())) f.hidden = true; });
+    /* المطابقة: المستحق من الدفعة (أو المبلغ المطلوب لغيرها) مقابل المستلم فعلًا — يتحدّث مع حقله في المراجعة */
+    const recvIn = rv ? rv.querySelector('.btr-rv input.t2-input') : null;
+    const recv = function () { const v = recvIn ? recvIn.value : (R.received != null ? R.received : t.amount); const n = Number(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : r2(n); };
+    const mt = e('section', { class: 'cu-ds tqn-tr-match' });
+    const paintM = function () {
+      const r = recv(), d = r2(r - due);
+      const res = d === 0 ? ['مطابق', 'ok'] : d < 0 ? ['أقل بـ ' + admMoney(-d), 'warn'] : ['زيادة ' + admMoney(d), 'warn'];
+      mt.replaceChildren(e('h3', { class: 'cu-ds-h' }, [e('span', { class: 'cu-ds-ic' }, frag(ui('list-checks', 16))), 'المطابقة مع المستحق']),
+        cuTbl(['البند', pp.seq ? 'المتبقي من الدفعة' : 'المطلوب', 'من هذا التحويل', 'النتيجة'], [e('tr', {}, [e('td', {}, cover), e('td', {}, admMoney(due)), e('td', {}, admMoney(r)), e('td', {}, DS.badge(res[0], res[1]))])]),
+        e('small', { class: 'cu-dr-hint' }, d > 0 ? 'الزيادة لا تُضاف للدفعة تلقائيًا وتحتاج معالجة بعد الاعتماد.' : recvIn ? 'يتحدّث مع «المبلغ المستلم فعلًا» في بنود المراجعة.' : 'من المبلغ المسجّل في الطلب.'));
+    };
+    paintM();
+    if (recvIn) recvIn.addEventListener('input', paintM);
+    const live = t.status === 'submitted' || t.status === 'review';
+    const nxt = t.status === 'submitted' ? 'استلم الإيصال ليُسجَّل باسمك، ثم دوّن تفاصيله وطابِقها مع كشف الحساب.'
+      : t.status === 'review' ? 'طابِق المبلغ مع كشف الحساب، ثم اتخذ القرار: اعتماد أو طلب تعديل أو رفض بسبب يصل للعميل.'
+        : t.status === 'approved' ? 'اعتُمد التحويل — لا إجراء.' : 'لا إجراء على هذا الطلب.';
+    const after = live ? e('div', { class: 'tqn-tr-after' }, [e('small', {}, 'بعد الاعتماد تلقائيًا'), e('ul', {}, [
+      e('li', {}, t.kind === 'settle' ? 'تُسدَّد قيمة المنتج ويُغلق العقد' : pp.seq ? 'يُضاف المبلغ إلى الدفعة ' + fmtNum(pp.seq) : 'يُضاف المبلغ'),
+      e('li', {}, 'يصدر الإيصال'), e('li', {}, 'تصل العميلَ رسالة الاستلام')])]) : null;
+    const card = e('section', { class: 'cu-ds tqn-tr-next' }, [e('h3', { class: 'cu-ds-h' }, [e('span', { class: 'cu-ds-ic' }, frag(ui('arrow-left', 16))), 'الخطوة التالية']), e('p', {}, nxt), after]);
+    const grid = e('div', { class: 'tqn-tr-grid' }, [e('div', { class: 'tqn-tr-main' }, main.concat([mt])), e('aside', { class: 'tqn-tr-side' }, [card].concat(side))]);
+    secs.replaceChildren(grid);
+    log.forEach(function (n) { secs.appendChild(n); });
+    const old = b.querySelector(':scope > .cu-dr-st');
+    if (old) old.replaceWith(head); else b.insertBefore(head, b.firstChild);
+    b.classList.add('tqn-tr');
+  } catch (err) { void err; }
+}
+if (TQN && typeof admTrOpen === 'function') {
+  const admTrOpen0 = admTrOpen;
+  admTrOpen = function (t, refetch) { const r = admTrOpen0(t, refetch); tqnTrLayout(t); return r; };
+}
 /* v655: إسناد الإيصال (لمن لديه صلاحية «اعتماد إيصالات التحويل البنكي») ورفعه للمعتمد (للموظف المستلم) */
 function admTrFlow(t, refetch) {
   const canA = !LIVE.on || cuCan('transfers.approve');
