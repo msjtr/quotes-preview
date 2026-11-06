@@ -20330,8 +20330,8 @@ function tqnStlTable(out, c, RF) {
       let edc = hint('—'), rsc = hint('—');
       if (can && P.length <= 1) {
         const l = P[0] || null; if (l) inT.push(l);
-        const sel = DS.select({ value: l ? (l.calc || 'pct') : '', options: [['', 'لا يطبق'], ['pct', 'نسبة %'], ['amt', 'مبلغ (ر.س)'], ['full', 'إعفاء كامل']], onChange: function (v) {
-          if (!v) { if (l) S.lines.splice(S.lines.indexOf(l), 1); }
+        const sel = DS.select({ value: l ? (l.calc || 'pct') : 'none', options: [['none', 'لا يطبق'], ['pct', 'نسبة %'], ['amt', 'مبلغ (ر.س)'], ['full', 'إعفاء كامل']], onChange: function (v) {
+          if (!v || v === 'none') { if (l) S.lines.splice(S.lines.indexOf(l), 1); } /* v719 */
           else if (l) { l.calc = v; if (v === 'full') l.val = ''; }
           else S.lines.push({ cat: 'extra', item: it.k, calc: v, val: '', reason: RS[0] || '' });
           onCh(); } });

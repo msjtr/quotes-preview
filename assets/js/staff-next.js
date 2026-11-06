@@ -395,6 +395,14 @@ function geoQ() {
     if (t && !t.__tqn) { t.__tqn = true; new MutationObserver(mark).observe(t, { childList: true, characterData: true, subtree: true }); }
     var r = document.getElementById('pv-root');
     if (r && !r.__tqn) { r.__tqn = true; new MutationObserver(mark).observe(r, { childList: true }); }
+  /* v719: هوية «تيرا · منصة الموظفين» في رأس القائمة الجانبية كما في التصور */
+  var stop = document.querySelector('#pv-host .t2-side-top');
+  if (stop && !stop.querySelector('.tqn-brand')) {
+    var bd = document.createElement('div');
+    bd.className = 'tqn-brand';
+    bd.innerHTML = '<span class="tqn-brand-l" aria-hidden="true">TERA</span><span class="tqn-brand-t"><b>تيرا</b><small>منصة الموظفين</small></span>';
+    stop.insertBefore(bd, stop.firstChild);
+  }
     /* v707: تبويبات الصفحة تُعاد بعد كل رسم داخلها، وموضع لوحة التفاصيل يتبع الشريط والقائمة */
     strip();
     geo();

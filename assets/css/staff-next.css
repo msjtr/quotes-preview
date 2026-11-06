@@ -1,4 +1,4 @@
-/* v702–v718 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v719 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -512,3 +512,56 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .tqn-dt tr.is-disc th[scope="row"] b { color: var(--t2-brand, #06707A); }
 .tq-next .tqn-dt-h { display: grid; gap: 2px; }
 .tq-next .tqn-dt-h b { font-size: 13px; }
+
+/* v719: الإطار العام بشكل التصور المعتمد — قائمة جانبية داكنة بطول الصفحة وفي رأسها هوية «تيرا · منصة الموظفين»،
+   وشريط علوي أبيض رفيع، وخلفية رمادية فاتحة، وعنوان الصفحة مسطّح بلا بطاقة، وبطاقات بحدّ رفيع. الشكل وحده — لا تغيير في البيانات ولا الإجراءات. */
+.tq-next { --tqn-navy: #0B2552; --tqn-bg: #F3F5F9; --tqn-line: #E3E8F0; --tqn-ink: #0F1B33; --tqn-mut: #66748C; }
+.tq-next .t2.t2-app { background: var(--tqn-bg); }
+.tq-next .t2-app > .t2-head { background: #fff; border-bottom: 1px solid var(--tqn-line); box-shadow: none; }
+/* القائمة الجانبية الداكنة */
+.tq-next .t2-app > .t2-side { background: var(--tqn-navy); border-inline-end: 0; padding: 14px 12px 12px; color: #fff; scrollbar-color: rgba(255, 255, 255, .22) transparent; }
+.tq-next .t2-app > .t2-side .t2-side-top { display: grid; gap: 10px; padding: 0 0 12px; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, .1); }
+.tq-next .tqn-brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px; color: #fff; }
+.tq-next .tqn-brand-l { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; background: linear-gradient(135deg, #2BC6C9, #0A8C96); font: 800 11px/1 "IBM Plex Sans Arabic", system-ui, sans-serif; letter-spacing: .02em; color: #fff; }
+.tq-next .tqn-brand-t { display: grid; gap: 1px; }
+.tq-next .tqn-brand-t b { font-size: 17px; font-weight: 800; color: #fff; }
+.tq-next .tqn-brand-t small { font-size: 11.5px; color: rgba(255, 255, 255, .6); }
+.tq-next .t2-app > .t2-side .t2-side-t { color: rgba(255, 255, 255, .72); background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .12); }
+.tq-next .t2-app > .t2-side .t2-side-t:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+.tq-next .tqn-nav .t2-side-gh, .tq-next .tqn-nav .tqn-gh { color: rgba(255, 255, 255, .5); font-size: 12px; font-weight: 600; background: none; }
+.tq-next .tqn-nav .t2-side-gh .t2-chev { opacity: .6; }
+.tq-next .tqn-nav .t2-side-i { min-height: 42px; height: auto; padding: 5px 10px; gap: 10px; color: rgba(255, 255, 255, .86); background: transparent; border-radius: 12px; border: 0; box-shadow: none; }
+.tq-next .tqn-nav .t2-side-i:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+.tq-next .tqn-nav .t2-side-i.is-on, .tq-next .tqn-nav .t2-side-i[aria-current="page"] { background: rgba(255, 255, 255, .13); color: #fff; box-shadow: inset -3px 0 0 #2BC6C9; }
+.tq-next .tqn-nav .t2-side-ic { width: 30px; height: 30px; flex: 0 0 30px; }
+.tq-next .tqn-nav .t2-side-ic svg { width: 30px; height: 30px; }
+.tq-next .tqn-nav .t2-side-l { color: inherit; font-size: 14px; font-weight: 600; }
+.tq-next .tqn-nav .tqn-dot { background: rgba(255, 255, 255, .45); }
+.tq-next .t2-side .tqn-flag { padding: 8px 10px; font-size: 11.5px; line-height: 1.6; gap: 2px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .78); }
+.tq-next .t2-side .tqn-flag b { font-size: 12px; color: #fff; }
+.tq-next .t2-side .tqn-flag a { color: #8AF0EC; }
+/* عنوان الصفحة مسطّح كما في التصور: الاسم والوصف بلا بطاقة ولا بلاطة كبيرة */
+.tq-next .t2-phead { gap: 8px; padding-block: 0 4px; }
+.tq-next .t2-phead-tx { background: none; border: 0; box-shadow: none; padding: 0; min-height: 0; }
+.tq-next .t2-phead-ic { display: none; }
+.tq-next .t2-phead-t { font-size: 24px; line-height: 1.35; font-weight: 800; color: var(--tqn-ink); }
+.tq-next .t2-phead-s { font-size: 13.5px; color: var(--tqn-mut); }
+.tq-next .t2-back { background: transparent; border: 0; box-shadow: none; padding: 2px 0; min-height: 0; color: var(--tqn-mut); font-size: 13px; }
+.tq-next .t2-back:hover { color: var(--tqn-ink); }
+/* البطاقات: أبيض بحدّ رفيع بلا ظل ثقيل */
+.tq-next #pv-root .t2-sec, .tq-next #pv-root .t2-card { background: #fff; border: 1px solid var(--tqn-line); border-radius: 16px; box-shadow: none; }
+/* الويب من 900: القائمة بطول الصفحة بجانب الشريط العلوي، والهوية فيها لا في الشريط */
+@media (min-width: 56.25rem) {
+  .tq-next #pv-host:not(.is-app) > .t2.t2-app { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "side head" "side main"; }
+  .tq-next #pv-host:not(.is-app) > .t2-app > .t2-side { display: flex; grid-row: 1 / span 2; top: 0; height: 100dvh; }
+  .tq-next #pv-host:not(.is-app) > .t2-app > .t2-head .t2-hd-brand { display: none; }
+}
+/* الشاشة المتوسطة (900–1024): القائمة الجانبية بدل الشريط السفلي */
+@media (min-width: 56.25rem) and (max-width: 64rem) {
+  .tq-next #pv-host:not(.is-app) > .t2-app > .t2-side { width: 248px; }
+  .tq-next #pv-host:not(.is-app.is-app) .t2-app > .t2-dock { display: none; }
+  .tq-next #pv-host:not(.is-app.is-app) .t2-app .t2-main { padding-bottom: 0; }
+}
+/* القائمة مطويّة: الشعار وحده */
+.tq-next .t2.is-side-min .tqn-brand { justify-content: center; padding-inline: 0; }
+.tq-next .t2.is-side-min .tqn-brand-t, .tq-next .t2.is-side-min .t2-side .tqn-flag { display: none; }
