@@ -1,4 +1,4 @@
-/* v702–v713 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v714 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -419,3 +419,34 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .cu-dr.is-dev .tqn-tr-grid { grid-template-columns: minmax(0, 1fr); }
 .tq-next .cu-dr.is-dev .tqn-tr-side { position: static; }
 .tq-next .cu-dr.is-dev .tqn-tr-head { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* v714: إعداد فاتورة سداد قيمة المنتج — الحسبة البسيطة، وعمود الإعداد، و«الخطوة التالية» والمعاينة جانبًا */
+.tq-next .tqn-eq { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 14px; border: 1px dashed var(--t2-line, #D0D5DD); border-radius: 12px; }
+.tq-next .tqn-eq-c { display: grid; gap: 2px; }
+.tq-next .tqn-eq-c small { font-size: 12px; color: var(--t2-muted, #667085); }
+.tq-next .tqn-eq-c b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.tq-next .tqn-eq-c.is-due b { font-size: 18px; color: var(--t2-brand, #06707A); }
+.tq-next .tqn-eq-o { font-size: 18px; font-weight: 700; color: var(--t2-muted, #667085); }
+.tq-next .tqn-stl-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.tq-next .tqn-stl-main, .tq-next .tqn-stl-side { display: grid; gap: 14px; min-width: 0; }
+.tq-next .tqn-stl-side { position: sticky; top: calc(var(--tqn-top, 72px) + 12px); }
+.tq-next .tqn-stl-next { display: grid; gap: 10px; padding: 14px 16px; border: 1.5px solid var(--t2-brand, #06707A); border-radius: 12px; background: color-mix(in srgb, var(--t2-brand, #06707A) 5%, var(--t2-surface, #fff)); }
+.tq-next .tqn-stl-next h5 { margin: 0; font-size: 15px; }
+.tq-next .tqn-stl-next p { margin: 0; font-size: 13px; line-height: 1.7; }
+.tq-next .tqn-stl-why { margin: 0; padding-inline-start: 18px; font-size: 12px; color: #B54708; display: grid; gap: 2px; }
+.tq-next .tqn-stl-acts { display: grid; gap: 8px; }
+.tq-next .tqn-stl-acts .t2-btn { width: 100%; justify-content: center; }
+.tq-next .tqn-stl-pv { display: grid; gap: 8px; }
+.tq-next .tqn-stl-pvh { font-size: 12px; color: var(--t2-muted, #667085); }
+.tq-next .tqn-stl-doc { display: grid; gap: 8px; padding: 16px; border-radius: 12px; border: 1px solid var(--t2-line, #E4E7EC); background: #fff; color: #101828; box-shadow: 0 1px 3px rgba(16, 24, 40, .08); }
+.tq-next .tqn-stl-brand { color: #06707A; }
+.tq-next .tqn-stl-dt { font-weight: 800; font-size: 15px; }
+.tq-next .tqn-stl-kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding-top: 6px; border-top: 1px solid #F2F4F7; }
+.tq-next .tqn-stl-kv b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tq-next .tqn-stl-kv.is-due b { font-size: 17px; color: #06707A; }
+.tq-next .t2.is-dark .tqn-stl-next { background: rgba(6, 112, 122, .12); }
+@media (max-width: 980px) { .tq-next .tqn-stl-grid { grid-template-columns: minmax(0, 1fr); } .tq-next .tqn-stl-side { position: static; } }
+.pv-dev .tq-next .tqn-stl-grid, .tq-next .pv-dev .tqn-stl-grid { grid-template-columns: minmax(0, 1fr); }
+.tq-next .pv-dev .tqn-stl-side { position: static; }
+/* v714: مسافة داخلية لبطاقة «الخطوة التالية» في مراجعة التحويل (v713) */
+.tq-next .tqn-tr-next { padding: 14px 16px; border-radius: 12px; }

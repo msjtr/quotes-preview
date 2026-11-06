@@ -20267,6 +20267,57 @@ function stlForm(c, r, RF) {
     S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null, nav]));
   return out;
 }
+/* v714: إعداد فاتورة «سداد قيمة المنتج» بالقالب النهائي الواحد (staff/next/) — الملخص ثم الحسبة البسيطة
+   (المتبقي − الإعفاء − الخصم = المستحق)، وأقسام الإعداد في عمود، و«الخطوة التالية» جانبًا (الحفظ وطلب الاعتماد · المسودة)
+   ومعاينة مختصرة لما يصل العميل مع «معاينة PDF». إعادة ترتيب لما يبنيه stlForm نفسه — الحساب والحفظ والمسودة كما هي. */
+function tqnStlLayout(out, c, r) {
+  try {
+    if (!TQN || !Array.isArray(out) || !c) return out;
+    const ed = out.filter(function (n) { return n && n.classList && n.classList.contains('stl-one'); })[0];
+    if (!ed || ed.classList.contains('tqn-stl')) return out;
+    const body = ed.querySelector(':scope > .stl-one-p'), nav = ed.querySelector(':scope > .stl-wz-nav'), bar = ed.querySelector(':scope > .stl-wz-sum');
+    if (!body || !nav) return out;
+    const S = (typeof CF_ST !== 'undefined' && CF_ST['stl:' + c.no]) || {}, R = S.res && !S.cerr ? S.res : null;
+    /* أزرار الشريط: قبل الفاصل (الحفظ · المعاينة) وبعده (المسودة · الإلغاء) */
+    const NK = [].slice.call(nav.children), sp = NK.filter(function (n) { return n.classList && n.classList.contains('sp'); })[0];
+    const pre = sp ? NK.slice(0, NK.indexOf(sp)) : NK, post = sp ? NK.slice(NK.indexOf(sp) + 1) : [];
+    const bSave = pre[0] || null, bPrev = pre.filter(function (b) { return /معاينة/.test(b.textContent); })[0] || null;
+    const vTxt = bar && bar.lastElementChild ? ((bar.lastElementChild.querySelector('b') || {}).textContent || '') : '';
+    const cell = function (k, v, due) { return e('div', { class: 'tqn-eq-c' + (due ? ' is-due' : '') }, [e('small', {}, k), e('b', {}, v)]); };
+    const op = function (x) { return e('span', { class: 'tqn-eq-o', 'aria-hidden': 'true' }, x); };
+    const exA = R ? (Number(R.exempt_amount) || 0) : 0;
+    const eq = R ? e('div', { class: 'tqn-eq', role: 'group', 'aria-label': 'الحسبة' }, [cell('المتبقي', SR(R.before)), op('−'), cell('الإعفاء', SR(exA)), op('−'),
+      cell('الخصم', SR(qr2((Number(R.discount) || 0) - exA))), op('='), cell('المستحق', SR(R.after), true)]) : null;
+    const nxt = !R ? (S.calc ? 'جارٍ الحساب…' : 'أكمل بيانات الفاتورة ليظهر المبلغ.')
+      : !S.addr ? 'اختر صيغة المخاطبة (السيد أو السيدة) في القسم 1، ثم احفظ الفاتورة.'
+        : R.needs_approval ? 'الفاتورة تحتاج اعتماد المشرف — احفظها لتُرسل إليه.' : 'البنود مكتملة — احفظ الفاتورة لتصبح جاهزة للتنفيذ.';
+    const why = R && R.needs_approval && (R.reasons || []).length ? e('ul', { class: 'tqn-stl-why' }, R.reasons.map(function (x) { return e('li', {}, x.t); })) : null;
+    const card = e('section', { class: 'tqn-stl-next' }, [e('h5', {}, 'الخطوة التالية'), e('p', {}, nxt), why,
+      e('div', { class: 'tqn-stl-acts' }, [bSave].concat(post).filter(Boolean))]);
+    const disc = R && R.items ? R.items.filter(function (it) { return Number(it.disc); }) : [];
+    const kv = function (k, v, cls) { return e('div', { class: 'tqn-stl-kv' + (cls ? ' ' + cls : '') }, [e('span', {}, k), e('b', {}, v)]); };
+    const pv = e('section', { class: 'tqn-stl-pv' }, [e('small', { class: 'tqn-stl-pvh' }, 'كما تصل العميل'),
+      e('div', { class: 'tqn-stl-doc' }, [e('b', { class: 'tqn-stl-brand' }, 'منصة تيرا'), e('div', { class: 'tqn-stl-dt' }, 'فاتورة سداد قيمة المنتج'), e('small', {}, ['العقد ', ltr(c.no)]),
+        R ? kv('المتبقي على العقد', SR(R.before)) : null,
+        disc.map(function (it) { return kv(it.t, '− ' + SR(it.disc)); }),
+        R && Number(R.discount) ? kv('نسبة الخصم الإجمالية', fmtNum(R.discount_pct) + '%') : null,
+        R ? kv('مستحق عليكم', SR(R.after), 'is-due') : e('small', { class: 'cu-dr-hint' }, 'تظهر الأرقام بعد اكتمال الحساب.'),
+        vTxt && vTxt !== '—' ? kv('صالحة حتى', vTxt) : null]),
+      e('small', { class: 'cu-dr-hint' }, 'معاينة مختصرة — المستند الكامل بنصوصه وإظهاره من «معاينة PDF».'),
+      bPrev ? e('div', { class: 't2-pb-actions' }, [bPrev]) : null]);
+    const err = ed.querySelector(':scope > .cu-err');
+    const top = [].slice.call(ed.children).filter(function (n) { return n !== body && n !== nav && n !== err; });
+    const grid = e('div', { class: 'tqn-stl-grid' }, [e('div', { class: 'tqn-stl-main' }, [body, err].filter(Boolean)), e('aside', { class: 'tqn-stl-side' }, [card, pv])]);
+    if (bar && eq) top.splice(top.indexOf(bar) + 1, 0, eq);
+    ed.replaceChildren.apply(ed, top.concat([grid]));
+    ed.classList.add('tqn-stl');
+  } catch (err) { void err; }
+  return out;
+}
+if (TQN && typeof stlForm === 'function') {
+  const stlForm0 = stlForm;
+  stlForm = function (c, r, RF) { return tqnStlLayout(stlForm0(c, r, RF), c, r); };
+}
 /* ===================== v549 — قالب سداد قيمة المنتج (قوالب الشركاء · قسم التحصيل) =====================
    القواعد المعتمدة (early-settlement.ts): تُعفى فائدة الأشهر التي لم تبدأ، والخصم الإضافي على البنود المختارة فقط،
    والضريبة محصّلة ولا تنقص، والفاتورة صالحة حتى تاريخ الدفعة القادمة (شاملًا). المستند على ورق عرض السعر وختمه. */
