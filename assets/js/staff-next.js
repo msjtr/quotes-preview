@@ -486,6 +486,9 @@ function geoQ() {
 (function () {
   function put() {
     var r = document.querySelector('#pv-host .t2-hd-r');
+    /* v726: شعار تيرا الرسمي الأبيض في رأس القائمة */
+    var br = document.querySelector('#pv-host .tqn-brand');
+    if (br && window.__tqLogo && window.__tqLogo.w && !br.classList.contains('has-logo')) { br.classList.add('has-logo'); br.innerHTML = '<img class="tqn-brand-img" alt="تيرا" src="' + window.__tqLogo.w + '"><small>منصة الموظفين</small>'; }
     if (r && !r.querySelector('.tqn-sw')) {
       var a = document.createElement('a');
       a.className = 'tqn-sw';
