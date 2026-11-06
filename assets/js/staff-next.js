@@ -101,7 +101,39 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
       '<g transform="translate(29.5,28) scale(0.171875)" fill="#06707A" opacity=".55"><path d="' + d + '"/></g>' +
       '<g transform="translate(28,25) scale(0.171875)" fill="#fff"><path d="' + d + '"/></g></svg>';
   }
-  function iconOf(A, k) { return (A && A.icon[k]) || tile3d(GLY[k] || '') || tile3d('info'); }
+  /* v724: بلاطة ثلاثية الأبعاد بلون القسم كما في التصور المعتمد (العملاء أزرق · الطلبات بنفسجي · المالية زعفراني · التواصل أحمر · الإعدادات رمادي)
+     الوصفة نفسها (ظل · قاعدة داكنة · وجه متدرّج · لمعة · حافة · رمز بظلّه) بتدرّجات معرّفة مرة واحدة في الصفحة */
+  var TQC = {
+    blue: ['#2457C5', '#6EA0FF', '#3B74E8'], violet: ['#5B3FD1', '#A18BFF', '#7559F0'], teal: ['#06707A', '#3FD0D3', '#0FA3A8'],
+    saffron: ['#B86F0A', '#FFC861', '#F0A12B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'], green: ['#13804F', '#5EE0A0', '#22A86B']
+  };
+  var COLK = {
+    'adm-home': 'teal', 'cu-list': 'blue', 'cu-new': 'blue', 'cu-pf-ver': 'blue', 'cu-pf-launch': 'blue',
+    'cu-svc': 'violet', 'cu-docs-pq': 'violet', 'cu-docs-pc': 'teal', 'cu-docs-sq': 'violet',
+    'fin-due': 'saffron', 'fin-pay': 'saffron', 'cu-paylinks': 'saffron', 'fin-req': 'saffron', 'cu-admx-rp': 'blue',
+    'comm-send': 'red', 'cs-tickets': 'red', 'cx': 'red', 'team-hub': 'teal', 'sys': 'slate', 'fin-fee': 'slate', 'pay-center': 'slate'
+  };
+  GLY['adm-home'] = GLY['adm-home'] || 'house'; GLY['team-hub'] = GLY['team-hub'] || 'users';
+  function tqDefs() {
+    if (document.getElementById('tq-tile-defs')) return;
+    var h = '<svg id="tq-tile-defs" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>';
+    Object.keys(TQC).forEach(function (c) { h += '<linearGradient id="tqg-' + c + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + TQC[c][1] + '"/><stop offset="1" stop-color="' + TQC[c][2] + '"/></linearGradient>'; });
+    h += '</defs></svg>';
+    document.body.insertAdjacentHTML('afterbegin', h);
+  }
+  function tile3c(glyph, col) {
+    var GL = window.__PGL || {}, d = GL[glyph], C = TQC[col] ? col : 'teal';
+    if (!d || !/^[\w\s,.\-]+$/.test(d)) return '';
+    try { tqDefs(); } catch (err) { void err; }
+    return '<svg class="t2-tile tqn-tile" viewBox="0 0 100 112" aria-hidden="true"><ellipse cx="50" cy="101" rx="38" ry="8" fill="rgba(11,37,82,.18)"/>' +
+      '<rect x="10" y="17" width="80" height="80" rx="25" fill="' + TQC[C][0] + '"/><rect x="10" y="7" width="80" height="80" rx="25" fill="url(#tqg-' + C + ')"/>' +
+      '<ellipse cx="34" cy="16" rx="40" ry="18" fill="#fff" opacity=".18"/>' +
+      '<rect x="11.5" y="8.5" width="77" height="77" rx="23.5" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>' +
+      '<g transform="translate(29.5,28) scale(0.171875)" fill="' + TQC[C][0] + '" opacity=".55"><path d="' + d + '"/></g>' +
+      '<g transform="translate(28,25) scale(0.171875)" fill="#fff"><path d="' + d + '"/></g></svg>';
+  }
+  window.__tqTile = tile3c;
+  function iconOf(A, k) { return tile3c(GLY[k] || '', COLK[k]) || (A && A.icon[k]) || tile3d(GLY[k] || '') || tile3d('info'); } /* v724: بلاطة بلون القسم */
 
   var ITEMS = {}, COVER = { 'adm-more': true };
   TREE.forEach(function (g) {
@@ -253,6 +285,29 @@ function strip() {
   d.setAttribute('data-k', k);
   d.innerHTML = html;
   page.insertBefore(d, page.firstChild);
+  /* v724: صفحات القسم الواحد تُختار من «العرض» — قائمة اختيار صغيرة بدل صف تبويبات فوق الصفحة */
+  var vt = d.querySelector('.tqn-vt');
+  if (vt) {
+    var sel = document.createElement('select');
+    sel.className = 'tqn-vsel';
+    sel.setAttribute('aria-label', 'العرض');
+    [].forEach.call(vt.querySelectorAll('[data-tqn-v]'), function (b) {
+      var op = document.createElement('option');
+      op.value = b.getAttribute('data-tqn-v');
+      op.textContent = b.textContent;
+      if (b.classList.contains('is-on')) op.selected = true;
+      sel.appendChild(op);
+    });
+    sel.addEventListener('change', function () { go(sel.value); });
+    var lb = document.createElement('label');
+    lb.className = 'tqn-vlb';
+    var sp = document.createElement('span');
+    sp.textContent = 'العرض';
+    lb.appendChild(sp);
+    lb.appendChild(sel);
+    vt.replaceWith(lb);
+  }
+
   var on = d.querySelector('.tqn-v.is-on');
   if (on && on.scrollIntoView) { try { on.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { void err; } }
   if (had) { var f = d.querySelector('.tqn-vc.is-on') || on; if (f) f.focus(); }
@@ -423,4 +478,42 @@ function geoQ() {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
+})();
+
+/* v724: الشريط العلوي والقائمة الجانبية كما في التصور المعتمد —
+   · زر ثابت في الشريط العلوي للانتقال إلى المنصة الحالية (/staff/) — الصفحة المفتوحة محفوظة في الجلسة فتُفتح هناك إن وُجدت.
+   · بطاقة المستخدم أسفل القائمة الجانبية (الاسم والدور، وزر الخروج) — تضغط أزرار الشريط الأصلية نفسها، فلا منطق جديد. */
+(function () {
+  function put() {
+    var r = document.querySelector('#pv-host .t2-hd-r');
+    if (r && !r.querySelector('.tqn-sw')) {
+      var a = document.createElement('a');
+      a.className = 'tqn-sw';
+      a.href = '/staff/' + location.search;
+      a.title = 'الانتقال إلى المنصة الحالية';
+      a.textContent = 'المنصة الحالية';
+      r.insertBefore(a, r.querySelector('.has-new') || r.querySelector('.is-out') || null);
+    }
+    var side = document.querySelector('#pv-host .t2-app > .t2-side'), who = r && r.querySelector('.t2-hwho');
+    if (!side || !who) return;
+    var nm = (who.querySelector('.t2-hwho-n') || {}).textContent || '', rl = (who.querySelector('.t2-hwho-r') || {}).textContent || '', av = (who.querySelector('.t2-avatar') || {}).textContent || '';
+    var u = side.querySelector(':scope > .tqn-user');
+    var sig = nm + '|' + rl + '|' + av;
+    if (u && u.getAttribute('data-sig') === sig && u === side.lastElementChild) return;
+    if (!u) {
+      u = document.createElement('div');
+      u.className = 'tqn-user';
+      u.innerHTML = '<button type="button" class="tqn-user-w"><span class="tqn-user-a"></span><span class="tqn-user-t"><b></b><small></small></span></button>' +
+        '<button type="button" class="tqn-user-o" title="تسجيل الخروج" aria-label="تسجيل الخروج"><svg viewBox="0 0 256 256" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"/></svg></button>';
+      u.querySelector('.tqn-user-w').addEventListener('click', function (ev) { ev.stopPropagation(); var w = document.querySelector('#pv-host .t2-hd-r .t2-hwho'); if (w) w.click(); });
+      u.querySelector('.tqn-user-o').addEventListener('click', function () { var o = document.querySelector('#pv-host .t2-hd-r .is-out'); if (o) o.click(); });
+    }
+    u.setAttribute('data-sig', sig);
+    u.querySelector('.tqn-user-a').textContent = av || (nm ? nm.charAt(0) : '');
+    u.querySelector('.tqn-user-t b').textContent = nm;
+    u.querySelector('.tqn-user-t small').textContent = rl;
+    side.appendChild(u);
+  }
+  var t = 0;
+  try { new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; put(); }, 60); }).observe(document.documentElement, { childList: true, subtree: true }); put(); } catch (err) { void err; }
 })();

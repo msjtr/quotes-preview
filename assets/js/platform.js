@@ -2,6 +2,131 @@
 'use strict';
 /* v704: المنصة الجديدة للموظفين — كل إضافة مشروطة بهذا الثابت فلا تعمل إلا على /staff/next/ */
 const TQN = /^\/staff\/next(\/|$)/.test(location.pathname);
+/* v724: زر ثابت في الشريط العلوي لمنصة الموظفين الحالية (/staff/) للانتقال إلى المنصة الجديدة (/staff/next/) — الصفحة المفتوحة محفوظة في الجلسة فتُفتح هناك إن وُجدت.
+   إضافة زر وحده في /staff/؛ لا تغيير في صفحاتها ولا بياناتها. والزر المقابل في staff/next/ تضيفه staff-next.js */
+if (!TQN && /^\/staff(\/|$)/.test(location.pathname)) {
+  try {
+    const tqSw = function () {
+      const r = document.querySelector('#pv-host .t2-hd-r');
+      if (!r || r.querySelector('.tqn-sw')) return;
+      const a = document.createElement('a');
+      a.className = 'tqn-sw';
+      a.href = '/staff/next/' + location.search;
+      a.title = 'الانتقال إلى المنصة الجديدة';
+      a.textContent = 'المنصة الجديدة';
+      a.setAttribute('style', 'display:inline-flex;align-items:center;height:40px;padding:0 14px;border:1px solid #06707A;border-radius:12px;background:#06707A;color:#fff;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap');
+      r.insertBefore(a, r.querySelector('.is-out') || null);
+    };
+    new MutationObserver(tqSw).observe(document.documentElement, { childList: true, subtree: true });
+  } catch (err) { void err; }
+}
+
+/* v724: القالب النهائي الواحد في staff/next/ (القاعدة 6 في التصور المعتمد) — مسار يعيدك خطوة واحدة، ثم رأس بالحقائق الأساسية،
+   ثم مساحة العمل، وبطاقة «الخطوة التالية» جانبًا بإجراء رئيسي واحد. لا أدراج ولا نوافذ: السطر في القائمة يفتح هذه الصفحة مكانها. */
+function tqnFx(o) {
+  const crumb = e('nav', { class: 'tqn-fx-crumb', 'aria-label': 'المسار' }, [
+    e('button', { type: 'button', class: 'tqn-fx-back', 'data-live-ok': '', onClick: o.back }, [frag(ui('caret-right', 14)), o.backT]),
+    e('span', { 'aria-hidden': 'true' }, '›'), e('span', {}, o.crumb || o.title)]);
+  const tags = (o.tags || []).filter(Boolean).map(function (t) { return e('span', { class: 'tqn-fx-tag' + (t[1] ? ' is-' + t[1] : '') }, t[0]); });
+  const facts = e('dl', { class: 'tqn-fx-facts' }, (o.facts || []).filter(Boolean).map(function (f) {
+    return e('div', { class: 'tqn-fx-f' + (f[2] ? ' is-' + f[2] : '') }, [e('dt', {}, f[0]), e('dd', {}, f[1])]);
+  }));
+  const head = e('header', { class: 'tqn-fx-head' }, [
+    e('div', { class: 'tqn-fx-ht' }, [tags.length ? e('div', { class: 'tqn-fx-tags' }, tags) : null, e('h2', { class: 'tqn-fx-t' }, o.title), o.sub ? e('p', { class: 'tqn-fx-s' }, o.sub) : null]),
+    facts]);
+  const nx = o.next ? e('section', { class: 'tqn-fx-next' }, [
+    e('small', {}, 'الخطوة التالية'), e('h3', {}, o.next.t), o.next.d ? e('p', {}, o.next.d) : null,
+    o.next.acts && o.next.acts.length ? e('div', { class: 'tqn-fx-acts' }, o.next.acts.filter(Boolean)) : null]) : null;
+  return e('div', { class: 't2-stack tqn-fx' }, [crumb, head, e('div', { class: 'tqn-fx-grid' }, [
+    e('div', { class: 'tqn-fx-main' }, (o.main || []).filter(Boolean)),
+    e('aside', { class: 'tqn-fx-side' }, [nx].concat(o.side || []).filter(Boolean))])]);
+}
+/* بطاقة في مساحة العمل: عنوان وعدّاد اختياري ثم المحتوى — بطاقة ظاهرة دائمًا، لا قسم يُطوى */
+function tqnFxCard(t, kids, extra) {
+  return e('section', { class: 'tqn-fx-card' }, [e('div', { class: 'tqn-fx-ch' }, [e('h3', {}, t), extra || null])].concat([].concat(kids).filter(Boolean)));
+}
+const tqnFxBtn = function (t, ic, fn, tone) { return liveOk(DS.button(t, { tone: tone || null, ui: ic, onClick: fn })); };
+const tqnFxCu = function (cid) { return function () { try { FX.pfc = cid; ADM.pfc = cid; } catch (err) { void err; } go('other', 'cu-file'); }; };
+const tqnFxTop = function () { try { window.scrollTo({ top: 0 }); } catch (err) { void err; } };
+/* v724: بلاطة بلون القسم (من staff-next.js) وإلا بلاطة المنصة */
+const tqnTile = function (g, c) { try { if (window.__tqTile) { const s = window.__tqTile(g, c); if (s) return s; } } catch (err) { void err; } return tile(g + ':teal'); };
+/* v724: الرئيسية في staff/next/ بشكل التصور المعتمد — تحية وتاريخ، ثم أربعة مؤشرات (المحصّل هذا الشهر · المتأخر · ما ينتظر قرارك · العملاء)،
+   ثم «التنبيهات» (البنود نفسها التي ينتظر فيها قرار، مرتّبة بالأولوية، ولكل بند زرّه) و«وصول سريع»، ثم التحصيل آخر 7 أيام والاستحقاق القادم وأعلى المتأخرات.
+   كل رقم محسوب من بيانات المنصة نفسها (dcPays · finCts · cuList · بنود صندوق المهام) — لا أرقام ثابتة ولا تغيير في البيانات. */
+function tqnHome(o) {
+  const IN = o.IN || [], now = new Date(), hr = now.getHours();
+  const T3 = function (ic) { const p = String(ic).split(':'); return frag(tqnTile(p[0], p[1])); };
+  const nm = String((typeof ME !== 'undefined' && ME && ME.name) || '').trim().split(/\s+/)[0] || '';
+  let P = null; try { if (o.finOk) P = dcPays(finCts()); } catch (err) { P = null; }
+  const rec = P ? P.rec.filter(function (r) { return r.cash; }) : [];
+  const sumA = function (A, k) { return qr2(A.reduce(function (a, r) { return a + (Number(r[k || 'amt']) || 0); }, 0)); };
+  const m0 = sumA(rec.filter(function (r) { return finPerFit(r.at, 'm0'); })), m1 = sumA(rec.filter(function (r) { return finPerFit(r.at, 'm1'); }));
+  const due = P ? P.due : [], late = due.filter(function (r) { return r.d < 0; });
+  const lateAmt = sumA(late, 'left'), lateCu = {}; late.forEach(function (r) { lateCu[r.x.cid] = 1; });
+  const D7 = []; for (let i = 6; i >= 0; i--) { const d = iso(new Date(now.getTime() - i * 864e5)); D7.push([d, sumA(rec.filter(function (r) { return iso(r.at) === d; }))]); }
+  const spark = function (V, col) {
+    const mx = Math.max.apply(null, V.concat([1])), W = 96, H = 28;
+    const pts = V.map(function (v, i) { return (i * W / Math.max(1, V.length - 1)).toFixed(1) + ',' + (H - 2 - (v / mx) * (H - 6)).toFixed(1); }).join(' ');
+    return frag('<svg class="tqn-hk-sp" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><polyline fill="none" stroke="' + col + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="' + pts + '"/></svg>');
+  };
+  const trend = function (a, b) { if (!(b > 0)) return null; const p = Math.round((a - b) / b * 100); return e('span', { class: 'tqn-hk-tr ' + (p >= 0 ? 'is-up' : 'is-dn') }, (p >= 0 ? '▲ ' : '▼ ') + fmtNum(Math.abs(p)) + '٪'); };
+  const goP = function (k) { return function () { go('other', k); }; };
+  const kpi = function (ic, t, v, unit, sub, tr, sp, tone, fn) {
+    return e(fn ? 'button' : 'section', { class: 'tqn-hk' + (tone ? ' is-' + tone : ''), type: fn ? 'button' : null, 'data-live-ok': '', onClick: fn || null }, [
+      e('div', { class: 'tqn-hk-h' }, [e('span', { class: 'tqn-hk-ic' }, T3(ic)), e('span', {}, t)]),
+      e('div', { class: 'tqn-hk-v' }, [e('b', {}, v), unit ? e('small', {}, unit) : null, sp || null]),
+      e('div', { class: 'tqn-hk-f' }, [e('small', {}, sub), tr || null])]);
+  };
+  const waitN = IN.reduce(function (a, x) { return a + (typeof x[5] === 'number' ? x[5] : 0); }, 0);
+  const K = [o.finOk ? kpi('arrow-up:saffron', 'المحصَّل هذا الشهر', fmtNum(Math.round(m0)), 'ر.س', m1 > 0 ? 'الشهر الماضي ' + fmtNum(Math.round(m1)) : 'منذ بداية الشهر', trend(m0, m1), spark(D7.map(function (x) { return x[1]; }), '#06707A'), null, goP('fin-pay')) : null,
+    o.finOk ? kpi('warning:red', 'المتأخر', fmtNum(Math.round(lateAmt)), 'ر.س', fmtNum(Object.keys(lateCu).length) + ' عميلًا · ' + fmtNum(late.length) + ' دفعة', null, null, late.length ? 'danger' : null, goP('fin-due')) : null,
+    kpi('list-checks:violet', 'ما ينتظر قرارك', fmtNum(waitN), null, IN.length ? fmtNum(IN.length) + ' أنواع في التنبيهات' : 'لا شيء معلّق', null, null, null, null),
+    o.cuOk ? kpi('users:blue', 'العملاء', fmtNum(o.nC || 0), null, 'ملفات العملاء المسجّلة', null, null, null, goP('cu-list')) : null].filter(Boolean);
+  /* التنبيهات: بنود صندوق المهام نفسها */
+  const TN = { danger: 'danger', warn: 'warn', info: 'info' };
+  const alerts = e('section', { class: 'tqn-hc tqn-ha' }, [
+    e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'التنبيهات'), IN.filter(function (a) { return a[3] === 'danger'; }).length ? e('span', { class: 'tqn-fx-tag is-danger' }, fmtNum(IN.filter(function (a) { return a[3] === 'danger'; }).length) + ' عاجل') : null]),
+    IN.length ? e('ul', { class: 'tqn-ha-l' }, IN.slice(0, 7).map(function (a) {
+      return e('li', { class: 'is-' + (TN[a[3]] || 'info') }, [e('span', { class: 'tqn-ha-ic' }, frag(ui(a[0] === 'services' ? 'clipboard-text' : a[0] === 'note' ? 'note-pencil' : a[0] === 'receipt' ? 'receipt' : a[0] === 'headset' ? 'headset' : a[0] === 'users' ? 'users' : a[0] === 'contract' ? 'file-text' : 'bell', 16))),
+        e('div', { class: 'tqn-ha-t' }, [e('b', {}, (typeof a[5] === 'number' ? fmtNum(a[5]) + ' · ' : '') + a[1]), a[2] ? e('small', {}, a[2]) : null]),
+        a[4] ? liveOk(DS.button('فتح', { size: 'sm', onClick: a[4] })) : null]);
+    })) : LDS.emptyState({ icon: 'ok', title: 'لا شيء معلّق', body: 'كل ما يُسند إليك أو ينتظر قرارًا يظهر هنا.', compact: true })]);
+  /* وصول سريع: الصفحات المتاحة لك فقط */
+  const QK = [['cu-new', 'العملاء الجدد', 'user:blue'], ['cu-svc', 'طلبات الخدمات', 'clipboard-text:violet'], ['fin-plnew', 'رابط دفع', 'credit-card:saffron'], ['fin-due', 'التحصيل', 'calendar-blank:teal'],
+    ['comm-send', 'رسالة لعميل', 'paper-plane-tilt:red'], ['cu-pf-ver', 'توثيق ملف', 'check-circle:teal'], ['fin-pay', 'المدفوعات', 'receipt:saffron'], ['cu-admx-rp', 'التقارير', 'chart-bar:slate']]
+    .filter(function (q) { return typeof LP !== 'undefined' && LP[q[0]]; });
+  const quick = QK.length ? e('section', { class: 'tqn-hc tqn-hq' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'وصول سريع')]),
+    e('div', { class: 'tqn-hq-g' }, QK.map(function (q) {
+      return e('button', { type: 'button', class: 'tqn-hq-i', 'data-live-ok': '', onClick: function () { if (q[0] === 'fin-plnew') { try { PAYC.made = null; tqnPlReset(); } catch (err) { void err; } } go('other', q[0]); } }, [e('span', { class: 'tqn-hq-ic' }, T3(q[2])), e('span', {}, q[1])]);
+    }))]) : null;
+  /* التحصيل آخر 7 أيام */
+  const mx7 = Math.max.apply(null, D7.map(function (x) { return x[1]; }).concat([1]));
+  const bars = o.finOk ? e('section', { class: 'tqn-hc' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'التحصيل — آخر 7 أيام'), e('small', {}, sar(sumA(D7.map(function (x) { return { amt: x[1] }; }))))]),
+    e('div', { class: 'tqn-hb' }, D7.map(function (x, i) {
+      return e('div', { class: 'tqn-hb-c' + (i === 6 ? ' is-today' : ''), title: x[0] + ' — ' + sar(x[1]) }, [e('i', { style: 'height:' + Math.max(3, Math.round(x[1] / mx7 * 100)) + '%' }), e('small', {}, i === 6 ? 'اليوم' : AR_DAY[new Date(now.getTime() - (6 - i) * 864e5).getDay()])]);
+    }))]) : null;
+  /* الاستحقاق القادم */
+  const BK = [['late', 'متأخر', function (r) { return r.d < 0; }], ['today', 'اليوم', function (r) { return r.d === 0; }], ['in7', 'خلال 7 أيام', function (r) { return r.d > 0 && r.d <= 7; }], ['in30', 'خلال 30 يومًا', function (r) { return r.d > 7 && r.d <= 30; }]];
+  const BV = BK.map(function (b) { return [b[0], b[1], sumA(due.filter(b[2]), 'left'), due.filter(b[2]).length]; }), bmx = Math.max.apply(null, BV.map(function (b) { return b[2]; }).concat([1]));
+  const dueC = o.finOk ? e('section', { class: 'tqn-hc' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'الاستحقاق القادم')]),
+    e('div', { class: 'tqn-hh' }, BV.map(function (b) {
+      return e('div', { class: 'tqn-hh-r is-' + b[0] }, [e('span', {}, b[1]), e('div', { class: 'tqn-hh-b' }, e('i', { style: 'width:' + Math.max(b[2] ? 4 : 0, Math.round(b[2] / bmx * 100)) + '%' })), e('b', {}, fmtNum(Math.round(b[2]))), e('small', {}, fmtNum(b[3]) + ' دفعة')]);
+    }))]) : null;
+  /* أعلى المتأخرات: لكل عميل عقده الأشد تأخرًا */
+  const G = {}; late.forEach(function (r) { const k = r.c.no; if (!G[k]) G[k] = { x: r.x, c: r.c, amt: 0, d: 0 }; G[k].amt += r.left || 0; G[k].d = Math.min(G[k].d, r.d); });
+  const TOP = Object.keys(G).map(function (k) { return G[k]; }).sort(function (a, b) { return b.amt - a.amt; }).slice(0, 5);
+  const topC = o.finOk ? e('section', { class: 'tqn-hc' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'أعلى المتأخرات'), e('button', { type: 'button', class: 'tqn-hc-a', 'data-live-ok': '', onClick: goP('fin-due') }, 'التحصيل')]),
+    TOP.length ? e('ul', { class: 'tqn-ht' }, TOP.map(function (g) {
+      return e('li', {}, e('button', { type: 'button', 'data-live-ok': '', onClick: function () { ADM.fdF = 'all'; ADM.fdOpen = g.c.no; go('other', 'fin-due'); } }, [e('i', { class: g.d < -LATE_MAX ? 'is-danger' : 'is-warn', 'aria-hidden': 'true' }), e('span', {}, (g.x && g.x.name) || '—'), e('small', {}, dayWord(-g.d)), e('b', {}, fmtNum(Math.round(g.amt)))]));
+    })) : LDS.emptyState({ icon: 'ok', title: 'لا متأخرات', compact: true })]) : null;
+  const head = e('header', { class: 'tqn-hh0' }, [e('h1', {}, (hr < 12 ? 'صباح الخير' : 'مساء الخير') + (nm ? '، ' + nm : '')),
+    e('p', {}, AR_DAY[now.getDay()] + ' ' + iso(now) + ' · آخر تحديث ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'))]);
+  return [e('div', { class: 't2-stack tqn-home' }, [head,
+    K.length ? e('div', { class: 'tqn-hk-g' }, K) : null,
+    e('div', { class: 'tqn-h2' + (quick ? '' : ' is-one') }, [alerts, quick]),
+    o.finOk ? e('div', { class: 'tqn-h3' }, [bars, dueC, topC]) : null])];
+}
+
 const TQH = []; /* v705: سجل الصفحات التي فتحها الموظف في staff/next/ — زر الرجوع يعود إلى السابقة فعلًا */
 const TQRD = { fin: 'fin-due', 'fin-rec': 'fin-rec-gw', 'cu-admx': 'fin-due' }; /* v707: صفحات الفهرس المالية في staff/next/ تُفتح على أول صفحة عمل بدلها — لا صفحة داخل صفحة */
 const TQGO = { on: false }; /* v707: أثناء إغلاق لوحة التفاصيل عند الانتقال لا يُرسم شيء — الصفحة الجديدة وحدها تُرسم */
@@ -14186,6 +14311,7 @@ const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup 
  const TV = function (a) { return typeof a[5] === 'number' ? fmtNum(a[5]) : '—'; };
  const TL = IN.length ? IN.slice(0, 4).map(function (a) { return [a[1], TV(a), a[3] === 'danger' ? 'warning' : a[3] === 'warn' ? 'clock' : 'list-checks', a[3] === 'danger' || a[3] === 'warn' ? 'warn' : null, a[4]]; }) : [['ما ينتظرك', fmtNum(0), 'check-circle', 'ok', null]];
  try { ['adm:inbox', 'adm:search'].forEach(function (k) { if (!(k in SECST)) SECST[k] = true; }); } catch (err) { void err; }
+ if (typeof tqnHome === 'function') { try { return tqnHome({ IN: IN, sup: sup, finOk: finOk, cuOk: cuOk, nC: nC }); } catch (err) { void err; } } /* v724: الرئيسية بشكل التصور — وإن تعذّر البناء تُرسم اللوحة السابقة */
  return [lvHero({ avatar: 'م', eye: admHomeT(), t: sup ? 'المشرف العام' : (ME.name || 'الموظف'), sub: AR_DAY[new Date().getDay()] + ' ' + iso(new Date()), pill: [IN.length ? (IN.length === 1 ? 'بند واحد ينتظرك' : fmtNum(IN.length) + ' بنود تنتظرك') : 'لا شيء معلّق', IN.length ? 'warn' : 'ok'], tiles: TL }),
  sec('صندوق المهام', null, [IN.length ? ok(lvHub(IN)) : LDS.emptyState({ icon: 'ok', title: 'لا شيء معلّق', body: 'كل ما يُسند إليك أو ينتظر قرارًا يظهر هنا مرتّبًا بالأولوية.', compact: true })], true, 'adm:inbox'),
  sec('البحث الموحّد', null, [ok(e('div', { class: 't2-stack-tight' }, [sIn, sBox]))], true, 'adm:search'),
@@ -14339,6 +14465,26 @@ function sec(title, note, body, open, key) { if (typeof gsecOf === 'function') {
 saveNav(); if (!x) appify(); keepAnchor(); } },
     [e('span', { class: 't2-sec-tx' }, [e('h2', { class: 't2-group-t' }, title)]), e('span', { class: 't2-chev', 'aria-hidden': 'true' })]);
   return e('section', { class: 't2-sec', 'data-k': k }, [h, b]);
+}
+/* v724: في staff/next/ لا أدراج — كل قسم (sec · lvSec) مفتوح دائمًا بعنوان ثابت، فلا يُخفي المحتوى ولا يُفتح ويُغلق بالضغط.
+   القسم يُبنى بالدالة نفسها ثم يُحوَّل رأسه من زر طيّ إلى عنوان، والمحتوى ظاهر. خارج staff/next/ لا تغيير. */
+if (TQN) {
+  const sec0 = sec;
+  sec = function (title, note, body, open, key) {
+    const s = sec0(title, note, body, open, key);
+    try {
+      if (s && s.classList && s.classList.contains('t2-sec')) {
+        const h = s.querySelector(':scope > .t2-sec-h'), b = s.querySelector(':scope > .t2-sec-b');
+        if (h && b) {
+          b.hidden = false;
+          const hd = e('div', { class: 't2-group-h t2-sec-h tqn-sec-h' }, [].slice.call(h.childNodes).filter(function (n) { return !(n.classList && n.classList.contains('t2-chev')); }));
+          h.replaceWith(hd);
+          s.classList.add('tqn-sec');
+        }
+      }
+    } catch (err) { void err; }
+    return s;
+  };
 }
 function guil() {
   let p = '';
@@ -29672,7 +29818,33 @@ if (LIVE.on) {
   /* v715: «سجل المدفوعات» في staff/next/ — سجل واحد لكل الأموال: شريط الحالة هو الفلتر (الكل · بانتظار الاعتماد · مقبولة · تحتاج مراجعة · مرفوضة · مستردة)،
    ثم أدوات الطريقة والفترة والعميل، ثم جدول عملية في كل سطر (العميل والعقد · الدفعة · الطريقة · المبلغ · الحالة · المطابقة · التاريخ)، والسطر يفتح تفاصيله تحته.
    نفس العمليات (fpOps) والحالات (fpSt/fpFitS) والبطاقة (fpCard) — بلا تغيير في البيانات ولا الخادم. */
+/* v724: صفحة العملية (المدفوعات ← سطر) — بيانات العملية والإيصال والمطابقة كما يبنيها fpCard، في القالب النهائي بلا قسم يُطوى،
+   وجانبًا «الخطوة التالية» حسب حالتها (اعتماد التحويل · مراجعة الفرق · لا إجراء) وبطاقة العميل. */
+function tqnFpPage(o, paint) {
+  const K = FP_KM[o.k] || ['', 'عملية', '', 'المبلغ'], S = fpSt(o), pays = (o.rows || []).map(function (r) { return r.p.i; });
+  const back = function () { ADM.fpOpen = ''; paint(); tqnFxTop(); };
+  const card = fpCard(o), body = card && card.querySelector ? card.querySelector(':scope > .t2-sec-b') : null;
+  const kids = body ? [].slice.call(body.childNodes) : [card];
+  /* لكل معلومة مكان واحد: ما في الرأس لا يتكرر في بيانات العملية */
+  const HK = ['العميل', 'العقد', 'الدفعة', 'الدفعات', 'التاريخ', 'الحالة', K[3]];
+  try { (body ? [].slice.call(body.querySelectorAll('.t2-field')) : []).forEach(function (f) { const k = f.querySelector('.t2-field-k'); if (k && HK.indexOf(k.textContent.trim()) >= 0) f.remove(); }); } catch (err) { void err; }
+  const pend = fpFitS(o, 'pend'), chk = fpFitS(o, 'chk') || !!o.over || !!o.short || o.st === 'nolink';
+  const cuB = o.cid ? tqnFxBtn('ملف العميل', 'user', tqnFxCu(o.cid)) : null;
+  const next = pend ? { t: 'بانتظار اعتمادك', d: 'راجع الإيصال والمبلغ والتاريخ مع الدفعة المستحقة، ثم اعتمد التحويل أو اطلب تصحيحه من صفحة التحويلات.', acts: [tqnFxBtn('مراجعة التحويل', 'check-circle', function () { go('other', 'cu-trin'); }, 'primary'), cuB] }
+    : chk ? { t: 'تحتاج مراجعة', d: o.st === 'nolink' ? 'العملية نجحت لدى بوابة الدفع ولم تُربط بأي دفعة — طابقها من جدول سداد العقد في ملف العميل.' : 'المبلغ المقبوض لا يطابق قيمة الدفعة — التصحيح من جدول سداد العقد في ملف العميل.', acts: [o.cid ? tqnFxBtn('ملف العميل', 'user', tqnFxCu(o.cid), 'primary') : null] }
+    : { t: 'لا إجراء مطلوب', d: 'العملية مسجّلة ومطابقة لدفعتها.', acts: [cuB] };
+  return tqnFx({
+    back: back, backT: 'المدفوعات', crumb: K[1] + ' · ' + (o.no || ''),
+    tags: [[K[1], ''], [S[0], S[1]]],
+    title: e('span', {}, [K[1] + ' · ', ltr(o.no || '—'), pays.length === 1 ? ' · الدفعة ' + fmtNum(pays[0]) : pays.length > 1 ? ' · ' + fmtNum(pays.length) + ' دفعات' : '']),
+    facts: [[K[3] || 'المبلغ', sar(o.amt), 'big'], [pays.length > 1 ? 'الدفعات' : 'الدفعة', pays.length ? pays.join('، ') + (o.n ? ' من ' + fmtNum(o.n) : '') : '—'], ['التاريخ', o.at ? bdiD(iso(o.at)) : '—'], ['العميل', o.name || '—']],
+    main: [tqnFxCard('بيانات العملية', kids)],
+    next: next, side: []
+  });
+}
+
 function tqnFpView(A, j, st, paint, refetch) {
+  if (ADM.fpOpen) { const o0 = A.filter(function (x) { return x && x.key === ADM.fpOpen; })[0]; if (o0) return [tqnFpPage(o0, paint)]; ADM.fpOpen = ''; } /* v724: السطر يفتح صفحة العملية */
   const m = ADM.fpM || 'all', s = ADM.fpS || 'all', per = ADM.fpP || 'all', cq = ADM.fpC || '';
   const base = function (o) { return (m === 'all' || o.k === m) && finPerFit(o.at, per) && (!cq || o.cid === cq); };
   const B = A.filter(base), R = B.filter(function (o) { return fpFitS(o, s); });
@@ -29692,7 +29864,7 @@ function tqnFpView(A, j, st, paint, refetch) {
   const body = [];
   L.slice(0, 300).forEach(function (o) {
     const S = fpSt(o), KK = FP_KM[o.k] || [o.k, o.k], pays = o.rows.map(function (r) { return r.p.i; }), on = open === o.key, x = mt(o);
-    body.push(e('tr', { class: 'tqn-fp-r' + (on ? ' is-open' : ''), tabindex: '0', 'aria-expanded': String(on), onClick: function () { ADM.fpOpen = on ? '' : o.key; paint(); }, onKeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ADM.fpOpen = on ? '' : o.key; paint(); } } }, [
+    body.push(e('tr', { class: 'tqn-fp-r' + (on ? ' is-open' : ''), tabindex: '0', 'aria-expanded': String(on), onClick: function () { ADM.fpOpen = o.key; paint(); tqnFxTop(); }, onKeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ADM.fpOpen = o.key; paint(); tqnFxTop(); } } }, [
       e('td', {}, [e('b', {}, o.name || '—'), e('small', {}, ltr(o.no || ''))]),
       e('td', {}, pays.length ? pays.join('، ') + (o.n ? ' من ' + fmtNum(o.n) : '') : '—'),
       e('td', {}, KK[1]),
@@ -29854,8 +30026,63 @@ const lvFinPay = function () {
   /* v720: صفحة «التحصيل» بشكل التصور المعتمد (staff/next/) — شريط النطاقات خلايا في بطاقة واحدة (العدد والمبلغ)، ثم جدول بسطر لكل عقد:
    العميل والعقد · الدفعة وشريط دفعات العقد · المبلغ · التأخر، والضغط على السطر يفتح تفاصيله في مكانه (الدفعات · التحويل المنتظر · سجل المتابعة).
    البيانات والنطاقات نفسها التي يبنيها lvFinDue — العرض وحده يتغيّر. */
+/* v724: صفحة الدفعة المستحقة (التحصيل ← سطر) — مكان الدفعة في العقد · دفعات العقد غير المسدّدة · التحويل المنتظر · سجل المتابعة،
+   وجانبًا «الخطوة التالية» (إرسال رابط الدفعة أو مراجعة التحويل) وبطاقة العميل. البيانات نفسها التي تبني سطر التحصيل. */
+function tqnFdPage(g, o) {
+  const c = g.c || {}, x = g.x || {}, rows = g.rows || [], od = g.od || [], r0 = (od[0] || rows[0] || {}), p0 = r0.p || {};
+  const P = (c.payments || []).slice().sort(function (a, b) { return (Number(a.i) || 0) - (Number(b.i) || 0); });
+  const tot = qr2(P.reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0));
+  const paid = qr2(P.reduce(function (a, p) { return a + Math.min(Number(p.paid) || 0, Number(p.amount) || 0); }, 0));
+  const left = qr2(P.reduce(function (a, p) { return a + (p.deferTo ? 0 : Math.max(0, (Number(p.amount) || 0) - (Number(p.paid) || 0))); }, 0));
+  const pct = tot > 0 ? Math.round(paid / tot * 100) : 0;
+  const d = Number(r0.d) || 0, tn = d < -LATE_MAX ? 'danger' : d < 0 ? 'warn' : d === 0 ? 'info' : '';
+  const when = d < 0 ? 'متأخرة ' + dayWord(-d) : d === 0 ? 'تستحق اليوم' : 'تستحق بعد ' + dayWord(d);
+  const amt = od.length ? o.lf(od) : (r0.left || 0);
+  const back = function () { ADM.fdOpen = ''; draw(); tqnFxTop(); };
+  /* مكان الدفعة في العقد: خلية لكل دفعة (مسدّدة · متأخرة · قادمة) */
+  const un = {}, late = {}; rows.forEach(function (r) { un[r.p.i] = r; }); od.forEach(function (r) { late[r.p.i] = 1; });
+  const n = Number(c.n) || P.length;
+  const tl = n && n <= 60 ? e('ol', { class: 'tqn-fd-tl', 'aria-label': 'دفعات العقد' }, (P.length ? P.map(function (p) { return Number(p.i); }) : Array.from({ length: n }, function (_, i) { return i + 1; })).map(function (i) {
+    const pp = P.filter(function (q) { return Number(q.i) === i; })[0], open = pp ? !pp.deferTo && (Number(pp.amount) || 0) - (Number(pp.paid) || 0) > 0.009 : !!un[i];
+    const k = late[i] ? 'late' : open ? 'due' : 'paid', cur = i === Number(p0.i);
+    return e('li', { class: 'is-' + k + (cur ? ' is-cur' : ''), title: 'الدفعة ' + fmtNum(i) + ' — ' + (k === 'late' ? 'متأخرة' : k === 'due' ? 'لم تُسدَّد بعد' : 'مسدّدة') }, [e('i', {}), e('small', {}, fmtNum(i))]);
+  })) : null;
+  const legend = tl ? e('div', { class: 'tqn-fd-lg' }, [['paid', 'مسدّدة'], ['late', 'متأخرة'], ['due', 'قادمة']].map(function (k) { return e('span', { class: 'is-' + k[0] }, [e('i', {}), k[1]]); })) : null;
+  const tbl = cuTbl(['الدفعة', 'الاستحقاق', 'المتبقي', 'الحالة'], (g.show || rows).map(function (r) {
+    return e('tr', {}, [e('td', {}, fmtNum(r.p.i) + ' من ' + fmtNum(n)), e('td', {}, bdiD(iso(r.p.due))), e('td', {}, [sar(r.left), r.p.paid > 0 ? e('small', { class: 'cf-sub' }, ' مدفوعة جزئيًا') : null]), e('td', {}, DS.badge(o.stt(r), o.tone(r.d)))]);
+  }));
+  const more = rows.length > (g.show || rows).length ? e('small', { class: 'cu-dr-hint' }, 'وبعدها ' + o.pw(rows.length - (g.show || rows).length) + ' بعد 30 يومًا · ' + sar(o.lf(rows.filter(function (r) { return r.d > 30; })))) : null;
+  const trp = CF_TRP_ALL(g.show || rows);
+  const fol = tqnFollowSec(g);
+  /* الخطوة التالية: تحويل ينتظر الاعتماد أولًا، وإلا رابط سداد الدفعة */
+  const link = function () {
+    try { PAYC.made = null; tqnPlReset(); Object.assign(PAYC.f, { uid: x.cid || '', ltype: 'contract', pid: p0.pid || '', desc: 'سداد الدفعة ' + fmtNum(p0.i) + ' من ' + fmtNum(n) + ' — ' + (c.no || '') }); } catch (err) { void err; }
+    go('other', 'fin-plnew');
+  };
+  const toFol = function () { const s = document.querySelector('.tqn-fx .tqn-fd-fol'); if (s) { try { s.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { void err; } const t = s.querySelector('textarea, select, input'); if (t) setTimeout(function () { try { t.focus({ preventScroll: true }); } catch (err) { void err; } }, 350); } };
+  const next = trp ? { t: 'تحويل ينتظر الاعتماد', d: 'رفع العميل إيصال تحويل لهذه الدفعة. راجع الإيصال واعتمده أو اطلب تصحيحه قبل أي تذكير.', acts: [tqnFxBtn('مراجعة التحويل', 'check-circle', function () { go('other', 'cu-trin'); }, 'primary'), tqnFxBtn('تسجيل متابعة', 'note-pencil', toFol)] }
+    : { t: d < 0 ? 'العميل متأخر ' + dayWord(-d) : d === 0 ? 'الدفعة تستحق اليوم' : 'الدفعة قادمة', d: d < 0 ? 'أرسل للعميل رابط سداد هذه الدفعة، ثم سجّل نتيجة تواصلك في سجل المتابعة.' : 'يمكنك إرسال رابط السداد مبكرًا، أو تسجيل ملاحظة في سجل المتابعة.',
+      acts: [x.cid && p0.pid ? tqnFxBtn('إرسال رابط الدفعة', 'link', link, 'primary') : null, tqnFxBtn('تسجيل متابعة', 'note-pencil', toFol, x.cid && p0.pid ? null : 'primary')] };
+  const cu = tqnFxCard('العميل', [e('dl', { class: 'tqn-fx-kv' }, [
+    e('div', {}, [e('dt', {}, 'الاسم'), e('dd', {}, x.name || '—')]),
+    e('div', {}, [e('dt', {}, 'العقد'), e('dd', {}, ltr(c.no || '—'))]),
+    e('div', {}, [e('dt', {}, 'دفعات متأخرة'), e('dd', {}, fmtNum(od.length))]),
+    e('div', {}, [e('dt', {}, 'المسدَّد من العقد'), e('dd', {}, fmtNum(pct) + '٪')])]),
+    x.cid ? tqnFxBtn('ملف العميل', 'user', tqnFxCu(x.cid)) : null]);
+  return tqnFx({
+    back: back, backT: 'التحصيل', crumb: (x.name || '') + ' · ' + (c.no || ''),
+    tags: [[when, tn], od.length > 1 ? [fmtNum(od.length) + ' دفعات متأخرة', 'warn'] : null, trp ? ['تحويل بانتظار الاعتماد', 'info'] : null],
+    title: e('span', {}, ['الدفعة ' + fmtNum(p0.i || 1) + ' من ' + fmtNum(n) + ' · ', ltr(c.no || '')]),
+    facts: [['المبلغ المستحق', sar(amt), 'big'], ['تاريخ الاستحقاق', p0.due ? bdiD(iso(p0.due)) : '—'], ['المتبقي على العقد', sar(left)], ['المسدَّد', fmtNum(pct) + '٪'], ['العميل', x.name || '—']],
+    main: [trp, tqnFxCard('مكان الدفعة في العقد', [tl, legend, tbl, more], e('small', {}, sar(paid) + ' مسدَّد من ' + sar(tot))), fol ? e('section', { class: 'tqn-fx-card tqn-fd-fol' }, fol) : null],
+    next: next, side: [cu]
+  });
+}
+
+
 function tqnFdView(o) {
   const O = o.O, R = o.R, f = o.f, lf = o.lf, BL = o.BL;
+  if (ADM.fdOpen && !o.XL) { const g0 = O.concat(R).filter(function (g) { return g && g.c && g.c.no === ADM.fdOpen; })[0]; if (g0) return [tqnFdPage(g0, o)]; ADM.fdOpen = ''; } /* v724: السطر يفتح صفحة الدفعة */
   const cnt = function (n) { return fmtNum(n) + (n === 1 ? ' عقد' : ' عقود'); };
   const cell = function (k, t, A, amt, tn) {
     const on = f === k;
@@ -29886,7 +30113,7 @@ function tqnFdView(o) {
     const amt = od.length ? lf(od) : (g.amt != null ? g.amt : lf(Lp));
     const pay = Lp.length > 1 ? (od.length ? fmtNum(Lp.length) + ' دفعات متأخرة' : fmtNum(Lp.length) + ' دفعات') : fmtNum(Lp[0].p.i) + ' من ' + fmtNum(g.c.n);
     const when = d < 0 ? dayWord(-d) : d === 0 ? 'اليوم' : 'بعد ' + dayWord(d);
-    const tog = function () { ADM.fdOpen = on ? '' : g.c.no; draw(); };
+    const tog = function () { ADM.fdOpen = g.c.no; draw(); tqnFxTop(); }; /* v724 */
     rows.push(e('tr', { class: 'tqn-fd-r' + (on ? ' is-open' : ''), tabindex: '0', 'aria-expanded': on ? 'true' : 'false', 'data-live-ok': '', onClick: tog, onKeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); tog(); } } }, [
       e('th', { scope: 'row' }, [e('b', {}, (g.x && g.x.name) || '—'), e('small', { dir: 'ltr' }, g.c.no)]),
       e('td', {}, [e('span', { class: 'tqn-fd-pay' }, pay), bar(g)]),
