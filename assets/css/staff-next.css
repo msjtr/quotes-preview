@@ -1,4 +1,4 @@
-/* v702–v714 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v715 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -450,3 +450,29 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .pv-dev .tqn-stl-side { position: static; }
 /* v714: مسافة داخلية لبطاقة «الخطوة التالية» في مراجعة التحويل (v713) */
 .tq-next .tqn-tr-next { padding: 14px 16px; border-radius: 12px; }
+
+/* v715: سجل المدفوعات — شريط الحالة هو الفلتر، وجدول عملية في كل سطر يفتح تفاصيله تحته */
+.tq-next .tqn-fp-k { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border: 1px solid var(--t2-line, #E4E7EC); border-radius: 14px; overflow: hidden; background: var(--t2-surface, #fff); }
+.tq-next .tqn-fp-kb { display: grid; gap: 2px; text-align: start; padding: 12px 14px; border: 0; border-inline-end: 1px solid var(--t2-line, #E4E7EC); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.tq-next .tqn-fp-kb:last-child { border-inline-end: 0; }
+.tq-next .tqn-fp-kb small { font-size: 12px; color: var(--t2-muted, #667085); }
+.tq-next .tqn-fp-kb b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.tq-next .tqn-fp-kb span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--t2-ink-2, #475467); }
+.tq-next .tqn-fp-kb.is-warn b { color: #B54708; }
+.tq-next .tqn-fp-kb.is-danger b { color: #B42318; }
+.tq-next .tqn-fp-kb.is-ok b { color: var(--t2-brand, #06707A); }
+.tq-next .tqn-fp-kb.is-on { background: color-mix(in srgb, var(--t2-brand, #06707A) 7%, var(--t2-surface, #fff)); box-shadow: inset 0 -3px 0 var(--t2-brand, #06707A); }
+.tq-next .tqn-fp-kb:focus-visible, .tq-next .tqn-fp-r:focus-visible { outline: 2px solid var(--t2-brand, #06707A); outline-offset: -2px; }
+.tq-next .tqn-fp-tw { display: grid; gap: 8px; overflow-x: auto; }
+.tq-next .tqn-fp-t { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--t2-surface, #fff); border: 1px solid var(--t2-line, #E4E7EC); border-radius: 12px; overflow: hidden; }
+.tq-next .tqn-fp-t th { text-align: start; font-weight: 600; font-size: 12px; color: var(--t2-muted, #667085); padding: 10px 12px; background: var(--t2-bg, #F6F8FA); white-space: nowrap; }
+.tq-next .tqn-fp-t td { padding: 10px 12px; border-top: 1px solid var(--t2-line, #EEF1F5); vertical-align: middle; }
+.tq-next .tqn-fp-t td small { display: block; font-size: 11px; color: var(--t2-muted, #667085); }
+.tq-next .tqn-fp-t td.is-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tq-next .tqn-fp-r { cursor: pointer; }
+.tq-next .tqn-fp-r:hover, .tq-next .tqn-fp-r.is-open { background: color-mix(in srgb, var(--t2-brand, #06707A) 4%, transparent); }
+.tq-next .tqn-fp-d > td { background: var(--t2-bg, #F6F8FA); padding: 12px; }
+.tq-next .tqn-fp-ok { color: var(--t2-brand, #06707A); font-weight: 700; }
+.tq-next .t2.is-dark .tqn-fp-k, .tq-next .t2.is-dark .tqn-fp-t { background: transparent; border-color: rgba(255, 255, 255, .14); }
+.tq-next .t2.is-dark .tqn-fp-t th, .tq-next .t2.is-dark .tqn-fp-d > td { background: rgba(255, 255, 255, .04); }
+@media (max-width: 720px) { .tq-next .tqn-fp-t thead { display: none; } .tq-next .tqn-fp-t tr.tqn-fp-r { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 12px; border-top: 1px solid var(--t2-line, #EEF1F5); } .tq-next .tqn-fp-t tr.tqn-fp-r td { border: 0; padding: 0; } .tq-next .tqn-fp-t tr.tqn-fp-d { display: block; } }

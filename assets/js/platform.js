@@ -29534,7 +29534,50 @@ if (LIVE.on) {
       e('small', { class: 'cu-dr-hint' }, 'كل فرق بدليله وما سُجّل في المنصة. اختر القرار واحفظه — يُنفَّذ بعدها ويظهر «نُفّذ» بما تم. ما دليله واضح أُنهي وتوضيحه في بطاقة «ما أُنهي» وفي الدفعة نفسها.'),
       e('div', { class: 't2-stack' }, open.concat(D.filter(function (d) { return d.status === 'done'; })).map(function (d) { return ardCard(d, st, paint, refetch); }))], 'fp:review', wait > 0);
   };
-  const lvFinPay = function () {
+  /* v715: «سجل المدفوعات» في staff/next/ — سجل واحد لكل الأموال: شريط الحالة هو الفلتر (الكل · بانتظار الاعتماد · مقبولة · تحتاج مراجعة · مرفوضة · مستردة)،
+   ثم أدوات الطريقة والفترة والعميل، ثم جدول عملية في كل سطر (العميل والعقد · الدفعة · الطريقة · المبلغ · الحالة · المطابقة · التاريخ)، والسطر يفتح تفاصيله تحته.
+   نفس العمليات (fpOps) والحالات (fpSt/fpFitS) والبطاقة (fpCard) — بلا تغيير في البيانات ولا الخادم. */
+function tqnFpView(A, j, st, paint, refetch) {
+  const m = ADM.fpM || 'all', s = ADM.fpS || 'all', per = ADM.fpP || 'all', cq = ADM.fpC || '';
+  const base = function (o) { return (m === 'all' || o.k === m) && finPerFit(o.at, per) && (!cq || o.cid === cq); };
+  const B = A.filter(base), R = B.filter(function (o) { return fpFitS(o, s); });
+  const sum = function (L) { return qr2(L.reduce(function (a, o) { return a + (o.amt || 0); }, 0)); };
+  const ks = FP_K.map(function (x) { return x[0]; }).filter(function (k) { return k === 'gw' || k === 'tr' || A.some(function (o) { return o.k === k; }); });
+  const K = [['all', 'كل العمليات', ''], ['pend', 'بانتظار الاعتماد', 'warn'], ['ok', 'مقبولة', 'ok'], ['chk', 'تحتاج مراجعة', 'warn'], ['rej', 'مرفوضة', 'danger'], ['rf', 'مستردة', '']];
+  const strip = e('div', { class: 'tqn-fp-k', role: 'group', 'aria-label': 'الحالة' }, K.map(function (x) {
+    const L = B.filter(function (o) { return fpFitS(o, x[0]); }), on = s === x[0];
+    if (x[0] !== 'all' && x[0] !== 'pend' && x[0] !== 'ok' && !L.length) return null;
+    return e('button', { type: 'button', class: 'tqn-fp-kb' + (on ? ' is-on' : '') + (x[2] ? ' is-' + x[2] : ''), 'aria-pressed': String(on), onClick: function () { ADM.fpS = x[0]; ADM.fpOpen = ''; paint(); } }, [
+      e('small', {}, x[1]), e('b', {}, fmtNum(L.length)), e('span', {}, x[0] === 'rf' ? sar(qr2(L.reduce(function (a, o) { return a + (o.rf || 0); }, 0))) : sar(sum(L)))]);
+  }));
+  const tools = fpTools(A, ks, paint);
+  try { const rows = tools.querySelectorAll(':scope > *'); if (rows[1]) rows[1].remove(); } catch (err) { void err; } /* الحالة في الشريط أعلاه */
+  const L = R.slice().sort(function (a, b) { return (b.at ? +b.at : 0) - (a.at ? +a.at : 0); }), open = ADM.fpOpen || '';
+  const mt = function (o) { return o.over ? 'زيادة ' + sar(o.over) : o.short ? 'أقل بـ ' + sar(o.short) : o.rv ? 'تحتاج مطابقة' : o.st === 'nolink' ? 'غير مربوطة' : ''; };
+  const body = [];
+  L.slice(0, 300).forEach(function (o) {
+    const S = fpSt(o), KK = FP_KM[o.k] || [o.k, o.k], pays = o.rows.map(function (r) { return r.p.i; }), on = open === o.key, x = mt(o);
+    body.push(e('tr', { class: 'tqn-fp-r' + (on ? ' is-open' : ''), tabindex: '0', 'aria-expanded': String(on), onClick: function () { ADM.fpOpen = on ? '' : o.key; paint(); }, onKeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ADM.fpOpen = on ? '' : o.key; paint(); } } }, [
+      e('td', {}, [e('b', {}, o.name || '—'), e('small', {}, ltr(o.no || ''))]),
+      e('td', {}, pays.length ? pays.join('، ') + (o.n ? ' من ' + fmtNum(o.n) : '') : '—'),
+      e('td', {}, KK[1]),
+      e('td', { class: 'is-num' }, sar(o.amt)),
+      e('td', {}, DS.badge(S[0], S[1])),
+      e('td', {}, x ? DS.badge(x, 'warn') : e('span', { class: 'tqn-fp-ok', 'aria-label': 'مطابقة' }, '✓')),
+      e('td', { class: 'is-num' }, o.at ? bdiD(iso(o.at)) : '—')]));
+    if (on) body.push(e('tr', { class: 'tqn-fp-d' }, e('td', { colspan: '7' }, fpCard(o))));
+  });
+  const legacy = (function () {
+    let a = 0, n = 0; try { Object.keys(LIVE_ADM.rh || {}).forEach(function (u) { if (isTestUid(u)) return; (LIVE_ADM.rh[u] || []).forEach(function (c) { (c.payments || []).forEach(function (p) { const v = Number(p.paid) || 0; if (v > 0) { a += v; n++; } }); }); }); } catch (err) { a = 0; }
+    return a > 0 ? DS.note('warn', 'مبالغ على سجلات طلبات خارج العقود: ' + sar(qr2(a)) + ' في ' + fmtNum(n) + ' دفعة', 'سُجّلت في النظام السابق على سجلات طلبات لا على عقود، فلا تدخل في المحصَّل حتى تُراجع وتُربط بعقدها — من «عقود العملاء» ← «تحتاج مراجعة».') : null; })();
+  return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'سجل المدفوعات'), e('small', {}, 'كل عملية مرة واحدة بطريقتها وحالتها ومطابقتها. اضغط رقمًا لتصفية القائمة، واضغط السطر لتفاصيله. الحسابات التجريبية لا تُحتسب.')]),
+    DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LV_PAY.at = 0; LIVE_ADM.at = 0; refetch(); } })]),
+    strip, legacy, fpReview((j && j.D) || [], st, paint, refetch), tools,
+    L.length ? e('div', { class: 'tqn-fp-tw' }, [e('table', { class: 'tqn-fp-t' }, [e('thead', {}, e('tr', {}, ['العميل والعقد', 'الدفعة', 'الطريقة', 'المبلغ', 'الحالة', 'المطابقة', 'التاريخ'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, body)]),
+      e('small', { class: 'cu-dr-hint' }, fmtNum(Math.min(L.length, 300)) + ' من ' + fmtNum(L.length) + ' عملية · ' + sar(sum(L)) + (L.length > 300 ? ' — اختر العميل أو الفترة لتضييقها.' : ''))])
+      : LDS.emptyState({ icon: 'ok', title: 'لا عمليات بهذا الاختيار', body: 'غيّر الحالة أو الطريقة أو الفترة أو العميل.', compact: true })].filter(Boolean);
+}
+const lvFinPay = function () {
     return admMount('finpay', 'سجل المدفوعات', async function () {
       const R = await Promise.all([lvPayLoad(), liveSb('admin_review_decisions?select=*&grp=eq.pay&order=ord.asc').catch(function () { return []; })]);
       return { at: Date.now(), D: Array.isArray(R[1]) ? R[1] : [] }; }, function (j, st, paint, refetch) {
@@ -29544,6 +29587,7 @@ if (LIVE.on) {
       const sum = function (L) { return qr2(L.reduce(function (a, o) { return a + o.amt; }, 0)); };
       const cash = R.filter(function (o) { return FP_CASH[o.k] && o.st === 'ok'; }), pend = R.filter(function (o) { return o.st === 'pend'; }), non = R.filter(function (o) { return !FP_CASH[o.k]; }), chk = R.filter(function (o) { return o.chk; }), rfT = qr2(R.reduce(function (a, o) { return a + (o.rf || 0); }, 0));
       const G = []; R.forEach(function (o) { let g = G.filter(function (y) { return y.cid === o.cid; })[0]; if (!g) { g = { cid: o.cid, name: o.name, L: [] }; G.push(g); } g.L.push(o); });
+    if (TQN) return tqnFpView(A, j, st, paint, refetch); /* v715 */
       return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'سجل المدفوعات'), e('small', {}, 'كل عملية سداد مرة واحدة بطريقتها وحالتها — للاطلاع. الاعتماد والرفض والاسترداد وروابط الدفع من ملف العميل، وتنعكس هنا. الحسابات التجريبية لا تُحتسب.')]),
           DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LV_PAY.at = 0; LIVE_ADM.at = 0; refetch(); } })]),
         /* v599: إجمالي المحصَّل ثم كل طريقة برقمها — مجموع الطرق يساوي الإجمالي */
