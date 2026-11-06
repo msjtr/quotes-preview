@@ -1,4 +1,4 @@
-/* v702–v717 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v718 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -496,3 +496,19 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .t2.is-dark .tqn-sr-next { background: rgba(6, 112, 122, .12); }
 @media (max-width: 980px) { .tq-next .tqn-sr-grid { grid-template-columns: minmax(0, 1fr); } .tq-next .tqn-sr-side { position: static; } }
 @media (max-width: 720px) { .tq-next .tqn-sr-head { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* v718: جدول واحد لبنود فاتورة سداد قيمة المنتج — الخصم وسببه وظهوره لكل بند */
+.tq-next .tqn-dt { overflow-x: auto; }
+.tq-next .tqn-dt .stl-tb { min-width: 820px; }
+.tq-next .tqn-dt .stl-tb th[scope="row"] { display: table-cell; min-width: 170px; }
+.tq-next .tqn-dt .stl-tb th[scope="row"] b { display: block; }
+.tq-next .tqn-dt .stl-tb th[scope="row"] small { display: block; font-weight: 400; font-size: 11.5px; color: var(--t2-muted, #667085); }
+.tq-next .tqn-dt .is-n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tq-next .tqn-dt-ed { display: flex; gap: 6px; align-items: center; min-width: 190px; }
+.tq-next .tqn-dt-ed > * { min-width: 0; flex: 1 1 0; }
+.tq-next .tqn-dt-rs { display: grid; gap: 6px; min-width: 170px; }
+.tq-next .tqn-dt .tqn-dt-nm { margin-top: 6px; height: 30px; font-size: 12px; font-weight: 400; }
+.tq-next .tqn-dt .stl-sg-ck { white-space: nowrap; }
+.tq-next .tqn-dt tr.is-disc th[scope="row"] b { color: var(--t2-brand, #06707A); }
+.tq-next .tqn-dt-h { display: grid; gap: 2px; }
+.tq-next .tqn-dt-h b { font-size: 13px; }

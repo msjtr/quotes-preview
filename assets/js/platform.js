@@ -20302,6 +20302,83 @@ function stlForm(c, r, RF) {
     S.err ? e('span', { class: 'cu-err', role: 'alert' }, S.err) : null, nav]));
   return out;
 }
+/* v718: جدول واحد لبنود فاتورة «سداد قيمة المنتج» (staff/next/) — لكل بند: المتبقي والخصم الإضافي وسببه وإجمالي الخصم وما بعده وظهوره في المستند،
+   بدل قائمة بنود الخصم الإضافي وجدول النتيجة وقائمة «البنود المخصومة» في محتوى المستند. الواجهة وحدها: الجدول يكتب في S.lines وS.doc أنفسهما،
+   والحساب من admin_settle_calc كما هو. خصم العضوية والنقاط والاستثنائي، وأكثر من خصم إضافي على بند واحد (التقريب)، تبقى بنودًا أسفل الجدول. */
+function tqnStlTable(out, c, RF) {
+  try {
+    if (!TQN || !Array.isArray(out) || !c || !RF || typeof CF_ST === 'undefined') return out;
+    const ed = out.filter(function (n) { return n && n.classList && n.classList.contains('stl-one'); })[0];
+    const S = CF_ST['stl:' + c.no], R = S && S.res && !S.cerr ? S.res : null;
+    if (!ed || !S || !Array.isArray(S.lines) || !R || !Array.isArray(R.items)) return out;
+    const secs = [].slice.call(ed.querySelectorAll(':scope > .stl-one-p > .stl-one-s'));
+    const sD = secs[1] || null, sDoc = secs[2] || null;
+    const box = sD ? sD.querySelector(':scope > .stl-wz-c') : null, tbw = sD ? sD.querySelector(':scope > .stl-tbw') : null;
+    if (!box || !tbw) return out;
+    const RS = ((LIVE_ADM.stx || {}).extra_reasons) || [], KS = STL_K.map(function (x) { return x[0]; });
+    const onCh = function () { S.touched = true; RF.paint(); };
+    const exOf = function (k) { return S.lines.filter(function (l) { return l && l.cat === 'extra' && l.item === k; }); };
+    const inT = [];
+    /* الظهور والمسمّى في المستند: صفوف «البنود المخصومة» نفسها تُنقل إلى الجدول بأحداثها */
+    const dc = sDoc ? [].slice.call(sDoc.querySelectorAll('.stl-dc')).filter(function (s) { const b = s.querySelector(':scope > .stl-dc-h > b'); return b && b.textContent.trim() === 'البنود المخصومة'; })[0] : null;
+    const dcOff = !!(dc && dc.classList.contains('is-off'));
+    const dcBox = dc ? dc.querySelector(':scope > .stl-dc-rows') : null, dcRows = dcBox ? [].slice.call(dcBox.children) : [];
+    const dcOk = dcRows.length === R.items.length;
+    const hint = function (t) { return e('small', { class: 'cu-dr-hint' }, t); };
+    const rows = R.items.map(function (it, n) {
+      const P = exOf(it.k), can = KS.indexOf(it.k) >= 0;
+      let edc = hint('—'), rsc = hint('—');
+      if (can && P.length <= 1) {
+        const l = P[0] || null; if (l) inT.push(l);
+        const sel = DS.select({ value: l ? (l.calc || 'pct') : '', options: [['', 'لا يطبق'], ['pct', 'نسبة %'], ['amt', 'مبلغ (ر.س)'], ['full', 'إعفاء كامل']], onChange: function (v) {
+          if (!v) { if (l) S.lines.splice(S.lines.indexOf(l), 1); }
+          else if (l) { l.calc = v; if (v === 'full') l.val = ''; }
+          else S.lines.push({ cat: 'extra', item: it.k, calc: v, val: '', reason: RS[0] || '' });
+          onCh(); } });
+        let num = null;
+        if (l && l.calc !== 'full') { num = DS.input({ value: l.val === undefined ? '' : l.val, numeric: true, placeholder: l.calc === 'amt' ? 'قبل الضريبة' : '%', onInput: function (v) { l.val = v; S.touched = true; } }); num.addEventListener('change', onCh); }
+        edc = e('div', { class: 'tqn-dt-ed' }, [sel, num]);
+        if (l) {
+          const other = l.rsO === true || !RS.length || (l.reason && RS.indexOf(l.reason) < 0);
+          const tx = other ? e('input', { class: 't2-input', type: 'text', maxlength: '200', placeholder: 'اكتب السبب', 'aria-label': 'سبب خصم ' + it.t, value: l.reason || '', onInput: function (ev) { l.reason = ev.target.value; S.touched = true; } }) : null;
+          if (tx) tx.addEventListener('change', onCh);
+          rsc = e('div', { class: 'tqn-dt-rs' }, [RS.length ? DS.select({ value: other ? '__o' : (l.reason || RS[0]), options: RS.map(function (r) { return [r, r]; }).concat([['__o', 'سبب آخر (يُكتب)']]),
+            onChange: function (v) { if (v === '__o') { l.rsO = true; l.reason = ''; } else { l.rsO = false; l.reason = v; } onCh(); } }) : null, tx]);
+        }
+      } else if (P.length > 1) edc = hint(fmtNum(P.length) + ' بنود خصم إضافي — أسفل الجدول');
+      const dr = dcOk && !dcOff ? dcRows[n] : null;
+      const ck = dr ? dr.querySelector(':scope > .stl-sg-ck') : null, nm = dr ? dr.querySelector(':scope > input.t2-input') : null;
+      if (nm) { nm.classList.add('tqn-dt-nm'); nm.setAttribute('placeholder', 'مسمّاه في المستند: ' + it.t); }
+      const d = Number(it.disc);
+      return e('tr', { class: d ? 'is-disc' : null }, [
+        e('th', { scope: 'row' }, [e('b', {}, it.t), (it.why || []).length ? e('small', {}, it.why.join(' · ')) : null, nm]),
+        e('td', { class: 'is-n' }, stlN(it.before)), e('td', {}, edc), e('td', {}, rsc),
+        e('td', { class: 'is-n' }, d ? '− ' + stlN(it.disc) + ' (' + stlPctV(it.disc, it.before) + ')' : '—'),
+        e('td', { class: 'is-n' }, stlN(it.after)),
+        e('td', {}, ck || hint(dcOff ? 'البنود مخفية من المستند' : '—'))]);
+    });
+    const V = R.vat || {}, lock = hint('محصّلة ولا تُخصم');
+    const vr = function (t, b, a) { const dd = qr2((Number(b) || 0) - (Number(a) || 0)); return e('tr', { class: 'is-vat' }, [e('th', { scope: 'row' }, t), e('td', { class: 'is-n' }, stlN(b)), e('td', {}, lock.cloneNode(true)), e('td', {}, hint('—')), e('td', { class: 'is-n' }, dd ? '− ' + stlN(dd) : '—'), e('td', { class: 'is-n' }, stlN(a)), e('td', {}, hint('—'))]); };
+    const foot = [vr('ضريبة المنتج', V.product_before, V.product_after), vr('ضريبة الخدمات (الرسوم)', V.fees_before, V.fees_after),
+      Number(R.residual) ? e('tr', { class: 'is-vat' }, [e('th', { scope: 'row' }, 'فرق التقريب'), e('td', { class: 'is-n' }, stlN(R.residual)), e('td', {}), e('td', {}), e('td', {}, '—'), e('td', { class: 'is-n' }, stlN(R.residual)), e('td', {})]) : null,
+      e('tr', { class: 'is-tot' }, [e('th', { scope: 'row' }, 'الإجمالي'), e('td', { class: 'is-n' }, stlN(R.before)), e('td', {}), e('td', {}), e('td', { class: 'is-n' }, '− ' + stlN(R.discount)), e('td', { class: 'is-n' }, stlN(R.after)), e('td', {})])].filter(Boolean);
+    const tbl = e('div', { class: 'stl-tbw tqn-dt' }, e('table', { class: 'stl-tb' }, [
+      e('thead', {}, e('tr', {}, ['البند', 'المتبقي', 'الخصم الإضافي', 'السبب', 'إجمالي الخصم', 'بعد الخصم', 'يظهر للعميل'].map(function (h) { return e('th', { scope: 'col' }, h); }))),
+      e('tbody', {}, rows.concat(foot))]));
+    /* بقية البنود: ما لم ينتقل إلى الجدول يبقى بنودًا كما هو */
+    const lns = [].slice.call(box.querySelectorAll(':scope > .stl-ln'));
+    if (lns.length === S.lines.length) lns.forEach(function (n, i) { if (inT.indexOf(S.lines[i]) >= 0) n.remove(); });
+    [].slice.call(box.querySelectorAll(':scope > small.cu-dr-hint')).forEach(function (n) { n.remove(); });
+    const add = [].slice.call(box.querySelectorAll(':scope > .t2-pb-actions')).filter(function (n) { return /إضافة بند خصم/.test(n.textContent); })[0];
+    if (add) add.replaceChildren(DS.button('إضافة خصم عضوية أو نقاط أو استثنائي', { size: 'sm', ui: 'plus', onClick: function () { S.lines.push({ cat: 'membership', item: 'margin', calc: 'pct', val: '', reason: '' }); onCh(); } }));
+    box.insertBefore(e('div', { class: 'tqn-dt-h' }, [e('b', {}, 'خصومات العضوية والنقاط والاستثنائية'), hint('تُطبَّق لكل بند بالترتيب: العضوية ثم النقاط ثم الإضافي ثم الاستثنائي.')]), box.firstChild);
+    sD.insertBefore(tbl, box); tbw.remove();
+    const h = sD.querySelector(':scope > .stl-one-h > span'); if (h) h.textContent = 'بنود الفاتورة والخصم';
+    if (dcBox && dcOk && !dcOff) dcBox.replaceWith(hint('إظهار كل بند ومسمّاه في المستند من جدول «بنود الفاتورة والخصم» أعلاه.'));
+    ed.classList.add('tqn-dt-on');
+  } catch (err) { void err; }
+  return out;
+}
 /* v714: إعداد فاتورة «سداد قيمة المنتج» بالقالب النهائي الواحد (staff/next/) — الملخص ثم الحسبة البسيطة
    (المتبقي − الإعفاء − الخصم = المستحق)، وأقسام الإعداد في عمود، و«الخطوة التالية» جانبًا (الحفظ وطلب الاعتماد · المسودة)
    ومعاينة مختصرة لما يصل العميل مع «معاينة PDF». إعادة ترتيب لما يبنيه stlForm نفسه — الحساب والحفظ والمسودة كما هي. */
@@ -20351,7 +20428,7 @@ function tqnStlLayout(out, c, r) {
 }
 if (TQN && typeof stlForm === 'function') {
   const stlForm0 = stlForm;
-  stlForm = function (c, r, RF) { return tqnStlLayout(stlForm0(c, r, RF), c, r); };
+  stlForm = function (c, r, RF) { return tqnStlLayout(tqnStlTable(stlForm0(c, r, RF), c, RF), c, r); }; /* v718 */
 }
 /* ===================== v549 — قالب سداد قيمة المنتج (قوالب الشركاء · قسم التحصيل) =====================
    القواعد المعتمدة (early-settlement.ts): تُعفى فائدة الأشهر التي لم تبدأ، والخصم الإضافي على البنود المختارة فقط،
