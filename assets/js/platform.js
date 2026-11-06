@@ -18825,6 +18825,41 @@ function srFullPage(x, RF) {
       DS.badge(st[0], st[1] || null),
       DS.button('ملف العميل', { size: 'sm', ui: 'user-circle', onClick: function () { ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); } })])].concat(TQN ? [tqnSrStage(x)] : [] /* v704 */, [srCard(x, RF, { who: false, kp: 'svp:', full: true })]);
 }
+/* v717: صفحة طلب «تأجيل دفعة» و«توحيد العقود» بالقالب النهائي الواحد (staff/next/) — الحقائق في الرأس (العقد · الدفعة · المبلغ · العقد الهدف)،
+   ثم عمود العمل (البيانات · المراسلة) و«الخطوة التالية» جانبًا (سطر المرحلة · القرار أو التنفيذ أو التعديل بأزراره)، ثم مسار الطلب بعرض الصفحة.
+   إعادة ترتيب لما يبنيه srFullPage نفسه بعد بنائه (العناصر تُنقل بأحداثها) — لا تغيير في القرار ولا التنفيذ ولا الخادم. سداد قيمة المنتج له محرّره (v714). */
+const TQSR_F = /^(العقد|العقود|العقود المطلوب توحيدها|الدفعة|الدفعات|المبلغ|إجمالي المتبقي|عقد التأجيل|العقد الموحّد)$/;
+function tqnSrLayout(out, x) {
+  try {
+    if (!TQN || !Array.isArray(out) || !x) return out;
+    const card = out.filter(function (n) { return n && n.classList && n.classList.contains('sr-card'); })[0];
+    const stage = out.filter(function (n) { return n && n.classList && n.classList.contains('tqn-stage'); })[0] || null;
+    if (!card || card.classList.contains('tqn-sr')) return out;
+    const kids = [].slice.call(card.children);
+    const ttl = function (n) { const h = n.querySelector('.t2-group-t'); return h ? h.textContent.trim() : ''; };
+    const log = kids.filter(function (n) { return n.classList.contains('t2-sec') && /^مسار الطلب/.test(ttl(n)); });
+    /* الإجراء الحالي: ملاحظة القرار ونماذج التنفيذ أو التعديل أو الإلغاء وأزرارها — كلها أبناء مباشرون للبطاقة */
+    const act = kids.filter(function (n) { const c = n.classList; return c.contains('cf-form') || c.contains('t2-pb-actions') || c.contains('cu-err') || (c.contains('t2-field') && c.contains('is-edit')); });
+    const main = kids.filter(function (n) { return log.indexOf(n) < 0 && act.indexOf(n) < 0; });
+    /* الحقائق: تُنقل من «بيانات الطلب» إلى الرأس (لكل معلومة مكان واحد) */
+    const fl = kids.filter(function (n) { return n.classList.contains('t2-fields'); })[0];
+    const facts = fl ? [].slice.call(fl.children).filter(function (f) {
+      const k = f.querySelector(':scope > .t2-field-k'); return k && f.classList.contains('t2-field') && TQSR_F.test(k.textContent.trim()); }) : [];
+    const head = facts.length ? e('div', { class: 'tqn-sr-head' }, facts) : null;
+    const nx = stage ? stage.querySelector(':scope > .tqn-next') : null;
+    if (nx && nx.firstChild && nx.firstChild.nodeType === 3 && /^الخطوة التالية/.test(nx.firstChild.nodeValue)) nx.removeChild(nx.firstChild); /* العنوان يكفي */
+    const side = e('aside', { class: 'tqn-sr-side' }, [e('section', { class: 'tqn-sr-next' }, [e('h5', {}, 'الخطوة التالية'), nx, act.length ? null : e('small', { class: 'cu-dr-hint' }, 'لا إجراء مطلوب الآن.')].concat(act))]);
+    const grid = e('div', { class: 'tqn-sr-grid' }, [e('div', { class: 'tqn-sr-main' }, main), side]);
+    card.replaceChildren.apply(card, [grid].concat(log));
+    card.classList.add('tqn-sr');
+    if (head) out.splice(out.indexOf(stage || card), 0, head);
+  } catch (err) { void err; }
+  return out;
+}
+if (TQN && typeof srFullPage === 'function') {
+  const srFullPage0 = srFullPage;
+  srFullPage = function (x, RF) { const out = srFullPage0(x, RF); return x && (x.kind === 'defer' || x.kind === 'merge') ? tqnSrLayout(out, x) : out; };
+}
 /* ── الأهلية: الإعادة للاستكمال بالبنود (منشئ واضح) ── */
 const EG_STAFF = { job_simah: 'تقرير سمة (ملم)', job_ss_pension: 'إثبات تعريف بمعاش الضمان', job_citizen_acct: 'إثبات تعريف بحساب المواطن', job_other: 'مرفق آخر' };
 const EG_IT = { field: 'تصحيح حقل', doc: 'مرفق', note: 'ملاحظة' };
