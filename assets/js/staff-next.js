@@ -1,4 +1,4 @@
-/* v702–v707 — المنصة الجديدة للموظفين (staff/next/)
+/* v702–v708 — المنصة الجديدة للموظفين (staff/next/)
    v707: قسم المالية بخمس صفحات وتبويبات داخل الصفحة، وبلا أدراج: لوحة التفاصيل صفحة في مساحة المحتوى (الموضع من geo()).
    قائمة تنقّل واحدة فوق محرك المنصة نفسه (platform.js): الخادم والقاعدة والصلاحيات والحسابات كما هي.
    لا يعمل هذا الملف إلا على المسار /staff/next/، ولا يغيّر شيئًا في /staff/ ولا في بوابة العميل.
@@ -223,7 +223,8 @@ function viewsOf(k) {
   return null;
 }
 function strip() {
-  var page = document.querySelector('#pv-root .lv-page'), k = window.__lvKey || '';
+  /* v708: صفحات «إجراءات الإدارة» (cu-admx-*) تُرسم في حاوية adm-live لا lv-page */
+  var k = window.__lvKey || '', page = document.querySelector('#pv-root .lv-page') || (/^cu-admx-/.test(k) ? document.querySelector('#pv-root > .t2-stack.adm-live') : null);
   var had = !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.tqn-views'));
   document.querySelectorAll('.tqn-views').forEach(function (x) { if (x.parentNode !== page || x.getAttribute('data-k') !== k) x.remove(); });
   if (!page || !k) return;
