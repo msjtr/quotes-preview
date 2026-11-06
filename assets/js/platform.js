@@ -29816,7 +29816,7 @@ if (t0 && t0.channel && t0.channel !== 'account' && typeof admTrOpen === 'functi
         L.run = function () {
           const out = [].concat(run0.apply(this, arguments)).filter(Boolean);
           const sel = e('div', { class: 'sys-form is-2 cu-bd-form fin-view' }, [DS.editField('العرض', DS.select({ value: x[0], options: pair, onChange: function (v) { if (v && v !== x[0]) go('other', v); } }))]);
-          out.unshift(sel); /* v597: «العرض» أعلى الصفحة */
+          if (!TQN) out.unshift(sel); /* v597: «العرض» أعلى الصفحة · v716: في staff/next/ تكفي التبويبات */
           return out;
         };
       });
