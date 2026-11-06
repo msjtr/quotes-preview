@@ -1,4 +1,4 @@
-/* v702–v719 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v720 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -565,3 +565,47 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 /* القائمة مطويّة: الشعار وحده */
 .tq-next .t2.is-side-min .tqn-brand { justify-content: center; padding-inline: 0; }
 .tq-next .t2.is-side-min .tqn-brand-t, .tq-next .t2.is-side-min .t2-side .tqn-flag { display: none; }
+
+/* v720: صفحة «التحصيل» بشكل التصور — شريط النطاقات في بطاقة واحدة، وجدول بسطر لكل عقد */
+.tq-next .tqn-fd-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(106px, 1fr); overflow-x: auto; scrollbar-width: thin; background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 16px; }
+.tq-next .tqn-fd-c { display: grid; gap: 4px; justify-items: start; padding: 12px 14px; text-align: start; background: #fff; border: 0; border-inline-start: 1px solid var(--tqn-line, #E3E8F0); border-bottom: 3px solid transparent; cursor: pointer; font: inherit; color: var(--tqn-ink, #0F1B33); }
+.tq-next .tqn-fd-c:hover { background: #F8FAFC; }
+.tq-next .tqn-fd-c.is-on { background: color-mix(in srgb, #06707A 6%, #fff); border-bottom-color: #06707A; }
+.tq-next .tqn-fd-c small { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-fd-dot { width: 8px; height: 8px; border-radius: 50%; background: #94A3B8; }
+.tq-next .tqn-fd-c.is-warn .tqn-fd-dot { background: #F59E0B; }
+.tq-next .tqn-fd-c.is-danger .tqn-fd-dot { background: #DC2626; }
+.tq-next .tqn-fd-c.is-info .tqn-fd-dot { background: #2563EB; }
+.tq-next .tqn-fd-c b { font-size: 26px; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tq-next .tqn-fd-c span { font-size: 12.5px; color: var(--tqn-mut, #66748C); font-variant-numeric: tabular-nums; }
+.tq-next .tqn-fd-card { background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 16px; overflow: hidden; }
+.tq-next .tqn-fd-tools { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .tqn-fd-tools .sp { flex: 1 1 auto; }
+.tq-next .tqn-fd-tools .cu-bd-cf { display: flex; align-items: end; gap: 8px; margin: 0; min-width: 240px; }
+.tq-next .tqn-fd-tw { overflow-x: auto; }
+.tq-next .tqn-fd-t { width: 100%; border-collapse: collapse; min-width: 640px; }
+.tq-next .tqn-fd-t thead th { padding: 10px 16px; font-size: 12.5px; font-weight: 600; color: var(--tqn-mut, #66748C); text-align: start; background: #F8FAFC; border-bottom: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .tqn-fd-r { cursor: pointer; }
+.tq-next .tqn-fd-r > th, .tq-next .tqn-fd-r > td { padding: 12px 16px; border-bottom: 1px solid var(--tqn-line, #E3E8F0); text-align: start; vertical-align: middle; }
+.tq-next .tqn-fd-r:hover > *, .tq-next .tqn-fd-r.is-open > * { background: #F6FAFB; }
+.tq-next .tqn-fd-r:focus-visible { outline: 2px solid #06707A; outline-offset: -2px; }
+.tq-next .tqn-fd-r > th { display: table-cell; font-weight: 400; }
+.tq-next .tqn-fd-r > th b { display: block; font-size: 14px; font-weight: 700; color: var(--tqn-ink, #0F1B33); }
+.tq-next .tqn-fd-r > th small { display: block; font-size: 12px; color: var(--tqn-mut, #66748C); text-align: end; }
+.tq-next .tqn-fd-pay { display: block; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.tq-next .tqn-fd-bar { display: flex; gap: 3px; margin-top: 6px; max-width: 160px; }
+.tq-next .tqn-fd-bar i { flex: 1 1 0; height: 4px; border-radius: 2px; background: #E2E8F0; }
+.tq-next .tqn-fd-bar i.is-paid { background: #06707A; }
+.tq-next .tqn-fd-bar i.is-late { background: #F59E0B; }
+.tq-next .tqn-fd-r .is-n b { font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tq-next .tqn-fd-st { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 700; white-space: nowrap; background: #EEF2F6; color: #475569; }
+.tq-next .tqn-fd-st.is-warn { background: #FEF3C7; color: #B45309; }
+.tq-next .tqn-fd-st.is-danger { background: #FEE2E2; color: #B91C1C; }
+.tq-next .tqn-fd-st.is-info { background: #DBEAFE; color: #1D4ED8; }
+.tq-next .tqn-fd-go { width: 48px; }
+.tq-next .tqn-fd-chev { display: inline-grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 10px; color: var(--tqn-ink, #0F1B33); background: #fff; }
+.tq-next .tqn-fd-x > td { padding: 0 16px 16px; background: #F6FAFB; border-bottom: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .tqn-fd-xb { display: grid; gap: 12px; padding-top: 4px; }
+.tq-next .tqn-fd-foot { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-fd-xl { padding: 12px 16px; }
+.tq-next .t2.is-dark .tqn-fd-strip, .tq-next .t2.is-dark .tqn-fd-card, .tq-next .t2.is-dark .tqn-fd-c, .tq-next .t2.is-dark .tqn-fd-chev { background: transparent; }

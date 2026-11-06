@@ -29829,7 +29829,62 @@ const lvFinPay = function () {
   /* الدفعات المستحقة والقادمة — بطاقة لكل عقد بدفعاته داخلها، بلا أدراج.
      v460: التصنيف بالعقد لا بالدفعة — العقد في نطاق أقدم دفعة غير مسدَّدة فيه (متعثر إن تجاوزت 60 يومًا ولو كان فيه متأخر أحدث)،
      وتظهر معه كل دفعاته المتأخرة والقادمة خلال 30 يومًا كلٌّ بحالتها. المؤشرات هي الاختيار: اضغط المؤشر لعرض عقوده. */
-  const lvFinDue = function () {
+  /* v720: صفحة «التحصيل» بشكل التصور المعتمد (staff/next/) — شريط النطاقات خلايا في بطاقة واحدة (العدد والمبلغ)، ثم جدول بسطر لكل عقد:
+   العميل والعقد · الدفعة وشريط دفعات العقد · المبلغ · التأخر، والضغط على السطر يفتح تفاصيله في مكانه (الدفعات · التحويل المنتظر · سجل المتابعة).
+   البيانات والنطاقات نفسها التي يبنيها lvFinDue — العرض وحده يتغيّر. */
+function tqnFdView(o) {
+  const O = o.O, R = o.R, f = o.f, lf = o.lf, BL = o.BL;
+  const cnt = function (n) { return fmtNum(n) + (n === 1 ? ' عقد' : ' عقود'); };
+  const cell = function (k, t, A, amt, tn) {
+    const on = f === k;
+    return e('button', { type: 'button', class: 'tqn-fd-c' + (on ? ' is-on' : '') + (tn ? ' is-' + tn : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { ADM.fdF = k; ADM.fdOpen = ''; draw(); } },
+      [e('small', {}, [e('i', { class: 'tqn-fd-dot', 'aria-hidden': 'true' }), t]), e('b', {}, fmtNum(A.length)), e('span', {}, k === 'fp' ? cnt(A.length) : sar(amt))]);
+  };
+  const sumG = function (A) { return qr2(A.reduce(function (a, g) { return a + g.amt; }, 0)); };
+  const cells = DC_DUEF.map(function (x) {
+    const A = O.filter(function (g) { return x[0] === 'all' || g.band === x[0]; });
+    return cell(x[0], x[1], A, x[0] === 'all' ? lf(o.L) : sumG(A), x[0] === 'def' ? 'danger' : x[0] === 'late' ? 'warn' : x[0] === 'today' ? 'info' : '');
+  }).concat([cell('cl', 'مغلقة عليها متبقٍّ', o.CLO, qr2(o.CLO.reduce(function (a, g) { return a + lf(g.rows); }, 0)), 'warn'), cell('fp', 'اكتمل السداد ولم يُغلق', o.FPO, 0, '')]);
+  const strip = e('div', { class: 'tqn-fd-strip', role: 'group', 'aria-label': 'نطاقات التحصيل' }, cells);
+  const rem = typeof COMMT !== 'undefined' ? liveOk(DS.button('إرسال تذكير للمتأخرين', { size: 'sm', tone: 'primary', ui: 'bell-ringing', onClick: function () { try { if (typeof RM !== 'undefined') { RM.tab = 'late'; RM.sel = {}; RM.det = false; } COMMT.t = 'rem'; } catch (err) { void err; } go('other', 'comm'); } })) : null;
+  const tools = e('div', { class: 'tqn-fd-tools' }, [finCliFilter('fdC', o.P.due), e('span', { class: 'sp' }), rem]);
+  if (o.XL) return [strip, e('section', { class: 'tqn-fd-card' }, [tools, o.XL.length ? e('div', { class: 't2-stack tqn-fd-xl' }, o.XL) : LDS.emptyState({ icon: 'ok', title: 'لا عقود هنا', compact: true })])];
+  /* شريط دفعات العقد: مسدَّدة · متأخرة · لم تُسدَّد بعد */
+  const bar = function (g) {
+    const n = Number(g.c.n) || 0; if (!n || n > 36) return null;
+    const un = {}, late = {}; g.rows.forEach(function (r) { un[r.p.i] = 1; }); (g.od || []).forEach(function (r) { late[r.p.i] = 1; });
+    const S = []; for (let i = 1; i <= n; i++) S.push(e('i', { class: late[i] ? 'is-late' : un[i] ? 'is-due' : 'is-paid' }));
+    return e('span', { class: 'tqn-fd-bar', 'aria-hidden': 'true' }, S);
+  };
+  const open = ADM.fdOpen || '', rows = [], shown = R.slice(0, 300);
+  shown.forEach(function (g) {
+    const r0 = g.rows[0], od = g.od || [], d = Number(r0.d) || 0, on = open === g.c.no;
+    const tn = d < -LATE_MAX ? 'danger' : d < 0 ? 'warn' : d === 0 ? 'info' : 'n';
+    const Lp = od.length ? od : (g.due && g.due.length ? g.due : [r0]);
+    const amt = od.length ? lf(od) : (g.amt != null ? g.amt : lf(Lp));
+    const pay = Lp.length > 1 ? (od.length ? fmtNum(Lp.length) + ' دفعات متأخرة' : fmtNum(Lp.length) + ' دفعات') : fmtNum(Lp[0].p.i) + ' من ' + fmtNum(g.c.n);
+    const when = d < 0 ? dayWord(-d) : d === 0 ? 'اليوم' : 'بعد ' + dayWord(d);
+    const tog = function () { ADM.fdOpen = on ? '' : g.c.no; draw(); };
+    rows.push(e('tr', { class: 'tqn-fd-r' + (on ? ' is-open' : ''), tabindex: '0', 'aria-expanded': on ? 'true' : 'false', 'data-live-ok': '', onClick: tog, onKeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); tog(); } } }, [
+      e('th', { scope: 'row' }, [e('b', {}, (g.x && g.x.name) || '—'), e('small', { dir: 'ltr' }, g.c.no)]),
+      e('td', {}, [e('span', { class: 'tqn-fd-pay' }, pay), bar(g)]),
+      e('td', { class: 'is-n' }, e('b', {}, sar(amt))),
+      e('td', {}, e('span', { class: 'tqn-fd-st is-' + tn }, when)),
+      e('td', {}, f === 'all' ? e('small', { class: 'cu-dr-hint' }, BL[g.band] || '') : null),
+      e('td', { class: 'tqn-fd-go' }, e('span', { class: 'tqn-fd-chev', 'aria-hidden': 'true' }, frag(ui(on ? 'caret-down' : 'caret-left', 14))))]));
+    if (on) rows.push(e('tr', { class: 'tqn-fd-x' }, e('td', { colspan: '6' }, e('div', { class: 'tqn-fd-xb' }, [
+      cuTbl(['الدفعة', 'الاستحقاق', 'المتبقي', 'الحالة'], g.show.map(function (r) { return e('tr', {}, [e('td', {}, fmtNum(r.p.i) + ' من ' + fmtNum(g.c.n)), e('td', {}, bdiD(iso(r.p.due))), e('td', {}, [sar(r.left), r.p.paid > 0 ? e('small', { class: 'cf-sub' }, ' مدفوعة جزئيًا') : null]), e('td', {}, DS.badge(o.stt(r), o.tone(r.d)))]); })),
+      g.rows.length > g.show.length ? e('small', { class: 'cu-dr-hint' }, 'وبعدها ' + o.pw(g.rows.length - g.show.length) + ' بعد 30 يومًا · ' + sar(lf(g.rows.filter(function (r) { return r.d > 30; })))) : null,
+      CF_TRP_ALL(g.show), tqnFollowSec(g)]))));
+  });
+  const tot = qr2(shown.reduce(function (a, g) { const od = g.od || []; return a + (od.length ? lf(od) : (g.amt || 0)); }, 0));
+  const table = R.length ? e('div', { class: 'tqn-fd-tw' }, e('table', { class: 'tqn-fd-t' }, [
+    e('thead', {}, e('tr', {}, ['العميل والعقد', 'الدفعة', 'المبلغ', 'التأخر', f === 'all' ? 'النطاق' : '', ''].map(function (h) { return e('th', { scope: 'col' }, h); }))),
+    e('tbody', {}, rows)])) : LDS.emptyState({ icon: 'ok', title: 'لا عقود في هذا النطاق', compact: true });
+  const foot = R.length ? e('div', { class: 'tqn-fd-foot' }, [e('small', {}, fmtNum(shown.length) + ' من ' + fmtNum(R.length) + (R.length > 300 ? ' — يظهر أول 300' : '')), e('small', {}, 'إجمالي المعروض: ' + sar(tot))]) : null;
+  return [strip, e('section', { class: 'tqn-fd-card' }, [tools, table, foot])];
+}
+const lvFinDue = function () {
     const P = dcPays(finCts()), cq = ADM.fdC || '', L = P.due.filter(function (r) { return !cq || r.x.cid === cq; });
     const lf = function (A) { return qr2(A.reduce(function (a, r) { return a + (r.left || 0); }, 0)); };
     const band = function (d) { return d < -LATE_MAX ? 'def' : d < 0 ? 'late' : d === 0 ? 'today' : d <= 3 ? 'in3' : d <= 7 ? 'in7' : d <= 30 ? 'in30' : 'later'; };
@@ -29857,6 +29912,7 @@ const lvFinPay = function () {
         DS.note('warn', 'عقد مغلق عليه متبقٍّ', 'لا يُحسب متأخرًا ولا متعثرًا. يُراجع من ملف العميل: إعفاء الفرق، أو إعادة فتح العقد وتسويته.'),
         cuTbl(['الدفعة', 'الاستحقاق', 'المتبقي'], g.rows.map(function (r) { return e('tr', {}, [e('td', {}, fmtNum(r.p.i) + ' من ' + fmtNum(g.c.n)), e('td', {}, bdiD(iso(r.p.due))), e('td', {}, sar(r.left))]); }))], 'fdcl:' + g.c.no); })
       : f === 'fp' ? FPO.map(function (g) { return lvSec(g.x.name + ' — ' + g.c.no, 'اكتمل السداد · ' + pw(g.c.n), [DS.note('info', 'اكتمل السداد ولم يُغلق العقد', 'يُغلق من ملف العميل: «إجراء على العقد ← إغلاق العقد ← اكتمل السداد».')], 'fdfp:' + g.c.no); }) : null;
+    if (TQN) return tqnFdView({ O: O, R: R, f: f, lf: lf, BL: BL, L: L, P: P, CLO: CLO, FPO: FPO, XL: XL, stt: stt, tone: tone, pw: pw }); /* v720 */
     return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'الدفعات المستحقة والقادمة'), e('small', {}, 'كل عقد في نطاق أقدم دفعة غير مسدَّدة فيه، ومعه دفعاته المتأخرة والقادمة خلال 30 يومًا. متأخر: من اليوم الأول بعد الاستحقاق حتى 60 يومًا · متعثر: من اليوم 61 — اضغط المؤشر لعرض عقوده.')])]),
       e('div', { class: 'cu-kpis cu-bd-k4 fd-kpis' }, K),
       e('div', { class: 'm3-tools ax-tools' }, [finCliFilter('fdC', P.due),
