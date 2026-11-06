@@ -24085,8 +24085,8 @@ function tqnPlList(D, st, paint, refetch, rows, L) {
   const tbl = rows.length ? e('div', { class: 'tqn-fd-tw' }, e('table', { class: 'tqn-fd-t tqn-pl-t' }, [
     e('thead', {}, e('tr', {}, ['الرابط', 'الدافع', 'المبلغ', 'الحالة', 'الدفع / الانتهاء', ''].map(function (h) { return e('th', { scope: 'col' }, h); }))),
     e('tbody', {}, rows)])) : LDS.emptyState({ icon: 'ok', title: L.length ? 'لا روابط بهذه الحالة' : 'لا روابط بعد', compact: true });
-  const foot = rows.length ? e('div', { class: 'tqn-fd-foot' }, [e('small', {}, ['المعروض ', e('b', { class: 'adm-shown' }, fmtNum(shown)), ' من ', fmtNum(rows.length)]), e('small', {}, 'آخر 300 رابط')]) : null;
-  return e('div', { class: 't2-stack tqn-pl-list' }, [strip, e('section', { class: 'tqn-fd-card tqn-pl-card' }, [e('div', { class: 'tqn-pl-tools' }, tools), tbl, foot])]);
+  const foot = rows.length ? [e('small', { class: 'tqn-pl-cnt' }, ['المعروض ', e('b', { class: 'adm-shown' }, fmtNum(shown)), ' من ', fmtNum(rows.length)]), e('small', { class: 'tqn-pl-cap' }, 'آخر 300 رابط')] : []; /* v723: العدّاد مع الجدول في حاوية واحدة (admFilter يعدّ السطور في أب العدّاد) */
+  return e('div', { class: 't2-stack tqn-pl-list' }, [strip, e('section', { class: 'tqn-fd-card tqn-pl-card' }, [e('div', { class: 'tqn-pl-tools' }, tools), e('div', { class: 'tqn-pl-body' }, [tbl].concat(foot))])]);
 }
 function payLinksPanel(D, st, paint, refetch) {
   const L = D.links || [], by = function (s) { return L.filter(function (x) { return x.status === s; }).length; };
