@@ -1,4 +1,4 @@
-/* v702–v721 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v722 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -634,3 +634,20 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .tqn-fp-tools .fin-filters { flex: 2 1 420px; flex-wrap: nowrap; }
 .tq-next .tqn-fp-tools .fin-filters > .st-sel { width: auto; flex: 1 1 0; min-width: 160px; }
 .tq-next .tqn-fp-tools .cu-bd-cf { flex: 1 1 200px; min-width: 180px; }
+
+/* v722: صفحة «روابط الدفع» بشكل التصور — شريط حالات الروابط وجدول بسطر لكل رابط */
+.tq-next .tqn-pl-list { gap: 14px; }
+.tq-next .tqn-pl-tools { padding: 12px 16px; border-bottom: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .tqn-pl-tools .adm-tools { margin: 0; padding: 0; border: 0; background: none; }
+.tq-next .tqn-pl-tools .m3-q { display: flex; gap: 10px; align-items: center; margin: 0; }
+.tq-next .tqn-pl-tools .m3-q-i { flex: 1 1 auto; }
+.tq-next .tqn-pl-t { width: 100%; border-collapse: collapse; min-width: 760px; }
+.tq-next .tqn-pl-t .tqn-pl-r > td { padding: 12px 16px; border-bottom: 1px solid var(--tqn-line, #E3E8F0); text-align: start; vertical-align: middle; }
+.tq-next .tqn-pl-t .tqn-pl-r:hover > td { background: #F6FAFB; }
+.tq-next .tqn-pl-t .tqn-pl-r .adm-nm { display: grid; gap: 2px; }
+.tq-next .tqn-pl-t .tqn-pl-r .adm-nm b { font-size: 14px; font-weight: 700; color: var(--tqn-ink, #0F1B33); }
+.tq-next .tqn-pl-t .tqn-pl-r .adm-nm small { font-size: 12px; color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-pl-t .tqn-pl-r > td:nth-child(3) { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tq-next .tqn-pl-t .tqn-pl-r > td:nth-child(5) { font-size: 13px; color: var(--tqn-mut, #66748C); white-space: nowrap; }
+.tq-next .tqn-pl-t .tqn-pl-r .t2-pb-actions { display: flex; flex-wrap: nowrap; gap: 6px; justify-content: flex-end; margin: 0; }
+.tq-next .t2.is-dark .tqn-pl-t .tqn-pl-r:hover > td { background: rgba(255, 255, 255, .04); }

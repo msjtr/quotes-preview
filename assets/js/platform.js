@@ -24066,6 +24066,28 @@ function payMadeCard(m, D, refetch) {
       liveOk(DS.button('رابط جديد', { size: 'sm', ui: 'plus', onClick: function () { PAYC.made = null; refetch(); } }))]),
     e('small', { class: 'pl-made-tip' }, 'يفتح الدافع الرابط فيرى المبلغ والوصف، ويدفع بمدى أو البطاقة الائتمانية أو Apple Pay عبر بوابة الدفع المعتمدة، ويصله الإيصال PDF بالختم تلقائيًا بعد الدفع.')]);
 }
+/* v722: صفحة «روابط الدفع» بشكل التصور المعتمد (staff/next/) — شريط حالات الروابط بخلايا «التحصيل» (العدد والمبلغ)، ثم جدول بسطر لكل رابط
+   (الرابط · الدافع · المبلغ · الحالة · الدفع أو الانتهاء · الإجراءات) في بطاقة واحدة مع البحث والتحديث. السطور وأزرارها (نسخ · إرسال للدافع · إلغاء) هي التي يبنيها payLinksPanel نفسه. */
+function tqnPlList(D, st, paint, refetch, rows, L) {
+  const sum = function (A) { return qr2(A.reduce(function (a, x) { return a + (Number(x.amount) || 0); }, 0)); };
+  const K = [['all', 'كل الروابط', ''], ['open', 'مفتوحة', 'info'], ['paid', 'مدفوعة', 'ok'], ['expired', 'منتهية', ''], ['cancelled', 'ملغاة', 'danger']];
+  const f = st.f || 'all';
+  const strip = e('div', { class: 'tqn-fd-strip', role: 'group', 'aria-label': 'حالة الرابط' }, K.map(function (k) {
+    const A = L.filter(function (x) { return k[0] === 'all' || x.status === k[0]; }), on = f === k[0];
+    if (k[0] === 'cancelled' && !A.length) return null;
+    return e('button', { type: 'button', class: 'tqn-fd-c' + (on ? ' is-on' : '') + (k[2] ? ' is-' + k[2] : ''), 'aria-pressed': String(on), 'data-live-ok': '', onClick: function () { st.f = k[0]; paint(); } },
+      [e('small', {}, [e('i', { class: 'tqn-fd-dot', 'aria-hidden': 'true' }), k[1]]), e('b', {}, fmtNum(A.length)), e('span', {}, sar(sum(A)))]);
+  }));
+  const q = String(st.q || '').trim().toLowerCase();
+  rows.forEach(function (tr) { tr.classList.add('tqn-pl-r'); if (q) tr.hidden = (tr.getAttribute('data-s') || '').indexOf(q) < 0; });
+  const shown = rows.filter(function (tr) { return !tr.hidden; }).length;
+  const tools = admTools(st, null, paint, refetch, 'ابحث برقم الرابط أو الاسم أو الوصف');
+  const tbl = rows.length ? e('div', { class: 'tqn-fd-tw' }, e('table', { class: 'tqn-fd-t tqn-pl-t' }, [
+    e('thead', {}, e('tr', {}, ['الرابط', 'الدافع', 'المبلغ', 'الحالة', 'الدفع / الانتهاء', ''].map(function (h) { return e('th', { scope: 'col' }, h); }))),
+    e('tbody', {}, rows)])) : LDS.emptyState({ icon: 'ok', title: L.length ? 'لا روابط بهذه الحالة' : 'لا روابط بعد', compact: true });
+  const foot = rows.length ? e('div', { class: 'tqn-fd-foot' }, [e('small', {}, ['المعروض ', e('b', { class: 'adm-shown' }, fmtNum(shown)), ' من ', fmtNum(rows.length)]), e('small', {}, 'آخر 300 رابط')]) : null;
+  return e('div', { class: 't2-stack tqn-pl-list' }, [strip, e('section', { class: 'tqn-fd-card tqn-pl-card' }, [e('div', { class: 'tqn-pl-tools' }, tools), tbl, foot])]);
+}
 function payLinksPanel(D, st, paint, refetch) {
   const L = D.links || [], by = function (s) { return L.filter(function (x) { return x.status === s; }).length; };
   const chips = [['all', 'الكل', L.length], ['open', 'مفتوحة', by('open')], ['paid', 'مدفوعة', by('paid')], ['expired', 'منتهية', by('expired')], ['cancelled', 'ملغاة', by('cancelled')]].filter(function (c) { return c[0] === 'all' || c[2]; });
@@ -24085,6 +24107,7 @@ function payLinksPanel(D, st, paint, refetch) {
     return admRow([admName(ltr(x.ref_no), x.description), admName(who || '—', sub || null), admMoney(x.amount), admB(PAY_LS, x.status), x.status === 'paid' && x.paid_at ? bdiD(String(x.paid_at).slice(0, 16).replace('T', ' ')) : bdiD(String(x.expires_at).slice(0, 16).replace('T', ' ')), acts],
       null, [x.ref_no, who, x.description, x.payer_phone].join(' '));
   });
+  if (TQN) return tqnPlList(D, st, paint, refetch, rows, L); /* v722 */
   return DS.panel('روابط الدفع', 'آخر 300 رابط', [admTools(st, chips, paint, refetch, 'ابحث برقم الرابط أو الاسم أو الوصف'), admTable(['الرابط', 'الدافع', 'المبلغ', 'الحالة', 'الدفع / الانتهاء', ''], rows, L.length, 'لا روابط بعد', true)]);
 }
 const PAY_RS = { none: null, partial: ['مسترد جزئيًا', 'warn'], full: ['مسترد كاملًا', 'danger'], void: ['ملغاة', 'danger'] };
