@@ -1,4 +1,4 @@
-/* v702–v704 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v707 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -170,4 +170,127 @@
 @media (max-width: 480px) {
   .tq-next .tqn-stage { padding: 12px; }
   .tq-next .tqn-step { font-size: 12px; }
+}
+
+/* v707: بلا أدراج في staff/next/ — لوحة التفاصيل (cuDrawer) صفحةٌ في مساحة المحتوى نفسها: تحت الشريط العلوي،
+   وبجانب القائمة الجانبية، وفوق شريط التطبيق السفلي، بلا تعتيم ولا انزلاق. الموضع من --tqn-top/--tqn-side/--tqn-bottom (geo() في staff-next.js) */
+html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
+.tq-next .cu-dr.cu-dr.is-page {
+  position: fixed !important;
+  top: var(--tqn-top) !important;
+  bottom: var(--tqn-bottom) !important;
+  left: 0 !important;
+  right: var(--tqn-side) !important;
+  z-index: 55 !important;
+  background: var(--t2-bg, #F5F7FA) !important;
+  pointer-events: auto !important;
+}
+.tq-next .cu-dr.cu-dr.is-page > .cu-dr-p {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  background: var(--t2-bg, #F5F7FA) !important;
+}
+/* لوحة المراسلة الجانبية (desk:) صفحة كاملة كذلك — ومسارها ظاهر لأنه صار مسار الصفحة نفسها */
+.tq-next .cu-dr.cu-dr.is-page[data-r^="desk:"] > .cu-dr-p > .cu-dr-nav { display: grid !important; }
+.tq-next .cu-dr.cu-dr.is-page .st-grip { display: none !important; }
+
+/* لوحات «st-modal» ونوافذ التأكيد: تبقى في مكانها وتُغلق بطريقتها، لكنها صفحة بخلفية الصفحة لا ورقة فوق تعتيم */
+.tq-next .st-modal.st-modal:not(.is-dev) { background: var(--t2-bg, #F5F7FA) !important; place-items: stretch !important; align-items: stretch !important; padding: 0 !important; }
+.tq-next .st-modal.st-modal:not(.is-dev) .st-sheet {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  overflow: auto;
+  padding: 24px max(24px, calc((100% - 1180px) / 2)) 40px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.tq-next .st-modal.st-modal .st-grip { display: none !important; }
+.tq-next .ov:not(.is-full) { background: var(--t2-bg, #F5F7FA) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; place-items: start center !important; padding-top: 64px !important; }
+.tq-next .pv-frame .ov:not(.is-full) { padding-top: 24px !important; }
+.tq-next .ov:not(.is-full) .ov-b { box-shadow: none !important; border: 1px solid var(--t2-line, rgba(11, 37, 82, .12)); }
+.tq-next .loy-dlg-bg { background: var(--t2-bg, #F5F7FA) !important; place-items: start center !important; padding-top: 64px !important; }
+.tq-next .loy-dlg { box-shadow: none !important; border: 1px solid var(--t2-line, rgba(11, 37, 82, .12)); }
+
+/* معاينة «تطبيق الجوال»: اللوحة تملأ شاشة التطبيق كاملة بدل الورقة السفلية */
+.tq-next .cu-dr.cu-dr.is-dev,
+.tq-next .st-modal.st-modal.is-dev { background: var(--t2-bg, #F5F7FA) !important; align-items: stretch !important; }
+.tq-next .cu-dr.cu-dr.is-dev .cu-dr-p,
+.tq-next .st-modal.st-modal.is-dev .st-sheet {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.tq-next .cu-dr.cu-dr.is-dev .st-grip,
+.tq-next .st-modal.st-modal.is-dev .st-grip { display: none !important; }
+
+/* «الأقسام» في التطبيق: صفحة كاملة لا ورقة سفلية */
+.tqn-sheet { align-items: stretch; }
+.tqn-back { display: none; }
+.tqn-panel { max-width: none; max-height: none; height: 100%; border-radius: 0; box-shadow: none; padding-top: calc(8px + env(safe-area-inset-top)); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.tqn-grip { display: none; }
+.tqn-x { width: auto; min-width: 44px; padding: 0 14px; font-size: 15px; font-weight: 700; }
+
+/* v707: صفحات البند الواحد تبويبات أعلى الصفحة (التحصيل · المدفوعات · الطلبات المالية · التقارير) */
+.tq-next .tqn-views { display: grid; gap: 10px; justify-items: start; margin: 0 0 4px; }
+.tq-next .tqn-vt {
+  display: flex;
+  gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--t2-surface-2, #EEF1F5);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tq-next .tqn-vt::-webkit-scrollbar { display: none; }
+.tq-next .tqn-v {
+  flex: none;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  background: transparent;
+  color: var(--t2-ink-2, inherit);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tq-next .tqn-v.is-on { background: var(--t2-surface, #fff); color: var(--t2-ink, #0B2552); box-shadow: 0 1px 3px rgba(11, 37, 82, .14); cursor: default; }
+.tq-next .tqn-vs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tq-next .tqn-vc {
+  min-height: 40px;
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--t2-line, rgba(11, 37, 82, .14));
+  border-radius: 999px;
+  box-shadow: none;
+  background: var(--t2-surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tq-next .tqn-vc.is-on { background: var(--t2-brand, #06707A); border-color: var(--t2-brand, #06707A); color: #fff; cursor: default; }
+.tq-next .tqn-v:focus-visible,
+.tq-next .tqn-vc:focus-visible { outline: 2px solid var(--t2-brand, #06707A); outline-offset: 2px; }
+@media (hover: hover) {
+  .tq-next .tqn-v:not(.is-on):hover { background: color-mix(in srgb, var(--t2-surface, #fff) 60%, transparent); }
+  .tq-next .tqn-vc:not(.is-on):hover { background: var(--t2-surface-2, rgba(11, 37, 82, .04)); }
 }

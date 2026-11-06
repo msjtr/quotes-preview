@@ -1,4 +1,5 @@
-/* v702–v703 — المنصة الجديدة للموظفين (staff/next/)
+/* v702–v707 — المنصة الجديدة للموظفين (staff/next/)
+   v707: قسم المالية بخمس صفحات وتبويبات داخل الصفحة، وبلا أدراج: لوحة التفاصيل صفحة في مساحة المحتوى (الموضع من geo()).
    قائمة تنقّل واحدة فوق محرك المنصة نفسه (platform.js): الخادم والقاعدة والصلاحيات والحسابات كما هي.
    لا يعمل هذا الملف إلا على المسار /staff/next/، ولا يغيّر شيئًا في /staff/ ولا في بوابة العميل.
    الظهور يتبع القائمة الأصلية التي رسمتها المنصة بعد فحص الصلاحيات: البند يظهر إن ظهر مفتاحه فيها،
@@ -24,15 +25,14 @@
       ['cu-docs-pc', 'عقود الشركاء', ['cu']],
       ['cu-docs-sq', 'عروض المتاجر', ['cu']]
     ]],
-    ['المالية والتحصيل', [
-      ['fin-due', 'الدفعات المستحقة', ['fin']],
-      /* مسجّلة في المنصة تحت قسم العملاء وتظهر في المالية — تلزمها الصلاحيتان معًا */
-      ['cu-trin', 'إيصالات التحويل', ['fin', 'cu']],
-      ['cu-opin', 'الإلغاء والاسترداد', ['fin', 'cu']],
-      ['cu-paylinks', 'روابط الدفع', ['fin', 'cu']],
-      ['fin-pay', 'سجل المدفوعات', ['fin']],
-      ['fin', 'كل صفحات المالية', ['fin']]
-    ]],
+    ['المالية', [
+    /* v707: خمس صفحات لكل منها عمل واحد — وما تفرّع عنها تبويبات أعلى الصفحة نفسها (VIEWS) لا بنود في القائمة ولا صفحات فهرس */
+    ['fin-due', 'التحصيل', ['fin']],
+    ['fin-pay', 'المدفوعات', ['fin']],
+    ['cu-paylinks', 'روابط الدفع', ['fin', 'cu']],
+    ['fin-req', 'الطلبات المالية', ['fin', 'cu']],
+    ['cu-admx-rp', 'التقارير', ['fin']]
+  ]],
     ['التواصل', [
       ['comm-send', 'مركز الإرسال', ['comm-hub']],
       ['cs-tickets', 'التذاكر والمراسلات', ['comm-hub']],
@@ -40,7 +40,7 @@
       ['comm-hub', 'كل صفحات التواصل', ['comm-hub']]
     ]],
     ['الفريق والشركاء', [['team-hub', 'الفريق والشركاء', ['team-hub']]]],
-    ['الإعدادات', [['sys', 'إعدادات النظام', ['sys']]]]
+    ['الإعدادات', [['sys', 'إعدادات النظام', ['sys']], ['fin-fee', 'الرسوم والضرائب', ['fin']], ['pay-center', 'إعدادات الدفع', ['fin']]]]
   ];
 
   /* اسم بديل للقسم نفسه في القائمة الأصلية (المفتاح القديم للقسم ذاته فقط) */
@@ -65,6 +65,23 @@
     'cs-ticket': 'cs-tickets', 'cx-dash': 'cx', 'cx-review': 'cx', 'cx-send': 'cx', 'cx-log': 'cx',
     'soon-emp': 'team-hub', 'soon-par': 'team-hub', 'soon-mkt': 'team-hub', 'adm-more': 'adm-home'
   };
+  /* v707: الصفحات الفرعية الجديدة ← بندها في القائمة */
+  Object.assign(UP, {
+  'fin': 'fin-due', 'fin-rec': 'fin-pay', 'cu-admx': 'fin-due', 'cu-admx-bd': 'fin-due', 'cu-admx-dd': 'fin-due', 'cu-admx-ck': 'fin-due',
+  'cu-admx-tr': 'fin-pay', 'cu-admx-rpc': 'cu-admx-rp', 'cu-admx-fee': 'cu-admx-rp', 'cu-trin': 'fin-pay', 'cu-opin': 'fin-req', 'fin-fee-i': 'fin-fee'
+});
+function upOf(k) { return /^fin-rec-/.test(k) ? 'fin-pay' : (UP[k] || ''); }
+
+/* v707: صفحات البند الواحد تبويبات أعلى الصفحة — [مفتاح, اسم, بادئة صفحات التبويب إن كان له صفحات فرعية] */
+var VIEWS = [
+  ['fin-due', [['fin-due', 'الدفعات المستحقة'], ['cu-admx-dd', 'الاستقطاع البنكي'], ['cu-admx-ck', 'الشيكات'], ['cu-admx-bd', 'السندات التنفيذية']]],
+  ['fin-pay', [['fin-pay', 'سجل المدفوعات'], ['fin-gw', 'عمليات بوابة الدفع'], ['cu-trin', 'التحويلات البنكية'], ['fin-rec-gw', 'سجل السداد', 'fin-rec-'], ['cu-admx-tr', 'الحوالات الصادرة']]],
+  ['fin-req', [['fin-req', 'سداد قيمة المنتج والتأجيل والتوحيد'], ['cu-opin', 'الإلغاء والاسترداد']]],
+  ['cu-admx-rp', [['cu-admx-rp', 'تقرير العملاء'], ['cu-admx-fee', 'الرسوم والإيراد']]]
+];
+/* سجل السداد حسب الطريقة — اختيارات داخل التبويب نفسه */
+var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'], ['cash', 'نقدًا'], ['settle', 'سداد قيمة المنتج'], ['merge', 'توحيد'], ['defer', 'تأجيل'], ['waive', 'إعفاء فرق'], ['round', 'فرق تقريب'], ['oth', 'بلا طريقة مسجّلة']];
+  
 
   /* v703: بلاطة ثلاثية الأبعاد لكل بند — رمز من مكتبة رموز المنصة (window.__PGL) بوصفة البلاطة نفسها */
   var GLY = {
@@ -73,6 +90,7 @@
     'fin-due': 'calendar-check', 'cu-trin': 'bank', 'cu-opin': 'arrow-counter-clockwise', 'cu-paylinks': 'link-simple',
     'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'cs-tickets': 'ticket', 'cx': 'star'
   };
+  Object.assign(GLY, { 'fin-due': 'calendar-check', 'fin-pay': 'receipt', 'cu-paylinks': 'link-simple', 'fin-req': 'arrows-left-right', 'cu-admx-rp': 'chart-bar', 'fin-fee': 'coins', 'pay-center': 'credit-card', 'sys': 'gear-six' });
   function tile3d(glyph) {
     var GL = window.__PGL || {}, d = GL[glyph];
     if (!d || !/^[\w\s,.\-]+$/.test(d)) return '';
@@ -92,6 +110,11 @@
       i[2].forEach(function (r) { (ALIAS[r] || [r]).forEach(function (k) { COVER[k] = true; }); });
     });
   });
+
+  /* v707: صفحات التبويبات وصفحات الفهرس مغطاة فلا تظهر في «أقسام أخرى» */
+  VIEWS.forEach(function (g) { g[1].forEach(function (t) { COVER[t[0]] = true; }); });
+['fin', 'fin-rec', 'cu-admx', 'cu-admx-rpc', 'fin-fee-i'].forEach(function (k) { COVER[k] = true; });
+RECV.forEach(function (r) { COVER['fin-rec-' + r[0]] = true; });
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -182,10 +205,105 @@
     mark();
   }
 
+  /* مفاتيح صفحات المنصة المسجّلة (لا تُعرض تبويبات لصفحة غير مسجّلة) */
+function acct() {
+  try {
+    var L = window.__teraApp && typeof window.__teraApp.keys === 'function' && window.__teraApp.keys().acct;
+    if (!L || !L.length) return null;
+    var o = {};
+    L.forEach(function (k) { o[k] = true; });
+    return o;
+  } catch (err) { return null; }
+}
+function viewsOf(k) {
+  for (var i = 0; i < VIEWS.length; i++) {
+    var L = VIEWS[i][1];
+    for (var j = 0; j < L.length; j++) if (L[j][0] === k || (L[j][2] && k.indexOf(L[j][2]) === 0)) return { g: VIEWS[i], cur: L[j] };
+  }
+  return null;
+}
+function strip() {
+  var page = document.querySelector('#pv-root .lv-page'), k = window.__lvKey || '';
+  var had = !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.tqn-views'));
+  document.querySelectorAll('.tqn-views').forEach(function (x) { if (x.parentNode !== page || x.getAttribute('data-k') !== k) x.remove(); });
+  if (!page || !k) return;
+  var V = viewsOf(k);
+  /* الصفحة النهائية (طلب مفتوح بمراحله) بلا تبويبات */
+  if (!V || page.querySelector('.tqn-stage')) { var o = page.querySelector(':scope > .tqn-views'); if (o) o.remove(); return; }
+  if (page.querySelector(':scope > .tqn-views')) return;
+  var AK = acct();
+  if (!AK) return; /* قبل تسجيل صفحات المنصة لا تبويبات (تُرسم في الفحص التالي) */
+  var L = V.g[1].filter(function (t) { return AK[t[0]]; });
+  var sub = V.cur[2] ? RECV.filter(function (r) { return AK[V.cur[2] + r[0]]; }) : [];
+  if (L.length < 2 && !sub.length) return;
+  var html = '<div class="tqn-vt">' + L.map(function (t) {
+    var on = t === V.cur;
+    return '<button type="button" class="tqn-v' + (on ? ' is-on' : '') + '"' + (on ? ' aria-current="page"' : '') + ' data-tqn-v="' + esc(t[0]) + '">' + esc(t[1]) + '</button>';
+  }).join('') + '</div>';
+  if (sub.length) {
+    html += '<div class="tqn-vs" role="group" aria-label="طريقة السداد">' + sub.map(function (r) {
+      var key = V.cur[2] + r[0], on = key === k;
+      return '<button type="button" class="tqn-vc' + (on ? ' is-on' : '') + '"' + (on ? ' aria-current="page"' : '') + ' data-tqn-v="' + esc(key) + '">' + esc(r[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+  var d = document.createElement('nav');
+  d.className = 'tqn-views';
+  d.setAttribute('aria-label', 'صفحات القسم');
+  d.setAttribute('data-k', k);
+  d.innerHTML = html;
+  page.insertBefore(d, page.firstChild);
+  var on = d.querySelector('.tqn-v.is-on');
+  if (on && on.scrollIntoView) { try { on.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { void err; } }
+  if (had) { var f = d.querySelector('.tqn-vc.is-on') || on; if (f) f.focus(); }
+}
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest && ev.target.closest('.tqn-views [data-tqn-v]');
+  if (!b || b.classList.contains('is-on')) return;
+  go(b.getAttribute('data-tqn-v'));
+});
+
+/* v707: لوحة التفاصيل صفحة في مساحة المحتوى — موضعها تحت الشريط العلوي وبجانب القائمة الجانبية وفوق شريط التطبيق السفلي */
+var GEO = '', RO = null;
+function vis(x) { return !!x && getComputedStyle(x).display !== 'none' && getComputedStyle(x).visibility !== 'hidden'; }
+function geo() {
+  var h = document.querySelector('#pv-host .t2-head'), s = document.querySelector('#pv-host .t2-side'), dk = document.querySelector('#pv-host .t2-dock');
+  var top = 0, side = 0, bot = 0, de = document.documentElement;
+  if (vis(h)) { var r = h.getBoundingClientRect(); if (r.height) top = Math.max(0, Math.round(r.bottom)); }
+  if (vis(s)) { var q = s.getBoundingClientRect(); if (q.width) side = Math.max(0, Math.round(de.clientWidth - q.left)); }
+  if (vis(dk)) { var z = dk.getBoundingClientRect(); if (z.height && z.top < de.clientHeight) bot = Math.max(0, Math.round(de.clientHeight - z.top)); }
+  var sig = top + '|' + side + '|' + bot;
+  if (sig !== GEO) {
+    GEO = sig;
+    de.style.setProperty('--tqn-top', top + 'px');
+    de.style.setProperty('--tqn-side', side + 'px');
+    de.style.setProperty('--tqn-bottom', bot + 'px');
+  }
+  /* المنصة تعيد رسم الغلاف (الويب/الجوال وبعد الدخول) — المراقبة تتبع العناصر الحالية */
+  if (RO && (RO.__h !== h || RO.__s !== s || RO.__d !== dk)) { RO.disconnect(); RO = null; }
+  if (!RO && typeof ResizeObserver === 'function' && (h || s || dk)) {
+    RO = new ResizeObserver(function () { geoQ(); });
+    RO.__h = h; RO.__s = s; RO.__d = dk;
+    [h, s, dk].forEach(function (x) { if (x) RO.observe(x); });
+  }
+  /* لوحة التفاصيل صفحة لا نافذة: القائمة والشريط يبقيان متاحين، والصفحة التي تحتها خارج التنقّل بلوحة المفاتيح */
+  var root = document.getElementById('pv-root'), open = false;
+  document.querySelectorAll('.cu-dh .cu-dr.is-page').forEach(function (d) {
+    open = true;
+    if (d.getAttribute('aria-modal') !== 'false') d.setAttribute('aria-modal', 'false');
+  });
+  if (root && root.inert !== open) root.inert = open;
+}
+var geoQd = false;
+function geoQ() {
+  if (geoQd) return;
+  geoQd = true;
+  requestAnimationFrame(function () { geoQd = false; geo(); });
+}
+
   /* تمييز البند الحالي: الصفحة المفتوحة أو أقرب أصل لها في الشجرة */
   function cur() {
     var k = window.__lvKey || '', g = 0;
-    while (k && !ITEMS[k] && !(LAST && LAST.set[k] && !COVER[k]) && g++ < 8) k = UP[k] || '';
+    while (k && !ITEMS[k] && !(LAST && LAST.set[k] && !COVER[k]) && g++ < 8) k = upOf(k);
     return k;
   }
   function mark() {
@@ -196,6 +314,7 @@
       b.classList.toggle('is-on', on);
       if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
+    strip();
   }
 
   /* التطبيق (الجوال): «الأقسام» في الشريط السفلي يفتح الشجرة نفسها في ورقة سفلية */
@@ -238,7 +357,7 @@
     s.innerHTML = '<div class="tqn-back" data-close="1"></div>' +
       '<div class="tqn-panel" role="dialog" aria-modal="true" aria-labelledby="tqn-st" dir="rtl">' +
       '<div class="tqn-grip" aria-hidden="true"></div>' +
-      '<div class="tqn-head"><h2 id="tqn-st">الأقسام</h2><button type="button" class="tqn-x" data-close="1" aria-label="إغلاق">×</button></div>' +
+      '<div class="tqn-head"><h2 id="tqn-st">الأقسام</h2><button type="button" class="tqn-x" data-close="1">رجوع</button></div>' +
       FLAG + '<div class="tqn-body">' + html + '</div></div>';
     s.__from = from;
     s.addEventListener('click', function (ev) {
@@ -275,6 +394,9 @@
     if (t && !t.__tqn) { t.__tqn = true; new MutationObserver(mark).observe(t, { childList: true, characterData: true, subtree: true }); }
     var r = document.getElementById('pv-root');
     if (r && !r.__tqn) { r.__tqn = true; new MutationObserver(mark).observe(r, { childList: true }); }
+    /* v707: تبويبات الصفحة تُعاد بعد كل رسم داخلها، وموضع لوحة التفاصيل يتبع الشريط والقائمة */
+    strip();
+    geo();
   }
 
   /* المنصة تعيد رسم الغلاف (الويب/الجوال وبعد الدخول) — يُفحص بعد كل تغيير في الصفحة، مرة لكل إطار */
@@ -287,6 +409,8 @@
   function start() {
     scan();
     new MutationObserver(queue).observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', geoQ, { passive: true });
+    window.addEventListener('scroll', geoQ, { passive: true });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
