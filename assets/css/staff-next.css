@@ -1,4 +1,4 @@
-/* v702–v720 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v721 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -609,3 +609,28 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .tqn-fd-foot { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; color: var(--tqn-mut, #66748C); }
 .tq-next .tqn-fd-xl { padding: 12px 16px; }
 .tq-next .t2.is-dark .tqn-fd-strip, .tq-next .t2.is-dark .tqn-fd-card, .tq-next .t2.is-dark .tqn-fd-c, .tq-next .t2.is-dark .tqn-fd-chev { background: transparent; }
+
+/* v721: صفحة «المدفوعات» بشكل التصور — شريط الحالات بخلايا «التحصيل» نفسها، والفلاتر والتحديث في رأس بطاقة الجدول */
+.tq-next .tqn-fd-c.is-ok .tqn-fd-dot { background: #16A34A; }
+.tq-next .tqn-fd-strip.tqn-fp-k { margin: 0; gap: 0; padding: 0; }
+.tq-next .tqn-fd-strip .tqn-fd-c.tqn-fp-kb { min-height: 0; border-radius: 0; box-shadow: none; }
+.tq-next .tqn-fd-strip .tqn-fd-c.tqn-fp-kb b { color: var(--tqn-ink, #0F1B33); }
+.tq-next .tqn-fp-tools { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .tqn-fp-tools > .m3-tools { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin: 0; padding: 0; flex: 1 1 auto; border: 0; background: none; }
+.tq-next .tqn-fp-tools .fin-filters { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+.tq-next .tqn-fp-tools .fin-filters > *, .tq-next .tqn-fp-tools .cu-bd-cf { min-width: 200px; margin: 0; }
+.tq-next .tqn-fp-tools .t2-field-k, .tq-next .tqn-fp-tools .st-sel > label { font-size: 12px; }
+.tq-next .tqn-fp-card .tqn-fp-tw { border: 0; border-radius: 0; margin: 0; }
+.tq-next .tqn-fp-t.tqn-fd-t { min-width: 760px; }
+.tq-next .tqn-fp-t .tqn-fp-r { cursor: pointer; }
+.tq-next .tqn-fp-t .tqn-fp-r > td { padding: 12px 16px; border-bottom: 1px solid var(--tqn-line, #E3E8F0); text-align: start; vertical-align: middle; background: none; }
+.tq-next .tqn-fp-t .tqn-fp-r:hover > td, .tq-next .tqn-fp-t .tqn-fp-r.is-open > td { background: #F6FAFB; }
+.tq-next .tqn-fp-t .tqn-fp-r:focus-visible { outline: 2px solid #06707A; outline-offset: -2px; }
+.tq-next .tqn-fp-t .tqn-fp-r > td:first-child b { display: block; font-size: 14px; font-weight: 700; color: var(--tqn-ink, #0F1B33); }
+.tq-next .tqn-fp-t .tqn-fp-r > td:first-child small { display: block; font-size: 12px; color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-fp-t .tqn-fp-r > td.is-num { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tq-next .tqn-fp-t .tqn-fp-d > td { padding: 0 16px 16px; background: #F6FAFB; border-bottom: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .t2.is-dark .tqn-fp-t .tqn-fp-r:hover > td, .tq-next .t2.is-dark .tqn-fp-t .tqn-fp-d > td { background: rgba(255, 255, 255, .04); }
+.tq-next .tqn-fp-tools .fin-filters { flex: 2 1 420px; flex-wrap: nowrap; }
+.tq-next .tqn-fp-tools .fin-filters > .st-sel { width: auto; flex: 1 1 0; min-width: 160px; }
+.tq-next .tqn-fp-tools .cu-bd-cf { flex: 1 1 200px; min-width: 180px; }

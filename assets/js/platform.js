@@ -29656,11 +29656,11 @@ function tqnFpView(A, j, st, paint, refetch) {
   const sum = function (L) { return qr2(L.reduce(function (a, o) { return a + (o.amt || 0); }, 0)); };
   const ks = FP_K.map(function (x) { return x[0]; }).filter(function (k) { return k === 'gw' || k === 'tr' || A.some(function (o) { return o.k === k; }); });
   const K = [['all', 'كل العمليات', ''], ['pend', 'بانتظار الاعتماد', 'warn'], ['ok', 'مقبولة', 'ok'], ['chk', 'تحتاج مراجعة', 'warn'], ['rej', 'مرفوضة', 'danger'], ['rf', 'مستردة', '']];
-  const strip = e('div', { class: 'tqn-fp-k', role: 'group', 'aria-label': 'الحالة' }, K.map(function (x) {
+  const strip = e('div', { class: 'tqn-fd-strip tqn-fp-k', role: 'group', 'aria-label': 'الحالة' }, K.map(function (x) {
     const L = B.filter(function (o) { return fpFitS(o, x[0]); }), on = s === x[0];
     if (x[0] !== 'all' && x[0] !== 'pend' && x[0] !== 'ok' && !L.length) return null;
-    return e('button', { type: 'button', class: 'tqn-fp-kb' + (on ? ' is-on' : '') + (x[2] ? ' is-' + x[2] : ''), 'aria-pressed': String(on), onClick: function () { ADM.fpS = x[0]; ADM.fpOpen = ''; paint(); } }, [
-      e('small', {}, x[1]), e('b', {}, fmtNum(L.length)), e('span', {}, x[0] === 'rf' ? sar(qr2(L.reduce(function (a, o) { return a + (o.rf || 0); }, 0))) : sar(sum(L)))]);
+    return e('button', { type: 'button', class: 'tqn-fd-c tqn-fp-kb' + (on ? ' is-on' : '') + (x[2] ? ' is-' + x[2] : ''), 'aria-pressed': String(on), onClick: function () { ADM.fpS = x[0]; ADM.fpOpen = ''; paint(); } }, [
+      e('small', {}, [e('i', { class: 'tqn-fd-dot', 'aria-hidden': 'true' }), x[1]]), e('b', {}, fmtNum(L.length)), e('span', {}, x[0] === 'rf' ? sar(qr2(L.reduce(function (a, o) { return a + (o.rf || 0); }, 0))) : sar(sum(L)))]);
   }));
   const tools = fpTools(A, ks, paint);
   try { const rows = tools.querySelectorAll(':scope > *'); if (rows[1]) rows[1].remove(); } catch (err) { void err; } /* الحالة في الشريط أعلاه */
@@ -29676,18 +29676,17 @@ function tqnFpView(A, j, st, paint, refetch) {
       e('td', { class: 'is-num' }, sar(o.amt)),
       e('td', {}, DS.badge(S[0], S[1])),
       e('td', {}, x ? DS.badge(x, 'warn') : e('span', { class: 'tqn-fp-ok', 'aria-label': 'مطابقة' }, '✓')),
-      e('td', { class: 'is-num' }, o.at ? bdiD(iso(o.at)) : '—')]));
-    if (on) body.push(e('tr', { class: 'tqn-fp-d' }, e('td', { colspan: '7' }, fpCard(o))));
+      e('td', { class: 'is-num' }, o.at ? bdiD(iso(o.at)) : '—'), e('td', { class: 'tqn-fd-go' }, e('span', { class: 'tqn-fd-chev', 'aria-hidden': 'true' }, frag(ui(on ? 'caret-down' : 'caret-left', 14))))]));
+    if (on) body.push(e('tr', { class: 'tqn-fp-d' }, e('td', { colspan: '8' }, fpCard(o))));
   });
   const legacy = (function () {
     let a = 0, n = 0; try { Object.keys(LIVE_ADM.rh || {}).forEach(function (u) { if (isTestUid(u)) return; (LIVE_ADM.rh[u] || []).forEach(function (c) { (c.payments || []).forEach(function (p) { const v = Number(p.paid) || 0; if (v > 0) { a += v; n++; } }); }); }); } catch (err) { a = 0; }
     return a > 0 ? DS.note('warn', 'مبالغ على سجلات طلبات خارج العقود: ' + sar(qr2(a)) + ' في ' + fmtNum(n) + ' دفعة', 'سُجّلت في النظام السابق على سجلات طلبات لا على عقود، فلا تدخل في المحصَّل حتى تُراجع وتُربط بعقدها — من «عقود العملاء» ← «تحتاج مراجعة».') : null; })();
-  return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'سجل المدفوعات'), e('small', {}, 'كل عملية مرة واحدة بطريقتها وحالتها ومطابقتها. اضغط رقمًا لتصفية القائمة، واضغط السطر لتفاصيله. الحسابات التجريبية لا تُحتسب.')]),
-    DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LV_PAY.at = 0; LIVE_ADM.at = 0; refetch(); } })]),
-    strip, legacy, fpReview((j && j.D) || [], st, paint, refetch), tools,
-    L.length ? e('div', { class: 'tqn-fp-tw' }, [e('table', { class: 'tqn-fp-t' }, [e('thead', {}, e('tr', {}, ['العميل والعقد', 'الدفعة', 'الطريقة', 'المبلغ', 'الحالة', 'المطابقة', 'التاريخ'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, body)]),
-      e('small', { class: 'cu-dr-hint' }, fmtNum(Math.min(L.length, 300)) + ' من ' + fmtNum(L.length) + ' عملية · ' + sar(sum(L)) + (L.length > 300 ? ' — اختر العميل أو الفترة لتضييقها.' : ''))])
-      : LDS.emptyState({ icon: 'ok', title: 'لا عمليات بهذا الاختيار', body: 'غيّر الحالة أو الطريقة أو الفترة أو العميل.', compact: true })].filter(Boolean);
+  const rfb = DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LV_PAY.at = 0; LIVE_ADM.at = 0; refetch(); } }); /* v721 */
+const tbl = L.length ? e('div', { class: 'tqn-fp-tw tqn-fd-tw' }, e('table', { class: 'tqn-fp-t tqn-fd-t' }, [e('thead', {}, e('tr', {}, ['العميل والعقد', 'الدفعة', 'الطريقة', 'المبلغ', 'الحالة', 'المطابقة', 'التاريخ', ''].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, body)]))
+: LDS.emptyState({ icon: 'ok', title: 'لا عمليات بهذا الاختيار', body: 'غيّر الحالة أو الطريقة أو الفترة أو العميل.', compact: true });
+const foot = L.length ? e('div', { class: 'tqn-fd-foot' }, [e('small', {}, fmtNum(Math.min(L.length, 300)) + ' من ' + fmtNum(L.length) + ' عملية' + (L.length > 300 ? ' — اختر العميل أو الفترة لتضييقها' : '')), e('small', {}, 'الإجمالي: ' + sar(sum(L)))]) : null;
+return [strip, legacy, fpReview((j && j.D) || [], st, paint, refetch), e('section', { class: 'tqn-fd-card tqn-fp-card' }, [e('div', { class: 'tqn-fp-tools' }, [tools, rfb]), tbl, foot])].filter(Boolean);
 }
 const lvFinPay = function () {
     return admMount('finpay', 'سجل المدفوعات', async function () {
