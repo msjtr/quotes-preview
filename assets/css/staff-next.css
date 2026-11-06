@@ -1,4 +1,4 @@
-/* v702–v726 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v727 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -1133,3 +1133,31 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .tqn-upc .tqn-hc-h h2 { white-space: nowrap; }
 .tq-next .tqn-upc-all { margin-top: auto; align-self: flex-start; font-size: 12.5px; }
 .tq-next .tqn-upc { display: flex; flex-direction: column; }
+
+/* v727: جديد منذ زيارتك السابقة · تخصيص الرئيسية · تذكير جماعي · صفوف مفردة ومزدوجة */
+.tq-next .tqn-nw { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 14px; background: linear-gradient(90deg, #ECFDF5, #F0F9FF); border: 1px solid #CDEFE3; font-size: 13px; color: var(--tqn-ink, #0F1B33); }
+.tq-next .tqn-nw.is-none { background: #F8FAFC; border-color: var(--tqn-line, #E3E8F0); color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-nw-ic { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: #fff; color: #06707A; }
+.tq-next .tqn-nw-t { font-weight: 800; }
+.tq-next .tqn-nw-c { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid #BFE3E5; background: #fff; color: #06707A; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.tq-next .tqn-nw-c:hover { background: #E0F2F3; }
+.tq-next .tqn-nw-x { margin-inline-start: auto; height: 30px; padding: 0 12px; border-radius: 9px; border: 0; background: transparent; color: var(--tqn-mut, #66748C); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.tq-next .tqn-nw-x:hover { background: rgba(15, 27, 51, .06); }
+.tq-next .tqn-htb-r.is-on { background: #0B2552; border-color: #0B2552; color: #fff; }
+.tq-next .tqn-cz { border: 1px dashed #9FB3CF; }
+.tq-next .tqn-cz-g { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; }
+.tq-next .tqn-cz-b h3 { margin: 0 0 10px; font-size: 13px; font-weight: 800; color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-cz-ch { display: flex; flex-wrap: wrap; gap: 8px; }
+.tq-next .tqn-cz-t { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px dashed #B8C4D6; background: #F8FAFC; color: var(--tqn-mut, #66748C); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; text-decoration: line-through; }
+.tq-next .tqn-cz-t.is-on { border-style: solid; border-color: #9ED3D6; background: #E9F7F7; color: #06707A; text-decoration: none; }
+.tq-next .tqn-cz-o { display: grid; gap: 6px; margin: 0 0 10px; padding: 0; list-style: none; }
+.tq-next .tqn-cz-o li { display: grid; grid-template-columns: 26px minmax(0, 1fr) 32px 32px; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: #F8FAFC; border: 1px solid var(--tqn-line, #E3E8F0); font-size: 13px; font-weight: 700; }
+.tq-next .tqn-cz-o li b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: #0B2552; color: #fff; font-size: 12px; }
+.tq-next .tqn-cz-o button { display: grid; place-items: center; width: 32px; height: 30px; border-radius: 8px; border: 1px solid var(--tqn-line, #E3E8F0); background: #fff; color: var(--tqn-ink, #0F1B33); cursor: pointer; }
+.tq-next .tqn-cz-o button[disabled] { opacity: .35; cursor: default; }
+.tq-next .tqn-cz-rs { border: 0; background: none; padding: 0; font: inherit; font-size: 12.5px; font-weight: 800; color: #06707A; cursor: pointer; }
+.tq-next .tqn-up-rm { margin-inline-start: auto; }
+.tq-next .tqn-hg.is-solo { grid-template-columns: minmax(0, 1fr); }
+.tq-next .tqn-hg.is-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 64rem) { .tq-next .tqn-hg.is-pair, .tq-next .tqn-cz-g { grid-template-columns: minmax(0, 1fr); } }
+.tq-next .tqn-upc .tqn-hc-n { white-space: nowrap; }

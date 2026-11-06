@@ -50,7 +50,7 @@ const tqnFxCu = function (cid) { return function () { try { FX.pfc = cid; ADM.pf
 const tqnFxTop = function () { try { window.scrollTo({ top: 0 }); } catch (err) { void err; } };
 /* v724: بلاطة بلون القسم (من staff-next.js) وإلا بلاطة المنصة */
 const tqnTile = function (g, c) { try { if (window.__tqTile) { const s = window.__tqTile(g, c); if (s) return s; } } catch (err) { void err; } return tile(g + ':teal'); };
-/* v726: الرئيسية في staff/next/ — لوحة عمل يومية بهوية تيرا، بلا مساحات فارغة:
+/* v727: الرئيسية في staff/next/ — لوحة عمل يومية بهوية تيرا، بلا مساحات فارغة:
    · بطاقة ترحيب (الاسم والدور والتاريخ وملخص اليوم) وفيها بحث سريع يفتح البحث الموحّد، وخانات زجاجية تفتح صفحاتها.
    · شريط أدوات: الفترة (أسبوع · شهر · 6 أشهر · سنة) تغيّر مؤشر المحصّل والرسم معًا، وزر تحديث بوقت آخر تحديث.
    · أربعة مؤشرات، ثم «إحصاءات سريعة» (التزام السداد · عقود عليها مستحق · عمليات السداد ومتوسطها · متوسط التأخر · المستحق خلال 30 يومًا).
@@ -61,8 +61,29 @@ const tqnTile = function (g, c) { try { if (window.__tqTile) { const s = window.
    · «طلبات العملاء»: ما طلبه العميل بنفسه (سداد · تأجيل · توحيد · أهلية · إيصال تحويل) بحالته وزر خطوته التالية.
    · «مسار العملاء والطلبات» · «مواعيد السداد القادمة» (من الغد إلى أسبوعين) ولكل دفعة زر رابط دفع مُعبّأ بالعميل والدفعة.
    · الأعمدة متساوية الطول: البطاقة الأخيرة في كل عمود تمتد، و«آخر النشاط» يأخذ طول جاره.
+   · v727: شريط «جديد منذ زيارتك السابقة» · «تخصيص» (إظهار البطاقات وإخفاؤها وترتيب الأقسام، على هذا الجهاز) · وعود السداد في «جدول اليوم» · «تذكير» جماعي يفتح مركز الإرسال بالمستلمين جاهزين (الإرسال بيد الموظف).
    كل رقم يظهر في مكان واحد.
    الأرقام كلها من بيانات المنصة (dcPays · finCts · cByNo · cuList · بنود صندوق المهام) — لا تغيير في البيانات. */
+/* v727: وعود السداد (stf_238 · admin_pay_promises) تدخل «جدول اليوم» — تُجلب كل دقيقتين؛ إن لم تكن الدالة مطبّقة أو لا صلاحية فلا يظهر شيء */
+const TQHP = { at: 0, busy: false, items: null, miss: false, u: '' };
+const tqnMeId = function () { try { return String((typeof LIVE !== 'undefined' && LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || ''); } catch (err) { return ''; } };
+function tqnHpLoad(redraw) {
+  const u = tqnMeId(); if (TQHP.u !== u) { TQHP.u = u; TQHP.at = 0; TQHP.items = null; TQHP.miss = false; }
+  if (TQHP.busy || TQHP.miss || Date.now() - TQHP.at < 120000) return;
+  if (typeof admRpc !== 'function') { TQHP.miss = true; return; }
+  TQHP.busy = true;
+  admRpc('admin_pay_promises', { p_from: iso(new Date(Date.now() - 7 * 864e5)), p_to: iso(new Date()) }).then(function (j) {
+    TQHP.busy = false; TQHP.at = Date.now();
+    if (TQHP.u !== u) return;
+    if (j && j.ok && Array.isArray(j.items)) { TQHP.items = j.items; if (document.querySelector('#pv-host .tqn-home')) redraw(); } else TQHP.miss = true;
+  }).catch(function () { TQHP.busy = false; TQHP.at = Date.now(); });
+}
+/* v727: «جديد منذ زيارتك السابقة» و«تخصيص الرئيسية» — تفضيلات عرض على هذا الجهاز فقط (localStorage)، لا بيانات */
+const TQHS = { u: '', prev: 0, off: false };
+const tqnLs = {
+  get: function (k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (err) { return null; } },
+  set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (err) { void err; } }
+};
 function tqnHome(o) {
   const IN = o.IN || [], now = new Date(), hr = now.getHours(), DAY = 864e5;
   const T3 = function (ic) { const p = String(ic).split(':'); return frag(tqnTile(p[0], p[1])); };
@@ -254,6 +275,32 @@ function tqnHome(o) {
   srT.forEach(function (x) { AG.push(['clipboard-text', 'info', srK(x) + ' — طلب جديد', short(cuNm[x.user_id]) || String(x.req_no || ''), rel(x.created_at), srOpen(x)]); });
   vT.forEach(function (v) { AG.push(['seal-check', 'info', 'طلب توثيق ملف', short(cuNm[v.user_id]) || '', rel(v.submitted_at), goP('cu-pf-ver')]); });
   if (!o.finOk) dueTm.forEach(function (r) { AG.push(['calendar-blank', '', 'دفعة تستحق غدًا', short(r.x && r.x.name) + ' · ' + sar(r.left), 'غدًا', fdOpenNo(r.c.no)]); });
+  /* وعود السداد: وعد اليوم · وعد فات موعده ولم تُسدَّد الدفعة · وفى بوعده اليوم */
+  try { if (o.finOk) tqnHpLoad(redraw); } catch (err) { void err; }
+  if (o.finOk && TQHP.items) {
+    const byPid = {}, byRid = {};
+    due.forEach(function (r) { if (r.p && r.p.pid) byPid[r.p.pid] = r; });
+    CT.forEach(function (x) { if (x && x.c && x.c.rid) byRid[x.c.rid] = x; });
+    const PR = [];
+    TQHP.items.forEach(function (it) {
+      const r = byPid[it.payment_id], cx = byRid[it.contract_id], pd = String(it.promise_date || '').slice(0, 10);
+      const nm = short((r && r.x && r.x.name) || (cx && cx.name) || (cx && cx.x && cx.x.name) || '') || 'عميل';
+      const amt = it.promise_amount != null ? sar(Number(it.promise_amount)) : (r ? sar(r.left) : '');
+      const no = (r && r.c && r.c.no) || (cx && cx.c && cx.c.no) || '';
+      const open = no ? fdOpenNo(no) : goP('fin-due');
+      if (!r) {
+        /* «وفى بوعده» فقط إن وُجدت الدفعة في عقد محمَّل وسُدِّدت فعلًا — لا للمؤجّلة ولا للمغلقة ولا لعقد غير محمَّل */
+        let paid = false;
+        try { const cc = cx && ((cx.c && cx.c.live) || cByNo(cx.c.no)); const pp = cc && cc.payments && cc.payments.filter(function (q) { return q.pid === it.payment_id; })[0]; paid = !!(pp && !pp.deferTo && !pp.closed && Number(pp.paid) >= Number(pp.amount)); } catch (err) { paid = false; }
+        if (paid && pd === T0d) PR.push(['check-circle', 'ok', 'وفى بوعده', nm + (amt ? ' · ' + amt : ''), 'سُدّدت', open]);
+        return;
+      }
+      if (pd === T0d) PR.push(['handshake', 'warn', 'وعد بالسداد اليوم', nm + (amt ? ' · ' + amt : ''), 'اليوم', open]);
+      else if (pd && pd < T0d) PR.push(['warning', 'danger', 'وعد لم يُوفَ', nm + (amt ? ' · ' + amt : '') + ' · موعده ' + pd, 'متابعة', open]);
+    });
+    PR.sort(function (a, b) { return (a[1] === 'danger' ? 0 : a[1] === 'warn' ? 1 : 2) - (b[1] === 'danger' ? 0 : b[1] === 'warn' ? 1 : 2); });
+    AG.unshift.apply(AG, PR);
+  }
   const agRow = function (a) { return e('li', {}, e('button', { type: 'button', class: 'tqn-ag-i is-' + (a[1] || 'n'), 'data-live-ok': '', onClick: a[5] }, [e('span', { class: 'tqn-ag-ic' }, frag(ui(a[0], 15))), e('span', { class: 'tqn-ag-t' }, [e('b', {}, a[2]), a[3] ? e('small', {}, a[3]) : null]), e('em', {}, a[4] || '')])); };
   const today = e('section', { class: 'tqn-hc tqn-ag' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'جدول اليوم'), e('span', { class: 'tqn-hc-n' }, fmtNum(AG.length))]),
     AG.length ? e('ul', { class: 'tqn-ag-l' }, AG.slice(0, 7).map(agRow)) : e('div', { class: 'tqn-tk-done' }, [T3('calendar-check:green'), e('b', {}, 'لا مواعيد اليوم'), e('small', {}, 'المستحق اليوم وما يصل من طلبات وإيصالات يظهر هنا.')]),
@@ -335,8 +382,21 @@ function tqnHome(o) {
       (typeof LP !== 'undefined' && LP['fin-plnew']) ? liveOk(e('button', { type: 'button', class: 'tqn-up-pl', title: 'رابط دفع لهذه الدفعة', onClick: plFor(r) }, [frag(ui('credit-card', 14)), 'رابط دفع'])) : null,
       liveOk(e('button', { type: 'button', class: 'tqn-tk-go', title: 'صفحة الدفعة والمتابعة', onClick: fdOpenNo(r.c.no) }, ['متابعة', frag(ui('caret-left', 14))]))]);
   };
+  /* تذكير جماعي: يفتح مركز الإرسال على «أشخاص محددون» بعملاء الدفعات — لا يُرسل شيئًا؛ الموظف يختار القالب ويرسل */
+  const remind = function (A) {
+    return function () {
+      try {
+        const ids = [], nm = {};
+        A.forEach(function (r) { const id = r.x && r.x.cid; if (id && ids.indexOf(id) < 0) { ids.push(id); nm[id] = (r.x && r.x.name) || ''; } });
+        SC.mode = 'pick'; SC.ids = ids; SC.nm = Object.assign({}, SC.nm || {}, nm); SC.ex = []; SC.res = null; SC.ask = false; SC.pAt = ''; COMMT.t = 'send';
+      } catch (err) { void err; }
+      go('other', 'comm-send');
+    };
+  };
+  const remA = UP.filter(function (r) { return r.d === 1; }).length ? UP.filter(function (r) { return r.d === 1; }) : UP.filter(function (r) { return r.d <= 3; });
+  const remB = (remA.length && typeof LP !== 'undefined' && LP['comm-send']) ? liveOk(e('button', { type: 'button', class: 'tqn-up-pl tqn-up-rm', title: 'يفتح مركز الإرسال والمستلمون جاهزون — الإرسال بيدك', onClick: remind(remA) }, [frag(ui('bell-ringing', 14)), (remA.every(function (r) { return r.d === 1; }) ? 'ذكّر دفعات الغد' : 'ذكّر دفعات 3 أيام') + ' (' + fmtNum(remA.length) + ')'])) : null;
   const upc = o.finOk ? e('section', { class: 'tqn-hc tqn-upc' }, [
-    e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'مواعيد السداد القادمة'), e('span', { class: 'tqn-hc-n' }, sar(sumA(UP, 'left')))]),
+    e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'مواعيد السداد القادمة'), e('span', { class: 'tqn-hc-n' }, sar(sumA(UP, 'left'))), remB]),
     UP.length ? e('ul', { class: 'tqn-rq-l' }, UP.slice(0, 5).map(upRow)) : e('div', { class: 'tqn-tk-done' }, [T3('calendar-check:green'), e('b', {}, 'لا دفعات خلال أسبوعين')]),
     e('button', { type: 'button', class: 'tqn-hc-a tqn-upc-all', 'data-live-ok': '', onClick: function () { ADM.fdF = 'all'; go('other', 'fin-due'); } }, [fmtNum(UP.length) + ' دفعة خلال أسبوعين — كلها في التحصيل', frag(ui('caret-left', 12))])]) : null;
   /* مسار العملاء والطلبات */
@@ -352,13 +412,70 @@ function tqnHome(o) {
         step('سجّلوا آخر أسبوع', cuNew.length, 'info', goP('cu-new')), step('توثيق قيد المراجعة', VL.length, VL.length ? 'warn' : '', goP('cu-pf-ver')), step('حساب نشِط', act, 'ok', goP('cu-list'), 'من ' + fmtNum(CL.length))])]) : null,
       o.cuOk ? e('div', { class: 'tqn-fn-r' }, [e('h3', {}, [frag(ui('clipboard-text', 15)), 'طلبات الخدمات']), e('div', { class: 'tqn-fn-st' }, [
         step('بانتظار الاستلام', srA, srA ? 'warn' : '', goP('cu-svc')), step('قيد المراجعة', srR, 'info', goP('cu-svc')), step('بانتظار التنفيذ', srX, srX ? 'warn' : '', goP('cu-svc')), step('نُفّذت — 30 يومًا', srD, 'ok', goP('cu-svc'), srRj ? fmtNum(srRj) + ' مرفوضة' : null)])]) : null])]);
-  return [e('div', { class: 't2-stack tqn-home' }, [hero, bar,
-    K.length ? e('div', { class: 'tqn-hk-g' }, K) : null,
-    QS.childNodes.length ? QS : null,
-    e('div', { class: 'tqn-hg' }, [tasks, e('div', { class: 'tqn-hg-s' }, [today, quick].filter(Boolean))]),
-    o.finOk ? e('div', { class: 'tqn-hg' }, [bars, topC]) : null,
-    (team || reqs) ? e('div', { class: 'tqn-hg is-fill' }, [e('div', { class: 'tqn-hg-s' }, [team, reqs].filter(Boolean)), feed]) : feed,
-    upc ? e('div', { class: 'tqn-hg' }, [funnel, e('div', { class: 'tqn-hg-s' }, [upc])]) : funnel])];
+  /* جديد منذ زيارتك السابقة — وقت الزيارة يُحفظ على هذا الجهاز عند أول رسم في الجلسة */
+  const meId = tqnMeId();
+  if (meId && TQHS.u !== meId) {
+    /* إعادة التحميل خلال 10 دقائق لا تُعدّ زيارة جديدة: يبقى «منذ» على الزيارة التي قبلها */
+    const uidK = 'tqn.hmSeen.v2.' + meId, SV = tqnLs.get(uidK) || {}, nowT = Date.now(), last = Number(SV.last) || 0;
+    TQHS.u = meId; TQHS.off = false; TQHS.prev = (last && nowT - last < 600000) ? (Number(SV.prev) || 0) : last;
+    tqnLs.set(uidK, { last: nowT, prev: TQHS.prev });
+  }
+  const since = meId ? TQHS.prev : 0, sinceD = since ? iso(new Date(since)) : '';
+  const aft = function (v) { const t = v ? new Date(v).getTime() : 0; return !!t && t > since; };
+  /* عمليات السداد قد تحمل تاريخًا بلا وقت: تُعدّ جديدة إن وقعت بعد يوم الزيارة السابقة */
+  const aftR = function (r) { const v = r.at, sv = typeof v === 'string' ? v : ''; if (!v) return false; if ((sv && sv.length <= 10) || /T00:00:00(\.0+)?(Z|\+00:00)?$/.test(sv)) return isoS(r) > sinceD; return aft(v); };
+  let newBar = null;
+  if (since && !TQHS.off) {
+    const nSr = SRA.filter(function (x) { return aft(x.created_at); }).length, nTr = TR.filter(function (t) { return aft(t.created_at); }).length;
+    const nRc = rec.filter(function (r) { return Number(r.amt) > 0 && aftR(r); }), nCu = CL.filter(function (r) { return aft(r.at); }).length, nV = VL.filter(function (v) { return aft(v.submitted_at); }).length;
+    const NB = [nSr ? [fmtNum(nSr) + ' طلب خدمة', goP('cu-svc')] : null, nTr ? [fmtNum(nTr) + ' إيصال تحويل', goP('cu-trin')] : null,
+      nRc.length ? [fmtNum(nRc.length) + ' عملية سداد · ' + sar(sumA(nRc)), goP('fin-pay')] : null, nCu ? [fmtNum(nCu) + ' عميل جديد', goP('cu-new')] : null, nV ? [fmtNum(nV) + ' طلب توثيق', goP('cu-pf-ver')] : null].filter(Boolean);
+    newBar = e('div', { class: 'tqn-nw' + (NB.length ? '' : ' is-none') }, [e('span', { class: 'tqn-nw-ic' }, frag(ui('sparkle', 16))),
+      e('span', { class: 'tqn-nw-t' }, (NB.length ? 'جديد منذ زيارتك السابقة' : 'لا جديد منذ زيارتك السابقة') + ' (' + rel(new Date(since)) + ')' + (NB.length ? ':' : '.')),
+      NB.map(function (b) { return e('button', { type: 'button', class: 'tqn-nw-c', 'data-live-ok': '', onClick: b[1] }, b[0]); }),
+      e('button', { type: 'button', class: 'tqn-nw-x', 'data-live-ok': '', title: 'إخفاء حتى زيارتك القادمة', onClick: function () { TQHS.off = true; redraw(); } }, 'تم الاطلاع')]);
+  }
+  /* تخصيص الرئيسية: إظهار البطاقات وإخفاؤها وترتيب الأقسام — على هذا الجهاز */
+  const LYK = 'tqn.hmLay.v1', LY = tqnLs.get(LYK) || {}, HID = (LY && LY.hide) || {};
+  const ROWS0 = ['r1', 'r2', 'r3', 'r4'];
+  const ORD = (LY && Array.isArray(LY.order) && LY.order.length === 4 && ROWS0.every(function (k) { return LY.order.indexOf(k) >= 0; })) ? LY.order : ROWS0;
+  const saveLY = function (h, ord) { tqnLs.set(LYK, { hide: h, order: ord }); redraw(); };
+  const EL = { kpi: K.length ? 1 : null, qs: QS.childNodes.length ? 1 : null, tasks: tasks, today: today, quick: quick, bars: bars, topC: topC, team: team, reqs: reqs, feed: feed, funnel: funnel, upc: upc };
+  const CARDS = [['kpi', 'المؤشرات'], ['qs', 'إحصاءات سريعة'], ['tasks', 'مهامك'], ['today', 'جدول اليوم'], ['quick', 'وصول سريع'], ['bars', 'رسم التحصيل'], ['topC', 'أعلى المتأخرات'],
+    ['team', 'عمل الفريق'], ['reqs', 'طلبات العملاء'], ['feed', 'آخر النشاط'], ['funnel', 'مسار العملاء والطلبات'], ['upc', 'مواعيد السداد القادمة']].filter(function (c) { return EL[c[0]]; });
+  const RN = { r1: 'مهامك وجدول اليوم', r2: 'التحصيل وأعلى المتأخرات', r3: 'الفريق وطلبات العملاء والنشاط', r4: 'المسار ومواعيد السداد' };
+  const vis = function (k) { return (EL[k] && !HID[k]) ? EL[k] : null; };
+  const mkRow = function (main, side, fill) {
+    main = main.filter(Boolean); side = side.filter(Boolean);
+    if (!main.length && !side.length) return null;
+    const box = function (A) { return A.length > 1 ? e('div', { class: 'tqn-hg-s' }, A) : A[0]; };
+    if (main.length && side.length) return e('div', { class: 'tqn-hg' + (fill ? ' is-fill' : '') }, [box(main), box(side)]);
+    const one = main.length ? main : side;
+    return e('div', { class: 'tqn-hg ' + (one.length > 1 ? 'is-pair' : 'is-solo') }, one);
+  };
+  const ROW = {
+    r1: function () { return mkRow([vis('tasks')], [vis('today'), vis('quick')]); },
+    r2: function () { return mkRow([vis('bars')], [vis('topC')]); },
+    r3: function () { return mkRow([vis('team'), vis('reqs')], [vis('feed')], true); },
+    r4: function () { return mkRow([vis('funnel')], [vis('upc')]); }
+  };
+  bar.appendChild(e('button', { type: 'button', class: 'tqn-htb-r' + (ADM.hmCz ? ' is-on' : ''), 'aria-pressed': String(!!ADM.hmCz), 'data-live-ok': '', onClick: function () { ADM.hmCz = !ADM.hmCz; redraw(); } }, [frag(ui('squares-four', 15)), 'تخصيص']));
+  const CZ = ADM.hmCz ? e('section', { class: 'tqn-hc tqn-cz' }, [
+    e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'تخصيص الرئيسية'), e('span', { class: 'tqn-hc-n' }, 'يُحفظ على هذا الجهاز'), e('button', { type: 'button', class: 'tqn-hc-a', 'data-live-ok': '', onClick: function () { ADM.hmCz = false; redraw(); } }, 'تم')]),
+    e('div', { class: 'tqn-cz-g' }, [
+      e('div', { class: 'tqn-cz-b' }, [e('h3', {}, 'البطاقات الظاهرة — اضغط للإخفاء أو الإظهار'), e('div', { class: 'tqn-cz-ch' }, CARDS.map(function (c) {
+        const on = !HID[c[0]];
+        return e('button', { type: 'button', class: 'tqn-cz-t' + (on ? ' is-on' : ''), 'aria-pressed': String(on), 'data-live-ok': '', onClick: function () { const h = Object.assign({}, HID); if (on) h[c[0]] = 1; else delete h[c[0]]; saveLY(h, ORD); } }, [on ? frag(ui('check-circle', 15)) : null, c[1]]);
+      }))]),
+      e('div', { class: 'tqn-cz-b' }, [e('h3', {}, 'ترتيب الأقسام'), e('ol', { class: 'tqn-cz-o' }, ORD.map(function (k, i) {
+        const mv = function (d) { return function () { const a = ORD.slice(), j = i + d; if (j < 0 || j >= a.length) return; a[i] = a[j]; a[j] = k; saveLY(HID, a); }; };
+        return e('li', {}, [e('b', {}, fmtNum(i + 1)), e('span', {}, RN[k]),
+          e('button', { type: 'button', title: 'تحريك لأعلى', 'aria-label': 'تحريك لأعلى', disabled: i === 0 ? true : null, 'data-live-ok': '', onClick: mv(-1) }, frag(ui('arrow-up', 14))),
+          e('button', { type: 'button', title: 'تحريك لأسفل', 'aria-label': 'تحريك لأسفل', disabled: i === ORD.length - 1 ? true : null, 'data-live-ok': '', onClick: mv(1) }, frag(ui('arrow-down', 14)))]);
+      })), e('button', { type: 'button', class: 'tqn-cz-rs', 'data-live-ok': '', onClick: function () { saveLY({}, ROWS0); } }, 'استعادة الافتراضي (إظهار الكل والترتيب الأصلي)')])])]) : null;
+  return [e('div', { class: 't2-stack tqn-home' }, [hero, newBar, bar, CZ,
+    (K.length && !HID.kpi) ? e('div', { class: 'tqn-hk-g' }, K) : null,
+    (QS.childNodes.length && !HID.qs) ? QS : null].concat(ORD.map(function (k) { return ROW[k](); })))];
 }
 
 const TQH = []; /* v705: سجل الصفحات التي فتحها الموظف في staff/next/ — زر الرجوع يعود إلى السابقة فعلًا */
