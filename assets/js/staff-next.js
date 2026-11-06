@@ -68,7 +68,7 @@
   /* v707: الصفحات الفرعية الجديدة ← بندها في القائمة */
   Object.assign(UP, {
   'fin': 'fin-due', 'fin-rec': 'fin-pay', 'cu-admx': 'fin-due', 'cu-admx-bd': 'fin-due', 'cu-admx-dd': 'fin-due', 'cu-admx-ck': 'fin-due',
-  'cu-admx-tr': 'fin-pay', 'cu-admx-rpc': 'cu-admx-rp', 'cu-admx-fee': 'cu-admx-rp', 'cu-trin': 'fin-pay', 'cu-opin': 'fin-req', 'fin-fee-i': 'fin-fee'
+  'cu-admx-tr': 'fin-pay', 'cu-admx-rpc': 'cu-admx-rp', 'cu-admx-fee': 'cu-admx-rp', 'cu-trin': 'fin-pay', 'cu-opin': 'fin-req', 'fin-fee-i': 'fin-fee', 'fin-plnew': 'cu-paylinks' /* v712 */
 });
 function upOf(k) { return /^fin-rec-/.test(k) ? 'fin-pay' : (UP[k] || ''); }
 

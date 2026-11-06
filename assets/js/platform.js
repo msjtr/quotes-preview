@@ -5,6 +5,136 @@ const TQN = /^\/staff\/next(\/|$)/.test(location.pathname);
 const TQH = []; /* v705: سجل الصفحات التي فتحها الموظف في staff/next/ — زر الرجوع يعود إلى السابقة فعلًا */
 const TQRD = { fin: 'fin-due', 'fin-rec': 'fin-rec-gw', 'cu-admx': 'fin-due' }; /* v707: صفحات الفهرس المالية في staff/next/ تُفتح على أول صفحة عمل بدلها — لا صفحة داخل صفحة */
 const TQGO = { on: false }; /* v707: أثناء إغلاق لوحة التفاصيل عند الانتقال لا يُرسم شيء — الصفحة الجديدة وحدها تُرسم */
+/* v712: «رابط دفع جديد» صفحة كاملة لها رابطها (staff/next/) — ثلاث خطوات مرقّمة ومعاينة لما يراه الدافع، بدل نموذج الإنشاء فوق قائمة الروابط.
+   نفس طلب الإنشاء (/admin/api/pay/links) والإرسال (/admin/api/pay/links/:id/send) — الخادم يتحقق من الصلاحية والمبلغ.
+   بعد الإنشاء ترجع الصفحة إلى «روابط الدفع» وبطاقة الرابط الجديد في أعلاها، ونتيجة الإرسال لكل قناة في مكانها (بلا نوافذ). */
+const TQPL_NM = { email: 'البريد', whatsapp: 'واتساب', push: 'إشعار الجوال', inbox: 'مركز الإشعارات' };
+const tqnPlReset = function () { PAYC.f = { uid: '', pid: '', amount: '', desc: '', name: '', phone: '', email: '', hours: '72', ltype: 'direct' }; PAYC.pays = {}; PAYC.busy = false; PAYC.err = ''; PAYC.ld = ''; };
+async function tqnPlLoad() {
+  const D = await clApi('/admin/api/pay/overview');
+  if (!D || !D.ok) throw new Error((D && D.message) || 'تعذّر تحميل بيانات الدفع.');
+  D.can = D.can || {}; D.gateway = D.gateway || {}; ['links', 'methods', 'subs', 'txns', 'transfers', 'refunds'].forEach(function (k) { if (!Array.isArray(D[k])) D[k] = D[k] == null ? [] : D[k]; });
+  if (D.can.links) { try { const c = await admClients(''); D.clients = (c && c.reg) || []; } catch (err) { D.clients = []; } }
+  return D;
+}
+/* أعلى «روابط الدفع»: بطاقة آخر رابط أُنشئ ونتيجة إرساله، وزر «رابط جديد» يفتح الصفحة */
+function tqnPlTop(D, refetch) {
+  try {
+    const m = PAYC.made, S0 = m && m.sent, R = (S0 && S0.results) || null;
+    const sent = S0 ? DS.note(S0.ok && !(R && Object.keys(R).some(function (k) { return !R[k].ok; })) ? 'ok' : 'warn', S0.ok ? 'أُرسل الرابط للدافع' : 'لم يُرسل الرابط',
+      R ? Object.keys(R).filter(function (k) { return R[k]; }).map(function (k) { return (TQPL_NM[k] || k) + (R[k].ok ? ' ✓' : ' ✗ ' + (R[k].message || 'لم تصل')); }).join(' · ') : (S0.message || null)) : null;
+    return e('div', { class: 't2-stack-tight tqn-pl-top' }, [m ? payMadeCard(m, D, refetch) : null, sent,
+      e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('رابط جديد', { tone: 'primary', ui: 'plus', onClick: function () { PAYC.made = null; tqnPlReset(); go('other', 'fin-plnew'); } }))])]);
+  } catch (err) { void err; return payLinkForm(D, refetch); }
+}
+function tqnPlNewPage() {
+  if (!PAYC.f) tqnPlReset();
+  return admMount('plnew', 'رابط دفع جديد', tqnPlLoad, function (D, st, paint) {
+    if (!D) return [DS.note('info', 'جارٍ التحميل…', null)];
+    if (!D.can.links) return [DS.note('warn', 'لا صلاحية', 'إنشاء روابط الدفع وإرسالها يحتاج صلاحية إدارة العملاء.')];
+    const f = PAYC.f, C = D.clients || [], g = D.gateway || {}, test = g.mode === 'test';
+    const PL = (D.settings && D.settings.subscriptions) ? (D.plans || []).filter(function (x) { return x.active && x.mode === g.mode; }) : [];
+    const contract = !!f.uid && f.ltype === 'contract';
+    const pays = contract ? (PAYC.pays[f.uid] || null) : [];
+    if (contract && !pays && PAYC.ld !== f.uid) {
+      const uid = PAYC.ld = f.uid;
+      liveSb('client_contract_payments?select=id,seq,amount,paid_amount,paid,review_state,due_date,client_contracts(contract_no,legacy_no,closed)&paid=eq.false&user_id=eq.' + encodeURIComponent(uid) + '&order=due_date.asc')
+        .then(function (L) { PAYC.pays[uid] = (L || []).filter(function (p) { return p.review_state === 'ok' && !(p.client_contracts && p.client_contracts.closed) && (Number(p.amount) || 0) - (Number(p.paid_amount) || 0) > 0; }); PAYC.ld = ''; paint(); })
+        .catch(function () { PAYC.pays[uid] = []; PAYC.ld = ''; paint(); });
+    }
+    const due = function (p) { return Math.round(((Number(p.amount) || 0) - (Number(p.paid_amount) || 0)) * 100) / 100; };
+    const cu = f.uid ? C.filter(function (c) { return c.id === f.uid; })[0] : null;
+    const selP = contract && pays ? pays.filter(function (p) { return p.id === f.pid; })[0] : null;
+    const plan = !f.uid && f.plan ? PL.filter(function (x) { return x.id === f.plan; })[0] : null;
+    const amt = contract ? (selP ? due(selP) : null) : (String(f.amount || '').trim() !== '' ? Math.round(Number(f.amount) * 100) / 100 : null);
+    const miss = [];
+    if (!f.uid && !String(f.name || '').trim()) miss.push('اسم الدافع');
+    if (!f.uid && !String(f.phone || '').trim() && !String(f.email || '').trim()) miss.push('جوال الدافع أو بريده');
+    if (contract && !selP) miss.push('الدفعة');
+    if (!contract && !(amt > 0)) miss.push('المبلغ');
+    if (!String(f.desc || '').trim()) miss.push('الوصف');
+    const exp = new Date(Date.now() + (Number(f.hours) || 72) * 3600e3);
+    const expTxt = exp.toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
+    const seg = function (val, opts, on, label) {
+      return e('div', { class: 'tqn-seg', role: 'radiogroup', 'aria-label': label || null }, opts.map(function (o) {
+        const on1 = String(val) === String(o[0]);
+        return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on1), class: 'tqn-seg-b' + (on1 ? ' is-on' : ''), onClick: function () { on(o[0]); } }, o[1]);
+      }));
+    };
+    const step = function (n, t, sub, kids, done) {
+      return e('section', { class: 'tqn-pl-step' + (done ? ' is-done' : '') }, [
+        e('header', { class: 'tqn-pl-sh' }, [e('span', { class: 'tqn-pl-n', 'aria-hidden': 'true' }, done ? '✓' : fmtNum(n)), e('div', { class: 'tqn-pl-st' }, [e('b', {}, t), sub ? e('small', {}, sub) : null])]),
+        e('div', { class: 'tqn-pl-sb' }, kids)]);
+    };
+    /* 1 · العميل والغرض */
+    const clientOpts = [['-', 'بدون عميل — دافع خارجي']].concat(C.map(function (c) { return [c.id, c.name + (c.no ? ' · ' + c.no : '')]; }));
+    const s1 = step(1, 'العميل والغرض', f.uid ? (cu ? cu.name : '') : 'دافع خارجي بلا حساب في المنصة', [
+      DS.editField('العميل', DS.select({ value: f.uid || '-', options: clientOpts, onChange: function (v) { f.uid = v === '-' ? '' : v; f.pid = ''; f.plan = ''; f.amount = ''; f.desc = ''; f.ltype = f.uid ? 'contract' : 'direct'; PAYC.pays = {}; PAYC.ld = ''; paint(); } })),
+      f.uid ? DS.editField('الغرض', seg(f.ltype || 'direct', [['contract', 'دفعة من عقد'], ['direct', 'مبلغ مستقل']], function (v) { f.ltype = v; f.pid = ''; f.amount = ''; f.desc = ''; paint(); }, 'الغرض')) : null,
+      !f.uid ? lvFields([
+        DS.editField('اسم الدافع', DS.input({ value: f.name, onInput: function (v) { f.name = v; } })),
+        DS.editField('جوال الدافع', DS.input({ value: f.phone, dir: 'ltr', placeholder: '05xxxxxxxx', onInput: function (v) { f.phone = v; } })),
+        DS.editField('بريد الدافع', DS.input({ value: f.email, dir: 'ltr', type: 'email', onInput: function (v) { f.email = v; } }))]) : null,
+      !f.uid && PL.length ? DS.editField('نوع الدفع', DS.select({ value: f.plan || '-', options: [['-', 'دفعة واحدة']].concat(PL.map(function (x) { return [x.id, 'اشتراك: ' + x.name + ' · ' + SR(x.amount) + ' كل ' + (PAY_FREQ[x.frequency] || x.frequency + ' يومًا')]; })),
+        onChange: function (v) { f.plan = v === '-' ? '' : v; const x = PL.filter(function (y) { return y.id === f.plan; })[0]; if (x) { f.amount = String(x.amount); f.desc = 'اشتراك: ' + x.name; } paint(); } })) : null
+    ], !!(f.uid || String(f.name || '').trim()));
+    /* 2 · المبلغ */
+    const total = e('div', { class: 'tqn-pl-total' }, [e('span', {}, 'إجمالي الرابط'), e('b', {}, amt > 0 ? SR(amt) : '—')]);
+    const s2 = step(2, 'المبلغ', contract ? 'يُحسب من الدفعة المختارة، ولا يُكتب يدويًا لدفعات العقود' : 'مبلغ مستقل بوصف يراه الدافع', contract ? [
+      !pays ? e('small', { class: 'cu-dr-hint' }, 'جارٍ تحميل دفعات العميل…')
+        : !pays.length ? DS.note('info', 'لا دفعات مستحقة قابلة للدفع', 'لا دفعة غير مسدَّدة في عقد مفتوح لهذا العميل. اختر «مبلغ مستقل» إن كان الدفع لغرض آخر.')
+        : e('div', { class: 'tqn-pl-pays', role: 'radiogroup', 'aria-label': 'الدفعة' }, pays.map(function (p) {
+          const c = p.client_contracts || {}, on1 = f.pid === p.id, no = c.contract_no || c.legacy_no || '—';
+          return e('button', { type: 'button', role: 'radio', 'aria-checked': String(on1), class: 'tqn-pl-pay' + (on1 ? ' is-on' : ''), onClick: function () { f.pid = p.id; f.amount = String(due(p)); f.desc = 'سداد الدفعة ' + p.seq + ' · العقد ' + no; paint(); } }, [
+            e('span', { class: 'tqn-pl-ck', 'aria-hidden': 'true' }, on1 ? '✓' : ''),
+            e('span', { class: 'tqn-pl-pay-t' }, [e('b', {}, 'الدفعة ' + fmtNum(p.seq)), e('small', {}, [ltr(no), ' · تستحق ', bdiD(String(p.due_date || '').slice(0, 10))])]),
+            e('b', { class: 'tqn-pl-pay-a' }, SR(due(p)))]);
+        })),
+      selP ? DS.editField('الوصف الذي يراه الدافع', DS.input({ value: f.desc, onInput: function (v) { f.desc = v; } })) : null,
+      e('small', { class: 'cu-dr-hint' }, 'الرابط المرتبط بدفعة يسدّدها في العقد تلقائيًا عند الدفع (في الوضع الحي فقط). دفعة واحدة لكل رابط.'), total
+    ] : [lvFields([
+      DS.editField('المبلغ (ريال)', plan ? e('div', { class: 't2-input is-num', dir: 'ltr' }, SR(plan.amount)) : DS.input({ value: f.amount, numeric: true, placeholder: '0.00', onInput: function (v) { f.amount = v; } })),
+      DS.editField('الوصف الذي يراه الدافع', DS.input({ value: f.desc, placeholder: 'مثال: رسوم خدمة إضافية', onInput: function (v) { f.desc = v; } }))]), total], amt > 0 && !!String(f.desc || '').trim());
+    /* 3 · الصلاحية والإرسال */
+    const create = async function (send) {
+      if (PAYC.busy || miss.length) return;
+      PAYC.busy = true; PAYC.err = ''; paint();
+      try {
+        const j = await clPost('/admin/api/pay/links', { plan_id: f.plan || null, user_id: f.uid || null, payment_id: contract ? f.pid : null, amount: amt == null ? null : amt, description: String(f.desc || '').trim(), name: f.uid ? '' : f.name, phone: f.uid ? '' : f.phone, email: f.uid ? '' : f.email, hours: Number(f.hours) || 72 });
+        if (!j || !j.ok) throw new Error((j && j.message) || 'تعذّر إنشاء الرابط.');
+        PAYC.made = Object.assign({}, j, { snap: { amount: amt == null ? '' : String(amt), desc: String(f.desc || '').trim(), name: cu ? cu.name : f.name, phone: cu ? (cu.phone || '') : f.phone, email: cu ? (cu.email || '') : f.email, hours: f.hours, mode: g.mode,
+          cno: selP && selP.client_contracts ? (selP.client_contracts.contract_no || selP.client_contracts.legacy_no || '') : (cu ? cu.no : '') } });
+        if (send && j.id) { try { PAYC.made.sent = (await clPost('/admin/api/pay/links/' + j.id + '/send', {})) || { ok: false }; } catch (err) { PAYC.made.sent = { ok: false, message: 'تعذّر الإرسال — أرسله من بطاقة الرابط.' }; } }
+        tqnPlReset();
+        try { if (ADMS.paylinks) ADMS.paylinks.at = 0; } catch (err) { void err; }
+        go('other', 'cu-paylinks');
+      } catch (err) { PAYC.busy = false; if (err && err.message === 'auth') return; PAYC.err = (err && err.message) || 'تعذّر إنشاء الرابط.'; paint(); }
+    };
+    const canSend = !!g.send;
+    const s3 = step(3, 'الصلاحية والإرسال', 'صالح حتى ' + expTxt, [
+      DS.editField('صالح لمدة', seg(f.hours, [['24', 'يوم واحد'], ['72', '3 أيام'], ['168', 'أسبوع'], ['720', '30 يومًا']], function (v) { f.hours = v; paint(); }, 'صالح لمدة')),
+      e('small', { class: 'cu-dr-hint' }, canSend ? '«إنشاء وإرسال» يرسل الرابط للدافع بالبريد وواتساب وإشعار الجوال حسب المتاح له، وتظهر نتيجة كل قناة بعد الإنشاء.' : 'الإرسال الآلي غير مفعّل — انسخ الرابط من بطاقته بعد الإنشاء وأرسله.'),
+      miss.length ? DS.note('warn', 'قبل الإنشاء', 'أكمل: ' + miss.join('، ')) : DS.note('ok', 'جاهز للإنشاء', test ? 'وضع الاختبار — لا يُخصم مبلغ حقيقي.' : null),
+      PAYC.err ? DS.note('warn', 'لم يُنشأ الرابط', PAYC.err) : null,
+      e('div', { class: 't2-pb-actions tqn-pl-acts' }, [
+        liveOk(DS.button(PAYC.busy ? 'جارٍ الإنشاء…' : canSend ? 'إنشاء الرابط فقط' : 'إنشاء الرابط', { tone: canSend ? null : 'primary', ui: 'link', disabled: PAYC.busy || miss.length > 0, onClick: function () { create(false); } })),
+        canSend ? liveOk(DS.button(PAYC.busy ? 'جارٍ الإنشاء…' : 'إنشاء وإرسال', { tone: 'primary', ui: 'paper-plane-tilt', disabled: PAYC.busy || miss.length > 0, onClick: function () { create(true); } })) : null,
+        DS.button('إلغاء', { ui: 'x', onClick: function () { tqnPlReset(); go('other', 'cu-paylinks'); } })])
+    ], false);
+    /* المعاينة: ما يراه الدافع على جواله */
+    const pv = e('aside', { class: 'tqn-pl-pv', 'aria-label': 'معاينة صفحة الدفع' }, [
+      e('small', { class: 'tqn-pl-pvh' }, 'كما يراه الدافع'),
+      e('div', { class: 'tqn-pl-phone' }, [
+        e('div', { class: 'tqn-pl-brand' }, [e('b', {}, 'منصة تيرا'), test ? e('span', { class: 'tqn-pl-test' }, 'وضع الاختبار') : null]),
+        e('div', { class: 'tqn-pl-desc' }, String(f.desc || '').trim() || 'وصف الدفع يظهر هنا'),
+        e('div', { class: 'tqn-pl-amt' }, amt > 0 ? [e('bdi', { dir: 'ltr' }, SAR(amt)), ' ', e('span', {}, 'ر.س')] : '—'),
+        e('small', { class: 'tqn-pl-exp' }, 'صالح حتى ' + expTxt),
+        e('div', { class: 'tqn-pl-paybtn', 'aria-hidden': 'true' }, 'ادفع الآن'),
+        e('small', { class: 'tqn-pl-pm' }, 'مدى · البطاقات الائتمانية · Apple Pay')])]);
+    return [test ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي.') : null,
+      e('div', { class: 'tqn-pl' }, [e('div', { class: 'tqn-pl-main' }, [s1, s2, s3]), pv])];
+  });
+}
 /* v711: «سجل المتابعة» داخل صف العقد في «التحصيل» (staff/next/) — هجرة stf_236: admin_pay_follow_list · admin_pay_follow_add.
    يُحمَّل عند ظهور الصف مفتوحًا أول مرة (لا طلبات للعقود المطويّة)، ويُحفظ في الذاكرة حتى إضافة بند. النص يُعرض نصًّا لا HTML.
    السجل للإضافة فقط: لا تعديل ولا حذف. الكاتب والعقد يحدّدهما الخادم. */
@@ -23982,7 +24112,7 @@ function admPayView(key, title, part) {
     const refetch = function (soft) { if (soft === true) paint(); else refetch0(); };
     const g = D.gateway || {};
     const head = g.keys && g.mode === 'test' ? DS.note('warn', 'البوابة في وضع الاختبار', 'لا يُخصم أي مبلغ حقيقي.') : null;
-    if (part === 'links') return D.can.links ? [head, payLinkForm(D, refetch), payLinksPanel(D, st, paint, refetch)].filter(Boolean)
+    if (part === 'links') return D.can.links ? [head, TQN ? tqnPlTop(D, refetch) : payLinkForm(D, refetch) /* v712 */, payLinksPanel(D, st, paint, refetch)].filter(Boolean)
       : [DS.note('warn', 'لا صلاحية', 'إنشاء روابط الدفع وإرسالها يحتاج صلاحية إدارة العملاء.')];
     const L = D.txns || [], ok = L.filter(function (t) { return t.status === 'success' && t.class_label !== 'online_refund'; });
     return [head, admKpis([['عملية ناجحة', ok.length, 'ok', 'check-circle'], ['مستردة كليًا أو جزئيًا', ok.filter(function (t) { return Number(t.refunded_amount) > 0; }).length, '', 'arrows-clockwise'],
@@ -29540,7 +29670,7 @@ if (t0 && t0.channel && t0.channel !== 'account' && typeof admTrOpen === 'functi
     });
     if (LP['cu-opin']) LP['cu-opin'].t = 'طلبات الإلغاء والاسترداد';
     if (LP['fin-gw']) LP['fin-gw'].t = 'سجل المدفوعات — بوابة الدفع';
-    ['cu-trin', 'cu-opin', 'cu-paylinks'].forEach(function (k) { if (LP[k]) LP[k].up = 'fin'; });
+    ['cu-trin', 'cu-opin', 'cu-paylinks'].forEach(function (k) { if (LP[k]) LP[k].up = 'fin'; }); if (TQN) { try { ICON['fin-plnew'] = ['link', 'teal']; } catch (err) { void err; } lp('fin-plnew', 'رابط دفع جديد', 'cu-paylinks', 'fin-plnew', tqnPlNewPage); } /* v712 */
   } catch (err) { void err; }
   /* المسارات القديمة لسجل السداد (لكل طريقة صفحة) تفتح السجل الموحّد مصفًّى بالطريقة */
   const fpGo = function (k) { return function () { if (ADM.fpFrom !== (k || '*')) { ADM.fpFrom = k || '*'; ADM.fpM = k || 'all'; ADM.fpS = 'all'; ADM.fpC = (k && ADM['frC' + k]) || ''; } return lvFinPay(); }; };
