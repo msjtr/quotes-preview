@@ -26505,9 +26505,12 @@ const LV_SETS = {
   si: [function () { return qtClone(QSI); }, function (v) { lvRepl(QSI, v); }],
   pc: [function () { return { list: qtClone(QPCS), def: QPC_DEF, n: QPC_N }; }, function (v) { const L = (v && v.list) || []; if (!L.length) return;
     L.forEach(function (t, i) { if (QPCS[i]) lvRepl(QPCS[i], t); else QPCS.push(t); }); QPCS.length = L.length; if (v.def) QPC_DEF = v.def; if (v.n) QPC_N = Math.max(QPC_N, v.n); }],
-  stamp: [function () { return qtClone(STAMP); }, function (v) { lvRepl(STAMP, v); }] };
+  stamp: [function () { return qtClone(STAMP); }, function (v) { lvRepl(STAMP, v); }],
+/* v725: قالب سداد قيمة المنتج (ES) وتصميم PDF لكل مستند (DOCDSN) محفوظان في القاعدة — كانا في الذاكرة فقط فيضيعان بإعادة التحميل. المحفوظ يُدمج فوق الافتراضي فلا يضيع حقل ناقص */
+es: [function () { return qtClone(ES); }, function (v) { if (!v || typeof v !== 'object' || Array.isArray(v)) return; const D = qtClone(ES0), X = Object.assign({}, D, v); X.show = Object.assign({}, D.show, (v.show && typeof v.show === 'object') ? v.show : {}); if (!Array.isArray(X.steps)) X.steps = D.steps; lvRepl(ES, X); delete ADM.esD; }],
+dsn: [function () { return qtClone(DOCDSN); }, function (v) { if (!v || typeof v !== 'object') return; Object.keys(DOCDSN).forEach(function (k) { if (v[k] === 1 || v[k] === 2) DOCDSN[k] = v[k]; }); }] };
 /* الصفحة ← المفاتيح التي يغيّرها حفظها */
-const LV_SETP = { 'sys-sla': ['sla'], 'sys-replies': ['replies'], 'sys-ntpl': ['ntpl'], 'sys-disc': ['disc'], 'sys-tax': ['tax', 'si'], 'sys-qt': ['qt'], 'sys-qs': ['qs'], 'sys-qc': ['qc'], 'sys-pc': ['pc'], 'sys-si': ['si'], 'sys-stamp': ['stamp'] };
+const LV_SETP = { 'sys-sla': ['sla'], 'sys-replies': ['replies'], 'sys-ntpl': ['ntpl'], 'sys-disc': ['disc'], 'sys-tax': ['tax', 'si'], 'sys-qt': ['qt', 'dsn'], 'sys-qs': ['qs', 'dsn'], 'sys-qc': ['qc', 'dsn'], 'sys-pc': ['pc', 'dsn'], 'sys-si': ['si', 'dsn'], 'sys-stamp': ['stamp'], 'sys-es': ['es'] }; /* v725: es · dsn */
 const lvLogPush = Array.prototype.push;
 async function lvSetLoad() {
   try {
@@ -26552,9 +26555,9 @@ function lvInvPage() {
   });
 }
 if (LIVE.on) {
-  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si', 'sys-stamp', 'sys-invites'].forEach(function (k) { delete LIVE_HOLD.admin[k]; });
+  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si', 'sys-stamp', 'sys-es', 'sys-invites'].forEach(function (k) { delete LIVE_HOLD.admin[k]; });
   CU_SETLOG.push = function (row) { const r = lvLogPush.call(CU_SETLOG, row); lvSetPersist(row); return r; };
-  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si', 'sys-stamp'].forEach(function (k) {
+  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si', 'sys-stamp', 'sys-es'].forEach(function (k) {
     const P = LP[k]; if (!P) return; const r0 = P.run; P.run = function () { return lvSetReady(P.t || 'إعدادات النظام') || lvOk([].concat(r0.apply(this, arguments)).filter(Boolean)); }; });
   LIVE_PAGES.admin['sys-invites'] = lvInvPage;
   if (/^\/staff/.test(location.pathname)) { LIVE_SET.at = -1; lvSetLoad(); }
