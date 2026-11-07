@@ -221,7 +221,7 @@ function deskBridge(d){ try{
   function call(path,body,hdr){ var h={'content-type':'application/json'}; for(var k in (hdr||{})) h[k]=hdr[k];
     return fetch(API+path,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){ return r.json().catch(function(){ return {ok:false} }).then(function(j){ j._s=r.status; return j }) }).catch(function(){ return {ok:false,message:'تعذر الاتصال. تحقق من الإنترنت وأعد المحاولة.'} }); }
   var member=null; /* {token, profile} لعميل مسجّل غير موظف */
-  var tk=sess(); if(tk) call('/session',null,{authorization:'Bearer '+tk}).then(function(r){ if(r&&r.signed_in&&!r.staff&&r.profile){ member={token:tk,p:r.profile};
+  var tk=sess(); if(tk) call('/session',null,{authorization:'Bearer '+tk}).then(function(r){ if(r&&r.signed_in&&r.profile){ member={token:tk,p:r.profile};
     var em=$('dk-em'); if(em&&!em.value){ em.value=r.profile.email||'' } var nm=$('dk-name'); if(nm&&!nm.value) nm.value=r.profile.name||''; } });
   function msg(id,k,t){ var m=$(id); if(!m) return; m.className='ts-msg'+(k?' '+k:''); m.textContent=t||''; m.hidden=!t; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c] }) }
