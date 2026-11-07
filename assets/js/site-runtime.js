@@ -204,5 +204,5 @@
   if(K[q]){ sessionStorage.setItem(KEY,JSON.stringify({k:q,at:Date.now()})); try{ var u=new URL(location.href); u.searchParams.delete('open'); history.replaceState(history.state,'',u.pathname+u.search+u.hash) }catch(e){} }
   var s=JSON.parse(sessionStorage.getItem(KEY)||'null');
   if(!s||!K[s.k]||Date.now()-s.at>15*60*1000){ sessionStorage.removeItem(KEY); return }
-  var n=0, t=setInterval(function(){ n++; try{ if(window.TQ_PUSH_GO&&window.TQ_PUSH_GO(K[s.k],true)){ clearInterval(t); sessionStorage.removeItem(KEY); setTimeout(function(){ window.TQ_PUSH_GO(K[s.k]) },800) } }catch(e){} if(n>240) clearInterval(t) },500);
+  var n=0, t=setInterval(function(){ n++; try{ if(window.TQ_PUSH_GO&&window.TQ_PUSH_GO(K[s.k],true)){ clearInterval(t); sessionStorage.removeItem(KEY); var k=K[s.k], H={req:'طلبات خدماتي',contract:'عقودي',paid:'مدفوعاتي',msg:'مركز المراسلات',member:'العضوية'}; /* التطبيق قد يرسم صفحته الأولى بعد جاهزيته — نعيد الفتح حتى يظهر القسم (حتى 8 ثوانٍ) */ [800,2500,5000,8000].forEach(function(ms){ setTimeout(function(){ try{ var h=document.querySelector('h1,h2,.t2-h,.pg-t'); if(!h||h.textContent.indexOf(H[k])<0) window.TQ_PUSH_GO(k) }catch(e){} },ms) }) } }catch(e){} if(n>240) clearInterval(t) },500);
 }catch(e){} })();
