@@ -315,19 +315,124 @@
       form.hidden = false; done.hidden = true; msg('dk-msg'); scrollToEl(form);
     }); });
     var reMail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, reLocal = /^[1-9]\d{6,11}$/;
-    $('#dk-send').addEventListener('click', function () {
-      var bad = [['#dk-name', !!$('#dk-name').value.trim()], ['#dk-ph', window.TQ_TEL ? TQ_TEL.ok('dk-ph') : reLocal.test($('#dk-ph').value.replace(/\s/g, ''))], ['#dk-em', reMail.test($('#dk-em').value.trim())], ['#dk-type', !!$('#dk-type').value], ['#dk-subj', !!$('#dk-subj').value.trim()], ['#dk-det', !!$('#dk-det').value.trim()]];
-      bad.forEach(function (x) { $(x[0]).classList.toggle('bad', !x[1]); });
-      if (bad.some(function (x) { return !x[1]; })) return msg('dk-msg', 'bad', 'يرجى استكمال البيانات المظللة: الاسم، والجوال (' + (window.TQ_TEL ? TQ_TEL.rule('dk-ph')[4] : '9 أرقام تبدأ بـ 5') + ' بدون صفر في أوله)، والبريد، والنوع، والموضوع، والتفاصيل.');
-      $('#dk-ref').textContent = '#TERA-' + String(Math.floor(100000 + Math.random() * 899999)); form.hidden = true; done.hidden = false; scrollToEl(done);
-    });
+    /* v754: «إرسال» و«عرض المراسلة» صارا مربوطين بالنظام (deskBridge أدناه) بدل العيّنة */
     $('#dk-draft').addEventListener('click', function () { msg('dk-msg', 'warn', 'حُفظت مسودة. لا تُسجَّل مراسلة رسمية ولا تبدأ مدة الرد إلا بعد الإرسال.'); });
     $('#dk-again').addEventListener('click', function () { done.hidden = true; $$('.t2-mp-i').forEach(function (o) { o.setAttribute('aria-checked', 'false'); o.classList.remove('is-on'); }); scrollToEl($('.ts-desk-kinds')); });
-    $('#fw-go').addEventListener('click', function () {
-      var r = $('#fw-ref').value.replace(/\s/g, '').toUpperCase().replace(/^#/, '');
-      if (!/^TERA-\d{6}$/.test(r) || !reMail.test($('#fw-em').value.trim())) { $('#fw-out').hidden = true; return msg('fw-msg', 'bad', 'أدخل رقم المراسلة بصيغة TERA-000000 والبريد المسجّل فيها.'); }
-      msg('fw-msg'); $('#fw-ref-v').textContent = '#' + r; $('#fw-out').hidden = false;
-    });
+  /* v754: مركز المراسلات مربوط بالنظام الفعلي (/api/desk) — نُقل من الجسر المؤقت في assets/js/site-runtime.js (v752–v753).
+     الزائر: رمز على البريد ورمز على واتساب الجوال ثم تُسجَّل المراسلة برقمها الحقيقي · من دخل بحسابه: تُسجَّل بحسابه مباشرة ·
+     متابعة مراسلة: رمز على البريد ثم الحالة والردود · المرفقات بمكوّن المنصة (t2-drop · t2-files) حتى 2 ميجابايت و8 ملفات.
+     يضع document.__tqDesk فيتجاوزه الجسر في site-runtime.js تلقائيًا. */
+  function deskBridge(d){ try{
+  if(!d||d.__tqDesk||(!d.getElementById('dk-form')&&!d.getElementById('fw-go'))) return; d.__tqDesk=true;
+  var $=function(id){ return d.getElementById(id) };
+  var API='/api/desk';
+  /* إزالة عبارة المعاينة */
+  (function(){ var w=d.createTreeWalker(d.body,4,null), n, L=[]; while((n=w.nextNode())) if(/هذه معاينة|\(معاينة\)/.test(n.nodeValue)) L.push(n); L.forEach(function(t){ t.nodeValue=t.nodeValue.replace(/\s*هذه معاينة[^.]*\.?/g,'').replace(/\s*\(معاينة\)/g,'') }) })(); /* نصوص فقط — لا يُعاد بناء العناصر فتبقى أحداثها */
+  function sess(){ try{ var s=JSON.parse(localStorage.getItem('tera.admin.session')||'null'); if(s&&s.access_token&&(!s.expires_at||s.expires_at*1000>Date.now())) return s.access_token }catch(e){} return '' }
+  function call(path,body,hdr){ var h={'content-type':'application/json'}; for(var k in (hdr||{})) h[k]=hdr[k];
+    return fetch(API+path,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){ return r.json().catch(function(){ return {ok:false} }).then(function(j){ j._s=r.status; return j }) }).catch(function(){ return {ok:false,message:'تعذر الاتصال. تحقق من الإنترنت وأعد المحاولة.'} }); }
+  var member=null; /* {token, profile} لعميل مسجّل غير موظف */
+  var tk=sess(); if(tk) call('/session',null,{authorization:'Bearer '+tk}).then(function(r){ if(r&&r.signed_in&&r.profile){ member={token:tk,p:r.profile};
+    var em=$('dk-em'); if(em&&!em.value){ em.value=r.profile.email||'' } var nm=$('dk-name'); if(nm&&!nm.value) nm.value=r.profile.name||''; } });
+  function msg(id,k,t){ var m=$(id); if(!m) return; m.className='ts-msg'+(k?' '+k:''); m.textContent=t||''; m.hidden=!t; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c] }) }
+  var reMail=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  function phoneOf(){ var el=$('dk-ph'); if(!el) return ''; var loc=el.value.replace(/\D/g,'').replace(/^0+/,''); var cc=$('dk-ph-cc'); var code=String(cc&&cc.value||'966').replace(/\D/g,'')||'966';
+    return code==='966'?loc:'+'+code+loc; }
+  /* نموذج «مراسلة جديدة» → حقول النظام */
+  var MAP={ complaint:{'شكوى عن خدمة':'خدمة','شكوى عن طلب':'طلب','شكوى عن تعامل':'تعامل أو تواصل'},
+            support:{'مشكلة في الحساب':'مشكلة في الحساب','مشكلة في المنصة':'مشكلة في استخدام المنصة','مشكلة في الدفع':'مشكلة في الدفع'} };
+  function payload(){ var on=d.querySelector('.t2-mp-i[data-kind].is-on'); var kind=on?on.dataset.kind:''; var type=($('dk-type')||{}).value||'';
+    var b={ name:$('dk-name').value.trim(), email:$('dk-em').value.trim().toLowerCase(), phone:phoneOf(), subject:$('dk-subj').value.trim(), details:$('dk-det').value.trim(), extra:'', kind:kind };
+    if(kind==='request'){ b.request_type=type==='طلب متعلق بخدمة قائمة'?'طلب متعلق بخدمة قائمة':'طلب جديد'; b.service=type==='طلب عرض سعر'?'عرض سعر':'منتج أو خدمة'; b.extra='نوع الطلب: '+type }
+    else if(kind==='complaint'){ b.complaint_type=MAP.complaint[type]||'أخرى'; b.extra='نوع الشكوى: '+type }
+    else if(kind==='support'){ b.support_type=MAP.support[type]||'أخرى'; b.extra='نوع الدعم: '+type }
+    else if(kind==='inquiry'){ b.kind='support'; b.support_type='استفسار عن خدمة'; b.extra='استفسار '+type }
+    return b; }
+  function check(b){ var bad=[['dk-name',b.name.length>=2],['dk-ph',/^\+?\d{9,15}$/.test(b.phone)],['dk-em',reMail.test(b.email)],['dk-type',!!($('dk-type')||{}).value],['dk-subj',b.subject.length>=3],['dk-det',b.details.length>=10]];
+    bad.forEach(function(x){ var e=$(x[0]); if(e) e.classList.toggle('bad',!x[1]) }); var miss=bad.filter(function(x){ return !x[1] });
+    if(!b.kind){ msg('dk-msg','bad','اختر نوع المراسلة.'); return false }
+    if(miss.length){ msg('dk-msg','bad','يرجى استكمال البيانات المظللة: الاسم، والجوال، والبريد، والنوع، والموضوع، والتفاصيل (10 أحرف على الأقل).'); return false }
+    if(member&&member.p.email&&b.email!==String(member.p.email).toLowerCase()){ msg('dk-msg','bad','اكتب بريد حسابك المسجّل ('+member.p.email+').'); $('dk-em').classList.add('bad'); return false }
+    return true; }
+  /* نافذة رموز التحقق */
+  function modal(title,rows,onOk){ var w=d.createElement('div'); w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true');
+    w.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(7,21,46,.55);display:flex;align-items:center;justify-content:center;padding:16px;direction:rtl';
+    w.innerHTML='<div style="background:#fff;color:#0B2552;border-radius:18px;max-width:420px;width:100%;padding:20px 18px;box-shadow:0 18px 50px rgba(0,0,0,.25);font:inherit"><b style="font-size:18px;display:block;margin-bottom:6px">'+esc(title)+'</b>'
+      +rows.map(function(r){ return '<label style="display:block;margin:14px 0 6px;font-weight:600">'+esc(r.label)+'</label><input data-k="'+r.k+'" inputmode="numeric" autocomplete="one-time-code" maxlength="8" style="width:100%;box-sizing:border-box;font:inherit;font-size:20px;letter-spacing:6px;text-align:center;padding:10px;border:1.5px solid #cdd6e3;border-radius:12px"><small style="display:block;color:#5b6b82;margin-top:4px">'+esc(r.hint)+'</small>' }).join('')
+      +'<p data-m style="display:none;margin:12px 0 0;color:#b42318;font-weight:600"></p><div style="display:flex;gap:8px;margin-top:16px"><button type="button" data-ok style="flex:1;font:inherit;font-weight:700;padding:11px;border:0;border-radius:12px;background:#0AA5AD;color:#fff;cursor:pointer">تحقق وأرسل</button><button type="button" data-x style="font:inherit;padding:11px 14px;border:1.5px solid #cdd6e3;border-radius:12px;background:#fff;color:#0B2552;cursor:pointer">إلغاء</button></div></div>';
+    d.body.appendChild(w); var first=w.querySelector('input'); if(first) first.focus();
+    var api={ el:w, close:function(){ w.remove() }, err:function(t){ var p=w.querySelector('[data-m]'); p.textContent=t||''; p.style.display=t?'block':'none' }, busy:function(on){ var b=w.querySelector('[data-ok]'); b.disabled=on; b.style.opacity=on?.6:1 } };
+    w.querySelector('[data-x]').onclick=api.close;
+    w.querySelector('[data-ok]').onclick=function(){ var v={}; [].forEach.call(w.querySelectorAll('input[data-k]'),function(i){ v[i.dataset.k]=i.value.replace(/\D/g,'') }); onOk(v,api) };
+    return api; }
+  /* المرفقات — بتصميم المنصة (t2-drop · t2-files · t2-file) وآلية النظام: /uploads مرة ثم /files لكل ملف (حتى 2 ميجابايت · 8 ملفات) */
+  var up={tok:'',list:[],busy:0}, MAXB=2*1024*1024, MAXN=8;
+  (function css(){ try{ var out=[]; var walk=function(rules,acc){ [].forEach.call(rules,function(r){ if(r.cssRules&&!r.selectorText){ var inn=[]; walk(r.cssRules,inn); if(inn.length&&r.conditionText) acc.push('@media '+r.conditionText+'{'+inn.join('')+'}') } else if(/\.t2-(drop|files?\b|file-)/.test(r.selectorText||'')) acc.push(r.cssText) }) };
+    [].forEach.call(((window.parent&&window.parent!==window)?window.parent.document:document).styleSheets,function(sh){ try{ walk(sh.cssRules,out) }catch(e){} }); var st=d.createElement('style'); st.textContent=out.join('\n')+'.t2-drop{position:relative}.t2-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}.t2-files[hidden]{display:none}'; d.head.appendChild(st) }catch(e){} })();
+  var fin=null, list=null;
+  /* يُركَّب الحقل بعد اكتمال رسم الصفحة (ts.js قد يعيد رسمه) — ومرة أخرى عند اختيار نوع المراسلة */
+  function initAtt(){ if(d.querySelector('#dk-form .t2-drop')) return; var f0=d.querySelector('#dk-form input[type=file]'), fld=f0&&(f0.closest('.ts-fld')||f0.parentNode); if(!fld) return;
+  { fld.innerHTML='<span class="ts-lab">المرفقات <small style="font-weight:400;color:var(--t2-muted)">(اختياري)</small></span>'
+      +'<div class="t2-drop"><span class="t2-drop-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/></svg></span>'
+      +'<span class="t2-drop-b"><span class="t2-drop-t">اسحب الملف هنا أو اختره</span><span class="t2-drop-h">PDF أو صورة أو أي مستند · حتى 2 ميجابايت للملف · '+MAXN+' ملفات كحد أقصى</span></span><span class="t2-drop-btn" aria-hidden="true">اختيار ملف</span>'
+      +'<input type="file" multiple aria-label="إرفاق ملفات بالمراسلة"></div><div class="t2-files" role="list" hidden></div>';
+    fin=fld.querySelector('input[type=file]'); list=fld.querySelector('.t2-files'); }
+    fin.addEventListener('change',function(){ addFiles(fin.files); fin.value='' });
+    list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-rm]'); if(!b) return; up.list.splice(+b.dataset.rm,1); paint() });
+    paint(); }
+  initAtt(); setTimeout(initAtt,1200); setTimeout(initAtt,3000);
+  function size(n){ return n<1024*1024?Math.max(1,Math.round(n/1024))+' ك.ب':(n/1048576).toFixed(1)+' م.ب' }
+  function guess(f){ if(f.type) return f.type; var x=(f.name.split('.').pop()||'').toLowerCase(); return {pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',heic:'image/heic',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',txt:'text/plain',csv:'text/csv'}[x]||'application/octet-stream' }
+  function paint(){ if(!list) return; list.hidden=!up.list.length; list.innerHTML=up.list.map(function(x,i){ var ext=(x.name.split('.').pop()||'').toLowerCase(), k=ext==='pdf'?'PDF':(/^(png|jpe?g|webp|gif|heic)$/.test(ext)?'IMG':'FILE');
+      var note=x.st==='up'?'جارٍ الرفع…':x.st==='ok'?size(x.size)+' · مرفوع ✓':'';
+      return '<div class="t2-file" role="listitem"><span class="t2-file-ic is-'+k.toLowerCase()+'" aria-hidden="true">'+k+'</span><span class="t2-file-t"><b>'+esc(x.name)+'</b>'+(note?'<span class="t2-file-n">'+note+'</span>':'')+(x.err?'<span class="t2-file-x">'+esc(x.err)+'</span>':'')+'</span><span class="t2-file-a"><button type="button" class="t2-btn" data-rm="'+i+'"'+(x.st==='up'?' disabled':'')+'>إزالة</button></span></div>' }).join('') }
+  function token(){ return up.tok?Promise.resolve(up.tok):call('/uploads',{}).then(function(r){ if(r&&r.ok&&r.upload_token){ up.tok=r.upload_token; return up.tok } throw new Error((r&&r.message)||'تعذر بدء الإرفاق.') }) }
+  function addFiles(fs){ [].forEach.call(fs||[],function(f){ var live=up.list.filter(function(x){ return x.st!=='bad' }).length;
+      var x={name:f.name,size:f.size,st:'up',err:'',id:''}; up.list.push(x);
+      if(live>=MAXN){ x.st='bad'; x.err='بلغت الحد: '+MAXN+' ملفات.'; return }
+      if(f.size>MAXB){ x.st='bad'; x.err='حجم الملف '+size(f.size)+' — الحد 2 ميجابايت.'; return }
+      if(!f.size){ x.st='bad'; x.err='الملف فارغ.'; return }
+      up.busy++; token().then(function(t){ return fetch(API+'/files',{method:'POST',headers:{'content-type':'application/octet-stream','x-desk-upload':t,'x-desk-type':guess(f),'x-desk-name':btoa(unescape(encodeURIComponent(f.name)))},body:f}).then(function(r){ return r.json().catch(function(){ return {ok:false} }) }) })
+        .then(function(r){ if(r&&r.ok&&r.file){ x.st='ok'; x.id=r.file.id } else { x.st='bad'; x.err=(r&&r.message)||'تعذر إرفاق الملف.' } }).catch(function(e){ x.st='bad'; x.err=e.message||'تعذر إرفاق الملف.' })
+        .then(function(){ up.busy--; paint() }); }); paint(); }
+  function done(ref){ up={tok:'',list:[],busy:0}; paint(); var r=$('dk-ref'); if(r) r.textContent='#'+ref; var f=$('dk-form'), x=$('dk-done'); if(f) f.hidden=true; if(x){ x.hidden=false; try{ x.scrollIntoView({block:'start',behavior:'smooth'}) }catch(e){} } }
+  var sending=false;
+  function submit(b,hdr,m){ return call('/threads',b,hdr).then(function(r){ if(r&&r.ok&&r.ref){ if(m) m.close(); done(r.ref); return }
+      var t=(r&&(r.errors&&r.errors.join(' ')||r.message))||'تعذر إرسال المراسلة. حاول مرة أخرى.'; if(m){ m.busy(false); m.err(t) } else msg('dk-msg','bad',t); }); }
+  function send(){ if(sending) return; var b=payload(); if(!check(b)) return; if(up.busy) return msg('dk-msg','warn','انتظر اكتمال رفع المرفقات.'); var ids=up.list.filter(function(x){ return x.st==='ok' }).map(function(x){ return x.id }); if(ids.length){ b.upload_token=up.tok; b.file_ids=ids } msg('dk-msg'); sending=true; var fin=function(){ sending=false };
+    var hdr=member?{authorization:'Bearer '+member.token}:null;
+    var needEmail=!member, needPhone=!member||String(member.p.phone||'').replace(/\D/g,'').slice(-9)!==b.phone.replace(/\D/g,'').slice(-9);
+    if(!needEmail&&!needPhone){ msg('dk-msg','warn','جارٍ الإرسال…'); return submit(b,hdr).then(fin) }
+    msg('dk-msg','warn','جارٍ إرسال رموز التحقق…');
+    var jobs=[]; if(needEmail) jobs.push(call('/verify/start',{channel:'email',dest:b.email})); if(needPhone) jobs.push(call('/verify/start',{channel:'phone',dest:b.phone}));
+    Promise.all(jobs).then(function(rs){ var bad=rs.filter(function(r){ return !r||!r.ok }); if(bad.length){ msg('dk-msg','bad',bad[0].message||'تعذر إرسال رمز التحقق.'); return fin() }
+      msg('dk-msg'); var i=0, rows=[]; if(needEmail){ rows.push({k:'email',label:'رمز التحقق المرسل إلى بريدك',hint:rs[i].masked||b.email}); i++ } if(needPhone) rows.push({k:'phone',label:'رمز التحقق المرسل إلى واتساب جوالك',hint:rs[i].masked||b.phone});
+      modal('تحقق من بياناتك',rows,function(v,m){ m.err(''); m.busy(true); var cj=[];
+        if(needEmail&&!b.email_proof) cj.push(call('/verify/check',{channel:'email',dest:b.email,code:v.email}).then(function(r){ if(r&&r.ok) b.email_proof=r.proof; return r }));
+        if(needPhone&&!b.phone_proof) cj.push(call('/verify/check',{channel:'phone',dest:b.phone,code:v.phone}).then(function(r){ if(r&&r.ok) b.phone_proof=r.proof; return r }));
+        Promise.all(cj).then(function(cr){ var x=cr.filter(function(r){ return !r||!r.ok }); if(x.length){ m.busy(false); return m.err(x[0].message||'الرمز غير صحيح.') } return submit(b,hdr,m) });
+      }); fin(); }); }
+  /* متابعة مراسلة */
+  function show(t){ var o=$('fw-out'); if(!o) return; var rv=$('fw-ref-v');
+    var msgs=(t.messages||[]).map(function(m){ var me=m.role==='customer'; return '<div style="margin:8px 0;padding:10px 12px;border-radius:12px;background:'+(me?'#eef3fb':'#e6f7f7')+'"><b style="font-size:13px">'+(me?'أنت':'فريق تيرا')+'</b> <small style="color:#5b6b82">'+esc(String(m.at||'').slice(0,16).replace('T',' '))+'</small><div style="white-space:pre-wrap;margin-top:4px">'+esc(m.body)+'</div></div>' }).join('');
+    o.innerHTML='<div style="padding:4px 0"><b style="font-size:18px">#'+esc(t.ref)+'</b> · '+esc(t.kind_label||'')+'<div style="margin:8px 0"><span style="display:inline-block;padding:4px 12px;border-radius:999px;background:#0AA5AD;color:#fff;font-weight:700">'+esc(t.status_label||t.status)+'</span></div>'
+      +'<div><b>الموضوع:</b> '+esc(t.subject)+'</div><div style="color:#5b6b82;font-size:13px;margin-top:4px">أُنشئت: '+esc(String(t.created_at||'').slice(0,10))+' · آخر تحديث: '+esc(String(t.updated_at||'').slice(0,10))+'</div>'+(msgs?'<div style="margin-top:10px">'+msgs+'</div>':'')+'</div>';
+    o.hidden=false; if(rv) rv.textContent='#'+t.ref; }
+  var gate='';
+  function follow(){ var ref=($('fw-ref').value||'').replace(/\s/g,'').toUpperCase().replace(/^#/,''), em=($('fw-em').value||'').trim().toLowerCase(); $('fw-out').hidden=true;
+    if(!/^TERA-\d{6,8}$/.test(ref)||!reMail.test(em)) return msg('fw-msg','bad','أدخل رقم المراسلة بصيغة TERA-000000 والبريد المسجّل فيها.');
+    var get=function(h,m){ return call('/threads/'+encodeURIComponent(ref),null,h).then(function(r){ if(r&&r.ok&&r.thread){ if(m) m.close(); msg('fw-msg'); show(r.thread); return true }
+      var t=(r&&r.message)||'لم نجد مراسلة بهذا الرقم لهذا البريد.'; if(m){ m.busy(false); m.err(t) } else msg('fw-msg','bad',t); return false }) };
+    if(member&&String(member.p.email||'').toLowerCase()===em) return get({authorization:'Bearer '+member.token});
+    if(gate) return get({'x-desk-gate':gate}).then(function(ok){ if(!ok) gate='' });
+    msg('fw-msg','warn','جارٍ إرسال رمز التحقق إلى بريدك…');
+    call('/verify/start',{channel:'email',dest:em}).then(function(r){ if(!r||!r.ok) return msg('fw-msg','bad',(r&&r.message)||'تعذر إرسال الرمز.'); msg('fw-msg');
+      modal('تحقق من بريدك',[{k:'email',label:'رمز التحقق المرسل إلى بريدك',hint:r.masked||em}],function(v,m){ m.err(''); m.busy(true);
+        call('/verify/check',{channel:'email',dest:em,code:v.email,purpose:'follow'}).then(function(c){ if(!c||!c.ok||!c.gate){ m.busy(false); return m.err((c&&c.message)||'الرمز غير صحيح.') } gate=c.gate; get({'x-desk-gate':gate},m) }) }) }); }
+  d.addEventListener('click',function(ev){ if(ev.target&&ev.target.closest&&ev.target.closest('.t2-mp-i[data-kind],#dk-again')) setTimeout(initAtt,80); var t=ev.target&&ev.target.closest&&ev.target.closest('#dk-send,#fw-go'); if(!t) return; ev.preventDefault(); ev.stopImmediatePropagation(); if(t.id==='dk-send') send(); else follow(); },true);
+}catch(e){} }
+  deskBridge(document);
   })();
 
   if ($('#dk-form') && window.__HASH) setTimeout(function () { var kb = $('.t2-mp-i[data-kind="' + window.__HASH + '"]'); if (kb) { kb.click(); scrollToEl(kb); } }, 350);
