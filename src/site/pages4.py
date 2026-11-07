@@ -266,7 +266,7 @@ def portal2():
 
     tiles = '<template id="pt-tiles">' + ''.join(f'<span data-ic="{ic}">{T(ic, tn)}</span>' for ic, tn in [('PiLockKeyFill','teal'),('PiKeyFill','saffron'),('PiDeviceMobileFill','navy'),('PiUserPlusFill','teal'),('PiEnvelopeFill','sky'),('PiShieldCheckFill','navy'),('PiArrowCounterClockwiseFill','saffron'),('PiCheckCircleFill','teal'),('PiDesktopFill','sky'),('PiUserFill','teal'),('PiSealCheckFill','teal'),('PiPhoneFill','teal')]) + '</template>'
     card = ('<div class="pt">' + tiles + head + '<div class="pt-body">' + login + otp + device + reg + fg + rc + done +
-            '<p class="ts-legal">باستخدامك البوابة توافق على سياسة الاستخدام وسياسة الخصوصية. هذه معاينة ولا تُرسل أي بيانات.</p></div></div>')
+            '<p class="ts-legal">باستخدامك البوابة توافق على سياسة الاستخدام وسياسة الخصوصية.</p></div></div>')
     side = (f'<aside class="pt-side"><div class="ts-lux"><small>بوابة الدخول الموحدة</small><h2>حساب واحد لكل خدماتك</h2><p>الدخول والتحقق والاسترداد بهوية واحدة وخطوات واضحة.</p><ul class="ts-feat-ul">'
             f'<li>{T("PiShieldCheckFill")}<div><b>مصادقة ثنائية إلزامية</b><span>تطبيق المصادقة أو رمز إضافي، أو الاثنان معًا.</span></div></li>'
             f'<li>{T("PiDevicesFill", "sky")}<div><b>ثلاثة أجهزة مصرّح لها</b><span>تختار مدة التصريح 30 أو 60 أو 90 يومًا، وتلغيه متى شئت.</span></div></li>'
