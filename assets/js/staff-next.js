@@ -578,8 +578,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v765: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v766: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v766: طلب التوثيق «بندًا بندًا»: الأقسام بنسبة إنجازها، وبند واحد كبير بزرّي مطابق/غير مطابق وانتقال تلقائي للتالي، والقرار والمراسلة والسجل من شريط ثابت.
    · v765: صفحة التفاصيل تفتح من أعلى الصفحة فيبقى الهيدر والقائمة الجانبية ظاهرين مهما كان موضع التمرير، وتعود القائمة لموضعها عند الإغلاق.
    · v764: صفحات التفاصيل داخل الصفحة لا أدراج (القائمة الجانبية والهيدر ظاهران) · رأس صفحة بالاسم والوسوم والأزرار · أيقونة لكل معلومة · التدشين: أرقام + البطاقة بجانب مسار التدشين + بيانات الملف · التوثيق: البنود بعمود والملخص والقرار والمراسلة بعمود، والبند يتكيّف مع العرض.
    · v760: صفحة «بانتظار التدشين» (شاشة المشرف): الخطوات شريط ثم عمودان بطاقات، واختيار الأسباب في المراجعة والقرار.
@@ -1499,7 +1500,35 @@ function geoQ() {
     var ol = b.querySelector(':scope > .lch-steps'); if (!ol) return;
     [].forEach.call(ol.children, function (li) { var st = li.getAttribute('style') || '', c = li.className || ''; cls(li, 'is-done', /18,\s*121,\s*92|is-done|is-ok/.test(st + ' ' + c)); cls(li, 'is-cur', /0AA5AD|is-on|is-cur/i.test(st + ' ' + c)); });
   }
-  /* تفاصيل طلب التوثيق: عمودان — البنود (يمين) ولوحة ثابتة بالملخص والقرار والمراسلة (يسار) — وأيقونة لكل بند */
+  /* ── 9) v766: طلب التوثيق «بندًا بندًا» — قائمة الأقسام بنسبة إنجاز كل قسم · بند واحد كبير في الوسط بزرّي مطابق/غير مطابق · انتقال تلقائي للبند التالي · شريط قرار ثابت ── */
+  /* المنصة تعيد رسم الطلب كاملًا بعد كل إجراء؛ نحفظ موضع المراجعة (القسم · البند · الوضع) ونعيد البناء من رسمها الجديد. عناصر المنصة تُنقل كما هي (بأزرارها) ولا تُنسخ. */
+  ST.fx = ST.fx || {};
+  function itSt(it) { return it.classList.contains('is-mismatch') ? 'bad' : it.classList.contains('is-pend') ? 'pend' : 'ok'; }
+  function itLab(it) { var b = it.querySelector('.vr3-it-l b'); return txt(b) || txt(it.querySelector('.vr3-it-l')).replace(/·.*$/, '').trim(); }
+  function fxModel(v) {
+    var S = [];
+    [].forEach.call(v.querySelectorAll('section.vr3-sec'), function (s) {
+      if (s.querySelector(':scope > .vr3-tabs') || s.matches('.vr3-log')) return;
+      var t = txt(s.querySelector('h3')); if (!t) return;
+      var g = s.querySelector(':scope > .vr3-grid');
+      var its = g ? [].slice.call(g.querySelectorAll(':scope > .vr3-it')) : [];
+      var m = txt(s.querySelector('.vr3-sec-m') || s.querySelector('.vr3-sec-h')), mm = m.match(/(\d+)\s*من\s*(\d+)/);
+      var n = its.length || (mm ? +mm[2] : 0);
+      var ok = its.length ? its.filter(function (i) { return itSt(i) === 'ok'; }).length : (mm ? +mm[1] : 0);
+      var bad = its.filter(function (i) { return itSt(i) === 'bad'; }).length;
+      var pend = its.length ? its.filter(function (i) { return itSt(i) === 'pend'; }).length : Math.max(0, n - ok);
+      S.push({ t: t, s: s, its: its, n: n, ok: ok, bad: bad, pend: pend, open: !!g });
+    });
+    return S;
+  }
+  var FXV = null;
+  function fxPark(el) { if (!el || el.__tqnPh || !el.parentNode) return; var ph = document.createComment('tqn'); el.parentNode.insertBefore(ph, el); el.__tqnPh = ph; if (FXV) (FXV.__tqnMv = FXV.__tqnMv || []).push(el); }
+  function fxBack(el) { var ph = el && el.__tqnPh; if (!ph) return; if (ph.parentNode) ph.parentNode.insertBefore(el, ph); if (ph.parentNode) ph.parentNode.removeChild(ph); el.__tqnPh = null; }
+  function fxNextPend(S, si, ii) {
+    for (var a = si; a < S.length; a++) { var its = S[a].its; for (var b = a === si ? ii + 1 : 0; b < its.length; b++) if (itSt(its[b]) === 'pend') return [a, b]; }
+    for (var c = 0; c <= si && c < S.length; c++) { var J = S[c].its; for (var e = 0; e < J.length; e++) if (itSt(J[e]) === 'pend' && !(c === si && e === ii)) return [c, e]; }
+    return null;
+  }
   function vrPage(d) {
     var v = d.querySelector('.vr3'); if (!v) return; cls(v, 'tqn-vr3', true);
     var H = txt(d.querySelector('.cu-dr-h > div > b')) + ' ' + txt(d.querySelector('.cu-dr-h > div > span'));
@@ -1507,41 +1536,130 @@ function geoQ() {
       var val = txt(kv.querySelector(':scope > :not(small):not(.tqn-ico)')); cls(kv, 'tqn-hide', !!val && val.length > 1 && H.indexOf(val) >= 0);
       if (!kv.__tqnI) { kv.__tqnI = 1; kv.insertBefore(icBox(icOf(txt(kv.querySelector('small')))), kv.firstChild); }
     });
-    [].forEach.call(v.querySelectorAll('section.vr3-sec'), function (s) {
-      cls(s, 'tqn-vr-dec', !!s.querySelector(':scope > .vr3-tabs'));
-      cls(s, 'is-done', !!s.querySelector(':scope > .vr3-sec-h:only-child'));
-      var g = s.querySelector(':scope > .vr3-grid'); if (!g) return;
-      [].forEach.call(g.querySelectorAll(':scope > .vr3-it'), function (it) {
-        if (!it.__tqnI) { it.__tqnI = 1; it.insertBefore(icBox(icOf(txt(it.querySelector('.vr3-it-l'))), 'tqn-ico is-it'), it.firstChild); }
-        var a = it.querySelector(':scope > .vr3-acts'); cls(a, 'tqn-hide', !!a && !a.children.length);
-      });
-      var W = [].slice.call(g.querySelectorAll(':scope > .vr3-it > .vr3-why')), T = W.map(txt);
-      var same = W.length >= 2 && T.every(function (t) { return t === T[0]; });
-      W.forEach(function (w) { cls(w, 'tqn-hide', same); });
-      var B = s.__tqnWhy;
-      if (same) {
-        if (!(B && B.parentNode === s && B.__t === T[0])) {
-          if (B && B.parentNode) B.parentNode.removeChild(B);
-          B = mk('div', 'tqn-vr-why'); B.__t = T[0];
-          B.appendChild(mk('b', '', 'سبب عدم المطابقة — لكل البنود (' + W.length + ')'));
-          B.appendChild(mk('span', '', T[0].replace(/^السبب:\s*/, '').replace(/\s+/g, ' ')));
-          s.insertBefore(B, g); s.__tqnWhy = B;
-        }
-      } else if (B && B.parentNode) B.parentNode.removeChild(B);
+    [].forEach.call(v.querySelectorAll('section.vr3-sec'), function (s) { cls(s, 'tqn-vr-dec', !!s.querySelector(':scope > .vr3-tabs')); });
+    [].forEach.call(v.querySelectorAll('.vr3-it'), function (it) {
+      if (!it.__tqnI) { it.__tqnI = 1; it.insertBefore(icBox(icOf(itLab(it)), 'tqn-ico is-it'), it.firstChild); }
+      [].forEach.call(it.querySelectorAll(':scope > .vr3-acts > .t2-btn'), function (b) { var t = txt(b); cls(b, 'tqn-fx-ok', /^مطابق$/.test(t)); cls(b, 'tqn-fx-no', /^غير مطابق$/.test(t)); cls(b, 'tqn-fx-2', !/^(مطابق|غير مطابق)$/.test(t)); });
     });
-    /* العمودان: يُبنيان مرة لكل رسم (المنصة تعيد رسم الطلب كاملًا بعد كل إجراء) */
-    if (!v.__tqnX) {
-      v.__tqnX = 1; cls(v, 'tqn-vx', true);
-      var M = mk('div', 'tqn-vx-m'), S = mk('div', 'tqn-vx-s');
-      [].slice.call(v.children).forEach(function (c) { if (c.matches('.vr3-top, section.tqn-vr-dec, .sr-msg')) S.appendChild(c); else M.appendChild(c); });
-      [].slice.call(S.children).sort(function (a, b) { return rk(a) - rk(b); }).forEach(function (c) { S.appendChild(c); });
-      v.appendChild(M); v.appendChild(S);
-    }
-    function rk(c) { return c.matches('.vr3-top') ? 0 : c.matches('.tqn-vr-dec') ? 1 : 2; }
-    /* البنود المكتملة في آخر القائمة: الأقسام التي فيها عمل أولًا */
-    var M2 = v.querySelector(':scope > .tqn-vx-m');
-    if (M2) { var done = [].filter.call(M2.children, function (c) { return c.matches('section.vr3-sec.is-done'); }); var log = M2.querySelector(':scope > .vr3-log'); done.forEach(function (c) { if (c.nextElementSibling && !c.nextElementSibling.matches('section.vr3-sec.is-done') && c.nextElementSibling !== log) M2.insertBefore(c, log); }); }
+    /* يُعاد البناء عند أي تغيّر في حالات البنود (رسم جديد أو تغيير في المكان) */
+    var sig = [].map.call(v.querySelectorAll('.vr3-it'), itSt).join('') + '|' + v.querySelectorAll('.vr3-it .vr3-box').length + '|' + v.querySelectorAll('section.vr3-sec > .vr3-grid').length + '|' + v.querySelectorAll('section.vr3-sec').length;
+    if (v.__tqnFx === sig && v.__tqnW && v.__tqnW.parentNode === v) return;
+    v.__tqnFx = sig; fxRender(d, v);
   }
+  function fxRender(d, v) {
+    var key = d.getAttribute('data-r') || 'vr', F = ST.fx[key] = ST.fx[key] || { mode: '', sec: '', lab: '', st: '' };
+    cls(v, 'tqn-fx', true);
+    /* أعِد كل ما نقلناه سابقًا إلى مكانه قبل القراءة والبناء */
+    var W = v.__tqnW;
+    FXV = v; (v.__tqnMv || []).splice(0).forEach(fxBack); if (W && W.parentNode) W.parentNode.removeChild(W);
+    var S = fxModel(v);
+    var dec = v.querySelector('section.tqn-vr-dec'), msg = v.querySelector('.sr-msg'), log = v.querySelector('.vr3-log'), top = v.querySelector('.vr3-top');
+    /* الموضع: البند الذي كنا عليه؛ وإن حُسم للتو (كان بانتظار) ننتقل للبند التالي المعلّق */
+    var si = -1, ii = -1;
+    S.forEach(function (x, a) { if (x.t === F.sec) { si = a; x.its.forEach(function (it, b) { if (itLab(it) === F.lab) ii = b; }); } });
+    if (si >= 0 && ii >= 0 && F.st === 'pend' && itSt(S[si].its[ii]) !== 'pend' && !S[si].its[ii].querySelector('.vr3-box')) {
+      var nx = fxNextPend(S, si, ii); if (nx) { si = nx[0]; ii = nx[1]; } else if (dec) F.mode = 'dec';
+    }
+    if (si < 0) { var fp = fxNextPend(S, 0, -1); if (fp) { si = fp[0]; ii = fp[1]; } else { si = S.length ? 0 : -1; ii = si >= 0 && S[0].its.length ? 0 : -1; if (dec && !F.mode && S.length) F.mode = 'dec'; } }
+    if (si >= 0 && ii < 0 && S[si].its.length) ii = 0;
+    var cur = si >= 0 && ii >= 0 ? S[si].its[ii] : null;
+    F.sec = si >= 0 ? S[si].t : ''; F.lab = cur ? itLab(cur) : ''; F.st = cur ? itSt(cur) : '';
+    var mode = F.mode || 'item';
+    var tot = 0, ok = 0, bad = 0, pend = 0; S.forEach(function (x) { tot += x.n; ok += x.ok; bad += x.bad; pend += x.pend; });
+    function go(a, b, m) { if (a >= 0) { F.sec = S[a].t; F.lab = b >= 0 && S[a].its[b] ? itLab(S[a].its[b]) : ''; F.st = b >= 0 && S[a].its[b] ? itSt(S[a].its[b]) : ''; } F.mode = m || ''; fxRender(d, v); var p = d.querySelector('.cu-dr-p'); if (p) p.scrollTop = 0; }
+    v.__tqnGo = go;
+    W = mk('div', 'tqn-fx-w' + (mode !== 'item' ? ' is-' + mode : '')); v.__tqnW = W; v.appendChild(W);
+    /* 1) قائمة الأقسام */
+    var N = mk('aside', 'tqn-fx-nav');
+    var pc = tot ? Math.round((ok + bad) / tot * 100) : 0;
+    var ring = mk('div', 'tqn-fx-ring'); ring.style.setProperty('--p', pc); ring.appendChild(mk('b', '', pc + '%')); ring.appendChild(mk('small', '', 'تمت مراجعته'));
+    var sumL = mk('div', 'tqn-fx-sum');
+    [['ok', ok, 'مطابق'], ['bad', bad, 'غير مطابق'], ['pend', pend, 'متبقٍ']].forEach(function (x) { var r = mk('span', 'is-' + x[0]); r.appendChild(mk('b', '', String(x[1]))); r.appendChild(mk('small', '', x[2])); sumL.appendChild(r); });
+    var hd = mk('div', 'tqn-fx-nh'); hd.appendChild(ring); hd.appendChild(sumL); N.appendChild(hd);
+    var L = mk('ol', 'tqn-fx-secs');
+    S.forEach(function (x, a) {
+      var li = mk('li', 'tqn-fx-sec' + (a === si && mode === 'item' ? ' is-on' : '') + (x.pend === 0 && x.n ? (x.bad ? ' is-bad' : ' is-done') : ''));
+      var bt = mk('button', 'tqn-fx-sb'); bt.type = 'button'; bt.setAttribute('data-live-ok', '');
+      var ic0 = s0ic(x.s); bt.appendChild(ic0);
+      var tx = mk('span', 'tqn-fx-st'); tx.appendChild(mk('b', '', x.t)); var bar = mk('i', 'tqn-fx-bar'); var fill = mk('i'); fill.style.width = (x.n ? Math.round((x.ok + x.bad) / x.n * 100) : 0) + '%'; bar.appendChild(fill); tx.appendChild(bar); bt.appendChild(tx);
+      bt.appendChild(mk('em', '', (x.ok + x.bad) + '/' + x.n));
+      bt.addEventListener('click', function () {
+        if (!x.open) { var ex = [].filter.call(x.s.querySelectorAll('.vr3-sec-h button, :scope > button'), function (q) { return /عرض|إظهار|فتح|البنود/.test(txt(q)); })[0]; F.sec = x.t; F.lab = ''; F.mode = ''; if (ex) { ex.click(); return; } }
+        var p0 = -1; x.its.forEach(function (it, b) { if (p0 < 0 && itSt(it) === 'pend') p0 = b; });
+        go(a, p0 >= 0 ? p0 : 0, '');
+      });
+      li.appendChild(bt);
+      if (a === si && mode === 'item' && x.its.length) {
+        var IL = mk('ul', 'tqn-fx-its');
+        x.its.forEach(function (it, b) {
+          var r = mk('li'); var q = mk('button', 'tqn-fx-ib is-' + itSt(it) + (b === ii ? ' is-on' : '')); q.type = 'button'; q.setAttribute('data-live-ok', '');
+          q.appendChild(mk('i')); q.appendChild(mk('span', '', itLab(it)));
+          q.addEventListener('click', function () { go(a, b, ''); }); r.appendChild(q); IL.appendChild(r);
+        });
+        li.appendChild(IL);
+      }
+      L.appendChild(li);
+    });
+    N.appendChild(L);
+    if (top) { var dt = mk('details', 'tqn-fx-info'); var sm = mk('summary', '', 'تفاصيل الطلب والإسناد'); dt.appendChild(sm); fxPark(top); dt.appendChild(top); N.appendChild(dt); }
+    W.appendChild(N);
+    /* 2) المسرح: بند واحد · أو القرار · أو المراسلة · أو السجل */
+    var G = mk('section', 'tqn-fx-stage');
+    if (mode === 'item' && cur) {
+      var x0 = S[si];
+      var sh = mk('div', 'tqn-fx-sh');
+      var shT = mk('div'); shT.appendChild(mk('small', '', x0.t)); shT.appendChild(mk('b', '', 'البند ' + (ii + 1) + ' من ' + x0.its.length)); sh.appendChild(shT);
+      var nv = mk('div', 'tqn-fx-pn');
+      var flat = []; S.forEach(function (x, a) { x.its.forEach(function (it, b) { flat.push([a, b]); }); });
+      var k = -1; flat.forEach(function (p, j) { if (p[0] === si && p[1] === ii) k = j; });
+      var pv = btn('‹ السابق', 'is-sm', function () { var p = flat[k - 1]; if (p) go(p[0], p[1], ''); }, k <= 0);
+      var nt = btn('التالي ›', 'is-sm', function () { var p = flat[k + 1]; if (p) go(p[0], p[1], ''); }, k < 0 || k >= flat.length - 1);
+      nv.appendChild(pv); nv.appendChild(nt); sh.appendChild(nv); G.appendChild(sh);
+      var card = mk('div', 'tqn-fx-card is-' + itSt(cur)); fxPark(cur); card.appendChild(cur); G.appendChild(card);
+      var nxp = fxNextPend(S, si, ii);
+      G.appendChild(mk('p', 'tqn-fx-hint', itSt(cur) === 'pend' ? 'اختر «مطابق» أو «غير مطابق» — تنتقل تلقائيًا إلى البند التالي. الأسهم ← → للتنقّل.' : (nxp ? 'حُسم هذا البند. التالي المعلّق: ' + itLab(S[nxp[0]].its[nxp[1]]) : 'لا بنود معلّقة — يمكنك اتخاذ القرار.')));
+      if (!nxp && itSt(cur) !== 'pend' && dec) G.appendChild(btn('اتخاذ القرار', 'is-pri', function () { go(-1, -1, 'dec'); }));
+      var sa = x0.s.querySelector(':scope > .vr3-sec-h .vr3-acts');
+      if (sa) [].forEach.call(sa.querySelectorAll('.t2-btn'), function (q) { cls(q, 'tqn-hide', /^طيّ/.test(txt(q))); });
+      if (sa && sa.children.length) { var sb = mk('div', 'tqn-fx-sa'); sb.appendChild(mk('small', '', 'على القسم كاملًا «' + x0.t + '»:')); fxPark(sa); sb.appendChild(sa); G.appendChild(sb); }
+    } else if (mode === 'item') {
+      var x1 = si >= 0 ? S[si] : null;
+      var em = mk('div', 'tqn-fx-empty'); em.appendChild(icBox('ok')); em.appendChild(mk('b', '', x1 ? (x1.pend ? 'بنود القسم «' + x1.t + '» غير معروضة' : 'القسم «' + x1.t + '» مكتمل') : 'لا بنود في هذا الطلب'));
+      em.appendChild(mk('small', '', x1 ? (x1.ok + ' مطابق · ' + x1.bad + ' غير مطابق من ' + x1.n) : ''));
+      G.appendChild(em);
+    } else {
+      var back = btn('‹ العودة إلى البنود', 'is-sm', function () { F.mode = ''; fxRender(d, v); });
+      var mh = mk('div', 'tqn-fx-sh'); var mt = mk('div'); mt.appendChild(mk('small', '', 'طلب التوثيق')); mt.appendChild(mk('b', '', mode === 'dec' ? 'القرار' : mode === 'msg' ? 'المراسلة مع صاحب الملف' : 'السجل والملاحظات')); mh.appendChild(mt); mh.appendChild(back); G.appendChild(mh);
+      var el = mode === 'dec' ? dec : mode === 'msg' ? msg : log;
+      if (el) { fxPark(el); if (el.tagName === 'DETAILS') el.open = true; G.appendChild(el); }
+      if (mode === 'dec' && pend) G.appendChild(mk('p', 'tqn-fx-warn', 'تنبيه: ما زال ' + pend + ' بندًا بانتظار المطابقة.'));
+    }
+    W.appendChild(G);
+    /* 3) شريط القرار الثابت */
+    var B = mk('div', 'tqn-fx-dock');
+    var cnt = mk('div', 'tqn-fx-cnt');
+    [['ok', ok, 'مطابق'], ['bad', bad, 'غير مطابق'], ['pend', pend, 'متبقٍ']].forEach(function (x) { var r = mk('span', 'is-' + x[0]); r.appendChild(mk('b', '', String(x[1]))); r.appendChild(document.createTextNode(' ' + x[2])); cnt.appendChild(r); });
+    B.appendChild(cnt);
+    var ba = mk('div', 'tqn-fx-da');
+    if (msg) ba.appendChild(btn('المراسلة', 'is-sm' + (mode === 'msg' ? ' is-on' : ''), function () { go(-1, -1, mode === 'msg' ? '' : 'msg'); }));
+    if (log) ba.appendChild(btn('السجل', 'is-sm' + (mode === 'log' ? ' is-on' : ''), function () { go(-1, -1, mode === 'log' ? '' : 'log'); }));
+    if (dec) ba.appendChild(btn('اتخاذ القرار', 'is-pri' + (mode === 'dec' ? ' is-on' : ''), function () { go(-1, -1, mode === 'dec' ? '' : 'dec'); }));
+    B.appendChild(ba); W.appendChild(B);
+    /* «الانتقال إلى القرار» في الملخص يفتح القرار هنا */
+    [].forEach.call(W.querySelectorAll('.vr3-link'), function (a) { if (a.__tqn) return; a.__tqn = 1; a.addEventListener('click', function (ev) { if (/القرار/.test(txt(a))) { ev.preventDefault(); ev.stopPropagation(); go(-1, -1, 'dec'); } }, true); });
+  }
+  function s0ic(s) { var o = s.querySelector('.vr3-sec-ic'); var i = mk('i', 'tqn-fx-si'); if (o && o.firstElementChild) i.appendChild(o.firstElementChild.cloneNode(true)); else i.appendChild(tqIc('list')); return i; }
+  /* الأسهم: التنقّل بين البنود (خارج حقول الكتابة) */
+  try {
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+      var t = ev.target; if (t && t.closest && t.closest('input, textarea, select, [contenteditable="true"]')) return;
+      var d = document.querySelector('.cu-dh .cu-dr.is-page.is-on'), v = d && d.querySelector('.vr3.tqn-fx'); if (!v || !v.__tqnW) return;
+      var b = [].filter.call(v.__tqnW.querySelectorAll('.tqn-fx-pn .tqn-b'), function (x) { return /التالي|السابق/.test(txt(x)); });
+      var want = ev.key === 'ArrowLeft' ? /التالي/ : /السابق/;
+      var hit = b.filter(function (x) { return want.test(txt(x)) && !x.disabled; })[0]; if (hit) { ev.preventDefault(); hit.click(); }
+    });
+  } catch (e) { void e; }
   /* ── 5) محتوى القسم ── */
   function isRecs(nested) {
     var forms = nested.filter(function (n) { return /^تسجيل/.test(title(n)); });
