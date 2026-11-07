@@ -577,7 +577,7 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v740: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v739) —
+/* v742: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v741) —
    · ملف العميل مساحة عمل: لوحة العميل ثابتة بجانب المحتوى (البطاقة · أزرار سريعة · دائرة السداد · التنويهات)، والمحتوى بتبويباته.
    · العقد: بطاقة رأس واحدة + تنبيه المتأخرات بأزراره + مسار الدفعات الزمني + تبويب لكل قسم.
    · صفحة الإجراءات: بطاقات مجمّعة حسب الغرض (التحصيل · تعديل الدفعات · حالة العقد) بحالة كل إجراء، وكل إجراء صفحة بإطار ثابت وزر رجوع.
@@ -697,12 +697,14 @@ function geoQ() {
     K.forEach(function (x) { ST.K[x.k.name] = x.k; });
     var stack = box.parentNode; cls(stack, 'tqn-cl', true); cls(box, 'tqn-hide', true);
     [].forEach.call(stack.querySelectorAll(':scope > .adm-tools'), function (x) { cls(x, 'tqn-hide', true); });
-    [].forEach.call(stack.querySelectorAll(':scope > .m3-tools, :scope > .ax-tools'), function (x) { cls(x, 'tqn-hide', x.querySelectorAll('.st-chip, button').length <= 1); });
+    /* v741: شرائح حالة الحساب (الأمان) تُدمج في شريط الجدول قائمةً منسدلة — صف تصفية واحد بدل صفّين */
+    var SC = [];
+    [].forEach.call(stack.querySelectorAll(':scope > .m3-tools, :scope > .ax-tools'), function (x) { var ch = x.querySelectorAll('.st-chip'); if (ch.length) { cls(x, 'tqn-hide', true); SC = SC.concat([].slice.call(ch)); } else cls(x, 'tqn-hide', x.querySelectorAll('button').length <= 1); });
     if (!box.__tqnMo) { try { box.__tqnMo = new MutationObserver(soon); box.__tqnMo.observe(box, { attributes: true, subtree: true, attributeFilter: ['style', 'hidden'] }); } catch (e) { void e; } }
     var F = ST.lf || 'all', SO = ST.ls || 'name', Q = (ST.lq || '').trim().toLowerCase();
     var groups = [['all', 'كل العملاء', K.length, ''], ['ok', 'منتظمون', 0, 'ok'], ['late', 'عليهم متأخرات', 0, 'bad'], ['soon', 'يستحق خلال 7 أيام', 0, 'warn'], ['none', 'بلا عقود', 0, 'g']];
     K.forEach(function (x) { var s = kState(x.k)[2]; groups.forEach(function (g) { if (g[0] === s) g[2]++; }); });
-    var sig = K.map(function (x) { return x.k.name + x.c.getAttribute('data-k') + (x.c.hidden || x.c.style.display === 'none' ? 0 : 1); }).join('|') + F + SO + Q;
+    var sig = K.map(function (x) { return x.k.name + x.c.getAttribute('data-k') + (x.c.hidden || x.c.style.display === 'none' ? 0 : 1); }).join('|') + F + SO + Q + SC.map(function (c) { return txt(c) + (c.classList.contains('is-on') ? 1 : 0); }).join(',');
     var W = stack.__tqnCl;
     if (W && W.parentNode === stack && W.__sig === sig) return;
     var keepQ = W && W.__q === document.activeElement;
@@ -723,6 +725,12 @@ function geoQ() {
     var seg = mk('div', 'tqn-seg');
     [['name', 'أ–ي'], ['late', 'الأعلى متأخرًا'], ['rem', 'الأعلى متبقيًا']].forEach(function (o) { var b = mk('button', SO === o[0] ? 'is-on' : '', o[1]); b.type = 'button'; b.setAttribute('data-live-ok', ''); b.addEventListener('click', function () { ST.ls = o[0]; apply(); }); seg.appendChild(b); });
     tb.appendChild(seg);
+    if (SC.length > 1) {
+      var sl = mk('select', 'tqn-lsel'); sl.setAttribute('aria-label', 'حالة الحساب'); sl.setAttribute('data-live-ok', '');
+      SC.forEach(function (c, i) { var lb = txt(c.querySelector('span:not(.st-chip-ic)')) || txt(c), n = txt(c.querySelector('small')); var o = mk('option', '', (i ? '' : 'الحساب: ') + lb.replace(n, '').trim() + (n ? ' (' + n + ')' : '')); o.value = String(i); if (c.classList.contains('is-on')) o.selected = true; sl.appendChild(o); });
+      sl.addEventListener('change', function () { var c = SC[+sl.value]; if (c) c.click(); soon(); });
+      tb.appendChild(sl);
+    }
     var rf = [].filter.call(stack.querySelectorAll('.adm-tools button'), function (x) { return /تحديث/.test(txt(x)); })[0];
     if (rf) tb.appendChild(btn('↻ تحديث', '', function () { rf.click(); }));
     W.appendChild(tb);
@@ -891,7 +899,12 @@ function geoQ() {
     var cur = ST[key]; if (!cur || !info.some(function (c) { return c.no === cur; })) {
       var open = info.filter(function (c) { return !c.closed; })[0]; cur = (open || info[0]).no;
     }
-    if (kids.length > 1) bar(b, kids[0], info.map(function (c) { return { k: c.no, n: c.st.t + c.left + c.pct, node: cCard(c) }; }), cur, 'c', function (k) { ST[key] = k; ST.__am = 0; });
+    /* v741: العقود المغلقة تُطوى خلف بطاقة واحدة حين تكثر — فلا تطول قائمة البطاقات قبل محتوى العقد */
+    var shut = info.filter(function (c) { return c.closed && c.no !== cur; }), fold = shut.length >= 3, xk = key + '|x', ex = !!ST[xk];
+    var vis = info.filter(function (c) { return !fold || ex || !c.closed || c.no === cur; });
+    var items = vis.map(function (c) { return { k: c.no, n: c.st.t + c.left + c.pct, node: cCard(c) }; });
+    if (fold) { var mo = mk('span', 'tqn-cc tqn-cc-more'); mo.appendChild(mk('b', '', ex ? 'إخفاء العقود المغلقة' : 'العقود المغلقة')); mo.appendChild(mk('small', '', ex ? '▴' : shut.length + ' عقود · ▾')); items.push({ k: '__more', n: ex ? 'x' : 'm', node: mo }); }
+    if (kids.length > 1) bar(b, kids[0], items, cur, 'c', function (k) { if (k === '__more') { ST[xk] = !ex; return; } ST[key] = k; ST.__am = 0; });
     kids.forEach(function (s, i) { var on = info[i].no === cur; cls(s, 'tqn-st-hide', !on); cls(s, 'tqn-ct', true); quiet(head(s)); if (on) contract(s, who + '|' + info[i].no); });
     return cur;
   }
