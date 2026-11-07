@@ -577,9 +577,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v753: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v754: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
-   · v753: «العملاء الجدد» و«طلبات توثيق الملف» و«تدشين الحساب» بلغة القسم نفسها: ملخص يصفّي، شريط أدوات واحد، جدول، ومسار موحّد في صفحات التفاصيل.
+   · v753–v754: «العملاء الجدد» و«طلبات توثيق الملف» و«تدشين الحساب» بلغة القسم نفسها: ملخص يصفّي، شريط أدوات واحد، جدول، ومسار موحّد في صفحات التفاصيل.
    · v750: التنويهات أعلى الملف · الوصول السريع صف وحده مع «طلبات العميل» و«تقرير العميل» · ما يُفتح من الملف يعود إليه (المسار وزر العودة).
    · ملف العميل مساحة عمل: لوحة العميل ثابتة بجانب المحتوى (البطاقة · أزرار سريعة · دائرة السداد · التنويهات)، والمحتوى بتبويباته.
    · العقد: بطاقة رأس واحدة + تنبيه المتأخرات بأزراره + مسار الدفعات الزمني + تبويب لكل قسم.
@@ -1185,7 +1185,7 @@ function geoQ() {
   }
 
 
-  /* ── 7) v753: العملاء الجدد · طلبات توثيق الملف · تدشين الحساب — بنفس لغة قسم العملاء ── */
+  /* ── 7) v753–v754: العملاء الجدد · طلبات توثيق الملف · تدشين الحساب — بنفس لغة قسم العملاء ── */
   var PT = { 'العملاء الجدد': 'nc', 'طلبات توثيق الملف': 'vr', 'تدشين الحساب': 'lch' };
   function pageKey() { return PT[txt(document.getElementById('pv-title'))] || ''; }
   function pages(root) {
@@ -1209,6 +1209,7 @@ function geoQ() {
       b.addEventListener('click', function () { c.click(); soon(); }); sm.appendChild(b);
     });
     (extra || []).forEach(function (x) { var d = mk('div', 'tqn-sm is-info'); d.appendChild(mk('i', '', x[2] || '★')); var t = mk('span'); t.appendChild(mk('small', '', x[0])); t.appendChild(mk('b', '', x[1])); d.appendChild(t); sm.appendChild(d); });
+    sm.style.setProperty('--n', String(chips.length + (extra || []).length));
     void IC; return sm;
   }
   function who(name, sub) { var w = mk('div', 'tqn-who'); w.appendChild(mk('i', '', String(name || '؟').replace(/[ﹰ-﻿]/g, function (ch) { return ch.normalize ? ch.normalize('NFKC') : ch; }).slice(0, 1))); var s = mk('span'); s.appendChild(mk('b', '', name || '—')); if (sub) s.appendChild(mk('small', '', sub)); w.appendChild(s); return w; }
