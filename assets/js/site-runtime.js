@@ -255,11 +255,37 @@ function deskBridge(d){ try{
     w.querySelector('[data-x]').onclick=api.close;
     w.querySelector('[data-ok]').onclick=function(){ var v={}; [].forEach.call(w.querySelectorAll('input[data-k]'),function(i){ v[i.dataset.k]=i.value.replace(/\D/g,'') }); onOk(v,api) };
     return api; }
-  function done(ref){ var r=$('dk-ref'); if(r) r.textContent='#'+ref; var f=$('dk-form'), x=$('dk-done'); if(f) f.hidden=true; if(x){ x.hidden=false; try{ x.scrollIntoView({block:'start',behavior:'smooth'}) }catch(e){} } }
+  /* المرفقات — بتصميم المنصة (t2-drop · t2-files · t2-file) وآلية النظام: /uploads مرة ثم /files لكل ملف (حتى 2 ميجابايت · 8 ملفات) */
+  var up={tok:'',list:[],busy:0}, MAXB=2*1024*1024, MAXN=8;
+  (function css(){ try{ var out=[]; var walk=function(rules,acc){ [].forEach.call(rules,function(r){ if(r.cssRules&&!r.selectorText){ var inn=[]; walk(r.cssRules,inn); if(inn.length&&r.conditionText) acc.push('@media '+r.conditionText+'{'+inn.join('')+'}') } else if(/\.t2-(drop|files?\b|file-)/.test(r.selectorText||'')) acc.push(r.cssText) }) };
+    [].forEach.call(document.styleSheets,function(sh){ try{ walk(sh.cssRules,out) }catch(e){} }); var st=d.createElement('style'); st.textContent=out.join('\n')+'.t2-drop{position:relative}.t2-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}.t2-files[hidden]{display:none}'; d.head.appendChild(st) }catch(e){} })();
+  var fin=d.querySelector('#dk-form input[type=file]'), fld=fin&&(fin.closest('.ts-fld')||fin.parentNode), list=null;
+  if(fld){ fld.innerHTML='<span class="ts-lab">المرفقات <small style="font-weight:400;color:var(--t2-muted)">(اختياري)</small></span>'
+      +'<div class="t2-drop"><span class="t2-drop-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/></svg></span>'
+      +'<span class="t2-drop-b"><span class="t2-drop-t">اسحب الملف هنا أو اختره</span><span class="t2-drop-h">PDF أو صورة أو أي مستند · حتى 2 ميجابايت للملف · '+MAXN+' ملفات كحد أقصى</span></span><span class="t2-drop-btn" aria-hidden="true">اختيار ملف</span>'
+      +'<input type="file" multiple aria-label="إرفاق ملفات بالمراسلة"></div><div class="t2-files" role="list" hidden></div>';
+    fin=fld.querySelector('input[type=file]'); list=fld.querySelector('.t2-files'); }
+  function size(n){ return n<1024*1024?Math.max(1,Math.round(n/1024))+' ك.ب':(n/1048576).toFixed(1)+' م.ب' }
+  function guess(f){ if(f.type) return f.type; var x=(f.name.split('.').pop()||'').toLowerCase(); return {pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',heic:'image/heic',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',txt:'text/plain',csv:'text/csv'}[x]||'application/octet-stream' }
+  function paint(){ if(!list) return; list.hidden=!up.list.length; list.innerHTML=up.list.map(function(x,i){ var ext=(x.name.split('.').pop()||'').toLowerCase(), k=ext==='pdf'?'PDF':(/^(png|jpe?g|webp|gif|heic)$/.test(ext)?'IMG':'FILE');
+      var note=x.st==='up'?'جارٍ الرفع…':x.st==='ok'?size(x.size)+' · مرفوع ✓':'';
+      return '<div class="t2-file" role="listitem"><span class="t2-file-ic is-'+k.toLowerCase()+'" aria-hidden="true">'+k+'</span><span class="t2-file-t"><b>'+esc(x.name)+'</b>'+(note?'<span class="t2-file-n">'+note+'</span>':'')+(x.err?'<span class="t2-file-x">'+esc(x.err)+'</span>':'')+'</span><span class="t2-file-a"><button type="button" class="t2-btn" data-rm="'+i+'"'+(x.st==='up'?' disabled':'')+'>إزالة</button></span></div>' }).join('') }
+  function token(){ return up.tok?Promise.resolve(up.tok):call('/uploads',{}).then(function(r){ if(r&&r.ok&&r.upload_token){ up.tok=r.upload_token; return up.tok } throw new Error((r&&r.message)||'تعذر بدء الإرفاق.') }) }
+  function addFiles(fs){ [].forEach.call(fs||[],function(f){ var live=up.list.filter(function(x){ return x.st!=='bad' }).length;
+      var x={name:f.name,size:f.size,st:'up',err:'',id:''}; up.list.push(x);
+      if(live>=MAXN){ x.st='bad'; x.err='بلغت الحد: '+MAXN+' ملفات.'; return }
+      if(f.size>MAXB){ x.st='bad'; x.err='حجم الملف '+size(f.size)+' — الحد 2 ميجابايت.'; return }
+      if(!f.size){ x.st='bad'; x.err='الملف فارغ.'; return }
+      up.busy++; token().then(function(t){ return fetch(API+'/files',{method:'POST',headers:{'content-type':'application/octet-stream','x-desk-upload':t,'x-desk-type':guess(f),'x-desk-name':btoa(unescape(encodeURIComponent(f.name)))},body:f}).then(function(r){ return r.json().catch(function(){ return {ok:false} }) }) })
+        .then(function(r){ if(r&&r.ok&&r.file){ x.st='ok'; x.id=r.file.id } else { x.st='bad'; x.err=(r&&r.message)||'تعذر إرفاق الملف.' } }).catch(function(e){ x.st='bad'; x.err=e.message||'تعذر إرفاق الملف.' })
+        .then(function(){ up.busy--; paint() }); }); paint(); }
+  if(fin) fin.addEventListener('change',function(){ addFiles(fin.files); fin.value='' });
+  if(list) list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-rm]'); if(!b) return; up.list.splice(+b.dataset.rm,1); paint() });
+  function done(ref){ up={tok:'',list:[],busy:0}; paint(); var r=$('dk-ref'); if(r) r.textContent='#'+ref; var f=$('dk-form'), x=$('dk-done'); if(f) f.hidden=true; if(x){ x.hidden=false; try{ x.scrollIntoView({block:'start',behavior:'smooth'}) }catch(e){} } }
   var sending=false;
   function submit(b,hdr,m){ return call('/threads',b,hdr).then(function(r){ if(r&&r.ok&&r.ref){ if(m) m.close(); done(r.ref); return }
       var t=(r&&(r.errors&&r.errors.join(' ')||r.message))||'تعذر إرسال المراسلة. حاول مرة أخرى.'; if(m){ m.busy(false); m.err(t) } else msg('dk-msg','bad',t); }); }
-  function send(){ if(sending) return; var b=payload(); if(!check(b)) return; msg('dk-msg'); sending=true; var fin=function(){ sending=false };
+  function send(){ if(sending) return; var b=payload(); if(!check(b)) return; if(up.busy) return msg('dk-msg','warn','انتظر اكتمال رفع المرفقات.'); var ids=up.list.filter(function(x){ return x.st==='ok' }).map(function(x){ return x.id }); if(ids.length){ b.upload_token=up.tok; b.file_ids=ids } msg('dk-msg'); sending=true; var fin=function(){ sending=false };
     var hdr=member?{authorization:'Bearer '+member.token}:null;
     var needEmail=!member, needPhone=!member||String(member.p.phone||'').replace(/\D/g,'').slice(-9)!==b.phone.replace(/\D/g,'').slice(-9);
     if(!needEmail&&!needPhone){ msg('dk-msg','warn','جارٍ الإرسال…'); return submit(b,hdr).then(fin) }
