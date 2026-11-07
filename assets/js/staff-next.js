@@ -578,8 +578,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v755: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v760: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v760: صفحة «بانتظار التدشين» (شاشة المشرف): الخطوات شريط ثم عمودان بطاقات، واختيار الأسباب في المراجعة والقرار.
    · v755: المحتوى الداخلي حتى آخر نقطة — بنود التوثيق صفوف (البند · القيمة · الحالة · الإجراء) والسبب المكرّر مرة للقسم، القرار بعد البنود، المراسلة والسجل بطاقات، وتفاصيل التدشين بطاقة العضوية بجانب حقائقها بلا تكرار، والملف المفتوح من «العملاء الجدد» يرجع إليها.
    · v753–v754: «العملاء الجدد» و«طلبات توثيق الملف» و«تدشين الحساب» بلغة القسم نفسها: ملخص يصفّي، شريط أدوات واحد، جدول، ومسار موحّد في صفحات التفاصيل.
    · v750: التنويهات أعلى الملف · الوصول السريع صف وحده مع «طلبات العميل» و«تقرير العميل» · ما يُفتح من الملف يعود إليه (المسار وزر العودة).
@@ -1378,7 +1379,9 @@ function geoQ() {
   function lchPage(d) {
     var b = d.querySelector('.cu-dr-b'); if (!b) return;
     var card = b.querySelector(':scope > .lch-mc'); cls(b, 'tqn-lchd', !!card);
-    [].forEach.call(b.querySelectorAll(':scope > section.cu-ds'), function (s) { cls(s, 'tqn-ds', true); });
+    /* قبل التدشين: الخطوات أعلى الصفحة ثم عمودان (البطاقة وقرار التدشين والملف · الفيلم) */
+    cls(b, 'tqn-lchp', !!b.querySelector(':scope > .lch-grid'));
+    [].forEach.call(b.querySelectorAll('section.cu-ds'), function (s) { cls(s, 'tqn-ds', true); });
     if (!card) return;
     [].forEach.call(b.querySelectorAll('section.cu-ds .t2-desc > .t2-field'), function (f) { cls(f, 'tqn-hide', /^(رقم العضوية|البطاقة الممنوحة|العميل)$/.test(txt(f.querySelector('.t2-field-k')))); });
     [].forEach.call(b.querySelectorAll('section.cu-ds .t2-desc > .t2-field'), function (f) { cls(f, 'is-wide', /^ملاحظة$/.test(txt(f.querySelector('.t2-field-k')))); });
