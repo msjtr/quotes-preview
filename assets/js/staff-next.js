@@ -578,8 +578,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v760: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v764: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v764: صفحات التفاصيل داخل الصفحة لا أدراج (القائمة الجانبية والهيدر ظاهران) · رأس صفحة بالاسم والوسوم والأزرار · أيقونة لكل معلومة · التدشين: أرقام + البطاقة بجانب مسار التدشين + بيانات الملف · التوثيق: البنود بعمود والملخص والقرار والمراسلة بعمود، والبند يتكيّف مع العرض.
    · v760: صفحة «بانتظار التدشين» (شاشة المشرف): الخطوات شريط ثم عمودان بطاقات، واختيار الأسباب في المراجعة والقرار.
    · v755: المحتوى الداخلي حتى آخر نقطة — بنود التوثيق صفوف (البند · القيمة · الحالة · الإجراء) والسبب المكرّر مرة للقسم، القرار بعد البنود، المراسلة والسجل بطاقات، وتفاصيل التدشين بطاقة العضوية بجانب حقائقها بلا تكرار، والملف المفتوح من «العملاء الجدد» يرجع إليها.
    · v753–v754: «العملاء الجدد» و«طلبات توثيق الملف» و«تدشين الحساب» بلغة القسم نفسها: ملخص يصفّي، شريط أدوات واحد، جدول، ومسار موحّد في صفحات التفاصيل.
@@ -1348,18 +1349,169 @@ function geoQ() {
         mine.appendChild(ol); nv.appendChild(mine); nv.__tqnCr = mine;
       }
       mine.__L = L;
-      vrPage(d); lchPage(d);
+      try { pgHead(d); } catch (e) { void e; }
+      try { vrPage(d); } catch (e) { void e; }
+      try { lchPage(d); } catch (e) { void e; }
+      try { dsIcons(d); } catch (e) { void e; }
+    });
+    inPage();
+  }
+  /* ── 8) v764: صفحات التفاصيل داخل الصفحة (لا أدراج): القائمة الجانبية والهيدر ظاهران، ورأس صفحة، وأيقونة لكل معلومة ── */
+  var TQIC = {
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+    id: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.5c.8-1.6 5.6-1.6 6.4 0M14.5 10h4M14.5 13.5h3"/>',
+    cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z"/>',
+    play: '<circle cx="12" cy="12" r="8.5"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/>',
+    note: '<path d="M6 3.5h8.5l4 4V20.5H5.5V3.5z"/><path d="M14 3.5V8h4.5M8.5 12.5h7M8.5 16h4.5"/>',
+    ok: '<circle cx="12" cy="12" r="8.5"/><path d="M8.3 12.2l2.5 2.5 4.9-5.4"/>',
+    flag: '<path d="M5.5 21V4M5.5 4.5h11l-2.2 4 2.2 4h-11"/>',
+    pin: '<path d="M12 21s-6.5-5.6-6.5-10.8a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/>',
+    phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/>',
+    mail: '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+    work: '<rect x="3" y="7.5" width="18" height="12.5" rx="2.5"/><path d="M9 7.5v-2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 12.5h18"/>',
+    money: '<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/>',
+    clip: '<path d="M19.5 11.5l-7.8 7.8a4.6 4.6 0 0 1-6.5-6.5l8.3-8.3a3.1 3.1 0 0 1 4.4 4.4l-8.2 8.2a1.5 1.5 0 0 1-2.2-2.2l7.4-7.4"/>',
+    rocket: '<path d="M5 15c-1 1-1.5 3.5-1.5 5.5 2 0 4.5-.5 5.5-1.5M9 15l-3-3c1.5-4.5 5.5-8 12.5-8.5-.5 7-4 11-8.5 12.5z"/><circle cx="14.5" cy="9.5" r="1.6"/>',
+    crown: '<path d="M3.5 8l4 3.5L12 5l4.5 6.5 4-3.5-1.5 10.5H5z"/><path d="M5 20.5h14"/>',
+    users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M15.5 5.2a3.4 3.4 0 0 1 0 6.6M18 14.3c2 .8 3.5 2.8 3.5 5.7"/>',
+    home: '<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/>',
+    shield: '<path d="M12 3l7.5 3v5.5c0 4.7-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.8-7.5-9.5V6z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/>',
+    hash: '<path d="M5 9h15M4 15h15M10 3.5L8 20.5M16 3.5l-2 17"/>',
+    card: '<rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19M6 15h4"/>',
+    list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>'
+  };
+  /* أيقونة المعلومة من اسمها (الترتيب مقصود: الأدق أولًا) */
+  var LI = [
+    [/صاحب الملف|المسؤول|أسنده|دشّنه|بواسطة|الموظف/, 'user'], [/الرمز البريدي|صندوق البريد|منطقة|مدينة|الحي/, 'pin'], [/البريد|الإيميل/, 'mail'], [/جوال|هاتف|التواصل/, 'phone'],
+    [/جنسي|دولة|بلد/, 'flag'], [/ساعة|وقت|المدة/, 'clock'], [/ميلاد|تاريخ|انتهاء|إصدار|صالحة|يوم|أُرسل|استُلم|اعتُمد/, 'cal'],
+    [/عنوان|مدينة|الحي|شارع|مبنى|المنطقة|الإضافي|الوحدة|الموقع/, 'pin'],
+    [/وظيف|جهة العمل|مهنة|العمل|القطاع|المسمى|الخدمة/, 'work'],
+    [/راتب|دخل|التزام|مبلغ|قسط|إيجار|رصيد/, 'money'],
+    [/مرفق|صورة|مستند|ملف/, 'clip'], [/اجتماعي|أفراد|معال|الأسرة|التابع/, 'users'], [/سكن/, 'home'],
+    [/نقاط/, 'star'], [/البطاقة|المستوى|العضوية/, 'crown'], [/فيلم|شاهد/, 'play'],
+    [/ملاحظة|سبب|رسالة/, 'note'], [/الحالة|الدور/, 'shield'],
+    [/رقم|الهوية|الإقامة|الوثيقة|طلب/, 'hash'],
+    [/اسم|العميل|صاحب|دشّنه|المسؤول|أسند|الموظف|بواسطة/, 'user']
+  ];
+  function tqIc(n) { var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('class', 'tqn-svg'); s.innerHTML = TQIC[n] || TQIC.note; return s; }
+  function icOf(label) { for (var i = 0; i < LI.length; i++) if (LI[i][0].test(label)) return LI[i][1]; return 'list'; }
+  function icBox(n, c) { var i = mk('i', c || 'tqn-ico'); i.appendChild(tqIc(n)); return i; }
+  function toneOf(t) { return /مُدشَّن|معتمد|مطابق|نشط|نعم|مكتمل/.test(t) && !/غير|بانتظار/.test(t) ? 'ok' : /مرفوض|غير مطابق|أُعيد|موقوف|لا$/.test(t) ? 'bad' : /قيد|بانتظار|مراجعة|جديد/.test(t) ? 'warn' : ''; }
+
+  /* داخل الصفحة: الدرج يغطي منطقة المحتوى فقط تحت الهيدر، والقائمة الجانبية تبقى ثابتة وظاهرة */
+  function inPage() {
+    var H = document.documentElement, d = document.querySelector('.cu-dh .cu-dr.is-page.is-on.tqn-dr-cu');
+    cls(H, 'tqn-inpg', !!d);
+    if (!d) return;
+    var hd = document.querySelector('#pv-host .t2-head') || document.querySelector('.t2-head');
+    var t = hd ? Math.max(0, Math.round(hd.getBoundingClientRect().bottom)) : 0;
+    if (H.style.getPropertyValue('--tqn-pg-t') !== t + 'px') H.style.setProperty('--tqn-pg-t', t + 'px');
+  }
+  /* التنقّل من القائمة الجانبية أو الهيدر وصفحة تفاصيل مفتوحة: تُغلق أولًا ثم يكمل التنقّل */
+  try {
+    document.addEventListener('click', function (ev) {
+      var t = ev.target; if (!t || !t.closest || !document.documentElement.classList.contains('tqn-inpg')) return;
+      if (!t.closest('.t2-side button, .t2-side a, #pv-host .t2-head button, #pv-host .t2-head a, .t2-mnav button, .t2-mnav a')) return;
+      [].forEach.call(document.querySelectorAll('.cu-dh .cu-dr.is-page.is-on.tqn-dr-cu'), function (d) { try { if (d.__close) d.__close(); } catch (e) { void e; } });
+      cls(document.documentElement, 'tqn-inpg', false);
+    }, true);
+  } catch (e) { void e; }
+
+  /* رأس الصفحة: حرف صاحب الملف · الاسم · وسوم (نوع الصفحة · الحالة · ...) · أزرار الصفحة */
+  function pgHead(d) {
+    var h = d.querySelector('.cu-dr-h'); if (!h) return;
+    cls(d, 'tqn-pg', true);
+    var b = h.querySelector(':scope > div > b'), sp = h.querySelector(':scope > div > span'); if (!b) return;
+    var name = txt(b), sub = txt(sp), sig = name + '|' + sub, M = h.__tqnM;
+    if (!(M && M.parentNode && M.__sig === sig)) {
+      if (M && M.parentNode) M.parentNode.removeChild(M);
+      M = mk('div', 'tqn-pg-tags'); M.__sig = sig;
+      sub.split('·').map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (p, i) { var t = toneOf(p); M.appendChild(mk('span', 'tqn-pg-tag' + (i === 0 ? ' is-kind' : '') + (t ? ' is-' + t : ''), p)); });
+      b.parentNode.insertBefore(M, sp || null); h.__tqnM = M;
+    }
+    if (sp) cls(sp, 'tqn-hide', true);
+    var av = h.__tqnAv, L = String(name || '؟').replace(/^(ال)/, '').slice(0, 1);
+    if (!(av && av.parentNode === h)) { av = mk('i', 'tqn-pg-av'); h.insertBefore(av, h.firstChild); h.__tqnAv = av; }
+    if (av.textContent !== L) av.textContent = L;
+    var A = h.__tqnA; if (!(A && A.parentNode === h)) { A = mk('div', 'tqn-pg-acts'); var x = h.querySelector(':scope > .st-sheet-x'); h.insertBefore(A, x || null); h.__tqnA = A; }
+    return A;
+  }
+  /* حقول الأقسام: أيقونة لكل معلومة (مرة واحدة لكل حقل) */
+  function dsIcons(d) {
+    [].forEach.call(d.querySelectorAll('.cu-dr-b section.cu-ds.tqn-ds .t2-field > .t2-field-k'), function (k) {
+      var f = k.parentNode; if (k.__tqnI || !f.querySelector(':scope > .t2-field-v')) return; k.__tqnI = 1; cls(f, 'tqn-fi', true); f.insertBefore(icBox(icOf(txt(k)), 'tqn-ico is-f'), k);
     });
   }
-  /* تفاصيل طلب التوثيق: بطاقات للأقسام المكتملة، والبنود صفوف (البند · القيمة · الحالة · الإجراء)، والسبب المكرّر مرة واحدة للقسم */
+  function fld(label, valNode, n) { var r = mk('div', 'tqn-kv'); r.appendChild(icBox(n || icOf(label))); var s = mk('span'); s.appendChild(mk('small', '', label)); var b = mk('b'); if (valNode) b.appendChild(valNode); else b.textContent = '—'; s.appendChild(b); r.appendChild(s); return r; }
+  function tqBox(title, n, kids, cl) { var s = mk('section', 'tqn-box' + (cl ? ' ' + cl : '')); var h = mk('h3', 'tqn-box-h'); h.appendChild(icBox(n)); h.appendChild(mk('span', '', title)); s.appendChild(h); kids.forEach(function (k) { if (k) s.appendChild(k); }); return s; }
+
+  /* تفاصيل التدشين — بعد التدشين: أرقام · البطاقة بجانب مسار التدشين · بيانات الملف · وكل حقل لم يُعرض في «تفاصيل أخرى» */
+  function lchPage(d) {
+    var b = d.querySelector('.cu-dr-b'); if (!b) return;
+    var A = d.querySelector('.cu-dr-h') && d.querySelector('.cu-dr-h').__tqnA;
+    var grid = b.querySelector(':scope > .lch-grid');
+    cls(b, 'tqn-lchp', !!grid);
+    [].forEach.call(b.querySelectorAll('section.cu-ds'), function (s) { cls(s, 'tqn-ds', true); });
+    if (grid) { lchPend(b); return; }
+    var card = b.querySelector(':scope > .lch-mc');
+    if (!card || b.querySelector(':scope > .tqn-lx')) return;
+    var F = {}, O = [], secs = [].slice.call(b.querySelectorAll(':scope > section.cu-ds'));
+    secs.forEach(function (s) { var st = txt(s.querySelector('.cu-ds-h')); [].forEach.call(s.querySelectorAll('.t2-field'), function (f) { var k = txt(f.querySelector('.t2-field-k')), v = f.querySelector('.t2-field-v'); if (k && v && !(k in F)) { F[k] = v; O.push([st, k]); } }); });
+    var used = { 'البطاقة الممنوحة': 1, 'رقم العضوية': 1, 'العميل': 1 };
+    function val(k) { used[k] = 1; var v = F[k]; return v ? v.cloneNode(true) : null; }
+    var X = mk('div', 'tqn-lx');
+    var S = mk('div', 'tqn-lx-st');
+    [['الحالة', 'shield'], ['نقاط التدشين', 'star'], ['صالحة حتى', 'cal', 'العضوية صالحة حتى'], ['شاهد العميل الفيلم', 'play']].forEach(function (x) {
+      if (!F[x[0]]) return; var t = mk('div', 'tqn-lx-t'); var tt = toneOf(txt(F[x[0]])); if (tt) cls(t, 'is-' + tt, true);
+      t.appendChild(icBox(x[1])); var s = mk('span'); s.appendChild(mk('small', '', x[2] || x[0])); var vb = mk('b'); vb.appendChild(val(x[0])); s.appendChild(vb); t.appendChild(s); S.appendChild(t);
+    });
+    X.appendChild(S);
+    var G = mk('div', 'tqn-lx-g'), CA = mk('div', 'tqn-lx-a'), CB = mk('div', 'tqn-lx-b');
+    CA.appendChild(card);
+    /* مسار التدشين: اعتماد الملف ← التدشين (من ومتى) ← الملاحظة */
+    var tl = mk('ol', 'tqn-ltl');
+    function step(t, n, v, sub) { var li = mk('li'); li.appendChild(icBox(n)); var s = mk('span'); s.appendChild(mk('b', '', t)); if (v) { var x = mk('small'); x.appendChild(v); s.appendChild(x); } if (sub) s.appendChild(mk('small', 'is-by', sub)); li.appendChild(s); tl.appendChild(li); }
+    if (F['اعتُمد الملف']) step('اعتُمد الملف', 'ok', val('اعتُمد الملف'));
+    if (F['يوم وتاريخ وساعة التدشين'] || F['دشّنه']) step('دُشّن الحساب', 'rocket', val('يوم وتاريخ وساعة التدشين'), F['دشّنه'] ? 'بواسطة ' + txt(val('دشّنه')) : '');
+    var kids = [tl];
+    if (F['ملاحظة']) { var q = mk('blockquote', 'tqn-lq'); q.appendChild(icBox('note')); var qs = mk('span'); qs.appendChild(mk('small', '', 'ملاحظة التدشين')); var qb = mk('b'); qb.appendChild(val('ملاحظة')); qs.appendChild(qb); q.appendChild(qs); kids.push(q); }
+    CB.appendChild(tqBox('مسار التدشين', 'rocket', kids, 'is-tl'));
+    /* بيانات الملف وبقية الحقول — لا يضيع شيء */
+    var groups = {};
+    O.forEach(function (o) { if (used[o[1]]) return; (groups[o[0]] = groups[o[0]] || []).push(o[1]); });
+    Object.keys(groups).forEach(function (g) {
+      var L = mk('div', 'tqn-kvs'); groups[g].forEach(function (k) { L.appendChild(fld(k, val(k))); });
+      CB.appendChild(tqBox(/الملف/.test(g) ? 'بيانات الملف' : /تفاصيل التدشين/.test(g) ? 'تفاصيل أخرى' : g, /الملف/.test(g) ? 'id' : 'list', [L]));
+    });
+    G.appendChild(CA); G.appendChild(CB); X.appendChild(G);
+    /* أزرار الأقسام (مثل «إعادة إرسال رسالة التدشين»): في رأس الصفحة */
+    if (A) { while (A.firstChild) A.removeChild(A.firstChild); [].forEach.call(b.querySelectorAll('section.cu-ds .cu-dr-fa button, section.cu-ds .cu-dr-fa a'), function (x) { A.appendChild(x); }); }
+    secs.forEach(function (s) { cls(s, 'tqn-hide', true); });
+    b.insertBefore(X, b.firstChild);
+  }
+  /* قبل التدشين: الخطوات شريط تقدّم (الحالة من لون المنصة)، والأقسام بطاقات بأيقونات */
+  function lchPend(b) {
+    var ol = b.querySelector(':scope > .lch-steps'); if (!ol) return;
+    [].forEach.call(ol.children, function (li) { var st = li.getAttribute('style') || '', c = li.className || ''; cls(li, 'is-done', /18,\s*121,\s*92|is-done|is-ok/.test(st + ' ' + c)); cls(li, 'is-cur', /0AA5AD|is-on|is-cur/i.test(st + ' ' + c)); });
+  }
+  /* تفاصيل طلب التوثيق: عمودان — البنود (يمين) ولوحة ثابتة بالملخص والقرار والمراسلة (يسار) — وأيقونة لكل بند */
   function vrPage(d) {
     var v = d.querySelector('.vr3'); if (!v) return; cls(v, 'tqn-vr3', true);
-    var H = txt(d.querySelector('.cu-dr-h'));
-    [].forEach.call(v.querySelectorAll('.vr3-kvs > .vr3-kv'), function (kv) { var val = txt(kv.querySelector(':scope > :not(small)')); cls(kv, 'tqn-hide', !!val && val.length > 1 && H.indexOf(val) >= 0); });
-    [].forEach.call(v.querySelectorAll(':scope > section.vr3-sec'), function (s) {
+    var H = txt(d.querySelector('.cu-dr-h > div > b')) + ' ' + txt(d.querySelector('.cu-dr-h > div > span'));
+    [].forEach.call(v.querySelectorAll('.vr3-kvs > .vr3-kv'), function (kv) {
+      var val = txt(kv.querySelector(':scope > :not(small):not(.tqn-ico)')); cls(kv, 'tqn-hide', !!val && val.length > 1 && H.indexOf(val) >= 0);
+      if (!kv.__tqnI) { kv.__tqnI = 1; kv.insertBefore(icBox(icOf(txt(kv.querySelector('small')))), kv.firstChild); }
+    });
+    [].forEach.call(v.querySelectorAll('section.vr3-sec'), function (s) {
       cls(s, 'tqn-vr-dec', !!s.querySelector(':scope > .vr3-tabs'));
+      cls(s, 'is-done', !!s.querySelector(':scope > .vr3-sec-h:only-child'));
       var g = s.querySelector(':scope > .vr3-grid'); if (!g) return;
-      [].forEach.call(g.querySelectorAll(':scope > .vr3-it > .vr3-acts'), function (a) { cls(a, 'tqn-hide', !a.children.length); });
+      [].forEach.call(g.querySelectorAll(':scope > .vr3-it'), function (it) {
+        if (!it.__tqnI) { it.__tqnI = 1; it.insertBefore(icBox(icOf(txt(it.querySelector('.vr3-it-l'))), 'tqn-ico is-it'), it.firstChild); }
+        var a = it.querySelector(':scope > .vr3-acts'); cls(a, 'tqn-hide', !!a && !a.children.length);
+      });
       var W = [].slice.call(g.querySelectorAll(':scope > .vr3-it > .vr3-why')), T = W.map(txt);
       var same = W.length >= 2 && T.every(function (t) { return t === T[0]; });
       W.forEach(function (w) { cls(w, 'tqn-hide', same); });
@@ -1374,17 +1526,18 @@ function geoQ() {
         }
       } else if (B && B.parentNode) B.parentNode.removeChild(B);
     });
-  }
-  /* تفاصيل التدشين: البطاقة بجانب حقائق التدشين، ولا تكرار لما في البطاقة (رقم العضوية · البطاقة الممنوحة · اسم العميل) */
-  function lchPage(d) {
-    var b = d.querySelector('.cu-dr-b'); if (!b) return;
-    var card = b.querySelector(':scope > .lch-mc'); cls(b, 'tqn-lchd', !!card);
-    /* قبل التدشين: الخطوات أعلى الصفحة ثم عمودان (البطاقة وقرار التدشين والملف · الفيلم) */
-    cls(b, 'tqn-lchp', !!b.querySelector(':scope > .lch-grid'));
-    [].forEach.call(b.querySelectorAll('section.cu-ds'), function (s) { cls(s, 'tqn-ds', true); });
-    if (!card) return;
-    [].forEach.call(b.querySelectorAll('section.cu-ds .t2-desc > .t2-field'), function (f) { cls(f, 'tqn-hide', /^(رقم العضوية|البطاقة الممنوحة|العميل)$/.test(txt(f.querySelector('.t2-field-k')))); });
-    [].forEach.call(b.querySelectorAll('section.cu-ds .t2-desc > .t2-field'), function (f) { cls(f, 'is-wide', /^ملاحظة$/.test(txt(f.querySelector('.t2-field-k')))); });
+    /* العمودان: يُبنيان مرة لكل رسم (المنصة تعيد رسم الطلب كاملًا بعد كل إجراء) */
+    if (!v.__tqnX) {
+      v.__tqnX = 1; cls(v, 'tqn-vx', true);
+      var M = mk('div', 'tqn-vx-m'), S = mk('div', 'tqn-vx-s');
+      [].slice.call(v.children).forEach(function (c) { if (c.matches('.vr3-top, section.tqn-vr-dec, .sr-msg')) S.appendChild(c); else M.appendChild(c); });
+      [].slice.call(S.children).sort(function (a, b) { return rk(a) - rk(b); }).forEach(function (c) { S.appendChild(c); });
+      v.appendChild(M); v.appendChild(S);
+    }
+    function rk(c) { return c.matches('.vr3-top') ? 0 : c.matches('.tqn-vr-dec') ? 1 : 2; }
+    /* البنود المكتملة في آخر القائمة: الأقسام التي فيها عمل أولًا */
+    var M2 = v.querySelector(':scope > .tqn-vx-m');
+    if (M2) { var done = [].filter.call(M2.children, function (c) { return c.matches('section.vr3-sec.is-done'); }); var log = M2.querySelector(':scope > .vr3-log'); done.forEach(function (c) { if (c.nextElementSibling && !c.nextElementSibling.matches('section.vr3-sec.is-done') && c.nextElementSibling !== log) M2.insertBefore(c, log); }); }
   }
   /* ── 5) محتوى القسم ── */
   function isRecs(nested) {
