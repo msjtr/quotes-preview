@@ -22268,6 +22268,9 @@ const TL_CSS = `
 .tlx .pill{font-size:11.5px;border-radius:99px;padding:1px 10px;background:var(--ttl);color:var(--tt2);font-weight:600;white-space:nowrap}.tlx .pill.warn{background:var(--twarnl);color:var(--twarn)}
 .tlx .grid{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:12px;align-items:start}
 @media (max-width:1280px){.tlx .grid{grid-template-columns:minmax(0,1fr) 320px}.tlx .reg{grid-column:1/-1}}
+.tlx{container-type:inline-size}
+@container (max-width:1200px){.tlx .grid{grid-template-columns:minmax(0,1fr) 320px}.tlx .reg{grid-column:1/-1;order:3}}
+@container (max-width:820px){.tlx .grid{grid-template-columns:minmax(0,1fr)}.tlx .reg{order:3}}
 @media (max-width:880px){.tlx .grid{grid-template-columns:minmax(0,1fr)}}
 .tlx .panel{background:var(--tcard);border:1px solid var(--tline);border-radius:14px;padding:12px;display:grid;gap:9px;min-width:0}
 .tlx .panel h3{font-size:13.5px;margin:0}.tlx .hint{color:var(--tmute);font-size:12px;margin:0;line-height:1.6}
@@ -22362,7 +22365,7 @@ const TL_CSS = `
 function tlCssOn() { if (document.getElementById('tlx-css')) return; const s = document.createElement('style'); s.id = 'tlx-css'; s.textContent = TL_CSS; document.head.appendChild(s); }
 function tlTyCss(F) {
   let s = document.getElementById('tlx-ty'); if (!s) { s = document.createElement('style'); s.id = 'tlx-ty'; document.head.appendChild(s); }
-  s.textContent = ".axp-page.is-tl .tl-flow{font-family:'" + F.body + "','IBM Plex Sans Arabic',Tahoma,sans-serif;font-size:" + Math.round(F.size * 0.78 * 10) / 10 + 'px;line-height:' + F.lh + "}.axp-page.is-tl .d3-ch b,.axp-page.is-tl .d3-ttl h1,.axp-page.is-tl .d3-brand h2,.axp-page.is-tl .tl-subj,.axp-page.is-tl .d3-apw-c.is-who b{font-family:'" + F.head + "','IBM Plex Sans Arabic',Tahoma,sans-serif}";
+  s.textContent = ".axp-page.is-tl .tl-flow{font-family:'" + F.body + "','IBM Plex Sans Arabic',Tahoma,sans-serif;font-size:" + Math.round(F.size * 0.86 * 10) / 10 + 'px;line-height:' + F.lh + "}.axp-page.is-tl .d3-ch b,.axp-page.is-tl .d3-ttl h1,.axp-page.is-tl .d3-brand h2,.axp-page.is-tl .tl-subj,.axp-page.is-tl .d3-apw-c.is-who b{font-family:'" + F.head + "','IBM Plex Sans Arabic',Tahoma,sans-serif}";
 }
 const tlNode = (x) => { if (!x) return document.createTextNode(''); if (x.nodeType) return x; const d = document.createElement('span'); d.innerHTML = String(x); return d; };
 /* ملف PDF بالتصميم الموحّد */
@@ -22374,7 +22377,7 @@ function tlPdfO() {
   const html = tlSan(D.body), box = document.createElement('div'); box.innerHTML = html;
   const segs = [[]]; [].slice.call(box.childNodes).forEach(function (n) { if (n.nodeType === 1 && n.tagName === 'HR' && n.classList.contains('pb')) { segs.push([]); return; } if (n.nodeType === 3 && !n.nodeValue.trim()) return; segs[segs.length - 1].push(n); });
   const wrap = function (n) { const w = document.createElement('div'); w.appendChild(n.nodeType === 3 ? document.createTextNode(n.nodeValue) : n); return w; };
-  const B = [d3Card('المرسل إليه', 'user', [d3KV(kv)]), d3Card('الموضوع', 'info', [e('p', { class: 'tl-subj' }, C.subject || '—')])];
+  const B = [d3Card('المرسل إليه', 'user', [d3Rows(kv)]), d3Card('الموضوع', 'info', [e('p', { class: 'tl-subj' }, C.subject || '—')])];
   const atts = String(D.atts || '').split('·').map(function (s) { return s.trim(); }).filter(Boolean);
   segs.forEach(function (sg, i) {
     const items = []; if (i === 0 && D.greet) items.push(e('div', {}, D.greet));
@@ -22388,7 +22391,7 @@ function tlPdfO() {
   const row = ap.querySelector('.d3-apw'), sg2 = D.sign || TLT.sign;
   if (row) { const who = e('div', { class: 'd3-apw-c is-who' }, [e('small', {}, sg2.t || ''), e('b', {}, sg2.n || '')]); if (row.children.length > 1) row.insertBefore(who, row.children[1]); else row.appendChild(who); }
   B.push(ap);
-  const foot = (T.foot || []).filter(function (f) { return f.on && String(f.v).trim(); }).map(function (f) { return f.l + ': ' + f.v; }).join('  ·  ');
+  const foot = (T.foot || []).filter(function (f) { return f.on && String(f.v).trim(); }).map(function (f) { return (f.l + ': ' + f.v).replace(/-/g, '\u2011').replace(/ /g, '\u00a0'); }).join('  ·  '); /* v758: لا ينكسر البند في التذييل */
   const fams = [F.body, F.head].concat((html.match(/font-family:\s*([^;"]+)/g) || []).map(function (m) { return m.replace(/font-family:\s*/, '').split(',')[0].replace(/['"]/g, '').trim(); })).concat((html.match(/face="([^"]+)"/g) || []).map(function (m) { return m.slice(6, -1).split(',')[0].trim(); }));
   const uf = fams.filter(function (f, i) { return f && fams.indexOf(f) === i; });
   return { label: 'الخطاب الرسمي', dsn: 2, lk: 'tl', cls: 'is-tl', title: T.title || 'خطاب رسمي', en: T.en || 'OFFICIAL LETTER', org: T.org || TLT.org, issuer: '', slogan0: (typeof QT0 !== 'undefined' && QT0.slogan) || '',
