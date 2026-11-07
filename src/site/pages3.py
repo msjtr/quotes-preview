@@ -90,7 +90,7 @@ def portal():
       f'<div class="ts-fld"><label for="rg-pw">كلمة المرور</label>{pw("rg-pw")}<ul class="ts-rules" id="pw-rules"><li data-r="len">8 أحرف على الأقل</li><li data-r="up">حرف لاتيني كبير</li><li data-r="num">رقم واحد على الأقل</li><li data-r="sym">رمز مثل ! أو @</li></ul></div>'
       '<label class="ts-chk"><input type="checkbox" id="rg-terms"><span>أوافق على سياسة الاستخدام وسياسة الخصوصية.</span></label>'
       '<p class="ts-msg" id="rg-msg" hidden></p><button class="t2-btn is-primary" type="submit">إنشاء الحساب</button><p class="ts-alt"><span>لديك حساب؟</span><button type="button" class="ts-link" data-back>تسجيل الدخول</button></p></form>'
-      '<p class="ts-legal">بالدخول توافق على سياسة الاستخدام وسياسة الخصوصية. هذه معاينة: لا تُرسل أي بيانات.</p></div>')
+      '<p class="ts-legal">بالدخول توافق على سياسة الاستخدام وسياسة الخصوصية.</p></div>')
     side = (f'<div class="ts-side"><div class="ts-lux"><small>بوابة الدخول الموحدة</small><h2>حساب واحد لكل خدماتك</h2><p>الدخول والرمز واسترداد الحساب من مكان واحد، وتبقى أجهزتك وعملياتك تحت نظرك.</p><ul>'
             f'<li>{T("PiShieldCheckFill")}<div><b>دخول آمن بخطوتين</b><span>كلمة المرور ثم رمز تحقق صالح خمس دقائق.</span></div></li>'
             f'<li>{T("PiDeviceMobileFill", "sky")}<div><b>أجهزتك تحت نظرك</b><span>تؤكد كل جهاز جديد، وتحدد مدة الثقة به.</span></div></li>'
