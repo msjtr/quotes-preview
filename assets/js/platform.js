@@ -21191,7 +21191,7 @@ const VN={'{name}':'اسم العميل','{contract}':'رقم العقد','{rema
 const VS={'{name}':'السيدة سمر','{contract}':'TRA-20260709-003','{remaining}':'SAR 4,820.00','{exempt}':'SAR 212.40','{extra}':'SAR 150.00','{due}':'SAR 4,457.60','{valid}':'2026-11-27','{no}':'ST-20261106-014'};
 const CHS=['wa','mail','push','inbox'];
 let D=toD(cfg.es), saved=JSON.stringify(D), ver=(cfg.es&&cfg.es.ver)||1, tab='doc', view=cfg.canEdit?'edit':'a4', ch='wa', cur=null, hist=[], fut=[], typingSnap=null, curSec='data', lastMsg=null;
-const $=id=>document.getElementById('esx-'+id);
+const $=id=>root.querySelector('#esx-'+id); /* v730: يعمل قبل إلحاق الجذر بالصفحة */
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const allLists=()=>D.sections.concat(CHS.map(k=>D.ch[k]));
 const secOf=id=>allLists().find(s=>s.id===id);
