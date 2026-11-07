@@ -577,7 +577,7 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v747: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v747) —
+/* v748: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · ملف العميل مساحة عمل: لوحة العميل ثابتة بجانب المحتوى (البطاقة · أزرار سريعة · دائرة السداد · التنويهات)، والمحتوى بتبويباته.
    · العقد: بطاقة رأس واحدة + تنبيه المتأخرات بأزراره + مسار الدفعات الزمني + تبويب لكل قسم.
@@ -1007,7 +1007,7 @@ function geoQ() {
       var ic = ch.querySelector('.fx-card-ic'); if (ic) top.appendChild(ic.cloneNode(true));
       var tt = mk('div', 'tqn-ch-tt');
       tt.appendChild(mk('h3', '', txt(ch.querySelector('.fx-chead-t > b'))));
-      var ids = ch.querySelector('.rq-ids'); if (ids) { var ci = ids.cloneNode(true); ci.className = 'rq-ids tqn-ch-ids'; [].forEach.call(ci.children, function (x) { if (/^العقد\s/.test(txt(x))) x.classList.add('tqn-hide'); }); tt.appendChild(ci); }
+      var ids = ch.querySelector('.rq-ids'); if (ids) { var ci = ids.cloneNode(true); ci.className = 'rq-ids tqn-ch-ids'; [].forEach.call(ci.children, function (x) { if (txt(x.querySelector('small')) === 'العقد' || /^العقد\s/.test(txt(x))) x.classList.add('tqn-hide'); }); tt.appendChild(ci); }
       var pl = ch.querySelector('.fx-chead-s'); if (pl) { var cp = pl.cloneNode(true); cp.className = 'tqn-ch-pl'; tt.appendChild(cp); }
       top.appendChild(tt);
       var side = mk('div', 'tqn-ch-side');
@@ -1089,7 +1089,9 @@ function geoQ() {
       if (!(fm && cur) && T.length) {
         G = mk('div', 'tqn-ag');
         var used = {};
-        AG.forEach(function (g) {
+        /* v748: إجراءات قليلة (4 فأقل) في صف واحد بلا تقسيم — فلا تبقى مجموعة ببطاقة وحيدة */
+        if (T.length <= 4) { T.forEach(function (t) { used[t[0]] = 1; }); G.appendChild(groupEl('', T, b)); }
+        else AG.forEach(function (g) {
           var L = T.filter(function (t) { return g[1].indexOf(t[0]) >= 0; }); if (!L.length) return;
           L.forEach(function (t) { used[t[0]] = 1; });
           G.appendChild(groupEl(g[0], L, b));
@@ -1101,7 +1103,7 @@ function geoQ() {
     cls(fm, 'tqn-am-form', !!fm);
   }
   function groupEl(name, L, b) {
-    var g = mk('div', 'tqn-agr'); g.appendChild(mk('h4', '', name));
+    var g = mk('div', 'tqn-agr'); if (name) g.appendChild(mk('h4', '', name));
     var w = mk('div', 'tqn-agw');
     L.forEach(function (t) {
       var c = mk('button', 'tqn-a is-' + (t[4] || 'brand') + (t[3] ? '' : ' is-dis')); c.type = 'button'; c.setAttribute('data-live-ok', '');
@@ -1163,7 +1165,9 @@ function geoQ() {
   function rCard(t, n, add) {
     var w = mk('span', 'tqn-rc' + (add ? ' is-add' : ''));
     if (add) w.appendChild(mk('span', 'tqn-rc-plus', '+'));
-    var x = mk('span', 'tqn-rc-x'); x.appendChild(mk('b', '', t)); if (n) x.appendChild(mk('small', '', n)); w.appendChild(x);
+    var x = mk('span', 'tqn-rc-x'); x.appendChild(mk('b', '', t));
+    if (n) { var sm = mk('small'); String(n).split('·').forEach(function (p, i) { p = p.trim(); if (!p) return; if (i) sm.appendChild(document.createTextNode(' · ')); if (/^[A-Za-z0-9][\w\-\/.]*$/.test(p)) { var bd = mk('bdi', '', p); bd.dir = 'ltr'; sm.appendChild(bd); } else sm.appendChild(document.createTextNode(p)); }); x.appendChild(sm); }
+    w.appendChild(x);
     return w;
   }
   function records(b, R, key) {
