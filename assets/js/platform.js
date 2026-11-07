@@ -17590,7 +17590,7 @@ function admPfFilesPage() {
     const L = R.filter(function (r) { return fit(r, cf); }).sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'ar'); });
     const cards = L.map(function (r) {
       const n = ((LIVE_ADM.ct || {})[r.id] || []).length, f = afl(r), a = AC[r.id];
-      return e('button', { type: 'button', class: 'cu-card', 'data-s': [r.name, r.email, r.phone, r.no].join(' ').toLowerCase(), onClick: function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name; go('other', 'cu-pf-file'); } }, [
+      return e('button', { type: 'button', class: 'cu-card', 'data-s': [r.name, r.email, r.phone, r.no].join(' ').toLowerCase(), 'data-k': tqnCuK(r), onClick: function () { ADM.pfc = r.id; FX.pfc = r.id; (ADM.pfN || (ADM.pfN = {}))[r.id] = r.name; go('other', 'cu-pf-file'); } }, [
         e('span', { class: 'cu-av' }, String(r.name || '؟').slice(0, 1)), e('span', { class: 'cu-card-t' }, [e('b', {}, r.name || '—'), e('small', {}, ['رقم تيرا ', ltr(r.no || '—'), n ? ' · ' + fmtNum(n) + (n === 1 ? ' عقد' : ' عقود') : ''])]),
         e('span', { class: 'cu-card-m' }, [r.status && r.status !== 'active' ? admB(ADM_USER_ST, r.status) : null, f.dis ? DS.badge('معطَّل', 'danger') : f.lock ? DS.badge('مقفل', 'danger') : null,
           f.pw ? DS.badge('يلزمه تغيير كلمة المرور', 'warn') : null, a && Number(a.active_sessions) ? DS.badge(fmtNum(Number(a.active_sessions)) + ' جلسة نشطة', 'info') : null, f.multi ? DS.badge('أدوار: ' + cfAcRoles(a).join('، '), 'warn') : null]), e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); });
@@ -21767,11 +21767,11 @@ function cfCtActs(id, c, r, f, C, RF) {
     ['gwop', 'arrows-clockwise', 'استرداد أو إلغاء عملية بوابة', gwOps.length ? fmtNum(gwOps.length) + ' عمليات بوابة قابلة للإجراء' : 'لا عمليات بوابة قابلة للإجراء', !closed && gwOps.length > 0, 'warn']].filter(function (t) { return t[0] === 'edit' || (closed ? ['reopen', 'cedit'].indexOf(t[0]) >= 0 : ['reopen', 'cedit'].indexOf(t[0]) < 0); });
   /* v448: إجراء واحد — تدخل وتحدد المهمة المطلوبة، فيظهر نموذجها وحده */
   const avail = tiles.filter(function (t) { return t[4]; }), cur = avail.filter(function (t) { return t[0] === W.a; })[0];
-  const grid = W.open ? e('div', { class: 'cf-form cf-act-pick' }, [
+  const grid = W.open ? e('div', { class: 'cf-form cf-act-pick', 'data-tiles': tqnTiles(tiles) }, [
       DS.editField('المهمة المطلوبة', DS.select({ value: W.a || '', ph: '— اختر المهمة —', options: avail.map(function (t) { return [t[0], t[2]]; }), onChange: function (v) { W.a = v; W.err = ''; RF.paint(); } })),
       cur ? e('small', { class: 'cu-dr-hint' }, cur[3]) : null,
       cur ? null : e('div', { class: 't2-pb-actions' }, [DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.a = ''; W.err = ''; RF.paint(); } })])])
-    : e('div', { class: 'cf-acts' }, [e('button', { type: 'button', class: 'cf-act is-brand', disabled: avail.length ? null : 'disabled', 'data-live-ok': '', onClick: function () { W.open = true; W.a = avail.length === 1 ? avail[0][0] : ''; W.err = ''; RF.paint(); } },
+    : e('div', { class: 'cf-acts', 'data-tiles': tqnTiles(tiles) }, [e('button', { type: 'button', class: 'cf-act is-brand', disabled: avail.length ? null : 'disabled', 'data-live-ok': '', onClick: function () { W.open = true; W.a = avail.length === 1 ? avail[0][0] : ''; W.err = ''; RF.paint(); } },
       [e('span', { class: 'cf-act-ic' }, frag(tile('note'))), e('span', { class: 'cf-act-t' }, [e('b', {}, 'إجراء على العقد'), e('small', {}, avail.length ? avail.map(function (t) { return t[2]; }).join(' · ') : 'لا إجراءات متاحة الآن')])])]);
   let form = null;
   if (!W.open) W.a = '';
@@ -27367,6 +27367,22 @@ function lvDevOpen(uid, name, D) {
     box.replaceChildren(cuSec('أحداث الحساب', 'clock-counter-clockwise', [EV.length ? e('ol', { class: 'cu-log' }, EV.map(function (x) { return e('li', {}, [e('b', {}, x.label || x.action), e('small', {}, [x.by_admin ? 'الإدارة' : x.by_system ? 'النظام' : 'العميل', ' · ', bdiD(iso(new Date(x.at))), ' ', ltr(hm(new Date(x.at)))])]); })) : e('small', { class: 'cu-dr-hint' }, 'لا أحداث.')])); })
     .catch(function () { const box = document.querySelector('.cu-dr[data-r="lvdv:' + uid + '"] .lv-dev-ev'); if (box) box.replaceChildren(e('small', { class: 'cu-dr-hint' }, 'تعذّر تحميل الأحداث.')); });
 }
+/* v735: بيانات مختصرة لقائمة العملاء وإجراءات العقد في المنصة الجديدة (staff/next) — قراءة فقط، لا كتابة ولا منطق جديد */
+function tqnD10(d) { try { if (!d) return ''; if (typeof d === 'string') return d.slice(0, 10); if (d instanceof Date) return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); return String(d).slice(0, 10); } catch (err) { return ''; } }
+function tqnCuK(r) {
+  try {
+    const L = ((LIVE_ADM.ct || {})[r.id] || []);
+    let tot = 0, paid = 0, rem = 0, late = 0, lateN = 0, nx = '', w = 0;
+    L.forEach(function (c) {
+      const f = ((LIVE_ADM.rows || {})[c.no] || {}).f; if (!f || c.mergedTo) return;
+      tot += f.total || 0; paid += f.paid || 0; rem += Math.max(0, f.remain || 0); late += f.lateSum || 0; lateN += (f.late || []).length;
+      const d = f.next ? tqnD10(f.next.due) : ''; if (d && (!nx || d < nx)) nx = d;
+      const k = f.tone === 'danger' ? 3 : f.tone === 'warn' ? 2 : f.leftN ? 1 : 0; if (k > w) w = k;
+    });
+    return JSON.stringify({ n: L.length, t: Math.round(tot), p: Math.round(paid), r: Math.round(rem), l: Math.round(late), ln: lateN, nx: nx, w: w, ph: r.phone || '' });
+  } catch (err) { return ''; }
+}
+function tqnTiles(T) { try { return JSON.stringify((T || []).map(function (t) { return [t[0], t[2], String(t[3] || ''), !!t[4], t[5] || '']; })); } catch (err) { return ''; } }
 function lvDevPage() {
   return admMount('devall', 'الأجهزة وأحداث الحساب', function () { return lvDevGet(''); }, function (L, st, paint, refetch) {
     const G = {}; L.forEach(function (d) { (G[d.user_id] || (G[d.user_id] = { uid: d.user_id, name: d.name, tera: d.tera_id, D: [] })).D.push(d); });
