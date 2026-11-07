@@ -27686,7 +27686,7 @@ function tqnCuK(r) {
       const d = f.next ? tqnD10(f.next.due) : ''; if (d && (!nx || d < nx)) nx = d;
       const k = f.tone === 'danger' ? 3 : f.tone === 'warn' ? 2 : f.leftN ? 1 : 0; if (k > w) w = k;
     });
-    return JSON.stringify({ n: L.length, t: Math.round(tot), p: Math.round(paid), r: Math.round(rem), l: Math.round(late), ln: lateN, nx: nx, w: w, ph: r.phone || '' });
+    return JSON.stringify({ x: (function () { try { return (AX.tr || []).filter(function (t) { return t.cid === r.id; }).length; } catch (e) { return null; } })(), n: L.length, t: Math.round(tot), p: Math.round(paid), r: Math.round(rem), l: Math.round(late), ln: lateN, nx: nx, w: w, ph: r.phone || '' });
   } catch (err) { return ''; }
 }
 function tqnTiles(T) { try { return JSON.stringify((T || []).map(function (t) { return [t[0], t[2], String(t[3] || ''), !!t[4], t[5] || '']; })); } catch (err) { return ''; } }
