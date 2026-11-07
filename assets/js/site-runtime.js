@@ -216,7 +216,7 @@ function deskBridge(d){ try{
   var $=function(id){ return d.getElementById(id) };
   var API='/api/desk';
   /* إزالة عبارة المعاينة */
-  [].forEach.call(d.querySelectorAll('p,small,div'),function(p){ if(p.children.length<3&&/هذه معاينة/.test(p.textContent)){ p.innerHTML=p.innerHTML.replace(/\s*هذه معاينة[^.<]*\.?/g,'') } });
+  (function(){ var w=d.createTreeWalker(d.body,4,null), n, L=[]; while((n=w.nextNode())) if(/هذه معاينة|\(معاينة\)/.test(n.nodeValue)) L.push(n); L.forEach(function(t){ t.nodeValue=t.nodeValue.replace(/\s*هذه معاينة[^.]*\.?/g,'').replace(/\s*\(معاينة\)/g,'') }) })(); /* نصوص فقط — لا يُعاد بناء العناصر فتبقى أحداثها */
   function sess(){ try{ var s=JSON.parse(localStorage.getItem('tera.admin.session')||'null'); if(s&&s.access_token&&(!s.expires_at||s.expires_at*1000>Date.now())) return s.access_token }catch(e){} return '' }
   function call(path,body,hdr){ var h={'content-type':'application/json'}; for(var k in (hdr||{})) h[k]=hdr[k];
     return fetch(API+path,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){ return r.json().catch(function(){ return {ok:false} }).then(function(j){ j._s=r.status; return j }) }).catch(function(){ return {ok:false,message:'تعذر الاتصال. تحقق من الإنترنت وأعد المحاولة.'} }); }
