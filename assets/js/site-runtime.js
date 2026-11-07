@@ -259,12 +259,18 @@ function deskBridge(d){ try{
   var up={tok:'',list:[],busy:0}, MAXB=2*1024*1024, MAXN=8;
   (function css(){ try{ var out=[]; var walk=function(rules,acc){ [].forEach.call(rules,function(r){ if(r.cssRules&&!r.selectorText){ var inn=[]; walk(r.cssRules,inn); if(inn.length&&r.conditionText) acc.push('@media '+r.conditionText+'{'+inn.join('')+'}') } else if(/\.t2-(drop|files?\b|file-)/.test(r.selectorText||'')) acc.push(r.cssText) }) };
     [].forEach.call(document.styleSheets,function(sh){ try{ walk(sh.cssRules,out) }catch(e){} }); var st=d.createElement('style'); st.textContent=out.join('\n')+'.t2-drop{position:relative}.t2-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}.t2-files[hidden]{display:none}'; d.head.appendChild(st) }catch(e){} })();
-  var fin=d.querySelector('#dk-form input[type=file]'), fld=fin&&(fin.closest('.ts-fld')||fin.parentNode), list=null;
-  if(fld){ fld.innerHTML='<span class="ts-lab">المرفقات <small style="font-weight:400;color:var(--t2-muted)">(اختياري)</small></span>'
+  var fin=null, list=null;
+  /* يُركَّب الحقل بعد اكتمال رسم الصفحة (ts.js قد يعيد رسمه) — ومرة أخرى عند اختيار نوع المراسلة */
+  function initAtt(){ if(d.querySelector('#dk-form .t2-drop')) return; var f0=d.querySelector('#dk-form input[type=file]'), fld=f0&&(f0.closest('.ts-fld')||f0.parentNode); if(!fld) return;
+  { fld.innerHTML='<span class="ts-lab">المرفقات <small style="font-weight:400;color:var(--t2-muted)">(اختياري)</small></span>'
       +'<div class="t2-drop"><span class="t2-drop-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/></svg></span>'
       +'<span class="t2-drop-b"><span class="t2-drop-t">اسحب الملف هنا أو اختره</span><span class="t2-drop-h">PDF أو صورة أو أي مستند · حتى 2 ميجابايت للملف · '+MAXN+' ملفات كحد أقصى</span></span><span class="t2-drop-btn" aria-hidden="true">اختيار ملف</span>'
       +'<input type="file" multiple aria-label="إرفاق ملفات بالمراسلة"></div><div class="t2-files" role="list" hidden></div>';
     fin=fld.querySelector('input[type=file]'); list=fld.querySelector('.t2-files'); }
+    fin.addEventListener('change',function(){ addFiles(fin.files); fin.value='' });
+    list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-rm]'); if(!b) return; up.list.splice(+b.dataset.rm,1); paint() });
+    paint(); }
+  initAtt(); setTimeout(initAtt,1200); setTimeout(initAtt,3000);
   function size(n){ return n<1024*1024?Math.max(1,Math.round(n/1024))+' ك.ب':(n/1048576).toFixed(1)+' م.ب' }
   function guess(f){ if(f.type) return f.type; var x=(f.name.split('.').pop()||'').toLowerCase(); return {pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',heic:'image/heic',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',txt:'text/plain',csv:'text/csv'}[x]||'application/octet-stream' }
   function paint(){ if(!list) return; list.hidden=!up.list.length; list.innerHTML=up.list.map(function(x,i){ var ext=(x.name.split('.').pop()||'').toLowerCase(), k=ext==='pdf'?'PDF':(/^(png|jpe?g|webp|gif|heic)$/.test(ext)?'IMG':'FILE');
@@ -279,8 +285,6 @@ function deskBridge(d){ try{
       up.busy++; token().then(function(t){ return fetch(API+'/files',{method:'POST',headers:{'content-type':'application/octet-stream','x-desk-upload':t,'x-desk-type':guess(f),'x-desk-name':btoa(unescape(encodeURIComponent(f.name)))},body:f}).then(function(r){ return r.json().catch(function(){ return {ok:false} }) }) })
         .then(function(r){ if(r&&r.ok&&r.file){ x.st='ok'; x.id=r.file.id } else { x.st='bad'; x.err=(r&&r.message)||'تعذر إرفاق الملف.' } }).catch(function(e){ x.st='bad'; x.err=e.message||'تعذر إرفاق الملف.' })
         .then(function(){ up.busy--; paint() }); }); paint(); }
-  if(fin) fin.addEventListener('change',function(){ addFiles(fin.files); fin.value='' });
-  if(list) list.addEventListener('click',function(ev){ var b=ev.target.closest('[data-rm]'); if(!b) return; up.list.splice(+b.dataset.rm,1); paint() });
   function done(ref){ up={tok:'',list:[],busy:0}; paint(); var r=$('dk-ref'); if(r) r.textContent='#'+ref; var f=$('dk-form'), x=$('dk-done'); if(f) f.hidden=true; if(x){ x.hidden=false; try{ x.scrollIntoView({block:'start',behavior:'smooth'}) }catch(e){} } }
   var sending=false;
   function submit(b,hdr,m){ return call('/threads',b,hdr).then(function(r){ if(r&&r.ok&&r.ref){ if(m) m.close(); done(r.ref); return }
@@ -315,5 +319,5 @@ function deskBridge(d){ try{
     call('/verify/start',{channel:'email',dest:em}).then(function(r){ if(!r||!r.ok) return msg('fw-msg','bad',(r&&r.message)||'تعذر إرسال الرمز.'); msg('fw-msg');
       modal('تحقق من بريدك',[{k:'email',label:'رمز التحقق المرسل إلى بريدك',hint:r.masked||em}],function(v,m){ m.err(''); m.busy(true);
         call('/verify/check',{channel:'email',dest:em,code:v.email,purpose:'follow'}).then(function(c){ if(!c||!c.ok||!c.gate){ m.busy(false); return m.err((c&&c.message)||'الرمز غير صحيح.') } gate=c.gate; get({'x-desk-gate':gate},m) }) }) }); }
-  d.addEventListener('click',function(ev){ var t=ev.target&&ev.target.closest&&ev.target.closest('#dk-send,#fw-go'); if(!t) return; ev.preventDefault(); ev.stopImmediatePropagation(); if(t.id==='dk-send') send(); else follow(); },true);
+  d.addEventListener('click',function(ev){ if(ev.target&&ev.target.closest&&ev.target.closest('.t2-mp-i[data-kind],#dk-again')) setTimeout(initAtt,80); var t=ev.target&&ev.target.closest&&ev.target.closest('#dk-send,#fw-go'); if(!t) return; ev.preventDefault(); ev.stopImmediatePropagation(); if(t.id==='dk-send') send(); else follow(); },true);
 }catch(e){} }

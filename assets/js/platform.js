@@ -7234,6 +7234,7 @@ const cuNowT = (d) => [bdiD(iso(d)), ' ', ltr(hm(d))];
 const CU_PKEYS = [['الطلبات', [['quotes.view', 'مشاهدة الطلبات'], ['quotes.create', 'إنشاء الطلبات'], ['quotes.edit', 'تعديل الطلبات'], ['quotes.approve', 'اعتماد الطلبات'], ['quotes.execute', 'تنفيذ الطلبات']]],
   ['الإدارة', [['assignments.manage', 'إدارة المهام والتكليفات'], ['customers.manage', 'إدارة العملاء'], ['employees.manage', 'إدارة الموظفين'], ['marketers.manage', 'إدارة المسوّقين'], ['investors.view', 'مشاهدة الشركاء'], ['investors.manage', 'إدارة الشركاء'], ['investors.finance', 'اعتماد إيداعات وسحوبات الشركاء']]],
   ['عروض الأسعار', [['quotations.view', 'مشاهدة عروض الأسعار'], ['quotations.create', 'إنشاء عرض سعر'], ['quotations.settings', 'تعديل إعدادات عروض الأسعار']]],
+  ['الخطابات الرسمية', [['letters.manage', 'إدارة الخطابات الرسمية وإصدارها']]],
   ['التقارير', [['reports.view', 'مشاهدة التقارير'], ['earnings.view', 'مشاهدة أرباحه وعمولاته هو'], ['earnings.view.all', 'مشاهدة السجلّ المالي لكل الموظفين']]],
   ['النظام', [['notifications.manage', 'إدارة التنبيهات'], ['system.settings', 'إدارة إعدادات النظام'], ['forms.arrange', 'ترتيب محتوى النماذج ونقله']]],
   ['أمان الحسابات', [['accounts.view', 'عرض الحسابات'], ['accounts.manage', 'إدارة الحسابات'], ['accounts.lock', 'قفل الحسابات'], ['accounts.unlock', 'فك قفل الحسابات'], ['accounts.security.manage', 'إدارة أمان الحسابات'], ['accounts.sessions.manage', 'إدارة جلسات الحسابات'], ['accounts.recovery.manage', 'إدارة استرداد الحسابات']]],
@@ -10511,7 +10512,8 @@ function dcPdf(o) {
       if (!css) { try { css = await Promise.race([H.getFontEmbedCSS(pages[0]), new Promise(function (ok) { setTimeout(function () { ok(''); }, 8000); })]); } catch (err) { css = ''; } }
       for (let i = 0; i < pages.length; i++) {
         st.textContent = 'صفحة ' + fmtNum(i + 1) + ' من ' + fmtNum(pages.length) + '…';
-        const op = { pixelRatio: 2, quality: 0.92, backgroundColor: '#ffffff', width: 794, height: 1123, cacheBust: false };
+        if (i === 0 && o.fontCSS) { try { css = (css || '') + '\n' + (await Promise.race([o.fontCSS(), new Promise(function (ok) { setTimeout(function () { ok(''); }, 15000); })])); } catch (err) { void err; } } /* v756: خطوط الخطاب في الملف */
+        const op = { pixelRatio: ((window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || window.innerWidth < 900) ? 3 : 4, quality: 0.95, backgroundColor: '#ffffff', width: 794, height: 1123, cacheBust: false }; /* v756: دقة ملف المستندات ×4 (×3 على الجوال) */
         let url; try { url = await H.toJpeg(pages[i], css ? Object.assign({ fontEmbedCSS: css }, op) : Object.assign({ skipFonts: true }, op)); } catch (err) { url = await H.toJpeg(pages[i], Object.assign({ skipFonts: true }, op)); }
         if (i) P.addPage('a4', 'portrait'); P.addImage(url, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
       }
@@ -10756,7 +10758,8 @@ function dcHubPage() {
     { ic: 'storefront:teal', t: 'عروض أسعار المتاجر', d: 'عرض سعر لطلبات المتجر بقالبه — وبعد اعتماده ودفعه تصدر الفاتورة', n: fmtNum(SO_PAY.filter(function (o) { return o.qt; }).length) + ' عروض', badge: Sw ? [fmtNum(Sw) + ' بانتظار الإصدار', 'warn'] : null, go: function () { go('other', 'cu-docs-sq'); } },
     { ic: 'note-pencil:saffron', t: 'عروض حسب الطلب', d: 'عرض مستقل لطلبات الخدمات والمنتجات حسب الطلب — وبعد اعتماده ودفعه تصدر الفاتورة', n: fmtNum(dcCq().filter(function (r) { return r.cus.quote; }).length) + ' عروض', badge: Cw ? [fmtNum(Cw) + ' بانتظار الإصدار', 'warn'] : null, go: function () { go('other', 'cu-docs-cq'); } },
     { ic: 'contract', t: 'عقود الشركاء', d: 'عقد بالقالب لكل عرض شركاء معتمد — البيانات والمكوّنات وجدول الدفعات والبنود والتوقيع', n: fmtNum(CT.length) + ' عقود', go: function () { go('other', 'cu-docs-pc'); } },
-    { ic: 'receipt:gold', t: 'فواتير المتاجر', d: 'فاتورة ضريبية بعد اعتماد عرض المتجر أو حسب الطلب ودفعه — بدل العقد', n: fmtNum(INV.length) + ' فواتير', go: function () { go('other', 'cu-docs-si'); } }]]]);
+    { ic: 'receipt:gold', t: 'فواتير المتاجر', d: 'فاتورة ضريبية بعد اعتماد عرض المتجر أو حسب الطلب ودفعه — بدل العقد', n: fmtNum(INV.length) + ' فواتير', go: function () { go('other', 'cu-docs-si'); } },
+    { ic: 'letter:navy', t: 'الخطابات الرسمية', d: 'خطابات رسمية للجهات الحكومية والشركات والعملاء والشركاء — رقم لا يتكرر وسجل وملف PDF بالتصميم الموحّد', n: ADM.tlN != null ? fmtNum(ADM.tlN) + ' خطابات' : 'السجل والإصدار', go: function () { go('other', 'cu-docs-tl'); } }]]]);
   const box = H[0], hf = box && box.querySelector('.hf-row'); if (hf) hf.remove();
   if (box) { const hh = box.querySelector('.shb-h'); box.insertBefore(DS.note('info', 'العروض والعقود والفواتير تصل العميل', 'تصدر من هنا بقوالبها في «إعدادات النظام»، ويصل العميل المستند في طلبه. تفاصيل الإعداد كالبنود المخفية غير المختارة لا تظهر له.'), hh ? hh.nextSibling : box.firstChild); }
   return H;
@@ -11145,6 +11148,7 @@ try { Object.assign(ICON, { 'sys-es': ['coins', 'gold'] }); } catch (err) { void
   lp('cu-docs-cq', 'عروض حسب الطلب', 'cu-docs', 'cu-docs-cq', dcCqPage);
   lp('cu-docs-pc', 'عقود الشركاء', 'cu-docs', 'cu-docs-pc', dcPcPage);
   lp('cu-docs-si', 'فواتير المتاجر', 'cu-docs', 'cu-docs-si', dcSiPage);
+  lp('cu-docs-tl', 'الخطابات الرسمية', 'cu-docs', 'cu-docs-tl', tlPage); try { Object.assign(ICON, { 'cu-docs-tl': ['letter', 'navy'] }); } catch (err) { void err; } /* v756 */
 }
 /* بنود القالب في نموذج الإصدار: تُضاف أو تُلغى، والمبلغ حسب طريقة الاحتساب */
 function tqExtrasEd(T, D, base, qty, rerun, incl) {
@@ -12517,6 +12521,7 @@ function d3Paginate(host, blocks, mk) {
   const lone = function () { return cur.body.children.length <= (pages.length === 1 ? 2 : 1); };
   const place = function (b) {
     if (!b) return;
+    if (b.__pb) { if (cur.body.children.length) np(); return; } /* v756: صفحة جديدة يحدّدها الكاتب */
     if (b.tbl) {
       let T = mkT(b, false); cur.body.appendChild(T.w); T.tb.appendChild(b.rows[0]);
       if (over() && cur.body.children.length > 1) { T.w.remove(); np(); T = mkT(b, false); cur.body.appendChild(T.w); T.tb.appendChild(b.rows[0]); }
@@ -21992,8 +21997,8 @@ function esxMsgPanel(kind, el) {
 /* v746 (P6): «الختم والشعار» في «قوالب المستندات» — مكتبة شعارات (الرسمي عالي الدقة + ما يرفعه المشرف) وشعار لكل مستند،
    وختم المنصة لكل مستند من التسعة بحجمه ومسافته؛ ومكتبة البنود الجاهزة من كل القوالب في القوائم المنسدلة. يُحفظ في المفتاح stamp. */
 const ESX_LOGO0 = { id: 'tera', name: 'شعار تيرا الرسمي', src: '/assets/brand/logo.svg', fixed: 1 };
-const ESX_DOCS = [['es', 'سداد قيمة المنتج'], ['quote', 'عرض السعر'], ['purchase', 'فاتورة المنتج'], ['contract', 'العقد'], ['pq', 'عرض سعر الشركاء'], ['sq', 'عرض سعر المتاجر'], ['cq', 'عرض حسب الطلب'], ['pc', 'عقد الشركاء'], ['si', 'فاتورة المتاجر']];
-const ESX_STMAP = { es: 'pq', quote: 'pq', purchase: 'pq', contract: 'pc' };
+const ESX_DOCS = [['es', 'سداد قيمة المنتج'], ['quote', 'عرض السعر'], ['purchase', 'فاتورة المنتج'], ['contract', 'العقد'], ['pq', 'عرض سعر الشركاء'], ['sq', 'عرض سعر المتاجر'], ['cq', 'عرض حسب الطلب'], ['pc', 'عقد الشركاء'], ['si', 'فاتورة المتاجر'], ['tl', 'الخطاب الرسمي']];
+const ESX_STMAP = { es: 'pq', quote: 'pq', purchase: 'pq', contract: 'pc', tl: 'pq' };
 let D3_LK = '';
 function esxLogos(S) { S = S || STAMP; const L = Array.isArray(S.logos) ? S.logos.filter(function (x) { return x && x.id && x.src; }) : []; return [ESX_LOGO0].concat(L); }
 function esxLogoOf(k, S) { S = S || STAMP; const at = S.logoAt || {}, def = S.logoDef || 'tera', id = (k && at[k]) || def; if (id === 'none') return null; const L = esxLogos(S); return L.filter(function (x) { return x.id === id; })[0] || L.filter(function (x) { return x.id === def; })[0] || ESX_LOGO0; }
@@ -22088,6 +22093,7 @@ function esxBrandPanel(doc, el) {
   el.onclick = function (e) {
     const b = e.target.closest('button'); if (!b) return; const d = b.dataset;
     const rootOf = function () { let r = el; while (r && !r.__esxGo) r = r.parentElement; return r; };
+    if (d.bg === 'tl') { snack('معاينة الخطاب الرسمي من «العقود والمستندات» ← الخطابات الرسمية'); return; }
     if (d.bg) { const r = rootOf(); if (r) r.__esxGo(d.bg); return; }
     if (!can && !d.bv) return;
     if (d.ba) { rep = null; el.querySelector('#esx-b6f').click(); return; }
@@ -22111,6 +22117,540 @@ function esxBrandPanel(doc, el) {
   el.oninput = function (e) { const t = e.target; if (t.dataset && t.dataset.bn) { const l = D.logos.filter(function (x) { return x.id === t.dataset.bn; })[0]; if (l) l.name = t.value.slice(0, 40); } };
   el.addEventListener('focusout', function (e) { if (e.target.dataset && e.target.dataset.bn) paint(); });
 }
+/* v756 — «الخطابات الرسمية» (cu-docs-tl): محرّر الخطاب، السجل المرقّم، قائمة الجهات، التذييل ومكتبة الخطوط في قالب tl.
+   ملف PDF يُرسم بالتصميم الموحّد نفسه (dcPdf + d3Mk) مع شعار المستند «tl» وختمه من «الختم والشعار». */
+const TL_LF = [
+  ['Amiri', 'أميري', 'نسخ رسمي', '400;700'], ['Noto Naskh Arabic', 'نوتو نسخ', 'نسخ رسمي', '400;700'], ['Scheherazade New', 'شهرزاد', 'نسخ رسمي', '400;700'], ['Lateef', 'لطيف', 'نسخ رسمي', '400;700'], ['Markazi Text', 'المركزي', 'نسخ رسمي', '400;700'], ['Harmattan', 'هرمتان', 'نسخ رسمي', '400;700'], ['Mirza', 'ميرزا', 'نسخ رسمي', '400;700'],
+  ['IBM Plex Sans Arabic', 'بلكس عربي', 'عصري للمراسلات', '400;500;600;700'], ['Noto Sans Arabic', 'نوتو سانس', 'عصري للمراسلات', '400;700'], ['Tajawal', 'تجوّل', 'عصري للمراسلات', '400;700'], ['Almarai', 'المراعي', 'عصري للمراسلات', '400;700'], ['Cairo', 'القاهرة', 'عصري للمراسلات', '400;700;800'], ['Readex Pro', 'ريدكس', 'عصري للمراسلات', '400;700'], ['Alexandria', 'الإسكندرية', 'عصري للمراسلات', '400;700'], ['Vazirmatn', 'وزير متن', 'عصري للمراسلات', '400;700'], ['Zain', 'زين', 'عصري للمراسلات', '400;700'], ['Mada', 'مدى', 'عصري للمراسلات', '400;700'], ['Baloo Bhaijaan 2', 'بالو', 'عصري للمراسلات', '400;700'],
+  ['Noto Kufi Arabic', 'نوتو كوفي', 'كوفي', '400;700'], ['Reem Kufi', 'ريم كوفي', 'كوفي', '400;700'], ['Kufam', 'كوفام', 'كوفي', '400;700'], ['El Messiri', 'المسيري', 'كوفي', '400;700'], ['Changa', 'تشانغا', 'كوفي', '400;700'], ['Qahiri', 'القاهري', 'كوفي', ''],
+  ['Lalezar', 'لاله زار', 'عناوين', ''], ['Rakkas', 'رقّاص', 'عناوين', ''], ['Jomhuria', 'جمهورية', 'عناوين', ''], ['Lemonada', 'ليمونادة', 'عناوين', '400;700'], ['Marhey', 'مرحي', 'عناوين', '400;700'], ['Katibeh', 'كاتبة', 'عناوين', ''],
+  ['Aref Ruqaa', 'عارف رقعة', 'يدوي وزخرفي', '400;700'], ['Gulzar', 'كلزار', 'يدوي وزخرفي', ''], ['Playpen Sans Arabic', 'بلاي بن', 'يدوي وزخرفي', '400;700']];
+const TL_LCAT = ['الكل', 'نسخ رسمي', 'عصري للمراسلات', 'كوفي', 'عناوين', 'يدوي وزخرفي', 'خطوطك'];
+const TL_LUSE = { 'نسخ رسمي': 'للنص والعناوين', 'عصري للمراسلات': 'للنص والعناوين', 'كوفي': 'للعناوين والنص القصير', 'عناوين': 'للعناوين فقط', 'يدوي وزخرفي': 'للعناوين والتواقيع', 'خطوطك': 'خط مرفوع' };
+const TL_TITLES = ['سعادة', 'معالي', 'سمو', 'فضيلة', 'المكرم', 'الفاضل', 'السادة'];
+const TL_SFX = ['المحترم', 'المحترمين', 'حفظه الله', 'حفظها الله', '—'];
+const TL_GRPS = ['الوزارات', 'الهيئات والجهات الحكومية', 'الجهات القضائية والتنفيذ', 'جهات منطقة حائل', 'البنوك والجهات المالية', 'الاتصالات والخدمات', 'الشركاء والمتاجر', 'جهات أضفتها'];
+const TLT0 = {
+  org: 'منصة تيرا للخدمات المتكاملة', title: 'خطاب رسمي', en: 'OFFICIAL LETTER',
+  fonts: { body: 'IBM Plex Sans Arabic', head: 'Cairo', size: 14.5, lh: 1.9 }, myFonts: [],
+  foot: [{ k: 'addr', l: 'العنوان', v: 'حائل — المملكة العربية السعودية', on: true }, { k: 'phone', l: 'الهاتف', v: '0597771565', on: true }, { k: 'mail', l: 'البريد', v: 'support@tera-services.com.sa', on: true },
+    { k: 'web', l: 'الموقع', v: 'tera-services.com.sa', on: true }, { k: 'cr', l: 'السجل التجاري', v: '', on: false }, { k: 'vat', l: 'الرقم الضريبي', v: '', on: false }],
+  greet: ['السلام عليكم ورحمة الله وبركاته،', 'تحية طيبة وبعد،', 'بعد التحية،'],
+  close: ['وتقبلوا خالص التحية والتقدير،', 'شاكرين لكم حسن تعاونكم،', 'والله ولي التوفيق،'],
+  sign: { n: 'محمد صالح جميعان الشمري', t: 'المشرف العام' }, show: { hijri: true, qr: true, seal: true } };
+const TLT = JSON.parse(JSON.stringify(TLT0));
+const TL_ENT0 = [['وزارة التجارة', 'الوزارات', 'معالي', 'حفظه الله', ''], ['وزارة الاستثمار', 'الوزارات', 'معالي', 'حفظه الله', ''], ['وزارة الموارد البشرية والتنمية الاجتماعية', 'الوزارات', 'معالي', 'حفظه الله', ''], ['وزارة المالية', 'الوزارات', 'معالي', 'حفظه الله', ''], ['وزارة العدل', 'الوزارات', 'معالي', 'حفظه الله', ''], ['وزارة الداخلية', 'الوزارات', 'سمو', 'حفظه الله', ''], ['وزارة الاتصالات وتقنية المعلومات', 'الوزارات', 'معالي', 'حفظه الله', ''], ['وزارة البلديات والإسكان', 'الوزارات', 'معالي', 'حفظه الله', ''],
+  ['هيئة الزكاة والضريبة والجمارك', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['البنك المركزي السعودي', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['هيئة السوق المالية', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['الهيئة العامة للمنشآت الصغيرة والمتوسطة (منشآت)', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['هيئة الاتصالات والفضاء والتقنية', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['الهيئة الوطنية للأمن السيبراني', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['المؤسسة العامة للتأمينات الاجتماعية', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['صندوق تنمية الموارد البشرية (هدف)', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''], ['المركز السعودي للأعمال', 'الهيئات والجهات الحكومية', 'سعادة', 'المحترم', ''],
+  ['النيابة العامة', 'الجهات القضائية والتنفيذ', 'سعادة', 'المحترم', ''], ['المحكمة التجارية', 'الجهات القضائية والتنفيذ', 'فضيلة', 'حفظه الله', ''], ['محكمة التنفيذ', 'الجهات القضائية والتنفيذ', 'فضيلة', 'حفظه الله', ''], ['مركز الإسناد والتصفية (إنفاذ)', 'الجهات القضائية والتنفيذ', 'سعادة', 'المحترم', ''],
+  ['إمارة منطقة حائل', 'جهات منطقة حائل', 'سمو', 'حفظه الله', 'حائل'], ['أمانة منطقة حائل', 'جهات منطقة حائل', 'سعادة', 'المحترم', 'حائل'], ['الغرفة التجارية الصناعية بحائل', 'جهات منطقة حائل', 'سعادة', 'المحترم', 'حائل'],
+  ['الشركة السعودية للمعلومات الائتمانية (سمة)', 'البنوك والجهات المالية', 'السادة', 'المحترمين', ''], ['مصرف الراجحي', 'البنوك والجهات المالية', 'السادة', 'المحترمين', ''], ['البنك الأهلي السعودي', 'البنوك والجهات المالية', 'السادة', 'المحترمين', ''], ['بنك الرياض', 'البنوك والجهات المالية', 'السادة', 'المحترمين', ''], ['بنك البلاد', 'البنوك والجهات المالية', 'السادة', 'المحترمين', ''], ['مصرف الإنماء', 'البنوك والجهات المالية', 'السادة', 'المحترمين', ''],
+  ['شركة الاتصالات السعودية (stc)', 'الاتصالات والخدمات', 'السادة', 'المحترمين', ''], ['شركة موبايلي', 'الاتصالات والخدمات', 'السادة', 'المحترمين', ''], ['شركة زين السعودية', 'الاتصالات والخدمات', 'السادة', 'المحترمين', ''], ['البريد السعودي (سبل)', 'الاتصالات والخدمات', 'السادة', 'المحترمين', ''], ['شركة مدى التسهيل للتجارة', 'الشركاء والمتاجر', 'السادة', 'المحترمين', '']]
+  .map(function (x, i) { return { id: 'd' + i, n: x[0], g: x[1], t: x[2], s: x[3], d: '', c: x[4] }; });
+const TLS = { el: null, list: [], counts: null, f: 'all', q: '', cur: null, dirty: false, ents: null, entLive: false, err: '', loading: false, menu: false, eq: '', form: null, cli: [], cliQ: '', rt: 'info', fc: 'الكل', fq: '', rng: null, busy: false, cf: null, pv: false, tplDirty: false, arm: null, ctxCell: null };
+const TL_ERR = { tl_issued_locked: 'الخطاب صادر ولا يُعدَّل — انسخ منه خطابًا جديدًا.', tl_incomplete: 'أكمل الموضوع والجهة قبل الإصدار.', tl_ent_dup: 'الجهة موجودة في القائمة باسمها.', too_large: 'حجم الخطاب كبير — صغّر الصور أو احذف بعضها.', not_found: 'لم يُعثر على الخطاب.', forbidden: 'لا تملك صلاحية «إدارة الخطابات الرسمية».' };
+const tlCan = () => !!(LIVE && LIVE.sup) || cuCan('letters.manage');
+const tlEsc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+const tlClone = (x) => JSON.parse(JSON.stringify(x));
+const tlById = (id) => document.getElementById('tlx-' + id);
+const tlErrMsg = (err) => { const m = (err && err.message) || ''; const k = Object.keys(TL_ERR).filter(function (x) { return m.indexOf(x) >= 0; })[0]; return k ? TL_ERR[k] : (m || 'تعذّر الاتصال بالخادم.'); };
+function tlRpc(fn, args) { return Promise.resolve(admRpc(fn, args)).then(function (j) { if (!j || j.ok !== true) throw new Error((j && j.error) || 'error'); return j; }); }
+function tlApplyTpl(v) {
+  if (!v || typeof v !== 'object') return;
+  ['org', 'title', 'en'].forEach(function (k) { if (typeof v[k] === 'string' && v[k].trim()) TLT[k] = v[k]; });
+  if (v.fonts && typeof v.fonts === 'object') Object.assign(TLT.fonts, v.fonts);
+  if (Array.isArray(v.myFonts)) TLT.myFonts = v.myFonts.filter(function (f) { return f && f.fam && f.src; });
+  if (Array.isArray(v.foot) && v.foot.length) TLT.foot = v.foot.filter(function (f) { return f && f.l; }).map(function (f) { return { k: String(f.k || f.l), l: String(f.l), v: String(f.v || ''), on: f.on !== false }; });
+  ['greet', 'close'].forEach(function (k) { if (Array.isArray(v[k]) && v[k].length) TLT[k] = v[k].map(String); });
+  if (v.sign && typeof v.sign === 'object') Object.assign(TLT.sign, v.sign);
+  if (v.show && typeof v.show === 'object') Object.assign(TLT.show, v.show);
+  tlRegFonts(); if (TLS.el) tlDraw();
+}
+function tlRegFonts() { (TLT.myFonts || []).forEach(function (f) { if (tlRegFonts.done[f.fam]) return; tlRegFonts.done[f.fam] = 1; try { const ff = new FontFace(f.fam, 'url(' + f.src + ')'); ff.load().then(function () { document.fonts.add(ff); }, function () {}); } catch (err) { void err; } }); }
+tlRegFonts.done = {};
+function tlAllFonts() { return TL_LF.concat((TLT.myFonts || []).map(function (f) { return [f.fam, f.name, 'خطوطك', '']; })); }
+const tlFName = (f) => { const x = tlAllFonts().filter(function (z) { return z[0] === f; })[0]; return x ? x[1] : f; };
+function tlLoadFont(f) { const x = TL_LF.filter(function (z) { return z[0] === f; })[0]; if (!x || tlLoadFont.done[f]) return; tlLoadFont.done[f] = 1; const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + (x[3] ? ':wght@' + x[3] : '') + '&display=swap'; document.head.appendChild(l); }
+tlLoadFont.done = {};
+/* الخطوط في ملف PDF: تُضمَّن الخطوط المستعملة في الخطاب (من Google أو المرفوعة) */
+const TL_FCSS = {};
+function tlBlobUrl(u) { return fetch(u, { mode: 'cors' }).then(function (r) { return r.blob(); }).then(function (b) { return new Promise(function (ok) { const rd = new FileReader(); rd.onload = function () { ok(String(rd.result)); }; rd.onerror = function () { ok(''); }; rd.readAsDataURL(b); }); }); }
+function tlFontCSS(fams) {
+  return Promise.all(fams.map(function (f) {
+    const my = (TLT.myFonts || []).filter(function (x) { return x.fam === f; })[0];
+    if (my) return "@font-face{font-family:'" + my.fam + "';src:url(" + my.src + ')}';
+    const x = TL_LF.filter(function (z) { return z[0] === f; })[0]; if (!x) return '';
+    if (TL_FCSS[f]) return TL_FCSS[f];
+    return TL_FCSS[f] = fetch('https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + (x[3] ? ':wght@' + x[3] : '') + '&display=swap', { mode: 'cors' }).then(function (r) { return r.text(); }).then(function (css) {
+      const parts = css.split(/(?=\/\*\s*[a-z-]+\s*\*\/)/i).filter(function (b) { return /^\/\*\s*(arabic|latin)\s*\*\//i.test(b.trim()); });
+      const txt = parts.join('\n'), urls = (txt.match(/url\((https:[^)]+)\)/g) || []).map(function (u) { return u.slice(4, -1); });
+      return Promise.all(urls.map(function (u) { return tlBlobUrl(u).then(function (d) { return [u, d]; }); })).then(function (L) { let out = txt; L.forEach(function (p) { if (p[1]) out = out.split(p[0]).join(p[1]); }); return out; });
+    }).catch(function () { delete TL_FCSS[f]; return ''; });
+  })).then(function (L) { return L.join('\n'); });
+}
+/* تنقية نص الخطاب: وسوم وخصائص محدّدة فقط، والصور data:image فقط */
+const TL_TAGS = { P: 1, DIV: 1, SPAN: 1, B: 1, STRONG: 1, I: 1, EM: 1, U: 1, S: 1, STRIKE: 1, BR: 1, H3: 1, H4: 1, BLOCKQUOTE: 1, UL: 1, OL: 1, LI: 1, TABLE: 1, THEAD: 1, TBODY: 1, TR: 1, TH: 1, TD: 1, IMG: 1, HR: 1, FONT: 1, SUB: 1, SUP: 1 };
+const TL_CSSOK = ['color', 'background-color', 'font-family', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line', 'text-align', 'width', 'float', 'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom', 'display', 'line-height', 'direction', 'padding-right', 'padding-left'];
+function tlCleanNode(n) {
+  const out = document.createDocumentFragment();
+  [].slice.call(n.childNodes).forEach(function (c) {
+    if (c.nodeType === 3) { out.appendChild(document.createTextNode(c.nodeValue)); return; }
+    if (c.nodeType !== 1) return;
+    const tg = c.tagName; if (/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|LINK|META|svg|SVG|MATH|FORM|INPUT|TEXTAREA|BUTTON|SELECT)$/.test(tg)) return;
+    if (!TL_TAGS[tg]) { out.appendChild(tlCleanNode(c)); return; }
+    const x = document.createElement(tg);
+    if (tg === 'IMG') { const src = c.getAttribute('src') || ''; if (!/^data:image\/(png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(src)) return; x.setAttribute('src', src); x.setAttribute('alt', (c.getAttribute('alt') || 'صورة').slice(0, 80)); }
+    ['colspan', 'rowspan'].forEach(function (a) { const v = c.getAttribute(a); if (v && /^\d{1,2}$/.test(v)) x.setAttribute(a, v); });
+    if (tg === 'FONT') { const fc = c.getAttribute('face'), sz = c.getAttribute('size'), co = c.getAttribute('color'); if (fc && /^[\w\s,'"-]{1,80}$/.test(fc)) x.setAttribute('face', fc); if (sz && /^[1-7]$/.test(sz)) x.setAttribute('size', sz); if (co && /^(#[0-9a-f]{3,8}|[a-z]{3,20}|rgb\([\d,\s.]+\))$/i.test(co)) x.setAttribute('color', co); }
+    if (tg === 'HR' && c.classList.contains('pb')) x.className = 'pb';
+    const dir = c.getAttribute('dir'); if (dir === 'rtl' || dir === 'ltr') x.setAttribute('dir', dir);
+    const al = c.getAttribute('align'); if (al && /^(right|left|center|justify)$/.test(al)) x.setAttribute('align', al);
+    const st = c.style, keep = []; for (let i = 0; i < st.length; i++) { const p = st[i], v = st.getPropertyValue(p); if (TL_CSSOK.indexOf(p) >= 0 && !/url\(|expression|javascript:/i.test(v)) keep.push(p + ':' + v); }
+    if (keep.length) x.setAttribute('style', keep.join(';'));
+    x.appendChild(tlCleanNode(c)); out.appendChild(x);
+  });
+  return out;
+}
+function tlSan(html) { const t = document.createElement('template'); t.innerHTML = String(html || ''); const d = document.createElement('div'); d.appendChild(tlCleanNode(t.content)); return d.innerHTML; }
+function tlDateTxt(iso, hij) {
+  const d = iso ? new Date(iso + 'T12:00:00') : new Date();
+  const g = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) + ' م';
+  if (!hij) return g;
+  let h = ''; try { h = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d).replace(/\s*هـ$/, '') + ' هـ'; } catch (err) { h = ''; }
+  return h ? h + ' · ' + g : g;
+}
+function tlNewDoc() { return { id: null, no: null, status: 'draft', subject: '', to_name: '', doc: { to: { n: '', g: '', t: 'سعادة', s: 'المحترم', d: '', c: '', kind: '' }, greet: TLT.greet[0], close: TLT.close[0], body: '<p>اكتب نص الخطاب هنا…</p>', atts: '', sign: tlClone(TLT.sign), show: tlClone(TLT.show) } }; }
+const tlIsDraft = () => !TLS.cur || TLS.cur.status === 'draft';
+const tlTpl = () => (!tlIsDraft() && TLS.cur.doc && TLS.cur.doc.tpl) ? Object.assign({}, TLT, TLS.cur.doc.tpl) : TLT;
+function tlCollect() {
+  const C = TLS.cur, D = C.doc, b = tlById('body'); if (!tlIsDraft()) return C; if (b) D.body = tlSan(b.innerHTML);
+  C.subject = (D.subj || C.subject || '').trim(); C.to_name = (D.to && D.to.n) || '';
+  D.tpl = { fonts: tlClone(TLT.fonts), foot: tlClone(TLT.foot), org: TLT.org, title: TLT.title, en: TLT.en };
+  return C;
+}
+function tlLoad() {
+  if (TLS.loading) return; TLS.loading = true; TLS.err = '';
+  Promise.all([tlRpc('tl_list', { p_status: null, p_q: null }).catch(function (err) { return { err: err }; }), tlRpc('tl_ent_list', {}).catch(function (err) { return { err: err }; })]).then(function (R) {
+    TLS.loading = false;
+    if (R[0].err) { TLS.err = tlErrMsg(R[0].err); TLS.errF = /forbidden/.test((R[0].err && R[0].err.message) || '') || /صلاحية/.test(TLS.err); TLS.list = []; TLS.counts = null; } else { TLS.list = R[0].rows || []; TLS.counts = R[0].counts || null; ADM.tlN = TLS.counts ? TLS.counts.all : TLS.list.length; }
+    if (R[1].err) { TLS.ents = TL_ENT0.slice(); TLS.entLive = false; } else { TLS.ents = R[1].rows || []; TLS.entLive = true; }
+    tlDraw();
+  });
+}
+function tlOpen(id) {
+  if (TLS.dirty && TLS.arm !== id) { TLS.arm = id; snack('في المسودة تغييرات لم تُحفظ — احفظها أو انقر الخطاب مرة أخرى لتركها'); return; }
+  TLS.arm = null; TLS.busy = true; tlDraw();
+  tlRpc('tl_get', { p_id: id }).then(function (j) { TLS.cur = j.row; TLS.cur.doc = Object.assign(tlNewDoc().doc, j.row.doc || {}); TLS.cur.doc.subj = j.row.subject; TLS.dirty = false; TLS.busy = false; tlDraw(); }, function (err) { TLS.busy = false; snack(tlErrMsg(err)); tlDraw(); });
+}
+function tlSave(then) {
+  if (!tlCan()) { snack(TL_ERR.forbidden); return; }
+  const C = tlCollect(), sz = JSON.stringify(C.doc).length; if (sz > 2800000) { snack(TL_ERR.too_large); return; }
+  TLS.busy = true; tlDraw(true);
+  tlRpc('tl_save', { p_id: C.id || null, p_subject: C.subject, p_to_name: C.to_name, p_doc: C.doc }).then(function (j) { C.id = j.id; TLS.dirty = false; TLS.busy = false; if (then) then(); else { snack('حُفظت المسودة'); tlLoad(); tlDraw(true); } }, function (err) { TLS.busy = false; snack('لم تُحفظ — ' + tlErrMsg(err)); tlDraw(true); });
+}
+function tlIssue() {
+  const C = tlCollect();
+  if (C.subject.length < 3 || C.to_name.length < 2) { snack(TL_ERR.tl_incomplete); return; }
+  tlSave(function () {
+    tlRpc('tl_issue', { p_id: C.id, p_subject: C.subject, p_to_name: C.to_name, p_doc: C.doc }).then(function (j) {
+      C.no = j.no; C.status = 'issued'; C.doc.date = j.date; C.issued_at = new Date().toISOString(); TLS.cf = null; TLS.dirty = false; snack('صدر الخطاب برقم ' + j.no); tlLoad(); tlDraw();
+    }, function (err) { snack('لم يصدر — ' + tlErrMsg(err)); tlDraw(true); });
+  });
+}
+const TL_CSS = `
+.tlx{--tn:#0B2552;--tt:#0B7A80;--tt2:#0A6469;--ttl:#E2F3F3;--tg:#C9A24A;--tgl:#F6EBCB;--tdesk:#EEF1F7;--tcard:#fff;--tline:#DFE4EE;--tink:#0F1B33;--tink2:#33415C;--tmute:#5B6680;--twarn:#9A4A16;--twarnl:#FFF4E8;display:grid;gap:12px;color:var(--tink)}
+.tlx [hidden]{display:none!important}
+.tlx button,.tlx select,.tlx input{font:inherit;color:inherit}
+.tlx button{cursor:pointer}
+.tlx .tl-bar{background:var(--tcard);border:1px solid var(--tline);border-radius:14px;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tlx .tl-bar h2{font-size:16px;margin:0}.tlx .sp{flex:1}
+.tlx .btn{border:1px solid var(--tline);background:var(--tcard);border-radius:10px;padding:6px 12px;font-size:13px;font-weight:500;display:inline-flex;gap:6px;align-items:center}
+.tlx .btn.pri{background:var(--tt);border-color:var(--tt);color:#fff}.tlx .btn.sm{padding:3px 9px;font-size:12px}.tlx .btn.ghost{background:transparent}.tlx .btn:disabled{opacity:.5;cursor:default}
+.tlx .pill{font-size:11.5px;border-radius:99px;padding:1px 10px;background:var(--ttl);color:var(--tt2);font-weight:600;white-space:nowrap}.tlx .pill.warn{background:var(--twarnl);color:var(--twarn)}
+.tlx .grid{display:grid;grid-template-columns:270px minmax(0,1fr) 330px;gap:12px;align-items:start}
+@media (max-width:1280px){.tlx .grid{grid-template-columns:minmax(0,1fr) 320px}.tlx .reg{grid-column:1/-1}}
+@media (max-width:880px){.tlx .grid{grid-template-columns:minmax(0,1fr)}}
+.tlx .panel{background:var(--tcard);border:1px solid var(--tline);border-radius:14px;padding:12px;display:grid;gap:9px;min-width:0}
+.tlx .panel h3{font-size:13.5px;margin:0}.tlx .hint{color:var(--tmute);font-size:12px;margin:0;line-height:1.6}
+.tlx .note{background:var(--twarnl);color:var(--twarn);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.6}
+.tlx .seg{display:flex;background:var(--tdesk);border-radius:10px;padding:3px;gap:2px}
+.tlx .seg button{flex:1;border:0;background:transparent;border-radius:8px;padding:5px 8px;font-size:12.5px;color:var(--tink2)}
+.tlx .seg button.on{background:var(--tcard);color:var(--tink);font-weight:600;box-shadow:0 1px 2px rgba(15,27,51,.12)}
+.tlx .srch{border:1px solid var(--tline);border-radius:10px;padding:6px 10px;background:var(--tcard);width:100%;box-sizing:border-box}
+.tlx .regl{display:grid;gap:6px;max-height:640px;overflow:auto}
+.tlx .lt{border:1px solid var(--tline);border-radius:12px;padding:8px 10px;text-align:start;background:var(--tcard);display:grid;gap:2px}
+.tlx .lt.on{border-color:var(--tt);background:var(--ttl)}.tlx .lt b{font-size:13px}.tlx .lt small{color:var(--tmute);font-size:11.5px;font-variant-numeric:tabular-nums}
+.tlx .lt .r{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.tlx label.f{display:grid;gap:3px;font-size:12px;color:var(--tink2)}
+.tlx label.f input,.tlx label.f select{border:1px solid var(--tline);border-radius:9px;padding:6px 9px;background:var(--tcard);width:100%;box-sizing:border-box}
+.tlx .chips{display:flex;gap:6px;flex-wrap:wrap}
+.tlx .chip{border:1px solid var(--tline);border-radius:99px;padding:3px 11px;background:var(--tcard);font-size:12.5px}.tlx .chip.on{border-color:var(--tt);background:var(--ttl);color:var(--tt2);font-weight:600}
+.tlx .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tlx .sec{border-top:1px solid var(--tline);padding-top:10px;display:grid;gap:8px}
+.tlx .ent{position:relative}
+.tlx .entb{width:100%;border:1px solid var(--tline);border-radius:10px;padding:8px 10px;background:var(--tcard);display:flex;gap:8px;align-items:center;text-align:start}
+.tlx .entb b{display:block;font-size:13px}.tlx .entb small{color:var(--tmute);font-size:11.5px}.tlx .entb .ar{margin-inline-start:auto;color:var(--tmute)}
+.tlx .entm{position:absolute;inset-inline:0;top:calc(100% + 4px);z-index:20;background:var(--tcard);border:1px solid var(--tline);border-radius:12px;box-shadow:0 12px 30px rgba(11,37,82,.22);padding:8px;display:grid;gap:6px}
+.tlx .entl{display:grid;gap:1px;max-height:300px;overflow:auto}
+.tlx .entl h6{margin:6px 6px 2px;font-size:11px;color:var(--tmute);font-weight:600}
+.tlx .eo{display:flex;gap:6px;align-items:center;border-radius:8px}.tlx .eo:hover{background:var(--ttl)}
+.tlx .eo>button:first-child{flex:1;border:0;background:transparent;text-align:start;padding:6px 8px;display:grid}
+.tlx .eo>button:first-child b{font-size:12.5px;font-weight:600}.tlx .eo>button:first-child small{color:var(--tmute);font-size:11px}
+.tlx .eo .ed{border:0;background:transparent;width:28px;height:28px;border-radius:7px;color:var(--tmute)}
+.tlx .eform{border:1px dashed var(--tline);border-radius:10px;padding:10px;display:grid;gap:8px;background:var(--tdesk)}
+.tlx .ed2{display:grid;gap:10px;min-width:0}
+.tlx .tb{position:sticky;top:8px;z-index:6;background:var(--tcard);border:1px solid var(--tline);border-radius:12px;padding:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;box-shadow:0 4px 14px rgba(11,37,82,.08)}
+.tlx .tb .g{display:flex;gap:2px;padding-inline:4px;border-inline-start:1px solid var(--tline)}.tlx .tb .g:first-child{border:0}
+.tlx .tb button{border:0;background:transparent;border-radius:7px;min-width:30px;height:30px;padding:0 6px;display:grid;place-items:center;font-size:13px;font-weight:600}
+.tlx .tb button:hover{background:var(--ttl);color:var(--tt2)}
+.tlx .tb select{border:1px solid var(--tline);border-radius:7px;height:30px;padding:0 6px;background:var(--tcard);font-size:12.5px;max-width:130px}
+.tlx .tb input[type=color]{width:30px;height:30px;border:0;background:transparent;padding:2px}
+.tlx .tbl-pick{position:absolute;z-index:30;background:var(--tcard);border:1px solid var(--tline);border-radius:10px;padding:8px;box-shadow:0 10px 30px rgba(11,37,82,.2);display:grid;gap:6px}
+.tlx .tbl-grid{display:grid;grid-template-columns:repeat(8,18px);gap:3px}.tlx .tbl-grid span{width:18px;height:18px;border:1px solid var(--tline);border-radius:3px}.tlx .tbl-grid span.on{background:var(--ttl);border-color:var(--tt)}
+.tlx .ctx{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--tgl);border-radius:10px;padding:6px 10px;font-size:12.5px;color:#5E4714}
+.tlx .stage{overflow-x:auto;padding:4px 0 10px}
+.tlx .page{width:min(794px,100%);margin:0 auto;background:#fff;color:#0F1B33;box-shadow:0 8px 30px rgba(11,37,82,.18);display:flex;flex-direction:column;min-height:1123px;font-family:var(--lf-body),'IBM Plex Sans Arabic',Tahoma,sans-serif;font-size:var(--lf-size,14.5px);line-height:var(--lf-lh,1.9)}
+.tlx .d3top{position:relative;overflow:hidden;background:radial-gradient(120% 140% at 15% 20%,#173b8a 0%,#0B2552 55%,#0E1A4F 100%);color:#fff;padding:22px clamp(16px,5%,40px);display:flex;justify-content:space-between;align-items:center;gap:16px}
+.tlx .d3br{display:flex;gap:14px;align-items:center}
+.tlx .d3lg{width:88px;height:88px;border-radius:50%;background:#fff;border:4px solid #C9A24A;display:grid;place-items:center;padding:11px;flex:none;box-sizing:border-box}
+.tlx .d3lg img{max-width:100%;max-height:100%}
+.tlx .d3br h2,.tlx .d3tt h1,.tlx .cardd>h4,.tlx .subjb,.tlx .who b{font-family:var(--lf-head),var(--lf-body),Tahoma,sans-serif}
+.tlx .d3br h2{font-size:20px;font-weight:800;color:#fff;margin:0}.tlx .d3br em{display:block;font-style:normal;color:#E9C46A;font-weight:700;font-size:13px}
+.tlx .d3tt{text-align:center;display:grid;gap:4px;justify-items:center}.tlx .d3tt small{letter-spacing:.18em;color:#E9C46A;font-weight:700;font-size:10.5px}
+.tlx .d3tt h1{font-size:22px;font-weight:800;color:#fff;margin:0}.tlx .d3tt span{background:linear-gradient(180deg,#F1D894,#C9A24A);color:#0B2552;font-weight:700;border-radius:99px;padding:2px 16px;font-size:12px}
+.tlx .d3gold{height:6px;background:linear-gradient(90deg,#8A6A1E,#E9C46A,#8A6A1E)}
+.tlx .d3in{padding:16px clamp(14px,5%,40px) 0;display:grid;gap:11px;flex:1;align-content:start}
+.tlx .d3meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}@media (max-width:640px){.tlx .d3meta{grid-template-columns:1fr 1fr}}
+.tlx .mc{border:1px solid #DFE4EE;border-radius:10px;padding:9px 11px;display:grid;gap:1px;border-top:3px solid #C9A24A;min-width:0}
+.tlx .mc small{color:#33415C;font-size:11px}.tlx .mc b{font-size:12.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tlx .cardd{border:1px solid #DFE4EE;border-radius:10px;overflow:hidden}
+.tlx .cardd>h4{display:flex;gap:10px;align-items:center;padding:9px 12px;font-size:15px;color:#0B2552;font-weight:800;margin:0}
+.tlx .cardd>h4::after{content:"";width:40px;height:3px;background:#C9A24A;border-radius:2px}
+.tlx .kv{display:grid;grid-template-columns:150px 1fr;border-top:1px solid #DFE4EE}
+.tlx .kv span{padding:6px 12px;color:#33415C;border-bottom:1px solid #EEF1F6;font-size:13px}.tlx .kv b{padding:6px 12px;border-bottom:1px solid #EEF1F6;font-weight:600;font-size:13.5px}
+.tlx .subjb{padding:9px 14px;border-top:1px solid #DFE4EE;font-weight:700;font-size:15px;color:#0B2552}
+.tlx .bodyw{border-top:1px solid #DFE4EE;padding:12px 16px}
+.tlx .tl-body{outline:none;min-height:280px}.tlx .tl-body:focus{box-shadow:0 0 0 2px #E2F3F3;border-radius:4px}
+.tlx .tl-body p,.tl-flow p{margin:0 0 6px}
+.tlx .tl-body table,.tl-flow table{border-collapse:collapse;width:100%;margin:8px 0}
+.tlx .tl-body td,.tlx .tl-body th,.tl-flow td,.tl-flow th{border:1px solid #9AA6BC;padding:5px 8px;vertical-align:top;min-width:40px}
+.tlx .tl-body th,.tl-flow th{color:#0B2552;font-weight:700}
+.tlx .tl-body img,.tl-flow img{max-width:100%;border-radius:4px}.tlx .tl-body img{cursor:pointer}.tlx .tl-body img.sel{outline:2px solid #0B7A80}
+.tlx .tl-body hr.pb{border:0;border-top:2px dashed #C9A24A;margin:18px 0;position:relative;overflow:visible}
+.tlx .tl-body hr.pb::after{content:"صفحة جديدة في PDF";position:absolute;inset-inline-start:50%;top:-11px;transform:translateX(50%);background:#fff;color:#7A5A12;font-size:11px;padding:0 8px}
+.tlx .atl,.tl-flow .tl-atl{margin-top:10px;padding-top:8px;border-top:1px dashed #DFE4EE;font-size:.92em}
+.tlx .appr{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;padding:12px 16px;border-top:1px solid #DFE4EE}@media (max-width:560px){.tlx .appr{grid-template-columns:1fr;justify-items:center}}
+.tlx .who{text-align:center;display:grid;gap:2px}.tlx .who b{color:#0B2552;font-size:15px}
+.tlx .d3foot{margin-top:14px;border-top:3px solid #C9A24A;padding:8px clamp(14px,5%,40px);display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:center;color:#33415C;font-size:11.5px}
+.tlx .d3foot b{color:#0B2552;font-weight:600}
+.tlx .confirm{background:var(--twarnl);border:1px solid var(--tline);border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.tlx .frow{display:grid;grid-template-columns:auto 1fr;gap:6px;align-items:center}.tlx .frow input[type=checkbox]{width:16px;height:16px;accent-color:var(--tt)}
+.tlx .fset{display:grid;gap:8px;background:var(--tdesk);border-radius:12px;padding:10px}.tlx .fset input[type=range]{width:100%;accent-color:var(--tt)}
+.tlx .flist{display:grid;gap:8px;max-height:560px;overflow:auto}
+.tlx .fcard{border:1px solid var(--tline);border-radius:12px;padding:9px 10px;display:grid;gap:6px}.tlx .fcard.on{border-color:var(--tt);box-shadow:inset 0 0 0 1px var(--tt)}
+.tlx .fcard .fh{display:flex;justify-content:space-between;gap:6px;align-items:center}.tlx .fcard .fh small{color:var(--tmute);font-size:11px}
+.tlx .fsmp{margin:0;font-size:18px;line-height:1.7;overflow-wrap:anywhere}
+.tlx .tag{font-size:10.5px;border-radius:99px;padding:0 8px;background:var(--ttl);color:var(--tt2);font-weight:600}
+.tlx.pv .grid{grid-template-columns:minmax(0,1fr)}.tlx.pv .reg,.tlx.pv .grid>aside,.tlx.pv .tb,.tlx.pv .ctx{display:none!important}.tlx.pv .tl-body{pointer-events:none;min-height:0}
+@media (max-width:600px){.tlx .page{min-height:0}.tlx .d3top{flex-direction:column;text-align:center}.tlx .d3br{flex-direction:column}.tlx .kv{grid-template-columns:110px 1fr}}
+.axp-page.is-tl .tl-flow{display:block}
+.axp-page.is-tl .tl-flow>div{padding:2px 16px;border:0;display:block}
+.axp-page.is-tl .tl-flow>div:first-child{padding-top:10px}.axp-page.is-tl .tl-flow>div:last-child{padding-bottom:10px}
+.axp-page.is-tl .tl-flow .tl-atl{margin:8px 16px 10px;padding:6px 0 0}
+.axp-page.is-tl .tl-subj{font-size:14px;font-weight:700;color:#0B2552;margin:0;padding:9px 14px}
+.axp-page.is-tl .d3-apw-c.is-who b{font-size:14px;color:#0B2552}.axp-page.is-tl .d3-apw-c.is-who small{color:#13213a}
+`;
+function tlCssOn() { if (document.getElementById('tlx-css')) return; const s = document.createElement('style'); s.id = 'tlx-css'; s.textContent = TL_CSS; document.head.appendChild(s); }
+function tlTyCss(F) {
+  let s = document.getElementById('tlx-ty'); if (!s) { s = document.createElement('style'); s.id = 'tlx-ty'; document.head.appendChild(s); }
+  s.textContent = ".axp-page.is-tl .tl-flow{font-family:'" + F.body + "','IBM Plex Sans Arabic',Tahoma,sans-serif;font-size:" + Math.round(F.size * 0.78 * 10) / 10 + 'px;line-height:' + F.lh + "}.axp-page.is-tl .d3-ch b,.axp-page.is-tl .d3-ttl h1,.axp-page.is-tl .d3-brand h2,.axp-page.is-tl .tl-subj,.axp-page.is-tl .d3-apw-c.is-who b{font-family:'" + F.head + "','IBM Plex Sans Arabic',Tahoma,sans-serif}";
+}
+const tlNode = (x) => { if (!x) return document.createTextNode(''); if (x.nodeType) return x; const d = document.createElement('span'); d.innerHTML = String(x); return d; };
+/* ملف PDF بالتصميم الموحّد */
+function tlPdfO() {
+  const C = tlCollect(), D = C.doc, T = tlTpl(), F = T.fonts || TLT.fonts, to = D.to || {}, sh = D.show || {};
+  [F.body, F.head].forEach(tlLoadFont); tlTyCss(F);
+  const sfx = to.s && to.s !== '—' ? ' ' + to.s : '', nm = (to.t ? to.t + ' / ' : '') + (to.n || '—') + sfx;
+  const kv = [['الجهة', nm], to.d ? ['الإدارة أو القسم', to.d] : null, to.c ? ['المدينة', to.c] : null].filter(Boolean);
+  const html = tlSan(D.body), box = document.createElement('div'); box.innerHTML = html;
+  const segs = [[]]; [].slice.call(box.childNodes).forEach(function (n) { if (n.nodeType === 1 && n.tagName === 'HR' && n.classList.contains('pb')) { segs.push([]); return; } if (n.nodeType === 3 && !n.nodeValue.trim()) return; segs[segs.length - 1].push(n); });
+  const wrap = function (n) { const w = document.createElement('div'); w.appendChild(n.nodeType === 3 ? document.createTextNode(n.nodeValue) : n); return w; };
+  const B = [d3Card('المرسل إليه', 'user', [d3KV(kv)]), d3Card('الموضوع', 'info', [e('p', { class: 'tl-subj' }, C.subject || '—')])];
+  const atts = String(D.atts || '').split('·').map(function (s) { return s.trim(); }).filter(Boolean);
+  segs.forEach(function (sg, i) {
+    const items = []; if (i === 0 && D.greet) items.push(e('div', {}, D.greet));
+    sg.forEach(function (n) { items.push(wrap(n)); });
+    if (i === segs.length - 1) { if (D.close) items.push(e('div', {}, D.close)); if (atts.length) items.push(e('div', { class: 'tl-atl' }, 'المرفقات: ' + atts.map(function (a, k) { return (k + 1) + '. ' + a; }).join('  ·  '))); }
+    if (i > 0) { const pb = e('div', {}); pb.__pb = 1; B.push(pb); }
+    B.push(d3Card(i ? 'نص الخطاب (تابع)' : 'نص الخطاب', 'list', [e('div', { class: 'd3-exp tl-flow' }, items.length ? items : [e('div', {}, '—')])]));
+  });
+  const seed = C.no || 'TL-DRAFT';
+  const ap = d3ApprWide(seed, 'tl', { a_qr: sh.qr === false ? false : undefined, a_bar: false, a_seal: sh.seal === false ? false : undefined });
+  const row = ap.querySelector('.d3-apw'), sg2 = D.sign || TLT.sign;
+  if (row) { const who = e('div', { class: 'd3-apw-c is-who' }, [e('small', {}, sg2.t || ''), e('b', {}, sg2.n || '')]); if (row.children.length > 1) row.insertBefore(who, row.children[1]); else row.appendChild(who); }
+  B.push(ap);
+  const foot = (T.foot || []).filter(function (f) { return f.on && String(f.v).trim(); }).map(function (f) { return f.l + ': ' + f.v; }).join('  ·  ');
+  const fams = [F.body, F.head].concat((html.match(/font-family:\s*([^;"]+)/g) || []).map(function (m) { return m.replace(/font-family:\s*/, '').split(',')[0].replace(/['"]/g, '').trim(); })).concat((html.match(/face="([^"]+)"/g) || []).map(function (m) { return m.slice(6, -1).split(',')[0].trim(); }));
+  const uf = fams.filter(function (f, i) { return f && fams.indexOf(f) === i; });
+  return { label: 'الخطاب الرسمي', dsn: 2, lk: 'tl', cls: 'is-tl', title: T.title || 'خطاب رسمي', en: T.en || 'OFFICIAL LETTER', org: T.org || TLT.org, issuer: '', slogan0: (typeof QT0 !== 'undefined' && QT0.slogan) || '',
+    pill: C.status === 'issued' ? 'صادر' : 'مسودة', draft: C.status !== 'issued', hdr: {}, nobar: !C.no,
+    meta: [['رقم الخطاب', C.no || 'يُعطى عند الإصدار'], ['التاريخ', tlDateTxt(D.date, sh.hijri !== false), false], ['المرسل إليه', to.n || '—', false]],
+    meta3: atts.length ? [['المرفقات', fmtNum(atts.length) + (atts.length === 1 ? ' مرفق' : ' مرفقات'), false]] : [],
+    auto: foot, foot: foot, slogan: '', blocks: B, stk: null, fname: 'خطاب-رسمي-' + (C.no || 'مسودة') + '.pdf', aud: C.no ? 'تنزيل خطاب رسمي PDF — ' + C.no : null,
+    fontCSS: function () { return tlFontCSS(uf); } };
+}
+function tlPdf() { try { dcPdf(tlPdfO()); } catch (err) { try { console.error('[tl]', err); } catch (x) { void x; } snack('تعذّرت المعاينة — ' + ((err && err.message) || '')); } }
+/* واجهة الصفحة */
+function tlEntCur() { return (TLS.cur && TLS.cur.doc && TLS.cur.doc.to) || {}; }
+function tlDrawEnt() {
+  const host = tlById('ent'); if (!host) return; const to = tlEntCur(), can = tlCan() && tlIsDraft();
+  let h = '<label class="f" style="margin-bottom:-2px">المرسل إليه</label><button type="button" class="entb" data-a="entB" aria-expanded="' + TLS.menu + '"' + (can ? '' : ' disabled') + '><span><b>' + tlEsc(to.n || 'اختر جهة أو عميلًا') + '</b><small>' + tlEsc(to.kind === 'once' ? 'لهذا الخطاب فقط — لم تُحفظ في القائمة' : to.kind === 'client' ? 'عميل' + (to.tid ? ' · رقم تيرا ' + to.tid : '') : (to.g || '')) + '</small></span><span class="ar">▾</span></button>';
+  if (TLS.menu) {
+    const q = TLS.eq.trim(), E = TLS.ents || [], groups = TL_GRPS.concat(E.map(function (x) { return x.g; }).filter(function (g, i, a) { return TL_GRPS.indexOf(g) < 0 && a.indexOf(g) === i; }));
+    let list = groups.map(function (g) { const its = E.filter(function (x) { return x.g === g && (!q || x.n.indexOf(q) >= 0); }); return its.length ? '<h6>' + tlEsc(g) + ' · ' + fmtNum(its.length) + '</h6>' + its.map(function (x) { return '<div class="eo"><button type="button" data-ent="' + tlEsc(x.id) + '"><b>' + tlEsc(x.n) + (to.id === x.id ? '  ✓' : '') + '</b><small>' + tlEsc((x.t || '') + ' · ' + (x.s || '') + (x.c ? ' · ' + x.c : '')) + '</small></button>' + (TLS.entLive ? '<button type="button" class="ed" data-ee="' + tlEsc(x.id) + '" title="تعديل الجهة" aria-label="تعديل ' + tlEsc(x.n) + '">✎</button>' : '') + '</div>'; }).join('') : ''; }).join('');
+    if (q.length >= 2 && TLS.cli.length) list += '<h6>عملاء المنصة · ' + fmtNum(TLS.cli.length) + '</h6>' + TLS.cli.map(function (c) { return '<div class="eo"><button type="button" data-cli="' + tlEsc(c.id) + '"><b>' + tlEsc(c.n) + '</b><small>عميل' + (c.tid ? ' · رقم تيرا ' + tlEsc(c.tid) : '') + '</small></button></div>'; }).join('');
+    h += '<div class="entm" role="dialog" aria-label="اختيار الجهة"><input class="srch" data-a="eq" placeholder="ابحث في الجهات، أو اكتب اسم عميل أو رقم تيرا…" value="' + tlEsc(TLS.eq) + '" aria-label="بحث في الجهات والعملاء">' + (TLS.entLive ? '' : '<p class="hint">قائمة افتراضية — تُحفظ الجهات وتُعدَّل بعد تفعيل قاعدة الخطابات.</p>') + '<div class="entl">' + (list || '<p class="hint" style="padding:6px">لا نتائج — أضفها جهة جديدة.</p>') + '</div>';
+    if (TLS.form) {
+      const F = TLS.form;
+      h += '<div class="eform"><b style="font-size:13px">' + (F.id ? 'تعديل الجهة' : 'جهة جديدة') + '</b><label class="f">اسم الجهة<input id="tlx-efN" value="' + tlEsc(F.n) + '"></label>' +
+        '<div class="row2"><label class="f">التصنيف<select id="tlx-efG">' + TL_GRPS.map(function (g) { return '<option' + (g === F.g ? ' selected' : '') + '>' + tlEsc(g) + '</option>'; }).join('') + '</select></label><label class="f">الصفة<select id="tlx-efT">' + TL_TITLES.map(function (t) { return '<option' + (t === F.t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></label></div>' +
+        '<div class="row2"><label class="f">الإدارة أو القسم<input id="tlx-efD" value="' + tlEsc(F.d) + '"></label><label class="f">المدينة<input id="tlx-efC" value="' + tlEsc(F.c) + '"></label></div>' +
+        '<div class="chips">' + (F.id ? '<button type="button" class="btn pri sm" data-ef="save">حفظ التعديل</button><button type="button" class="btn sm ghost" data-ef="arch">إزالة من القائمة</button>' : (TLS.entLive ? '<button type="button" class="btn pri sm" data-ef="save">حفظ في القائمة واستخدامها</button>' : '') + '<button type="button" class="btn sm" data-ef="once">لهذا الخطاب فقط</button>') + '<button type="button" class="btn sm ghost" data-ef="cancel">إلغاء</button></div></div>';
+    } else h += '<button type="button" class="btn sm" data-a="eAdd">+ جهة جديدة</button>';
+    h += '</div>';
+  }
+  host.innerHTML = h;
+  const eq = host.querySelector('[data-a="eq"]'); if (eq && !TLS.form) { eq.focus(); eq.setSelectionRange(eq.value.length, eq.value.length); }
+}
+function tlApplyEnt(x, kind) { const D = TLS.cur.doc; D.to = { id: x.id || null, n: x.n, g: x.g || '', t: x.t || 'سعادة', s: x.s || (x.t === 'السادة' ? 'المحترمين' : 'المحترم'), d: x.d || '', c: x.c || '', kind: kind, tid: x.tid || '' }; TLS.dirty = true; }
+function tlDrawFonts() {
+  const host = tlById('fonts'); if (!host) return; const F = TLT.fonts, q = TLS.fq.trim(), c = TLS.fc, can = tlCan(), A = tlAllFonts();
+  const opts = function (sel) { return TL_LCAT.slice(1).map(function (g) { const its = A.filter(function (x) { return x[2] === g; }); return its.length ? '<optgroup label="' + tlEsc(g) + '">' + its.map(function (x) { return '<option value="' + tlEsc(x[0]) + '"' + (x[0] === sel ? ' selected' : '') + '>' + tlEsc(x[1]) + '</option>'; }).join('') + '</optgroup>' : ''; }).join(''); };
+  const its = A.filter(function (x) { return (c === 'الكل' || x[2] === c) && (!q || x[1].indexOf(q) >= 0 || x[0].toLowerCase().indexOf(q.toLowerCase()) >= 0); });
+  its.forEach(function (x) { tlLoadFont(x[0]); });
+  host.innerHTML = '<div class="fset"><b style="font-size:13px">خطوط قالب الخطاب</b>' +
+    '<div class="row2"><label class="f">خط النص<select data-a="tyB">' + opts(F.body) + '</select></label><label class="f">خط العناوين<select data-a="tyH">' + opts(F.head) + '</select></label></div>' +
+    '<label class="f">حجم النص <output>' + F.size + '</output><input type="range" data-a="tyS" min="12" max="18" step="0.5" value="' + F.size + '"></label>' +
+    '<label class="f">تباعد الأسطر <output>' + F.lh + '</output><input type="range" data-a="tyL" min="1.5" max="2.4" step="0.1" value="' + F.lh + '"></label>' +
+    '<p class="hint">تُطبَّق على كل الخطابات وملف PDF. لتغيير خط كلمة أو فقرة: حدّدها في الخطاب ثم «على المحدد».</p>' + (can ? '<button type="button" class="btn ' + (TLS.tplDirty ? 'pri' : '') + ' sm" data-a="tplSave">حفظ في قالب الخطابات</button>' : '') + '</div>' +
+    '<input class="srch" data-a="fq" placeholder="ابحث عن خط…" value="' + tlEsc(q) + '" aria-label="بحث في الخطوط">' +
+    '<div class="chips">' + TL_LCAT.map(function (g) { return '<button type="button" class="chip' + (g === c ? ' on' : '') + '" data-fcat="' + tlEsc(g) + '">' + tlEsc(g) + '</button>'; }).join('') + '</div>' +
+    '<div class="flist">' + (its.map(function (x) { const on = x[0] === F.body || x[0] === F.head;
+      return '<div class="fcard' + (on ? ' on' : '') + '"><div class="fh"><b>' + tlEsc(x[1]) + '</b><span>' + (x[0] === F.body ? '<span class="tag">النص</span> ' : '') + (x[0] === F.head ? '<span class="tag">العناوين</span> ' : '') + '<small>' + tlEsc(TL_LUSE[x[2]] || '') + '</small></span></div>' +
+        '<p class="fsmp" style="font-family:\'' + tlEsc(x[0]) + '\',serif">نفيد سعادتكم بأن منصة تيرا ترغب في تحديث بياناتها — ١٤٤٨ هـ · 2026</p>' +
+        '<div class="chips"><button type="button" class="btn sm" data-lfb="' + tlEsc(x[0]) + '">للنص</button><button type="button" class="btn sm" data-lfh="' + tlEsc(x[0]) + '">للعناوين</button><button type="button" class="btn sm" data-lfs="' + tlEsc(x[0]) + '">على المحدد</button>' + (x[2] === 'خطوطك' && can ? '<button type="button" class="btn sm ghost" data-lfd="' + tlEsc(x[0]) + '">حذف</button>' : '') + '</div></div>'; }).join('') || '<p class="hint">لا يوجد خط بهذا الاسم.</p>') + '</div>' +
+    (can ? '<button type="button" class="btn" data-a="fUp">+ رفع خط من جهازك</button><p class="hint">ملف خط (TTF أو OTF أو WOFF) حتى 700 كيلوبايت، مثل الخط الرسمي للمنصة، ويُحفظ مع القالب. تأكد أن الخط مرخّص للاستخدام التجاري.</p>' : '');
+}
+function tlFamSel() { return '<option value="">خط المحدد…</option>' + TL_LCAT.slice(1).map(function (c) { const its = tlAllFonts().filter(function (x) { return x[2] === c; }); return its.length ? '<optgroup label="' + tlEsc(c) + '">' + its.map(function (x) { return '<option value="' + tlEsc(x[0]) + '">' + tlEsc(x[1]) + '</option>'; }).join('') + '</optgroup>' : ''; }).join(''); }
+function tlPaper(keep) {
+  const pg = tlById('page'); if (!pg) return; const C = TLS.cur, D = C.doc, T = tlTpl(), F = T.fonts || TLT.fonts, to = D.to || {}, sh = D.show || {}, ed = tlIsDraft() && tlCan();
+  const old = tlById('body'), body = keep && old ? old.innerHTML : tlSan(D.body);
+  [F.body, F.head].forEach(tlLoadFont); pg.style.setProperty('--lf-body', "'" + F.body + "'"); pg.style.setProperty('--lf-head', "'" + F.head + "'"); pg.style.setProperty('--lf-size', F.size + 'px'); pg.style.setProperty('--lf-lh', F.lh);
+  const sfx = to.s && to.s !== '—' ? ' ' + to.s : '', kv = [['الجهة', (to.t ? to.t + ' / ' : '') + (to.n || '—') + sfx], ['الإدارة أو القسم', to.d], ['المدينة', to.c]].filter(function (x) { return String(x[1] || '').trim(); });
+  const atts = String(D.atts || '').split('·').map(function (s) { return s.trim(); }).filter(Boolean), ft = (T.foot || []).filter(function (f) { return f.on && String(f.v).trim(); }), lg = esxDocLogo('tl'), sg = D.sign || TLT.sign;
+  pg.innerHTML = '<header class="d3top"><div class="d3br">' + (lg ? '<div class="d3lg"><img src="' + tlEsc(lg) + '" alt="الشعار"></div>' : '') + '<div><h2>' + tlEsc(T.org || TLT.org) + '</h2><em>' + tlEsc((typeof QT0 !== 'undefined' && QT0.slogan) || '') + '</em></div></div>' +
+    '<div class="d3tt"><small>' + tlEsc(T.en || 'OFFICIAL LETTER') + '</small><h1>' + tlEsc(T.title || 'خطاب رسمي') + '</h1><span>' + (C.status === 'issued' ? 'صادر' : 'مسودة') + '</span></div></header><div class="d3gold"></div><div class="d3in">' +
+    '<div class="d3meta"><div class="mc"><small>رقم الخطاب</small><b dir="ltr">' + tlEsc(C.no || 'يُعطى عند الإصدار') + '</b></div><div class="mc"><small>التاريخ</small><b>' + tlEsc(tlDateTxt(D.date, sh.hijri !== false)) + '</b></div>' +
+    '<div class="mc"><small>المرفقات</small><b>' + (atts.length ? fmtNum(atts.length) + (atts.length === 1 ? ' مرفق' : ' مرفقات') : 'لا يوجد') + '</b></div><div class="mc"><small>المرسل إليه</small><b>' + tlEsc(to.n || '—') + '</b></div></div>' +
+    '<section class="cardd"><h4>المرسل إليه</h4><div class="kv">' + kv.map(function (x) { return '<span>' + tlEsc(x[0]) + '</span><b>' + tlEsc(x[1]) + '</b>'; }).join('') + '</div></section>' +
+    '<section class="cardd"><h4>الموضوع</h4><div class="subjb">' + tlEsc(D.subj || C.subject || '—') + '</div></section>' +
+    '<section class="cardd"><h4>نص الخطاب</h4><div class="bodyw"><div>' + tlEsc(D.greet || '') + '</div><div class="tl-body" id="tlx-body" contenteditable="' + ed + '" spellcheck="false" aria-label="نص الخطاب">' + body + '</div><div>' + tlEsc(D.close || '') + '</div>' +
+    (atts.length ? '<div class="atl"><b>المرفقات:</b> ' + atts.map(function (a, i) { return (i + 1) + '. ' + tlEsc(a); }).join('  ·  ') + '</div>' : '') + '</div></section>' +
+    '<section class="cardd"><h4>الاعتماد</h4><div class="appr"><div id="tlx-qr"></div><div class="who"><small>' + tlEsc(sg.t || '') + '</small><b>' + tlEsc(sg.n || '') + '</b></div><div id="tlx-seal"></div></div></section></div>' +
+    (ft.length ? '<footer class="d3foot">' + ft.map(function (f) { return '<span>' + tlEsc(f.l) + ': <b dir="auto">' + tlEsc(f.v) + '</b></span>'; }).join('') + '</footer>' : '');
+  try { if (sh.qr !== false) { const q = tlById('qr'); q.appendChild(tlNode(dcQr(C.no || 'TL-DRAFT'))); q.style.width = '76px'; } } catch (err) { void err; }
+  try { if (sh.seal !== false && esxStOn('tl')) tlById('seal').appendChild(tlNode(stSeal(STAMP, esxStPx(110)))); } catch (err) { void err; }
+}
+function tlDraw(keep) {
+  const el = TLS.el; if (!el) return; if (!TLS.cur) TLS.cur = tlNewDoc(); keep = keep || TLS.shown === TLS.cur;
+  const C = TLS.cur, D = C.doc, can = tlCan(), dr = tlIsDraft(), ed = dr && can, cnt = TLS.counts;
+  const sb = keep && tlById('body') ? tlById('body').innerHTML : null;
+  const fl = TLS.list.filter(function (x) { return TLS.f === 'all' || x.status === TLS.f; }).filter(function (x) { const q = TLS.q.trim(); return !q || ((x.no || '') + ' ' + x.subject + ' ' + x.to_name).indexOf(q) >= 0; });
+  el.classList.toggle('pv', TLS.pv);
+  el.innerHTML = '<div class="tl-bar"><h2>' + (dr ? (C.id ? 'مسودة' : 'خطاب جديد') : 'الخطاب ' + tlEsc(C.no)) + '</h2><span class="pill' + (dr ? ' warn' : '') + '">' + (dr ? 'مسودة' : 'صادر') + '</span>' + (TLS.dirty ? '<span class="hint">تغييرات لم تُحفظ</span>' : '') + '<span class="sp"></span>' +
+    '<button type="button" class="btn" data-a="pv">' + (TLS.pv ? 'رجوع للتحرير' : 'معاينة العينة') + '</button><button type="button" class="btn" data-a="pdf">معاينة وتنزيل PDF</button>' +
+    (can ? '<button type="button" class="btn" data-a="new">+ خطاب جديد</button>' : '') + (can && !dr ? '<button type="button" class="btn" data-a="copy">نسخ إلى خطاب جديد</button>' : '') +
+    (ed ? (C.id ? '<button type="button" class="btn ghost" data-a="del">حذف المسودة</button>' : '') + '<button type="button" class="btn" data-a="save"' + (TLS.busy ? ' disabled' : '') + '>حفظ مسودة</button><button type="button" class="btn pri" data-a="issue"' + (TLS.busy ? ' disabled' : '') + '>إصدار برقم</button>' : '') + '</div>' +
+    (can ? '' : '<div class="note">للاطلاع فقط — إنشاء الخطابات وإصدارها يحتاج صلاحية «إدارة الخطابات الرسمية».</div>') +
+    (TLS.err ? '<div class="note">' + tlEsc(TLS.err) + (TLS.errF ? '' : ' — السجل والترقيم يعملان بعد تفعيل قاعدة الخطابات. يمكنك الكتابة والمعاينة الآن.') + '</div>' : '') +
+    (TLS.cf ? '<div class="confirm" role="alertdialog"><b>' + tlEsc(TLS.cf.t) + '</b><span class="hint">' + tlEsc(TLS.cf.s) + '</span><div class="chips"><button type="button" class="btn pri sm" data-a="cfOk">' + tlEsc(TLS.cf.ok) + '</button><button type="button" class="btn sm" data-a="cfNo">إلغاء</button></div></div>' : '') +
+    '<div class="grid"><aside class="panel reg" aria-label="سجل الخطابات"><h3>سجل الخطابات</h3><div class="seg">' + [['all', 'الكل'], ['draft', 'مسودات'], ['issued', 'صادرة']].map(function (x) { return '<button type="button" data-rf="' + x[0] + '" class="' + (TLS.f === x[0] ? 'on' : '') + '">' + x[1] + (cnt ? ' · ' + fmtNum(cnt[x[0]] || 0) : '') + '</button>'; }).join('') + '</div>' +
+      '<input class="srch" data-a="q" placeholder="ابحث بالرقم أو الموضوع أو الجهة" value="' + tlEsc(TLS.q) + '" aria-label="بحث في الخطابات"><div class="regl">' +
+      (TLS.loading && !TLS.list.length ? '<p class="hint">يحمّل السجل…</p>' : fl.map(function (x) { return '<button type="button" class="lt' + (x.id === C.id ? ' on' : '') + '" data-lt="' + tlEsc(x.id) + '"><span class="r"><b>' + tlEsc(x.subject || 'بلا موضوع') + '</b><span class="pill' + (x.status === 'draft' ? ' warn' : '') + '">' + (x.status === 'draft' ? 'مسودة' : 'صادر') + '</span></span><small>' + tlEsc(x.to_name || '—') + '</small><small dir="auto">' + tlEsc(x.no || 'بلا رقم بعد') + ' · ' + tlEsc(String(x.issued_at || x.updated_at || '').slice(0, 10)) + ' · ' + tlEsc(x.by || '') + '</small></button>'; }).join('') || '<p class="hint">' + (TLS.err ? 'السجل غير متاح بعد.' : 'لا خطابات بعد.') + '</p>') +
+      '</div><p class="hint">الرقم يُعطى عند الإصدار ولا يتكرر. الخطاب الصادر لا يُعدَّل ولا يُحذف، ويُنسخ منه خطاب جديد.</p></aside>' +
+    '<main class="ed2"><div class="tb" role="toolbar" aria-label="تنسيق النص"' + (ed ? '' : ' style="opacity:.5"') + '>' +
+      '<div class="g"><button type="button" data-c="undo" title="تراجع">↶</button><button type="button" data-c="redo" title="إعادة">↷</button></div>' +
+      '<div class="g"><select data-a="fFam" aria-label="خط النص المحدد">' + tlFamSel() + '</select><select data-a="fSize" aria-label="الحجم"><option value="">الحجم</option><option value="2">صغير</option><option value="3">عادي</option><option value="4">متوسط</option><option value="5">كبير</option><option value="6">عنوان</option></select><select data-a="fBlock" aria-label="نوع الفقرة"><option value="">الفقرة</option><option value="p">فقرة</option><option value="h3">عنوان فرعي</option><option value="blockquote">اقتباس</option></select></div>' +
+      '<div class="g"><button type="button" data-c="bold" title="غامق"><b>غ</b></button><button type="button" data-c="italic" title="مائل"><i>م</i></button><button type="button" data-c="underline" title="تسطير"><u>ت</u></button><button type="button" data-c="strikeThrough" title="يتوسطه خط"><s>خ</s></button><input type="color" data-a="fCol" value="#0B2552" title="لون النص" aria-label="لون النص"><input type="color" data-a="fHi" value="#F6EBCB" title="تظليل" aria-label="لون التظليل"></div>' +
+      '<div class="g"><button type="button" data-c="justifyRight" title="محاذاة يمين">يمين</button><button type="button" data-c="justifyCenter" title="توسيط">وسط</button><button type="button" data-c="justifyLeft" title="محاذاة يسار">يسار</button><button type="button" data-c="justifyFull" title="ضبط">ضبط</button></div>' +
+      '<div class="g"><button type="button" data-c="insertOrderedList" title="قائمة مرقّمة">١.</button><button type="button" data-c="insertUnorderedList" title="قائمة نقطية">•</button><button type="button" data-c="outdent" title="إنقاص المسافة">→</button><button type="button" data-c="indent" title="زيادة المسافة">←</button></div>' +
+      '<div class="g"><button type="button" data-a="tbl" title="إدراج جدول">جدول</button><button type="button" data-a="img" title="إدراج صورة">صورة</button><button type="button" data-c="insertHorizontalRule" title="خط فاصل">―</button><button type="button" data-a="pb" title="صفحة جديدة">صفحة</button><button type="button" data-c="removeFormat" title="مسح التنسيق">مسح</button></div></div>' +
+      '<div class="ctx" id="tlx-ctx" hidden></div><div class="stage"><article class="page" id="tlx-page"></article></div></main>' +
+    '<aside class="panel" aria-label="بيانات الخطاب ومكتبة الخطوط"><div class="seg">' + [['info', 'بيانات الخطاب'], ['fonts', 'مكتبة الخطوط']].map(function (x) { return '<button type="button" data-rt="' + x[0] + '" class="' + (TLS.rt === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      '<div id="tlx-fonts" style="display:' + (TLS.rt === 'fonts' ? 'grid' : 'none') + ';gap:10px"></div><div style="display:' + (TLS.rt === 'info' ? 'grid' : 'none') + ';gap:9px">' +
+      '<div class="ent" id="tlx-ent"></div>' +
+      '<div class="row2"><label class="f">الصفة<select data-d="to.t"' + (ed ? '' : ' disabled') + '>' + TL_TITLES.map(function (t) { return '<option' + (t === (D.to || {}).t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></label><label class="f">ما بعد الاسم<select data-d="to.s"' + (ed ? '' : ' disabled') + '>' + TL_SFX.map(function (t) { return '<option' + (t === (D.to || {}).s ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></label></div>' +
+      '<label class="f">الإدارة أو القسم<input data-d="to.d" value="' + tlEsc((D.to || {}).d) + '"' + (ed ? '' : ' disabled') + '></label><label class="f">المدينة<input data-d="to.c" value="' + tlEsc((D.to || {}).c) + '"' + (ed ? '' : ' disabled') + '></label>' +
+      '<label class="f">الموضوع<input data-d="subj" value="' + tlEsc(D.subj || C.subject || '') + '"' + (ed ? '' : ' disabled') + ' placeholder="موضوع الخطاب"></label>' +
+      '<div class="row2"><label class="f">التحية<input data-d="greet" list="tlx-gl" value="' + tlEsc(D.greet) + '"' + (ed ? '' : ' disabled') + '></label><label class="f">الختام<input data-d="close" list="tlx-cl" value="' + tlEsc(D.close) + '"' + (ed ? '' : ' disabled') + '></label></div>' +
+      '<datalist id="tlx-gl">' + TLT.greet.map(function (g) { return '<option value="' + tlEsc(g) + '">'; }).join('') + '</datalist><datalist id="tlx-cl">' + TLT.close.map(function (g) { return '<option value="' + tlEsc(g) + '">'; }).join('') + '</datalist>' +
+      '<div class="row2"><label class="f">اسم الموقِّع<input data-d="sign.n" value="' + tlEsc((D.sign || {}).n) + '"' + (ed ? '' : ' disabled') + '></label><label class="f">صفته<input data-d="sign.t" value="' + tlEsc((D.sign || {}).t) + '"' + (ed ? '' : ' disabled') + '></label></div>' +
+      '<label class="f">المرفقات (افصل بينها بـ ·)<input data-d="atts" value="' + tlEsc(D.atts) + '"' + (ed ? '' : ' disabled') + ' placeholder="صورة السجل التجاري · خطاب تفويض"></label>' +
+      '<div class="chips">' + [['seal', 'الختم'], ['hijri', 'التاريخ الهجري'], ['qr', 'رمز التحقق']].map(function (x) { return '<button type="button" class="chip' + ((D.show || {})[x[0]] !== false ? ' on' : '') + '" data-sh="' + x[0] + '"' + (ed ? '' : ' disabled') + '>' + x[1] + '</button>'; }).join('') + '</div>' +
+      (esxStOn('tl') ? '' : '<p class="hint">الختم معطّل لهذا المستند في «قوالب المستندات» ← الختم والشعار.</p>') +
+      '<div class="sec"><h3>التذييل</h3><p class="hint">بيانات التواصل في آخر الخطاب — للقالب كله. عدّلها أو أخفِ ما لا تريده ثم احفظها في القالب.' + (dr ? '' : ' الخطاب الصادر يحتفظ بتذييله وقت الإصدار.') + '</p>' +
+      TLT.foot.map(function (f, i) { return '<div class="frow"><input type="checkbox" data-fo="' + i + '"' + (f.on ? ' checked' : '') + (can ? '' : ' disabled') + ' aria-label="إظهار ' + tlEsc(f.l) + '"><label class="f">' + tlEsc(f.l) + '<input data-fv="' + i + '" value="' + tlEsc(f.v) + '"' + (can ? '' : ' disabled') + ' placeholder="اكتب ' + tlEsc(f.l) + '"></label></div>'; }).join('') +
+      (can ? '<button type="button" class="btn ' + (TLS.tplDirty ? 'pri' : '') + ' sm" data-a="tplSave">حفظ التذييل في القالب</button>' : '') + '</div></div>' +
+      '<input type="file" id="tlx-imgF" accept="image/*" hidden><input type="file" id="tlx-fontF" accept=".ttf,.otf,.woff,.woff2" hidden></aside></div>';
+  tlPaper(false); if (sb != null && tlById('body') && dr) tlById('body').innerHTML = sb;
+  TLS.shown = TLS.cur; tlDrawEnt(); if (TLS.rt === 'fonts') tlDrawFonts();
+}
+function tlExec(c, v) {
+  const b = tlById('body'); if (!b || b.getAttribute('contenteditable') !== 'true') { snack(tlCan() ? 'الخطاب الصادر لا يُعدَّل — انسخ منه خطابًا جديدًا' : TL_ERR.forbidden); return; }
+  b.focus(); if (TLS.rng && TLS.rng.startContainer.isConnected && b.contains(TLS.rng.startContainer)) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(TLS.rng); }
+  try { document.execCommand('styleWithCSS', false, true); } catch (err) { void err; }
+  document.execCommand(c, false, v); TLS.dirty = true;
+}
+function tlHideCtx() { const c = tlById('ctx'); if (c && c.dataset.k !== 'tbl') c.hidden = true; document.querySelectorAll('#tlx-body img.sel').forEach(function (x) { x.classList.remove('sel'); }); const p = TLS.el && TLS.el.querySelector('.tbl-pick'); if (p) p.remove(); }
+function tlSelImg(im) {
+  if (!tlIsDraft()) return; document.querySelectorAll('#tlx-body img.sel').forEach(function (x) { x.classList.remove('sel'); }); im.classList.add('sel');
+  const w = parseInt(im.style.width, 10) || 60, c = tlById('ctx'); c.hidden = false; c.dataset.k = 'img';
+  c.innerHTML = '<b>الصورة</b><label>العرض <input type="range" data-a="imgW" min="15" max="100" value="' + w + '"> <span>' + w + '%</span></label><button type="button" class="btn sm" data-iw="r">يمين</button><button type="button" class="btn sm" data-iw="c">وسط</button><button type="button" class="btn sm" data-iw="l">يسار</button><button type="button" class="btn sm" data-a="imgDel">حذف</button>';
+}
+function tlInsTable(R, C) { let h = '<table><thead><tr>'; for (let j = 0; j < C; j++) h += '<th>عنوان</th>'; h += '</tr></thead><tbody>'; for (let i = 1; i < R; i++) { h += '<tr>'; for (let j = 0; j < C; j++) h += '<td>&nbsp;</td>'; h += '</tr>'; } h += '</tbody></table><p><br></p>'; tlExec('insertHTML', h); snack('أُدرج جدول — انقر خلية لتظهر أدوات الجدول'); }
+function tlTblPick(btn) {
+  const old = TLS.el.querySelector('.tbl-pick'); if (old) { old.remove(); return; }
+  const r = btn.getBoundingClientRect(), hr = TLS.el.getBoundingClientRect(), d = document.createElement('div'); d.className = 'tbl-pick'; d.style.top = (r.bottom - hr.top + 4) + 'px'; d.style.left = Math.max(8, r.left - hr.left - 120) + 'px';
+  let h = '<b style="font-size:12.5px">إدراج جدول</b><div class="tbl-grid">'; for (let i = 1; i <= 6; i++) for (let j = 1; j <= 8; j++) h += '<span data-r="' + i + '" data-cc="' + j + '"></span>'; h += '</div><small class="hint">اختر الصفوف والأعمدة</small>'; d.innerHTML = h;
+  TLS.el.style.position = 'relative'; TLS.el.appendChild(d);
+  d.addEventListener('mouseover', function (ev) { const s = ev.target.closest('span[data-r]'); if (!s) return; const R = +s.dataset.r, C = +s.dataset.cc; d.querySelectorAll('span[data-r]').forEach(function (x) { x.classList.toggle('on', +x.dataset.r <= R && +x.dataset.cc <= C); }); d.querySelector('small').textContent = fmtNum(R) + ' صفوف × ' + fmtNum(C) + ' أعمدة'; });
+  d.addEventListener('click', function (ev) { ev.stopPropagation(); const s = ev.target.closest('span[data-r]'); if (!s) return; d.remove(); tlInsTable(+s.dataset.r, +s.dataset.cc); });
+}
+function tlTblAct(a) {
+  const cell = TLS.ctxCell; if (!cell || !cell.isConnected) return; const tr = cell.parentElement, tbl = cell.closest('table'), idx = [].slice.call(tr.children).indexOf(cell);
+  if (a === 'rowA') { const n = document.createElement('tr'); [].slice.call(tr.children).forEach(function () { const td = document.createElement('td'); td.innerHTML = '&nbsp;'; n.appendChild(td); }); if (tr.parentElement.tagName === 'THEAD') { const tb = tbl.tBodies[0] || tbl.appendChild(document.createElement('tbody')); tb.insertBefore(n, tb.firstChild); } else tr.parentElement.insertBefore(n, tr.nextSibling); }
+  if (a === 'rowD' && tbl.querySelectorAll('tr').length > 1) tr.remove();
+  if (a === 'colA') tbl.querySelectorAll('tr').forEach(function (r) { const c = r.children[idx]; if (!c) return; const n = document.createElement(c.tagName); n.innerHTML = c.tagName === 'TH' ? 'عنوان' : '&nbsp;'; c.after(n); });
+  if (a === 'colD' && tr.children.length > 1) tbl.querySelectorAll('tr').forEach(function (r) { if (r.children[idx]) r.children[idx].remove(); });
+  if (a === 'tblD') { tbl.remove(); const c = tlById('ctx'); c.hidden = true; c.dataset.k = ''; }
+  TLS.dirty = true;
+}
+function tlImgIn(f) {
+  if (!f) return; if (f.size > 8 * 1024 * 1024) { snack('الصورة أكبر من 8 ميغابايت'); return; }
+  const rd = new FileReader(); rd.onload = function () {
+    const src = String(rd.result); if (f.size <= 350 * 1024) { tlExec('insertHTML', '<img src="' + src + '" alt="صورة مرفقة" style="width:60%">'); return; }
+    const im = new Image(); im.onload = function () { const k = Math.min(1, 1600 / Math.max(im.width, im.height)), cv = document.createElement('canvas'); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k); const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(im, 0, 0, cv.width, cv.height); tlExec('insertHTML', '<img src="' + cv.toDataURL('image/jpeg', 0.85) + '" alt="صورة مرفقة" style="width:60%">'); snack('أُدرجت الصورة (صُغّرت لتناسب الخطاب) — انقرها لتغيير حجمها ومكانها'); };
+    im.onerror = function () { snack('تعذّرت قراءة الصورة'); }; im.src = src;
+  }; rd.readAsDataURL(f);
+}
+function tlSetD(path, v) { const D = TLS.cur.doc, p = path.split('.'); if (p.length === 2) { D[p[0]] = D[p[0]] || {}; D[p[0]][p[1]] = v; } else D[p[0]] = v; TLS.dirty = true; }
+function tlMount(el) {
+  TLS.el = el; el.className = 'tlx';
+  el.addEventListener('click', function (ev) {
+    const t = ev.target.closest('button,img'), inEnt = ev.target.closest('#tlx-ent');
+    if (TLS.menu && !inEnt) { TLS.menu = false; TLS.form = null; tlDrawEnt(); }
+    if (!t) { tlHideCtx(); return; }
+    if (t.tagName === 'IMG') { if (t.closest('#tlx-body')) tlSelImg(t); return; }
+    const d = t.dataset, a = d.a, C = TLS.cur, can = tlCan();
+    if (d.c) { tlExec(d.c); return; }
+    if (d.lt) { tlOpen(d.lt); return; }
+    if (d.rf) { TLS.f = d.rf; tlDraw(true); return; }
+    if (d.rt) { TLS.rt = d.rt; tlDraw(true); return; }
+    if (d.fcat) { TLS.fc = d.fcat; tlDrawFonts(); return; }
+    if (d.sh) { const D = C.doc; D.show = D.show || {}; D.show[d.sh] = D.show[d.sh] === false; TLS.dirty = true; tlDraw(true); return; }
+    if (d.lfb || d.lfh) { if (!can) return; TLT.fonts[d.lfb ? 'body' : 'head'] = d.lfb || d.lfh; TLS.tplDirty = true; tlPaper(true); tlDrawFonts(); snack((d.lfb ? 'خط النص: ' : 'خط العناوين: ') + tlFName(d.lfb || d.lfh) + ' — احفظه في القالب'); return; }
+    if (d.lfs) { if (!TLS.rng || TLS.rng.collapsed) { snack('حدّد نصًا في الخطاب أولًا'); return; } tlLoadFont(d.lfs); tlExec('fontName', d.lfs); snack('طُبّق «' + tlFName(d.lfs) + '» على النص المحدد'); return; }
+    if (d.lfd) { TLT.myFonts = TLT.myFonts.filter(function (x) { return x.fam !== d.lfd; }); if (TLT.fonts.body === d.lfd) TLT.fonts.body = TLT0.fonts.body; if (TLT.fonts.head === d.lfd) TLT.fonts.head = TLT0.fonts.head; TLS.tplDirty = true; tlDraw(true); snack('حُذف الخط — احفظ القالب لتثبيت الحذف'); return; }
+    if (d.ent) { const x = (TLS.ents || []).filter(function (z) { return String(z.id) === d.ent; })[0]; if (x) { tlApplyEnt(x, 'ent'); TLS.menu = false; tlDraw(true); } return; }
+    if (d.cli) { const x = TLS.cli.filter(function (z) { return String(z.id) === d.cli; })[0]; if (x) { tlApplyEnt({ id: x.id, n: x.n, g: 'عملاء المنصة', t: 'المكرم', s: 'المحترم', tid: x.tid }, 'client'); TLS.menu = false; tlDraw(true); } return; }
+    if (d.ee) { const x = (TLS.ents || []).filter(function (z) { return String(z.id) === d.ee; })[0]; if (x) { TLS.form = { id: x.id, n: x.n, g: x.g, t: x.t, d: x.d, c: x.c }; tlDrawEnt(); tlById('efN').focus(); } return; }
+    if (d.ef) {
+      if (d.ef === 'cancel') { TLS.form = null; tlDrawEnt(); return; }
+      if (d.ef === 'arch') { tlRpc('tl_ent_archive', { p_id: TLS.form.id }).then(function () { snack('أُزيلت الجهة من القائمة'); TLS.form = null; tlLoad(); }, function (err) { snack(tlErrMsg(err)); }); return; }
+      const n = tlById('efN').value.trim(); if (n.length < 3) { snack('اكتب اسم الجهة (3 أحرف على الأقل)'); tlById('efN').focus(); return; }
+      const v = { n: n, g: tlById('efG').value, t: tlById('efT').value, d: tlById('efD').value.trim(), c: tlById('efC').value.trim() }; v.s = v.t === 'السادة' ? 'المحترمين' : (['معالي', 'سمو', 'فضيلة'].indexOf(v.t) >= 0 ? 'حفظه الله' : 'المحترم');
+      if (d.ef === 'once') { tlApplyEnt(v, 'once'); TLS.form = null; TLS.menu = false; tlDraw(true); snack('استُخدمت «' + n + '» لهذا الخطاب فقط'); return; }
+      const id = TLS.form.id || null; tlRpc('tl_ent_save', { p_id: id, p_e: v }).then(function (j) { v.id = j.id; if (!id || tlEntCur().id === id) tlApplyEnt(v, 'ent'); TLS.form = null; TLS.menu = false; snack(id ? 'حُفظ تعديل «' + n + '»' : 'أُضيفت «' + n + '» إلى القائمة واستُخدمت'); tlDraw(true); tlLoad(); }, function (err) { snack(tlErrMsg(err)); });
+      return;
+    }
+    if (d.iw) { const im = document.querySelector('#tlx-body img.sel'); if (im) { im.style.float = d.iw === 'r' ? 'right' : d.iw === 'l' ? 'left' : 'none'; im.style.display = d.iw === 'c' ? 'block' : ''; im.style.margin = d.iw === 'c' ? '6px auto' : (d.iw === 'r' ? '0 0 8px 12px' : '0 12px 8px 0'); TLS.dirty = true; } return; }
+    if (d.ta) { tlTblAct(d.ta); return; }
+    switch (a) {
+      case 'entB': TLS.menu = !TLS.menu; TLS.form = null; TLS.eq = ''; TLS.cli = []; tlDrawEnt(); return;
+      case 'eAdd': TLS.form = { id: 0, n: TLS.eq, g: 'جهات أضفتها', t: 'سعادة', d: '', c: '' }; tlDrawEnt(); tlById('efN').focus(); return;
+      case 'pv': TLS.pv = !TLS.pv; tlDraw(true); window.scrollTo({ top: 0 }); return;
+      case 'pdf': tlPdf(); return;
+      case 'new': if (TLS.dirty && TLS.arm !== 'new') { TLS.arm = 'new'; snack('في المسودة تغييرات لم تُحفظ — احفظها أو انقر «خطاب جديد» مرة أخرى'); return; } TLS.arm = null; TLS.cur = tlNewDoc(); TLS.dirty = false; TLS.pv = false; tlDraw(); return;
+      case 'copy': { const D = tlClone(C.doc); delete D.date; delete D.tpl; TLS.cur = { id: null, no: null, status: 'draft', subject: C.subject, to_name: C.to_name, doc: D }; TLS.cur.doc.subj = C.subject; TLS.dirty = true; tlDraw(); snack('نُسخ إلى مسودة جديدة — عدّلها ثم احفظها'); return; }
+      case 'save': tlSave(); return;
+      case 'issue': { tlCollect(); if (C.subject.length < 3 || C.to_name.length < 2) { snack(TL_ERR.tl_incomplete); return; } TLS.cf = { k: 'issue', t: 'إصدار الخطاب برقم جديد', s: 'يُعطى رقم من السجل لا يتكرر، ولا يُعدَّل الخطاب بعد الإصدار ولا يُحذف، ويبقى بنسخته هذه.', ok: 'إصدار' }; tlDraw(true); return; }
+      case 'del': TLS.cf = { k: 'del', t: 'حذف هذه المسودة', s: 'تُحذف المسودة نهائيًا. الخطابات الصادرة لا تُحذف.', ok: 'حذف المسودة' }; tlDraw(true); return;
+      case 'cfNo': TLS.cf = null; tlDraw(true); return;
+      case 'cfOk': { const k = TLS.cf && TLS.cf.k; TLS.cf = null; if (k === 'issue') { tlDraw(true); tlIssue(); return; } if (k === 'del') { tlRpc('tl_draft_delete', { p_id: C.id }).then(function () { snack('حُذفت المسودة'); TLS.cur = tlNewDoc(); TLS.dirty = false; tlLoad(); tlDraw(); }, function (err) { snack(tlErrMsg(err)); tlDraw(true); }); } return; }
+      case 'img': tlById('imgF').click(); return;
+      case 'imgDel': { const im = document.querySelector('#tlx-body img.sel'); if (im) { im.remove(); TLS.dirty = true; } tlHideCtx(); return; }
+      case 'pb': tlExec('insertHTML', '<hr class="pb"><p><br></p>'); return;
+      case 'tbl': tlTblPick(t); return;
+      case 'fUp': tlById('fontF').click(); return;
+      case 'tplSave': {
+        if (!can) { snack(TL_ERR.forbidden); return; }
+        const v = { org: TLT.org, title: TLT.title, en: TLT.en, fonts: TLT.fonts, myFonts: TLT.myFonts, foot: TLT.foot, greet: TLT.greet, close: TLT.close, sign: TLT.sign, show: TLT.show };
+        Promise.resolve(admRpc('platform_settings_save', { p_key: 'tl', p_value: v, p_summary: 'عدّل قالب الخطابات الرسمية (الخطوط والتذييل)' })).then(function () { TLS.tplDirty = false; snack('حُفظ قالب الخطابات — يُطبَّق على المسودات والخطابات الجديدة'); tlDraw(true); }, function (err) { snack('لم يُحفظ القالب — ' + tlErrMsg(err)); });
+        return;
+      }
+    }
+  });
+  el.addEventListener('input', function (ev) {
+    const t = ev.target, d = t.dataset || {};
+    if (t.id === 'tlx-body') { TLS.dirty = true; return; }
+    if (d.a === 'q') { TLS.q = t.value; const p = t.selectionStart; tlDraw(true); const n = TLS.el.querySelector('[data-a="q"]'); n.focus(); n.setSelectionRange(p, p); return; }
+    if (d.a === 'eq') { TLS.eq = t.value; const p = t.selectionStart; tlDrawEnt(); const n = TLS.el.querySelector('[data-a="eq"]'); if (n) { n.focus(); n.setSelectionRange(p, p); }
+      clearTimeout(TLS.cliT); const qq = TLS.eq.trim(); if (qq.length >= 2 && TLS.entLive) TLS.cliT = setTimeout(function () { tlRpc('tl_client_search', { p_q: qq }).then(function (j) { if (TLS.eq.trim() !== qq) return; TLS.cli = j.rows || []; const p2 = (TLS.el.querySelector('[data-a="eq"]') || {}).selectionStart; tlDrawEnt(); const n2 = TLS.el.querySelector('[data-a="eq"]'); if (n2 && p2 != null) n2.setSelectionRange(p2, p2); }, function () { TLS.cli = []; }); }, 300); else TLS.cli = [];
+      return; }
+    if (d.a === 'fq') { TLS.fq = t.value; const p = t.selectionStart; tlDrawFonts(); const n = TLS.el.querySelector('[data-a="fq"]'); n.focus(); n.setSelectionRange(p, p); return; }
+    if (d.a === 'tyS' || d.a === 'tyL') { TLT.fonts[d.a === 'tyS' ? 'size' : 'lh'] = +t.value; t.previousElementSibling.textContent = t.value; TLS.tplDirty = true; tlPaper(true); return; }
+    if (d.a === 'imgW') { const im = document.querySelector('#tlx-body img.sel'); if (im) { im.style.width = t.value + '%'; t.nextElementSibling.textContent = t.value + '%'; TLS.dirty = true; } return; }
+    if (d.d) { tlSetD(d.d, t.value); tlPaper(true); return; }
+    if (d.fv != null) { TLT.foot[+d.fv].v = t.value; TLS.tplDirty = true; tlPaper(true); return; }
+  });
+  el.addEventListener('change', function (ev) {
+    const t = ev.target, d = t.dataset || {};
+    if (d.d && t.tagName === 'SELECT') { tlSetD(d.d, t.value); tlPaper(true); return; }
+    if (d.fo != null) { TLT.foot[+d.fo].on = t.checked; TLS.tplDirty = true; tlPaper(true); return; }
+    if (d.a === 'tyB' || d.a === 'tyH') { TLT.fonts[d.a === 'tyB' ? 'body' : 'head'] = t.value; TLS.tplDirty = true; tlPaper(true); tlDrawFonts(); return; }
+    if (d.a === 'fFam') { const v = t.value; t.value = ''; if (v) { tlLoadFont(v); tlExec('fontName', v); } return; }
+    if (d.a === 'fSize') { const v = t.value; t.value = ''; if (v) tlExec('fontSize', v); return; }
+    if (d.a === 'fBlock') { const v = t.value; t.value = ''; if (v) tlExec('formatBlock', v); return; }
+    if (d.a === 'fCol') { tlExec('foreColor', t.value); return; }
+    if (d.a === 'fHi') { tlExec('hiliteColor', t.value); return; }
+    if (t.id === 'tlx-imgF') { const f = t.files && t.files[0]; t.value = ''; tlImgIn(f); return; }
+    if (t.id === 'tlx-fontF') {
+      const f = t.files && t.files[0]; t.value = ''; if (!f) return; if (f.size > 700 * 1024) { snack('ملف الخط أكبر من 700 كيلوبايت'); return; }
+      const tot = (TLT.myFonts || []).reduce(function (s, x) { return s + x.src.length; }, 0); if (tot + f.size * 1.37 > 1300000) { snack('مساحة الخطوط المرفوعة ممتلئة — احذف خطًا أولًا'); return; }
+      const nm = f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim().slice(0, 40) || 'خط مرفوع', fam = 'TL ' + nm.replace(/[^\w\s؀-ۿ]/g, '') + ' ' + Date.now().toString(36);
+      const rd = new FileReader(); rd.onload = function () { const src = String(rd.result); try { const ff = new FontFace(fam, 'url(' + src + ')'); ff.load().then(function () { document.fonts.add(ff); tlRegFonts.done[fam] = 1; TLT.myFonts.push({ id: fam, name: nm, fam: fam, src: src }); TLS.fc = 'خطوطك'; TLS.tplDirty = true; tlDraw(true); snack('أُضيف الخط «' + nm + '» — احفظ القالب لتثبيته'); }, function () { snack('تعذّر قراءة ملف الخط — جرّب ملفًا آخر'); }); } catch (err) { snack('تعذّر قراءة ملف الخط'); } }; rd.readAsDataURL(f);
+    }
+  });
+  el.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && TLS.menu) { TLS.menu = false; TLS.form = null; tlDrawEnt(); } });
+  if (!tlMount.sel) {
+    tlMount.sel = 1;
+    document.addEventListener('selectionchange', function () {
+      if (!TLS.el || !TLS.el.isConnected) return; const s = window.getSelection(); if (!s || !s.anchorNode) return;
+      const n = s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement; if (!n || !n.closest) return;
+      if (n.closest('#tlx-body') && s.rangeCount) TLS.rng = s.getRangeAt(0).cloneRange();
+      const cell = n.closest('#tlx-body td,#tlx-body th'), c = tlById('ctx'); if (!c) return;
+      if (cell && tlIsDraft()) { if (c.dataset.k !== 'tbl' || c.hidden) { c.dataset.k = 'tbl'; c.hidden = false; c.innerHTML = '<b>الجدول</b><button type="button" class="btn sm" data-ta="rowA">+ صف</button><button type="button" class="btn sm" data-ta="colA">+ عمود</button><button type="button" class="btn sm" data-ta="rowD">حذف صف</button><button type="button" class="btn sm" data-ta="colD">حذف عمود</button><button type="button" class="btn sm" data-ta="tblD">حذف الجدول</button>'; } TLS.ctxCell = cell; }
+      else if (c.dataset.k === 'tbl' && !n.closest('#tlx-ctx')) { c.dataset.k = ''; c.hidden = true; }
+    });
+  }
+  tlDraw(); tlLoad();
+}
+function tlPage() {
+  tlCssOn();
+  try { if (typeof LIVE_SET !== 'undefined' && !LIVE_SET.at) { LIVE_SET.at = -1; lvSetLoad().then(function () { tlDraw(true); }); } } catch (err) { void err; }
+  if (!ADM.tlEl) { ADM.tlEl = e('div', { class: 'tlx' }); try { tlMount(ADM.tlEl); } catch (err) { try { console.error('[tl]', err); } catch (x) { void x; } ADM.tlEl.textContent = 'تعذّر فتح صفحة الخطابات — ' + ((err && err.message) || ''); } }
+  return [dcTop('الخطابات الرسمية', 'خطابات المنصة الرسمية للجهات والعملاء والشركاء — بتصميم المستندات الموحّد ورقم لا يتكرر', []), ADM.tlEl];
+}
+
 function sysEsPage(start) { if (start) ADM.esxStart = start;
 const can = cuCan('settings.qtpl'), sig = JSON.stringify(ES);
 if (!ADM.esxEl || ADM.esxSig !== sig) { ADM.esxSig = sig; ADM.esxEl = e('div', { class: 'esx-host' }); try { esxMount(ADM.esxEl, { es: JSON.parse(sig), gdocs: esxGdocs(), start: ADM.esxStart || '', eqEl: EQ_EL, eqTpl0: EQ_TPL0, eqName: EQ_DOC_NAME, previewEq: function (k, T, SH) { try { dcPdf(dcEqDoc(k, eqSampleQ(k), true, { tpl: T, shared: SH, recv: k === 'purchase' ? 'الاستلام من الوكيل' : '' })); } catch (x) { snack((x && x.message) || 'تعذّرت المعاينة'); } }, canEdit: can, canAddBank: !!(LIVE && LIVE.sup), bankStep: STL_BANK_STEP, calcMeta: { items: ES_ITEMS, disc: ES_DISC },
@@ -27871,6 +28411,7 @@ const LV_SETS = {
   pc: [function () { return { list: qtClone(QPCS), def: QPC_DEF, n: QPC_N }; }, function (v) { const L = (v && v.list) || []; if (!L.length) return;
     L.forEach(function (t, i) { if (QPCS[i]) lvRepl(QPCS[i], t); else QPCS.push(t); }); QPCS.length = L.length; if (v.def) QPC_DEF = v.def; if (v.n) QPC_N = Math.max(QPC_N, v.n); }],
   stamp: [function () { return qtClone(STAMP); }, function (v) { lvRepl(STAMP, v); }],
+  tl: [function () { return qtClone(TLT); }, function (v) { tlApplyTpl(v); }], /* v756: قالب الخطابات الرسمية */
 /* v725: قالب سداد قيمة المنتج (ES) وتصميم PDF لكل مستند (DOCDSN) محفوظان في القاعدة — كانا في الذاكرة فقط فيضيعان بإعادة التحميل. المحفوظ يُدمج فوق الافتراضي فلا يضيع حقل ناقص */
 es: [function () { return qtClone(ES); }, function (v) { if (!v || typeof v !== 'object' || Array.isArray(v)) return; const D = qtClone(ES0), X = Object.assign({}, D, v); X.show = Object.assign({}, D.show, (v.show && typeof v.show === 'object') ? v.show : {}); if (!Array.isArray(X.steps)) X.steps = D.steps; lvRepl(ES, X); delete ADM.esD; }],
 dsn: [function () { return qtClone(DOCDSN); }, function (v) { if (!v || typeof v !== 'object') return; Object.keys(DOCDSN).forEach(function (k) { if (v[k] === 1 || v[k] === 2) DOCDSN[k] = v[k]; }); }] };
