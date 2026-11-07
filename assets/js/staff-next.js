@@ -578,8 +578,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v764: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v765: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v765: صفحة التفاصيل تفتح من أعلى الصفحة فيبقى الهيدر والقائمة الجانبية ظاهرين مهما كان موضع التمرير، وتعود القائمة لموضعها عند الإغلاق.
    · v764: صفحات التفاصيل داخل الصفحة لا أدراج (القائمة الجانبية والهيدر ظاهران) · رأس صفحة بالاسم والوسوم والأزرار · أيقونة لكل معلومة · التدشين: أرقام + البطاقة بجانب مسار التدشين + بيانات الملف · التوثيق: البنود بعمود والملخص والقرار والمراسلة بعمود، والبند يتكيّف مع العرض.
    · v760: صفحة «بانتظار التدشين» (شاشة المشرف): الخطوات شريط ثم عمودان بطاقات، واختيار الأسباب في المراجعة والقرار.
    · v755: المحتوى الداخلي حتى آخر نقطة — بنود التوثيق صفوف (البند · القيمة · الحالة · الإجراء) والسبب المكرّر مرة للقسم، القرار بعد البنود، المراسلة والسجل بطاقات، وتفاصيل التدشين بطاقة العضوية بجانب حقائقها بلا تكرار، والملف المفتوح من «العملاء الجدد» يرجع إليها.
@@ -1402,9 +1403,11 @@ function geoQ() {
 
   /* داخل الصفحة: الدرج يغطي منطقة المحتوى فقط تحت الهيدر، والقائمة الجانبية تبقى ثابتة وظاهرة */
   function inPage() {
-    var H = document.documentElement, d = document.querySelector('.cu-dh .cu-dr.is-page.is-on.tqn-dr-cu');
+    var H = document.documentElement, d = document.querySelector('.cu-dh .cu-dr.is-page.is-on.tqn-dr-cu'), was = H.classList.contains('tqn-inpg');
     cls(H, 'tqn-inpg', !!d);
-    if (!d) return;
+    /* الهيدر والقائمة الجانبية في مكانهما: الصفحة إلى أعلاها عند الفتح، وتعود لموضعها عند الإغلاق */
+    if (!d) { if (was && ST.__pgY != null) { try { window.scrollTo(0, ST.__pgY); } catch (e) { void e; } } ST.__pgY = null; return; }
+    if (!was) { ST.__pgY = window.scrollY || 0; try { window.scrollTo(0, 0); } catch (e) { void e; } }
     var hd = document.querySelector('#pv-host .t2-head') || document.querySelector('.t2-head');
     var t = hd ? Math.max(0, Math.round(hd.getBoundingClientRect().bottom)) : 0;
     if (H.style.getPropertyValue('--tqn-pg-t') !== t + 'px') H.style.setProperty('--tqn-pg-t', t + 'px');
@@ -1415,7 +1418,7 @@ function geoQ() {
       var t = ev.target; if (!t || !t.closest || !document.documentElement.classList.contains('tqn-inpg')) return;
       if (!t.closest('.t2-side button, .t2-side a, #pv-host .t2-head button, #pv-host .t2-head a, .t2-mnav button, .t2-mnav a')) return;
       [].forEach.call(document.querySelectorAll('.cu-dh .cu-dr.is-page.is-on.tqn-dr-cu'), function (d) { try { if (d.__close) d.__close(); } catch (e) { void e; } });
-      cls(document.documentElement, 'tqn-inpg', false);
+      cls(document.documentElement, 'tqn-inpg', false); ST.__pgY = null;
     }, true);
   } catch (e) { void e; }
 
