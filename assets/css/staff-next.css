@@ -1,4 +1,4 @@
-/* v702–v748 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v749 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -1293,7 +1293,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next.pv-dark #pv-host .tqn-up-d.is-soon b { color: #FCD34D !important; }
 .tq-next.pv-dark #pv-host :is(.tqn-hc-a, .tqn-cz-rs) { color: #5FD3D6 !important; }
 .tq-next.pv-dark #pv-host .tqn-tk-done b { color: var(--tqn-ink) !important; }
-/* ═══ v748 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v749 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -1552,7 +1552,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next.pv-dark #pv-host .tqn-ch-s.is-brand b { color: #5FD6D8; }
 .tq-next.pv-dark #pv-host .tqn-ch-bar { background: #1A2742; }
 
-/* ═══ v748 — مساحة عمل ملف العميل · مسار الدفعات · صفحة الإجراءات · جدول العملاء ═══ */
+/* ═══ v749 — مساحة عمل ملف العميل · مسار الدفعات · صفحة الإجراءات · جدول العملاء ═══ */
 .tq-next .tqn-b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--tqn-line, #E3E8F0); background: #fff; color: var(--tqn-ink, #0F1B33); font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: filter .15s, background .15s; }
 .tq-next .tqn-b:hover { background: #F1F5F9; }
 .tq-next .tqn-b.is-pri { background: linear-gradient(135deg, #06707A, #0B8F99); color: #fff; border: 0; box-shadow: 0 10px 20px -12px rgba(6, 112, 122, .9); }
@@ -1730,12 +1730,12 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-rail-in { position: static; }
 .tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-qa { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 @container tqcf (max-width: 520px) { .tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-qa { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-/* v748: أيقونات ملخص القائمة، وزر «تسجيل سداد» المعطّل بهيئة الأزرار المعطّلة */
+/* v749: أيقونات ملخص القائمة، وزر «تسجيل سداد» المعطّل بهيئة الأزرار المعطّلة */
 .tq-next .tqn-sm > i { display: grid; place-items: center; font-style: normal; font-size: 18px; font-weight: 900; color: #06707A; }
 .tq-next .tqn-sm.is-ok > i { color: #15803D; } .tq-next .tqn-sm.is-bad > i { color: #B91C1C; } .tq-next .tqn-sm.is-warn > i { color: #B45309; } .tq-next .tqn-sm.is-g > i { color: #64748B; }
 .tq-next .tqn-q.is-pri:disabled { background: #FBFDFE; color: var(--tqn-ink, #0F1B33); border-color: var(--tqn-line, #E3E8F0); }
 .tq-next .tqn-q.is-pri:disabled i { background: #E0F2F3; color: #06707A; }
-/* v748: إصلاح التوزيع فقط — لا قصّ للمحتوى ولا للوحة */
+/* v749: إصلاح التوزيع فقط — لا قصّ للمحتوى ولا للوحة */
 .tq-next #pv-root .tqn-cf .tqn-rail .lx-hero.tqn-hx::before { content: "" !important; display: block !important; position: static !important; height: 86px !important; width: auto !important; opacity: 1 !important; background: radial-gradient(120% 140% at 100% 0%, #13B5B9 0%, #06707A 45%, #0B1B33 100%) !important; }
 .tq-next #pv-root .tqn-cf .tqn-rail .lx-hero .lx-acts { z-index: 1; }
 .tq-next #pv-root .tqn-cf .tqn-st.is-c { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
@@ -1747,14 +1747,14 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next #pv-root .tqn-cf .fx-kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important; }
 .tq-next #pv-root .tqn-cf .tqn-st.is-r .tqn-st-b:has(.tqn-rc.is-add) { grid-column: 1 / -1; padding-block: 10px; }
 .tq-next #pv-root .tqn-cf .tqn-st.is-r .tqn-rc.is-add { justify-content: center; }
-/* v748: طيّ العقود المغلقة، وقائمة حالة الحساب في شريط الجدول */
+/* v749: طيّ العقود المغلقة، وقائمة حالة الحساب في شريط الجدول */
 .tq-next #pv-root .tqn-cf .tqn-st.is-c .tqn-st-b:has(.tqn-cc-more) { border-style: dashed; background: #F8FBFB; padding-bottom: 12px; display: grid; place-items: center; }
 .tq-next .tqn-cc-more { display: grid; justify-items: center; gap: 2px; text-align: center; }
 .tq-next .tqn-cc-more b { font-size: 13.5px; font-weight: 800; color: #06707A; }
 .tq-next .tqn-cc-more small { font-size: 12px; font-weight: 700; color: var(--tqn-mut, #66748C); }
 .tq-next .tqn-lsel { height: 40px; min-width: 150px; padding: 0 12px; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 12px; background: #fff; color: var(--tqn-ink, #0F1B33); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .tq-next.pv-dark #pv-host .tqn-lsel, .tq-next.pv-dark #pv-root .tqn-cf .tqn-st.is-c .tqn-st-b:has(.tqn-cc-more) { background: #101A2D; border-color: var(--tqn-line); color: var(--tqn-ink); }
-/* v748: ملف العميل بصفوف عرضية — بلا عمودين، والمحتوى بعرض الصفحة */
+/* v749: ملف العميل بصفوف عرضية — بلا عمودين، والمحتوى بعرض الصفحة */
 .tq-next #pv-root .tqn-cf { padding-inline-start: 0 !important; min-height: 0 !important; display: grid; gap: 22px; }
 .tq-next #pv-root .tqn-cf > * { margin-top: 0 !important; margin-bottom: 0 !important; }
 .tq-next #pv-root .tqn-cf > .tqn-rail { display: none !important; }
@@ -1816,6 +1816,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 }
 .tq-next.pv-dark #pv-root .tqn-r1 > .lx-hero, .tq-next.pv-dark #pv-host .tqn-mkc, .tq-next.pv-dark #pv-root .tqn-r1 .tqn-hx-c { background: #101A2D !important; border-color: var(--tqn-line) !important; color: var(--tqn-ink) !important; }
 .tq-next.pv-dark #pv-root .tqn-r1 > .lx-hero h1, .tq-next.pv-dark #pv-root .tqn-r1 > .lx-hero h2 { color: var(--tqn-ink) !important; }
-/* v748: بطاقات الحوالات والسندات — السطر الثاني يلتف ولا يُقصّ، والتواريخ باتجاهها الصحيح */
+/* v749: بطاقات الحوالات والسندات — السطر الثاني يلتف ولا يُقصّ، والتواريخ باتجاهها الصحيح */
 .tq-next #pv-root .tqn-cf .tqn-rc-x small { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.6; }
 .tq-next #pv-root .tqn-cf .tqn-agr:not(:has(h4)) { margin-top: 4px; }
+.tq-next #pv-root .tqn-cf .tqn-agr:not(:has(h4)) .tqn-agw { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
