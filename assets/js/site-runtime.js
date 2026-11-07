@@ -3,7 +3,7 @@
   var CFG=window.__TERA||{}, LINKS=CFG.links||{};
   var page=CFG.start||'app', C=null, loading=null, PP={}, cur={path:'/',hash:''}, first=true;
   /* v366: رابط مباشر لصفحات الدليل من المنصة والبوابة: home/#/guide/<طريقة> */
-  var GD=/^#(\/guide(?:\/[a-z]+)?|\/faq|\/policies(?:\/[a-z-]+)?|\/p\/(?:about|products|services|partners|s\d{2})|\/store\/(?:devices|digital|custom|cat\/[a-z]+)|\/desk|\/membership)(?:#([a-z-]+))?$/, /* v562: روابط مباشرة للأسئلة الشائعة والسياسات بالشكل الجديد — v739: وتعرّف على تيرا والمتجر وأسواقه وأقسامه ومركز المراسلات (#/desk#follow) لروابط بوت واتساب */ gm=GD.exec(location.hash||''); if(gm){ cur={path:gm[1],hash:gm[2]||''}; if(page==='portal') page='home'; }
+  var GD=/^#(\/guide(?:\/[a-z]+)?|\/faq|\/policies(?:\/[a-z-]+)?|\/p\/(?:about|products|services|partners|s\d{2})|\/store\/(?:devices|digital|custom|cat\/[a-z]+)|\/product\/[A-Za-z0-9._-]+|\/desk|\/membership)(?:#([a-z-]+))?$/, /* v562: روابط مباشرة للأسئلة الشائعة والسياسات بالشكل الجديد — v739: وصفحة المنتج وتعرّف على تيرا والمتجر وأسواقه وأقسامه ومركز المراسلات (#/desk#follow) لروابط بوت واتساب */ gm=GD.exec(location.hash||''); if(gm){ cur={path:gm[1],hash:gm[2]||''}; if(page==='portal') page='home'; }
   var dv=document.createElement('div'); dv.className='ts-dev'; fr.parentNode.insertBefore(dv,fr); dv.appendChild(fr);
   /* شاشة الانتظار الموحّدة: تظهر في كل تحميل وانتقال وتحديث، ومدتها 3 ثوانٍ على الأقل */
   var LG=['sym','tera','ar','lines','tagtx','en'];
