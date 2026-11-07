@@ -166,7 +166,7 @@
   }
   fr.addEventListener('load',function(){ waitDone(); jumpTab() });
   /* v743: رابط مباشر لتبويب داخل الصفحة (مثل #/desk#follow «متابعة الطلب»): بعد الرسم يُمرَّر إلى صف التبويبات المختار حتى يظهر نموذجه */
-  function jumpTab(){ try{ var h=cur&&cur.hash; if(!h||!/^[a-z0-9-]+$/.test(h)) return; var d=fr.contentDocument; if(!d) return; setTimeout(function(){ var c=d.querySelector('.hf-c[data-flt="'+h+'"]'); if(!c) return; var row=c.closest('.hf-row')||c; row.scrollIntoView({block:'start',behavior:'smooth'}); },700); }catch(e){} }
+  function jumpTab(){ try{ var h=cur&&cur.hash; if(!h||!/^[a-z0-9-]+$/.test(h)) return; var d=fr.contentDocument; if(!d) return; setTimeout(function(){ var k=d.querySelector('.t2-mp-i[data-kind="'+h+'"]'); if(k){ k.click(); return; } var c=d.querySelector('.hf-c[data-flt="'+h+'"]'); if(!c) return; var row=c.closest('.hf-row')||c; row.scrollIntoView({block:'start',behavior:'smooth'}); },700); }catch(e){} }
   function setBtn(p){ page=p; document.querySelectorAll('.pv-bar button[data-page]').forEach(function(b){var on=b.dataset.page===p; if(b.classList.contains('is-on')!==on) b.classList.toggle('is-on',on)}) }
   function size(){ var v=(bar?bar.offsetHeight:44)+'px'; if(box.style.getPropertyValue('--pvh')!==v) box.style.setProperty('--pvh',v); var ph=phone(); if(box.classList.contains('is-phone')!==ph) box.classList.toggle('is-phone',ph) }
   function paint(opening){
