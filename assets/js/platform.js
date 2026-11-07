@@ -21770,7 +21770,7 @@ function cfCtActs(id, c, r, f, C, RF) {
   const grid = W.open ? e('div', { class: 'cf-form cf-act-pick', 'data-tiles': tqnTiles(tiles) }, [
       DS.editField('المهمة المطلوبة', DS.select({ value: W.a || '', ph: '— اختر المهمة —', options: avail.map(function (t) { return [t[0], t[2]]; }), onChange: function (v) { W.a = v; W.err = ''; RF.paint(); } })),
       cur ? e('small', { class: 'cu-dr-hint' }, cur[3]) : null,
-      cur ? null : e('div', { class: 't2-pb-actions' }, [DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.a = ''; W.err = ''; RF.paint(); } })])])
+      (cur && !TQN) ? null : e('div', { class: 't2-pb-actions' }, [cur ? DS.button('رجوع إلى الإجراءات', { size: 'sm', onClick: function () { W.a = ''; W.err = ''; RF.paint(); } }) : null, DS.button('إغلاق الإجراء', { size: 'sm', ui: 'x', onClick: function () { W.open = false; W.a = ''; W.err = ''; RF.paint(); } })])])
     : e('div', { class: 'cf-acts', 'data-tiles': tqnTiles(tiles) }, [e('button', { type: 'button', class: 'cf-act is-brand', disabled: avail.length ? null : 'disabled', 'data-live-ok': '', onClick: function () { W.open = true; W.a = avail.length === 1 ? avail[0][0] : ''; W.err = ''; RF.paint(); } },
       [e('span', { class: 'cf-act-ic' }, frag(tile('note'))), e('span', { class: 'cf-act-t' }, [e('b', {}, 'إجراء على العقد'), e('small', {}, avail.length ? avail.map(function (t) { return t[2]; }).join(' · ') : 'لا إجراءات متاحة الآن')])])]);
   let form = null;

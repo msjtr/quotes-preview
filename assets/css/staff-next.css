@@ -1,4 +1,4 @@
-/* v702–v735 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v736 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -1293,7 +1293,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next.pv-dark #pv-host .tqn-up-d.is-soon b { color: #FCD34D !important; }
 .tq-next.pv-dark #pv-host :is(.tqn-hc-a, .tqn-cz-rs) { color: #5FD3D6 !important; }
 .tq-next.pv-dark #pv-host .tqn-tk-done b { color: var(--tqn-ink) !important; }
-/* ═══ v735 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v736 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -1552,7 +1552,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next.pv-dark #pv-host .tqn-ch-s.is-brand b { color: #5FD6D8; }
 .tq-next.pv-dark #pv-host .tqn-ch-bar { background: #1A2742; }
 
-/* ═══ v735 — مساحة عمل ملف العميل · مسار الدفعات · صفحة الإجراءات · جدول العملاء ═══ */
+/* ═══ v736 — مساحة عمل ملف العميل · مسار الدفعات · صفحة الإجراءات · جدول العملاء ═══ */
 .tq-next .tqn-b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--tqn-line, #E3E8F0); background: #fff; color: var(--tqn-ink, #0F1B33); font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: filter .15s, background .15s; }
 .tq-next .tqn-b:hover { background: #F1F5F9; }
 .tq-next .tqn-b.is-pri { background: linear-gradient(135deg, #06707A, #0B8F99); color: #fff; border: 0; box-shadow: 0 10px 20px -12px rgba(6, 112, 122, .9); }
@@ -1710,7 +1710,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next .tqn-le { padding: 24px; text-align: center; color: var(--tqn-mut, #66748C); font-size: 13.5px; }
 .tq-next .tqn-lf { font-size: 12.5px; color: var(--tqn-mut, #66748C); padding: 0 6px; }
 @container (max-width: 900px) { .tq-next .tqn-lr { grid-template-columns: minmax(170px, 2fr) 60px minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 1fr) 110px; } .tq-next .tqn-lr > :nth-child(2), .tq-next .tqn-lr > :nth-child(6) { display: none; } }
-@media (max-width: 63.99rem) { .tq-next .tqn-lr { grid-template-columns: minmax(150px, 2fr) minmax(80px, 1fr) minmax(80px, 1fr) 100px; } .tq-next .tqn-lr > :nth-child(2), .tq-next .tqn-lr > :nth-child(3), .tq-next .tqn-lr > :nth-child(6) { display: none; } }
+@media (max-width: 63.99rem) { .tq-next .tqn-lr { grid-template-columns: minmax(140px, 2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 1fr) 104px; padding: 10px 12px; } .tq-next .tqn-lr > :nth-child(2), .tq-next .tqn-lr > :nth-child(3), .tq-next .tqn-lr > :nth-child(6) { display: none; } .tq-next .tqn-acts .tqn-ib { display: none; } }
 
 /* الوضع الليلي */
 .tq-next.pv-dark #pv-host .tqn-b, .tq-next.pv-dark #pv-host .tqn-q, .tq-next.pv-dark #pv-host .tqn-qa, .tq-next.pv-dark #pv-host .tqn-mo, .tq-next.pv-dark #pv-host .tqn-am-h, .tq-next.pv-dark #pv-host .tqn-a, .tq-next.pv-dark #pv-host .tqn-sm, .tq-next.pv-dark #pv-host .tqn-ltb, .tq-next.pv-dark #pv-host .tqn-lt, .tq-next.pv-dark #pv-host .tqn-ib, .tq-next.pv-dark #pv-root .tqn-am-sec .cf-act-form, .tq-next.pv-dark #pv-host .tqn-rail .lx-hero { background: #101A2D !important; border-color: var(--tqn-line) !important; color: var(--tqn-ink); }
@@ -1724,3 +1724,9 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next.pv-dark #pv-host .tqn-od b { color: #FCA5A5; } .tq-next.pv-dark #pv-host .tqn-od p { color: #FDBA74; }
 .tq-next.pv-dark #pv-host .tqn-rail .lx-hero h2 { color: var(--tqn-ink) !important; }
 .tq-next.pv-dark #pv-host .tqn-seg button.is-on { background: #16223A; color: #5FD6D8; }
+
+/* المساحة الضيقة: لوحة العميل فوق المحتوى (بلا تثبيت) والأزرار السريعة صفًا واحدًا */
+.tq-next #pv-root .tqn-cf:not(.tqn-ws) > .tqn-rail { position: static; width: auto; }
+.tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-rail-in { position: static; }
+.tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-qa { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@container tqcf (max-width: 520px) { .tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-qa { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

@@ -577,7 +577,7 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v735: قسم العملاء بالتصوّر المعتمد —
+/* v736: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات —
    · ملف العميل مساحة عمل: لوحة العميل ثابتة بجانب المحتوى (البطاقة · أزرار سريعة · دائرة السداد · التنويهات)، والمحتوى بتبويباته.
    · العقد: بطاقة رأس واحدة + تنبيه المتأخرات بأزراره + مسار الدفعات الزمني + تبويب لكل قسم.
    · صفحة الإجراءات: بطاقات مجمّعة حسب الغرض (التحصيل · تعديل الدفعات · حالة العقد) بحالة كل إجراء، وكل إجراء صفحة بإطار ثابت وزر رجوع.
@@ -696,6 +696,8 @@ function geoQ() {
     if (!K.length) return;
     K.forEach(function (x) { ST.K[x.k.name] = x.k; });
     var stack = box.parentNode; cls(stack, 'tqn-cl', true); cls(box, 'tqn-hide', true);
+    [].forEach.call(stack.querySelectorAll(':scope > .adm-tools'), function (x) { cls(x, 'tqn-hide', true); });
+    [].forEach.call(stack.querySelectorAll(':scope > .m3-tools, :scope > .ax-tools'), function (x) { cls(x, 'tqn-hide', x.querySelectorAll('.st-chip, button').length <= 1); });
     if (!box.__tqnMo) { try { box.__tqnMo = new MutationObserver(soon); box.__tqnMo.observe(box, { attributes: true, subtree: true, attributeFilter: ['style', 'hidden'] }); } catch (e) { void e; } }
     var F = ST.lf || 'all', SO = ST.ls || 'name', Q = (ST.lq || '').trim().toLowerCase();
     var groups = [['all', 'كل العملاء', K.length, ''], ['ok', 'منتظمون', 0, 'ok'], ['late', 'عليهم متأخرات', 0, 'bad'], ['soon', 'يستحق خلال 7 أيام', 0, 'warn'], ['none', 'بلا عقود', 0, 'g']];
@@ -719,7 +721,10 @@ function geoQ() {
     tb.appendChild(q); W.__q = q;
     var seg = mk('div', 'tqn-seg');
     [['name', 'أ–ي'], ['late', 'الأعلى متأخرًا'], ['rem', 'الأعلى متبقيًا']].forEach(function (o) { var b = mk('button', SO === o[0] ? 'is-on' : '', o[1]); b.type = 'button'; b.setAttribute('data-live-ok', ''); b.addEventListener('click', function () { ST.ls = o[0]; apply(); }); seg.appendChild(b); });
-    tb.appendChild(seg); W.appendChild(tb);
+    tb.appendChild(seg);
+    var rf = [].filter.call(stack.querySelectorAll('.adm-tools button'), function (x) { return /تحديث/.test(txt(x)); })[0];
+    if (rf) tb.appendChild(btn('↻ تحديث', '', function () { rf.click(); }));
+    W.appendChild(tb);
     var rows = K.filter(function (x) { return !(x.c.hidden || x.c.style.display === 'none'); })
       .filter(function (x) { return F === 'all' || kState(x.k)[2] === F; })
       .filter(function (x) { return !Q || (x.c.getAttribute('data-s') || '').indexOf(Q) >= 0 || x.k.name.toLowerCase().indexOf(Q) >= 0; });
@@ -928,21 +933,16 @@ function geoQ() {
     b.click();
     wait(function () { return [].filter.call(pk.querySelectorAll('.t2-cb-l > li'), function (li) { return txt(li) === label; })[0]; }, function (li) { li.click(); setTimeout(apply, 80); });
   }
-  function formClose(f) { var A = [].filter.call(f.querySelectorAll('.t2-pb-actions'), function (x) { return !x.closest('.t2-cb-pop, .t2-dp, [class*="pop"]'); }).pop(); return A ? [].filter.call(A.querySelectorAll('button'), function (x) { return /^(إغلاق|إلغاء)$/.test(txt(x)); }).pop() : null; }
+  function pkBtn(s, re) { var pk = s && s.querySelector('.cf-act-pick'); return pk ? [].filter.call(pk.querySelectorAll('.t2-pb-actions button'), function (x) { return re.test(txt(x)); })[0] : null; }
   function amClose() {
-    var s = curCt(); if (!s) { ST.__am = 0; return; }
-    var f = s.querySelector('.cf-act-form'), pk = s.querySelector('.cf-act-pick');
-    var c = f ? formClose(f) : null;
-    if (!c && pk) c = [].filter.call(pk.querySelectorAll('.t2-pb-actions button'), function (x) { return /إغلاق/.test(txt(x)); })[0];
-    ST.__am = 0;
+    var s = curCt(); ST.__am = 0; if (!s) return;
+    var c = pkBtn(s, /^إغلاق الإجراء$/);
     if (c) c.click(); else apply();
   }
   function amBack() {
     var s = curCt(); if (!s) return;
-    var f = s.querySelector('.cf-act-form');
-    if (!f) return amClose();
-    var c = formClose(f);
-    if (c) { c.click(); wait(function () { return !s.querySelector('.cf-act-form') && s.querySelector('.cf-act'); }, function () { openActs(s, ''); }); }
+    var c = pkBtn(s, /^رجوع إلى الإجراءات$/);
+    if (c) c.click(); else amClose();
   }
 
   /* بطاقة رأس العقد: كل ما يخصّ العقد في مكان واحد بلا تكرار */
@@ -1052,9 +1052,7 @@ function geoQ() {
     var T = tilesOf(pk), curL = pk ? txt(pk.querySelector('.t2-cb-v')) : '';
     var cur = T.filter(function (t) { return t[1] === curL; })[0];
     cls(b, 'tqn-am', true); cls(acts, 'tqn-am-sec', true); cls(acts, 'tqn-hide', false); cls(acts, 'tqn-st-hide', false); quiet(head(acts));
-    cls(pk && pk.querySelector('.t2-field'), 'tqn-hide', !!T.length);
-    cls(pk && pk.querySelector(':scope > .cu-dr-hint'), 'tqn-hide', !!T.length);
-    cls(pk && pk.querySelector(':scope > .t2-pb-actions'), 'tqn-hide', true);
+    cls(pk, 'tqn-hide', !!T.length);
     ST.__am = fm && cur ? cur[1] : 1;
     /* الرأس */
     var sig = (fm && cur ? cur[0] : 'list') + '|' + T.map(function (t) { return t[0] + (t[3] ? 1 : 0) + t[2]; }).join(',');
@@ -1223,8 +1221,9 @@ function geoQ() {
     /* اللوحة الجانبية الثابتة في المساحة العريضة */
     var wide = stack.getBoundingClientRect().width >= 980;
     cls(stack, 'tqn-ws', wide);
-    if (wide) { try { railBuild(stack, h, who); var IN = stack.__tqnRail && stack.__tqnRail.firstChild; var mh = IN ? IN.offsetHeight + 'px' : ''; if (stack.style.minHeight !== mh) stack.style.minHeight = mh; } catch (e) { void e; } }
-    else { railOff(stack, h); if (stack.style.minHeight) stack.style.minHeight = ''; }
+    try { railBuild(stack, h, who); } catch (e) { void e; }
+    var IN = stack.__tqnRail && stack.__tqnRail.firstChild, mh = wide && IN ? IN.offsetHeight + 'px' : '';
+    if (stack.style.minHeight !== mh) stack.style.minHeight = mh;
   }
   function dups(root) {
     var ph = document.querySelector('#pv-host .t2-phead-t'), pt = txt(ph);
