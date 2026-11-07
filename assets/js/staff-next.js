@@ -577,7 +577,7 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v746: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v746) —
+/* v747: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v747) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · ملف العميل مساحة عمل: لوحة العميل ثابتة بجانب المحتوى (البطاقة · أزرار سريعة · دائرة السداد · التنويهات)، والمحتوى بتبويباته.
    · العقد: بطاقة رأس واحدة + تنبيه المتأخرات بأزراره + مسار الدفعات الزمني + تبويب لكل قسم.
@@ -786,7 +786,7 @@ function geoQ() {
         var m = p.match(/^(رقم تيرا|عميل منذ|تاريخ التسجيل|رقم الجوال|الجوال)\s+(.+)$/);
         if (m) L.push([m[1], m[2]]); else if (/النظام السابق|مُرحّل|مرحّل|منقول/.test(p)) L.push(['المصدر', p]); else L.push(['', p]);
       });
-      if (ph && !L.some(function (x) { return /الجوال/.test(x[0]); })) L.splice(1, 0, ['الجوال', ph]);
+      if (ph && !L.some(function (x) { return /الجوال/.test(x[0]); })) L.splice(1, 0, ['الجوال', String(ph).replace(/^966/, '0')]);
       L.forEach(function (x) { var f = mk('span', 'tqn-hx-c'); if (x[0]) f.appendChild(mk('small', '', x[0])); f.appendChild(mk('bdi', '', x[1])); F.appendChild(f); });
       var nm = tx.querySelector('h1, h2'); if (nm && nm.nextSibling) tx.insertBefore(box, nm.nextSibling); else tx.appendChild(box);
       tx.appendChild(F); tx.__tqnHx = box; tx.__tqnHf = F;
@@ -1007,7 +1007,7 @@ function geoQ() {
       var ic = ch.querySelector('.fx-card-ic'); if (ic) top.appendChild(ic.cloneNode(true));
       var tt = mk('div', 'tqn-ch-tt');
       tt.appendChild(mk('h3', '', txt(ch.querySelector('.fx-chead-t > b'))));
-      var ids = ch.querySelector('.rq-ids'); if (ids) { var ci = ids.cloneNode(true); ci.className = 'rq-ids tqn-ch-ids'; [].forEach.call(ci.children, function (x) { if (/^العقد\s/.test(txt(x))) x.style.display = 'none'; }); tt.appendChild(ci); }
+      var ids = ch.querySelector('.rq-ids'); if (ids) { var ci = ids.cloneNode(true); ci.className = 'rq-ids tqn-ch-ids'; [].forEach.call(ci.children, function (x) { if (/^العقد\s/.test(txt(x))) x.classList.add('tqn-hide'); }); tt.appendChild(ci); }
       var pl = ch.querySelector('.fx-chead-s'); if (pl) { var cp = pl.cloneNode(true); cp.className = 'tqn-ch-pl'; tt.appendChild(cp); }
       top.appendChild(tt);
       var side = mk('div', 'tqn-ch-side');
@@ -1130,6 +1130,8 @@ function geoQ() {
       }
       [].forEach.call(b.querySelectorAll(':scope > .t2-note'), function (x) { AL.appendChild(x); });
       [ch, tr, kp].forEach(function (x) { cls(x, 'tqn-hide', true); });
+      /* v747: لا يتكرر المبلغ المتأخر إن ذكرته ملاحظة المنصة نفسها */
+      var od = hd.querySelector('.tqn-od'); if (od) { var amt = (txt(od.querySelector('b')).match(/\d[\d,]*(?= ر\.س)/) || [])[0]; cls(od, 'tqn-hide', !!amt && txt(AL).indexOf(amt) >= 0); }
       cls(AL, 'is-empty', !AL.children.length); cls(A, 'is-empty', !A.children.length);
       quick(hd, s, tilesOf(ab && ab.querySelector('[data-tiles]')));
     }
