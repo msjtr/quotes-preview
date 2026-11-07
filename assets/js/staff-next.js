@@ -23,7 +23,8 @@
       ['cu-svc', 'طلبات الخدمات', ['cu']],
       ['cu-docs-pq', 'عروض الشركاء', ['cu']],
       ['cu-docs-pc', 'عقود الشركاء', ['cu']],
-      ['cu-docs-sq', 'عروض المتاجر', ['cu']]
+      ['cu-docs-sq', 'عروض المتاجر', ['cu']],
+    ['cu-docs-tl', 'الخطابات الرسمية', ['cu']]
     ]],
     ['المالية', [
     /* v707: خمس صفحات لكل منها عمل واحد — وما تفرّع عنها تبويبات أعلى الصفحة نفسها (VIEWS) لا بنود في القائمة ولا صفحات فهرس */
@@ -86,7 +87,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
   /* v703: بلاطة ثلاثية الأبعاد لكل بند — رمز من مكتبة رموز المنصة (window.__PGL) بوصفة البلاطة نفسها */
   var GLY = {
     'cu-list': 'identification-card', 'cu-new': 'user', 'cu-pf-ver': 'seal-check', 'cu-pf-launch': 'rocket-launch',
-    'cu-svc': 'clipboard-text', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront',
+    'cu-svc': 'clipboard-text', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront', 'cu-docs-tl': 'envelope-simple',
     'fin-due': 'calendar-check', 'cu-trin': 'bank', 'cu-opin': 'arrow-counter-clockwise', 'cu-paylinks': 'link-simple',
     'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'cs-tickets': 'ticket', 'cx': 'star'
   };

@@ -11148,7 +11148,7 @@ try { Object.assign(ICON, { 'sys-es': ['coins', 'gold'] }); } catch (err) { void
   lp('cu-docs-cq', 'عروض حسب الطلب', 'cu-docs', 'cu-docs-cq', dcCqPage);
   lp('cu-docs-pc', 'عقود الشركاء', 'cu-docs', 'cu-docs-pc', dcPcPage);
   lp('cu-docs-si', 'فواتير المتاجر', 'cu-docs', 'cu-docs-si', dcSiPage);
-  lp('cu-docs-tl', 'الخطابات الرسمية', 'cu-docs', 'cu-docs-tl', tlPage); try { Object.assign(ICON, { 'cu-docs-tl': ['letter', 'navy'] }); } catch (err) { void err; } /* v756 */
+  lp('cu-docs-tl', 'الخطابات الرسمية', 'cu', 'cu-docs-tl', tlPage); try { Object.assign(ICON, { 'cu-docs-tl': ['letter', 'navy'] }); } catch (err) { void err; } /* v756 */
 }
 /* بنود القالب في نموذج الإصدار: تُضاف أو تُلغى، والمبلغ حسب طريقة الاحتساب */
 function tqExtrasEd(T, D, base, qty, rerun, incl) {
@@ -33271,7 +33271,7 @@ if (LIVE.on) {
           { ic: 'arrows-clockwise:teal', t: 'المنقولون من النظام السابق', d: 'رسالة «تدشين الهوية الجديدة» وحالة الدخول والتوثيق', n: w(Mg.filter(function (x) { return x.open; }).length), badge: lt(Mg), go: function () { go('other', 'cu-pf-mig'); } },
           { ic: 'rocket-launch:teal', t: 'تدشين الحساب', d: 'الحسابات المعتمدة بانتظار التدشين', n: LCH.at ? fmtNum(LCH.w) + ' بانتظار · ' + fmtNum(LCH.d) + ' مدشّنة' : null, badge: LCH.w ? ['بانتظار ' + fmtNum(LCH.w), 'warn'] : null, go: function () { ADM.lchF = 'wait'; go('other', 'cu-pf-launch'); } },
           { ic: 'crown-simple:gold', t: 'العضويات والنقاط', d: 'المستوى والنقاط وحالة العضوية', n: (typeof LIVE_LOY !== 'undefined' && LIVE_LOY.mem) ? fmtNum(LIVE_LOY.mem.length) + ' أعضاء' : 'الأعضاء والنقاط', go: function () { go('other', 'cu-mem'); } }]],
-        ['rq', 'الطلبات والعقود', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · تحقق من الأهلية', n: w(svcN), go: function () { go('other', 'cu-svc'); } }].concat(CC.p || [], payCards)],
+        ['rq', 'الطلبات والعقود', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · تحقق من الأهلية', n: w(svcN), go: function () { go('other', 'cu-svc'); } }].concat(CC.p || [], payCards, [{ ic: 'letter:navy', t: 'الخطابات الرسمية', d: 'خطابات رسمية للجهات الحكومية والشركات والعملاء والشركاء — رقم لا يتكرر وسجل وملف PDF', n: ADM.tlN != null ? fmtNum(ADM.tlN) + ' خطابات' : 'السجل والإصدار', go: function () { go('other', 'cu-docs-tl'); } }])] /* v757 */,
         ['st', 'المتجر', 'store', [{ ic: 'store', t: 'طلبات المتجر', d: 'الطلبات والشحن · حسب الطلب · الخدمات الرقمية', n: w(n('store')), go: function () { ADM.cuf = 'store'; go('other', 'cu-inbox'); } }].concat(CC.s || [])],
         ['sc', 'الأمن والوصول', 'shield-check:teal', [{ ic: 'shield-check:teal', t: 'مركز الأمن', d: 'النشاط والدخول · التنبيهات · العمليات الحساسة · الأجهزة · سجل التدقيق', n: secN ? fmtNum(secN) + ' تنبيهًا هذا الأسبوع' : 'لا تنبيهات أمنية', go: function () { go('other', 'cu-secc'); } },
           (typeof cuSecOk !== 'function' || cuSecOk('cpg')) ? { ic: 'user-circle:navy', t: 'صفحة العميل', d: 'الدخول إلى صفحة العميل كما يراها بسبب مُسجَّل · سجل توثيق الوصول', go: function () { go('other', 'cpg'); } } : null].filter(Boolean)]];
