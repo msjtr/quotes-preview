@@ -1,4 +1,4 @@
-/* v702–v767 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v768 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -1303,7 +1303,8 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v767 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+
+/* ═══ v768 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -1562,7 +1563,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next.pv-dark #pv-host .tqn-ch-s.is-brand b { color: #5FD6D8; }
 .tq-next.pv-dark #pv-host .tqn-ch-bar { background: #1A2742; }
 
-/* ═══ v767 — مساحة عمل ملف العميل · مسار الدفعات · صفحة الإجراءات · جدول العملاء ═══ */
+/* ═══ v768 — مساحة عمل ملف العميل · مسار الدفعات · صفحة الإجراءات · جدول العملاء ═══ */
 .tq-next .tqn-b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--tqn-line, #E3E8F0); background: #fff; color: var(--tqn-ink, #0F1B33); font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; white-space: nowrap; transition: filter .15s, background .15s; }
 .tq-next .tqn-b:hover { background: #F1F5F9; }
 .tq-next .tqn-b.is-pri { background: linear-gradient(135deg, #06707A, #0B8F99); color: #fff; border: 0; box-shadow: 0 10px 20px -12px rgba(6, 112, 122, .9); }
@@ -1740,12 +1741,12 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-rail-in { position: static; }
 .tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-qa { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 @container tqcf (max-width: 520px) { .tq-next #pv-root .tqn-cf:not(.tqn-ws) .tqn-qa { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-/* v767: أيقونات ملخص القائمة، وزر «تسجيل سداد» المعطّل بهيئة الأزرار المعطّلة */
+/* v768: أيقونات ملخص القائمة، وزر «تسجيل سداد» المعطّل بهيئة الأزرار المعطّلة */
 .tq-next .tqn-sm > i { display: grid; place-items: center; font-style: normal; font-size: 18px; font-weight: 900; color: #06707A; }
 .tq-next .tqn-sm.is-ok > i { color: #15803D; } .tq-next .tqn-sm.is-bad > i { color: #B91C1C; } .tq-next .tqn-sm.is-warn > i { color: #B45309; } .tq-next .tqn-sm.is-g > i { color: #64748B; }
 .tq-next .tqn-q.is-pri:disabled { background: #FBFDFE; color: var(--tqn-ink, #0F1B33); border-color: var(--tqn-line, #E3E8F0); }
 .tq-next .tqn-q.is-pri:disabled i { background: #E0F2F3; color: #06707A; }
-/* v767: إصلاح التوزيع فقط — لا قصّ للمحتوى ولا للوحة */
+/* v768: إصلاح التوزيع فقط — لا قصّ للمحتوى ولا للوحة */
 .tq-next #pv-root .tqn-cf .tqn-rail .lx-hero.tqn-hx::before { content: "" !important; display: block !important; position: static !important; height: 86px !important; width: auto !important; opacity: 1 !important; background: radial-gradient(120% 140% at 100% 0%, #13B5B9 0%, #06707A 45%, #0B1B33 100%) !important; }
 .tq-next #pv-root .tqn-cf .tqn-rail .lx-hero .lx-acts { z-index: 1; }
 .tq-next #pv-root .tqn-cf .tqn-st.is-c { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
@@ -1757,14 +1758,14 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 .tq-next #pv-root .tqn-cf .fx-kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important; }
 .tq-next #pv-root .tqn-cf .tqn-st.is-r .tqn-st-b:has(.tqn-rc.is-add) { grid-column: 1 / -1; padding-block: 10px; }
 .tq-next #pv-root .tqn-cf .tqn-st.is-r .tqn-rc.is-add { justify-content: center; }
-/* v767: طيّ العقود المغلقة، وقائمة حالة الحساب في شريط الجدول */
+/* v768: طيّ العقود المغلقة، وقائمة حالة الحساب في شريط الجدول */
 .tq-next #pv-root .tqn-cf .tqn-st.is-c .tqn-st-b:has(.tqn-cc-more) { border-style: dashed; background: #F8FBFB; padding-bottom: 12px; display: grid; place-items: center; }
 .tq-next .tqn-cc-more { display: grid; justify-items: center; gap: 2px; text-align: center; }
 .tq-next .tqn-cc-more b { font-size: 13.5px; font-weight: 800; color: #06707A; }
 .tq-next .tqn-cc-more small { font-size: 12px; font-weight: 700; color: var(--tqn-mut, #66748C); }
 .tq-next .tqn-lsel { height: 40px; min-width: 150px; padding: 0 12px; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 12px; background: #fff; color: var(--tqn-ink, #0F1B33); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .tq-next.pv-dark #pv-host .tqn-lsel, .tq-next.pv-dark #pv-root .tqn-cf .tqn-st.is-c .tqn-st-b:has(.tqn-cc-more) { background: #101A2D; border-color: var(--tqn-line); color: var(--tqn-ink); }
-/* v767: ملف العميل بصفوف عرضية — بلا عمودين، والمحتوى بعرض الصفحة */
+/* v768: ملف العميل بصفوف عرضية — بلا عمودين، والمحتوى بعرض الصفحة */
 .tq-next #pv-root .tqn-cf { padding-inline-start: 0 !important; min-height: 0 !important; display: grid; gap: 22px; }
 .tq-next #pv-root .tqn-cf > * { margin-top: 0 !important; margin-bottom: 0 !important; }
 .tq-next #pv-root .tqn-cf > .tqn-rail { display: none !important; }
@@ -1826,7 +1827,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 }
 .tq-next.pv-dark #pv-root .tqn-r1 > .lx-hero, .tq-next.pv-dark #pv-host .tqn-mkc, .tq-next.pv-dark #pv-root .tqn-r1 .tqn-hx-c { background: #101A2D !important; border-color: var(--tqn-line) !important; color: var(--tqn-ink) !important; }
 .tq-next.pv-dark #pv-root .tqn-r1 > .lx-hero h1, .tq-next.pv-dark #pv-root .tqn-r1 > .lx-hero h2 { color: var(--tqn-ink) !important; }
-/* v767: بطاقات الحوالات والسندات — السطر الثاني يلتف ولا يُقصّ، والتواريخ باتجاهها الصحيح */
+/* v768: بطاقات الحوالات والسندات — السطر الثاني يلتف ولا يُقصّ، والتواريخ باتجاهها الصحيح */
 .tq-next #pv-root .tqn-cf .tqn-rc-x small { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.6; }
 .tq-next #pv-root .tqn-cf .tqn-agr:not(:has(h4)) { margin-top: 4px; }
 .tq-next #pv-root .tqn-cf .tqn-agr:not(:has(h4)) .tqn-agw { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
@@ -2266,7 +2267,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .tqn-fx-card { padding: 28px; border: 1px solid var(--tqn-line, #E3E8F0); border-top: 5px solid #F59E0B; border-radius: 24px; background: #fff; box-shadow: 0 14px 34px -18px rgba(15, 27, 51, .25); }
 .tq-next .tqn-fx-card.is-ok { border-top-color: #12795C; }
 .tq-next .tqn-fx-card.is-bad { border-top-color: #DC2626; }
-.tq-next .cu-dr .tqn-fx-card > .vr3-it { display: grid !important; grid-template-columns: 58px minmax(0, 1fr) auto; grid-template-areas: "ic lab st" "val val val" "acts acts acts"; align-items: center; gap: 16px; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; min-width: 0; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it { display: grid !important; grid-template-columns: 58px minmax(0, 1fr) auto; grid-template-areas: "ic lab st" "val val val"; align-items: center; gap: 16px; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; min-width: 0; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-it-h { display: contents !important; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .tqn-ico.is-it { grid-area: ic; width: 58px; height: 58px; border-radius: 17px; background: #E6F6F6; color: #06707A; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .tqn-ico.is-it .tqn-svg { width: 27px; height: 27px; }
@@ -2278,7 +2279,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-it-v, .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-file { grid-area: val; min-width: 0; margin: 0 !important; padding: 28px 22px !important; border: 1.5px dashed #CFD9E6 !important; border-radius: 18px !important; background: #F6F9FC !important; font-size: 26px !important; font-weight: 900 !important; line-height: 1.5; color: var(--tqn-ink, #0F1B33) !important; text-align: center; white-space: normal !important; overflow-wrap: anywhere; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-file { font-size: 14px !important; font-weight: 700 !important; color: #06707A !important; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-file::before { content: "مرفق مرفوع — افتحه بزر «عرض المرفق»"; display: block; margin-bottom: 6px; font-size: 13px; font-weight: 800; color: var(--tqn-mut, #66748C); direction: rtl; }
-.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-acts:not(.tqn-hide) { grid-area: acts; display: flex !important; flex-wrap: wrap; gap: 10px; margin: 0 !important; padding: 0 !important; border: 0 !important; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-acts:not(.tqn-hide) { grid-column: 1 / -1; display: flex !important; flex-wrap: wrap; gap: 10px; margin: 0 !important; padding: 0 !important; border: 0 !important; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-acts .t2-btn { justify-content: center; white-space: nowrap; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-acts .tqn-fx-ok, .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-acts .tqn-fx-no { flex: 1 1 calc(50% - 5px); order: 1; min-height: 58px !important; padding: 0 18px !important; border-radius: 16px !important; font-size: 17px !important; font-weight: 900 !important; }
 .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-acts .tqn-fx-ok { background: linear-gradient(135deg, #12795C, #16A06F) !important; border-color: transparent !important; color: #fff !important; }
@@ -2319,7 +2320,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
   .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-it-v { padding: 20px 14px !important; font-size: 21px !important; }
 }
 @container tqnpg (max-width: 520px) {
-  .tq-next .cu-dr .tqn-fx-card > .vr3-it { grid-template-areas: "ic lab lab" "st st st" "val val val" "acts acts acts"; }
+  .tq-next .cu-dr .tqn-fx-card > .vr3-it { grid-template-areas: "ic lab lab" "st st st" "val val val"; }
   .tq-next .cu-dr .tqn-fx-card .vr3-it-h > .t2-pill { justify-self: start; }
   .tq-next .tqn-fx-dock { margin: 6px -14px -22px; padding: 10px 14px; }
 }
@@ -2333,6 +2334,26 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next.pv-dark .cu-dr .tqn-fx-card > .vr3-it > .vr3-acts .tqn-fx-no { background: transparent !important; }
 .tq-next .cu-dr .tqn-fx-stage > section.tqn-vr-dec > .vr3-sec-t, .tq-next .cu-dr .tqn-fx-stage > .sr-msg > b:first-child { display: none !important; }
 /* v767: إخفاء محتوى الطلب الأصلي خلف شاشة «بندًا بندًا» بأولوية أعلى (كان القرار يظهر أعلى الصفحة) */
+/* الإجراءات الفرعية داخل البند: الصندوق المفتوح (سبب عدم المطابقة · الملاحظة · تعديل القيمة) قبل الأزرار وبارز، والزرّان الكبيران يصغران أثناءه */
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-box { display: grid !important; gap: 10px; padding: 16px !important; border: 1.5px solid #9ED6D9 !important; border-radius: 16px !important; background: #F5FBFB !important; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-box textarea, .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-box input, .tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-box select { width: 100%; min-height: 44px; font-size: 14px; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-box .vr3-acts { display: flex !important; flex-wrap: wrap; gap: 8px; margin: 0 !important; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-box .vr3-acts .t2-btn { min-height: 42px !important; padding: 0 18px !important; border-radius: 12px !important; font-weight: 800 !important; }
+.tq-next .cu-dr .tqn-fx-card.has-box > .vr3-it > .vr3-acts .tqn-fx-ok, .tq-next .cu-dr .tqn-fx-card.has-box > .vr3-it > .vr3-acts .tqn-fx-no, .tq-next .cu-dr .tqn-fx-card > .vr3-it:has(> .vr3-box) > .vr3-acts .tqn-fx-ok, .tq-next .cu-dr .tqn-fx-card > .vr3-it:has(> .vr3-box) > .vr3-acts .tqn-fx-no { flex: 0 0 auto; min-height: 40px !important; font-size: 14px !important; border-radius: 12px !important; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-nt { padding: 10px 14px !important; border-radius: 12px; background: #F3F6FA; font-size: 13px; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-why.is-prev { background: #F3F6FA !important; color: var(--tqn-mut, #66748C) !important; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .t2-note { margin: 0 !important; }
+.tq-next .cu-dr .tqn-fx-card > .vr3-it > .vr3-file { font-size: 12px !important; font-weight: 600 !important; color: var(--tqn-mut, #66748C) !important; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
+/* رسائل القسم ونتيجة الإجراء السابق */
+.tq-next .cu-dr .tqn-fx-stage > .tqn-fx-msg { margin: 0 !important; }
+.tq-next .tqn-fx-flash { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 800; animation: tqnFxIn .35s ease-out; }
+.tq-next .tqn-fx-flash .tqn-svg { width: 18px; height: 18px; }
+.tq-next .tqn-fx-flash.is-ok { background: #E7F6EF; color: #12795C; }
+.tq-next .tqn-fx-flash.is-bad { background: #FDECEC; color: #B42318; }
+@keyframes tqnFxIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.tq-next.pv-dark .cu-dr .tqn-fx-card > .vr3-it > .vr3-box { background: #0F2530 !important; border-color: #1E4A55 !important; }
+.tq-next.pv-dark .cu-dr .tqn-fx-card > .vr3-it > .vr3-nt { background: #0F1829; }
+/* v768: الإجراءات الفرعية (السبب · الملاحظة · تعديل القيمة) قبل الأزرار وبارزة، ورسائل القسم ونتيجة الإجراء السابق ظاهرة */
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }

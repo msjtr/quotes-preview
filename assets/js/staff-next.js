@@ -578,8 +578,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v767: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v768: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v768: الإجراءات الفرعية في البند (السبب · الملاحظة · التعديل) بارزة قبل الأزرار، ورسائل القسم ونتيجة الإجراء السابق ظاهرة، وروابط البنود في القرار تفتح البند.
    · v767: إصلاح ظهور القرار أعلى صفحة «بندًا بندًا».
    · v766: طلب التوثيق «بندًا بندًا»: الأقسام بنسبة إنجازها، وبند واحد كبير بزرّي مطابق/غير مطابق وانتقال تلقائي للتالي، والقرار والمراسلة والسجل من شريط ثابت.
    · v765: صفحة التفاصيل تفتح من أعلى الصفحة فيبقى الهيدر والقائمة الجانبية ظاهرين مهما كان موضع التمرير، وتعود القائمة لموضعها عند الإغلاق.
@@ -1558,7 +1559,9 @@ function geoQ() {
     /* الموضع: البند الذي كنا عليه؛ وإن حُسم للتو (كان بانتظار) ننتقل للبند التالي المعلّق */
     var si = -1, ii = -1;
     S.forEach(function (x, a) { if (x.t === F.sec) { si = a; x.its.forEach(function (it, b) { if (itLab(it) === F.lab) ii = b; }); } });
+    var flash = '';
     if (si >= 0 && ii >= 0 && F.st === 'pend' && itSt(S[si].its[ii]) !== 'pend' && !S[si].its[ii].querySelector('.vr3-box')) {
+      flash = [itLab(S[si].its[ii]), itSt(S[si].its[ii])];
       var nx = fxNextPend(S, si, ii); if (nx) { si = nx[0]; ii = nx[1]; } else if (dec) F.mode = 'dec';
     }
     if (si < 0) { var fp = fxNextPend(S, 0, -1); if (fp) { si = fp[0]; ii = fp[1]; } else { si = S.length ? 0 : -1; ii = si >= 0 && S[0].its.length ? 0 : -1; if (dec && !F.mode && S.length) F.mode = 'dec'; } }
@@ -1616,7 +1619,10 @@ function geoQ() {
       var pv = btn('‹ السابق', 'is-sm', function () { var p = flat[k - 1]; if (p) go(p[0], p[1], ''); }, k <= 0);
       var nt = btn('التالي ›', 'is-sm', function () { var p = flat[k + 1]; if (p) go(p[0], p[1], ''); }, k < 0 || k >= flat.length - 1);
       nv.appendChild(pv); nv.appendChild(nt); sh.appendChild(nv); G.appendChild(sh);
-      var card = mk('div', 'tqn-fx-card is-' + itSt(cur)); fxPark(cur); card.appendChild(cur); G.appendChild(card);
+      if (flash) { var fl = mk('div', 'tqn-fx-flash is-' + flash[1]); fl.appendChild(tqIc(flash[1] === 'bad' ? 'note' : 'ok')); fl.appendChild(mk('span', '', 'سُجّل «' + flash[0] + '» ' + (flash[1] === 'bad' ? 'غير مطابق' : 'مطابق') + ' — هذا البند التالي.')); G.appendChild(fl); }
+      /* رسائل القسم وتنبيهاته (نتيجة إجراء القسم · حقول ناقصة) تظهر هنا بدل أن تختفي مع القسم */
+      [].forEach.call(x0.s.children, function (c) { if (c.matches('.vr3-sec-h, .vr3-grid, .tqn-vr-why') || !txt(c)) return; fxPark(c); cls(c, 'tqn-fx-msg', true); G.appendChild(c); });
+      var card = mk('div', 'tqn-fx-card is-' + itSt(cur) + (cur.querySelector(':scope > .vr3-box') ? ' has-box' : '')); fxPark(cur); card.appendChild(cur); G.appendChild(card);
       var nxp = fxNextPend(S, si, ii);
       G.appendChild(mk('p', 'tqn-fx-hint', itSt(cur) === 'pend' ? 'اختر «مطابق» أو «غير مطابق» — تنتقل تلقائيًا إلى البند التالي. الأسهم ← → للتنقّل.' : (nxp ? 'حُسم هذا البند. التالي المعلّق: ' + itLab(S[nxp[0]].its[nxp[1]]) : 'لا بنود معلّقة — يمكنك اتخاذ القرار.')));
       if (!nxp && itSt(cur) !== 'pend' && dec) G.appendChild(btn('اتخاذ القرار', 'is-pri', function () { go(-1, -1, 'dec'); }));
@@ -1647,7 +1653,17 @@ function geoQ() {
     if (dec) ba.appendChild(btn('اتخاذ القرار', 'is-pri' + (mode === 'dec' ? ' is-on' : ''), function () { go(-1, -1, mode === 'dec' ? '' : 'dec'); }));
     B.appendChild(ba); W.appendChild(B);
     /* «الانتقال إلى القرار» في الملخص يفتح القرار هنا */
-    [].forEach.call(W.querySelectorAll('.vr3-link'), function (a) { if (a.__tqn) return; a.__tqn = 1; a.addEventListener('click', function (ev) { if (/القرار/.test(txt(a))) { ev.preventDefault(); ev.stopPropagation(); go(-1, -1, 'dec'); } }, true); });
+    [].forEach.call(W.querySelectorAll('.vr3-link'), function (a) {
+      if (a.__tqn) return; a.__tqn = 1;
+      a.addEventListener('click', function (ev) {
+        var t = txt(a);
+        if (/^الانتقال إلى القرار|^القرار$/.test(t)) { ev.preventDefault(); ev.stopPropagation(); go(-1, -1, 'dec'); return; }
+        /* روابط «القسم — البند» في القرار: تفتح البند نفسه في شاشة المراجعة */
+        var pr = t.split(' — '), sec = (pr[0] || '').trim(), lab = (pr.slice(1).join(' — ') || '').trim();
+        S.forEach(function (x, a2) { if (x.t === sec) { F.sec = x.t; F.lab = lab; F.st = ''; F.mode = ''; } });
+        if (F.mode === '' && F.sec === sec) { var hit = -1; S.forEach(function (x, a2) { if (x.t === sec) x.its.forEach(function (it, b2) { if (itLab(it) === lab) hit = [a2, b2]; }); }); if (hit !== -1) { ev.preventDefault(); ev.stopPropagation(); go(hit[0], hit[1], ''); } }
+      }, true);
+    });
   }
   function s0ic(s) { var o = s.querySelector('.vr3-sec-ic'); var i = mk('i', 'tqn-fx-si'); if (o && o.firstElementChild) i.appendChild(o.firstElementChild.cloneNode(true)); else i.appendChild(tqIc('list')); return i; }
   /* الأسهم: التنقّل بين البنود (خارج حقول الكتابة) */
