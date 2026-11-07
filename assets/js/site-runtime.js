@@ -195,3 +195,14 @@
   /* سلامة العرض: إن بقي محتوى المنصة بلا رسم بعد التحميل، أنهِ حركات الظهور */
   setTimeout(function(){ try{ document.getAnimations().forEach(function(a){ var t=a.effect&&a.effect.getTiming&&a.effect.getTiming(); if(t&&t.iterations!==Infinity&&a.playState!=='finished'&&a.currentTime<50) a.finish() }) }catch(e){} },2500);
 })();
+/* v751: روابط بوت واتساب المباشرة لأقسام حساب العميل — /clients/?open=reqs|contracts|pay|msg|member
+   تُحفظ قبل الدخول (إن لم يكن مسجّلًا) وتُفتح بعده عبر TQ_PUSH_GO الذي تستخدمه الإشعارات. */
+(function(){ try{
+  if(!/^\/clients\//.test(location.pathname)) return;
+  var K={reqs:'req',contracts:'contract',pay:'paid',msg:'msg',member:'member'}, KEY='tera.open';
+  var q=new URLSearchParams(location.search).get('open')||'';
+  if(K[q]){ sessionStorage.setItem(KEY,JSON.stringify({k:q,at:Date.now()})); try{ var u=new URL(location.href); u.searchParams.delete('open'); history.replaceState(history.state,'',u.pathname+u.search+u.hash) }catch(e){} }
+  var s=JSON.parse(sessionStorage.getItem(KEY)||'null');
+  if(!s||!K[s.k]||Date.now()-s.at>15*60*1000){ sessionStorage.removeItem(KEY); return }
+  var n=0, t=setInterval(function(){ n++; try{ if(window.TQ_PUSH_GO&&window.TQ_PUSH_GO(K[s.k],true)){ clearInterval(t); sessionStorage.removeItem(KEY); setTimeout(function(){ window.TQ_PUSH_GO(K[s.k]) },800) } }catch(e){} if(n>240) clearInterval(t) },500);
+}catch(e){} })();
