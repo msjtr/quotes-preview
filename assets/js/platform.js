@@ -10717,7 +10717,7 @@ const dcFld = (r, re) => { const f = r && r.fields.filter(function (x) { return 
 const dcClose0 = (key) => { const d = document.querySelector('.cu-dr[data-r="' + key + '"]'); if (d && d.__close) d.__close(); else draw(); };
 function dcHubPage() {
   const W = dcWait(), Sw = SO_PAY.filter(function (o) { return o.st === 'quote'; }).length, Cw = dcCq().filter(function (r) { return !r.cus.quote && cuCusAct(r); }).length, CT = dcCts(), INV = dcInvList();
-  const H = secHub('cudocs', { t: 'العقود والمستندات', s: 'تنفيذ المستندات: عروض الأسعار والعقود والفواتير. القوالب وإعدادها في «إعدادات النظام» ← القوالب والمستندات.', ic: 'contract' }, [['dc', 'العقود والمستندات', 'contract', [
+  const H = secHub('cudocs', { t: 'العقود والمستندات', s: 'تنفيذ المستندات: عروض الأسعار والعقود والفواتير. القوالب وإعدادها في «قوالب المستندات».', ic: 'contract' }, [['dc', 'العقود والمستندات', 'contract', [
     { ic: 'file-text:navy', t: 'عروض أسعار الشركاء', d: 'إعداد العرض لطلبات الأهلية واختيار البنود الظاهرة للعميل — ومعاينة PDF قبل الإرسال', n: LIVE.on ? (ADM.pqN != null ? fmtNum(ADM.pqN) + ' عروض جديدة' : 'الطلبات الجديدة') : fmtNum(QUOTES.length) + ' عروض', badge: !LIVE.on && W.length ? [fmtNum(W.length) + ' بانتظار إعداد العرض', 'warn'] : null, go: function () { go('other', 'cu-docs-pq'); } },
     { ic: 'storefront:teal', t: 'عروض أسعار المتاجر', d: 'عرض سعر لطلبات المتجر بقالبه — وبعد اعتماده ودفعه تصدر الفاتورة', n: fmtNum(SO_PAY.filter(function (o) { return o.qt; }).length) + ' عروض', badge: Sw ? [fmtNum(Sw) + ' بانتظار الإصدار', 'warn'] : null, go: function () { go('other', 'cu-docs-sq'); } },
     { ic: 'note-pencil:saffron', t: 'عروض حسب الطلب', d: 'عرض مستقل لطلبات الخدمات والمنتجات حسب الطلب — وبعد اعتماده ودفعه تصدر الفاتورة', n: fmtNum(dcCq().filter(function (r) { return r.cus.quote; }).length) + ' عروض', badge: Cw ? [fmtNum(Cw) + ' بانتظار الإصدار', 'warn'] : null, go: function () { go('other', 'cu-docs-cq'); } },
@@ -10725,7 +10725,7 @@ function dcHubPage() {
     { ic: 'receipt:gold', t: 'فواتير المتاجر', d: 'فاتورة ضريبية بعد اعتماد عرض المتجر أو حسب الطلب ودفعه — بدل العقد', n: fmtNum(INV.length) + ' فواتير', go: function () { go('other', 'cu-docs-si'); } },
     { ic: 'letter:navy', t: 'الخطابات الرسمية', d: 'خطابات رسمية للجهات الحكومية والشركات والعملاء والشركاء — رقم لا يتكرر وسجل وملف PDF بالتصميم الموحّد', n: ADM.tlN != null ? fmtNum(ADM.tlN) + ' خطابات' : 'السجل والإصدار', go: function () { go('other', 'cu-docs-tl'); } }]]]);
   const box = H[0], hf = box && box.querySelector('.hf-row'); if (hf) hf.remove();
-  if (box) { const hh = box.querySelector('.shb-h'); box.insertBefore(DS.note('info', 'العروض والعقود والفواتير تصل العميل', 'تصدر من هنا بقوالبها في «إعدادات النظام»، ويصل العميل المستند في طلبه. تفاصيل الإعداد كالبنود المخفية غير المختارة لا تظهر له.'), hh ? hh.nextSibling : box.firstChild); }
+  if (box) { const hh = box.querySelector('.shb-h'); box.insertBefore(DS.note('info', 'العروض والعقود والفواتير تصل العميل', 'تصدر من هنا بقوالبها في «قوالب المستندات»، ويصل العميل المستند في طلبه. تفاصيل الإعداد كالبنود المخفية غير المختارة لا تظهر له.'), hh ? hh.nextSibling : box.firstChild); }
   return H;
 }
 const dcTop = (t, s, acts) => e('div', { class: 'ax-top is-sub' }, [e('div', { class: 'ax-top-t' }, [e('small', {}, s)]), acts && acts.filter(Boolean).length ? e('div', { class: 't2-row-wrap' }, acts.filter(Boolean)) : null]);
@@ -11561,7 +11561,7 @@ function dcPqPrep(rno) {
       fld('n', 'عدد الدفعات', DS.select({ value: D.n, options: Array.from({ length: QFMAX[D.freq] }, function (_, i) { return [String(i + 1), qTerm(i + 1)]; }), onChange: function (v) { D.n = v; rerun(); } })),
       fld('firstDue', 'أول دفعة', datePick({ value: D.firstDue, min: iso(T0), onChange: function (v) { D.firstDue = v; rerun(); } })),
       e('div', { class: 'cu-bd-wide tm-plan' }, tmPlanEd(D, c, rerun)),
-      axSh('العقد بعد موافقة العميل', 'files'), e('div', { class: 'cu-bd-wide' }, [DS.fields([['قالب العقد', pcTpl(QPC_DEF).name + ' — من الإعدادات']]), e('small', { class: 'cu-dr-hint' }, 'بموافقة العميل على العرض يُنشأ العقد بالرقم نفسه ويُرسل له بهذا القالب. القالب الافتراضي يُحدَّد في «إعدادات النظام › قوالب عقد الشركاء».'), r && c ? DS.button('معاينة العقد', { size: 'sm', ui: 'file-text', onClick: function () { tmCtPreview(mkQ(true)); } }) : null]),
+      axSh('العقد بعد موافقة العميل', 'files'), e('div', { class: 'cu-bd-wide' }, [DS.fields([['قالب العقد', pcTpl(QPC_DEF).name + ' — من الإعدادات']]), e('small', { class: 'cu-dr-hint' }, 'بموافقة العميل على العرض يُنشأ العقد بالرقم نفسه ويُرسل له بهذا القالب. القالب الافتراضي يُحدَّد في «قوالب المستندات» ← عقد الشركاء.'), r && c ? DS.button('معاينة العقد', { size: 'sm', ui: 'file-text', onClick: function () { tmCtPreview(mkQ(true)); } }) : null]),
       axSh('الإظهار والإخفاء في هذا العرض', 'letter'), !own ? e('div', { class: 'cu-bd-wide' }, DS.note('info', 'بقالب الإعدادات', 'أقسام العرض والترويسة من «' + TQ_NAME.pq + '» — تغييرها لهذا العرض لصاحب صلاحية «قوالب المستندات».')) : e('div', { class: 'cu-bd-wide' }, [tmVisTree(pqVisTree(D, { terms: QT.terms }), 'pqq', rerun).el, e('small', { class: 'cu-dr-hint' }, 'الافتراضي من قالب «' + TQ_NAME.pq + '»، والتغيير هنا لهذا العرض فقط. ظهور كل بند في الملخص والتوضيح من القالب، واختيار «مستقل / مدمج / لا يُحتسب» من «التسعيرة والبنود».')])])];
   const aside = [tmPqDecision(P, D), r ? tmActSec(r, rerun) : null, r ? tmReqSecs(r, { fold: true }) : null, r ? rqEvalSec(r, rerun, true) : null,
     P ? pqNotesSec(P, rerun) : null];
@@ -12200,7 +12200,7 @@ function sysPayPage() {
       DS.editField('حتى (شهر)', num(t, 1, '12')),
       D.tiers.length > 1 && !last ? e('button', { type: 'button', class: 'nd-ib is-del', 'aria-label': 'حذف الشريحة ' + fmtNum(i + 1), onClick: function () { D.tiers.splice(i, 1); draw(); } }, frag(ui('trash', 16))) : e('span'),
       E['t' + i] ? e('small', { class: 'cu-bd-err' }, E['t' + i]) : null]); });
-  return [DS.note('info', 'مصدر واحد للتسعير والسداد', 'تُقرأ هذه السياسة في نموذج «تحقق من أهليتك» (المبالغ والمدد)، وفي إعداد عرض الشركاء (أنواع السداد وعدد الدفعات)، وفي طلب العميل تعديل العرض، وفي قسم «الالتزام والقدرة على السداد». الرسوم والضريبة وبنود التسعير في «قالب عرض سعر الشركاء».'),
+  return [DS.note('info', 'مصدر واحد للتسعير والسداد', 'تُقرأ هذه السياسة في نموذج «تحقق من أهليتك» (المبالغ والمدد)، وفي إعداد عرض الشركاء (أنواع السداد وعدد الدفعات)، وفي طلب العميل تعديل العرض، وفي قسم «الالتزام والقدرة على السداد». الرسوم والضريبة وبنود التسعير في «قوالب المستندات» ← عرض سعر الشركاء.'),
     e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'السياسة الحالية'), e('small', {}, ppSummary())]), e('div', { class: 't2-row-wrap' }, [DS.button('قالب عرض سعر الشركاء', { ui: 'file-text', onClick: function () { esxOpen('pq'); } }), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })])]),
     e('div', { class: 'ax-form' }, [
       formSec('1. قيمة الطلب', 'في نموذج العميل', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('min', 'الحد الأدنى (ريال)', num(D, 'min')), F('max', 'الحد الأعلى (ريال)', num(D, 'max')), F('step', 'الفاصل بين المبالغ في القائمة (ريال)', num(D, 'step')),
@@ -12213,7 +12213,7 @@ function sysPayPage() {
       formSec('4. القدرة على السداد', 'في دراسة الطلب', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('dbr', 'حد الالتزامات والمصروفات مع الدفعة من الدخل (%)', num(D, 'dbr')),
         e('small', { class: 'cu-dr-hint cu-bd-wide' }, 'إذا تجاوزت الالتزامات والمصروفات مع دفعة الطلب هذا الحد يظهر التنبيه في الطلب وإعداد العرض.')])]),
       formSec('5. احتساب الوحدات', 'لبنود «لكل وحدة»', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('round', 'عدد الوحدات', DS.select({ value: D.round, options: [['ceil', 'للأعلى — كل جزء من الوحدة وحدة كاملة'], ['exact', 'بالكسر — حسب القيمة بالضبط']], onChange: function (v) { D.round = v; } })),
-        e('small', { class: 'cu-dr-hint cu-bd-wide' }, 'حجم الوحدة في «قالب عرض سعر الشركاء» ← الضريبة. الحالي: ' + sar(QCFG.unit) + '.')])])]),
+        e('small', { class: 'cu-dr-hint cu-bd-wide' }, 'حجم الوحدة في «قوالب المستندات» ← عرض سعر الشركاء ← الضريبة. الحالي: ' + sar(QCFG.unit) + '.')])])]),
     e('div', { class: 't2-pb-actions' }, [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM.ppD = ppDraft(); draw(); } }),
       DS.button('استعادة الافتراضي', { onClick: function () { ADM.ppD = ppDraft(PPOL0); snack('عُبّئت القيم الافتراضية — احفظ لتطبيقها'); draw(); } })])];
 }
@@ -17968,7 +17968,7 @@ const EQ_EL = {
     { g: 'بيانات العقد', c: 'c_c_data', k: [['c_d_client', 'اسم العميل', 'اسم العميل'], ['c_d_prod', 'المنتج', 'المنتج'], ['c_d_total', 'قيمة العقد', 'قيمة العقد'], ['c_d_n', 'عدد الدفعات', 'عدد الدفعات'], ['c_d_first', 'أول دفعة', 'أول دفعة'], ['c_d_last', 'آخر دفعة', 'آخر دفعة']], add: 'kv' },
     { g: 'مكوّنات قيمة العقد', c: 'c_c_items', items: 1, k: [['c_t_vat', 'ضريبة القيمة المضافة', 'ضريبة القيمة المضافة', 2], ['c_t_total', 'قيمة العقد شامل الضريبة', 'قيمة العقد شامل الضريبة', 2]] },
     { g: 'جدول الدفعات', c: 'c_c_plan', k: [['c_s_tbl', 'جدول الدفعات', 'جدول الدفعات', 2]] },
-    { g: 'بنود العقد', c: 'c_c_terms', tx: [['terms', 'بنود إضافية (سطر لكل بند)', 3]], hint: 'نص البنود الأساسي من «قالب عقد الشركاء» في الإعدادات.' },
+    { g: 'بنود العقد', c: 'c_c_terms', tx: [['terms', 'بنود إضافية (سطر لكل بند)', 3]], hint: 'نص البنود الأساسي من «قوالب المستندات» ← عقد الشركاء.' },
     { g: 'التوقيع', c: 'c_c_sign' },
     { g: 'الاعتماد', c: 'c_c_appr', k: [['c_a_seal', 'الختم ورمز المستند', '', 1]] }]
 };
@@ -21646,7 +21646,7 @@ const FOOT_PRE=['منصة تيرا للخدمات المتكاملة','عالم�
 function eqPack(kind){ const M=EQ_DEFMSG[kind], nm=EQ_NAME[kind];
   const titles={quote:['عرض السعر','عرض سعر المنتج'],purchase:['فاتورة المنتج','موافقة شراء المنتج'],contract:['العقد','عقد شراء المنتج']}[kind];
   const terms={quote:['توقيع العقد واستكمال الإجراءات.','مدة التنفيذ من 30 دقيقة إلى 3 أيام عمل بعد توقيع العقد واستكمال الإجراءات.','المبالغ بالريال السعودي.','الضريبة 15% على قيمة المنتج، ولا ضريبة على الرسوم.'],purchase:[],contract:['يُغلق العقد تلقائيًا بعد اكتمال السداد.','تُعدّ الدفعة متأخرة من اليوم الأول بعد استحقاقها حتى اليوم 60، ومتعثرة من اليوم 61.','المبالغ بالريال السعودي.']}[kind];
-  const note={quote:['العرض لا يعني موافقة نهائية إلا بعد استكمال ومراجعة المتطلبات التي تحددها المنصة ومطابقتها.','هذا العرض للاطلاع فقط، ولا يُعد موافقة نهائية أو عقدًا ملزمًا.'],purchase:['يصدر العقد للتوقيع بعد اعتمادكم هذه الفاتورة.','الاعتذار عن الشراء يغلق الطلب.'],contract:['نص البنود الأساسي من «قالب عقد الشركاء».']}[kind];
+  const note={quote:['العرض لا يعني موافقة نهائية إلا بعد استكمال ومراجعة المتطلبات التي تحددها المنصة ومطابقتها.','هذا العرض للاطلاع فقط، ولا يُعد موافقة نهائية أو عقدًا ملزمًا.'],purchase:['يصدر العقد للتوقيع بعد اعتمادكم هذه الفاتورة.','الاعتذار عن الشراء يغلق الطلب.'],contract:['تُطبَّق على هذا العقد بنوده الموضّحة في هذا المستند.']}[kind];
   const pre={title:{meta:['أرقام المستند'],data:['بيانات العميل','بيانات العرض والعميل','بيانات العقد'],prod:['المنتج','المنتج والاستلام','تفاصيل المنتج'],items:['البنود والرسوم','التكاليف','مكوّنات قيمة العقد'],plan:['خطة الدفع','جدول الدفعات'],terms:['الشروط','بنود العقد','الشروط والأحكام'],note:['تنويه','ملاحظات مهمة'],sign:['التوقيع','إقرار العميل','اعتماد العميل'],appr:['الاعتماد','التحقق والاعتماد']},
    hdr:{org:['منصة تيرا للخدمات المتكاملة','منصة تيرا'],issuer:['فريق خدمة المبيعات','قسم الائتمان والموافقات','إدارة الائتمان والمخاطر','خدمة العملاء'],title:titles,en:[EQ_EN[kind]],pill:['نسخة العميل','نسخة المنصة','مسودة']},
    terms,note,sign:['أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.','أوافق على فاتورة المنتج وأعتمدها.'],foot:FOOT_PRE,signl:['سطر التوثيق'],appr:{seal:['الختم ورمز المستند']},
