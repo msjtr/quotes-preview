@@ -10167,7 +10167,7 @@ const QT_VH = [12, 24, 48, 72], QT_DAYS = [3, 5, 7, 10, 14, 30];
 function qtRegister() {
   CU_PEND['settings.quote_tpl'] = ['إدارة قوالب المستندات', 'system.settings', 'قوالب المستندات'];
   CU_MAP.push(['قوالب المستندات (عروض الأسعار والعقد والفاتورة)', 'settings.quote_tpl']); CU_GATE['settings.qtpl'] = 'settings.quote_tpl';
-  try { Object.assign(ICON, { 'sys-qt': ['letter', 'navy'] }); } catch (err) { void err; }
+ 
   tqRegister(); ctRegister(); tmRegister();
 }
 /* ===================== v188 — التحويل لكل عقد وتقرير الرسوم والعمولات والمصاريف ===================== */
@@ -10413,7 +10413,6 @@ const TQ_PQV = [['أقسام العرض', [['cust', 'بيانات العميل']
 const TQ_VIS = [['show', 'ظاهر في العرض دائمًا', 'eye'], ['opt', 'مخفي — يختار المُعِدّ ظهوره', 'eye-slash']];
 const TQ_DEF = [['show', 'يظهر في العرض بندًا مستقلًا', 'eye'], ['merge', 'يُحتسب ويُدمج في «رسوم أخرى»', 'stack'], ['off', 'لا يُحتسب في هذا العرض', 'x-circle']];
 const TQ_NAME = { pq: 'عرض سعر الشركاء', sq: 'عرض سعر المتاجر', cq: 'عرض حسب الطلب', pc: 'عقد الشركاء', si: 'فاتورة المتاجر' };
-const TQ_ROUTE = { pq: 'sys-qt', sq: 'sys-qs', cq: 'sys-qc', pc: 'sys-pc', si: 'sys-si' };
 let TQ_ID = 1;
 const tqId = () => 'i' + (TQ_ID++) + Math.random().toString(36).slice(2, 6);
 /* بنود عرض الشركاء الافتراضية = رسوم القالب المعتمد نفسها، وبند مخفي مثال لا يُحتسب إلا إذا اختاره المُعِدّ */
@@ -10665,7 +10664,7 @@ function tqPreviewQ(D, kind) {
   const base = L.reduce(function (a, l) { return a + l[1] * l[2]; }, 0), qty = L.reduce(function (a, l) { return a + l[2]; }, 0);
   dcPdf(dcLineDoc({ no: tqNextNo(cfg.num.prefix), issued: NOWQ, until: addDays(T0, cfg.days), req: kind === 'sq' ? 'ORD-24058' : 'CUS-24508', kind: kind === 'sq' ? 'طلب عرض سعر من المتجر' : 'طلب حسب الطلب', to: ME.name, lines: L.concat(tqExtras(cfg, null, base, qty).map(function (x) { return [x[0], x[1], 1]; })), incl: kind === 'sq', recv: kind === 'sq' ? 'الشحن إلى عنواني — حائل' : '', cfg: cfg, draft: true }, kind));
 }
-function tqQuotePage(kind) {
+function esxCfgQuote(kind) { /* v761: قسم «التسعير والترقيم» في «قوالب المستندات» — حلّ محل صفحة القالب القديمة */
   TM_FSP = 'q' + kind;
   const T = TQ_OF[kind](), can = cuCan('settings.qtpl'), key = 'tq_' + kind, D = ADM[key] || (ADM[key] = tqDraftQ(T)), E = D.err, F = tqF(D), inp = tqInp(D), ta = tqTa(D), shw = tqShw(D);
   const nextNo = tqNextNo(D.prefix || T.num.prefix), name = TQ_NAME[kind];
@@ -10677,37 +10676,31 @@ function tqQuotePage(kind) {
     if (kind === 'pq') { Object.assign(QT, c, { num: Object.assign({}, QT.num, c.num) }); Object.assign(QCFG, QT.num); } else Object.assign(T, c);
     ADM[key] = tqDraftQ(T); cuSetLog('عدّل قالب ' + name); snack('حُفظ القالب — يُطبَّق على كل ' + name + ' جديد'); draw();
   };
-  const terms = [tmTermsSec(fmtNum(kind === 'pq' ? 8 : 7), D.terms)];
-  const sum = kind === 'pq' ? 'يُطبَّق على كل عرض سعر جديد لطلبات الشركاء (التحقق من الأهلية). البنود المخفية تظهر للإدارة وقت إعداد العرض، ويختار المُعِدّ ما يظهر منها للعميل.' : kind === 'sq' ? 'يُطبَّق على كل عرض سعر جديد لطلبات المتجر، وبعد اعتماد العميل للعرض ودفعه تصدر له فاتورة بقالب «فاتورة المتاجر».' : 'يُطبَّق على كل عرض جديد لطلبات «حسب الطلب»، وبعد الاعتماد والدفع تصدر الفاتورة.';
-  return [DS.note('info', 'قالب ' + name + ' — مستقل عن بقية القوالب', sum + ' العروض الصادرة تبقى بقالب إصدارها.'),
+  return [
     e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'رقم العرض التالي'), e('small', {}, ltr(nextNo))]), e('div', { class: 't2-row-wrap' }, tmFsAll().concat([DS.button('معاينة PDF', { ui: 'file-text', onClick: function () { tqPreviewQ(D, kind); } }), DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save })]))]),
     E.terms ? DS.note('warn', 'الشروط والأحكام', E.terms) : null,
     e('div', { class: 'ax-form' }, [
       tmDsnSec(kind, function () { tqPreviewQ(D, kind); }),
-      tmFs('1. الترويسة والجهة المُصدِرة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('org', 'اسم المنشأة', inp('org')), F('issuer', 'الجهة المُصدِرة', inp('issuer')), F('auto', 'عبارة الإصدار الآلي', inp('auto'), true), F('slogan', 'الشعار النصي في الختام', inp('slogan'))])]),
-      kind === 'pq' ? (function () { const V = tmVisTree(pqVisTree(D, { items: D.items, terms: D.terms, pn: true }), 'pq'); return tmFs('2. الإظهار والإخفاء', 'كل ما يظهر في العرض في مكان واحد — بترتيب المستند من الأعلى إلى الأسفل', [V.el], { sub: fmtNum(V.on) + ' ظاهر من ' + fmtNum(V.all) }); })()
-        : tmVisSec('2. الإظهار والإخفاء', [['أقسام العرض', [tmCk(D.show, 'recv', 'طريقة الاستلام'), tmCk(D.show, 'exp', 'توضيح البنود'), tmCk(D.show, 'terms', 'الشروط والأحكام'), tmCk(D.show, 'exec', 'مدة التنفيذ'), tmCk(D.show, 'note', 'التنويه')]], tmHdrG(D)]),
+      kind === 'pq' ? (function () { const V = tmVisTree(pqVisTree(D, { items: D.items, terms: D.terms, pn: true }), 'pq'); return tmFs('1. الإظهار والإخفاء', 'كل ما يظهر في العرض في مكان واحد — بترتيب المستند من الأعلى إلى الأسفل', [V.el], { sub: fmtNum(V.on) + ' ظاهر من ' + fmtNum(V.all) }); })()
+        : null,
       ].concat(kind === 'pq' ? [
-      tmFs('3. الترقيم والصلاحية', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('prefix', 'بادئة رقم العرض', inp('prefix', { dir: 'ltr', placeholder: T.num.prefix })), DS.editField('صيغة الرقم', e('div', { class: 't2-input cu-bd-ro' }, ltr(nextNo))),
+      tmFs('2. الترقيم والصلاحية', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('prefix', 'بادئة رقم العرض', inp('prefix', { dir: 'ltr', placeholder: T.num.prefix })), DS.editField('صيغة الرقم', e('div', { class: 't2-input cu-bd-ro' }, ltr(nextNo))),
         kind === 'pq' ? F('validityHours', 'صلاحية العرض', DS.select({ value: D.validityHours, options: QT_VH.map(function (h) { return [String(h), fmtNum(h) + ' ساعة']; }), onChange: function (v) { D.validityHours = v; } }))
           : F('days', 'الصلاحية الافتراضية', DS.select({ value: D.days, options: QT_DAYS.map(function (d) { return [String(d), fmtNum(d) + (d <= 10 ? ' أيام' : ' يومًا')]; }), onChange: function (v) { D.days = v; } }))])]),
-      tmPnText('4', D),
-      tmFs('5. البنود وطريقة الاحتساب', null, [e('div', { class: 'tm-dets' }, tqItemsEd(D, kind)), kind === 'pq' ? e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('other', 'اسم السطر الذي تُدمج فيه البنود المخفية', inp('other', { placeholder: 'رسوم ومصاريف أخرى' }), true)]) : null,
+      tmPnText('3', D),
+      tmFs('4. البنود وطريقة الاحتساب', null, [e('div', { class: 'tm-dets' }, tqItemsEd(D, kind)), kind === 'pq' ? e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('other', 'اسم السطر الذي تُدمج فيه البنود المخفية', inp('other', { placeholder: 'رسوم ومصاريف أخرى' }), true)]) : null,
         e('small', { class: 'cu-dr-hint' }, kind === 'pq' ? 'ظهور كل بند في «ملخص عرض السعر» و«توضيح البنود» من قسم «الإظهار والإخفاء» — والبند الجديد يظهر هناك فور إضافته. «ظاهر» يظهر في كل عرض. «مخفي» يظهر للإدارة وقت إعداد العرض لتختار: يظهر بندًا مستقلًا، أو يُحتسب ويُدمج في سطر واحد، أو لا يُحتسب.' : 'البنود التلقائية تُضاف عند الإصدار ويمكن إلغاؤها، والاختيارية يضيفها المُصدِر عند الحاجة.')]),
-      tmFs('6. الضريبة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('vatPct', 'ضريبة القيمة المضافة (%)', inp('vatPct', { numeric: true })), kind === 'pq' ? null : DS.editField('الأسعار', e('div', { class: 't2-input cu-bd-ro' }, T.incl ? 'شاملة الضريبة' : 'قبل الضريبة — تُضاف الضريبة')),
+      tmFs('5. الضريبة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('vatPct', 'ضريبة القيمة المضافة (%)', inp('vatPct', { numeric: true })), kind === 'pq' ? null : DS.editField('الأسعار', e('div', { class: 't2-input cu-bd-ro' }, T.incl ? 'شاملة الضريبة' : 'قبل الضريبة — تُضاف الضريبة')),
         e('small', { class: 'cu-dr-hint cu-bd-wide' }, kind === 'pq' ? 'الضريبة على قيمة المنتج، وعلى كل بند فُعّل عليه مفتاح «ضريبة القيمة المضافة على البند» في البنود. وبنود «لكل مبلغ من قيمة المنتج» تُحسب بمبلغها في البند نفسه: الكمية = قيمة المنتج ÷ المبلغ، وتقريبها من «سياسة التسعير والسداد».' : 'بنود القالب تُحتسب بالطريقة المحددة لكل بند وتُضاف إلى بنود العرض.')])]),
-      tmTermsSec('7', D.terms),
-      tmFs('8. مدة التنفيذ والتنويه', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('exec', 'مدة التنفيذ', inp('exec')), F('execSub', 'شرح مدة التنفيذ', inp('execSub')), F('note', 'التنويه', ta('note', 3), true)])]),
       ] : [
-      tmFs('3. الترقيم والصلاحية', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('prefix', 'بادئة رقم العرض', inp('prefix', { dir: 'ltr', placeholder: T.num.prefix })), DS.editField('صيغة الرقم', e('div', { class: 't2-input cu-bd-ro' }, ltr(nextNo))),
+      tmFs('1. الترقيم والصلاحية', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('prefix', 'بادئة رقم العرض', inp('prefix', { dir: 'ltr', placeholder: T.num.prefix })), DS.editField('صيغة الرقم', e('div', { class: 't2-input cu-bd-ro' }, ltr(nextNo))),
         kind === 'pq' ? F('validityHours', 'صلاحية العرض', DS.select({ value: D.validityHours, options: QT_VH.map(function (h) { return [String(h), fmtNum(h) + ' ساعة']; }), onChange: function (v) { D.validityHours = v; } }))
           : F('days', 'الصلاحية الافتراضية', DS.select({ value: D.days, options: QT_DAYS.map(function (d) { return [String(d), fmtNum(d) + (d <= 10 ? ' أيام' : ' يومًا')]; }), onChange: function (v) { D.days = v; } }))])]),
-      tmFs('4. الضريبة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('vatPct', 'ضريبة القيمة المضافة (%)', inp('vatPct', { numeric: true })), kind === 'pq' ? null : DS.editField('الأسعار', e('div', { class: 't2-input cu-bd-ro' }, T.incl ? 'شاملة الضريبة' : 'قبل الضريبة — تُضاف الضريبة')),
+      tmFs('2. الضريبة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('vatPct', 'ضريبة القيمة المضافة (%)', inp('vatPct', { numeric: true })), kind === 'pq' ? null : DS.editField('الأسعار', e('div', { class: 't2-input cu-bd-ro' }, T.incl ? 'شاملة الضريبة' : 'قبل الضريبة — تُضاف الضريبة')),
         e('small', { class: 'cu-dr-hint cu-bd-wide' }, kind === 'pq' ? 'الضريبة على قيمة المنتج، وعلى كل بند فُعّل عليه مفتاح «ضريبة القيمة المضافة على البند» في البنود. وبنود «لكل مبلغ من قيمة المنتج» تُحسب بمبلغها في البند نفسه: الكمية = قيمة المنتج ÷ المبلغ، وتقريبها من «سياسة التسعير والسداد».' : 'بنود القالب تُحتسب بالطريقة المحددة لكل بند وتُضاف إلى بنود العرض.')])]),
-      tmFs('5. البنود وطريقة الاحتساب', null, [e('div', { class: 'tm-dets' }, tqItemsEd(D, kind)), kind === 'pq' ? e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('other', 'اسم السطر الذي تُدمج فيه البنود المخفية', inp('other', { placeholder: 'رسوم ومصاريف أخرى' }), true)]) : null,
+      tmFs('3. البنود وطريقة الاحتساب', null, [e('div', { class: 'tm-dets' }, tqItemsEd(D, kind)), kind === 'pq' ? e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('other', 'اسم السطر الذي تُدمج فيه البنود المخفية', inp('other', { placeholder: 'رسوم ومصاريف أخرى' }), true)]) : null,
         e('small', { class: 'cu-dr-hint' }, kind === 'pq' ? 'ظهور كل بند في «ملخص عرض السعر» و«توضيح البنود» من قسم «الإظهار والإخفاء» — والبند الجديد يظهر هناك فور إضافته. «ظاهر» يظهر في كل عرض. «مخفي» يظهر للإدارة وقت إعداد العرض لتختار: يظهر بندًا مستقلًا، أو يُحتسب ويُدمج في سطر واحد، أو لا يُحتسب.' : 'البنود التلقائية تُضاف عند الإصدار ويمكن إلغاؤها، والاختيارية يضيفها المُصدِر عند الحاجة.')]),
-      tmFs('6. مدة التنفيذ والتنويه', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('exec', 'مدة التنفيذ', inp('exec')), F('execSub', 'شرح مدة التنفيذ', inp('execSub')), F('note', 'التنويه', ta('note', 3), true)])]),
-      ].concat(terms))),
+      ])),
     e('div', { class: 't2-pb-actions' }, [DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save }), DS.button('معاينة PDF', { ui: 'file-text', onClick: function () { tqPreviewQ(D, kind); } }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM[key] = tqDraftQ(T); draw(); } }),
       DS.button('استعادة القالب الافتراضي', { onClick: function () { ADM[key] = tqDraftQ(kind === 'pq' ? QT0 : kind === 'sq' ? QTS0 : QTC0); snack('عُبّئ القالب الافتراضي — احفظ لتطبيقه'); draw(); } })])];
 }
@@ -10715,35 +10708,6 @@ function tqQuotePage(kind) {
 const tqDraftC = (T) => ({ title: T.title, org: T.org, cr: T.cr, addr: T.addr, pre: T.pre, sign: T.sign, clauses: qtClone(T.clauses), show: Object.assign({}, T.show), err: {} });
 /* قالب فاتورة المتاجر */
 const tqDraftI = (T) => ({ hdr: Object.assign({}, TQH0, T.hdr), title: T.title, en: T.en, org: T.org, vatNo: T.vatNo, cr: T.cr, addr: T.addr, prefix: T.prefix, vatPct: String(Math.round(T.vatRate * 10000) / 100), note: T.note, terms: qtClone(T.terms), show: Object.assign({}, T.show), err: {} });
-function tqInvPage() {
-  TM_FSP = 'si';
-  const can = cuCan('settings.qtpl'), D = ADM.tq_si || (ADM.tq_si = tqDraftI(QSI)), E = D.err, F = tqF(D), inp = tqInp(D), ta = tqTa(D), shw = tqShw(D);
-  const cfg = function (X) { X = X || D; return { title: String(X.title).trim(), en: String(X.en).trim(), org: String(X.org).trim(), vatNo: String(X.vatNo).trim(), cr: String(X.cr).trim(), addr: String(X.addr).trim(), prefix: String(X.prefix).trim().toUpperCase(), vatRate: Number(X.vatPct) / 100, note: String(X.note).trim(), terms: X.terms.map(function (t) { return [String(t[0]).trim(), String(t[1]).trim()]; }), show: Object.assign({}, X.show), hdr: Object.assign({}, X.hdr) }; };
-  const sample = function (T) { const L = dcInvList(), inv = L[0] ? Object.assign({}, L[0], { no: tqNextNo(T.prefix) }) : { no: tqNextNo(T.prefix), at: iso(T0), buyer: ME.name, src: 'store', ref: 'ORD-24044', qno: '', lines: [['جوال Samsung Galaxy S25 Ultra', 4899, 1]], incl: true, pay: 'مدى' }; dcPdf(dcInvDoc(inv, true, T)); };
-  if (!can) return [cuRO('settings.qtpl'), DS.panel('قالب فاتورة المتاجر', 'للعرض فقط', [DS.fields([['العنوان', QSI.title], ['البائع', QSI.org], ['الرقم الضريبي', ltr(QSI.vatNo)], ['بادئة الرقم', QSI.prefix]]), DS.button('معاينة PDF', { size: 'sm', ui: 'file-text', onClick: function () { sample(QSI); } })])];
-  const next = tqNextNo(D.prefix || QSI.prefix);
-  const save = function () {
-    const E2 = {}, pf = String(D.prefix).trim().toUpperCase(); if (String(D.title).trim().length < 4) E2.title = 'أدخل عنوان الفاتورة'; if (String(D.org).trim().length < 3) E2.org = 'أدخل اسم البائع';
-    
-    if (!/^[A-Z]{2,4}(-[A-Z]{1,3})?$/.test(pf)) E2.prefix = 'من 2 إلى 4 أحرف لاتينية، ويجوز لاحقة مثل TRA-Q'; else if (tqPrefixes('si').indexOf(pf) >= 0) E2.prefix = 'البادئة مستعملة في قالب آخر';
-    const v = Number(D.vatPct); if (String(D.vatPct).trim() === '' || isNaN(v) || v < 0 || v > 30) E2.vatPct = 'نسبة بين 0 و30';
-    if (D.terms.some(function (t) { return String(t[0]).trim().length < 2 || String(t[1]).trim().length < 10; })) E2.terms = 'أكمل عنوان كل بند ونصه';
-    D.err = E2; if (Object.keys(E2).length) { draw(); snack('راجع الحقول المظلّلة'); return; }
-    const c = cfg(); if (JSON.stringify(c) === JSON.stringify(cfg(tqDraftI(QSI)))) { snack('لا تغيير'); return; }
-    Object.assign(QSI, c); ADM.tq_si = tqDraftI(QSI); cuSetLog('عدّل قالب فاتورة المتاجر'); snack('حُفظ القالب — يُطبَّق على كل فاتورة جديدة'); draw();
-  };
-  return [DS.note('info', 'قالب فاتورة المتاجر — مستقل', 'بعد اعتماد العميل لعرض سعر المتجر أو «حسب الطلب» ودفعه، تصدر له فاتورة بهذا القالب بدل العقد. الفواتير الصادرة تبقى بقالب إصدارها.'),
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'رقم الفاتورة'), e('small', {}, 'نفس رقم عرض السعر المعتمد — ' + QTS.num.prefix + ' للمتجر · ' + QTC.num.prefix + ' لحسب الطلب')]), e('div', { class: 't2-row-wrap' }, tmFsAll().concat([DS.button('معاينة PDF', { ui: 'file-text', onClick: function () { sample(cfg()); } }), DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save })]))]),
-    E.terms ? DS.note('warn', 'الشروط', E.terms) : null,
-    e('div', { class: 'ax-form' }, [
-      tmDsnSec('si', function () { sample(cfg()); }),
-      tmFs('1. بيانات البائع', 'من «بيانات المنشأة والضريبة»', [DS.fields(TAXF.filter(function (f) { return taxOn(f[0], 'si'); }).map(function (f) { return [f[1], /vat|tin|cert|lic/.test(f[0]) ? ltr(taxVal(f[0])) : taxVal(f[0])]; })), DS.button('تعديل البيانات ومواضع ظهورها', { size: 'sm', ui: 'pencil-simple', onClick: function () { go('other', 'sys-tax'); } })]),
-      tmVisSec('2. الإظهار والإخفاء', [['أقسام الفاتورة', [tmCk(D.show, 'qr', 'رمز الاستجابة السريعة'), tmCk(D.show, 'pay', 'طريقة الدفع'), tmCk(D.show, 'terms', 'الشروط')]], tmHdrG(D), tmTaxG('si')]),
-      tmFs('3. الفاتورة والترقيم', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('title', 'عنوان الفاتورة', inp('title')), F('en', 'العنوان بالإنجليزية', inp('en', { dir: 'ltr' })), DS.editField('رقم الفاتورة', e('div', { class: 't2-input cu-bd-ro' }, 'نفس رقم عرض السعر المعتمد')), F('vatPct', 'ضريبة القيمة المضافة (%)', inp('vatPct', { numeric: true }))])]),
-      tmFs('4. الشروط', null, [e('div', { class: 'tm-dets' }, tqListEd(D.terms))], { sub: fmtNum(D.terms.length) + ' بنود' }),
-      tmFs('5. ملاحظة الختام', null, [F('note', 'تظهر أسفل الفاتورة', ta('note', 2))])]),
-    e('div', { class: 't2-pb-actions' }, [DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save }), DS.button('معاينة PDF', { ui: 'file-text', onClick: function () { sample(cfg()); } }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM.tq_si = tqDraftI(QSI); draw(); } }), DS.button('استعادة القالب الافتراضي', { onClick: function () { ADM.tq_si = tqDraftI(QSI0); snack('عُبّئ القالب الافتراضي — احفظ لتطبيقه'); draw(); } })])];
-}
 /* ===================== التنفيذ: «العقود والمستندات» ===================== */
 const DCK = { key: 'quotes.partner', alt: 'quotes.approve', pname: 'إعداد عروض أسعار الشركاء' };
 const dcPerm = () => cuPermNo('للعرض فقط', 'إعداد عروض أسعار الشركاء وإصدارها وإنشاء العقود لمن يملك صلاحية «' + DCK.pname + '» (' + DCK.key + ') — تعمل الآن ببديلها ' + DCK.alt + '.');
@@ -10765,12 +10729,13 @@ function dcHubPage() {
   return H;
 }
 const dcTop = (t, s, acts) => e('div', { class: 'ax-top is-sub' }, [e('div', { class: 'ax-top-t' }, [e('small', {}, s)]), acts && acts.filter(Boolean).length ? e('div', { class: 't2-row-wrap' }, acts.filter(Boolean)) : null]);
-const dcTplBtn = (k) => null && DS.button(k === 'si' ? 'إعدادات الفاتورة' : 'قالب ' + TQ_NAME[k], { ui: 'sliders-horizontal', onClick: function () { if (k === 'si') { ADM.tqTab_sq = 'i'; go('other', 'sys-qs'); return; } go('other', TQ_ROUTE[k]); } });
+/* v761: فتح «قوالب المستندات» على مستند محدّد (حلّ محل المسارات القديمة لكل قالب) */
+function esxOpen(k) { go('other', 'sys-es'); setTimeout(function () { const el = ADM.esxEl; if (!el) return; if (k === 'brand') { if (el.__esxTab) el.__esxTab('brand'); } else if (el.__esxGo) el.__esxGo(k); }, 80); }
 /* عروض أسعار الشركاء */
 function dcPqPage() {
   const can = cuCan('pq.prep'), W = dcWait(), f = ADM.dcPqF || 'all', L = QUOTES.slice().sort(function (a, b) { return b.issued - a.issued; });
   const fit = function (q, k) { const s = qStat(q); return k === 'all' || (k === 'other' ? ['issued', 'accepted'].indexOf(s) < 0 : s === k); };
-  return [dcTop('عروض أسعار الشركاء', 'رقم العرض هو رقم العقد — وموافقة العميل توقيع للعقد', [dcTplBtn('pq'), DS.button('معاينة: إرسال طلب شركاء', { ui: 'paper-plane-tilt', onClick: tmDemoReq }), can ? DS.button('إعداد عرض سعر', { tone: 'primary', ui: 'plus', onClick: function () { dcPqPrep(W[0] ? W[0].no : (dcPqReqs()[0] || {}).no || ''); } }) : null]),
+  return [dcTop('عروض أسعار الشركاء', 'رقم العرض هو رقم العقد — وموافقة العميل توقيع للعقد', [null, DS.button('معاينة: إرسال طلب شركاء', { ui: 'paper-plane-tilt', onClick: tmDemoReq }), can ? DS.button('إعداد عرض سعر', { tone: 'primary', ui: 'plus', onClick: function () { dcPqPrep(W[0] ? W[0].no : (dcPqReqs()[0] || {}).no || ''); } }) : null]),
     can ? null : dcPerm(),
     axKpis([['العروض', fmtNum(L.length), '', 'letter'], ['بانتظار رد العميل', fmtNum(L.filter(function (q) { return qStat(q) === 'issued'; }).length), 'warn', 'hourglass-medium'], ['مقبولة', fmtNum(L.filter(function (q) { return qStat(q) === 'accepted'; }).length), 'ok', 'check-circle'], ['بانتظار إعداد العرض', fmtNum(W.length), W.length ? 'warn' : '', 'note-pencil']]),
     W.length ? e('section', { class: 'axc-grp' }, [e('h3', { class: 'axc-grp-t' }, ['بانتظار إعداد العرض', e('small', {}, fmtNum(W.length))]), tmCList(W.map(function (r) { const g = pqStage(r); return { name: ME.name, unit: 'طلبات', no: r.no, sub: dcFld(r, /^المنتج/).split(' · ')[0] || 'طلب عرض سعر', amt: sar(rqVal(r)), v: rqVal(r), st: g, tone: g[1] === 'danger' ? 'danger' : 'warn', go: function () { dcPqPrep(r.no); } }; }), '')]) : null,
@@ -10791,7 +10756,7 @@ function dcPqOpen(no) {
 /* عروض أسعار المتاجر */
 function dcSqPage() {
   const L = dcSq(), f = ADM.dcSqF || 'all', fit = function (o, k) { return k === 'all' || (k === 'wait' ? o.st === 'quote' : k === 'offer' ? o.st === 'offer' : k === 'inv' ? dcOrdInv(o) : o.st === 'cancel'); };
-  return [dcTop('عروض أسعار المتاجر', 'بقالب «' + TQ_NAME.sq + '» — بعد اعتماد العرض ودفعه تصدر الفاتورة', [dcTplBtn('sq')]),
+  return [dcTop('عروض أسعار المتاجر', 'بقالب «' + TQ_NAME.sq + '» — بعد اعتماد العرض ودفعه تصدر الفاتورة', [null]),
     axKpis([['العروض الصادرة', fmtNum(L.filter(function (o) { return o.qt; }).length), '', 'storefront'], ['بانتظار الإصدار', fmtNum(L.filter(function (o) { return o.st === 'quote'; }).length), 'warn', 'hourglass-medium'], ['بانتظار رد العميل', fmtNum(L.filter(function (o) { return o.st === 'offer'; }).length), 'info', 'clock'], ['صدرت فاتورتها', fmtNum(L.filter(dcOrdInv).length), 'ok', 'receipt']]),
     e('div', { class: 'm3-tools ax-tools' }, [chipRow([['all', 'الكل', 'list:navy'], ['wait', 'بانتظار الإصدار', 'hourglass-medium:saffron'], ['offer', 'بانتظار الرد', 'clock:sky'], ['inv', 'معتمدة — فاتورة', 'receipt:gold'], ['cancel', 'ملغاة', 'x-circle:gold']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (o) { return fit(o, x[0]); }).length]; }), f, function (v) { ADM.dcSqF = v; draw(); }, 'تصفية العروض')]),
     tmCList(L.filter(function (o) { return fit(o, f); }).map(function (o) { if (o.st === 'quote') return { name: ME.name, unit: 'طلبات وعروض', no: o.no, sub: 'طلب عرض سعر من المتجر', amt: '—', v: 0, st: ['بانتظار إعداد العرض', 'warn'], tone: 'warn', go: function () { cuStoreOpen('o:' + o.no); } }; const inv = dcOrdInv(o) ? dcInvOf('so', o) : null, S = SO_ST[o.st] || ['—', 'info']; return { name: ME.name, unit: 'طلبات وعروض', no: o.qt.no || o.no, sub: 'طلب ' + o.no + (inv ? ' · فاتورة بالرقم نفسه' : ''), amt: sar(soTotal(o)), v: soTotal(o), st: inv ? ['معتمد — فاتورة', 'ok'] : [S[0], S[1] || 'info'], tone: o.st === 'cancel' ? 'danger' : '', go: function () { dcSqOpen(o.no); } }; }), 'لا عروض هنا')];
@@ -10805,7 +10770,7 @@ function dcSqOpen(no) {
 /* عروض حسب الطلب */
 function dcCqPage() {
   const L = dcCq(), f = ADM.dcCqF || 'all', fit = function (r, k) { return k === 'all' || (k === 'wait' ? !r.cus.quote && r.status !== 'rejected' : k === 'q' ? r.cus.quote && !r.cus.pay : k === 'inv' ? !!r.cus.pay : r.status === 'rejected'); };
-  return [dcTop('عروض حسب الطلب', 'بقالب «' + TQ_NAME.cq + '» المستقل — بعد اعتماد العرض ودفعه تصدر الفاتورة', [dcTplBtn('cq')]),
+  return [dcTop('عروض حسب الطلب', 'بقالب «' + TQ_NAME.cq + '» المستقل — بعد اعتماد العرض ودفعه تصدر الفاتورة', [null]),
     axKpis([['الطلبات', fmtNum(L.length), '', 'note-pencil'], ['بانتظار الإصدار', fmtNum(L.filter(function (r) { return fit(r, 'wait'); }).length), 'warn', 'hourglass-medium'], ['عروض صادرة', fmtNum(L.filter(function (r) { return r.cus.quote; }).length), 'info', 'letter'], ['صدرت فاتورتها', fmtNum(L.filter(function (r) { return r.cus.pay; }).length), 'ok', 'receipt']]),
     e('div', { class: 'm3-tools ax-tools' }, [chipRow([['all', 'الكل', 'list:navy'], ['wait', 'بانتظار الإصدار', 'hourglass-medium:saffron'], ['q', 'بانتظار الاعتماد', 'clock:sky'], ['inv', 'معتمدة — فاتورة', 'receipt:gold'], ['rej', 'مُعتذر عنها', 'x-circle:gold']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (r) { return fit(r, x[0]); }).length]; }), f, function (v) { ADM.dcCqF = v; draw(); }, 'تصفية الطلبات')]),
     tmCList(L.filter(function (r) { return fit(r, f); }).map(function (r) { const Q = r.cus.quote; if (!Q) return { name: ME.name, unit: 'طلبات وعروض', no: r.no, sub: cusTitle(r), amt: '—', v: 0, st: r.status === 'rejected' ? ['مُعتذر عنه', 'danger'] : ['بانتظار إعداد العرض', 'warn'], tone: r.status === 'rejected' ? '' : 'warn', go: function () { cuStoreOpen('c:' + r.no); } }; return { name: ME.name, unit: 'طلبات وعروض', no: dcCqNo(r), sub: cusTitle(r) + ' · طلب ' + r.no, amt: sar(cusTotal(r)), v: cusTotal(r), st: r.cus.pay ? ['معتمد — فاتورة', 'ok'] : ['بانتظار اعتماد العميل', 'info'], go: function () { dcCqOpen(r.no); } }; }), 'لا طلبات هنا')];
@@ -10863,7 +10828,7 @@ function dcPcPage() {
       e('span', { class: 'cu-card-t' }, [e('b', {}, g.name), e('small', {}, [ctW(g.L.length) + ' · المتبقي ' + sar(rem(g.L))]), f !== 'all' ? e('small', { class: 'cf-sub', dir: 'ltr' }, g.L.map(function (x) { return x.c.no; }).slice(0, 4).join(' · ') + (g.L.length > 4 ? ' …' : '')) : null]),
       e('span', { class: 'cu-card-m' }, [nr ? DS.badge(fmtNum(nr) + ' مراجعة', 'warn') : null, nd ? DS.badge(fmtNum(nd) + ' متعثر', 'danger') : null, nl ? DS.badge(fmtNum(nl) + ' متأخر', 'warn') : null, nc ? DS.badge(fmtNum(nc) + ' مسدد', 'ok') : null, (function () { const ne = g.L.filter(function (x) { return cfEdAt(x.c.no); }).length; return ne ? DS.badge(fmtNum(ne) + ' معدّل', 'info') : null; })(), !nd && !nl && !nc && !nr ? DS.badge('منتظم', 'info') : null]),
       e('span', { class: 'nsc-go' }, frag(ui('caret-left', 16)))]); });
-  return [dcTop('عقود الشركاء', LIVE.on ? 'اختر العميل لفتح ملفه الموحّد: عقوده وعروض أسعارها ومرفقاتها وجدول سدادها وسجل أحداثها' : 'اختر العميل لعرض ملخص عقوده وأقسامها', [dcTplBtn('pc')]),
+  return [dcTop('عقود الشركاء', LIVE.on ? 'اختر العميل لفتح ملفه الموحّد: عقوده وعروض أسعارها ومرفقاتها وجدول سدادها وسجل أحداثها' : 'اختر العميل لعرض ملخص عقوده وأقسامها', [null]),
     axKpis([['العقود', fmtNum(L.length), '', 'contract'], ['العملاء', fmtNum(new Set(L.map(function (x) { return x.cid; })).size), '', 'users-three'], ['تحتاج مراجعة', fmtNum(L.filter(function (x) { return x.sec === 'rv'; }).length), 'warn', 'note'], ['متعثرة', fmtNum(L.filter(function (x) { return x.sec === 'def'; }).length), 'danger', 'warning'], ['متأخرة', fmtNum(L.filter(function (x) { return x.sec === 'late'; }).length), 'warn', 'clock'], ['إجمالي المتبقي', sar(rem(L.filter(function (x) { return !x.rh; }))), 'warn', 'coins']]),
     e('div', { class: 'm3-tools ax-tools' }, [chipRow([['rv', 'تحتاج مراجعة', 'note-pencil:saffron'], ['done', 'مكتملة السداد', 'seal-check:teal'], ['def', 'متعثرة', 'warning-octagon:gold'], ['late', 'متأخرة', 'warning:gold'], ['act', 'منتظمة', 'check-circle:teal'], ['ed', 'معدّلة', 'note-pencil:navy'], ['all', 'الكل', 'list:navy']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), f, function (v) { ADM.dcPcF = v; draw(); }, 'تصفية العقود'),
       e('div', { class: 'cu-bd-cf' }, [DS.editField('اسم العميل', DS.select({ value: '*', options: [['*', 'كل العملاء']].concat(G.map(function (g) { return [g.cid, g.name]; })), onChange: function (v) { ADM.dcPcC = v === '*' ? '' : v; draw(); } }))])]),
@@ -11112,7 +11077,7 @@ function dcPcOpen(cid, no) {
 /* فواتير المتاجر */
 function dcSiPage() {
   const L = dcInvList(), f = ADM.dcSiF || 'all', fit = function (x, k) { return k === 'all' || x.src === k; };
-  return [dcTop('فواتير المتاجر', 'بقالب «' + TQ_NAME.si + '» — تصدر بعد اعتماد العرض ودفعه', [dcTplBtn('si')]),
+  return [dcTop('فواتير المتاجر', 'بقالب «' + TQ_NAME.si + '» — تصدر بعد اعتماد العرض ودفعه', [null]),
     axKpis([['الفواتير', fmtNum(L.length), '', 'receipt'], ['من عروض المتجر', fmtNum(L.filter(function (x) { return x.src === 'store'; }).length), '', 'storefront'], ['من حسب الطلب', fmtNum(L.filter(function (x) { return x.src === 'cus'; }).length), '', 'note-pencil'], ['الإجمالي شامل الضريبة', sar(axSum(L, dcInvTot)), 'ok', 'coins']]),
     e('div', { class: 'm3-tools ax-tools' }, [chipRow([['all', 'الكل', 'list:navy'], ['store', 'المتجر', 'storefront:teal'], ['cus', 'حسب الطلب', 'note-pencil:saffron']].map(function (x) { return [x[0], x[1], x[2], L.filter(function (y) { return fit(y, x[0]); }).length]; }), f, function (v) { ADM.dcSiF = v; draw(); }, 'تصفية الفواتير')]),
     tmCList(L.filter(function (x) { return fit(x, f); }).map(function (x) { return { name: x.buyer, unit: 'فواتير', no: x.no, sub: (x.src === 'cus' ? 'حسب الطلب ' : 'المتجر ') + x.ref, amt: sar(dcInvTot(x)), v: dcInvTot(x), st: x.st === 'refund' ? ['مستردة', 'danger'] : ['مدفوعة', 'ok'], go: function () { dcSiOpen(x.key); } }; }), 'لا فواتير هنا')];
@@ -11134,12 +11099,12 @@ function dcSeed() {
 function tqRegister() {
   dcSeed(); dsRegister(); txRegister(); rqRegister();
   CU_PEND['quotes.partner'] = [DCK.pname, DCK.alt, 'العقود والمستندات']; CU_MAP.push(['إعداد عروض أسعار الشركاء وإصدارها وإنشاء العقود', 'quotes.partner']); CU_GATE['pq.prep'] = 'quotes.partner';
-  try { Object.assign(ICON, { 'sys-qs': ['storefront', 'teal'], 'sys-qc': ['note-pencil', 'saffron'], 'sys-pc': ['contract', 'navy'], 'sys-si': ['receipt', 'gold'], 'cu-docs': ['contract', 'navy'], 'cu-docs-pq': ['letter', 'navy'], 'cu-docs-sq': ['storefront', 'teal'], 'cu-docs-cq': ['note-pencil', 'saffron'], 'cu-docs-pc': ['contract', 'navy'], 'cu-docs-si': ['receipt', 'gold'] }); } catch (err) { void err; }
-  lp('sys-qt', 'قالب عرض سعر الشركاء', 'sys', 'sys-qt', function () { return sysEsPage('pq'); });
-  lp('sys-qs', 'قالب عرض سعر المتاجر', 'sys', 'sys-qs', function () { return sysEsPage('sq'); });
-  lp('sys-qc', 'قالب عرض حسب الطلب', 'sys', 'sys-qc', function () { return sysEsPage('cq'); });
-  lp('sys-pc', 'قوالب عقد الشركاء', 'sys', 'sys-pc', function () { return sysEsPage('pc'); });
-  lp('sys-si', 'قالب فاتورة المتاجر', 'sys', 'sys-si', function () { return sysEsPage('si'); });
+  try { Object.assign(ICON, { 'cu-docs': ['contract', 'navy'], 'cu-docs-pq': ['letter', 'navy'], 'cu-docs-sq': ['storefront', 'teal'], 'cu-docs-cq': ['note-pencil', 'saffron'], 'cu-docs-pc': ['contract', 'navy'], 'cu-docs-si': ['receipt', 'gold'] }); } catch (err) { void err; }
+  
+  
+  
+  
+  
 lp('sys-es', 'قوالب المستندات', 'sys', 'sys-es', sysEsPage);
 try { Object.assign(ICON, { 'sys-es': ['coins', 'gold'] }); } catch (err) { void err; }
   lp('cu-docs', 'العقود والمستندات', 'cu', 'cu-docs', dcHubPage);
@@ -11394,7 +11359,7 @@ function pcPageSec(D) {
       tmCk(P, 'show_inv_done_text', 'نص شاشة «تم الاعتماد»', false, true), DS.editField('نص شاشة «تم الاعتماد»', A('inv_done_text', 2)),
       DS.editField('عنوان شاشة الاعتذار عن الشراء', I('inv_decline_title')), DS.editField('نص شاشة الاعتذار عن الشراء', A('inv_decline_text', 2))])]);
 }
-function tqCtPage2() {
+function esxCfgPc() { /* v761: قسم «القوالب والصفحات» لعقد الشركاء في «قوالب المستندات» — حلّ محل صفحة القالب القديمة */
   TM_FSP = 'pc'; pcDbLoad(); /* v679 */
   const can = cuCan('settings.qtpl'), id = ADM.pcSel && QPCS.some(function (t) { return t.id === ADM.pcSel; }) ? ADM.pcSel : QPC_DEF, T = pcTpl(id), key = 'tq_pc_' + id, D = ADM[key] || (ADM[key] = pcDraft(T)), E = D.err;
   const F = tqF(D), inp = tqInp(D), ta = tqTa(D), shw = tqShw(D);
@@ -11411,21 +11376,16 @@ function tqCtPage2() {
     const c = cfg(); if (JSON.stringify(c) === JSON.stringify(cfg(pcDraft(T)))) { snack('لا تغيير'); return; }
     Object.assign(T, c); ADM[key] = pcDraft(T); if (id === 'full') pcDbSave(c); /* v679 */ cuSetLog('عدّل قالب العقد «' + T.name + '»'); snack('حُفظ القالب'); draw();
   };
-  let sn = 2;
   const add = function () { const n = qtClone(T); n.id = 'c' + (++QPC_N); n.name = 'قالب عقد ' + fmtNum(QPCS.length + 1); QPCS.push(n); (TAX.at.trade || []).push('pc:' + n.id); ADM.pcSel = n.id; cuSetLog('أضاف قالب عقد «' + n.name + '»'); snack('أُضيف قالب جديد نسخةً من «' + T.name + '» — عدّله ثم احفظ'); draw(); };
   const del = function () { if (QPCS.length < 2 || id === QPC_DEF) return; const i = QPCS.indexOf(T); QPCS.splice(i, 1); Object.keys(PC_OF).forEach(function (k) { if (PC_OF[k] === id) delete PC_OF[k]; }); Object.keys(TAX.at).forEach(function (f) { TAX.at[f] = TAX.at[f].filter(function (x) { return x !== 'pc:' + id; }); }); delete ADM[key]; ADM.pcSel = QPC_DEF; cuSetLog('حذف قالب العقد «' + T.name + '»'); snack('حُذف القالب'); draw(); };
-  return [DS.note('info', 'قوالب عقد الشركاء', 'أكثر من قالب: الكامل بتمهيده وبنوده، والمختصر بلا تمهيد ولا بنود، ويمكن إضافة غيرهما. كل عنصر يُظهر أو يُخفى من «أقسام العقد»، ويُختار القالب لكل عقد من «العقود والمستندات».'),
+  return [
     e('div', { class: 'ax-top' }, [e('div', { class: 'cu-bd-cf' }, [pick]), e('div', { class: 't2-row-wrap' }, [tmFsAll()[0], tmFsAll()[1], DS.button('قالب جديد', { ui: 'plus', onClick: add }), id !== QPC_DEF ? DS.button('تعيينه افتراضيًا', { ui: 'check-circle', onClick: function () { QPC_DEF = id; cuSetLog('القالب الافتراضي للعقود: «' + T.name + '»'); snack('أصبح «' + T.name + '» القالب الافتراضي'); draw(); } }) : null,
       id !== QPC_DEF && QPCS.length > 1 ? DS.button('حذف القالب', { tone: 'danger', ui: 'trash', onClick: del }) : null, DS.button('معاينة PDF', { ui: 'file-text', onClick: function () { sample(cfg()); } }), DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save })])]),
     E.clauses ? DS.note('warn', 'بنود العقد', E.clauses) : null,
     e('div', { class: 'ax-form' }, [
       tmDsnSec('pc', function () { sample(cfg()); }),
-      tmFs('1. اسم القالب والعنوان', id === QPC_DEF ? 'الافتراضي' : null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('name', 'اسم القالب', inp('name')), F('title', 'عنوان العقد', inp('title')), F('org', 'اسم المنشأة في الترويسة', inp('org')), ])]),
-      tmVisSec('2. الإظهار والإخفاء', [['أقسام العقد', [tmCk(D.show, 'pre', 'التمهيد', true), tmCk(D.show, 'clauses', 'بنود العقد', true), tmCk(D.show, 'fees', 'مكوّنات قيمة العقد'), tmCk(D.show, 'sched', 'جدول الدفعات'), tmCk(D.show, 'bond', 'السند الإلكتروني'), tmCk(D.show, 'sign', 'خانات التوقيع', true)], ], tmHdrG(D)]),
-      D.show.pre ? tmFs(fmtNum(++sn) + '. التمهيد', null, [F('pre', 'نص التمهيد', ta('pre', 3))]) : null,
-      D.show.clauses ? tmFs(fmtNum(++sn) + '. بنود العقد', null, [e('div', { class: 'tm-dets' }, tqListEd(D.clauses))], { sub: fmtNum(D.clauses.length) + ' بنود' }) : null,
       id === 'full' ? pcPageSec(D) : null,
-      D.show.sign ? tmFs(fmtNum(++sn) + '. عبارة التوقيع', null, [F('sign', 'العبارة أسفل خانات التوقيع', ta('sign', 2))]) : null].filter(Boolean)),
+      null].filter(Boolean)),
     e('div', { class: 't2-pb-actions' }, [DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save }), DS.button('معاينة PDF', { ui: 'file-text', onClick: function () { sample(cfg()); } }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM[key] = pcDraft(T); draw(); } }),
       id === 'full' || id === 'short' ? DS.button('استعادة الافتراضي', { onClick: function () { ADM[key] = pcDraft(id === 'full' ? QPC0 : QPC_S0); snack('عُبّئ القالب الافتراضي — احفظ لتطبيقه'); draw(); } }) : null])];
 }
@@ -11592,7 +11552,7 @@ function dcPqPrep(rno) {
     live.length ? DS.note('warn', 'للطلب عرض سابق ' + live[0].no + ' — ' + tmQSq(live[0])[0], 'العرض الجديد يحل محله بعد اعتماده وإرساله للعميل.') : null,
     axForm([axSh('الطلب', 'orders'), e('div', { class: 'cu-bd-wide' }, fld('rno', 'طلب الأهلية', DS.select({ value: D.rno, ph: '— اختَرِ الطلب —', options: reqOpts, onChange: function (v) { CUD[key] = dcPqNew(v); dcPqPrep(); } }))),
       axSh('المنتج', 'orders'), fld('type', 'المنتج', DS.input({ value: D.type, onInput: function (v) { D.type = v; } })), fld('value', 'قيمة المنتج (ريال)', num('value')),
-      axSh('التسعيرة والبنود', 'coins'), e('div', { class: 'cu-bd-wide tq-prs' }, items.concat([E.items ? e('small', { class: 'cu-bd-err' }, E.items) : null, e('small', { class: 'cu-dr-hint' }, own ? 'كل بنود «قالب عرض سعر الشركاء» متاحة هنا: عدّل سعرها لهذا العرض وكميتها، واختر أن تظهر بندًا مستقلًا أو تُدمج في «' + (QT.other || 'رسوم ومصاريف أخرى') + '» أو لا تُحتسب.' : 'السعر وطريقة الاحتساب من الإعدادات — أدخل الكمية للبنود الثابتة، واختر ما يظهر من البنود المخفية.'), own ? DS.button('إدارة بنود القالب', { size: 'sm', ui: 'sliders-horizontal', onClick: function () { dcClose0(key); go('other', 'sys-qt'); } }) : null])),
+      axSh('التسعيرة والبنود', 'coins'), e('div', { class: 'cu-bd-wide tq-prs' }, items.concat([E.items ? e('small', { class: 'cu-bd-err' }, E.items) : null, e('small', { class: 'cu-dr-hint' }, own ? 'كل بنود «قالب عرض سعر الشركاء» متاحة هنا: عدّل سعرها لهذا العرض وكميتها، واختر أن تظهر بندًا مستقلًا أو تُدمج في «' + (QT.other || 'رسوم ومصاريف أخرى') + '» أو لا تُحتسب.' : 'السعر وطريقة الاحتساب من الإعدادات — أدخل الكمية للبنود الثابتة، واختر ما يظهر من البنود المخفية.'), own ? DS.button('إدارة بنود القالب', { size: 'sm', ui: 'sliders-horizontal', onClick: function () { dcClose0(key); esxOpen('pq'); } }) : null])),
       axSh('الخصم والنقاط', 'tag'),
       dsEd('pq', D, Number(D.value) || 0, c ? qr2(c.total + c.discount + c.points) : 0, rerun, live[0] ? 'q:' + live[0].no : ''),
       axSh('الإجمالي', 'receipt'), e('div', { class: 'cu-bd-wide' }, tmTotCard(c, D)),
@@ -11694,12 +11654,6 @@ const tmTaxable = (c) => qr2(Math.max(0, c.productValue - (c.discount || 0) - (c
 const tmFeeVat = (c) => (c.items || []).some(function (x) { return x.vat && x.amt > 0; });
 
 /* ---------- قالب المتاجر وحسب الطلب: عرض السعر ومعه إعدادات الفاتورة ---------- */
-function tmQuoteTpl(kind) {
-  const k = 'tqTab_' + kind, cur = ADM[k] || 'q';
-  const tabs = chipRow([['q', 'عرض السعر', kind === 'sq' ? 'storefront:teal' : 'note-pencil:saffron'], ['i', 'إعدادات الفاتورة', 'receipt:gold']], cur, function (v) { ADM[k] = v; draw(); }, 'أقسام قالب ' + TQ_NAME[kind]);
-  if (cur === 'i') return [tabs, DS.note('info', 'إعدادات الفاتورة من داخل قالب العرض', 'بعد اعتماد ' + TQ_NAME[kind] + ' ودفعه تصدر الفاتورة بالرقم نفسه. إعدادات الفاتورة مشتركة بين عروض المتاجر وعروض حسب الطلب.')].concat(tqInvPage());
-  return [tabs].concat(tqQuotePage(kind));
-}
 
 /* ---------- البطاقات: قسم الشركاء وقسم المتاجر، وكل قسم فيه بطاقاته ---------- */
 function tmTplCards(side) {
@@ -11722,9 +11676,7 @@ function ctCards() {
 /* v305: العقود صارت داخل «قسم العملاء» — الرابط القديم يفتح القسم */
 function ctHubPage() { return cuHubPage(); }
 function tmRegister() {
-  try { Object.assign(ICON, { 'cu-docs-pq': ['file-text', 'navy'], 'cu-docs-pc': ['files', 'navy'], 'sys-pc': ['files', 'navy'], 'sys-qt': ['file-text', 'navy'] }); } catch (err) { void err; }
-  lp('sys-qs', 'قالب عرض سعر المتاجر', 'sys', 'sys-qs', function () { return tmQuoteTpl('sq'); });
-  lp('sys-qc', 'قالب عرض حسب الطلب', 'sys', 'sys-qc', function () { return tmQuoteTpl('cq'); });
+  try { Object.assign(ICON, { 'cu-docs-pq': ['file-text', 'navy'], 'cu-docs-pc': ['files', 'navy'], }); } catch (err) { void err; }
   stRegister();
 }
 /* ---------- القوائم: مجمّعة حسب العميل — صف مختصر لكل مستند (الرقم · التفاصيل · القيمة · الحالة) ---------- */
@@ -11760,32 +11712,6 @@ function stBlock(k, S) {
   return e('div', { class: 'st-blk', style: 'margin-top:' + gap + 'px' }, e('div', { class: 'st-seal', style: 'padding:' + Math.round(gap / 2) + 'px' }, stSeal(S, px)));
 }
 const stDraft = () => Object.assign(qtClone(STAMP), { err: {} });
-function sysStampPage() {
-  const can = cuCan('settings.qtpl'), D = ADM.stD || (ADM.stD = stDraft());
-  if (D.mode !== 'img' && D.mode !== 'logo') D.mode = 'seal';
-  const prev = e('div', { class: 'st-prev' }, [e('div', { class: 'st-prev-s' }, stSeal(D, 128)), e('div', { class: 'st-prev-t' }, [e('b', {}, D.on ? 'الختم مفعّل' : 'الختم موقوف'), e('small', {}, D.on ? 'يظهر في: ' + (ST_DOCS.filter(function (x) { return D.at[x[0]]; }).map(function (x) { return x[1]; }).join(' · ') || 'لا مستند') : 'لا يظهر في أي مستند'), e('small', {}, 'مسافة الأمان: ' + ST_GAP[D.gap][1] + ' · الحجم: ' + ST_SIZE[D.size][1])])]);
-  if (!can) return [cuRO('settings.qtpl'), DS.panel('ختم المنصة', 'للعرض فقط', [prev])];
-  const ck = function (o, k, label) { const i = e('input', { type: 'checkbox', 'aria-label': label }); i.checked = !!o[k]; i.addEventListener('change', function () { o[k] = i.checked; draw(); }); return DS.editField(label, i); };
-  const sel = function (k, label, M) { return DS.editField(label, DS.select({ value: D[k], options: Object.keys(M).map(function (x) { return [x, M[x][1]]; }), onChange: function (v) { D[k] = v; draw(); } })); };
-  const file = e('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', 'aria-label': 'رفع صورة الختم' });
-  file.addEventListener('change', function () { const f = file.files && file.files[0]; if (!f) return; if (f.size > 600 * 1024) { snack('حجم الصورة أكبر من 600 كيلوبايت'); return; } const fr = new FileReader(); fr.onload = function () { D.img = String(fr.result); D.mode = 'img'; draw(); snack('رُفعت صورة الختم — احفظ لتطبيقها'); }; fr.readAsDataURL(f); });
-  const save = function () {
-    const E = {}; if (D.mode === 'img' && !D.img) E.img = 'ارفع صورة الختم'; D.err = E; if (Object.keys(E).length) { draw(); snack('راجع الحقول المظلّلة'); return; }
-    const c = qtClone(D); delete c.err; if (JSON.stringify(c) === JSON.stringify(STAMP)) { snack('لا تغيير'); return; }
-    Object.keys(STAMP).forEach(function (k) { delete STAMP[k]; }); Object.assign(STAMP, c); ADM.stD = stDraft();
-    cuSetLog(STAMP.on ? 'عدّل ختم المنصة' : 'أوقف ختم المنصة في المستندات'); snack('حُفظ الختم — يُطبَّق على المستندات من الآن'); draw();
-  };
-  const preview = function () { const b = QUOTES.filter(function (q) { return q.calc; })[0]; if (!b) { snack('لا عرض للمعاينة'); return; } const S0 = qtClone(STAMP), c = qtClone(D); delete c.err; c.at = Object.assign({}, c.at, { pq: true }); c.on = true; Object.assign(STAMP, c); try { dcPdf(dcQuoteDoc(b, true)); } finally { Object.keys(STAMP).forEach(function (k) { delete STAMP[k]; }); Object.assign(STAMP, S0); } };
-  const imgF = (function () { const w = DS.editField('صورة الختم', tqAttach({ input: file, hint: 'PNG أو JPG أو SVG حتى 600 كيلوبايت (يفضّل خلفية شفافة)', file: D.img ? { name: 'صورة الختم', note: 'مرفوعة — احفظ لتطبيقها' } : null, onDelete: D.img ? function () { D.img = ''; draw(); } : null })) /* v696 */; if (D.err.img) { w.classList.add('is-missing'); w.appendChild(e('small', { class: 'cu-bd-err' }, D.err.img)); } return w; })();
-  return [DS.note('info', 'ختم المنصة', 'الختم الرسمي المعتمد في آخر المستند — بلا اسم موقّع — بعيدًا عن المحتوى بمسافة الأمان، ولا ينقسم بين صفحتين. أوقفه كليًا أو لمستندات بعينها، أو اختر شعار تيرا بإطار، أو ارفع صورة ختم.'),
-    e('div', { class: 'ax-top' }, [prev, e('div', { class: 't2-row-wrap' }, [DS.button('معاينة PDF', { ui: 'file-text', onClick: preview }), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })])]),
-    e('div', { class: 'ax-form' }, [
-      formSec('1. التفعيل والمستندات', null, [e('div', { class: 'axp-opts' }, [ck(D, 'on', 'إظهار الختم')]), D.on ? e('div', { class: 'axp-opts' }, ST_DOCS.map(function (x) { return ck(D.at, x[0], x[1]); })) : e('small', { class: 'cu-dr-hint' }, 'الختم موقوف — لا يظهر في أي مستند حتى تفعّله.')]),
-      formSec('2. الختم', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('الختم', DS.select({ value: D.mode, options: [['seal', 'الختم الرسمي المعتمد — الافتراضي', 'seal-check'], ['logo', 'شعار تيرا بإطار دائري', 'user-circle'], ['img', 'صورة ختم مرفوعة', 'upload-simple']], onChange: function (v) { D.mode = v; draw(); } }))]
-        .concat(D.mode === 'logo' ? [sel('color', 'لون الإطار', ST_COL), e('div', { class: 'axp-opts' }, [ck(D, 'ring', 'إطار دائري حول الشعار')])] : [imgF, D.img ? DS.button('إزالة الصورة', { size: 'sm', ui: 'trash', onClick: function () { D.img = ''; draw(); } }) : null].filter(Boolean)))]),
-      formSec('3. مسافة الأمان والحجم', 'بين الختم وآخر محتوى في المستند', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [sel('gap', 'مسافة الأمان', ST_GAP), sel('size', 'حجم الختم', ST_SIZE)]), e('small', { class: 'cu-dr-hint' }, 'الختم في كتلة مستقلة آخر المستند، حوله هامش فارغ بنصف مسافة الأمان، فلا يلامس المبالغ ولا النصوص.')])]),
-    e('div', { class: 't2-pb-actions' }, [DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save }), DS.button('معاينة PDF', { ui: 'file-text', onClick: preview }), DS.button('تراجع عن التعديلات', { onClick: function () { ADM.stD = stDraft(); draw(); } }), DS.button('استعادة الافتراضي', { onClick: function () { ADM.stD = Object.assign(qtClone(STAMP0), { err: {} }); snack('عُبّئ الافتراضي — احفظ لتطبيقه'); draw(); } })])];
-}
 /* البطاقات المشتركة في الإعدادات */
 function tmShared() {
   return [{ ic: 'receipt:navy', t: 'الضريبة ومواضعها في المستندات', d: 'من شهادة التسجيل — ومواضع ظهورها في كل قالب', n: TAX.v.vat, go: function () { go('other', 'sys-tax'); } },
@@ -11793,9 +11719,7 @@ function tmShared() {
     { ic: 'coins:teal', t: 'سياسة التسعير والسداد', d: 'حدود قيمة الطلب ومدد السداد وأنواعه وحد القدرة على السداد — لنموذج العميل وإعداد العروض', n: ppSummary(), go: function () { go('other', 'sys-pay'); } }];
 }
 function stRegister() {
-  try { Object.assign(ICON, { 'sys-stamp': ['seal-check', 'navy'] }); } catch (err) { void err; }
   CU_GATE['pq.approve'] = 'quotes.approve'; CU_MAP.push(['اعتماد عروض أسعار الشركاء وإرسالها للعميل', 'quotes.approve']);
-  lp('sys-stamp', 'قوالب المستندات', 'sys', 'sys-es', function () { return sysEsPage('brand'); });
   ppRegister();
 }
 /* ===================== v198 — معاينة العقد قبل التوقيع من العرض نفسه ===================== */
@@ -12277,7 +12201,7 @@ function sysPayPage() {
       D.tiers.length > 1 && !last ? e('button', { type: 'button', class: 'nd-ib is-del', 'aria-label': 'حذف الشريحة ' + fmtNum(i + 1), onClick: function () { D.tiers.splice(i, 1); draw(); } }, frag(ui('trash', 16))) : e('span'),
       E['t' + i] ? e('small', { class: 'cu-bd-err' }, E['t' + i]) : null]); });
   return [DS.note('info', 'مصدر واحد للتسعير والسداد', 'تُقرأ هذه السياسة في نموذج «تحقق من أهليتك» (المبالغ والمدد)، وفي إعداد عرض الشركاء (أنواع السداد وعدد الدفعات)، وفي طلب العميل تعديل العرض، وفي قسم «الالتزام والقدرة على السداد». الرسوم والضريبة وبنود التسعير في «قالب عرض سعر الشركاء».'),
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'السياسة الحالية'), e('small', {}, ppSummary())]), e('div', { class: 't2-row-wrap' }, [DS.button('قالب عرض سعر الشركاء', { ui: 'file-text', onClick: function () { go('other', 'sys-qt'); } }), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })])]),
+    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, 'السياسة الحالية'), e('small', {}, ppSummary())]), e('div', { class: 't2-row-wrap' }, [DS.button('قالب عرض سعر الشركاء', { ui: 'file-text', onClick: function () { esxOpen('pq'); } }), DS.button('حفظ', { tone: 'primary', ui: 'check', onClick: save })])]),
     e('div', { class: 'ax-form' }, [
       formSec('1. قيمة الطلب', 'في نموذج العميل', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [F('min', 'الحد الأدنى (ريال)', num(D, 'min')), F('max', 'الحد الأعلى (ريال)', num(D, 'max')), F('step', 'الفاصل بين المبالغ في القائمة (ريال)', num(D, 'step')),
         e('small', { class: 'cu-dr-hint cu-bd-wide' }, 'القائمة تُبنى من هذه الحدود، و«مبلغ مختلف» يُقبل داخلها فقط.')])]),
@@ -21870,54 +21794,13 @@ function esRun(C) {
   if (t > 0) return esToTarget(c, C.date, { target: t, fullItems: ES_DISC.filter(function (k) { return C.mode[k] === 'full'; }), shareItems: ES_DISC.filter(function (k) { return C.mode[k] === 'share'; }), reason: C.reason });
   return esSettle(c, C.date);
 }
-function sysEsPageV1(calcOnly) {
-const can = cuCan('settings.qtpl'), D = ADM.esD || (ADM.esD = esDraft()), C = ADM.esC || (ADM.esC = esCalc0());
-  const inp = function (k, o) { return e('input', Object.assign({ class: 't2-input', value: D[k] || '', disabled: can ? null : 'disabled', onInput: function (ev) { D[k] = ev.target.value; } }, o || {})); };
-  const ta = function (k, rows) { return e('textarea', { class: 't2-input', rows: String(rows || 3), disabled: can ? null : 'disabled', onInput: function (ev) { D[k] = ev.target.value; } }, D[k] || ''); };
-  const ck = function (k, t) { return tmCk(D.show, k, t, false, true); };
-  const tpl = function () { const T = JSON.parse(JSON.stringify(D)); T.steps = String(D.stepsT || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean); delete T.stepsT; return T; };
-  let R = null, err = '';
-  try { R = esRun(C); } catch (x) { err = (x && x.message) || 'تعذّر الحساب.'; }
-  const L = R ? esFromCalc(R) : null, T = tpl();
-  const cin = function (k, o) { return e('input', Object.assign({ class: 't2-input', value: C[k], onChange: function (ev) { C[k] = ev.target.value; draw(); } }, o || {})); };
-  const tin = function (k) { return DS.editField(ES_NAME[k], e('input', { class: 't2-input', type: 'number', min: '0', step: '0.01', dir: 'ltr', value: C.totals[k], onChange: function (ev) { C.totals[k] = ev.target.value; draw(); } })); };
-  const prev = function () { if (!L) { snack(err || 'أكمل بيانات الحاسبة أولًا'); return; } dcPdf(dcSettleDoc(L, true, T)); };
-  const save = function () {
-    const c = tpl(); if (String(c.issuer || '').trim().length < 2 || String(c.title || '').trim().length < 2) { snack('اكتب الجهة المُصدِرة وعنوان المستند'); return; }
-    if (JSON.stringify(c) === JSON.stringify(JSON.parse(JSON.stringify(ES)))) { snack('لا تغيير'); return; }
-    Object.keys(ES).forEach(function (k) { delete ES[k]; }); Object.assign(ES, c); ADM.esD = esDraft(); cuSetLog('عدّل قالب سداد قيمة المنتج'); snack('حُفظ القالب — يُطبَّق على كل فاتورة سداد قيمة المنتج جديدة'); draw();
-  };
-  const msg = L ? esFill(T, L) : '';
-  const bub = function (t, x) { return e('div', { class: 'stl-lns' }, [e('b', {}, t), e('div', { class: 't2-input', style: 'white-space:pre-wrap;line-height:1.8;height:auto' }, x)]); };
-  const OUT = [DS.note('info', 'قالب سداد قيمة المنتج — على ورق عرض سعر الشركاء وختمه', 'يصدر عن ' + (ES.issuer || 'قسم التحصيل') + '. تُعفى فائدة الأشهر التي لم تبدأ، والخصم الإضافي على البنود المختارة فقط، والضريبة محصّلة ولا تنقص، والفاتورة صالحة حتى تاريخ الدفعة القادمة (شاملًا). الفواتير الصادرة تبقى كما صدرت.'),
-    can ? null : cuRO('settings.qtpl'),
-    e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, T.title), e('small', {}, T.org + ' · ' + T.issuer)]), e('div', { class: 't2-row-wrap' }, [liveOk(DS.button('معاينة PDF', { ui: 'file-text', onClick: prev })), can ? liveOk(DS.button('حفظ القالب', { tone: 'primary', ui: 'check', onClick: save })) : null])]),
-    e('div', { class: 'ax-form' }, [
-      calcOnly ? null : tmFs('1. الترويسة والجهة المُصدِرة', null, [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('اسم المنشأة', inp('org')), DS.editField('الجهة المُصدِرة', inp('issuer')), DS.editField('عنوان المستند', inp('title')), DS.editField('الشعار النصي في الختام', inp('slogan')), DS.editField('عبارة الإصدار الآلي', inp('auto'))])]),
-      calcOnly ? null : tmFs('2. المحتوى', 'يظهر على المستند بالترتيب', [DS.editField('المقدمة', ta('intro', 2)), DS.editField('خطوات القبول والسداد — خطوة في كل سطر', ta('stepsT', 4)), DS.editField('التنويه', ta('note', 3)),
-        e('div', { class: 't2-row-wrap' }, [ck('items', 'البنود المخصومة'), ck('valid', 'صلاحية العرض والدفعة القادمة'), ck('steps', 'الخطوات'), ck('note', 'التنويه'), ck('appr', 'الاعتماد والختم')])]),
-      calcOnly ? null : tmFs('3. رسالة العميل', 'الحقول: {name} {contract} {remaining} {exempt} {extra} {due} {valid} {date} {no}', [DS.editField('نص الرسالة', ta('msg', 7))]),
-      tmFs(calcOnly ? 'الحاسبة' : '4. الحاسبة', calcOnly ? 'تجربة القواعد على عقد افتراضي — لا تحفظ شيئًا، وأرقامها تُستعمل في «معاينة PDF» أعلاه' : 'تجربة القواعد على عقد افتراضي — لا تحفظ شيئًا', [
-        e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('رقم العقد', cin('no', { dir: 'ltr' })), DS.editField('العميل', cin('customer')), DS.editField('تاريخ أول دفعة', cin('firstDue', { type: 'date', dir: 'ltr' })), DS.editField('تاريخ السداد', cin('date', { type: 'date', dir: 'ltr' })),
-          DS.editField('عدد الدفعات', cin('months', { type: 'number', min: '1', dir: 'ltr' })), DS.editField('الدفعات المسدَّدة', cin('paid', { type: 'number', min: '0', dir: 'ltr' }))]),
-        e('div', { class: 'sys-form is-2 cu-bd-form' }, ES_ITEMS.map(function (x) { return tin(x[0]); })),
-        e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('التقريب إلى مبلغ (اختياري)', cin('target', { type: 'number', min: '0', step: '0.01', dir: 'ltr' })), DS.editField('سبب الخصم الإضافي', cin('reason'))].concat(ES_DISC.map(function (k) {
-          return DS.editField(ES_NAME[k], DS.select({ value: C.mode[k] || 'none', options: [['none', '—'], ['full', 'كامل أولًا'], ['share', 'توزيع']], onChange: function (v) { C.mode[k] = v; draw(); } })); }))),
-        err ? DS.note('warn', 'تعذّر الحساب', err) : null,
-        R ? DS.fields([['المتبقي على العقد', esMoney(R.ledger.remaining)], ['إعفاء فائدة الأشهر التي لم تبدأ', '− ' + esMoney(R.ledger.interestExemption)], ['خصم إضافي', '− ' + esMoney(R.ledger.extraDiscount)], ['المبلغ المطلوب لإغلاق العقد', esMoney(R.ledger.due)],
-          ['صافي الفائدة', esMoney(R.netInterest)], ['صالح حتى', qDmy(R.validUntil)], ['الدفعة القادمة', R.nextDue ? '#' + R.nextInstallmentNo + ' · ' + qDmy(R.nextDue) + ' · ' + esMoney(R.nextInstallment) : '—'], ['المتأخر', R.overdue.count ? fmtNum(R.overdue.count) + ' · ' + esMoney(R.overdue.amount) : 'لا يوجد']]
-          .concat(R.discountedItems.map(function (x) { return [x.name, '− ' + esMoney(x.discount) + (x.fullyExempt ? ' · إعفاء كامل' : '')]; }))) : null,
-        R && R.flags.length ? DS.note('warn', 'تنبيه', R.flags.join(' · ')) : null]),
-      L && !calcOnly ? tmFs('5. معاينة الرسالة', 'كما تصل العميل — لا يُرسل شيء من هنا', [bub('واتساب', msg), bub('البريد — ' + T.title + ' · العقد ' + L.contract, msg), bub('إشعار التطبيق', T.title + ': ' + esMoney(L.due) + ' — صالح حتى ' + qDmy(L.valid))]) : null])];
-return calcOnly ? [OUT[OUT.length - 1]] : OUT;
-}
 /* v729: صفحة القالب بالتصميم المعتمد — المحرّر أعلاه، والحاسبة أسفله */
 /* v740 (P4): القوالب الخمسة القديمة في «قوالب المستندات» — المحتوى في المحرّر الموحّد بمواصفة لكل قالب، والإعدادات الحسابية (التصميم · الترقيم · الصلاحية · الضريبة · البنود وطرق الاحتساب) بلوحتها الحالية داخل المستند نفسه. كل قالب يُحفظ في مفتاحه كما كان، والرسم لم يتغيّر. */
 const ESX_ALLK = ['es', 'dsn', 'qt', 'qs', 'qc', 'pc', 'si', 'tax', 'stamp'];
 const ESX_HDRV = function () { return TQ_HDR.map(function (x) { return { l: x[1], p: 'hdr.' + x[0] }; }); };
 function esxRepl(T, X) { Object.keys(T).forEach(function (k) { delete T[k]; }); Object.assign(T, X); }
 /* لوحة الإعدادات: من صفحة القالب القديمة نفسها، بلا أقسام المحتوى التي صارت في المحرّر */
-function esxOldCfg(nodes, drop) { const keep = [].concat(nodes).filter(function (n) { return n && n.classList && (n.classList.contains('ax-top') || n.classList.contains('ax-form')); }); const box = e('div', { class: 'esx-ext' }, [DS.note('info', 'إعدادات القالب الحسابية', 'التصميم والترقيم والصلاحية والضريبة والبنود وطرق احتسابها — تُحفظ بزر «حفظ القالب» في هذه اللوحة، ومحتوى المستند يُحفظ بـ«مراجعة وحفظ» أعلى المحرّر.')].concat(keep)); box.dataset.ownSave = '1'; box.querySelectorAll('.t2-sec[data-ak]').forEach(function (s) { if (drop.test(s.getAttribute('data-ak') || '')) s.remove(); }); return box; }
+function esxCfgBox(nodes) { const keep = [].concat(nodes).filter(function (n) { return n && n.classList && (n.classList.contains('ax-top') || n.classList.contains('ax-form')); }); const box = e('div', { class: 'esx-ext' }, [DS.note('info', 'إعدادات القالب الحسابية', 'التصميم والترقيم والصلاحية والضريبة والبنود وطرق احتسابها — تُحفظ بزر «حفظ القالب» في هذه اللوحة، ومحتوى المستند يُحفظ بـ«مراجعة وحفظ» أعلى المحرّر.')].concat(keep)); box.dataset.ownSave = '1'; return box; }
 function esxGQuote(kind) {
   const cur = function () { return TQ_OF[kind](); }, nm = TQ_NAME[kind], pq = kind === 'pq';
   return { k: kind, vkey: { pq: 'qt', sq: 'qs', cq: 'qc' }[kind], name: nm, tabL: 'العرض', icon: kind === 'sq' ? 'store' : kind === 'cq' ? 'req' : 'file', orgP: 'org',
@@ -21934,7 +21817,7 @@ function esxGQuote(kind) {
     check: function (X) { if (String(X.org || '').trim().length < 3) return 'أدخل اسم المنشأة'; if (String(X.issuer || '').trim().length < 2) return 'أدخل الجهة المُصدِرة'; if ((X.terms || []).some(function (g) { return (g[2] || []).some(function (t) { return String(t[0]).trim().length < 2 || String(t[1]).trim().length < 10; }); })) return 'أكمل عنوان كل بند ونصه في الشروط (10 أحرف على الأقل)'; return ''; },
     save: function (X, note) { esxRepl(cur(), X); ADM['tq_' + kind] = tqDraftQ(cur()); cuSetLog('عدّل قالب ' + nm + (note ? ' · ' + note : '')); return Promise.resolve(); },
     preview: function (X) { tqPreviewQ(tqDraftQ(X), kind); },
-    ext: function () { if (!ADM['tq_' + kind]) ADM['tq_' + kind] = tqDraftQ(cur()); return esxOldCfg(tqQuotePage(kind), pq ? /:(الترويسة والجهة المُصدِرة|مدة التنفيذ والتنويه)$|الشروط/ : /:(الترويسة والجهة المُصدِرة|مدة التنفيذ والتنويه|الإظهار والإخفاء)$|الشروط/); } };
+    ext: function () { if (!ADM['tq_' + kind]) ADM['tq_' + kind] = tqDraftQ(cur()); return esxCfgBox(esxCfgQuote(kind)); } };
 }
 function esxGSi() {
   return { k: 'si', vkey: 'si', name: TQ_NAME.si, tabL: 'الفاتورة', icon: 'inv', orgP: 'org',
@@ -21959,7 +21842,7 @@ function esxGPc() {
     check: function (X) { if (String(X.name || '').trim().length < 2) return 'أدخل اسم القالب'; if (String(X.title || '').trim().length < 2) return 'أدخل عنوان العقد'; if (String(X.org || '').trim().length < 3) return 'أدخل اسم المنشأة'; if (X.show && X.show.pre && String(X.pre || '').trim().length < 20) return 'أدخل التمهيد (20 حرفًا على الأقل) أو أخفِه'; if (X.show && X.show.clauses) { if (!(X.clauses || []).length) return 'أضف بندًا أو أخفِ البنود'; if (X.clauses.some(function (t) { return String(t[0]).trim().length < 2 || String(t[1]).trim().length < 10; })) return 'أكمل عنوان كل بند ونصه'; } const id = cur(); if (QPCS.some(function (t) { return t.id !== id && t.name === String(X.name).trim(); })) return 'الاسم مستعمل لقالب آخر'; return ''; },
     save: function (X, note) { const id = cur(), T = pcTpl(id); const c = { name: String(X.name).trim(), title: String(X.title).trim(), org: String(X.org).trim(), cr: String(X.cr || '').trim(), addr: String(X.addr || '').trim(), pre: String(X.pre || '').trim(), sign: String(X.sign || '').trim(), clauses: (X.clauses || []).map(function (t) { return [String(t[0]).trim(), String(t[1]).trim()]; }), show: Object.assign({}, X.show), hdr: Object.assign({}, X.hdr), page: Object.assign({}, X.page) }; Object.assign(T, c, { _hid: X._hid, _ui: X._ui }); ADM['tq_pc_' + id] = pcDraft(T); return Promise.resolve(id === 'full' ? pcDbSave(c) : null).then(function () { cuSetLog('عدّل قالب العقد «' + T.name + '»' + (note ? ' · ' + note : '')); }); },
     preview: function (X) { let c = null; try { c = axCts('me').filter(function (x) { return !x.from; })[0] || axCts('me')[0]; } catch (x) { c = null; } if (!c) { const t = lvToday(), y = +t.slice(0, 4), m = +t.slice(5, 7), pays = []; for (let i = 1; i <= 12; i++) pays.push({ due: new Date(Date.UTC(y, m - 1 + i, 7)).toISOString().slice(0, 10), amt: i < 12 ? 540.83 : 540.87 }); c = { no: 'TRA-' + t.replace(/-/g, '') + '-000', product: 'iPhone 17 Pro · 256GB', total: 6490, n: 12, inst: 540.83, pays: pays, from: null, k: 'act' }; } dcPdf(dcCtDoc('me', c, true, Object.assign({ id: cur() }, X))); },
-    ext: function () { return esxOldCfg(tqCtPage2(), /:(اسم القالب والعنوان|الإظهار والإخفاء|التمهيد|بنود العقد|عبارة التوقيع)$/); } };
+    ext: function () { return esxCfgBox(esxCfgPc()); } };
 }
 function esxGdocs() { const L = []; [function () { return esxGQuote('pq'); }, function () { return esxGQuote('sq'); }, function () { return esxGQuote('cq'); }, esxGPc, esxGSi].forEach(function (f) { try { L.push(f()); } catch (x) { try { console.error('[esx gdoc]', x); } catch (y) { void y; } } }); return L; }
 /* v744 (P5): «رسائل العميل» في «قوالب المستندات» تعرض الرسالة الموحّدة المعتمدة للمستند من «قوالب الرسائل» (msg_catalog) —
@@ -22664,7 +22547,7 @@ items: (R.discountedItems || []).map(function (x) { return [x.name, '− ' + esM
 banks: function () { return clApi('/admin/api/banks').then(function (j) { BTR_BANKS.L = (j && j.banks) || []; BTR_BANKS.at = Date.now(); return BTR_BANKS.L; }); },
 addBank: function (a) { return clPost('/admin/api/banks', { id: null, bank: a.bank, holder: a.holder, iban: a.iban, label: a.label || '', default: false, active: true }).then(function (r) { if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر حفظ الحساب.'); BTR_BANKS.at = 0; return r; }); },
 preview: function (T) { try { const C = ADM.esC || (ADM.esC = esCalc0()); dcPdf(dcSettleDoc(esFromCalc(esRun(C)), true, T)); } catch (x) { snack((x && x.message) || 'أكمل بيانات الحاسبة أسفل الصفحة لمعاينة PDF'); } },
-save: function (T, note) { if (!cuCan('settings.qtpl')) return Promise.reject(new Error('لا تملك صلاحية تعديل القالب')); Object.keys(ES).forEach(function (k) { delete ES[k]; }); Object.assign(ES, T); ADM.esxSig = JSON.stringify(ES); delete ADM.esD; cuSetLog('عدّل قوالب المستندات — الإصدار ' + (T.ver || '') + (note ? ' · ' + note : '')); return Promise.resolve(); } }); } catch (x) { try { console.error('[esx]', x); } catch (y) { void y; } ADM.esxEl = null; ADM.esxSig = ''; return sysEsPageV1(false); } }
+save: function (T, note) { if (!cuCan('settings.qtpl')) return Promise.reject(new Error('لا تملك صلاحية تعديل القالب')); Object.keys(ES).forEach(function (k) { delete ES[k]; }); Object.assign(ES, T); ADM.esxSig = JSON.stringify(ES); delete ADM.esD; cuSetLog('عدّل قوالب المستندات — الإصدار ' + (T.ver || '') + (note ? ' · ' + note : '')); return Promise.resolve(); } }); } catch (x) { try { console.error('[esx]', x); } catch (y) { void y; } ADM.esxEl = null; ADM.esxSig = ''; return [DS.note('warn', 'تعذّر فتح «قوالب المستندات»', ((x && x.message) || 'خطأ غير متوقع') + ' — أعد تحميل الصفحة، وإن تكرّر فأبلغ الدعم الفني.')]; /* v761: لا محرّر قديم احتياطي */ } }
 if (ADM.esxEl) setTimeout(function () { const el = ADM.esxEl; if (!el) return; if (start && ADM.esxLastGo !== start && el.__esxGo) { ADM.esxLastGo = start; if (start === 'brand') { if (el.__esxTab) el.__esxTab('brand'); } else el.__esxGo(start); } else if (el.__esxExt) el.__esxExt(); }, 0); return [can ? null : cuRO('settings.qtpl'), ADM.esxEl]; /* v732: الحاسبة صارت تبويبًا داخل المحرّر بنفس تصميمه */
 }
 /* إعدادات سداد قيمة المنتج — في «إعدادات النظام · قسم العملاء» */
@@ -24904,7 +24787,7 @@ if (LIVE.on) secDevices = function () {
   H('admin', ['cu-mem', 'cu-pf-launch'], 'العضويات والتدشين', 'تُعرض العضويات وتدشين الحسابات من الخادم عند ربطها.');
   H('admin', ['cu-comms'], 'الإشعارات والإعلانات', 'الإرسال للعملاء يُفعَّل عند ربطه بالخادم — لا تُرسل أي رسالة الآن.');
   H('admin', ['cu-pf-req', 'cu-pf-acct'], 'طلبات الملف وإدارة الحساب', 'تُعرض طلبات تحديث الملف ومشكلات الحسابات هنا من الخادم عند ربطها.');
-  H('admin', ['sys', 'sys-roles', 'sys-role', 'sys-titles', 'sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si', 'sys-stamp', 'sys-pay', 'sys-invites', 'sys-loy', 'sys-loy-appr'], 'إعدادات النظام', 'تُقرأ الإعدادات وتُحفظ من الخادم عند ربطها — لا تُعرض قيم تجريبية.');
+  H('admin', ['sys', 'sys-roles', 'sys-role', 'sys-titles', 'sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-pay', 'sys-invites', 'sys-loy', 'sys-loy-appr'], 'إعدادات النظام', 'تُقرأ الإعدادات وتُحفظ من الخادم عند ربطها — لا تُعرض قيم تجريبية.');
 })();
 /* ===== حارس الإجراءات: لا تنفيذ لأي إجراء يغيّر البيانات ما لم يُربط بالخادم ===== */
 const LIVE_DIA = /[\u064B-\u0652\u0670\u0640]/g;
@@ -28419,9 +28302,9 @@ const LV_SETS = {
 es: [function () { return qtClone(ES); }, function (v) { if (!v || typeof v !== 'object' || Array.isArray(v)) return; const D = qtClone(ES0), X = Object.assign({}, D, v); X.show = Object.assign({}, D.show, (v.show && typeof v.show === 'object') ? v.show : {}); if (!Array.isArray(X.steps)) X.steps = D.steps; lvRepl(ES, X); delete ADM.esD; }],
 dsn: [function () { return qtClone(DOCDSN); }, function (v) { if (!v || typeof v !== 'object') return; Object.keys(DOCDSN).forEach(function (k) { if (v[k] === 1 || v[k] === 2) DOCDSN[k] = v[k]; }); }] };
 /* الصفحة ← المفاتيح التي يغيّرها حفظها */
-const LV_SETP = { 'sys-sla': ['sla'], 'sys-replies': ['replies'], 'sys-ntpl': ['ntpl'], 'sys-disc': ['disc'], 'sys-tax': ['tax', 'si'], 'sys-qt': ['qt', 'dsn'], 'sys-qs': ['qs', 'dsn'], 'sys-qc': ['qc', 'dsn'], 'sys-pc': ['pc', 'dsn'], 'sys-si': ['si', 'dsn'], 'sys-stamp': ['stamp'], 'sys-es': ['es'] };
+const LV_SETP = { 'sys-sla': ['sla'], 'sys-replies': ['replies'], 'sys-ntpl': ['ntpl'], 'sys-disc': ['disc'], 'sys-tax': ['tax', 'si'], 'sys-es': ['es'] };
 /* v741 (P4): «قوالب المستندات» الموحّدة — الحفظ منها يشمل مفاتيح القوالب كلها (مساراتها القديمة تفتح الصفحة نفسها) */
-['sys-es', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si'].forEach(function (r) { LV_SETP[r] = ['es', 'dsn', 'qt', 'qs', 'qc', 'pc', 'si', 'tax']; }); /* v725: es · dsn */
+['sys-es'].forEach(function (r) { LV_SETP[r] = ['es', 'dsn', 'qt', 'qs', 'qc', 'pc', 'si', 'tax']; }); /* v725: es · dsn */
 const lvLogPush = Array.prototype.push;
 async function lvSetLoad() {
   try {
@@ -28466,9 +28349,9 @@ function lvInvPage() {
   });
 }
 if (LIVE.on) {
-  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si', 'sys-stamp', 'sys-es', 'sys-invites'].forEach(function (k) { delete LIVE_HOLD.admin[k]; });
+  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-es', 'sys-invites'].forEach(function (k) { delete LIVE_HOLD.admin[k]; });
   CU_SETLOG.push = function (row) { const r = lvLogPush.call(CU_SETLOG, row); lvSetPersist(row); return r; };
-  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-qt', 'sys-qs', 'sys-qc', 'sys-pc', 'sys-si', 'sys-stamp', 'sys-es'].forEach(function (k) {
+  ['sys-sla', 'sys-replies', 'sys-ntpl', 'sys-log', 'sys-disc', 'sys-tax', 'sys-es'].forEach(function (k) {
     const P = LP[k]; if (!P) return; const r0 = P.run; P.run = function () { return lvSetReady(P.t || 'إعدادات النظام') || lvOk([].concat(r0.apply(this, arguments)).filter(Boolean)); }; });
   LIVE_PAGES.admin['sys-invites'] = lvInvPage;
   if (/^\/staff/.test(location.pathname)) { LIVE_SET.at = -1; lvSetLoad(); }
