@@ -27676,6 +27676,22 @@ function lvDevOpen(uid, name, D) {
 }
 /* v735: بيانات مختصرة لقائمة العملاء وإجراءات العقد في المنصة الجديدة (staff/next) — قراءة فقط، لا كتابة ولا منطق جديد */
 function tqnD10(d) { try { if (!d) return ''; if (typeof d === 'string') return d.slice(0, 10); if (d instanceof Date) return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); return String(d).slice(0, 10); } catch (err) { return ''; } }
+/* v750: staff/next — ملف العميل: تنقّل للقراءة فقط (تقرير العميل · العودة إلى الملف) وأعداد حيّة (الطلبات · التحويلات). لا يعمل خارج /staff/next/ */
+if (TQN) {
+  try {
+    window.TQN_CF = {
+      pfc: function () { return String(ADM.pfc || ''); },
+      has: function (k) { return !!LP[k]; },
+      go: function (k, o) { o = o || {}; if (!LP[k]) return; if (o.pfc) { ADM.pfc = o.pfc; FX.pfc = o.pfc; } if (o.rp) { ADM.rpCid = o.rp; ADM.crTab = 'sum'; } go('other', k); },
+      cnt: function () {
+        const id = ADM.pfc; if (!id) return null; let q = null, x = null;
+        try { if (typeof LV_SR !== 'undefined' && LV_SR && Array.isArray(LV_SR.all)) q = LV_SR.all.filter(function (y) { return y && y.user_id === id && !/^SR-TEST/i.test(String(y.req_no || '')); }).length; } catch (err) { void err; }
+        try { if (AX && Array.isArray(AX.tr) && AX.tr.length) x = AX.tr.filter(function (t) { return t.cid === id; }).length; } catch (err) { void err; }
+        return { q: q, x: x };
+      }
+    };
+  } catch (err) { void err; }
+}
 function tqnCuK(r) {
   try {
     const L = ((LIVE_ADM.ct || {})[r.id] || []);
