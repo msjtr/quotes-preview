@@ -164,7 +164,7 @@
       });
     }).catch(function(err){ waitDone(); console.error(err) });
   }
-  fr.addEventListener('load',function(){ waitDone(); jumpTab() });
+  fr.addEventListener('load',function(){ waitDone(); jumpTab(); try{ if(typeof deskBridge==='function') deskBridge(fr.contentDocument) }catch(e){} });
   /* v743: رابط مباشر لتبويب داخل الصفحة (مثل #/desk#follow «متابعة الطلب»): بعد الرسم يُمرَّر إلى صف التبويبات المختار حتى يظهر نموذجه */
   function jumpTab(){ try{ var h=cur&&cur.hash; if(!h||!/^[a-z0-9-]+$/.test(h)) return; var d=fr.contentDocument; if(!d) return; setTimeout(function(){ var k=d.querySelector('.t2-mp-i[data-kind="'+h+'"]'); if(k){ k.click(); return; } var c=d.querySelector('.hf-c[data-flt="'+h+'"]'); if(!c) return; var row=c.closest('.hf-row')||c; row.scrollIntoView({block:'start',behavior:'smooth'}); },700); }catch(e){} }
   function setBtn(p){ page=p; document.querySelectorAll('.pv-bar button[data-page]').forEach(function(b){var on=b.dataset.page===p; if(b.classList.contains('is-on')!==on) b.classList.toggle('is-on',on)}) }
@@ -206,3 +206,88 @@
   if(!s||!K[s.k]||Date.now()-s.at>15*60*1000){ sessionStorage.removeItem(KEY); return }
   var n=0, t=setInterval(function(){ n++; try{ if(window.TQ_PUSH_GO&&window.TQ_PUSH_GO(K[s.k],true)){ clearInterval(t); sessionStorage.removeItem(KEY); var k=K[s.k], H={req:'طلبات خدماتي',contract:'عقودي',paid:'مدفوعاتي',msg:'مركز المراسلات',member:'العضوية'}; /* التطبيق قد يرسم صفحته الأولى بعد جاهزيته — نعيد الفتح حتى يظهر القسم (حتى 8 ثوانٍ) */ [800,2500,5000,8000].forEach(function(ms){ setTimeout(function(){ try{ var h=document.querySelector('h1,h2,.t2-h,.pg-t'); if(!h||h.textContent.indexOf(H[k])<0) window.TQ_PUSH_GO(k) }catch(e){} },ms) }) } }catch(e){} if(n>240) clearInterval(t) },500);
 }catch(e){} })();
+/* v752: مركز المراسلات في /home/ مربوط بالنظام الفعلي (/api/desk) — كانت الصفحة عيّنة لا تُرسل شيئًا.
+   • الزائر: رمز تحقق على بريده وجواله (واتساب) ثم تُسجَّل المراسلة برقمها الحقيقي.
+   • العميل المسجّل: تُسجَّل بحسابه مباشرة (ورمز الجوال فقط إن كتب جوالًا غير جوال حسابه).
+   • متابعة مراسلة: رمز على البريد المسجّل فيها ثم تظهر حالتها والردود.
+   يُستبدل بربط ts.js في البناء القادم (tools/build.py). */
+function deskBridge(d){ try{
+  if(!d||d.__tqDesk||(!d.getElementById('dk-form')&&!d.getElementById('fw-go'))) return; d.__tqDesk=true;
+  var $=function(id){ return d.getElementById(id) };
+  var API='/api/desk';
+  /* إزالة عبارة المعاينة */
+  [].forEach.call(d.querySelectorAll('p,small,div'),function(p){ if(p.children.length<3&&/هذه معاينة/.test(p.textContent)){ p.innerHTML=p.innerHTML.replace(/\s*هذه معاينة[^.<]*\.?/g,'') } });
+  function sess(){ try{ var s=JSON.parse(localStorage.getItem('tera.admin.session')||'null'); if(s&&s.access_token&&(!s.expires_at||s.expires_at*1000>Date.now())) return s.access_token }catch(e){} return '' }
+  function call(path,body,hdr){ var h={'content-type':'application/json'}; for(var k in (hdr||{})) h[k]=hdr[k];
+    return fetch(API+path,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){ return r.json().catch(function(){ return {ok:false} }).then(function(j){ j._s=r.status; return j }) }).catch(function(){ return {ok:false,message:'تعذر الاتصال. تحقق من الإنترنت وأعد المحاولة.'} }); }
+  var member=null; /* {token, profile} لعميل مسجّل غير موظف */
+  var tk=sess(); if(tk) call('/session',null,{authorization:'Bearer '+tk}).then(function(r){ if(r&&r.signed_in&&!r.staff&&r.profile){ member={token:tk,p:r.profile};
+    var em=$('dk-em'); if(em&&!em.value){ em.value=r.profile.email||'' } var nm=$('dk-name'); if(nm&&!nm.value) nm.value=r.profile.name||''; } });
+  function msg(id,k,t){ var m=$(id); if(!m) return; m.className='ts-msg'+(k?' '+k:''); m.textContent=t||''; m.hidden=!t; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c] }) }
+  var reMail=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  function phoneOf(){ var el=$('dk-ph'); if(!el) return ''; var loc=el.value.replace(/\D/g,'').replace(/^0+/,''); var cc=$('dk-ph-cc'); var code=String(cc&&cc.value||'966').replace(/\D/g,'')||'966';
+    return code==='966'?loc:'+'+code+loc; }
+  /* نموذج «مراسلة جديدة» → حقول النظام */
+  var MAP={ complaint:{'شكوى عن خدمة':'خدمة','شكوى عن طلب':'طلب','شكوى عن تعامل':'تعامل أو تواصل'},
+            support:{'مشكلة في الحساب':'مشكلة في الحساب','مشكلة في المنصة':'مشكلة في استخدام المنصة','مشكلة في الدفع':'مشكلة في الدفع'} };
+  function payload(){ var on=d.querySelector('.t2-mp-i[data-kind].is-on'); var kind=on?on.dataset.kind:''; var type=($('dk-type')||{}).value||'';
+    var b={ name:$('dk-name').value.trim(), email:$('dk-em').value.trim().toLowerCase(), phone:phoneOf(), subject:$('dk-subj').value.trim(), details:$('dk-det').value.trim(), extra:'', kind:kind };
+    if(kind==='request'){ b.request_type=type==='طلب متعلق بخدمة قائمة'?'طلب متعلق بخدمة قائمة':'طلب جديد'; b.service=type==='طلب عرض سعر'?'عرض سعر':'منتج أو خدمة'; b.extra='نوع الطلب: '+type }
+    else if(kind==='complaint'){ b.complaint_type=MAP.complaint[type]||'أخرى'; b.extra='نوع الشكوى: '+type }
+    else if(kind==='support'){ b.support_type=MAP.support[type]||'أخرى'; b.extra='نوع الدعم: '+type }
+    else if(kind==='inquiry'){ b.kind='support'; b.support_type='استفسار عن خدمة'; b.extra='استفسار '+type }
+    return b; }
+  function check(b){ var bad=[['dk-name',b.name.length>=2],['dk-ph',/^\+?\d{9,15}$/.test(b.phone)],['dk-em',reMail.test(b.email)],['dk-type',!!($('dk-type')||{}).value],['dk-subj',b.subject.length>=3],['dk-det',b.details.length>=10]];
+    bad.forEach(function(x){ var e=$(x[0]); if(e) e.classList.toggle('bad',!x[1]) }); var miss=bad.filter(function(x){ return !x[1] });
+    if(!b.kind){ msg('dk-msg','bad','اختر نوع المراسلة.'); return false }
+    if(miss.length){ msg('dk-msg','bad','يرجى استكمال البيانات المظللة: الاسم، والجوال، والبريد، والنوع، والموضوع، والتفاصيل (10 أحرف على الأقل).'); return false }
+    if(member&&member.p.email&&b.email!==String(member.p.email).toLowerCase()){ msg('dk-msg','bad','اكتب بريد حسابك المسجّل ('+member.p.email+').'); $('dk-em').classList.add('bad'); return false }
+    return true; }
+  /* نافذة رموز التحقق */
+  function modal(title,rows,onOk){ var w=d.createElement('div'); w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true');
+    w.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(7,21,46,.55);display:flex;align-items:center;justify-content:center;padding:16px;direction:rtl';
+    w.innerHTML='<div style="background:#fff;color:#0B2552;border-radius:18px;max-width:420px;width:100%;padding:20px 18px;box-shadow:0 18px 50px rgba(0,0,0,.25);font:inherit"><b style="font-size:18px;display:block;margin-bottom:6px">'+esc(title)+'</b>'
+      +rows.map(function(r){ return '<label style="display:block;margin:14px 0 6px;font-weight:600">'+esc(r.label)+'</label><input data-k="'+r.k+'" inputmode="numeric" autocomplete="one-time-code" maxlength="8" style="width:100%;box-sizing:border-box;font:inherit;font-size:20px;letter-spacing:6px;text-align:center;padding:10px;border:1.5px solid #cdd6e3;border-radius:12px"><small style="display:block;color:#5b6b82;margin-top:4px">'+esc(r.hint)+'</small>' }).join('')
+      +'<p data-m style="display:none;margin:12px 0 0;color:#b42318;font-weight:600"></p><div style="display:flex;gap:8px;margin-top:16px"><button type="button" data-ok style="flex:1;font:inherit;font-weight:700;padding:11px;border:0;border-radius:12px;background:#0AA5AD;color:#fff;cursor:pointer">تحقق وأرسل</button><button type="button" data-x style="font:inherit;padding:11px 14px;border:1.5px solid #cdd6e3;border-radius:12px;background:#fff;color:#0B2552;cursor:pointer">إلغاء</button></div></div>';
+    d.body.appendChild(w); var first=w.querySelector('input'); if(first) first.focus();
+    var api={ el:w, close:function(){ w.remove() }, err:function(t){ var p=w.querySelector('[data-m]'); p.textContent=t||''; p.style.display=t?'block':'none' }, busy:function(on){ var b=w.querySelector('[data-ok]'); b.disabled=on; b.style.opacity=on?.6:1 } };
+    w.querySelector('[data-x]').onclick=api.close;
+    w.querySelector('[data-ok]').onclick=function(){ var v={}; [].forEach.call(w.querySelectorAll('input[data-k]'),function(i){ v[i.dataset.k]=i.value.replace(/\D/g,'') }); onOk(v,api) };
+    return api; }
+  function done(ref){ var r=$('dk-ref'); if(r) r.textContent='#'+ref; var f=$('dk-form'), x=$('dk-done'); if(f) f.hidden=true; if(x){ x.hidden=false; try{ x.scrollIntoView({block:'start',behavior:'smooth'}) }catch(e){} } }
+  var sending=false;
+  function submit(b,hdr,m){ return call('/threads',b,hdr).then(function(r){ if(r&&r.ok&&r.ref){ if(m) m.close(); done(r.ref); return }
+      var t=(r&&(r.errors&&r.errors.join(' ')||r.message))||'تعذر إرسال المراسلة. حاول مرة أخرى.'; if(m){ m.busy(false); m.err(t) } else msg('dk-msg','bad',t); }); }
+  function send(){ if(sending) return; var b=payload(); if(!check(b)) return; msg('dk-msg'); sending=true; var fin=function(){ sending=false };
+    var hdr=member?{authorization:'Bearer '+member.token}:null;
+    var needEmail=!member, needPhone=!member||String(member.p.phone||'').replace(/\D/g,'').slice(-9)!==b.phone.replace(/\D/g,'').slice(-9);
+    if(!needEmail&&!needPhone){ msg('dk-msg','warn','جارٍ الإرسال…'); return submit(b,hdr).then(fin) }
+    msg('dk-msg','warn','جارٍ إرسال رموز التحقق…');
+    var jobs=[]; if(needEmail) jobs.push(call('/verify/start',{channel:'email',dest:b.email})); if(needPhone) jobs.push(call('/verify/start',{channel:'phone',dest:b.phone}));
+    Promise.all(jobs).then(function(rs){ var bad=rs.filter(function(r){ return !r||!r.ok }); if(bad.length){ msg('dk-msg','bad',bad[0].message||'تعذر إرسال رمز التحقق.'); return fin() }
+      msg('dk-msg'); var i=0, rows=[]; if(needEmail){ rows.push({k:'email',label:'رمز التحقق المرسل إلى بريدك',hint:rs[i].masked||b.email}); i++ } if(needPhone) rows.push({k:'phone',label:'رمز التحقق المرسل إلى واتساب جوالك',hint:rs[i].masked||b.phone});
+      modal('تحقق من بياناتك',rows,function(v,m){ m.err(''); m.busy(true); var cj=[];
+        if(needEmail&&!b.email_proof) cj.push(call('/verify/check',{channel:'email',dest:b.email,code:v.email}).then(function(r){ if(r&&r.ok) b.email_proof=r.proof; return r }));
+        if(needPhone&&!b.phone_proof) cj.push(call('/verify/check',{channel:'phone',dest:b.phone,code:v.phone}).then(function(r){ if(r&&r.ok) b.phone_proof=r.proof; return r }));
+        Promise.all(cj).then(function(cr){ var x=cr.filter(function(r){ return !r||!r.ok }); if(x.length){ m.busy(false); return m.err(x[0].message||'الرمز غير صحيح.') } return submit(b,hdr,m) });
+      }); fin(); }); }
+  /* متابعة مراسلة */
+  function show(t){ var o=$('fw-out'); if(!o) return; var rv=$('fw-ref-v');
+    var msgs=(t.messages||[]).map(function(m){ var me=m.role==='customer'; return '<div style="margin:8px 0;padding:10px 12px;border-radius:12px;background:'+(me?'#eef3fb':'#e6f7f7')+'"><b style="font-size:13px">'+(me?'أنت':'فريق تيرا')+'</b> <small style="color:#5b6b82">'+esc(String(m.at||'').slice(0,16).replace('T',' '))+'</small><div style="white-space:pre-wrap;margin-top:4px">'+esc(m.body)+'</div></div>' }).join('');
+    o.innerHTML='<div style="padding:4px 0"><b style="font-size:18px">#'+esc(t.ref)+'</b> · '+esc(t.kind_label||'')+'<div style="margin:8px 0"><span style="display:inline-block;padding:4px 12px;border-radius:999px;background:#0AA5AD;color:#fff;font-weight:700">'+esc(t.status_label||t.status)+'</span></div>'
+      +'<div><b>الموضوع:</b> '+esc(t.subject)+'</div><div style="color:#5b6b82;font-size:13px;margin-top:4px">أُنشئت: '+esc(String(t.created_at||'').slice(0,10))+' · آخر تحديث: '+esc(String(t.updated_at||'').slice(0,10))+'</div>'+(msgs?'<div style="margin-top:10px">'+msgs+'</div>':'')+'</div>';
+    o.hidden=false; if(rv) rv.textContent='#'+t.ref; }
+  var gate='';
+  function follow(){ var ref=($('fw-ref').value||'').replace(/\s/g,'').toUpperCase().replace(/^#/,''), em=($('fw-em').value||'').trim().toLowerCase(); $('fw-out').hidden=true;
+    if(!/^TERA-\d{6,8}$/.test(ref)||!reMail.test(em)) return msg('fw-msg','bad','أدخل رقم المراسلة بصيغة TERA-000000 والبريد المسجّل فيها.');
+    var get=function(h,m){ return call('/threads/'+encodeURIComponent(ref),null,h).then(function(r){ if(r&&r.ok&&r.thread){ if(m) m.close(); msg('fw-msg'); show(r.thread); return true }
+      var t=(r&&r.message)||'لم نجد مراسلة بهذا الرقم لهذا البريد.'; if(m){ m.busy(false); m.err(t) } else msg('fw-msg','bad',t); return false }) };
+    if(member&&String(member.p.email||'').toLowerCase()===em) return get({authorization:'Bearer '+member.token});
+    if(gate) return get({'x-desk-gate':gate}).then(function(ok){ if(!ok) gate='' });
+    msg('fw-msg','warn','جارٍ إرسال رمز التحقق إلى بريدك…');
+    call('/verify/start',{channel:'email',dest:em}).then(function(r){ if(!r||!r.ok) return msg('fw-msg','bad',(r&&r.message)||'تعذر إرسال الرمز.'); msg('fw-msg');
+      modal('تحقق من بريدك',[{k:'email',label:'رمز التحقق المرسل إلى بريدك',hint:r.masked||em}],function(v,m){ m.err(''); m.busy(true);
+        call('/verify/check',{channel:'email',dest:em,code:v.email,purpose:'follow'}).then(function(c){ if(!c||!c.ok||!c.gate){ m.busy(false); return m.err((c&&c.message)||'الرمز غير صحيح.') } gate=c.gate; get({'x-desk-gate':gate},m) }) }) }); }
+  d.addEventListener('click',function(ev){ var t=ev.target&&ev.target.closest&&ev.target.closest('#dk-send,#fw-go'); if(!t) return; ev.preventDefault(); ev.stopImmediatePropagation(); if(t.id==='dk-send') send(); else follow(); },true);
+}catch(e){} }
