@@ -577,7 +577,7 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v738: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v737) —
+/* v740: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v739) —
    · ملف العميل مساحة عمل: لوحة العميل ثابتة بجانب المحتوى (البطاقة · أزرار سريعة · دائرة السداد · التنويهات)، والمحتوى بتبويباته.
    · العقد: بطاقة رأس واحدة + تنبيه المتأخرات بأزراره + مسار الدفعات الزمني + تبويب لكل قسم.
    · صفحة الإجراءات: بطاقات مجمّعة حسب الغرض (التحصيل · تعديل الدفعات · حالة العقد) بحالة كل إجراء، وكل إجراء صفحة بإطار ثابت وزر رجوع.
@@ -1223,8 +1223,16 @@ function geoQ() {
     var wide = stack.getBoundingClientRect().width >= 980;
     cls(stack, 'tqn-ws', wide);
     try { railBuild(stack, h, who); } catch (e) { void e; }
-    var IN = stack.__tqnRail && stack.__tqnRail.firstChild, mh = wide && IN ? IN.offsetHeight + 'px' : '';
+    railFit(stack);
+  }
+  /* v739: اللوحة لا تُقصّ — الحاوية بطول اللوحة على الأقل، واللوحة الأطول من الشاشة تتمرّر حتى آخرها ثم تثبت */
+  function railFit(stack) {
+    var R = stack && stack.__tqnRail, IN = R && R.firstChild; if (!IN) return;
+    var wide = stack.classList.contains('tqn-ws'), h = IN.offsetHeight;
+    var mh = wide && h ? h + 'px' : '', top = wide ? Math.min(84, window.innerHeight - h - 16) + 'px' : '';
     if (stack.style.minHeight !== mh) stack.style.minHeight = mh;
+    if (IN.style.top !== top) IN.style.top = top;
+    if (!IN.__tqnRO && window.ResizeObserver) { IN.__tqnRO = new ResizeObserver(function () { railFit(stack); }); IN.__tqnRO.observe(IN); }
   }
   function dups(root) {
     var ph = document.querySelector('#pv-host .t2-phead-t'), pt = txt(ph);
