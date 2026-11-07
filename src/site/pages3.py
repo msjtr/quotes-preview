@@ -31,7 +31,7 @@ def desk():
            '<div class="ts-fld" style="grid-column:1/-1"><span class="ts-lab">المرفقات</span><input class="ts-in" type="file" multiple style="padding-top:10px"><span class="hint">حتى 2 ميجابايت للملف.</span></div>'
            '</div><p class="ts-msg" id="dk-msg" hidden></p>'
            '<div class="t2-pb-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button class="t2-btn is-primary" type="button" id="dk-send">إرسال المراسلة</button><button class="t2-btn" type="button" id="dk-draft">حفظ كمسودة</button></div>'
-           '<p class="ts-legal" style="text-align:start">تقديم الطلب أو الشكوى أو الدعم لا يعني قبوله. المراجعة تتم وفق البيانات والسياسات. هذه معاينة: لا تُرسل أي بيانات.</p></section>'
+           '<p class="ts-legal" style="text-align:start">تقديم الطلب أو الشكوى أو الدعم لا يعني قبوله. المراجعة تتم وفق البيانات والسياسات.</p></section>'
            f'<section class="t2-panel" id="dk-done" hidden><div class="ts-flow ts-done">{T("PiCheckCircleFill")}<h2>تم إرسال مراسلتك بنجاح</h2><p>رقم المراسلة</p><div class="ts-ref" id="dk-ref">#TERA-000000</div>'
            '<ul class="ts-status"><li class="is-done">جديدة</li><li class="is-now">قيد المراجعة</li><li>قيد المعالجة</li><li>تم الرد</li><li>تم الحل</li></ul>'
            '<p>مدة الرد المتوقعة: من يوم عمل إلى 7 أيام عمل. ستصلك التحديثات على البريد المسجّل، وإن لم تجدها في البريد الوارد فتحقّق من مجلد الرسائل غير المرغوب فيها.</p><button type="button" class="t2-btn" id="dk-again">مراسلة جديدة</button></div></section></div>')
