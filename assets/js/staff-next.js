@@ -577,7 +577,7 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v736: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات —
+/* v738: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v737) —
    · ملف العميل مساحة عمل: لوحة العميل ثابتة بجانب المحتوى (البطاقة · أزرار سريعة · دائرة السداد · التنويهات)، والمحتوى بتبويباته.
    · العقد: بطاقة رأس واحدة + تنبيه المتأخرات بأزراره + مسار الدفعات الزمني + تبويب لكل قسم.
    · صفحة الإجراءات: بطاقات مجمّعة حسب الغرض (التحصيل · تعديل الدفعات · حالة العقد) بحالة كل إجراء، وكل إجراء صفحة بإطار ثابت وزر رجوع.
@@ -708,10 +708,11 @@ function geoQ() {
     var keepQ = W && W.__q === document.activeElement;
     if (W && W.parentNode) W.parentNode.removeChild(W);
     W = mk('div', 'tqn-clw'); W.__sig = sig;
+    var SMI = { all: '∑', ok: '✓', bad: '!', warn: '◷', g: '∅' };
     var sm = mk('div', 'tqn-sum');
     groups.forEach(function (g) {
       var b = mk('button', 'tqn-sm is-' + (g[3] || 'all') + (F === g[0] ? ' is-on' : '')); b.type = 'button'; b.setAttribute('data-live-ok', '');
-      b.appendChild(mk('i')); var t = mk('span'); t.appendChild(mk('small', '', g[1])); t.appendChild(mk('b', '', String(g[2]))); b.appendChild(t);
+      b.appendChild(mk('i', '', SMI[g[3] || 'all'] || '∑')); var t = mk('span'); t.appendChild(mk('small', '', g[1])); t.appendChild(mk('b', '', String(g[2]))); b.appendChild(t);
       b.addEventListener('click', function () { ST.lf = g[0]; apply(); }); sm.appendChild(b);
     });
     W.appendChild(sm);
@@ -941,7 +942,7 @@ function geoQ() {
   }
   function amBack() {
     var s = curCt(); if (!s) return;
-    var c = pkBtn(s, /^رجوع إلى الإجراءات$/);
+    var c = pkBtn(s, /^(قائمة الإجراءات|رجوع إلى الإجراءات)$/);
     if (c) c.click(); else amClose();
   }
 
