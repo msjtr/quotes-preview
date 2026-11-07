@@ -1,4 +1,4 @@
-/* v702–v727 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
+/* v702–v728 — المنصة الجديدة للموظفين (staff/next/) — يعمل تحت .tq-next وحده، فلا أثر له في /staff/ ولا في بوابة العميل */
 
 /* القائمة الأصلية تبقى في الصفحة مخفية (المنصة تحدّث حالتها)، وتظهر القائمة الجديدة مكانها */
 .tq-next .t2-side-n[data-tqn-hide] { display: none !important; }
@@ -1161,3 +1161,135 @@ html.tq-next { --tqn-top: 0px; --tqn-side: 0px; --tqn-bottom: 0px; }
 .tq-next .tqn-hg.is-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 64rem) { .tq-next .tqn-hg.is-pair, .tq-next .tqn-cz-g { grid-template-columns: minmax(0, 1fr); } }
 .tq-next .tqn-upc .tqn-hc-n { white-space: nowrap; }
+
+/* ═══ v728 — القائمة الجانبية والشريط العلوي والرئيسية: طيّ الأقسام وفتحها · طيّ القائمة كلها · الحساب والوضع الليلي والخروج · بلا تكرار ═══ */
+/* أقسام القائمة: العنوان يطوي ويفتح فعلًا، بحجم ولون مقروءين على الخلفية الداكنة */
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-g.is-closed > .t2-side-gb { display: none !important; }
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-gh { display: flex !important; align-items: center; gap: 8px; width: 100%; margin: 6px 0 2px; padding: 9px 12px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 14px !important; font-weight: 800 !important; color: #C3D1EA !important; letter-spacing: 0; cursor: pointer !important; pointer-events: auto !important; text-align: start; min-height: 0; }
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-gh:hover { background: rgba(255, 255, 255, .06) !important; color: #fff !important; }
+.tq-next .tqn-nav .tqn-gh:focus-visible { outline: 2px solid #5FD3D6; outline-offset: 2px; }
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-gh .t2-chev { display: none !important; }
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-gh::after { content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin-inline-start: auto; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .18s ease; opacity: .85; }
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-g.is-closed > .tqn-gh::after { transform: rotate(-45deg); }
+.tq-next .tqn-nav .t2-side-g + .t2-side-g { border-top: 1px solid rgba(255, 255, 255, .07); padding-top: 4px; }
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-gh span:first-child { font-size: 14px !important; font-weight: 800 !important; color: inherit !important; }
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav > .tqn-g:last-child > .tqn-gh { display: none !important; }
+/* رأس القائمة: الشعار في المنتصف وتحته «منصة الموظفين» بمحاذاة واحدة، ثابت عند التمرير، وزر طيّ القائمة بجانبه */
+.tq-next .t2-app > .t2-side .t2-side-top { position: sticky; top: -14px; z-index: 3; margin: -14px -12px 8px; padding: 16px 12px 12px; background: var(--tqn-navy); }
+.tq-next .tqn-brand.has-logo { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 2px 34px 0 !important; text-align: center; }
+.tq-next .tqn-brand.has-logo .tqn-brand-img { display: block; height: 40px; width: auto; max-width: 100%; margin: 0 auto; object-fit: contain; }
+.tq-next .tqn-brand.has-logo small { display: block; margin: 0; font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .72); text-align: center; letter-spacing: 0; }
+.tq-next .tqn-brand-mark { display: none; width: 40px; height: 40px; margin: 0 auto; object-fit: contain; }
+.tq-next #pv-host .t2-app > .t2-side .t2-side-t { display: inline-flex !important; position: absolute; top: 18px; inset-inline-end: 8px; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; background: rgba(255, 255, 255, .06); color: #fff; cursor: pointer; }
+.tq-next .t2-app > .t2-side .t2-side-t:hover { background: rgba(255, 255, 255, .14); }
+.tq-next .t2-app > .t2-side .t2-side-t > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tq-next #pv-host .t2-app > .t2-side .t2-side-t .t2-chev { display: none !important; }
+.tq-next #pv-host .t2-app > .t2-side .t2-side-t::after { content: ""; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(135deg); margin-left: 3px; }
+.tq-next #pv-host .t2.is-side-min > .t2-side .t2-side-t::after { transform: rotate(-45deg); margin-left: -3px; }
+/* القائمة مطويّة: أيقونات فقط بعرض 80، والاسم يظهر عند المرور */
+@media (min-width: 64rem) {
+  .tq-next #pv-host .t2.t2-app.is-side-min { grid-template-columns: 80px minmax(0, 1fr) !important; }
+  .tq-next #pv-host .t2.is-side-min > .t2-side { width: 80px !important; min-width: 80px; padding: 14px 10px 12px; overflow-x: hidden; }
+  .tq-next #pv-host .t2.is-side-min > .t2-side .t2-side-top { margin: -14px -10px 8px; padding: 14px 10px 10px; }
+  .tq-next #pv-host .t2.is-side-min .tqn-brand.has-logo { padding: 0 !important; }
+  .tq-next #pv-host .t2.is-side-min .tqn-brand-img, .tq-next #pv-host .t2.is-side-min .tqn-brand small { display: none !important; }
+  .tq-next #pv-host .t2.is-side-min .tqn-brand-mark { display: block; }
+  .tq-next #pv-host .t2.is-side-min > .t2-side .t2-side-t { position: static; margin: 8px auto 0; }
+  .tq-next #pv-host .t2.t2-app.is-side-min > .t2-side .tqn-nav .tqn-gh, .tq-next #pv-host .t2.t2-app.is-side-min > .t2-side .tqn-nav .t2-side-l, .tq-next #pv-host .t2.t2-app.is-side-min > .t2-side .tqn-flag { display: none !important; }
+  .tq-next #pv-host .t2.t2-app.is-side-min > .t2-side .tqn-nav .tqn-g.is-closed > .t2-side-gb { display: grid !important; }
+  .tq-next #pv-host .t2.t2-app.is-side-min > .t2-side .tqn-nav .t2-side-i { justify-content: center !important; gap: 0 !important; padding: 7px 0 !important; }
+  .tq-next #pv-host .t2.is-side-min .tqn-nav .t2-side-g + .t2-side-g { margin-top: 6px; padding-top: 6px; }
+}
+/* الحساب في الشريط العلوي وحده (لا بطاقة مكرّرة أسفل القائمة) */
+.tq-next .tqn-user { display: none !important; }
+/* الشريط العلوي: الحساب · الوضع الليلي · الإشعارات · الخروج */
+.tq-next #pv-host .t2-app > .t2-head .t2-hd-r { display: flex; align-items: center; gap: 8px; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hwho { display: inline-flex !important; align-items: center; gap: 8px; height: 42px; padding: 0 10px 0 6px; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 12px; background: #fff; color: var(--tqn-ink, #0F1B33); font: inherit; cursor: pointer; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hwho .t2-avatar { display: grid !important; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(145deg, #E0F2F3, #BFE3E5); color: #06707A; font-weight: 800; font-size: 13px; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hwho .t2-hwho-n { display: block !important; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 800; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hwho .t2-hwho-r { display: block !important; font-size: 11px; color: var(--tqn-mut, #66748C); }
+.tq-next #pv-host .t2-app > .t2-head .t2-hwho > span:not(.t2-avatar):not(.lv-caret) { display: grid !important; line-height: 1.2; text-align: start; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hmode, .tq-next #pv-host .t2-app > .t2-head .t2-hbtn.is-out { display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hbtn.is-out .t2-hbtn-t { display: inline !important; font-size: 12.5px; font-weight: 800; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hbtn.is-out { height: 42px; padding: 0 12px; border: 1px solid #F4D4D4; border-radius: 12px; background: #FFF6F6; color: #B42318; }
+.tq-next #pv-host .t2-app > .t2-head .t2-hcart { display: none !important; }
+.tq-next:not(.pv-dark) #pv-host .t2-app > .t2-head .t2-hmode .t2-hm-sun, .tq-next.pv-dark #pv-host .t2-app > .t2-head .t2-hmode .t2-hm-moon { display: none !important; }
+.tq-next:not(.pv-dark) #pv-host .t2-app > .t2-head .t2-hmode .t2-hm-moon, .tq-next.pv-dark #pv-host .t2-app > .t2-head .t2-hmode .t2-hm-sun { display: inline-flex !important; }
+@media (max-width: 64rem) { .tq-next #pv-host .t2-app > .t2-head .t2-hwho > span:not(.t2-avatar), .tq-next #pv-host .t2-app > .t2-head .t2-hbtn.is-out .t2-hbtn-t { display: none !important; } }
+
+/* الرئيسية */
+.tq-next .tqn-hg > * { min-width: 0; }
+.tq-next .tqn-hero { min-height: 0; }
+.tq-next .tqn-hero .tqn-hero-cs, .tq-next .tqn-hero .tqn-hero-q { display: none !important; }
+/* المؤشرات: العنوان في سطر واحد ونسبة المقارنة شارة صغيرة */
+.tq-next .tqn-hk-h { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; }
+.tq-next .tqn-hk-t { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tq-next .tqn-hk-tr { flex: 0 0 auto; width: auto !important; height: auto !important; min-width: 0 !important; border-radius: 999px !important; padding: 3px 8px !important; font-size: 11.5px !important; line-height: 1.25; white-space: nowrap; }
+.tq-next .tqn-hk-mb.is-ok i { background: linear-gradient(90deg, #16A34A, #4ADE80); }
+.tq-next .tqn-hk.is-ok .tqn-hk-v b { color: #15803D; }
+.tq-next .tqn-hk.is-warn .tqn-hk-v b { color: #B45309; }
+.tq-next .tqn-hk-f { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.tq-next .tqn-hk-f > small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* وصول سريع: صف واحد من البلاطات الصغيرة المتساوية بدل البطاقة الكبيرة */
+.tq-next .tqn-qk { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; padding: 10px; border-radius: 16px; background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .tqn-qk-i { display: grid; justify-items: center; align-content: center; gap: 5px; min-width: 0; height: 74px; padding: 6px 4px; border: 1px solid transparent; border-radius: 12px; background: #F8FAFC; color: var(--tqn-ink, #0F1B33); font: inherit; font-size: 12.5px; font-weight: 800; line-height: 1.2; text-align: center; cursor: pointer; transition: background .15s, border-color .15s, transform .15s; }
+.tq-next .tqn-qk-i > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tq-next .tqn-qk-i:hover { background: #fff; border-color: #9ED3D6; transform: translateY(-1px); }
+.tq-next .tqn-qk-ic { display: inline-grid; place-items: center; width: 30px; height: 33px; }
+.tq-next .tqn-qk-ic svg { width: 30px; height: 33px; }
+/* جدول اليوم: حالة الفراغ مدمجة */
+.tq-next .tqn-ag .tqn-tk-done { padding: 10px 0 6px; gap: 4px; }
+.tq-next .tqn-ag .tqn-tk-done svg { width: 40px; height: 44px; }
+/* المؤشرات: السطر الأخير يلتف بدل القطع */
+.tq-next .tqn-hk-f { flex-wrap: wrap; }
+.tq-next .tqn-hk-f > small { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+/* «آخر النشاط» تحت «جدول اليوم» يأخذ ما بقي من طول «مهامك» */
+@media (min-width: 64rem) {
+  .tq-next .tqn-hg.is-fill > .tqn-hg-s > .tqn-af:last-child { contain: size; overflow: hidden; display: flex; flex-direction: column; min-height: 280px; }
+  .tq-next .tqn-hg.is-fill > .tqn-hg-s > .tqn-af:last-child .tqn-af-l { flex: 1 1 auto; min-height: 0; overflow: hidden; align-content: start; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); }
+}
+/* رسم التحصيل يملأ بطاقته */
+.tq-next .tqn-h7 { display: flex; flex-direction: column; }
+.tq-next .tqn-h7 .tqn-hb { flex: 1 1 auto; min-height: 200px; height: auto; }
+.tq-next .tqn-hg.is-solo > .tqn-h7 .tqn-hb { min-height: 220px; max-width: 1100px; }
+/* مواعيد السداد القادمة: لا شيء يخرج عن البطاقة */
+.tq-next .tqn-upc { min-width: 0; overflow: hidden; }
+.tq-next .tqn-upc .tqn-hc-h { flex-wrap: nowrap; min-width: 0; }
+.tq-next .tqn-upc-f { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 6px; }
+.tq-next .tqn-upc-f .tqn-up-rm { margin: 0; }
+.tq-next .tqn-upc-f .tqn-upc-all { margin: 0; }
+
+/* ═══ الوضع الليلي (يُفعَّل من زر القمر في الشريط العلوي) ═══ */
+html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF6; --tqn-mut: #95A5BE; color-scheme: dark; }
+.tq-next.pv-dark body, .tq-next.pv-dark #pv-host .t2.t2-app, .tq-next.pv-dark #pv-host .t2-main { background: var(--tqn-bg) !important; color: var(--tqn-ink); }
+.tq-next.pv-dark #pv-host .t2-app > .t2-head { background: #0F1829 !important; border-bottom-color: var(--tqn-line) !important; }
+.tq-next.pv-dark #pv-host .t2-app > .t2-head .t2-hcmd { background: #152039 !important; border-color: var(--tqn-line) !important; color: #C9D4E6 !important; }
+.tq-next.pv-dark #pv-host .t2-app > .t2-head .t2-hwho, .tq-next.pv-dark #pv-host .t2-app > .t2-head .t2-hbtn, .tq-next.pv-dark #pv-host .t2-app > .t2-head .tqn-sw { background: #152039 !important; border-color: var(--tqn-line) !important; color: var(--tqn-ink) !important; }
+.tq-next.pv-dark #pv-host .t2-app > .t2-head .t2-hbtn.is-out { background: #2A1418 !important; border-color: #4A2329 !important; color: #FCA5A5 !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-hc, .tqn-hk, .tqn-qk, .tqn-seg, .tqn-htb-r, .tqn-cz, .t2-sec, .tqn-fx-card, .tqn-sec) { background: #101A2D !important; border-color: var(--tqn-line) !important; color: var(--tqn-ink) !important; box-shadow: none !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-tk li, .tqn-tf button, .tqn-qk-i, .tqn-cz-t, .tqn-cz-o li, .tqn-cz-o button, .tqn-up-d, .tqn-hb-c.is-zero i, .tqn-tm-b, .tqn-hk-mb, .tqn-tm-d) { background: #16223A !important; border-color: var(--tqn-line) !important; color: var(--tqn-ink) !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-tk li.is-danger) { background: #2A1418 !important; border-color: #4A2329 !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-tf button.is-on, .tqn-seg button.is-on, .tqn-htb-r.is-on) { background: #2BC6C9 !important; border-color: #2BC6C9 !important; color: #06212A !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-hc-h h2, .tqn-tk-t b, .tqn-rq-t b, .tqn-ag-t b, .tqn-af-t b, .tqn-tm-t b, .tqn-ht-t b, .tqn-hk-v b, .tqn-up-d b, .tqn-hb-c em, .t2-phead-t, h1, h2, h3) { color: var(--tqn-ink) !important; }
+.tq-next.pv-dark #pv-host .tqn-hk.is-danger .tqn-hk-v b { color: #F87171 !important; }
+.tq-next.pv-dark #pv-host .tqn-hk.is-ok .tqn-hk-v b { color: #4ADE80 !important; }
+.tq-next.pv-dark #pv-host :is(small, .tqn-hc-n, .tqn-hb-c small, .tqn-af-i em, .tqn-ag-i em) { color: var(--tqn-mut) !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-hc-n, .tqn-tk-n) { background: #1A2742 !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-ag-i, .tqn-rq-i, .tqn-tm-l li, .tqn-ht li button) { border-color: var(--tqn-line) !important; }
+.tq-next.pv-dark #pv-host .tqn-nw { background: linear-gradient(90deg, #0E2A2A, #0F2238) !important; border-color: #1E4044 !important; color: var(--tqn-ink) !important; }
+.tq-next.pv-dark #pv-host .tqn-nw-c, .tq-next.pv-dark #pv-host .tqn-nw-ic { background: #102235 !important; border-color: #1E4044 !important; color: #5FD3D6 !important; }
+.tq-next.pv-dark #pv-host .tqn-tm-un { background: #2A2010 !important; border-color: #4A3A17 !important; color: #FCD34D !important; }
+.tq-next.pv-dark #pv-host .tqn-af-l::before { background: var(--tqn-line) !important; }
+.tq-next.pv-dark #pv-host .tqn-af-ic { box-shadow: 0 0 0 3px #101A2D !important; }
+.tq-next.pv-dark #pv-host :is(input, select, textarea) { background: #0F1829; border-color: var(--tqn-line); color: var(--tqn-ink); }
+.tq-next.pv-dark #pv-host .tqn-tf button i { background: #22304A !important; color: var(--tqn-ink) !important; }
+.tq-next.pv-dark #pv-host .tqn-tf button.is-on i { background: rgba(6, 33, 42, .25) !important; color: #06212A !important; }
+.tq-next.pv-dark #pv-host .tqn-rq-s { background: #1A2742 !important; color: #C9D4E6 !important; }
+.tq-next.pv-dark #pv-host .tqn-rq-s.is-warn { background: #2A2010 !important; color: #FCD34D !important; }
+.tq-next.pv-dark #pv-host .tqn-rq-s.is-info { background: #10213F !important; color: #93C5FD !important; }
+.tq-next.pv-dark #pv-host .tqn-rq-s.is-ok { background: #0F2A1C !important; color: #86EFAC !important; }
+.tq-next.pv-dark #pv-host .tqn-up-pl { background: #2A2010 !important; border-color: #4A3A17 !important; color: #FCD34D !important; }
+.tq-next.pv-dark #pv-host .tqn-up-d.is-soon { background: #2A2010 !important; }
+.tq-next.pv-dark #pv-host .tqn-up-d.is-soon b { color: #FCD34D !important; }
+.tq-next.pv-dark #pv-host :is(.tqn-hc-a, .tqn-cz-rs) { color: #5FD3D6 !important; }
+.tq-next.pv-dark #pv-host .tqn-tk-done b { color: var(--tqn-ink) !important; }

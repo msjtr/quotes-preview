@@ -50,7 +50,7 @@ const tqnFxCu = function (cid) { return function () { try { FX.pfc = cid; ADM.pf
 const tqnFxTop = function () { try { window.scrollTo({ top: 0 }); } catch (err) { void err; } };
 /* v724: بلاطة بلون القسم (من staff-next.js) وإلا بلاطة المنصة */
 const tqnTile = function (g, c) { try { if (window.__tqTile) { const s = window.__tqTile(g, c); if (s) return s; } } catch (err) { void err; } return tile(g + ':teal'); };
-/* v727: الرئيسية في staff/next/ — لوحة عمل يومية بهوية تيرا، بلا مساحات فارغة:
+/* v728: الرئيسية في staff/next/ — لوحة عمل يومية بهوية تيرا، بلا تكرار ولا مساحات فارغة:
    · بطاقة ترحيب (الاسم والدور والتاريخ وملخص اليوم) وفيها بحث سريع يفتح البحث الموحّد، وخانات زجاجية تفتح صفحاتها.
    · شريط أدوات: الفترة (أسبوع · شهر · 6 أشهر · سنة) تغيّر مؤشر المحصّل والرسم معًا، وزر تحديث بوقت آخر تحديث.
    · أربعة مؤشرات، ثم «إحصاءات سريعة» (التزام السداد · عقود عليها مستحق · عمليات السداد ومتوسطها · متوسط التأخر · المستحق خلال 30 يومًا).
@@ -61,6 +61,10 @@ const tqnTile = function (g, c) { try { if (window.__tqTile) { const s = window.
    · «طلبات العملاء»: ما طلبه العميل بنفسه (سداد · تأجيل · توحيد · أهلية · إيصال تحويل) بحالته وزر خطوته التالية.
    · «مسار العملاء والطلبات» · «مواعيد السداد القادمة» (من الغد إلى أسبوعين) ولكل دفعة زر رابط دفع مُعبّأ بالعميل والدفعة.
    · الأعمدة متساوية الطول: البطاقة الأخيرة في كل عمود تمتد، و«آخر النشاط» يأخذ طول جاره.
+   · v728: الأقسام: مهامك | جدول اليوم وآخر النشاط — طلبات العملاء والفريق | مواعيد السداد وأعلى المتأخرات — رسم التحصيل بالعرض كله.
+   · v728: بلا تكرار — البحث في الشريط العلوي وحده (لا في الترحيب) · لا خانات في الترحيب (مكانها «جدول اليوم») · لا أزرار إنشاء في شريط الأدوات (مكانها «وصول سريع») ·
+     «التزام السداد» مؤشر رابع بدل «تنتظر قرارك» (عدّاده في «مهامك») · لا صف إحصاءات سريعة · لا «المستحق القادم» في رسم التحصيل (مكانه «مواعيد السداد القادمة») · لا «مسار العملاء والطلبات» (أرقامه في غيره) ·
+     «وصول سريع» شريط مدمج · ثلاثة أقسام: مهامك | جدول اليوم وأعلى المتأخرات — مواعيد السداد | رسم التحصيل — الفريق وطلبات العملاء | آخر النشاط.
    · v727: شريط «جديد منذ زيارتك السابقة» · «تخصيص» (إظهار البطاقات وإخفاؤها وترتيب الأقسام، على هذا الجهاز) · وعود السداد في «جدول اليوم» · «تذكير» جماعي يفتح مركز الإرسال بالمستلمين جاهزين (الإرسال بيد الموظف).
    كل رقم يظهر في مكان واحد.
    الأرقام كلها من بيانات المنصة (dcPays · finCts · cByNo · cuList · بنود صندوق المهام) — لا تغيير في البيانات. */
@@ -152,9 +156,8 @@ function tqnHome(o) {
         e('p', { class: 'tqn-hero-g' }, [frag(ui(moon ? 'moon' : 'sun', 16)), greet]),
         e('h1', {}, nm || 'مرحبًا'),
         e('p', { class: 'tqn-hero-m' }, [o.sup ? e('span', { class: 'tqn-hero-r' }, 'المشرف العام') : null, e('span', {}, dateT)]),
-        e('p', { class: 'tqn-hero-s' }, sumLine),
-        e('button', { type: 'button', class: 'tqn-hero-q', 'data-live-ok': '', onClick: openSearch }, [frag(ui('magnifying-glass', 16)), e('span', {}, 'ابحث عن عميل، عقد، طلب أو صفحة…'), e('kbd', {}, 'Ctrl K')])])]),
-    chips.length ? e('div', { class: 'tqn-hero-cs' }, chips) : null]);
+        e('p', { class: 'tqn-hero-s' }, sumLine)])])]);
+  void chips; void openSearch;
   /* شريط الأدوات: الفترة والتحديث */
   const tm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   const bar = e('div', { class: 'tqn-htb' }, [
@@ -162,11 +165,10 @@ function tqnHome(o) {
       return e('button', { type: 'button', class: x === per ? 'is-on' : '', 'aria-pressed': String(x === per), 'data-live-ok': '', onClick: function () { ADM.hmP = x[0]; redraw(); } }, x[1]);
     }))) : null,
     e('span', { class: 'sp' }),
-    e('div', { class: 'tqn-htb-new', role: 'group', 'aria-label': 'إنشاء' }, [['fin-plnew', 'رابط دفع'], ['sv-new', 'طلب لعميل'], ['comm-send', 'رسالة']].filter(function (q) { return typeof LP !== 'undefined' && LP[q[0]]; }).map(function (q) {
-      return e('button', { type: 'button', 'data-live-ok': '', onClick: function () { if (q[0] === 'fin-plnew') { try { PAYC.made = null; tqnPlReset(); } catch (err) { void err; } } go('other', q[0]); } }, [frag(ui('plus', 14)), q[1]]);
-    })),
     e('small', { class: 'tqn-htb-t' }, 'آخر تحديث ' + tm),
     e('button', { type: 'button', class: 'tqn-htb-r', 'data-live-ok': '', onClick: redraw, title: 'تحديث الأرقام' }, [frag(ui('arrows-clockwise', 15)), 'تحديث'])]);
+  const CL = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA.clients && LIVE_DATA.clients.reg) || [];
+  const cuNew = CL.filter(function (r) { const t = tsS(r.at); return t && t > dAgo(7); });
   /* المؤشرات */
   const kpi = function (ic, t, v, unit, sub, tr, viz, tone, fn) {
     return e(fn ? 'button' : 'section', { class: 'tqn-hk' + (tone ? ' is-' + tone : ''), type: fn ? 'button' : null, 'data-live-ok': '', onClick: fn || null }, [
@@ -175,14 +177,13 @@ function tqnHome(o) {
       e('div', { class: 'tqn-hk-f' }, [e('small', {}, sub), viz || null])]);
   };
   const lateBar = due.length ? e('span', { class: 'tqn-hk-mb', 'aria-hidden': 'true' }, [e('i', { style: 'width:' + Math.round(late.length / due.length * 100) + '%' })]) : null;
-  const K = [o.finOk ? kpi('arrow-up:saffron', 'المحصَّل — آخر ' + per[1], fmtNum(Math.round(cP)), 'ر.س', 'الفترة السابقة ' + fmtNum(Math.round(cQ)) + ' ر.س', trend(cP, cQ), spark(BUK.map(function (x) { return x[1]; }), '#06707A'), null, goP('fin-pay')) : null,
-    o.finOk ? kpi('warning:red', 'المتأخر', fmtNum(Math.round(lateAmt)), 'ر.س', fmtNum(Object.keys(lateCu).length) + ' عملاء · ' + fmtNum(late.length) + ' دفعة متأخرة', null, lateBar, late.length ? 'danger' : null, goP('fin-due')) : null,
-    kpi('list-checks:violet', 'تنتظر قرارك', fmtNum(waitN), 'بندًا', urgent.length ? fmtNum(urgent.length) + ' عاجل · ' + fmtNum(IN.length) + ' أنواع' : fmtNum(IN.length) + ' أنواع', null, null, null, null),
-    o.cuOk ? kpi('users:blue', 'العملاء', fmtNum(o.nC || 0), 'عميلًا', 'ملفات العملاء المسجّلة', null, null, null, goP('cu-list')) : null].filter(Boolean);
+  const K = [o.finOk ? kpi('arrow-up:saffron', 'المحصَّل — آخر ' + per[1], fmtNum(Math.round(cP)), 'ر.س', fmtNum(recP.length) + ' عملية · السابقة ' + fmtNum(Math.round(cQ)) + ' ر.س', trend(cP, cQ), spark(BUK.map(function (x) { return x[1]; }), '#06707A'), null, goP('fin-pay')) : null,
+    o.finOk ? kpi('warning:red', 'المتأخر', fmtNum(Math.round(lateAmt)), 'ر.س', fmtNum(Object.keys(lateCu).length) + ' عملاء متأخرون', null, lateBar, late.length ? 'danger' : null, goP('fin-due')) : null,
+    o.finOk ? kpi('check-circle:green', 'التزام السداد', comp == null ? '—' : fmtNum(comp), comp == null ? '' : '٪', comp == null ? 'لا دفعات مستحقة بعد' : fmtNum(Math.round(duePaid)) + ' من ' + sar(Math.round(dueAmt)), null,
+      comp == null ? null : e('span', { class: 'tqn-hk-mb is-ok', 'aria-hidden': 'true' }, [e('i', { style: 'width:' + Math.max(0, Math.min(100, comp)) + '%' })]), comp == null ? null : comp >= 85 ? 'ok' : comp >= 65 ? 'warn' : 'danger', goP('fin-due')) : null,
+    o.cuOk ? kpi('users:blue', 'العملاء', fmtNum(o.nC || 0), 'عميلًا', cuNew.length ? fmtNum(cuNew.length) + ' سجّلوا هذا الأسبوع' : 'ملفات العملاء المسجّلة', null, null, null, goP('cu-list')) : null].filter(Boolean);
   /* إحصاءات سريعة */
   const st = function (ic, t, v, s, tone, fn) { return e(fn ? 'button' : 'div', { class: 'tqn-qs-i' + (tone ? ' is-' + tone : ''), type: fn ? 'button' : null, 'data-live-ok': '', onClick: fn || null }, [e('span', { class: 'tqn-qs-ic' }, frag(ui(ic, 16))), e('small', {}, t), e('b', {}, v), s ? e('em', {}, s) : null]); };
-  const CL = (typeof LIVE_DATA !== 'undefined' && LIVE_DATA.clients && LIVE_DATA.clients.reg) || [];
-  const cuNew = CL.filter(function (r) { const t = tsS(r.at); return t && t > dAgo(7); });
   const QS = e('section', { class: 'tqn-qs', 'aria-label': 'إحصاءات سريعة' }, [
     o.finOk ? st('check-circle', 'التزام السداد حتى اليوم', comp == null ? '—' : fmtNum(comp) + '٪', comp == null ? null : sar(duePaid) + ' من ' + sar(dueAmt), comp == null ? '' : comp >= 85 ? 'ok' : comp >= 65 ? 'warn' : 'danger', null) : null,
     o.finOk ? st('file-text', 'عقود عليها مستحق', fmtNum(Object.keys(actC).length), fmtNum(due.length) + ' دفعة غير مسدّدة', '', goP('fin-due')) : null,
@@ -223,13 +224,12 @@ function tqnHome(o) {
         a[4] ? liveOk(e('button', { type: 'button', class: 'tqn-tk-go', onClick: a[4] }, [K2[1], frag(ui('caret-left', 14))])) : null]);
     })) : e('div', { class: 'tqn-tk-done' }, [T3('check-circle:green'), e('b', {}, IN.length ? 'لا مهام بهذه التصفية' : 'كل المهام منجزة'), e('small', {}, 'ما يُسند إليك أو ينتظر قرارًا يظهر هنا.')])]);
   /* وصول سريع */
-  const QK = [['cu-new', 'العملاء الجدد', 'user:blue'], ['cu-svc', 'طلبات الخدمات', 'clipboard-text:violet'], ['fin-plnew', 'رابط دفع', 'credit-card:saffron'], ['fin-due', 'التحصيل', 'calendar-check:teal'],
+  const QK = [['cu-new', 'العملاء الجدد', 'user:blue'], ['cu-svc', 'طلبات الخدمات', 'clipboard-text:violet'], ['sv-new', 'طلب لعميل', 'plus:teal'], ['fin-plnew', 'رابط دفع', 'credit-card:saffron'], ['fin-due', 'التحصيل', 'calendar-check:teal'],
     ['comm-send', 'رسالة لعميل', 'paper-plane-tilt:red'], ['cu-pf-ver', 'توثيق ملف', 'seal-check:blue'], ['fin-pay', 'المدفوعات', 'receipt:saffron'], ['cu-admx-rp', 'التقارير', 'chart-bar:slate']]
     .filter(function (q) { return typeof LP !== 'undefined' && LP[q[0]]; });
-  const quick = QK.length ? e('section', { class: 'tqn-hc tqn-hq' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'وصول سريع')]),
-    e('div', { class: 'tqn-hq-g' }, QK.map(function (q) {
-      return e('button', { type: 'button', class: 'tqn-hq-i', 'data-live-ok': '', onClick: function () { if (q[0] === 'fin-plnew') { try { PAYC.made = null; tqnPlReset(); } catch (err) { void err; } } go('other', q[0]); } }, [e('span', { class: 'tqn-hq-ic' }, T3(q[2])), e('span', {}, q[1])]);
-    }))]) : null;
+  const quick = QK.length ? e('nav', { class: 'tqn-qk', 'aria-label': 'وصول سريع' }, QK.map(function (q) {
+      return e('button', { type: 'button', class: 'tqn-qk-i', 'data-live-ok': '', onClick: function () { if (q[0] === 'fin-plnew') { try { PAYC.made = null; tqnPlReset(); } catch (err) { void err; } } go('other', q[0]); } }, [e('span', { class: 'tqn-qk-ic' }, T3(q[2])), e('span', {}, q[1])]);
+    })) : null;
   /* أعلى المتأخرات لكل عميل */
   const G = {}; late.forEach(function (r) { const k = r.x.cid || r.c.no; if (!G[k]) G[k] = { x: r.x, no: r.c.no, amt: 0, d: 0, n: {} }; G[k].amt += r.left || 0; G[k].n[r.c.no] = 1; if (r.d < G[k].d) { G[k].d = r.d; G[k].no = r.c.no; } });
   const TOP = Object.keys(G).map(function (k) { return G[k]; }).sort(function (a, b) { return b.amt - a.amt; }).slice(0, 5);
@@ -244,16 +244,11 @@ function tqnHome(o) {
     })) : e('div', { class: 'tqn-tk-done' }, [T3('check-circle:green'), e('b', {}, 'لا متأخرات')])]) : null;
   /* رسم التحصيل للفترة */
   const mxB = Math.max.apply(null, BUK.map(function (x) { return x[1]; }).concat([1]));
-  const bars = o.finOk ? e('section', { class: 'tqn-hc tqn-h7' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'التحصيل — آخر ' + per[1]), e('span', { class: 'tqn-hc-n' }, sar(cP)), trend(cP, cQ)]),
+  const bars = o.finOk ? e('section', { class: 'tqn-hc tqn-h7' }, [e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'التحصيل — آخر ' + per[1])]),
     e('div', { class: 'tqn-hb', style: 'grid-template-columns:repeat(' + BUK.length + ',1fr)' }, BUK.map(function (x) {
       return e('div', { class: 'tqn-hb-c' + (x[3] ? ' is-today' : '') + (x[1] ? '' : ' is-zero'), title: x[2] + ' — ' + sar(x[1]) }, [
         e('em', {}, x[1] ? (x[1] >= 10000 ? fmtNum(Math.round(x[1] / 100) / 10) + 'k' : fmtNum(Math.round(x[1]))) : '—'), e('i', { style: 'height:' + Math.max(4, Math.round(x[1] / mxB * 100)) + '%' }), e('small', {}, x[0])]);
-    })),
-    /* المستحق القادم: مكانه هنا مع التحصيل (المتأخر في مؤشره) */
-    e('div', { class: 'tqn-up' }, [e('small', {}, 'المستحق القادم')].concat([['اليوم', 0, 0, 'today'], ['خلال 7 أيام', 1, 7, 'all'], ['خلال 30 يومًا', 8, 30, 'in30']].map(function (b) {
-      const A = due.filter(function (r) { return r.d >= b[1] && r.d <= b[2]; });
-      return e('button', { type: 'button', 'data-live-ok': '', onClick: function () { ADM.fdF = b[3]; go('other', 'fin-due'); } }, [e('span', {}, b[0]), e('b', {}, sar(sumA(A, 'left'))), e('em', {}, fmtNum(A.length) + ' دفعة')]);
-    })))]) : null;
+    }))]) : null;
   /* الوقت النسبي */
   const rel = function (v) {
     const d = v instanceof Date ? v : new Date(v); if (!d || isNaN(d.getTime())) return '';
@@ -396,9 +391,9 @@ function tqnHome(o) {
   const remA = UP.filter(function (r) { return r.d === 1; }).length ? UP.filter(function (r) { return r.d === 1; }) : UP.filter(function (r) { return r.d <= 3; });
   const remB = (remA.length && typeof LP !== 'undefined' && LP['comm-send']) ? liveOk(e('button', { type: 'button', class: 'tqn-up-pl tqn-up-rm', title: 'يفتح مركز الإرسال والمستلمون جاهزون — الإرسال بيدك', onClick: remind(remA) }, [frag(ui('bell-ringing', 14)), (remA.every(function (r) { return r.d === 1; }) ? 'ذكّر دفعات الغد' : 'ذكّر دفعات 3 أيام') + ' (' + fmtNum(remA.length) + ')'])) : null;
   const upc = o.finOk ? e('section', { class: 'tqn-hc tqn-upc' }, [
-    e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'مواعيد السداد القادمة'), e('span', { class: 'tqn-hc-n' }, sar(sumA(UP, 'left'))), remB]),
+    e('div', { class: 'tqn-hc-h' }, [e('h2', {}, 'مواعيد السداد القادمة'), e('span', { class: 'tqn-hc-n' }, sar(sumA(UP, 'left')))]),
     UP.length ? e('ul', { class: 'tqn-rq-l' }, UP.slice(0, 5).map(upRow)) : e('div', { class: 'tqn-tk-done' }, [T3('calendar-check:green'), e('b', {}, 'لا دفعات خلال أسبوعين')]),
-    e('button', { type: 'button', class: 'tqn-hc-a tqn-upc-all', 'data-live-ok': '', onClick: function () { ADM.fdF = 'all'; go('other', 'fin-due'); } }, [fmtNum(UP.length) + ' دفعة خلال أسبوعين — كلها في التحصيل', frag(ui('caret-left', 12))])]) : null;
+    e('div', { class: 'tqn-upc-f' }, [remB, e('button', { type: 'button', class: 'tqn-hc-a tqn-upc-all', 'data-live-ok': '', onClick: function () { ADM.fdF = 'all'; go('other', 'fin-due'); } }, [fmtNum(UP.length) + ' دفعة خلال أسبوعين في التحصيل', frag(ui('caret-left', 12))])])]) : null;
   /* مسار العملاء والطلبات */
   const step = function (t, n, tone, fn, sub) { return e('button', { type: 'button', class: 'tqn-fn-s' + (tone ? ' is-' + tone : ''), 'data-live-ok': '', onClick: fn || null }, [e('b', {}, fmtNum(n)), e('span', {}, t), sub ? e('small', {}, sub) : null]); };
   const act = CL.filter(function (r) { return r.status === 'active'; }).length;
@@ -437,13 +432,14 @@ function tqnHome(o) {
   }
   /* تخصيص الرئيسية: إظهار البطاقات وإخفاؤها وترتيب الأقسام — على هذا الجهاز */
   const LYK = 'tqn.hmLay.v1', LY = tqnLs.get(LYK) || {}, HID = (LY && LY.hide) || {};
-  const ROWS0 = ['r1', 'r2', 'r3', 'r4'];
-  const ORD = (LY && Array.isArray(LY.order) && LY.order.length === 4 && ROWS0.every(function (k) { return LY.order.indexOf(k) >= 0; })) ? LY.order : ROWS0;
+  const ROWS0 = ['r1', 'r2', 'r3'];
+  const ORD = (LY && Array.isArray(LY.order) && LY.order.length === 3 && ROWS0.every(function (k) { return LY.order.indexOf(k) >= 0; })) ? LY.order : ROWS0;
   const saveLY = function (h, ord) { tqnLs.set(LYK, { hide: h, order: ord }); redraw(); };
-  const EL = { kpi: K.length ? 1 : null, qs: QS.childNodes.length ? 1 : null, tasks: tasks, today: today, quick: quick, bars: bars, topC: topC, team: team, reqs: reqs, feed: feed, funnel: funnel, upc: upc };
-  const CARDS = [['kpi', 'المؤشرات'], ['qs', 'إحصاءات سريعة'], ['tasks', 'مهامك'], ['today', 'جدول اليوم'], ['quick', 'وصول سريع'], ['bars', 'رسم التحصيل'], ['topC', 'أعلى المتأخرات'],
-    ['team', 'عمل الفريق'], ['reqs', 'طلبات العملاء'], ['feed', 'آخر النشاط'], ['funnel', 'مسار العملاء والطلبات'], ['upc', 'مواعيد السداد القادمة']].filter(function (c) { return EL[c[0]]; });
-  const RN = { r1: 'مهامك وجدول اليوم', r2: 'التحصيل وأعلى المتأخرات', r3: 'الفريق وطلبات العملاء والنشاط', r4: 'المسار ومواعيد السداد' };
+  const EL = { kpi: K.length ? 1 : null, quick: quick, tasks: tasks, today: today, topC: topC, upc: upc, bars: bars, team: team, reqs: reqs, feed: feed };
+  void QS; void funnel;
+  const CARDS = [['kpi', 'المؤشرات'], ['quick', 'وصول سريع'], ['tasks', 'مهامك'], ['today', 'جدول اليوم'], ['topC', 'أعلى المتأخرات'], ['upc', 'مواعيد السداد القادمة'], ['bars', 'رسم التحصيل'],
+    ['team', 'عمل الفريق'], ['reqs', 'طلبات العملاء'], ['feed', 'آخر النشاط']].filter(function (c) { return EL[c[0]]; });
+  const RN = { r1: 'مهامك وجدول اليوم وآخر النشاط', r2: 'طلبات العملاء والفريق ومواعيد السداد والمتأخرات', r3: 'رسم التحصيل' };
   const vis = function (k) { return (EL[k] && !HID[k]) ? EL[k] : null; };
   const mkRow = function (main, side, fill) {
     main = main.filter(Boolean); side = side.filter(Boolean);
@@ -454,10 +450,9 @@ function tqnHome(o) {
     return e('div', { class: 'tqn-hg ' + (one.length > 1 ? 'is-pair' : 'is-solo') }, one);
   };
   const ROW = {
-    r1: function () { return mkRow([vis('tasks')], [vis('today'), vis('quick')]); },
-    r2: function () { return mkRow([vis('bars')], [vis('topC')]); },
-    r3: function () { return mkRow([vis('team'), vis('reqs')], [vis('feed')], true); },
-    r4: function () { return mkRow([vis('funnel')], [vis('upc')]); }
+    r1: function () { return mkRow([vis('tasks')], [vis('today'), vis('feed')], true); },
+    r2: function () { return mkRow([vis('reqs'), vis('team')], [vis('upc'), vis('topC')]); },
+    r3: function () { return mkRow([vis('bars')], []); }
   };
   bar.appendChild(e('button', { type: 'button', class: 'tqn-htb-r' + (ADM.hmCz ? ' is-on' : ''), 'aria-pressed': String(!!ADM.hmCz), 'data-live-ok': '', onClick: function () { ADM.hmCz = !ADM.hmCz; redraw(); } }, [frag(ui('squares-four', 15)), 'تخصيص']));
   const CZ = ADM.hmCz ? e('section', { class: 'tqn-hc tqn-cz' }, [
@@ -475,7 +470,7 @@ function tqnHome(o) {
       })), e('button', { type: 'button', class: 'tqn-cz-rs', 'data-live-ok': '', onClick: function () { saveLY({}, ROWS0); } }, 'استعادة الافتراضي (إظهار الكل والترتيب الأصلي)')])])]) : null;
   return [e('div', { class: 't2-stack tqn-home' }, [hero, newBar, bar, CZ,
     (K.length && !HID.kpi) ? e('div', { class: 'tqn-hk-g' }, K) : null,
-    (QS.childNodes.length && !HID.qs) ? QS : null].concat(ORD.map(function (k) { return ROW[k](); })))];
+    vis('quick')].concat(ORD.map(function (k) { return ROW[k](); })))];
 }
 
 const TQH = []; /* v705: سجل الصفحات التي فتحها الموظف في staff/next/ — زر الرجوع يعود إلى السابقة فعلًا */

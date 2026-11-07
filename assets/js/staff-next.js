@@ -520,3 +520,60 @@ function geoQ() {
   var t = 0;
   try { new MutationObserver(function () { if (t) return; t = setTimeout(function () { t = 0; put(); }, 60); }).observe(document.documentElement, { childList: true, subtree: true }); put(); } catch (err) { void err; }
 })();
+
+/* v728: طيّ القائمة الجانبية وفتحها بزرّها في رأس القائمة، وطيّ كل قسم وفتحه بعنوانه — الحالتان تُحفظان على هذا الجهاز ·
+   الشعار المختصر عند طيّ القائمة · اسم كل عنصر يظهر عند المرور */
+(function () {
+  var K = 'tqn.sideMin', KG = 'tqn.sideClosed', busy = false;
+  function closedList() { try { var a = JSON.parse(localStorage.getItem(KG) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function ghName(g) { var h = g.querySelector(':scope > .tqn-gh span'); return h ? h.textContent.trim() : ''; }
+  function T2() { return document.querySelector('#pv-host .t2'); }
+  function want() { try { return localStorage.getItem(K) === '1'; } catch (e) { return false; } }
+  function apply() {
+    busy = false;
+    var t = T2(); if (!t) return;
+    if (t.__tqnSide !== 1) { t.__tqnSide = 1; if (want() !== t.classList.contains('is-side-min')) t.classList.toggle('is-side-min', want()); }
+    var min = t.classList.contains('is-side-min');
+    var b = t.querySelector('.t2-side-t');
+    if (b) {
+      var l = b.querySelector('span:last-child'), txt = min ? 'توسيع القائمة' : 'طيُّ القائمة';
+      if (l && l.textContent !== txt) l.textContent = txt;
+      if (b.title !== txt) b.title = txt;
+      if (b.getAttribute('aria-expanded') !== String(!min)) b.setAttribute('aria-expanded', String(!min));
+    }
+    var br = t.querySelector('.tqn-brand.has-logo');
+    if (br && !br.querySelector('.tqn-brand-mark')) {
+      var m = (window.__tqLogo && window.__tqLogo.m) || '';
+      if (m) { var im = document.createElement('img'); im.className = 'tqn-brand-mark'; im.alt = 'تيرا'; im.src = m; br.insertBefore(im, br.firstChild); }
+    }
+    if (t.__tqnGrp !== 1) {
+      t.__tqnGrp = 1;
+      var CLs = closedList();
+      t.querySelectorAll('.tqn-nav > .tqn-g').forEach(function (g) {
+        var n = ghName(g); if (!n) return;
+        var c = CLs.indexOf(n) >= 0;
+        if (c !== g.classList.contains('is-closed')) g.classList.toggle('is-closed', c);
+        var h = g.querySelector(':scope > .tqn-gh'); if (h) h.setAttribute('aria-expanded', String(!c));
+      });
+    }
+    t.querySelectorAll('.tqn-nav .t2-side-i').forEach(function (i) {
+      if (!i.title) { var s = i.querySelector('.t2-side-l'); if (s) i.title = s.textContent.trim(); }
+    });
+  }
+  function soon() { if (busy) return; busy = true; (window.requestAnimationFrame || setTimeout)(apply); }
+  document.addEventListener('click', function (ev) {
+    var gh = ev.target && ev.target.closest && ev.target.closest('#pv-host .tqn-nav .tqn-gh');
+    if (gh) {
+      setTimeout(function () {
+        var t = T2(); if (!t) return; var a = [];
+        t.querySelectorAll('.tqn-nav > .tqn-g.is-closed').forEach(function (g) { var n = ghName(g); if (n) a.push(n); });
+        try { localStorage.setItem(KG, JSON.stringify(a)); } catch (e) { void e; }
+      }, 0);
+      return;
+    }
+    var b = ev.target && ev.target.closest && ev.target.closest('#pv-host .t2-side-t'); if (!b) return;
+    setTimeout(function () { var t = T2(); if (!t) return; try { localStorage.setItem(K, t.classList.contains('is-side-min') ? '1' : '0'); } catch (e) { void e; } apply(); }, 0);
+  }, true);
+  try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
+  soon();
+})();
