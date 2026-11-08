@@ -21,7 +21,7 @@
       ['cu-mem', 'العضويات والنقاط', ['cu']]
     ]],
     ['أمن العملاء', [
-      ['cu-secc', 'أمن الحسابات', ['cu']],
+      ['cu-secc', 'مركز الأمن', ['cu']],
       ['cpg', 'صفحة العميل', ['cu']]
     ]],
     ['الطلبات والعقود', [
@@ -92,7 +92,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
 
   /* v703: بلاطة ثلاثية الأبعاد لكل بند — رمز من مكتبة رموز المنصة (window.__PGL) بوصفة البلاطة نفسها */
   var GLY = {
-    'cu-list': 'identification-card', 'cu-new': 'user', 'cu-pf-ver': 'seal-check', 'cu-pf-launch': 'rocket-launch',
+    'cu-list': 'identification-card', 'cu-new': 'user', 'cu-pf-ver': 'seal-check', 'cu-pf-launch': 'rocket-launch', 'cu-pf-req': 'note-pencil', 'cu-mem': 'crown-simple', 'cu-secc': 'shield-check', 'cpg': 'user-circle', 'cu-inbox': 'tray',
     'cu-svc': 'clipboard-text', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront', 'cu-docs-tl': 'envelope-simple',
     'fin-due': 'calendar-check', 'cu-trin': 'bank', 'cu-opin': 'arrow-counter-clockwise', 'cu-paylinks': 'link-simple',
     'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'cs-tickets': 'ticket', 'cx': 'star'
@@ -115,7 +115,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
     saffron: ['#B86F0A', '#FFC861', '#F0A12B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'], green: ['#13804F', '#5EE0A0', '#22A86B']
   };
   var COLK = {
-    'adm-home': 'teal', 'cu-list': 'blue', 'cu-new': 'blue', 'cu-pf-ver': 'blue', 'cu-pf-launch': 'blue',
+    'adm-home': 'teal', 'cu-list': 'blue', 'cu-new': 'blue', 'cu-pf-ver': 'blue', 'cu-pf-launch': 'blue', 'cu-pf-req': 'blue', 'cu-mem': 'blue', 'cu-secc': 'teal', 'cpg': 'teal', 'cu-inbox': 'violet',
     'cu-svc': 'violet', 'cu-docs-pq': 'violet', 'cu-docs-pc': 'teal', 'cu-docs-sq': 'violet',
     'fin-due': 'saffron', 'fin-pay': 'saffron', 'cu-paylinks': 'saffron', 'fin-req': 'saffron', 'cu-admx-rp': 'blue',
     'comm-send': 'red', 'cs-tickets': 'red', 'cx': 'red', 'team-hub': 'teal', 'sys': 'slate', 'fin-fee': 'slate', 'pay-center': 'slate'
@@ -584,8 +584,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v770: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v771: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v771: أيقونات بنود القائمة الجديدة، و«مركز الأمن» و«طلبات المتجر» باسم صفحتهما بلا تكرار في المسار.
    · v770: «طلبات تحديث الملف» جدول بالحقول المعدّلة والقرار في الصف · تقرير العميل بأقسام تبويبات · القائمة الجانبية بلا «كل صفحات العملاء» (صفحاتها بنود مباشرة).
    · v768: الإجراءات الفرعية في البند (السبب · الملاحظة · التعديل) بارزة قبل الأزرار، ورسائل القسم ونتيجة الإجراء السابق ظاهرة، وروابط البنود في القرار تفتح البند.
    · v767: إصلاح ظهور القرار أعلى صفحة «بندًا بندًا».
@@ -1209,6 +1210,9 @@ function geoQ() {
   function pages(root) {
     /* v770: اسم الصفحة كما في القائمة الجانبية */
     var ptl = document.getElementById('pv-title'); if (ptl && txt(ptl) === 'طلبات الملف الشخصي') ptl.textContent = 'طلبات تحديث الملف';
+    /* v771: «طلبات المتجر» عنوانها في المنصة «بانتظار إجراء» — اسم القائمة نفسه بلا تكرار في المسار */
+    var onI = document.querySelector('.tqn-nav .tqn-i.is-on'), onT = onI ? (onI.getAttribute('title') || txt(onI)) : '';
+    if (ptl && onT === 'طلبات المتجر' && txt(ptl) === 'بانتظار إجراء') ptl.textContent = 'طلبات المتجر';
     try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');
     [].forEach.call(root.querySelectorAll('.tqn-ncp, .tqn-axp'), function (x) { if (x !== L || !k) { cls(x, 'tqn-ncp', false); cls(x, 'tqn-axp', false); } });
