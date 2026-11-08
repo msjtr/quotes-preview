@@ -5769,7 +5769,7 @@ function secHub(key, head, groups) {
   /* v597: مجموعة واحدة = بطاقاتها مباشرة بلا شريط عنوان يكرر عنوان الصفحة ولا تصفية «الكل» */
   const secs = groups.length === 1 ? [e('div', { class: 'hc-g is-solo' }, groups[0][3].map(card))] : show.map(secEl);
   if (HUB_INLINE) return secs;
-  return [e('div', { class: 'shb' + (['cu', 'cuacc', 'cuax', 'cupf', 'cusec', 'sys', 'cudocs', 'ctr', 'fin', 'cpg', 'comm'].indexOf(key) >= 0 ? ' is-wide' : '') }, [e('div', { class: 'shb-h' }, [e('span', { class: 'shb-ic' }, frag(tile(head.ic))), e('div', {}, [e('h1', { class: 'shb-t' }, head.t), e('p', { class: 'shb-s' }, head.s)])]), head.ad ? adBoard(head.ad) : null, groups.length > 1 && key !== 'fin' ? filt : null].filter(Boolean)
+  return [e('div', { class: 'shb' + (['cu', 'cuacc', 'cuax', 'cupf', 'cusec', 'sys', 'ctr', 'fin', 'cpg', 'comm'].indexOf(key) >= 0 ? ' is-wide' : '') }, [e('div', { class: 'shb-h' }, [e('span', { class: 'shb-ic' }, frag(tile(head.ic))), e('div', {}, [e('h1', { class: 'shb-t' }, head.t), e('p', { class: 'shb-s' }, head.s)])]), head.ad ? adBoard(head.ad) : null, groups.length > 1 && key !== 'fin' ? filt : null].filter(Boolean)
     .concat(secs))];
 }
 function svcHubPage() {
@@ -10401,7 +10401,7 @@ function feeRegister() {
   lp('cu-admx-fee', 'الرسوم والمصاريف والضرائب', 'cu-admx', 'cu-admx-fee', feePage);
 }
 /* ===================== v189 — قالب مستقل لكل مستند (عرض الشركاء · عرض المتاجر · حسب الطلب · عقد الشركاء · فاتورة المتاجر)
-   البنود وطريقة الاحتساب · بنود مخفية يختار المُعِدّ ظهورها · قسم «العقود والمستندات» للتنفيذ · معاينة وتنزيل PDF ===================== */
+   البنود وطريقة الاحتساب · بنود مخفية يختار المُعِدّ ظهورها · التنفيذ في «الطلبات والعقود» · معاينة وتنزيل PDF ===================== */
 const TQ_CALC = { unit: 'لكل مبلغ من قيمة المنتج', pct: 'نسبة من قيمة المنتج', fixed: 'مبلغ ثابت', inst: 'لكل دفعة', perq: 'لكل قطعة', spct: 'نسبة من قيمة البنود' };
 const TQ_CALC_K = { pq: ['unit', 'pct', 'fixed', 'inst'], sq: ['fixed', 'perq', 'spct'], cq: ['fixed', 'spct'] };
 /* عناصر عرض سعر الشركاء القابلة للإظهار والإخفاء — القالب وكل عرض */
@@ -10708,26 +10708,13 @@ function esxCfgQuote(kind) { /* v761: قسم «التسعير والترقيم»
 const tqDraftC = (T) => ({ title: T.title, org: T.org, cr: T.cr, addr: T.addr, pre: T.pre, sign: T.sign, clauses: qtClone(T.clauses), show: Object.assign({}, T.show), err: {} });
 /* قالب فاتورة المتاجر */
 const tqDraftI = (T) => ({ hdr: Object.assign({}, TQH0, T.hdr), title: T.title, en: T.en, org: T.org, vatNo: T.vatNo, cr: T.cr, addr: T.addr, prefix: T.prefix, vatPct: String(Math.round(T.vatRate * 10000) / 100), note: T.note, terms: qtClone(T.terms), show: Object.assign({}, T.show), err: {} });
-/* ===================== التنفيذ: «العقود والمستندات» ===================== */
+/* ===================== التنفيذ: «الطلبات والعقود» ===================== */
 const DCK = { key: 'quotes.partner', alt: 'quotes.approve', pname: 'إعداد عروض أسعار الشركاء' };
 const dcPerm = () => cuPermNo('للعرض فقط', 'إعداد عروض أسعار الشركاء وإصدارها وإنشاء العقود لمن يملك صلاحية «' + DCK.pname + '» (' + DCK.key + ') — تعمل الآن ببديلها ' + DCK.alt + '.');
 const dcLive = (q) => ['issued', 'accepted', 'mod'].indexOf(qStat(q)) >= 0;
 const dcWait = () => dcPqReqs().filter(function (r) { return !QUOTES.some(function (q) { return q.req === r.no && dcLive(q); }); });
 const dcFld = (r, re) => { const f = r && r.fields.filter(function (x) { return x && re.test(x[0]); })[0]; return f ? String(f[1]) : ''; };
 const dcClose0 = (key) => { const d = document.querySelector('.cu-dr[data-r="' + key + '"]'); if (d && d.__close) d.__close(); else draw(); };
-function dcHubPage() {
-  const W = dcWait(), Sw = SO_PAY.filter(function (o) { return o.st === 'quote'; }).length, Cw = dcCq().filter(function (r) { return !r.cus.quote && cuCusAct(r); }).length, CT = dcCts(), INV = dcInvList();
-  const H = secHub('cudocs', { t: 'العقود والمستندات', s: 'تنفيذ المستندات: عروض الأسعار والعقود والفواتير. القوالب وإعدادها في «قوالب المستندات».', ic: 'contract' }, [['dc', 'العقود والمستندات', 'contract', [
-    { ic: 'file-text:navy', t: 'عروض أسعار الشركاء', d: 'إعداد العرض لطلبات الأهلية واختيار البنود الظاهرة للعميل — ومعاينة PDF قبل الإرسال', n: LIVE.on ? (ADM.pqN != null ? fmtNum(ADM.pqN) + ' عروض جديدة' : 'الطلبات الجديدة') : fmtNum(QUOTES.length) + ' عروض', badge: !LIVE.on && W.length ? [fmtNum(W.length) + ' بانتظار إعداد العرض', 'warn'] : null, go: function () { go('other', 'cu-docs-pq'); } },
-    { ic: 'storefront:teal', t: 'عروض أسعار المتاجر', d: 'عرض سعر لطلبات المتجر بقالبه — وبعد اعتماده ودفعه تصدر الفاتورة', n: fmtNum(SO_PAY.filter(function (o) { return o.qt; }).length) + ' عروض', badge: Sw ? [fmtNum(Sw) + ' بانتظار الإصدار', 'warn'] : null, go: function () { go('other', 'cu-docs-sq'); } },
-    { ic: 'note-pencil:saffron', t: 'عروض حسب الطلب', d: 'عرض مستقل لطلبات الخدمات والمنتجات حسب الطلب — وبعد اعتماده ودفعه تصدر الفاتورة', n: fmtNum(dcCq().filter(function (r) { return r.cus.quote; }).length) + ' عروض', badge: Cw ? [fmtNum(Cw) + ' بانتظار الإصدار', 'warn'] : null, go: function () { go('other', 'cu-docs-cq'); } },
-    { ic: 'contract', t: 'عقود الشركاء', d: 'عقد بالقالب لكل عرض شركاء معتمد — البيانات والمكوّنات وجدول الدفعات والبنود والتوقيع', n: fmtNum(CT.length) + ' عقود', go: function () { go('other', 'cu-docs-pc'); } },
-    { ic: 'receipt:gold', t: 'فواتير المتاجر', d: 'فاتورة ضريبية بعد اعتماد عرض المتجر أو حسب الطلب ودفعه — بدل العقد', n: fmtNum(INV.length) + ' فواتير', go: function () { go('other', 'cu-docs-si'); } },
-    { ic: 'letter:navy', t: 'الخطابات الرسمية', d: 'خطابات رسمية للجهات الحكومية والشركات والعملاء والشركاء — رقم لا يتكرر وسجل وملف PDF بالتصميم الموحّد', n: ADM.tlN != null ? fmtNum(ADM.tlN) + ' خطابات' : 'السجل والإصدار', go: function () { go('other', 'cu-docs-tl'); } }]]]);
-  const box = H[0], hf = box && box.querySelector('.hf-row'); if (hf) hf.remove();
-  if (box) { const hh = box.querySelector('.shb-h'); box.insertBefore(DS.note('info', 'العروض والعقود والفواتير تصل العميل', 'تصدر من هنا بقوالبها في «قوالب المستندات»، ويصل العميل المستند في طلبه. تفاصيل الإعداد كالبنود المخفية غير المختارة لا تظهر له.'), hh ? hh.nextSibling : box.firstChild); }
-  return H;
-}
 const dcTop = (t, s, acts) => e('div', { class: 'ax-top is-sub' }, [e('div', { class: 'ax-top-t' }, [e('small', {}, s)]), acts && acts.filter(Boolean).length ? e('div', { class: 't2-row-wrap' }, acts.filter(Boolean)) : null]);
 /* v761: فتح «قوالب المستندات» على مستند محدّد (حلّ محل المسارات القديمة لكل قالب) */
 function esxOpen(k) { go('other', 'sys-es'); setTimeout(function () { const el = ADM.esxEl; if (!el) return; if (k === 'brand') { if (el.__esxTab) el.__esxTab('brand'); } else if (el.__esxGo) el.__esxGo(k); }, 80); }
@@ -11098,21 +11085,10 @@ function dcSeed() {
 }
 function tqRegister() {
   dcSeed(); dsRegister(); txRegister(); rqRegister();
-  CU_PEND['quotes.partner'] = [DCK.pname, DCK.alt, 'العقود والمستندات']; CU_MAP.push(['إعداد عروض أسعار الشركاء وإصدارها وإنشاء العقود', 'quotes.partner']); CU_GATE['pq.prep'] = 'quotes.partner';
-  try { Object.assign(ICON, { 'cu-docs': ['contract', 'navy'], 'cu-docs-pq': ['letter', 'navy'], 'cu-docs-sq': ['storefront', 'teal'], 'cu-docs-cq': ['note-pencil', 'saffron'], 'cu-docs-pc': ['contract', 'navy'], 'cu-docs-si': ['receipt', 'gold'] }); } catch (err) { void err; }
-  
-  
-  
-  
-  
-lp('sys-es', 'قوالب المستندات', 'sys', 'sys-es', sysEsPage);
+  CU_PEND['quotes.partner'] = [DCK.pname, DCK.alt, 'الطلبات والعقود']; CU_MAP.push(['إعداد عروض أسعار الشركاء وإصدارها وإنشاء العقود', 'quotes.partner']); CU_GATE['pq.prep'] = 'quotes.partner';
+  try { Object.assign(ICON, { 'cu-docs-pq': ['letter', 'navy'], 'cu-docs-sq': ['storefront', 'teal'], 'cu-docs-cq': ['note-pencil', 'saffron'], 'cu-docs-pc': ['contract', 'navy'], 'cu-docs-si': ['receipt', 'gold'] }); } catch (err) { void err; }
+  lp('sys-es', 'قوالب المستندات', 'sys', 'sys-es', sysEsPage);
 try { Object.assign(ICON, { 'sys-es': ['coins', 'gold'] }); } catch (err) { void err; }
-  lp('cu-docs', 'العقود والمستندات', 'cu', 'cu-docs', dcHubPage);
-  lp('cu-docs-pq', 'عروض أسعار الشركاء', 'cu-docs', 'cu-docs-pq', dcPqPage);
-  lp('cu-docs-sq', 'عروض أسعار المتاجر', 'cu-docs', 'cu-docs-sq', dcSqPage);
-  lp('cu-docs-cq', 'عروض حسب الطلب', 'cu-docs', 'cu-docs-cq', dcCqPage);
-  lp('cu-docs-pc', 'عقود الشركاء', 'cu-docs', 'cu-docs-pc', dcPcPage);
-  lp('cu-docs-si', 'فواتير المتاجر', 'cu-docs', 'cu-docs-si', dcSiPage);
   lp('cu-docs-tl', 'الخطابات الرسمية', 'cu', 'cu-docs-tl', tlPage); try { Object.assign(ICON, { 'cu-docs-tl': ['letter', 'navy'] }); } catch (err) { void err; } /* v756 */
 }
 /* بنود القالب في نموذج الإصدار: تُضاف أو تُلغى، والمبلغ حسب طريقة الاحتساب */
@@ -11571,7 +11547,6 @@ function dcPqPrep(rno) {
 function ctRegister() {
   try { Object.assign(ICON, { ctr: ['files', 'navy'] }); } catch (err) { void err; }
   lp('ctr', 'قسم العملاء', null, 'cu', ctHubPage);
-  lp('cu-docs', 'قسم العملاء', null, 'cu', ctHubPage);
   finRegister();
   lp('cu-docs-pq', 'عروض أسعار الشركاء', 'cu', 'cu-docs-pq', dcPqPage);
   lp('cu-docs-sq', 'عروض أسعار المتاجر', 'cu', 'cu-docs-sq', dcSqPage);
@@ -21976,7 +21951,7 @@ function esxBrandPanel(doc, el) {
   el.onclick = function (e) {
     const b = e.target.closest('button'); if (!b) return; const d = b.dataset;
     const rootOf = function () { let r = el; while (r && !r.__esxGo) r = r.parentElement; return r; };
-    if (d.bg === 'tl') { snack('معاينة الخطاب الرسمي من «العقود والمستندات» ← الخطابات الرسمية'); return; }
+    if (d.bg === 'tl') { snack('معاينة الخطاب الرسمي من «الطلبات والعقود» ← الخطابات الرسمية'); return; }
     if (d.bg) { const r = rootOf(); if (r) r.__esxGo(d.bg); return; }
     if (!can && !d.bv) return;
     if (d.ba) { rep = null; el.querySelector('#esx-b6f').click(); return; }

@@ -57,7 +57,7 @@
     'cu-mon-dev': 'cu', 'cu-mon-live': 'cu', 'cu-audit': 'cu', 'cpg': 'cu', 'cpg-access': 'cu',
     'cpg-log': 'cu', 'cs': 'cu', 'cs-customers': 'cu-list', 'cs-customer': 'cu-list',
     'cs-updates': 'cu', 'cs-devices': 'cu', 'cs-requests': 'cu-svc', 'cs-complaints': 'cs-tickets',
-    'cu-docs': 'cu-docs-pq', 'cu-docs-cq': 'cu-docs-sq', 'cu-docs-si': 'cu-docs-sq', 'ctr': 'cu',
+    'cu-docs-cq': 'cu-docs-sq', 'cu-docs-si': 'cu-docs-sq', 'ctr': 'cu',
     'cu-payops': 'fin-pay', 'fin-gw': 'fin-pay', 'fin-rec': 'fin-pay', 'fin-fee': 'fin',
     'fin-fee-i': 'fin', 'cu-admx': 'fin', 'cu-admx-bd': 'fin', 'cu-admx-dd': 'fin',
     'cu-admx-tr': 'fin', 'cu-admx-ck': 'fin', 'cu-admx-rp': 'fin', 'cu-admx-rpc': 'fin',
