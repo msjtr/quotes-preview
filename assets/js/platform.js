@@ -2185,7 +2185,7 @@ const TQN_CR0 = {
   ext: { w1: 35, w2: 25, w3: 15, w4: 15, w5: 10, valid: 30, lateEach: 20, bnplLateEach: 5, defPts: 40, markEach: 2, inq30Each: 5, inq90Each: 1, bnplFree: 2, bnplEach: 5, court12: 50, courtOld: 80 },
   extR: { defMax: 2000, lateN: 2, inq30: 5, lowBand: 1 },
   mix: { lo: 3, hi: 12, a: 70, b: 50, c: 30 },
-  dbr: { max: 33, cardPct: 5 }
+  dbr: { max: 60, cardPct: 5 } /* v788: حد الالتزامات 60% من إجمالي الدخل — قرار المشرف العام */
 };
 const TQN_CR = JSON.parse(JSON.stringify(TQN_CR0));
 let tqnCrD = null, tqnCrCid = '';
@@ -2266,7 +2266,7 @@ function tqnCrPage() {
       e('li', {}, 'يُحسب كل مكوّن من 0 إلى 100 بالقواعد في الأقسام 1–4.'),
       e('li', {}, 'الدرجة = مجموع (قيمة المكوّن × وزنه ÷ 100)، فتكون من 0 إلى 100.'),
       e('li', {}, 'تُحدَّد درجة المخاطرة من الدرجة (القسم 5)، ويُحدَّد قرار الأهلية بقواعد مستقلة عن الدرجة (القسم 6).'),
-      e('li', {}, 'في طلب الأهلية يُقرأ «التقرير الائتماني الذكي» من مُلم المرفق — من العميل أو الموظف — داخل المتصفح (القسم 7)، ويُدمج مع سلوك العميل في المنصة بوزن يتغير حسب تاريخه معنا، مع القدرة على السداد (القسم 8). التوصية استشارية والقرار للإدارة.')]),
+      e('li', {}, 'في طلب الأهلية يُقرأ «التقرير الائتماني الذكي» من مُلم المرفق — من العميل أو الموظف — داخل المتصفح (القسم 7)، ويُدمج مع سلوك العميل في المنصة بوزن يتغير حسب تاريخه معنا، مع القدرة على السداد (القسم 8). التقرير اختياري: بلا تقرير يُعتمد التقييم الداخلي.'), e('li', {}, 'الأهلية: إن تجاوزت الالتزامات الشهرية حد القسم 8 من إجمالي الدخل فالتوصية «غير مؤهل»، وإلا «مؤهل» بالمتبقي حتى الحد قسطًا، والمبلغ = القسط × مدة السداد. المتعثرات والمتأخرات تُعرض بالتفصيل للمراجعة. التوصية استشارية والقرار للإدارة.')]),
       e('small', {}, 'قواعد ثابتة في المنصة كلها: الدفعة متأخرة من اليوم 1 حتى 60 بعد استحقاقها ومتعثرة من اليوم 61، والعقد المغلق عليه متبقٍّ لا يُحسب متأخرًا ولا متعثرًا بل يظهر مستقلًّا بانتظار القرار.')]),
     sec('∑', 'أوزان المكوّنات', 'مجموعها 100 — المكوّن بوزن 0 لا يدخل الدرجة', [grid([f('w', 'pay', '1 · سجل السداد في الموعد', '%'), f('w', 'now', '2 · الوضع الحالي', '%'), f('w', 'legal', '3 · إجراءات التحصيل والقانونية', '%'), f('w', 'hist', '4 · عمق العلاقة', '%')]), refs.sum]),
     sec(1, 'سجل السداد في الموعد', 'لكل دفعة مستحقة نسبة حسب أيام تأخر سدادها، والمكوّن = متوسطها موزونًا بمبلغ الدفعة', [
@@ -2296,7 +2296,7 @@ function tqnCrPage() {
       grid([f('extR', 'defMax', '«متعثر» إن زاد متبقي المتعثر التمويلي على', 'ر.س', 'متعثر الاتصالات «يحتاج متابعة»'), f('extR', 'lateN', '«يحتاج متابعة» عند منتجات متأخرة الآن لا تقل عن', 'منتج'), f('extR', 'inq30', '«يحتاج متابعة» عند استعلامات خلال 30 يومًا لا تقل عن', 'استعلام'), f('extR', 'lowBand', 'تصنيف مُلم «منخفض جدًا» يوجب المتابعة', '1 نعم · 0 لا')])]),
     sec(8, 'الدمج مع سلوك العميل والقدرة على السداد', 'وزن التقرير الخارجي يقل كلما زاد تاريخ العميل معنا، والباقي لسلوكه في المنصة', [
       grid([f('mix', 'lo', 'عميل جديد: دفعاته المستحقة أقل من', 'دفعة'), f('mix', 'a', 'وزن الخارجي للعميل الجديد', '%'), f('mix', 'b', 'وزن الخارجي لما بينهما', '%'), f('mix', 'hi', 'عميل له تاريخ: دفعاته المستحقة لا تقل عن', 'دفعة'), f('mix', 'c', 'وزن الخارجي لمن له تاريخ', '%')]),
-      grid([f('dbr', 'max', 'حد نسبة عبء الدين', '% من الراتب', '(الأقساط الحالية + قسط تيرا) ÷ صافي الراتب — يُطابَق مع لوائح البنك المركزي'), f('dbr', 'cardPct', 'قسط بطاقة الائتمان بلا قسط محدد', '% من رصيدها')])]),
+      grid([f('dbr', 'max', 'حد الالتزامات من إجمالي الدخل', '% من الدخل', 'الالتزامات الشهرية ÷ إجمالي الدخل — فوق الحد «غير مؤهل»، ودونه «مؤهل» بالمتبقي حتى الحد قسطًا، والمبلغ = القسط × مدة السداد'), f('dbr', 'cardPct', 'قسط بطاقة الائتمان بلا قسط محدد', '% من رصيدها')])]),
     refs.err,
     e('section', { class: 'tqn-cr-s' }, [e('div', { class: 'tqn-cr-sh' }, [e('i', { 'aria-hidden': 'true' }, '✓'), e('div', {}, [e('b', {}, 'مثال الاحتساب على عميل حقيقي'), e('small', {}, 'بالقيم المعروضة في الصفحة قبل حفظها — غيّر قيمة ثم «احسب المثال»')])]),
       e('div', { class: 'tqn-cr-exb' }, [C.length ? e('select', { class: 'tqn-cr-sel', 'aria-label': 'العميل', onChange: function (ev) { tqnCrCid = ev.target.value; draw(); } }, C.map(function (c) { const o = e('option', { value: c.id }, c.name); if (c.id === tqnCrCid) o.selected = true; return o; })) : e('small', {}, 'لا عملاء بعقود بعد.'),
@@ -2455,20 +2455,24 @@ function tqnExtEval(R, ctx) {
   return out;
 }
 function tqnExtMix(r, X, nums) {
+  /* v788: قرار المشرف العام — الأهلية بنسبة الالتزامات من إجمالي الدخل: فوق الحد (60%) «غير مؤهل»، ودونه «مؤهل» بالمتبقي حتى الحد
+     قسطًا (الحد × الدخل − الالتزامات) ومبلغًا (القسط × مدة السداد). المتعثرات والمتأخرات تُعرض في التقرير ولا تغيّر القرار — والقرار النهائي للإدارة */
   const M = TQN_CR.mix, D = TQN_CR.dbr, due = r && r.any ? (r.dueN || 0) : 0;
   const ew = due < M.lo ? M.a : due < M.hi ? M.b : M.c;
   const iS = r && r.any ? r.score : null, eS = X && X.valid ? X.score : null;
   const score = eS === null ? iS : iS === null ? eS : Math.round((eS * ew + iS * (100 - ew)) / 100);
-  const rank = { ok: 0, watch: 1, risk: 2 }, ic = r && r.any ? r.cls : 'ok', xc = X && X.valid ? X.cls : 'ok';
-  const cls = rank[xc] > rank[ic] ? xc : ic;
-  const sal = Number(nums.sal) || 0, tera = Number(nums.tera) || 0, ob = X && X.valid ? X.instNow : (Number(nums.ob0) || 0); /* v785 · v786: بلا تقرير صالح → الالتزامات المُصرَّح بها في الطلب */
-  const dbr = sal > 0 ? Math.round((ob + tera) / sal * 1000) / 10 : null, maxInst = sal > 0 ? Math.max(0, Math.round(sal * D.max / 100 - ob)) : null;
-  const why = [].concat(X && X.valid ? (X.hard.length ? X.hard : X.soft) : [], r && r.any && r.cls !== 'ok' ? (r.why || []) : []);
-  if (dbr !== null && dbr > D.max) why.push('نسبة عبء الدين ' + fmtNum(dbr) + '% أعلى من ' + fmtNum(D.max) + '%');
-  let fin = dbr !== null && dbr > D.max && cls === 'ok' ? 'watch' : cls;
-  const K = TQN_CR.rule;
-  if (score !== null && score !== undefined && X && X.valid) { if (score < K.risk) { fin = 'risk'; why.push('الدرجة المدمجة ' + fmtNum(score) + ' أقل من ' + fmtNum(K.risk)); } else if (score < K.watch && fin === 'ok') { fin = 'watch'; why.push('الدرجة المدمجة ' + fmtNum(score) + ' أقل من ' + fmtNum(K.watch)); } }
-  return { ew: ew, due: due, score: score, cls: fin, why: why, dbr: dbr, maxInst: maxInst, ob: ob, tera: tera, sal: sal };
+  const sal = Number(nums.sal) || 0, tera = Number(nums.tera) || 0, mon = Number(nums.mon) || 0;
+  const ob = X && X.valid ? X.instNow : (Number(nums.ob0) || 0); /* v785 · v786: بلا تقرير صالح → الالتزامات المُصرَّح بها في الطلب */
+  const dbrNow = sal > 0 ? Math.round(ob / sal * 1000) / 10 : null, dbr = sal > 0 ? Math.round((ob + tera) / sal * 1000) / 10 : null;
+  const maxInst = sal > 0 ? Math.max(0, Math.floor(sal * D.max / 100 - ob)) : null, maxAmt = maxInst !== null && mon > 0 ? maxInst * mon : null;
+  let elig = null; /* null = لا دخل · no = غير مؤهل · full = مؤهل بالمطلوب · part = مؤهل بمبلغ أقل */
+  if (sal > 0) elig = dbrNow > D.max || maxInst <= 0 ? 'no' : !tera || tera <= maxInst ? 'full' : 'part';
+  const notes = [];
+  if (X && X.valid) { if (X.hard.length) notes.push.apply(notes, X.hard); notes.push.apply(notes, X.soft); }
+  if (r && r.any && r.cls !== 'ok') notes.push.apply(notes, (r.why || []).map(function (w) { return 'في المنصة: ' + w; }));
+  const cls = elig === 'no' ? 'risk' : notes.length || elig === 'part' ? 'watch' : 'ok';
+  const why = elig === 'no' ? ['الالتزامات ' + fmtNum(dbrNow) + '% من إجمالي الدخل — أعلى من ' + fmtNum(D.max) + '%'] : [];
+  return { ew: ew, due: due, score: score, cls: cls, elig: elig, why: why, notes: notes, dbr: dbr, dbrNow: dbrNow, maxInst: maxInst, maxAmt: maxAmt, ob: ob, tera: tera, sal: sal, mon: mon };
 }
 /* v784: «التقرير الائتماني الخارجي» في طلب الأهلية (تبويب التقرير والقرار) — التقرير المرفق (من العميل «تقرير سمة (ملم)» أو ملف يختاره الموظف)،
    والبيانات المستخرجة، ومكوّنات الدرجة الخارجية، والقدرة على السداد، وسلوك العميل في المنصة، والتوصية المدمجة — والقرار النهائي للإدارة */
@@ -2501,9 +2505,12 @@ function tqnExtPanel(x, docs, paint) {
     const N = egNums(x), tot = Number(egNum(egFv(x, /^القيمة الإجمالية للطلب/))) || 0, mon = Number(egNum(egFv(x, /^مدة السداد/))) || 0;
     if (S.sal === '' && N.inc) S.sal = String(N.inc);
     if (S.tera === '' && tot && mon) S.tera = String(Math.round(tot / mon));
-    const nid = egFv(x, /رقم الهوية|الهوية الوطنية|رقم الإقامة|السجل المدني/);
+    if (S.mon === undefined || S.mon === '') S.mon = mon ? String(mon) : '';
+    /* v788: رقم الهوية من ملف العميل (إن لم يكن في الطلب) لمطابقة التقرير تلقائيًا */
+    if (!S.nidAt) { S.nidAt = 1; try { admClients('/reg/' + encodeURIComponent(x.user_id)).then(function (j) { const B = (j && j.profile && j.profile.blocks) || {}; let v = ''; Object.keys(B).forEach(function (k) { (Array.isArray(B[k]) ? B[k] : []).forEach(function (f) { if (!v && f && /(^|\.)(national_id|iqama_no|id_number)$/.test(String(f.key || ''))) { let z = ''; try { z = clVal(f); } catch (y) { z = f.value; } v = String(z || f.value || '').replace(/\D/g, ''); } }); }); S.nid = v; S.nidAt = 2; if (v) paint(); }).catch(function () { S.nidAt = 2; }); } catch (err) { S.nidAt = 2; } }
+    const nid = egFv(x, /رقم الهوية|الهوية الوطنية|رقم الإقامة|السجل المدني/) || S.nid || '';
     let r = null; try { r = axRep(x.user_id); } catch (err) { r = null; }
-    const R = S.st === 'ok' ? S.R : null, cus = (function () { try { return srName(x.user_id) || ''; } catch (err) { return ''; } })(), X = R ? tqnExtEval(R, { nid: nid, name: cus }) : null, MX = tqnExtMix(r, X, { sal: S.sal, tera: S.tera, ob0: N.ob });
+    const R = S.st === 'ok' ? S.R : null, cus = (function () { try { return srName(x.user_id) || ''; } catch (err) { return ''; } })(), X = R ? tqnExtEval(R, { nid: nid, name: cus }) : null, MX = tqnExtMix(r, X, { sal: S.sal, tera: S.tera, mon: S.mon, ob0: N.ob });
     const pick = e('input', { type: 'file', accept: 'application/pdf,.pdf', hidden: true, onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; if (!f) return; tqnExtRun(S, function () { return f.arrayBuffer().then(function (b) { return new Uint8Array(b); }); }, 'local', paint); } });
     const head = e('div', { class: 'tqn-xp-h' }, [e('div', {}, [e('b', {}, 'التقرير الائتماني الخارجي — مُلم (سمة)'), e('small', {}, D ? 'المرفق: ' + (D.name || 'تقرير سمة (ملم)') + ' · ' + ({ uploaded: 'مرفوع', pending: 'بانتظار المراجعة', accepted: 'مقبول', rejected: 'مرفوض' }[D.status] || D.status || '') : 'اختياري — لم يُرفق تقرير مُلم، فالتوصية مبنية على التقييم الداخلي (سلوك العميل في المنصة). إن أُرفق التقرير أو حلّلته من جهازك يُضاف إلى التقييم تلقائيًا.')]),
       e('div', { class: 'tqn-xp-a' }, [D ? DS.button('إعادة التحليل', { size: 'sm', onClick: function () { S.src = ''; S.did = ''; paint(); } }) : null, DS.button('تحليل ملف من جهازك', { size: 'sm', ui: 'file-pdf', onClick: function () { pick.click(); } }), pick])]);
@@ -2533,20 +2540,34 @@ function tqnExtPanel(x, docs, paint) {
           e('span', { class: 'tqn-sc-bar', 'aria-hidden': 'true' }, [e('i', { style: 'width:' + Math.max(2, c[3]) + '%' })]), e('small', { class: 'tqn-sc-n' }, c[4])]);
       }).concat([e('div', { class: 'tqn-sc-r is-tot is-' + tn(X.score || 0) }, [e('div', { class: 'tqn-sc-h' }, [e('span', {}, 'الدرجة الخارجية'), e('small', {}, X.hard.length ? 'قواعد حاسمة: ' + X.hard.join(' · ') : X.soft.length ? X.soft.join(' · ') : 'لا ملاحظات حاسمة'), e('b', {}, X.score === null ? '—' : fmtNum(X.score) + ' / 100')])])])));
     }
-    /* القدرة على السداد */
+    /* v788: الأهلية بنسبة الالتزامات من إجمالي الدخل */
     const inp = function (k, ph) { return e('input', { type: 'number', inputmode: 'numeric', min: '0', value: S[k], placeholder: ph, onChange: function (ev) { S[k] = ev.target.value; paint(); } }); };
-    body.push(e('div', { class: 'tqn-xp-cap' }, [e('b', {}, 'القدرة على السداد'),
-      e('label', {}, ['صافي الراتب الشهري ', inp('sal', 'من الطلب أو أدخله')]), e('label', {}, ['قسط تيرا المقترح ', inp('tera', 'القيمة ÷ المدة')]),
-      e('span', {}, [X && X.valid ? 'الأقساط الحالية (من التقرير) ' : 'الالتزامات المُصرَّح بها في الطلب ', e('b', {}, MX.ob ? sar(MX.ob) : '—')]),
-      e('span', { class: MX.dbr !== null && MX.dbr > TQN_CR.dbr.max ? 'is-bad' : '' }, ['نسبة عبء الدين ', e('b', {}, MX.dbr === null ? '—' : fmtNum(MX.dbr) + '%'), ' (الحد ' + fmtNum(TQN_CR.dbr.max) + '%)']),
-      e('span', {}, ['أقصى قسط ممكن ', e('b', {}, MX.maxInst === null ? '—' : sar(MX.maxInst))])]));
-    /* التوصية المدمجة */
-    const lab = { ok: 'يُوصى بالمتابعة', watch: 'يُوصى بالمراجعة قبل الاعتماد', risk: 'لا يُوصى بالمنح' };
-    body.push(e('div', { class: 'tqn-sc-d is-' + MX.cls }, [
-      e('b', {}, 'التوصية: ' + lab[MX.cls] + (MX.score !== null && MX.score !== undefined ? ' — الدرجة المدمجة ' + fmtNum(MX.score) + ' / 100' : '')),
-      e('small', {}, 'سلوك العميل في المنصة: ' + (r && r.any ? fmtNum(r.score) + ' / 100 · ' + AX_CLS[r.cls][0] + ' · دفعات مستحقة ' + fmtNum(MX.due) : 'لا تاريخ سداد في المنصة') + (X && X.valid ? ' · الخارجي ' + fmtNum(X.score) + ' / 100 بوزن ' + fmtNum(MX.ew) + '%' : R ? ' · التقرير الخارجي غير صالح فلم يُحتسب' : ' · التقييم داخلي فقط — التقرير الخارجي اختياري ولم يُرفق')),
-      MX.why.length ? e('small', {}, 'الأسباب: ' + MX.why.join(' · ')) : null,
-      e('small', { class: 'tqn-xp-final' }, 'التوصية استشارية — القرار النهائي للإدارة من «التوصية والقرار». المعايير والأوزان من «إعدادات النظام ← معايير تقييم العملاء والأهلية».')]));
+    body.push(e('div', { class: 'tqn-xp-cap' }, [e('b', {}, 'الأهلية والقدرة على السداد'),
+      e('label', {}, ['إجمالي الدخل الشهري ', inp('sal', 'من الطلب أو أدخله')]), e('label', {}, ['قسط تيرا المطلوب ', inp('tera', 'القيمة ÷ المدة')]), e('label', {}, ['مدة السداد (شهر) ', inp('mon', 'من الطلب')]),
+      e('span', {}, [X && X.valid ? 'الالتزامات الشهرية (من التقرير) ' : 'الالتزامات المُصرَّح بها في الطلب ', e('b', {}, MX.ob ? sar(MX.ob) : '—')]),
+      e('span', { class: MX.elig === 'no' ? 'is-bad' : '' }, ['نسبة الالتزامات من الدخل ', e('b', {}, MX.dbrNow === null ? '—' : fmtNum(MX.dbrNow) + '%'), ' (الحد ' + fmtNum(TQN_CR.dbr.max) + '%)']),
+      e('span', {}, ['المتبقي حتى الحد (أقصى قسط) ', e('b', {}, MX.maxInst === null ? '—' : sar(MX.maxInst))]),
+      e('span', {}, ['أقصى مبلغ ', e('b', {}, MX.maxAmt === null ? '—' : sar(MX.maxAmt) + ' على ' + fmtNum(MX.mon) + ' شهرًا')]),
+      e('span', {}, ['النسبة بعد قسط تيرا ', e('b', {}, MX.dbr === null || !MX.tera ? '—' : fmtNum(MX.dbr) + '%')])]));
+    /* v788: المتعثرات والمتأخرات بالتفصيل (من التقرير الصالح ومن المنصة) */
+    if (X && X.valid) {
+      const pn = function (a) { return String(a.txt || '').replace(/\d{4}\/\d{2}\/\d{2}/g, ' ').replace(/متأخر|منتظم|مغلق|-\s*[A-Z0-9]{3,5}\s*-/g, ' ').replace(/\s+/g, ' ').trim() || 'منتج'; };
+      const L = [];
+      if (R.defN) L.push(['danger', 'متعثر', fmtNum(R.defN) + ' منتج' + (R.defTel ? ' (اتصالات)' : '') + ' — متبقٍّ ' + sar(R.defAmt)]);
+      R.court.forEach(function (c) { L.push([c.settled ? 'warn' : 'danger', 'محاكم التنفيذ', sar(c.amt) + ' · ' + (c.settled ? 'مُسوّى' + (c.settle ? ' في ' + c.settle : '') : 'قائم بمتبقٍّ ' + sar(c.rem))]); });
+      R.act.filter(function (a) { return a.st === 'متأخر'; }).forEach(function (a) { L.push(['warn', 'متأخر', pn(a) + ' — متبقٍّ ' + sar(a.rem) + (a.inst ? ' · قسط ' + sar(a.inst) : '')]); });
+      const bl = R.bnpl.filter(function (b) { return b.st === 'act' && b.od > 0; });
+      if (bl.length) L.push(['warn', 'اشترِ الآن متأخرة', fmtNum(bl.length) + ' عملية — المتأخر ' + sar(Math.round(bl.reduce(function (s, b) { return s + b.od; }, 0) * 100) / 100)]);
+      body.push(e('div', { class: 'tqn-xp-dl', style: 'margin:10px 0;padding:10px 12px;border:1px solid rgba(127,127,127,.25);border-radius:10px' }, [e('b', {}, 'المتعثرات والمتأخرات في التقرير'), L.length ? e('ul', { style: 'margin:6px 0 0;padding-inline-start:18px;line-height:1.9' }, L.map(function (z) { return e('li', { class: 'is-' + z[0], style: 'color:' + (z[0] === 'danger' ? '#c0392b' : '#b7791f') }, [e('strong', {}, z[1] + ': '), z[2]]); })) : e('small', {}, 'لا متعثرات ولا متأخرات ولا قرارات تنفيذ.')]));
+    }
+    /* v788: التوصية — تحكمها نسبة الالتزامات؛ والملاحظات للعرض */
+    const ttl = MX.elig === 'no' ? 'غير مؤهل' : MX.elig === 'full' ? 'مؤهل بالمبلغ المطلوب' + (MX.tera ? ' (قسط ' + sar(MX.tera) + ')' : '') : MX.elig === 'part' ? 'مؤهل بمبلغ حتى ' + (MX.maxAmt !== null ? sar(MX.maxAmt) : '—') + ' — قسط حتى ' + sar(MX.maxInst) : 'أدخل إجمالي الدخل لحساب الأهلية';
+    body.push(e('div', { class: 'tqn-sc-d is-' + (MX.elig === null ? 'watch' : MX.cls) }, [
+      e('b', {}, 'التوصية: ' + ttl),
+      MX.why.length ? e('small', {}, 'السبب: ' + MX.why.join(' · ')) : null,
+      MX.notes.length ? e('small', {}, 'ملاحظات للمراجعة: ' + MX.notes.join(' · ')) : null,
+      e('small', {}, 'سلوك العميل في المنصة: ' + (r && r.any ? fmtNum(r.score) + ' / 100 · ' + AX_CLS[r.cls][0] + ' · دفعات مستحقة ' + fmtNum(MX.due) : 'لا تاريخ سداد في المنصة') + (X && X.valid ? ' · الخارجي ' + fmtNum(X.score) + ' / 100 · الدرجة المدمجة ' + fmtNum(MX.score) + ' / 100' : R ? ' · التقرير الخارجي غير صالح فلم يُحتسب' : ' · التقييم داخلي فقط — التقرير الخارجي اختياري ولم يُرفق')),
+      e('small', { class: 'tqn-xp-final' }, 'التوصية استشارية — القرار النهائي للإدارة من «التوصية والقرار». الحد والمعايير من «إعدادات النظام ← معايير تقييم العملاء والأهلية».')]));
     if (R && R.notes) body.push(DS.note('info', 'ملاحظات في التقرير', 'في التقرير ملاحظات من الأعضاء أو العميل (غالبًا اعتراض على بيان) — راجعها في الملف.'));
     return e('section', { class: 'ax-card tqn-xp' }, [head].concat(body));
   } catch (err) { try { console.warn('[tqn-ext]', err && err.message); } catch (y) { void y; } return null; }
