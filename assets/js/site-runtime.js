@@ -96,7 +96,7 @@
   function script(src){return new Promise(function(ok,no){var s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=no; document.head.appendChild(s)})}
   function load(){
     if(loading) return loading;
-    loading=new Promise(function(ok,no){ window.__TS_READY=function(){ b64gz(window.__TS_GZ).then(function(c){C=c; window.__TS_GZ=''; ok(c)},no) }; script('site/core.js?v=' + encodeURIComponent((window.TQ_VERSION && window.TQ_VERSION.v) || '') + '.2').catch(no) }); /* v762: «.2» = core.js أُعيد توليده لمركز المراسلات دون رفع رقم الإصدار — يكسر الكاش القديم */
+    loading=new Promise(function(ok,no){ window.__TS_READY=function(){ b64gz(window.__TS_GZ).then(function(c){C=c; window.__TS_GZ=''; ok(c)},no) }; script('site/core.js?v=' + encodeURIComponent((window.TQ_VERSION && window.TQ_VERSION.v) || '') + '.3').catch(no) }); /* «.3» = core.js أُعيد توليده لمركز المراسلات دون رفع رقم الإصدار — يكسر الكاش القديم */
     return loading;
   }
   /* v318: آراء العملاء المنشورة (بموافقتهم) من القاعدة — تظهر في الصفحة الرئيسية بعد قسم الفيلم */
