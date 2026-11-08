@@ -2461,7 +2461,7 @@ function tqnExtMix(r, X, nums) {
   const score = eS === null ? iS : iS === null ? eS : Math.round((eS * ew + iS * (100 - ew)) / 100);
   const rank = { ok: 0, watch: 1, risk: 2 }, ic = r && r.any ? r.cls : 'ok', xc = X && X.valid ? X.cls : 'ok';
   const cls = rank[xc] > rank[ic] ? xc : ic;
-  const sal = Number(nums.sal) || 0, tera = Number(nums.tera) || 0, ob = X ? X.instNow : (Number(nums.ob0) || 0); /* v785: بلا تقرير → الالتزامات المُصرَّح بها في الطلب */
+  const sal = Number(nums.sal) || 0, tera = Number(nums.tera) || 0, ob = X && X.valid ? X.instNow : (Number(nums.ob0) || 0); /* v785 · v786: بلا تقرير صالح → الالتزامات المُصرَّح بها في الطلب */
   const dbr = sal > 0 ? Math.round((ob + tera) / sal * 1000) / 10 : null, maxInst = sal > 0 ? Math.max(0, Math.round(sal * D.max / 100 - ob)) : null;
   const why = [].concat(X && X.valid ? (X.hard.length ? X.hard : X.soft) : [], r && r.any && r.cls !== 'ok' ? (r.why || []) : []);
   if (dbr !== null && dbr > D.max) why.push('نسبة عبء الدين ' + fmtNum(dbr) + '% أعلى من ' + fmtNum(D.max) + '%');
@@ -2537,7 +2537,7 @@ function tqnExtPanel(x, docs, paint) {
     const inp = function (k, ph) { return e('input', { type: 'number', inputmode: 'numeric', min: '0', value: S[k], placeholder: ph, onChange: function (ev) { S[k] = ev.target.value; paint(); } }); };
     body.push(e('div', { class: 'tqn-xp-cap' }, [e('b', {}, 'القدرة على السداد'),
       e('label', {}, ['صافي الراتب الشهري ', inp('sal', 'من الطلب أو أدخله')]), e('label', {}, ['قسط تيرا المقترح ', inp('tera', 'القيمة ÷ المدة')]),
-      e('span', {}, [R ? 'الأقساط الحالية (من التقرير) ' : 'الالتزامات المُصرَّح بها في الطلب ', e('b', {}, R || MX.ob ? sar(MX.ob) : '—')]),
+      e('span', {}, [X && X.valid ? 'الأقساط الحالية (من التقرير) ' : 'الالتزامات المُصرَّح بها في الطلب ', e('b', {}, MX.ob ? sar(MX.ob) : '—')]),
       e('span', { class: MX.dbr !== null && MX.dbr > TQN_CR.dbr.max ? 'is-bad' : '' }, ['نسبة عبء الدين ', e('b', {}, MX.dbr === null ? '—' : fmtNum(MX.dbr) + '%'), ' (الحد ' + fmtNum(TQN_CR.dbr.max) + '%)']),
       e('span', {}, ['أقصى قسط ممكن ', e('b', {}, MX.maxInst === null ? '—' : sar(MX.maxInst))])]));
     /* التوصية المدمجة */
