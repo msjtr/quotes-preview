@@ -584,8 +584,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v771: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v773: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v773: «طلبات المتجر» تفتح على شريحة المتجر في صندوق «بانتظار إجراء».
    · v771: أيقونات بنود القائمة الجديدة، و«مركز الأمن» و«طلبات المتجر» باسم صفحتهما بلا تكرار في المسار.
    · v770: «طلبات تحديث الملف» جدول بالحقول المعدّلة والقرار في الصف · تقرير العميل بأقسام تبويبات · القائمة الجانبية بلا «كل صفحات العملاء» (صفحاتها بنود مباشرة).
    · v768: الإجراءات الفرعية في البند (السبب · الملاحظة · التعديل) بارزة قبل الأزرار، ورسائل القسم ونتيجة الإجراء السابق ظاهرة، وروابط البنود في القرار تفتح البند.
@@ -1213,6 +1214,8 @@ function geoQ() {
     /* v771: «طلبات المتجر» عنوانها في المنصة «بانتظار إجراء» — اسم القائمة نفسه بلا تكرار في المسار */
     var onI = document.querySelector('.tqn-nav .tqn-i.is-on'), onT = onI ? (onI.getAttribute('title') || txt(onI)) : '';
     if (ptl && onT === 'طلبات المتجر' && txt(ptl) === 'بانتظار إجراء') ptl.textContent = 'طلبات المتجر';
+    /* v773: «طلبات المتجر» تفتح صندوق «بانتظار إجراء» على شريحة المتجر نفسها (مرة عند الدخول من القائمة) */
+    if (ST.__inbx && onT === 'طلبات المتجر') { var sc = [].filter.call(root.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0]; if (sc) { ST.__inbx = 0; if (!sc.classList.contains('is-on')) sc.click(); } }
     try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');
     [].forEach.call(root.querySelectorAll('.tqn-ncp, .tqn-axp'), function (x) { if (x !== L || !k) { cls(x, 'tqn-ncp', false); cls(x, 'tqn-axp', false); } });
@@ -1884,6 +1887,6 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   try { window.addEventListener('resize', soon); } catch (e) { void e; }
   /* v750: التنقّل من القائمة الجانبية أو المسار أو الهيدر يُنهي «فُتح من ملف العميل» */
-  try { document.addEventListener('click', function (ev) { var t = ev.target; if (t && t.closest && t.closest('.tqn-nav, .tqn-cr, #pv-host .t2-head, .t2-head')) { ST.__navU = 1; if (!t.closest('.tqn-cr-bk')) ST.from = null; if (!t.closest('.tqn-cr')) ST.fromNc = false; } if (t && t.closest && t.closest('#pv-root .tqn-nc-gl > article.nr > .nr-main')) ST.fromNc = true; }, true); } catch (e) { void e; }
+  try { document.addEventListener('click', function (ev) { var t = ev.target; if (t && t.closest && t.closest('.tqn-nav, .tqn-cr, #pv-host .t2-head, .t2-head')) { ST.__navU = 1; if (!t.closest('.tqn-cr-bk')) ST.from = null; if (!t.closest('.tqn-cr')) ST.fromNc = false; } if (t && t.closest && t.closest('#pv-root .tqn-nc-gl > article.nr > .nr-main')) ST.fromNc = true; var ni = t && t.closest && t.closest('.tqn-nav .tqn-i'); if (ni) ST.__inbx = /^طلبات المتجر$/.test(ni.getAttribute('title') || txt(ni)) ? 1 : 0; }, true); } catch (e) { void e; }
   soon();
 })();
