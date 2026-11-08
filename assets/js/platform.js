@@ -2341,13 +2341,26 @@ function tqnMoLines(items) {
     return T.map(function (t) { return t.n ? t.s.replace(/\s+/g, '') : t.s.normalize('NFKC').replace(/[ً-ْـ]/g, '').replace(/\s+/g, ' ').trim(); }).filter(function (t) { return t !== ''; });
   });
 }
-async function tqnMoRead(buf) {
+/* v789: عامل pdf.js مشترك للتحليل، ومهلة، ثم إعادة المحاولة داخل الصفحة إن تعطّل العامل */
+let TQN_PDFW = null;
+function tqnTO(p, ms, msg) { return new Promise(function (res, rej) { const t = setTimeout(function () { rej(new Error(msg)); }, ms); p.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); }); }); }
+async function tqnMoRead(buf, inPage) {
   const lib = await pdfjsLoad();
-  const doc = await lib.getDocument({ data: buf, isEvalSupported: false }).promise;
+  if (inPage && !globalThis.pdfjsWorker) { try { globalThis.pdfjsWorker = await import(PDFJS_BASE + 'worker.min.js'); } catch (err) { void err; } }
+  if (!inPage && !TQN_PDFW && lib.PDFWorker) { try { TQN_PDFW = new lib.PDFWorker({ name: 'tqn-molim' }); } catch (err) { TQN_PDFW = null; } }
+  const opt = { data: buf.slice(0), isEvalSupported: false }; if (!inPage && TQN_PDFW) opt.worker = TQN_PDFW;
+  const doc = await lib.getDocument(opt).promise;
   const pages = [];
   for (let p = 1; p <= doc.numPages; p++) { const pg = await doc.getPage(p); const tc = await pg.getTextContent(); pages.push(tqnMoLines(tc.items)); }
   try { doc.destroy(); } catch (err) { void err; }
   return pages;
+}
+async function tqnMoReadSafe(buf) {
+  try { return await tqnTO(tqnMoRead(buf), 35000, 'to'); } catch (err) {
+    if (!err || err.message !== 'to') throw err;
+    try { if (TQN_PDFW) TQN_PDFW.destroy(); } catch (y) { void y; } TQN_PDFW = null;
+    return tqnTO(tqnMoRead(buf, true), 60000, 'استغرق تحليل الملف وقتًا طويلًا — اضغط «إعادة التحليل» أو حلّل الملف من جهازك.');
+  }
 }
 function tqnMoParse(pages) {
   const isD = function (s) { return /^\d{4}\/\d{2}\/\d{2}$/.test(s || ''); }, isN = function (s) { return /^-?\d+(\.\d+)?$/.test(s || ''); };
@@ -2489,7 +2502,7 @@ async function tqnDocBuf(d) {
 }
 function tqnExtRun(S, getBuf, src, paint) {
   S.st = 'busy'; S.err = ''; S.src = src; paint();
-  Promise.resolve().then(getBuf).then(function (buf) { if (buf && buf.length > 15 * 1024 * 1024) throw new Error('الملف أكبر من 15 ميغابايت.'); return tqnMoRead(buf); }).then(function (pages) {
+  Promise.resolve().then(getBuf).then(function (buf) { if (buf && buf.length > 15 * 1024 * 1024) throw new Error('الملف أكبر من 15 ميغابايت.'); return tqnMoReadSafe(buf); }).then(function (pages) { /* v789 */
     const R = tqnMoParse(pages);
     if (!R.molim) throw new Error('الملف ليس «التقرير الائتماني الذكي» من مُلم — أو أنه صورة ممسوحة بلا نص. اطلب الملف الأصلي من تطبيق مُلم.');
     if (!R.ok) throw new Error('قُرئ الملف لكن نقصت بيانات أساسية (الهوية أو التاريخ أو الدرجة) — راجعه يدويًا.');
