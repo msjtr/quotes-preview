@@ -9114,3 +9114,16 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 /* v673 */ .eg-msg { white-space: pre-line; line-height: 1.9; padding: 12px 14px; border-radius: 12px; background: rgba(11, 42, 74, .04); border: 1px solid rgba(11, 42, 74, .1); margin: 8px 0; font-size: 14px; }     .eg-rep-f { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
 
 /* v674 */ .nt-st { display: block; font-weight: 800; color: #4D7C0F; margin: 2px 0 4px; } .nt-det { margin-top: 4px; } .nt-det summary { cursor: pointer; font-weight: 700; color: #0B2552; } .nt-det .nt-ln { display: block; } .tqn:has(.nt-st) .tqn-h b, .fx-ncard:has(.nt-st) b { font-size: 1.12em; }
+
+/* v777: الخطاب الرسمي — الاعتماد (الاسم فوق رمز البيانات في الوسط والختم بجانبه) والتذييل (بنود محاذاة)، ولا نص رمادي في المستندات */
+.dc3.dc3 .d3-apw.is-tl>.is-whoqr{grid-column:2}
+.dc3.dc3 .d3-apw.is-tl>.is-seal{grid-column:3}
+.dc3.dc3 .d3-apw .tl-who{display:grid;justify-items:center;gap:2px;margin-bottom:6px}
+.dc3.dc3 .d3-apw .tl-who small{font-size:10.5px;color:#2b4170;font-weight:700}
+.dc3.dc3 .d3-apw .tl-who b{font-size:15px;font-weight:800;color:#0b2552}
+.dc3.dc3.is-tl .d3-fb{height:auto;min-height:44px;padding-top:8px;padding-bottom:8px}
+.dc3.dc3 .d3-auto .tl-fi{display:flex;flex-wrap:wrap;align-items:center;gap:3px 18px;line-height:1.55}
+.dc3.dc3 .d3-auto .tl-fi>span{white-space:nowrap}
+.dc3.dc3 .d3-auto .tl-fi em{font-style:normal;color:#f2cf73;font-weight:700;margin-inline-end:2px}
+.dc3.dc3 .d2-brand p,.dc3.dc3 .d2-ttl small,.dc3.dc3 .d2-chip small,.dc3.dc3 .axp-t th,.dc3.dc3 .axp-k small,.dc3.dc3 .dc-to small,.dc3.dc3 .d3-exp span,.dc3.dc3 .d3-sign span,.dc3.dc3 .d3-kv th,.dc3.dc3 .d3-p6 th,.dc3.dc3 .d3-apw-c small,.dc3 .d3-sign-pad span,.dc3 .d3-sign-m small{color:#2b4170}
+.dc3.dc3 .d3-micro{color:#7f95c9}

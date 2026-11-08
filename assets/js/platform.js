@@ -22274,9 +22274,10 @@ function tlPdfO() {
   const seed = C.no || 'TL-DRAFT';
   const ap = d3ApprWide(seed, 'tl', { a_qr: sh.qr === false ? false : undefined, a_bar: false, a_seal: sh.seal === false ? false : undefined });
   const row = ap.querySelector('.d3-apw'), sg2 = D.sign || TLT.sign;
-  if (row) { const who = e('div', { class: 'd3-apw-c is-who' }, [e('small', {}, sg2.t || ''), e('b', {}, sg2.n || '')]); if (row.children.length > 1) row.insertBefore(who, row.children[1]); else row.appendChild(who); }
+  if (row) { /* v777: الاعتماد — اسم المسؤول وصفته في الوسط وتحته رمز بيانات المستند، والختم بجانبه */ const who = e('div', { class: 'tl-who' }, [e('small', {}, sg2.t || ''), e('b', {}, sg2.n || '')]); const qr = row.querySelector('.d3-apw-c:not(.is-seal):not(.is-bar)'); if (qr) { qr.classList.add('is-whoqr'); qr.insertBefore(who, qr.firstChild); } else { const w2 = e('div', { class: 'd3-apw-c is-whoqr' }, [who]); row.insertBefore(w2, row.firstChild); } row.classList.add('is-tl'); }
   B.push(ap);
-  const foot = (T.foot || []).filter(function (f) { return f.on && String(f.v).trim(); }).map(function (f) { return (f.l + ': ' + f.v).replace(/-/g, '\u2011').replace(/ /g, '\u00a0'); }).join('  ·  '); /* v758: لا ينكسر البند في التذييل */
+  const footI = (T.foot || []).filter(function (f) { return f.on && String(f.v).trim(); }); /* v777: بنود التذييل عناصر مستقلة محاذاة لا سطر نصي ينكسر */
+  const foot = footI.length ? e('span', { class: 'tl-fi' }, footI.map(function (f) { return e('span', {}, [e('em', {}, f.l + ':'), ' ', e('bdi', {}, String(f.v))]); })) : '';
   const fams = [F.body, F.head].concat((html.match(/font-family:\s*([^;"]+)/g) || []).map(function (m) { return m.replace(/font-family:\s*/, '').split(',')[0].replace(/['"]/g, '').trim(); })).concat((html.match(/face="([^"]+)"/g) || []).map(function (m) { return m.slice(6, -1).split(',')[0].trim(); }));
   const uf = fams.filter(function (f, i) { return f && fams.indexOf(f) === i; });
   return { label: 'الخطاب الرسمي', dsn: 2, lk: 'tl', cls: 'is-tl', title: T.title || 'خطاب رسمي', en: T.en || 'OFFICIAL LETTER', org: T.org || TLT.org, issuer: '', slogan0: (typeof QT0 !== 'undefined' && QT0.slogan) || '',
