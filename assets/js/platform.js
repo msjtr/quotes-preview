@@ -2403,12 +2403,23 @@ function tqnMoParse(pages) {
 }
 /* v784: تقييم التقرير الخارجي (مُلم) بمعايير «معايير تقييم العملاء والأهلية» (TQN_CR.ext · extR · mix · dbr) — استشاري، والقرار للإدارة */
 function tqnDays(a, b) { const p = function (s) { const m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(s || '') || /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; }; const d = (p(b) - p(a)) / 864e5; return isFinite(d) ? Math.round(d) : null; }
+/* v785: مطابقة الاسم في التقرير (يُستخرج بلا مسافات) مع اسم العميل في المنصة — بالترتيب، بعد توحيد الهمزات والتاء والياء */
+function tqnNmN(s) { return String(s || '').normalize('NFKC').replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي').replace(/[^\u0621-\u064A ]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function tqnNmMatch(rep, cus) {
+  const r = tqnNmN(rep).replace(/ /g, ''), t = tqnNmN(cus).split(' ').filter(function (w) { return w.length > 1; });
+  if (!r || !t.length) return null;
+  const has = function (ws) { let at = 0; for (let i = 0; i < ws.length; i++) { const k = r.indexOf(ws[i], at); if (k < 0) return false; at = k + ws[i].length; } return true; };
+  if (has(t)) return true;
+  return t.length > 1 && has([t[0], t[t.length - 1]]) ? 'part' : false;
+}
 function tqnExtEval(R, ctx) {
   const E = TQN_CR.ext, Q = TQN_CR.extR, today = iso(T0).replace(/-/g, '/');
   const age = tqnDays(R.date, today), out = { warn: [], why: [], soft: [], hard: [] };
   const cid = String((ctx && ctx.nid) || '').replace(/\D/g, '');
   out.idMatch = cid && R.id ? cid === R.id : null;
   if (out.idMatch === false) out.warn.push('رقم الهوية في التقرير لا يطابق هوية العميل');
+  out.nameMatch = tqnNmMatch(R.name, ctx && ctx.name); out.cusName = String((ctx && ctx.name) || '');
+  if (out.nameMatch === false) out.warn.push('الاسم في التقرير لا يطابق اسم العميل');
   if (age === null) out.warn.push('تعذّر قراءة تاريخ التقرير'); else if (age > E.valid) out.warn.push('التقرير أقدم من ' + fmtNum(E.valid) + ' يومًا (' + fmtNum(age) + ' يومًا)');
   out.age = age; out.valid = !out.warn.length;
   const actP = R.act.filter(function (a) { return true; }), lateP = R.act.filter(function (a) { return a.st === 'متأخر'; });
@@ -2450,7 +2461,7 @@ function tqnExtMix(r, X, nums) {
   const score = eS === null ? iS : iS === null ? eS : Math.round((eS * ew + iS * (100 - ew)) / 100);
   const rank = { ok: 0, watch: 1, risk: 2 }, ic = r && r.any ? r.cls : 'ok', xc = X && X.valid ? X.cls : 'ok';
   const cls = rank[xc] > rank[ic] ? xc : ic;
-  const sal = Number(nums.sal) || 0, tera = Number(nums.tera) || 0, ob = X ? X.instNow : 0;
+  const sal = Number(nums.sal) || 0, tera = Number(nums.tera) || 0, ob = X ? X.instNow : (Number(nums.ob0) || 0); /* v785: بلا تقرير → الالتزامات المُصرَّح بها في الطلب */
   const dbr = sal > 0 ? Math.round((ob + tera) / sal * 1000) / 10 : null, maxInst = sal > 0 ? Math.max(0, Math.round(sal * D.max / 100 - ob)) : null;
   const why = [].concat(X && X.valid ? (X.hard.length ? X.hard : X.soft) : [], r && r.any && r.cls !== 'ok' ? (r.why || []) : []);
   if (dbr !== null && dbr > D.max) why.push('نسبة عبء الدين ' + fmtNum(dbr) + '% أعلى من ' + fmtNum(D.max) + '%');
@@ -2492,9 +2503,9 @@ function tqnExtPanel(x, docs, paint) {
     if (S.tera === '' && tot && mon) S.tera = String(Math.round(tot / mon));
     const nid = egFv(x, /رقم الهوية|الهوية الوطنية|رقم الإقامة|السجل المدني/);
     let r = null; try { r = axRep(x.user_id); } catch (err) { r = null; }
-    const R = S.st === 'ok' ? S.R : null, X = R ? tqnExtEval(R, { nid: nid }) : null, MX = tqnExtMix(r, X, { sal: S.sal, tera: S.tera });
+    const R = S.st === 'ok' ? S.R : null, cus = (function () { try { return srName(x.user_id) || ''; } catch (err) { return ''; } })(), X = R ? tqnExtEval(R, { nid: nid, name: cus }) : null, MX = tqnExtMix(r, X, { sal: S.sal, tera: S.tera, ob0: N.ob });
     const pick = e('input', { type: 'file', accept: 'application/pdf,.pdf', hidden: true, onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; if (!f) return; tqnExtRun(S, function () { return f.arrayBuffer().then(function (b) { return new Uint8Array(b); }); }, 'local', paint); } });
-    const head = e('div', { class: 'tqn-xp-h' }, [e('div', {}, [e('b', {}, 'التقرير الائتماني الخارجي — مُلم (سمة)'), e('small', {}, D ? 'المرفق: ' + (D.name || 'تقرير سمة (ملم)') + ' · ' + ({ uploaded: 'مرفوع', pending: 'بانتظار المراجعة', accepted: 'مقبول', rejected: 'مرفوض' }[D.status] || D.status || '') : 'لم يُرفق العميل «تقرير سمة (ملم)» — اطلبه من «إعادة للاستكمال» أو حلّل ملفًا من جهازك')]),
+    const head = e('div', { class: 'tqn-xp-h' }, [e('div', {}, [e('b', {}, 'التقرير الائتماني الخارجي — مُلم (سمة)'), e('small', {}, D ? 'المرفق: ' + (D.name || 'تقرير سمة (ملم)') + ' · ' + ({ uploaded: 'مرفوع', pending: 'بانتظار المراجعة', accepted: 'مقبول', rejected: 'مرفوض' }[D.status] || D.status || '') : 'اختياري — لم يُرفق تقرير مُلم، فالتوصية مبنية على التقييم الداخلي (سلوك العميل في المنصة). إن أُرفق التقرير أو حلّلته من جهازك يُضاف إلى التقييم تلقائيًا.')]),
       e('div', { class: 'tqn-xp-a' }, [D ? DS.button('إعادة التحليل', { size: 'sm', onClick: function () { S.src = ''; S.did = ''; paint(); } }) : null, DS.button('تحليل ملف من جهازك', { size: 'sm', ui: 'file-pdf', onClick: function () { pick.click(); } }), pick])]);
     const body = [];
     if (S.st === 'busy') body.push(e('p', { class: 'tqn-xp-busy' }, 'جارٍ قراءة التقرير داخل المتصفح…'));
@@ -2505,7 +2516,7 @@ function tqnExtPanel(x, docs, paint) {
       body.push(e('div', { class: 'tqn-xp-v' + (X.valid ? ' is-ok' : ' is-bad') }, [
         e('span', {}, ['تاريخ التقرير ', e('b', {}, R.date), X.age !== null ? ' (' + fmtNum(X.age) + ' يومًا)' : '']),
         e('span', {}, ['الهوية ', e('b', {}, X.idMatch === true ? 'مطابقة ✓' : X.idMatch === false ? 'غير مطابقة ✗' : '••••' + String(R.id).slice(-4) + ' — طابِقها يدويًا')]),
-        e('span', {}, ['الاسم في التقرير ', e('b', {}, R.name || '—')]),
+        e('span', {}, ['الاسم ', e('b', {}, X.nameMatch === true ? 'مطابق لاسم العميل ✓ (' + X.cusName + ')' : X.nameMatch === 'part' ? 'مطابق جزئيًا (الأول والأخير) — راجِعه: ' + X.cusName : X.nameMatch === false ? 'لا يطابق اسم العميل ✗ (' + X.cusName + ')' : (R.name || '—') + ' — طابِقه يدويًا')]),
         X.warn.length ? e('strong', {}, X.warn.join(' · ') + ' — لا يدخل في التوصية حتى يُصحَّح') : null]));
       const kp = function (t, v, tone) { return e('div', { class: 'tqn-xp-k' + (tone ? ' is-' + tone : '') }, [e('small', {}, t), e('b', {}, v)]); };
       body.push(e('div', { class: 'tqn-xp-ks' }, [
@@ -2526,14 +2537,14 @@ function tqnExtPanel(x, docs, paint) {
     const inp = function (k, ph) { return e('input', { type: 'number', inputmode: 'numeric', min: '0', value: S[k], placeholder: ph, onChange: function (ev) { S[k] = ev.target.value; paint(); } }); };
     body.push(e('div', { class: 'tqn-xp-cap' }, [e('b', {}, 'القدرة على السداد'),
       e('label', {}, ['صافي الراتب الشهري ', inp('sal', 'من الطلب أو أدخله')]), e('label', {}, ['قسط تيرا المقترح ', inp('tera', 'القيمة ÷ المدة')]),
-      e('span', {}, ['الأقساط الحالية ', e('b', {}, R ? sar(MX.ob) : '— (بعد تحليل التقرير)')]),
+      e('span', {}, [R ? 'الأقساط الحالية (من التقرير) ' : 'الالتزامات المُصرَّح بها في الطلب ', e('b', {}, R || MX.ob ? sar(MX.ob) : '—')]),
       e('span', { class: MX.dbr !== null && MX.dbr > TQN_CR.dbr.max ? 'is-bad' : '' }, ['نسبة عبء الدين ', e('b', {}, MX.dbr === null ? '—' : fmtNum(MX.dbr) + '%'), ' (الحد ' + fmtNum(TQN_CR.dbr.max) + '%)']),
       e('span', {}, ['أقصى قسط ممكن ', e('b', {}, MX.maxInst === null ? '—' : sar(MX.maxInst))])]));
     /* التوصية المدمجة */
     const lab = { ok: 'يُوصى بالمتابعة', watch: 'يُوصى بالمراجعة قبل الاعتماد', risk: 'لا يُوصى بالمنح' };
     body.push(e('div', { class: 'tqn-sc-d is-' + MX.cls }, [
       e('b', {}, 'التوصية: ' + lab[MX.cls] + (MX.score !== null && MX.score !== undefined ? ' — الدرجة المدمجة ' + fmtNum(MX.score) + ' / 100' : '')),
-      e('small', {}, 'سلوك العميل في المنصة: ' + (r && r.any ? fmtNum(r.score) + ' / 100 · ' + AX_CLS[r.cls][0] + ' · دفعات مستحقة ' + fmtNum(MX.due) : 'لا تاريخ سداد في المنصة') + (X && X.valid ? ' · الخارجي ' + fmtNum(X.score) + ' / 100 بوزن ' + fmtNum(MX.ew) + '%' : ' · بلا تقرير خارجي صالح')),
+      e('small', {}, 'سلوك العميل في المنصة: ' + (r && r.any ? fmtNum(r.score) + ' / 100 · ' + AX_CLS[r.cls][0] + ' · دفعات مستحقة ' + fmtNum(MX.due) : 'لا تاريخ سداد في المنصة') + (X && X.valid ? ' · الخارجي ' + fmtNum(X.score) + ' / 100 بوزن ' + fmtNum(MX.ew) + '%' : R ? ' · التقرير الخارجي غير صالح فلم يُحتسب' : ' · التقييم داخلي فقط — التقرير الخارجي اختياري ولم يُرفق')),
       MX.why.length ? e('small', {}, 'الأسباب: ' + MX.why.join(' · ')) : null,
       e('small', { class: 'tqn-xp-final' }, 'التوصية استشارية — القرار النهائي للإدارة من «التوصية والقرار». المعايير والأوزان من «إعدادات النظام ← معايير تقييم العملاء والأهلية».')]));
     if (R && R.notes) body.push(DS.note('info', 'ملاحظات في التقرير', 'في التقرير ملاحظات من الأعضاء أو العميل (غالبًا اعتراض على بيان) — راجعها في الملف.'));
