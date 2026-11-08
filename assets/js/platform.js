@@ -2180,7 +2180,12 @@ const TQN_CR0 = {
   legal: { court: 60, ref: 40, nsf: 30, grace: 10 },
   hist: { h0: 40, h1: 65, h2: 80, h3: 100, nBonus: 12, bonus: 10 },
   band: { low: 80, mid: 65, high: 50 },
-  rule: { watch: 65, risk: 50, lp60m: 12 }
+  rule: { watch: 65, risk: 50, lp60m: 12 },
+  /* v784: التقرير الخارجي (مُلم) · قواعده · الدمج مع سلوك العميل · القدرة على السداد */
+  ext: { w1: 35, w2: 25, w3: 15, w4: 15, w5: 10, valid: 30, lateEach: 20, bnplLateEach: 5, defPts: 40, markEach: 2, inq30Each: 5, inq90Each: 1, bnplFree: 2, bnplEach: 5, court12: 50, courtOld: 80 },
+  extR: { defMax: 2000, lateN: 2, inq30: 5, lowBand: 1 },
+  mix: { lo: 3, hi: 12, a: 70, b: 50, c: 30 },
+  dbr: { max: 33, cardPct: 5 }
 };
 const TQN_CR = JSON.parse(JSON.stringify(TQN_CR0));
 let tqnCrD = null, tqnCrCid = '';
@@ -2202,6 +2207,16 @@ function tqnCrCheck(c) {
   if (!(B.low <= 100 && B.low > B.mid && B.mid > B.high && B.high >= 0)) E.push('حدود المخاطرة تتنازل: منخفضة > متوسطة > مرتفعة');
   if (!(in100(R.watch) && in100(R.risk) && R.risk <= R.watch)) E.push('حد «متعثر» لا يزيد على حد «يحتاج متابعة»');
   if (!(R.lp60m >= 0 && R.lp60m <= 60)) E.push('مدة «سُدّدت بعد تعثّرها» من 0 إلى 60 شهرًا');
+  const X = c.ext, XR = c.extR, M = c.mix, DB = c.dbr;
+  if (X && XR && M && DB) {
+    const sx = X.w1 + X.w2 + X.w3 + X.w4 + X.w5;
+    if (sx !== 100) E.push('مجموع أوزان التقرير الخارجي ' + fmtNum(sx) + ' — يجب أن يكون 100');
+    if (![X.lateEach, X.bnplLateEach, X.defPts, X.markEach, X.inq30Each, X.inq90Each, X.bnplEach, X.court12, X.courtOld].every(in100)) E.push('خصومات التقرير الخارجي وقيمه من 0 إلى 100');
+    if (!(X.valid >= 1 && X.valid <= 365)) E.push('صلاحية التقرير من 1 إلى 365 يومًا');
+    if (!(XR.lateN >= 1 && XR.inq30 >= 1 && XR.defMax >= 0 && (XR.lowBand === 0 || XR.lowBand === 1))) E.push('قواعد التقرير الخارجي: المنتجات والاستعلامات 1 فأكثر، وتصنيف «منخفض جدًا» 0 أو 1');
+    if (!(M.lo >= 0 && M.lo < M.hi && [M.a, M.b, M.c].every(in100))) E.push('الدمج: حد العميل الجديد أقل من حد العميل ذي التاريخ، والأوزان من 0 إلى 100');
+    if (!(DB.max >= 1 && DB.max <= 100 && in100(DB.cardPct))) E.push('حد نسبة عبء الدين من 1 إلى 100%');
+  }
   return E;
 }
 function tqnCrWith(cfg, fn) { const keep = JSON.parse(JSON.stringify(TQN_CR)); tqnCrSet(cfg); try { return fn(); } finally { tqnCrSet(keep); } }
@@ -2250,7 +2265,8 @@ function tqnCrPage() {
       e('li', {}, 'تُجمع دفعات عقود العميل الفعلية من المنصة (لا تُحسب الدفعات المنقولة بالتأجيل أو التوحيد ولا المعفاة).'),
       e('li', {}, 'يُحسب كل مكوّن من 0 إلى 100 بالقواعد في الأقسام 1–4.'),
       e('li', {}, 'الدرجة = مجموع (قيمة المكوّن × وزنه ÷ 100)، فتكون من 0 إلى 100.'),
-      e('li', {}, 'تُحدَّد درجة المخاطرة من الدرجة (القسم 5)، ويُحدَّد قرار الأهلية بقواعد مستقلة عن الدرجة (القسم 6).')]),
+      e('li', {}, 'تُحدَّد درجة المخاطرة من الدرجة (القسم 5)، ويُحدَّد قرار الأهلية بقواعد مستقلة عن الدرجة (القسم 6).'),
+      e('li', {}, 'في طلب الأهلية يُقرأ «التقرير الائتماني الذكي» من مُلم المرفق — من العميل أو الموظف — داخل المتصفح (القسم 7)، ويُدمج مع سلوك العميل في المنصة بوزن يتغير حسب تاريخه معنا، مع القدرة على السداد (القسم 8). التوصية استشارية والقرار للإدارة.')]),
       e('small', {}, 'قواعد ثابتة في المنصة كلها: الدفعة متأخرة من اليوم 1 حتى 60 بعد استحقاقها ومتعثرة من اليوم 61، والعقد المغلق عليه متبقٍّ لا يُحسب متأخرًا ولا متعثرًا بل يظهر مستقلًّا بانتظار القرار.')]),
     sec('∑', 'أوزان المكوّنات', 'مجموعها 100 — المكوّن بوزن 0 لا يدخل الدرجة', [grid([f('w', 'pay', '1 · سجل السداد في الموعد', '%'), f('w', 'now', '2 · الوضع الحالي', '%'), f('w', 'legal', '3 · إجراءات التحصيل والقانونية', '%'), f('w', 'hist', '4 · عمق العلاقة', '%')]), refs.sum]),
     sec(1, 'سجل السداد في الموعد', 'لكل دفعة مستحقة نسبة حسب أيام تأخر سدادها، والمكوّن = متوسطها موزونًا بمبلغ الدفعة', [
@@ -2271,6 +2287,16 @@ function tqnCrPage() {
         e('div', { class: 'is-watch' }, [e('b', {}, 'يحتاج متابعة'), e('small', {}, 'يُراجع سداده قبل منحه منتجًا: عقد متأخر · شيك بلا رصيد · إمهال تنفيذ ينتهي قريبًا · متبقٍّ على عقد مغلق · دفعة سُدّدت بعد تعثّرها خلال المدة أدناه · أو الدرجة أقل من الحد أدناه.')]),
         e('div', { class: 'is-risk' }, [e('b', {}, 'متعثر'), e('small', {}, 'لا يستحق منتجًا جديدًا حتى التسوية: عقد متعثر · سند محال لمحكمة التنفيذ · دفعة محالة لجهات الاختصاص · أو الدرجة أقل من الحد أدناه.')])]),
       grid([f('rule', 'watch', '«يحتاج متابعة» إن قلّت الدرجة عن', 'من 100'), f('rule', 'risk', '«متعثر» إن قلّت الدرجة عن', 'من 100'), f('rule', 'lp60m', 'دفعة سُدّدت بعد تعثّرها خلال', 'شهرًا', '0 = لا تُعتبر')])]),
+    sec(7, 'التقرير الائتماني الخارجي — مُلم (سمة)', 'يُقرأ من ملف «التقرير الائتماني الذكي» المرفق في طلب الأهلية — خمسة أجزاء موزونة مجموعها 100', [
+      grid([f('ext', 'w1', 'درجة مُلم', '%', '(الدرجة − 300) ÷ 5.5'), f('ext', 'w2', 'الوضع الحالي في السوق', '%'), f('ext', 'w3', 'سجل السداد (24 شهرًا)', '%'), f('ext', 'w4', 'كثرة طلب التمويل', '%'), f('ext', 'w5', 'محاكم التنفيذ', '%')]),
+      grid([f('ext', 'lateEach', 'لكل منتج متأخر الآن', '− نقطة'), f('ext', 'bnplLateEach', 'لكل «اشترِ الآن» متأخر', '− نقطة'), f('ext', 'defPts', 'وجود منتج متعثر', '− نقطة'), f('ext', 'markEach', 'لكل مرة تأخر في ملخص السداد', '− نقطة'),
+        f('ext', 'inq30Each', 'لكل استعلام خلال 30 يومًا', '− نقطة'), f('ext', 'inq90Each', 'لكل استعلام من 31 إلى 90 يومًا', '− نقطة'), f('ext', 'bnplFree', '«اشترِ الآن» نشطة بلا خصم حتى', 'منتج'), f('ext', 'bnplEach', 'لكل «اشترِ الآن» زائدة', '− نقطة'),
+        f('ext', 'court12', 'قرار تنفيذ مُسوّى خلال 12 شهرًا', 'من 100'), f('ext', 'courtOld', 'قرار تنفيذ مُسوّى أقدم', 'من 100'), f('ext', 'valid', 'صلاحية التقرير', 'يومًا', 'الأقدم منها لا يدخل في التوصية')]),
+      e('small', { class: 'tqn-cr-ex' }, 'قرار تنفيذ قائم = 0. سجل السداد: لا تأخر 100 · أسوأ تأخر 30 يومًا 75 · 60 يومًا 55 · 90 يومًا 35 · أكثر 15، ويُخصم لكل مرة تأخر. لا يدخل التقرير في التوصية إن كان أقدم من الصلاحية أو لم تطابق الهوية.'),
+      grid([f('extR', 'defMax', '«متعثر» إن زاد متبقي المتعثر التمويلي على', 'ر.س', 'متعثر الاتصالات «يحتاج متابعة»'), f('extR', 'lateN', '«يحتاج متابعة» عند منتجات متأخرة الآن لا تقل عن', 'منتج'), f('extR', 'inq30', '«يحتاج متابعة» عند استعلامات خلال 30 يومًا لا تقل عن', 'استعلام'), f('extR', 'lowBand', 'تصنيف مُلم «منخفض جدًا» يوجب المتابعة', '1 نعم · 0 لا')])]),
+    sec(8, 'الدمج مع سلوك العميل والقدرة على السداد', 'وزن التقرير الخارجي يقل كلما زاد تاريخ العميل معنا، والباقي لسلوكه في المنصة', [
+      grid([f('mix', 'lo', 'عميل جديد: دفعاته المستحقة أقل من', 'دفعة'), f('mix', 'a', 'وزن الخارجي للعميل الجديد', '%'), f('mix', 'b', 'وزن الخارجي لما بينهما', '%'), f('mix', 'hi', 'عميل له تاريخ: دفعاته المستحقة لا تقل عن', 'دفعة'), f('mix', 'c', 'وزن الخارجي لمن له تاريخ', '%')]),
+      grid([f('dbr', 'max', 'حد نسبة عبء الدين', '% من الراتب', '(الأقساط الحالية + قسط تيرا) ÷ صافي الراتب — يُطابَق مع لوائح البنك المركزي'), f('dbr', 'cardPct', 'قسط بطاقة الائتمان بلا قسط محدد', '% من رصيدها')])]),
     refs.err,
     e('section', { class: 'tqn-cr-s' }, [e('div', { class: 'tqn-cr-sh' }, [e('i', { 'aria-hidden': 'true' }, '✓'), e('div', {}, [e('b', {}, 'مثال الاحتساب على عميل حقيقي'), e('small', {}, 'بالقيم المعروضة في الصفحة قبل حفظها — غيّر قيمة ثم «احسب المثال»')])]),
       e('div', { class: 'tqn-cr-exb' }, [C.length ? e('select', { class: 'tqn-cr-sel', 'aria-label': 'العميل', onChange: function (ev) { tqnCrCid = ev.target.value; draw(); } }, C.map(function (c) { const o = e('option', { value: c.id }, c.name); if (c.id === tqnCrCid) o.selected = true; return o; })) : e('small', {}, 'لا عملاء بعقود بعد.'),
@@ -2295,6 +2321,224 @@ function tqnScoreCard(r) {
     }).concat([e('div', { class: 'tqn-sc-r is-tot is-' + tn(r.score) }, [e('div', { class: 'tqn-sc-h' }, [e('span', {}, 'الدرجة النهائية'), e('small', {}, 'مخاطرة ' + r.risk[0]), e('b', {}, fmtNum(r.score) + ' / 100')])])])),
     e('div', { class: 'tqn-sc-d is-' + r.cls }, [e('b', {}, 'قرار الأهلية: ' + AX_CLS[r.cls][0] + ' — ' + AX_CLS[r.cls][2]), e('small', {}, r.why && r.why.length ? 'بقواعد مستقلة عن الدرجة — ' + r.why.join(' · ') : 'لا تأخر الآن ولا إجراءات، والدرجة ' + fmtNum(TQN_CR.rule.watch) + ' فأعلى')]),
     e('small', { class: 'cu-dr-hint' }, 'المخاطرة: ' + fmtNum(B.low) + ' فأعلى منخفضة · ' + fmtNum(B.mid) + '–' + fmtNum(B.low - 1) + ' متوسطة · ' + fmtNum(B.high) + '–' + fmtNum(B.mid - 1) + ' مرتفعة · أقل من ' + fmtNum(B.high) + ' مرتفعة جدًا. سجل السداد لكل دفعة مستحقة: في موعدها ' + fmtNum(P.s0) + '٪ · تأخر حتى ' + fmtNum(P.d1) + ' أيام ' + fmtNum(P.s1) + '٪ · حتى ' + fmtNum(P.d2) + ' يومًا ' + fmtNum(P.s2) + '٪ · حتى ' + fmtNum(P.d3) + ' يومًا ' + fmtNum(P.s3) + '٪ · بعدها ' + fmtNum(P.s4) + '٪ · غير مسددة 0، موزونة بمبلغ الدفعة. الدرجة داخلية وليست تقييمًا من جهة ائتمانية.')]);
+}
+/* v784: قارئ «التقرير الائتماني الذكي» من مُلم (سمة) — يُقرأ ملف PDF داخل متصفح الموظف بـ pdf.js المضمّن، فلا يخرج الملف إلى أي خدمة خارجية */
+const TQN_MO_NUM = /^[\d.,\/:\-\s]+$/;
+function tqnMoLines(items) {
+  const rows = [];
+  items.forEach(function (it) { if (!it.str || !it.str.trim()) return; const y = it.transform[5]; let r = null; for (let i = 0; i < rows.length; i++) if (Math.abs(rows[i].y - y) <= 2.5) { r = rows[i]; break; } if (!r) rows.push(r = { y: y, it: [] }); r.it.push({ x: it.transform[4], w: it.width || 0, s: it.str }); });
+  rows.sort(function (a, b) { return b.y - a.y; });
+  return rows.map(function (r) {
+    r.it.sort(function (a, b) { return b.x - a.x; });
+    const T = []; let cur = null, lastX = null;
+    r.it.forEach(function (o) {
+      const isN = TQN_MO_NUM.test(o.s), gap = lastX === null ? 0 : lastX - (o.x + o.w);
+      if (isN) { if (cur) { T.push(cur); cur = null; } const last = T[T.length - 1]; if (last && last.n && gap < 3) last.s = o.s + last.s; else T.push({ n: 1, s: o.s }); }
+      else { if (cur && gap > 25) { T.push(cur); cur = null; } if (!cur) cur = { s: '' }; cur.s += o.s; }
+      lastX = o.x;
+    });
+    if (cur) T.push(cur);
+    return T.map(function (t) { return t.n ? t.s.replace(/\s+/g, '') : t.s.normalize('NFKC').replace(/[ً-ْـ]/g, '').replace(/\s+/g, ' ').trim(); }).filter(function (t) { return t !== ''; });
+  });
+}
+async function tqnMoRead(buf) {
+  const lib = await pdfjsLoad();
+  const doc = await lib.getDocument({ data: buf, isEvalSupported: false }).promise;
+  const pages = [];
+  for (let p = 1; p <= doc.numPages; p++) { const pg = await doc.getPage(p); const tc = await pg.getTextContent(); pages.push(tqnMoLines(tc.items)); }
+  try { doc.destroy(); } catch (err) { void err; }
+  return pages;
+}
+function tqnMoParse(pages) {
+  const isD = function (s) { return /^\d{4}\/\d{2}\/\d{2}$/.test(s || ''); }, isN = function (s) { return /^-?\d+(\.\d+)?$/.test(s || ''); };
+  const nk = function (s) { return String(s || '').replace(/\s+/g, ''); }, num = function (s) { return Number(String(s || '').replace(/,/g, '')) || 0; };
+  const L = []; pages.forEach(function (p, pi) { p.forEach(function (l) { L.push({ p: pi, t: l, k: nk(l.join('')) }); }); });
+  const R = { ok: false, molim: L.some(function (x) { return /مُلم|ملم|MOLIM|SIMAH|للمعلوماتالائتمانية/.test(x.k); }), act: [], bnpl: [], inq: [], court: [], marks: [], defProducts: 0 };
+  const after = function (l, re) { for (let i = 0; i < l.t.length; i++) if (re.test(nk(l.t[i]))) { for (let j = i + 1; j < l.t.length; j++) if (l.t[j] !== ':' && l.t[j] !== '-') return l.t[j]; } return ''; };
+  const find = function (re) { for (let i = 0; i < L.length; i++) if (re.test(L[i].k)) return L[i]; return null; };
+  const val = function (re, lab) { const l = find(re); return l ? after(l, lab || re) : ''; };
+  R.id = (val(/رقمالهوية/) || '').replace(/\D/g, '');
+  R.name = val(/اسمالعميل/);
+  const dt = find(/التاريخوالوقت/); R.date = dt ? (dt.t.filter(isD)[0] || '') : '';
+  R.updated = val(/تاريخالتحديث:?\d/, /تاريخالتحديث/);
+  R.first = val(/تاريخصدور/);
+  R.activeN = num(val(/عددالمنتجاتالائتمانيةالنشطة/));
+  R.limits = num(val(/^إجماليالحدودالائتمانية:/, /إجماليالحدودالائتمانية$/));
+  R.oblig = num(val(/إجماليالالتزاماتالائتمانيةالقائمة/));
+  R.gLimits = num(val(/إجماليالحدودالائتمانيةالمكفولة/));
+  R.gOblig = num(val(/إجماليالالتزاماتالائتمانيةالمكفولة/));
+  R.defN = num(val(/عددالمنتجاتالائتمانيةالمتعثرة/));
+  R.defAmt = num(val(/المتبقيمنالالتزاماتالائتمانيةالمتعثرة/));
+  /* الدرجة والتصنيف */
+  const si = L.findIndex(function (x) { return x.k === 'التقييمالائتماني'; });
+  for (let i = si + 1; si >= 0 && i < Math.min(L.length, si + 25); i++) { const t = L[i].t[0]; if (/^\d{3}$/.test(t) && +t >= 300 && +t <= 850) { R.score = +t; break; } }
+  const BANDS = [['منخفضجدا', 'منخفض جدًا'], ['منخفض', 'منخفض'], ['متوسط', 'متوسط'], ['جيدجدا', 'جيد جدًا'], ['جيد', 'جيد'], ['ممتاز', 'ممتاز']];
+  for (let i = si + 1; si >= 0 && i < Math.min(L.length, si + 25); i++) { const b = BANDS.filter(function (z) { return L[i].k === z[0]; })[0]; if (b) { R.band = b[1]; R.bandK = b[0]; break; } }
+  /* المنتجات النشطة: صف ينتهي بحالة السداد وقبلها تاريخ التحديث */
+  const TEL = /زين|موبايلي|اتحادالاتصالات|الاتصالاتالسعودية|stc|إس تي سي|الانترنت|الهاتف|اتصالات/i;
+  L.forEach(function (l, i) { const t = l.t, n = t.length; if (n >= 5 && /^(منتظم|متأخر|متعثر)$/.test(t[n - 1]) && isD(t[n - 2]) && isN(t[n - 3]) && isN(t[n - 4]) && isN(t[n - 5])) {
+    const txt = [L[i - 1], l, L[i + 1]].filter(Boolean).map(function (z) { return z.t.filter(function (s) { return !isN(s); }).join(' '); }).join(' ');
+    R.act.push({ inst: num(t[n - 5]), limit: num(t[n - 4]), rem: num(t[n - 3]), upd: t[n - 2], st: t[n - 1], tel: TEL.test(txt), txt: txt.slice(0, 80) }); } });
+  /* اشترِ الآن وادفع لاحقًا: بعد قسمها، كل منتج بحالته وسطر بياناته (إصدار · حد · انتهاء · عدد · متبقٍّ · متأخر · قسط · تحديث) */
+  const bi = L.findIndex(function (x) { return /منتجاتاشتريالآنادفعلاحقا/.test(x.k); });
+  if (bi >= 0) { let st = ''; for (let i = bi + 1; i < L.length; i++) { const l = L[i], t = l.t;
+    if (/المنتج:/.test(l.k) && !/حالةالمنتج/.test(t[0] || '')) { if (/المنتج:/.test(nk(t[1] || '')) || /المنتج:/.test(nk(t[0] || ''))) break; }
+    if (/حالةالمنتج/.test(l.k)) st = /منتجنشط/.test(l.k) ? 'act' : /متعثر/.test(l.k) ? 'def' : 'closed';
+    if (t.length === 8 && isD(t[0]) && isN(t[1]) && isD(t[2]) && isN(t[3]) && isN(t[4]) && isN(t[5]) && isN(t[6]) && isD(t[7])) R.bnpl.push({ st: st, limit: num(t[1]), rem: num(t[4]), od: num(t[5]), inst: num(t[6]), end: t[2] }); } }
+  /* ملخص حالة السداد: رموز التأخر الرقمية (30 · 60 · 90 · 120 · 150 · 180) */
+  R.defTel = true;
+  L.forEach(function (l) { if (/^ملخصحالةالسداد/.test(l.k)) l.t.forEach(function (s) { if (/^(30|60|90|120|150|180)$/.test(s)) R.marks.push(+s); }); if (/حالةالمنتج/.test(l.k) && /منتجمتعثر/.test(l.k)) { R.defProducts++; if (!TEL.test(l.k)) R.defTel = false; } });
+  if (!R.defProducts) R.defTel = false;
+  /* الاستعلامات */
+  const qi = L.findIndex(function (x) { return /^الاستعلاماتالأخيرة$/.test(x.k); }), ci = L.findIndex(function (x) { return /^قراراتمحاكمالتنفيذ$/.test(x.k); });
+  if (qi >= 0) for (let i = qi + 1; i < (ci > qi ? ci : L.length); i++) { const t = L[i].t; if (isD(t[0]) && !/التاريخوالوقت|صفحة/.test(L[i].k)) R.inq.push({ d: t[0], who: t[1] || '', amt: num(t[t.length - 1]) }); }
+  /* قرارات محاكم التنفيذ */
+  const ni = L.findIndex(function (x) { return /^الملاحظات$/.test(x.k); });
+  if (ci >= 0) for (let i = ci + 1; i < (ni > ci ? ni : Math.min(L.length, ci + 40)); i++) { const t = L[i].t, ds = t.filter(isD), ns = t.filter(function (s) { return isN(s) && /\./.test(s); }), tx = t.filter(function (s) { return !isN(s) && !isD(s); });
+    if (ds.length >= 2 && ns.length >= 2) { const stT = tx[tx.length - 1] || ''; R.court.push({ dec: ds[0], amt: num(ns[0]), rem: num(ns[1]), st: stT, settled: /تمالتنفيذ|تم التنفيذ|مسدد|منته|تسوية/.test(nk(stT)) || num(ns[1]) <= 0, settle: ds.length >= 3 ? ds[ds.length - 1] : '' }); } }
+  /* الملاحظات */
+  R.notes = ni >= 0 && L.slice(ni, ni + 14).filter(function (x) { return /^لاتوجدملاحظات/.test(x.k); }).length < 2;
+  R.ok = !!(R.molim && R.id && R.date && (R.score || R.activeN || R.act.length));
+  return R;
+}
+/* v784: تقييم التقرير الخارجي (مُلم) بمعايير «معايير تقييم العملاء والأهلية» (TQN_CR.ext · extR · mix · dbr) — استشاري، والقرار للإدارة */
+function tqnDays(a, b) { const p = function (s) { const m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(s || '') || /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; }; const d = (p(b) - p(a)) / 864e5; return isFinite(d) ? Math.round(d) : null; }
+function tqnExtEval(R, ctx) {
+  const E = TQN_CR.ext, Q = TQN_CR.extR, today = iso(T0).replace(/-/g, '/');
+  const age = tqnDays(R.date, today), out = { warn: [], why: [], soft: [], hard: [] };
+  const cid = String((ctx && ctx.nid) || '').replace(/\D/g, '');
+  out.idMatch = cid && R.id ? cid === R.id : null;
+  if (out.idMatch === false) out.warn.push('رقم الهوية في التقرير لا يطابق هوية العميل');
+  if (age === null) out.warn.push('تعذّر قراءة تاريخ التقرير'); else if (age > E.valid) out.warn.push('التقرير أقدم من ' + fmtNum(E.valid) + ' يومًا (' + fmtNum(age) + ' يومًا)');
+  out.age = age; out.valid = !out.warn.length;
+  const actP = R.act.filter(function (a) { return true; }), lateP = R.act.filter(function (a) { return a.st === 'متأخر'; });
+  const bAct = R.bnpl.filter(function (b) { return b.st === 'act'; }), bLate = bAct.filter(function (b) { return b.od > 0; });
+  const card = function (a) { return /بطاقة/.test(a.txt) && !a.inst ? a.rem * (TQN_CR.dbr.cardPct / 100) : a.inst; };
+  out.instNow = Math.round((actP.reduce(function (s, a) { return s + card(a); }, 0) + bAct.reduce(function (s, b) { return s + b.inst; }, 0)) * 100) / 100;
+  out.lateN = lateP.length + bLate.length; out.lateRem = Math.round(lateP.reduce(function (s, a) { return s + a.rem; }, 0) + bLate.reduce(function (s, b) { return s + b.od; }, 0));
+  const inqIn = function (d) { return R.inq.filter(function (q) { const x = tqnDays(q.d, R.date); return x !== null && x >= 0 && x <= d; }).length; };
+  out.inq30 = inqIn(30); out.inq90 = inqIn(90); out.inq180 = inqIn(180); out.bnplAct = bAct.length;
+  const worst = R.marks.reduce(function (a, m) { return Math.max(a, m); }, 0); out.worst = worst;
+  const openCourt = R.court.filter(function (c) { return !c.settled; }), recentCourt = R.court.filter(function (c) { return c.settled && tqnDays(c.settle || c.dec, R.date) !== null && tqnDays(c.settle || c.dec, R.date) <= 365; });
+  const cl = function (v) { return Math.max(0, Math.min(100, Math.round(v))); };
+  const S1 = R.score ? cl((R.score - 300) / 5.5) : null;
+  const S2 = cl(100 - E.lateEach * lateP.length - E.bnplLateEach * bLate.length - (R.defN > 0 ? E.defPts : 0));
+  const S3 = cl((worst === 0 ? 100 : worst === 30 ? 75 : worst === 60 ? 55 : worst === 90 ? 35 : 15) - Math.min(30, E.markEach * R.marks.length));
+  const S4 = cl(100 - E.inq30Each * out.inq30 - E.inq90Each * Math.max(0, out.inq90 - out.inq30) - E.bnplEach * Math.max(0, bAct.length - E.bnplFree));
+  const S5 = openCourt.length ? 0 : recentCourt.length ? E.court12 : R.court.length ? E.courtOld : 100;
+  out.SC = [
+    ['score', 'درجة مُلم', E.w1, S1, R.score ? fmtNum(R.score) + ' من 850' + (R.band ? ' · ' + R.band : '') : 'لم تُقرأ الدرجة — لا يدخل هذا الجزء'],
+    ['now', 'الوضع الحالي في السوق', E.w2, S2, (lateP.length ? 'منتجات متأخرة الآن ' + fmtNum(lateP.length) : 'لا منتجات متأخرة') + (bLate.length ? ' · اشترِ الآن متأخرة ' + fmtNum(bLate.length) : '') + (R.defN ? ' · متعثر ' + fmtNum(R.defN) + ' بمتبقٍّ ' + sar(R.defAmt) + (R.defTel ? ' (اتصالات)' : '') : '')],
+    ['hist', 'سجل السداد (24 شهرًا)', E.w3, S3, worst ? 'أسوأ تأخر ' + fmtNum(worst) + ' يومًا · مرات التأخر ' + fmtNum(R.marks.length) : 'لا تأخر مسجّل في ملخصات السداد'],
+    ['hunger', 'كثرة طلب التمويل', E.w4, S4, 'استعلامات 30 يومًا ' + fmtNum(out.inq30) + ' · 90 يومًا ' + fmtNum(out.inq90) + ' · اشترِ الآن نشطة ' + fmtNum(bAct.length)],
+    ['court', 'محاكم التنفيذ', E.w5, S5, openCourt.length ? 'قرار قائم بمتبقٍّ ' + sar(openCourt.reduce(function (s, c) { return s + c.rem; }, 0)) : R.court.length ? 'قرار مُسوّى' + (recentCourt.length ? ' خلال 12 شهرًا' : '') + ' (' + sar(R.court[0].amt) + ')' : 'لا قرارات']].filter(function (c) { return c[2] > 0 && c[3] !== null; });
+  const wT = out.SC.reduce(function (s, c) { return s + c[2]; }, 0);
+  out.score = wT ? cl(out.SC.reduce(function (s, c) { return s + c[2] * c[3]; }, 0) / wT) : null;
+  if (openCourt.length) out.hard.push('قرار تنفيذ قائم');
+  if (R.defN > 0 && !R.defTel && R.defAmt > Q.defMax) out.hard.push('منتج تمويلي متعثر بمتبقٍّ ' + sar(R.defAmt));
+  if (R.defN > 0 && !out.hard.length) out.soft.push('متعثر ' + (R.defTel ? 'اتصالات ' : '') + 'بمتبقٍّ ' + sar(R.defAmt) + ' — يُسوّى ويُثبت');
+  if (out.lateN >= Q.lateN) out.soft.push('منتجات متأخرة الآن ' + fmtNum(out.lateN));
+  if (out.inq30 >= Q.inq30) out.soft.push('استعلامات كثيرة خلال 30 يومًا (' + fmtNum(out.inq30) + ')');
+  if (Q.lowBand && R.bandK === 'منخفضجدا') out.soft.push('تصنيف مُلم «منخفض جدًا»');
+  out.cls = out.hard.length ? 'risk' : out.soft.length ? 'watch' : 'ok';
+  return out;
+}
+function tqnExtMix(r, X, nums) {
+  const M = TQN_CR.mix, D = TQN_CR.dbr, due = r && r.any ? (r.dueN || 0) : 0;
+  const ew = due < M.lo ? M.a : due < M.hi ? M.b : M.c;
+  const iS = r && r.any ? r.score : null, eS = X && X.valid ? X.score : null;
+  const score = eS === null ? iS : iS === null ? eS : Math.round((eS * ew + iS * (100 - ew)) / 100);
+  const rank = { ok: 0, watch: 1, risk: 2 }, ic = r && r.any ? r.cls : 'ok', xc = X && X.valid ? X.cls : 'ok';
+  const cls = rank[xc] > rank[ic] ? xc : ic;
+  const sal = Number(nums.sal) || 0, tera = Number(nums.tera) || 0, ob = X ? X.instNow : 0;
+  const dbr = sal > 0 ? Math.round((ob + tera) / sal * 1000) / 10 : null, maxInst = sal > 0 ? Math.max(0, Math.round(sal * D.max / 100 - ob)) : null;
+  const why = [].concat(X && X.valid ? (X.hard.length ? X.hard : X.soft) : [], r && r.any && r.cls !== 'ok' ? (r.why || []) : []);
+  if (dbr !== null && dbr > D.max) why.push('نسبة عبء الدين ' + fmtNum(dbr) + '% أعلى من ' + fmtNum(D.max) + '%');
+  let fin = dbr !== null && dbr > D.max && cls === 'ok' ? 'watch' : cls;
+  const K = TQN_CR.rule;
+  if (score !== null && score !== undefined && X && X.valid) { if (score < K.risk) { fin = 'risk'; why.push('الدرجة المدمجة ' + fmtNum(score) + ' أقل من ' + fmtNum(K.risk)); } else if (score < K.watch && fin === 'ok') { fin = 'watch'; why.push('الدرجة المدمجة ' + fmtNum(score) + ' أقل من ' + fmtNum(K.watch)); } }
+  return { ew: ew, due: due, score: score, cls: fin, why: why, dbr: dbr, maxInst: maxInst, ob: ob, tera: tera, sal: sal };
+}
+/* v784: «التقرير الائتماني الخارجي» في طلب الأهلية (تبويب التقرير والقرار) — التقرير المرفق (من العميل «تقرير سمة (ملم)» أو ملف يختاره الموظف)،
+   والبيانات المستخرجة، ومكوّنات الدرجة الخارجية، والقدرة على السداد، وسلوك العميل في المنصة، والتوصية المدمجة — والقرار النهائي للإدارة */
+const TQN_EXT = {};
+async function tqnDocBuf(d) {
+  const tk = await liveToken(), cfg = LIVE.cfg || (LIVE.cfg = await liveCfg());
+  const p = String(d.path).split('/').map(encodeURIComponent).join('/');
+  const r = await fetch(cfg.supabaseUrl + '/storage/v1/object/sign/' + encodeURIComponent(d.bucket || 'attachments') + '/' + p, { method: 'POST', cache: 'no-store', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 120 }) });
+  const s = await r.json().catch(function () { return null; }), u = s && (s.signedURL || s.signedUrl);
+  if (!r.ok || !u) throw new Error('تعذّر فتح المرفق — تحقق من صلاحية الاطلاع على المستندات.');
+  const f = await fetch(/^https?:/i.test(u) ? u : cfg.supabaseUrl + '/storage/v1' + (u.charAt(0) === '/' ? '' : '/') + u, { cache: 'no-store' });
+  if (!f.ok) throw new Error('تعذّر تنزيل المرفق.');
+  return new Uint8Array(await f.arrayBuffer());
+}
+function tqnExtRun(S, getBuf, src, paint) {
+  S.st = 'busy'; S.err = ''; S.src = src; paint();
+  Promise.resolve().then(getBuf).then(function (buf) { if (buf && buf.length > 15 * 1024 * 1024) throw new Error('الملف أكبر من 15 ميغابايت.'); return tqnMoRead(buf); }).then(function (pages) {
+    const R = tqnMoParse(pages);
+    if (!R.molim) throw new Error('الملف ليس «التقرير الائتماني الذكي» من مُلم — أو أنه صورة ممسوحة بلا نص. اطلب الملف الأصلي من تطبيق مُلم.');
+    if (!R.ok) throw new Error('قُرئ الملف لكن نقصت بيانات أساسية (الهوية أو التاريخ أو الدرجة) — راجعه يدويًا.');
+    S.R = R; S.st = 'ok'; S.at = Date.now(); paint();
+  }).catch(function (err) { S.st = 'err'; S.err = (err && err.message) || 'تعذّرت قراءة الملف.'; paint(); });
+}
+function tqnExtPanel(x, docs, paint) {
+  try {
+    if (!x || !x.id) return null;
+    const S = TQN_EXT[x.id] || (TQN_EXT[x.id] = { st: 'idle', R: null, err: '', src: '', sal: '', tera: '', did: '' });
+    const D = (docs || []).filter(function (d) { return d && d.doc_type === 'job_simah' && d.path; })[0] || null;
+    if (D && S.did !== D.id && S.src !== 'local' && S.st !== 'busy') { S.did = D.id; S.st = 'busy'; setTimeout(function () { tqnExtRun(S, function () { return tqnDocBuf(D); }, 'doc', paint); }, 0); }
+    const N = egNums(x), tot = Number(egNum(egFv(x, /^القيمة الإجمالية للطلب/))) || 0, mon = Number(egNum(egFv(x, /^مدة السداد/))) || 0;
+    if (S.sal === '' && N.inc) S.sal = String(N.inc);
+    if (S.tera === '' && tot && mon) S.tera = String(Math.round(tot / mon));
+    const nid = egFv(x, /رقم الهوية|الهوية الوطنية|رقم الإقامة|السجل المدني/);
+    let r = null; try { r = axRep(x.user_id); } catch (err) { r = null; }
+    const R = S.st === 'ok' ? S.R : null, X = R ? tqnExtEval(R, { nid: nid }) : null, MX = tqnExtMix(r, X, { sal: S.sal, tera: S.tera });
+    const pick = e('input', { type: 'file', accept: 'application/pdf,.pdf', hidden: true, onChange: function (ev) { const f = ev.target.files && ev.target.files[0]; if (!f) return; tqnExtRun(S, function () { return f.arrayBuffer().then(function (b) { return new Uint8Array(b); }); }, 'local', paint); } });
+    const head = e('div', { class: 'tqn-xp-h' }, [e('div', {}, [e('b', {}, 'التقرير الائتماني الخارجي — مُلم (سمة)'), e('small', {}, D ? 'المرفق: ' + (D.name || 'تقرير سمة (ملم)') + ' · ' + ({ uploaded: 'مرفوع', pending: 'بانتظار المراجعة', accepted: 'مقبول', rejected: 'مرفوض' }[D.status] || D.status || '') : 'لم يُرفق العميل «تقرير سمة (ملم)» — اطلبه من «إعادة للاستكمال» أو حلّل ملفًا من جهازك')]),
+      e('div', { class: 'tqn-xp-a' }, [D ? DS.button('إعادة التحليل', { size: 'sm', onClick: function () { S.src = ''; S.did = ''; paint(); } }) : null, DS.button('تحليل ملف من جهازك', { size: 'sm', ui: 'file-pdf', onClick: function () { pick.click(); } }), pick])]);
+    const body = [];
+    if (S.st === 'busy') body.push(e('p', { class: 'tqn-xp-busy' }, 'جارٍ قراءة التقرير داخل المتصفح…'));
+    if (S.st === 'err') body.push(DS.note('warn', 'لم يُحلَّل التقرير', S.err));
+    if (S.src === 'local' && R) body.push(e('small', { class: 'tqn-xp-loc' }, 'ملف من جهاز الموظف — يُحلَّل هنا ولا يُحفظ في الطلب. لحفظه: اطلبه من العميل «تقرير سمة (ملم)» أو ارفعه نيابةً عنه.'));
+    if (R && X) {
+      const tn = function (s) { const B = TQN_CR.band; return s >= B.low ? 'ok' : s >= B.mid ? 'info' : s >= B.high ? 'warn' : 'danger'; };
+      body.push(e('div', { class: 'tqn-xp-v' + (X.valid ? ' is-ok' : ' is-bad') }, [
+        e('span', {}, ['تاريخ التقرير ', e('b', {}, R.date), X.age !== null ? ' (' + fmtNum(X.age) + ' يومًا)' : '']),
+        e('span', {}, ['الهوية ', e('b', {}, X.idMatch === true ? 'مطابقة ✓' : X.idMatch === false ? 'غير مطابقة ✗' : '••••' + String(R.id).slice(-4) + ' — طابِقها يدويًا')]),
+        e('span', {}, ['الاسم في التقرير ', e('b', {}, R.name || '—')]),
+        X.warn.length ? e('strong', {}, X.warn.join(' · ') + ' — لا يدخل في التوصية حتى يُصحَّح') : null]));
+      const kp = function (t, v, tone) { return e('div', { class: 'tqn-xp-k' + (tone ? ' is-' + tone : '') }, [e('small', {}, t), e('b', {}, v)]); };
+      body.push(e('div', { class: 'tqn-xp-ks' }, [
+        kp('درجة مُلم', R.score ? fmtNum(R.score) + (R.band ? ' · ' + R.band : '') : '—', R.score ? tn(Math.round((R.score - 300) / 5.5)) : ''),
+        kp('الالتزامات القائمة', sar(R.oblig)), kp('الأقساط الشهرية الحالية', sar(X.instNow)),
+        kp('متعثر', R.defN ? fmtNum(R.defN) + ' · ' + sar(R.defAmt) : 'لا', R.defN ? 'danger' : 'ok'),
+        kp('متأخرة الآن', X.lateN ? fmtNum(X.lateN) + ' · ' + sar(X.lateRem) : 'لا', X.lateN ? 'warn' : 'ok'),
+        kp('استعلامات 30 / 90 يومًا', fmtNum(X.inq30) + ' / ' + fmtNum(X.inq90), X.inq30 >= TQN_CR.extR.inq30 ? 'warn' : ''),
+        kp('اشترِ الآن نشطة', fmtNum(X.bnplAct), X.bnplAct > TQN_CR.ext.bnplFree ? 'warn' : ''),
+        kp('محاكم التنفيذ', R.court.length ? R.court.map(function (c) { return sar(c.amt) + ' · ' + (c.settled ? 'مُسوّى' : 'قائم'); }).join('، ') : 'لا', R.court.some(function (c) { return !c.settled; }) ? 'danger' : R.court.length ? 'warn' : 'ok'),
+        kp('أول منتج ائتماني', R.first || '—'), kp('المنتجات النشطة', fmtNum(R.activeN))]));
+      body.push(e('div', { class: 'tqn-sc-l' }, X.SC.map(function (c) {
+        return e('div', { class: 'tqn-sc-r is-' + tn(c[3]) }, [e('div', { class: 'tqn-sc-h' }, [e('span', {}, c[1]), e('small', {}, 'الوزن ' + fmtNum(c[2]) + '%'), e('b', {}, fmtNum(c[3]) + ' / 100')]),
+          e('span', { class: 'tqn-sc-bar', 'aria-hidden': 'true' }, [e('i', { style: 'width:' + Math.max(2, c[3]) + '%' })]), e('small', { class: 'tqn-sc-n' }, c[4])]);
+      }).concat([e('div', { class: 'tqn-sc-r is-tot is-' + tn(X.score || 0) }, [e('div', { class: 'tqn-sc-h' }, [e('span', {}, 'الدرجة الخارجية'), e('small', {}, X.hard.length ? 'قواعد حاسمة: ' + X.hard.join(' · ') : X.soft.length ? X.soft.join(' · ') : 'لا ملاحظات حاسمة'), e('b', {}, X.score === null ? '—' : fmtNum(X.score) + ' / 100')])])])));
+    }
+    /* القدرة على السداد */
+    const inp = function (k, ph) { return e('input', { type: 'number', inputmode: 'numeric', min: '0', value: S[k], placeholder: ph, onChange: function (ev) { S[k] = ev.target.value; paint(); } }); };
+    body.push(e('div', { class: 'tqn-xp-cap' }, [e('b', {}, 'القدرة على السداد'),
+      e('label', {}, ['صافي الراتب الشهري ', inp('sal', 'من الطلب أو أدخله')]), e('label', {}, ['قسط تيرا المقترح ', inp('tera', 'القيمة ÷ المدة')]),
+      e('span', {}, ['الأقساط الحالية ', e('b', {}, R ? sar(MX.ob) : '— (بعد تحليل التقرير)')]),
+      e('span', { class: MX.dbr !== null && MX.dbr > TQN_CR.dbr.max ? 'is-bad' : '' }, ['نسبة عبء الدين ', e('b', {}, MX.dbr === null ? '—' : fmtNum(MX.dbr) + '%'), ' (الحد ' + fmtNum(TQN_CR.dbr.max) + '%)']),
+      e('span', {}, ['أقصى قسط ممكن ', e('b', {}, MX.maxInst === null ? '—' : sar(MX.maxInst))])]));
+    /* التوصية المدمجة */
+    const lab = { ok: 'يُوصى بالمتابعة', watch: 'يُوصى بالمراجعة قبل الاعتماد', risk: 'لا يُوصى بالمنح' };
+    body.push(e('div', { class: 'tqn-sc-d is-' + MX.cls }, [
+      e('b', {}, 'التوصية: ' + lab[MX.cls] + (MX.score !== null && MX.score !== undefined ? ' — الدرجة المدمجة ' + fmtNum(MX.score) + ' / 100' : '')),
+      e('small', {}, 'سلوك العميل في المنصة: ' + (r && r.any ? fmtNum(r.score) + ' / 100 · ' + AX_CLS[r.cls][0] + ' · دفعات مستحقة ' + fmtNum(MX.due) : 'لا تاريخ سداد في المنصة') + (X && X.valid ? ' · الخارجي ' + fmtNum(X.score) + ' / 100 بوزن ' + fmtNum(MX.ew) + '%' : ' · بلا تقرير خارجي صالح')),
+      MX.why.length ? e('small', {}, 'الأسباب: ' + MX.why.join(' · ')) : null,
+      e('small', { class: 'tqn-xp-final' }, 'التوصية استشارية — القرار النهائي للإدارة من «التوصية والقرار». المعايير والأوزان من «إعدادات النظام ← معايير تقييم العملاء والأهلية».')]));
+    if (R && R.notes) body.push(DS.note('info', 'ملاحظات في التقرير', 'في التقرير ملاحظات من الأعضاء أو العميل (غالبًا اعتراض على بيان) — راجعها في الملف.'));
+    return e('section', { class: 'ax-card tqn-xp' }, [head].concat(body));
+  } catch (err) { try { console.warn('[tqn-ext]', err && err.message); } catch (y) { void y; } return null; }
 }
 function cInfo(c) {
   const total = c.payments.reduce(function (a, p) { return a + p.amount; }, 0);
@@ -18717,7 +18961,7 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
     };
     const P6 = function (k) { try { return paneOf(k); } catch (err) { try { console.warn('[elig-pane]', k, err && err.message); } catch (y) { void y; } return null; } };
     const pane6 = tab === 'docs' ? [P6('docs'), open || fx || c.fix ? P6('fix') : null]
-      : tab === 'rep' ? [P6('rep'), P6('res')]
+      : tab === 'rep' ? [TQN ? tqnExtPanel(x, docs, paint) : null /* v784 */, P6('rep'), P6('res')]
         : tab === 'qt' ? [P6('qt')]
           : tab === 'adm' ? [P6('adm')] /* v692: المرحلة السابعة تعرض لوحتها لا لوحة المعاينة */
           : [egJourney(x, c, paint, live, tab)];
