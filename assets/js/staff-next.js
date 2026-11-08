@@ -16,11 +16,17 @@
       ['cu-list', 'ملفات العملاء', ['cu']],
       ['cu-new', 'العملاء الجدد', ['cu']],
       ['cu-pf-ver', 'طلبات توثيق الملف', ['cu']],
+      ['cu-pf-req', 'طلبات تحديث الملف', ['cu']],
       ['cu-pf-launch', 'تدشين الحساب', ['cu']],
-      ['cu', 'كل صفحات العملاء', ['cu']]
+      ['cu-mem', 'العضويات والنقاط', ['cu']]
+    ]],
+    ['أمن العملاء', [
+      ['cu-secc', 'أمن الحسابات', ['cu']],
+      ['cpg', 'صفحة العميل', ['cu']]
     ]],
     ['الطلبات والعقود', [
       ['cu-svc', 'طلبات الخدمات', ['cu']],
+      ['cu-inbox', 'طلبات المتجر', ['cu']],
       ['cu-docs-pq', 'عروض الشركاء', ['cu']],
       ['cu-docs-pc', 'عقود الشركاء', ['cu']],
       ['cu-docs-sq', 'عروض المتاجر', ['cu']],
@@ -49,15 +55,15 @@
 
   /* الصفحة الفرعية ← أقرب بند في الشجرة (من سجل صفحات المنصة) — لتمييز البند الحالي فقط */
   var UP = {
-    'cu-file': 'cu-list', 'cu-pf-files': 'cu-list', 'cu-pf-file': 'cu-list', 'cu-pf': 'cu',
-    'cu-pf-req': 'cu', 'cu-pf-mig': 'cu', 'cu-pf-acct': 'cu', 'cu-inbox': 'cu', 'cu-mem': 'cu',
-    'cu-comms': 'cu', 'cu-acc': 'cu', 'cu-secc': 'cu', 'cu-sx-sess': 'cu', 'cu-sx-reccode': 'cu',
-    'cu-sx-totp': 'cu', 'cu-sx-mail': 'cu', 'cu-wa-pins': 'cu', 'cu-2fa': 'cu',
-    'cu-mon-activity': 'cu', 'cu-mon-alerts': 'cu', 'cu-mon-sens': 'cu', 'cu-mon-sec': 'cu',
-    'cu-mon-dev': 'cu', 'cu-mon-live': 'cu', 'cu-audit': 'cu', 'cpg': 'cu', 'cpg-access': 'cu',
-    'cpg-log': 'cu', 'cs': 'cu', 'cs-customers': 'cu-list', 'cs-customer': 'cu-list',
-    'cs-updates': 'cu', 'cs-devices': 'cu', 'cs-requests': 'cu-svc', 'cs-complaints': 'cs-tickets',
-    'cu-docs-cq': 'cu-docs-sq', 'cu-docs-si': 'cu-docs-sq', 'ctr': 'cu',
+    'cu-file': 'cu-list', 'cu-pf-files': 'cu-list', 'cu-pf-file': 'cu-list', 'cu-pf': 'cu-list',
+    'cu-pf-req': 'cu-list', 'cu-pf-mig': 'cu-pf-ver', 'cu-pf-acct': 'cu-list', 'cu-inbox': 'cu-list', 'cu-mem': 'cu-list',
+    'cu-comms': 'cu-list', 'cu-acc': 'cu-list', 'cu-secc': 'cu-list', 'cu-sx-sess': 'cu-secc', 'cu-sx-reccode': 'cu-secc',
+    'cu-sx-totp': 'cu-secc', 'cu-sx-mail': 'cu-secc', 'cu-wa-pins': 'cu-secc', 'cu-2fa': 'cu-secc',
+    'cu-mon-activity': 'cu-secc', 'cu-mon-alerts': 'cu-secc', 'cu-mon-sens': 'cu-secc', 'cu-mon-sec': 'cu-secc',
+    'cu-mon-dev': 'cu-secc', 'cu-mon-live': 'cu-secc', 'cu-audit': 'cu-secc', 'cpg': 'cu-list', 'cpg-access': 'cpg',
+    'cpg-log': 'cpg', 'cs': 'cu-list', 'cs-customers': 'cu-list', 'cs-customer': 'cu-list',
+    'cs-updates': 'cu-list', 'cs-devices': 'cu-list', 'cs-requests': 'cu-svc', 'cs-complaints': 'cs-tickets',
+    'cu-docs-cq': 'cu-docs-sq', 'cu-docs-si': 'cu-docs-sq', 'ctr': 'cu-list',
     'cu-payops': 'fin-pay', 'fin-gw': 'fin-pay', 'fin-rec': 'fin-pay', 'fin-fee': 'fin',
     'fin-fee-i': 'fin', 'cu-admx': 'fin', 'cu-admx-bd': 'fin', 'cu-admx-dd': 'fin',
     'cu-admx-tr': 'fin', 'cu-admx-ck': 'fin', 'cu-admx-rp': 'fin', 'cu-admx-rpc': 'fin',
@@ -578,8 +584,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v768: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v770: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v770: «طلبات تحديث الملف» جدول بالحقول المعدّلة والقرار في الصف · تقرير العميل بأقسام تبويبات · القائمة الجانبية بلا «كل صفحات العملاء» (صفحاتها بنود مباشرة).
    · v768: الإجراءات الفرعية في البند (السبب · الملاحظة · التعديل) بارزة قبل الأزرار، ورسائل القسم ونتيجة الإجراء السابق ظاهرة، وروابط البنود في القرار تفتح البند.
    · v767: إصلاح ظهور القرار أعلى صفحة «بندًا بندًا».
    · v766: طلب التوثيق «بندًا بندًا»: الأقسام بنسبة إنجازها، وبند واحد كبير بزرّي مطابق/غير مطابق وانتقال تلقائي للتالي، والقرار والمراسلة والسجل من شريط ثابت.
@@ -1197,9 +1204,12 @@ function geoQ() {
 
 
   /* ── 7) v753–v755: العملاء الجدد · طلبات توثيق الملف · تدشين الحساب — بنفس لغة قسم العملاء ── */
-  var PT = { 'العملاء الجدد': 'nc', 'طلبات توثيق الملف': 'vr', 'تدشين الحساب': 'lch' };
+  var PT = { 'العملاء الجدد': 'nc', 'طلبات توثيق الملف': 'vr', 'تدشين الحساب': 'lch', 'طلبات الملف الشخصي': 'req', 'طلبات تحديث الملف': 'req' };
   function pageKey() { return PT[txt(document.getElementById('pv-title'))] || ''; }
   function pages(root) {
+    /* v770: اسم الصفحة كما في القائمة الجانبية */
+    var ptl = document.getElementById('pv-title'); if (ptl && txt(ptl) === 'طلبات الملف الشخصي') ptl.textContent = 'طلبات تحديث الملف';
+    try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');
     [].forEach.call(root.querySelectorAll('.tqn-ncp, .tqn-axp'), function (x) { if (x !== L || !k) { cls(x, 'tqn-ncp', false); cls(x, 'tqn-axp', false); } });
     if (!L || !k) return;
@@ -1232,6 +1242,8 @@ function geoQ() {
     var extra = [];
     if (k === 'lch') [].forEach.call(L.querySelectorAll('.cu-kpi'), function (q) { var l = txt(q.querySelector('small')), v = txt(q.querySelector('b')); if (/الافتراضي|الافتراضية/.test(l)) extra.push([l, v, /نقاط/.test(l) ? '◆' : '♛']); });
     var sig = k + '|' + rows.map(function (r) { return txt(r); }).join('|') + '#' + chips.map(function (c) { return txt(c) + (c.classList.contains('is-on') ? 1 : 0); }).join(',') + '#' + extra.join(',');
+    /* v770: أرقام المنصة مكرّرة مع بطاقات الملخص التي تصفّي — تبقى البطاقات وحدها */
+    if (k === 'req' && chips.length) [].forEach.call(L.querySelectorAll(':scope > .cu-kpis'), function (q) { cls(q, 'tqn-hide', true); });
     var W = L.__tqnAx, SM = L.__tqnSm;
     if (W && L.contains(W) && W.__sig === sig && (!chips.length || (SM && L.contains(SM)))) return;
     if (W && W.parentNode) W.parentNode.removeChild(W);
@@ -1239,7 +1251,7 @@ function geoQ() {
     W = mk('div', 'tqn-clw tqn-axw is-' + k); W.__sig = sig;
     if (chips.length && tools) { SM = sumTiles(chips, extra); cls(SM, 'tqn-axs', true); tools.parentNode.insertBefore(SM, tools); L.__tqnSm = SM; [].forEach.call(L.querySelectorAll('.st-chips-w'), function (x) { cls(x, 'tqn-hide', true); }); }
     var T = mk('div', 'tqn-lt is-' + k);
-    var H = k === 'vr' ? ['صاحب الملف', 'النوع', 'الحالة', 'أُرسل', 'البنود', 'المسؤول', ''] : ['العميل', 'الحالة', 'المستوى', 'النقاط', 'تاريخ التدشين', ''];
+    var H = k === 'vr' ? ['صاحب الملف', 'النوع', 'الحالة', 'أُرسل', 'البنود', 'المسؤول', ''] : k === 'req' ? ['العميل', 'القسم', 'ما عدّله العميل', 'التاريخ', 'الحالة', 'القرار'] : ['العميل', 'الحالة', 'المستوى', 'النقاط', 'تاريخ التدشين', ''];
     var hr = mk('div', 'tqn-ar is-h'); H.forEach(function (h) { hr.appendChild(mk('span', '', h)); }); T.appendChild(hr);
     rows.forEach(function (r) {
       var go = r.querySelector('.nr-main') || r, x = mk('div', 'tqn-ar'); x.setAttribute('role', 'button'); x.tabIndex = 0;
@@ -1257,6 +1269,23 @@ function geoQ() {
         var mb = mk('span', 'tqn-mb is-3'); [[ok, 'm'], [bad, 'x'], [pd, 'p']].forEach(function (s) { if (!all || !s[0]) return; var i = mk('i', 'is-' + s[1]); i.style.width = (s[0] / all * 100) + '%'; mb.appendChild(i); }); pc.appendChild(mb);
         x.appendChild(pc);
         var ow = txt(F['المسؤول']); x.appendChild(mk('span', 'tqn-ow' + (/غير مُسند|غير مسند/.test(ow) ? ' is-mut' : ''), ow || '—'));
+      } else if (k === 'req') {
+        var Q = {}; [].forEach.call(r.querySelectorAll('.adm-cm-i'), function (i) { Q[txt(i.querySelector('small'))] = i.querySelector(':scope > span'); });
+        x.appendChild(who(txt(r.querySelector('.adm-nm') || r.querySelector('.adm-ct')), txt(r.querySelector('.adm-nm + small, .adm-ct small'))));
+        x.appendChild(mk('span', 'tqn-chip is-done', txt(Q['القسم']) || '—'));
+        var fl = mk('div', 'tqn-flds'); (txt(Q['التغيير']) || '').split(/[،,]/).map(function (z) { return z.trim(); }).filter(Boolean).forEach(function (z) { fl.appendChild(mk('span', '', z)); }); if (!fl.children.length) fl.appendChild(mk('span', 'is-mut', '—')); x.appendChild(fl);
+        x.appendChild(mk('bdi', 'tqn-dt', txt(Q['التاريخ']) || '—'));
+        var sq = Q['الحالة'] && Q['الحالة'].querySelector('.t2-pill'); x.appendChild(sq ? chipOf(sq) : mk('span', '', txt(Q['الحالة']) || '—'));
+        /* القرار: أزرار المنصة نفسها (تُضغط عند الطلب من الصف الحالي في القائمة الأصلية) */
+        var dc = mk('div', 'tqn-acts'), rk = txt(r.querySelector('.ax-r-b')) + '|' + txt(Q['التاريخ']);
+        [].forEach.call(Q['القرار'] ? Q['القرار'].querySelectorAll('button') : [], function (pb) {
+          var lb = txt(pb); dc.appendChild(btn(lb, /اعتماد/.test(lb) ? 'is-pri is-sm' : 'is-sm is-no', function () {
+            var cur0 = [].filter.call(L.querySelectorAll('article.cu-bd-r'), function (a) { var A = {}; [].forEach.call(a.querySelectorAll('.adm-cm-i'), function (i) { A[txt(i.querySelector('small'))] = txt(i.querySelector(':scope > span')); }); return txt(a.querySelector('.ax-r-b')) + '|' + (A['التاريخ'] || '') === rk; })[0];
+            var b0 = cur0 && [].filter.call(cur0.querySelectorAll('button'), function (q) { return txt(q) === lb; })[0]; if (b0) b0.click();
+          }));
+        });
+        if (!dc.children.length) dc.appendChild(mk('span', 'is-mut', '—'));
+        x.appendChild(dc); x.removeAttribute('role'); x.tabIndex = -1; x.__noGo = 1;
       } else {
         var nm = txt(r.querySelector('.ax-r-b > b')), ln = txt(r.querySelector('.ax-r-b > span'));
         var pr = ln.split('—'), id = (pr[1] || '').trim(), tk = (pr[0] || '').split('·').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -1267,12 +1296,14 @@ function geoQ() {
         x.appendChild(mk('b', '', pts.replace(/\s*نقطة/, '')));
         x.appendChild(mk('bdi', 'tqn-dt', dt));
       }
-      var ac = mk('div', 'tqn-acts'); ac.appendChild(btn('عرض', 'is-pri is-sm', function () { go.click(); })); x.appendChild(ac);
-      x.addEventListener('click', function () { go.click(); });
-      x.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') go.click(); });
+      if (!x.__noGo) {
+        var ac = mk('div', 'tqn-acts'); ac.appendChild(btn('عرض', 'is-pri is-sm', function () { go.click(); })); x.appendChild(ac);
+        x.addEventListener('click', function () { go.click(); });
+        x.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') go.click(); });
+      }
       T.appendChild(x);
     });
-    if (rows.length) { W.appendChild(T); W.appendChild(mk('div', 'tqn-lf', 'عرض ' + rows.length + (k === 'vr' ? ' طلب' : ' حساب'))); }
+    if (rows.length) { W.appendChild(T); if (k !== 'req') W.appendChild(mk('div', 'tqn-lf', 'عرض ' + rows.length + (k === 'vr' ? ' طلب' : ' حساب'))); }
     if (list) cls(list, 'tqn-hide', true);
     if (tools) tools.parentNode.insertBefore(W, tools.nextSibling); else if (list) list.parentNode.insertBefore(W, list); else L.appendChild(W);
     L.__tqnAx = W;
@@ -1677,6 +1708,42 @@ function geoQ() {
       var hit = b.filter(function (x) { return want.test(txt(x)) && !x.disabled; })[0]; if (hit) { ev.preventDefault(); hit.click(); }
     });
   } catch (e) { void e; }
+  /* ── 10) v770: تقرير العميل (السجل الائتماني) — أقسام التقرير تبويبات ظاهرة بدل القائمة المنسدلة ── */
+  function rpPage(root) {
+    var pg = root.querySelector('.lv-page'), hd = pg && pg.querySelector(':scope > .axc-head'), sel = pg && pg.querySelector(':scope > .st-sel');
+    if (!hd || !sel) return;
+    var cb = sel.querySelector('.t2-cb'); if (!cb) return;
+    /* خيارات القائمة تُرسم عند فتحها فقط: نقرأها مرة لكل رسم للتقرير ثم نغلقها */
+    if (!pg.__tqnOpts) {
+      var lz = cb.querySelectorAll('li.t2-cb-o');
+      if (!lz.length) { var ob = cb.querySelector('.t2-cb-btn'); if (ob) { ob.click(); lz = cb.querySelectorAll('li.t2-cb-o'); var cx = cb.querySelector('.t2-cb-x'); pg.__tqnOpts = [].map.call(lz, txt); if (lz.length) { if (cx) cx.click(); else { var ob2 = cb.querySelector('.t2-cb-btn'); if (ob2) ob2.click(); } } } }
+      else pg.__tqnOpts = [].map.call(lz, txt);
+    }
+    var lis = (pg.__tqnOpts || []).map(function (t) { return { t: t }; });
+    if (lis.length < 2) { pg.__tqnOpts = null; return; }
+    cls(pg, 'tqn-rp', true);
+    var curT = txt(cb.querySelector('.t2-cb-btn'));
+    var sig = lis.map(function (x) { return x.t; }).join('|') + '#' + curT, B = pg.__tqnRp;
+    if (B && B.parentNode === pg && B.__sig === sig) return;
+    if (B && B.parentNode) B.parentNode.removeChild(B);
+    B = mk('div', 'tqn-rp-tabs'); B.setAttribute('role', 'tablist'); B.__sig = sig;
+    var RI = [[/الملخص/, 'list'], [/العقود/, 'note'], [/الإجراءات/, 'shield'], [/التحويلات/, 'money'], [/الرسوم/, 'money'], [/الالتزام|المخاطرة/, 'shield'], [/التوصية/, 'star']];
+    lis.forEach(function (li) {
+      var t = li.t, m = t.match(/^(.*?)\s*\((\d+)\)\s*$/), lb = m ? m[1] : t, n = m ? m[2] : '';
+      var on = t === curT;
+      var b = mk('button', 'tqn-rp-t' + (on ? ' is-on' : '')); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(on)); b.setAttribute('data-live-ok', '');
+      var nIc = 'list'; RI.forEach(function (r) { if (r[0].test(lb) && nIc === 'list') nIc = r[1]; }); b.appendChild(tqIc(nIc));
+      b.appendChild(mk('span', '', lb)); if (n) b.appendChild(mk('i', '', n));
+      b.addEventListener('click', function () {
+        var pick = function () { return [].filter.call(pg.querySelectorAll('.st-sel li.t2-cb-o'), function (x) { return txt(x) === t; })[0]; };
+        var cur = pick(); if (!cur) { var ob = pg.querySelector('.st-sel .t2-cb-btn'); if (ob) ob.click(); cur = pick(); }
+        if (cur) cur.click(); else wait(pick, function (x) { x.click(); });
+      });
+      B.appendChild(b);
+    });
+    cls(sel, 'tqn-hide', true);
+    pg.insertBefore(B, sel); pg.__tqnRp = B;
+  }
   /* ── 5) محتوى القسم ── */
   function isRecs(nested) {
     var forms = nested.filter(function (n) { return /^تسجيل/.test(title(n)); });
