@@ -6903,7 +6903,7 @@ html,body{height:auto;min-height:100%}
 .pv-dev.pv-dev .t2 .tq-pr-q{grid-template-columns:1fr}
 @media (max-width:720px){.t2.t2 .tq-pr-q{grid-template-columns:1fr}}
 /* v211 — القالب 2: ترويسة كحلية بزخرفة · إطار ذهبي · بطاقات بعمودين */
-.dc3.dc3{--n1:#0e1a4f;--n2:#1a2f7c;--tl:#14a6a4;--gd1:#f6dc8c;--gd2:#c9962e;--gd3:#8a5f16;--ln:#e4e8f1;--mu:#6b7590}
+.dc3.dc3{--n1:#0e1a4f;--n2:#1a2f7c;--tl:#14a6a4;--gd1:#f6dc8c;--gd2:#c9962e;--gd3:#8a5f16;--ln:#e4e8f1;--mu:#2b4170}
 .dc3.dc3 .d3-top{position:relative;height:168px;flex:none;overflow:hidden;color:#fff;background:linear-gradient(100deg,#0c1748 0%,#13246a 45%,#123d7a 75%,#147c8e 100%)}
 .dc3.dc3 .d3-top.is-sm{height:92px}
 .dc3.dc3 .d3-guil{position:absolute;inset:0;width:100%;height:100%}
@@ -6970,7 +6970,7 @@ html,body{height:auto;min-height:100%}
 .dc3.dc3 .d3-ol.is-2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px}
 .dc3.dc3 .d3-ol li{display:flex;align-items:flex-start;gap:9px;font-size:11px;color:#1d2742;line-height:1.6}
 .dc3.dc3 .d3-ol li b{color:var(--n1)}
-.dc3.dc3 .d3-n{flex:none;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;font-style:normal;font-weight:800;font-size:10.5px;color:#fff;background:linear-gradient(180deg,#1d3f8a,#0e8f93);box-shadow:inset 0 -2px 0 #d8ad4c}
+.dc3.dc3 .d3-n{flex:none;display:inline-block;min-width:16px;font-style:normal;font-weight:800;font-size:11.5px;color:#0b2552}.dc3.dc3 .d3-n::after{content:"."}
 .dc3.dc3 .d3-p{margin:0;padding:10px 14px;font-size:11px;line-height:1.75;color:#1d2742}
 .dc3.dc3 .d3-p.is-sm{font-size:10px;color:var(--mu);padding-top:0}
 .dc3.dc3 .d3-bot{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
@@ -6995,13 +6995,13 @@ html,body{height:auto;min-height:100%}
 .dc3.dc3 .d3-fb{height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 40px;color:#fff;font-size:11.5px;font-weight:700;background:linear-gradient(100deg,#0c1748,#13246a 55%,#147c8e)}
 .dc3.dc3 .d3-auto{display:flex;align-items:center;gap:8px}
 .dc3.dc3 .d3-auto i{width:10px;height:10px;border-radius:50%;background:#e9c46a;box-shadow:0 0 0 3px rgba(233,196,106,.25)}
-.dc3.dc3 .d3-fr{display:flex;align-items:center;gap:12px;color:#d6e0f5}
-.dc3.dc3 .d3-fr .d2-pg{color:#f2cf73}
+.dc3.dc3 .d3-fr{display:flex;align-items:center;gap:12px;color:#d6e0f5;flex:none}
+.dc3.dc3 .d3-fr .d2-pg{color:#f2cf73;white-space:nowrap}
 .dc3.dc3 .axp-tw{border-radius:16px}
 .dc3.dc3 .axp-tt b{position:relative;padding-bottom:5px}.dc3.dc3 .axp-tt b::after{content:"";position:absolute;right:0;bottom:0;width:38px;height:3px;border-radius:3px;background:linear-gradient(90deg,#a87a22,#f3d580)}
 .dc3.dc3 .axp-t tr.dc-gt td{background:linear-gradient(100deg,#0c1748,#14306e 60%,#147c8e);color:#fff;border-top:3px solid #d8ad4c}
 .dc3.dc3 .axp-t tr.dc-gt td:last-child{color:#f6d77c}
-.dc3.dc3 .dc-pill{background:radial-gradient(circle at 35% 30%,#4fd8d2,#13a3a0 55%,#0d6f72);box-shadow:0 0 0 2px #e8c770}
+.dc3.dc3 .dc-pill{background:none;box-shadow:none;color:#0b2552;min-width:0;height:auto;padding:0}
 .dc3.dc3 .axp-b>div:has(>.axp-sh),.dc3.dc3 .axp-kv>.axp-k{border-color:var(--ln)}
 /* بطاقتا اختيار التصميم في صفحة القالب */
 .t2.t2 .d3-picks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}

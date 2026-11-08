@@ -11089,7 +11089,7 @@ function tqRegister() {
   try { Object.assign(ICON, { 'cu-docs-pq': ['letter', 'navy'], 'cu-docs-sq': ['storefront', 'teal'], 'cu-docs-cq': ['note-pencil', 'saffron'], 'cu-docs-pc': ['contract', 'navy'], 'cu-docs-si': ['receipt', 'gold'] }); } catch (err) { void err; }
   lp('sys-es', 'قوالب المستندات', 'sys', 'sys-es', sysEsPage);
 try { Object.assign(ICON, { 'sys-es': ['coins', 'gold'] }); } catch (err) { void err; }
-  lp('cu-docs-tl', 'الخطابات الرسمية', 'cu', 'cu-docs-tl', tlPage); try { Object.assign(ICON, { 'cu-docs-tl': ['letter', 'navy'] }); } catch (err) { void err; } /* v756 */
+  lp('cu-docs-tl', 'الخطابات الرسمية', 'cu', 'cu-docs-tl', tlPage); try { Object.assign(ICON, { 'cu-docs-tl': ['envelope-simple', 'navy'] }); } catch (err) { void err; } /* v756 */
 }
 /* بنود القالب في نموذج الإصدار: تُضاف أو تُلغى، والمبلغ حسب طريقة الاحتساب */
 function tqExtrasEd(T, D, base, qty, rerun, incl) {
@@ -22073,7 +22073,7 @@ function tlDateTxt(iso, hij) {
   let h = ''; try { h = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d).replace(/\s*هـ$/, '') + ' هـ'; } catch (err) { h = ''; }
   return h ? h + ' · ' + g : g;
 }
-function tlNewDoc() { return { id: null, no: null, status: 'draft', subject: '', to_name: '', doc: { to: { n: '', g: '', t: 'سعادة', s: 'المحترم', d: '', c: '', kind: '' }, greet: TLT.greet[0], close: TLT.close[0], body: '<p>اكتب نص الخطاب هنا…</p>', atts: '', sign: tlClone(TLT.sign), show: tlClone(TLT.show) } }; }
+function tlNewDoc() { return { id: null, no: null, status: 'draft', subject: '', to_name: '', doc: { to: { n: '', g: '', t: 'سعادة', s: 'المحترم', d: '', c: '', kind: '' }, greet: TLT.greet[0], close: TLT.close[0], body: '', atts: '', sign: tlClone(TLT.sign), show: tlClone(TLT.show) } }; }
 const tlIsDraft = () => !TLS.cur || TLS.cur.status === 'draft';
 const tlTpl = () => (!tlIsDraft() && TLS.cur.doc && TLS.cur.doc.tpl) ? Object.assign({}, TLT, TLS.cur.doc.tpl) : TLT;
 function tlCollect() {
@@ -22187,7 +22187,7 @@ const TL_CSS = `
 .tlx .kv span{padding:6px 12px;color:#33415C;border-bottom:1px solid #EEF1F6;font-size:13px}.tlx .kv b{padding:6px 12px;border-bottom:1px solid #EEF1F6;font-weight:600;font-size:13.5px}
 .tlx .subjb{padding:9px 14px;border-top:1px solid #DFE4EE;font-weight:700;font-size:15px;color:#0B2552}
 .tlx .bodyw{border-top:1px solid #DFE4EE;padding:12px 16px}
-.tlx .tl-body{outline:none;min-height:280px}.tlx .tl-body:focus{box-shadow:0 0 0 2px #E2F3F3;border-radius:4px}
+.tlx .tl-body{outline:none;min-height:280px}.tlx .tl-body:empty::before{content:attr(data-ph);color:#51607E;pointer-events:none}.tlx .tl-body:focus{box-shadow:0 0 0 2px #E2F3F3;border-radius:4px}
 .tlx .tl-body p,.tl-flow p{margin:0 0 6px}
 .tlx .tl-body table,.tl-flow table{border-collapse:collapse;width:100%;margin:8px 0}
 .tlx .tl-body td,.tlx .tl-body th,.tl-flow td,.tl-flow th{border:1px solid #9AA6BC;padding:5px 8px;vertical-align:top;min-width:40px}
@@ -22311,7 +22311,7 @@ function tlPaper(keep) {
     '<div class="mc"><small>المرفقات</small><b>' + (atts.length ? fmtNum(atts.length) + (atts.length === 1 ? ' مرفق' : ' مرفقات') : 'لا يوجد') + '</b></div><div class="mc"><small>المرسل إليه</small><b>' + tlEsc(to.n || '—') + '</b></div></div>' +
     '<section class="cardd"><h4>المرسل إليه</h4><div class="kv">' + kv.map(function (x) { return '<span>' + tlEsc(x[0]) + '</span><b>' + tlEsc(x[1]) + '</b>'; }).join('') + '</div></section>' +
     '<section class="cardd"><h4>الموضوع</h4><div class="subjb">' + tlEsc(D.subj || C.subject || '—') + '</div></section>' +
-    '<section class="cardd"><h4>نص الخطاب</h4><div class="bodyw"><div>' + tlEsc(D.greet || '') + '</div><div class="tl-body" id="tlx-body" contenteditable="' + ed + '" spellcheck="false" aria-label="نص الخطاب">' + body + '</div><div>' + tlEsc(D.close || '') + '</div>' +
+    '<section class="cardd"><h4>نص الخطاب</h4><div class="bodyw"><div>' + tlEsc(D.greet || '') + '</div><div class="tl-body" id="tlx-body" contenteditable="' + ed + '" spellcheck="false" aria-label="نص الخطاب" data-ph="اكتب نص الخطاب هنا…">' + body + '</div><div>' + tlEsc(D.close || '') + '</div>' +
     (atts.length ? '<div class="atl"><b>المرفقات:</b> ' + atts.map(function (a, i) { return (i + 1) + '. ' + tlEsc(a); }).join('  ·  ') + '</div>' : '') + '</div></section>' +
     '<section class="cardd"><h4>الاعتماد</h4><div class="appr"><div id="tlx-qr"></div><div class="who"><small>' + tlEsc(sg.t || '') + '</small><b>' + tlEsc(sg.n || '') + '</b></div><div id="tlx-seal"></div></div></section></div>' +
     (ft.length ? '<footer class="d3foot">' + ft.map(function (f) { return '<span>' + tlEsc(f.l) + ': <b dir="auto">' + tlEsc(f.v) + '</b></span>'; }).join('') + '</footer>' : '');
@@ -22505,7 +22505,7 @@ function tlMount(el) {
 function tlPage() {
   tlCssOn();
   try { if (typeof LIVE_SET !== 'undefined' && !LIVE_SET.at) { LIVE_SET.at = -1; lvSetLoad().then(function () { tlDraw(true); }); } } catch (err) { void err; }
-  if (!ADM.tlEl) { ADM.tlEl = e('div', { class: 'tlx' }); try { tlMount(ADM.tlEl); } catch (err) { try { console.error('[tl]', err); } catch (x) { void x; } ADM.tlEl.textContent = 'تعذّر فتح صفحة الخطابات — ' + ((err && err.message) || ''); } }
+  if (!ADM.tlEl) { ADM.tlEl = e('div', { class: 'tlx', 'data-live-ok': '' }); /* v774: أزرار الصفحة (حفظ · إصدار · حذف) لا يوقفها حارس النقرات */ try { tlMount(ADM.tlEl); } catch (err) { try { console.error('[tl]', err); } catch (x) { void x; } ADM.tlEl.textContent = 'تعذّر فتح صفحة الخطابات — ' + ((err && err.message) || ''); } }
   return [dcTop('الخطابات الرسمية', 'خطابات المنصة الرسمية للجهات والعملاء والشركاء — بتصميم المستندات الموحّد ورقم لا يتكرر', []), ADM.tlEl];
 }
 
