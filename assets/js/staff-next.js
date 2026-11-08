@@ -1,4 +1,4 @@
-/* v702–v708 — المنصة الجديدة للموظفين (staff/next/)
+/* v702–v776 — المنصة الجديدة للموظفين (staff/next/)
    v707: قسم المالية بخمس صفحات وتبويبات داخل الصفحة، وبلا أدراج: لوحة التفاصيل صفحة في مساحة المحتوى (الموضع من geo()).
    قائمة تنقّل واحدة فوق محرك المنصة نفسه (platform.js): الخادم والقاعدة والصلاحيات والحسابات كما هي.
    لا يعمل هذا الملف إلا على المسار /staff/next/، ولا يغيّر شيئًا في /staff/ ولا في بوابة العميل.
@@ -584,8 +584,9 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v773: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v776: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v776: التأخر والتعثر والسداد المتأخر من مصدر واحد — العقد المغلق عليه متبقٍّ حالة مستقلة في قائمة العملاء لا «متعثر»، وتقرير العميل يحسب السداد في الموعد والمسدَّد متأخرًا.
    · v773: «طلبات المتجر» تفتح على شريحة المتجر في صندوق «بانتظار إجراء».
    · v771: أيقونات بنود القائمة الجديدة، و«مركز الأمن» و«طلبات المتجر» باسم صفحتهما بلا تكرار في المسار.
    · v770: «طلبات تحديث الملف» جدول بالحقول المعدّلة والقرار في الصف · تقرير العميل بأقسام تبويبات · القائمة الجانبية بلا «كل صفحات العملاء» (صفحاتها بنود مباشرة).
@@ -726,6 +727,8 @@ function geoQ() {
     if (k.l > 0) return [k.w >= 3 ? 'متعثر' : 'متأخر', 'bad', 'late'];
     var d = days(k.nx);
     if (k.r > 0 && d != null && d <= 7) return [d <= 0 ? 'يستحق اليوم' : 'يستحق خلال ' + d + (d === 1 ? ' يوم' : ' أيام'), 'warn', 'soon'];
+    /* v776: متبقٍّ على عقد مغلق — لا يُحسب متأخرًا ولا متعثرًا، ويظهر مستقلًّا بانتظار القرار (إعفاء · تحصيل · إعادة فتح) */
+    if (k.cr > 0) return ['متبقٍّ على عقد مغلق', 'cl', 'cl'];
     if (k.r > 0) return ['منتظم', 'ok', 'ok'];
     return ['مكتمل', 'done', 'ok'];
   }
@@ -742,15 +745,16 @@ function geoQ() {
     [].forEach.call(stack.querySelectorAll(':scope > .m3-tools, :scope > .ax-tools'), function (x) { var ch = x.querySelectorAll('.st-chip'); if (ch.length) { cls(x, 'tqn-hide', true); SC = SC.concat([].slice.call(ch)); } else cls(x, 'tqn-hide', x.querySelectorAll('button').length <= 1); });
     if (!box.__tqnMo) { try { box.__tqnMo = new MutationObserver(soon); box.__tqnMo.observe(box, { attributes: true, subtree: true, attributeFilter: ['style', 'hidden'] }); } catch (e) { void e; } }
     var F = ST.lf || 'all', SO = ST.ls || 'name', Q = (ST.lq || '').trim().toLowerCase();
-    var groups = [['all', 'كل العملاء', K.length, ''], ['ok', 'منتظمون', 0, 'ok'], ['late', 'عليهم متأخرات', 0, 'bad'], ['soon', 'يستحق خلال 7 أيام', 0, 'warn'], ['none', 'بلا عقود', 0, 'g']];
+    var groups = [['all', 'كل العملاء', K.length, ''], ['ok', 'منتظمون', 0, 'ok'], ['late', 'عليهم متأخرات', 0, 'bad'], ['soon', 'يستحق خلال 7 أيام', 0, 'warn'], ['cl', 'متبقٍّ على عقد مغلق', 0, 'cl'], ['none', 'بلا عقود', 0, 'g']];
     K.forEach(function (x) { var s = kState(x.k)[2]; groups.forEach(function (g) { if (g[0] === s) g[2]++; }); });
+    groups = groups.filter(function (g) { return g[0] !== 'cl' || g[2] > 0 || F === 'cl'; });
     var sig = K.map(function (x) { return x.k.name + x.c.getAttribute('data-k') + (x.c.hidden || x.c.style.display === 'none' ? 0 : 1); }).join('|') + F + SO + Q + SC.map(function (c) { return txt(c) + (c.classList.contains('is-on') ? 1 : 0); }).join(',');
     var W = stack.__tqnCl;
     if (W && W.parentNode === stack && W.__sig === sig) return;
     var keepQ = W && W.__q === document.activeElement;
     if (W && W.parentNode) W.parentNode.removeChild(W);
     W = mk('div', 'tqn-clw'); W.__sig = sig;
-    var SMI = { all: '∑', ok: '✓', bad: '!', warn: '◷', g: '∅' };
+    var SMI = { all: '∑', ok: '✓', bad: '!', warn: '◷', cl: '⊟', g: '∅' };
     var sm = mk('div', 'tqn-sum');
     groups.forEach(function (g) {
       var b = mk('button', 'tqn-sm is-' + (g[3] || 'all') + (F === g[0] ? ' is-on' : '')); b.type = 'button'; b.setAttribute('data-live-ok', '');
@@ -1214,7 +1218,7 @@ function geoQ() {
     /* v771: «طلبات المتجر» عنوانها في المنصة «بانتظار إجراء» — اسم القائمة نفسه بلا تكرار في المسار */
     var onI = document.querySelector('.tqn-nav .tqn-i.is-on'), onT = onI ? (onI.getAttribute('title') || txt(onI)) : '';
     if (ptl && onT === 'طلبات المتجر' && txt(ptl) === 'بانتظار إجراء') ptl.textContent = 'طلبات المتجر';
-    /* v773: «طلبات المتجر» تفتح صندوق «بانتظار إجراء» على شريحة المتجر نفسها (مرة عند الدخول من القائمة) */
+    /* v776: «طلبات المتجر» تفتح صندوق «بانتظار إجراء» على شريحة المتجر نفسها (مرة عند الدخول من القائمة) */
     if (ST.__inbx && onT === 'طلبات المتجر') { var sc = [].filter.call(root.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0]; if (sc) { ST.__inbx = 0; if (!sc.classList.contains('is-on')) sc.click(); } }
     try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');

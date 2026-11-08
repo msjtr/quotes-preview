@@ -2144,6 +2144,34 @@ function payState(p) {
   if (late > 0) return { k: 'late', t: part ? 'متأخرة — مدفوعة جزئيًا' : 'متأخرة', tone: late > LATE_MAX ? 'danger' : 'warn', late: late, part: part };
   return { k: part ? 'partial' : 'due', t: part ? 'مدفوعة جزئيًا' : 'مستحقة', tone: part ? 'part' : null, left: -late, part: part };
 }
+/* v776: التأخر والتعثر من مصدر واحد في staff/next — العقد المغلق عليه متبقٍّ لا يُحسب متأخرًا ولا متعثرًا (قاعدة المشرف العام):
+   حالته «مغلق — عليه متبقٍّ»، ومتبقّيه clRem ظاهر مستقلًّا بانتظار القرار (إعفاء · تحصيل · إعادة فتح)، ولا موعد قادم له.
+   كل ما يقرأ cInfo وpayState في المنصة الجديدة يتبع ذلك (قائمة العملاء · الملف · العقود · التقرير). /staff/ بلا تغيير. */
+if (TQN) {
+  const cInfo0 = cInfo, payState0 = payState;
+  cInfo = function (c) {
+    const f = cInfo0(c);
+    if (!c || c.mergedTo || !f.leftN || !(c.payments[0] || {}).closed) return f;
+    const left = c.payments.filter(function (p) { return !settled(p); });
+    return Object.assign({}, f, { status: 'مغلق — عليه متبقٍّ', tone: 'warn', late: [], lateSum: 0, lateDays: 0, next: null, clN: left.length,
+      clRem: Math.round(left.reduce(function (a, p) { return a + dueAmt(p); }, 0) * 100) / 100 });
+  };
+  payState = function (p) {
+    const s = payState0(p);
+    return p && p.closed && !p.deferTo && !settled(p) ? Object.assign({}, s, { k: 'clrem', t: 'متبقٍّ — العقد مغلق', tone: 'warn', late: 0 }) : s;
+  };
+}
+/* v776: «دفعات العقود» في تقرير العميل — في الموعد · سُدّدت متأخرة · متأخرة (حتى 60 يومًا) · متعثرة (من 61) · على عقد مغلق · لم يحن */
+function tqnPayMeter(r, today) {
+  const n = function (f) { return r.cp.filter(f).length; }, od = function (x) { return cuDays(x.due, today); };
+  return [['سُدّدت في موعدها', n(function (x) { return x.ok && !(x.lt > 0); }), 'ok'],
+    ['سُدّدت متأخرة', n(function (x) { return x.ok && x.lt > 0; }), 'lp'],
+    ['متأخرة', n(function (x) { return !x.ok && !x.cl && x.due < today && od(x) <= LATE_MAX; }), 'warn'],
+    ['متعثرة', n(function (x) { return !x.ok && !x.cl && x.due < today && od(x) > LATE_MAX; }), 'danger'],
+    ['متبقٍّ على عقد مغلق', n(function (x) { return !x.ok && x.cl; }), 'navy'],
+    ['لم يحن موعدها', n(function (x) { return !x.ok && !x.cl && x.due >= today; }), 'none']]
+    .filter(function (x, i) { return x[1] > 0 || i === 0 || i === 5; });
+}
 function cInfo(c) {
   const total = c.payments.reduce(function (a, p) { return a + p.amount; }, 0);
   const done = c.payments.filter(settled);
@@ -9474,10 +9502,12 @@ function axMeter(parts, label) {
     e('div', { class: 'ax-mt-l' }, parts.map(function (x) { return e('span', {}, [e('i', { class: 'is-' + x[2], 'aria-hidden': 'true' }), x[0] + ' ', e('b', {}, fmtNum(x[1]))]); }))]);
 }
 const AX_MK = { ok: ['مسدّد', 'ok'], late: ['متأخر', 'warn'], bad: ['شيك مرتجع أو إحالة', 'danger'], up: ['لم يحن', 'info'], none: ['لا دفعات', 'none'] };
+/* v776: سجل الالتزام في staff/next يميّز الشهر الذي سُدّد فيه متأخرًا، ومتبقّي العقد المغلق (لا يُعدّ تأخرًا) */
+if (TQN) (function () { const o = { ok: AX_MK.ok, lp: ['سُدّد متأخرًا', 'lp'], late: AX_MK.late, cl: ['متبقٍّ على عقد مغلق', 'navy'], bad: AX_MK.bad, up: AX_MK.up, none: AX_MK.none }; Object.keys(AX_MK).forEach(function (k) { delete AX_MK[k]; }); Object.assign(AX_MK, o); })();
 function axMonths(r) {
-  const today = iso(T0), L = r.cp.map(function (x) { return [x.due, x.ok ? 'ok' : x.due < today ? 'late' : 'up']; }).concat(r.nsf.concat(r.ref).map(function (x) { return [x.due, 'bad']; }));
+  const today = iso(T0), L = r.cp.map(function (x) { return [x.due, x.ok ? (TQN && x.lt > 0 ? 'lp' : 'ok') : TQN && x.cl ? 'cl' : x.due < today ? 'late' : 'up']; }).concat(r.nsf.concat(r.ref).map(function (x) { return [x.due, 'bad']; }));
   return Array.from({ length: 12 }, function (_, i) { const m = iso(addMonths(T0, i - 11)).slice(0, 7), xs = L.filter(function (x) { return x[0].slice(0, 7) === m; }).map(function (x) { return x[1]; });
-    return { m: m.slice(5) + '/' + m.slice(0, 4), k: !xs.length ? 'none' : xs.indexOf('bad') >= 0 ? 'bad' : xs.indexOf('late') >= 0 ? 'late' : xs.indexOf('up') >= 0 ? 'up' : 'ok', n: xs.length }; });
+    return { m: m.slice(5) + '/' + m.slice(0, 4), k: !xs.length ? 'none' : xs.indexOf('bad') >= 0 ? 'bad' : xs.indexOf('late') >= 0 ? 'late' : xs.indexOf('cl') >= 0 ? 'cl' : xs.indexOf('lp') >= 0 ? 'lp' : xs.indexOf('up') >= 0 ? 'up' : 'ok', n: xs.length }; });
 }
 function axActs(r) {
   const L = [];
@@ -9537,9 +9567,9 @@ function axCrPage() {
   let body = [];
   if (tab === 'sum') body = [
     axKpis([['إجمالي قيمة العقود', sar(r.prod), '', 'files'], ['إجمالي المستلم (المدفوع)', sar(r.recv), 'ok', 'check-circle'], ['إجمالي المتبقي', sar(r.remain), 'warn', 'coins'], ['إجمالي المبالغ المحوَّلة', sar(r.tr), '', 'paper-plane-tilt']]),
-    axKpis([['المتأخر', sar(r.overdue), r.overdue ? 'danger' : '', 'alarm'], ['نسبة الانتظام في السداد', axPct(r.rate), r.rate !== null && r.rate < 80 ? 'warn' : 'ok', 'trend-up'], ['مستحق خلال شهر', sar(axSum(r.up, function (x) { return x.amt; })), '', 'calendar-check'], ['السندات القائمة والمحالة', sar(r.bLive), r.bLive ? 'warn' : '', 'gavel']]),
+    axKpis([['المتأخر', sar(r.overdue), r.overdue ? 'danger' : '', 'alarm'], ['نسبة الانتظام في السداد', axPct(r.rate), r.rate !== null && r.rate < 80 ? 'warn' : 'ok', 'trend-up'], ['مستحق خلال شهر', sar(axSum(r.up, function (x) { return x.amt; })), '', 'calendar-check'], ['السندات القائمة والمحالة', sar(r.bLive), r.bLive ? 'warn' : '', 'gavel']].concat(TQN && r.lpN ? [['دفعات سُدّدت متأخرة', fmtNum(r.lpN) + ' · أقصاها ' + fmtNum(r.lpMax) + ' يومًا', 'warn', 'clock']] : [], TQN && r.clRem ? [['متبقٍّ على عقد مغلق', sar(r.clRem), 'warn', 'lock']] : [])),
     axKpis([['إجمالي قيمة المنتجات', sar(r.fe.prod), '', 'storefront'], ['المحمَّل على العميل', sar(r.fe.chg), 'warn', 'coins'], ['منه الضريبة', sar(r.fe.vat), '', 'receipt'], ['صافي إيراد الرسوم', sar(r.fe.net), r.fe.net < 0 ? 'danger' : 'ok', 'trend-up']]),
-    e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'العقود'), e('div', { class: 'axc-cnt' }, [['العقود', r.ctN, ''], ['مسددة', r.ctDone, 'ok'], ['قائمة', r.ctAct, 'info'], ['متأخرة', r.ctLate, 'warn'], ['متعثرة', r.ctDef, 'danger']].map(function (x) { return e('div', { class: 'axc-c' + (x[2] ? ' is-' + x[2] : '') }, [e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })), e('small', { class: 'cu-dr-hint' }, 'المتأخرة والمتعثرة من ضمن القائمة. قيمة العقد = قيمة المنتج + الرسوم + الضريبة. عقد التأجيل لا يُضاف إلى قيمة العقود لأنه جزء من عقده الأصلي.')])];
+    e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'العقود'), e('div', { class: 'axc-cnt' }, [['العقود', r.ctN, ''], ['مسددة', r.ctDone, 'ok'], ['قائمة', r.ctAct, 'info'], ['متأخرة', r.ctLate, 'warn'], ['متعثرة', r.ctDef, 'danger']].concat(TQN && r.ctClRem ? [['مغلقة عليها متبقٍّ', r.ctClRem, 'navy']] : []).map(function (x) { return e('div', { class: 'axc-c' + (x[2] ? ' is-' + x[2] : '') }, [e('b', {}, fmtNum(x[1])), e('small', {}, x[0])]); })), e('small', { class: 'cu-dr-hint' }, 'المتأخرة والمتعثرة من ضمن القائمة. قيمة العقد = قيمة المنتج + الرسوم + الضريبة. عقد التأجيل لا يُضاف إلى قيمة العقود لأنه جزء من عقده الأصلي.')])];
   if (tab === 'ct') body = [e('div', { class: 'axc-grid' }, r.CT.map(axCtCard))];
   if (tab === 'trf') body = feeTrTab(r);
   if (tab === 'fee') body = feeTab(r);
@@ -9559,7 +9589,7 @@ function axCrPage() {
   if (tab === 'risk') { const M = axMonths(r), today = iso(T0);
     body = [e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'سجل الالتزام — آخر 12 شهرًا'), e('div', { class: 'axc-mo' }, M.map(function (x) { return e('div', { class: 'axc-m is-' + x.k, title: x.m + ': ' + AX_MK[x.k][0] }, [e('i', { 'aria-hidden': 'true' }), e('small', {}, x.m)]); })),
         e('div', { class: 'ax-mt-l' }, Object.keys(AX_MK).map(function (k) { return e('span', {}, [e('i', { class: 'is-' + (k === 'up' ? 'info' : k === 'bad' ? 'danger' : AX_MK[k][1]), 'aria-hidden': 'true' }), AX_MK[k][0]]); }))]),
-      e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'دفعات العقود'), axMeter([['مسددة', r.cp.filter(function (x) { return x.ok; }).length, 'ok'], ['متأخرة', r.cp.filter(function (x) { return !x.ok && x.due < today; }).length, 'warn'], ['لم يحن موعدها', r.cp.filter(function (x) { return !x.ok && x.due >= today; }).length, 'none']], 'دفعات العقود')]),
+      e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'دفعات العقود'), axMeter(TQN ? tqnPayMeter(r, today) : [['مسددة', r.cp.filter(function (x) { return x.ok; }).length, 'ok'], ['متأخرة', r.cp.filter(function (x) { return !x.ok && x.due < today; }).length, 'warn'], ['لم يحن موعدها', r.cp.filter(function (x) { return !x.ok && x.due >= today; }).length, 'none']], 'دفعات العقود')]),
       e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'عوامل المخاطرة — الدرجة تبدأ من 100 وتنقص بكل عامل'), r.F.length ? e('div', { class: 'axc-fx' }, r.F.map(function (x) { return e('div', {}, [e('span', {}, [x[0], e('small', {}, 'العدد ' + x[1])]), e('b', {}, fmtNum(x[2]))]); }).concat([e('div', { class: 'is-tot' }, [e('span', {}, 'الدرجة النهائية'), e('b', {}, fmtNum(r.score) + ' / 100 — مخاطرة ' + r.risk[0])])])) : e('small', { class: 'cu-dr-hint' }, 'لا عوامل مخاطرة — الدرجة 100.'),
         e('small', { class: 'cu-dr-hint' }, '80 فأعلى منخفضة · 60–79 متوسطة · 40–59 مرتفعة · أقل من 40 مرتفعة جدًا. الدرجة داخلية وليست تقييمًا من جهة ائتمانية.')])]; }
   if (tab === 'rec') { const R = axRecOf(r), sug = axRecSug(r);
@@ -24662,6 +24692,47 @@ if (LIVE.on) {
     return (AX_CTC[cid] = L.map(function (c) { return Object.assign(c, { k: axCtK(c.st), stT: c.st + (c.ld && c.st !== 'مكتمل' ? ' ' + dayWord(c.ld) : '') }); }));
   };
   cuBdCts = function (cid) { if (!cid) return []; return (cid === 'me' ? CONTRACTS : (LIVE_ADM.ct[cid] || [])).map(function (c) { return [c.no, c.no]; }); };
+  /* v776: تقرير العميل في staff/next — السداد المتأخر والتأخر والتعثر من الدفعات الفعلية:
+     · كل دفعة مسددة يُعرف تاريخ سدادها: سُدّدت بعد موعدها بكم يومًا (lt)، ودفعات العقد المغلق غير المسددة (cl) خارج التأخر.
+     · نسبة الانتظام = المسددة في موعدها ÷ المستحقة حتى اليوم (بلا دفعات العقد المغلق) — لا «المسددة» وحدها.
+     · العوامل: المسددة بعد تعثّرها (أكثر من 60 يومًا) والعقد المغلق عليه متبقٍّ تُنقص الدرجة وتجعل التصنيف «يحتاج متابعة». */
+  if (TQN) {
+    const axCts1 = axCts, axRep1 = axRep;
+    axCts = function (cid) {
+      const L = axCts1(cid);
+      L.forEach(function (c) {
+        if (c.__tq) return; c.__tq = 1;
+        const PL = (c.live && c.live.payments ? c.live.payments : []).filter(function (p) { return !p.deferTo; }), cl = c.k === 'clrem';
+        (c.pays || []).forEach(function (x, i) {
+          const p = PL[i];
+          if (cl && !x.ok) x.cl = 1;
+          if (p && x.ok && p.at && !p.noDate) { const d = daysBetween(p.due, p.at); if (d > 0) x.lt = d; }
+        });
+        c.clAmt = cl ? Math.max(0, c.rem || 0) : 0;
+      });
+      return L;
+    };
+    axRep = function (cid) {
+      const r = axRep1(cid), today = iso(T0);
+      const due = r.cp.filter(function (x) { return x.due < today && !x.cl; });
+      const onT = due.filter(function (x) { return x.ok && !(x.lt > 0); }).length;
+      const lp = r.cp.filter(function (x) { return x.ok && x.lt > 0; }), lp60 = lp.filter(function (x) { return x.lt > LATE_MAX; }).length;
+      r.dueN = due.length; r.okN = onT; r.rate = due.length ? Math.round(onT / due.length * 100) : null;
+      r.lpN = lp.length; r.lp60 = lp60; r.lpMax = lp.reduce(function (a, x) { return Math.max(a, x.lt); }, 0);
+      r.clRem = axSum(r.CT, function (c) { return c.clAmt || 0; });
+      r.up = r.up.filter(function (x) { return !x.cl; });
+      const F = r.F.filter(function (f) { return !/^نسبة الانتظام/.test(f[0]); });
+      const add = function (t, n, w) { if (n > 0) F.push([t, fmtNum(n), -n * w]); };
+      add('دفعات سُدّدت بعد تعثّرها (أكثر من 60 يومًا)', lp60, 5);
+      add('عقود مغلقة عليها متبقٍّ بانتظار القرار', r.ctClRem, 5);
+      if (r.rate !== null && r.rate < 80) F.push(['نسبة الانتظام في السداد أقل من 80%', fmtNum(r.rate) + '%', -Math.round((80 - r.rate) / 4)]);
+      r.F = F;
+      r.score = Math.max(0, Math.min(100, 100 + F.reduce(function (s, f) { return s + f[2]; }, 0)));
+      r.risk = r.score >= 80 ? ['منخفضة', 'ok'] : r.score >= 60 ? ['متوسطة', 'info'] : r.score >= 40 ? ['مرتفعة', 'warn'] : ['مرتفعة جدًا', 'danger'];
+      r.cls = r.ctDef || r.courtN || r.ref.length || r.score < 50 ? 'risk' : r.ctLate || r.nsf.length || r.grace.length || r.ctClRem || lp60 || r.score < 80 ? 'watch' : 'ok';
+      return r;
+    };
+  }
   /* تفاصيل العقد: الدفعات وطرق سدادها وإيصالاتها ومرفقات العقد (لا تفصيل رسوم تقديري) */
   dcPcOpen = function (cid, no) { const x = LIVE_ADM.rows[no]; if (x) admCtOpen(x); };
   /* السند: الحقول الأساسية من الترحيل للعرض، والحالة ومحكمة التنفيذ والإمهال والملاحظة تُحفظ في الخادم */
@@ -28221,14 +28292,14 @@ if (TQN) {
 function tqnCuK(r) {
   try {
     const L = ((LIVE_ADM.ct || {})[r.id] || []);
-    let tot = 0, paid = 0, rem = 0, late = 0, lateN = 0, nx = '', w = 0;
+    let tot = 0, paid = 0, rem = 0, late = 0, lateN = 0, nx = '', w = 0, cr = 0;
     L.forEach(function (c) {
       const f = ((LIVE_ADM.rows || {})[c.no] || {}).f; if (!f || c.mergedTo) return;
-      tot += f.total || 0; paid += f.paid || 0; rem += Math.max(0, f.remain || 0); late += f.lateSum || 0; lateN += (f.late || []).length;
+      tot += f.total || 0; paid += f.paid || 0; rem += Math.max(0, f.remain || 0); late += f.lateSum || 0; lateN += (f.late || []).length; cr += f.clRem || 0;
       const d = f.next ? tqnD10(f.next.due) : ''; if (d && (!nx || d < nx)) nx = d;
       const k = f.tone === 'danger' ? 3 : f.tone === 'warn' ? 2 : f.leftN ? 1 : 0; if (k > w) w = k;
     });
-    return JSON.stringify({ x: (function () { try { return (AX.tr || []).filter(function (t) { return t.cid === r.id; }).length; } catch (e) { return null; } })(), n: L.length, t: Math.round(tot), p: Math.round(paid), r: Math.round(rem), l: Math.round(late), ln: lateN, nx: nx, w: w, ph: r.phone || '' });
+    return JSON.stringify({ x: (function () { try { return (AX.tr || []).filter(function (t) { return t.cid === r.id; }).length; } catch (e) { return null; } })(), n: L.length, t: Math.round(tot), p: Math.round(paid), r: Math.round(rem), l: Math.round(late), ln: lateN, cr: Math.round(cr), nx: nx, w: w, ph: r.phone || '' });
   } catch (err) { return ''; }
 }
 function tqnTiles(T) { try { return JSON.stringify((T || []).map(function (t) { return [t[0], t[2], String(t[3] || ''), !!t[4], t[5] || '']; })); } catch (err) { return ''; } }
