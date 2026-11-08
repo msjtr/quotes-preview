@@ -9122,7 +9122,7 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .dc3.dc3 .d3-apw .tl-who small{font-size:10.5px;color:#2b4170;font-weight:700}
 .dc3.dc3 .d3-apw .tl-who b{font-size:15px;font-weight:800;color:#0b2552}
 .dc3.dc3.is-tl .d3-fb{height:auto;min-height:44px;padding-top:8px;padding-bottom:8px}
-.dc3.dc3 .d3-auto .tl-fi{display:flex;flex-wrap:wrap;align-items:center;gap:3px 18px;line-height:1.55}
+.dc3.dc3 .d3-auto .tl-fi{display:grid;grid-template-columns:repeat(2,max-content);align-items:center;justify-content:start;gap:3px 28px;line-height:1.55} /* v778: عمودان محاذيان */
 .dc3.dc3 .d3-auto .tl-fi>span{white-space:nowrap}
 .dc3.dc3 .d3-auto .tl-fi em{font-style:normal;color:#f2cf73;font-weight:700;margin-inline-end:2px}
 .dc3.dc3 .d2-brand p,.dc3.dc3 .d2-ttl small,.dc3.dc3 .d2-chip small,.dc3.dc3 .axp-t th,.dc3.dc3 .axp-k small,.dc3.dc3 .dc-to small,.dc3.dc3 .d3-exp span,.dc3.dc3 .d3-sign span,.dc3.dc3 .d3-kv th,.dc3.dc3 .d3-p6 th,.dc3.dc3 .d3-apw-c small,.dc3 .d3-sign-pad span,.dc3 .d3-sign-m small{color:#2b4170}
