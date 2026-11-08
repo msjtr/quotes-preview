@@ -2172,6 +2172,20 @@ function tqnPayMeter(r, today) {
     ['لم يحن موعدها', n(function (x) { return !x.ok && !x.cl && x.due >= today; }), 'none']]
     .filter(function (x, i) { return x[1] > 0 || i === 0 || i === 5; });
 }
+/* v781: بطاقة «كيف تُحسب الدرجة» في تقرير العميل (staff/next) — المكوّنات الأربعة بوزنها ونقاطها وسببها، ثم قرار المنصة وأسبابه */
+function tqnScoreCard(r) {
+  const tn = function (s) { return s >= 80 ? 'ok' : s >= 65 ? 'info' : s >= 50 ? 'warn' : 'danger'; };
+  return e('div', { class: 'ax-card tqn-sc' }, [
+    e('b', { class: 'ax-mt-t' }, 'كيف تُحسب الدرجة — أربعة مكوّنات موزونة من 100'),
+    e('div', { class: 'tqn-sc-l' }, r.SC.map(function (c) {
+      return e('div', { class: 'tqn-sc-r is-' + tn(c[3]) }, [
+        e('div', { class: 'tqn-sc-h' }, [e('span', {}, c[1]), e('small', {}, 'الوزن ' + fmtNum(c[2]) + '%'), e('b', {}, fmtNum(Math.round(c[2] * c[3] / 100)) + ' من ' + fmtNum(c[2]))]),
+        e('span', { class: 'tqn-sc-bar', 'aria-hidden': 'true' }, [e('i', { style: 'width:' + Math.max(2, c[3]) + '%' })]),
+        e('small', { class: 'tqn-sc-n' }, c[4])]);
+    }).concat([e('div', { class: 'tqn-sc-r is-tot is-' + tn(r.score) }, [e('div', { class: 'tqn-sc-h' }, [e('span', {}, 'الدرجة النهائية'), e('small', {}, 'مخاطرة ' + r.risk[0]), e('b', {}, fmtNum(r.score) + ' / 100')])])])),
+    e('div', { class: 'tqn-sc-d is-' + r.cls }, [e('b', {}, 'قرار المنصة: ' + AX_CLS[r.cls][0]), e('small', {}, r.why && r.why.length ? 'بقواعد مستقلة عن الدرجة — ' + r.why.join(' · ') : 'لا تأخر الآن ولا إجراءات، والدرجة 65 فأعلى')]),
+    e('small', { class: 'cu-dr-hint' }, 'المخاطرة: 80 فأعلى منخفضة · 65–79 متوسطة · 50–64 مرتفعة · أقل من 50 مرتفعة جدًا. سجل السداد لكل دفعة مستحقة: في موعدها 100٪ · تأخر 1–7 أيام 85٪ · 8–30 يومًا 65٪ · 31–60 يومًا 40٪ · بعد 60 يومًا 15٪ · غير مسددة 0، موزونة بمبلغ الدفعة، وما استُحق قبل 12 شهرًا بنصف الوزن. الدرجة داخلية وليست تقييمًا من جهة ائتمانية.')]);
+}
 function cInfo(c) {
   const total = c.payments.reduce(function (a, p) { return a + p.amount; }, 0);
   const done = c.payments.filter(settled);
@@ -9590,7 +9604,7 @@ function axCrPage() {
     body = [e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'سجل الالتزام — آخر 12 شهرًا'), e('div', { class: 'axc-mo' }, M.map(function (x) { return e('div', { class: 'axc-m is-' + x.k, title: x.m + ': ' + AX_MK[x.k][0] }, [e('i', { 'aria-hidden': 'true' }), e('small', {}, x.m)]); })),
         e('div', { class: 'ax-mt-l' }, Object.keys(AX_MK).map(function (k) { return e('span', {}, [e('i', { class: 'is-' + (k === 'up' ? 'info' : k === 'bad' ? 'danger' : AX_MK[k][1]), 'aria-hidden': 'true' }), AX_MK[k][0]]); }))]),
       e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'دفعات العقود'), axMeter(TQN ? tqnPayMeter(r, today) : [['مسددة', r.cp.filter(function (x) { return x.ok; }).length, 'ok'], ['متأخرة', r.cp.filter(function (x) { return !x.ok && x.due < today; }).length, 'warn'], ['لم يحن موعدها', r.cp.filter(function (x) { return !x.ok && x.due >= today; }).length, 'none']], 'دفعات العقود')]),
-      e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'عوامل المخاطرة — الدرجة تبدأ من 100 وتنقص بكل عامل'), r.F.length ? e('div', { class: 'axc-fx' }, r.F.map(function (x) { return e('div', {}, [e('span', {}, [x[0], e('small', {}, 'العدد ' + x[1])]), e('b', {}, fmtNum(x[2]))]); }).concat([e('div', { class: 'is-tot' }, [e('span', {}, 'الدرجة النهائية'), e('b', {}, fmtNum(r.score) + ' / 100 — مخاطرة ' + r.risk[0])])])) : e('small', { class: 'cu-dr-hint' }, 'لا عوامل مخاطرة — الدرجة 100.'),
+      TQN && r.SC ? tqnScoreCard(r) : e('div', { class: 'ax-card' }, [e('b', { class: 'ax-mt-t' }, 'عوامل المخاطرة — الدرجة تبدأ من 100 وتنقص بكل عامل'), r.F.length ? e('div', { class: 'axc-fx' }, r.F.map(function (x) { return e('div', {}, [e('span', {}, [x[0], e('small', {}, 'العدد ' + x[1])]), e('b', {}, fmtNum(x[2]))]); }).concat([e('div', { class: 'is-tot' }, [e('span', {}, 'الدرجة النهائية'), e('b', {}, fmtNum(r.score) + ' / 100 — مخاطرة ' + r.risk[0])])])) : e('small', { class: 'cu-dr-hint' }, 'لا عوامل مخاطرة — الدرجة 100.'),
         e('small', { class: 'cu-dr-hint' }, '80 فأعلى منخفضة · 60–79 متوسطة · 40–59 مرتفعة · أقل من 40 مرتفعة جدًا. الدرجة داخلية وليست تقييمًا من جهة ائتمانية.')])]; }
   if (tab === 'rec') { const R = axRecOf(r), sug = axRecSug(r);
     body = [e('div', { class: 'ax-card' }, [e('div', { class: 'ax-ind is-' + c0[1] }, [e('b', {}, [DS.badge('مقترح النظام', c0[1]), ' ' + axRecT(sug)]), e('span', {}, 'بناءً على التصنيف «' + c0[0] + '» والدرجة ' + fmtNum(r.score) + ' / 100')]),
@@ -24722,15 +24736,32 @@ if (LIVE.on) {
       r.lpN = lp.length; r.lp60 = lp60; r.lpMax = lp.reduce(function (a, x) { return Math.max(a, x.lt); }, 0);
       r.clRem = axSum(r.CT, function (c) { return c.clAmt || 0; });
       r.up = r.up.filter(function (x) { return !x.cl; });
-      const F = r.F.filter(function (f) { return !/^نسبة الانتظام/.test(f[0]); });
-      const add = function (t, n, w) { if (n > 0) F.push([t, fmtNum(n), -n * w]); };
-      add('دفعات سُدّدت بعد تعثّرها (أكثر من 60 يومًا)', lp60, 5);
-      add('عقود مغلقة عليها متبقٍّ بانتظار القرار', r.ctClRem, 5);
-      if (r.rate !== null && r.rate < 80) F.push(['نسبة الانتظام في السداد أقل من 80%', fmtNum(r.rate) + '%', -Math.round((80 - r.rate) / 4)]);
-      r.F = F;
-      r.score = Math.max(0, Math.min(100, 100 + F.reduce(function (s, f) { return s + f[2]; }, 0)));
-      r.risk = r.score >= 80 ? ['منخفضة', 'ok'] : r.score >= 60 ? ['متوسطة', 'info'] : r.score >= 40 ? ['مرتفعة', 'warn'] : ['مرتفعة جدًا', 'danger'];
-      r.cls = r.ctDef || r.courtN || r.ref.length || r.score < 50 ? 'risk' : r.ctLate || r.nsf.length || r.grace.length || r.ctClRem || lp60 || r.score < 80 ? 'watch' : 'ok';
+      /* v781: الدرجة مقياس من أربعة مكوّنات موزونة (من 100) بدل خصومات ثابتة — قرار المشرف العام «مقياس حقيقي»:
+         سجل السداد في الموعد 40 · الوضع الحالي 30 · إجراءات التحصيل والقانونية 20 · عمق العلاقة 10.
+         كل مكوّن من 0 إلى 100، والدرجة = مجموع (المكوّن × وزنه)، وقرار المنصة بقواعد مستقلة عن الدرجة. */
+      const yAgo = iso(addMonths(T0, -12)), unp = due.filter(function (x) { return !x.ok; }).length;
+      const lp60y = lp.filter(function (x) { return x.lt > LATE_MAX && x.due >= yAgo; }).length;
+      const pS = function (x) { if (!x.ok) return 0; const d = x.lt || 0; return d <= 0 ? 1 : d <= 7 ? 0.85 : d <= 30 ? 0.65 : d <= LATE_MAX ? 0.4 : 0.15; };
+      let wS = 0, wT = 0; due.forEach(function (x) { const w = (Number(x.amt) || 1) * (x.due >= yAgo ? 1 : 0.5); wT += w; wS += w * pS(x); });
+      const lim = !wT, A = lim ? 70 : Math.round(wS / wT * 100);
+      const maxLd = r.CT.reduce(function (a, c) { return c.k === 'late' || c.k === 'def' ? Math.max(a, c.ld || 0) : a; }, 0);
+      const B = r.ctDef ? 0 : r.ctLate ? Math.max(10, 70 - maxLd) : r.ctClRem ? 70 : 100;
+      const C = Math.max(0, 100 - 60 * r.courtN - 40 * r.ref.length - 30 * r.nsf.length - 10 * r.grace.length);
+      const D = Math.min(100, (r.ctDone >= 3 ? 100 : r.ctDone === 2 ? 80 : r.ctDone === 1 ? 65 : 40) + (due.length >= 12 ? 10 : 0));
+      const ev = [[r.courtN, 'سند محال لمحكمة التنفيذ'], [r.ref.length, 'دفعة محالة لجهات الاختصاص'], [r.nsf.length, 'شيك بلا رصيد'], [r.grace.length, 'إمهال تنفيذ ينتهي قريبًا']].filter(function (x) { return x[0] > 0; });
+      r.SC = [
+        ['pay', 'سجل السداد في الموعد', 40, A, lim ? 'لا دفعات مستحقة بعد — يُحتسب 70 مؤقتًا' : 'الدفعات المستحقة ' + fmtNum(due.length) + ': في موعدها ' + fmtNum(onT) + (lp.length ? ' · سُدّدت متأخرة ' + fmtNum(lp.length) + ' (أقصاها ' + fmtNum(r.lpMax) + ' يومًا)' : '') + (unp ? ' · غير مسددة ' + fmtNum(unp) : '')],
+        ['now', 'الوضع الحالي', 30, B, r.ctDef ? 'عقد متعثر — تأخر أكثر من 60 يومًا' : r.ctLate ? 'عقد متأخر ' + fmtNum(maxLd) + ' يومًا' : r.ctClRem ? 'متبقٍّ ' + sar(r.clRem) + ' على عقد مغلق بانتظار القرار' : 'لا مستحقات متأخرة الآن'],
+        ['legal', 'إجراءات التحصيل والقانونية', 20, C, ev.length ? ev.map(function (x) { return x[1] + ' ×' + fmtNum(x[0]); }).join(' · ') : 'لا إجراءات — والسندات القائمة ضمان لا تُنقص الدرجة'],
+        ['hist', 'عمق العلاقة', 10, D, 'العقود المكتملة ' + fmtNum(r.ctDone) + (due.length >= 12 ? ' · 12 دفعة مستحقة فأكثر' : '')]];
+      r.lim = lim;
+      r.F = r.SC.map(function (c) { return [c[1] + ' (الوزن ' + c[2] + '%)', fmtNum(c[3]) + ' / 100', -Math.round(c[2] * (100 - c[3]) / 100)]; }).filter(function (f) { return f[2] < 0; });
+      r.score = Math.max(0, Math.min(100, 100 + r.F.reduce(function (s, f) { return s + f[2]; }, 0)));
+      r.risk = r.score >= 80 ? ['منخفضة', 'ok'] : r.score >= 65 ? ['متوسطة', 'info'] : r.score >= 50 ? ['مرتفعة', 'warn'] : ['مرتفعة جدًا', 'danger'];
+      const hard = [[r.ctDef, 'عقد متعثر'], [r.courtN, 'سند محال لمحكمة التنفيذ'], [r.ref.length, 'دفعة محالة لجهات الاختصاص'], [r.score < 50, 'الدرجة أقل من 50']].filter(function (x) { return x[0]; });
+      const soft = [[r.ctLate, 'عقد متأخر'], [r.nsf.length, 'شيك بلا رصيد'], [r.grace.length, 'إمهال تنفيذ ينتهي قريبًا'], [r.ctClRem, 'متبقٍّ على عقد مغلق بانتظار القرار'], [lp60y, 'دفعة سُدّدت بعد تعثّرها خلال 12 شهرًا'], [r.score < 65, 'الدرجة أقل من 65']].filter(function (x) { return x[0]; });
+      r.cls = hard.length ? 'risk' : soft.length ? 'watch' : 'ok';
+      r.why = (hard.length ? hard : soft).map(function (x) { return x[1]; });
       return r;
     };
   }
