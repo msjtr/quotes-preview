@@ -9221,3 +9221,6 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .d3-cfs-sig img{max-width:240px;max-height:110px;object-fit:contain}
 .d3-cfs-sig .is-typed{font-size:22px;font-weight:800;color:#0b2552}
 .d3-cfs-sig small{font-size:10.5px;color:#0b2552}
+
+/* v798: العنوان الطويل في الترويسة (مثل «فاتورة سداد قيمة المنتج») أصغر قليلًا فلا يتداخل مع اسم المنصة */
+.dc3.dc3.dc3 .d3-ttl h1.is-long{font-size:20px!important;max-width:240px;line-height:1.3}

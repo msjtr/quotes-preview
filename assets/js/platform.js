@@ -20722,43 +20722,11 @@ function stlFlags(R) {
 }
 /* معاينة الإشعار للإدارة وحدها — للطباعة أو الحفظ PDF من المتصفح */
 function stlNotice(R, Q) {
-  try { if (R && R.items) { if (Q && Q.quote_no) { esxTplOf(Q.quote_no, 'adm').then(function (T) { try { dcPdf(dcSettleDoc(esFromR(R, Q), !Q, T)); } catch (x) { stlNotice0(R, Q); } }); return; } dcPdf(dcSettleDoc(esFromR(R, Q), !Q)); return; } } catch (err) { void err; } /* v735: نسخة القالب المحفوظة مع الفاتورة */
-  return stlNotice0(R, Q);
+  try { if (R && R.items) { if (Q && Q.quote_no) { esxTplOf(Q.quote_no, 'adm').then(function (T) { try { dcPdf(dcSettleDoc(esFromR(R, Q), !Q, T)); } catch (x) { stlNoticeFail(); } }); return; } dcPdf(dcSettleDoc(esFromR(R, Q), !Q)); return; } } catch (err) { void err; } /* v735: نسخة القالب المحفوظة مع الفاتورة */
+  return stlNoticeFail();
 }
-function stlNotice0(R, Q) {
-  const w = window.open('', '_blank'); if (!w) { snack('اسمح بالنوافذ المنبثقة لمعاينة الإشعار.'); return; }
-  const h = function (s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); };
-  const V = R.vat || {}, tr = function (a, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' + a.map(function (x, i) { return (i ? '<td>' : '<th>') + x + (i ? '</td>' : '</th>'); }).join('') + '</tr>'; };
-  const rows = R.items.map(function (it) { return tr([h(it.t) + ((it.why || []).length ? '<small>' + h(it.why.join(' · ')) + '</small>' : ''), stlN(it.before), Number(it.disc) ? '− ' + stlN(it.disc) : '—', stlN(it.after)]); }).join('')
-    + tr(['ضريبة المنتج', stlN(V.product_before), '', stlN(V.product_after)], 'v') + tr(['ضريبة الخدمات (الرسوم)', stlN(V.fees_before), '', stlN(V.fees_after)], 'v')
-    + (Number(R.residual) ? tr(['فرق التقريب', stlN(R.residual), '', stlN(R.residual)], 'v') : '') + tr(['الإجمالي', stlN(R.before), '− ' + stlN(R.discount), stlN(R.after)], 't');
-  const st = Q ? (STL_ST[Q.status] || [Q.status])[0] : 'معاينة — لم يُحفظ';
-  w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>فاتورة سداد قيمة المنتج ' + h(R.contract) + '</title><style>'
-    + '@page{size:A4;margin:14mm}body{font-family:"IBM Plex Sans Arabic","Alexandria",Tahoma,sans-serif;color:#0A1F44;margin:0;padding:24px;background:#fff}'
-    + '.hd{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0AA5AD;padding-bottom:12px}.hd img{height:46px}.hd h1{margin:0;font-size:22px}.hd small{display:block;color:#067A82}'
-    + '.wm{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:99px;background:#FFF4DC;color:#7a5200;font-size:12px}'
-    + '.mt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 16px;margin:16px 0}.mt div{border:1px solid #E2F4F5;border-radius:10px;padding:8px 10px}.mt span{display:block;font-size:11px;color:#5b6b85}.mt b{font-size:14px}'
-    + 'table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid #e5ecf2;text-align:start}td{text-align:end;white-space:nowrap}thead th{background:#0A1F44;color:#fff;font-weight:600}'
-    + 'th small{display:block;color:#067A82;font-weight:400;font-size:11px}tr.v th,tr.v td{color:#5b6b85}tr.t th,tr.t td{font-weight:700;background:#E2F4F5;border-top:2px solid #0AA5AD}'
-    + '.am{margin:18px 0;padding:14px;border-radius:14px;background:#0A1F44;color:#fff;display:flex;justify-content:space-between;align-items:center}.am b{font-size:24px;color:#FFC861}'
-    + '.ft{margin-top:16px;font-size:12px;color:#5b6b85;line-height:1.8}@media print{.np{display:none}}</style></head><body>'
-    + '<div class="hd"><div><h1>فاتورة سداد قيمة المنتج</h1><small>منصة تيرا</small><span class="wm">نسخة للإدارة — لا تُرسل للعميل في هذه المرحلة</span></div><img src="' + location.origin + '/logo-transparent.png" alt="تيرا"></div>'
-    + '<div class="mt"><div><span>العميل</span><b>' + h(R.client_name || '—') + '</b></div><div><span>العقد</span><b dir="ltr">' + h(R.contract) + '</b></div><div><span>رقم الفاتورة</span><b dir="ltr">' + h(Q ? Q.quote_no : '—') + '</b></div>'
-    + '<div><span>تاريخ السداد</span><b>' + h(R.date) + '</b></div><div><span>صالح حتى</span><b>' + h(Q ? Q.valid_until : '—') + '</b></div><div><span>الحالة</span><b>' + h(st) + '</b></div></div>'
-    + '<table><thead><tr><th>البند</th><td>المتبقي قبل</td><td>الخصم</td><td>بعد</td></tr></thead><tbody>' + rows + '</tbody></table>'
-    + '<div class="am"><span>مبلغ السداد المطلوب لإغلاق العقد</span><b>' + stlN(R.after) + ' ر.س</b></div>'
-    + '<div class="ft">المتبقي على العقد ' + stlN(R.before) + ' ر.س عن الدفعات ' + h((R.payments || []).map(function (p) { return p.seq; }).join('، ')) + '. '
-    + (Number(R.exempt_amount) ? 'يشمل الخصم إعفاءً من ربح ' + h(R.future_months) + ' أشهر لم تبدأ (' + stlN(R.exempt_amount) + ' ر.س). ' : '')
-    + 'القيم قبل الضريبة لكل بند، وضريبة المنتج وضريبة الخدمات منفصلتان وتُعاد بعد الخصم. المبلغ صالح حتى تاريخ الصلاحية ما لم تتغيّر دفعات العقد.</div>'
-    + '<p class="np"><button onclick="print()">طباعة / حفظ PDF</button></p></body></html>');
-  w.document.close();
-}
-/* ═════ v564: سداد قيمة المنتج — بنود الخصم المرنة · توقيع العميل بالتحقق · المستند والشهادة ═════ */
-try { Object.assign(ADM_ERR, { exc_fixed: 'الخصم الاستثنائي من البنود الثابتة في إعدادات سداد قيمة المنتج وحدها.', super_only: 'خصم العضوية والبنود الاستثنائية يحدّدها المشرف العام وحده.',
-  verify_required: 'الموافقة تتم بعد التحقق برمز والتوقيع.', accept_first: 'لم يوقّع العميل على الفاتورة بعد.' }); } catch (err) { void err; }
-const STL_F = { email_code: 'رمز عبر البريد الإلكتروني', whatsapp_code: 'رمز عبر واتساب', totp: 'تطبيق المصادقة', extra_code: 'الرمز الإضافي' };
-const STL_SM = { draw: 'رسم على الشاشة', type: 'كتابة الاسم', upload: 'صورة مرفقة' };
-/* بند الخصم كما يقرؤه المحرّك: «إعفاء كامل» = نسبة 100% */
+/* v798: لا قالب قديم احتياطي — إن تعذّر إنشاء الإشعار بالقالب الموحّد تظهر رسالة بدل نافذة التصميم القديم */
+function stlNoticeFail() { snack('تعذّر إنشاء الإشعار — أعد المحاولة بعد قليل.'); }
 function stlLn(l) {
   const full = l.calc === 'full';
   return { cat: l.cat, item: l.item, calc: full ? 'pct' : (l.calc || 'pct'), val: full ? 100 : (l.val === '' || l.val === undefined ? null : Number(l.val)),
@@ -20788,7 +20756,7 @@ async function stlNoticeQ(R, Q) {
     const L = esFromR(R, Q);
     if (L.sign && Q.client_sign && Q.client_sign.img) { const s = await admRpc('admin_settle_sign', { p_quote: Q.id }).catch(function () { return null; }); if (s && s.ok) L.sign.image = s.image; }
 dcPdf(dcSettleDoc(L, !Q, Q && Q.quote_no ? await esxTplOf(Q.quote_no, 'adm') : undefined)); /* v735 */
-  } catch (err) { stlNotice0(R, Q); }
+  } catch (err) { stlNoticeFail(); }
 }
 /* لوحة الرسم: عنصر واحد يبقى بين إعادات الرسم فلا يضيع التوقيع */
 function stlPad(F) {
