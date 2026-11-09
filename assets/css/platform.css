@@ -9187,3 +9187,18 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 @media (max-width:640px){.u3-top{flex-direction:column;align-items:stretch}.u3-ttl{align-items:flex-start;text-align:right}.u3-rows{grid-template-columns:1fr}.u3-logo{width:104px;height:48px}.u3-ttl h1{font-size:23px}}
 .u3-chip .d3-ic{flex:none;width:36px;height:36px;display:inline-flex}
 .u3-chip .d3-ic svg{width:36px;height:36px}
+
+/* v793: تنسيق الجداول — نمط عام أو لكل مستند (platform_settings: tbl). الافتراضي «خطوط أفقية» بلا خلفيات */
+.dc3{--tb-acc:#0b2552;--tb-line:#d5dbe8;--tb-zb:#f3f6fb}
+.dc3.tb-grid .d3-dt th,.dc3.tb-grid .d3-dt td,.dc3.tb-grid .d3-kv th,.dc3.tb-grid .d3-kv td{border:1px solid var(--tb-line)!important}
+.dc3.tb-min .d3-dt tbody td,.dc3.tb-min .d3-kv th,.dc3.tb-min .d3-kv td{border-color:transparent!important}
+.dc3.tb-min .d3-dt thead th{border-bottom:2px solid var(--tb-acc)!important}
+.dc3.tb-box .d3-card>.d3-dt,.dc3.tb-box .d3-card>.d3-kv{border:1.5px solid var(--tb-acc)!important;border-radius:10px;border-collapse:separate!important;border-spacing:0;overflow:hidden;margin:8px 10px!important;width:calc(100% - 20px)!important}
+.dc3.tb-head .d3-dt thead th{background:var(--tb-acc)!important;color:#fff!important;border-color:var(--tb-acc)!important}
+.dc3.tb-zebra .d3-dt tbody tr:nth-child(even) td,.dc3.tb-zebra .d3-kv tbody tr:nth-child(even) th,.dc3.tb-zebra .d3-kv tbody tr:nth-child(even) td{background:var(--tb-zb)!important}
+.dc3:not(.tb-lines):not(.tb-min) .d3-dt td,.dc3:not(.tb-lines):not(.tb-min) .d3-kv td{border-color:var(--tb-line)}
+.tb-demo{width:auto!important;height:auto!important;min-height:0!important;padding:10px!important;margin:6px 0!important;box-shadow:none!important;position:relative}
+.sig-padw{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sig-pad{width:100%;max-width:600px;height:auto;aspect-ratio:3/1;background:#fff;border:1.5px dashed #9fb0cc;border-radius:12px;touch-action:none;cursor:crosshair}
+.sig-cur{display:flex;flex-direction:column;gap:4px}.sig-cur img{max-width:300px;max-height:100px;background:#fff;border:1px solid #e3e8f2;border-radius:10px;padding:6px}
+.sig-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #eef1f7}.sig-row img{width:150px;height:50px;object-fit:contain;background:#fff;border:1px solid #e3e8f2;border-radius:8px}.sig-row small{display:block;color:#2b4170}
