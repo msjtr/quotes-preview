@@ -8037,7 +8037,7 @@ const CU_MG_GAPS = { new: ['حقول جديدة في المنصة', 'لم تكن
 const CU_MG_ST = { conf: ['تعارض هوية', 'danger'], new: ['بانتظار الإرسال', 'warn'], sent: ['بانتظار العميل', 'info'], pw: ['عيّن كلمة المرور', 'info'], sub: ['أرسل التحديث', 'ok'], done: ['موثَّق', 'ok'], out: ['مستبعَد', null] };
 const CU_MG_CH = [['both', 'واتساب والبريد'], ['wa', 'واتساب فقط'], ['mail', 'البريد فقط']];
 const CU_MG = [];
-const cuMgNew = ['الاسم بالإنجليزية', 'دولة الميلاد', 'الحي', 'جهة اتصال للطوارئ'];
+const cuMgNew = ['الاسم بالإنجليزية', 'الحي', 'جهة اتصال للطوارئ']; /* v797 */
 const CU_MG_L = [];
 /* ---------- v498: العملاء المنقولون (حساباتهم في المنصة نفسها) — من الخادم /admin/api/mig، والإرسال «محاكاة» حتى يُفعَّل بقرار الإدارة ---------- */
 const MIG2 = { st: 'idle', rows: null, mode: 'simulated', err: '', at: 0, pv: {} };
@@ -8291,7 +8291,7 @@ const MGR_DET = {};
 /* ملاحظة «متطلب تحديث» بجانب كل خانة — من نواقص الترحيل نفسها التي تُرسل للعميل */
 const MGR_ALIAS = { 'الاسم الكامل': 'الاسم', 'تاريخ انتهاء الهوية': 'انتهاء الهوية', 'رقم الهوية / الإقامة': 'رقم الهوية', 'رقم الآيبان': 'الآيبان', 'شهادة الآيبان': 'الآيبان', 'الحساب البنكي': 'الآيبان' };
 const MGR_NOTE = { old: ['ناقص — يُطلب', 'danger'], exp: ['منتهٍ — يُطلب تحديثه', 'warn'], fix: ['يحتاج تصحيحًا', 'warn'], new: ['حقل جديد — يُطلب', 'info'] };
-const MGR_NEWBLK = { 'الاسم بالإنجليزية': 'personal', 'مكان الميلاد': 'personal', 'دولة الميلاد': 'personal', 'منطقة الميلاد': 'personal', 'الحي': 'address', 'الشارع': 'address' };
+const MGR_NEWBLK = { 'الاسم بالإنجليزية': 'personal', 'الحي': 'address', 'الشارع': 'address' };
 function mgrNotes(g) { const N = {}; ['old', 'exp', 'fix', 'new'].forEach(function (k) { (g && Array.isArray(g[k]) ? g[k] : []).forEach(function (t) { const l = MGR_ALIAS[t] || t; if (!N[l]) N[l] = k; }); }); return N; }
 const mgrNoteB = (k) => k ? DS.badge(MGR_NOTE[k][0], MGR_NOTE[k][1]) : null;
 function mgrFieldSecs(x) {
@@ -14135,12 +14135,12 @@ function lvSum(label, pill, tone, extra) { return e('section', { class: 't2-sc i
 
 /* =============================== ملفي الشخصي =============================== */
 /* [مفتاح، الاسم، مطلوب، القيمة، خيارات التعديل] — بيانات تجريبية مجهّلة */
-/* أسماء الدول الرسمية كما في النظام السابق (V1): الجنسية ودولة الميلاد ودولة العنوان */
+/* أسماء الدول الرسمية كما في النظام السابق (V1): الجنسية ودولة العنوان */
 const NATS = ['المملكة العربية السعودية', 'الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', 'جمهورية مصر العربية'];
 const NATS_ADDR = ['المملكة العربية السعودية', 'دولة الإمارات العربية المتحدة', 'دولة الكويت', 'مملكة البحرين', 'دولة قطر', 'سلطنة عُمان', 'جمهورية مصر العربية'];
 const BANKS = ['البنك الأهلي السعودي', 'مصرف الراجحي', 'بنك الرياض', 'البنك السعودي الأول', 'بنك البلاد', 'بنك الجزيرة', 'مصرف الإنماء', 'البنك العربي الوطني'];
 const LVP = {
-  personal: { t: 'المعلومات الشخصية', ic: 'profile', k: 'me-personal', groups: [['المعلومات الأساسية', [['name_ar', 'الاسم الكامل بالعربية', 1, 'عميل تجريبي'], ['name_en', 'الاسم الكامل بالإنجليزية', 0, 'Demo Client'], ['nat', 'الجنسية', 1, 'المملكة العربية السعودية', NATS], ['dob', 'تاريخ الميلاد', 1, '1992-03-14', 'date'], ['pob', 'دولة الميلاد', 1, 'المملكة العربية السعودية', NATS], ['rob', 'منطقة الميلاد', 1, 'منطقة حائل', REGIONS]]],
+  personal: { t: 'المعلومات الشخصية', ic: 'profile', k: 'me-personal', groups: [['المعلومات الأساسية', [['name_ar', 'الاسم الكامل بالعربية', 1, 'عميل تجريبي'], ['name_en', 'الاسم الكامل بالإنجليزية', 0, 'Demo Client'], ['nat', 'الجنسية', 1, 'المملكة العربية السعودية', NATS], ['dob', 'تاريخ الميلاد', 1, '1992-03-14', 'date']]],
     ['الوثيقة', [['doc_type', 'نوع الوثيقة', 1, 'الهوية الوطنية', ['الهوية الوطنية', 'هوية مقيم', 'الهوية الخليجية', 'إثبات الهوية الوطنية', 'جواز السفر']], ['doc_no', 'رقم الوثيقة', 1, '1••• ••• •001'], ['doc_exp', 'تاريخ انتهاء الوثيقة', 1, '2030-05-20', 'date']]]] },
   address: { t: 'العنوان', ic: 'pin', k: 'me-address', groups: [['العنوان الوطني', [['country', 'الدولة', 1, 'المملكة العربية السعودية', NATS_ADDR], ['region', 'المنطقة', 0, 'منطقة حائل', REGIONS], ['city', 'المدينة', 1, 'حائل'], ['dist', 'الحي', 1, 'النقرة'], ['street', 'الشارع', 0, 'طريق الملك عبدالعزيز'], ['bno', 'رقم المبنى', 1, '4821'], ['zip', 'الرمز البريدي', 1, '55431'], ['ext', 'الرقم الإضافي', 1, '7316'], ['short', 'العنوان المختصر', 0, '']]]] },
   contact: { t: 'بيانات التواصل', ic: 'phone', k: 'me-contact', groups: [['التواصل المباشر', [['phone', 'رقم الجوال', 1, '+966 5•• ••• •100', null, ['غير موثّق', 'warn']], ['email', 'البريد الإلكتروني', 1, 'cl•••@example.com', null, ['غير موثّق', 'warn']]]]] },
@@ -15516,8 +15516,6 @@ const V1_FIELDS = [
     { kind: 'required_if', match: 'all', when: [v1W('residency_type', 'neq', 'saudi', 'personal'), v1W('residency_type', 'neq', 'resident', 'personal'), v1W('residency_type', 'neq', 'gcc', 'personal')], msg: 'الاسمُ بالإنجليزيةِ مطلوبٌ لغيرِ المقيمِ وحدَه.' }], { ltr: true }],
   ['personal', 'nationality', 'الجنسية', 'select', 1, 'المعلومات الأساسية', V1_NAT_L, []],
   ['personal', 'birth_date', 'تاريخ الميلاد', 'date', 1, 'المعلومات الأساسية', null, [{ kind: 'age', min: 18, max: 100, msg_min: 'العمرُ أقلُّ من 18 سنة.', msg_max: 'تاريخُ الميلاد غيرُ منطقي.' }]],
-  ['personal', 'birth_place', 'دولة الميلاد', 'select', 1, 'المعلومات الأساسية', V1_NAT_L, []],
-  ['personal', 'birth_region', 'منطقة الميلاد', 'select', 1, 'المعلومات الأساسية', V1_STATES[V1_KSA], [{ kind: 'visible_if', match: 'all', when: [v1W('birth_place', 'eq', V1_KSA, 'personal')] }]],
   ['personal', 'residency_type', 'نوع الإقامة', 'select', 1, 'الوثيقة', [['saudi', 'سعودي'], ['gcc', 'خليجي'], ['resident', 'مقيم'], ['non_resident', 'غير مقيم']], [
     { kind: 'allow_if', match: 'all', when: [v1W('nationality', 'eq', V1_KSA, 'personal')], values: ['saudi'], msg: 'الجنسيَّةُ السعوديَّةُ وثيقتُها الهُويَّةُ الوطنيَّة.' },
     { kind: 'allow_if', match: 'any', when: v1GCCW('eq'), values: ['gcc'], msg: 'مواطنو دولِ الخليجِ وثيقتُهم الهُويَّةُ الخليجيَّةُ أو جوازُ السفر.' },
@@ -15585,8 +15583,7 @@ const V1_FIELDS = [
 ].map(function (a) { return { f: a[0], k: a[1], id: a[0] + '.' + a[1], l: a[2], t: a[3], r: !!a[4], g: a[5], o: a[6], u: a[7] || [], x: a[8] || {} }; });
 const V1_BY = {}; V1_FIELDS.forEach(function (f) { V1_BY[f.id] = f; });
 /* نموذج تجريبي سعودي (بيانات توضيحية) */
-const V1_SEED = { 'personal.full_name': 'عميل تجريبي', 'personal.full_name_en': '', 'personal.nationality': V1_KSA, 'personal.birth_date': '1992-03-14', 'personal.birth_place': V1_KSA, 'personal.birth_region': 'منطقة حائل',
-  'personal.residency_type': 'saudi', 'personal.id_doc': 'national_id', 'personal.national_id': '1043918001', 'personal.id_expiry': '2030-05-20',
+const V1_SEED = { 'personal.full_name': 'عميل تجريبي', 'personal.full_name_en': '', 'personal.nationality': V1_KSA, 'personal.birth_date': '1992-03-14', 'personal.residency_type': 'saudi', 'personal.id_doc': 'national_id', 'personal.national_id': '1043918001', 'personal.id_expiry': '2030-05-20',
   'contact.country_code': '+966', 'contact.phone': '501234100', 'contact.email': 'client@example.com', 'contact.emg_name': '', 'contact.emg_country_code': '+966', 'contact.emg_phone': '',
   'address.country': V1_KSA, 'address.state': 'منطقة حائل', 'address.city': 'حائل', 'address.district': 'النقرة', 'address.street': 'طريق الملك عبدالعزيز', 'address.building_number': '4821', 'address.postal_code': '55431', 'address.additional_number': '7316', 'address.short_address': 'HAIL4821',
   'bank.payout_method': 'bank', 'bank.bank_name': 'البنك الأهلي السعودي', 'bank.iban': 'SA4480000123456789014417', 'bank.account_currency': 'ريال سعودي (SAR)',
@@ -24724,6 +24721,13 @@ U.vals = {}; U.stage = 'form'; U.ask = false; U.msg = 'تم التراجع — �
 } catch (err) { if (err && err.message === 'auth') { U.busy = false; return; } U.err = (err && err.message) || 'تعذّر التراجع.'; }
 U.busy = false; draw();
 }
+/* v797: خيارات الحقل في «تعديل بياناتي» حسب قواعد allow_if بالقيم الجارية في النموذج (LV.allowOpts)، وإن بقي خيار واحد يُختار تلقائيًا */
+function cfAllowed(k, f, cur, ALL) {
+  try { const LV = window.__LV || {}; if (!LV.allowOpts || !f.rules) return f.options;
+    const cv = {}; ALL.forEach(function (y) { cv[y.key] = cur(y); });
+    const L = LV.allowOpts(k, f.rules, f.allOptions || f.options, cv); return L && L.length ? L : f.options;
+  } catch (err) { void err; return f.options; }
+}
 function cfEditor(k, mig) {
 const LV = window.__LV || {};
 if (!LV.updFields || !LV.save) return [DS.note('warn', 'تعذّر تحميل أداة التعديل', 'أعد فتح الصفحة بعد قليل.')];
@@ -24752,7 +24756,8 @@ const v = cur(f), set = function (x) { U.vals[f.key] = x; U.msg = ''; };
     const sel = DS.select({ value: typing ? '__other' : v, options: [['', 'اختر']].concat(f.options).concat([['__other', 'أخرى']]), onChange: function (x) { if (x === '__other') { U.oth[f.key] = true; set(''); } else { U.oth[f.key] = false; set(x); } draw(); } });
     return typing ? e('div', { class: 't2-stack-tight' }, [sel, DS.input({ value: inL(v) ? '' : v, placeholder: 'اكتب الاسم', title: f.label, onInput: set })]) : sel;
   }
-  if (f.options) return DS.select({ value: v, options: [['', 'اختر']].concat(cfStr(v) && !f.options.some(function (o) { return o[0] === cfStr(v); }) ? [[cfStr(v), cfStr(v)]] : []).concat(f.options), onChange: function (x) { set(x); draw(); } });
+  if (f.options) { const fo = cfAllowed(k, f, cur, ALL); if (fo.length === 1 && cfStr(cur(f)) !== String(fo[0][0])) U.vals[f.key] = fo[0][0]; const v2 = cur(f); /* v797: الخيارات المسموحة فقط */
+    return DS.select({ value: v2, options: [['', 'اختر']].concat(cfStr(v2) && !fo.some(function (o) { return o[0] === cfStr(v2); }) ? [[cfStr(v2), cfStr(v2)]] : []).concat(fo), onChange: function (x) { set(x); draw(); } }); }
 if (f.kind === 'date') return DS.input({ type: 'date', value: v, title: f.label, onInput: function (x) { set(x); } });
 return DS.input({ value: v, dir: /phone|email|iban|number|postal|building|zip|short/.test(f.kind + ' ' + f.key) ? 'ltr' : null, onInput: set });
 };
@@ -25959,11 +25964,31 @@ function liveInput(f) {
 }
 /* v314: صفحة «طلب تحديث» للقسم بهوية العيّنة نفسها (updPage): مسار الاكتمال · ما الذي تريد تحديثه · الخريطة للعنوان · مراجعة التعديل · التحقق ثم الإرسال — بحقول القاعدة وقيمها */
 const LIVE_UPD = {};
+/* v797: قواعد allow_if من تعريف الحقل نفسه (كما يطبّقها الخادم) تحصر خيارات القائمة بحسب القيم الحالية —
+ * مثل: الجنسية السعودية وثيقتها «الهوية الوطنية» وحدها، فلا يختار العميل خيارًا يُرفض عند الحفظ ويبقى الحقل ناقصًا. */
+function lvRuleVal(form, field, cur) {
+  try { if (cur && Object.prototype.hasOwnProperty.call(cur, field)) return cur[field];
+    const d = LIVE_DATA.blocks && LIVE_DATA.blocks[form], f = d && Array.isArray(d.fields) ? d.fields.filter(function (x) { return x && x.key === field; })[0] : null;
+    return f ? f.value : ''; } catch (err) { void err; return ''; }
+}
+function lvAllowOpts(form, rules, ops, cur) {
+  if (!Array.isArray(ops) || !ops.length) return ops;
+  const R = Array.isArray(rules) ? rules : rules && Array.isArray(rules.list) ? rules.list : [];
+  const val = function (c) { const fm = c.form || form, x = lvRuleVal(fm, c.field, fm === form ? cur : null); return x === null || x === undefined || typeof x === 'object' ? '' : String(x).trim(); };
+  const ok = function (c) { if (!c || !c.field) return false; const v = val(c), w = c.value, L = Array.isArray(w) ? w.map(String) : null;
+    switch (c.op || 'eq') { case 'eq': return v === String(w); case 'neq': return v !== String(w); case 'in': return !!L && L.indexOf(v) >= 0; case 'not_in': case 'nin': return !L || L.indexOf(v) < 0;
+      case 'empty': return v === ''; case 'filled': case 'not_empty': return v !== ''; default: return false; } };
+  let o = ops;
+  R.forEach(function (r) { if (!r || r.kind !== 'allow_if' || !Array.isArray(r.values) || !Array.isArray(r.when) || !r.when.length) return;
+    if (!(r.match === 'any' ? r.when.some(ok) : r.when.every(ok))) return;
+    const vs = r.values.map(String), n = o.filter(function (x) { return vs.indexOf(String(x[0])) >= 0; }); if (n.length) o = n; });
+  return o;
+}
 function liveUpdFields(s) {
   const d = LIVE_DATA.blocks && LIVE_DATA.blocks[s];
   return (d && Array.isArray(d.fields) ? d.fields : []).filter(function (f) { return f && f.active !== false && f.kind !== 'file' && !f.readonly && !f.locked && !f.hidden; }).map(function (f) {
     const ops = Array.isArray(f.options) ? f.options.map(function (op) { return Array.isArray(op) ? [String(op[0]), String(op[1])] : op && op.value !== undefined ? [String(op.value), String(op.label || op.value)] : [String(op), String(op)]; }) : null;
-    return { key: f.key, label: f.label || f.key, required: !!f.required, kind: f.kind || 'text', other: !!f.allow_other, options: ops && ops.length ? ops : null, value: f.value === null || f.value === undefined || typeof f.value === 'object' ? '' : String(f.value) };
+    return { key: f.key, label: f.label || f.key, required: !!f.required, kind: f.kind || 'text', other: !!f.allow_other, options: ops && ops.length ? lvAllowOpts(s, f.rules, ops, null) : null, allOptions: ops && ops.length ? ops : null, rules: f.rules || null, /* v797 */ value: f.value === null || f.value === undefined || typeof f.value === 'object' ? '' : String(f.value) };
   });
 }
 /* v316: حفظ موقع العنوان (الإحداثيات والعنوان المختصر) في عناوين الحساب عبر الخادم — تحديث العنوان الأساسي بدل تكراره */
@@ -26023,7 +26048,7 @@ function liveUpdPage(s) {
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('مراجعة التعديل', { tone: 'primary', onClick: function () { if (!changes.length) { U.miss = true; draw(); return; } U.stage = 'review'; draw(); toTop(); } })),
         DS.button('تراجع', { onClick: function () { delete LIVE_UPD[s]; go('other', LVP[s].k); } })])]))])];
 }
-window.__LV = Object.assign(window.__LV || {}, { updFields: typeof liveUpdFields === 'function' ? liveUpdFields : null, save: typeof liveSaveBlock === 'function' ? liveSaveBlock : null, geoSave: typeof liveGeoSave === 'function' ? liveGeoSave : null, geoPick: typeof geoPick === 'function' ? geoPick : null, geoFill: typeof geoFill === 'function' ? geoFill : null, table: typeof lvTable === 'function' ? lvTable : null }); /* v507: لاستمارة ما قبل التدشين */
+window.__LV = Object.assign(window.__LV || {}, { updFields: typeof liveUpdFields === 'function' ? liveUpdFields : null, allowOpts: typeof lvAllowOpts === 'function' ? lvAllowOpts : null, save: typeof liveSaveBlock === 'function' ? liveSaveBlock : null, geoSave: typeof liveGeoSave === 'function' ? liveGeoSave : null, geoPick: typeof geoPick === 'function' ? geoPick : null, geoFill: typeof geoFill === 'function' ? geoFill : null, table: typeof lvTable === 'function' ? lvTable : null }); /* v507: لاستمارة ما قبل التدشين */
 function liveEditPanel(k) {
   const d = LIVE_DATA.blocks && LIVE_DATA.blocks[k], F = d && Array.isArray(d.fields) ? d.fields.filter(function (f) { return f && f.active !== false && f.kind !== 'file' && !f.readonly && !f.locked; }) : [];
   if (!F.length) return DS.note('info', 'لا حقول قابلة للتحديث في هذا القسم.', '');
