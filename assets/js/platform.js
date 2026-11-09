@@ -4153,7 +4153,7 @@ const paidOnTime = (p) => !!(p && !p.deferTo && p.paid >= p.amount && p.at && da
 function thanksCard(p, compact) {
   return e('article', { class: 'fx-thx' + (compact ? ' is-compact' : '') }, [
     e('div', { class: 'fx-thx-orn', 'aria-hidden': 'true' }),
-    e('header', { class: 'fx-thx-h' }, [e('img', { src: IMG.logo, alt: 'تيرا', class: 'fx-thx-logo' }), e('span', { class: 'fx-thx-seal' }, frag(tile('thanks')))]),
+    e('header', { class: 'fx-thx-h' }, [e('img', { src: ESX_LOGO0.src, alt: 'تيرا', class: 'fx-thx-logo' }), e('span', { class: 'fx-thx-seal' }, frag(tile('thanks')))]),
     e('span', { class: 'fx-thx-eye' }, 'رسالة شكر وتقدير'),
     e('h3', { class: 'fx-thx-t' }, THANKS.title),
     e('p', { class: 'fx-thx-to' }, ['عزيزنا ', e('b', {}, ME.name), '،']),
@@ -4181,28 +4181,32 @@ function thanksTemplates() {
     DS.note('info', 'متى تُرسل؟', 'تلقائيًا بعد كل سداد كامل في موعد الاستحقاق أو قبله، وبعد اعتماد التحويل البنكي إذا كان تاريخ التحويل في الموعد.')];
 }
 /* ===== إيصال السداد (مستند) ===== */
-function rcptPage() {
+function rcptPage() { /* v792: إيصال السداد في بوابة العميل بشكل القالب الموحّد — الترويسة والبطاقات والأيقونات نفسها في ملف PDF */
   const p = payById(FX.pid); if (!p || !p.rc) return [DS.note('info', 'لا يوجد إيصال', 'يصدر إيصال السداد بعد نجاح الدفع أو اعتماد التحويل.')];
-  const c = p.c, r = function (l, v) { return e('div', { class: 'fx-doc-r' }, [e('span', {}, l), e('b', {}, v)]); };
-  const rk = p.rc.kind || (isGw(p) ? 'gw' : 'tr');
-  const method = isGw(p) ? [e('h3', {}, 'بيانات الدفع عبر بوابة الدفع')].concat(gwView(p.gw).map(function (x) { return r(x[0], x[1]); }))
-    : rk === 'gw' ? [e('h3', {}, 'بيانات الدفع الإلكتروني'), r('طريقة السداد', 'سداد إلكتروني'), r('رقم العملية', p.txn ? ltr(p.txn) : '—'), r('تاريخ السداد', p.at ? isoT(p.at) : '—'), r('المبلغ', SR(p.paid))]
-    : rk === 'cash' ? [e('h3', {}, 'بيانات السداد'), r('طريقة السداد', 'نقدًا'), r('تاريخ السداد', isoT(p.at || p.rc.at)), r('المبلغ', SR(p.paid))]
-    : [e('h3', {}, 'بيانات التحويل البنكي')].concat(trView(p).map(function (x) { return r(x[0], x[1]); }));
-  return [e('article', { class: 'fx-doc' }, [
-    e('header', { class: 'fx-doc-h' }, [e('img', { src: IMG.logo, alt: 'تيرا', class: 'fx-doc-logo' }), e('div', {}, [e('h2', {}, 'إيصال سداد'), e('span', {}, 'Payment Receipt')]), e('div', { class: 'fx-doc-no' }, [e('small', {}, 'رقم الإيصال'), e('b', {}, ltr(p.rc.no)), e('small', {}, ['تاريخ الإصدار ', isoT(p.rc.at)])])]),
-    p.rc.void ? e('div', { class: 'fx-doc-void' }, [frag(ui('info', 16)), 'هذا الإيصال ملغى — ' + (p.refund && p.refund.kind === 'void' ? 'أُلغيت العملية' : 'استُرد المبلغ') + ' في ' + isoT(p.refund ? p.refund.at : T0) + ' بإشعار الاسترداد ', ltr(p.refund ? p.refund.no : '')]) : null,
-    e('div', { class: 'fx-doc-amt' }, [e('span', {}, 'المبلغ المسدَّد'), e('b', {}, [SAR(opAmt(p)), e('small', {}, ' ريال')]), e('i', { class: 'fx-doc-stamp' + (p.rc.void ? ' is-void' : '') }, p.rc.void ? (p.refund && p.refund.kind === 'void' ? 'ملغى' : 'مسترد') : 'مدفوع')]),
-    e('section', { class: 'fx-doc-s' }, [e('h3', {}, 'بيانات الدفعة'), r('العميل', ME.name), r('المنتج', c.product), r('رقم العقد', ltr(c.no)), r('رقم الدفعة', p.i + ' من ' + c.n), r('تاريخ الاستحقاق', isoT(p.due)), r('قيمة الدفعة', SR(p.amount)), r('المسدَّد', SR(opAmt(p))), r('المتبقي من الدفعة', SR(dueAmt(p)))]),
-    e('section', { class: 'fx-doc-s' }, method),
-    isGw(p) && gwFileRows(p.gw).length ? e('details', { class: 'fx-doc-s fx-doc-more' }, [e('summary', {}, ['كامل بيانات العملية كما في تقرير Paymob ', e('small', {}, '(' + fmtNum(gwFileRows(p.gw).length) + ' بندًا)')])]
-      .concat(gwFileRows(p.gw).map(function (x) { return r(x[0], x[1]); }))) : null,
-    p.refund ? e('section', { class: 'fx-doc-s is-rf' }, [e('h3', {}, p.refund.kind === 'void' ? 'بيانات الإلغاء' : 'بيانات الاسترداد'), r('رقم إشعار الاسترداد', ltr(p.refund.no)), r('رقم عملية الاسترداد (Paymob)', ltr(p.refund.txn)), r('المبلغ المسترد', SR(p.refund.amount)), r('تاريخ الاسترداد', isoT(p.refund.at)), r('يُعاد إلى', p.gw && p.gw.last4 ? ['البطاقة نفسها ', ltr('•••• ' + p.gw.last4)] : 'وسيلة الدفع نفسها')]) : null,
-    e('footer', { class: 'fx-doc-f' }, ['صادر إلكترونيًا من منصة تيرا ولا يحتاج إلى توقيع. ', isGw(p) ? ['المرجع لدى بوابة الدفع: ', ltr(p.gw.ref)] : rk === 'cash' ? ['رقم الإيصال: ', ltr(p.rc.no)] : [rk === 'gw' ? 'رقم العملية: ' : 'رقم العملية البنكي: ', ltr(p.txn || '—')]])]),
-    p.rc.live && p.pid ? lvDocActs(p.pid, 'receipt') : null,
-    paidOnTime(p) ? thanksCard(p) : null,
-    paidOnTime(p) && p.rc.live && p.pid ? lvDocActs(p.pid, 'thanks') : null,
-    rcOpReq(p)];
+  const c = p.c, rk = isGw(p) ? 'gw' : (p.rc.kind || 'tr'), vd = !!p.rc.void;
+  const r = function (x) { return x ? e('div', { class: 'u3-r' }, [e('span', {}, x[0]), e('b', {}, x[1])]) : null; };
+  const card = function (t, ic, rows, cls) { return d3Card(t, ic, [e('div', { class: 'u3-rows' }, rows.filter(Boolean).map(r))], cls); };
+  const chip = function (l, v, ic) { return e('div', { class: 'u3-chip' }, [e('span', { class: 'd3-ic' }, frag(d2Icon(ic || d2IcMeta(l)))), e('div', {}, [e('small', {}, l), e('b', {}, v)])]); };
+  const kind = { gw: 'سداد إلكتروني', tr: 'تحويل بنكي', cash: 'سداد نقدي' }[rk] || 'تحويل بنكي';
+  const pill = vd ? (p.refund && p.refund.kind === 'void' ? 'ملغى' : 'مسترد') : 'مدفوع';
+  const method = isGw(p) ? card('بيانات العملية', 'card', gwView(p.gw))
+    : rk === 'gw' ? card('بيانات العملية', 'card', [['رقم العملية', p.txn ? ltr(p.txn) : '—'], ['تاريخ السداد', p.at ? isoT(p.at) : '—'], ['المبلغ', SR(p.paid)]])
+    : rk === 'cash' ? card('بيانات الاستلام', 'card', [p.rc.cash ? ['رقم العملية النقدية', ltr(p.rc.cash)] : null, ['تاريخ الاستلام', isoT(p.at || p.rc.at)], ['المبلغ المستلم', SR(p.paid)]])
+    : card('بيانات التحويل وإثبات السداد', 'card', trView(p));
+  return [e('article', { class: 'u3-doc dc3' }, [
+    e('header', { class: 'u3-top' }, [e('div', { class: 'u3-brand' }, [e('span', { class: 'u3-logo' }, e('img', { src: ESX_LOGO0.src, alt: 'شعار منصة تيرا' })), e('div', {}, [e('h2', {}, 'منصة تيرا للخدمات المتكاملة'), e('em', {}, 'عالمك بلا حدود'), e('p', {}, 'قسم المالية')])]),
+      e('div', { class: 'u3-ttl' }, [e('small', {}, { gw: 'CARD PAYMENT RECEIPT', tr: 'BANK TRANSFER RECEIPT', cash: 'CASH PAYMENT RECEIPT' }[rk] || 'PAYMENT RECEIPT'), e('h1', {}, 'إيصال سداد'), e('em', { class: 'u3-kind' }, kind), e('span', { class: 'u3-pill' + (vd ? ' is-void' : '') }, pill)])]),
+    e('div', { class: 'u3-meta' }, [chip('رقم الإيصال', ltr(p.rc.no)), chip('تاريخ الإصدار', isoT(p.rc.at)), chip('المبلغ المقبوض', [SAR(opAmt(p)), ' ريال'], 'receipt')]),
+    vd ? e('div', { class: 'fx-doc-void' }, [frag(ui('info', 16)), 'هذا الإيصال ملغى — ' + (p.refund && p.refund.kind === 'void' ? 'أُلغيت العملية' : 'استُرد المبلغ') + ' في ' + isoT(p.refund ? p.refund.at : T0) + ' بإشعار الاسترداد ', ltr(p.refund ? p.refund.no : '')]) : null,
+    card('العميل والدفعة', 'user', [['اسم العميل', ME.name], ['المنتج', c.product], ['رقم العقد', ltr(c.no)], ['الدفعة', p.i + ' من ' + c.n], ['تاريخ الاستحقاق', isoT(p.due)], ['قيمة الدفعة', SR(p.amount)], ['المسدَّد', SR(opAmt(p))], ['المتبقي من الدفعة', SR(dueAmt(p))]]),
+    method,
+    isGw(p) && gwFileRows(p.gw).length ? e('details', { class: 'u3-more' }, [e('summary', {}, ['كامل بيانات العملية كما في تقرير بوابة الدفع ', e('small', {}, '(' + fmtNum(gwFileRows(p.gw).length) + ' بندًا)')]), e('div', { class: 'u3-rows' }, gwFileRows(p.gw).map(r))]) : null,
+    p.refund ? card(p.refund.kind === 'void' ? 'بيانات الإلغاء' : 'بيانات الاسترداد', 'info', [['رقم إشعار الاسترداد', ltr(p.refund.no)], ['رقم عملية الاسترداد', ltr(p.refund.txn)], ['المبلغ المسترد', SR(p.refund.amount)], ['تاريخ الاسترداد', isoT(p.refund.at)], ['يُعاد إلى', p.gw && p.gw.last4 ? ['البطاقة نفسها ', ltr('•••• ' + p.gw.last4)] : 'وسيلة الدفع نفسها']], 'is-rf') : null,
+    e('footer', { class: 'u3-foot' }, ['صادر إلكترونيًا من منصة تيرا ولا يحتاج إلى توقيع · ', isGw(p) ? ['المرجع لدى بوابة الدفع: ', ltr(p.gw.ref)] : rk === 'cash' ? ['رقم الإيصال: ', ltr(p.rc.no)] : [rk === 'gw' ? 'رقم العملية: ' : 'رقم العملية البنكي: ', ltr(p.txn || '—')]])]),
+  p.rc.live && p.pid ? lvDocActs(p.pid, 'receipt') : null,
+  paidOnTime(p) ? thanksCard(p) : null,
+  paidOnTime(p) && p.rc.live && p.pid ? lvDocActs(p.pid, 'thanks') : null,
+  rcOpReq(p)];
 }
 /* أسفل الإيصال: طلب على العملية نفسها — إلغاء العملية أو استرداد العملية، مع سبب الطلب (تراجعه الإدارة) */
 const OPK = { void: ['إلغاء العملية', 'x-circle:gold', 'قبل تسوية العملية لدى البنك — لا يظهر الخصم في كشفك أو يُعكس مباشرة.'], refund: ['استرداد العملية', 'payshield', 'بعد تسوية العملية — يُعاد المبلغ إلى وسيلة الدفع نفسها حسب إجراءات البنك.'] };
@@ -4797,7 +4801,7 @@ function qDocBase(q) {
   return e('article', { class: 'qd', 'aria-label': 'عرض سعر ' + q.no }, [stamp,
     /* الرأس الفاخر */
     e('header', { class: 'qd-hero' }, [
-      e('div', { class: 'qd-brand' }, [qHdr('logo') ? e('span', { class: 'qd-logo' }, e('img', { src: IMG.logo, alt: 'تيرا' })) : null, qHdr('org') ? e('div', {}, [e('b', {}, QTR.org), e('span', {}, QTR.issuer)]) : null]),
+      e('div', { class: 'qd-brand' }, [qHdr('logo') ? e('span', { class: 'qd-logo' }, e('img', { src: ESX_LOGO0.src, alt: 'تيرا' })) : null, qHdr('org') ? e('div', {}, [e('b', {}, QTR.org), e('span', {}, QTR.issuer)]) : null]),
       qHdr('title') ? e('div', { class: 'qd-title' }, [e('small', {}, 'QUOTATION'), e('h2', {}, 'عرض سعر'), e('span', {}, 'نسخة العميل')]) : null]),
     /* مقدَّم إلى + الإجمالي */
     e('section', { class: 'qd-to' }, [
@@ -10570,7 +10574,7 @@ function qtDoc(x) {
     const money = function (n) { return [e('b', {}, Number.isInteger(n) ? n.toLocaleString('en-US') : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })), e('small', {}, ' ريال')]; };
     const until = x.until instanceof Date ? x.until : parseIso(x.until); let n = 0;
     return e('article', { class: 'qd', 'aria-label': 'عرض سعر ' + x.no }, [
-      e('header', { class: 'qd-hero' }, [e('div', { class: 'qd-brand' }, [e('span', { class: 'qd-logo' }, e('img', { src: IMG.logo, alt: 'تيرا' })), e('div', {}, [e('b', {}, T.org), e('span', {}, T.issuer)])]),
+      e('header', { class: 'qd-hero' }, [e('div', { class: 'qd-brand' }, [e('span', { class: 'qd-logo' }, e('img', { src: ESX_LOGO0.src, alt: 'تيرا' })), e('div', {}, [e('b', {}, T.org), e('span', {}, T.issuer)])]),
         e('div', { class: 'qd-title' }, [e('small', {}, 'QUOTATION'), e('h2', {}, 'عرض سعر'), e('span', {}, 'نسخة العميل')])]),
       e('section', { class: 'qd-to' }, [e('div', { class: 'qd-to-c' }, [e('span', { class: 'qd-ic' }, frag(tile('profile'))), e('div', {}, [e('small', {}, 'مقدَّم إلى'), e('b', {}, x.to || ME.name), e('span', {}, ['بطلب رقم ', ltr(x.req), ' · ' + x.kind])])]),
         e('div', { class: 'qd-to-t' }, [e('small', {}, 'الإجمالي مع الضريبة'), e('div', { class: 'qd-to-v' }, money(total)), e('span', {}, fmtNum(x.lines.length) + (x.lines.length === 1 ? ' بند' : ' بنود'))])]),
@@ -22413,7 +22417,7 @@ function docxCore(H) {
     if (paid && C && S('status')) cards.push(dCard(T.tt.status, 'cal', dKV([
       ['قيمة العقد', sar(C.total), false], ['المسدَّد', sar(C.paid), false],
       ['المتبقي', sar(C.remain), false], ['الدفعات المسدَّدة', C.paidCnt + ' من ' + C.count, false],
-      S('next') && C.next ? ['تاريخ الدفعة القادمة', dmy(C.next.due), true] : null, S('next') && C.next ? ['قيمة الدفعة القادمة', sar(C.next.amount), false] : null,
+      S('next') && C.next ? (function (od) { return ['تاريخ الدفعة القادمة', dmy(C.next.due) + (od ? ' — متأخرة' : ''), !od]; })(String(C.next.due || '').slice(0, 10) < new Date(Date.now() + 108e5).toISOString().slice(0, 10)) : null /* v792: متأخرة إن مضى تاريخها */, S('next') && C.next ? ['قيمة الدفعة القادمة', sar(C.next.amount), false] : null,
       S('next') && !C.next ? ['الدفعة القادمة', 'لا يوجد — اكتمل السداد', false, null, true] : null
     ])));
     cards.push(H.appr(no));
@@ -22499,7 +22503,7 @@ function docxPv(pg) {
     const tp = document.createElement('template'); tp.innerHTML = h; if (tp.content.firstElementChild) B.push(tp.content.firstElementChild);
   });
   const meta = (pg.meta || []).filter(function (m) { return m && m[1] != null && String(m[1]) !== ''; }).map(function (m) { return [m[0], m[1], DOCX.isLtr(m[1]) ? undefined : false]; });
-  dcPdf({ dsn: 2, cls: 'is-docx', org: pg.org, issuer: pg.issuer, title: pg.title, kind2: pg.kind2, en: pg.en, pill: pg.pill, slogan0: 'عالمك بلا حدود', meta: meta, blocks: B,
+  dcPdf({ dsn: 2, cls: 'is-docx', label: pg.title || 'المستند', org: pg.org, issuer: pg.issuer, title: pg.title, kind2: pg.kind2, en: pg.en, pill: pg.pill, slogan0: 'عالمك بلا حدود', meta: meta, blocks: B,
     auto: pg.auto, slogan: (pg.org || 'منصة تيرا للخدمات المتكاملة') + ' · عالمك بلا حدود', fname: pg.title + ' — معاينة', draft: true });
 }
 /* بيانات المعاينة — نموذجية، لا تُقرأ من حساب عميل */
@@ -24290,7 +24294,7 @@ function liveContract(r) {
     else if (paid > 0 && !('receipt_no' in p)) q.rc = { no: 'RC-' + String(q.at.getFullYear()).slice(-2) + '-' + String(p.id || '').replace(/[^0-9a-f]/gi, '').slice(0, 8).toUpperCase(), file: 'receipt-' + no + '-' + (p.seq || i + 1) + '.pdf', at: q.at, void: false };
     /* v456: الإيصال برقمه الثابت من المنصة (stf_66) — يصدر لكل مبلغ مقبوض بعد اعتماده، وقالبه من طريقة السداد (بوابة · تحويل · نقدًا) */
     /* المسوّاة بالتوحيد أو التأجيل أو التسوية لا إيصال لها إلا لجزء نقدي قُبض قبلها */
-    if (p.receipt_no && paid > 0 && !(q.deferTo && !(paid < amt - 0.005))) q.rc = { no: p.receipt_group || p.receipt_no, file: (p.receipt_group || p.receipt_no) + '.pdf', /* v580: عملية غطّت عدة دفعات ← إيصال واحد (stf_147) */ at: parseIso(p.receipt_at) || q.at || due, void: false, kind: p.receipt_kind || 'tr', live: true };
+    if (p.receipt_no && paid > 0 && !(q.deferTo && !(paid < amt - 0.005))) q.rc = { no: p.receipt_group || p.receipt_no, file: (p.receipt_group || p.receipt_no) + '.pdf', /* v580: عملية غطّت عدة دفعات ← إيصال واحد (stf_147) */ at: parseIso(p.receipt_at) || q.at || due, void: false, kind: p.receipt_kind || 'tr', cash: p.cash_no || '', live: true };
   });
   c.n = c.payments.length; c.amount = c.n ? c.payments[0].amount : 0; c.start = c.n ? c.payments[0].due : c.req;
   return c;

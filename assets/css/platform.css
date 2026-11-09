@@ -9153,3 +9153,37 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .dc3.dc3 .d3-apw-c.is-seal>:first-child{width:100px!important;height:100px!important}
 .dc3.dc3 .d3-qr svg{width:78px!important;height:78px!important}
 .dc3.dc3 .d3-kv th,.dc3.dc3 .d3-kv td{padding-top:5px!important;padding-bottom:5px!important}
+
+/* v792: إيصال السداد في بوابة العميل بشكل القالب الموحّد — ورقة بيضاء ثابتة في الوضعين الفاتح والداكن */
+.u3-doc{background:#fff;border:1px solid #e3e8f2;border-radius:18px;overflow:hidden;color:#0b2552;max-width:880px;margin:0 auto 14px;box-sizing:border-box}
+.u3-doc *{box-sizing:border-box}
+.u3-top{background:linear-gradient(120deg,#0b1f5c,#16357f 55%,#0e4f7a);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;border-bottom:4px solid #d1a442}
+.u3-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.u3-logo{width:126px;height:58px;background:#fff;border-radius:13px;padding:6px 10px;display:flex;align-items:center;justify-content:center;border:2px solid #d1a442;flex:none}
+.u3-logo img{width:100%;height:100%;object-fit:contain}
+.u3-brand h2{margin:0;font-size:17px;font-weight:800;color:#fff;line-height:1.35}
+.u3-brand em{display:block;font-style:normal;color:#f2cf73;font-size:12px;font-weight:700}
+.u3-brand p{margin:2px 0 0;color:#fff;font-size:12px;font-weight:600}
+.u3-ttl{display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:left}
+.u3-ttl small{letter-spacing:2px;font-size:10px;color:#f2cf73;font-weight:800;direction:ltr}
+.u3-ttl h1{margin:0;font-size:27px;font-weight:900;color:#fff;line-height:1.2}
+.u3-kind{font-style:normal;color:#f2cf73;font-weight:800;font-size:15px}
+.u3-pill{background:linear-gradient(#f2cf73,#d1a442);color:#0b2552;border-radius:999px;padding:3px 16px;font-size:12px;font-weight:800;margin-top:3px}
+.u3-pill.is-void{background:#fff;color:#b42318}
+.u3-meta{display:flex;gap:10px;padding:14px 16px 2px;flex-wrap:wrap}
+.u3-chip{flex:1 1 170px;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #e3e8f2;border-top:3px solid #d1a442;border-radius:14px;padding:10px 12px;min-height:60px}
+.u3-chip>div{min-width:0}
+.u3-chip small{display:block;font-size:11px;color:#2b4170;font-weight:700}
+.u3-chip b{display:block;font-size:14px;font-weight:800;color:#0b2552;white-space:nowrap;unicode-bidi:isolate}
+.u3-doc .d3-card{margin:12px 16px 0;background:#fff}
+.u3-rows{display:grid;grid-template-columns:1fr 1fr}
+.u3-r{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 14px;border-bottom:1px solid #eef1f7;font-size:13px;min-width:0}
+.u3-r span{color:#2b4170;font-weight:700;flex:none}
+.u3-r b{font-weight:800;color:#0b2552;text-align:left;min-width:0;overflow-wrap:anywhere}
+.u3-more{margin:12px 16px 0;border:1px solid #e3e8f2;border-radius:14px;overflow:hidden}
+.u3-more summary{padding:10px 14px;font-weight:800;cursor:pointer}
+.u3-doc .fx-doc-void{margin:12px 16px 0}
+.u3-foot{margin-top:14px;background:linear-gradient(120deg,#0b1f5c,#0e4f7a);color:#fff;padding:11px 16px;font-size:12px;font-weight:700;text-align:center;line-height:1.7}
+@media (max-width:640px){.u3-top{flex-direction:column;align-items:stretch}.u3-ttl{align-items:flex-start;text-align:right}.u3-rows{grid-template-columns:1fr}.u3-logo{width:104px;height:48px}.u3-ttl h1{font-size:23px}}
+.u3-chip .d3-ic{flex:none;width:36px;height:36px;display:inline-flex}
+.u3-chip .d3-ic svg{width:36px;height:36px}
