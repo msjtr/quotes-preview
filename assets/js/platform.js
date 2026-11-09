@@ -18153,27 +18153,25 @@ function cfFinLoad(rid, force) {
     .catch(function (err) { S.st = 'err'; S.lerr = (err && err.message) || 'تعذّر التحميل.'; draw(); });
   return S;
 }
-function cfFinSigned(d) {
-  const g = d.sign || {}, D = g.doc || {}, cls = Array.isArray(D.clauses) ? D.clauses : [];
-  const money = (v) => (Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ريال';
-  const rows = [['رقم العقد', D.contract_no || d.contract_no || '—'], ['تاريخ العقد', D.date || '—'], ['اسم العميل', d.client || '—'], ['المنتج', D.product || '—'],
-    ['قيمة المنتج', money(D.product_value)], ['إجمالي العقد', money(D.total)], ['عدد الدفعات', D.n ? String(D.n) : '—']];
-  const sched = Array.isArray(D.sched) ? D.sched : [];
-  let sh = null;
-  sh = cuDrawer({ key: 'cf-fin-sg', ic: 'file-text', title: 'العقد الموقّع ' + (d.contract_no || ''), sub: 'كما وقّعه العميل من رابط «صدر عقدك» — للاطلاع فقط',
-    body: [
-      e('h3', { class: 'cu-ds-h' }, D.title || 'عقد بيع منتج بالدفعات'),
-      D.pre ? e('p', { class: 'cu-dr-hint', style: 'white-space:pre-line' }, D.pre) : null,
-      e('div', { class: 'fx-facts' }, [factGrp('بيانات العقد', rows)]),
-      sched.length ? factGrp('جدول الدفعات', sched.map(function (p) { return ['الدفعة ' + p.no + ' · ' + (p.due || ''), money(p.amount)]; })) : null,
-      cls.length ? e('h3', { class: 'cu-ds-h' }, 'بنود العقد') : null].concat(cls.map(function (c) { return e('div', { class: 'cu-mgr-doc' }, [e('span', { class: 'cu-mgr-doc-t' }, [e('b', {}, String(c[0] || '')), e('small', { style: 'white-space:pre-line' }, String(c[1] || ''))])]); }),
-      [D.sign ? e('p', { class: 'cu-dr-hint', style: 'white-space:pre-line' }, D.sign) : null,
-        e('h3', { class: 'cu-ds-h' }, 'التوقيع'),
-        e('div', { class: 'fx-facts' }, [factGrp('بيانات التوقيع', [['الاسم', g.name || '—'], ['الطريقة', CF_FIN_M[g.method] || g.method || '—'], ['وقت التوقيع', cfFinDt(g.signed_at)], ['التحقق', /email/.test(g.factor || '') ? 'رمز البريد' : /wa|whats/.test(g.factor || '') ? 'رمز واتساب' : (g.factor || '—')]])]),
-        /^data:image\/(png|jpeg);base64,/.test(g.image || '') ? e('div', { style: 'text-align:center;padding:12px;border:1px dashed var(--line,#ddd);border-radius:12px;background:#fff' }, [e('img', { src: g.image, alt: 'توقيع العميل', style: 'max-width:100%;max-height:160px' })])
-          : e('p', { style: 'text-align:center;font-size:22px;font-weight:800;padding:12px;border:1px dashed #ccc;border-radius:12px' }, g.name || '—'),
-        g.statement ? e('small', { class: 'cu-dr-hint' }, 'الإقرار: ' + g.statement) : null]),
-    foot: [DS.button('إغلاق', { onClick: function () { if (sh && sh.__close) sh.__close(); } })] });
+function cfFinSigned(d) { /* v796: العقد الموقّع بالقالب الموحّد (بدل الدرج) — من بيانات التوقيع المحفوظة نفسها، بلا تغيير عليها */
+  const g = d.sign || {}, D = g.doc || {}, cls = Array.isArray(D.clauses) ? D.clauses : [], sched = Array.isArray(D.sched) ? D.sched : [];
+  const money = function (v) { return (Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ريال'; };
+  const no = String(D.contract_no || d.contract_no || '—'), B = [];
+  const sdt = (function () { try { const t = new Date(g.signed_at); return isNaN(t) ? '—' : t.toLocaleString('en-CA', { timeZone: 'Asia/Riyadh', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ''); } catch (err) { return '—'; } })();
+  if (D.pre) B.push(e('p', { class: 'd3-cfs-p' }, String(D.pre)));
+  B.push(d3Card('بيانات العقد', 'file-text', [d3KV([['رقم العقد', no, true], ['تاريخ العقد', D.date || '—', true], ['اسم العميل', d.client || '—'], ['المنتج', D.product || '—'],
+    ['قيمة المنتج', money(D.product_value)], ['إجمالي العقد', money(D.total)], ['عدد الدفعات', D.n ? String(D.n) : '—']])]));
+  if (sched.length) B.push(d3DT('جدول الدفعات', 'calendar', ['الدفعة', 'تاريخ الاستحقاق', 'المبلغ'], sched.map(function (p) { return [String(p.no || ''), e('bdi', { dir: 'ltr' }, String(p.due || '')), money(p.amount)]; })));
+  for (let i = 0; i < cls.length; i += 4) B.push(d3Card(i ? 'بنود العقد (تابع)' : 'بنود العقد', 'list', cls.slice(i, i + 4).map(function (c) { return e('div', { class: 'd3-cfs-cl' }, [c[0] ? e('b', {}, String(c[0])) : null, e('p', {}, String(c[1] || ''))]); })));
+  if (D.sign) B.push(e('p', { class: 'd3-cfs-p' }, String(D.sign)));
+  const img = /^data:image\/(png|jpeg);base64,/.test(g.image || '');
+  const fac = /email/.test(g.factor || '') ? 'رمز البريد' : /wa|whats/.test(g.factor || '') ? 'رمز واتساب' : (g.factor || '—');
+  B.push(d3Card('توقيع العميل', 'pen', [e('div', { class: 'd3-cfs-sig' }, [img ? e('img', { src: g.image, alt: 'توقيع العميل' }) : e('b', { class: 'is-typed' }, g.name || '—'), img && g.name ? e('small', {}, g.name) : null]),
+    d3KV([['الاسم', g.name || '—'], ['طريقة التوقيع', CF_FIN_M[g.method] || g.method || '—'], ['وقت التوقيع', sdt, true], ['التحقق', fac]]),
+    g.statement ? e('p', { class: 'd3-cfs-p is-st' }, 'الإقرار: ' + g.statement) : null]));
+  try { B.push(d3ApprWide(no, 'ct', {})); } catch (err) { void err; }
+  dcPdf({ dsn: 2, cls: 'is-docx', label: 'العقد الموقّع ' + no, org: 'منصة تيرا للخدمات المتكاملة', title: D.title || 'عقد بيع منتج بالدفعات', kind2: 'نسخة موقّعة إلكترونيًا', en: 'SIGNED CONTRACT', pill: 'موقّع', slogan0: 'عالمك بلا حدود',
+    meta: [['رقم العقد', no], ['وقت التوقيع', sdt]], blocks: B, slogan: 'منصة تيرا للخدمات المتكاملة — عالمك بلا حدود' });
 }
 function cfFinal(c, x) {
   const r = (x && x.r) || {}, rid = r.id || c.rid, uid = r.user_id;
