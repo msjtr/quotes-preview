@@ -9202,3 +9202,12 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .sig-pad{width:100%;max-width:600px;height:auto;aspect-ratio:3/1;background:#fff;border:1.5px dashed #9fb0cc;border-radius:12px;touch-action:none;cursor:crosshair}
 .sig-cur{display:flex;flex-direction:column;gap:4px}.sig-cur img{max-width:300px;max-height:100px;background:#fff;border:1px solid #e3e8f2;border-radius:10px;padding:6px}
 .sig-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #eef1f7}.sig-row img{width:150px;height:50px;object-fit:contain;background:#fff;border:1px solid #e3e8f2;border-radius:8px}.sig-row small{display:block;color:#2b4170}
+
+/* v794: خانة التوقيع في الاعتماد أو بطاقة مستقلة */
+.dc3.dc3 .d3-apw-c.is-sig{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:150px}
+.dc3.dc3 .d3-sig-img{width:160px;height:56px;object-fit:contain}
+.dc3.dc3 .d3-apw-c.is-sig b{font-size:13px;color:#0b2552;font-weight:800}
+.dc3.dc3 .d3-apw-c.is-sig small{font-size:10.5px;color:#2b4170;font-weight:700}
+.dc3.dc3 .d3-sigbox{display:flex;justify-content:flex-start;padding:10px 18px}
+.dc3.dc3 .d3-sigwrap{display:flex;flex-direction:column;gap:12px}
+.sgn-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 14px;align-items:end;padding:12px 0;border-bottom:1px solid #eef1f7}.sgn-row>b{grid-column:1/-1;font-size:14px}

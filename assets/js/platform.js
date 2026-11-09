@@ -10934,7 +10934,7 @@ function dcPdf(o) {
   const wrap = e('div', { class: 'axp-pages' }), sizer = e('div', { class: 'axp-sizer' }, wrap), stage = e('div', { class: 'axp-stage' }, sizer);
   const root = e('div', { id: 'axp-root', dir: 'rtl', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'معاينة ' + o.label }, [e('div', { class: 'axp-bar' }, [e('b', {}, 'معاينة ' + o.label + (o.draft ? ' — قبل الإرسال' : '')), st, e('span', { class: 'axp-sp' }), dlBtn, prBtn, xBtn]), stage]);
   document.body.appendChild(root); document.body.classList.add('axp-on'); document.addEventListener('keydown', onKey, true);
-  D3_LK = (o && (o.lk || (o.d3 && o.d3.k) || o.stk)) || ''; o = d3Use(o); let pi = 0; const mk = function () { return d3Mk(o, pi++ === 0); };
+  try { if (!SIGS.at) sigLoad(); } catch (err) { void err; } D3_LK = (o && (o.lk || (o.d3 && o.d3.k) || o.stk)) || ''; o = d3Use(o); let pi = 0; const mk = function () { return d3Mk(o, pi++ === 0); };
   const mk0 = function () { const body = e('div', { class: 'axp-b' }), pg = e('span', {});
     const H = Object.assign({}, TQH0, o.hdr || {}), MK = ['no', 'date', 'client'];
     const page = e('div', { class: 'axp-page' + (o.draft ? ' is-draft' : '') + (o.cls ? ' ' + o.cls : '') }, [e('header', { class: 'axp-h' }, [H.logo ? e('img', { src: IMG.logo, alt: 'تيرا' }) : null, H.title || H.org ? e('div', { class: 'axp-ht' }, [H.title ? e('b', {}, o.title) : null, H.org ? e('small', {}, o.sub) : null]) : null,
@@ -11634,6 +11634,7 @@ function dsRegister() {
   lp('sys-tbl', 'تنسيق الجداول', 'sys', 'sys-tbl', tblPage);
   lp('sys-vf', 'صفحة التحقق', 'sys', 'sys-vf', vfPage);
   lp('sys-sig', 'التواقيع المعتمدة', 'sys', 'sys-sig', sigPage);
+  try { Object.assign(ICON, { 'me-sig': ['pen', 'gold'] }); } catch (err) { void err; } lp('me-sig', 'توقيعي المعتمد', 'profile', 'me-sig', sigPage); /* v794 */
 }
 /* مساعدات المستندات: الخصم والنقاط من نموذج الإصدار أو من المستند الصادر */
 const dsX = (D, base, Q) => { if (D) { const p = dsPack(D, base); return { disc: p.disc, ptsN: p.ptsN, pts: ptsVal(p.ptsN) }; } return { disc: (Q && Q.disc) || null, ptsN: (Q && Q.ptsN) || 0, pts: (Q && Q.pts) || 0 }; };
@@ -12734,7 +12735,8 @@ function d3WmSvg() {
     + '<circle cx="200" cy="200" r="58" fill="#0e1a4f"/><circle cx="200" cy="200" r="58" fill="none" stroke="#29c3c0" stroke-width="3"/><circle cx="200" cy="200" r="16" fill="#1b4f9c"/></svg>';
 }
 /* بطاقة الاعتماد بعرض الصفحة: رمز البيانات · الباركود · الختم */
-function d3ApprWide(seed, stk, sh) {
+function d3ApprWide(seed, stk, sh) { return sgnWrap(d3ApprWide0(seed, stk, sh), stk); } /* v794: التوقيع حسب إعداد القالب */
+function d3ApprWide0(seed, stk, sh) {
   const V = sh || {}, sOn = esxStOn(stk) && V.a_seal !== false;
   return esxStGapEl(d3Card('الاعتماد', 'award', [e('div', { class: 'd3-apw' }, [
     V.a_qr !== false ? e('div', { class: 'd3-apw-c' }, [e('div', { class: 'd3-qr' }, dcQr(seed)), e('small', {}, 'رمز بيانات المستند')]) : null,
@@ -12828,7 +12830,7 @@ function d3Line(o) {
   { const xe = [on('exec') && T.exec ? d3Card('مدة التنفيذ', 'clock', [e('div', { class: 'd3-exec' }, [e('b', {}, T.exec), T.execSub ? e('span', {}, T.execSub) : null])]) : null,
       on('note') && T.note ? d3Card('تنويه', 'info', [e('p', { class: 'd3-p' }, T.note)], 'is-note', true) : null].filter(Boolean);
     if (xe.length === 2) B.push(e('div', { class: 'd3-grid' }, xe.map(function (k) { return e('div', { class: 'd3-col' }, [k]); }))); else if (xe.length) B.push(xe[0]); }
-  if (on('appr')) B.push(d3ApprWide(x.no, X.k, sh));
+  if (on('appr')) B.push(d3ApprWide(x.req || x.no, X.k, sh)); /* v794: برقم الطلب المسجّل للتحقق */
   const m0 = o.meta || [];
   return Object.assign({}, o, { dsn: 2, cls: (o.cls ? o.cls + ' ' : '') + 'is-line', en: 'QUOTATION', slogan0: QT0.slogan, blocks: B, stk: null,
     meta: [m0[0], m0[1] ? ['تاريخ الإصدار', m0[1][1]] : null], meta3: X.until ? [['صالح حتى', qDmyD(X.until), false]] : [] });
@@ -12851,7 +12853,7 @@ function d3Si(o) {
     if (tOn) B.push(d3Card('الشروط', 'shield', [d3List(T.terms, 0, false), nOn ? e('p', { class: 'd3-p is-sm d3-note2' }, T.note) : null], 'is-terms'));
     else if (nOn) B.push(d3Card('ملاحظة', 'info', [e('p', { class: 'd3-p' }, T.note)], 'is-note', true)); }
   if (on('appr')) {
-    const ap = d3ApprWide(inv.no, 'si', { a_qr: sh.qr === false ? false : sh.a_qr, a_bar: sh.a_bar, a_seal: sh.a_seal });
+    const ap = d3ApprWide(inv.ref || inv.no, 'si', { a_qr: sh.qr === false ? false : sh.a_qr, a_bar: sh.a_bar, a_seal: sh.a_seal });
     const cap = ap.querySelector('.d3-apw-c:not(.is-bar):not(.is-seal) small'); if (cap) cap.textContent = 'رمز الفاتورة — معاينة حتى الربط مع «فاتورة»';
     B.push(ap);
   }
@@ -12958,8 +12960,33 @@ function sigPage() {
     DS.editField('ارسم التوقيع', e('div', { class: 'sig-padw' }, [pad, DS.button('مسح الرسم', { size: 'sm', onClick: function () { pad.getContext('2d').clearRect(0, 0, pad.width, pad.height); delete pad.dataset.ink; } })])), DS.editField('أو ارفع صورة التوقيع (PNG بخلفية شفافة أفضل)', file),
     e('div', { class: 'ax-top' }, [DS.button('حفظ التوقيع', { ui: 'check', onClick: save }), D.has ? DS.button('حذف توقيعي', { size: 'sm', onClick: del }) : null])]));
   else out.push(DS.note('warn', 'لا تملك صلاحية «توقيع المستندات»', 'اطلب من المشرف العام منح دورك هذه الصلاحية لتضيف توقيعك.'));
+  if (cuCan('settings.qtpl') && typeof S !== 'undefined' && S.other === 'sys-sig') out.push(sgnPanel()); /* v794 */
   if (all) out.push(DS.panel('التواقيع المحفوظة', fmtNum(SIGS.list.length) + ' توقيع', SIGS.list.length ? SIGS.list.map(function (s) { return e('div', { class: 'sig-row' }, [e('img', { src: s.img, alt: '' }), e('div', {}, [e('b', {}, s.name), e('small', {}, s.title || '—')])]); }) : [e('p', {}, 'لا توجد تواقيع بعد.')]));
   return out;
+}
+/* ═══ v794: التوقيع في كل القوالب — إظهار وإخفاء ومكان واسم الموقّع لكل مستند (platform_settings: sgn) ═══ */
+const SGN_POS = [['apr-end', 'داخل خانة الاعتماد — في آخرها'], ['apr-start', 'داخل خانة الاعتماد — في أولها'], ['card', 'بطاقة توقيع مستقلة قبل الاعتماد']];
+const SGN_DOCS = TB_DOCS.concat([['qv', 'عرض السعر القديم (/v1)']]);
+function sgnOfC(k) { const d = SGN.docs && SGN.docs[k]; if (!d || !d.on || SGN.on === false) return null; const s = SIGS.list.filter(function (x) { return x.user_id === d.uid; })[0] || null;
+  return { pos: d.pos || 'apr-end', label: d.label || 'التوقيع', name: d.name || (s && s.name) || '', title: d.title || (s && s.title) || '', img: s ? s.img : '' }; }
+function sgnCellC(g) { return e('div', { class: 'd3-apw-c is-sig' }, [g.img ? e('img', { class: 'd3-sig-img', src: g.img, alt: 'التوقيع' }) : e('i', { class: 'd3-sigln' }), g.name ? e('b', {}, g.name) : null, e('small', {}, g.label + (g.title ? ' — ' + g.title : ''))]); }
+function sgnWrap(el, k) {
+  try { if (!el || k === 'tl') return el; if (!SIGS.at) sigLoad(); const g = sgnOfC(k); if (!g) return el; const row = el.querySelector && el.querySelector('.d3-apw');
+    if (g.pos === 'card' || !row) return e('div', { class: 'd3-sigwrap' }, [d3Card(g.label, 'pen', [e('div', { class: 'd3-sigbox' }, [sgnCellC(g)])], 'is-sigc'), el]);
+    if (g.pos === 'apr-start') row.insertBefore(sgnCellC(g), row.firstChild); else row.appendChild(sgnCellC(g)); } catch (err) { void err; }
+  return el;
+}
+function sgnPanel() { /* «مكان التوقيع في القوالب» — في صفحة «التواقيع المعتمدة» من إعدادات النظام */
+  const D = ADM.sgnD || (ADM.sgnD = JSON.parse(JSON.stringify(SGN))); if (!D.docs) D.docs = {};
+  const opts = [['', 'بلا صورة — خط توقيع فارغ']].concat(SIGS.list.map(function (s) { return [s.user_id, s.name + (s.title ? ' — ' + s.title : '')]; }));
+  const rows = SGN_DOCS.map(function (d) { const c = D.docs[d[0]] || (D.docs[d[0]] = { on: d[0] === 'tl', uid: '', pos: 'apr-end', label: 'التوقيع', name: '', title: '' });
+    const on = e('input', { type: 'checkbox', 'aria-label': 'إظهار التوقيع في ' + d[1] }); on.checked = !!c.on; on.addEventListener('change', function () { c.on = on.checked; });
+    const inp = function (k, ph) { return DS.input({ value: c[k] || '', placeholder: ph, onInput: function (v) { c[k] = v; } }); };
+    return e('div', { class: 'sgn-row' }, [e('b', {}, d[1]), DS.editField('إظهار التوقيع', on), DS.editField('صاحب التوقيع', DS.select({ value: c.uid || '', options: opts, onChange: function (v) { c.uid = v; } })),
+      d[0] === 'tl' ? e('small', {}, 'الخطاب: التوقيع في سطر «اسم المسؤول» حسب المسؤول المختار في الخطاب') : DS.editField('مكان التوقيع', DS.select({ value: c.pos || 'apr-end', options: SGN_POS, onChange: function (v) { c.pos = v; } })),
+      DS.editField('عنوان الخانة', inp('label', 'التوقيع')), DS.editField('الاسم الظاهر (اختياري)', inp('name', 'من التوقيع المحفوظ')), DS.editField('الصفة الظاهرة (اختياري)', inp('title', 'من التوقيع المحفوظ'))]); });
+  const save = function () { const c = JSON.parse(JSON.stringify(D)); if (JSON.stringify(c) === JSON.stringify(SGN)) { snack('لا تغيير'); return; } Object.keys(SGN).forEach(function (k) { delete SGN[k]; }); Object.assign(SGN, c); ADM.sgnD = null; cuSetLog('عدّل مكان التوقيع في القوالب'); snack('حُفظ — يظهر التوقيع حسب إعداد كل قالب'); draw(); };
+  return DS.panel('مكان التوقيع في القوالب', 'لكل مستند: إظهار أو إخفاء، صاحب التوقيع، مكانه، والاسم والصفة الظاهران', rows.concat([e('div', { class: 'ax-top' }, [DS.button('حفظ مكان التوقيع', { ui: 'check', onClick: save })])]));
 }
 function d3Use(o) {
   const k = o.d3 && o.d3.k;
@@ -23099,10 +23126,10 @@ function tlPdfO() {
   });
   const seed = C.no || 'TL-DRAFT';
   const ap = d3ApprWide(seed, 'tl', { a_qr: sh.qr === false ? false : undefined, a_bar: C.no && sh.bar !== false ? undefined : false, a_seal: sh.seal === false ? false : undefined });
-  const row = ap.querySelector('.d3-apw'), sg2 = Object.assign({}, D.sign || TLT.sign || {}); if (!sg2.img && C.status === 'issued') { const sx = d3SigFor(sg2.n); if (sx) sg2.img = sx.img; } /* v793: التوقيع المعتمد للمسؤول في الخطاب الصادر */
+  const row = ap.querySelector('.d3-apw'), sg2 = Object.assign({}, D.sign || TLT.sign || {}); if (!sg2.img && C.status === 'issued') { const tc = SGN.docs && SGN.docs.tl; const sx = (tc && tc.uid && SIGS.list.filter(function (s) { return s.user_id === tc.uid; })[0]) || d3SigFor(sg2.n); if (sx) sg2.img = sx.img; } /* v793: التوقيع المعتمد للمسؤول في الخطاب الصادر */
   if (row) { /* v791: الاعتماد — اسم المسؤول وصفته · التوقيع · «تم الاعتماد» بالتاريخ والوقت، ثم الرمز والباركود والختم */ const iss = C.status === 'issued', at = iss && C.issued_at ? d3At(C.issued_at) : '';
     const who = e('div', { class: 'd3-who' }, [e('div', { class: 'd3-who-n' }, [e('small', {}, 'اسم المسؤول'), e('b', {}, sg2.n || '—'), sg2.t ? e('span', {}, sg2.t) : null]),
-      sh.sig === false ? null : e('div', { class: 'd3-who-s' }, [e('small', {}, 'التوقيع'), sg2.img ? e('img', { src: sg2.img, alt: 'التوقيع' }) : e('i', { class: 'd3-sigln' })]),
+      sh.sig === false || (SGN.docs && SGN.docs.tl && SGN.docs.tl.on === false) ? null : e('div', { class: 'd3-who-s' }, [e('small', {}, 'التوقيع'), sg2.img ? e('img', { src: sg2.img, alt: 'التوقيع' }) : e('i', { class: 'd3-sigln' })]),
       e('div', { class: 'd3-who-ok' + (iss ? '' : ' is-wait') }, [e('i', {}, iss ? '✓' : '…'), e('div', {}, [e('b', {}, iss ? 'تم الاعتماد' : 'بانتظار الاعتماد'), at ? e('span', {}, at) : null])])]);
     row.parentNode.insertBefore(who, row); }
   B.push(ap);
@@ -29203,6 +29230,10 @@ const VFS = { on: true, title: 'التحقق من المستند', intro: 'أد�
 LV_SETS.tbl = [function () { return JSON.parse(JSON.stringify(TBL)); }, function (v) { if (v && typeof v === 'object') { Object.keys(TBL).forEach(function (k) { delete TBL[k]; }); Object.assign(TBL, { preset: 'lines', acc: '#0b2552', line: '#d5dbe8', zb: '#f3f6fb', per: {} }, v); } }];
 LV_SETS.vf = [function () { return JSON.parse(JSON.stringify(VFS)); }, function (v) { if (v && typeof v === 'object') { const sh = Object.assign({}, VFS.show, v.show || {}); Object.assign(VFS, v, { show: sh }); } }];
 LV_SETP['sys-tbl'] = ['tbl']; LV_SETP['sys-vf'] = ['vf'];
+/* v794: مكان التوقيع في القوالب — platform_settings: sgn (db/stf_251) */
+const SGN = { on: true, docs: {} };
+LV_SETS.sgn = [function () { return JSON.parse(JSON.stringify(SGN)); }, function (v) { if (v && typeof v === 'object') { Object.keys(SGN).forEach(function (k) { delete SGN[k]; }); Object.assign(SGN, { on: true, docs: {} }, v); } }];
+LV_SETP['sys-sig'] = ['sgn'];
 /* v782: «معايير تقييم العملاء والأهلية» صفحة في إعدادات النظام (staff/next) — المفتاح cr بصلاحية system.settings (db/stf_247) */
 if (TQN) {
   LV_SETS.cr = [function () { return JSON.parse(JSON.stringify(TQN_CR)); }, function (v) { tqnCrSet(v); }];
