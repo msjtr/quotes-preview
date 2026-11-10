@@ -585,8 +585,9 @@ function geoQ() {
   soon();
 })();
 
-/* v804: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v805: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v805: إكمال قسم العملاء — «العضويات والنقاط» جدول ببطاقات مستوى تصفّي وسطر النقاط وبحث (بدل شبكة البطاقات)، والمستويات بالعربية وحدها، وبلا تكرار شارة المستوى في تفاصيل العضوية؛ «طلبات تحديث الملف» بطاقة مقارنة (البيان · الحالي · المطلوب) قبل الاعتماد أو الرفض؛ «تدشين الحساب» القيم الافتراضية سطر معلومات لا بطاقات بشكل المرشّحات؛ «العملاء الجدد» الجوال 05… وشرح التذكير سطر واحد؛ و«ر.س» تشمل تبويب «الطلبات» في الملف.
    · v804: مراجعة قسم العملاء — تبويبات العقد ستة بدل أحد عشر (التفاصيل والقيمة · الإيصالات مجمّعة)، بلا تكرار المتبقي ومسار السداد، والوصول السريع يعمل من أي تبويب، والتبويب الفرعي الافتراضي أول ما فيه عناصر، و«مركز الأمن» و«صفحة العميل» بطاقات مباشرة بلا شرائح «عنصر واحد»، و«منذ 0 يوم» ← «اليوم»، و«ريال» ← «ر.س» في ملف العميل.
    · v784: «التقرير الائتماني الخارجي» (مُلم) في طلب الأهلية — قراءة آلية للملف المرفق داخل المتصفح، ودرجة خارجية وقواعد أهلية وقدرة على السداد، ودمج مع سلوك العميل وتوصية استشارية.
    · v783: بطاقة «معايير تقييم العملاء والأهلية» في «إعدادات النظام ← قسم العملاء».
@@ -1258,9 +1259,15 @@ function geoQ() {
       var t = mk('span'); t.appendChild(mk('small', '', lb)); t.appendChild(mk('b', '', n || '0')); b.appendChild(t);
       b.addEventListener('click', function () { c.click(); soon(); }); sm.appendChild(b);
     });
-    (extra || []).forEach(function (x) { var d = mk('div', 'tqn-sm is-info'); d.appendChild(mk('i', '', x[2] || '★')); var t = mk('span'); t.appendChild(mk('small', '', x[0])); t.appendChild(mk('b', '', x[1])); d.appendChild(t); sm.appendChild(d); });
-    sm.style.setProperty('--n', String(chips.length + (extra || []).length));
+    /* v805: القيم الافتراضية ليست مرشّحات — سطر معلومات واحد تحت البطاقات لا بطاقات بنفس شكلها */
+    if ((extra || []).length) sm.appendChild(infoStrip(extra.title || 'الإعدادات الافتراضية', extra));
+    sm.style.setProperty('--n', String(chips.length));
     void IC; return sm;
+  }
+  function infoStrip(title, items) {
+    var d = mk('div', 'tqn-sdef'); d.appendChild(mk('span', 'tqn-sdef-t', title));
+    items.forEach(function (x) { var c = mk('span', 'tqn-sdef-i'); c.appendChild(mk('small', '', x[0])); c.appendChild(mk('b', '', x[1])); d.appendChild(c); });
+    return d;
   }
   function who(name, sub) { var w = mk('div', 'tqn-who'); w.appendChild(mk('i', '', String(name || '؟').replace(/[ﹰ-﻿]/g, function (ch) { return ch.normalize ? ch.normalize('NFKC') : ch; }).slice(0, 1))); var s = mk('span'); s.appendChild(mk('b', '', name || '—')); if (sub) s.appendChild(mk('small', '', sub)); w.appendChild(s); return w; }
   function axTable(L, k) {
@@ -1269,7 +1276,7 @@ function geoQ() {
     var chips = [].slice.call(L.querySelectorAll('.st-chip'));
     var list = rows.length ? rows[0].parentNode : null, tools = L.querySelector('.adm-tools, .ax-tools');
     var extra = [];
-    if (k === 'lch') [].forEach.call(L.querySelectorAll('.cu-kpi'), function (q) { var l = txt(q.querySelector('small')), v = txt(q.querySelector('b')); if (/الافتراضي|الافتراضية/.test(l)) extra.push([l, v, /نقاط/.test(l) ? '◆' : '♛']); });
+    if (k === 'lch') [].forEach.call(L.querySelectorAll('.cu-kpi'), function (q) { var l = txt(q.querySelector('small')), v = txt(q.querySelector('b')); if (/الافتراضي|الافتراضية/.test(l)) extra.push([l.replace(/\s*(الافتراضية|الافتراضي)$/, ''), v]); }); extra.title = 'عند التدشين افتراضيًا';
     var sig = k + '|' + rows.map(function (r) { return txt(r); }).join('|') + '#' + chips.map(function (c) { return txt(c) + (c.classList.contains('is-on') ? 1 : 0); }).join(',') + '#' + extra.join(',');
     /* v770: أرقام المنصة مكرّرة مع بطاقات الملخص التي تصفّي — تبقى البطاقات وحدها */
     if (k === 'req' && chips.length) [].forEach.call(L.querySelectorAll(':scope > .cu-kpis'), function (q) { cls(q, 'tqn-hide', true); });
@@ -1279,10 +1286,11 @@ function geoQ() {
     if (SM && SM.parentNode) SM.parentNode.removeChild(SM);
     W = mk('div', 'tqn-clw tqn-axw is-' + k); W.__sig = sig;
     if (chips.length && tools) { SM = sumTiles(chips, extra); cls(SM, 'tqn-axs', true); tools.parentNode.insertBefore(SM, tools); L.__tqnSm = SM; [].forEach.call(L.querySelectorAll('.st-chips-w'), function (x) { cls(x, 'tqn-hide', true); }); }
-    var T = mk('div', 'tqn-lt is-' + k);
+    var T = mk('div', k === 'req' ? 'tqn-rqs' : 'tqn-lt is-' + k);
     var H = k === 'vr' ? ['صاحب الملف', 'النوع', 'الحالة', 'أُرسل', 'البنود', 'المسؤول', ''] : k === 'req' ? ['العميل', 'القسم', 'ما عدّله العميل', 'التاريخ', 'الحالة', 'القرار'] : ['العميل', 'الحالة', 'المستوى', 'النقاط', 'تاريخ التدشين', ''];
-    var hr = mk('div', 'tqn-ar is-h'); H.forEach(function (h) { hr.appendChild(mk('span', '', h)); }); T.appendChild(hr);
+    var hr = mk('div', 'tqn-ar is-h'); H.forEach(function (h) { hr.appendChild(mk('span', '', h)); }); if (k !== 'req') T.appendChild(hr);
     rows.forEach(function (r) {
+      if (k === 'req') { T.appendChild(reqCard(r, L)); return; }
       var go = r.querySelector('.nr-main') || r, x = mk('div', 'tqn-ar'); x.setAttribute('role', 'button'); x.tabIndex = 0;
       if (k === 'vr') {
         var F = {}; [].forEach.call(r.querySelectorAll('.adm-cm-i'), function (i) { F[txt(i.querySelector('small'))] = i.querySelector(':scope > span'); });
@@ -1298,23 +1306,6 @@ function geoQ() {
         var mb = mk('span', 'tqn-mb is-3'); [[ok, 'm'], [bad, 'x'], [pd, 'p']].forEach(function (s) { if (!all || !s[0]) return; var i = mk('i', 'is-' + s[1]); i.style.width = (s[0] / all * 100) + '%'; mb.appendChild(i); }); pc.appendChild(mb);
         x.appendChild(pc);
         var ow = txt(F['المسؤول']); x.appendChild(mk('span', 'tqn-ow' + (/غير مُسند|غير مسند/.test(ow) ? ' is-mut' : ''), ow || '—'));
-      } else if (k === 'req') {
-        var Q = {}; [].forEach.call(r.querySelectorAll('.adm-cm-i'), function (i) { Q[txt(i.querySelector('small'))] = i.querySelector(':scope > span'); });
-        x.appendChild(who(txt(r.querySelector('.adm-nm') || r.querySelector('.adm-ct')), txt(r.querySelector('.adm-nm + small, .adm-ct small'))));
-        x.appendChild(mk('span', 'tqn-chip is-done', txt(Q['القسم']) || '—'));
-        var fl = mk('div', 'tqn-flds'); (txt(Q['التغيير']) || '').split(/[،,]/).map(function (z) { return z.trim(); }).filter(Boolean).forEach(function (z) { fl.appendChild(mk('span', '', z)); }); if (!fl.children.length) fl.appendChild(mk('span', 'is-mut', '—')); x.appendChild(fl);
-        x.appendChild(mk('bdi', 'tqn-dt', txt(Q['التاريخ']) || '—'));
-        var sq = Q['الحالة'] && Q['الحالة'].querySelector('.t2-pill'); x.appendChild(sq ? chipOf(sq) : mk('span', '', txt(Q['الحالة']) || '—'));
-        /* القرار: أزرار المنصة نفسها (تُضغط عند الطلب من الصف الحالي في القائمة الأصلية) */
-        var dc = mk('div', 'tqn-acts'), rk = txt(r.querySelector('.ax-r-b')) + '|' + txt(Q['التاريخ']);
-        [].forEach.call(Q['القرار'] ? Q['القرار'].querySelectorAll('button') : [], function (pb) {
-          var lb = txt(pb); dc.appendChild(btn(lb, /اعتماد/.test(lb) ? 'is-pri is-sm' : 'is-sm is-no', function () {
-            var cur0 = [].filter.call(L.querySelectorAll('article.cu-bd-r'), function (a) { var A = {}; [].forEach.call(a.querySelectorAll('.adm-cm-i'), function (i) { A[txt(i.querySelector('small'))] = txt(i.querySelector(':scope > span')); }); return txt(a.querySelector('.ax-r-b')) + '|' + (A['التاريخ'] || '') === rk; })[0];
-            var b0 = cur0 && [].filter.call(cur0.querySelectorAll('button'), function (q) { return txt(q) === lb; })[0]; if (b0) b0.click();
-          }));
-        });
-        if (!dc.children.length) dc.appendChild(mk('span', 'is-mut', '—'));
-        x.appendChild(dc); x.removeAttribute('role'); x.tabIndex = -1; x.__noGo = 1;
       } else {
         var nm = txt(r.querySelector('.ax-r-b > b')), ln = txt(r.querySelector('.ax-r-b > span'));
         var pr = ln.split('—'), id = (pr[1] || '').trim(), tk = (pr[0] || '').split('·').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -1339,6 +1330,39 @@ function geoQ() {
     /* لوحة المنصة: عنوانها مكرّر مع عنوان الصفحة */
     var ph = L.querySelector('.t2-panel > .t2-panel-h'); cls(ph, 'tqn-hide', !!ph);
   }
+  /* v805: طلب تحديث الملف بطاقةً — البيان والقيمة الحالية والمطلوبة جنبًا إلى جنب قبل الاعتماد أو الرفض */
+  function reqCard(r, L) {
+    var Q = {}; [].forEach.call(r.querySelectorAll('.adm-cm-i'), function (i) { Q[txt(i.querySelector('small'))] = i.querySelector(':scope > span'); });
+    var c = mk('article', 'tqn-rq'), h = mk('div', 'tqn-rq-h');
+    h.appendChild(who(txt(r.querySelector('.adm-nm b') || r.querySelector('.adm-nm') || r.querySelector('.adm-ct')), txt(r.querySelector('.adm-nm small, .adm-ct small'))));
+    var mt = mk('div', 'tqn-rq-m');
+    mt.appendChild(mk('span', 'tqn-chip is-done', txt(Q['القسم']) || '—'));
+    mt.appendChild(mk('bdi', 'tqn-dt', txt(Q['التاريخ']) || '—'));
+    var sq = Q['الحالة'] && Q['الحالة'].querySelector('.t2-pill'); mt.appendChild(sq ? chipOf(sq) : mk('span', 'tqn-chip', txt(Q['الحالة']) || '—'));
+    h.appendChild(mt); c.appendChild(h);
+    var P = Q['التغيير'] ? [].slice.call(Q['التغيير'].querySelectorAll('.tqn-pfch > span')) : [];
+    if (P.length) {
+      var g = mk('div', 'tqn-cmp'), hr = mk('div', 'tqn-cmp-r is-h'); ['البيان', 'الحالي', 'المطلوب'].forEach(function (t) { hr.appendChild(mk('span', '', t)); }); g.appendChild(hr);
+      P.forEach(function (p) {
+        var b0 = p.getAttribute('data-b') || '—', a0 = p.getAttribute('data-a') || '—', w = mk('div', 'tqn-cmp-r' + (b0 === a0 ? ' is-same' : ''));
+        w.appendChild(mk('b', '', txt(p))); w.appendChild(mk('bdi', 'is-old', b0)); w.appendChild(mk('bdi', 'is-new', a0)); g.appendChild(w);
+      });
+      c.appendChild(g);
+    } else {
+      var fl = mk('div', 'tqn-flds'); (txt(Q['التغيير']) || '').split(/[،,]/).map(function (z) { return z.trim(); }).filter(Boolean).forEach(function (z) { fl.appendChild(mk('span', '', z)); }); if (!fl.children.length) fl.appendChild(mk('span', 'is-mut', '—')); c.appendChild(fl);
+    }
+    /* القرار: أزرار المنصة نفسها (تُضغط عند الطلب من الصف الحالي في القائمة الأصلية) */
+    var dc = mk('div', 'tqn-acts'), rk = txt(r.querySelector('.ax-r-b')) + '|' + txt(Q['التاريخ']);
+    [].forEach.call(Q['القرار'] ? Q['القرار'].querySelectorAll('button') : [], function (pb) {
+      var lb = txt(pb); dc.appendChild(btn(lb, /اعتماد/.test(lb) ? 'is-pri' : 'is-no', function () {
+        var cur0 = [].filter.call(L.querySelectorAll('article.cu-bd-r'), function (a) { var A = {}; [].forEach.call(a.querySelectorAll('.adm-cm-i'), function (i) { A[txt(i.querySelector('small'))] = txt(i.querySelector(':scope > span')); }); return txt(a.querySelector('.ax-r-b')) + '|' + (A['التاريخ'] || '') === rk; })[0];
+        var b0 = cur0 && [].filter.call(cur0.querySelectorAll('button'), function (q) { return txt(q) === lb; })[0]; if (b0) b0.click();
+      }));
+    });
+    if (!dc.children.length) { var sm0 = txt(r.querySelector('.adm-nm small')); if (sm0) dc.appendChild(mk('span', 'is-mut', sm0)); }
+    if (dc.children.length) c.appendChild(dc);
+    return c;
+  }
   /* العملاء الجدد: مسار المرحلة · شريط التذكير والتصفية · أرقام · جدول بمتابعة كل عميل */
   function newClients(L) {
     cls(L, 'tqn-ncp', true);
@@ -1356,6 +1380,9 @@ function geoQ() {
     if (rem) {
       cls(rem, 'tqn-nc-rem', true);
       var nt = rem.querySelector(':scope > .t2-note'), tt = nt && nt.querySelector('.t2-note-t');
+      /* v805: الشرح سطر واحد بلا تكرار العنوان (النص الكامل عند المرور) */
+      var nb = nt && nt.querySelector('.t2-note-b');
+      if (nb && !nb.__tqn) { var full = txt(nb); nb.title = full; nb.textContent = full.replace(/^للعميل الجديد الذي لم يرسل ملفه للتوثيق:\s*/, '').replace(/\s*يصله في واتساب ما ينقصه بالتحديد\.?$/, ' — يصله في واتساب ما ينقصه.'); nb.__tqn = 1; cls(nb, 'tqn-1l', true); }
       if (tt && !tt.__tqn) { var m = txt(tt).match(/^(.*?):\s*(.+)$/); if (m) { tt.textContent = ''; tt.appendChild(document.createTextNode(m[1])); tt.appendChild(mk('span', 'tqn-chip ' + (/موقوف|متوقف/.test(m[2]) ? 'is-warn' : 'is-ok'), m[2])); } tt.__tqn = 1; }
     }
     [].forEach.call(L.querySelectorAll(':scope > .cu-bd-form'), function (f) { cls(f, 'tqn-nc-flt', true); });
@@ -1900,10 +1927,14 @@ function geoQ() {
   function ago(n) { n = +n; return n === 0 ? 'اليوم' : n === 1 ? 'أمس' : n === 2 ? 'منذ يومين' : n <= 10 ? 'منذ ' + n + ' أيام' : 'منذ ' + n + ' يومًا'; }
   function texts(root) {
     var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, L = [];
-    while ((n = w.nextNode())) { var v = n.nodeValue; if (v && (v.indexOf('منذ') >= 0 || v.indexOf('ريال') >= 0)) L.push(n); }
+    while ((n = w.nextNode())) { var v = n.nodeValue; if (v && (v.indexOf('منذ') >= 0 || v.indexOf('ريال') >= 0 || v.indexOf('Terra ') >= 0 || v.indexOf('966') >= 0)) L.push(n); }
     L.forEach(function (t) {
-      var v = t.nodeValue, o = v.replace(/منذ\s+(\d+)\s+يوم(?![\u0621-\u0652])/g, function (m, d) { return ago(d); });
-      if (t.parentNode && t.parentNode.closest && t.parentNode.closest('.tqn-cf')) o = o.replace(/(\d)\s*ريال(?![\u0621-\u0652])/g, '$1 ر.س');
+      var v = t.nodeValue, o = v.replace(/منذ\s+(\d+)\s+يوم(?![\u0621-\u0652])/g, function (m, d) { return ago(d); }), pe = t.parentNode && t.parentNode.closest ? t.parentNode : null;
+      if (pe && pe.closest('.tqn-cf')) o = o.replace(/(\d)\s*ريال(?![\u0621-\u0652])/g, '$1 ر.س');
+      /* v805: مستويات العضوية بالعربية وحدها — «Terra Plus — تيرا بلس» ← «تيرا بلس» */
+      if (o.indexOf('Terra ') >= 0 && pe && !pe.closest('input, textarea, select, option')) o = o.replace(/Terra (?:Plus|Premium|Elite)\s*[—–-]\s*(?=تيرا)/g, '').replace(/Terra Plus/g, 'تيرا بلس').replace(/Terra Premium/g, 'تيرا بريميوم').replace(/Terra Elite/g, 'تيرا إيليت');
+      /* v805: الجوال في العملاء الجدد بصيغة قائمة العملاء نفسها (05…) */
+      if (pe && pe.closest('.tqn-nc-gl')) o = o.replace(/(^|[^\d+])966(5\d{8})(?!\d)/g, '$10$2');
       if (o !== v) t.nodeValue = o;
     });
   }
@@ -1917,17 +1948,79 @@ function geoQ() {
       if (all && on && on !== all) all.click();
     });
   }
+  /* v805: العضويات والنقاط — بطاقات مستوى تصفّي + سطر النقاط + بحث + جدول (بدل شبكة البطاقات وشريطي أرقام بشكلين) */
+  var TIER = [['Terra Plus', 'تيرا بلس'], ['Terra Premium', 'تيرا بريميوم'], ['Terra Elite', 'تيرا إيليت']];
+  function tierAr(s) { s = String(s || ''); var m = s.match(/تيرا\s+[\u0621-\u064A]+/); if (m) return m[0]; for (var i = 0; i < TIER.length; i++) if (s.indexOf(TIER[i][0]) >= 0) return TIER[i][1]; return s.trim() || '—'; }
+  function members(root) {
+    var ptl = document.getElementById('pv-title'), stk = root.querySelector('.t2-stack.lv-page.is-cu');
+    if (!stk || txt(ptl) !== 'العضويات والنقاط') return;
+    var box = stk.querySelector(':scope > .cu-cards'); if (!box) return;
+    var cards = [].slice.call(box.querySelectorAll(':scope > .cu-card')); if (!cards.length) return;
+    var KP = [].slice.call(stk.querySelectorAll(':scope > .cu-kpis'));
+    var kv = function (q) { return [txt(q.querySelector('small')), txt(q.querySelector('b'))]; };
+    var K1 = KP[0] ? [].map.call(KP[0].querySelectorAll('.cu-kpi'), kv) : [], K2 = KP[1] ? [].map.call(KP[1].querySelectorAll('.cu-kpi'), kv) : [];
+    var M = cards.map(function (c) {
+      var sm = c.querySelector('.cu-card-t small'), no = txt(sm && sm.querySelector('bdi')), pts = '', sp = null;
+      [].forEach.call(c.querySelectorAll('.cu-card-m .t2-pill'), function (p) { if (/نقطة/.test(txt(p))) pts = txt(p).replace(/\s*نقطة/, ''); else sp = p; });
+      return { c: c, name: txt(c.querySelector('.cu-card-t b')), no: no, tier: tierAr(txt(sm).replace(no, '')), pts: pts, sp: sp, hid: c.hidden || c.style.display === 'none' };
+    });
+    var F = ST.mf || 'all', Q = (ST.mq || '').trim().toLowerCase();
+    var sig = M.map(function (x) { return [x.name, x.no, x.tier, x.pts, txt(x.sp), x.hid ? 0 : 1].join('~'); }).join('|') + '#' + K1.concat(K2).join(',') + '#' + F + '#' + Q;
+    var W = stk.__tqnMb;
+    if (W && W.parentNode === stk && W.__sig === sig) return;
+    var keepQ = W && W.__q === document.activeElement;
+    if (W && W.parentNode) W.parentNode.removeChild(W);
+    KP.forEach(function (q) { cls(q, 'tqn-hide', true); }); cls(box, 'tqn-hide', true);
+    W = mk('div', 'tqn-clw tqn-mbw'); W.__sig = sig;
+    var sm = mk('div', 'tqn-sum'), T0 = [['all', 'كل الأعضاء', M.length]];
+    K1.forEach(function (x) { if (!/الأعضاء/.test(x[0])) T0.push([tierAr(x[0]), tierAr(x[0]), num(x[1])]); });
+    T0.forEach(function (g) {
+      var b = mk('button', 'tqn-sm is-' + (g[0] === 'all' ? 'all' : 'tier') + (F === g[0] ? ' is-on' : '')); b.type = 'button'; b.setAttribute('data-live-ok', '');
+      b.appendChild(mk('i', '', g[0] === 'all' ? '∑' : '♛')); var t = mk('span'); t.appendChild(mk('small', '', g[1])); t.appendChild(mk('b', '', String(g[2]))); b.appendChild(t);
+      b.addEventListener('click', function () { ST.mf = g[0]; apply(); }); sm.appendChild(b);
+    });
+    sm.style.setProperty('--n', String(T0.length));
+    if (K2.length) sm.appendChild(infoStrip('النقاط', K2));
+    W.appendChild(sm);
+    var tb = mk('div', 'tqn-ltb'), q = mk('input', 'tqn-lq'); q.type = 'search'; q.placeholder = 'ابحث بالاسم أو رقم العضوية…'; q.value = ST.mq || ''; q.setAttribute('aria-label', 'بحث في الأعضاء');
+    q.addEventListener('input', function () { ST.mq = q.value; clearTimeout(q.__t); q.__t = setTimeout(apply, 160); });
+    tb.appendChild(q); W.__q = q; W.appendChild(tb);
+    var R = M.filter(function (x) { return !x.hid && (F === 'all' || x.tier === F) && (!Q || (x.name + ' ' + x.no).toLowerCase().indexOf(Q) >= 0); });
+    var T = mk('div', 'tqn-lt is-mb'), hr = mk('div', 'tqn-ar is-h'); ['العضو', 'المستوى', 'النقاط', 'الحالة', ''].forEach(function (h) { hr.appendChild(mk('span', '', h)); }); T.appendChild(hr);
+    R.forEach(function (x) {
+      var r = mk('div', 'tqn-ar'); r.setAttribute('role', 'button'); r.tabIndex = 0;
+      r.appendChild(who(x.name, x.no)); r.appendChild(mk('span', 'tqn-tier', x.tier)); r.appendChild(mk('b', '', x.pts || '0'));
+      r.appendChild(x.sp ? chipOf(x.sp) : mk('span', 'is-mut', '—'));
+      var ac = mk('div', 'tqn-acts'); ac.appendChild(btn('عرض', 'is-pri is-sm', function () { x.c.click(); })); r.appendChild(ac);
+      r.addEventListener('click', function () { x.c.click(); }); r.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') x.c.click(); });
+      T.appendChild(r);
+    });
+    if (R.length) { W.appendChild(T); W.appendChild(mk('div', 'tqn-lf', 'عرض ' + R.length + ' من ' + M.length + ' عضو')); }
+    else W.appendChild(mk('div', 'tqn-lf', 'لا أعضاء بهذا الاختيار'));
+    stk.insertBefore(W, box); stk.__tqnMb = W;
+    if (keepQ) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) { void e; } }
+  }
+  /* v805: تفاصيل العضوية — شارة المستوى أعلى البطاقة تكرّر رأس الصفحة وحقل «المستوى» */
+  function mbDetail() {
+    [].forEach.call(document.querySelectorAll('.cu-dh .cu-dr.is-page'), function (d) {
+      if (![].some.call(d.querySelectorAll('.t2-field-k, .t2-field > span:first-child'), function (k) { return txt(k) === 'رقم العضوية'; })) return;
+      [].forEach.call(d.querySelectorAll('.cu-dr-st > .t2-pill'), function (p) { cls(p, 'tqn-hide', /^(تيرا|Terra)\s/.test(txt(p))); });
+    });
+  }
   function apply() {
     busy = false;
     var root = document.querySelector('#pv-root'); if (!root) return;
     try { hubs(root); } catch (e) { void e; }
-    try { texts(root); } catch (e) { void e; }
     try { list(root); } catch (e) { void e; }
     try { file(root); } catch (e) { void e; }
     try { dups(root); } catch (e) { void e; }
     try { pages(root); } catch (e) { void e; }
+    try { members(root); } catch (e) { void e; }
     try { drCrumbs(); } catch (e) { void e; }
     try { crumbs(); } catch (e) { void e; }
+    /* v805: النصوص بعد بناء الملف والصفحات (كانت قبلها فيفوتها ما يُبنى لاحقًا مثل تبويب «الطلبات») */
+    try { texts(root); [].forEach.call(document.querySelectorAll('.cu-dh .cu-dr.is-page'), function (d) { if (!root.contains(d)) texts(d); }); } catch (e) { void e; }
+    try { mbDetail(); } catch (e) { void e; }
   }
   function soon() { if (busy) return; busy = true; var t = setTimeout(apply, 80); if (window.requestAnimationFrame) requestAnimationFrame(function () { clearTimeout(t); if (busy) apply(); }); }
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
