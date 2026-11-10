@@ -2498,3 +2498,13 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .cu-dr .tqn-vr3 .vr3-tabs .t2-btn.is-danger { background: #fff !important; color: #B91C1C !important; box-shadow: 0 1px 3px rgba(15, 27, 51, .12) !important; }
 .tq-next .cu-dr .vr3.tqn-vr3 > section.vr3-sec.tqn-vr-dec .vr3-box, .tq-next .cu-dr .vr3.tqn-vr3 > section.vr3-sec.tqn-vr-dec textarea { width: 100%; }
 .tq-next.pv-dark .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps, .tq-next.pv-dark .cu-dr.tqn-dr-cu .cu-dr-f, .tq-next.pv-dark .cu-dr .tqn-vr3 .vr3-chip { background: #101A2D !important; border-color: var(--tqn-line) !important; color: var(--tqn-ink) !important; }
+
+/* v818: القائمة الجانبية تبدأ من أعلى الصفحة بشعارها (كانت تنزل بارتفاع الهيدر فيبقى فوقها فراغ: قاعدة preview.css «.tq-live … .t2-side { top: var(--t2-hh) !important }» تغلب top: 0 هنا) */
+.tq-next.tq-live #pv-host:not(.is-app) > .t2-app > .t2-side { top: 0 !important; height: 100dvh !important; }
+/* v818: القائمة المصغّرة — عرض الأيقونات فقط (كان العرض مثبّتًا 248px فتبقى عريضة فارغة) والرمز تحت زر التوسيع */
+.tq-next #pv-host:not(.is-app) > .t2.t2-app.is-side-min > .t2-side { width: 84px; }
+.tq-next .t2.is-side-min .t2-side-top { display: flex !important; flex-direction: column; align-items: center; gap: 8px; padding-inline: 0 !important; padding-top: 64px !important; }
+.tq-next .t2.is-side-min .t2-side-t { left: 50% !important; right: auto !important; transform: translateX(-50%); }
+.tq-next .t2.is-side-min .tqn-brand { width: auto !important; min-width: 0 !important; padding: 0 !important; }
+.tq-next .t2.is-side-min .tqn-brand-img, .tq-next .t2.is-side-min .tqn-brand > small { display: none !important; }
+.tq-next .t2.is-side-min .tqn-brand-mark { display: block !important; width: 40px; height: 40px; object-fit: contain; }
