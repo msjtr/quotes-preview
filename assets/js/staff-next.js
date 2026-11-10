@@ -588,8 +588,9 @@ function geoQ() {
   soon();
 })();
 
-/* v824: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v827: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v827: طلب الأهلية — زرّا «إلغاء الطلب» و«إرسال إشعار للعميل» ثابتان في رأس الطلب، وخطوات العمل شريطًا أفقيًا يعطي المحتوى العرض كاملًا، وقرار الأهلية بنموذج منظّم (حقول بعناوينها · مؤشرات · توصية)، والأرقام إنجليزية فقط.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
    · v820: صفوف جداول «الطلبات والعقود» تُفتح (كان حارس الإجراءات يمنع «إصدار عرض السعر…» لأن الصف بلا data-live-ok)، وعدد العقود الصحيح («عقد واحد» كان يُقرأ من المبلغ)، والجدول بأعمدته على الشاشات المتوسطة.
    · v819: «الطلبات والعقود» — «عقود العملاء» جدول (بطاقات ملخص تصفّي · بحث · صف لكل عميل بعقوده والمتبقي وحالاتها)، و«طلبات المتجر» جدول طلبات المتجر وحدها (بلا شرائح الأقسام الأخرى)، وصفحة الطلب والعرض بتبويب لكل قسم (الإجراء أولًا) ومسار «الطلبات والعقود › الصفحة › الطلب».
@@ -1766,8 +1767,14 @@ function geoQ() {
     rqShell(stack, box, C);
   }
   /* صفحة طلب الأهلية الكاملة: تبويبات — العمل على الطلب · الإسناد · المراسلة · مسار الطلب */
+  /* v827: أزرار الطلب العامة (إلغاء الطلب · إرسال إشعار للعميل) ثابتة في رأس الطلب — لا تتنقّل مع التبويبات */
+  function srFix(root) {
+    var top = root.querySelector('.sr-full-top'), F = root.querySelector('.sr-full'); if (!top || !F) return;
+    [].forEach.call(F.querySelectorAll(':scope > .t2-pb-actions'), function (pa) { cls(pa, 'tqn-sr-acts', true); top.appendChild(pa); });
+  }
   function srTabs(root) {
     var F = root.querySelector('.sr-full'); if (!F) return;
+    try { srFix(root); } catch (e) { void e; }
     var G = { 'العمل على الطلب': [], 'الإسناد': [], 'المراسلة': [], 'مسار الطلب': [] };
     [].forEach.call(F.children, function (x) {
       if (x.classList.contains('tqn-st')) return;
@@ -2413,9 +2420,21 @@ function geoQ() {
     cls(b, 'is-set', true);
     S.forEach(function (x, i) { var onx = K[i] === cur; cls(x, 'tqn-st-hide', !onx); cls(x, 'tqn-stab-s', true); quiet(x.querySelector(':scope > .t2-sec-h, :scope > .t2-panel-h')); });
   }
+  /* v827: الأرقام إنجليزية فقط — حقول الأرقام والتواريخ بلغة en (كان المتصفح يعرض ١٦٥٠٠)، وأي رقم هندي في النصوص يُحوَّل */
+  var ARD = /[\u0660-\u0669\u06F0-\u06F9]/;
+  function enDigits(host) {
+    /* حقل الرقم يعرضه المتصفح بالأرقام الهندية مهما كانت لغته — يصير حقل نص رقمي بالقيمة نفسها (المنصة تقرأ .value فقط) */
+    [].forEach.call(host.querySelectorAll('input[type=number]'), function (i) { i.type = 'text'; i.setAttribute('inputmode', 'decimal'); i.setAttribute('data-tqn-num', ''); i.setAttribute('dir', 'ltr'); });
+    [].forEach.call(host.querySelectorAll('input[type=date], input[type=time], input[type=datetime-local], input[type=month]'), function (i) { if (i.getAttribute('lang') !== 'en') i.setAttribute('lang', 'en'); });
+    var tw = document.createTreeWalker(host, NodeFilter.SHOW_TEXT), n;
+    while ((n = tw.nextNode())) { var v = n.nodeValue; if (ARD.test(v)) n.nodeValue = v.replace(/[\u0660-\u0669]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); }).replace(/[\u06F0-\u06F9]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); }); }
+  }
+  /* الكتابة في حقل رقمي: الأرقام الهندية تُحوَّل وغير الأرقام يُحذف قبل أن تقرأها المنصة */
+  try { document.addEventListener('input', function (ev) { var t = ev.target; if (!t || !t.hasAttribute || !t.hasAttribute('data-tqn-num')) return; var v = t.value, w = v.replace(/[\u0660-\u0669]/g, function (d) { return String(d.charCodeAt(0) - 0x0660); }).replace(/[\u06F0-\u06F9]/g, function (d) { return String(d.charCodeAt(0) - 0x06F0); }).replace(/٫/g, '.').replace(/[^0-9.\-]/g, ''); if (w !== v) t.value = w; }, true); } catch (e) { void e; }
   function apply() {
     busy = false;
     var root = document.querySelector('#pv-root'); if (!root) return;
+    try { enDigits(document.querySelector('#pv-host') || root); } catch (e) { void e; }
     try { hubs(root); } catch (e) { void e; }
     try { list(root); } catch (e) { void e; }
     try { file(root); } catch (e) { void e; }
