@@ -18484,6 +18484,7 @@ const EQ_PLANK = [['plan_start', 'أول دفعة'], ['plan_end', 'آخر دفع
 const EQ_RET = [['مراجعة البنود والمبالغ', 'مراجعة البنود والمبالغ'], ['مراجعة الدفعات', 'مراجعة الدفعات'], ['مراجعة المنتج أو قيمته', 'مراجعة المنتج أو قيمته'], ['مراجعة عناصر المستندات', 'مراجعة عناصر المستندات'], ['أخرى', 'سبب آخر']];
 const EQ_REO = [['طلب العميل تعديل العرض', 'طلب العميل تعديل العرض'], ['تغيّر سعر المنتج أو توفّره', 'تغيّر سعر المنتج أو توفّره'], ['تصحيح خطأ في العرض', 'تصحيح خطأ في العرض'], ['أخرى', 'سبب آخر']];
 const EQG = {};
+const EQ_INL = {}; /* v806: إعداد العرض داخل مرحلة «عرض السعر» بدل النافذة الجانبية */
 function eqMsg(j, def) { return (j && (j.message || EQ_ERR[j.error] || (typeof EGQ_ERR !== 'undefined' && EGQ_ERR[j.error]) || j.error)) || def || 'تعذّر تنفيذ الإجراء.'; }
 async function eqCall(fn, args) { const j = await admRpc(fn, args); if (!j || j.ok === false) throw new Error(eqMsg(j)); return j; }
 function eqRate() { return (Number((LIVE_FEE.st || {}).vat_rate) || 15) / 100; }
@@ -18796,10 +18797,11 @@ function eqClientPv(x, Q, D, C, rerun) {
   ]);
 }
 
-function eqEdit(x, Q, mode, done) {
+function eqEdit(x, Q, mode, done, inl) {
+  if (!inl && EQ_INL[x.id] && document.querySelector('.eg-work[data-sr="' + x.id + '"]')) { EQ_INL[x.id].open(Q, mode, done); return null; } /* v806: داخل المرحلة لا نافذة جانبية */
   const key = 'eqed:' + (Q ? Q.id : x.id);
   const D = CUD[key] || (CUD[key] = Q ? eqSeed(Q) : eqSeedNew(x));
-  const rerun = function () { if (CUD[key] === D && document.querySelector('.cu-dr[data-r="' + key + '"]')) eqEdit(x, Q, mode, done); }; /* لا يُعاد فتح درج أُغلق */
+  const rerun = inl ? function () { if (CUD[key] === D) inl.paint(); } : function () { if (CUD[key] === D && document.querySelector('.cu-dr[data-r="' + key + '"]')) eqEdit(x, Q, mode, done); }; /* لا يُعاد فتح درج أُغلق */
   eqReadyLoad(rerun); eqReadyMerge(D);
   eqSrv(x, D, rerun);
   const C = Number(D.value) > 0 ? eqCalcOf(D) : null;
@@ -18813,7 +18815,7 @@ function eqEdit(x, Q, mode, done) {
       const j = mode === 'issue' ? await eqCall('admin_elig_quote_issue', { p_sr: x.id, p_data: Object.assign(pl, { submit: !!submit, note: note }) })
         : await eqCall('admin_elig_quote_update', { p_q: Q.id, p_data: Object.assign(pl, { submit: draftish ? !!submit : undefined, rev: D.rev || undefined, note: note }) });
       if (D.qpDirty) { const qid = (j && j.id) || (Q && Q.id); if (qid) { try { const base = (Q && Q.calc && Q.calc.doc && Q.calc.doc.quote) || {}; await eqCall('admin_elig_quote_doc_save', { p_q: qid, p_kind: 'quote', p_doc: Object.assign({}, base, { page: eqQpClean(D.qpage) }), p_attach: null }); } catch (e2) { snack('حُفظ العرض، وتعذّر حفظ نصوص صفحة العميل — أعد حفظها من «إعداد عرض السعر».'); } } } /* v802 */
-      delete CUD[key]; if (Q) delete EQG[Q.id]; admClose();
+      delete CUD[key]; if (Q) delete EQG[Q.id]; if (inl) inl.close(); else admClose();
       snack(mode === 'issue' ? (submit ? 'صدر العرض ' + (j.quotation_number || '') + ' وأُحيل للاعتماد' : 'حُفظ العرض ' + (j.quotation_number || '') + ' مسودة') : appr ? 'حُفظ التعديل — العرض بانتظار الاعتماد' : submit ? 'حُفظ وأُحيل للاعتماد' : 'حُفظت المسودة');
       if (done) done();
     } catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; rerun(); }
@@ -18844,13 +18846,14 @@ function eqEdit(x, Q, mode, done) {
       sec(3, 'الدفعات', eqPlanBox(D, C, rerun)),
       sec(4, 'ما يظهر للعميل والمعاينة', [e('div', { class: 'sys-form is-2 cu-bd-form eq-3' }, [['value', 'قيمة المنتج'], ['items', 'تفصيل البنود'], ['vat', 'سطر الضريبة'], ['valid', 'صالح حتى'], ['plan_start', 'أول دفعة'], ['plan_end', 'آخر دفعة'], ['plan_n', 'عدد الدفعات'], ['plan_amt', 'قيمة الدفعة'], ['plan_tbl', 'جدول الدفعات']].map(function (k) { return eqVisSel(D, k[0], k[1], rerun); })),
         e('div', { class: 't2-pb-actions' }, [DS.button('معاينة عرض السعر PDF', { size: 'sm', ui: 'file-pdf', disabled: !C, onClick: function () { dcPdf(dcEqDoc('quote', Object.assign({}, Q || {}, { product_type: D.type, customer_name: (Q && Q.customer_name) || x.client_name || x.name || '', req_no: x.req_no, calc: eqCalcOf(D) }), true)); } })]),
-        eqClientPv(x, Q, D, C, rerun), /* v802 */
+        inl ? null : eqClientPv(x, Q, D, C, rerun), /* v802 · v806: داخل المرحلة نصوص الصفحة في تبويب «صفحة الرابط» */
         e('small', { class: 'cu-dr-hint' }, 'عناصر المستند (العنوان والشروط والتنويه) وإرفاقه عند الإرسال في مرحلة «عرض السعر» — وفاتورة المنتج والعقد في مرحلتيهما.'),
         DS.editField('ملاحظة التعديل (تُسجَّل في سجل العرض — اختياري)', e('textarea', { class: 't2-input', rows: '2', maxlength: '300', onInput: function (ev) { D.note = ev.target.value; } }, D.note || ''))])]),
     D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
   const btn = function (t, sub, tone) { return liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : t, { tone: tone || null, ui: 'check', disabled: D.busy || !C, onClick: function () { save(sub); } })); };
   const foot = [e('div', { class: 'cu-dr-fa' }, (draftish ? [btn(mode === 'issue' ? 'إصدار العرض وإحالته للاعتماد' : 'حفظ وإحالة للاعتماد', true, 'primary'), btn('حفظ مسودة', false)] : [btn('حفظ التعديل', false, 'primary')])
-    .concat([DS.button('إلغاء', { onClick: function () { delete CUD[key]; admClose(); } })]))];
+    .concat([DS.button('إلغاء', { onClick: function () { delete CUD[key]; if (inl) inl.close(); else admClose(); } })]))];
+  if (inl) return e('div', { class: 'eq-inl' }, [e('div', { class: 'eg-hd' }, [e('b', {}, mode === 'issue' ? 'إعداد عرض السعر' : appr ? 'تعديل العرض قبل الاعتماد' : 'تعديل عرض السعر'), DS.badge(x.req_no || '', null)])].concat(body.filter(Boolean), foot)); /* v806 */
   const old = document.querySelector('.cu-dr[data-r="' + key + '"]');
   if (old) { const b = old.querySelector('.cu-dr-b'), y = b.scrollTop; b.replaceChildren.apply(b, body.filter(Boolean)); const f = old.querySelector('.cu-dr-f'); if (f) f.replaceChildren.apply(f, foot); b.scrollTop = y; return; }
   cuDrawer({ key: key, ic: 'file-text:navy', title: mode === 'issue' ? 'إعداد عرض السعر' : appr ? 'تعديل العرض قبل الاعتماد' : 'تعديل عرض السعر', sub: (x.req_no || (Q && Q.req_no) || '') + ' · طلب الأهلية', body: body.filter(Boolean), foot: foot, onClose: function () { draw(); } });
@@ -18923,7 +18926,7 @@ function eqOpen(id, refetch, x) {
 }
 
 /* ═════ مراحل الموظف الست (eligWork): الترتيب الحقيقي · شريط ملخص واحد · القرار داخل مرحلته · المستندات داخل مراحلها ═════ */
-const EG6 = { docs: 'docs', fix: 'docs', rep: 'rep', res: 'rep', qt: 'qt', apv: 'qt', pv: 'pv', snd: 'pv', jr: 'pv', log: 'pv', inv: 'inv', ct: 'ct', adm: 'adm' }; /* v691: adm */
+const EG6 = { docs: 'docs', fix: 'docs', rep: 'rep', res: 'rep', qt: 'qt', apv: 'qt', pv: 'rep', snd: 'rep', jr: 'rep', log: 'rep', inv: 'inv', ct: 'ct', adm: 'adm' }; /* v691: adm · v806: «المعاينة والإرسال» لم تعد مرحلة — النتيجة وإرسالها في «القرار والنتيجة»، والمعاينة داخل كل مرحلة */
 /* v691: المرحلة السابعة — إجراءات الإدارة وإغلاق الطلب. الإجراءات نفسها في «ملفات الإدارة» ببطاقة العقد (ملف العميل)، و«إنهاء العقد» بعد توقيع العميل يُغلق الطلب */
 function egAdmPane(x, ctT, ctNo, ctj, paint) {
   const out = [e('b', {}, 'إجراءات الإدارة وإغلاق الطلب')];
@@ -18944,7 +18947,8 @@ function egStages6(steps) {
   const g = function (k) { return S[k] || [k, '', '', '']; };
   const docs = g('fix')[3] === 'wait' ? g('fix') : g('docs'), rep = g('res')[3] ? g('res') : g('rep');
   const qt = g('apv')[3] === 'now' ? ['qt', '', g('apv')[2], 'now'] : g('qt'), pv = g('snd')[3] ? g('snd') : g('pv');
-  return [['docs', 'المستندات', docs[2], docs[3]], ['rep', 'التوصية والقرار', rep[2], rep[3]], ['qt', 'عرض السعر', qt[2], qt[3]], ['pv', 'المعاينة والإرسال', pv[2], pv[3]], ['inv', 'فاتورة المنتج', g('inv')[2], g('inv')[3]], ['ct', 'العقد', g('ct')[2], g('ct')[3]], ['adm', 'إجراءات الإدارة', g('adm')[2], g('adm')[3]]]; /* v691 */
+  const repL = rep[3] === 'ok' && pv[3] && pv[2] ? rep[2] + ' · ' + pv[2] : rep[2], repS = rep[3] === 'ok' && pv[3] === 'now' ? 'now' : rep[3]; /* v806 */
+  return [['docs', 'المستندات', docs[2], docs[3]], ['rep', 'القرار والنتيجة', repL, repS], ['qt', 'عرض السعر', qt[2], qt[3]], ['inv', 'فاتورة المنتج', g('inv')[2], g('inv')[3]], ['ct', 'العقد', g('ct')[2], g('ct')[3]], ['adm', 'إجراءات الإدارة', g('adm')[2], g('adm')[3]]]; /* v691 · v806: ست مراحل */
 }
 function egSumBar(x, Rp, live, N) {
   const R = Rp || {}, M = x.meta || {}, ok = R.rec === 'eligible' || R.rec === 'eligible_less', rc = egRecvInfo(x), req = egReq(x);
@@ -19008,17 +19012,19 @@ function egQtStage(x, c, Q, live, paint) {
     egDocTools(x, c, 'quote', paint), oldSec]);
 }
 /* مستند المرحلة: معاينة PDF · عناصر المستند (إضافة وحذف وإخفاء) · «إرفاق المستند» — يُحفظ لكل مستند (admin_elig_quote_doc_save) */
-function egDocTools(x, c, kind, paint) {
+function egDocTools(x, c, kind, paint, full) {
+  if (c.wrapDoc && !full) return null; /* v806: المستند تبويب داخل المرحلة */
   const Q0 = (c.qs || []).filter(function (q) { return ['rejected', 'cancelled', 'declined', 'expired'].indexOf(q.status) < 0 || (q.status === 'rejected' && q.returned); })[0];
   if (!Q0) return null;
   const G = eqGet(Q0.id, paint), J = G.j;
   if (!J) return G.st === 'load' ? CF_EMPTY('جارٍ تجهيز ' + EQ_DOC_NAME[kind] + '…') : null;
   const Q = J.q, c0 = Q.calc || {}, cs = Q.calc_staff || {}, canDoc = !!(J.can && J.can.doc && J.can.doc[kind]);
   const T = c.doc || (c.doc = {}), D = T[kind] && T[kind].q === Q.id ? T[kind] : (T[kind] = { q: Q.id, open: false, busy: false, err: '', d: null, att: !!(cs.attach && cs.attach[kind]), dirty: false });
+  if (full && !D.auto) { D.auto = true; if (canDoc) { D.open = true; if (!D.d) D.d = stlDocNorm(JSON.parse(JSON.stringify((c0.doc && c0.doc[kind]) || eqTplDoc(kind)))); } } /* v806: العناصر مفتوحة في تبويب «المستند» */
   const cur = function () { return D.d ? Object.assign({}, Q, { calc: Object.assign({}, c0, { doc: Object.assign({}, c0.doc || {}, (function () { const o = {}; o[kind] = D.d; return o; })()) }) }) : Q; };
   const save = async function () {
     if (D.busy) return; D.busy = true; D.err = ''; paint();
-    try { await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: D.d ? stlDocClean(D.d) : null, p_attach: !!D.att }); D.busy = false; D.dirty = false; D.open = false; delete EQG[Q.id]; snack('حُفظ ' + EQ_DOC_NAME[kind] + ' — أعد معاينته على رقمك قبل الإرسال.'); paint(); }
+    try { await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: D.d ? stlDocClean(Object.assign({}, D.d, { page: (c0.doc && c0.doc[kind] && c0.doc[kind].page) || D.d.page })) : null, p_attach: !!D.att }); D.busy = false; D.dirty = false; D.open = false; delete EQG[Q.id]; snack('حُفظ ' + EQ_DOC_NAME[kind] + ' — أعد معاينته على رقمك قبل الإرسال.'); paint(); }
     catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
   };
   const kids = [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('إرفاق المستند', canDoc ? DS.select({ value: D.att ? 'pdf' : 'none', options: EQ_ATT, onChange: function (v) { D.att = v === 'pdf'; D.dirty = true; paint(); } }) : e('div', { class: 't2-input cu-bd-ro' }, D.att ? 'إرفاق المستند PDF' : 'بدون إرفاق'))]),
@@ -19027,7 +19033,167 @@ function egDocTools(x, c, kind, paint) {
   if (D.open && D.d) kids.push(e('div', { class: 'stl-dc' }, eqDocAll(D.d, kind, c0.items || [], function () { D.dirty = true; paint(); }, function () { D.dirty = true; })));
   if (canDoc && (D.open || D.dirty)) kids.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ ' + EQ_DOC_NAME[kind], { size: 'sm', tone: 'primary', ui: 'check', disabled: D.busy, onClick: save }))]));
   if (D.err) kids.push(e('span', { class: 'cu-err', role: 'alert' }, D.err));
+  if (full) return e('div', { class: 'eg-doc' }, [e('div', { class: 'eg-hd' }, [e('b', {}, 'مستند ' + EQ_DOC_NAME[kind]), DS.badge(D.att ? 'يُرفق PDF مع الرابط' : 'بدون إرفاق', D.att ? 'info' : null)])].concat(kids)); /* v806 */
   return lvSec('مستند ' + EQ_DOC_NAME[kind], D.att ? 'يُرفق PDF' : 'بدون إرفاق', kids, 'egdoc:' + kind + ':' + x.id, !!(D.open || D.dirty));
+}
+/* ═════ v806: «ما يصل العميل» داخل كل مرحلة من طلب الأهلية — تبويبات بعمل واحد لكل تبويب:
+ * إعداد المرحلة · الرسالة (كما تصل بمتغيراتها؛ قالب Meta لا يُمسّ) · صفحة الرابط (معاينة حيّة + نصوصها لهذا العميل) · المستند (عناصره وإرفاقه) — ونتيجة الأهلية: الرسالة · الصفحة · الإرسال.
+ * نسخة العميل تُحفظ في مستند المرحلة (calc.doc.<kind>.page عبر admin_elig_quote_doc_save) وتغلب النص العام؛ و«إعادة للافتراضي» تحذفها.
+ * الصفحة من الخادم كما يراها العميل (adm_elig_stage_view · stf_258) وتُعرض في /elig/?local=1. ═════ */
+const EGO_T = { result: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
+const EGM_KEY = { quote: 'elig_quote', purchase: 'elig_purchase', contract: 'contract_new' };
+const EGP_F = {
+  quote: [['q_title', 'عنوان الصفحة', 'صدر عرض السعر', 0], ['q_status', 'سطر الحالة', 'بانتظار اعتمادك', 0], ['q_note', 'رسالة المراجعة', '', 1], ['q_ack', 'نص الإقرار', '', 1], ['q_accept', 'زر القبول', 'قبول عرض السعر', 0], ['q_decline', 'زر الرفض', 'رفض عرض السعر', 0]],
+  purchase: [['inv_title', 'عنوان الفاتورة', '', 0], ['inv_status', 'سطر الحالة', '', 0], ['inv_note', 'رسالة المراجعة', '', 1], ['inv_ack', 'نص الإقرار', '', 1], ['inv_confirm_title', 'عنوان نافذة التأكيد', '', 0], ['inv_confirm_note', 'نص نافذة التأكيد', '', 1], ['inv_done_title', 'عنوان شاشة «تم الاعتماد»', '', 0], ['inv_done_text', 'نص شاشة «تم الاعتماد»', '', 1], ['inv_decline_title', 'عنوان شاشة الاعتذار', '', 0], ['inv_decline_text', 'نص شاشة الاعتذار', '', 1]],
+  contract: [['status', 'سطر الحالة', '', 0], ['hint', 'تنويه الصفحة', '', 1], ['sign_title', 'عنوان قسم التوقيع', '', 0], ['ack', 'نص الإقرار', '', 1], ['confirm_title', 'عنوان نافذة التأكيد', '', 0], ['confirm_note', 'نص نافذة التأكيد', '', 1], ['done_title', 'عنوان شاشة «تم التوقيع»', '', 0], ['done_text', 'نص شاشة «تم التوقيع»', '', 1], ['sig', 'عبارة الختام', '', 1]]
+};
+const EGV = {};
+function egPvBtn(x, kind, paint) {
+  const S = EGJ[x.id] || {}, k = kind === 'result' ? 'result' : kind;
+  return liveOk(DS.button(S.busy === 'pv:' + k ? 'جارٍ الإرسال…' : 'إرسال معاينة لجوالي', { size: 'sm', ui: 'device-mobile', disabled: !!S.busy, onClick: function () { egjPreview(x, k, paint); } }));
+}
+function egPvGet(x, kind, paint, force) {
+  const K = x.id + ':' + kind, S = EGV[K] || (EGV[K] = { st: 'idle', d: null, err: '', at: 0 });
+  if (S.st === 'load' || (!force && S.st === 'ok' && Date.now() - S.at < 60000)) return S;
+  S.st = 'load';
+  admRpc('adm_elig_stage_view', { p_sr: x.id, p_kind: kind }).then(function (j) {
+    S.st = 'ok'; S.at = Date.now();
+    if (j && j.ok) { S.d = j; S.err = ''; } else { S.d = null; S.err = j && j.error === 'no_quote' ? 'أعدّ عرض السعر أولًا.' : j && j.error === 'forbidden' ? 'تحتاج صلاحية إدارة العملاء.' : 'تعذّرت قراءة الصفحة.'; }
+    paint();
+  }).catch(function (err) { S.st = 'ok'; S.at = Date.now(); S.d = null; S.err = (err && err.message) || 'تعذّرت قراءة الصفحة.'; paint(); });
+  return S;
+}
+function egMsgKey(x, kind) {
+  if (kind !== 'result') return EGM_KEY[kind];
+  const rec = (((x.meta || {}).report) || {}).rec;
+  return x.status === 'rejected' || rec === 'not_eligible' ? 'elig_no' : rec === 'eligible_less' ? 'elig_less' : 'elig_ok';
+}
+function egMsgVars(x, kind, live, Q) {
+  const M = x.meta || {}, R = M.report || {}, rc = egRecvInfo(x);
+  const prod = (Q && Q.product_type) || (M.client_product && M.client_product.name) || R.prod || '';
+  const tot = Q ? Number(Q.total) : live ? Number(live.total) : 0;
+  const n = Q && Q.calc && Array.isArray(Q.calc.plan) ? Q.calc.plan.length : (Number(R.n) || 0);
+  const money = function (v) { const z = Number(v); return isFinite(z) && z > 0 ? z.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'; };
+  return { req: x.req_no || '', product: prod || '—', amount: money(tot), n: n ? String(n) : '—', recv: rc.now || '—', elig_amt: money(R.elig_amt), req_amt: money(R.req_amt || egReq(x)), name: x.client_name || x.name || '' };
+}
+function egMsgPane(x, c, kind, live, Q, paint) {
+  const key = egMsgKey(x, kind);
+  if (!MSGC.rows && MSGC.at !== -1) {
+    MSGC.at = -1;
+    admRpc('admin_msg_list', {}).then(function (j) { MSGC.rows = (j && j.rows) || []; MSGC.sup = !!(j && j.super); MSGC.at = Date.now(); paint(); })
+      .catch(function () { MSGC.rows = []; MSGC.at = Date.now(); paint(); });
+  }
+  const row = (MSGC.rows || []).filter(function (r) { return r.key === key; })[0] || null;
+  const V = egMsgVars(x, kind, live, Q), fill = function (s) { return String(s || '').replace(/\{([a-z_]+)\}/g, function (m, k) { return V[k] != null ? V[k] : m; }); };
+  const W = c.msg || (c.msg = {}), ck = key + ':' + x.id + ':' + (Q ? Q.id + ':' + (Q.total || '') : '');
+  const kids = [e('div', { class: 'eg-hd' }, [e('b', {}, 'الرسالة كما تصل العميل'), DS.badge('قالب Meta المعتمد — لا يُعدَّل', 'ok')])];
+  if (MSGC.at === -1 && !MSGC.rows) kids.push(CF_EMPTY('جارٍ قراءة «قوالب الرسائل»…'));
+  else if (!row) kids.push(DS.note('info', 'لا قالب لهذه الرسالة في «قوالب الرسائل»', kind === 'contract' ? 'رسالة «صدر عقدك» تصل بقالب واتساب الخاص بالعقد مع رابط الاطلاع والتوقيع.' : 'أضف القالب من «قوالب الرسائل».'));
+  else {
+    const F = { title: fill(row.title), status: fill(row.status), l1: fill(row.l1), l2: fill(row.l2), l3: fill(row.l3), l4: fill(row.l4) };
+    if (W.key !== ck && !W.busy) {
+      W.key = ck; W.busy = true; W.pv = null; W.err = '';
+      clPost('/admin/api/msg/preview', { key: row.key, row: Object.assign({}, F, { btn_label: row.btn_label, btn_path: row.btn_path, img: row.img, attach: row.attach, channels: (row.channels || []).slice(), state: row.state }) })
+        .then(function (j) { W.busy = false; if (j && j.ok) W.pv = j.preview; else W.err = (j && j.message) || 'تعذّرت المعاينة.'; paint(); })
+        .catch(function (err) { W.busy = false; W.err = (err && err.message) || 'تعذّرت المعاينة.'; paint(); });
+    }
+    const P = W.key === ck ? W.pv : null, wa = (P && P.wa) || {};
+    const lines = [F.l1, F.l2, F.l3, F.l4].filter(Boolean);
+    const CHN = { app: 'المنصة', push: 'إشعار الجوال', email: 'البريد', wa: 'واتساب' };
+    kids.push(e('div', { class: 'eg-msg2' }, [
+      e('div', { class: 'eg-msg2-v' }, [DS.fields([['العنوان', F.title], ['الحالة', F.status]].concat(lines.map(function (l, i) { return ['السطر ' + (i + 1), l]; }), [['الزر', row.btn_label || '—'], ['يُرسل عبر', (row.channels || []).map(function (ch) { return CHN[ch] || ch; }).join(' · ') || '—']])),
+        e('small', { class: 'cu-dr-hint' }, 'المتغيرات معبّأة من هذا الطلب. نص الرسالة لكل العملاء يُعدَّل من «قوالب الرسائل».')]),
+      e('div', { class: 'eg-msg2-p' }, [e('small', { class: 'cu-dr-hint' }, 'واتساب كما يصل العميل'),
+        W.err ? DS.note('warn', 'تعذّرت المعاينة من الخادم', W.err) : !P ? CF_EMPTY('جارٍ تجهيز المعاينة…')
+          : e('div', { class: 'comm-wa sc-wa' }, [scWaMsg({ img: wa.header === 'image' ? wa.img : '', text: (wa.header === 'document' ? '📄 ' + (wa.doc || 'مستند PDF') + '\n\n' : '') + (wa.text || ''), buttons: wa.button ? [wa.button] : [] })])])]));
+  }
+  kids.push(e('div', { class: 't2-pb-actions' }, [egPvBtn(x, kind, paint)]));
+  return e('div', { class: 'sr-stl' }, kids);
+}
+function egPvPage(x, c, kind, live, J, paint) {
+  const V = egPvGet(x, kind, paint), F = EGP_F[kind] || [];
+  const Q = J ? J.q : null, c0 = (Q && Q.calc) || {}, base = (c0.doc && c0.doc[kind]) || {}, saved = base.page || {};
+  const W = c.pg || (c.pg = {}), D = W[kind] && W[kind].q === (Q && Q.id) ? W[kind] : (W[kind] = { q: Q && Q.id, v: Object.assign({}, saved), dirty: false, busy: false, err: '' });
+  const G = (V.d && V.d.page) || {};
+  const clean = function () { const o = {}; F.forEach(function (f) { const v = String(D.v[f[0]] || '').trim(); if (v) o[f[0]] = v.slice(0, 700); }); return o; };
+  const canSave = !!(Q && J && J.can && J.can.doc && J.can.doc[kind]);
+  const save = async function (reset) {
+    if (D.busy || !Q) return; D.busy = true; D.err = ''; paint();
+    try {
+      const pg = reset ? {} : clean(), doc = Object.assign({}, base);
+      if (Object.keys(pg).length) doc.page = pg; else delete doc.page;
+      await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: doc, p_attach: null });
+      D.busy = false; D.dirty = false; if (reset) D.v = {}; delete EQG[Q.id]; egPvGet(x, kind, paint, true);
+      snack(reset ? 'عادت صفحة الرابط للنسخة الافتراضية.' : 'حُفظت نصوص صفحة الرابط لهذا العميل.'); paint();
+    } catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
+  };
+  const fields = F.map(function (f) {
+    const inp = e(f[3] ? 'textarea' : 'input', Object.assign({ class: 't2-input', placeholder: String(G[f[0]] || f[2] || ''), maxlength: f[3] ? '700' : '120', 'aria-label': f[1] }, f[3] ? { rows: '2' } : { type: 'text' }));
+    inp.value = D.v[f[0]] || '';
+    inp.addEventListener('input', function () { D.v[f[0]] = inp.value; D.dirty = true; });
+    inp.addEventListener('change', function () { paint(); });
+    return DS.editField(f[1] + (saved[f[0]] ? ' — معدّل لهذا العميل' : ''), inp);
+  });
+  let pv = null;
+  if (V.d) {
+    const pl = JSON.parse(JSON.stringify(V.d));
+    pl.doc = Object.assign({}, pl.doc || {}); pl.doc.page = Object.assign({}, pl.doc.page || {}, clean());
+    pl.kind = kind === 'result' ? 'elig' : kind; pl.preview = true; pl.can_decide = false;
+    window.__ELIG_PV = pl;
+    pv = e('iframe', { class: 'eq-cpv-f', title: 'معاينة صفحة الرابط كما يراها العميل', src: '/elig/?local=1&r=' + Date.now() });
+  }
+  const own = Object.keys(saved).length > 0;
+  return e('div', { class: 'eg-pg' }, [
+    e('div', { class: 'eg-pg-ed' }, [
+      e('div', { class: 'eg-hd' }, [e('b', {}, 'صفحة الرابط'), DS.badge(F.length ? (own ? 'نسخة هذا العميل' : 'النسخة الافتراضية') : 'من القرار والتوصية', own ? 'info' : null)]),
+      e('small', { class: 'cu-dr-hint' }, F.length ? 'ما تكتبه هنا لهذا العميل فقط، والحقل الفارغ يأخذ النص العام من «قوالب العقد ← صفحات الرابط».' : 'صفحة النتيجة تُبنى من التوصية والقرار كما يراها العميل.'),
+      F.length ? e('div', { class: 'sys-form cu-bd-form' }, fields) : null,
+      D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null,
+      F.length && Q && !canSave ? e('small', { class: 'cu-dr-hint' }, 'تعديل نصوص هذه المرحلة غير متاح الآن بحسب حالة العرض أو صلاحيتك.') : null,
+      e('div', { class: 't2-pb-actions' }, [
+        F.length && canSave ? liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ لهذا العميل', { size: 'sm', tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(false); } })) : null,
+        F.length && canSave && own ? liveOk(DS.button('إعادة للافتراضي', { size: 'sm', ui: 'arrows-clockwise', disabled: D.busy, onClick: function () { if (tqConfirm('إلغاء نصوص هذا العميل والرجوع للنسخة الافتراضية؟')) save(true); } })) : null,
+        egPvBtn(x, kind, paint)])]),
+    e('figure', { class: 'eg-pg-pv' }, [e('figcaption', { class: 'cu-dr-hint' }, 'كما يراه العميل — تتحدّث عند مغادرة الحقل'),
+      pv || (V.err ? DS.note('warn', 'تعذّرت المعاينة', V.err) : CF_EMPTY('جارٍ تجهيز الصفحة…'))])]);
+}
+function egOut(x, c, kind, live, paint, setup) {
+  const S = c.sub || (c.sub = {});
+  const G = live && kind !== 'result' ? eqGet(live.id, paint) : null, J = G && G.j, Q = J ? J.q : null;
+  const dk = Q && Q.calc && Q.calc.doc ? (Q.calc.doc[kind] || null) : null;
+  const pgOwn = !!(dk && dk.page && Object.keys(dk.page).length);
+  const docOwn = !!(dk && ((dk.hide || []).length || Object.keys(dk.labels || {}).length || Object.keys(dk.texts || {}).length || (dk.adds || []).length));
+  const T = [];
+  if (setup) T.push(['setup', kind === 'quote' ? 'إعداد العرض' : kind === 'purchase' ? 'الفاتورة والاستلام' : 'العقد والتوقيع', '']);
+  T.push(['msg', 'الرسالة', 'افتراضية']);
+  T.push(['page', 'صفحة الرابط', kind === 'result' ? '' : pgOwn ? 'نسخة هذا العميل' : 'افتراضية']);
+  if (kind !== 'result') T.push(['doc', 'المستند', docOwn ? 'نسخة هذا العميل' : 'افتراضية']);
+  if (kind === 'result') T.push(['send', 'الإرسال', '']);
+  let cur = S[kind] || T[0][0];
+  if (!T.some(function (t) { return t[0] === cur; })) cur = T[0][0];
+  const bar = e('div', { class: 'eg-sub', role: 'tablist', 'aria-label': 'أعمال مرحلة ' + EGO_T[kind] }, T.map(function (t) {
+    const on = t[0] === cur;
+    return e('button', { type: 'button', role: 'tab', class: 'eg-sub-t' + (on ? ' is-on' : ''), 'aria-selected': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { S[kind] = t[0]; paint(); } },
+      [e('span', {}, t[1]), t[2] ? e('small', { class: t[2] === 'نسخة هذا العميل' ? 'is-own' : null }, t[2]) : null]);
+  }));
+  let body = null;
+  try {
+    if (cur === 'setup') body = kind === 'quote' && c.qed ? eqEdit(x, c.qed.Q, c.qed.mode, c.qed.done, { paint: paint, close: function () { c.qed = null; paint(); } }) : setup();
+    else if (cur === 'msg') body = egMsgPane(x, c, kind, live, Q, paint);
+    else if (cur === 'page') body = egPvPage(x, c, kind, live, J, paint);
+    else if (cur === 'doc') body = egDocTools(x, c, kind, paint, true) || CF_EMPTY('يظهر بعد إعداد عرض السعر.');
+    else if (cur === 'send') body = egJourney(x, c, paint, live, 'pv');
+  } catch (err) { try { console.warn('[eg-out]', kind, cur, err && err.message); } catch (y) { void y; } body = DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.'); }
+  return e('div', { class: 'eg-out' }, [bar, e('div', { class: 'eg-out-b', role: 'tabpanel' }, [body])]);
+}
+function egNext(x, c, G6, paint, cur) {
+  const now = G6.filter(function (s) { return s[3] === 'now' || s[3] === 'wait'; })[0] || null;
+  return e('aside', { class: 'eg-next', 'aria-label': 'الخطوة التالية' }, [
+    e('small', {}, 'الخطوة التالية'),
+    e('b', { class: 'eg-next-t' }, now ? (now[3] === 'wait' ? 'بانتظار العميل — ' : '') + now[1] : x.executed_at ? 'اكتمل الطلب' : '—'),
+    now && now[2] ? e('span', { class: 'eg-next-s' }, now[2]) : null,
+    now && now[0] !== cur ? e('div', { class: 't2-pb-actions' }, [DS.button('فتح المرحلة', { size: 'sm', tone: 'primary', onClick: function () { c.tab = now[0]; paint(); } })]) : null,
+    e('ol', { class: 'eg-next-l' }, G6.map(function (s) { return e('li', { class: 'is-' + (s[3] || 'pend') }, [e('b', {}, s[1]), e('small', {}, s[2] || '')]); }))]);
 }
 /* أسفل مساحة العمل: السجل وبيانات الطلب وحساب الاستلام — مطويّة */
 function egBottom(x, c, paint, live, more, open) {
@@ -19185,6 +19351,7 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
       : firstNow(['qt', 'ct', 'adm', 'apv', 'pv', 'snd']) || (mm.released || auto ? 'snd' : appr ? 'qt' : 'res'));
     const tab = EG6[tab0] || 'docs', G6 = egStages6(steps); /* v686: ٦ مراحل بالترتيب الحقيقي — المفاتيح القديمة (fix · res · apv · snd · log · jr) تُحوَّل لمرحلتها */
     if (tab0 === 'log') c.logOpen = true;
+    c.wrapDoc = true; /* v806: المستند تبويب داخل المرحلة — لا يتكرّر داخل لوحاتها */
     const N = egNums(x);
     const tiles = egSumBar(x, Rp, live, N); /* v686: شريط ملخص واحد */
     const ST_W = { ok: 'تمّت', now: 'الخطوة الحالية', wait: 'بانتظار العميل', bad: 'متوقفة' };
@@ -19210,11 +19377,23 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
     };
     const P6 = function (k) { try { return paneOf(k); } catch (err) { try { console.warn('[elig-pane]', k, err && err.message); } catch (y) { void y; } return null; } };
     const pane6 = tab === 'docs' ? [P6('docs'), open || fx || c.fix ? P6('fix') : null]
-      : tab === 'rep' ? [TQN ? tqnExtPanel(x, docs, paint) : null /* v784 */, P6('rep'), P6('res')]
-        : tab === 'qt' ? [P6('qt')]
-          : tab === 'adm' ? [P6('adm')] /* v692: المرحلة السابعة تعرض لوحتها لا لوحة المعاينة */
-          : [egJourney(x, c, paint, live, tab)];
-    return e('div', { class: 'eg-work' }, [tiles, tabs, e('div', { class: 'eg-pane', role: 'tabpanel' }, pane6), egBottom(x, c, paint, live, more, open)]); /* v686: «ملفات الطلب» داخل مراحلها، والسجل وبيانات الطلب والحساب مطويّة أسفلها */
+      : tab === 'rep' ? [TQN ? tqnExtPanel(x, docs, paint) : null /* v784 */, P6('rep'), P6('res'), appr || x.status === 'rejected' ? egOut(x, c, 'result', live, paint, null) : null] /* v806: النتيجة: رسالتها وصفحتها وإرسالها */
+        : tab === 'qt' ? [egOut(x, c, 'quote', live, paint, function () { return P6('qt'); })] /* v806 */
+          : tab === 'inv' ? [egOut(x, c, 'purchase', live, paint, function () { return egJourney(x, c, paint, live, 'inv'); })]
+            : tab === 'ct' ? [egOut(x, c, 'contract', live, paint, function () { return egJourney(x, c, paint, live, 'ct'); })]
+              : tab === 'adm' ? [P6('adm')] /* v692 */
+                : [P6('rep')];
+    /* v806: إعداد العرض داخل المرحلة بدل النافذة الجانبية — eqEdit يفتح هنا ما دام الطلب ظاهرًا */
+    EQ_INL[x.id] = { open: function (Qx, mode, done) { c.qed = { Q: Qx, mode: mode, done: done }; c.tab = 'qt'; (c.sub || (c.sub = {})).quote = 'setup'; paint(); } };
+    /* v806: أقسام الطلب — «مسار الطلب» (المراحل بجانب «الخطوة التالية») · «السجل» · «بيانات الطلب وحساب الاستلام» */
+    const top = c.top || 'path';
+    const topBar = e('div', { class: 'eg-top', role: 'tablist', 'aria-label': 'أقسام الطلب' }, [['path', 'مسار الطلب'], ['log', 'السجل'], ['data', 'بيانات الطلب وحساب الاستلام']].map(function (t) {
+      return e('button', { type: 'button', role: 'tab', class: 'eg-top-t' + (top === t[0] ? ' is-on' : ''), 'aria-selected': top === t[0] ? 'true' : 'false', 'data-live-ok': '', onClick: function () { c.top = t[0]; if (t[0] === 'log') { c.logOpen = true; egjLoad(x, paint, true); } paint(); } }, t[1]);
+    }));
+    const body = top === 'log' ? [e('div', { class: 'sr-stl' }, [e('b', {}, 'السجل — الإرسال والمعاينات والموافقات'), egJourney(x, c, paint, live, 'log')])]
+      : top === 'data' ? [e('div', { class: 'eg-more' }, (more || []).filter(Boolean))]
+        : [tabs, e('div', { class: 'eg-grid' }, [e('div', { class: 'eg-pane', role: 'tabpanel' }, pane6), egNext(x, c, G6, paint, tab)])];
+    return e('div', { class: 'eg-work', 'data-sr': x.id }, [tiles, topBar].concat(body)); /* v806 (كان v686: السجل وبيانات الطلب مطويّة أسفل المراحل) */
   } catch (err) { try { console.warn('[elig-work]', err && err.message); } catch (y) { void y; } return null; }
 }
 /* إعداد العرض من الطلب: المنتج وبديله والوكيل، القيمة والدفعات، البنود (مبلغ · مسمّى في هذا العرض · ظاهر/مخفي) وبنود مضافة، ومعاينة ما يراه العميل */
@@ -20347,7 +20526,7 @@ function srCard(x, RF, o) {
       DS.button('إلغاء الطلب', { size: 'sm', ui: 'x', onClick: function () { W.mode = 'cancel'; W.note = ''; W.err = ''; RF.paint(); } }));
     if (x.kind === 'settle' && !qok) body.push(e('small', { class: 'cu-dr-hint' }, liveQ ? 'العرض بانتظار اعتماد المشرف — بعده يُعتمد الطلب ويُرسل المبلغ.' : 'أعدّ فاتورة سداد قيمة المنتج أعلاه، ثم اعتمد الطلب لإرسال المبلغ للعميل.'));
   } else if (srWaitExec(x)) {
-    if (x.kind !== 'settle' && !(TQN && x.kind === 'elig')) { /* v705: لا تظهر كتلة «ربط الدفعات بعقد» على طلب الأهلية في staff/next/ */
+    if (x.kind !== 'settle' && x.kind !== 'elig') { /* v806: لا تظهر كتلة «ربط الدفعات بعقد» على طلب الأهلية إطلاقًا (كانت في staff/next/ وحدها — v705) */
       const T = ((LIVE_ADM.ct || {})[x.user_id] || []).filter(function (c) { const rr = srRow(c.no); return !rr.closed && (rr.contract_type || 'new') === x.kind && (x.contract_nos || []).indexOf(c.no) < 0; });
       body.push(e('div', { class: 'cf-form' }, [e('b', {}, 'التنفيذ: ربط الدفعات بعقد ' + (x.kind === 'defer' ? 'التأجيل' : 'التوحيد')),
         T.length ? DS.editField(x.kind === 'defer' ? 'عقد التأجيل' : 'العقد الموحّد', DS.select({ value: W.tgt, ph: '— اختر العقد —', options: T.map(function (c) { return [c.no, c.no + ' · ' + SR(cInfo(c).total || 0)]; }), onChange: function (v) { W.tgt = v; RF.paint(); } }))

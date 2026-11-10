@@ -9230,3 +9230,39 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eq-cpv-ed,.eq-cpv-ph{display:flex;flex-direction:column;gap:8px;min-width:0}
 .eq-cpv-ph>b,.eq-cpv-ed>b{color:var(--t2-navy,#0A1F44)}
 .eq-cpv-f{width:100%;max-width:390px;height:640px;margin-inline:auto;border:1px solid var(--t2-line,#D4DEEA);border-radius:22px;background:#F4F7FA;box-shadow:0 10px 28px rgba(10,31,68,.10)}
+
+/* v806: طلب الأهلية — أقسام الطلب، والمرحلة بجانب «الخطوة التالية»، و«ما يصل العميل» بتبويبات داخل كل مرحلة */
+.eg-top{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--t2-line,#D4DEEA);margin:4px 0 14px}
+.eg-top-t{font:inherit;font-size:14.5px;background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;min-height:44px;color:var(--t2-muted,#566A88);cursor:pointer}
+.eg-top-t.is-on{color:var(--t2-navy,#0A1F44);font-weight:700;border-bottom-color:var(--t2-brand,#0AA5AD)}
+.eg-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:start;margin-top:14px}
+.eg-grid>.eg-pane{min-width:0}
+.eg-next{position:sticky;top:12px;display:grid;gap:10px;padding:16px;border:1px solid var(--t2-line,#D4DEEA);border-top:4px solid #C99A2E;border-radius:16px;background:var(--t2-surface,#fff)}
+.eg-next>small{color:var(--t2-muted,#566A88);font-size:12.5px}
+.eg-next-t{font-size:16px;color:var(--t2-navy,#0A1F44)}
+.eg-next-s{font-size:13px;color:var(--t2-muted,#566A88)}
+.eg-next-l{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:6px}
+.eg-next-l li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--t2-surface-2,#F7F9FC);font-size:13px;border-inline-start:3px solid var(--t2-line,#D4DEEA)}
+.eg-next-l li small{color:var(--t2-muted,#566A88);font-size:12px}
+.eg-next-l li.is-ok{border-inline-start-color:#12795C}
+.eg-next-l li.is-now{border-inline-start-color:#C99A2E;background:#FFF8E8}
+.eg-next-l li.is-wait{border-inline-start-color:#0AA5AD}
+.eg-next-l li.is-bad{border-inline-start-color:#B3261E}
+.eg-out{display:grid;gap:0;border:1px solid var(--t2-line,#D4DEEA);border-radius:16px;overflow:hidden;background:var(--t2-surface,#fff);margin-top:12px}
+.eg-sub{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;background:var(--t2-surface-2,#F7F9FC);border-bottom:1px solid var(--t2-line,#D4DEEA)}
+.eg-sub-t{font:inherit;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 14px;border-radius:10px;border:1px solid transparent;background:none;color:var(--t2-navy,#0A1F44);cursor:pointer}
+.eg-sub-t small{font-size:11.5px;color:var(--t2-muted,#566A88)}
+.eg-sub-t small.is-own{color:#067A82;font-weight:700}
+.eg-sub-t.is-on{background:var(--t2-surface,#fff);border-color:var(--t2-line,#D4DEEA);font-weight:700}
+.eg-out-b{padding:16px}
+.eg-out-b>.sr-stl{border:0;padding:0;margin:0}
+.eg-pg{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;align-items:start}
+.eg-pg-ed{display:grid;gap:10px;min-width:0}
+.eg-pg-pv{margin:0;display:grid;gap:8px;justify-items:center}
+.eg-msg2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+.eg-msg2-v,.eg-msg2-p{display:grid;gap:8px;min-width:0}
+.eq-inl{display:grid;gap:12px}
+.eq-inl .cu-dr-fa{display:flex;flex-wrap:wrap;gap:8px;padding-top:8px;border-top:1px solid var(--t2-line,#D4DEEA)}
+.eg-doc{display:grid;gap:10px}
+@media (max-width:1100px){.eg-grid{grid-template-columns:minmax(0,1fr)}.eg-next{position:static}}
+@media (max-width:900px){.eg-pg,.eg-msg2{grid-template-columns:minmax(0,1fr)}}
