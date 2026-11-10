@@ -16186,7 +16186,7 @@ function rvuReview() {
   return [DS.panel('راجع طلبك', null, rows.concat([
     miss.length ? DS.note('warn', 'بنود ناقصة أو غير صحيحة: ' + fmtNum(miss.length), miss.slice(0, 6).map(function (m) { return m[0] + ' › ' + m[1] + ': ' + m[2]; }).join(' — ')) : null,
     DS.editField('أقرّ بصحة البيانات والمرفقات، وأعلم أن الطلب يُقفل للتعديل بعد استلامه', ack)]), [rvBadge('مسودة', 'info')]),
-    DS.actionBar({ buttons: [DS.button('رجوع للتعديل', { ui: 'pencil-simple', onClick: function () { RVU.view = 'form'; draw(); } }),
+    DS.actionBar({ buttons: [DS.button('تعديل البيانات', { ui: 'pencil-simple', onClick: function () { RVU.view = 'form'; draw(); } }),
       DS.button(back ? 'أعد الإرسال' : 'تأكيد وأرسل', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !RVU.ack || miss.length > 0, onClick: function () {
         RVU.st = 'sent'; RVU.view = 'form'; RVU.no = RVU.no || 'UPD-2610-0042'; RVU.at = new Date(); RVU.ack = false; RV.toast = ''; draw(); toTop(); } })] })];
 }
@@ -16438,7 +16438,7 @@ function pfSection(k) {
   if (PF.mode === 'review') {
     const rows = pfChanges(); kids.push(pfSteps(2));
     kids.push(DS.panel('مراجعة التعديل', 'راجع التغيير قبل الإرسال. يُعتمد بعد مراجعة الإدارة.', [pfDiff(rows), rows.some(function (r) { return /id_doc|residency_type|nationality|payout_method/.test(r.id); }) ? DS.note('warn', 'تتغيّر المرفقاتُ المطلوبة', 'بعد الاعتماد راجع «المرفقات» وارفع ما يطلبه نوع الوثيقة الجديد.') : null,
-      rvRow([DS.button('إرسال طلب التحديث', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { pfSubmit(k); } }), DS.button('رجوع للتعديل', { onClick: function () { PF.mode = 'edit'; PF.msg = null; draw(); } })])]));
+      rvRow([DS.button('إرسال طلب التحديث', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { pfSubmit(k); } }), DS.button('تعديل البيانات', { onClick: function () { PF.mode = 'edit'; PF.msg = null; draw(); } })])]));
     return kids;
   }
   if (PF.mode === 'edit') {
@@ -25017,7 +25017,7 @@ const tbl = !rows.length ? DS.note('info', 'لا تغيير على بيانات 
 : LV.table ? LV.table({ id: 'cf-rev-' + k, search: false, pager: false, columns: [{ label: 'الحقل', cell: function (c) { return c[0]; } }, { label: 'القيمة الحالية', cell: function (c) { return c[1]; } }, { label: 'القيمة الجديدة', cell: function (c) { return e('b', {}, c[2]); } }], rows: rows })
 : DS.fields(rows.map(function (c) { return [c[0], c[1] + ' ← ' + c[2]]; }));
 return [e('div', { class: 't2-stack-tight' }, [DS.note('info', 'راجع التعديل قبل الحفظ', rows.length ? fmtNum(rows.length) + ' تعديل على هذا القسم.' : ''), tbl, U.gate, bad,
-rvRow([liveOk(DS.button(U.busy ? 'جارٍ الحفظ…' : 'تأكيد الحفظ', { tone: 'primary', size: 'sm', ui: 'check', disabled: U.busy, onClick: function () { cfSave(k); } })), DS.button('رجوع للتعديل', { size: 'sm', disabled: U.busy, onClick: function () { U.stage = 'form'; U.err = ''; draw(); } })])])];
+rvRow([liveOk(DS.button(U.busy ? 'جارٍ الحفظ…' : 'تأكيد الحفظ', { tone: 'primary', size: 'sm', ui: 'check', disabled: U.busy, onClick: function () { cfSave(k); } })), DS.button('تعديل البيانات', { size: 'sm', disabled: U.busy, onClick: function () { U.stage = 'form'; U.err = ''; draw(); } })])])];
 }
 const ctl = function (f) {
 const v = cur(f), set = function (x) { U.vals[f.key] = x; U.msg = ''; };
@@ -30605,7 +30605,7 @@ function commCtOpen(c, mode) {
       cuSec('الدور', 'users-three', auto ? [DS.fields([['الدور', commRoleT(D.roles)]]), e('small', { class: 'cu-dr-hint' }, 'الأدوار من الحساب نفسه.')] : [e('div', { class: 'sys-form is-2 cu-bd-form' }, Object.keys(COMM_ROLE).map(function (r) { return commSw(COMM_ROLE[r][0], D.roles.indexOf(r) >= 0, function (on) { D.roles = on ? D.roles.concat([r]) : D.roles.filter(function (x) { return x !== r; }); if (!D.roles.length) D.roles = [r]; rerun(); }); }))]),
       cuSec('ملاحظة', 'note-pencil', [e('textarea', { class: 't2-input cu-why', rows: '2', onInput: function (ev) { D.note = ev.target.value; } }, D.note || ''), commSw('في المفضلة', D.favorite, function (on) { D.favorite = on; })]),
       D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
-    foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ', { tone: 'primary', ui: 'check', onClick: save, disabled: D.busy })), c ? DS.button('رجوع للعرض', { onClick: function () { D.mode = 'view'; rerun(); } }) : null, DS.button('إغلاق', { onClick: close })])];
+    foot = [e('div', { class: 'cu-dr-fa is-wrap' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ', { tone: 'primary', ui: 'check', onClick: save, disabled: D.busy })), c ? DS.button('العودة للعرض', { onClick: function () { D.mode = 'view'; rerun(); } }) : null, DS.button('إغلاق', { onClick: close })])];
   }
   cuBdDraw({ key: 'commct:' + key, ic: (COMM_ROLE[((c && c.roles) || ['client'])[0]] || COMM_ROLE.client)[1], title: c ? 'جهة اتصال · ' + c.name : 'إضافة جهة اتصال', sub: c ? commRoleT(c.roles) + (auto ? ' · من حسابه في المنصة' : '') : 'تُضاف يدويًا إلى الدليل', body: body, foot: foot, onClose: function () { delete COMMD[key]; draw(); } });
 }
