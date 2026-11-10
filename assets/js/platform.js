@@ -19578,7 +19578,8 @@ function eligResubmit(x) {
 /* إعدادات مرفقات الوظيفة: مرحلة طلب كل مستند ومدة صلاحيته */
 const JDM = { at: 0, rows: [], busy: false, dirty: {}, err: '' };
 function jobDocMetaPanel(paint) {
-  if (!JDM.at) { JDM.at = 1; admRpc('job_doc_meta', {}).then(function (j) { JDM.rows = (j && j.rows) || []; JDM.at = Date.now(); paint(); }).catch(function (err) { JDM.err = (err && err.message) || 'تعذّر التحميل.'; JDM.at = Date.now(); paint(); }); }
+  JDM.rp = paint; /* v801: المنصة الجديدة تركّب الصفحة مرتين — يُعاد الرسم بآخر دالة رسم */
+  if (!JDM.at) { JDM.at = 1; admRpc('job_doc_meta', {}).then(function (j) { JDM.rows = (j && j.rows) || []; JDM.at = Date.now(); (TQN && JDM.rp ? JDM.rp : paint)(); }).catch(function (err) { JDM.err = (err && err.message) || 'تعذّر التحميل.'; JDM.at = Date.now(); (TQN && JDM.rp ? JDM.rp : paint)(); }); }
   const ST = [['apply', 'عند تقديم الطلب'], ['after_elig', 'بعد قبول الأهلية'], ['before_contract', 'قبل توقيع العقد']];
   const VD = [['', 'بلا حد'], ['0', 'صادر بتاريخ اليوم'], ['7', 'خلال 7 أيام'], ['30', 'خلال 30 يومًا'], ['90', 'خلال 90 يومًا']];
   const WTN = { gov_civil: 'موظف حكومي مدني', gov_military: 'موظف عسكري', company: 'موظف شركة', investor: 'مستثمر / صاحب عمل', retired: 'متقاعد', housewife: 'ربة منزل', student: 'طالب' };
@@ -33591,7 +33592,8 @@ function egxForm(t) { return { title: t.title || '', lead: t.lead || '', duratio
 function egTextsPanel(rp) {
   try {
     const T = 'نصوص خدمة الأهلية', RD = typeof rp === 'function' ? rp : draw;
-    if (!EGX.at) { EGX.at = -1; Promise.resolve(admRpc('admin_elig_texts', {})).then(function (j) { EGX.at = Date.now(); if (j && j.ok === true) { EGX.t = j.texts || {}; EGX.can = !!j.can; EGX.v = egxForm(EGX.t); EGX.err = ''; } else EGX.err = 'تعذّر تحميل النصوص.'; try { RD(); } catch (er) { void er; } }).catch(function (er) { EGX.at = Date.now(); EGX.err = (er && er.message) || 'تعذّر تحميل النصوص.'; try { RD(); } catch (x) { void x; } }); }
+    EGX.rd = RD; /* v801 */
+    if (!EGX.at) { EGX.at = -1; Promise.resolve(admRpc('admin_elig_texts', {})).then(function (j) { EGX.at = Date.now(); if (j && j.ok === true) { EGX.t = j.texts || {}; EGX.can = !!j.can; EGX.v = egxForm(EGX.t); EGX.err = ''; } else EGX.err = 'تعذّر تحميل النصوص.'; try { (TQN && EGX.rd ? EGX.rd : RD)(); } catch (er) { void er; } }).catch(function (er) { EGX.at = Date.now(); EGX.err = (er && er.message) || 'تعذّر تحميل النصوص.'; try { (TQN && EGX.rd ? EGX.rd : RD)(); } catch (x) { void x; } }); }
     if (EGX.at < 0) return DS.panel(T, null, [DS.note('info', 'جارٍ التحميل…', '')]);
     if (!EGX.t) return DS.panel(T, null, [DS.note('warn', 'تعذّر التحميل', EGX.err || '', DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { EGX.at = 0; RD(); } }))]);
     const V = EGX.v;
