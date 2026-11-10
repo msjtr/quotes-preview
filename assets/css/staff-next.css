@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v821 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v822 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2506,6 +2506,79 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 
 /* v821: صفحة الطلب والعرض — القسم خارج التبويب المختار مخفي (قاعدة عرض أقسام الصفحة كانت تغلب الإخفاء) */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b section.cu-ds.tqn-ds.tqn-st-hide, .tq-next .cu-dr.tqn-dr-cu .cu-dr-b section.t2-sec.tqn-st-hide { display: none !important; }
+
+/* ═══ v822: «الطلبات والعقود» — تصميم جديد موحّد: شريط علوي داكن بأرقام الحالات · بحث · جدول واحد · صفحة الطلب برأس داكن ═══ */
+.tq-next.tqn-rqp #pv-title, .tq-next.tqn-rqp .t2-ph-sub { display: none !important; }
+.tq-next .tqn-rqw { display: grid; gap: 14px; }
+.tq-next .tqn-rh { display: grid; gap: 18px; padding: 22px 24px; border-radius: 22px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, #0E8F96 0%, #0B5E6E 38%, #0F1B33 100%); box-shadow: 0 10px 30px rgba(15, 27, 51, .18); }
+.tq-next .tqn-rh-t { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.tq-next .tqn-rh-t > div:not(.tqn-rh-a) { flex: 1 1 220px; min-width: 0; }
+.tq-next .tqn-rh h2 { margin: 0; font-size: 22px; font-weight: 900; color: #fff; }
+.tq-next .tqn-rh p { margin: 4px 0 0; font-size: 13px; color: rgba(255, 255, 255, .78); }
+.tq-next .tqn-rh-ic { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .22); }
+.tq-next .tqn-rh-ic .tqn-svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tq-next .tqn-rh-a { display: flex; gap: 8px; flex-wrap: wrap; }
+.tq-next .tqn-rh-a .tqn-b { background: rgba(255, 255, 255, .12); color: #fff; border: 1px solid rgba(255, 255, 255, .28); }
+.tq-next .tqn-rh-a .tqn-b:hover { background: rgba(255, 255, 255, .22); }
+.tq-next .tqn-rh-s { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.tq-next .tqn-rh-st { display: grid; gap: 2px; justify-items: start; padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .08); color: #fff; font: inherit; text-align: start; cursor: pointer; transition: background .15s, transform .15s; }
+.tq-next .tqn-rh-st:hover:not(:disabled) { background: rgba(255, 255, 255, .16); transform: translateY(-1px); }
+.tq-next .tqn-rh-st:disabled { cursor: default; }
+.tq-next .tqn-rh-st b { font-size: 24px; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tq-next .tqn-rh-st small { font-size: 12px; color: rgba(255, 255, 255, .8); }
+.tq-next .tqn-rh-st.is-warn b { color: #FFD27A; }
+.tq-next .tqn-rh-st.is-bad b { color: #FF9C9C; }
+.tq-next .tqn-rh-st.is-ok b { color: #8FF0C5; }
+.tq-next .tqn-rh-st.is-on { background: #fff; border-color: #fff; color: #0F1B33; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.tq-next .tqn-rh-st.is-on small { color: #4A5872; }
+.tq-next .tqn-rh-st.is-on.is-warn b { color: #B7791F; } .tq-next .tqn-rh-st.is-on.is-bad b { color: #C0392B; } .tq-next .tqn-rh-st.is-on.is-ok b { color: #12795C; }
+.tq-next .tqn-rq-tb { display: flex; align-items: center; gap: 12px; }
+.tq-next .tqn-rq-tb .tqn-lq { flex: 1 1 auto; }
+.tq-next .tqn-rq-n { flex: none; font-size: 12px; font-weight: 700; color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-rqt { display: grid; background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; overflow: hidden; box-shadow: 0 2px 10px rgba(15, 27, 51, .04); }
+.tq-next .tqn-rqr { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.7fr) minmax(0, 1.6fr) minmax(0, 1.1fr) 92px; gap: 14px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--tqn-line, #E3E8F0); font-size: 13px; cursor: pointer; transition: background .12s; }
+.tq-next .tqn-rqr:first-child { border-top: 0; }
+.tq-next .tqn-rqr:hover { background: #F0FAFA; }
+.tq-next .tqn-rqr.is-h { background: #F6F8FB; cursor: default; padding-block: 10px; font-size: 12px; font-weight: 800; color: var(--tqn-mut, #66748C); }
+.tq-next .tqn-rqr > * { min-width: 0; }
+.tq-next .tqn-rqr > .tqn-b { justify-self: end; }
+.tq-next .tqn-rq-no { display: grid; gap: 2px; }
+.tq-next .tqn-rq-no bdi { font-weight: 800; font-size: 12.5px; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tq-next .tqn-rq-no small { font-size: 11.5px; color: var(--tqn-mut, #66748C); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tq-next .tqn-rq-i { color: #3B4A63; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tq-next .tqn-rq-i.is-b { font-weight: 800; color: var(--tqn-ink, #0F1B33); }
+.tq-next .tqn-rqr .tqn-who small.is-rtl { direction: rtl; text-align: start; }
+.tq-next .tqn-rqr .tqn-who > i { width: 36px; height: 36px; border-radius: 12px; }
+.tq-next.pv-dark #pv-host .tqn-rqt { background: #121C30; border-color: var(--tqn-line); }
+.tq-next.pv-dark #pv-host .tqn-rqr { border-color: var(--tqn-line); }
+.tq-next.pv-dark #pv-host .tqn-rqr.is-h { background: #0F1829; }
+.tq-next.pv-dark #pv-host .tqn-rqr:hover { background: #12303A; }
+.tq-next.pv-dark #pv-host .tqn-rq-i { color: var(--tqn-ink); }
+@media (max-width: 44rem) {
+  .tq-next .tqn-rqr { grid-template-columns: minmax(0, 1fr) auto; }
+  .tq-next .tqn-rqr.is-h { display: none; }
+  .tq-next .tqn-rqr > :nth-child(1), .tq-next .tqn-rqr > :nth-child(3) { display: none; }
+  .tq-next .tqn-rqr > :nth-child(2) { grid-column: 1; }
+  .tq-next .tqn-rqr > :nth-child(4) { grid-column: 1; }
+  .tq-next .tqn-rqr > .tqn-b { grid-column: 2; grid-row: 1 / span 2; }
+}
+/* صفحة الطلب أو العرض المفتوحة من القسم: رأس داكن · تبويبات بارزة · أقسام بطاقات */
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-h { padding: 22px 24px !important; border-radius: 22px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, #0E8F96 0%, #0B5E6E 38%, #0F1B33 100%) !important; border: 0 !important; box-shadow: 0 10px 30px rgba(15, 27, 51, .18); margin-bottom: 14px; }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-h b, .tq-next .cu-dr.tqn-dr-rq .cu-dr-h h2, .tq-next .cu-dr.tqn-dr-rq .cu-dr-h h3 { color: #fff !important; }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-h .tqn-pg-av { background: rgba(255, 255, 255, .16) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .25); }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-h .tqn-pg-tag { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-color: rgba(255, 255, 255, .22) !important; }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-h .st-sheet-x { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-color: rgba(255, 255, 255, .28) !important; }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-b > .cu-dr-st { display: none; }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-b > .cu-asg { padding: 14px 16px; border-radius: 16px; background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .tqn-st.tqn-drt { position: sticky; top: calc(var(--tqn-pg-t, 76px) + 6px); z-index: 3; background: #EEF2F7; box-shadow: 0 4px 14px rgba(15, 27, 51, .08); }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-b > section.cu-ds.tqn-ds:not(.tqn-st-hide) { background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; padding: 18px !important; box-shadow: 0 2px 10px rgba(15, 27, 51, .04); }
+.tq-next .cu-dr.tqn-dr-rq .cu-dr-b .t2-fields { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important; gap: 10px !important; }
+.tq-next.pv-dark #pv-host .cu-dr.tqn-dr-rq .cu-dr-b > section.cu-ds.tqn-ds, .tq-next.pv-dark #pv-host .cu-dr.tqn-dr-rq .cu-dr-b > .cu-asg { background: #121C30; border-color: var(--tqn-line); }
+/* صفحة طلب الأهلية: الرأس الداكن نفسه */
+.tq-next .sr-full-top { padding: 20px 22px !important; border-radius: 22px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, #0E8F96 0%, #0B5E6E 38%, #0F1B33 100%) !important; border: 0 !important; box-shadow: 0 10px 30px rgba(15, 27, 51, .18); }
+.tq-next .sr-full-top b, .tq-next .sr-full-top h2, .tq-next .sr-full-top small, .tq-next .sr-full-top span:not(.t2-pill) { color: #fff !important; }
+.tq-next .sr-full-top .t2-btn { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-color: rgba(255, 255, 255, .28) !important; }
+.tq-next .sr-full > .tqn-st-hide { display: none !important; }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }

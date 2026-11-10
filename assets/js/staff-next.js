@@ -588,8 +588,9 @@ function geoQ() {
   soon();
 })();
 
-/* v820: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v822: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
    · v820: صفوف جداول «الطلبات والعقود» تُفتح (كان حارس الإجراءات يمنع «إصدار عرض السعر…» لأن الصف بلا data-live-ok)، وعدد العقود الصحيح («عقد واحد» كان يُقرأ من المبلغ)، والجدول بأعمدته على الشاشات المتوسطة.
    · v819: «الطلبات والعقود» — «عقود العملاء» جدول (بطاقات ملخص تصفّي · بحث · صف لكل عميل بعقوده والمتبقي وحالاتها)، و«طلبات المتجر» جدول طلبات المتجر وحدها (بلا شرائح الأقسام الأخرى)، وصفحة الطلب والعرض بتبويب لكل قسم (الإجراء أولًا) ومسار «الطلبات والعقود › الصفحة › الطلب».
    · v814: «المالية» و«التواصل» — «المدفوعات» تبويبان (سجل المدفوعات · فروقات تحتاج قرارك) بدل قسم طويل فوق السجل، و«تجربة العملاء» تظهر (كانت فارغة)، واسم الصفحة اسم القائمة (جهات الاتصال · تجربة العملاء)، وخلية العميل في العروض بفاصل بين أجزائها.
@@ -1287,14 +1288,14 @@ function geoQ() {
     if (ptl && RN[txt(ptl)] && onT === RN[txt(ptl)]) ptl.textContent = RN[txt(ptl)];
     try { srvCount(root); } catch (e) { void e; }
     try { finPay(root); } catch (e) { void e; }
-    try { ctList(root); } catch (e) { void e; }
-    try { stInbox(root); } catch (e) { void e; }
+    try { rqPages(root); } catch (e) { void e; }
     if (ST.__inbx && onT === 'طلبات المتجر') { var sc = [].filter.call(root.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0]; if (sc) { ST.__inbx = 0; if (!sc.classList.contains('is-on')) sc.click(); } }
     try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');
     [].forEach.call(root.querySelectorAll('.tqn-ncp, .tqn-axp'), function (x) { if (x !== L || !k) { cls(x, 'tqn-ncp', false); cls(x, 'tqn-axp', false); } });
     if (!L || !k) return;
     if (k === 'nc') newClients(L);
+    else if (k === 'pq') { cls(L, 'tqn-axp', false); }
     else axTable(L, k);
   }
   /* لون الشارة من صنف حبة المنصة */
@@ -1603,6 +1604,183 @@ function geoQ() {
     if (!rows.length) T.appendChild(mk('div', 'tqn-le', 'لا طلبات متجر تنتظر إجراء الآن.'));
     W.appendChild(T); W.appendChild(mk('div', 'tqn-lf', rows.length ? 'عرض ' + rows.length + ' طلب ينتظر إجراء' : ''));
     page.insertBefore(W, gl || null); page.__tqnSi = W;
+  }
+
+  /* ═══ v822: «الطلبات والعقود» — هيكل واحد لكل صفحات القسم ═══ */
+  var RQI = { 'طلبات الخدمات': ['clip', 'تحقق الأهلية وطلبات العملاء — القرار والتنفيذ من صفحة الطلب.'], 'طلبات المتجر': ['card', 'طلبات المتجر التي تنتظر إجراءً: عرض سعر أو تأكيد طلب.'], 'عروض الشركاء': ['note', 'عروض أسعار الشركاء — الإعداد والاعتماد والإرسال للعميل.'], 'عروض المتاجر': ['note', 'عروض أسعار المتاجر — الإعداد والاعتماد والإرسال للعميل.'], 'عقود العملاء': ['id', 'عقود كل عميل وحالاتها — المراجعة والسداد والتعثّر.'] };
+  function rqTone(t) { return /مكتمل|منتظم|مقبول|معتمد|منفّذ|مؤهَّل|مسدد/.test(t) && !/غير|بانتظار/.test(t) ? 'ok' : /متعثر|متأخر|مرفوض|ملغا|رفض/.test(t) ? 'bad' : /بانتظار|مراجعة|قيد|معدّل|معلّق|جديد/.test(t) ? 'warn' : ''; }
+  function rqNum(el) { var t = txt(el), m = t.match(/\d[\d,]*/); return m ? m[0] : '0'; }
+  function rqLab(el) { return txt(el).replace(/\d[\d,]*/g, '').replace(/\s+/g, ' ').trim(); }
+  /* الهيكل: شريط علوي + بحث + جدول؛ يُبنى مرة ويُعاد عند تغيّر البيانات */
+  function rqShell(host, before, C) {
+    var Q = (ST['rq:' + C.key] || '').trim();
+    var sig = C.key + '#' + C.sig + '#' + Q;
+    var W = host.__tqnRq;
+    if (W && W.parentNode === host && W.__sig === sig) { if (before && W.nextSibling !== before && before.parentNode === host) host.insertBefore(W, before); return W; }
+    var keepQ = W && W.__q === document.activeElement;
+    if (W && W.parentNode) W.parentNode.removeChild(W);
+    W = mk('div', 'tqn-rqw'); W.__sig = sig;
+    var H = mk('section', 'tqn-rh');
+    var ht = mk('div', 'tqn-rh-t'); ht.appendChild(icBox(C.ic || 'list', 'tqn-rh-ic'));
+    var hs = mk('div'); hs.appendChild(mk('h2', '', C.title)); if (C.sub) hs.appendChild(mk('p', '', C.sub)); ht.appendChild(hs);
+    if ((C.acts || []).length) { var ha = mk('div', 'tqn-rh-a'); C.acts.forEach(function (a) { ha.appendChild(btn(a.t, 'is-sm', a.fn)); }); ht.appendChild(ha); }
+    H.appendChild(ht);
+    if ((C.stats || []).length) {
+      var st = mk('div', 'tqn-rh-s');
+      C.stats.forEach(function (x) {
+        var b = mk('button', 'tqn-rh-st' + (x.tone ? ' is-' + x.tone : '') + (x.on ? ' is-on' : '')); b.type = 'button'; b.setAttribute('data-live-ok', '');
+        b.appendChild(mk('b', '', x.n)); b.appendChild(mk('small', '', x.t));
+        if (x.fn) b.addEventListener('click', function () { x.fn(); soon(); }); else b.disabled = true;
+        st.appendChild(b);
+      });
+      H.appendChild(st);
+    }
+    W.appendChild(H);
+    var tb = mk('div', 'tqn-rq-tb'), q = mk('input', 'tqn-lq'); q.type = 'search'; q.placeholder = C.ph || 'ابحث بالاسم أو الرقم…'; q.value = ST['rq:' + C.key] || ''; q.setAttribute('aria-label', 'بحث');
+    q.addEventListener('input', function () { ST['rq:' + C.key] = q.value; clearTimeout(q.__t); q.__t = setTimeout(apply, 160); });
+    tb.appendChild(q); W.__q = q;
+    var rows = C.items.filter(function (it) { return !Q || it.s.indexOf(Q) >= 0; });
+    tb.appendChild(mk('span', 'tqn-rq-n', rows.length + ' من ' + C.items.length));
+    W.appendChild(tb);
+    var T = mk('div', 'tqn-rqt');
+    var hr = mk('div', 'tqn-rqr is-h'); C.cols.forEach(function (h) { hr.appendChild(mk('span', '', h)); }); hr.appendChild(mk('span')); T.appendChild(hr);
+    rows.forEach(function (it) {
+      var r = mk('div', 'tqn-rqr'); r.setAttribute('role', 'button'); r.setAttribute('data-live-ok', ''); r.tabIndex = 0;
+      it.c.forEach(function (n) { r.appendChild(n || mk('span', 'is-mut', '—')); });
+      r.appendChild(btn(it.bt || 'فتح', 'is-pri is-sm', it.open));
+      r.addEventListener('click', function () { it.open(); });
+      r.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') it.open(); });
+      T.appendChild(r);
+    });
+    if (!rows.length) T.appendChild(mk('div', 'tqn-le', C.items.length ? 'لا نتائج تطابق البحث.' : (C.empty || 'لا طلبات هنا الآن.')));
+    W.appendChild(T);
+    host.insertBefore(W, before && before.parentNode === host ? before : null); host.__tqnRq = W;
+    if (keepQ) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) { void e; } }
+    return W;
+  }
+  function cNo(no, sub) { var x = mk('span', 'tqn-rq-no'); x.appendChild(mk('bdi', '', no || '—')); if (sub) x.appendChild(mk('small', '', sub)); return x; }
+  function cWho(nm, sub) { var w = mk('div', 'tqn-who'); w.appendChild(mk('i', '', String(nm || '؟').replace(/^(ال)/, '').slice(0, 1))); var s2 = mk('span'); s2.appendChild(mk('b', '', nm || '—')); if (sub) s2.appendChild(mk('small', 'is-rtl', sub)); w.appendChild(s2); return w; }
+  function cTxt(t, cl) { return mk('span', 'tqn-rq-i' + (cl ? ' ' + cl : ''), t || '—'); }
+  function cSt(el, t) { if (el) return chipOf(el); var tn = rqTone(t || ''); return mk('span', 'tqn-chip' + (tn ? ' is-' + tn : ''), t || '—'); }
+  function chipStats(chips) { return chips.map(function (c) { var n = txt(c.querySelector('small')) || rqNum(c), lb = txt(c).replace(new RegExp(n.replace(/,/g, ',?') + '\\s*$'), '').trim(); return { t: lb, n: n, tone: rqTone(lb), on: c.classList.contains('is-on'), fn: function () { c.click(); } }; }); }
+  function rqPages(root) {
+    var on = rqOn(), H = document.documentElement;
+    var pt = txt(document.getElementById('pv-title'));
+    var page = on && RQI[on.t] && pt === on.t ? on.t : '';
+    cls(H, 'tqn-rqp', !!page);
+    if (!page) { try { srTabs(root); } catch (e) { void e; } return; }
+    var I = RQI[page], C = { key: page, title: page, ic: I[0], sub: I[1] };
+    if (page === 'طلبات الخدمات') return rqSrv(root, C);
+    if (page === 'طلبات المتجر') return rqStore(root, C);
+    if (page === 'عقود العملاء') return rqCt(root, C);
+    return rqOffers(root, C);
+  }
+  /* طلبات الخدمات: بطاقات الطلبات (sr-brief) صفوفًا، وأرقام الحالات من بطاقات المنصة */
+  function rqSrv(root, C) {
+    var L = root.querySelector('.adm-live'); if (!L) return;
+    if (L.querySelector(':scope > .sr-full, :scope > .sr-full-top')) { cls(document.documentElement, 'tqn-rqp', false); try { srTabs(root); } catch (e) { void e; } return; }
+    var kp = [].slice.call(L.querySelectorAll('.cu-kpis .cu-kpi')), tools = L.querySelector(':scope > .m3-tools, :scope > .ax-tools');
+    var secs = [].filter.call(L.querySelectorAll(':scope > section.t2-sec'), function (s) { return s.querySelector('.cf-srs'); });
+    var cards = []; secs.forEach(function (s) { cards = cards.concat([].slice.call(s.querySelectorAll('.cf-srs > .sr-brief'))); });
+    [].forEach.call(L.querySelectorAll(':scope > .ax-top, :scope > .cu-kpis'), function (x) { cls(x, 'tqn-hide', true); });
+    if (tools) cls(tools, 'tqn-hide', true);
+    secs.forEach(function (s) { cls(s, 'tqn-hide', true); });
+    C.stats = kp.map(function (k) { var lb = rqLab(k); return { t: lb, n: rqNum(k), tone: k.classList.contains('is-warn') ? 'warn' : rqTone(lb), on: k.classList.contains('is-on'), fn: function () { k.click(); } }; });
+    C.acts = tools ? [].filter.call(tools.querySelectorAll(':scope > button'), function (b) { return txt(b); }).map(function (b) { return { t: txt(b), fn: function () { b.click(); } }; }) : [];
+    C.cols = ['الطلب', 'العميل', 'التفاصيل', 'الحالة'];
+    C.items = cards.map(function (c) {
+      var t = txt(c.querySelector('.sr-brief-t b')).split('·'), sm = txt(c.querySelector('.sr-brief-t small')).split('·');
+      var inf = [].map.call(c.querySelectorAll('.sr-brief-i small'), function (x) { return txt(x); }).join(' · ');
+      var b = c.querySelector('button');
+      return { s: txt(c), c: [cNo((t[1] || '').trim(), (t[0] || '').trim()), cWho((sm[0] || '').trim(), (sm[1] || '').trim()), cTxt(inf), cSt(c.querySelector('.t2-pill'))], open: function () { if (b) b.click(); }, bt: 'فتح الطلب' };
+    });
+    C.sig = C.items.map(function (x) { return x.s; }).join('|') + C.stats.map(function (x) { return x.n + (x.on ? 1 : 0); }).join(',') + C.acts.map(function (a) { return a.t; }).join(',');
+    C.empty = 'لا طلبات بهذه الحالة.';
+    rqShell(L, secs[0] || null, C);
+  }
+  /* طلبات المتجر: صفوف صندوق «بانتظار إجراء» لشريحة المتجر وحدها */
+  function rqStore(root, C) {
+    var page = root.querySelector('.lv-page'); if (!page) return;
+    var gl = page.querySelector(':scope > .nr-gl'), chw = page.querySelector(':scope > .st-chips-w');
+    var sc = chw && [].filter.call(chw.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0];
+    if (!sc || !sc.classList.contains('is-on')) return;
+    cls(chw, 'tqn-hide', true); [].forEach.call(page.querySelectorAll(':scope > .cu-kpis'), function (x) { cls(x, 'tqn-hide', true); });
+    if (gl) cls(gl, 'tqn-hide', true);
+    var rows = gl ? [].slice.call(gl.querySelectorAll(':scope > article.nr')) : [];
+    var late = rows.filter(function (r) { return /متأخر/.test(txt(r.querySelector('.t2-pill'))); }).length;
+    var q = rows.filter(function (r) { return /عرض السعر/.test(txt(r.querySelector('.cu-ir-a'))); }).length;
+    C.stats = [{ t: 'تنتظر إجراء', n: String(rows.length) }, { t: 'متأخرة', n: String(late), tone: late ? 'bad' : '' }, { t: 'عرض سعر', n: String(q) }, { t: 'تأكيد طلب', n: String(rows.length - q) }];
+    C.cols = ['الطلب', 'العميل', 'الإجراء المطلوب', 'الحالة'];
+    C.items = rows.map(function (r) {
+      var go = r.querySelector('.nr-main') || r, cu = txt(r.querySelector('.cu-ir-c'));
+      return { s: txt(r), c: [cNo(txt(r.querySelector('.cu-ir-no'))), cWho(cu && cu !== 'العميل' ? cu : '—'), cTxt(txt(r.querySelector('.cu-ir-a')), 'is-b'), cSt(r.querySelector('.t2-pill'))], open: function () { go.click(); } };
+    });
+    C.sig = C.items.map(function (x) { return x.s; }).join('|');
+    C.empty = 'لا طلبات متجر تنتظر إجراءً الآن.';
+    rqShell(page, gl, C);
+  }
+  /* العروض: صف لكل عرض — الرقم ورقم الطلب · العميل وطريقة التسليم · الإجمالي وصلاحيته · الحالة */
+  function rqOffers(root, C) {
+    var L = root.querySelector('.adm-live'); if (!L) return;
+    var rows = [].slice.call(L.querySelectorAll('article.cu-bd-r')).filter(function (r) { return !(r.hidden || r.style.display === 'none'); });
+    var chips = [].slice.call(L.querySelectorAll('.st-chip'));
+    var list = rows[0] ? rows[0].parentNode : null;
+    [].forEach.call(L.querySelectorAll(':scope > .t2-note, :scope > .cu-kpis, :scope > .adm-tools, :scope > .ax-tools, .st-chips-w'), function (x) { cls(x, 'tqn-hide', true); });
+    [].forEach.call(L.querySelectorAll(':scope > .tqn-axw, :scope > .tqn-axs'), function (x) { x.parentNode.removeChild(x); }); L.__tqnAx = null; L.__tqnSm = null;
+    if (list) cls(list, 'tqn-hide', true);
+    var ref = list && list.parentNode === L ? list : (list ? list.closest('.adm-live > *') : null);
+    C.stats = chipStats(chips);
+    C.cols = ['العرض', 'العميل', 'الإجمالي والصلاحية', 'الحالة'];
+    C.items = rows.map(function (r) {
+      var QV = {}; [].forEach.call(r.querySelectorAll('.adm-cm-i'), function (i) { QV[txt(i.querySelector('small'))] = i.querySelector(':scope > :not(small)'); });
+      var no = txt(r.querySelector('.ax-r-b > b, .ax-r-b > bdi, .ax-r-b bdi')), cu = tj(QV['العميل']).split(' · ');
+      var tot = txt(QV['الإجمالي'] || QV['المبلغ']), till = txt(QV['صالح حتى']);
+      var pl = null; Object.keys(QV).forEach(function (k) { var v = QV[k]; if (!pl && v) pl = v.matches('.t2-pill') ? v : v.querySelector('.t2-pill'); });
+      var go = r.querySelector('.nr-main') || r;
+      return { s: txt(r), c: [cNo(no, QV['الطلب'] ? 'الطلب ' + txt(QV['الطلب']) : ''), cWho(cu[0] && cu[0] !== 'العميل' ? cu[0] : '—', cu[1] || ''), cTxt((tot || '—') + (till ? ' · حتى ' + till : '')), cSt(pl, txt(QV['الحالة']))], open: function () { go.click(); } };
+    });
+    C.sig = C.items.map(function (x) { return x.s; }).join('|') + C.stats.map(function (x) { return x.n + (x.on ? 1 : 0); }).join(',');
+    C.empty = 'لا عروض بهذه الحالة.';
+    rqShell(L, ref, C);
+  }
+  /* عقود العملاء: صف لكل عميل — العقود والمتبقي · حالات العقود */
+  function rqCt(root, C) {
+    var box = root.querySelector('.cu-cards'), stack = box && box.parentNode; if (!box) return;
+    var cards = [].slice.call(box.querySelectorAll(':scope > .cu-card')).filter(function (c) { return !c.getAttribute('data-k'); });
+    var chips = [].slice.call(stack.querySelectorAll('.st-chip'));
+    cls(box, 'tqn-hide', true);
+    [].forEach.call(stack.querySelectorAll(':scope > .m3-tools, :scope > .ax-tools, :scope > .t2-note, :scope > .ax-top'), function (x) { cls(x, 'tqn-hide', true); });
+    if (!box.__tqnMo) { try { box.__tqnMo = new MutationObserver(soon); box.__tqnMo.observe(box, { attributes: true, subtree: true, attributeFilter: ['style', 'hidden'] }); } catch (e) { void e; } }
+    var vis = cards.filter(function (c) { return !(c.hidden || c.style.display === 'none'); });
+    C.stats = chipStats(chips);
+    C.cols = ['العميل', 'العقود', 'المتبقي', 'حالات العقود'];
+    C.ph = 'ابحث باسم العميل…';
+    C.items = vis.map(function (c) {
+      var nm = txt(c.querySelector('.cu-card-t b')), sm = txt(c.querySelector('.cu-card-t small'));
+      var n = (sm.match(/(\d+)\s*عقد/) || [])[1] || (/عقدان/.test(sm) ? '2' : /عقد واحد|^عقد\b/.test(sm) ? '1' : '—'), rm = (sm.match(/المتبقي\s*([\d٬,.]+\s*ر\.س)/) || ['', '—'])[1];
+      var P = mk('div', 'tqn-ctp'); [].forEach.call(c.querySelectorAll('.cu-card-m .t2-pill'), function (p) { P.appendChild(chipOf(p)); });
+      return { s: c.getAttribute('data-s') || txt(c), c: [cWho(nm), cTxt(n + ' ' + (n === '1' ? 'عقد' : 'عقود'), 'is-b'), cTxt(rm, 'is-b'), P.children.length ? P : null], open: function () { c.click(); }, bt: 'العقود' };
+    });
+    C.sig = C.items.map(function (x) { return x.s; }).join('|') + C.stats.map(function (x) { return x.n + (x.on ? 1 : 0); }).join(',');
+    C.empty = 'لا عملاء بهذه الحالة.';
+    rqShell(stack, box, C);
+  }
+  /* صفحة طلب الأهلية الكاملة: تبويبات — العمل على الطلب · الإسناد · المراسلة · مسار الطلب */
+  function srTabs(root) {
+    var F = root.querySelector('.sr-full'); if (!F) return;
+    var G = { 'العمل على الطلب': [], 'الإسناد': [], 'المراسلة': [], 'مسار الطلب': [] };
+    [].forEach.call(F.children, function (x) {
+      if (x.classList.contains('tqn-st')) return;
+      var h = txt(x.querySelector(':scope > .t2-sec-h .t2-group-t, :scope > .t2-sec-h h2, :scope > header h2, :scope > h3'));
+      var k = /الإسناد/.test(h) ? 'الإسناد' : /مسار|السجل/.test(h) ? 'مسار الطلب' : x.matches('.sr-msg') || /مراسلة|رسالة/.test(h) ? 'المراسلة' : 'العمل على الطلب';
+      G[k].push(x);
+    });
+    var K = Object.keys(G).filter(function (k) { return G[k].length; }); if (K.length < 2) return;
+    var cur = K.indexOf(ST.srT) >= 0 ? ST.srT : K[0];
+    var first = F.firstElementChild && F.firstElementChild.classList.contains('tqn-st') ? F.firstElementChild.nextElementSibling : F.firstElementChild;
+    var b = bar(F, first, K.map(function (k) { return { k: k, t: k }; }), cur, 'k', function (k) { ST.srT = k; });
+    cls(b, 'is-set', true); cls(b, 'tqn-drt', true);
+    K.forEach(function (k) { G[k].forEach(function (x) { cls(x, 'tqn-st-hide', k !== cur); }); });
   }
   /* ── 8) v764: صفحات التفاصيل داخل الصفحة (لا أدراج): القائمة الجانبية والهيدر ظاهران، ورأس صفحة، وأيقونة لكل معلومة ── */
   var TQIC = {
