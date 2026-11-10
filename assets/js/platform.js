@@ -24999,7 +24999,7 @@ if (f.kind === 'date') return DS.input({ type: 'date', value: v, title: f.label,
 return DS.input({ value: v, dir: /phone|email|iban|number|postal|building|zip|short/.test(f.kind + ' ' + f.key) ? 'ltr' : null, onInput: set });
 };
 const geo = k === 'address' && LV.geoPick && LV.geoFill ? e('div', { class: 'geo-sec' }, [e('div', { class: 'geo-sec-h' }, [frag(tile('map-trifold:teal')), e('span', {}, [e('b', {}, 'تحديد الموقع على الخريطة'), e('small', {}, 'يجلب العنوان ويعبّئ الحقول — ثم تراجعها وتحفظ')])]),
-e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, liveOk(DS.button(U.map ? 'إخفاء الخريطة' : 'فتح الخريطة', { tone: 'primary', size: 'sm', ui: 'map-trifold', onClick: function () { U.map = !U.map; draw(); } }))),
+e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, (U.map ? null : liveOk(DS.button('فتح الخريطة', { tone: 'primary', size: 'sm', ui: 'map-trifold', onClick: function () { U.map = true; draw(); } }))) /* v810 */),
 U.map ? LV.geoPick({ key: 'cf:' + k, onUse: function (R) { U.geo = R; const n = LV.geoFill(R, F, function (x, y) { U.vals[x] = y; }); snack(n ? 'عُبّئت ' + fmtNum(n) + ' حقول من الخريطة — راجعها ثم احفظ.' : 'لم تتطابق بيانات الموقع مع الحقول — أدخلها يدويًا.'); draw(); } }) : null])]) : null;
 const grid = e('div', { class: 't2-pb-grid' }, F.map(function (f) {
 const empty = f.required && !cfStr(cur(f));
@@ -25071,6 +25071,11 @@ const scan = function (n) { if (n.matches && n.matches('input[type=password]')) 
 new MutationObserver(function (M) { M.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); }); }); }).observe(document.documentElement, { childList: true, subtree: true });
 scan(document);
 } catch (err) { void err; } })();
+/* v810: خطأ في عرض الاستمارة يظهر للعميل برسالة ورمز — لا ينتقل إلى صفحة أخرى */
+function clFormErr(err, where) {
+  const m = String((err && (err.message || err)) || 'خطأ غير معروف').slice(0, 160);
+  return DS.panel(where ? 'تعذّر عرض قسم «' + where + '»' : 'تعذّر عرض استمارة ملفك', 'أعد فتح الصفحة، وإن تكرر أرسل هذه الرسالة لفريق تيرا من «المراسلات».', [DS.note('warn', where ? 'تعذّر عرض هذا القسم' : 'تعذّر عرض الاستمارة', 'رمز الخطأ: ' + m), rvRow([liveOk(DS.button('إعادة المحاولة', { tone: 'primary', size: 'sm', onClick: function () { draw(); } }))])]);
+}
 function clForm(J) {
 const me = LIVE.me || {}, first = String(me.full_name || ME.name || '').split(' ')[0], C = clConf(), mig = C ? !!C.mig : !!J.mig, cb = (C && C.blocks) || {};
 const PG = clProg(), VS = liveVsec(), sub = J.st === 'submitted', LV = window.__LV || {};
@@ -25086,7 +25091,8 @@ e('p', {}, sub ? 'أُرسل ملفك للتوثيق وهو بانتظار اس�
 !sub && left.length ? e('p', { class: 'jr-gate' }, [frag(ui('lock-key', 16)), e('span', {}, 'لن يُرسَل ملفك للتوثيق حتى تُكمل: ' + left.join('، ') + '.')]) : null,
 J.returned ? DS.note('warn', 'أُعيد ملفك للتعديل', ((J.v.returned_items || []).map(function (x) { return x.label + (x.reason ? ' — ' + x.reason : ''); }).join('، ')) || 'عدّل الحقول التي عليها ملاحظات ثم أعد الإرسال.') : null]),
 e('div', { class: 'jr-ring', style: '--jr-r:' + PG.pct }, [e('b', { 'data-jr-n': String(PG.pct) }, '0'), e('small', {}, '٪ اكتمال الملف')])]);
-const secs = PG.items.map(function (it) {
+const secs = PG.items.map(function (it) { try { return cfSecOne(it); } catch (es) { try { console.error('[clForm:' + (it && it.key) + ']', es); } catch (e0) { void e0; } return rvSec((it && it.label) || 'قسم', [DS.note('warn', 'تعذّر عرض هذا القسم', 'بقية الأقسام تعمل. أعد فتح الصفحة، وإن تكرر أرسل هذه الرسالة لفريق تيرا من «المراسلات». رمز الخطأ: ' + String((es && (es.message || es)) || '').slice(0, 160))], { one: 'cf-' + ((it && it.key) || 'x'), ic: CF_IC[it && it.key] || 'profile' }, null, null); } /* v810: خطأ في قسم لا يُسقط الاستمارة كلها */
+function cfSecOne(it) {
 let st, body;
 if (it.kind === 'sec') {
 st = it.done ? 'done' : 'empty';
@@ -25102,7 +25108,7 @@ body = [back, cfMissLine(b)].concat(cfDocs())
 } else body = [back, st === 'wait' ? DS.note('info', 'معبّأ من ملفك السابق', 'راجع البيانات وعدّل ما يلزم، ثم «حفظ» — الحفظ بلا تغيير يعتمدها كما هي.') : null, cfMissLine(b)].concat(cfEditor(it.key, mig));
 }
 return rvSec(it.label, body.filter(Boolean), { one: 'cf-' + it.key, ic: CF_IC[it.key] || 'profile' }, null, cfBadge(st));
-});
+} });
 const foot = sub ? null : DS.panel(J.returned ? 'إعادة إرسال الملف' : 'إرسال الملف للتوثيق', PG.ready ? 'ملفك مكتمل — أرسله للتوثيق، ويمكنك تعديله حتى يستلمه الفريق.' : 'المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total) + ' — أكمل الأقسام الناقصة ثم أرسل ملفك.',
 [DS.note(PG.ready ? 'ok' : 'info', PG.ready ? 'ملفك مكتمل' : 'المكتمل ' + fmtNum(PG.done) + ' من ' + fmtNum(PG.total), PG.ready ? 'أرسله للتوثيق، ويمكنك تعديله حتى يستلمه الفريق.' : (PG.items.filter(function (x) { return !x.done; }).map(function (x) { return x.label + (x.filled && !x.confirmed ? ' (ممتلئ — افتحه واضغط «حفظ» لتأكيده)' : ' (ناقص)'); }).join(' · ') + ' — بعدها أرسل ملفك.'))], [liveOk(DS.button(J.returned ? 'أعد الإرسال' : 'إرسال الملف للتوثيق', { tone: 'primary', ui: 'paper-plane-tilt', onClick: function () { clSubmit(); } }))]);
 const box = e('div', { class: 't2-dash jr cf' }, [hero, e('div', { class: 'rv-acc' }, secs), foot]);
@@ -25156,18 +25162,20 @@ const CL_PRE_NAV = [['الأساسي', [['profile', 'ملفي الشخصي'], ['
 const CL_PRE_DOCK = [['profile', 'ملفي'], ['mail', 'المراسلات'], ['tq-account', 'حسابك']];
 /* v505: الدوال هنا داخل كتلة؛ تُكشف لـ shell() خارجها (القائمة الجانبية وشريط الجوال) */
 window.__clPre = clPre; window.__CL_PRE_NAV = CL_PRE_NAV; window.__CL_PRE_DOCK = CL_PRE_DOCK;
+/* v810: قبل التدشين في مرحلة الاستمارة أو المراجعة لا نموذج ثانٍ — «طلب التحديث» بعد الاعتماد فقط */
+function clUpdOk() { try { const s = liveJourney().stage; return s !== 'start' && s !== 'review'; } catch (err) { return false; } }
 function clPreOk(tab, other) {
 if (tab === 'msg' || tab === 'notif') return true;
 if (tab !== 'other') return false;
 let k = other, n = 0;
-while (k && n++ < 12) { if (['profile', 'mail', 'msg', 'con', 'notif', 'tq-account'].indexOf(k) >= 0 || /^(me-|upd-)/.test(k)) return true; /* v532: مركز الأمان يظهر بعد التدشين فقط */ k = LP[k] && LP[k].up; }
+while (k && n++ < 12) { if (['profile', 'mail', 'msg', 'con', 'notif', 'tq-account'].indexOf(k) >= 0 || /^me-/.test(k) || (/^upd-/.test(k) && clUpdOk())) return true; /* v810: «طلب التحديث» لا يُفتح قبل الإرسال والمراجعة — الاستمارة وحدها */ /* v532: مركز الأمان يظهر بعد التدشين فقط */ k = LP[k] && LP[k].up; }
 return false;
 }
 if (LIVE.on) {
 const drawPre = draw;
 draw = function () { try { if (clPre() && (S.tab === 'dash' || !clPreOk(S.tab, S.other))) { S.tab = 'other'; S.other = 'profile'; } } catch (err) { void err; } return drawPre.apply(this, arguments); };
 try { if (LP['profile']) { const pr0 = LP['profile'].run; LP['profile'].run = function () { const out = [].concat(pr0.apply(this, arguments) || []); try { if (clPre()) { const J0 = liveJourney(); const UP = window.__clUpd || function (x) { return x; }; /* v509: بنر «نطمئنكم» للمنقولين */
-if (J0.stage === 'start' || J0.st === 'submitted') return UP(clForm(J0)); return UP([].concat(journeyPage(J0) || []).concat(out)); } /* v507: الاستمارة قبل الاستلام */ } catch (err) { void err; } return out; }; } } catch (err) { void err; }
+if (J0.stage === 'start' || J0.st === 'submitted') { try { return UP(clForm(J0)); } catch (ef) { try { console.error('[clForm]', ef); } catch (e0) { void e0; } return [clFormErr(ef)]; } } /* v810: لا تُستبدل الاستمارة بصفحة ما بعد التدشين عند الخطأ */ return UP([].concat(journeyPage(J0) || []).concat(out)); } /* v507: الاستمارة قبل الاستلام */ } catch (err) { void err; } return out; }; } } catch (err) { void err; }
 }
 /* المسار المتحرك: من خط زمني القاعدة إن وُجد، وإلا خمس مراحل ثابتة */
 function jrTrack(J) {
@@ -26274,7 +26282,7 @@ function liveUpdPage(s) {
     return DS.input({ value: v, dir: /phone|email|iban|number|postal|building/.test(f.kind + ' ' + f.key) ? 'ltr' : null, onInput: set });
   };
   const show = U.pick === 'all' ? F : F.filter(function (f) { return f.key === U.pick; });
-  const geo = s === 'address' ? e('div', { class: 'geo-sec' }, [e('div', { class: 'geo-sec-h' }, [frag(tile('map-trifold:teal')), e('span', {}, [e('b', {}, 'تحديد الموقع على الخريطة'), e('small', {}, 'يجلب العنوان ويعبّئ الحقول — ثم تراجعها')])]), e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, liveOk(DS.button(U.map ? 'إخفاء الخريطة' : 'فتح الخريطة', { tone: 'primary', ui: 'map-trifold', onClick: function () { U.map = !U.map; draw(); } }))),
+  const geo = s === 'address' ? e('div', { class: 'geo-sec' }, [e('div', { class: 'geo-sec-h' }, [frag(tile('map-trifold:teal')), e('span', {}, [e('b', {}, 'تحديد الموقع على الخريطة'), e('small', {}, 'يجلب العنوان ويعبّئ الحقول — ثم تراجعها')])]), e('div', { class: 't2-stack-tight' }, [e('div', { class: 't2-pb-geo-bar' }, (U.map ? null : liveOk(DS.button('فتح الخريطة', { tone: 'primary', ui: 'map-trifold', onClick: function () { U.map = true; draw(); } }))) /* v810: زر واحد — الخريطة نافذة بزرّها */),
     U.map ? geoPick({ key: 'lupd:' + s, onUse: function (R) { U.geo = R; const n = geoFill(R, F, function (k, v) { U.vals[k] = v; }); U.pick = 'all'; U.miss = false; snack(n ? 'عُبّئت ' + fmtNum(n) + ' حقول من الخريطة — راجعها ثم «مراجعة التعديل».' : 'لم تتطابق بيانات الموقع مع الحقول — أدخلها يدويًا.'); draw(); } }) : null])]) : null;
   return [e('div', { class: 't2-stack t2-pb-page' }, [comp,
     e('section', { class: 't2-panel' }, e('div', { class: 't2-stack-tight' }, [
