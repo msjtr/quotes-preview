@@ -22510,7 +22510,9 @@ function docxCore(H) {
     const pages = [{ org: T.org, issuer: T.issuer, en: paid ? ((T.ken && T.ken[kd]) || T.en) : K[1], title: paid ? T.title : K[0], kind2: paid && S('kind') && T.kt ? T.kt[kd] : '', pill: paid ? T.pill : K[2], no: no, cards: cards,
       meta: [['رقم الإيصال', no], [paid ? 'تاريخ الإصدار' : 'التاريخ', X.issued ? dmy(X.issued) : o.date], [paid ? 'المبلغ المقبوض' : (kind === 'refund' ? 'المبلغ المسترد' : 'المبلغ'), sar(o.amount), 'receipt']],
       auto: T.auto[kd] || T.auto.cash }];
-    if (o.thanks && typeof o.thanks === 'object') pages.push(thanksPage(Object.assign({}, o.thanks, { _no: no }), TH));
+    /* v800: الشكر داخل الإيصال نفسه (لا صفحة ثانية ولا مستند آخر) — شريط مضغوط بعد الاعتماد، للدفعة المسدَّدة كاملة في موعدها أو قبله.
+       مضغوط عمدًا: جسم الصفحة ثابت الارتفاع ويقصّ الزائد، وبعد الاعتماد كي لا يُقصّ الختم أبدًا */
+    if (o.thanks && typeof o.thanks === 'object') { const T2 = TH || tpl('th'); const nm2 = o.thanks.name || 'عميلنا'; const tx2 = [on(T2, 'greet') ? T2.greet.replace(/\{name\}/g, nm2) : '', T2.body].filter(Boolean).join(' '); if (tx2) cards.push('<section class="d3-card d3-thx"><div style="display:flex;align-items:center;gap:12px;padding:8px 18px"><div style="flex:1;font-size:12px;line-height:1.6;color:#0b2552;font-weight:600"><b style="font-size:13px;color:#8A6A1F">' + esc(T2.head) + '</b> — ' + esc(tx2) + '</div></div></section>'); }
     return pages;
   }
 

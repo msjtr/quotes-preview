@@ -14,7 +14,7 @@
   function token() { try { var s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return s && s.access_token ? s.access_token : ''; } catch (e) { return ''; } }
   var TOK0 = (function () { try { return token(); } catch (e) { return ''; } })();
 
-  var PICK_UNTIL = 0; /* v799 */ var ended = false, locEl = null, endEl = null, lastCode = null, lastMsg = null;
+  var PICK_UNTIL = 0; /* v800 */ var ended = false, locEl = null, endEl = null, lastCode = null, lastMsg = null;
   var CSS = 'position:fixed;inset:0;z-index:2147482000;background:rgba(7,18,38,.72);display:flex;align-items:center;justify-content:center;padding:16px;font:15px/1.8 "IBM Plex Sans Arabic",sans-serif';
   var CARD = 'background:#fff;color:#0b1f3a;border-radius:16px;max-width:420px;width:100%;padding:20px;box-shadow:0 18px 48px rgba(0,0,0,.35);text-align:right';
   var BTN = 'display:block;width:100%;margin-top:10px;padding:10px 12px;border-radius:10px;border:0;font:700 14px "IBM Plex Sans Arabic",sans-serif;cursor:pointer';
@@ -30,21 +30,21 @@
     w.appendChild(c); return w;
   }
   function goLogin() { try { localStorage.removeItem(SESSION_KEY); } catch (e) { void e; } location.replace('/portal/'); }
-  function showEnded(code, msg) { if (!ended && !PUBLIC && (code === 'silent' || code === 'idle' || code === 'location')) { ended = true; var tk = token(); if (tk && tk !== TOK0) { location.reload(); return; } try { localStorage.removeItem(SESSION_KEY); } catch (e) { void e; } location.replace('/portal/?ended=' + code); return; } /* v799: الجلسة المنتهية تُغلق تلقائيًا بلا حجب */
+  function showEnded(code, msg) { if (!ended && !PUBLIC && (code === 'silent' || code === 'idle' || code === 'location')) { ended = true; var tk = token(); if (tk && tk !== TOK0) { location.reload(); return; } try { localStorage.removeItem(SESSION_KEY); } catch (e) { void e; } location.replace('/portal/?ended=' + code); return; } /* v800: الجلسة المنتهية تُغلق تلقائيًا بلا حجب */
     if (ended) return; ended = true;
     if (PUBLIC) { if (locEl && locEl.parentNode) locEl.parentNode.removeChild(locEl); locEl = null; try { if (token() === TOK0) localStorage.removeItem(SESSION_KEY); } catch (e) { void e; } return; } /* لا يُمسح رمز أحدث من دخول جديد في تبويب آخر */
     if (locEl && locEl.parentNode) locEl.parentNode.removeChild(locEl);
     endEl = card(TITLES[code] || 'انتهت الجلسة', msg || 'انتهت جلستك. سجّل الدخول من جديد.', [['تسجيل الدخول', goLogin, true]]);
     (document.body || document.documentElement).appendChild(endEl);
   }
-  function showLocation(left) { if (Date.now() < PICK_UNTIL && document.querySelector('.rvm-mask, .tn-wrap')) return; /* v799: لا تُغطّى نافذة تحديد الموقع */
+  function showLocation(left) { if (Date.now() < PICK_UNTIL && document.querySelector('.rvm-mask, .tn-wrap')) return; /* v800: لا تُغطّى نافذة تحديد الموقع */
     if (ended || PUBLIC) return;
     var t = 'تحديد الموقع شرط لاستمرار الجلسة. شغّل الموقع للمتصفح (أيقونة القفل بجانب العنوان ← الموقع ← سماح)، أو إن تعذّر جلب موقعك فحدّده على الخريطة أو بالعنوان الوطني.'
       + (left > 0 ? ' ستنتهي الجلسة بعد ' + left + ' ثانية إن بقي متوقفًا.' : '');
     if (!locEl) {
       locEl = card(TITLES.location, t, [
         ['إعادة المحاولة', function () { location.reload(); }, true],
-        ['حدّد موقعي على الخريطة', function () { PICK_UNTIL = Date.now() + 170000; hideLocation(); try { if (window.TeraSession && window.TeraSession.locate) window.TeraSession.locate(); } catch (e) { void e; } }, false]]); /* v799: الطبقة كانت تغطي الخريطة (z 2147482000 فوق 130) فلا يستطيع العميل تحديد موقعه */
+        ['حدّد موقعي على الخريطة', function () { PICK_UNTIL = Date.now() + 170000; hideLocation(); try { if (window.TeraSession && window.TeraSession.locate) window.TeraSession.locate(); } catch (e) { void e; } }, false]]); /* v800: الطبقة كانت تغطي الخريطة (z 2147482000 فوق 130) فلا يستطيع العميل تحديد موقعه */
       (document.body || document.documentElement).appendChild(locEl);
     } else { var p = locEl.querySelector('.sg-text'); if (p) p.textContent = t; }
   }
@@ -69,7 +69,7 @@
           if (j.reason_code) { lastCode = j.reason_code; lastMsg = j.message || null; }
           if (j.error === 'session_revoked' || (sess && j.closed)) { showEnded(j.reason_code || lastCode, j.message || lastMsg); return; }
           if (!sess) return;
-          if (Number(j.prev_closed) > 0) prevNote(); /* v799 */ if (j.idle_off) IDLE_MIN = Infinity; else if (Number(j.idle_minutes) > 0) IDLE_MIN = Number(j.idle_minutes);
+          if (Number(j.prev_closed) > 0) prevNote(); /* v800 */ if (j.idle_off) IDLE_MIN = Infinity; else if (Number(j.idle_minutes) > 0) IDLE_MIN = Number(j.idle_minutes);
           if (j.location_ok === false) showLocation(Number(j.location_grace_s) || 0);
           else if (j.location_ok === true) hideLocation();
         }).catch(function () {});
@@ -120,7 +120,7 @@
   if (typeof window.TeraAuth.expired !== 'function') window.TeraAuth.expired = function () { showEnded(lastCode, lastMsg); };
 
   /* v483: تحميل مُجمِّع الجلسة وتحديد الموقع من المستودع الجديد مرة واحدة بعد وجود جلسة (بدل /admin/session-geo.js) */
-  /* v799: رسائل الجلسة الهادئة — إشعار موحّد بدل الحجب: «أُنهيت جلستك السابقة» عند فتح جلسة جديدة،
+  /* v800: رسائل الجلسة الهادئة — إشعار موحّد بدل الحجب: «أُنهيت جلستك السابقة» عند فتح جلسة جديدة،
  * و«انتهت جلستك السابقة تلقائيًا» في صفحة الدخول بعد إغلاق جلسة عالقة (انقطاع · خمول · موقع). */
 var NOTE_DONE = false;
 function tnShow(o, tries) { try { if (window.TeraNotify && window.TeraNotify.show) { window.TeraNotify.show(o); return; } } catch (e) { void e; } if ((tries || 0) < 40) setTimeout(function () { tnShow(o, (tries || 0) + 1); }, 500); }
@@ -136,7 +136,7 @@ var tries = 0;
     if (PUBLIC) { clearInterval(boot); return; } /* v585: الصفحة الرئيسية عامة — لا يُحمَّل مُجمِّع الجلسة وتحديد الموقع فيها (كانت تفتح «حدّد موقعك على الخريطة» بجلسة قديمة فلا تعمل الخريطة) */
     if (!token()) { if (tries > 400) clearInterval(boot); return; }
     clearInterval(boot);
-    var s = document.createElement('script'); s.src = '/assets/js/session-location.js?v=' + ((window.TQ_VERSION && window.TQ_VERSION.v) || '799'); s.async = true;
+    var s = document.createElement('script'); s.src = '/assets/js/session-location.js?v=' + ((window.TQ_VERSION && window.TQ_VERSION.v) || '800'); s.async = true;
     (document.head || document.documentElement).appendChild(s);
   }, 1500);
 })();
