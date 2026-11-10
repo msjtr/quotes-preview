@@ -588,7 +588,7 @@ function geoQ() {
   soon();
 })();
 
-/* v823: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v824: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
    · v820: صفوف جداول «الطلبات والعقود» تُفتح (كان حارس الإجراءات يمنع «إصدار عرض السعر…» لأن الصف بلا data-live-ok)، وعدد العقود الصحيح («عقد واحد» كان يُقرأ من المبلغ)، والجدول بأعمدته على الشاشات المتوسطة.
@@ -1642,7 +1642,7 @@ function geoQ() {
     var rows = C.items.filter(function (it) { return !Q || it.s.indexOf(Q) >= 0; });
     tb.appendChild(mk('span', 'tqn-rq-n', rows.length + ' من ' + C.items.length));
     W.appendChild(tb);
-    var T = mk('div', 'tqn-rqt');
+    var T = mk('div', 'tqn-rqt' + (C.cls ? ' ' + C.cls : ''));
     var hr = mk('div', 'tqn-rqr is-h'); C.cols.forEach(function (h) { hr.appendChild(mk('span', '', h)); }); hr.appendChild(mk('span')); T.appendChild(hr);
     rows.forEach(function (it) {
       var r = mk('div', 'tqn-rqr'); r.setAttribute('role', 'button'); r.setAttribute('data-live-ok', ''); r.tabIndex = 0;
@@ -1753,11 +1753,11 @@ function geoQ() {
     if (!box.__tqnMo) { try { box.__tqnMo = new MutationObserver(soon); box.__tqnMo.observe(box, { attributes: true, subtree: true, attributeFilter: ['style', 'hidden'] }); } catch (e) { void e; } }
     var vis = cards.filter(function (c) { return !(c.hidden || c.style.display === 'none'); });
     C.stats = chipStats(chips);
-    C.cols = ['العميل', 'العقود', 'المتبقي', 'حالات العقود'];
+    C.cols = ['العميل', 'العقود', 'المتبقي', 'حالات العقود']; C.cls = 'is-ct';
     C.ph = 'ابحث باسم العميل…';
     C.items = vis.map(function (c) {
       var nm = txt(c.querySelector('.cu-card-t b')), sm = txt(c.querySelector('.cu-card-t small'));
-      var n = (sm.match(/(\d+)\s*عقد/) || [])[1] || (/عقدان/.test(sm) ? '2' : /عقد واحد|^عقد\b/.test(sm) ? '1' : '—'), rm = (sm.match(/المتبقي\s*([\d٬,.]+\s*ر\.س)/) || ['', '—'])[1];
+      var n = (sm.match(/(\d+)\s*عقو?د/) || [])[1] || (/عقدان/.test(sm) ? '2' : /عقد واحد|^عقد\b/.test(sm) ? '1' : '—'), rm = (sm.match(/المتبقي\s*([\d٬,.]+\s*ر\.س)/) || ['', '—'])[1]; /* v824: «4 عقود» */
       var P = mk('div', 'tqn-ctp'); [].forEach.call(c.querySelectorAll('.cu-card-m .t2-pill'), function (p) { P.appendChild(chipOf(p)); });
       return { s: c.getAttribute('data-s') || txt(c), c: [cWho(nm), cTxt(n + ' ' + (n === '1' ? 'عقد' : 'عقود'), 'is-b'), cTxt(rm, 'is-b'), P.children.length ? P : null], open: function () { c.click(); }, bt: 'العقود' };
     });

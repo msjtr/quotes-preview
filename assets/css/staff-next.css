@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v823 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v824 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2587,6 +2587,10 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .tqn-rqr .tqn-who b { white-space: normal; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tq-next .tqn-rq-i { white-space: normal; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; border: 0 !important; }
 .tq-next .tqn-rqr { align-items: center; }
+
+/* v824: «عقود العملاء» — عمود الاسم أعرض (الاسم هو المفتاح هنا) */
+.tq-next .tqn-rqt.is-ct .tqn-rqr { grid-template-columns: minmax(0, 2.2fr) minmax(0, .8fr) minmax(0, 1fr) minmax(0, 1.6fr) 84px; }
+@media (max-width: 44rem) { .tq-next .tqn-rqt.is-ct .tqn-rqr { grid-template-columns: minmax(0, 1fr) auto; } .tq-next .tqn-rqt.is-ct .tqn-rqr > :nth-child(1) { display: flex !important; grid-column: 1; } .tq-next .tqn-rqt.is-ct .tqn-rqr > :nth-child(2) { display: none !important; } }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }
