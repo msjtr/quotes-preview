@@ -19386,7 +19386,7 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
       ['adm', 'إجراءات الإدارة', x.executed_at ? 'أُغلق الطلب' : (ctj && ctj.signed_at) ? 'بانتظار الإنهاء' : ctNo ? 'بعد التوقيع' : 'بعد العقد', x.executed_at ? 'ok' : (ctj && ctj.signed_at) ? 'now' : ''], /* v691 */
       ['apv', 'الاعتماد', !live ? (appr ? 'بعد إعداد العرض' : '—') : live.status === 'pending_approval' ? 'بانتظار الاعتماد' : 'اعتُمد العرض', !live ? '' : live.status === 'pending_approval' ? 'now' : 'ok'],
       ['pv', 'المعاينة', auto ? 'الحجز متوقف' : pvSt.length ? fmtNum(pvN) + ' من ' + fmtNum(pvSt.length) : 'بعد القرار', mm.released || auto || (held && allPv) ? 'ok' : held && (!appr || qHas) ? 'now' : ''],
-      ['snd', 'الإرسال', mm.released ? 'أُرسلت النتيجة' : auto ? 'أُرسلت تلقائيًا' : held ? (allPv ? 'جاهز للإرسال' : 'محجوزة') : 'بعد المعاينة', mm.released || auto ? 'ok' : held && allPv ? 'now' : ''],
+      ['snd', 'الإرسال', mm.released ? 'أُرسلت النتيجة' : auto ? 'أُرسلت تلقائيًا' : held ? (allPv ? 'جاهز للإرسال' : 'لم تُرسل بعد') : 'بعد المعاينة', mm.released || auto ? 'ok' : held && allPv ? 'now' : ''],
       ['log', 'التوثيق', JD ? (evN ? fmtNum(evN) + ' حدث' : 'لا أحداث') : 'السجل', fin ? 'ok' : '', 'ما تم — سجل ما حصل']];
     const firstNow = function (keys) { for (let i = 0; i < steps.length; i++) { if (keys.indexOf(steps[i][0]) >= 0 && steps[i][3] === 'now') return steps[i][0]; } return ''; };
     const tab0 = c.tab || (open ? (fx && fx.open ? 'fix' : (c.at && missReq) ? 'docs' : !Rp ? 'rep' : 'res')
@@ -19449,7 +19449,7 @@ const paneOf = function (tab) { let pane = null; /* v686: لوحات الخطو�
     /* v811: الخطوة التالية — سطر واحد بزر يفتح قسمها */
     const nk = firstNow(['docs', 'fix', 'rep', 'res', 'apv', 'qt', 'inv', 'ct', 'pv', 'snd', 'adm']) || (steps.filter(function (s) { return s[3] === 'wait'; })[0] || [])[0] || '';
     const ns = nk ? SD[nk] : null, nsec = nk ? SEC_OF[nk] : '';
-    const nextBar = e('div', { class: 'eg-nextbar' }, [e('div', {}, [e('small', {}, 'الخطوة التالية'), e('b', {}, ns ? (ns[3] === 'wait' ? 'بانتظار العميل — ' : '') + ns[1] + (ns[2] ? ' · ' + ns[2] : '') : x.executed_at ? 'اكتمل الطلب' : '—')]),
+    const nextBar = e('div', { class: 'eg-nextbar' }, [e('div', {}, [e('small', {}, 'الخطوة التالية'), e('b', {}, ns ? (ns[3] === 'wait' ? 'بانتظار العميل — ' : '') + (({ docs: 'مراجعة المستندات', fix: 'استكمال العميل للمطلوب', rep: 'تسجيل القرار والتوصية', res: 'إصدار نتيجة الأهلية', apv: 'اعتماد عرض السعر', qt: 'إعداد عرض السعر', inv: 'فاتورة المنتج', ct: 'العقد', pv: 'الإرسال للعميل', snd: 'الإرسال للعميل', adm: 'إجراءات الإغلاق' })[nk] || ns[1]) /* v812: اسم الإجراء بدل «الاعتماد · بانتظار الاعتماد» */ : x.executed_at ? 'اكتمل الطلب' : '—')]),
       ns && nsec && nsec !== sec ? DS.button('فتح ' + SEC_T[nsec], { size: 'sm', tone: 'primary', onClick: function () { c.tab = nk; paint(); } }) : null]);
     const later = function (t) { return DS.note('info', t, 'يظهر هذا القسم بعد قرار «مؤهَّل».'); };
     const decData = function () { return e('div', { class: 'eg-dec' }, [TQN ? tqnExtPanel(x, docs, paint) : null, P6('rep'), P6('res')]); };
