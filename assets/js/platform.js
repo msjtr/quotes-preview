@@ -19951,7 +19951,7 @@ function cfDocSide(f, back) {
 const LV = window.__LV || {}, d = back ? f.doc_back : f.doc, k = f.key + (back ? '#back' : '');
 const ck = (window.__cpvUid || 'me') + ':' + k, st = CFU[ck] || (CFU[ck] = {}); if (!st.gate) st.gate = e('div'); const gate = st.gate;
 const nm = back === null ? f.label : (f.label + ' — ' + (back ? 'الوجه الخلفي' : 'الوجه الأمامي'));
-const S = d && typeof d === 'object' ? (CF_DST[d.status] || [d.status || 'مرفوع', 'info']) : [f.required ? 'مطلوب — لم يُرفع' : 'لم يُرفع', f.required ? 'warn' : null];
+const S = d && typeof d === 'object' ? ((window.__CF_DST || {})[d.status] || [d.status || 'مرفوع', 'info']) : [f.required ? 'مطلوب — لم يُرفع' : 'لم يُرفع', f.required ? 'warn' : null];
 const run = async function (file) {
   if (st.busy) return;
   st.busy = true; st.err = ''; if (file) { st.prev = tqFilePrev(file); st.lastV = null; } draw();
@@ -19959,15 +19959,15 @@ const run = async function (file) {
     if (file) await LV.upload(k, file, st, gate); else await liveSaveBlock('docs', st.lastV, st, gate);
     const fn = (st.prev && st.prev.name) || '';
     st.busy = false; st.lastV = null; st.need = false; gate.innerHTML = '';
-    try { await cfRefresh(); } catch (err) { void err; }
+    try { await window.__cfRefresh(); } catch (err) { void err; }
     draw();
-    tqCenterNote('تم تحميل المرفق', ['«' + nm + '»', fn ? 'الملف: ' + fn : null, 'حالته الآن: بانتظار مراجعة الفريق.', 'تستطيع معاينته أو استبداله من نفس المكان.'], 'ok');
+    window.__tqCenterNote('تم تحميل المرفق', ['«' + nm + '»', fn ? 'الملف: ' + fn : null, 'حالته الآن: بانتظار مراجعة الفريق.', 'تستطيع معاينته أو استبداله من نفس المكان.'], 'ok');
   } catch (err) {
     st.busy = false;
     if (err && err.message === 'auth') { draw(); return; }
     st.err = (err && err.message) || 'تعذّر الرفع — أعد المحاولة.';
     draw();
-    tqCenterNote(st.lastV ? 'وصل الملف ولم يُحفظ بعد' : 'لم يُرفع المرفق', ['«' + nm + '»', st.err].concat(st.lastV ? ['اضغط «إعادة الحفظ» تحت المرفق — لا تحتاج لاختيار الملف مرة أخرى.'] : ['تأكد أن الملف PDF أو صورة أو أي مستند (JPG · PNG) ثم أعد المحاولة.']), 'warn');
+    window.__tqCenterNote(st.lastV ? 'وصل الملف ولم يُحفظ بعد' : 'لم يُرفع المرفق', ['«' + nm + '»', st.err].concat(st.lastV ? ['اضغط «إعادة الحفظ» تحت المرفق — لا تحتاج لاختيار الملف مرة أخرى.'] : ['تأكد أن الملف PDF أو صورة أو أي مستند (JPG · PNG) ثم أعد المحاولة.']), 'warn');
   }
 };
 const inp = e('input', { type: 'file', accept: FT_ACCEPT, hidden: true, onChange: function () {
@@ -20427,7 +20427,7 @@ function tqKeepDlg(items) {
       });
       w.appendChild(ta); w.appendChild(b); w.appendChild(msg); card.appendChild(w);
     });
-    resub.addEventListener('click', function () { close(); try { if (typeof clSubmit === 'function') clSubmit(); } catch (er) { void er; } });
+    resub.addEventListener('click', function () { close(); try { if (typeof window.__clSubmit === 'function') window.__clSubmit(); } catch (er) { void er; } });
     const edit = el('button', 'margin-top:8px;width:100%;border:1px solid #9a6400;border-radius:12px;padding:10px;font-size:15px;font-weight:700;color:#9a6400;background:#fff;cursor:pointer;font-family:inherit', 'سأعدّل الحقول');
     edit.type = 'button'; edit.setAttribute('data-live-ok', ''); edit.addEventListener('click', close);
     card.appendChild(resub); card.appendChild(edit); ready();
@@ -25057,6 +25057,7 @@ return L.length ? e('p', { class: 't2-field-h is-bad' }, 'الناقص: ' + L.jo
 /* v508: مستندات الاستمارة — لكل مستند حالته، وللمستند ذي الوجهين رفعٌ للوجه الأمامي وآخر للخلفي («المفتاح#back» في القاعدة).
 السعودي: الهوية الوطنية (وجه) · المقيم: هوية مقيم (وجه) · غير السعودي: الجواز (وجه) أو الهوية الوطنية لبلده (وجهان). */
 const CF_DST = { pending: ['بانتظار المراجعة', 'info'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض — ارفعه من جديد', 'danger'], needs_changes: ['مطلوب تعديله', 'warn'] };
+try { window.__CF_DST = CF_DST; window.__cfRefresh = cfRefresh; window.__tqCenterNote = tqCenterNote; } catch (e) { void e; } /* v816: cfDocSide خارج هذه الكتلة (strict) — تصل إليها من هنا */
 function cfDocOk(d) { return !!(d && typeof d === 'object' && ['rejected', 'needs_changes', 'replaced'].indexOf(d.status) < 0); }
 
 function cfDocs() {
