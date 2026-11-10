@@ -25057,7 +25057,7 @@ return L.length ? e('p', { class: 't2-field-h is-bad' }, 'الناقص: ' + L.jo
 /* v508: مستندات الاستمارة — لكل مستند حالته، وللمستند ذي الوجهين رفعٌ للوجه الأمامي وآخر للخلفي («المفتاح#back» في القاعدة).
 السعودي: الهوية الوطنية (وجه) · المقيم: هوية مقيم (وجه) · غير السعودي: الجواز (وجه) أو الهوية الوطنية لبلده (وجهان). */
 const CF_DST = { pending: ['بانتظار المراجعة', 'info'], accepted: ['مقبول', 'ok'], rejected: ['مرفوض — ارفعه من جديد', 'danger'], needs_changes: ['مطلوب تعديله', 'warn'] };
-try { window.__CF_DST = CF_DST; window.__cfRefresh = cfRefresh; window.__tqCenterNote = tqCenterNote; } catch (e) { void e; } /* v816: cfDocSide خارج هذه الكتلة (strict) — تصل إليها من هنا */
+try { window.__CF_DST = CF_DST; window.__cfRefresh = cfRefresh; window.__tqCenterNote = tqCenterNote; window.tqCenterNote = tqCenterNote; } catch (e) { void e; } /* v816: cfDocSide خارج هذه الكتلة (strict) — تصل إليها من هنا */
 function cfDocOk(d) { return !!(d && typeof d === 'object' && ['rejected', 'needs_changes', 'replaced'].indexOf(d.status) < 0); }
 
 function cfDocs() {
