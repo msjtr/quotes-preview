@@ -1,4 +1,4 @@
-/* v702–v784 — المنصة الجديدة للموظفين (staff/next/)
+/* v702–v804 — المنصة الجديدة للموظفين (staff/next/)
    v707: قسم المالية بخمس صفحات وتبويبات داخل الصفحة، وبلا أدراج: لوحة التفاصيل صفحة في مساحة المحتوى (الموضع من geo()).
    قائمة تنقّل واحدة فوق محرك المنصة نفسه (platform.js): الخادم والقاعدة والصلاحيات والحسابات كما هي.
    لا يعمل هذا الملف إلا على المسار /staff/next/، ولا يغيّر شيئًا في /staff/ ولا في بوابة العميل.
@@ -584,8 +584,10 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   soon();
 })();
-/* v784: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+
+/* v804: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v804: مراجعة قسم العملاء — تبويبات العقد ستة بدل أحد عشر (التفاصيل والقيمة · الإيصالات مجمّعة)، بلا تكرار المتبقي ومسار السداد، والوصول السريع يعمل من أي تبويب، والتبويب الفرعي الافتراضي أول ما فيه عناصر، و«مركز الأمن» و«صفحة العميل» بطاقات مباشرة بلا شرائح «عنصر واحد»، و«منذ 0 يوم» ← «اليوم»، و«ريال» ← «ر.س» في ملف العميل.
    · v784: «التقرير الائتماني الخارجي» (مُلم) في طلب الأهلية — قراءة آلية للملف المرفق داخل المتصفح، ودرجة خارجية وقواعد أهلية وقدرة على السداد، ودمج مع سلوك العميل وتوصية استشارية.
    · v783: بطاقة «معايير تقييم العملاء والأهلية» في «إعدادات النظام ← قسم العملاء».
    · v782: «معايير تقييم العملاء والأهلية» في إعدادات النظام — كل وزن ونسبة وحدّ يُعدَّل، مع شرح الطريقة والاحتساب والأهلية ومثال حيّ على عميل حقيقي.
@@ -616,6 +618,8 @@ function geoQ() {
   var ORDER = [/جدول السداد/, /الوسائل/, /مكوّنات|مكونات/, /تفاصيل/, /عرض السعر/, /الرسوم|المصاريف/, /مستندات/, /سجل/];
   var SHORT = [[/^جدول السداد/, 'جدول السداد'], [/^مكوّنات|^مكونات/, 'مكوّنات القيمة'], [/^تفاصيل العقد/, 'التفاصيل'], [/^مستندات العقد/, 'المستندات'], [/^سجل الأحداث/, 'السجل']];
   var SKIPK = /المسددة|آخر دفعة|عرض السعر/, DIAC = /[ً-ْ]/g;
+  /* v804: تبويبات العقد — مهمة واحدة لكل تبويب، والأقسام المتقاربة في تبويب واحد */
+  var CGRP = [['جدول السداد', /جدول السداد/], ['التفاصيل والقيمة', /مكوّنات|مكونات|تفاصيل|عرض السعر|الرسوم|المصاريف/], ['الوسائل المرتبطة', /الوسائل/], ['الإيصالات', /إيصال/], ['المستندات', /مستندات/], ['السجل', /سجل/]];
   var AG = [['التحصيل والسداد', ['pset', 'plink', 'btr', 'gwop']], ['تعديل الدفعات', ['edit', 'waive', 'link', 'unset']], ['حالة العقد', ['settle', 'close', 'reopen', 'cedit']]];
   var AIC = { pset: '✓', plink: '⛓', btr: '⇄', settle: '◎', gwop: '↺', edit: '✎', waive: '½', link: '⤳', unset: '↶', close: '■', reopen: '□', cedit: '✎' };
   function txt(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
@@ -906,7 +910,8 @@ function geoQ() {
       R1.appendChild(MO); R1.__mo = MO;
     }
     /* الوصول السريع — صف وحده */
-    var tiles = ctrTiles(stack), en = function (k) { return tiles.some(function (t) { return t[0] === k && t[3]; }); };
+    /* v804: خارج تبويب «العقود» لا تُعرف إجراءات العقد بعد — الزر يعمل وينقل إلى العقود ثم ينفّذ */
+    var tiles = ctrTiles(stack), en = function (k) { return !tiles.length || tiles.some(function (t) { return t[0] === k && t[3]; }); };
     var ph = K.ph || '', rep = !!(C && C.has && C.has('cu-admx-rpc'));
     var qsig = ['pset', 'plink', 'btr'].map(en).join('') + ph + rep;
     var QA = R2.__qa;
@@ -1189,6 +1194,8 @@ function geoQ() {
         if (fn.length && !am) { [].forEach.call(AL.querySelectorAll(':scope > .tqn-fab'), function (x) { x.parentNode.removeChild(x); }); fn.forEach(function (x) { x.classList.add('tqn-fab'); AL.appendChild(x); }); }
       }
       [].forEach.call(b.querySelectorAll(':scope > .t2-note'), function (x) { AL.appendChild(x); });
+      /* v804: «المتبقي على العقد» (معلومة) تكرار لأرقام رأس العقد — تُخفى؛ والتنبيهات تبقى */
+      [].forEach.call(AL.querySelectorAll('.t2-note'), function (x) { cls(x, 'tqn-hide', /(^|\s)is-info(\s|$)/.test(x.className) && /^المتبقي على العقد/.test(txt(x))); });
       [ch, tr, kp].forEach(function (x) { cls(x, 'tqn-hide', true); });
       /* v747: لا يتكرر المبلغ المتأخر إن ذكرته ملاحظة المنصة نفسها */
       var od = hd.querySelector('.tqn-od'); if (od) { var amt = (txt(od.querySelector('b')).match(/\d[\d,]*(?= ر\.س)/) || [])[0]; cls(od, 'tqn-hide', !!amt && txt(AL).indexOf(amt) >= 0); }
@@ -1203,13 +1210,19 @@ function geoQ() {
     if (!list.length) return;
     var rank = function (x) { var t = title(x); for (var i = 0; i < ORDER.length; i++) if (ORDER[i].test(t)) return i; return ORDER.length; };
     list = list.map(function (x, i) { return { x: x, r: rank(x) * 100 + i }; }).sort(function (a, c) { return a.r - c.r; }).map(function (o) { return o.x; });
-    var T = list.map(title);
-    var cur = ST[key]; if (!cur || T.indexOf(cur) < 0) cur = T[0];
-    var tb = bar(b, hd ? hd.nextSibling : list[0], list.map(function (x, i) { var n = count(x); return { k: T[i], t: short(T[i]), n: /^\d{1,3}$/.test(n) ? n : '' }; }), cur, 'k', function (k) { ST[key] = k; });
+    /* v804: تجميع الأقسام في تبويبات (CGRP) — ما لا يطابق مجموعة يبقى تبويبًا وحده */
+    var G = [], gOf = function (t) { for (var i = 0; i < CGRP.length; i++) if (CGRP[i][1].test(t)) return CGRP[i][0]; return short(t); };
+    list.forEach(function (x) { var g = gOf(title(x)), o = G.filter(function (y) { return y.k === g; })[0]; if (!o) { o = { k: g, xs: [], n: 0, nn: false }; G.push(o); } o.xs.push(x); var c = count(x); if (/^\d{1,3}$/.test(c)) { o.n += +c; o.nn = true; } });
+    var GK = G.map(function (g) { return g.k; });
+    var cur = ST[key]; if (!cur || GK.indexOf(cur) < 0) { var gi = GK.indexOf(gOf(cur || '')); cur = gi >= 0 ? GK[gi] : GK[0]; }
+    var tb = bar(b, hd ? hd.nextSibling : list[0], G.map(function (g) { return { k: g.k, t: g.k, n: g.nn && g.n ? String(g.n) : '' }; }), cur, 'k', function (k) { ST[key] = k; });
     cls(tb, 'tqn-o-tabs', true);
-    list.forEach(function (x, i) {
-      var on = T[i] === cur; cls(x, 'tqn-st-hide', !on); cls(x, 'tqn-cg', true);
-      if (on) { quiet(head(x)); inner(x, key); }
+    G.forEach(function (g) {
+      var on = g.k === cur, many = g.xs.length > 1;
+      g.xs.forEach(function (x) {
+        cls(x, 'tqn-st-hide', !on); cls(x, 'tqn-cg', true); cls(x, 'tqn-cg-m', on && many);
+        if (on) { if (!many) quiet(head(x)); inner(x, key); }
+      });
     });
   }
 
@@ -1223,7 +1236,7 @@ function geoQ() {
     /* v771: «طلبات المتجر» عنوانها في المنصة «بانتظار إجراء» — اسم القائمة نفسه بلا تكرار في المسار */
     var onI = document.querySelector('.tqn-nav .tqn-i.is-on'), onT = onI ? (onI.getAttribute('title') || txt(onI)) : '';
     if (ptl && onT === 'طلبات المتجر' && txt(ptl) === 'بانتظار إجراء') ptl.textContent = 'طلبات المتجر';
-    /* v784: «طلبات المتجر» تفتح صندوق «بانتظار إجراء» على شريحة المتجر نفسها (مرة عند الدخول من القائمة) */
+    /* v804: «طلبات المتجر» تفتح صندوق «بانتظار إجراء» على شريحة المتجر نفسها (مرة عند الدخول من القائمة) */
     if (ST.__inbx && onT === 'طلبات المتجر') { var sc = [].filter.call(root.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0]; if (sc) { ST.__inbx = 0; if (!sc.classList.contains('is-on')) sc.click(); } }
     try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');
@@ -1844,7 +1857,8 @@ function geoQ() {
       else items.push({ k: title(s), t: title(s), n: count(s), top: s });
     });
     items.forEach(function (it) { if (/^تحويلات تيرا/.test(it.t) && /^\d+$/.test(it.n)) { ST.X = ST.X || {}; ST.X[who] = +it.n; } });
-    var cur = ST[key]; if (!cur || !items.some(function (it) { return it.k === cur; })) cur = items.length ? items[0].k : '';
+    /* v804: التبويب الفرعي الافتراضي أول ما فيه عناصر لا أول ما في القائمة */
+    var cur = ST[key]; if (!cur || !items.some(function (it) { return it.k === cur; })) { var nz = items.filter(function (it) { return !/^0$/.test(String(it.n || '').trim()); })[0]; cur = (nz || items[0] || { k: '' }).k; }
     var sel = items.filter(function (it) { return it.k === cur; })[0];
     if (items.length >= 2) bar(stack, top[0], items.map(function (it) { return { k: it.k, t: it.t === 'التواصل' && /البيانات/.test(tab) ? 'بيانات الاتصال' : it.t, n: /^[\d,٬]{1,6}$/.test(it.n) || /^\S{1,8}$/.test(it.n) ? it.n : '' }; }), cur, 's', function (k) { ST[key] = k; });
     top.forEach(function (s) {
@@ -1882,9 +1896,32 @@ function geoQ() {
       cls(k, 'tqn-dup-k', hits >= 2);
     });
   }
+  /* v804: نصوص — «منذ 0 يوم» ← «اليوم» · «ريال» ← «ر.س» داخل ملف العميل */
+  function ago(n) { n = +n; return n === 0 ? 'اليوم' : n === 1 ? 'أمس' : n === 2 ? 'منذ يومين' : n <= 10 ? 'منذ ' + n + ' أيام' : 'منذ ' + n + ' يومًا'; }
+  function texts(root) {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, L = [];
+    while ((n = w.nextNode())) { var v = n.nodeValue; if (v && (v.indexOf('منذ') >= 0 || v.indexOf('ريال') >= 0)) L.push(n); }
+    L.forEach(function (t) {
+      var v = t.nodeValue, o = v.replace(/منذ\s+(\d+)\s+يوم(?![\u0621-\u0652])/g, function (m, d) { return ago(d); });
+      if (t.parentNode && t.parentNode.closest && t.parentNode.closest('.tqn-cf')) o = o.replace(/(\d)\s*ريال(?![\u0621-\u0652])/g, '$1 ر.س');
+      if (o !== v) t.nodeValue = o;
+    });
+  }
+  /* v804: صفحة أقسام كل قسم فيها عنصر واحد (مركز الأمن · صفحة العميل) — بطاقات مباشرة بلا شرائح ولا عناوين «عنصر واحد» */
+  function hubs(root) {
+    [].forEach.call(root.querySelectorAll('.shb'), function (s) {
+      var S = [].slice.call(s.querySelectorAll(':scope > .hc-sec')), one = S.length >= 2 && S.every(function (x) { return x.querySelectorAll('.hc').length === 1; });
+      cls(s, 'tqn-hub1', one);
+      if (!one) return;
+      var on = s.querySelector('.st-chips-w .hf-c.is-on'), all = s.querySelector('.st-chips-w .hf-c');
+      if (all && on && on !== all) all.click();
+    });
+  }
   function apply() {
     busy = false;
     var root = document.querySelector('#pv-root'); if (!root) return;
+    try { hubs(root); } catch (e) { void e; }
+    try { texts(root); } catch (e) { void e; }
     try { list(root); } catch (e) { void e; }
     try { file(root); } catch (e) { void e; }
     try { dups(root); } catch (e) { void e; }
