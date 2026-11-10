@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'802',d:'2026-11-10'};
+window.TQ_VERSION={v:'803',d:'2026-11-10'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -28,7 +28,17 @@ window.TQ_VERSION={v:'802',d:'2026-11-10'};
     function mark(v) { try { sessionStorage.setItem('tq.upd', v); } catch (e) { void e; } }
     function go(v) {
       mark(v || '');
-      try { var u = new URL(location.href); u.searchParams.set('u', v || String(Date.now())); location.replace(u.toString()); } catch (e) { location.reload(); }
+      /* v803: قبل إعادة التحميل تُجدَّد نسخ ملفات الصفحة (js/css) في ذاكرة المتصفح، فتتحدّث كل الصفحات والأنظمة
+         ولو بقي رقم ?v= في صفحةٍ ما قديمًا (كما حدث في /staff/next من 791 إلى 800) */
+      var nav = function () { try { var u = new URL(location.href); u.searchParams.set('u', v || String(Date.now())); location.replace(u.toString()); } catch (e) { location.reload(); } };
+      try {
+        var L = [].slice.call(document.querySelectorAll('script[src],link[rel="stylesheet"][href]')).map(function (x) { return x.src || x.href; })
+          .filter(function (h) { return h && h.indexOf(location.origin + '/') === 0; });
+        if (!L.length || !window.fetch || !window.Promise) return nav();
+        var done = false, fin = function () { if (!done) { done = true; nav(); } };
+        setTimeout(fin, 12000);
+        Promise.all(L.map(function (h) { return fetch(h, { cache: 'reload', credentials: 'same-origin' }).catch(function () { return null; }); })).then(fin, fin);
+      } catch (e) { nav(); }
     }
     function btn(t, cls, fn) { var b = document.createElement('button'); b.type = 'button'; b.textContent = t; if (cls) b.className = cls; b.setAttribute('data-live-ok', ''); b.addEventListener('click', fn); return b; }
     /* v386: شريط «يتوفر تحديث» تحت الهيدر (المنصة أو صفحة الموقع داخل الإطار) — وإلا أسفل الشاشة */
