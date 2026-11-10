@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v813 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v814 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2468,6 +2468,11 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .tqn-qno > bdi { font-weight: 900; font-size: 13px; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tq-next .tqn-qno > small { font-size: 11.5px; color: var(--tqn-mut, #66748C); direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 63.99rem) { .tq-next .tqn-lt.is-pq .tqn-ar { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto 56px; } .tq-next .tqn-lt.is-pq .tqn-ar > :nth-child(n+3):not(:nth-last-child(-n+2)) { display: none; } }
+
+/* v814: «تجربة العملاء» — صفحة الأقسام كانت فارغة: قاعدة «التواصل» (.is-comm-hub > .shb) تخفي رأس القسم الفرعي، وهنا الرأس هو الصفحة كلها */
+.tq-next .is-comm-hub > .shb:has(> .hc-sec) { display: grid !important; }
+/* v814: «المدفوعات» — تبويبا السجل والفروقات */
+.tq-next .tqn-st.tqn-fpt { margin: 0 0 4px; }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }

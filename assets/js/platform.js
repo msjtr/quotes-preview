@@ -32071,11 +32071,11 @@ function deskOpen(ref) {
   cuBdDraw({ key: 'desk:' + ref, ic: 'chat-circle-dots:sky', title: 'مراسلة ' + ref, sub: t ? ((t.kind_label || '') + ' · ' + (t.status_label || '')) : 'مراسلات العملاء', body: body.filter(Boolean), foot: foot, onClose: function () { delete DSKD[ref]; draw(); } });
 }
 function commRegister() {
-  try { Object.assign(ICON, { comm: ['chat-circle-dots', 'sky'], 'comm-dir': ['users-three', 'teal'], 'comm-send': ['paper-plane-tilt', 'sky'], 'comm-rep': ['chart-bar', 'navy'], 'comm-tpl': ['file-text', 'gold'] }); } catch (err) { void err; }
+  try { Object.assign(ICON, { comm: ['chat-circle-dots', 'sky'], 'comm-dir': ['users-three', 'teal'], 'comm-send': ['paper-plane-tilt', 'sky'], 'comm-rep': ['chart-bar', 'navy'], 'comm-rem': ['bell-ringing', 'gold'], 'comm-tpl': ['file-text', 'gold'] }); } catch (err) { void err; }
   lp('comm', 'التواصل المباشر', null, 'comm', commHubPage);
   lp('comm-dir', 'دليل هواتف وبريد الشركاء', 'comm', 'comm-dir', commDirPage);
   lp('comm-send', 'مركز الإرسال', 'comm', 'comm-send', scPage); /* v509: المكان الوحيد للإرسال */
-  lp('comm-rep', 'تقرير الإرسال', 'comm', 'comm-rep', scRepPage);
+  lp('comm-rep', 'تقرير الإرسال', 'comm', 'comm-rep', scRepPage); lp('comm-rem', 'التذكير', 'comm', 'comm-rem', remPage); /* v814: «التذكير» صفحة مستقلة لبندها في المنصة الجديدة (والتبويب في «التواصل» كما هو) */
   lp('comm-tpl', 'قوالب الرسائل', 'sys', 'sys-msgc', msgcPage); /* v641: «القوالب الجاهزة» القديمة حُذفت — المفتاح يفتح «قوالب الرسائل» */
 }
 commRegister();

@@ -40,11 +40,13 @@
     ['fin-req', 'الطلبات المالية', ['fin', 'cu']],
     ['cu-admx-rp', 'التقارير', ['fin']]
   ]],
+    /* v814: «التواصل» بنود مباشرة لكل عمل — بلا «كل صفحات التواصل» (كانت تكرّر مركز الإرسال والتذاكر وتجربة العملاء)، و«تقرير الإرسال» تبويب داخل «مركز الإرسال» */
     ['التواصل', [
       ['comm-send', 'مركز الإرسال', ['comm-hub']],
+      ['comm-rem', 'التذكير', ['comm-hub']],
       ['cs-tickets', 'التذاكر والمراسلات', ['comm-hub']],
-      ['cx', 'تجربة العملاء', ['comm-hub']],
-      ['comm-hub', 'كل صفحات التواصل', ['comm-hub']]
+      ['comm-dir', 'جهات الاتصال', ['comm-hub']],
+      ['cx', 'تجربة العملاء', ['comm-hub']]
     ]],
     ['الفريق والشركاء', [['team-hub', 'الفريق والشركاء', ['team-hub']]]],
     ['الإعدادات', [['sys', 'إعدادات النظام', ['sys']], ['fin-fee', 'الرسوم والضرائب', ['fin']], ['pay-center', 'إعدادات الدفع', ['fin']]]]
@@ -84,7 +86,8 @@ var VIEWS = [
   ['fin-due', [['fin-due', 'الدفعات المستحقة'], ['cu-admx-dd', 'الاستقطاع البنكي'], ['cu-admx-ck', 'الشيكات'], ['cu-admx-bd', 'السندات التنفيذية']]],
   ['fin-pay', [['fin-pay', 'سجل المدفوعات'], ['fin-gw', 'عمليات بوابة الدفع'], ['cu-trin', 'التحويلات البنكية'], ['fin-rec-gw', 'سجل السداد', 'fin-rec-'], ['cu-admx-tr', 'الحوالات الصادرة']]],
   ['fin-req', [['fin-req', 'سداد قيمة المنتج والتأجيل والتوحيد'], ['cu-opin', 'الإلغاء والاسترداد']]],
-  ['cu-admx-rp', [['cu-admx-rp', 'تقرير العملاء'], ['cu-admx-fee', 'الرسوم والإيراد']]]
+  ['cu-admx-rp', [['cu-admx-rp', 'تقرير العملاء'], ['cu-admx-fee', 'الرسوم والإيراد']]],
+  ['comm-send', [['comm-send', 'الإرسال'], ['comm-rep', 'تقرير الإرسال']]]
 ];
 /* سجل السداد حسب الطريقة — اختيارات داخل التبويب نفسه */
 var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'], ['cash', 'نقدًا'], ['settle', 'سداد قيمة المنتج'], ['merge', 'توحيد'], ['defer', 'تأجيل'], ['waive', 'إعفاء فرق'], ['round', 'فرق تقريب'], ['oth', 'بلا طريقة مسجّلة']];
@@ -95,7 +98,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
     'cu-list': 'identification-card', 'cu-new': 'user', 'cu-pf-ver': 'seal-check', 'cu-pf-launch': 'rocket-launch', 'cu-pf-req': 'note-pencil', 'cu-mem': 'crown-simple', 'cu-secc': 'shield-check', 'cpg': 'user-circle', 'cu-inbox': 'tray',
     'cu-svc': 'clipboard-text', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront', 'cu-docs-tl': 'envelope-simple',
     'fin-due': 'calendar-check', 'cu-trin': 'bank', 'cu-opin': 'arrow-counter-clockwise', 'cu-paylinks': 'link-simple',
-    'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'cs-tickets': 'ticket', 'cx': 'star'
+    'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'comm-rem': 'bell-ringing', 'comm-dir': 'users-three', 'cs-tickets': 'ticket', 'cx': 'star'
   };
   Object.assign(GLY, { 'fin-due': 'calendar-check', 'fin-pay': 'receipt', 'cu-paylinks': 'link-simple', 'fin-req': 'arrows-left-right', 'cu-admx-rp': 'chart-bar', 'fin-fee': 'coins', 'pay-center': 'credit-card', 'sys': 'gear-six' });
   function tile3d(glyph) {
@@ -585,8 +588,9 @@ function geoQ() {
   soon();
 })();
 
-/* v813: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v814: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v814: «المالية» و«التواصل» — «المدفوعات» تبويبان (سجل المدفوعات · فروقات تحتاج قرارك) بدل قسم طويل فوق السجل، و«تجربة العملاء» تظهر (كانت فارغة)، واسم الصفحة اسم القائمة (جهات الاتصال · تجربة العملاء)، وخلية العميل في العروض بفاصل بين أجزائها.
    · v813: «الطلبات والعقود» — العروض (الشركاء والمتاجر) جدول صفًّا لكل عرض ببطاقات ملخص تصفّي بلا شريط أرقام مكرّر، واسم الصفحة اسم القائمة نفسه، ورقم عنوان القسم في «طلبات الخدمات» عدد طلباته.
    · v808: «إعدادات النظام» — ثماني مجموعات واضحة وكل عنصر في مكان واحد (مدة الجلسة مع الوصول والأمان، سداد قيمة المنتج مع المالية، النقاط والخصومات معًا) وبحث بدل شريط الشرائح، ومسار كامل في كل صفحة إعدادات، وكل الأقسام مفتوحة، والصفحات الطويلة بتبويب لكل قسم، وبلا رابطين مكرّرين في القائمة الجانبية.
    · v806: «ر.س» أيضًا حين يكون الرقم في عنصر مستقل (مثل «6,200 ريال» في بطاقة طلب الأهلية).
@@ -1253,6 +1257,21 @@ function geoQ() {
       if (n && txt(c) !== String(n)) c.textContent = String(n);
     });
   }
+  /* v814: «المدفوعات» — تبويبان: سجل المدفوعات (الملخص والتنبيه والسجل) · فروقات تحتاج قرارك (كانت قسمًا طويلًا فوق السجل) */
+  function finPay(root) {
+    var sec = [].filter.call(root.querySelectorAll('section.t2-sec'), function (x) { return /^فروقات تحتاج قرارك/.test(txt(x.querySelector(':scope > .t2-sec-h'))); })[0];
+    var card = root.querySelector('section.tqn-fd-card');
+    if (!sec || !card || sec.parentNode !== card.parentNode) return;
+    var box = sec.parentNode, strip = box.querySelector(':scope > .tqn-fd-strip'), notes = [].slice.call(box.querySelectorAll(':scope > .t2-note'));
+    var nd = (txt(sec.querySelector(':scope > .t2-sec-h')).match(/(\d+)\s*بانتظار/) || [])[1] || '';
+    var cur = ST.fpT === 'd' ? 'd' : 'l', first = [strip].concat(notes, [sec, card]).filter(Boolean)[0];
+    var b = bar(box, first, [{ k: 'l', t: 'سجل المدفوعات' }, { k: 'd', t: 'فروقات تحتاج قرارك', n: nd }], cur, 'k', function (k) { ST.fpT = k; });
+    cls(b, 'is-set', true); cls(b, 'tqn-fpt', true);
+    [strip, card].concat(notes).forEach(function (x) { cls(x, 'tqn-st-hide', cur !== 'l'); });
+    cls(sec, 'tqn-st-hide', cur !== 'd'); quiet(sec.querySelector(':scope > .t2-sec-h'));
+  }
+  /* v814: نص خانة من أجزاء متعددة بفاصل بينها (كان «العميلتسليم إلكتروني») */
+  function tj(v) { if (!v) return ''; while (v.children.length === 1 && v.childNodes.length === 1) v = v.children[0]; var P = [].map.call(v.childNodes, function (n) { return String(n.textContent || '').replace(/\s+/g, ' ').trim(); }).filter(Boolean); return P.length > 1 ? P.join(' · ') : txt(v); }
   function pageKey() { return PT[txt(document.getElementById('pv-title'))] || ''; }
   function pages(root) {
     /* v770: اسم الصفحة كما في القائمة الجانبية */
@@ -1262,9 +1281,10 @@ function geoQ() {
     if (ptl && onT === 'طلبات المتجر' && txt(ptl) === 'بانتظار إجراء') ptl.textContent = 'طلبات المتجر';
     /* v804: «طلبات المتجر» تفتح صندوق «بانتظار إجراء» على شريحة المتجر نفسها (مرة عند الدخول من القائمة) */
     /* v813: اسم الصفحة اسم القائمة نفسه — بلا «عروض الشركاء › عروض أسعار الشركاء» في المسار */
-    var RN = { 'عروض أسعار الشركاء': 'عروض الشركاء', 'عروض أسعار المتاجر': 'عروض المتاجر' };
+    var RN = { 'عروض أسعار الشركاء': 'عروض الشركاء', 'عروض أسعار المتاجر': 'عروض المتاجر', 'دليل هواتف وبريد الشركاء': 'جهات الاتصال', 'تجربة العملاء والجودة': 'تجربة العملاء' };
     if (ptl && RN[txt(ptl)] && onT === RN[txt(ptl)]) ptl.textContent = RN[txt(ptl)];
     try { srvCount(root); } catch (e) { void e; }
+    try { finPay(root); } catch (e) { void e; }
     if (ST.__inbx && onT === 'طلبات المتجر') { var sc = [].filter.call(root.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0]; if (sc) { ST.__inbx = 0; if (!sc.classList.contains('is-on')) sc.click(); } }
     try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');
@@ -1327,7 +1347,7 @@ function geoQ() {
         /* v813: العرض صفًّا واحدًا — الرقم ثم أعمدة المنصة نفسها (العميل · الطلب · الإجمالي · صالح حتى · أعدّه · الحالة) */
         var QV = {}; [].forEach.call(r.querySelectorAll('.adm-cm-i'), function (i) { QV[txt(i.querySelector('small'))] = i.querySelector(':scope > :not(small)'); });
         var q0 = mk('span', 'tqn-qno'); q0.appendChild(mk('bdi', '', txt(r.querySelector('.ax-r-b > b, .ax-r-b > bdi, .ax-r-b bdi')) || '—')); if (QV['الطلب']) q0.appendChild(mk('small', '', 'الطلب ' + txt(QV['الطلب']))); x.appendChild(q0);
-        QL.forEach(function (l) { var v = QV[l], pl = v && (v.matches('.t2-pill') ? v : v.querySelector('.t2-pill')); x.appendChild(pl ? chipOf(pl) : mk(/الإجمالي|المبلغ|القيمة/.test(l) ? 'b' : 'span', /الطلب|صالح|التاريخ/.test(l) ? 'tqn-dt' : '', txt(v) || '—')); });
+        QL.forEach(function (l) { var v = QV[l], pl = v && (v.matches('.t2-pill') ? v : v.querySelector('.t2-pill')); x.appendChild(pl ? chipOf(pl) : mk(/الإجمالي|المبلغ|القيمة/.test(l) ? 'b' : 'span', /الطلب|صالح|التاريخ/.test(l) ? 'tqn-dt' : '', (l === 'العميل' ? tj(v) : txt(v)) || '—')); });
       } else if (k === 'vr') {
         var F = {}; [].forEach.call(r.querySelectorAll('.adm-cm-i'), function (i) { F[txt(i.querySelector('small'))] = i.querySelector(':scope > span'); });
         var role = txt(F['الدور']);
