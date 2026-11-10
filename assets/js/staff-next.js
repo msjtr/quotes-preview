@@ -588,8 +588,9 @@ function geoQ() {
   soon();
 })();
 
-/* v819: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v820: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v820: صفوف جداول «الطلبات والعقود» تُفتح (كان حارس الإجراءات يمنع «إصدار عرض السعر…» لأن الصف بلا data-live-ok)، وعدد العقود الصحيح («عقد واحد» كان يُقرأ من المبلغ)، والجدول بأعمدته على الشاشات المتوسطة.
    · v819: «الطلبات والعقود» — «عقود العملاء» جدول (بطاقات ملخص تصفّي · بحث · صف لكل عميل بعقوده والمتبقي وحالاتها)، و«طلبات المتجر» جدول طلبات المتجر وحدها (بلا شرائح الأقسام الأخرى)، وصفحة الطلب والعرض بتبويب لكل قسم (الإجراء أولًا) ومسار «الطلبات والعقود › الصفحة › الطلب».
    · v814: «المالية» و«التواصل» — «المدفوعات» تبويبان (سجل المدفوعات · فروقات تحتاج قرارك) بدل قسم طويل فوق السجل، و«تجربة العملاء» تظهر (كانت فارغة)، واسم الصفحة اسم القائمة (جهات الاتصال · تجربة العملاء)، وخلية العميل في العروض بفاصل بين أجزائها.
    · v813: «الطلبات والعقود» — العروض (الشركاء والمتاجر) جدول صفًّا لكل عرض ببطاقات ملخص تصفّي بلا شريط أرقام مكرّر، واسم الصفحة اسم القائمة نفسه، ورقم عنوان القسم في «طلبات الخدمات» عدد طلباته.
@@ -1556,8 +1557,8 @@ function geoQ() {
     var hr = mk('div', 'tqn-ctr is-h'); ['العميل', 'العقود', 'المتبقي', 'حالات العقود', ''].forEach(function (h) { hr.appendChild(mk('span', '', h)); }); T.appendChild(hr);
     rows.forEach(function (c) {
       var nm = txt(c.querySelector('.cu-card-t b')), sm = txt(c.querySelector('.cu-card-t small'));
-      var n = (sm.match(/(\d+)\s*عقد/) || sm.match(/(\d+)/) || ['', '—'])[1], rm = (sm.match(/المتبقي\s*([\d٬,.]+\s*ر\.س)/) || ['', '—'])[1];
-      var r = mk('div', 'tqn-ctr'); r.setAttribute('role', 'button'); r.tabIndex = 0;
+      var n = (sm.match(/(\d+)\s*عقد/) || [])[1] || (/عقدان/.test(sm) ? '2' : /عقد واحد|^عقد\b/.test(sm) ? '1' : '—'), rm = (sm.match(/المتبقي\s*([\d٬,.]+\s*ر\.س)/) || ['', '—'])[1];
+      var r = mk('div', 'tqn-ctr'); r.setAttribute('role', 'button'); r.setAttribute('data-live-ok', ''); r.tabIndex = 0;
       var w = mk('div', 'tqn-who'); w.appendChild(mk('i', '', String(nm || '؟').slice(0, 1))); var w2 = mk('span'); w2.appendChild(mk('b', '', nm)); w.appendChild(w2); r.appendChild(w);
       r.appendChild(mk('b', '', n)); r.appendChild(mk('b', rm === '—' || /^0\s/.test(rm) ? 'is-mut' : '', rm));
       var P = mk('div', 'tqn-ctp'); [].forEach.call(c.querySelectorAll('.cu-card-m .t2-pill'), function (p) { P.appendChild(chipOf(p)); }); if (!P.children.length) P.appendChild(mk('span', 'is-mut', '—')); r.appendChild(P);
@@ -1589,9 +1590,9 @@ function geoQ() {
     var T = mk('div', 'tqn-ct is-si');
     var hr = mk('div', 'tqn-ctr is-h'); ['الإجراء المطلوب', 'العميل', 'الرقم', 'الحالة', ''].forEach(function (h) { hr.appendChild(mk('span', '', h)); }); T.appendChild(hr);
     rows.forEach(function (r) {
-      var go = r.querySelector('.nr-main') || r, x = mk('div', 'tqn-ctr'); x.setAttribute('role', 'button'); x.tabIndex = 0;
+      var go = r.querySelector('.nr-main') || r, x = mk('div', 'tqn-ctr'); x.setAttribute('role', 'button'); x.setAttribute('data-live-ok', ''); x.tabIndex = 0;
       x.appendChild(mk('b', '', txt(r.querySelector('.cu-ir-a')) || '—'));
-      var cu = txt(r.querySelector('.cu-ir-c')); x.appendChild(mk('span', cu && cu !== 'العميل' ? '' : 'is-mut', cu && cu !== 'العميل' ? cu : 'عميل بلا حساب'));
+      var cu = txt(r.querySelector('.cu-ir-c')); x.appendChild(mk('span', cu && cu !== 'العميل' ? '' : 'is-mut', cu && cu !== 'العميل' ? cu : '—'));
       x.appendChild(mk('bdi', 'tqn-dt', txt(r.querySelector('.cu-ir-no')) || '—'));
       var pl = r.querySelector('.t2-pill'); x.appendChild(pl ? chipOf(pl) : mk('span', 'is-mut', '—'));
       x.appendChild(btn('فتح', 'is-pri is-sm', function () { go.click(); }));

@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v819 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v820 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2492,10 +2492,16 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next.pv-dark #pv-host .tqn-ctr { border-color: var(--tqn-line); }
 .tq-next.pv-dark #pv-host .tqn-ctr.is-h { background: #0F1829; }
 .tq-next.pv-dark #pv-host .tqn-ctr:hover { background: #12303A; }
-@media (max-width: 63.99rem) {
+@media (max-width: 40rem) {
   .tq-next .tqn-ctr, .tq-next .tqn-ct.is-si .tqn-ctr { grid-template-columns: minmax(0, 1fr) auto; }
   .tq-next .tqn-ctr.is-h { display: none; }
   .tq-next .tqn-ctr > :not(:first-child):not(:last-child) { display: none; }
+}
+
+/* v820: جداول «الطلبات والعقود» بأعمدتها على الشاشات المتوسطة (تُطوى إلى الاسم والزر تحت 40rem فقط) */
+@media (min-width: 40.01rem) and (max-width: 63.99rem) {
+  .tq-next .tqn-ctr { grid-template-columns: minmax(0, 2fr) 48px minmax(100px, 1fr) minmax(0, 2fr) 100px; gap: 10px; padding-inline: 14px; }
+  .tq-next .tqn-ct.is-si .tqn-ctr { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.8fr) minmax(0, 1.3fr) minmax(0, 1fr) 64px; }
 }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
