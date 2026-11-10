@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v806 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v808 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2445,6 +2445,21 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next.pv-dark .tqn-cmp-r.is-h { background: #0F1829; }
 .tq-next.pv-dark .tqn-cmp-r > .is-new { color: #5FD4D6; }
 .tq-next.pv-dark .tqn-sm.is-tier > i { background: #2A2210; color: #F2C66D; }
+/* v808: إعدادات النظام — مجموعات الصفحة بمسافتها، كل الأقسام مفتوحة، تبويب لكل قسم في الصفحات الطويلة، وبنود الرسوم صفًا واحدًا */
+.tq-next .shb > .tqn-sh { display: grid; gap: 18px; }
+.tq-next #pv-root.tqn-setp section.t2-sec.is-closed > .t2-sec-b { display: block !important; }
+.tq-next #pv-root.tqn-setp .t2-sec-h .t2-chev { display: none !important; }
+.tq-next .t2-panel-h.tqn-st-nh { display: none !important; }
+.tq-next #pv-root.tqn-setp .tqn-st.is-set { margin: 0 0 4px; }
+@media (min-width: 64rem) {
+  .tq-next #pv-root.tqn-setp .fee-xs { display: grid; gap: 8px; }
+  .tq-next #pv-root.tqn-setp .fee-x { display: grid !important; grid-template-columns: minmax(160px, 2fr) minmax(150px, 1.5fr) minmax(110px, 1fr) auto auto !important; gap: 10px 14px !important; align-items: end; padding: 12px 14px !important; }
+  .tq-next #pv-root.tqn-setp .fee-x > * { margin: 0 !important; min-width: 0; }
+  .tq-next #pv-root.tqn-setp .fee-x > :not(.is-toggle) { grid-column: auto !important; }
+  .tq-next #pv-root.tqn-setp .fee-x > .is-toggle { display: grid !important; justify-items: center; gap: 6px; padding: 0 !important; background: none !important; border: 0 !important; }
+  .tq-next #pv-root.tqn-setp .fee-x > .is-toggle:nth-last-child(2) { grid-column: 4 !important; }
+  .tq-next #pv-root.tqn-setp .fee-x > .is-toggle:last-child { grid-column: 5 !important; }
+}
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }

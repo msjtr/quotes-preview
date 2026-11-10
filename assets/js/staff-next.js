@@ -585,8 +585,9 @@ function geoQ() {
   soon();
 })();
 
-/* v806: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v808: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v808: «إعدادات النظام» — ثماني مجموعات واضحة وكل عنصر في مكان واحد (مدة الجلسة مع الوصول والأمان، سداد قيمة المنتج مع المالية، النقاط والخصومات معًا) وبحث بدل شريط الشرائح، ومسار كامل في كل صفحة إعدادات، وكل الأقسام مفتوحة، والصفحات الطويلة بتبويب لكل قسم، وبلا رابطين مكرّرين في القائمة الجانبية.
    · v806: «ر.س» أيضًا حين يكون الرقم في عنصر مستقل (مثل «6,200 ريال» في بطاقة طلب الأهلية).
    · v805: إكمال قسم العملاء — «العضويات والنقاط» جدول ببطاقات مستوى تصفّي وسطر النقاط وبحث (بدل شبكة البطاقات)، والمستويات بالعربية وحدها، وبلا تكرار شارة المستوى في تفاصيل العضوية؛ «طلبات تحديث الملف» بطاقة مقارنة (البيان · الحالي · المطلوب) قبل الاعتماد أو الرفض؛ «تدشين الحساب» القيم الافتراضية سطر معلومات لا بطاقات بشكل المرشّحات؛ «العملاء الجدد» الجوال 05… وشرح التذكير سطر واحد؛ و«ر.س» تشمل تبويب «الطلبات» في الملف.
    · v804: مراجعة قسم العملاء — تبويبات العقد ستة بدل أحد عشر (التفاصيل والقيمة · الإيصالات مجمّعة)، بلا تكرار المتبقي ومسار السداد، والوصول السريع يعمل من أي تبويب، والتبويب الفرعي الافتراضي أول ما فيه عناصر، و«مركز الأمن» و«صفحة العميل» بطاقات مباشرة بلا شرائح «عنصر واحد»، و«منذ 0 يوم» ← «اليوم»، و«ريال» ← «ر.س» في ملف العميل.
@@ -686,6 +687,17 @@ function geoQ() {
       if (pt0 && pt0 !== F.who) L.push({ t: pt0 });
       L.back = F;
       return crumbsDraw(src, back, mine, L);
+    }
+    /* v808: صفحة فُتحت من بطاقة في صفحة أقسام (إعدادات النظام · مركز الأمن …) — المسار: الرئيسية › المجموعة › الصفحة الأم › الصفحة */
+    var hf = ST.__hubFrom;
+    if (!on && hf && document.body.contains(hf)) {
+      var hi = hf.getAttribute('title') || txt(hf), hgr = hf.closest('.tqn-g'), hgl = hgr ? txt(hgr.querySelector('.tqn-gh')) : '', hp = txt(document.getElementById('pv-title')) || srcLast;
+      if (hp && hp !== hi) {
+        L.push({ t: 'الرئيسية', home: 1, go: function () { if (homeBtn) homeBtn.click(); else if (srcBtns[0]) srcBtns[0].click(); } });
+        if (hgl && hgl !== hi) L.push({ t: hgl, grp: 1 });
+        L.push({ t: hi, go: function () { hf.click(); } }); L.push({ t: hp });
+        return crumbsDraw(src, back, mine, L);
+      }
     }
     if (!on || on === homeBtn) { cls(src, 'tqn-cr-src', false); cls(back, 'tqn-hide', false); if (mine && mine.parentNode) mine.parentNode.removeChild(mine); return; }
     var item = on.getAttribute('title') || txt(on);
@@ -2010,6 +2022,75 @@ function geoQ() {
       [].forEach.call(d.querySelectorAll('.cu-dr-st > .t2-pill'), function (p) { cls(p, 'tqn-hide', /^(تيرا|Terra)\s/.test(txt(p))); });
     });
   }
+  /* v808: إعدادات النظام — مجموعات واضحة وكل عنصر في مكان واحد + بحث بدل شريط الشرائح المكرّر لعناوين الأقسام */
+  var SG = [
+    ['الوصول والأمان', ['الأدوار والصلاحيات', 'المسمّيات الوظيفية', 'دعوات الحسابات', 'مدة الجلسة']],
+    ['المنشأة والضريبة', ['بيانات المنشأة', 'الضريبة ومواضعها في المستندات']],
+    ['المالية والدفع', ['الرسوم والضرائب والعمولات', 'إعدادات الدفع الإلكتروني', 'سداد قيمة المنتج']],
+    ['العملاء والأهلية', ['إعدادات تدشين الحساب', 'معايير تقييم العملاء والأهلية', 'مرفقات الوظيفة', 'قرارات مراجعة الترحيل']],
+    ['النقاط والخصومات', ['إعدادات النقاط', 'الخصم والنقاط في العروض', 'اعتماد النقاط']],
+    ['التواصل', ['قوالب الرسائل', 'إعدادات الإرسال للعملاء', 'إعدادات تجربة العملاء والجودة', 'الرد الآلي']],
+    ['القوالب والمستندات', ['قوالب المستندات', 'تنسيق الجداول', 'صفحة التحقق', 'التواقيع المعتمدة']],
+    ['التشغيل', ['مدد الإنجاز', 'سجل الإعدادات']]
+  ];
+  function cntW(n) { return n === 1 ? 'عنصر واحد' : n === 2 ? 'عنصران' : n <= 10 ? n + ' عناصر' : n + ' عنصرًا'; }
+  function setHub(root) {
+    /* القائمة الجانبية: «الرسوم والضرائب» و«إعدادات الدفع» داخل «إعدادات النظام» — بلا رابط مكرّر */
+    [].forEach.call(document.querySelectorAll('.tqn-nav .tqn-i'), function (x) { if (/^(الرسوم والضرائب|إعدادات الدفع)$/.test(x.getAttribute('title') || txt(x))) cls(x, 'tqn-hide', true); });
+    if (txt(document.getElementById('pv-title')) !== 'إعدادات النظام') return;
+    var s = root.querySelector('.shb'); if (!s) return;
+    var OS = [].slice.call(s.querySelectorAll(':scope > .hc-sec')); if (!OS.length) return;
+    var C = [];
+    OS.forEach(function (sec) { var og = txt(sec.querySelector('.hc-sec-h h2')); [].forEach.call(sec.querySelectorAll('.hc'), function (c) { C.push({ c: c, t: txt(c.querySelector('.hc-tx b')), d: txt(c.querySelector('.hc-tx small')), og: og, sec: sec }); }); });
+    var Q = (ST.shq || '').trim();
+    var sig = C.map(function (x) { return x.t + '~' + x.d; }).join('|') + '#' + Q;
+    [].forEach.call(s.querySelectorAll(':scope > .st-chips-w'), function (x) { cls(x, 'tqn-hide', true); });
+    OS.forEach(function (x) { cls(x, 'tqn-hide', true); });
+    var W = s.__tqnSh;
+    if (W && W.parentNode === s && W.__sig === sig) return;
+    var keepQ = W && W.__q === document.activeElement;
+    if (W && W.parentNode) W.parentNode.removeChild(W);
+    W = mk('div', 'tqn-sh'); W.__sig = sig;
+    var tb = mk('div', 'tqn-ltb'), q = mk('input', 'tqn-lq'); q.type = 'search'; q.placeholder = 'ابحث في الإعدادات…'; q.value = ST.shq || ''; q.setAttribute('aria-label', 'بحث في الإعدادات');
+    q.addEventListener('input', function () { ST.shq = q.value; clearTimeout(q.__t); q.__t = setTimeout(apply, 160); });
+    tb.appendChild(q); W.__q = q; W.appendChild(tb);
+    var used = [], G = SG.map(function (g) { var xs = g[1].map(function (n) { return C.filter(function (x) { return x.t === n; })[0]; }).filter(Boolean); used = used.concat(xs); return { t: g[0], xs: xs }; });
+    C.forEach(function (x) { if (used.indexOf(x) >= 0 || /يُربط لاحقًا/.test(txt(x.c))) return; var o = G.filter(function (g) { return g.t === x.og; })[0]; if (!o) { o = { t: x.og, xs: [] }; G.push(o); } o.xs.push(x); });
+    var any = 0;
+    G.forEach(function (g, gi) {
+      var xs = g.xs.filter(function (x) { return !Q || (x.t + ' ' + x.d).indexOf(Q) >= 0; }); if (!xs.length) return; any += xs.length;
+      var sec = mk('section', 'hc-sec tqn-hs is-t' + (gi % 4)), h = mk('header', 'hc-sec-h'), ic = xs[0].sec.querySelector('.hc-sec-ic');
+      h.appendChild(ic ? ic.cloneNode(true) : mk('span', 'hc-sec-ic')); h.appendChild(mk('h2', '', g.t)); h.appendChild(mk('small', '', cntW(xs.length))); sec.appendChild(h);
+      var gr = mk('div', 'hc-g');
+      xs.forEach(function (x) { var cl = x.c.cloneNode(true); cl.setAttribute('data-live-ok', ''); cl.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); ST.__hubFrom = document.querySelector('.tqn-nav .tqn-i.is-on') || ST.__hubFrom; x.c.click(); }); gr.appendChild(cl); });
+      sec.appendChild(gr); W.appendChild(sec);
+    });
+    if (!any) W.appendChild(mk('div', 'tqn-lf', 'لا إعداد بهذا الاسم'));
+    s.insertBefore(W, OS[0]); s.__tqnSh = W;
+    if (keepQ) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) { void e; } }
+  }
+  /* v808: صفحات الإعدادات — كل الأقسام مفتوحة، والصفحات الطويلة بتبويب لكل قسم (مهمة واحدة في كل تبويب)، وبلا تكرار العنوان في التنويه */
+  var STAB = /^(الرسوم والضرائب والعمولات|سداد قيمة المنتج|مرفقات الوظيفة|إعدادات نقاط ومكافآت تيرا)$/;
+  function secT(x) { var h = x.querySelector(':scope > .t2-sec-h .t2-group-t, :scope > .t2-sec-h h2, :scope > .t2-panel-h .t2-group-t, :scope > .t2-panel-h h2, :scope > .t2-panel-h h3, :scope > header h2, :scope > header h3'); return txt(h).replace(/^\d+\s*[.\-–]\s*/, '').split(/[:：]/)[0].trim(); }
+  function setPage(root) {
+    var hf = ST.__hubFrom, hi = hf ? (hf.getAttribute('title') || txt(hf)) : '', pt = txt(document.getElementById('pv-title'));
+    var on = hi === 'إعدادات النظام' && document.body.contains(hf) && pt && pt !== hi && !document.querySelector('.tqn-nav .tqn-i.is-on');
+    cls(root, 'tqn-setp', !!on);
+    if (!on) return;
+    [].forEach.call(root.querySelectorAll('.t2-note .t2-note-t'), function (t) { cls(t, 'tqn-hide', txt(t) === pt); });
+    [].forEach.call(root.querySelectorAll('button'), function (b) { if (/^(فتح الكل|طي الكل)$/.test(txt(b))) cls(b, 'tqn-hide', true); });
+    var np = pt.replace(/^إعدادات\s+/, ''); [].forEach.call(root.querySelectorAll('.ax-top-t > b'), function (b) { cls(b, 'tqn-hide', txt(b).replace(/^إعدادات\s+/, '') === np); });
+    if (!STAB.test(pt)) return;
+    var P = [], best = null;
+    [].forEach.call(root.querySelectorAll('section.t2-sec, section.t2-panel'), function (x) { if (!secT(x)) return; var p = x.parentNode, o = P.filter(function (y) { return y.p === p; })[0]; if (!o) { o = { p: p, xs: [] }; P.push(o); } o.xs.push(x); });
+    P.forEach(function (o) { if (!best || o.xs.length > best.xs.length) best = o; });
+    if (!best || best.xs.length < 3) return;
+    var S = best.xs, K = S.map(secT), key = 'st:' + pt;
+    var cur = ST[key]; if (K.indexOf(cur) < 0) cur = K[0];
+    var b = bar(best.p, S[0], K.map(function (k) { return { k: k, t: k }; }), cur, 'k', function (k) { ST[key] = k; });
+    cls(b, 'is-set', true);
+    S.forEach(function (x, i) { var onx = K[i] === cur; cls(x, 'tqn-st-hide', !onx); cls(x, 'tqn-stab-s', true); quiet(x.querySelector(':scope > .t2-sec-h, :scope > .t2-panel-h')); });
+  }
   function apply() {
     busy = false;
     var root = document.querySelector('#pv-root'); if (!root) return;
@@ -2019,6 +2100,8 @@ function geoQ() {
     try { dups(root); } catch (e) { void e; }
     try { pages(root); } catch (e) { void e; }
     try { members(root); } catch (e) { void e; }
+    try { setHub(root); } catch (e) { void e; }
+    try { setPage(root); } catch (e) { void e; }
     try { drCrumbs(); } catch (e) { void e; }
     try { crumbs(); } catch (e) { void e; }
     /* v805: النصوص بعد بناء الملف والصفحات (كانت قبلها فيفوتها ما يُبنى لاحقًا مثل تبويب «الطلبات») */
@@ -2029,6 +2112,6 @@ function geoQ() {
   try { new MutationObserver(soon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { void e; }
   try { window.addEventListener('resize', soon); } catch (e) { void e; }
   /* v750: التنقّل من القائمة الجانبية أو المسار أو الهيدر يُنهي «فُتح من ملف العميل» */
-  try { document.addEventListener('click', function (ev) { var t = ev.target; if (t && t.closest && t.closest('.tqn-nav, .tqn-cr, #pv-host .t2-head, .t2-head')) { ST.__navU = 1; if (!t.closest('.tqn-cr-bk')) ST.from = null; if (!t.closest('.tqn-cr')) ST.fromNc = false; } if (t && t.closest && t.closest('#pv-root .tqn-nc-gl > article.nr > .nr-main')) ST.fromNc = true; var ni = t && t.closest && t.closest('.tqn-nav .tqn-i'); if (ni) ST.__inbx = /^طلبات المتجر$/.test(ni.getAttribute('title') || txt(ni)) ? 1 : 0; }, true); } catch (e) { void e; }
+  try { document.addEventListener('click', function (ev) { var t = ev.target; if (t && t.closest && t.closest('.tqn-nav, .tqn-cr, #pv-host .t2-head, .t2-head')) { ST.__navU = 1; if (!t.closest('.tqn-cr-bk')) ST.from = null; if (!t.closest('.tqn-cr')) ST.fromNc = false; } if (t && t.closest && t.closest('#pv-root .tqn-nc-gl > article.nr > .nr-main')) ST.fromNc = true; var ni = t && t.closest && t.closest('.tqn-nav .tqn-i'); if (ni) ST.__inbx = /^طلبات المتجر$/.test(ni.getAttribute('title') || txt(ni)) ? 1 : 0; if (t && t.closest && t.closest('.tqn-nav')) ST.__hubFrom = null; else if (t && t.closest && t.closest('#pv-root .shb .hc')) ST.__hubFrom = document.querySelector('.tqn-nav .tqn-i.is-on') || ST.__hubFrom; }, true); } catch (e) { void e; }
   soon();
 })();
