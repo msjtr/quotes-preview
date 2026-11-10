@@ -28,7 +28,7 @@
       ['cu-svc', 'طلبات الخدمات', ['cu']],
       ['cu-inbox', 'طلبات المتجر', ['cu']],
       ['cu-docs-pq', 'عروض الشركاء', ['cu']],
-      ['cu-docs-pc', 'عقود الشركاء', ['cu']],
+      ['cu-docs-pc', 'عقود العملاء', ['cu']],
       ['cu-docs-sq', 'عروض المتاجر', ['cu']],
     ['cu-docs-tl', 'الخطابات الرسمية', ['cu']]
     ]],
@@ -588,8 +588,9 @@ function geoQ() {
   soon();
 })();
 
-/* v814: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v819: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
+   · v819: «الطلبات والعقود» — «عقود العملاء» جدول (بطاقات ملخص تصفّي · بحث · صف لكل عميل بعقوده والمتبقي وحالاتها)، و«طلبات المتجر» جدول طلبات المتجر وحدها (بلا شرائح الأقسام الأخرى)، وصفحة الطلب والعرض بتبويب لكل قسم (الإجراء أولًا) ومسار «الطلبات والعقود › الصفحة › الطلب».
    · v814: «المالية» و«التواصل» — «المدفوعات» تبويبان (سجل المدفوعات · فروقات تحتاج قرارك) بدل قسم طويل فوق السجل، و«تجربة العملاء» تظهر (كانت فارغة)، واسم الصفحة اسم القائمة (جهات الاتصال · تجربة العملاء)، وخلية العميل في العروض بفاصل بين أجزائها.
    · v813: «الطلبات والعقود» — العروض (الشركاء والمتاجر) جدول صفًّا لكل عرض ببطاقات ملخص تصفّي بلا شريط أرقام مكرّر، واسم الصفحة اسم القائمة نفسه، ورقم عنوان القسم في «طلبات الخدمات» عدد طلباته.
    · v808: «إعدادات النظام» — ثماني مجموعات واضحة وكل عنصر في مكان واحد (مدة الجلسة مع الوصول والأمان، سداد قيمة المنتج مع المالية، النقاط والخصومات معًا) وبحث بدل شريط الشرائح، ومسار كامل في كل صفحة إعدادات، وكل الأقسام مفتوحة، والصفحات الطويلة بتبويب لكل قسم، وبلا رابطين مكرّرين في القائمة الجانبية.
@@ -1285,6 +1286,8 @@ function geoQ() {
     if (ptl && RN[txt(ptl)] && onT === RN[txt(ptl)]) ptl.textContent = RN[txt(ptl)];
     try { srvCount(root); } catch (e) { void e; }
     try { finPay(root); } catch (e) { void e; }
+    try { ctList(root); } catch (e) { void e; }
+    try { stInbox(root); } catch (e) { void e; }
     if (ST.__inbx && onT === 'طلبات المتجر') { var sc = [].filter.call(root.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0]; if (sc) { ST.__inbx = 0; if (!sc.classList.contains('is-on')) sc.click(); } }
     try { rpPage(root); } catch (e) { void e; }
     var k = pageKey(), L = root.querySelector('.adm-live');
@@ -1300,7 +1303,7 @@ function geoQ() {
     var IC = ['∑', '◷', '✓', '!', '↺', '∅'], sm = mk('div', 'tqn-sum');
     chips.forEach(function (c) {
       var n = txt(c.querySelector('small')) || (txt(c).match(/\d+\s*$/) || [''])[0].trim(), lb = txt(c).replace(new RegExp(n + '\\s*$'), '').trim();
-      var tn = /معتمد|المدشّنة|مدشّن|مقبول/.test(lb) ? 'ok' : /أُعيد|مرفوض|رُفض/.test(lb) ? 'bad' : /بانتظار|قيد|لم يُرسل/.test(lb) ? 'warn' : 'all';
+      var tn = /معتمد|المدشّنة|مدشّن|مقبول|مكتملة|منتظم/.test(lb) ? 'ok' : /أُعيد|مرفوض|رُفض|متعثر|متأخر/.test(lb) ? 'bad' : /بانتظار|قيد|لم يُرسل|مراجعة|معدّل|معلّق/.test(lb) ? 'warn' : 'all';
       var b = mk('button', 'tqn-sm is-' + tn + (c.classList.contains('is-on') ? ' is-on' : '')); b.type = 'button'; b.setAttribute('data-live-ok', '');
       b.appendChild(mk('i', '', tn === 'ok' ? '✓' : tn === 'bad' ? '!' : tn === 'warn' ? '◷' : '∑'));
       var t = mk('span'); t.appendChild(mk('small', '', lb)); t.appendChild(mk('b', '', n || '0')); b.appendChild(t);
@@ -1471,11 +1474,14 @@ function geoQ() {
       var T = li.map(function (l) { return txt(l); });
       if (!T.some(function (t) { return /^قسم العملاء$/.test(t); })) return;
       cls(d, 'tqn-dr-cu', true); drHead(d);
-      var L = [];
+      /* v819: صفحة فُتحت من «الطلبات والعقود» — المسار: الرئيسية › الطلبات والعقود › اسم الصفحة في القائمة › الطلب */
+      var rq = rqOn(), L = [];
+      cls(d, 'tqn-dr-rq', !!rq);
       li.forEach(function (l, i) {
         var t = T[i]; if (/^الملف الشخصي$/.test(t)) return;
         var a = l.querySelector('button, a');
-        if (/^قسم العملاء$/.test(t)) L.push({ t: 'العملاء', grp: 1 });
+        if (/^قسم العملاء$/.test(t)) L.push({ t: rq ? rq.g : 'العملاء', grp: 1 });
+        else if (rq && i === li.length - 2 && !/^الرئيسية$/.test(t)) L.push({ t: rq.t, go: a ? function () { a.click(); } : function () { rq.el.click(); } });
         else L.push({ t: t, home: /^الرئيسية$/.test(t), go: a && i < li.length - 1 ? function () { a.click(); } : null });
       });
       /* آخر المسار يكرّر اسم الصفحة؟ اسم صاحبه بدلًا منه */
@@ -1500,8 +1506,102 @@ function geoQ() {
       try { vrPage(d); } catch (e) { void e; }
       try { lchPage(d); } catch (e) { void e; }
       try { dsIcons(d); } catch (e) { void e; }
+      if (rq) try { drTabs(d, T[T.length - 1] || ''); } catch (e) { void e; }
     });
     inPage();
+  }
+  /* v819: البند المفتوح في القائمة إن كان من مجموعة «الطلبات والعقود» */
+  function rqOn() {
+    var on = document.querySelector('.tqn-nav .tqn-i.is-on'); if (!on) return null;
+    var g = on.closest('.tqn-g'), gl = g ? txt(g.querySelector('.tqn-gh')) : '';
+    return gl === 'الطلبات والعقود' ? { g: gl, t: on.getAttribute('title') || txt(on), el: on } : null;
+  }
+  /* v819: صفحة الطلب أو العرض — تبويب لكل قسم (الإجراء أولًا)، وأزرار الصفحة ظاهرة دائمًا */
+  function drTabs(d, kind) {
+    var b = d.querySelector('.cu-dr-b'); if (!b) return;
+    var S = [].filter.call(b.children, function (x) { return x.matches('section.cu-ds, section.t2-sec') && !x.classList.contains('tqn-hide'); });
+    if (S.length < 2) return;
+    var K = S.map(function (s) { var h = s.querySelector(':scope > .cu-ds-h, :scope > .t2-sec-h .t2-group-t, :scope > .t2-sec-h h2, :scope > .t2-sec-h h3'); return txt(h).replace(/\s*\d+\s*$/, '').split(/[:：]/)[0].trim() || '—'; });
+    var key = 'dt:' + kind, cur = ST[key];
+    if (K.indexOf(cur) < 0) cur = K.filter(function (k) { return /^الإجراء/.test(k); })[0] || K[0];
+    var bb = bar(b, S[0], K.map(function (k) { return { k: k, t: k }; }), cur, 'k', function (k) { ST[key] = k; });
+    cls(bb, 'is-set', true); cls(bb, 'tqn-drt', true);
+    S.forEach(function (x, i) { cls(x, 'tqn-st-hide', K[i] !== cur); quiet(x.querySelector(':scope > .cu-ds-h, :scope > .t2-sec-h')); });
+  }
+  /* v819: «عقود العملاء» — جدول بدل البطاقات: صف لكل عميل (العقود · المتبقي · حالات العقود) وبطاقات ملخص تصفّي وبحث بالاسم */
+  function ctList(root) {
+    if (txt(document.getElementById('pv-title')) !== 'عقود العملاء') return;
+    var box = root.querySelector('.cu-cards'), stack = box && box.parentNode; if (!box) return;
+    var cards = [].slice.call(box.querySelectorAll(':scope > .cu-card')).filter(function (c) { return !c.getAttribute('data-k'); });
+    if (!cards.length) return;
+    var chips = [].slice.call(stack.querySelectorAll('.st-chip'));
+    cls(box, 'tqn-hide', true);
+    [].forEach.call(stack.querySelectorAll(':scope > .m3-tools, :scope > .ax-tools'), function (x) { cls(x, 'tqn-hide', true); });
+    [].forEach.call(stack.querySelectorAll(':scope > .t2-note'), function (x) { if (/انتقلت إلى/.test(txt(x))) cls(x, 'tqn-hide', true); });
+    if (!box.__tqnMo) { try { box.__tqnMo = new MutationObserver(soon); box.__tqnMo.observe(box, { attributes: true, subtree: true, attributeFilter: ['style', 'hidden'] }); } catch (e) { void e; } }
+    var Q = (ST.ctq || '').trim();
+    var vis = cards.filter(function (c) { return !(c.hidden || c.style.display === 'none'); });
+    var sig = vis.map(function (c) { return txt(c); }).join('|') + '#' + chips.map(function (c) { return txt(c) + (c.classList.contains('is-on') ? 1 : 0); }).join(',') + '#' + Q;
+    var W = stack.__tqnCt;
+    if (W && W.parentNode === stack && W.__sig === sig) return;
+    var keepQ = W && W.__q === document.activeElement;
+    if (W && W.parentNode) W.parentNode.removeChild(W);
+    W = mk('div', 'tqn-clw tqn-ctw'); W.__sig = sig;
+    if (chips.length) W.appendChild(sumTiles(chips));
+    var tb = mk('div', 'tqn-ltb'), q = mk('input', 'tqn-lq'); q.type = 'search'; q.placeholder = 'ابحث باسم العميل…'; q.value = ST.ctq || ''; q.setAttribute('aria-label', 'بحث في عقود العملاء');
+    q.addEventListener('input', function () { ST.ctq = q.value; clearTimeout(q.__t); q.__t = setTimeout(apply, 160); });
+    tb.appendChild(q); W.__q = q; W.appendChild(tb);
+    var rows = vis.filter(function (c) { return !Q || (c.getAttribute('data-s') || txt(c)).indexOf(Q) >= 0; });
+    var T = mk('div', 'tqn-ct');
+    var hr = mk('div', 'tqn-ctr is-h'); ['العميل', 'العقود', 'المتبقي', 'حالات العقود', ''].forEach(function (h) { hr.appendChild(mk('span', '', h)); }); T.appendChild(hr);
+    rows.forEach(function (c) {
+      var nm = txt(c.querySelector('.cu-card-t b')), sm = txt(c.querySelector('.cu-card-t small'));
+      var n = (sm.match(/(\d+)\s*عقد/) || sm.match(/(\d+)/) || ['', '—'])[1], rm = (sm.match(/المتبقي\s*([\d٬,.]+\s*ر\.س)/) || ['', '—'])[1];
+      var r = mk('div', 'tqn-ctr'); r.setAttribute('role', 'button'); r.tabIndex = 0;
+      var w = mk('div', 'tqn-who'); w.appendChild(mk('i', '', String(nm || '؟').slice(0, 1))); var w2 = mk('span'); w2.appendChild(mk('b', '', nm)); w.appendChild(w2); r.appendChild(w);
+      r.appendChild(mk('b', '', n)); r.appendChild(mk('b', rm === '—' || /^0\s/.test(rm) ? 'is-mut' : '', rm));
+      var P = mk('div', 'tqn-ctp'); [].forEach.call(c.querySelectorAll('.cu-card-m .t2-pill'), function (p) { P.appendChild(chipOf(p)); }); if (!P.children.length) P.appendChild(mk('span', 'is-mut', '—')); r.appendChild(P);
+      r.appendChild(btn('فتح العقود', 'is-pri is-sm', function () { c.click(); }));
+      r.addEventListener('click', function () { c.click(); });
+      r.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') c.click(); });
+      T.appendChild(r);
+    });
+    if (!rows.length) T.appendChild(mk('div', 'tqn-le', 'لا عملاء يطابقون البحث أو التصفية.'));
+    W.appendChild(T); W.appendChild(mk('div', 'tqn-lf', 'عرض ' + rows.length + ' من ' + vis.length + ' عميلًا'));
+    stack.insertBefore(W, box); stack.__tqnCt = W;
+    if (keepQ) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) { void e; } }
+  }
+  /* v819: «طلبات المتجر» — طلبات المتجر وحدها في جدول (الإجراء · العميل · الرقم · الحالة)، بلا شرائح أقسام أخرى ولا أرقام لا تخصّها */
+  function stInbox(root) {
+    var on = rqOn(); if (!on || on.t !== 'طلبات المتجر' || txt(document.getElementById('pv-title')) !== 'طلبات المتجر') return;
+    var page = root.querySelector('.lv-page'); if (!page) return;
+    var gl = page.querySelector(':scope > .nr-gl'), chw = page.querySelector(':scope > .st-chips-w');
+    var sc = chw && [].filter.call(chw.querySelectorAll('.st-chip'), function (c) { return /^طلبات المتجر/.test(txt(c)); })[0];
+    if (!sc || !sc.classList.contains('is-on')) return;
+    cls(chw, 'tqn-hide', true);
+    [].forEach.call(page.querySelectorAll(':scope > .cu-kpis'), function (x) { cls(x, 'tqn-hide', true); });
+    var rows = gl ? [].slice.call(gl.querySelectorAll(':scope > article.nr')) : [];
+    if (gl) cls(gl, 'tqn-hide', true);
+    var sig = rows.map(function (r) { return txt(r); }).join('|'), W = page.__tqnSi;
+    if (W && W.parentNode === page && W.__sig === sig) return;
+    if (W && W.parentNode) W.parentNode.removeChild(W);
+    W = mk('div', 'tqn-clw tqn-siw'); W.__sig = sig;
+    var T = mk('div', 'tqn-ct is-si');
+    var hr = mk('div', 'tqn-ctr is-h'); ['الإجراء المطلوب', 'العميل', 'الرقم', 'الحالة', ''].forEach(function (h) { hr.appendChild(mk('span', '', h)); }); T.appendChild(hr);
+    rows.forEach(function (r) {
+      var go = r.querySelector('.nr-main') || r, x = mk('div', 'tqn-ctr'); x.setAttribute('role', 'button'); x.tabIndex = 0;
+      x.appendChild(mk('b', '', txt(r.querySelector('.cu-ir-a')) || '—'));
+      var cu = txt(r.querySelector('.cu-ir-c')); x.appendChild(mk('span', cu && cu !== 'العميل' ? '' : 'is-mut', cu && cu !== 'العميل' ? cu : 'عميل بلا حساب'));
+      x.appendChild(mk('bdi', 'tqn-dt', txt(r.querySelector('.cu-ir-no')) || '—'));
+      var pl = r.querySelector('.t2-pill'); x.appendChild(pl ? chipOf(pl) : mk('span', 'is-mut', '—'));
+      x.appendChild(btn('فتح', 'is-pri is-sm', function () { go.click(); }));
+      x.addEventListener('click', function () { go.click(); });
+      x.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') go.click(); });
+      T.appendChild(x);
+    });
+    if (!rows.length) T.appendChild(mk('div', 'tqn-le', 'لا طلبات متجر تنتظر إجراء الآن.'));
+    W.appendChild(T); W.appendChild(mk('div', 'tqn-lf', rows.length ? 'عرض ' + rows.length + ' طلب ينتظر إجراء' : ''));
+    page.insertBefore(W, gl || null); page.__tqnSi = W;
   }
   /* ── 8) v764: صفحات التفاصيل داخل الصفحة (لا أدراج): القائمة الجانبية والهيدر ظاهران، ورأس صفحة، وأيقونة لكل معلومة ── */
   var TQIC = {
