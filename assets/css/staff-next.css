@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v825 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v826 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2594,6 +2594,32 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 
 /* v825: صفحة طلب الأهلية — بلا الخط الملوّن العريض على حافة المحتوى (حالة الطلب ظاهرة في الرأس) */
 .tq-next .sr-full.sr-card { border-right-width: 1px !important; border-left-width: 1px !important; border-color: var(--tqn-line, #E3E8F0) !important; }
+
+/* v826: طلب الأهلية «العمل على الطلب» — خطوات العمل قائمة جانبية مرتّبة (مجموعة · خطوة · حالتها) بدل روابط متزاحمة، والخطوة التالية تنبيه واضح، وأزرار الطلب العامة في شريط سفلي (إلغاء الطلب بلون التحذير) */
+.tq-next .sr-full .eg-work { display: grid; gap: 14px; }
+.tq-next .sr-full .eg-lay { display: grid !important; grid-template-columns: 200px minmax(0, 1fr) !important; gap: 16px !important; align-items: start; }
+.tq-next .sr-full .eg-nav { display: flex !important; flex-direction: column !important; flex-wrap: nowrap !important; gap: 2px !important; padding: 10px !important; background: #F6F8FB; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 16px; position: sticky; top: calc(var(--tqn-pg-t, 76px) + 72px); }
+.tq-next .sr-full .eg-nav-g { font-size: 11px !important; font-weight: 800; color: var(--tqn-mut, #66748C); padding: 10px 8px 4px !important; margin: 0 !important; border: 0 !important; }
+.tq-next .sr-full .eg-nav-i { display: flex !important; flex-direction: column; align-items: flex-start !important; gap: 1px; width: 100% !important; padding: 8px 12px !important; border-radius: 10px !important; text-align: start; white-space: normal !important; border: 0 !important; background: transparent; min-height: 0 !important; }
+.tq-next .sr-full .eg-nav-i:hover { background: #E9F5F6; }
+.tq-next .sr-full .eg-nav-i.is-on { background: #0F1B33 !important; color: #fff !important; }
+.tq-next .sr-full .eg-nav-i.is-on * { color: inherit !important; }
+.tq-next .sr-full .eg-nav-i small, .tq-next .sr-full .eg-nav-i span:last-child { font-size: 11px !important; opacity: .85; }
+.tq-next .sr-full .eg-nextbar { padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; position: static !important; }
+.tq-next .sr-full .eg-nextbar > div { display: flex !important; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px; background: #FFF7E6; border: 1px solid #F3D9A4; }
+.tq-next .sr-full .eg-nextbar small { font-size: 12px; font-weight: 700; color: #8A5A00; }
+.tq-next .sr-full .eg-nextbar b { font-size: 15px; font-weight: 900; color: #0F1B33; }
+.tq-next .sr-full > .t2-pb-actions { display: flex !important; flex-wrap: wrap; gap: 8px; justify-content: flex-start; padding: 14px 16px; margin: 0; border-radius: 16px; background: #F6F8FB; border: 1px solid var(--tqn-line, #E3E8F0); }
+.tq-next .sr-full > .t2-pb-actions > .t2-btn:first-child { color: #B42318 !important; border-color: #F3C4BF !important; background: #fff !important; }
+.tq-next.pv-dark #pv-host .sr-full .eg-nav, .tq-next.pv-dark #pv-host .sr-full > .t2-pb-actions { background: #0F1829; border-color: var(--tqn-line); }
+.tq-next.pv-dark #pv-host .sr-full .eg-nextbar > div { background: #2A2412; border-color: #5C4A1E; }
+.tq-next.pv-dark #pv-host .sr-full .eg-nextbar b { color: var(--tqn-ink); }
+@media (max-width: 44rem) {
+  .tq-next .sr-full .eg-lay { grid-template-columns: minmax(0, 1fr) !important; }
+  .tq-next .sr-full .eg-nav { position: static; flex-direction: row !important; overflow-x: auto; }
+  .tq-next .sr-full .eg-nav-g { display: none !important; }
+  .tq-next .sr-full .eg-nav-i { width: auto !important; flex: none; }
+}
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }
