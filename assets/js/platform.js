@@ -11745,7 +11745,7 @@ function taxSetPage() {
 }
 /* ---------- الإعدادات: قوالب عقد الشركاء (متعددة) ---------- */
 /* v679: صفحة توقيع العقد (رابط «صدر عقدك») — نصوصها وإظهارها من هنا، وقالب «full» يُحفظ في المنصة (adm_contract_tpl_save) ويُطبَّق على الرابط */
-const PCP0 = {"status": "بانتظار توقيعك", "show_status": true, "sign_title": "التوقيع", "ack": "أقرّ بأنني اطّلعت على العقد وجدول الدفعات ووافقت على جميع بنوده، وأن توقيعي الإلكتروني ملزم لي.", "hint": "العقد للاطلاع والتوقيع فقط، ويصلكم العقد النهائي من فريق تيرا بعد التوقيع.", "show_hint": true, "confirm_title": "تأكيد توقيع العقد", "confirm_note": "بعد التأكيد يُعتمد توقيعك على العقد، ويصلكم العقد النهائي من فريق تيرا.", "show_confirm_note": true, "done_title": "تم توقيع العقد", "done_status": "عقد معتمد", "done_text": "شكرًا لكم. تم توقيع عقدكم إلكترونيًا، ويصلكم العقد النهائي من فريق تيرا.", "show_done_text": true, "sig": "شاكرين لكم ثقتكم بمنصة تيرا.\nفريق تيرا", "show_sig": true, "show_client": true, "show_prod": true, "show_date": true, "inv_title": "فاتورة المنتج", "inv_status": "بانتظار اعتمادك", "show_inv_status": true, "inv_note": "راجع تفاصيل المنتج وتكاليفه وخطة الدفع، ثم اعتمد الفاتورة ليصدر عقدكم للتوقيع.", "show_inv_note": true, "show_inv_recv": true, "show_inv_fees": true, "show_inv_plan": true, "inv_ack": "أقرّ باعتماد فاتورة المنتج الموضّحة بقيمتها وتكاليفها وخطة الدفع، وأوافق على إصدار العقد.", "inv_confirm_title": "تأكيد اعتماد فاتورة المنتج", "inv_confirm_note": "بعد التأكيد يصدر عقدكم، ويصلكم رابط الاطلاع عليه وتوقيعه.", "show_inv_confirm_note": true, "inv_done_title": "تم اعتماد فاتورة المنتج", "inv_done_status": "صدر عقدك", "inv_done_text": "شكرًا لكم. صدر عقدكم، ويصلكم الآن رابط الاطلاع عليه وتوقيعه.", "show_inv_done_text": true, "inv_decline_title": "تم الاعتذار عن الشراء", "inv_decline_text": "تم تسجيل اعتذاركم وأُغلق طلب الأهلية. يسعدنا تقييم تجربتكم."};
+const PCP0 = {"q_title": "صدر عرض السعر", "q_status": "بانتظار اعتمادك", "q_note": "نأمل مراجعة العرض واعتماده قبل انتهاء صلاحيته. بعد القبول تصلكم موافقة شراء المنتج، وبعد الرفض يُغلق الطلب.", "q_ack": "أقرّ بقبول عرض السعر الموضّح وما يترتب عليه من إصدار العقد وجدول الدفعات.", "q_accept": "قبول عرض السعر", "q_decline": "رفض عرض السعر", "status": "بانتظار توقيعك", "show_status": true, "sign_title": "التوقيع", "ack": "أقرّ بأنني اطّلعت على العقد وجدول الدفعات ووافقت على جميع بنوده، وأن توقيعي الإلكتروني ملزم لي.", "hint": "العقد للاطلاع والتوقيع فقط، ويصلكم العقد النهائي من فريق تيرا بعد التوقيع.", "show_hint": true, "confirm_title": "تأكيد توقيع العقد", "confirm_note": "بعد التأكيد يُعتمد توقيعك على العقد، ويصلكم العقد النهائي من فريق تيرا.", "show_confirm_note": true, "done_title": "تم توقيع العقد", "done_status": "عقد معتمد", "done_text": "شكرًا لكم. تم توقيع عقدكم إلكترونيًا، ويصلكم العقد النهائي من فريق تيرا.", "show_done_text": true, "sig": "شاكرين لكم ثقتكم بمنصة تيرا.\nفريق تيرا", "show_sig": true, "show_client": true, "show_prod": true, "show_date": true, "inv_title": "فاتورة المنتج", "inv_status": "بانتظار اعتمادك", "show_inv_status": true, "inv_note": "راجع تفاصيل المنتج وتكاليفه وخطة الدفع، ثم اعتمد الفاتورة ليصدر عقدكم للتوقيع.", "show_inv_note": true, "show_inv_recv": true, "show_inv_fees": true, "show_inv_plan": true, "inv_ack": "أقرّ باعتماد فاتورة المنتج الموضّحة بقيمتها وتكاليفها وخطة الدفع، وأوافق على إصدار العقد.", "inv_confirm_title": "تأكيد اعتماد فاتورة المنتج", "inv_confirm_note": "بعد التأكيد يصدر عقدكم، ويصلكم رابط الاطلاع عليه وتوقيعه.", "show_inv_confirm_note": true, "inv_done_title": "تم اعتماد فاتورة المنتج", "inv_done_status": "صدر عقدك", "inv_done_text": "شكرًا لكم. صدر عقدكم، ويصلكم الآن رابط الاطلاع عليه وتوقيعه.", "show_inv_done_text": true, "inv_decline_title": "تم الاعتذار عن الشراء", "inv_decline_text": "تم تسجيل اعتذاركم وأُغلق طلب الأهلية. يسعدنا تقييم تجربتكم."};
 const pcDraft = (T) => Object.assign(tqDraftC(T), { name: T.name, hdr: Object.assign({}, TQH0, T.hdr), page: Object.assign({}, PCP0, T.page) });
 let PC_DB = 0;
 function pcDbLoad() {
@@ -11766,7 +11766,9 @@ function pcDbSave(c) {
 }
 function pcPageSec(D) {
   const P = D.page || (D.page = Object.assign({}, PCP0)), I = tqInp(P), A = tqTa(P);
-  return tmFs('صفحات الرابط: فاتورة المنتج وتوقيع العقد', 'تُطبَّق على الروابط', [
+  return tmFs('صفحات الرابط: عرض السعر وفاتورة المنتج وتوقيع العقد', 'تُطبَّق على الروابط', [
+    DS.note('info', 'صفحة عرض السعر (رابط «صدر عرض السعر»)', 'النص العام لكل العروض. ويُعدَّل لعرض واحد من «إعداد عرض السعر» حيث تظهر صفحة العميل حيّة.'), /* v802 */
+    e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('عنوان الصفحة', I('q_title')), DS.editField('سطر الحالة', I('q_status')), DS.editField('رسالة المراجعة', A('q_note', 2)), DS.editField('نص الإقرار', A('q_ack', 2)), DS.editField('زر القبول', I('q_accept')), DS.editField('زر الرفض', I('q_decline'))]),
     DS.note('info', 'صفحة توقيع العقد', 'نص هذا القالب وبنوده وما يظهر منه هو ما يراه العميل في رابط «صدر عقدك»، ومعه نصوص الصفحة أدناه. عدّل وأظهر وأخفِ ثم «حفظ القالب».'),
     e('div', { class: 'sys-form is-2 cu-bd-form' }, [
       tmCk(P, 'show_date', 'تاريخ العقد في بيانات العقد', false, true), tmCk(P, 'show_client', 'اسم العميل في بيانات العقد', false, true), tmCk(P, 'show_prod', 'المنتج في بيانات العقد', false, true),
@@ -18757,6 +18759,43 @@ function eqPlanBox(D, C, rerun) {
     C && C.plan && C.plan.length ? e('small', { class: 'cu-dr-hint' }, qTerm(C.plan.length) + ' × ' + sar(C.plan[0].amount) + (C.plan.length > 1 && C.plan[C.plan.length - 1].amount !== C.plan[0].amount ? ' (الأخيرة ' + sar(C.plan[C.plan.length - 1].amount) + ')' : '')) : null];
 }
 /* المحرّر في درج cuDrawer — mode: 'issue' (إصدار) | 'edit' (مسودة/معاد/تعديل المعتمِد قبل الاعتماد) */
+/* ═════ v802: صفحة العميل داخل «إعداد عرض السعر» — معاينة حيّة لما يراه العميل في رابط «صدر عرض السعر» + نصوصها لهذا العرض.
+ * النص العام من «قوالب العقد ← صفحات الرابط» (client_contract_tpl.page: q_*)، ونص هذا العرض يُحفظ في مستنده (calc.doc.quote.page) ويغلب العام.
+ * المعاينة إطار /elig/?local=1 يقرأ المسودة من window.__ELIG_PV (نفس المصدر) — لا رابط ولا رمز ولا قرار. ═════ */
+const EQ_QP = [['q_title', 'عنوان الصفحة', 'صدر عرض السعر', 0], ['q_status', 'سطر الحالة', 'بانتظار اعتمادك', 0], ['q_note', 'رسالة المراجعة', 'نأمل مراجعة العرض واعتماده قبل انتهاء صلاحيته. بعد القبول تصلكم موافقة شراء المنتج، وبعد الرفض يُغلق الطلب.', 1], ['q_ack', 'نص الإقرار', 'أقرّ بقبول عرض السعر الموضّح وما يترتب عليه من إصدار العقد وجدول الدفعات.', 1], ['q_accept', 'زر القبول', 'قبول عرض السعر', 0], ['q_decline', 'زر الرفض', 'رفض عرض السعر', 0]];
+function eqQpGen() {
+  try { if (typeof pcDbLoad === 'function') pcDbLoad(); const T = typeof pcTpl === 'function' ? pcTpl('full') : null; return (T && T.page) || (typeof PCP0 !== 'undefined' ? PCP0 : {}); } catch (err) { return {}; }
+}
+function eqQpClean(p) { const o = {}; EQ_QP.forEach(function (k) { const v = String((p || {})[k[0]] || '').trim(); if (v) o[k[0]] = v.slice(0, k[3] ? 700 : 120); }); return o; }
+function eqPvData(x, Q, D, C, G) {
+  const sh = C.show || D.show || {}, on = function (k) { return sh[k] !== false; };
+  const pl = Array.isArray(C.plan) ? C.plan : [], n = pl.length, dq = (C.doc && C.doc.quote) || (D.doc && D.doc.quote) || {};
+  const pg = {}; EQ_QP.forEach(function (k) { if (G && typeof G[k[0]] === 'string') pg[k[0]] = G[k[0]]; });
+  return { ok: true, state: 'active', preview: true, can_decide: false, kind: 'quote', v: 2,
+    quote_no: (Q && (Q.quotation_number || Q.quote_number)) || 'يصدر عند الحفظ', req: x.req_no || (Q && Q.req_no) || '', prod: String(D.type || '').trim() || '—',
+    title: 'صدر عرض السعر', status: 'بانتظار اعتمادك', show: sh, page: pg, doc: Object.assign({}, dq, { page: eqQpClean(D.qpage) }),
+    svc_label: C.svc_label, fees: C.fees, items: on('items') ? (C.items || []) : [], value: on('value') ? C.value : null, vat: on('vat') ? C.vat : null, total: C.total,
+    n: on('plan_n') ? n : null, first_due: on('plan_start') && n ? pl[0].due : null, last_due: on('plan_end') && n ? pl[n - 1].due : null,
+    first_amt: on('plan_amt') && n ? pl[0].amount : null, plan: on('plan_tbl') ? pl : null, valid_until: on('valid') ? ((Q && Q.valid_until) || null) : null };
+}
+function eqClientPv(x, Q, D, C, rerun) {
+  if (!D.qpage) D.qpage = Object.assign({}, (Q && Q.calc && Q.calc.doc && Q.calc.doc.quote && Q.calc.doc.quote.page) || {});
+  const G = eqQpGen();
+  const fields = EQ_QP.map(function (k) {
+    const inp = e(k[3] ? 'textarea' : 'input', Object.assign({ class: 't2-input', placeholder: String(G[k[0]] || k[2]), maxlength: k[3] ? '700' : '120' }, k[3] ? { rows: '2' } : { type: 'text' }));
+    inp.value = D.qpage[k[0]] || '';
+    inp.addEventListener('input', function () { D.qpage[k[0]] = inp.value; D.qpDirty = true; });
+    inp.addEventListener('change', function () { rerun(); });
+    return DS.editField(k[1], inp);
+  });
+  let pv = null;
+  if (C) { window.__ELIG_PV = eqPvData(x, Q, D, C, G); pv = e('iframe', { class: 'eq-cpv-f', title: 'معاينة صفحة العميل', src: '/elig/?local=1&r=' + Date.now() }); }
+  return e('div', { class: 'eq-cpv' }, [
+    e('div', { class: 'eq-cpv-ed' }, [e('b', {}, 'نصوص صفحة العميل لهذا العرض'), e('small', { class: 'cu-dr-hint' }, 'الحقل الفارغ يأخذ النص العام (قوالب العقد ← صفحات الرابط). يُحفظ مع العرض، وتتحدّث المعاينة عند مغادرة الحقل.'), e('div', { class: 'sys-form cu-bd-form' }, fields)]),
+    e('div', { class: 'eq-cpv-ph' }, [e('b', {}, 'كما يراه العميل'), pv || CF_EMPTY('أدخل قيمة المنتج لتظهر المعاينة.')])
+  ]);
+}
+
 function eqEdit(x, Q, mode, done) {
   const key = 'eqed:' + (Q ? Q.id : x.id);
   const D = CUD[key] || (CUD[key] = Q ? eqSeed(Q) : eqSeedNew(x));
@@ -18773,6 +18812,7 @@ function eqEdit(x, Q, mode, done) {
       const note = String(D.note || '').trim().slice(0, 300) || undefined, pl = eqPayload(D); delete pl.dist;
       const j = mode === 'issue' ? await eqCall('admin_elig_quote_issue', { p_sr: x.id, p_data: Object.assign(pl, { submit: !!submit, note: note }) })
         : await eqCall('admin_elig_quote_update', { p_q: Q.id, p_data: Object.assign(pl, { submit: draftish ? !!submit : undefined, rev: D.rev || undefined, note: note }) });
+      if (D.qpDirty) { const qid = (j && j.id) || (Q && Q.id); if (qid) { try { const base = (Q && Q.calc && Q.calc.doc && Q.calc.doc.quote) || {}; await eqCall('admin_elig_quote_doc_save', { p_q: qid, p_kind: 'quote', p_doc: Object.assign({}, base, { page: eqQpClean(D.qpage) }), p_attach: null }); } catch (e2) { snack('حُفظ العرض، وتعذّر حفظ نصوص صفحة العميل — أعد حفظها من «إعداد عرض السعر».'); } } } /* v802 */
       delete CUD[key]; if (Q) delete EQG[Q.id]; admClose();
       snack(mode === 'issue' ? (submit ? 'صدر العرض ' + (j.quotation_number || '') + ' وأُحيل للاعتماد' : 'حُفظ العرض ' + (j.quotation_number || '') + ' مسودة') : appr ? 'حُفظ التعديل — العرض بانتظار الاعتماد' : submit ? 'حُفظ وأُحيل للاعتماد' : 'حُفظت المسودة');
       if (done) done();
@@ -18804,6 +18844,7 @@ function eqEdit(x, Q, mode, done) {
       sec(3, 'الدفعات', eqPlanBox(D, C, rerun)),
       sec(4, 'ما يظهر للعميل والمعاينة', [e('div', { class: 'sys-form is-2 cu-bd-form eq-3' }, [['value', 'قيمة المنتج'], ['items', 'تفصيل البنود'], ['vat', 'سطر الضريبة'], ['valid', 'صالح حتى'], ['plan_start', 'أول دفعة'], ['plan_end', 'آخر دفعة'], ['plan_n', 'عدد الدفعات'], ['plan_amt', 'قيمة الدفعة'], ['plan_tbl', 'جدول الدفعات']].map(function (k) { return eqVisSel(D, k[0], k[1], rerun); })),
         e('div', { class: 't2-pb-actions' }, [DS.button('معاينة عرض السعر PDF', { size: 'sm', ui: 'file-pdf', disabled: !C, onClick: function () { dcPdf(dcEqDoc('quote', Object.assign({}, Q || {}, { product_type: D.type, customer_name: (Q && Q.customer_name) || x.client_name || x.name || '', req_no: x.req_no, calc: eqCalcOf(D) }), true)); } })]),
+        eqClientPv(x, Q, D, C, rerun), /* v802 */
         e('small', { class: 'cu-dr-hint' }, 'عناصر المستند (العنوان والشروط والتنويه) وإرفاقه عند الإرسال في مرحلة «عرض السعر» — وفاتورة المنتج والعقد في مرحلتيهما.'),
         DS.editField('ملاحظة التعديل (تُسجَّل في سجل العرض — اختياري)', e('textarea', { class: 't2-input', rows: '2', maxlength: '300', onInput: function (ev) { D.note = ev.target.value; } }, D.note || ''))])]),
     D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
@@ -21155,6 +21196,7 @@ const stlDocClean = function (d) {
   if ((d.hide || []).length) o.hide = d.hide.slice();
   if (Object.keys(d.labels || {}).length) o.labels = Object.assign({}, d.labels);
   if (Object.keys(d.texts || {}).length) o.texts = Object.assign({}, d.texts);
+  if (Object.keys(d.page || {}).length) o.page = Object.assign({}, d.page); /* v802: نصوص صفحة العميل لهذا المستند */
   const A = (d.adds || []).filter(function (a) { return a && String(a.t || '').trim().length >= 2 && String(a.v || '').trim().length >= 1; }).map(function (a) { return { at: a.at === 'sec' ? 'sec' : 'kv', t: String(a.t).trim().slice(0, 60), v: String(a.v).trim().slice(0, 700) }; });
   if (A.length) o.adds = A.slice(0, 12);
   return Object.keys(o).length ? o : null;
