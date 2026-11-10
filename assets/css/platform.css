@@ -9266,3 +9266,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg-doc{display:grid;gap:10px}
 @media (max-width:1100px){.eg-grid{grid-template-columns:minmax(0,1fr)}.eg-next{position:static}}
 @media (max-width:900px){.eg-pg,.eg-msg2{grid-template-columns:minmax(0,1fr)}}
+/* v809: صورة رأس رسالة «صدر عقدك» في مرحلة العقد */
+.eg-ct-img{width:100%;max-width:360px;border-radius:14px;border:1px solid var(--t2-line,#D4DEEA)}

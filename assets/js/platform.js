@@ -19068,13 +19068,51 @@ function egMsgKey(x, kind) {
   const rec = (((x.meta || {}).report) || {}).rec;
   return x.status === 'rejected' || rec === 'not_eligible' ? 'elig_no' : rec === 'eligible_less' ? 'elig_less' : 'elig_ok';
 }
+/* v809: متغيرات الرسالة كما يعبّئها sr_notify_elig في القاعدة — الاسم الكامل للعميل · الصيغ نفسها · n_req/n_new · note */
+const EGJ_WA = { delivered: 'وصلت', sent: 'أُرسلت', read: 'قُرئت', failed: 'تعذّرت', error: 'تعذّرت', queued: 'بالانتظار', accepted: 'قبلها المزوّد', skipped: 'لم تُرسل' };
+function egjSt(v) { return EGJ_WA[String(v || '').toLowerCase()] || v; }
 function egMsgVars(x, kind, live, Q) {
   const M = x.meta || {}, R = M.report || {}, rc = egRecvInfo(x);
-  const prod = (Q && Q.product_type) || (M.client_product && M.client_product.name) || R.prod || '';
-  const tot = Q ? Number(Q.total) : live ? Number(live.total) : 0;
-  const n = Q && Q.calc && Array.isArray(Q.calc.plan) ? Q.calc.plan.length : (Number(R.n) || 0);
-  const money = function (v) { const z = Number(v); return isFinite(z) && z > 0 ? z.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'; };
-  return { req: x.req_no || '', product: prod || '—', amount: money(tot), n: n ? String(n) : '—', recv: rc.now || '—', elig_amt: money(R.elig_amt), req_amt: money(R.req_amt || egReq(x)), name: x.client_name || x.name || '' };
+  const num = function (v) { const z = Number(v); return v != null && v !== '' && isFinite(z) ? z : null; };
+  const f0 = function (v) { const z = num(v); return z == null ? '—' : Math.round(z).toLocaleString('en-US'); };
+  const f2 = function (v) { const z = num(v); return z == null ? '—' : z.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  const fl = Array.isArray(x.fields) ? x.fields : [];
+  const fv = function (lbl) { const r = fl.filter(function (f) { return Array.isArray(f) && f[0] === lbl; })[0]; return r && r[1] != null ? String(r[1]) : ''; };
+  const dg = (fv('مدة السداد').replace(/[٠-٩]/g, function (d) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)); }).match(/[0-9]{1,3}/) || [])[0];
+  const nreq = dg ? parseInt(dg, 10) : null, nR = parseInt(R.n, 10), n = isFinite(nR) ? nR : nreq;
+  const prod = (Q && String(Q.product_type || '').trim()) || (M.client_product && M.client_product.name) || R.prod || '—';
+  const amt = Q ? num(Q.total) : live ? num(live.total) : null;
+  const fix = ((M.fix || {}).items || []).map(function (i) { return i && i.label; }).filter(Boolean).join('، ');
+  return {
+    name: (typeof srName === 'function' ? srName(x.user_id) : '') || x.client_name || '', req: x.req_no || '', product: prod,
+    recv: fv('طريقة الاستلام').split(' — ')[0] || rc.now || '—',
+    req_amt: f0(R.req_amt), elig_amt: f0(num(R.elig_amt) != null ? R.elig_amt : R.req_amt),
+    n_req: nreq != null ? String(nreq) : n != null ? String(n) : '—', n_new: n != null && nreq != null && n !== nreq ? String(n) : '', n: n != null ? String(n) : '—',
+    amount: amt != null ? f2(amt) : f2(R.elig_amt), note: fix || String(x.decision_note || '').trim() || 'التفاصيل في طلبكم'
+  };
+}
+/* v809: تعبئة القالب كما تعبّئه msg_cat_fill — القيمة الفارغة لا تُعبّأ، والمقطع الاختياري [[…]] يُحذف إن بقي فيه متغير */
+function egMsgFill(V) {
+  return function (s) {
+    s = String(s || '');
+    Object.keys(V).forEach(function (k) {
+      const v = String(V[k] == null ? '' : V[k]).replace(/\s+/g, ' ').trim().replace(/[{}]/g, function (ch) { return ch === '{' ? '(' : ')'; });
+      if (v) s = s.split('{' + k + '}').join(v);
+    });
+    return s.replace(/\[\[[^\]]*\{[a-z0-9_]+\}[^\]]*\]\]/g, '').replace(/\[\[|\]\]/g, '');
+  };
+}
+/* v809: رسالة «صدر عقدك» لا تأتي من «قوالب الرسائل» — تصل من حدث العميل client_contract_new_event فور صدور العقد برابط التوقيع */
+function egCtMsg(x, Q) {
+  const no = (Q && (Q.contract_no || (Q.calc && Q.calc.contract_no))) || '';
+  const n = Q && Q.calc && Array.isArray(Q.calc.plan) ? Q.calc.plan.length : 0;
+  const nm = (typeof srName === 'function' ? srName(x.user_id) : '') || '—';
+  const body = 'عقدك' + (no ? ' ' + no : '') + (n ? ' · ' + n + ' دفعات' : '') + ' · للاطلاع على العقد وتوقيعه من خلال الرابط: ' + location.origin + '/elig/?t=…';
+  return e('div', { class: 'eg-msg2' }, [
+    e('div', { class: 'eg-msg2-v' }, [DS.fields([['العميل', nm], ['العنوان', 'صدر عقدك رقم ' + (no || '(يُحدَّد عند الإصدار)')], ['الحالة', 'عقد جديد'], ['التفاصيل', body], ['الزر', 'عرض في حسابي']]),
+      e('small', { class: 'cu-dr-hint' }, 'تصل فور صدور العقد برابط الاطلاع والتوقيع الخاص بهذا العميل، بقالب واتساب المعتمد لأحداث العميل. نصها ثابت ولا يُعدَّل من «قوالب الرسائل».')]),
+    e('div', { class: 'eg-msg2-p' }, [e('small', { class: 'cu-dr-hint' }, 'صورة رأس الرسالة'),
+      e('img', { src: '/assets/brand/wa/ev-contract-new.jpg', alt: 'صورة رسالة «صدر عقدك»', class: 'eg-ct-img', loading: 'lazy' })])]);
 }
 function egMsgPane(x, c, kind, live, Q, paint) {
   const key = egMsgKey(x, kind);
@@ -19084,16 +19122,17 @@ function egMsgPane(x, c, kind, live, Q, paint) {
       .catch(function () { MSGC.rows = []; MSGC.at = Date.now(); paint(); });
   }
   const row = (MSGC.rows || []).filter(function (r) { return r.key === key; })[0] || null;
-  const V = egMsgVars(x, kind, live, Q), fill = function (s) { return String(s || '').replace(/\{([a-z_]+)\}/g, function (m, k) { return V[k] != null ? V[k] : m; }); };
+  const V = egMsgVars(x, kind, live, Q), fill = egMsgFill(V);
   const W = c.msg || (c.msg = {}), ck = key + ':' + x.id + ':' + (Q ? Q.id + ':' + (Q.total || '') : '');
   const kids = [e('div', { class: 'eg-hd' }, [e('b', {}, 'الرسالة كما تصل العميل'), DS.badge('قالب Meta المعتمد — لا يُعدَّل', 'ok')])];
   if (MSGC.at === -1 && !MSGC.rows) kids.push(CF_EMPTY('جارٍ قراءة «قوالب الرسائل»…'));
-  else if (!row) kids.push(DS.note('info', 'لا قالب لهذه الرسالة في «قوالب الرسائل»', kind === 'contract' ? 'رسالة «صدر عقدك» تصل بقالب واتساب الخاص بالعقد مع رابط الاطلاع والتوقيع.' : 'أضف القالب من «قوالب الرسائل».'));
+  else if (!row && kind === 'contract') kids.push(egCtMsg(x, Q));
+  else if (!row) kids.push(DS.note('info', 'لا قالب لهذه الرسالة في «قوالب الرسائل»', 'أضف القالب من «قوالب الرسائل».'));
   else {
     const F = { title: fill(row.title), status: fill(row.status), l1: fill(row.l1), l2: fill(row.l2), l3: fill(row.l3), l4: fill(row.l4) };
     if (W.key !== ck && !W.busy) {
       W.key = ck; W.busy = true; W.pv = null; W.err = '';
-      clPost('/admin/api/msg/preview', { key: row.key, row: Object.assign({}, F, { btn_label: row.btn_label, btn_path: row.btn_path, img: row.img, attach: row.attach, channels: (row.channels || []).slice(), state: row.state }) })
+      clPost('/admin/api/msg/preview', { key: row.key, name: V.name || '', row: Object.assign({}, F, { btn_label: row.btn_label, btn_path: row.btn_path, img: row.img, attach: row.attach, channels: (row.channels || []).slice(), state: row.state }) })
         .then(function (j) { W.busy = false; if (j && j.ok) W.pv = j.preview; else W.err = (j && j.message) || 'تعذّرت المعاينة.'; paint(); })
         .catch(function (err) { W.busy = false; W.err = (err && err.message) || 'تعذّرت المعاينة.'; paint(); });
     }
@@ -19154,7 +19193,7 @@ function egPvPage(x, c, kind, live, J, paint) {
         F.length && canSave ? liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ لهذا العميل', { size: 'sm', tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(false); } })) : null,
         F.length && canSave && own ? liveOk(DS.button('إعادة للافتراضي', { size: 'sm', ui: 'arrows-clockwise', disabled: D.busy, onClick: function () { if (tqConfirm('إلغاء نصوص هذا العميل والرجوع للنسخة الافتراضية؟')) save(true); } })) : null,
         egPvBtn(x, kind, paint)])]),
-    e('figure', { class: 'eg-pg-pv' }, [e('figcaption', { class: 'cu-dr-hint' }, 'كما يراه العميل — تتحدّث عند مغادرة الحقل'),
+    e('figure', { class: 'eg-pg-pv' }, [e('figcaption', { class: 'cu-dr-hint' }, F.length ? 'كما يراه العميل — تتحدّث عند مغادرة الحقل' : 'كما يراه العميل'),
       pv || (V.err ? DS.note('warn', 'تعذّرت المعاينة', V.err) : CF_EMPTY('جارٍ تجهيز الصفحة…'))])]);
 }
 function egOut(x, c, kind, live, paint, setup) {
@@ -19630,7 +19669,7 @@ function egJourney(x, c, paint, live, part) {
   /* 2) السجل: الإرسال والموافقات */
   const ev = [];
   (d.sends || []).forEach(function (s) {
-    const ch = [s.wa_status ? 'واتساب: ' + s.wa_status + (s.wa_sent_at ? ' ' + egjDt(s.wa_sent_at) : '') : null, s.mail_status ? 'البريد: ' + s.mail_status : null].filter(Boolean).join(' · ');
+    const ch = [s.wa_status ? 'واتساب: ' + egjSt(s.wa_status) + (s.wa_sent_at ? ' ' + egjDt(s.wa_sent_at) : '') : null, s.mail_status ? 'البريد: ' + egjSt(s.mail_status) : null].filter(Boolean).join(' · ');
     const t = s.kind === 'preview' ? 'معاينة إلى ' + (s.by || 'الموظف') + ': ' + (EGJ_KEY[s.key] || s.key) : s.kind === 'send' ? 'أُرسل للعميل: ' + (EGJ_KEY[s.key] || s.key)
       : s.kind === 'held' ? 'حُجزت ' + (EGJ_KEY[s.key] || s.key) : s.kind === 'release' ? 'أرسل ' + (s.by || 'الموظف') + ' النتيجة للعميل' : s.kind === 'auto_quote' ? 'أُرسل عرض السعر تلقائيًا بعد موافقة العميل'
       : s.kind === 'recv' ? 'رشّح ' + (s.by || 'الفريق') + ' طريقة الاستلام' : s.kind;
@@ -22643,7 +22682,7 @@ function docxCore(H) {
   /* ═══ القوالب الافتراضية — كل نص قابل للاستبدال، وكل بند قابل للإخفاء، والملاحظات قابلة للإضافة ═══ */
   const DEF = {
     rc: { org: ORG, title: 'إيصال سداد', en: 'PAYMENT RECEIPT', issuer: 'قسم المالية', pill: 'مدفوع',
-      tt: { client: 'العميل والدفعة', gw: 'بيانات العملية', tr: 'بيانات التحويل وإثبات السداد', cash: 'بيانات الاستلام', status: 'حالة العقد بعد السداد', note: 'تنويه' },
+      tt: { client: 'العميل', pay: 'الدفعة', gw: 'العملية', tr: 'بيانات التحويل وإثبات السداد', cash: 'بيانات الاستلام', status: 'حالة العقد بعد السداد', note: 'تنويه' },
       kt: { gw: 'سداد إلكتروني', tr: 'تحويل بنكي', cash: 'سداد نقدي' }, ken: { gw: 'CARD PAYMENT RECEIPT', tr: 'BANK TRANSFER RECEIPT', cash: 'CASH PAYMENT RECEIPT' },
       show: { tera: true, due: true, dueDate: true, paidDate: true, invoice: true, order: true, auth: true, rrn: true, link: true, trDate: true, checked: true, from: true, to: true, recv: true, applied: true, bankRef: true, proof: true, by: true, cashNo: true, cashBy: true, kind: true, status: true, next: true, notes: true },
       notes: [],
@@ -22683,13 +22722,19 @@ function docxCore(H) {
     const kind = RK[o.kind] ? o.kind : 'paid', paid = kind === 'paid', K = RK[kind], X = o.x || {}, no = o.rcNo || o.ref || String(o.trx || '');
     const S = function (k) { return on(T, k); };
     const cards = [];
-    cards.push(dCard(T.tt.client, 'user', dKV([
-      ['اسم العميل', o.name, false], S('tera') ? ['رقم تيرا', X.teraId, true] : null,
-      ['رقم العقد', o.contract || X.contract, true], ['الدفعة', X.seqTxt || (X.contract ? '' : o.src), false],
-      S('due') ? ['قيمة الدفعة', X.due != null ? sar(X.due) : '', false] : null, S('dueDate') ? ['تاريخ الاستحقاق', X.dueDate ? dmy(X.dueDate) : '', true] : null,
-      S('paidDate') ? ['تاريخ السداد', X.paidDate ? dmy(X.paidDate) : '', true] : null, X.invoice && S('invoice') ? ['فاتورة سداد قيمة المنتج', X.invoice, true] : null,
-      !X.seqTxt && o.src && (o.contract || X.contract) ? ['البيان', o.src, false, null, true] : null
-    ])));
+  /* v809: ثلاثة جداول منفصلة — العميل · الدفعة · العملية. رقم العقد مرة واحدة، و«البيان» لا يكرّر الدفعة، والمبلغ المقبوض في جدول الدفعة وحده (لا في الأعلى) */
+  const ctNo = o.contract || X.contract || '', seqSrc = String(X.seqTxt || o.src || ''), seqM = /الدفعة\s+([0-9\u0660-\u0669]+\s*من\s*[0-9\u0660-\u0669]+)/.exec(seqSrc);
+  const bayan = seqM ? '' : seqSrc.replace(/\s*·\s*العقد\s+\S+/, '').trim();
+  const amtL = paid ? 'المبلغ المقبوض' : (kind === 'refund' ? 'المبلغ المسترد' : 'المبلغ');
+  cards.push(dCard(T.tt.client === 'العميل والدفعة' ? 'العميل' : T.tt.client, 'user', dKV([
+    ['اسم العميل', o.name, false, null, !(S('tera') && X.teraId)], S('tera') && X.teraId ? ['رقم تيرا', X.teraId, true] : null
+  ])));
+  cards.push(dCard(T.tt.pay || 'الدفعة', 'receipt', dKV([
+    ['رقم العقد', ctNo, true], ['الدفعة', seqM ? seqM[1] : '', false],
+    S('due') ? ['قيمة الدفعة', X.due != null ? sar(X.due) : '', false] : null, S('dueDate') ? ['تاريخ الاستحقاق', X.dueDate ? dmy(X.dueDate) : '', true] : null,
+    S('paidDate') ? ['تاريخ السداد', X.paidDate ? dmy(X.paidDate) : '', true] : null, X.invoice && S('invoice') ? ['فاتورة سداد قيمة المنتج', X.invoice, true] : null,
+    bayan && bayan !== ctNo ? ['البيان', bayan, false, null, true] : null
+  ], [[amtL, sar(o.amount)]])));
     const kd = X.kind || (o.trx ? 'gw' : (o.method === 'نقدًا' ? 'cash' : 'tr'));
     if (kd === 'gw') {
       const g = X.gw || {};
@@ -22729,8 +22774,8 @@ function docxCore(H) {
       S('next') && !C.next ? ['الدفعة القادمة', 'لا يوجد — اكتمل السداد', false, null, true] : null
     ])));
     cards.push(H.appr(no));
-    const pages = [{ org: T.org, issuer: T.issuer, en: paid ? ((T.ken && T.ken[kd]) || T.en) : K[1], title: paid ? T.title : K[0], kind2: paid && S('kind') && T.kt ? T.kt[kd] : '', pill: paid ? T.pill : K[2], no: no, cards: cards,
-      meta: [['رقم الإيصال', no], [paid ? 'تاريخ الإصدار' : 'التاريخ', X.issued ? dmy(X.issued) : o.date], [paid ? 'المبلغ المقبوض' : (kind === 'refund' ? 'المبلغ المسترد' : 'المبلغ'), sar(o.amount), 'receipt']],
+    const pages = [{ org: T.org, issuer: T.issuer, en: paid ? ((T.ken && T.ken[kd]) || T.en) : K[1], title: paid ? T.title : K[0], kind2: paid && S('kind') && T.kt ? T.kt[kd] : '', pill: paid ? T.pill : K[2], no: no, nobar: true, cards: cards,
+      meta: [['رقم الإيصال', no], [paid ? 'تاريخ الإصدار' : 'التاريخ', X.issued ? dmy(X.issued) : o.date]],
       auto: T.auto[kd] || T.auto.cash }];
     /* v800: الشكر داخل الإيصال نفسه (لا صفحة ثانية ولا مستند آخر) — شريط مضغوط بعد الاعتماد، للدفعة المسدَّدة كاملة في موعدها أو قبله.
        مضغوط عمدًا: جسم الصفحة ثابت الارتفاع ويقصّ الزائد، وبعد الاعتماد كي لا يُقصّ الختم أبدًا */
