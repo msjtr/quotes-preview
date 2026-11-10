@@ -588,9 +588,10 @@ function geoQ() {
   soon();
 })();
 
-/* v827: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v828: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · v827: طلب الأهلية — زرّا «إلغاء الطلب» و«إرسال إشعار للعميل» ثابتان في رأس الطلب، وخطوات العمل شريطًا أفقيًا يعطي المحتوى العرض كاملًا، وقرار الأهلية بنموذج منظّم (حقول بعناوينها · مؤشرات · توصية)، والأرقام إنجليزية فقط.
+   · v828: قرار الأهلية — المؤشر وحدّه في سطر واحد، والتوصية مرة واحدة (بلا تكرارها في تقرير الأهلية)، وزر «معاينة ما وصل للعميل»، والرسالة: المعاينة أولًا وتفاصيل القالب بنصّ كامل غير مقصوص.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
    · v820: صفوف جداول «الطلبات والعقود» تُفتح (كان حارس الإجراءات يمنع «إصدار عرض السعر…» لأن الصف بلا data-live-ok)، وعدد العقود الصحيح («عقد واحد» كان يُقرأ من المبلغ)، والجدول بأعمدته على الشاشات المتوسطة.
    · v819: «الطلبات والعقود» — «عقود العملاء» جدول (بطاقات ملخص تصفّي · بحث · صف لكل عميل بعقوده والمتبقي وحالاتها)، و«طلبات المتجر» جدول طلبات المتجر وحدها (بلا شرائح الأقسام الأخرى)، وصفحة الطلب والعرض بتبويب لكل قسم (الإجراء أولًا) ومسار «الطلبات والعقود › الصفحة › الطلب».
@@ -1772,9 +1773,21 @@ function geoQ() {
     var top = root.querySelector('.sr-full-top'), F = root.querySelector('.sr-full'); if (!top || !F) return;
     [].forEach.call(F.querySelectorAll(':scope > .t2-pb-actions'), function (pa) { cls(pa, 'tqn-sr-acts', true); top.appendChild(pa); });
   }
+  /* v828: قرار الأهلية — المؤشر وحدّه في سطر واحد (18.2% · الحد 60%) بدل سطرين، وزر «ما وصل العميل» باسم واضح */
+  function egTidy(F) {
+    [].forEach.call(F.querySelectorAll('.tqn-xp-cap > span'), function (sp) {
+      if (sp.__tqnMv) return; var b = sp.querySelector(':scope > b'); if (!b) return;
+      var lim = '';
+      [].forEach.call(sp.childNodes, function (n) { if (n.nodeType === 3) { var m = n.nodeValue.match(/\(([^)]*)\)/); if (m && n.previousSibling === b) { lim = m[1].trim(); n.nodeValue = n.nodeValue.replace(m[0], ''); } } });
+      var row = mk('span', 'tqn-mv'); sp.insertBefore(row, b); row.appendChild(b); if (lim) row.appendChild(mk('i', 'tqn-lim', lim));
+      sp.__tqnMv = 1;
+    });
+    [].forEach.call(F.querySelectorAll('button'), function (x) { if (txt(x) !== 'ما وصل العميل') return; [].forEach.call(x.childNodes, function (n) { if (n.nodeType === 3 && /ما وصل العميل/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace('ما وصل العميل', 'معاينة ما وصل للعميل'); }); });
+  }
   function srTabs(root) {
     var F = root.querySelector('.sr-full'); if (!F) return;
     try { srFix(root); } catch (e) { void e; }
+    try { egTidy(F); } catch (e) { void e; }
     var G = { 'العمل على الطلب': [], 'الإسناد': [], 'المراسلة': [], 'مسار الطلب': [] };
     [].forEach.call(F.children, function (x) {
       if (x.classList.contains('tqn-st')) return;

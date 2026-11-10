@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v827 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v828 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2666,6 +2666,21 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .sr-full .sr-stl .t2-field-v { padding: 0 !important; background: none !important; border: 0 !important; font-size: 15px; font-weight: 900; white-space: nowrap; }
 .tq-next.pv-dark #pv-host .sr-full .sr-stl .t2-field { background: #0F1829 !important; }
 .tq-next.pv-dark #pv-host .sr-full .eg-nextbar { background: #2A2412 !important; border-color: #5C4A1E !important; }
+
+/* v828: قرار الأهلية والرسالة — مؤشر بحدّه في سطر · توصية واحدة · نص الرسالة كامل */
+.tq-next .sr-full .tqn-xp-cap > span .tqn-mv { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.tq-next .sr-full .tqn-xp-cap > span .tqn-lim { font-style: normal; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #E3E8F0; color: #4A5872; white-space: nowrap; }
+.tq-next .sr-full .eg-dec:has(.tqn-sc-d) .sr-stl > .t2-note { display: none !important; }
+.tq-next .sr-full .sr-stl .t2-field-v { white-space: normal !important; overflow-wrap: anywhere; line-height: 1.5; }
+.tq-next .sr-full .eg-msg2 { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: 14px !important; }
+.tq-next .sr-full .eg-msg2 > :not(.eg-msg2-v) { order: -1; justify-self: center; width: 100%; max-width: 440px; }
+.tq-next .sr-full .eg-msg2-v { width: auto !important; }
+.tq-next .sr-full .eg-msg2-v .t2-fields { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important; gap: 10px !important; }
+.tq-next .sr-full .eg-msg2-v .t2-field { min-height: 0 !important; height: auto !important; }
+.tq-next .sr-full .eg-pg { gap: 16px !important; }
+.tq-next .sr-full .eg-pg-ed { padding: 14px 16px !important; border-radius: 14px; background: #F6F8FB; border: 1px solid var(--tqn-line, #E3E8F0); align-self: start; }
+.tq-next.pv-dark #pv-host .sr-full .tqn-xp-cap > span .tqn-lim { background: #24324D; color: var(--tqn-ink); }
+.tq-next.pv-dark #pv-host .sr-full .eg-pg-ed { background: #0F1829; }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }
