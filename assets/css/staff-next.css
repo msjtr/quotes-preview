@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v822 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v823 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2568,7 +2568,6 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .cu-dr.tqn-dr-rq .cu-dr-h .tqn-pg-av { background: rgba(255, 255, 255, .16) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .25); }
 .tq-next .cu-dr.tqn-dr-rq .cu-dr-h .tqn-pg-tag { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-color: rgba(255, 255, 255, .22) !important; }
 .tq-next .cu-dr.tqn-dr-rq .cu-dr-h .st-sheet-x { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-color: rgba(255, 255, 255, .28) !important; }
-.tq-next .cu-dr.tqn-dr-rq .cu-dr-b > .cu-dr-st { display: none; }
 .tq-next .cu-dr.tqn-dr-rq .cu-dr-b > .cu-asg { padding: 14px 16px; border-radius: 16px; background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); }
 .tq-next .tqn-st.tqn-drt { position: sticky; top: calc(var(--tqn-pg-t, 76px) + 6px); z-index: 3; background: #EEF2F7; box-shadow: 0 4px 14px rgba(15, 27, 51, .08); }
 .tq-next .cu-dr.tqn-dr-rq .cu-dr-b > section.cu-ds.tqn-ds:not(.tqn-st-hide) { background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; padding: 18px !important; box-shadow: 0 2px 10px rgba(15, 27, 51, .04); }
@@ -2579,6 +2578,15 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .sr-full-top b, .tq-next .sr-full-top h2, .tq-next .sr-full-top small, .tq-next .sr-full-top span:not(.t2-pill) { color: #fff !important; }
 .tq-next .sr-full-top .t2-btn { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-color: rgba(255, 255, 255, .28) !important; }
 .tq-next .sr-full > .tqn-st-hide { display: none !important; }
+
+/* v823: جدول القسم يقرأ كاملًا على الشاشات المتوسطة — الأسماء والأرقام والتفاصيل على سطرين بدل القصّ، وأرقام الحالات في صف واحد غالبًا */
+.tq-next .tqn-rh-s { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.tq-next .tqn-rh-st { padding: 10px 12px; }
+.tq-next .tqn-rh-st b { font-size: 21px; }
+.tq-next .tqn-rq-no bdi { white-space: normal; word-break: break-all; line-height: 1.3; }
+.tq-next .tqn-rqr .tqn-who b { white-space: normal; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tq-next .tqn-rq-i { white-space: normal; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; border: 0 !important; }
+.tq-next .tqn-rqr { align-items: center; }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }
