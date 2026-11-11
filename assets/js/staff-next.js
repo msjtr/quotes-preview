@@ -588,10 +588,10 @@ function geoQ() {
   soon();
 })();
 
-/* v832: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v833: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · v827: طلب الأهلية — زرّا «إلغاء الطلب» و«إرسال إشعار للعميل» ثابتان في رأس الطلب، وخطوات العمل شريطًا أفقيًا يعطي المحتوى العرض كاملًا، وقرار الأهلية بنموذج منظّم (حقول بعناوينها · مؤشرات · توصية)، والأرقام إنجليزية فقط.
-   · v832: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
+   · v833: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
    · v829: طلب الأهلية — التوصية عنوانًا وشارات قصيرة، وترتيب كل تبويب: العنوان وحده ← البيانات/القالب ← المعاينة والإرفاق ← الحفظ، ورسالة «ما وصل للعميل» فقاعة رسالة واضحة.
    · v828: قرار الأهلية — المؤشر وحدّه في سطر واحد، والتوصية مرة واحدة (بلا تكرارها في تقرير الأهلية)، وزر «معاينة ما وصل للعميل»، والرسالة: المعاينة أولًا وتفاصيل القالب بنصّ كامل غير مقصوص.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
@@ -1793,7 +1793,7 @@ function geoQ() {
     });
     [].forEach.call(F.querySelectorAll('button'), function (x) { if (txt(x) !== 'ما وصل العميل') return; [].forEach.call(x.childNodes, function (n) { if (n.nodeType === 3 && /ما وصل العميل/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace('ما وصل العميل', 'معاينة ما وصل للعميل'); }); });
   }
-  /* v832: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
+  /* v833: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
      المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد) وكل تبويب يحمل المعاينة والمرفقات داخله؛ ملخص ثابت بجانب العمل؛ زر للإجراء التالي */
   var EGS = [
     { t: 'البيانات', k: [[/^المستندات$/, 'المرفقات'], [/^بيانات الطلب/, 'بيانات الطلب']] },
@@ -1896,14 +1896,146 @@ function geoQ() {
     }
     lay.appendChild(A);
   }
+  /* v833: مكتبة البنود داخل «المستند» — لكل قسم قائمة منسدلة (بنود هذا القسم أو كل الأقسام أو كتابة بند جديد)،
+     وتعديل البند في مكانه وترتيبه وحذفه؛ و«إضافة قسم» من المكتبة. يكتب في حقول المنصة نفسها فيُحفظ بزر الحفظ المعتاد */
+  var EGLIB = [{"i":"dur","t":"مدة التنفيذ","g":"التنفيذ والعرض","e":["مدة التنفيذ من 30 دقيقة إلى 3 أيام عمل بعد توقيع العقد واستكمال الإجراءات.","مدة التنفيذ من يوم إلى 3 أيام عمل بعد اعتماد العرض وإتمام الدفع.","مدة التنفيذ حسب نطاق العمل، وتبدأ بعد اعتماد العرض واستلام المتطلبات.","تخضع مدة تنفيذ الطلب لطبيعة المنتج أو الخدمة والإجراءات والمتطلبات اللازمة، ولا تُعد أي مدة ملزمة إلا إذا تم تحديدها صراحةً في عرض السعر، مع مراعاة أي ظروف أو متطلبات خارجة عن نطاق السيطرة المعقولة للمنصة."]},{"i":"start","t":"بدء التنفيذ","g":"التنفيذ والعرض","e":["توقيع العقد واستكمال الإجراءات.","يصدر العقد للتوقيع بعد اعتمادكم هذه الفاتورة.","لا يترتب على اعتماد عرض السعر بدء تنفيذ الطلب تلقائيًا، إذ يتطلب التنفيذ استكمال الإجراءات والمتطلبات والمستندات اللازمة وفقًا لطبيعة الطلب.","يبدأ تجهيز الطلب بعد اعتماد العرض وإتمام الدفع كاملًا عبر وسائل الدفع المعتمدة في المنصة.","يبدأ التنفيذ بعد اعتماد العرض وإتمام الدفع وفق ما يرد في العرض."]},{"i":"cust","t":"التزامات العميل","g":"التنفيذ والعرض","e":["يلتزم العميل بمراجعة تفاصيل عرض السعر والتحقق من صحة ودقة البيانات والمعلومات المقدمة قبل اعتماده.","يلتزم العميل بالتعاون مع المنصة وتقديم المعلومات والمستندات المطلوبة واستكمال الإجراءات اللازمة لتنفيذ الطلب وفق المتطلبات المعتمدة.","يلتزم العميل بتسليم المتطلبات والمحتوى اللازم للتنفيذ في المواعيد المتفق عليها."]},{"i":"avail","t":"توافر المنتجات","g":"التنفيذ والعرض","e":["يخضع تنفيذ الطلب لتوافر المنتجات أو إمكانية تقديم الخدمات عند استكمال الإجراءات اللازمة.","يخضع تنفيذ الطلب لتوفر المنتجات لدى المنصة عند اعتماد العرض وإتمام الدفع.","إذا كان تنفيذ الطلب يعتمد على منتجات أو خدمات يقدمها شركاء أو جهات خارجية، فتخضع تلك المنتجات والخدمات لشروط ومتطلبات الجهات المقدمة لها، دون الإخلال بمسؤوليات المنصة المقررة نظامًا."]},{"i":"scope","t":"نطاق العرض","g":"التنفيذ والعرض","e":["يخضع عرض السعر للبيانات والتفاصيل والمواصفات الموضحة فيه، ويقتصر على المنتجات والخدمات والتكاليف المذكورة صراحةً، ولا يشمل أي تكاليف أو خدمات إضافية غير مدرجة فيه.","يقتصر العرض على المنتجات والكميات المذكورة فيه، وأي إضافة أو تعديل يصدر لها عرض جديد.","يقتصر العرض على الأعمال والبنود الموضحة فيه، وأي عمل إضافي يُتفق عليه بعرض مستقل.","يحق للعميل طلب تعديلات في حدود نطاق العمل المتفق عليه قبل التسليم النهائي."]},{"i":"valid","t":"صلاحية العرض والفاتورة","g":"التنفيذ والعرض","e":["يسري عرض السعر خلال مدة الصلاحية المحددة فيه، وينتهي بانتهائها ما لم يتم تمديده أو اعتماده خلال مدة سريانه.","بعد هذا التاريخ يُعاد احتساب الفاتورة.","الفاتورة صالحة حتى تاريخ الدفعة القادمة (شاملًا)؛ وفي يومها يُسدَّد مبلغ السداد أو الدفعة المستحقة، وبعده يُعاد احتساب الفاتورة."]},{"i":"price","t":"الأسعار والضريبة","g":"التنفيذ والعرض","e":["يشمل عرض السعر جميع التكاليف والرسوم الموضحة فيه، وفقًا للتفاصيل المحددة، وتُعامل أي تكاليف إضافية غير مذكورة وفق ما يتم الاتفاق عليه وبما يتوافق مع الأنظمة المعمول بها.","الأسعار الموضحة في العرض شاملة ضريبة القيمة المضافة ما لم يُذكر خلاف ذلك، وتسري خلال مدة صلاحية العرض فقط.","الضريبة محصّلة ولا تنقص بالخصم."]},{"i":"contract","t":"بنود العقد","g":"العقد والتحصيل","e":["إنه في التاريخ المبيّن أعلاه اتفق الطرفان، وهما بكامل الأهلية المعتبرة شرعًا ونظامًا، على أن تبيع المنصة للطرف الثاني المنتج الموضح في هذا العقد بالقيمة وجدول الدفعات المبيّنين فيه، وفق البنود التالية:","تبيع المنصة للطرف الثاني المنتج الموضح في هذا العقد بحالته ومواصفاته المذكورة في عرض السعر المعتمد.","قيمة العقد هي إجمالي ما يلتزم به الطرف الثاني، وتشمل قيمة المنتج والرسوم وضريبة القيمة المضافة الموضحة في هذا العقد.","تُعد الإشعارات المرسلة عبر المنصة أو البريد الإلكتروني أو الجوال المسجّلة نافذة بحق الطرفين.","يخضع هذا العقد للأنظمة المعمول بها في المملكة العربية السعودية، وتختص الجهات القضائية المختصة بالنظر في أي نزاع ينشأ عنه."]},{"i":"collect","t":"التحصيل والسداد","g":"العقد والتحصيل","e":["يسرّنا تقديم فاتورة سداد قيمة المنتج.","الموافقة على الفاتورة وتوقيعها من صفحة طلبكم في منصة تيرا بعد التحقق برمز.","سداد المبلغ عبر رابط السداد المرسل إليكم أو من صفحة الطلب قبل انتهاء صلاحية الفاتورة.","سداد المبلغ بالتحويل البنكي إلى حساب منصة تيرا، ثم إرفاق الإيصال من رابط التحويل المرسل إليكم قبل انتهاء صلاحية الفاتورة.","يلتزم الطرف الثاني بسداد الدفعات في مواعيد استحقاقها الموضحة في جدول الدفعات عبر وسائل الدفع المعتمدة في المنصة."]},{"i":"late","t":"التأخر في السداد","g":"العقد والتحصيل","e":["تُعدّ الدفعة متأخرة من اليوم الأول بعد استحقاقها حتى اليوم 60، ومتعثرة من اليوم 61.","إذا تأخر الطرف الثاني عن سداد دفعة مستحقة يحق للمنصة اتخاذ الإجراءات النظامية للمطالبة بها، بما في ذلك تنفيذ السند الإلكتروني."]},{"i":"bond","t":"السند الإلكتروني","g":"العقد والتحصيل","e":["يحرر الطرف الثاني سندًا إلكترونيًا بقيمة العقد ضمانًا للوفاء بالدفعات، ويُعاد أو يُغلق عند السداد الكامل."]},{"i":"early","t":"السداد المبكر","g":"العقد والتحصيل","e":["يحق للطرف الثاني سداد المتبقي كاملًا في أي وقت عبر طلب سداد كامل من المنصة."]},{"i":"close","t":"إغلاق العقد","g":"العقد والتحصيل","e":["يُغلق العقد تلقائيًا بعد اكتمال السداد.","يُغلق العقد تلقائيًا وتصدر إيصالات السداد وشهادة «تقدير ووفاء»."]},{"i":"ship","t":"التسليم والشحن","g":"التسليم والحقوق","e":["يُسلَّم المنتج بالطريقة المختارة في الطلب بعد توقيع العقد واستكمال الإجراءات.","يُشحن الطلب إلى العنوان المسجّل، وتُحتسب رسوم الشحن والتوصيل حسب ما يرد في العرض.","يُسلَّم العمل عبر المنصة، وتصدر الفاتورة الضريبية بعد اعتماد العرض وإتمام الدفع."]},{"i":"taxinv","t":"الفاتورة الضريبية","g":"التسليم والحقوق","e":["تصدر للعميل فاتورة ضريبية بعد اعتماد العرض وإتمام الدفع، وتُعد مرجع الضمان والاسترجاع."]},{"i":"rights","t":"حقوق المنصة","g":"التسليم والحقوق","e":["يحق للمنصة تعديل تفاصيل عرض السعر قبل اعتماده، وفقًا للأنظمة والسياسات المعمول بها، وأي تعديل على المنتجات أو الخدمات أو الكميات أو المواصفات أو التكاليف يستلزم إصدار عرض سعر جديد متى اقتضى ذلك.","يحق للمنصة إلغاء عرض السعر قبل اعتماده، دون التزام عليها بتنفيذ الطلب، مع مراعاة أي حقوق أو التزامات نظامية قائمة.","إذا تبيّن للمنصة، قبل تنفيذ الطلب أو أثناءه، وجود بيانات أو معلومات غير صحيحة أو مضللة أو مستندات غير سليمة مقدمة من العميل، فيحق لها تعليق إجراءات تنفيذ الطلب أو إلغاء تنفيذه دون الحاجة إلى موافقة العميل، مع مراعاة الحقوق والالتزامات النظامية المترتبة على ذلك.","يحق للمنصة تعليق إجراءات تنفيذ الطلب أو إعادة مراجعته عند ظهور متطلبات إضافية أو عوائق تشغيلية أو نظامية تؤثر في إمكانية التنفيذ، مع إشعار العميل متى كان ذلك مناسبًا، ومراعاة الحقوق والالتزامات النظامية."]},{"i":"return","t":"الاسترجاع والضمان","g":"التسليم والحقوق","e":["يحق للعميل طلب الاسترجاع أو الاستبدال خلال المدة المحددة في سياسة المنصة بشرط سلامة المنتج وتغليفه.","تخضع المنتجات لضمان الوكيل أو الشركة المصنّعة وفق شروطه، وتُعد هذه الفاتورة إثباتًا للشراء."]},{"i":"ack","t":"الإقرار والموافقة","g":"الإقرار والتنويه","e":["أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.","يُعد اعتماد العميل لعرض السعر إقرارًا باطلاعه على تفاصيله والشروط والأحكام المرتبطة به وموافقته عليها، دون الإخلال بأي حقوق مقررة له بموجب الأنظمة المعمول بها."]},{"i":"sign","t":"التوقيع","g":"الإقرار والتنويه","e":["يُوقَّع هذا العقد إلكترونيًا عبر المنصة، ويُعد التوقيع الإلكتروني ملزمًا للطرفين."]},{"i":"notice","t":"التنويه","g":"الإقرار والتنويه","e":["العرض لا يعني موافقة نهائية إلا بعد استكمال ومراجعة المتطلبات التي تحددها المنصة ومطابقتها.","هذا العرض للاطلاع فقط، ولا يُعد موافقة نهائية أو عقدًا ملزمًا، ولا تتم الموافقة إلا بعد استكمال ومراجعة المتطلبات التي تحددها المنصة والتحقق من مطابقتها لها.","هذا العرض صالح خلال مدته فقط، والأسعار شاملة ضريبة القيمة المضافة، وتصدر الفاتورة الضريبية بعد اعتماد العرض وإتمام الدفع.","هذا العرض للاطلاع، ولا يبدأ التنفيذ إلا بعد اعتماده وإتمام الدفع واستلام المتطلبات."]}];
+  var EGSUG = { 'الشروط': ['dur', 'start', 'cust', 'avail', 'scope', 'valid', 'price'], 'بنود العقد': ['contract', 'collect', 'late', 'bond', 'early', 'close'], 'تنويه': ['notice'], 'إقرار العميل': ['ack', 'sign'], 'نص الإقرار': ['ack', 'sign'] };
+  var EGADD = { q: ['scope', 'valid', 'price', 'avail', 'dur'], p: ['ship', 'taxinv', 'rights', 'return'], c: ['collect', 'late', 'bond', 'early', 'close'] };
+  var egDDo = null, egOpened = {};
+  function egSet(el, v) { var P = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(P, 'value').set.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); }
+  function egLn(v) { return String(v || '').split('\n').map(function (t) { return t.trim(); }).filter(Boolean); }
+  function egBtn(c, t, f) { var b = mk('button', c, t); b.type = 'button'; b.setAttribute('data-live-ok', ''); if (f) b.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); f(ev); }); return b; }
+  function egDDx() { if (egDDo) { egDDo.remove(); egDDo = null; } }
+  document.addEventListener('mousedown', function (ev) { if (egDDo && !egDDo.contains(ev.target) && !(ev.target.closest && ev.target.closest('.tqn-cl-dd'))) egDDx(); }, true);
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') egDDx(); }, true);
+  /* القائمة المنسدلة: o = { sug: [ids], have: [نصوص موجودة], pick: fn(text), title, secs: true لاختيار قسم كامل } */
+  function egDD(anchor, o) {
+    if (egDDo && egDDo.__a === anchor) { egDDx(); return; } egDDx();
+    var D = mk('div', 'tqn-dd'); D.__a = anchor; D.setAttribute('role', 'dialog'); D.setAttribute('aria-label', o.title || 'إضافة بند');
+    var q = mk('input', 'tqn-dd-q'); q.type = 'search'; q.placeholder = o.secs ? 'ابحث عن قسم…' : 'ابحث في البنود…'; D.appendChild(q);
+    var L = mk('div', 'tqn-dd-l'); D.appendChild(L);
+    var sug = (o.sug || []).filter(function (id) { return EGLIB.some(function (s) { return s.i === id; }); });
+    function grp(s, open, qq) {
+      var it = o.secs ? [] : s.e.filter(function (x) { return !qq || x.indexOf(qq) >= 0 || s.t.indexOf(qq) >= 0; });
+      if (o.secs) { if (qq && s.t.indexOf(qq) < 0 && !s.e.some(function (x) { return x.indexOf(qq) >= 0; })) return null; var r = egBtn('tqn-dd-i is-sec', '', function () { o.pick(s); egDDx(); }); r.appendChild(mk('b', '', s.t)); r.appendChild(mk('small', '', s.e.length + ' بند · ' + s.g)); return r; }
+      if (!it.length) return null;
+      var g = mk('details', 'tqn-dd-g'); if (open) g.open = true; g.appendChild(mk('summary', '', s.t + ' (' + it.length + ')'));
+      it.forEach(function (x) { var has = (o.have || []).indexOf(x.trim()) >= 0; var r = egBtn('tqn-dd-i' + (has ? ' is-has' : ''), '', has ? null : function () { o.pick(x); egDDx(); }); r.appendChild(mk('span', '', x)); if (has) { r.disabled = true; r.appendChild(mk('em', '', 'مضاف')); } g.appendChild(r); });
+      return g;
+    }
+    function paintL() {
+      var qq = q.value.trim(); L.innerHTML = '';
+      var A = sug.map(function (id) { return EGLIB.filter(function (s) { return s.i === id; })[0]; }), B = EGLIB.filter(function (s) { return sug.indexOf(s.i) < 0; });
+      if (A.length) { L.appendChild(mk('div', 'tqn-dd-h', o.secs ? 'مقترحة لهذا المستند' : 'بنود هذا القسم')); A.forEach(function (s) { var g = grp(s, true, qq); if (g) L.appendChild(g); }); }
+      L.appendChild(mk('div', 'tqn-dd-h', A.length ? 'من كل الأقسام' : 'كل الأقسام'));
+      var n = 0; B.forEach(function (s) { var g = grp(s, !!qq, qq); if (g) { L.appendChild(g); n++; } });
+      if (!L.querySelector('.tqn-dd-i')) L.appendChild(mk('small', 'tqn-dd-0', 'لا نتائج.'));
+    }
+    q.addEventListener('input', paintL); paintL();
+    if (!o.secs) {
+      var F = mk('div', 'tqn-dd-f'), w = egBtn('tqn-dd-new', '✎ كتابة بند جديد', function () {
+        F.innerHTML = ''; var t = mk('textarea', 't2-input'); t.rows = 3; t.placeholder = 'نص البند الجديد'; F.appendChild(t);
+        F.appendChild(egBtn('t2-btn is-primary is-sm', 'إضافة', function () { var v = t.value.trim(); if (v.length < 3) { t.focus(); return; } o.pick(v); egDDx(); }));
+        F.appendChild(egBtn('t2-btn is-sm', 'إلغاء', egDDx)); t.focus();
+      }); F.appendChild(w); D.appendChild(F);
+    }
+    /* تُعلَّق على صفحة الطلب نفسها فلا يقصّها حدّ القسم */
+    var host = anchor.closest('.sr-full') || document.body, hr = host.getBoundingClientRect(), ar = anchor.getBoundingClientRect();
+    var dw = Math.min(460, hr.width - 16); D.style.width = dw + 'px'; D.style.top = Math.round(ar.bottom - hr.top + 6) + 'px'; D.style.right = 'auto';
+    D.style.left = Math.max(8, Math.min(Math.round(ar.left - hr.left), Math.round(hr.width - dw - 8))) + 'px';
+    host.appendChild(D); egDDo = D; setTimeout(function () { q.focus(); }, 0);
+  }
+  /* قائمة البنود فوق حقل «سطر لكل بند»: ترقيم · تعديل في المكان · أعلى/أسفل · حذف · إضافة من المكتبة */
+  function egClList(ta, sug) {
+    var fld = ta.closest('.t2-field') || ta.parentNode, box = mk('div', 'tqn-cl'); ta.__tqnCl = box; fld.parentNode.insertBefore(box, fld); cls(fld, 'tqn-cl-raw', true);
+    var raw = false, ed = -1;
+    function put(L) { egSet(ta, L.join('\n')); paint(); }
+    function paint() {
+      var L = egLn(ta.value); box.innerHTML = '';
+      var H = mk('div', 'tqn-cl-h'); H.appendChild(mk('b', '', 'البنود')); H.appendChild(mk('span', 'tqn-cl-n', String(L.length)));
+      var len = L.join('\n').length; if (len > 700) H.appendChild(mk('span', 'tqn-cl-w', 'طويل: ' + len + ' حرفًا'));
+      H.appendChild(mk('i', 'tqn-cl-sp'));
+      H.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', '+ إضافة بند ▾', function (ev) { egDD(ev.currentTarget, { sug: sug, have: L, pick: function (x) { put(egLn(ta.value).concat([x.trim()])); } }); }));
+      H.appendChild(egBtn('tqn-cl-lnk', raw ? 'عرض كقائمة' : 'تحرير كنص', function () { raw = !raw; cls(fld, 'tqn-cl-raw', !raw); if (!raw) paint(); else { paint(); ta.focus(); } }));
+      box.appendChild(H);
+      if (raw) return;
+      if (!L.length) box.appendChild(mk('small', 'tqn-cl-0', 'لا بنود بعد — أضف من القائمة أو اكتب بندًا جديدًا.'));
+      L.forEach(function (x, i) {
+        var r = mk('div', 'tqn-cl-r'); r.appendChild(mk('span', 'tqn-cl-i', String(i + 1)));
+        if (ed === i) {
+          var t = mk('textarea', 't2-input'); t.rows = 2; t.value = x; r.appendChild(t);
+          var a = mk('div', 'tqn-cl-a'); a.appendChild(egBtn('t2-btn is-primary is-sm', 'حفظ', function () { var v = t.value.trim(); var M = egLn(ta.value); if (v) M[i] = v; else M.splice(i, 1); ed = -1; put(M); }));
+          a.appendChild(egBtn('t2-btn is-sm', 'إلغاء', function () { ed = -1; paint(); })); r.appendChild(a); box.appendChild(r); setTimeout(function () { t.focus(); }, 0); return;
+        }
+        r.appendChild(mk('span', 'tqn-cl-t', x));
+        var A = mk('div', 'tqn-cl-a');
+        A.appendChild(egBtn('tqn-cl-b', '✎', function () { ed = i; paint(); })).title = 'تعديل';
+        var u = A.appendChild(egBtn('tqn-cl-b', '↑', function () { var M = egLn(ta.value); M.splice(i - 1, 0, M.splice(i, 1)[0]); put(M); })); u.title = 'لأعلى'; u.disabled = i === 0;
+        var d = A.appendChild(egBtn('tqn-cl-b', '↓', function () { var M = egLn(ta.value); M.splice(i + 1, 0, M.splice(i, 1)[0]); put(M); })); d.title = 'لأسفل'; d.disabled = i === L.length - 1;
+        A.appendChild(egBtn('tqn-cl-b is-del', '✕', function () { var M = egLn(ta.value); M.splice(i, 1); put(M); })).title = 'حذف';
+        r.appendChild(A); box.appendChild(r);
+      });
+    }
+    ta.addEventListener('input', function (ev) { if (raw && ev.isTrusted) { var n = box.querySelector('.tqn-cl-n'); if (n) n.textContent = String(egLn(ta.value).length); } });
+    paint();
+  }
+  /* نص واحد (التنويه · الإقرار): «اختيار نص جاهز» يستبدل النص */
+  function egClOne(ta, sug) {
+    var fld = ta.closest('.t2-field') || ta.parentNode, box = mk('div', 'tqn-cl is-one'); ta.__tqnCl = box; fld.parentNode.insertBefore(box, fld);
+    box.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', 'اختيار نص جاهز ▾', function (ev) { egDD(ev.currentTarget, { sug: sug, have: [ta.value.trim()], title: 'اختيار نص جاهز', pick: function (x) { egSet(ta, x.trim()); } }); }));
+  }
+  function egKind(M) { var on = M.closest('.eg-work'); on = on && on.querySelector('.eg-nav-i.is-on'); var t = txt(on && on.querySelector('span')); return /فاتورة/.test(t) ? 'p' : /العقد/.test(t) ? 'c' : /عرض السعر/.test(t) ? 'q' : ''; }
+  function egCl(F) {
+    var M = F.querySelector('.eg-work .eg-main'); if (!M) return;
+    var kd = egKind(M); if (!kd) return;
+    var sub = M.querySelector('.eg-sub > .eg-sub-t.is-on'), st = txt(sub && sub.querySelector('span'));
+    /* «المستند» يفتح محرّر العناصر مباشرة (مرة لكل مستند) */
+    if (st === 'المستند' && !egOpened[kd]) {
+      var ob = [].filter.call(M.querySelectorAll('.eg-out-b button'), function (b) { return /^عناصر المستند/.test(txt(b)); })[0];
+      egOpened[kd] = 1; if (ob) { ob.click(); return; }
+    }
+    [].forEach.call(M.querySelectorAll('.eg-out-b section.stl-dc'), function (s) {
+      var h = txt(s.querySelector(':scope > .stl-dc-h > b'));
+      [].forEach.call(s.querySelectorAll('textarea'), function (ta) {
+        if (ta.__tqnCl && ta.__tqnCl.isConnected) return;
+        if (ta.closest('.stl-dc-add')) return;
+        var k = txt(ta.closest('.t2-field') && ta.closest('.t2-field').querySelector('.t2-field-k'));
+        if (/سطر لكل/.test(k)) egClList(ta, EGSUG[h] || []);
+        else if (EGSUG[h]) egClOne(ta, EGSUG[h]);
+      });
+      if (s.classList.contains('is-add') && !s.querySelector(':scope > .tqn-cl-sec')) {
+        var pa = [].filter.call(s.querySelectorAll('button'), function (b) { return txt(b) === 'إضافة قسم'; })[0]; if (!pa) return;
+        var w = mk('div', 'tqn-cl-sec');
+        w.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', '+ إضافة قسم من المكتبة ▾', function (ev) {
+          egDD(ev.currentTarget, { secs: true, sug: EGADD[kd] || [], title: 'إضافة قسم من المكتبة', pick: function (sec) {
+            var sel = '.sr-full .eg-out-b section.stl-dc.is-add .stl-dc-add', n0 = document.querySelectorAll(sel).length, tries = 0;
+            pa.click();
+            (function fill() {
+              var R = document.querySelectorAll(sel), r = R[R.length - 1];
+              if (R.length <= n0 || !r) { if (++tries < 25) setTimeout(fill, 80); return; }
+              var i = r.querySelector('input'), t = r.querySelector('textarea'); if (!i || !t || i.value || t.value) return;
+              egSet(i, sec.t); egSet(t, sec.e.join('\n')); t.rows = Math.min(8, sec.e.length + 1);
+            })();
+          } });
+        }));
+        s.appendChild(w);
+      }
+    });
+    /* صفحة الرابط: نص الإقرار من النصوص الجاهزة */
+    [].forEach.call(M.querySelectorAll('.eg-out-b .t2-field'), function (f) {
+      var ta = f.querySelector('textarea'); if (!ta || (ta.__tqnCl && ta.__tqnCl.isConnected) || ta.closest('.stl-dc')) return;
+      var k = txt(f.querySelector('.t2-field-k')); if (EGSUG[k]) egClOne(ta, EGSUG[k]);
+    });
+  }
   function srTabs(root) {
     var F = root.querySelector('.sr-full'); if (!F) return;
     try { srFix(root); } catch (e) { void e; }
     try { egTidy(F); } catch (e) { void e; }
     try { egFlow(F); } catch (e) { void e; }
+    try { egCl(F); } catch (e) { void e; }
     var G = { 'العمل على الطلب': [], 'الإسناد': [], 'المراسلة': [], 'الإرسال للعميل': [], 'مسار الطلب': [] };
     [].forEach.call(F.children, function (x) {
-      if (x.classList.contains('tqn-st')) return;
+      if (x.classList.contains('tqn-st') || x.classList.contains('tqn-dd')) return;
       var h = txt(x.querySelector(':scope > .t2-sec-h .t2-group-t, :scope > .t2-sec-h h2, :scope > header h2, :scope > h3'));
       var k = /الإسناد/.test(h) ? 'الإسناد' : /مسار|السجل/.test(h) ? 'مسار الطلب' : x.matches('.sr-msg') || /مراسلة|رسالة/.test(h) ? 'المراسلة' : 'العمل على الطلب';
       G[k].push(x);
