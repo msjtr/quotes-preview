@@ -18615,7 +18615,7 @@ function dcEqDoc(kind, Q, draft, X) {
       tbl ? d3Plan6(P.map(function (p) { return [p.no, qDmy(p.due), qMoney(p.amount)]; })) : null]));
   }
   /* ٥ الشروط والأقسام المضافة والتنويه */
-  const terms = String(D.texts.terms || '').split('\n').map(function (t) { return t.trim(); }).filter(Boolean);
+  const terms = String(D.texts.terms || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return t && t.charAt(0) !== '⊘'; }); /* v834: البند المخفي (أوله ⊘) لا يظهر في المستند */
   if (terms.length && on(pre + '_c_terms')) B.push(d3Card(lb(pre + '_c_terms', kind === 'contract' ? 'بنود العقد' : 'الشروط'), 'shield', [d3List(terms, 0, false)], 'is-terms'));
   D.adds.filter(function (a) { return a && a.at === 'sec' && a.t; }).forEach(function (a) { B.push(d3Card(a.t, 'info', [e('p', { class: 'd3-p' }, a.v || '')])); });
   if (D.texts.note && on(pre + '_c_note')) B.push(d3Card(lb(pre + '_c_note', 'تنويه'), 'info', [e('p', { class: 'd3-p' }, D.texts.note)], 'is-note', true));
@@ -19154,7 +19154,7 @@ function egPvPage(x, c, kind, live, J, paint) {
   const Q = J ? J.q : null, c0 = (Q && Q.calc) || {}, base = (c0.doc && c0.doc[kind]) || {}, saved = base.page || {};
   const W = c.pg || (c.pg = {}), D = W[kind] && W[kind].q === (Q && Q.id) ? W[kind] : (W[kind] = { q: Q && Q.id, v: Object.assign({}, saved), dirty: false, busy: false, err: '' });
   const G = (V.d && V.d.page) || {};
-  const clean = function () { const o = {}; F.forEach(function (f) { const v = String(D.v[f[0]] || '').trim(); if (v) o[f[0]] = v.slice(0, 700); }); return o; };
+  const clean = function () { const o = {}; F.forEach(function (f) { const v = String(D.v[f[0]] || '').trim(); if (v) o[f[0]] = v.slice(0, 700); }); /* v834: أقسام صفحة الرابط لهذا العميل */ const bl = (Array.isArray(D.v.blocks) ? D.v.blocks : []).map(function (b) { b = b || {}; return { t: String(b.t || '').trim().slice(0, 80), off: !!b.off, lib: /^[a-z]{2,12}$/.test(String(b.lib || '')) ? b.lib : undefined, items: (Array.isArray(b.items) ? b.items : []).map(function (x) { x = x || {}; return { v: String(x.v || '').trim().slice(0, 700), off: !!x.off }; }).filter(function (x) { return x.v; }).slice(0, 20) }; }).filter(function (b) { return b.t || b.items.length; }).slice(0, 12); if (bl.length) o.blocks = bl; return o; };
   const canSave = !!(Q && J && J.can && J.can.doc && J.can.doc[kind]);
   const save = async function (reset) {
     if (D.busy || !Q) return; D.busy = true; D.err = ''; paint();
@@ -19186,7 +19186,7 @@ function egPvPage(x, c, kind, live, J, paint) {
     e('div', { class: 'eg-pg-ed' }, [
       e('div', { class: 'eg-hd' }, [e('b', {}, 'صفحة الرابط'), DS.badge(F.length ? (own ? 'نسخة هذا العميل' : 'النسخة الافتراضية') : 'من القرار والتوصية', own ? 'info' : null)]),
       e('small', { class: 'cu-dr-hint' }, F.length ? 'ما تكتبه هنا لهذا العميل فقط، والحقل الفارغ يأخذ النص العام من «قوالب العقد ← صفحات الرابط».' : 'صفحة النتيجة تُبنى من التوصية والقرار كما يراها العميل.'),
-      F.length ? e('div', { class: 'sys-form cu-bd-form' }, fields) : null,
+      F.length ? e('div', { class: 'sys-form cu-bd-form' }, fields) : null, F.length ? (function () { /* v834: مضيف أقسام صفحة الرابط (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-pg-blk' }); h.__pg = { can: canSave, get: function () { if (!Array.isArray(D.v.blocks)) D.v.blocks = []; return D.v.blocks; }, mark: function () { D.dirty = true; }, set: function (b) { D.v.blocks = b; D.dirty = true; paint(); } }; return h; })() : null,
       D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null,
       F.length && Q && !canSave ? e('small', { class: 'cu-dr-hint' }, 'تعديل نصوص هذه المرحلة غير متاح الآن بحسب حالة العرض أو صلاحيتك.') : null,
       e('div', { class: 't2-pb-actions' }, [

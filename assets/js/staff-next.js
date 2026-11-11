@@ -588,10 +588,10 @@ function geoQ() {
   soon();
 })();
 
-/* v833: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v834: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · v827: طلب الأهلية — زرّا «إلغاء الطلب» و«إرسال إشعار للعميل» ثابتان في رأس الطلب، وخطوات العمل شريطًا أفقيًا يعطي المحتوى العرض كاملًا، وقرار الأهلية بنموذج منظّم (حقول بعناوينها · مؤشرات · توصية)، والأرقام إنجليزية فقط.
-   · v833: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
+   · v834: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
    · v829: طلب الأهلية — التوصية عنوانًا وشارات قصيرة، وترتيب كل تبويب: العنوان وحده ← البيانات/القالب ← المعاينة والإرفاق ← الحفظ، ورسالة «ما وصل للعميل» فقاعة رسالة واضحة.
    · v828: قرار الأهلية — المؤشر وحدّه في سطر واحد، والتوصية مرة واحدة (بلا تكرارها في تقرير الأهلية)، وزر «معاينة ما وصل للعميل»، والرسالة: المعاينة أولًا وتفاصيل القالب بنصّ كامل غير مقصوص.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
@@ -1793,7 +1793,7 @@ function geoQ() {
     });
     [].forEach.call(F.querySelectorAll('button'), function (x) { if (txt(x) !== 'ما وصل العميل') return; [].forEach.call(x.childNodes, function (n) { if (n.nodeType === 3 && /ما وصل العميل/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace('ما وصل العميل', 'معاينة ما وصل للعميل'); }); });
   }
-  /* v833: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
+  /* v834: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
      المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد) وكل تبويب يحمل المعاينة والمرفقات داخله؛ ملخص ثابت بجانب العمل؛ زر للإجراء التالي */
   var EGS = [
     { t: 'البيانات', k: [[/^المستندات$/, 'المرفقات'], [/^بيانات الطلب/, 'بيانات الطلب']] },
@@ -1926,6 +1926,7 @@ function geoQ() {
     function paintL() {
       var qq = q.value.trim(); L.innerHTML = '';
       var A = sug.map(function (id) { return EGLIB.filter(function (s) { return s.i === id; })[0]; }), B = EGLIB.filter(function (s) { return sug.indexOf(s.i) < 0; });
+      if (o.blank && !qq) { var bk = egBtn('tqn-dd-i is-sec is-blank', '', function () { o.pick(null); egDDx(); }); bk.appendChild(mk('b', '', '+ ' + o.blank)); bk.appendChild(mk('small', '', 'عنوان تكتبه وبنود تضيفها')); L.appendChild(bk); }
       if (A.length) { L.appendChild(mk('div', 'tqn-dd-h', o.secs ? 'مقترحة لهذا المستند' : 'بنود هذا القسم')); A.forEach(function (s) { var g = grp(s, true, qq); if (g) L.appendChild(g); }); }
       L.appendChild(mk('div', 'tqn-dd-h', A.length ? 'من كل الأقسام' : 'كل الأقسام'));
       var n = 0; B.forEach(function (s) { var g = grp(s, !!qq, qq); if (g) { L.appendChild(g); n++; } });
@@ -1945,31 +1946,38 @@ function geoQ() {
     D.style.left = Math.max(8, Math.min(Math.round(ar.left - hr.left), Math.round(hr.width - dw - 8))) + 'px';
     host.appendChild(D); egDDo = D; setTimeout(function () { q.focus(); }, 0);
   }
-  /* قائمة البنود فوق حقل «سطر لكل بند»: ترقيم · تعديل في المكان · أعلى/أسفل · حذف · إضافة من المكتبة */
+  /* قائمة البنود فوق حقل «سطر لكل بند»: ترقيم · تعديل في المكان · إخفاء بالعين · أعلى/أسفل · حذف · إضافة من المكتبة
+     البند المخفي يبقى في مكانه وأوله «⊘» فلا يظهر في المستند (v834) ويرجع بالعين */
+  var EGOFF = '⊘ ';
+  function egOff(x) { return x.charAt(0) === '⊘'; }
+  function egBare(x) { return x.replace(/^⊘\s*/, ''); }
   function egClList(ta, sug) {
     var fld = ta.closest('.t2-field') || ta.parentNode, box = mk('div', 'tqn-cl'); ta.__tqnCl = box; fld.parentNode.insertBefore(box, fld); cls(fld, 'tqn-cl-raw', true);
     var raw = false, ed = -1;
     function put(L) { egSet(ta, L.join('\n')); paint(); }
     function paint() {
       var L = egLn(ta.value); box.innerHTML = '';
-      var H = mk('div', 'tqn-cl-h'); H.appendChild(mk('b', '', 'البنود')); H.appendChild(mk('span', 'tqn-cl-n', String(L.length)));
-      var len = L.join('\n').length; if (len > 700) H.appendChild(mk('span', 'tqn-cl-w', 'طويل: ' + len + ' حرفًا'));
+      var on = L.filter(function (x) { return !egOff(x); }).length;
+      var H = mk('div', 'tqn-cl-h'); H.appendChild(mk('b', '', 'البنود')); H.appendChild(mk('span', 'tqn-cl-n', on === L.length ? String(L.length) : on + ' ظاهر من ' + L.length));
+      var len = L.join('\n').length; if (len > 700) H.appendChild(mk('span', 'tqn-cl-w', len + ' حرفًا'));
       H.appendChild(mk('i', 'tqn-cl-sp'));
-      H.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', '+ إضافة بند ▾', function (ev) { egDD(ev.currentTarget, { sug: sug, have: L, pick: function (x) { put(egLn(ta.value).concat([x.trim()])); } }); }));
-      H.appendChild(egBtn('tqn-cl-lnk', raw ? 'عرض كقائمة' : 'تحرير كنص', function () { raw = !raw; cls(fld, 'tqn-cl-raw', !raw); if (!raw) paint(); else { paint(); ta.focus(); } }));
+      H.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', '+ إضافة بند ▾', function (ev) { egDD(ev.currentTarget, { sug: sug, have: L.map(egBare), pick: function (x) { put(egLn(ta.value).concat([x.trim()])); } }); }));
+      H.appendChild(egBtn('tqn-cl-lnk', raw ? 'عرض كقائمة' : 'تحرير كنص', function () { raw = !raw; cls(fld, 'tqn-cl-raw', !raw); paint(); if (raw) ta.focus(); }));
       box.appendChild(H);
       if (raw) return;
       if (!L.length) box.appendChild(mk('small', 'tqn-cl-0', 'لا بنود بعد — أضف من القائمة أو اكتب بندًا جديدًا.'));
       L.forEach(function (x, i) {
-        var r = mk('div', 'tqn-cl-r'); r.appendChild(mk('span', 'tqn-cl-i', String(i + 1)));
+        var off = egOff(x), bare = egBare(x);
+        var r = mk('div', 'tqn-cl-r' + (off ? ' is-off' : '')); r.appendChild(mk('span', 'tqn-cl-i', String(i + 1)));
         if (ed === i) {
-          var t = mk('textarea', 't2-input'); t.rows = 2; t.value = x; r.appendChild(t);
-          var a = mk('div', 'tqn-cl-a'); a.appendChild(egBtn('t2-btn is-primary is-sm', 'حفظ', function () { var v = t.value.trim(); var M = egLn(ta.value); if (v) M[i] = v; else M.splice(i, 1); ed = -1; put(M); }));
+          var t = mk('textarea', 't2-input'); t.rows = 2; t.value = bare; r.appendChild(t);
+          var a = mk('div', 'tqn-cl-a'); a.appendChild(egBtn('t2-btn is-primary is-sm', 'حفظ', function () { var v = t.value.replace(/\s*\n\s*/g, ' ').trim(); var M = egLn(ta.value); if (v) M[i] = (off ? EGOFF : '') + v; else M.splice(i, 1); ed = -1; put(M); }));
           a.appendChild(egBtn('t2-btn is-sm', 'إلغاء', function () { ed = -1; paint(); })); r.appendChild(a); box.appendChild(r); setTimeout(function () { t.focus(); }, 0); return;
         }
-        r.appendChild(mk('span', 'tqn-cl-t', x));
+        var tx = r.appendChild(mk('span', 'tqn-cl-t', bare)); if (off) tx.appendChild(mk('em', 'tqn-cl-off', 'مخفي'));
         var A = mk('div', 'tqn-cl-a');
         A.appendChild(egBtn('tqn-cl-b', '✎', function () { ed = i; paint(); })).title = 'تعديل';
+        A.appendChild(egBtn('tqn-cl-b is-eye' + (off ? ' is-on' : ''), off ? '◌' : '◉', function () { var M = egLn(ta.value); M[i] = off ? bare : EGOFF + bare; put(M); })).title = off ? 'إظهار' : 'إخفاء';
         var u = A.appendChild(egBtn('tqn-cl-b', '↑', function () { var M = egLn(ta.value); M.splice(i - 1, 0, M.splice(i, 1)[0]); put(M); })); u.title = 'لأعلى'; u.disabled = i === 0;
         var d = A.appendChild(egBtn('tqn-cl-b', '↓', function () { var M = egLn(ta.value); M.splice(i + 1, 0, M.splice(i, 1)[0]); put(M); })); d.title = 'لأسفل'; d.disabled = i === L.length - 1;
         A.appendChild(egBtn('tqn-cl-b is-del', '✕', function () { var M = egLn(ta.value); M.splice(i, 1); put(M); })).title = 'حذف';
@@ -1978,6 +1986,76 @@ function geoQ() {
     }
     ta.addEventListener('input', function (ev) { if (raw && ev.isTrusted) { var n = box.querySelector('.tqn-cl-n'); if (n) n.textContent = String(egLn(ta.value).length); } });
     paint();
+  }
+  /* v834: أقسام صفحة الرابط المضافة لهذا العميل — قسم من المكتبة أو فارغ، عنوان يُعدَّل في مكانه، وبنود تُضاف من المكتبة
+     أو تُكتب، ولكل قسم وبند: إخفاء بالعين · أعلى/أسفل · حذف. المضيف .eg-pg-blk من المنصة (v834) يحمل get/set/mark/can */
+  var egPgEd = {};
+  function egPgBlk(h, kd) {
+    var G = h.__pg; if (!G || h.__tqnPg) return; h.__tqnPg = 1;
+    var B = G.get(), can = !!G.can, key = kd;
+    function upd() { G.set(B.slice()); }
+    function mv(A, i, d) { var j = i + d; if (j < 0 || j >= A.length) return; A.splice(j, 0, A.splice(i, 1)[0]); }
+    var H = mk('div', 'tqn-pgb-h'); H.appendChild(mk('b', '', 'أقسام إضافية في الصفحة')); H.appendChild(mk('span', 'tqn-cl-n', String(B.length)));
+    H.appendChild(mk('i', 'tqn-cl-sp'));
+    if (can) H.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', '+ إضافة قسم ▾', function (ev) {
+      egDD(ev.currentTarget, { secs: true, blank: 'قسم فارغ', sug: EGADD[kd] || [], title: 'إضافة قسم إلى صفحة الرابط', pick: function (sec) {
+        if (B.length >= 12) { return; }
+        B.push(sec ? { t: sec.t, lib: sec.i, items: sec.e.slice(0, 20).map(function (x) { return { v: x }; }) } : { t: '', items: [] });
+        egPgEd[key] = { b: B.length - 1, t: !sec }; upd();
+      } });
+    }));
+    var box = mk('div', 'tqn-cl tqn-pgb'); box.appendChild(H);
+    box.appendChild(mk('small', 'tqn-cl-0', B.length ? 'تظهر للعميل بعد «رسالة المراجعة» وقبل الإقرار، والمخفي لا يظهر. احفظ بزر «حفظ لهذا العميل».' : 'لا أقسام إضافية — أضف قسمًا من المكتبة أو قسمًا فارغًا تكتبه.'));
+    var E = egPgEd[key] || {};
+    B.forEach(function (b, bi) {
+      b.items = Array.isArray(b.items) ? b.items : [];
+      var c = mk('section', 'tqn-pgb-s' + (b.off ? ' is-off' : ''));
+      var ch = mk('div', 'tqn-pgb-sh'); ch.appendChild(mk('span', 'tqn-cl-i', String(bi + 1)));
+      var ti = mk('input', 't2-input tqn-pgb-t'); ti.type = 'text'; ti.maxLength = 80; ti.placeholder = 'عنوان القسم'; ti.value = b.t || ''; ti.disabled = !can;
+      ti.addEventListener('input', function () { b.t = ti.value; G.mark(); }); ti.addEventListener('change', upd);
+      ch.appendChild(ti); if (E.b === bi && E.t) { egPgEd[key] = {}; setTimeout(function () { ti.focus(); }, 0); }
+      if (b.off) ch.appendChild(mk('em', 'tqn-cl-off', 'مخفي'));
+      if (can) {
+        var A = mk('div', 'tqn-cl-a');
+        A.appendChild(egBtn('tqn-cl-b is-eye' + (b.off ? ' is-on' : ''), b.off ? '◌' : '◉', function () { b.off = !b.off; upd(); })).title = b.off ? 'إظهار القسم' : 'إخفاء القسم';
+        var u = A.appendChild(egBtn('tqn-cl-b', '↑', function () { mv(B, bi, -1); upd(); })); u.title = 'لأعلى'; u.disabled = bi === 0;
+        var d = A.appendChild(egBtn('tqn-cl-b', '↓', function () { mv(B, bi, 1); upd(); })); d.title = 'لأسفل'; d.disabled = bi === B.length - 1;
+        A.appendChild(egBtn('tqn-cl-b is-del', '✕', function () { if (b.items.length && !window.confirm('حذف القسم «' + (b.t || 'بلا عنوان') + '» وبنوده؟')) return; B.splice(bi, 1); upd(); })).title = 'حذف القسم';
+        ch.appendChild(A);
+      }
+      c.appendChild(ch);
+      b.items.forEach(function (x, i) {
+        var r = mk('div', 'tqn-cl-r' + (x.off ? ' is-off' : '')); r.appendChild(mk('span', 'tqn-cl-i', String(i + 1)));
+        if (E.b === bi && E.i === i && can) {
+          var t = mk('textarea', 't2-input'); t.rows = 2; t.value = x.v || ''; r.appendChild(t);
+          var a = mk('div', 'tqn-cl-a');
+          a.appendChild(egBtn('t2-btn is-primary is-sm', 'حفظ', function () { var v = t.value.replace(/\s*\n\s*/g, ' ').trim(); if (v) x.v = v; else b.items.splice(i, 1); egPgEd[key] = {}; upd(); }));
+          a.appendChild(egBtn('t2-btn is-sm', 'إلغاء', function () { egPgEd[key] = {}; if (!String(x.v || '').trim()) b.items.splice(i, 1); upd(); }));
+          r.appendChild(a); c.appendChild(r); setTimeout(function () { t.focus(); }, 0); return;
+        }
+        var tx = r.appendChild(mk('span', 'tqn-cl-t', x.v || '')); if (x.off) tx.appendChild(mk('em', 'tqn-cl-off', 'مخفي'));
+        if (can) {
+          var A2 = mk('div', 'tqn-cl-a');
+          A2.appendChild(egBtn('tqn-cl-b', '✎', function () { egPgEd[key] = { b: bi, i: i }; upd(); })).title = 'تعديل';
+          A2.appendChild(egBtn('tqn-cl-b is-eye' + (x.off ? ' is-on' : ''), x.off ? '◌' : '◉', function () { x.off = !x.off; upd(); })).title = x.off ? 'إظهار' : 'إخفاء';
+          var u2 = A2.appendChild(egBtn('tqn-cl-b', '↑', function () { mv(b.items, i, -1); upd(); })); u2.title = 'لأعلى'; u2.disabled = i === 0;
+          var d2 = A2.appendChild(egBtn('tqn-cl-b', '↓', function () { mv(b.items, i, 1); upd(); })); d2.title = 'لأسفل'; d2.disabled = i === b.items.length - 1;
+          A2.appendChild(egBtn('tqn-cl-b is-del', '✕', function () { b.items.splice(i, 1); upd(); })).title = 'حذف';
+          r.appendChild(A2);
+        }
+        c.appendChild(r);
+      });
+      if (can) {
+        var f = mk('div', 'tqn-pgb-f');
+        f.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', '+ إضافة بند ▾', function (ev) {
+          if (b.items.length >= 20) return;
+          egDD(ev.currentTarget, { sug: b.lib ? [b.lib] : (EGADD[kd] || []), have: b.items.map(function (z) { return String(z.v || '').trim(); }), pick: function (v) { b.items.push({ v: v.trim() }); upd(); } });
+        }));
+        c.appendChild(f);
+      }
+      box.appendChild(c);
+    });
+    h.appendChild(box);
   }
   /* نص واحد (التنويه · الإقرار): «اختيار نص جاهز» يستبدل النص */
   function egClOne(ta, sug) {
@@ -2021,6 +2099,7 @@ function geoQ() {
         s.appendChild(w);
       }
     });
+    [].forEach.call(M.querySelectorAll('.eg-out-b .eg-pg-blk'), function (h) { egPgBlk(h, kd); });
     /* صفحة الرابط: نص الإقرار من النصوص الجاهزة */
     [].forEach.call(M.querySelectorAll('.eg-out-b .t2-field'), function (f) {
       var ta = f.querySelector('textarea'); if (!ta || (ta.__tqnCl && ta.__tqnCl.isConnected) || ta.closest('.stl-dc')) return;
