@@ -18571,6 +18571,8 @@ function eqDocAll(d, kind, items, onCh, mark) {
   return stlDocAll(stlDocNorm(d), R, onCh, mark, 'gateway', EQ_EL[kind]);
 }
 /* v687: PDF بهوية «فاتورة سداد قيمة المنتج» نفسها (التصميم 2: بطاقات d3) — من calc العرض (نسخة العميل) وإعداد المستند doc[kind] وخيارات الإظهار show */
+/* v836: نص من عدة أسطر يصير قائمة بنود، والبند المخفي (أوله ⊘) لا يظهر */
+function dcEqTxt(v) { const L = String(v || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return t && t.charAt(0) !== '⊘'; }); return L.length > 1 ? d3List(L, 0, false) : e('p', { class: 'd3-p' }, L[0] || ''); }
 function dcEqDoc(kind, Q, draft, X) {
   X = X || {};
   const c = Q.calc || {}, sh = kind === 'contract' ? {} : (c.show || {}), TT = (draft || X.tpl || kind !== 'quote') ? Object.assign(eqTpl(kind), X.tpl || {}) : null, SH = X.shared || eqShared(), D = stlDocNorm(JSON.parse(JSON.stringify((c.doc && c.doc[kind]) || (TT ? TT.doc : {}))));
@@ -18589,10 +18591,10 @@ function dcEqDoc(kind, Q, draft, X) {
   if (on(pre + '_c_data') && dk.length) B.push(d3Card(lb(pre + '_c_data', kind === 'contract' ? 'بيانات العقد' : kind === 'quote' ? 'بيانات العرض والعميل' : 'بيانات العميل'), 'user', [d3KV(dk)]));
   /* ٢ المنتج */
   if (kind !== 'contract' && on(pre + '_c_prod')) {
-    const pk = [[lb(pre + '_p_name', 'المنتج'), Q.product_type || '—']];
-    if (kind === 'quote' && sh.value !== false) pk.push([lb('q_p_val', 'قيمة المنتج'), qMoney(c.value) + (c.value_vat === false ? ' · غير خاضعة للضريبة' : '')]);
-    if (kind === 'quote' && c.alt && c.alt_show !== false && sh.alt !== false) pk.push([lb('q_p_alt', 'المنتج البديل عند عدم التوفر'), c.alt]);
-    if (kind === 'quote' && c.agent_show && c.agent && c.agent.name && sh.agent !== false) pk.push([lb('q_p_agent', 'الوكيل'), c.agent.name + (c.agent.phone ? ' · ' + c.agent.phone : '')]);
+    const pk = on(pre + '_p_name') ? [[lb(pre + '_p_name', 'المنتج'), Q.product_type || '—']] : []; /* v836: كل عناصر المستند تُخفى */
+    if (kind === 'quote' && sh.value !== false && on('q_p_val')) pk.push([lb('q_p_val', 'قيمة المنتج'), qMoney(c.value) + (c.value_vat === false ? ' · غير خاضعة للضريبة' : '')]);
+    if (kind === 'quote' && c.alt && c.alt_show !== false && sh.alt !== false && on('q_p_alt')) pk.push([lb('q_p_alt', 'المنتج البديل عند عدم التوفر'), c.alt]);
+    if (kind === 'quote' && c.agent_show && c.agent && c.agent.name && sh.agent !== false && on('q_p_agent')) pk.push([lb('q_p_agent', 'الوكيل'), c.agent.name + (c.agent.phone ? ' · ' + c.agent.phone : '')]);
     if (kind === 'purchase' && X.recv && on('p_p_recv')) pk.push([lb('p_p_recv', 'طريقة الاستلام'), X.recv]);
     B.push(d3Card(lb(pre + '_c_prod', kind === 'purchase' ? 'المنتج والاستلام' : 'المنتج'), 'box', [d3KV(pk)]));
   }
@@ -18600,26 +18602,26 @@ function dcEqDoc(kind, Q, draft, X) {
   if (on(pre + '_c_items')) {
     const items = (kind === 'contract' || sh.items !== false) ? (c.items || []).filter(function (y) { return on('i_' + y.id); }) : [];
     const rows = (kind === 'contract' || sh.value !== false ? [['قيمة المنتج', qMoney(c.value)]] : []).concat(items.map(function (y) { return [lb('i_' + y.id, y.t), qMoney(y.amt)]; }));
-    const tots = [(kind === 'contract' || sh.vat !== false) && Number(c.vat) > 0 ? [lb(pre + '_t_vat', 'ضريبة القيمة المضافة') + ' (' + fmtNum(Math.round((Number(c.vat_rate) || eqRate()) * 100)) + '٪)', qMoney(c.vat)] : null,
-      [lb(pre + '_t_total', kind === 'contract' ? 'قيمة العقد شامل الضريبة' : 'الإجمالي شامل الضريبة'), qMoney(c.total), 'gt']];
+    const tots = [(kind === 'contract' || sh.vat !== false) && on(pre + '_t_vat') && Number(c.vat) > 0 ? [lb(pre + '_t_vat', 'ضريبة القيمة المضافة') + ' (' + fmtNum(Math.round((Number(c.vat_rate) || eqRate()) * 100)) + '٪)', qMoney(c.vat)] : null,
+      on(pre + '_t_total') ? [lb(pre + '_t_total', kind === 'contract' ? 'قيمة العقد شامل الضريبة' : 'الإجمالي شامل الضريبة'), qMoney(c.total), 'gt'] : null];
     B.push(d3Card(lb(pre + '_c_items', kind === 'contract' ? 'مكوّنات قيمة العقد' : kind === 'purchase' ? 'التكاليف' : 'البنود والرسوم'), 'receipt', [
       rows.length ? e('table', { class: 'd3-dt' }, [e('thead', {}, e('tr', {}, [e('th', {}, 'البند'), e('th', {}, 'المبلغ')])), e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('th', {}, r[0]), e('td', {}, r[1])]); }))]) : null,
       d3KV([], tots)]));
   }
   /* ٤ خطة الدفع */
   if (P.length && on(pre + '_c_plan')) {
-    const pk = kind === 'quote' ? [sh.plan_start !== false ? [lb('q_s_start', 'أول دفعة'), qDmy(P[0].due), true] : null, sh.plan_end !== false ? [lb('q_s_end', 'آخر دفعة'), qDmy(P[P.length - 1].due), true] : null,
-      sh.plan_n !== false ? [lb('q_s_n', 'عدد الدفعات'), qTerm(P.length)] : null, sh.plan_amt !== false ? [lb('q_s_amt', 'قيمة الدفعة'), qMoney(P[0].amount)] : null].filter(Boolean) : [];
-    const tbl = kind === 'contract' || (kind === 'quote' ? sh.plan_tbl !== false : on('p_s_tbl'));
+    const pk = kind === 'quote' ? [sh.plan_start !== false && on('q_s_start') ? [lb('q_s_start', 'أول دفعة'), qDmy(P[0].due), true] : null, sh.plan_end !== false && on('q_s_end') ? [lb('q_s_end', 'آخر دفعة'), qDmy(P[P.length - 1].due), true] : null,
+      sh.plan_n !== false && on('q_s_n') ? [lb('q_s_n', 'عدد الدفعات'), qTerm(P.length)] : null, sh.plan_amt !== false && on('q_s_amt') ? [lb('q_s_amt', 'قيمة الدفعة'), qMoney(P[0].amount)] : null].filter(Boolean) : [];
+    const tbl = kind === 'contract' ? on('c_s_tbl') : (kind === 'quote' ? sh.plan_tbl !== false && on('q_s_tbl') : on('p_s_tbl'));
     if (pk.length || tbl) B.push(d3Card(lb(pre + '_c_plan', kind === 'contract' ? 'جدول الدفعات' : 'خطة الدفع'), 'cal', [pk.length ? d3KV(pk) : null,
       tbl ? d3Plan6(P.map(function (p) { return [p.no, qDmy(p.due), qMoney(p.amount)]; })) : null]));
   }
   /* ٥ الشروط والأقسام المضافة والتنويه */
   const terms = String(D.texts.terms || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return t && t.charAt(0) !== '⊘'; }); /* v834: البند المخفي (أوله ⊘) لا يظهر في المستند */
   if (terms.length && on(pre + '_c_terms')) B.push(d3Card(lb(pre + '_c_terms', kind === 'contract' ? 'بنود العقد' : 'الشروط'), 'shield', [d3List(terms, 0, false)], 'is-terms'));
-  D.adds.filter(function (a) { return a && a.at === 'sec' && a.t; }).forEach(function (a) { B.push(d3Card(a.t, 'info', [e('p', { class: 'd3-p' }, a.v || '')])); });
-  if (D.texts.note && on(pre + '_c_note')) B.push(d3Card(lb(pre + '_c_note', 'تنويه'), 'info', [e('p', { class: 'd3-p' }, D.texts.note)], 'is-note', true));
-  if (kind === 'purchase' && TT && on('p_c_sign')) B.push(d3Card(lb('p_c_sign', 'إقرار العميل'), 'pen', [e('p', { class: 'd3-p' }, D.texts.ack || (TT.doc.texts && TT.doc.texts.ack) || 'أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.'), d3KV([['اعتماد العميل برمز التحقق', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
+  D.adds.filter(function (a) { return a && a.at === 'sec' && a.t; }).forEach(function (a) { B.push(d3Card(a.t, 'info', [dcEqTxt(a.v || '')])); });
+  if (D.texts.note && on(pre + '_c_note')) B.push(d3Card(lb(pre + '_c_note', 'تنويه'), 'info', [dcEqTxt(D.texts.note)], 'is-note', true));
+  if (kind === 'purchase' && TT && on('p_c_sign')) B.push(d3Card(lb('p_c_sign', 'إقرار العميل'), 'pen', [dcEqTxt(D.texts.ack || (TT.doc.texts && TT.doc.texts.ack) || 'أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.'), d3KV([['اعتماد العميل برمز التحقق', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
   if (kind === 'contract' && on('c_c_sign')) B.push(d3Card(lb('c_c_sign', 'التوقيع'), 'pen', [d3KV([['توقيع العميل', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
   if (on(pre + '_c_appr') && on(pre + '_a_seal')) B.push(d3ApprWide(no, kind, {}));
   const H0 = Object.assign({}, QT.hdr || {});
@@ -21411,7 +21413,7 @@ if (pm === 'bank' && !bv && st0.length > 1) st0[1] = STL_BANK_STEP;
   const nm = function (k, def, aria) { return e('input', { class: 't2-input', type: 'text', maxlength: '60', value: d.labels[k] || '', placeholder: def, 'aria-label': 'مسمى ' + aria, onInput: function (ev) { const v = ev.target.value.trim(); if (v.length >= 2) d.labels[k] = v; else delete d.labels[k]; mark(); } }); };
   const rowEl = function (x) {
     const k = x[0], only = x[3];
-    return e('div', { class: 'stl-dc-r' + (hid(k) ? ' is-off' : '') }, [only === 2 ? e('span', { class: 'stl-dc-fix' }, 'ثابت') : ck(k, x[1]), e('span', { class: 'stl-dc-n' }, x[1]), only === 1 ? e('span', {}) : nm(k, x[2], x[1])]);
+    return e('div', { class: 'stl-dc-r' + (hid(k) ? ' is-off' : '') }, [only === 2 && !EL ? e('span', { class: 'stl-dc-fix' }, 'ثابت') : ck(k, x[1]) /* v836: في مستندات الأهلية لا عنصر ثابت */, e('span', { class: 'stl-dc-n' }, x[1]), only === 1 ? e('span', {}) : nm(k, x[2], x[1])]);
   };
   const tx = function (t) { const k = t[0]; return DS.editField(t[1], e('textarea', { class: 't2-input', rows: String(t[2]), maxlength: '700', placeholder: TXD[k] || '', onInput: function (ev) { const v = ev.target.value; if (v.trim().length >= 2) d.texts[k] = v; else delete d.texts[k]; mark(); } }, d.texts[k] || '')); };
   const addEl = function (a, i) {
