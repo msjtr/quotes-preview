@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v830 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v831 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2740,6 +2740,57 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
   .tq-next .sr-full .stl-dc-h, .tq-next .sr-full .stl-dc-r { grid-template-columns: auto minmax(0, 1fr) !important; }
   .tq-next .sr-full .stl-dc-h .t2-input, .tq-next .sr-full .stl-dc-r .t2-input { grid-column: 1 / -1; }
 }
+/* v831: طلب الأهلية — التصميم المعتمد: خطوات أفقية · الإجراء التالي بزر · تبويبات المستندات · ملخص جانبي */
+.tq-next #pv-root .tqn-stage:has(+ .sr-full .eg-work) { display: none !important; }
+.tq-next .sr-full .eg-work.tqn-egf { display: grid !important; gap: 14px !important; container-type: inline-size; }
+.tq-next .sr-full .eg-work.tqn-egf .eg-nav { display: none !important; }
+.tq-next .sr-full .tqn-egs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.tq-next .sr-full .tqn-egs-i { display: grid; gap: 1px; justify-items: start; text-align: start; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--tqn-line, #E3E8F0); background: #fff; color: #0F1B33; cursor: pointer; font: inherit; position: relative; min-width: 0; }
+.tq-next .sr-full .tqn-egs-i:hover { border-color: #9FD3D8; }
+.tq-next .sr-full .tqn-egs-n { font-size: 11px; font-weight: 800; color: var(--tqn-mut, #66748C); }
+.tq-next .sr-full .tqn-egs-i b { font-size: 14.5px; font-weight: 900; }
+.tq-next .sr-full .tqn-egs-i small { font-size: 12px; color: var(--tqn-mut, #66748C); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tq-next .sr-full .tqn-egs-i.is-ok .tqn-egs-n { color: #1F7A4D; }
+.tq-next .sr-full .tqn-egs-i.is-ok .tqn-egs-n::after { content: " ✓"; }
+.tq-next .sr-full .tqn-egs-i.is-now:not(.is-on) small { color: #8A5A00; font-weight: 700; }
+.tq-next .sr-full .tqn-egs-i.is-on { border-color: #06707A; box-shadow: inset 0 -3px 0 #06707A; }
+.tq-next .sr-full .tqn-egs-i.is-on .tqn-egs-n { color: #06707A; }
+.tq-next .sr-full .eg-work.tqn-egf .eg-nextbar .tqn-egn-b { margin-inline-start: auto; }
+.tq-next .sr-full .eg-work.tqn-egf .eg-lay { display: grid !important; grid-template-columns: minmax(0, 1fr) 270px !important; gap: 16px !important; align-items: start; }
+.tq-next .sr-full .eg-work.tqn-egf .eg-main { display: grid; gap: 12px; min-width: 0; }
+.tq-next .sr-full .tqn-egd-none { display: none; }
+.tq-next .sr-full .tqn-egd { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #EEF2F7; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 14px; }
+.tq-next .sr-full .tqn-egd-t { flex: 1 1 140px; display: grid; gap: 0; justify-items: center; padding: 8px 12px; border: 0; border-radius: 10px; background: transparent; color: #0F1B33; cursor: pointer; font: inherit; min-width: 0; }
+.tq-next .sr-full .tqn-egd-t b { font-size: 14px; font-weight: 900; }
+.tq-next .sr-full .tqn-egd-t small { font-size: 11.5px; color: var(--tqn-mut, #66748C); }
+.tq-next .sr-full .tqn-egd-t .is-ok { color: #1F7A4D; } .tq-next .sr-full .tqn-egd-t .is-now { color: #8A5A00; font-weight: 700; }
+.tq-next .sr-full .tqn-egd-t.is-on { background: #fff; box-shadow: 0 1px 3px rgba(15, 27, 51, .14); }
+.tq-next .sr-full .tqn-egd-t.is-on b { color: #06707A; }
+.tq-next .sr-full .tqn-egsum { position: sticky; top: calc(var(--tqn-pg-t, 76px) + 16px); display: grid; gap: 12px; min-width: 0; }
+.tq-next .sr-full .tqn-egsum-c { display: grid; gap: 2px; padding: 12px; background: #fff; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 16px; }
+.tq-next .sr-full .tqn-egsum-c h4 { margin: 0 4px 6px; font-size: 14px; font-weight: 900; }
+.tq-next .sr-full .tqn-egsum-r, .tq-next .sr-full .tqn-egsum-p { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 6px 8px; border: 0; border-radius: 9px; background: none; color: #0F1B33; font: inherit; font-size: 13px; text-align: start; cursor: pointer; }
+.tq-next .sr-full .tqn-egsum-r:hover, .tq-next .sr-full .tqn-egsum-p:hover { background: #F1F5F9; }
+.tq-next .sr-full .tqn-egsum-r.is-on { background: #E9F5F6; }
+.tq-next .sr-full .tqn-egsum-r em { font-style: normal; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 99px; background: #F1F5F9; color: #66748C; white-space: nowrap; }
+.tq-next .sr-full .tqn-egsum-r em.is-ok { background: #E2F3EA; color: #1F7A4D; }
+.tq-next .sr-full .tqn-egsum-r em.is-now { background: #FDF0DC; color: #8A5A00; }
+.tq-next .sr-full .tqn-egsum-r em.is-bad { background: #FDE8E6; color: #B42318; }
+.tq-next .sr-full .tqn-egsum-p { justify-content: flex-start; }
+.tq-next .sr-full .tqn-egsum-p i { width: 8px; height: 8px; border-radius: 50%; background: #06707A; flex: none; }
+.tq-next .sr-full .tqn-egsum-p.is-next i { background: #C98A12; }
+.tq-next .sr-full .tqn-egsum-p.is-next span { font-weight: 800; }
+@container (max-width: 860px) {
+  .tq-next .sr-full .eg-work.tqn-egf .eg-lay { grid-template-columns: minmax(0, 1fr) !important; }
+  .tq-next .sr-full .tqn-egsum { position: static; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+}
+.tq-next.pv-dark #pv-host .sr-full .tqn-egs-i, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-c { background: #121C30; border-color: var(--tqn-line); color: var(--tqn-ink); }
+.tq-next.pv-dark #pv-host .sr-full .tqn-egd { background: #0F1829; border-color: var(--tqn-line); }
+.tq-next.pv-dark #pv-host .sr-full .tqn-egd-t, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-r, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-p { color: var(--tqn-ink); }
+.tq-next.pv-dark #pv-host .sr-full .tqn-egd-t.is-on { background: #121C30; }
+.tq-next.pv-dark #pv-host .sr-full .tqn-egsum-r:hover, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-p:hover, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-r.is-on { background: #0F1829; }
+.tq-next .sr-full .eg-work.tqn-egf .eg-sh { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.tq-next .sr-full .eg-work.tqn-egf .eg-sh-m { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12.5px; color: var(--tqn-mut, #66748C); }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }

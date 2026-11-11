@@ -588,9 +588,10 @@ function geoQ() {
   soon();
 })();
 
-/* v829: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v831: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · v827: طلب الأهلية — زرّا «إلغاء الطلب» و«إرسال إشعار للعميل» ثابتان في رأس الطلب، وخطوات العمل شريطًا أفقيًا يعطي المحتوى العرض كاملًا، وقرار الأهلية بنموذج منظّم (حقول بعناوينها · مؤشرات · توصية)، والأرقام إنجليزية فقط.
+   · v831: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
    · v829: طلب الأهلية — التوصية عنوانًا وشارات قصيرة، وترتيب كل تبويب: العنوان وحده ← البيانات/القالب ← المعاينة والإرفاق ← الحفظ، ورسالة «ما وصل للعميل» فقاعة رسالة واضحة.
    · v828: قرار الأهلية — المؤشر وحدّه في سطر واحد، والتوصية مرة واحدة (بلا تكرارها في تقرير الأهلية)، وزر «معاينة ما وصل للعميل»، والرسالة: المعاينة أولًا وتفاصيل القالب بنصّ كامل غير مقصوص.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
@@ -1792,10 +1793,95 @@ function geoQ() {
     });
     [].forEach.call(F.querySelectorAll('button'), function (x) { if (txt(x) !== 'ما وصل العميل') return; [].forEach.call(x.childNodes, function (n) { if (n.nodeType === 3 && /ما وصل العميل/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace('ما وصل العميل', 'معاينة ما وصل للعميل'); }); });
   }
+  /* v831: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
+     المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد) وكل تبويب يحمل المعاينة والمرفقات داخله؛ ملخص ثابت بجانب العمل؛ زر للإجراء التالي */
+  var EGS = [
+    { t: 'البيانات', k: [[/^المستندات$/, 'المرفقات'], [/^بيانات الطلب/, 'بيانات الطلب']] },
+    { t: 'القرار', k: [[/^قرار الأهلية/, 'قرار الأهلية']] },
+    { t: 'المستندات', k: [[/^عرض السعر/, 'عرض السعر'], [/^فاتورة المنتج/, 'فاتورة المنتج'], [/^العقد/, 'العقد']] },
+    { t: 'الإرسال', k: [[/^الإرسال/, 'الإرسال والمتابعة'], [/^السجل/, 'السجل']] },
+    { t: 'الإغلاق', k: [[/^الإغلاق/, 'الإغلاق']] }
+  ];
+  var EGN = [[/المستندات|استكمال/, /^المستندات$/], [/القرار|التوصية|نتيجة الأهلية/, /^قرار الأهلية/], [/عرض السعر/, /^عرض السعر/], [/فاتورة/, /^فاتورة المنتج/], [/العقد/, /^العقد/], [/الإرسال/, /^الإرسال/], [/الإغلاق/, /^الإغلاق/]];
+  function egStOf(sm) { var c = sm ? sm.className : ''; return /is-ok/.test(c) ? 'ok' : /is-now/.test(c) ? 'now' : /is-bad|is-err/.test(c) ? 'bad' : 'pend'; }
+  function egFlow(F) {
+    var W = F.querySelector('.eg-work'); if (!W) return;
+    var nav = W.querySelector('.eg-nav'), lay = W.querySelector('.eg-lay'), main = W.querySelector('.eg-main'); if (!nav || !lay || !main) return;
+    var I = [].map.call(nav.querySelectorAll('.eg-nav-i'), function (b) { var sm = b.querySelector('small'); return { b: b, t: txt(b.querySelector('span')) || txt(b), s: txt(sm), st: egStOf(sm), on: b.classList.contains('is-on') }; });
+    if (!I.length) return;
+    var S = EGS.map(function (g, gi) {
+      var it = []; g.k.forEach(function (k) { I.forEach(function (x) { if (x.g === undefined && k[0].test(x.t)) { x.g = gi; x.l = k[1]; it.push(x); } }); });
+      return { t: g.t, it: it };
+    }).filter(function (g) { return g.it.length; });
+    I.forEach(function (x) { if (x.g === undefined) { S[S.length - 1].it.push(x); x.l = x.t; } });
+    var cur = 0; S.forEach(function (g, i) { if (g.it.some(function (x) { return x.on; })) cur = i; });
+    var nb = W.querySelector('.eg-nextbar'), nt = nb ? txt(nb.querySelector('b')) : '';
+    var nx = null; EGN.some(function (m) { if (m[0].test(nt)) { nx = I.filter(function (x) { return m[1].test(x.t); })[0] || null; return true; } });
+    /* العنوان لا يتكرّر: اسم التبويب يكفي، ورأس «البيانات» المطابق لاسم المرحلة يُخفى */
+    var out = main.querySelector('.eg-out');
+    if (out) {
+      var many = S[cur].it.length > 1, h3 = out.querySelector(':scope > .eg-sh > h3'), ht = txt(h3);
+      cls(h3, 'tqn-hide', many);
+      [].forEach.call(out.querySelectorAll('.eg-out-b .eg-hd'), function (h) { var hb = txt(h.querySelector(':scope > b')); if (hb && hb === ht) cls(h, 'tqn-hide', true); });
+    }
+    var sig = I.map(function (x) { return x.t + x.s + x.st + (x.on ? 1 : 0); }).join('|') + nt;
+    if (W.__egSig === sig && W.querySelector(':scope > .tqn-egs') && main.querySelector(':scope > .tqn-egd, :scope > .tqn-egd-none') && lay.querySelector(':scope > .tqn-egsum')) return;
+    W.__egSig = sig; cls(W, 'tqn-egf', true);
+    var go = function (x) { return function () { if (!x.on) x.b.click(); }; };
+    /* 1) الخطوات */
+    var old = W.querySelector(':scope > .tqn-egs'); if (old) old.remove();
+    var R = mk('nav', 'tqn-egs'); R.setAttribute('aria-label', 'خطوات الطلب');
+    S.forEach(function (g, i) {
+      var sd = g.it.filter(function (x) { return x.s; }), done = sd.length && sd.every(function (x) { return x.st === 'ok'; }), now = g.it.filter(function (x) { return x.st === 'now' || x.st === 'bad'; })[0];
+      var main1 = now || sd.filter(function (x) { return x.st !== 'ok'; })[0] || sd[0] || g.it[0];
+      var b = mk('button', 'tqn-egs-i' + (i === cur ? ' is-on' : '') + (done ? ' is-ok' : '') + (now ? ' is-now' : ''));
+      b.type = 'button'; b.setAttribute('data-live-ok', ''); if (i === cur) b.setAttribute('aria-current', 'step');
+      b.appendChild(mk('span', 'tqn-egs-n', String(i + 1))); b.appendChild(mk('b', '', g.t)); b.appendChild(mk('small', '', done ? 'مكتملة' : (main1.s || '—')));
+      b.addEventListener('click', go(g.it.filter(function (x) { return x.on; })[0] || main1));
+      R.appendChild(b);
+    });
+    W.insertBefore(R, W.firstChild);
+    /* 2) الإجراء التالي: زر يفتح مكانه */
+    if (nb) {
+      var ob = nb.querySelector(':scope > .tqn-egn-b'); if (ob) ob.remove();
+      if (nx && !nx.on) { var gb = mk('button', 't2-btn is-primary is-sm tqn-egn-b', 'انتقل إليه'); gb.type = 'button'; gb.setAttribute('data-live-ok', ''); gb.addEventListener('click', go(nx)); nb.appendChild(gb); }
+      var lb = nb.querySelector(':scope > div > small'); if (lb && txt(lb) === 'الخطوة التالية') lb.textContent = 'الإجراء التالي';
+    }
+    /* 3) تبويبات داخل الخطوة (المستندات: عرض السعر · فاتورة المنتج · العقد) */
+    var od = main.querySelector(':scope > .tqn-egd, :scope > .tqn-egd-none'); if (od) od.remove();
+    var G = S[cur];
+    if (G.it.length > 1) {
+      var D = mk('div', 'tqn-egd'); D.setAttribute('role', 'tablist');
+      G.it.forEach(function (x) {
+        var b = mk('button', 'tqn-egd-t' + (x.on ? ' is-on' : '')); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', x.on ? 'true' : 'false'); b.setAttribute('data-live-ok', '');
+        b.appendChild(mk('b', '', x.l)); b.appendChild(mk('small', 'tqn-egd-s is-' + x.st, x.s || '—'));
+        b.addEventListener('click', go(x)); D.appendChild(b);
+      });
+      main.insertBefore(D, main.firstChild);
+    } else main.insertBefore(mk('i', 'tqn-egd-none'), main.firstChild);
+    /* 4) الملخص */
+    var os = lay.querySelector(':scope > .tqn-egsum'); if (os) os.remove();
+    var A = mk('aside', 'tqn-egsum');
+    var c1 = mk('section', 'tqn-egsum-c'); c1.appendChild(mk('h4', '', 'الملخص'));
+    I.filter(function (x) { return !/^السجل|^بيانات الطلب/.test(x.t); }).forEach(function (x) {
+      var r = mk('button', 'tqn-egsum-r' + (x.on ? ' is-on' : '')); r.type = 'button'; r.setAttribute('data-live-ok', '');
+      r.appendChild(mk('span', '', x.l || x.t)); r.appendChild(mk('em', 'is-' + x.st, x.s || '—')); r.addEventListener('click', go(x)); c1.appendChild(r);
+    });
+    A.appendChild(c1);
+    var pend = I.filter(function (x) { return x.st === 'now' || x.st === 'bad'; });
+    if (pend.filter(function (x) { return x !== nx; }).length) {
+      var c2 = mk('section', 'tqn-egsum-c'); c2.appendChild(mk('h4', '', 'ما ينقص الطلب'));
+      if (nt) { var n0 = mk('button', 'tqn-egsum-p is-next'); n0.type = 'button'; n0.setAttribute('data-live-ok', ''); n0.appendChild(mk('i')); n0.appendChild(mk('span', '', nt)); if (nx) n0.addEventListener('click', go(nx)); c2.appendChild(n0); }
+      pend.forEach(function (x) { if (nx === x) return; var p = mk('button', 'tqn-egsum-p'); p.type = 'button'; p.setAttribute('data-live-ok', ''); p.appendChild(mk('i')); p.appendChild(mk('span', '', (x.l || x.t) + ': ' + x.s)); p.addEventListener('click', go(x)); c2.appendChild(p); });
+      A.appendChild(c2);
+    }
+    lay.appendChild(A);
+  }
   function srTabs(root) {
     var F = root.querySelector('.sr-full'); if (!F) return;
     try { srFix(root); } catch (e) { void e; }
     try { egTidy(F); } catch (e) { void e; }
+    try { egFlow(F); } catch (e) { void e; }
     var G = { 'العمل على الطلب': [], 'الإسناد': [], 'المراسلة': [], 'مسار الطلب': [] };
     [].forEach.call(F.children, function (x) {
       if (x.classList.contains('tqn-st')) return;
