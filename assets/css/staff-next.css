@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v831 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v832 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2740,7 +2740,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
   .tq-next .sr-full .stl-dc-h, .tq-next .sr-full .stl-dc-r { grid-template-columns: auto minmax(0, 1fr) !important; }
   .tq-next .sr-full .stl-dc-h .t2-input, .tq-next .sr-full .stl-dc-r .t2-input { grid-column: 1 / -1; }
 }
-/* v831: طلب الأهلية — التصميم المعتمد: خطوات أفقية · الإجراء التالي بزر · تبويبات المستندات · ملخص جانبي */
+/* v832: طلب الأهلية — التصميم المعتمد: خطوات أفقية · الإجراء التالي بزر · تبويبات المستندات · ملخص جانبي */
 .tq-next #pv-root .tqn-stage:has(+ .sr-full .eg-work) { display: none !important; }
 .tq-next .sr-full .eg-work.tqn-egf { display: grid !important; gap: 14px !important; container-type: inline-size; }
 .tq-next .sr-full .eg-work.tqn-egf .eg-nav { display: none !important; }
@@ -2791,6 +2791,10 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-r:hover, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-p:hover, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-r.is-on { background: #0F1829; }
 .tq-next .sr-full .eg-work.tqn-egf .eg-sh { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .tq-next .sr-full .eg-work.tqn-egf .eg-sh-m { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12.5px; color: var(--tqn-mut, #66748C); }
+/* v832: تبويبات الطلب العليا تعمل (المراسلة · مسار الطلب) + «الإرسال للعميل» تبويب أعلى مستقل */
+.tq-next .sr-full .eg-work.tqn-egf.tqn-st-hide { display: none !important; }
+.tq-next .sr-full .eg-work.tqn-egf.tqn-egsend > .tqn-egs, .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .eg-nextbar, .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .tqn-egsum { display: none !important; }
+.tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .eg-lay { grid-template-columns: minmax(0, 1fr) !important; }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }
