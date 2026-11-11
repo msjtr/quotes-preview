@@ -18632,9 +18632,9 @@ function dcEqDoc(kind, Q, draft, X) {
   if (terms.length && on(pre + '_c_terms')) B.push(d3Card(lb(pre + '_c_terms', kind === 'contract' ? 'بنود العقد' : 'الشروط'), 'shield', [d3List(terms, 0, false)], 'is-terms'));
   D.adds.filter(function (a) { return a && a.at === 'sec' && a.t; }).forEach(function (a) { B.push(d3Card(a.t, 'info', [dcEqTxt(a.v || '')])); });
   if (D.texts.note && on(pre + '_c_note')) B.push(d3Card(lb(pre + '_c_note', 'تنويه'), 'info', [dcEqTxt(D.texts.note)], 'is-note', true));
-  if (kind === 'purchase' && TT && on('p_c_sign')) B.push(d3Card(lb('p_c_sign', 'إقرار العميل'), 'pen', [dcEqTxt(D.texts.ack || (TT.doc.texts && TT.doc.texts.ack) || 'أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.'), d3KV([['اعتماد العميل برمز التحقق', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
+  if (kind === 'purchase' && TT && on('p_c_sign') && !dcSgRow(kind, Q)) B.push(d3Card(lb('p_c_sign', 'إقرار العميل'), 'pen', [dcEqTxt(D.texts.ack || (TT.doc.texts && TT.doc.texts.ack) || 'أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.'), d3KV([['اعتماد العميل برمز التحقق', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
   if (kind === 'contract' && on('c_c_sign')) B.push(d3Card(lb('c_c_sign', 'التوقيع'), 'pen', [d3KV([['توقيع العميل', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
-  if (on(pre + '_c_appr') && on(pre + '_a_seal')) B.push(d3ApprWide(no, kind, {}));
+  { const sgB = dcSignBlk(kind, Q); if (sgB) B.push(sgB); } if (on(pre + '_c_appr') && on(pre + '_a_seal')) B.push(d3ApprWide(no, kind, {}));
   const H0 = Object.assign({}, QT.hdr || {});
   return { lk: kind, hdr: Object.assign(H0, { stl_no: H0.no !== false && on(pre + '_h_no'), stl_date: H0.date !== false && on(pre + '_h_date') }), label: name, title: D.texts.title || (TT && TT.doc && TT.doc.texts && TT.doc.texts.title) || name, sub: TT ? [SH.org, on(pre + '_h_iss') ? TT.issuer : ''].filter(Boolean).join(' · ') : QT0.org, org: TT ? SH.org : QT0.org, foot: TT ? eqFootOf(TT, SH).foot : QT0.org + ' · ' + QT0.auto,
     pill: on(pre + '_h_pill') ? lb(pre + '_h_pill', 'نسخة العميل') : null, auto: QT0.auto, slogan: TT ? eqFootOf(TT, SH).slogan : d2Slogan(QT0), slogan0: QT0.slogan, dsn: 2, cls: 'is-pq is-stl', en: (TT && TT.en) || (kind === 'contract' ? 'CONTRACT' : kind === 'purchase' ? 'PRODUCT INVOICE' : 'PRICE QUOTATION'),
@@ -19083,7 +19083,7 @@ function egDecideBox(x, c, RF, Rp, fx, open, paint) {
       Rp && !wait ? DS.button('طلب من العميل للاستكمال', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { c.tab = 'fix'; const W = c.fix || (c.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false }); W.form = true; paint(); } }) : null])]);
 }
 /* «عرض السعر» — العرض القائم وحالته وأزراره حسب الدور، ومستند العرض (PDF والعناصر والإرفاق)، والعروض السابقة مطويّة */
-function egQtStage(x, c, Q, live, paint) {
+function egQtStage(x, c, Q, live, paint) { sgLogLoad(x, paint);
   const box = function (chip, kids) { return e('div', { class: 'sr-stl' }, [e('div', { class: 'eg-hd' }, [e('b', {}, 'عرض السعر'), chip])].concat(kids)); };
   if (c.qs === null && c.at) return box(null, [DS.note('warn', 'تعذّرت قراءة العروض', 'تحتاج صلاحية عروض الأسعار.')]);
   const reload = function () { c.reload(); };
@@ -19106,7 +19106,36 @@ function egQtStage(x, c, Q, live, paint) {
     egDocTools(x, c, 'quote', paint), oldSec]);
 }
 /* مستند المرحلة: معاينة PDF · عناصر المستند (إضافة وحذف وإخفاء) · «إرفاق المستند» — يُحفظ لكل مستند (admin_elig_quote_doc_save) */
-function egDocTools(x, c, kind, paint, full) {
+/* v841: توثيق قبول العميل داخل المستند (عرض السعر · فاتورة المنتج) — من رابط العميل: وقت العملية وقناة التحقق والجهة المرسل إليها الرمز (مقنّعة) ومرجع العملية (admin_elig_sign_log — stf_263)؛ قبل تطبيقها لا يظهر شيء */
+const SGLOG = {};
+function sgLogLoad(x, paint) {
+  if (!x || !x.id || SGLOG['sr:' + x.id]) return; SGLOG['sr:' + x.id] = 'load';
+  eqCall('admin_elig_sign_log', { p_sr: x.id }).then(function (j) {
+    ((j && j.rows) || []).forEach(function (r) { const k = (r.purpose === 'purchase' ? 'purchase:' : 'quote:') + (r.quotation_id || ''); if (r.decision === 'accept' && r.quotation_id && !SGLOG[k]) SGLOG[k] = r; });
+    SGLOG['sr:' + x.id] = 'ok'; if (paint) paint();
+  }).catch(function () { SGLOG['sr:' + x.id] = 'err'; });
+}
+function dcSgRow(kind, Q) { return Q && Q.id && (kind === 'quote' || kind === 'purchase') ? SGLOG[kind + ':' + Q.id] || null : null; }
+function dcSignBlk(kind, Q) {
+  const g = dcSgRow(kind, Q); if (!g) return null;
+  const dt = (function () { try { const t = new Date(g.at); return isNaN(t) ? '—' : t.toLocaleString('en-CA', { timeZone: 'Asia/Riyadh', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') + ' (توقيت الرياض)'; } catch (err) { return '—'; } })();
+  const fac = /mail/.test(g.factor || '') ? 'رمز تحقق عبر البريد' : /wa|whats/.test(g.factor || '') ? 'رمز تحقق عبر واتساب' : '—';
+  return d3Card(kind === 'purchase' ? 'اعتماد العميل وتوثيقه' : 'قبول العميل وتوثيقه', 'pen', [
+    d3KV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', kind === 'purchase' ? 'اعتماد الفاتورة' : 'قبول عرض السعر'], ['وقت العملية', dt, true], ['التحقق', fac], ['أُرسل الرمز إلى', g.to || '—', true], ['مرجع العملية', g.ref || '—', true]]),
+    e('p', { class: 'd3-cfs-p is-st' }, '✓ وُثّقت العملية إلكترونيًا عبر منصة تيرا برمز تحقق لمرة واحدة، ولا يلزم توقيع خطي.')], 'is-sign');
+}
+/* v841: «إرفاق المستند PDF» ظاهر في «صفحة الرابط» — حالته من المستند نفسه، والتغيير من «المستند ← إرفاق المستند» (نفس الحفظ) */
+function egPgAtt(c, kind, Q) {
+  if (['quote', 'purchase', 'contract'].indexOf(kind) < 0) return null;
+  const D0 = c && c.doc && c.doc[kind], cs = (Q && Q.calc_staff) || {};
+  const on = D0 && Q && D0.q === Q.id ? !!D0.att : !!(cs.attach && cs.attach[kind]);
+  return e('div', { class: 'eg-pg-att' + (on ? ' is-on' : '') }, [e('div', {}, [e('b', {}, on ? 'المستند PDF مرفق' : 'المستند PDF غير مرفق'), e('small', {}, on ? 'يُرفق مع رسالة واتساب والبريد عند الإرسال، فيفتحه العميل وينزّله منها.' : 'لن يُرفق المستند — تصل العميلَ صفحةُ الرابط وحدها.')]),
+    DS.button(on ? 'تغيير الإرفاق' : 'إرفاق المستند PDF', { size: 'sm', ui: 'paperclip', onClick: function () {
+      const t = [].filter.call(document.querySelectorAll('.eg-sub > .eg-sub-t'), function (b) { return /^المستند/.test(String(b.textContent || '').trim()); })[0]; if (t) t.click();
+      setTimeout(function () { const s = [].filter.call(document.querySelectorAll('.eg-out-b select'), function (y) { return [].some.call(y.options, function (o) { return o.value === 'pdf'; }); })[0]; if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }, 350);
+    } })]);
+}
+function egDocTools(x, c, kind, paint, full) { sgLogLoad(x, paint);
   if (c.wrapDoc && !full) return null; /* v806: المستند تبويب داخل المرحلة */
   const Q0 = (c.qs || []).filter(function (q) { return ['rejected', 'cancelled', 'declined', 'expired'].indexOf(q.status) < 0 || (q.status === 'rejected' && q.returned); })[0];
   if (!Q0) return null;
@@ -19281,7 +19310,7 @@ function egPvPage(x, c, kind, live, J, paint) {
     e('div', { class: 'eg-pg-ed' }, [
       e('div', { class: 'eg-hd' }, [e('b', {}, 'صفحة الرابط'), DS.badge(F.length ? (own ? 'نسخة هذا العميل' : 'النسخة الافتراضية') : 'من القرار والتوصية', own ? 'info' : null)]),
       e('small', { class: 'cu-dr-hint' }, F.length ? 'ما تكتبه هنا لهذا العميل فقط، والحقل الفارغ يأخذ النص العام من «قوالب العقد ← صفحات الرابط».' : 'صفحة النتيجة تُبنى من التوصية والقرار كما يراها العميل.'),
-      F.length ? e('div', { class: 'sys-form cu-bd-form' }, fields) : null, F.length ? (function () { /* v834: مضيف أقسام صفحة الرابط (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-pg-blk' }); h.__pg = { can: canSave, get: function () { if (!Array.isArray(D.v.blocks)) D.v.blocks = []; return D.v.blocks; }, mark: function () { D.dirty = true; }, set: function (b) { D.v.blocks = b; D.dirty = true; paint(); } }; return h; })() : null,
+      F.length ? e('div', { class: 'sys-form cu-bd-form' }, fields) : null, egPgAtt(c, kind, Q), F.length ? (function () { /* v834: مضيف أقسام صفحة الرابط (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-pg-blk' }); h.__pg = { can: canSave, get: function () { if (!Array.isArray(D.v.blocks)) D.v.blocks = []; return D.v.blocks; }, mark: function () { D.dirty = true; }, set: function (b) { D.v.blocks = b; D.dirty = true; paint(); } }; return h; })() : null,
       D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null,
       F.length && Q && !canSave ? e('small', { class: 'cu-dr-hint' }, 'تعديل نصوص هذه المرحلة غير متاح الآن بحسب حالة العرض أو صلاحيتك.') : null,
       e('div', { class: 't2-pb-actions' }, [
