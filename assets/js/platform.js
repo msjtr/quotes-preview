@@ -18810,6 +18810,87 @@ function eqClientPv(x, Q, D, C, rerun) {
   ]);
 }
 
+/* v838: «البنود والرسوم» جدول واحد بطريقتين — إدخال يدوي، أو «توزيع مبلغ» على نفس البنود: المبلغ يُضاف على قيمة المنتج، والضريبة من ضمنه أو تُضاف عليه، وعمود «يُوزَّع» يحدد البنود؛ والملخص المالي ثابت بجانب النموذج (تصميم طلبات الخدمات المعتمد) */
+function eqD2(D) { return D.d2 || (D.d2 = { on: false, add: '', inc: 'inc', how: 'eq', pick: {}, busy: false, err: '', t: 0, sig: '' }); }
+function eqD2Ok(l) { return !!l.cfg || String(l.t || '').trim().length >= 2; }
+function eqD2Sig(D) { const Z = eqD2(D); return JSON.stringify([D.value, D.pvat, Z.add, Z.inc, Z.how, D.lines.map(function (l) { const on = eqD2Ok(l) && Z.pick[l.id] !== false; return [l.id, !!l.vat, on, on ? 0 : Number(l.amt) || 0]; })]); }
+function eqD2Run(x, D, rerun) {
+  const Z = eqD2(D); clearTimeout(Z.t);
+  Z.t = setTimeout(async function () {
+    const A = Number(Z.add) || 0; Z.err = '';
+    if (!(A > 0) || !(Number(D.value) > 0)) { rerun(); return; }
+    const modes = {};
+    D.lines.forEach(function (l) { if (!eqD2Ok(l)) return; if (Z.pick[l.id] !== false) modes[l.id] = Z.how === 'prop' ? 'prop' : 'eq'; else if (Number(l.amt) > 0) modes[l.id] = 'fixed'; });
+    if (!Object.keys(modes).some(function (k) { return modes[k] !== 'fixed'; })) { Z.err = 'حدّد بندًا واحدًا على الأقل في عمود «يُوزَّع».'; rerun(); return; }
+    Z.busy = true; rerun();
+    try {
+      const keep = D.dist.modes; D.dist.modes = modes; const p = eqPayload(D); D.dist.modes = keep;
+      const ids = p.items.map(function (y) { return y.id; }), m2 = {};
+      Object.keys(modes).forEach(function (k) { if (ids.indexOf(k) >= 0) m2[k] = modes[k]; });
+      p.dist = { amount: qr2(Z.inc === 'inc' ? Number(D.value) + A : A), basis: Z.inc === 'inc' ? 'total' : 'lines', modes: m2, apply: true };
+      const j = await eqCall('admin_elig_quote_preview', { p_sr: x.id, p_data: p });
+      const S = (j.staff && j.staff.items) || [];
+      D.lines.forEach(function (l) { if (!m2[l.id] || m2[l.id] === 'fixed') return; const y = S.filter(function (z) { return z.id === l.id; })[0]; l.amt = y && Number(y.amt) > 0 ? String(y.amt) : ''; l.man = true; });
+      Z.busy = false; Z.sig = eqD2Sig(D);
+    } catch (err) { Z.busy = false; Z.err = (err && err.message) || EQ_ERR.bad_dist; }
+    rerun();
+  }, 120);
+}
+function eqD2Tog(x, D, rerun) {
+  const Z = eqD2(D);
+  return e('div', { class: 'q2-tog' }, [e('small', {}, 'طريقة إدخال المبالغ'),
+    DS.button('إدخال يدوي', { size: 'sm', tone: Z.on ? null : 'primary', onClick: function () { Z.on = false; rerun(); } }),
+    DS.button('توزيع مبلغ', { size: 'sm', tone: Z.on ? 'primary' : null, ui: 'sliders-horizontal', onClick: function () { Z.on = true; rerun(); } })]);
+}
+function eqD2Box(x, D, C, rerun) {
+  const Z = eqD2(D); if (!Z.on) return null;
+  const A = Number(Z.add) || 0, V = Number(D.value) || 0, T = qr2(V + A);
+  if (A > 0 && V > 0 && !Z.busy && eqD2Sig(D) !== Z.sig) { Z.sig = eqD2Sig(D); eqD2Run(x, D, rerun); }
+  const inA = DS.input({ value: Z.add, numeric: true, placeholder: 'مثال: 1000', onInput: function (v) { Z.add = v && v.target ? v.target.value : v; } });
+  inA.addEventListener('change', function () { rerun(); });
+  inA.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); Z.add = inA.value !== undefined ? inA.value : Z.add; rerun(); } });
+  const pvat = D.pvat !== false ? qr2(V * eqRate()) : 0, vat = C ? Number(C.vat) || 0 : 0, tot = C ? Number(C.total) || 0 : 0, net = C ? qr2(V + (Number(C.fees) || 0)) : 0;
+  const hit = Z.inc === 'inc' ? Math.abs(tot - T) < 0.005 : Math.abs(net - T) < 0.005;
+  const ln = function (t, v, cls) { return e('div', { class: 'q2-ln' + (cls ? ' ' + cls : '') }, [e('span', {}, t), e('b', {}, v)]); };
+  return e('div', { class: 'q2-d' }, [
+    e('div', { class: 'sys-form is-2 cu-bd-form eq-3' }, [
+      DS.editField('المبلغ المضاف على قيمة المنتج (' + sar(V) + ')', inA),
+      DS.editField(A > 0 ? 'المطلوب من العميل ' + sar(T) + ' — الضريبة' : 'الضريبة', DS.select({ value: Z.inc, options: [['inc', 'من ضمنه (الإجمالي شامل الضريبة)'], ['exc', 'تُضاف عليه (المبلغ قبل الضريبة)']], onChange: function (v) { Z.inc = v; rerun(); } })),
+      DS.editField('طريقة التوزيع', DS.select({ value: Z.how, options: [['eq', 'بالتساوي'], ['prop', 'حسب النسب الحالية']], onChange: function (v) { Z.how = v; rerun(); } }))]),
+    e('small', { class: 'cu-dr-hint' }, 'حدّد في عمود «يُوزَّع» البنود التي يُوزَّع عليها المبلغ؛ البند غير المحدد يبقى مبلغه كما تكتبه. ضريبة كل بند وظهوره للعميل من الجدول نفسه.'),
+    Z.busy ? e('small', { class: 'q2-busy' }, 'يُحسب التوزيع…') : null,
+    Z.err ? e('span', { class: 'cu-err', role: 'alert' }, Z.err) : null,
+    A > 0 && C && !Z.busy && !Z.err ? e('div', { class: 'q2-res' + (hit ? '' : ' is-off') }, [
+      ln('قيمة المنتج', sar(V)), ln('البنود والرسوم', sar(Number(C.fees) || 0)), ln('المجموع قبل الضريبة', sar(net), 'is-sub' + (Z.inc === 'exc' ? ' is-hit' : '')),
+      pvat ? ln('ضريبة المنتج', sar(pvat), 'is-mut') : null, ln('ضريبة البنود', sar(qr2(vat - pvat)), 'is-mut'),
+      e('div', { class: 'q2-tot' + (Z.inc === 'inc' ? ' is-hit' : '') }, [e('span', {}, 'الإجمالي شامل الضريبة'), e('b', {}, sar(tot))]),
+      e('p', { class: 'q2-exp' }, hit ? (Z.inc === 'inc' ? 'المطلوب ' + sar(T) + ' = الإجمالي شامل الضريبة، والضريبة (' + sar(vat) + ') من ضمنه.' : 'المطلوب ' + sar(T) + ' = المجموع قبل الضريبة، وتُضاف عليه الضريبة ' + sar(vat) + ' فيصبح الإجمالي ' + sar(tot) + '.') : 'الأرقام الحالية لا تطابق المطلوب ' + sar(T) + ' — غيّر أي خيار أو اضغط Enter في خانة المبلغ لإعادة الحساب.')].filter(Boolean)) : null].filter(Boolean));
+}
+function eqD2Row(x, D, l, rerun, row) {
+  const Z = eqD2(D); if (!Z.on || !row) return row;
+  const ok = eqD2Ok(l), on = ok && Z.pick[l.id] !== false, amtC = row.children[1];
+  const cb = e('input', { type: 'checkbox', 'aria-label': 'يُوزَّع على ' + (l.t || 'البند') }); cb.checked = on; cb.disabled = !ok;
+  cb.addEventListener('change', function () { Z.pick[l.id] = cb.checked; rerun(); });
+  row.classList.add('is-d2'); if (on) row.classList.add('is-on');
+  if (on && amtC) amtC.replaceChildren(e('div', { class: 'q2-amt' }, [e('b', {}, Number(l.amt) > 0 ? sar(Number(l.amt)) : '—'), e('small', {}, l.vat ? (Number(l.amt) > 0 ? '+ ضريبة ' + sar(qr2(Number(l.amt) * eqRate())) : 'خاضع للضريبة') : 'بلا ضريبة')]));
+  row.insertBefore(e('div', { class: 'eq-c is-ck' }, [cb]), row.firstChild);
+  return row;
+}
+/* الملخص المالي بجانب النموذج — كل بند بمبلغه، والضريبة مفصّلة */
+function eqSum2(x, D, C, rerun) {
+  const V = Number(C.value) || 0, F = Number(C.fees) || 0, vat = Number(C.vat) || 0, pvat = D.pvat !== false ? qr2(V * eqRate()) : 0, hid = D.hide || [];
+  const ln = function (t, v, cls, tag) { return e('div', { class: 'q2-ln' + (cls ? ' ' + cls : '') }, [e('span', {}, [t, tag ? e('small', {}, tag) : null].filter(Boolean)), e('b', {}, v)]); };
+  const P = Array.isArray(C.plan) ? C.plan : [];
+  const L = D.lines.filter(function (l) { return Number(l.amt) > 0; });
+  return e('aside', { class: 'q2-sum' }, [e('div', { class: 'q2-sum-h' }, [e('b', {}, 'الملخص المالي'), e('small', {}, 'يتحدث مع كل تعديل')]),
+    ln(String(D.type || '').trim() || 'قيمة المنتج', sar(V), 'is-pv', D.pvat === false ? 'غير خاضع' : null),
+    e('small', { class: 'q2-g' }, 'البنود والرسوم')].concat(L.length ? L.map(function (l) { return ln(String(l.t || '').trim() || '—', sar(Number(l.amt)), 'is-it', hid.indexOf(l.id) >= 0 ? 'ضمن «' + (String(D.svcLabel || '').trim() || EQ_SVC) + '»' : (l.vat ? null : 'غير خاضع')); }) : [e('small', { class: 'q2-g' }, '—')], [
+    ln('مجموع البنود', sar(F), 'is-sub'), ln('المجموع قبل الضريبة', sar(qr2(V + F)), 'is-mut'),
+    pvat ? ln('ضريبة المنتج', sar(pvat), 'is-mut') : null, ln('ضريبة البنود', sar(qr2(vat - pvat)), 'is-mut'), ln('مجموع الضريبة', sar(vat)),
+    e('div', { class: 'q2-tot' }, [e('span', {}, 'الإجمالي شامل الضريبة'), e('b', {}, sar(Number(C.total) || 0))]),
+    P.length ? ln('الدفعات', fmtNum(P.length) + ' × ' + sar(P[0].amount), 'is-mut') : null,
+    eqD2(D).on ? null : DS.button('إضافة مبلغ وتوزيعه', { size: 'sm', ui: 'sliders-horizontal', onClick: function () { eqD2(D).on = true; rerun(); } })]).filter(Boolean));
+}
 function eqEdit(x, Q, mode, done, inl) {
   if (!inl && EQ_INL[x.id] && document.querySelector('.eg-work[data-sr="' + x.id + '"]')) { EQ_INL[x.id].open(Q, mode, done); return null; } /* v806: داخل المرحلة لا نافذة جانبية */
   const key = 'eqed:' + (Q ? Q.id : x.id);
@@ -18836,10 +18917,10 @@ function eqEdit(x, Q, mode, done, inl) {
   const sec = function (n, t, kids, aside) { return e('section', { class: 'stl-one-s' }, [e('h5', { class: 'stl-one-h' }, [e('i', {}, String(n)), e('span', {}, t), aside || null])].concat(kids)); };
   const valIn = DS.input({ value: D.value, numeric: true, onInput: function (v) { D.value = v && v.target ? v.target.value : v; } }); valIn.addEventListener('change', function () { eqValueCh(D); rerun(); });
   const R = Q && Q.calc_staff && Q.calc_staff.ret;
-  const rows = D.lines.map(function (l, i) { return eqLineRow(D, l, i, rerun); });
+  const rows = D.lines.map(function (l, i) { return eqD2Row(x, D, l, rerun, eqLineRow(D, l, i, rerun)); });
   const body = [
     R ? DS.note('warn', 'أُعيد للتعديل — ' + (R.by_name || ''), R.note || '') : null,
-    C ? e('div', { class: 'stl-wz-sum' }, [['قيمة المنتج', sar(C.value)], ['البنود', sar(C.fees)], ['الضريبة', sar(C.vat)], ['الإجمالي', sar(C.total)], ['الدفعة', C.plan && C.plan.length ? sar(C.plan[0].amount) : '—']].map(function (v, i) { return e('div', { class: i === 3 ? 'is-due' : null }, [e('small', {}, v[0]), e('b', {}, v[1])]); })) : null,
+    C ? eqSum2(x, D, C, rerun) : null, false ? e('div', { class: 'stl-wz-sum' }, [['قيمة المنتج', sar(C.value)], ['البنود', sar(C.fees)], ['الضريبة', sar(C.vat)], ['الإجمالي', sar(C.total)], ['الدفعة', C.plan && C.plan.length ? sar(C.plan[0].amount) : '—']].map(function (v, i) { return e('div', { class: i === 3 ? 'is-due' : null }, [e('small', {}, v[0]), e('b', {}, v[1])]); })) : null,
     D.srvErr ? e('span', { class: 'cu-err', role: 'alert' }, D.srvErr) : null,
     e('div', { class: 'stl-one-p' }, [
       sec(1, 'المنتج', [e('div', { class: 'sys-form is-2 cu-bd-form eq-3' }, [DS.editField('المنتج', DS.input({ value: D.type, onInput: function (v) { D.type = v && v.target ? v.target.value : v; } })),
@@ -18851,11 +18932,11 @@ function eqEdit(x, Q, mode, done, inl) {
           DS.editField('الوكيل', DS.input({ value: D.agent, placeholder: 'اختياري', onInput: function (v) { D.agent = v && v.target ? v.target.value : v; } })),
           DS.editField('جوال الوكيل', DS.input({ value: D.agentPh, placeholder: 'اختياري', onInput: function (v) { D.agentPh = v && v.target ? v.target.value : v; } })),
           DS.editField('إظهار الوكيل في العرض', DS.select({ value: D.agentShow ? 'show' : 'hide', options: [['hide', 'للفريق فقط'], ['show', 'ظاهر للعميل']], onChange: function (v) { D.agentShow = v === 'show'; rerun(); } }))])], 'eqag:' + key, !!(D.alt || D.agent))]),
-      sec(2, 'البنود', [EQ_RD.st === 'load' && !rows.length ? CF_EMPTY('جارٍ تحميل البنود الجاهزة…') : null, EQ_RD.st === 'err' ? e('div', {}, [DS.note('warn', 'تعذّر تحميل البنود الجاهزة', 'أعد التحميل أو أضف البنود يدويًا.'), e('div', { class: 't2-pb-actions' }, [DS.button('إعادة تحميل البنود الجاهزة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { eqReadyLoad(rerun, true); rerun(); } })])]) : null,
-        e('div', { class: 'eq-tb' }, [e('div', { class: 'eq-tr is-h' }, [e('div', { class: 'eq-c is-nm' }, 'البند'), e('div', { class: 'eq-c' }, 'المبلغ (ريال)'), e('div', { class: 'eq-c' }, 'الضريبة'), e('div', { class: 'eq-c' }, 'للعميل'), e('div', { class: 'eq-c is-x' }, '')])].concat(rows)),
+      sec(2, 'البنود', [eqD2Tog(x, D, rerun), C ? eqD2Box(x, D, C, rerun) : null, EQ_RD.st === 'load' && !rows.length ? CF_EMPTY('جارٍ تحميل البنود الجاهزة…') : null, EQ_RD.st === 'err' ? e('div', {}, [DS.note('warn', 'تعذّر تحميل البنود الجاهزة', 'أعد التحميل أو أضف البنود يدويًا.'), e('div', { class: 't2-pb-actions' }, [DS.button('إعادة تحميل البنود الجاهزة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { eqReadyLoad(rerun, true); rerun(); } })])]) : null,
+        e('div', { class: 'eq-tb' }, [e('div', { class: 'eq-tr is-h' + (eqD2(D).on ? ' is-d2' : '') }, [eqD2(D).on ? e('div', { class: 'eq-c is-ck' }, 'يُوزَّع') : null, e('div', { class: 'eq-c is-nm' }, 'البند'), e('div', { class: 'eq-c' }, eqD2(D).on ? 'المبلغ' : 'المبلغ (ريال)'), e('div', { class: 'eq-c' }, 'الضريبة'), e('div', { class: 'eq-c' }, 'للعميل'), e('div', { class: 'eq-c is-x' }, '')].filter(Boolean))].concat(rows)),
         e('div', { class: 't2-pb-actions' }, [DS.button('إضافة بند', { size: 'sm', ui: 'plus', onClick: function () { let k = 1; while (D.lines.some(function (y) { return y.id === 'c_' + k; })) k++; D.lines.push({ id: 'c_' + k, t: '', amt: '', def: 0, vat: true, cfg: false, man: true }); rerun(); } })]),
         D.hide.length ? DS.editField('اسم السطر الذي يجمع البنود المخفية للعميل', DS.input({ value: D.svcLabel, placeholder: EQ_SVC, onInput: function (v) { D.svcLabel = v && v.target ? v.target.value : v; } })) : null,
-        C ? eqDistBox(x, D, C, rerun) : null]),
+        null]),
       sec(3, 'الدفعات', eqPlanBox(D, C, rerun)),
       sec(4, 'ما يظهر للعميل والمعاينة', [e('div', { class: 'sys-form is-2 cu-bd-form eq-3' }, [['value', 'قيمة المنتج'], ['items', 'تفصيل البنود'], ['vat', 'سطر الضريبة'], ['valid', 'صالح حتى'], ['plan_start', 'أول دفعة'], ['plan_end', 'آخر دفعة'], ['plan_n', 'عدد الدفعات'], ['plan_amt', 'قيمة الدفعة'], ['plan_tbl', 'جدول الدفعات']].map(function (k) { return eqVisSel(D, k[0], k[1], rerun); })),
         e('div', { class: 't2-pb-actions' }, [DS.button('معاينة عرض السعر PDF', { size: 'sm', ui: 'file-pdf', disabled: !C, onClick: function () { dcPdf(dcEqDoc('quote', Object.assign({}, Q || {}, { product_type: D.type, customer_name: (Q && Q.customer_name) || x.client_name || x.name || '', req_no: x.req_no, calc: eqCalcOf(D) }), true)); } })]),
