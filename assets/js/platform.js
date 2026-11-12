@@ -18673,10 +18673,10 @@ function dcEqDoc(kind, Q, draft, X) {
   const terms = String(D.texts.terms || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return t && t.charAt(0) !== '⊘'; }); /* v834: البند المخفي (أوله ⊘) لا يظهر في المستند */
   if (terms.length && on(pre + '_c_terms')) B.push(d3Card(lb(pre + '_c_terms', kind === 'contract' ? 'بنود العقد' : 'الشروط'), 'shield', [d3List(terms, 0, false)], 'is-terms'));
   D.adds.filter(function (a) { return a && a.at === 'sec' && a.t; }).forEach(function (a) { B.push(d3Card(a.t, 'info', [dcEqTxt(a.v || '')])); });
-  if (D.texts.note && on(pre + '_c_note')) B.push(d3Card(lb(pre + '_c_note', 'تنويه'), 'info', [dcEqTxt(D.texts.note)], 'is-note', true));
+  if (D.texts.note && srdLines(D.texts.note).some(function (z) { return z.on; }) && on(pre + '_c_note')) B.push(d3Card(lb(pre + '_c_note', 'تنويه'), 'info', [dcEqTxt(D.texts.note)], 'is-note', true));
   if (kind === 'purchase' && TT && on('p_c_sign') && !dcSgRow(kind, Q)) B.push(d3Card(lb('p_c_sign', 'إقرار العميل'), 'pen', [dcEqTxt(D.texts.ack || (TT.doc.texts && TT.doc.texts.ack) || 'أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.'), d3KV([['اعتماد العميل برمز التحقق', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
   if (kind === 'contract' && on('c_c_sign')) B.push(d3Card(lb('c_c_sign', 'التوقيع'), 'pen', [d3KV([['توقيع العميل', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
-  { const sgB = dcSignBlk(kind, Q, { on: on, lb: lb, p: pre }); if (sgB) B.push(sgB); } if (on(pre + '_c_appr') && on(pre + '_a_seal')) B.push(d3ApprWide(no, kind, {}));
+  { const sgB = dcSignBlk(kind, Q, { on: on, lb: lb, p: pre, D: D, X: X }); if (sgB) B.push(sgB); } if (on(pre + '_c_appr') && (on(pre + '_a_seal') || on(pre + '_a_qr') || on(pre + '_a_bar'))) B.push(d3ApprWide(no, kind, { a_qr: on(pre + '_a_qr'), a_bar: on(pre + '_a_bar'), a_seal: on(pre + '_a_seal') })); /* v852 */
   egBOrd(B, D, kind, lb); /* v850 */
   const H0 = Object.assign({}, QT.hdr || {});
   return { lk: kind, hdr: Object.assign(H0, { stl_no: H0.no !== false && on(pre + '_h_no'), stl_date: H0.date !== false && on(pre + '_h_date') }), label: name, title: D.texts.title || (TT && TT.doc && TT.doc.texts && TT.doc.texts.title) || name, sub: TT ? [SH.org, on(pre + '_h_iss') ? TT.issuer : ''].filter(Boolean).join(' · ') : QT0.org, org: TT ? SH.org : QT0.org, foot: TT ? eqFootOf(TT, SH).foot : QT0.org + ' · ' + QT0.auto,
@@ -19079,7 +19079,7 @@ function egAdmTasks(x, A, ctNo, paint) {
     try {
       const j = await admRpc(fn, Object.assign({ p_contract: id }, args));
       if (j && j.ok === false) throw new Error(ADM_ERR[j.error] || j.message || 'تعذّر تنفيذ الإجراء.');
-      EGADM.busy = false; if (msg) toast(msg); await ctAdmLoad(); paint();
+      EGADM.busy = false; if (msg) snack(msg); await ctAdmLoad(); paint(); /* v852: toast غير معرَّفة هنا */
     } catch (err) { EGADM.busy = false; EGADM.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; paint(); }
   };
   const T = items.map(function (i) { const z = CTADM_K.filter(function (q) { return q[0] === i.kind; })[0]; return { k: i.kind, t: i.label || (z ? z[1] : i.kind), ok: !!i.ok, by: i.required_by || '' }; });
@@ -19218,8 +19218,15 @@ function dcSignBlk(kind, Q, ON) {
   if (ON && !ON.on(ON.p + '_c_sign')) return null; /* v846: القسم وصفوفه من «المستند» */
   const sgKV = function (L) { return d3KV(L.map(function (r, i) { return ON ? [ON.lb(ON.p + '_g_' + SGK[i], r[0])].concat(r.slice(1)) : r; }).filter(function (r, i) { return !ON || ON.on(ON.p + '_g_' + SGK[i]); })); };
   const g = dcSgRow(kind, Q);
+  /* v852: خانة توقيع العميل حسب «طريقة التوقيع المطلوبة» من أدوات المستند، ومعاينة «بعد التوقيع (نموذج)» */
+  const meth = ON && ON.D && ON.D.labels ? (ON.D.labels.zz_sgm || 'none') : 'none', sgImg = !!(ON && meth !== 'none' && ON.on(ON.p + '_g_img'));
+  const sgCell = function (done) { return e('div', { class: 'd3-sgcell' + (done ? ' is-done' : '') }, [done && meth === 'type' ? e('b', { class: 'd3-sgtyped' }, Q.customer_name || Q.client_name || '') : e('i', { class: 'd3-sgln' }), e('small', {}, done ? (meth === 'type' ? 'كتابة الاسم' : 'رسم التوقيع') : ON.lb(ON.p + '_g_img', 'توقيع العميل'))]); };
+  if (!g && ON && ON.X && ON.X.sgView === 'after' && kind === 'quote') {
+    const fac0 = ON.D && ON.D.labels && ON.D.labels.zz_sgc === 'email' ? 'رمز تحقق عبر البريد' : 'رمز تحقق عبر واتساب';
+    return d3Card('قبول العميل وتوثيقه', 'pen', [sgImg ? sgCell(true) : null, sgKV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', 'قبول عرض السعر'], ['وقت العملية', '2026-11-12 14:32 (توقيت الرياض) — نموذج', true], ['التحقق', fac0], ['أُرسل الرمز إلى', '05••••••21', true], ['مرجع العملية', 'SG-XXXXXX', true]]), e('p', { class: 'd3-cfs-p is-st' }, '✓ وُثّقت العملية إلكترونيًا عبر منصة تيرا برمز تحقق لمرة واحدة، ولا يلزم توقيع خطي.')], 'is-sign');
+  }
   /* v843: قبل قبول العميل — مكان التوثيق ظاهر «بانتظار العميل» ويُملأ تلقائيًا من رابطه */
-  if (!g) return kind === 'quote' && Q && ['accepted', 'rejected', 'cancelled', 'expired'].indexOf(Q.status) < 0 ? d3Card('قبول العميل وتوثيقه', 'pen', [sgKV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', 'قبول عرض السعر'], ['وقت العملية', '..............................'], ['التحقق', 'رمز تحقق لمرة واحدة (واتساب أو البريد)'], ['أُرسل الرمز إلى', '..............................'], ['مرجع العملية', '..............................']]), e('p', { class: 'd3-cfs-p is-st' }, 'بانتظار العميل — يُملأ تلقائيًا عند قبوله العرض من رابطه.')], 'is-sign') : null;
+  if (!g) return kind === 'quote' && Q && ['accepted', 'rejected', 'cancelled', 'expired'].indexOf(Q.status) < 0 ? d3Card('قبول العميل وتوثيقه', 'pen', [sgKV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', 'قبول عرض السعر'], ['وقت العملية', '..............................'], ['التحقق', 'رمز تحقق لمرة واحدة (واتساب أو البريد)'], ['أُرسل الرمز إلى', '..............................'], ['مرجع العملية', '..............................']]), sgImg ? sgCell(false) : null, e('p', { class: 'd3-cfs-p is-st' }, 'بانتظار العميل — يُملأ تلقائيًا عند قبوله العرض من رابطه.')], 'is-sign') : null;
   const dt = (function () { try { const t = new Date(g.at); return isNaN(t) ? '—' : t.toLocaleString('en-CA', { timeZone: 'Asia/Riyadh', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') + ' (توقيت الرياض)'; } catch (err) { return '—'; } })();
   const fac = /mail/.test(g.factor || '') ? 'رمز تحقق عبر البريد' : /wa|whats/.test(g.factor || '') ? 'رمز تحقق عبر واتساب' : '—';
   return d3Card(kind === 'purchase' ? 'اعتماد العميل وتوثيقه' : 'قبول العميل وتوثيقه', 'pen', [
@@ -19520,7 +19527,758 @@ function egPvPage(x, c, kind, live, J, paint) {
     e('figure', { class: 'eg-pg-pv' }, [e('figcaption', { class: 'cu-dr-hint' }, F.length ? 'كما يراه العميل على الجوال — تتحدّث أثناء الكتابة' : 'كما يراه العميل على الجوال'),
       pv || (V.err ? DS.note('warn', 'تعذّرت المعاينة', V.err) : CF_EMPTY('جارٍ تجهيز الصفحة…'))])]);
 }
-function egOut(x, c, kind, live, paint, setup, head) { /* v811: head = رأس المرحلة؛ الترتيب: البيانات · المستند · صفحة الرابط · الرسالة */
+/* ═════ v852: طلبات الخدمات بالتصميم المعتمد (docs/design/sr-design.html) — مكوّنات المنصة نفسها لا تزيين فوقها.
+ * المحتوى داخل .srd، والطبقات (اللوحات الجانبية والنوافذ والقوائم) داخل .srd-l على body. يعمل في المنصة الجديدة (TQN) وحدها،
+ * ويستعمل النماذج والحفظ القائمة نفسها (eqSeed · admin_elig_quote_* · admin_elig_quote_doc_save) — لا تغيير في القاعدة. ═════ */
+const SRD_I = {
+  ed: '<path d="M4 20h4L19 9l-4-4L4 16z"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>', dn: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  del: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', dots: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>', chev: '<path d="M6 9l6 6 6-6"/>', send: '<path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>', hist: '<path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"/>', pdf: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', back: '<path d="M9 6l6 6-6 6"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>', lib: '<path d="M4 4h5v16H4zM10 4h5v16h-5zM16 5l4 1-3 14-4-1z"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  sec: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>', clip: '<path d="M8 12l6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l7-7"/>'
+};
+function srdIc(k, c) { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', 'ic' + (c ? ' ' + c : '')); s.setAttribute('aria-hidden', 'true'); s.setAttribute('fill', k === 'dots' ? 'currentColor' : 'none'); s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '2'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round'); s.innerHTML = SRD_I[k] || ''; return s; }
+function srdIb(k, title, fn, o) { return e('button', { class: 'ib' + (o && o.cls ? ' ' + o.cls : ''), type: 'button', title: title, 'aria-label': title, disabled: !!(o && o.dis), 'data-live-ok': '', onClick: function (ev) { ev.stopPropagation(); fn(ev); } }, [srdIc(k)]); }
+function srdSw(on, label, fn, dis) { return e('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': on ? 'true' : 'false', 'aria-label': (on ? 'إخفاء ' : 'إظهار ') + label, title: on ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', disabled: !!dis, 'data-live-ok': '', onClick: function (ev) { ev.stopPropagation(); fn(); } }); }
+/* زر التصميم: o = { pri, sm, link, danger, ic, dis, live } — live: زر يغيّر البيانات (يُقفل في العيّنة كبقية أزرار المنصة) */
+function srdB(t, o, fn) { o = o || {}; const b = e('button', { type: 'button', class: 'b' + (o.pri ? ' pri' : '') + (o.sm ? ' sm' : '') + (o.link ? ' link' : '') + (o.danger ? ' danger' : '') + (o.ghost ? ' ghost' : ''), disabled: !!o.dis, 'data-live-ok': o.live ? null : '', onClick: function (ev) { if (fn) fn(ev); } }, [o.ic ? srdIc(o.ic) : null, t, o.after ? srdIc(o.after) : null]); return o.live ? liveOk(b) : b; }
+function srdChip(t, tone, dot) { return e('span', { class: 'chip' + (tone ? ' ' + tone : '') }, [dot ? e('i', {}) : null, t]); }
+function srdM(n) { return (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function srdNarrow() { return innerWidth <= 700; }
+/* الطبقة العليا: لوحات ونوافذ وقوائم — واحدة على body */
+function srdLayer() { let L = document.querySelector('body > .srd-l'); if (!L) { L = e('div', { class: 'srd-l', dir: 'rtl', lang: 'ar' }); document.body.appendChild(L); } return L; }
+const SRDP = { pop: null };
+function srdPopClose() { const P = SRDP.pop; if (!P) return; SRDP.pop = null; try { P.el.remove(); if (P.scrim) P.scrim.remove(); } catch (err) { void err; } document.removeEventListener('mousedown', srdPopOut, true); }
+function srdPopOut(ev) { const P = SRDP.pop; if (P && !P.sheet && !P.el.contains(ev.target) && !(P.a && P.a.contains(ev.target))) srdPopClose(); }
+function srdPopPlace() {
+  const P = SRDP.pop; if (!P || P.sheet || !P.a || !P.a.isConnected) return;
+  const el = P.el, r = P.a.getBoundingClientRect(), vh = innerHeight, vw = innerWidth, below = vh - r.bottom - 14, above = r.top - 14, up = below < 380 && above > below;
+  el.style.maxHeight = Math.max(200, Math.min(520, up ? above : below)) + 'px';
+  const ht = el.offsetHeight, w = el.offsetWidth;
+  el.style.top = (up ? Math.max(8, r.top - 6 - ht) : r.bottom + 6) + 'px';
+  el.style.left = Math.max(8, Math.min(r.right - w, vw - w - 8)) + 'px';
+}
+/* قائمة صغيرة بجانب الزر (ويب) أو لوحة سفلية (جوال) — build(el) يملأ المحتوى */
+function srdPop(anchor, title, build) {
+  if (SRDP.pop && SRDP.pop.a === anchor) { srdPopClose(); return; }
+  srdPopClose(); const L = srdLayer();
+  if (srdNarrow()) {
+    const scrim = e('div', { class: 'scrim', onClick: srdPopClose }), el = e('div', { class: 'sheet', role: 'dialog', 'aria-label': title }, [e('div', { class: 'grab' }), e('div', { class: 'sh-h' }, [e('b', {}, title), srdIb('x', 'إغلاق', srdPopClose)])]);
+    build(el); L.appendChild(scrim); L.appendChild(el); SRDP.pop = { el: el, scrim: scrim, a: anchor, sheet: true };
+  } else {
+    const el = e('div', { class: 'pop', role: 'dialog', 'aria-label': title }); build(el); L.appendChild(el); SRDP.pop = { el: el, a: anchor };
+    srdPopPlace(); setTimeout(function () { document.addEventListener('mousedown', srdPopOut, true); }, 0);
+  }
+}
+window.addEventListener('resize', function () { srdPopPlace(); });
+window.addEventListener('scroll', function () { if (SRDP.pop && !SRDP.pop.sheet) srdPopPlace(); }, true);
+document.addEventListener('keydown', function (ev) { if (ev.key !== 'Escape') return; if (SRDP.pop) { srdPopClose(); return; } const m = document.querySelector('body > .srd-l > .modal'); if (m) { srdModalClose(); return; } if (document.querySelector('body > .srd-l > .drawer')) srdDrawerClose(); });
+/* نافذة وسطى للتأكيد والمعاينة الكبيرة */
+function srdModalClose() { const L = document.querySelector('body > .srd-l'); if (!L) return; [].forEach.call(L.querySelectorAll(':scope > .modal, :scope > .scrim.is-m'), function (n) { n.remove(); }); }
+function srdModal(title, body, foot, wide) {
+  srdModalClose(); const L = srdLayer();
+  L.appendChild(e('div', { class: 'scrim is-m', onClick: srdModalClose }));
+  L.appendChild(e('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title }, [e('div', { class: 'mbox', style: wide ? null : 'width:min(560px,100%)' }, [
+    e('div', { class: 'mh' }, [e('b', {}, title), srdIb('x', 'إغلاق', srdModalClose)]), e('div', { class: 'mb' }, [].concat(body)), foot ? e('div', { class: 'mf' }, [].concat(foot)) : null])]));
+}
+
+/* التاريخ: يوم/شهر/سنة واسم اليوم، وتقويم داخل القائمة بدل حقل المتصفح، واختصارات */
+const SRD_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const SRD_D = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+function srdDOf(s) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null; }
+function srdIso(d) { return d.toISOString().slice(0, 10); }
+function srdDmy(s) { const d = srdDOf(s); return d ? String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear() : '—'; }
+function srdDLong(s) { const d = srdDOf(s); return d ? SRD_D[d.getUTCDay()] + ' ' + srdDmy(s) : '—'; }
+function srdCal(val, min, max, pick, quick) {
+  const v = srdDOf(val) || srdDOf(min) || srdDOf(lvToday()); let ym = { y: v.getUTCFullYear(), m: v.getUTCMonth() };
+  const W = e('div', { class: 'cal' });
+  const draw = function () {
+    W.replaceChildren();
+    const first = new Date(Date.UTC(ym.y, ym.m, 1)), days = new Date(Date.UTC(ym.y, ym.m + 1, 0)).getUTCDate(), t0 = lvToday();
+    W.appendChild(e('div', { class: 'cal-h' }, [srdIb('back', 'الشهر السابق', function () { ym.m--; if (ym.m < 0) { ym.m = 11; ym.y--; } draw(); }), e('b', {}, SRD_M[ym.m] + ' ' + ym.y), srdIb('back', 'الشهر التالي', function () { ym.m++; if (ym.m > 11) { ym.m = 0; ym.y++; } draw(); }, { cls: 'flip' })]));
+    const G = e('div', { class: 'cal-g' }, SRD_D.map(function (d) { return e('span', { class: 'cal-w' }, d.replace('ال', '').slice(0, 2)); }));
+    for (let i = 0; i < first.getUTCDay(); i++) G.appendChild(e('span', {}));
+    for (let d = 1; d <= days; d++) {
+      const s = srdIso(new Date(Date.UTC(ym.y, ym.m, d))), off = (min && s < min) || (max && s > max);
+      G.appendChild(e('button', { type: 'button', class: 'cal-d' + (s === val ? ' sel' : '') + (s === t0 ? ' now' : ''), disabled: !!off, 'data-live-ok': '', onClick: function () { pick(s); } }, String(d)));
+    }
+    W.appendChild(G);
+    if (quick && quick.length) W.appendChild(e('div', { class: 'cal-q' }, quick.map(function (q) { const s = srdIso(new Date(srdDOf(t0).getTime() + q[1] * 864e5)); return e('button', { type: 'button', class: 'chip', 'data-live-ok': '', onClick: function () { pick(s); } }, q[0]); })));
+  };
+  draw(); return W;
+}
+function srdDate(val, onPick, o) {
+  o = o || {};
+  const b = e('button', { type: 'button', class: 'dfield', 'aria-label': (o.title || 'التاريخ') + ': ' + srdDLong(val), 'data-live-ok': '' }, [srdIc('cal'), e('span', {}, val ? srdDLong(val) : 'اختر التاريخ')]);
+  b.addEventListener('click', function () { srdPop(b, o.title || 'اختر التاريخ', function (el) { el.appendChild(e('div', { class: 'pl', style: 'padding:12px' }, [srdCal(val, o.min, o.max, function (s) { srdPopClose(); onPick(s); }, o.quick)])); }); });
+  return b;
+}
+/* قسم قابل للطي برأس فيه ملخصه (accify في التصميم) */
+const SRD_ACC = {};
+function srdAcc(key, title, sum, kids, def) {
+  const open = SRD_ACC[key] === undefined ? !!def : SRD_ACC[key];
+  const W = e('div', { class: 'fs acc' + (open ? ' open' : '') });
+  W.appendChild(e('button', { type: 'button', class: 'acc-h', 'aria-expanded': open ? 'true' : 'false', 'data-live-ok': '', onClick: function () { SRD_ACC[key] = !W.classList.contains('open'); W.classList.toggle('open'); this.setAttribute('aria-expanded', W.classList.contains('open') ? 'true' : 'false'); } },
+    [e('span', { class: 'acc-t' }, title), e('span', { class: 'acc-s' }, sum || ''), srdIc('chev', 'acc-c')]));
+  W.appendChild(e('div', { class: 'acc-b' }, kids));
+  return W;
+}
+function srdFld(lbl, el, cls) { return e('div', { class: 'fld' + (cls ? ' ' + cls : '') }, [e('label', {}, lbl), el]); }
+function srdSel(val, opts, on, aria) { const s = e('select', { 'aria-label': aria || '' }, opts.map(function (o) { return e('option', { value: o[0], selected: String(o[0]) === String(val) ? 'selected' : null }, o[1]); })); s.value = String(val); s.addEventListener('change', function () { on(s.value); }); return s; }
+function srdIn(val, on, o) { o = o || {}; const i = e('input', { type: o.num ? 'text' : 'text', inputmode: o.num ? 'decimal' : null, class: o.cls || null, placeholder: o.ph || null, maxlength: o.max || null, 'aria-label': o.aria || null }); i.value = val === undefined || val === null ? '' : String(val); i.addEventListener('input', function () { on(i.value, false); }); i.addEventListener('change', function () { on(i.value, true); }); return i; }
+function srdSeg(val, opts, on, aria, sm) { return e('div', { class: 'seg' + (sm ? ' sm' : ''), role: 'tablist', 'aria-label': aria || '' }, opts.map(function (o) { return e('button', { type: 'button', role: 'tab', 'aria-selected': val === o[0] ? 'true' : 'false', 'data-live-ok': '', onClick: function () { on(o[0]); } }, o[1]); })); }
+/* ═════ v852: «البيانات» في عرض السعر — كما في التصميم: ثلاثة أقسام مطويّة بملخصها (المنتج · البنود والرسوم · خطة الدفع)،
+ * جدول بنود واحد (التوزيع يكتب في الجدول نفسه)، والملخص المالي ثابت بجانبه يتحدث مع كل رقم، وشريط «تعديلات غير محفوظة».
+ * النموذج D نفسه (eqSeed) والحفظ نفسه (admin_elig_quote_issue/update) والتوزيع من القاعدة (eqD2Run). ═════ */
+function srdCalc(D) { return Number(D.value) > 0 ? eqCalcOf(D) : null; }
+function srdSvc(D) { return String(D.svcLabel || '').trim() || EQ_SVC; }
+/* الملخص المالي (sumEl) */
+function srdSum(x, D, C, onDist) {
+  const W = e('div', { class: 'sum', 'data-srd-sum': '' });
+  const ln = function (t, v, cls, tag) { return e('div', { class: 'ln' + (cls ? ' ' + cls : '') }, [e('span', {}, [t, tag ? e('small', { class: 'tg' }, tag) : null]), e('b', {}, v)]); };
+  W.appendChild(e('div', { class: 'sum-h' }, [e('h4', {}, 'الملخص المالي'), srdChip(D.srdBusy ? 'يُحسب…' : 'يتحدث مع كل رقم', 'ok')]));
+  if (!C) { W.appendChild(e('p', { class: 'hint', style: 'margin:0' }, 'أدخل قيمة المنتج ليظهر الملخص.')); return W; }
+  const V = Number(C.value) || 0, F = Number(C.fees) || 0, vat = Number(C.vat) || 0, hid = D.hide || [];
+  W.appendChild(ln(String(D.type || '').trim() || 'المنتج', srdM(V), 'pv', D.pvat === false ? 'غير خاضع' : null));
+  W.appendChild(e('div', { class: 'sum-g' }, 'البنود والرسوم'));
+  const L = D.lines.filter(function (l) { return l.cfg || String(l.t || '').trim(); });
+  L.forEach(function (l) { const a = Number(l.amt) || 0; W.appendChild(ln(String(l.t || '').trim() || 'بند', srdM(a), 'it' + (a ? '' : ' z'), hid.indexOf(l.id) >= 0 ? 'إداري' : !l.vat ? 'غير خاضع' : null)); });
+  const base = qr2((D.pvat !== false ? V : 0) + D.lines.reduce(function (s, l) { return s + (l.vat && Number(l.amt) > 0 ? Number(l.amt) : 0); }, 0));
+  const adm = qr2(D.lines.reduce(function (s, l) { return s + (hid.indexOf(l.id) >= 0 && Number(l.amt) > 0 ? Number(l.amt) : 0); }, 0));
+  W.appendChild(ln('مجموع البنود', srdM(F), 'sub')); W.appendChild(ln('الخاضع للضريبة', srdM(base), 'mut'));
+  W.appendChild(ln('ضريبة القيمة المضافة ' + fmtNum(Math.round(eqRate() * 100)) + '٪', srdM(vat)));
+  W.appendChild(ln('الإجمالي قبل الضريبة', srdM(qr2(V + F)), 'sub'));
+  W.appendChild(e('div', { class: 'grand' }, [e('span', {}, 'الإجمالي شامل الضريبة'), e('b', {}, srdM(C.total) + ' ر.س')]));
+  const P = Array.isArray(C.plan) ? C.plan : [];
+  if (P.length) W.appendChild(ln('خطة الدفع', P.length === 1 ? 'دفعة واحدة · ' + srdDmy(P[0].due) : fmtNum(P.length) + ' × ' + srdM(P[0].amount), 'mut'));
+  if (adm > 0) W.appendChild(ln('يراها العميل سطرًا واحدًا «' + srdSvc(D) + '»', srdM(adm), 'mut'));
+  if (onDist) W.appendChild(srdB('إضافة مبلغ وتوزيعه', { sm: true, after: 'chev' }, onDist));
+  return W;
+}
+/* نتيجة التوزيع (distRes) — من حساب القاعدة بعد تطبيق التوزيع على الجدول */
+function srdDistRes(D, C) {
+  const Z = eqD2(D), A = Number(Z.add) || 0, V = Number(D.value) || 0, T = qr2(V + A), inc = Z.inc === 'inc';
+  const L = function (t, v, cls) { return e('div', { class: 'ln' + (cls ? ' ' + cls : '') }, [e('span', {}, t), e('b', {}, v)]); };
+  const W = e('div', { class: 'dres', 'aria-live': 'polite' });
+  if (!(A > 0)) { W.appendChild(e('p', { class: 'hint', style: 'margin:0' }, 'اكتب المبلغ الذي تضيفه على قيمة المنتج، فيُوزَّع على البنود المحددة في الجدول.')); return W; }
+  if (Z.busy) { W.appendChild(e('p', { class: 'hint', style: 'margin:0' }, 'يُحسب التوزيع…')); return W; }
+  if (Z.err) { W.appendChild(e('p', { class: 'warnp' }, Z.err)); return W; }
+  if (!C) return W;
+  const vat = Number(C.vat) || 0, tot = Number(C.total) || 0, F = Number(C.fees) || 0, net = qr2(V + F), pvat = D.pvat !== false ? qr2(V * eqRate()) : 0;
+  const hit = inc ? Math.abs(tot - T) < 0.005 : Math.abs(net - T) < 0.005;
+  [L('قيمة المنتج', srdM(V)), L('البنود والرسوم (' + fmtNum(D.lines.filter(function (l) { return Number(l.amt) > 0; }).length) + ')', srdM(F)), L('المجموع قبل الضريبة', srdM(net), 'sub' + (inc ? '' : ' hit')),
+    pvat ? L('ضريبة المنتج ' + fmtNum(Math.round(eqRate() * 100)) + '٪', srdM(pvat), 'mut') : null, L('ضريبة البنود الخاضعة', srdM(qr2(vat - pvat)), 'mut'),
+    e('div', { class: 'ln g' + (inc ? ' hit' : '') }, [e('span', {}, 'الإجمالي شامل الضريبة'), e('b', {}, srdM(tot) + ' ر.س')]),
+    e('p', { class: 'dexp' }, hit ? (inc ? 'المطلوب ' + srdM(T) + ' = الإجمالي شامل الضريبة، والضريبة (' + srdM(vat) + ') من ضمنه.' : 'المطلوب ' + srdM(T) + ' = المجموع قبل الضريبة، وتُضاف عليه الضريبة ' + srdM(vat) + ' فيصبح الإجمالي ' + srdM(tot) + '.') : 'الأرقام الحالية لا تطابق المطلوب ' + srdM(T) + ' — غيّر أي خيار لإعادة الحساب.')
+  ].forEach(function (n) { if (n) W.appendChild(n); });
+  return W;
+}
+/* «البنود والرسوم»: جدول واحد — البند · المبلغ · الضريبة · كيف يظهر للعميل · حذف/تصفير، وعمود «يُوزَّع» عند التوزيع */
+function srdItems(x, D, C, mark, rerun) {
+  const Z = eqD2(D), on = !!Z.on, rate = fmtNum(Math.round(eqRate() * 100));
+  if (on && Number(Z.add) > 0 && Number(D.value) > 0 && !Z.busy && eqD2Sig(D) !== Z.sig) { Z.sig = eqD2Sig(D); eqD2Run(x, D, rerun); }
+  const W = [e('div', { class: 'dopt' }, [e('span', { class: 'k2' }, 'طريقة إدخال المبالغ'), srdSeg(on ? 'd' : 'm', [['m', 'إدخال يدوي'], ['d', 'توزيع مبلغ']], function (k) { Z.on = k === 'd'; rerun(); }, 'طريقة الإدخال')])];
+  if (on) {
+    const A = srdIn(Z.add, function (v, done) { Z.add = v; mark(); if (done) rerun(); }, { num: true, cls: 'fin', ph: 'مثال: 1000', aria: 'المبلغ المضاف' });
+    A.setAttribute('data-srd-dist', '');
+    A.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); Z.add = A.value; rerun(); } });
+    W.push(e('div', { class: 'dpanel' }, [
+      e('div', { class: 'dp-in' }, [e('label', { class: 'k2' }, 'المبلغ المضاف على قيمة المنتج (' + srdM(D.value) + ' ر.س)'), A]),
+      e('div', { class: 'dopt' }, [e('span', { class: 'k2' }, 'المبلغ المطلوب من العميل: ' + srdM(qr2((Number(D.value) || 0) + (Number(Z.add) || 0))) + ' ر.س — هل الضريبة من ضمنه؟'), srdSeg(Z.inc, [['inc', 'الضريبة من ضمنه'], ['exc', 'الضريبة تُضاف عليه']], function (k) { Z.inc = k; Z.sig = ''; mark(); rerun(); }, 'الضريبة')]),
+      e('div', { class: 'dopt' }, [e('span', { class: 'k2' }, 'طريقة التوزيع'), srdSeg(Z.how, [['eq', 'بالتساوي'], ['prop', 'حسب النسب الحالية']], function (k) { Z.how = k; Z.sig = ''; mark(); rerun(); }, 'طريقة التوزيع')]),
+      e('p', { class: 'hint', style: 'margin:0' }, 'ضريبة المنتج: ' + (D.pvat !== false ? 'تُحتسب ' + rate + '٪' : 'غير خاضع') + ' (من قسم «المنتج»). ضريبة كل بند وظهوره للعميل من الجدول أدناه.')]));
+  }
+  const tb = e('tbody', {});
+  D.lines.forEach(function (l, i) {
+    const ok = eqD2Ok(l), inD = on && ok && Z.pick[l.id] !== false;
+    const nm = l.cfg ? e('div', { class: 'lbl' }, [e('b', {}, l.t), e('span', {}, l.kind === 'pct' ? fmtNum(l.pv) + '٪ من قيمة المنتج' : l.kind === 'fixed' ? 'ثابت ' + srdM(l.pv) : 'بند جاهز')])
+      : srdIn(l.t, function (v, done) { l.t = v; mark(); if (done) rerun(); }, { ph: 'مسمّى البند', aria: 'اسم البند', max: '60' });
+    const amt = inD ? e('span', { class: 'da chg' }, [e('b', {}, Number(l.amt) > 0 ? srdM(l.amt) : '—'), e('small', {}, l.vat ? (Number(l.amt) > 0 ? '+ ضريبة ' + srdM(qr2(Number(l.amt) * eqRate())) : 'خاضع') : 'بلا ضريبة')])
+      : srdIn(l.amt, function (v, done) { l.amt = v; l.man = true; mark(); if (done) rerun(); }, { num: true, cls: 'num', ph: '0', aria: 'المبلغ' });
+    const cb = on ? e('input', { type: 'checkbox', 'aria-label': 'يشمله التوزيع: ' + (l.t || 'البند') }) : null;
+    if (cb) { cb.checked = inD; cb.disabled = !ok; cb.addEventListener('change', function () { Z.pick[l.id] = cb.checked; Z.sig = ''; mark(); rerun(); }); }
+    tb.appendChild(e('tr', { class: inD ? 'ind' : null }, [
+      on ? e('td', { class: 'c-chk', 'data-l': 'يُوزَّع' }, [cb]) : null,
+      e('td', { class: 'c-name', 'data-l': 'البند' }, [nm]),
+      e('td', { class: 'c-amt', 'data-l': inD ? 'المبلغ (موزَّع)' : 'المبلغ (ر.س)' }, [amt]),
+      e('td', { class: 'c-tax', 'data-l': 'الضريبة' }, [srdSel(l.vat ? '1' : '0', [['1', 'خاضع ' + rate + '٪'], ['0', 'غير خاضع']], function (v) { l.vat = v === '1'; Z.sig = ''; mark(); rerun(); }, 'الضريبة')]),
+      e('td', { class: 'c-vis', 'data-l': 'كيف يظهر للعميل' }, [srdSel(D.hide.indexOf(l.id) < 0 ? 'show' : 'admin', [['show', 'سطر مستقل'], ['admin', 'ضمن «' + srdSvc(D) + '»']], function (v) { D.hide = D.hide.filter(function (k) { return k !== l.id; }); if (v === 'admin') D.hide.push(l.id); mark(); rerun(); }, 'يظهر للعميل')]),
+      e('td', { class: 'c-del' }, [l.cfg ? (Number(l.amt) > 0 ? srdIb('x', 'تصفير البند', function () { l.amt = ''; l.man = true; Z.sig = ''; mark(); rerun(); }) : null)
+        : srdIb('del', 'حذف البند', function () { D.lines.splice(i, 1); D.hide = D.hide.filter(function (k) { return k !== l.id; }); if (D.dist && D.dist.modes) delete D.dist.modes[l.id]; Z.sig = ''; mark(); rerun(); }, { cls: 'del' })])]));
+  });
+  const heads = [on ? 'يُوزَّع' : null, 'البند', 'المبلغ (ر.س)', 'الضريبة', 'كيف يظهر للعميل', ''].filter(function (t) { return t !== null; });
+  W.push(EQ_RD.st === 'load' && !D.lines.length ? e('p', { class: 'hint' }, 'جارٍ تحميل البنود الجاهزة…') : null);
+  W.push(EQ_RD.st === 'err' ? e('p', { class: 'warnp' }, ['تعذّر تحميل البنود الجاهزة — ', srdB('إعادة التحميل', { sm: true, link: true }, function () { eqReadyLoad(rerun, true); rerun(); })]) : null);
+  W.push(e('div', { class: 'itbl-w' }, [e('table', { class: 'it' + (on ? ' dist' : '') }, [e('thead', {}, [e('tr', {}, heads.map(function (t) { return e('th', {}, t); }))]), tb])]));
+  W.push(e('div', { class: 'addrow' }, [srdB('إضافة بند', { sm: true, ic: 'plus' }, function () { let k = 1; while (D.lines.some(function (y) { return y.id === 'c_' + k; })) k++; D.lines.push({ id: 'c_' + k, t: '', amt: '', def: 0, vat: true, cfg: false, man: true }); Z.sig = ''; mark(); rerun(); })]));
+  if (D.hide.length) W.push(srdFld('اسم السطر الذي يراه العميل للبنود الإدارية', srdIn(D.svcLabel, function (v, done) { D.svcLabel = v; mark(); if (done) rerun(); }, { ph: EQ_SVC, max: '60' })));
+  W.push(e('p', { class: 'hint', style: 'margin:0' }, 'البنود «ضمن «' + srdSvc(D) + '»» تبقى منفصلة عندكم، ويراها العميل سطرًا واحدًا باسم «' + srdSvc(D) + '».' + (on && Z.how === 'prop' ? ' في «حسب النسب الحالية» يأخذ البند الجديد صفرًا حتى تُدخل له مبلغًا يدويًا.' : '')));
+  if (on) W.push(e('div', { class: 'dres-box' }, [e('b', { class: 'k2' }, 'نتيجة التوزيع'), srdDistRes(D, C)]));
+  return W;
+}
+/* المعاينة المصغّرة للمستند (الورقة) — من مولّد المستند نفسه (dcEqDoc) فهي ما يُطبع فعلًا */
+function srdPaper(spec, lg) {
+  try {
+    const P = e('div', { class: 'srd-paper' + (lg ? ' is-lg' : '') });
+    const pg = e('div', { class: 'axp-page srd-pg ' + (spec.cls || '') + (spec.draft ? ' is-draft' : '') });
+    pg.appendChild(e('header', { class: 'srd-pg-h' }, [IMG && IMG.logo ? e('img', { src: IMG.logo, alt: 'تيرا' }) : null, e('div', {}, [e('b', {}, spec.title || spec.label || ''), e('small', {}, spec.sub || '')]), spec.pill ? e('span', { class: 'srd-pg-pill' }, spec.pill) : null]));
+    pg.appendChild(e('div', { class: 'srd-pg-m' }, (spec.meta || []).concat(spec.meta3 || []).filter(Boolean).map(function (m) { return e('span', {}, [m[0] + ': ', e('b', { dir: m[2] === false ? null : 'ltr' }, m[1])]); })));
+    (spec.blocks || []).forEach(function (b) { if (b && b.nodeType) pg.appendChild(b); });
+    pg.appendChild(e('footer', { class: 'srd-pg-f' }, [e('span', {}, spec.foot || '')]));
+    P.appendChild(pg); return P;
+  } catch (err) { try { console.warn('[srd-paper]', err && err.message); } catch (y) { void y; } return e('p', { class: 'hint' }, 'تعذّرت المعاينة — استعمل «معاينة PDF».'); }
+}
+function srdEditor(x, Q, mode, done, inl) {
+  const key = 'eqed:' + (Q ? Q.id : x.id);
+  const D = CUD[key] || (CUD[key] = Q ? eqSeed(Q) : eqSeedNew(x));
+  const rerun = function () { if (CUD[key] === D) inl.paint(); };
+  eqReadyLoad(rerun); eqReadyMerge(D); eqSrv(x, D, rerun);
+  const C = srdCalc(D), st = Q ? Q.status : '', draftish = !Q || st === 'draft' || eqRetd(Q), appr = Q && st === 'pending_approval';
+  /* تحديث الملخص دون إعادة بناء النموذج (حتى لا يضيع المؤشر من الحقل) */
+  const mark = function () {
+    if (!D.srdDirty) { D.srdDirty = true; const bb = document.querySelector('.srd [data-srd-bar="' + key + '"]'); if (bb) bb.replaceWith(bar()); }
+    const s = document.querySelector('.srd [data-srd-sum]'); if (s && (D.srdSide || 'sum') === 'sum') s.replaceWith(srdSum(x, D, srdCalc(D), dist));
+  };
+  const dist = function () { const Z = eqD2(D); Z.on = true; SRD_ACC['dq:' + key + ':items'] = true; rerun(); setTimeout(function () { const n = document.querySelector('.srd [data-srd-dist]'); if (n) { n.scrollIntoView({ block: 'center' }); n.focus({ preventScroll: true }); } }, 60); };
+  const save = async function (submit) {
+    const C1 = srdCalc(D);
+    if (!C1) { D.err = 'أدخل قيمة المنتج.'; rerun(); return; }
+    if (String(D.type || '').trim().length < 2) { D.err = EQ_ERR.bad_product; rerun(); return; }
+    if (D.busy) return; D.busy = true; D.err = ''; rerun();
+    try {
+      const note = String(D.note || '').trim().slice(0, 300) || undefined, pl = eqPayload(D); delete pl.dist;
+      const j = mode === 'issue' ? await eqCall('admin_elig_quote_issue', { p_sr: x.id, p_data: Object.assign(pl, { submit: !!submit, note: note }) })
+        : await eqCall('admin_elig_quote_update', { p_q: Q.id, p_data: Object.assign(pl, { submit: draftish ? !!submit : undefined, rev: D.rev || undefined, note: note }) });
+      delete CUD[key]; if (Q) delete EQG[Q.id]; inl.close();
+      snack(mode === 'issue' ? (submit ? 'صدر العرض ' + (j.quotation_number || '') + ' وأُحيل للاعتماد' : 'حُفظ العرض ' + (j.quotation_number || '') + ' مسودة') : appr ? 'حُفظ التعديل — العرض بانتظار الاعتماد' : submit ? 'حُفظ وأُحيل للاعتماد' : 'حُفظت المسودة');
+      if (done) done();
+    } catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; rerun(); }
+  };
+  const bar = function () {
+    const btn = function (t, sub, pri) { return srdB(D.busy ? 'جارٍ الحفظ…' : t, { pri: pri, ic: 'ok', dis: D.busy || !C, live: true }, function () { save(sub); }); };
+    const acts = draftish ? [btn(mode === 'issue' ? 'إصدار العرض وإحالته للاعتماد' : 'حفظ وإحالة للاعتماد', true, true), btn('حفظ مسودة', false)] : [btn('حفظ التعديل', false, true)];
+    return e('div', { class: 'bbar', 'data-srd-bar': key }, [e('div', {}, [
+      e('span', { class: 'chip ' + (D.srdDirty ? 'warn' : '') }, [e('i', {}), D.srdDirty ? 'تعديلات غير محفوظة' : mode === 'issue' ? 'عرض جديد' : 'لا تعديلات بعد']),
+      e('span', { class: 'sp' }),
+      D.srdDirty ? srdB('تراجع', {}, function () { delete CUD[key]; rerun(); }) : null].concat(acts))]);
+  };
+  const R = Q && Q.calc_staff && Q.calc_staff.ret, fld = srdFld;
+  const prod = srdAcc('dq:' + key + ':prod', 'المنتج', (String(D.type || '').trim() || '—') + ' · ' + srdM(D.value), [
+    e('div', { class: 'grid3' }, [
+      fld('المنتج', srdIn(D.type, function (v, d0) { D.type = v; mark(); if (d0) rerun(); }, { max: '120' })),
+      fld('قيمة المنتج قبل الضريبة', srdIn(D.value, function (v, d0) { D.value = v; mark(); if (d0) { eqValueCh(D); rerun(); } }, { num: true })),
+      fld('ضريبة المنتج', srdSel(D.pvat !== false ? '1' : '0', [['1', 'تُحتسب ' + fmtNum(Math.round(eqRate() * 100)) + '٪'], ['0', 'غير خاضع']], function (v) { D.pvat = v === '1'; mark(); rerun(); }, 'ضريبة المنتج'))]),
+    e('details', { open: D.alt || D.agent ? 'open' : null }, [e('summary', { class: 'hint', style: 'cursor:pointer;font-weight:600' }, 'المنتج البديل والوكيل (اختياري — يظهر في المستند إن فعّلته من «المستند»)'),
+      e('div', { class: 'grid3', style: 'margin-top:8px' }, [
+        fld('المنتج البديل عند عدم التوفر', srdIn(D.alt, function (v) { D.alt = v; mark(); }, { ph: 'اختياري', max: '120' })),
+        fld('الوكيل', srdIn(D.agent, function (v) { D.agent = v; mark(); }, { ph: 'اختياري', max: '120' })),
+        fld('جوال الوكيل', srdIn(D.agentPh, function (v) { D.agentPh = v; mark(); }, { ph: 'اختياري', max: '20' })),
+        fld('إظهار البديل للعميل', srdSel(D.altShow ? 'show' : 'hide', [['hide', 'للفريق فقط'], ['show', 'ظاهر للعميل']], function (v) { D.altShow = v === 'show'; mark(); rerun(); })),
+        fld('إظهار الوكيل للعميل', srdSel(D.agentShow ? 'show' : 'hide', [['hide', 'للفريق فقط'], ['show', 'ظاهر للعميل']], function (v) { D.agentShow = v === 'show'; mark(); rerun(); }))])])], false);
+  const nIt = D.lines.filter(function (l) { return Number(l.amt) > 0; }).length;
+  const items = srdAcc('dq:' + key + ':items', 'البنود والرسوم', (eqD2(D).on ? 'توزيع مبلغ · ' : '') + fmtNum(nIt) + ' بنود · ' + srdM(C ? C.fees : 0), srdItems(x, D, C, mark, rerun), false);
+  const n = Math.max(1, Math.min(36, Number(D.n) || 1)), P = C && Array.isArray(C.plan) ? C.plan : [];
+  const plan = srdAcc('dq:' + key + ':plan', 'خطة الدفع', (n === 1 ? 'دفعة واحدة' : fmtNum(n) + ' دفعات') + ' · ' + srdDmy(D.first), [
+    e('div', { class: 'grid3' }, [
+      fld('أول دفعة', srdDate(D.first, function (s) { D.first = s; mark(); rerun(); }, { min: lvToday(), title: 'تاريخ أول دفعة', quick: [['بعد أسبوع', 7], ['بعد أسبوعين', 14], ['بعد شهر', 30]] })),
+      fld('عدد الدفعات', srdSel(String(n), Array.from({ length: 36 }, function (_, i) { return [String(i + 1), i ? qTerm(i + 1) : 'دفعة واحدة']; }), function (v) { D.n = v; mark(); rerun(); }, 'عدد الدفعات')),
+      fld('الدورية', e('div', { class: 'dfield', 'aria-readonly': 'true' }, [e('span', {}, 'شهرية')]))]),
+    P.length ? e('p', { class: 'hint', style: 'margin:0' }, (P.length === 1 ? 'دفعة واحدة ' + srdM(P[0].amount) : fmtNum(P.length) + ' × ' + srdM(P[0].amount) + (P[P.length - 1].amount !== P[0].amount ? ' (الأخيرة ' + srdM(P[P.length - 1].amount) + ')' : '')) + ' · آخر دفعة ' + srdDLong(P[P.length - 1].due)) : null], false);
+  const note = e('div', { class: 'fs' }, [e('h3', {}, 'ملاحظة التعديل'), (function () { const t = e('textarea', { class: 'fin', rows: '2', maxlength: '300', placeholder: 'تُسجَّل في سجل العرض — اختياري' }); t.value = D.note || ''; t.addEventListener('input', function () { D.note = t.value; mark(); }); return t; })()]);
+  const side = D.srdSide || 'sum';
+  const doc = function () { return C ? srdPaper(dcEqDoc('quote', Object.assign({}, Q || {}, { product_type: D.type, customer_name: (Q && Q.customer_name) || x.client_name || x.name || '', req_no: x.req_no, calc: eqCalcOf(D) }), true)) : e('p', { class: 'hint' }, 'أدخل قيمة المنتج لتظهر المعاينة.'); };
+  const pv = e('div', { class: 'pvcol' }, [e('div', { class: 'dside' }, [srdSeg(side, [['sum', 'الملخص المالي'], ['doc', 'المستند']], function (k) { D.srdSide = k; rerun(); }, 'اللوحة الجانبية'), side === 'sum' ? srdSum(x, D, C, dist) : doc()])]);
+  const form = e('div', { class: 'form' }, [R ? e('div', { class: 'next' }, [e('small', {}, 'أُعيد للتعديل' + (R.by_name ? ' — ' + R.by_name : '')), e('b', {}, R.note || '')]) : null, D.srvErr ? e('p', { class: 'warnp' }, D.srvErr) : null, prod, items, plan, note, D.err ? e('p', { class: 'warnp', role: 'alert' }, D.err) : null]);
+  return e('div', { class: 'srd-data' }, [e('div', { class: 'split', 'data-pv': D.srdPv || 'edit' }, [form, pv]), bar()]);
+}
+/* بعد اعتماد العرض: الأرقام للعرض فقط (kv) — تعديلها بـ«سحب العرض للتعديل» من رأس المرحلة */
+function srdDataRO(x, Q) {
+  const c = (Q && Q.calc) || {}, P = Array.isArray(c.plan) ? c.plan : [];
+  const kv = [['المنتج', Q.product_type || '—'], ['قيمة المنتج', srdM(c.value)], ['البنود والرسوم', srdM(c.fees)], ['الضريبة', srdM(c.vat)], ['الإجمالي شامل الضريبة', srdM(c.total)], ['الدفعات', P.length === 1 ? 'دفعة واحدة' : P.length ? fmtNum(P.length) + ' دفعات' : '—'], ['أول دفعة', P.length ? srdDmy(P[0].due) : '—'], ['قيمة الدفعة', P.length ? srdM(P[0].amount) : '—'], ['صالح حتى', Q.valid_until ? srdDmy(Q.valid_until) : '—']];
+  return e('div', { class: 'form' }, [e('div', { class: 'fs' }, [e('h3', {}, 'بيانات عرض السعر'), e('p', { class: 'hint', style: 'margin:0' }, 'العرض ' + (EGQ_ST[Q.status] ? EGQ_ST[Q.status][0] : Q.status) + ' — الأرقام للعرض فقط.'),
+    e('div', { class: 'kv' }, kv.map(function (z) { return e('div', {}, [e('span', { class: 'k' }, z[0]), e('b', {}, z[1])]); }))])]);
+}
+/* ═════ v852: «المستند» — كما في التصميم: شريط (عنوان المستند · المصدر · استعادة الافتراضي)، وكل قسم بطاقة رأسها سطر واحد
+ * (مفتاح ظاهر/مخفي · الاسم والعدد · تغيير الاسم · أعلى · أسفل · حذف للمضاف · طيّ)، والصفوف بقيمتها الفعلية وزر تعديل الاسم،
+ * والبنود (الشروط · التنويه · الإقرار · بنود العقد) صفًّا صفًّا بمكتبة بنود، و«إضافة قسم»، وأدوات توقيع العميل، والورقة بجانبه.
+ * النموذج نفسه (hide · labels · texts · adds · labels.zz_ord) والحفظ نفسه admin_elig_quote_doc_save — لا تغيير في القاعدة. ═════ */
+const SRD_LIB = [
+  { i: 'terms', t: 'الشروط', g: 'عرض السعر', e: ['توقيع العقد واستكمال الإجراءات.', 'مدة التنفيذ من 30 دقيقة إلى 3 أيام عمل بعد توقيع العقد واستكمال الإجراءات.', 'الأسعار شاملة ضريبة القيمة المضافة ما لم يُذكر خلاف ذلك.', 'العرض صالح حتى التاريخ المذكور في الترويسة.', 'يحق للمنصة تعديل العرض إن تغيّر سعر المنتج أو توفّره قبل القبول.'] },
+  { i: 'note', t: 'تنويه', g: 'كل المستندات', e: ['العرض لا يعني موافقة نهائية إلا بعد استكمال ومراجعة المتطلبات التي تحددها المنصة ومطابقتها.', 'يصدر العقد للتوقيع بعد اعتمادكم هذه الفاتورة.', 'تُرسل المستندات والإشعارات على رقم الجوال والبريد المسجّلين في الحساب.'] },
+  { i: 'ack', t: 'الإقرار', g: 'فاتورة المنتج', e: ['أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.', 'أقرّ بأن البيانات التي قدّمتها صحيحة ومحدّثة.', 'أقرّ بالاطلاع على الشروط والموافقة عليها.'] },
+  { i: 'ct', t: 'بنود العقد', g: 'العقد', e: ['يُغلق العقد تلقائيًا بعد اكتمال السداد.', 'تُعدّ الدفعة متأخرة من اليوم الأول بعد استحقاقها حتى اليوم 60، ومتعثرة من اليوم 61.', 'يلتزم العميل بسداد الدفعات في مواعيدها عبر وسائل السداد المعتمدة في المنصة.', 'يحق للعميل السداد المبكر لكامل المتبقي أو جزء منه وفق سياسة السداد المبكر.'] }
+];
+const SRD_LIBOF = { terms: ['terms', 'ct'], note: ['note'], ack: ['ack'] };
+const SRD_DOC = {};
+function srdLines(v) { return String(v || '').split('\n').map(function (t) { return t.replace(/\s+$/, ''); }).filter(function (t) { return t.trim(); }).map(function (t) { const off = t.charAt(0) === '⊘'; return { v: (off ? t.slice(1) : t).trim(), on: !off }; }).filter(function (z) { return z.v; }); }
+function srdJoin(L) { return L.map(function (c) { return (c.on ? '' : '⊘') + c.v; }).join('\n'); }
+/* القيمة الفعلية لكل صف من العرض نفسه */
+function srdDV(kind, k, Q, c, x) {
+  const P = Array.isArray(c.plan) ? c.plan : [], no = Q.quotation_number || 'يصدر عند الحفظ';
+  const M = {
+    h_no: no, h_date: srdDmy(String(Q.issue_date || lvToday()).slice(0, 10)), h_valid: Q.valid_until ? srdDmy(Q.valid_until) : '—', h_pill: 'نسخة العميل', h_iss: (eqTpl(kind).issuer || ''),
+    f_client: Q.customer_name || x.client_name || x.name || '—', f_req: Q.req_no || x.req_no || '—', d_client: Q.customer_name || '—', d_prod: Q.product_type || '—', d_total: srdM(c.total) + ' ر.س', d_n: P.length ? qTerm(P.length) : '—', d_first: P.length ? srdDmy(P[0].due) : '—', d_last: P.length ? srdDmy(P[P.length - 1].due) : '—',
+    p_name: Q.product_type || '—', p_val: srdM(c.value) + ' ر.س', p_alt: c.alt || 'غير محدد', p_agent: c.agent && c.agent.name ? c.agent.name + (c.agent.phone ? ' · ' + c.agent.phone : '') : 'غير محدد', p_recv: egRecvInfo(x).now || '—',
+    t_vat: srdM(c.vat) + ' ر.س', t_total: srdM(c.total) + ' ر.س', s_start: P.length ? srdDmy(P[0].due) : '—', s_end: P.length ? srdDmy(P[P.length - 1].due) : '—', s_n: P.length ? qTerm(P.length) : '—', s_amt: P.length ? srdM(P[0].amount) + ' ر.س' : '—', s_tbl: P.length ? fmtNum(P.length) + ' صف' : '—',
+    g_name: Q.customer_name || '—', g_op: kind === 'purchase' ? 'اعتماد الفاتورة' : kind === 'contract' ? 'توقيع العقد' : 'قبول عرض السعر', g_at: 'لحظة القرار (توقيت الرياض)', g_fac: 'رمز تحقق لمرة واحدة', g_to: 'الجوال أو البريد (مقنّع)', g_ref: 'يصدر آليًا', g_img: 'مكان توقيع العميل',
+    a_seal: 'الختم الرسمي للمنصة', a_qr: 'رمز QR لبيانات المستند', a_bar: no
+  };
+  const m = /^[qpc]_(.+)$/.exec(k); return m && M[m[1]] !== undefined ? M[m[1]] : '';
+}
+/* مكتبة البنود والأقسام (clausePicker) */
+function srdPicker(anchor, o) {
+  srdPop(anchor, o.secs ? 'إضافة قسم' : 'إضافة بند', function (el) {
+    const q = e('input', { type: 'search', placeholder: o.secs ? 'ابحث عن قسم…' : 'ابحث في البنود…', 'aria-label': 'بحث' }), list = e('div', { class: 'pl' }), foot = e('div', { class: 'pf' });
+    const sug = (o.sug || []).map(function (id) { return SRD_LIB.filter(function (s) { return s.i === id; })[0]; }).filter(Boolean), rest = SRD_LIB.filter(function (s) { return sug.indexOf(s) < 0; });
+    const has = function (v) { return (o.have || []).indexOf(String(v).trim()) >= 0; }, pick = function (v) { srdPopClose(); o.pick(v); };
+    const grp = function (s, open, qq) {
+      const it = s.e.filter(function (v) { return !qq || v.indexOf(qq) >= 0 || s.t.indexOf(qq) >= 0; }); if (!it.length) return null;
+      const g = e('div', { class: 'grp', 'data-open': open ? 'true' : 'false' }), b = e('div', { class: 'grp-b' });
+      g.appendChild(e('button', { class: 'grp-h', type: 'button', 'data-live-ok': '', onClick: function () { g.dataset.open = g.dataset.open === 'true' ? 'false' : 'true'; srdPopPlace(); } }, [e('span', {}, s.t), e('span', { class: 'cnt' }, String(it.length)), e('span', { class: 'sp' }), srdIc('chev')]));
+      it.forEach(function (v) { b.appendChild(e('button', { class: 'opt', type: 'button', disabled: has(v), 'data-live-ok': '', onClick: function () { pick(v); } }, [e('span', {}, v), has(v) ? e('span', { class: 'add' }, 'مضاف') : e('span', { class: 'add' }, [srdIc('plus')])])); });
+      g.appendChild(b); return g;
+    };
+    const secOpt = function (s) { return e('button', { class: 'opt sec', type: 'button', 'data-live-ok': '', onClick: function () { pick(s); } }, [e('span', { class: 'ico' }, [srdIc(s ? 'sec' : 'plus')]), e('span', {}, [e('b', {}, s ? s.t : 'قسم فارغ'), e('small', {}, s ? s.e.length + ' بند · ' + s.g : 'عنوان تكتبه ونص تضيفه')]), e('span', { class: 'add' }, [srdIc('plus')])]); };
+    const paint = function () {
+      const qq = q.value.trim(); list.replaceChildren();
+      if (o.secs) {
+        const A = e('div', { class: 'grp opts-flat' }); if (!qq) A.appendChild(secOpt(null));
+        SRD_LIB.filter(function (s) { return !qq || s.t.indexOf(qq) >= 0 || s.e.some(function (v) { return v.indexOf(qq) >= 0; }); }).forEach(function (s) { A.appendChild(secOpt(s)); });
+        list.appendChild(e('div', { class: 'pg' }, 'أقسام المكتبة')); list.appendChild(A);
+      } else {
+        if (sug.length) { list.appendChild(e('div', { class: 'pg' }, 'بنود هذا القسم')); sug.forEach(function (s) { const g = grp(s, true, qq); if (g) list.appendChild(g); }); }
+        list.appendChild(e('div', { class: 'pg' }, sug.length ? 'من بقية أقسام المكتبة' : 'كل أقسام المكتبة'));
+        rest.forEach(function (s) { const g = grp(s, !!qq, qq); if (g) list.appendChild(g); });
+      }
+      if (!list.querySelector('.opt')) list.appendChild(e('p', { class: 'hint' }, 'لا نتائج لهذا البحث.'));
+      srdPopPlace();
+    };
+    q.addEventListener('input', paint);
+    if (!o.secs) {
+      const wb = srdB('كتابة بند جديد', { link: true, ic: 'ed' }, function () {
+        const t = e('textarea', { rows: '3', placeholder: 'اكتب نص البند الجديد' }); foot.className = 'pf newc'; foot.replaceChildren(t, e('div', { style: 'display:flex;gap:6px;margin-top:6px' }, [srdB('إضافة البند', { pri: true, sm: true }, function () { const v = t.value.trim(); if (v.length > 2) pick(v); else t.focus(); }), srdB('إلغاء', { sm: true }, function () { foot.replaceChildren(wb); srdPopPlace(); })])); t.focus(); srdPopPlace();
+      });
+      foot.appendChild(wb);
+    } else foot.hidden = true;
+    el.appendChild(e('div', { class: 'ph' }, [q])); el.appendChild(list); el.appendChild(foot); paint(); setTimeout(function () { try { q.focus(); } catch (err) { void err; } }, 30);
+  });
+}
+/* إدخال سطري للتسمية والنص */
+function srdInline(v, done, area, cancel) {
+  const t = e(area ? 'textarea' : 'input', area ? { rows: '3', class: 'fin' } : { type: 'text', class: 'fin', maxlength: '60' }); t.value = v || '';
+  const ok = function () { done(area ? t.value.trim() : t.value.replace(/\s*\n\s*/g, ' ').trim()); };
+  t.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' && !area) { ev.preventDefault(); ok(); } if (ev.key === 'Escape') cancel(); });
+  setTimeout(function () { try { t.focus(); if (t.select) t.select(); } catch (err) { void err; } }, 0);
+  return e('div', { class: 'inl', style: 'padding:0' }, [t, e('div', { class: 'bb' }, [srdB('حفظ', { pri: true, sm: true }, ok), srdB('إلغاء', { sm: true }, cancel)])]);
+}
+function srdDoc(x, c, kind, paint) {
+  sgLogLoad(x, paint);
+  const Q0 = (c.qs || []).filter(function (q) { return ['rejected', 'cancelled', 'declined', 'expired'].indexOf(q.status) < 0 || (q.status === 'rejected' && q.returned); })[0];
+  if (!Q0) return e('p', { class: 'hint' }, 'يظهر بعد إعداد عرض السعر.');
+  const G = eqGet(Q0.id, paint), J = G.j;
+  if (!J) return e('p', { class: 'hint' }, G.st === 'load' ? 'جارٍ تجهيز ' + EQ_DOC_NAME[kind] + '…' : 'تعذّرت قراءة المستند.');
+  const Q = J.q, c0 = Q.calc || {}, canDoc = !!(J.can && J.can.doc && J.can.doc[kind]), pre = kind === 'quote' ? 'q' : kind === 'purchase' ? 'p' : 'c';
+  const T = c.doc || (c.doc = {}), D = T[kind] && T[kind].q === Q.id ? T[kind] : (T[kind] = { q: Q.id, busy: false, err: '', d: null, att: !!(Q.calc_staff && Q.calc_staff.attach && Q.calc_staff.attach[kind]), dirty: false });
+  if (!D.d) { D.d = stlDocNorm(JSON.parse(JSON.stringify((c0.doc && c0.doc[kind]) || eqTplDoc(kind)))); egShowMerge(D.d, kind, c0); }
+  const d = D.d, TP = eqTplDoc(kind), U = SRD_DOC[x.id + ':' + kind] || (SRD_DOC[x.id + ':' + kind] = { open: '', ed: '', view: 'before' });
+  const own = !!(c0.doc && c0.doc[kind]);
+  const hid = function (k) { return d.hide.indexOf(k) >= 0; }, setHid = function (k, h) { d.hide = d.hide.filter(function (y) { return y !== k; }); if (h) d.hide.push(k); };
+  const lb = function (k, def) { return d.labels[k] || def; };
+  const mark = function () { D.dirty = true; paint(); };
+  const ro = !canDoc;
+  const save = async function () {
+    if (D.busy) return; D.busy = true; D.err = ''; paint();
+    try { await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: stlDocClean(Object.assign({}, d, { page: (c0.doc && c0.doc[kind] && c0.doc[kind].page) || d.page })), p_attach: null }); D.busy = false; D.dirty = false; delete EQG[Q.id]; D.d = null; snack('حُفظ ' + EQ_DOC_NAME[kind] + ' لهذا العميل — أعد معاينته على رقمك قبل الإرسال.'); paint(); }
+    catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
+  };
+  const EL = egElOrd(EQ_EL[kind], d), movable = EL.filter(function (g) { return g.c; });
+  const move = function (g, dir) { const L = movable.slice(), a = L.indexOf(g), b = a + dir; if (a < 0 || b < 0 || b >= L.length) return; const t = L[a]; L[a] = L[b]; L[b] = t; d.labels.zz_ord = L.map(egSk).join(','); mark(); };
+  const toggleOpen = function (id) { U.open = U.open === id ? '' : id; U.ed = ''; paint(); };
+  const cur = function () { return Object.assign({}, Q, { calc: Object.assign({}, c0, { doc: Object.assign({}, c0.doc || {}, (function () { const o = {}; o[kind] = d; return o; })()) }) }); };
+  /* رأس القسم في سطر واحد */
+  const head = function (id, name, cnt, on, o) {
+    o = o || {};
+    const open = U.open === id;
+    return e('div', { class: 'sec-h' }, [
+      o.lock ? e('span', { class: 'pin', title: 'قسم ثابت' }, [srdIc('lock')]) : srdSw(on, name, function () { o.tog(); }, ro),
+      U.ed === 't:' + id ? e('div', { class: 'sec-t' }, [srdInline(name, function (v) { o.ren(v); U.ed = ''; mark(); }, false, function () { U.ed = ''; paint(); })])
+        : e('button', { class: 'sec-t', type: 'button', style: 'border:0;background:none;text-align:start;padding:0', 'aria-expanded': open ? 'true' : 'false', 'data-live-ok': '', onClick: function () { toggleOpen(id); } }, [e('span', {}, name), cnt ? e('span', { class: 'cnt' }, cnt) : null, on ? null : srdChip('مخفي')]),
+      ro ? null : e('div', { class: 'acts' }, [o.ren ? srdIb('ed', 'تغيير اسم القسم', function () { U.ed = 't:' + id; U.open = id; paint(); }) : null,
+        o.mv ? srdIb('up', 'لأعلى', function () { o.mv(-1); }, { dis: o.first }) : null, o.mv ? srdIb('dn', 'لأسفل', function () { o.mv(1); }, { dis: o.last }) : null,
+        o.del ? srdIb('del', 'حذف القسم', o.del, { cls: 'del' }) : null]),
+      srdIb('chev', open ? 'طيّ' : 'فتح', function () { toggleOpen(id); })]);
+  };
+  /* صف عنصر: مفتاح · الاسم وقيمته الفعلية · تغيير الاسم */
+  const sgM = d.labels.zz_sgm || (kind === 'contract' ? 'draw' : 'none');
+  const row = function (id, k, name, def, only) {
+    const isImg = /_g_img$/.test(k), rk = 'r:' + id + ':' + k, on = !hid(k) && !(isImg && sgM === 'none'), nm = lb(k, def || name);
+    if (U.ed === rk) return e('div', { class: 'inl' }, [e('span', { class: 'k' }, 'اسم العنصر في المستند'), srdInline(nm, function (v) { if (v.length >= 2 && v !== (def || name)) d.labels[k] = v.slice(0, 60); else delete d.labels[k]; U.ed = ''; mark(); }, false, function () { U.ed = ''; paint(); })]);
+    const val = srdDV(kind, k, Q, c0, x);
+    return e('div', { class: 'row' + (on ? '' : ' off') }, [srdSw(on, nm, function () { if (isImg && sgM === 'none') { d.labels.zz_sgm = 'draw'; setHid(k, false); } else setHid(k, on); mark(); }, ro),
+      e('div', { class: 'lbl' }, [e('b', {}, nm), e('span', { dir: /_(h_no|g_to|g_ref|a_bar)$/.test(k) ? 'ltr' : null, style: /_(h_no|g_to|g_ref|a_bar)$/.test(k) ? 'text-align:right' : null }, val || '—')]),
+      ro || only === 1 ? e('span', {}) : e('div', { class: 'acts' }, [srdIb('ed', 'تغيير الاسم', function () { U.ed = rk; paint(); })])]);
+  };
+  /* بنود نصية (سطر لكل بند؛ المخفي أوله ⊘) */
+  const clauses = function (id, tk) {
+    const L = srdLines(d.texts[tk] !== undefined ? d.texts[tk] : (TP.texts && TP.texts[tk]) || ''), put = function () { const v = srdJoin(L); d.texts[tk] = v.trim().length >= 2 ? v : '⊘'; mark(); };
+    const out = [];
+    if (!L.length) out.push(e('p', { class: 'hint' }, 'لا بنود بعد — أضف من المكتبة أو اكتب بندًا.'));
+    L.forEach(function (cl, j) {
+      const ck = 'c:' + id + ':' + tk + ':' + j;
+      if (U.ed === ck) { out.push(e('div', { class: 'inl' }, [srdInline(cl.v, function (v) { if (v) cl.v = v; else L.splice(j, 1); U.ed = ''; put(); }, true, function () { U.ed = ''; paint(); })])); return; }
+      out.push(e('div', { class: 'row' + (cl.on ? '' : ' off') }, [srdSw(cl.on, 'البند', function () { cl.on = !cl.on; put(); }, ro), e('div', { class: 'lbl txt' }, [e('b', {}, cl.v)]),
+        ro ? e('span', {}) : e('div', { class: 'acts' }, [srdIb('ed', 'تعديل البند', function () { U.ed = ck; paint(); }), srdIb('up', 'لأعلى', function () { L.splice(j - 1, 0, L.splice(j, 1)[0]); put(); }, { dis: j === 0 }),
+          srdIb('dn', 'لأسفل', function () { L.splice(j + 1, 0, L.splice(j, 1)[0]); put(); }, { dis: j === L.length - 1 }), srdIb('del', 'حذف البند', function () { L.splice(j, 1); put(); }, { cls: 'del' })])]));
+    });
+    if (!ro) out.push(e('div', { class: 'addrow' }, [(function () { const b = srdB('إضافة بند', { sm: true, ic: 'plus', after: 'chev' }, function () { srdPicker(b, { sug: SRD_LIBOF[tk] || [], have: L.map(function (z) { return z.v; }), pick: function (v) { L.push({ v: String(v).trim(), on: true }); put(); } }); }); return b; })()]));
+    return out;
+  };
+  const sgTools = function () {
+    const meth = d.labels.zz_sgm || (kind === 'contract' ? 'draw' : 'none'), fac = d.labels.zz_sgc || 'wa';
+    const seg = function (val, opts, set, l) { return e('div', { class: 'dopt' }, [e('span', { class: 'k2' }, l), srdSeg(val, opts, function (k) { if (ro) return; set(k); mark(); }, l)]); };
+    return e('div', { class: 'sgtools' }, [e('p', { class: 'hint', style: 'margin:0' }, 'تُسجَّل هذه البيانات تلقائيًا لحظة ' + srdDV(kind, pre + '_g_op', Q, c0, x) + ' من رابط العميل، وتُضاف داخل نفس المستند PDF. اختر هنا ما يظهر منها.'),
+      seg(meth, kind === 'contract' ? [['draw', 'رسم'], ['type', 'كتابة الاسم'], ['upload', 'صورة']] : [['none', 'قبول برمز فقط'], ['draw', 'رسم'], ['type', 'كتابة الاسم']], function (k) { if (k === (kind === 'contract' ? 'draw' : 'none')) delete d.labels.zz_sgm; else d.labels.zz_sgm = k; setHid(pre + '_g_img', k === 'none'); }, 'طريقة التوقيع المطلوبة من العميل'),
+      seg(fac, [['wa', 'رمز واتساب'], ['email', 'رمز البريد']], function (k) { if (k === 'wa') delete d.labels.zz_sgc; else d.labels.zz_sgc = k; }, 'قناة التحقق (للمعاينة — الفعلية يختارها العميل)'),
+      e('div', { class: 'dopt' }, [e('span', { class: 'k2' }, 'المعاينة'), srdSeg(U.view, [['before', 'قبل التوقيع'], ['after', 'بعد التوقيع (نموذج)']], function (k) { U.view = k; paint(); }, 'المعاينة')])]);
+  };
+  const secs = [];
+  EL.forEach(function (g) {
+    const id = g.c || 'head', isHead = !g.c, on = isHead || !hid(g.c), name = isHead ? g.g : lb(g.c, g.g);
+    const rows = (g.k || []).slice(), sign = /_c_sign$/.test(g.c || ''), appr = /_c_appr$/.test(g.c || '');
+    if (sign && kind !== 'contract') rows.unshift([pre + '_g_img', 'خانة التوقيع', 'توقيع العميل', 1]);
+    if (appr) { rows.splice(0, rows.length, [pre + '_a_qr', 'رمز QR لبيانات المستند', '', 1], [pre + '_a_bar', 'الباركود ورقم المستند', '', 1], [pre + '_a_seal', 'الختم الرسمي للمنصة', '', 1]); }
+    const items = g.items ? (c0.items || []).map(function (y) { return ['i_' + y.id, y.t, y.t]; }) : [];
+    const all = rows.concat(items), nOn = all.filter(function (r) { return !hid(r[0]); }).length;
+    const tx = (g.tx || []).filter(function (t) { return t[0] !== 'title'; });
+    const cnt = tx.length ? fmtNum(srdLines(d.texts[tx[0][0]] !== undefined ? d.texts[tx[0][0]] : (TP.texts && TP.texts[tx[0][0]]) || '').filter(function (z) { return z.on; }).length) + ' بند' : all.length ? fmtNum(nOn) + ' / ' + fmtNum(all.length) : '';
+    const mi = movable.indexOf(g);
+    const sec = e('section', { class: 'sec' + (on ? '' : ' off') + (U.open === id ? ' cur' : '') }, [head(id, name, cnt, on, { lock: isHead, tog: function () { setHid(g.c, on); mark(); }, ren: isHead ? null : function (v) { if (v.length >= 2 && v !== g.g) d.labels[g.c] = v.slice(0, 60); else delete d.labels[g.c]; }, mv: isHead ? null : function (dir) { move(g, dir); }, first: mi === 0, last: mi === movable.length - 1 })]);
+    if (U.open === id) {
+      const B = e('div', { class: 'sec-b' });
+      if (sign) B.appendChild(sgTools());
+      if (appr) B.appendChild(e('p', { class: 'hint', style: 'margin:0 0 4px' }, 'التوقيع المعتمد ومكانه من «مركز القوالب» — يظهر في كل المستندات.'));
+      if (isHead && kind === 'quote' && Q.valid_until) B.appendChild(e('div', { class: 'vrow' }, [e('span', { class: 'k2' }, 'صالح حتى'), srdDate(String(Q.valid_until).slice(0, 10), function (to) { if (ro) return; eqCall('admin_elig_quote_valid', { p_q: Q.id, p_until: to }).then(function () { Q.valid_until = to; delete EQG[Q.id]; snack('حُدّثت صلاحية عرض السعر.'); paint(); }).catch(function (err) { snack((err && err.message) || 'تعذّر تحديث الصلاحية.'); }); }, { min: lvToday(), title: 'صالح حتى', quick: [['أسبوع', 7], ['أسبوعان', 14], ['شهر', 30]] })]));
+      all.forEach(function (r) { B.appendChild(row(id, r[0], r[1], r[2], r[3])); });
+      if (g.add) {
+        d.adds.forEach(function (a, i) {
+          if (a.at !== 'kv') return; const ak = 'a:' + i;
+          if (U.ed === ak) { const t1 = e('input', { class: 'fin', type: 'text', maxlength: '60', placeholder: 'المسمى' }), t2 = e('input', { class: 'fin', type: 'text', maxlength: '120', placeholder: 'القيمة' }); t1.value = a.t || ''; t2.value = a.v || ''; B.appendChild(e('div', { class: 'inl' }, [t1, t2, e('div', { class: 'bb' }, [srdB('حفظ', { pri: true, sm: true }, function () { a.t = t1.value.trim(); a.v = t2.value.trim(); U.ed = ''; mark(); }), srdB('إلغاء', { sm: true }, function () { U.ed = ''; paint(); })])])); return; }
+          B.appendChild(e('div', { class: 'row' }, [e('span', { class: 'chip info' }, 'مضاف'), e('div', { class: 'lbl' }, [e('b', {}, a.t || 'سطر جديد'), e('span', {}, a.v || '—')]), ro ? e('span', {}) : e('div', { class: 'acts' }, [srdIb('ed', 'تعديل السطر', function () { U.ed = ak; paint(); }), srdIb('del', 'حذف السطر', function () { d.adds.splice(i, 1); mark(); }, { cls: 'del' })])]));
+        });
+        if (!ro) B.appendChild(e('div', { class: 'addrow' }, [srdB('إضافة سطر', { sm: true, ic: 'plus' }, function () { if (d.adds.length >= 12) { snack('الحد 12 إضافة'); return; } d.adds.push({ at: 'kv', t: '', v: '' }); U.ed = 'a:' + (d.adds.length - 1); mark(); })]));
+      }
+      tx.forEach(function (t) { if (tx.length > 1) B.appendChild(e('div', { class: 'k2', style: 'padding-top:6px' }, t[1])); clauses(id, t[0]).forEach(function (n) { B.appendChild(n); }); });
+      if (g.hint) B.appendChild(e('p', { class: 'hint', style: 'margin:0' }, g.hint));
+      sec.appendChild(B);
+    }
+    secs.push(sec);
+  });
+  /* الأقسام المضافة (نص حر) */
+  d.adds.forEach(function (a, i) {
+    if (a.at !== 'sec') return; const id = 'add:' + i;
+    const sec = e('section', { class: 'sec' + (U.open === id ? ' cur' : '') }, [head(id, a.t || 'قسم جديد', srdLines(a.v).length ? fmtNum(srdLines(a.v).length) + ' بند' : '', true, { lock: true, ren: function (v) { a.t = v.slice(0, 60); }, del: function () { d.adds.splice(i, 1); U.open = ''; mark(); } })]);
+    if (U.open === id) {
+      const B = e('div', { class: 'sec-b' }), L = srdLines(a.v), put = function () { a.v = L.map(function (z) { return z.v; }).join('\n'); mark(); };
+      L.forEach(function (cl, j) {
+        const ck = 'x:' + i + ':' + j;
+        if (U.ed === ck) { B.appendChild(e('div', { class: 'inl' }, [srdInline(cl.v, function (v) { if (v) cl.v = v; else L.splice(j, 1); U.ed = ''; put(); }, true, function () { U.ed = ''; paint(); })])); return; }
+        B.appendChild(e('div', { class: 'row' }, [e('span', { class: 'k' }, fmtNum(j + 1)), e('div', { class: 'lbl txt' }, [e('b', {}, cl.v)]), ro ? e('span', {}) : e('div', { class: 'acts' }, [srdIb('ed', 'تعديل', function () { U.ed = ck; paint(); }), srdIb('up', 'لأعلى', function () { L.splice(j - 1, 0, L.splice(j, 1)[0]); put(); }, { dis: j === 0 }), srdIb('dn', 'لأسفل', function () { L.splice(j + 1, 0, L.splice(j, 1)[0]); put(); }, { dis: j === L.length - 1 }), srdIb('del', 'حذف', function () { L.splice(j, 1); put(); }, { cls: 'del' })])]));
+      });
+      if (!ro) B.appendChild(e('div', { class: 'addrow' }, [(function () { const b = srdB('إضافة بند', { sm: true, ic: 'plus', after: 'chev' }, function () { srdPicker(b, { sug: [], have: L.map(function (z) { return z.v; }), pick: function (v) { L.push({ v: String(v).trim(), on: true }); put(); } }); }); return b; })()]));
+      sec.appendChild(B);
+    }
+    secs.push(sec);
+  });
+  if (!ro) secs.push(e('div', { style: 'justify-self:end' }, [(function () { const b = srdB('إضافة قسم', { ic: 'plus', after: 'chev' }, function () { srdPicker(b, { secs: true, pick: function (s) { if (d.adds.length >= 12) { snack('الحد 12 إضافة'); return; } d.adds.push({ at: 'sec', t: s ? s.t : 'قسم جديد', v: s ? s.e.join('\n') : '' }); U.open = 'add:' + (d.adds.length - 1); if (!s) U.ed = 't:' + U.open; mark(); snack(s ? 'أُضيف قسم «' + s.t + '»' : 'أُضيف قسم فارغ — اكتب عنوانه'); } }); }); return b; })()]));
+  const title = (function () { const i = e('input', { class: 'fin', type: 'text', maxlength: '60', disabled: ro, 'aria-label': 'عنوان المستند' }); i.value = d.texts.title || (TP.texts && TP.texts.title) || EQ_DOC_NAME[kind]; i.addEventListener('change', function () { const v = i.value.trim(); if (v.length >= 2) d.texts.title = v; else delete d.texts.title; mark(); }); return i; })();
+  const top = e('div', { class: 'fs' }, [e('div', { class: 'fgrid' }, [srdFld('عنوان المستند', title), e('div', { class: 'fld' }, [e('label', {}, 'المصدر'), e('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center' }, [e('span', { class: 'hint' }, own ? 'نسخة هذا العميل — معدّلة من القالب.' : 'من مركز القوالب، وتعديلك هنا لهذا العميل فقط.'),
+    ro ? null : srdB('استعادة الافتراضي', { sm: true, link: true }, function () { if (!tqConfirm('استعادة المستند الافتراضي من مركز القوالب لهذا العميل؟')) return; D.d = stlDocNorm(JSON.parse(JSON.stringify(eqTplDoc(kind)))); D.dirty = true; paint(); })])])])]);
+  const spec = (function () { try { return dcEqDoc(kind, cur(), ['sent', 'accepted'].indexOf(Q.status) < 0, { recv: kind === 'quote' ? '' : egRecvInfo(x).now, sgView: U.view }); } catch (err) { return null; } })();
+  const pv = e('div', { class: 'pvcol' }, [e('div', { class: 'hint', style: 'display:flex;gap:6px;align-items:center' }, [srdIc('eye'), 'المعاينة تتحدث مع كل تعديل', e('span', { class: 'sp', style: 'flex:1' }), srdB('معاينة PDF', { sm: true, ic: 'pdf' }, function () { dcPdf(dcEqDoc(kind, cur(), ['sent', 'accepted'].indexOf(Q.status) < 0, { recv: kind === 'quote' ? '' : egRecvInfo(x).now })); })]), spec ? srdPaper(spec) : e('p', { class: 'hint' }, 'تعذّرت المعاينة.')]);
+  const bar = D.dirty || D.busy ? e('div', { class: 'bbar' }, [e('div', {}, [srdChip('تعديلات غير محفوظة', 'warn', true), e('span', { class: 'sp' }), srdB('تراجع', {}, function () { D.d = null; D.dirty = false; paint(); }), srdB(D.busy ? 'جارٍ الحفظ…' : 'حفظ ' + EQ_DOC_NAME[kind] + ' لهذا العميل', { pri: true, ic: 'ok', dis: D.busy, live: true }, save)])]) : null;
+  return e('div', { class: 'srd-doc' }, [e('div', { class: 'split', 'data-pv': U.pv || 'edit' }, [e('div', { class: 'secs' }, [ro ? e('div', { class: 'lock' }, [srdIc('lock'), 'المستند للعرض فقط — تعديله لصاحب الصلاحية قبل الإرسال.']) : null, top].concat(secs).concat([D.err ? e('p', { class: 'warnp', role: 'alert' }, D.err) : null])), pv]), bar]);
+}
+/* ═════ v852: «صفحة العميل» (صفحة الرابط) — كما في التصميم: تعريف ومصدر النسخة، وكل جزء قسم برأس سطر واحد (مفتاح · الاسم والعدد · تعديل · طيّ)،
+ * و«مستند PDF» قسم بمفتاحه، والإقرار بنودًا مستقلة، وأقسام مضافة من المكتبة، والمعاينة الحيّة على الجوال (/elig/?local=1) بجانبه.
+ * النموذج نفسه (calc.doc.<kind>.page: الحقول · *_off · *_sum · blocks) والحفظ نفسه admin_elig_quote_doc_save. ═════ */
+function srdPgSecs(kind, D, G, saved, paint, ro, att) {
+  const S = EGPS[kind]; if (!S) return [];
+  const P = S.p, V = D.v, ofK = P + '_off', smK = P + '_sum';
+  const list = function (k) { return String(V[k] || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
+  const setL = function (k, L) { V[k] = L.join(','); D.dirty = true; paint(); };
+  const off = P ? list(ofK) : [], hid = P ? list(smK) : [];
+  const U = D.srd || (D.srd = { open: 'hd', ed: '' });
+  const tog = function (key, on) { setL(ofK, on ? off.concat([key]) : off.filter(function (z) { return z !== key; })); };
+  const up = function () { D.dirty = true; if (D.pvUp) D.pvUp(); };
+  const field = function (f) {
+    const on = !f[4] || off.indexOf(f[4]) < 0, x = e(f[3] ? 'textarea' : 'input', Object.assign({ class: 'fin', placeholder: String(G[f[0]] || f[2] || ''), maxlength: f[3] ? '700' : '120', 'aria-label': f[1], disabled: ro }, f[3] ? { rows: '2' } : { type: 'text' }));
+    x.value = V[f[0]] || '';
+    x.addEventListener('input', function () { V[f[0]] = x.value; up(); });
+    return e('div', { class: 'row prow' + (on ? '' : ' off') }, [f[4] && P ? srdSw(on, f[1], function () { tog(f[4], on); }, ro) : e('span', { class: 'pin', title: 'أساسي' }, [srdIc('lock')]),
+      e('div', { class: 'lbl' }, [e('span', { class: 'k2' }, f[1] + (saved[f[0]] ? ' — معدّل لهذا العميل' : '')), x]), e('span', {})]);
+  };
+  const ackRows = function (k, def) {
+    const raw = String(V[k] || '').trim() || String(G[k] || '').trim() || def, L = raw.split('\n').map(function (t) { return t.trim(); }).filter(Boolean);
+    const put = function (A) { V[k] = A.join('\n'); D.dirty = true; paint(); }, out = [];
+    L.forEach(function (t, i) {
+      const ck = 'ack:' + i;
+      if (U.ed === ck) { out.push(e('div', { class: 'inl' }, [srdInline(t, function (v) { const A = L.slice(); if (v) A[i] = v; else A.splice(i, 1); U.ed = ''; put(A.length ? A : [def]); }, true, function () { U.ed = ''; paint(); })])); return; }
+      out.push(e('div', { class: 'row' }, [e('input', { type: 'checkbox', disabled: true, 'aria-hidden': 'true', style: 'accent-color:var(--brand)' }), e('div', { class: 'lbl txt' }, [e('b', {}, t)]),
+        ro ? e('span', {}) : e('div', { class: 'acts' }, [srdIb('ed', 'تعديل الإقرار', function () { U.ed = ck; paint(); }), srdIb('up', 'لأعلى', function () { const A = L.slice(); A.splice(i - 1, 0, A.splice(i, 1)[0]); put(A); }, { dis: i === 0 }),
+          srdIb('dn', 'لأسفل', function () { const A = L.slice(); A.splice(i + 1, 0, A.splice(i, 1)[0]); put(A); }, { dis: i === L.length - 1 }), srdIb('del', 'حذف الإقرار', function () { const A = L.slice(); A.splice(i, 1); put(A); }, { cls: 'del', dis: L.length < 2 })])]));
+    });
+    if (!ro) out.push(e('div', { class: 'addrow' }, [(function () { const b = srdB('إضافة إقرار', { sm: true, ic: 'plus', after: 'chev' }, function () { srdPicker(b, { sug: ['ack'], have: L, pick: function (v) { put(L.concat([String(v).trim()])); } }); }); return b; })()]));
+    if (String(V[k] || '').length > 700) out.push(e('p', { class: 'warnp' }, 'الإقرارات أطول من 700 حرف — يُحفظ أول 700 حرف فقط.'));
+    out.push(e('p', { class: 'hint', style: 'margin:0' }, 'كل إقرار يظهر للعميل بمربع اختيار مستقل، ولا يكتمل القرار إلا بتحديدها كلها.'));
+    return out;
+  };
+  const sumRows = function () {
+    return (S.sum || []).map(function (z) { const on = hid.indexOf(z[0]) < 0; return e('div', { class: 'row' + (on ? '' : ' off') }, [srdSw(on, z[1], function () { setL(smK, on ? hid.concat([z[0]]) : hid.filter(function (q) { return q !== z[0]; })); }, ro), e('div', { class: 'lbl' }, [e('b', {}, z[1])]), e('span', {})]); })
+      .concat([e('p', { class: 'hint', style: 'margin:0' }, 'الأرقام من «البيانات»؛ ما يُخفى هنا يُخفى من صفحة العميل وحدها، والمستند PDF يُضبط من «المستند».')]);
+  };
+  const card = function (id, name, cnt, on, o, kids) {
+    o = o || {}; const open = U.open === id;
+    const h = e('div', { class: 'sec-h' }, [o.sw ? srdSw(on, name, o.sw, ro) : e('span', { class: 'pin', title: 'قسم أساسي' }, [srdIc('lock')]),
+      U.ed === 't:' + id && o.ren ? e('div', { class: 'sec-t' }, [srdInline(name, function (v) { o.ren(v); U.ed = ''; D.dirty = true; paint(); }, false, function () { U.ed = ''; paint(); })])
+        : e('button', { class: 'sec-t', type: 'button', style: 'border:0;background:none;text-align:start;padding:0', 'aria-expanded': open ? 'true' : 'false', 'data-live-ok': '', onClick: function () { U.open = open ? '' : id; U.ed = ''; paint(); } }, [e('span', {}, name), cnt ? e('span', { class: 'cnt' }, cnt) : null, on ? null : srdChip('مخفي')]),
+      ro ? null : e('div', { class: 'acts' }, [o.ren ? srdIb('ed', 'تغيير اسم القسم', function () { U.ed = 't:' + id; U.open = id; paint(); }) : null, o.mv ? srdIb('up', 'لأعلى', function () { o.mv(-1); }, { dis: o.first }) : null, o.mv ? srdIb('dn', 'لأسفل', function () { o.mv(1); }, { dis: o.last }) : null, o.del ? srdIb('del', 'حذف القسم', o.del, { cls: 'del' }) : null]),
+      srdIb('chev', open ? 'طيّ' : 'فتح', function () { U.open = open ? '' : id; U.ed = ''; paint(); })]);
+    return e('section', { class: 'sec' + (on ? '' : ' off') + (open ? ' cur' : '') }, [h, open ? e('div', { class: 'sec-b' }, kids()) : null]);
+  };
+  const out = [];
+  S.secs.forEach(function (s) {
+    const id = s[0], on = !s[2] || off.indexOf(s[2]) < 0;
+    const cnt = id === 'sum' ? fmtNum(S.sum.length - hid.length) + ' / ' + fmtNum(S.sum.length) : typeof s[3] === 'string' ? fmtNum((String(V[s[3]] || G[s[3]] || s[4] || '').split('\n').filter(function (t) { return t.trim(); })).length) + ' بند' : Array.isArray(s[3]) ? fmtNum(s[3].filter(function (f) { return !f[4] || off.indexOf(f[4]) < 0; }).length) + ' / ' + fmtNum(s[3].length) : '';
+    out.push(card(id, s[1], cnt, on, { sw: s[2] && P ? function () { tog(s[2], on); } : null }, function () { return id === 'sum' ? sumRows() : typeof s[3] === 'string' ? ackRows(s[3], s[4]) : s[3].map(field); }));
+    if (id === 'note' && att) out.push(card('att', 'مستند PDF', att.on ? '1 / 1' : '0 / 1', att.on, { sw: function () { att.set(!att.on); } }, function () {
+      return [e('div', { class: 'attbox' + (att.on ? ' on' : '') }, [e('span', { class: 'fi' }, [srdIc('pdf')]), e('div', { class: 'fn' }, [e('b', {}, att.name + ' (PDF)'), e('small', {}, att.on ? 'يُرفق مع رسالة واتساب والبريد عند الإرسال، ويظهر للعميل زر «' + att.name + ' كاملًا (PDF)» في صفحته.' : 'لن يُرفق المستند — تصل العميلَ صفحةُ الرابط وحدها.')]), ro ? null : srdB(att.on ? 'إلغاء الإرفاق' : 'إرفاق المستند PDF', { sm: true, ic: 'clip' }, function () { att.set(!att.on); })])];
+    }));
+  });
+  /* أقسام مضافة لهذا العميل (blocks) */
+  if (!Array.isArray(V.blocks)) V.blocks = [];
+  const BL = V.blocks;
+  BL.forEach(function (b, i) {
+    const id = 'blk:' + i, items = Array.isArray(b.items) ? b.items : (b.items = []);
+    out.push(card(id, b.t || 'قسم جديد', fmtNum(items.filter(function (z) { return !z.off; }).length) + ' بند', !b.off, { sw: function () { b.off = !b.off; D.dirty = true; paint(); }, ren: function (v) { b.t = v.slice(0, 80); }, mv: function (dir) { const j = i + dir; if (j < 0 || j >= BL.length) return; BL.splice(j, 0, BL.splice(i, 1)[0]); U.open = 'blk:' + j; D.dirty = true; paint(); }, first: i === 0, last: i === BL.length - 1, del: function () { BL.splice(i, 1); U.open = ''; D.dirty = true; paint(); } }, function () {
+      const kids = [];
+      items.forEach(function (it, j) {
+        const ck = 'bi:' + i + ':' + j;
+        if (U.ed === ck) { kids.push(e('div', { class: 'inl' }, [srdInline(it.v, function (v) { if (v) it.v = v; else items.splice(j, 1); U.ed = ''; D.dirty = true; paint(); }, true, function () { U.ed = ''; paint(); })])); return; }
+        kids.push(e('div', { class: 'row' + (it.off ? ' off' : '') }, [srdSw(!it.off, 'البند', function () { it.off = !it.off; D.dirty = true; paint(); }, ro), e('div', { class: 'lbl txt' }, [e('b', {}, it.v)]),
+          ro ? e('span', {}) : e('div', { class: 'acts' }, [srdIb('ed', 'تعديل', function () { U.ed = ck; paint(); }), srdIb('up', 'لأعلى', function () { items.splice(j - 1, 0, items.splice(j, 1)[0]); D.dirty = true; paint(); }, { dis: j === 0 }), srdIb('dn', 'لأسفل', function () { items.splice(j + 1, 0, items.splice(j, 1)[0]); D.dirty = true; paint(); }, { dis: j === items.length - 1 }), srdIb('del', 'حذف', function () { items.splice(j, 1); D.dirty = true; paint(); }, { cls: 'del' })])]));
+      });
+      if (!ro) kids.push(e('div', { class: 'addrow' }, [(function () { const bb = srdB('إضافة بند', { sm: true, ic: 'plus', after: 'chev' }, function () { srdPicker(bb, { sug: [], have: items.map(function (z) { return z.v; }), pick: function (v) { if (items.length >= 20) { snack('الحد 20 بندًا'); return; } items.push({ v: String(v).trim() }); D.dirty = true; paint(); } }); }); return bb; })()]));
+      return kids;
+    }));
+  });
+  if (!ro) out.push(e('div', { style: 'justify-self:end' }, [(function () { const b = srdB('إضافة قسم', { ic: 'plus', after: 'chev' }, function () { srdPicker(b, { secs: true, pick: function (s) { if (BL.length >= 12) { snack('الحد 12 قسمًا'); return; } BL.push({ t: s ? s.t : 'قسم جديد', items: s ? s.e.map(function (v) { return { v: v }; }) : [] }); U.open = 'blk:' + (BL.length - 1); if (!s) U.ed = 't:' + U.open; D.dirty = true; paint(); } }); }); return b; })()]));
+  return out;
+}
+function srdPage(x, c, kind, live, J, paint) {
+  const V = egPvGet(x, kind, paint), F = EGP_F[kind] || [];
+  const Q = J ? J.q : null, c0 = (Q && Q.calc) || {}, base = (c0.doc && c0.doc[kind]) || {}, saved = base.page || {};
+  const W = c.pg || (c.pg = {}), D = W[kind] && W[kind].q === (Q && Q.id) ? W[kind] : (W[kind] = { q: Q && Q.id, v: JSON.parse(JSON.stringify(saved)), dirty: false, busy: false, err: '' });
+  const G = (V.d && V.d.page) || {};
+  const clean = function () { const o = {}; F.forEach(function (f) { const v = String(D.v[f[0]] || '').trim(); if (v) o[f[0]] = v.slice(0, 700); }); const bl = (Array.isArray(D.v.blocks) ? D.v.blocks : []).map(function (b) { b = b || {}; return { t: String(b.t || '').trim().slice(0, 80), off: !!b.off, lib: /^[a-z]{2,12}$/.test(String(b.lib || '')) ? b.lib : undefined, items: (Array.isArray(b.items) ? b.items : []).map(function (y) { y = y || {}; return { v: String(y.v || '').trim().slice(0, 700), off: !!y.off }; }).filter(function (y) { return y.v; }).slice(0, 20) }; }).filter(function (b) { return b.t || b.items.length; }).slice(0, 12); if (bl.length) o.blocks = bl; return o; };
+  const canSave = !!(Q && J && J.can && J.can.doc && J.can.doc[kind]), ro = !canSave;
+  const save = async function (reset) {
+    if (D.busy || !Q) return; D.busy = true; D.err = ''; paint();
+    try {
+      const pg = reset ? {} : clean(), doc = Object.assign({}, base);
+      if (Object.keys(pg).length) doc.page = pg; else delete doc.page;
+      await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: doc, p_attach: reset || D.att === undefined ? null : !!D.att });
+      if (D.att !== undefined && c.doc && c.doc[kind]) c.doc[kind].att = !!D.att;
+      D.busy = false; D.dirty = false; if (reset) D.v = {}; delete EQG[Q.id]; egPvGet(x, kind, paint, true);
+      snack(reset ? 'عادت صفحة العميل للنسخة الافتراضية.' : 'حُفظت صفحة العميل لهذا العميل.'); paint();
+    } catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
+  };
+  let att = null;
+  if (['quote', 'purchase', 'contract'].indexOf(kind) >= 0 && Q) {
+    const D0 = c.doc && c.doc[kind], cs = Q.calc_staff || {};
+    const on = D.att !== undefined ? !!D.att : (D0 && D0.q === Q.id ? !!D0.att : !!(cs.attach && cs.attach[kind]));
+    att = { on: on, name: EQ_DOC_NAME[kind] || 'المستند', set: function (v) { if (ro) return; D.att = !!v; D.dirty = true; paint(); } };
+  }
+  let pv = null;
+  if (V.d) {
+    const mk = function () { const p2 = JSON.parse(JSON.stringify(V.d)); p2.doc = Object.assign({}, p2.doc || {}); p2.doc.page = Object.assign({}, p2.doc.page || {}, clean()); p2.kind = kind === 'result' ? 'elig' : kind; p2.preview = true; p2.can_decide = false; return p2; };
+    window.__ELIG_PV = mk();
+    pv = e('iframe', { class: 'srd-phone-f', title: 'معاينة صفحة العميل كما يراها على الجوال', src: '/elig/?local=1&r=' + Date.now() });
+    const pvF = pv; D.pvUp = function () { clearTimeout(D.pvT); D.pvT = setTimeout(function () { if (!pvF.isConnected) return; window.__ELIG_PV = mk(); try { pvF.contentWindow.location.reload(); } catch (er) { pvF.src = '/elig/?local=1&r=' + Date.now(); } }, 450); };
+  }
+  const own = Object.keys(saved).length > 0;
+  const intro = e('div', { class: 'fs pg-intro' }, [e('p', { class: 'hint', style: 'margin:0' }, F.length ? 'الصفحة التي يفتحها العميل من الرابط. كل جزء فيها حقل مستقل: أظهره أو أخفه، غيّر نصه، وأضف أقسامًا وبنودًا. ما تكتبه هنا لهذا العميل فقط، والحقل الفارغ يأخذ النص العام.' : 'صفحة النتيجة تُبنى من التوصية والقرار كما يراها العميل.'),
+    e('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center' }, [srdChip(own ? 'نسخة هذا العميل' : 'النسخة الافتراضية من «قوالب العقد ← صفحات الرابط»', own ? 'info' : null),
+      ro && F.length && Q ? srdChip('للعرض فقط بحسب حالة العرض أو صلاحيتك', 'warn') : null])]);
+  const secs = F.length ? srdPgSecs(kind, D, G, saved, paint, ro, att) : [];
+  const bar = F.length && canSave ? e('div', { class: 'bbar' }, [e('div', {}, [srdChip(D.dirty ? 'تعديلات غير محفوظة' : 'لا تعديلات بعد', D.dirty ? 'warn' : null, true), e('span', { class: 'sp' }),
+    own && !D.dirty ? srdB('إعادة للافتراضي', { live: true, dis: D.busy }, function () { if (tqConfirm('إلغاء نصوص هذا العميل والرجوع للنسخة الافتراضية؟')) save(true); }) : null,
+    D.dirty ? srdB('تراجع', {}, function () { W[kind] = null; paint(); }) : null,
+    egPvBtn(x, kind, paint), srdB(D.busy ? 'جارٍ الحفظ…' : 'حفظ لهذا العميل', { pri: true, ic: 'ok', dis: D.busy || !D.dirty, live: true }, function () { save(false); })])]) : e('div', { class: 'sh-acts' }, [egPvBtn(x, kind, paint)]);
+  return e('div', { class: 'srd-page' }, [e('div', { class: 'split', 'data-pv': D.srdPv || 'edit' }, [e('div', { class: 'secs' }, [intro].concat(secs).concat([D.err ? e('p', { class: 'warnp', role: 'alert' }, D.err) : null])),
+    e('div', { class: 'pvcol' }, [e('div', { class: 'hint', style: 'display:flex;gap:6px;align-items:center' }, [srdIc('phone'), 'كما يراها العميل على الجوال — تتحدّث أثناء الكتابة']),
+      e('div', { class: 'srd-phone' }, [pv || (V.err ? e('p', { class: 'warnp', style: 'padding:12px' }, V.err) : e('p', { class: 'hint', style: 'padding:12px' }, 'جارٍ تجهيز الصفحة…'))])])]), bar]);
+}
+/* ═════ v852: رأس المرحلة (الاسم والحالة وأزرارها) والتبويبات الفرعية بخط سفلي — كما في التصميم ═════ */
+const SRD_ST = { quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد', result: 'القرار والنتيجة' };
+function srdStageHead(x, c, kind, live, J, paint) {
+  const Q = J ? J.q : null, st = Q ? eqStLabel(Q) : live ? (EGQ_ST[live.status] || [live.status, null]) : null;
+  const tone = st ? ({ ok: 'ok', warn: 'warn', danger: 'bad', info: 'info' })[st[1]] || null : null;
+  const acts = [];
+  if (Q && kind !== 'result') acts.push(srdB('معاينة PDF', { ic: 'pdf' }, function () { dcPdf(dcEqDoc(kind, Q, ['sent', 'accepted'].indexOf(Q.status) < 0, { recv: kind === 'quote' ? '' : egRecvInfo(x).now })); }));
+  if (kind === 'quote' && J) { const W = c.qa || (c.qa = { mode: '', why: '', note: '' }); const A = eqActs(J, x, W, function (msg) { delete EQG[live.id]; if (msg) snack(msg); W.mode = ''; c.reload(); }, paint); if (A && c.qed) [].slice.call(A.querySelectorAll('button')).forEach(function (b) { if (/^تعديل/.test(String(b.textContent || '').trim())) b.remove(); }); if (A) acts.push(A); }
+  if (kind !== 'result' && Q && ['approved', 'sent', 'accepted'].indexOf(Q.status) >= 0) acts.push(srdB('إرسال للعميل', { ic: 'send' }, function () { c.tab = 'pv'; paint(); }));
+  return e('div', { class: 'sh' }, [e('h2', {}, SRD_ST[kind] || ''), st ? srdChip(st[0], tone) : null, e('span', { class: 'sp' }), e('div', { class: 'sh-acts' }, acts)]);
+}
+/* ═════ v852: «السجل» لوحة جانبية واحدة بتصفية (الكل · الإرسال · القرارات والإسناد · المستندات · المراسلة) — مسار الطلب وسجل الإرسال والمراسلة في مكان واحد ═════ */
+const EGJEV = {};
+const SRD_DRW = { k: '', f: 'all' };
+function srdDrawerClose() { SRD_DRW.k = ''; const L = document.querySelector('body > .srd-l'); if (L) [].forEach.call(L.querySelectorAll(':scope > .drawer, :scope > .scrim.is-d'), function (n) { n.remove(); }); document.body.classList.remove('srd-drw-open'); }
+function srdLogKind(t) { return /^أُرسل(ت)? طلب|طلب التحقق|^أُرسل الطلب/.test(t) ? 'doc' : /رسالة|راسل|المراسلة/.test(t) ? 'msg' : /أُرسل|أُتيح|إرسال|معاينة|فتح العميل|رابط|واتساب|البريد/.test(t) ? 'send' : /مرفق|مستند|المستندات|رفع|قُبل المرفق|رُفض المرفق/.test(t) ? 'doc' : 'dec'; }
+function srdLogRows(x) {
+  const R = [];
+  (EGJEV[x.id] || []).forEach(function (r) { R.push([r[0], r[1], r[2] || '', srdLogKind(r[1])]); });
+  (x.log || []).forEach(function (l) { const t = String(l.t || ''); if (t && !R.some(function (z) { return z[1] === t && Math.abs(new Date(z[0]) - new Date(l.at)) < 60000; })) R.push([l.at, t, (l.by === x.user_id ? 'العميل' : (l.by_name || 'فريق تيرا')), srdLogKind(t)]); });
+  const M = SRM['sr:' + x.id]; ((M && M.rows) || []).forEach(function (m) { R.push([m.at, (m.who === 'staff' ? 'رسالة من الفريق: ' : 'رسالة من العميل: ') + String(m.body || (m.ask ? 'طلب مرفق: ' + m.ask.label : '')).slice(0, 90), m.who === 'staff' ? 'فريق تيرا' : 'العميل', 'msg']); });
+  R.sort(function (a, b) { return new Date(b[0]) - new Date(a[0]); });
+  return R;
+}
+function srdDrawer(k, x, c, RF, live) {
+  srdPopClose(); SRD_DRW.k = k;
+  const L = srdLayer(); [].forEach.call(L.querySelectorAll(':scope > .drawer, :scope > .scrim.is-d'), function (n) { n.remove(); });
+  const isLog = k === 'log', paint = function () { if (SRD_DRW.k === k) srdDrawer(k, x, c, RF, live); };
+  const D = e('aside', { class: 'drawer', role: 'dialog', 'aria-label': isLog ? 'سجل الطلب' : 'المراسلة مع العميل' });
+  D.appendChild(e('div', { class: 'dr-h' }, [srdIc(isLog ? 'hist' : 'chat'), e('h3', {}, isLog ? 'سجل الطلب' : 'المراسلة مع العميل'), srdIb('x', 'إغلاق', srdDrawerClose)]));
+  if (isLog) {
+    try { egjLoad(x, paint); egJourney(x, c, paint, live, 'log'); } catch (err) { void err; }
+    try { reqMsgBox('sr', x, { paint: paint }, 'staff'); } catch (err) { void err; }
+    const F = [['all', 'الكل'], ['send', 'الإرسال'], ['dec', 'القرارات والإسناد'], ['doc', 'المستندات'], ['msg', 'المراسلة']], A = srdLogRows(x);
+    D.appendChild(e('div', { class: 'dr-f' }, F.map(function (f) { const n = f[0] === 'all' ? A.length : A.filter(function (z) { return z[3] === f[0]; }).length; return e('button', { class: 'chip' + (SRD_DRW.f === f[0] ? ' brand' : ''), style: 'border:0', type: 'button', 'aria-pressed': SRD_DRW.f === f[0] ? 'true' : 'false', 'data-live-ok': '', onClick: function () { SRD_DRW.f = f[0]; paint(); } }, [f[1], n ? ' ' + fmtNum(n) : '']); })));
+    const S = A.filter(function (z) { return SRD_DRW.f === 'all' || z[3] === SRD_DRW.f; }), IC = { send: 'send', dec: 'ok', doc: 'pdf', msg: 'chat' };
+    D.appendChild(e('div', { class: 'dr-b' }, [S.length ? e('div', { class: 'tl' }, S.map(function (z) { return e('div', { class: 'tl-i' }, [e('span', { class: 'tl-d ' + z[3] }, [srdIc(IC[z[3]])]), e('div', { class: 'tl-t' }, [e('b', {}, z[1]), e('small', {}, [z[2], egjDt(z[0])].filter(Boolean).join(' · '))])]); }))
+      : e('p', { class: 'hint' }, (EGJ[x.id] || {}).busy ? 'جارٍ القراءة…' : 'لا أحداث في هذا التصنيف.')]));
+    D.appendChild(e('div', { class: 'dr-foot' }, [e('p', { class: 'hint', style: 'margin:0' }, 'مسار الطلب وسجل الإرسال والمراسلة في مكان واحد.')]));
+  } else {
+    D.appendChild(e('div', { class: 'dr-b srd-msgs' }, [reqMsgBox('sr', x, { paint: paint }, 'staff')]));
+  }
+  L.appendChild(e('div', { class: 'scrim is-d', onClick: srdDrawerClose })); L.appendChild(D); document.body.classList.add('srd-drw-open');
+}
+/* أزرار رأس الطلب (المنصة الجديدة) تفتح اللوحتين */
+const SRD_CUR = { x: null, c: null, RF: null, live: null };
+window.tqSrdDrawer = function (k) { const S = SRD_CUR; if (!S.x || !document.querySelector('.eg-work[data-sr="' + S.x.id + '"]')) return false; if (SRD_DRW.k === k) { srdDrawerClose(); return true; } srdDrawer(k, S.x, S.c, S.RF, S.live); return true; };
+window.tqSrdCnt = function () { const S = SRD_CUR; if (!S.x) return {}; const M = SRM['sr:' + S.x.id]; return { log: srdLogRows(S.x).length, msg: M && M.rows ? M.rows.length : 0 }; };
+
+/* ═════ v852: إجراءات الإدارة — المهام يسارًا، وتفاصيل المهمة المختارة: نموذج + معاينة (السند · التحويل · الشيكات · الأمر المستديم · الإغلاق) داخل الطلب ═════ */
+function srdAdmPv(kind, D, x, A) {
+  const nm = (A && A.name) || x.client_name || x.name || '—', no = (A && A.contract_no) || '';
+  const P = e('div', { class: 'paper' });
+  const kv = function (L) { return e('div', { class: 'pp-kv' }, L.map(function (z) { return e('div', {}, [e('span', {}, z[0]), e('b', { dir: z[2] ? 'ltr' : null }, z[1] || '—')]); })); };
+  P.appendChild(e('div', { class: 'pp-top' }, [e('div', { class: 'pp-logo' }, [e('i', {}, 'ت'), 'تيرا']), e('span', { class: 'pp-tag' }, 'مسودة')]));
+  if (kind === 'bond') {
+    P.appendChild(e('div', { class: 'pp-title' }, 'سند لأمر'));
+    P.appendChild(kv([['المدين', nm], ['الدائن', 'منصة تيرا للخدمات'], ['المبلغ', D && Number(D.val) > 0 ? srdM(D.val) + ' ر.س' : '—'], ['رقم السند', D && D.no, true], ['التاريخ', D && D.date ? srdDmy(D.date) : '—'], ['العقد', no, true]]));
+    P.appendChild(e('div', { class: 'pp-sign' }, [e('div', {}, 'توقيع المدين'), e('div', {}, 'ختم نافذ')]));
+  } else if (kind === 'payout') {
+    const acct = D ? AX_ACCTS.filter(function (a) { return a[0] === D.acct; })[0] : null;
+    P.appendChild(e('div', { class: 'pp-title' }, 'أمر تحويل للمورّد'));
+    P.appendChild(kv([['العميل', nm], ['العقد', no, true], ['المبلغ', D && Number(D.amt) > 0 ? srdM(D.amt) + ' ر.س' : '—'], ['التاريخ', D && D.date ? srdDmy(D.date) : '—'], ['من حساب', acct ? acct[1] + ' ••' + acct[2] : '—'], ['إلى', D && D.own === 'no' ? (D.holder || '—') + ' · ••' + String(D.iban || '').slice(-4) : 'حساب العميل المسجّل']]));
+  } else if (kind === 'cheque' || kind === 'standing_order') {
+    P.appendChild(e('div', { class: 'pp-title' }, kind === 'cheque' ? 'الشيكات' : 'الأمر المستديم'));
+    P.appendChild(kv([['العميل', nm], ['العقد', no, true], ['النوع', kind === 'cheque' ? 'شيكات' : 'أمر مستديم']]));
+    P.appendChild(e('p', { class: 'hint', style: 'margin:0' }, 'تفاصيل الدفعات كما تُدخلها في النموذج — تُسجَّل في قسمها بملف العميل.'));
+  }
+  P.appendChild(e('div', { class: 'pp-foot' }, [e('span', {}, x.req_no || ''), e('span', { class: 'pp-qr' })]));
+  return P;
+}
+function srdAdm(x, ctT, ctNo, ctj, paint) {
+  const W = e('section', { class: 'stage-simple', 'aria-label': 'إجراءات الإدارة' });
+  if (!CTADM.at && !CTADM.busy && !CTADM.tried && typeof ctAdmLoad === 'function') { CTADM.busy = true; CTADM.tried = true; ctAdmLoad().then(function () { CTADM.busy = false; paint(); }).catch(function () { CTADM.busy = false; }); }
+  const id = ctT && ctT.id, A = id ? CTADM.rows[id] : null, signed = !!((ctj && ctj.signed_at) || (A && A.signed_at));
+  const items = A ? (A.items || []) : [], nOk = items.filter(function (i) { return i.ok; }).length;
+  W.appendChild(e('div', { class: 'sh' }, [e('h2', {}, 'إجراءات الإدارة'), srdChip(fmtNum(nOk) + ' من ' + fmtNum(items.length + 1) + ' منجزة', nOk === items.length && items.length ? 'ok' : null), e('span', { class: 'sp' })]));
+  if (!ctNo) { W.appendChild(e('div', { class: 'lock' }, [srdIc('lock'), 'تبدأ هذه المرحلة بعد صدور العقد وتوقيع العميل.'])); return W; }
+  if (x.executed_at && !A) { W.appendChild(egAdmPane(x, ctT, ctNo, ctj, paint)); return W; }
+  if (!signed) W.appendChild(e('div', { class: 'lock' }, [srdIc('lock'), 'بانتظار توقيع العميل على العقد ' + ctNo + ' — يمكنك تحديد الإجراءات المطلوبة الآن، و«إغلاق الطلب» بعد التوقيع.']));
+  if (!A) { W.appendChild(e('p', { class: 'hint' }, CTADM.at ? 'لا إجراءات معلّقة على العقد ' + ctNo + '.' : 'جارٍ قراءة إجراءات الإدارة…')); return W; }
+  const can = CTADM.can || {}, uid = x.user_id, ready = items.length > 0 && nOk === items.length;
+  const T = items.map(function (i) { const z = CTADM_K.filter(function (q) { return q[0] === i.kind; })[0]; return { k: i.kind, t: i.label || (z ? z[1] : i.kind), ok: !!i.ok, by: i.required_by || '', it: i }; });
+  T.push({ k: 'close', t: 'إغلاق الطلب', ok: false, close: true });
+  let sel = EGADM.sel[id]; if (!T.some(function (t) { return t.k === sel; })) sel = (T.filter(function (t) { return !t.ok; })[0] || T[0]).k; EGADM.sel[id] = sel;
+  const cur = T.filter(function (t) { return t.k === sel; })[0];
+  const RF2 = function () { CTADM.at = 0; ctAdmLoad().then(paint).catch(paint); }; RF2.paint = paint;
+  const rpc = async function (fn, args, msg) { if (EGADM.busy) return; EGADM.busy = true; EGADM.err = ''; paint(); try { const j = await admRpc(fn, Object.assign({ p_contract: id }, args)); if (j && j.ok === false) throw new Error(ADM_ERR[j.error] || j.message || 'تعذّر تنفيذ الإجراء.'); EGADM.busy = false; if (msg) snack(msg); await ctAdmLoad(); paint(); } catch (err) { EGADM.busy = false; EGADM.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; paint(); } };
+  const list = e('div', { class: 'card' }, T.map(function (t, i) {
+    return e('button', { type: 'button', class: 'task' + (t.ok ? ' done' : ''), 'aria-current': t.k === sel ? 'true' : null, 'data-live-ok': '', onClick: function () { EGADM.sel[id] = t.k; paint(); } }, [e('span', { class: 'num' }, t.ok ? '✓' : String(i + 1)),
+      e('span', { class: 'lbl' }, [e('b', {}, t.t), e('span', {}, t.close ? (ready ? 'اكتملت الإجراءات' : 'بعد اكتمال ما سبق') : t.ok ? 'سُجّل في ملف العميل' : 'بانتظار الاستكمال' + (t.by ? ' · حدّده ' + t.by : ''))]),
+      srdChip(t.close ? (ready ? 'جاهز' : 'لم يبدأ') : t.ok ? 'منجز' : 'لم يبدأ', t.ok || (t.close && ready) ? 'ok' : null)]);
+  }));
+  const det = e('div', { class: 'det' }, [e('div', { class: 'sh' }, [e('h3', { style: 'font-size:17px' }, cur.t), srdChip(cur.close ? (ready ? 'جاهز' : 'لم يبدأ') : cur.ok ? 'منجز' : 'لم يبدأ', cur.ok ? 'ok' : null)])]);
+  if (cur.close) {
+    det.appendChild(e('div', { class: 'card' }, T.filter(function (t) { return !t.close; }).map(function (t) { return e('div', { class: 'chk' }, [e('span', { class: 'tl-d ' + (t.ok ? 'dec' : '') }, [srdIc(t.ok ? 'ok' : 'x')]), e('b', {}, t.t), srdChip(t.ok ? 'منجز' : 'متبقٍّ', t.ok ? 'ok' : 'warn')]); })));
+    det.appendChild(e('div', { class: 'kv' }, [['توقيع العميل', A.signed_at ? srdDmy(A.signed_at) : 'لم يوقّع بعد'], ['العقد النهائي', A.final_sent_at ? 'أُرسل ' + srdDmy(A.final_sent_at) : 'لم يُرسل بعد'], ['الإجراءات', ctAdmSt(A)[0]]].map(function (z) { return e('div', {}, [e('span', { class: 'k' }, z[0]), e('b', { style: 'font-size:14px' }, z[1])]); })));
+    if (can.f) det.appendChild(e('div', { class: 'addrow' }, [ready ? admTwoStep('إغلاق الطلب', 'primary', function () { return rpc('admin_contract_finalize', {}, 'أُغلق الطلب — يظهر العقد الآن كسائر العقود.'); }, 'seal-check') : srdB('إغلاق الطلب', { pri: true, dis: true })]));
+    det.appendChild(e('p', { class: 'hint', style: 'margin:0' }, can.f ? 'يُفعَّل «إغلاق الطلب» بعد اكتمال الإجراءات المطلوبة وتوقيع العميل. بعد الإغلاق يمكن إعادة فتحه داخليًا لأي تصحيح.' : 'يُغلقه من يملك صلاحية «إغلاق الطلب».'));
+  } else if (cur.ok) {
+    det.appendChild(e('p', { class: 'hint' }, 'اكتمل هذا الإجراء وسُجّل في ملف العميل مرتبطًا بالعقد ' + ctNo + '.'));
+    det.appendChild(e('div', { class: 'addrow' }, [srdB('عرضه في ملف العميل', { ic: 'user' }, function () { ctAdmGo({ user_id: uid, contract_no: ctNo, name: A.name || '' }); })]));
+  } else if (!can.m) {
+    det.appendChild(e('p', { class: 'hint' }, 'تعبئة الإجراءات لمن يملك صلاحية إدارة العقود.'));
+  } else {
+    const kk = 'ctadm:' + cur.k + ':' + id;
+    let form = null, D = null;
+    if (cur.k === 'payout' || cur.k === 'bond') {
+      const nk = cur.k === 'payout' ? 'tr' : 'bd';
+      D = CF_ST[kk] || (CF_ST[kk] = Object.assign(lvNewD(nk, uid), { ct: id, lnk: '1' })); D.cid = uid; D.ct = id;
+      form = e('div', { class: 'fs' }, lvNewFields(nk, D, paint, { fixed: true }).concat([e('div', { class: 'addrow' }, [liveOk(DS.button(D.busy ? 'جارٍ التسجيل…' : (nk === 'tr' ? 'تسجيل الحوالة' : 'تسجيل تفعيل السند'), { tone: 'primary', ui: 'plus', disabled: D.busy, onClick: function () {
+        lvNewSave(nk, D, paint, async function (j) { if (nk === 'bd' && j && j.id) { try { await admRpc('admin_contract_admin_bond', { p_contract: id, p_bond: j.id }); } catch (err) { void err; } } delete CF_ST[kk]; if (nk === 'tr') ADM.trAt = 0; await cfRe(RF2, nk === 'tr' ? 'سُجّلت الحوالة في «تحويلات تيرا».' : 'سُجّل السند واعتُمد لإجراءات هذا العقد.'); });
+      } }))]), e('p', { class: 'hint', style: 'margin:0' }, nk === 'tr' ? 'تُسجَّل في «تحويلات تيرا» مرتبطة بهذا العقد مع إيصالها، فيكتمل هذا الإجراء.' : 'يُسجَّل في «السندات» للعميل مرتبطًا بهذا العقد مع ملفه، فيكتمل هذا الإجراء.')]));
+    } else {
+      const pk = cur.k === 'cheque' ? 'ck' : 'dd', W2 = cfSt(kk + ':w', {});
+      D = CF_ST[kk] || (CF_ST[kk] = Object.assign(axPlanNew(), { cid: uid, ct: A.contract_no || '' })); if (!D.ct && A.contract_no) D.ct = A.contract_no;
+      form = e('div', { class: 'fs' }, [axPlanFields(pk, D, paint, true), cfErr(W2), e('div', { class: 'addrow' }, [liveOk(DS.button(W2.busy ? 'جارٍ التسجيل…' : (pk === 'ck' ? 'تسجيل الشيكات' : 'تسجيل الأمر المستديم'), { tone: 'primary', ui: 'plus', disabled: W2.busy, onClick: function () { D.cid = uid; cfPlanSave(pk, D, W2, RF2, null, pk === 'ck' ? 'سُجّلت الشيكات في «الشيكات».' : 'سُجّل الأمر المستديم في «الأوامر المستديمة».', function () { delete CF_ST[kk]; }); } }))])]);
+    }
+    det.appendChild(e('div', { class: 'det2' }, [form, e('div', { class: 'pvcol', style: 'position:static' }, [e('div', { class: 'hint', style: 'display:flex;gap:6px;align-items:center' }, [srdIc('eye'), 'معاينة المستند']), srdAdmPv(cur.k, D, x, A)])]));
+    det.appendChild(e('div', { class: 'addrow' }, [admTwoStep('إزالة من المطلوب', 'danger', function () { return rpc('admin_contract_admin_set', { p_kind: cur.k, p_required: false }, 'أُزيل من الإجراءات المطلوبة.'); }, 'x')]));
+  }
+  const left = CTADM_K.filter(function (z) { return !T.some(function (t) { return t.k === z[0]; }); });
+  if (can.m && left.length) det.appendChild(e('div', { class: 'fs' }, [e('h3', {}, 'إضافة إجراء مطلوب لهذا العقد'), e('div', { class: 'vld' }, [srdSel(EGADM.pick[id] || '', [['', '— اختر الإجراء —']].concat(left), function (v) { EGADM.pick[id] = v; }), srdB(EGADM.busy ? 'جارٍ…' : 'إضافة إلى المطلوب', { sm: true, ic: 'plus', dis: EGADM.busy, live: true }, function () { const v = EGADM.pick[id]; if (!v) { EGADM.err = 'اختر الإجراء.'; paint(); return; } EGADM.pick[id] = ''; rpc('admin_contract_admin_set', { p_kind: v, p_required: true }, 'أُضيف إلى الإجراءات المطلوبة.'); })])]));
+  if (EGADM.err) det.appendChild(e('p', { class: 'warnp', role: 'alert' }, EGADM.err));
+  W.appendChild(e('div', { class: 'tasks' }, [list, det]));
+  return W;
+}
+/* ═════ v852: المرحلة كاملة (رأسها · تبويباتها · العمل) — بديل egOut في المنصة الجديدة ═════ */
+function srdOut(x, c, kind, live, paint, setup) {
+  const S = c.sub || (c.sub = {});
+  const G = live && kind !== 'result' ? eqGet(live.id, paint) : null, J = G && G.j, Q = J ? J.q : null;
+  const dk = Q && Q.calc && Q.calc.doc ? (Q.calc.doc[kind] || null) : null;
+  const pgOwn = !!(dk && dk.page && Object.keys(dk.page).length);
+  const docOwn = !!(dk && ((dk.hide || []).length || Object.keys(dk.labels || {}).length || Object.keys(dk.texts || {}).length || (dk.adds || []).length));
+  const T = [['setup', 'البيانات', '']];
+  if (kind !== 'result') T.push(['doc', 'المستند', docOwn ? 'لهذا العميل' : 'افتراضي']);
+  T.push(['page', kind === 'result' ? 'صفحة النتيجة' : 'صفحة العميل', kind === 'result' ? '' : pgOwn ? 'لهذا العميل' : 'افتراضية']);
+  let cur = S[kind] || 'setup'; if (!T.some(function (t) { return t[0] === cur; })) cur = 'setup';
+  if (kind === 'quote' && cur === 'setup' && !c.qed) {
+    if (J && Q && J.can && J.can.edit && (Q.status === 'draft' || Q.status === 'pending_approval' || eqRetd(Q))) c.qed = { Q: Q, mode: 'edit', done: function () { c.reload(); }, auto: true };
+    else if (!live && x.status === 'approved' && c.at && c.qs !== null) c.qed = { Q: null, mode: 'issue', done: function () { c.reload(); }, auto: true };
+  }
+  const nav = e('div', { class: 'subnav', role: 'tablist', 'aria-label': 'أعمال مرحلة ' + (SRD_ST[kind] || '') }, T.map(function (t) {
+    return e('button', { type: 'button', role: 'tab', 'aria-selected': t[0] === cur ? 'true' : 'false', 'data-live-ok': '', onClick: function () { S[kind] = t[0]; srdPopClose(); paint(); } }, [t[1], t[2] ? e('small', { class: t[2] === 'لهذا العميل' ? 'own' : null }, t[2]) : null]);
+  }));
+  let body = null;
+  try {
+    if (cur === 'setup') body = kind === 'quote' ? (c.qed ? srdEditor(x, c.qed.Q, c.qed.mode, c.qed.done, { paint: paint, close: function () { c.qed = null; paint(); } }) : Q ? srdDataRO(x, Q) : setup()) : setup();
+    else if (cur === 'doc') body = srdDoc(x, c, kind, paint);
+    else if (cur === 'page') body = srdPage(x, c, kind, live, J, paint);
+  } catch (err) { try { console.warn('[srd-out]', kind, cur, err && err.message); } catch (y) { void y; } body = e('p', { class: 'warnp' }, 'تعذّر عرض هذا القسم — أعد تحميل الصفحة.'); }
+  let head = null; try { head = srdStageHead(x, c, kind, live, J, paint); } catch (err) { void err; }
+  return e('div', { class: 'eg-out srd', 'data-srd-k': kind }, [head, nav, e('div', { class: 'srd-b', role: 'tabpanel' }, [body])]);
+}
+
+function egOut(x, c, kind, live, paint, setup, head) {
+  if (TQN) return srdOut(x, c, kind, live, paint, setup); /* v852 */ /* v811: head = رأس المرحلة؛ الترتيب: البيانات · المستند · صفحة الرابط · الرسالة */
   const S = c.sub || (c.sub = {});
   const G = live && kind !== 'result' ? eqGet(live.id, paint) : null, J = G && G.j, Q = J ? J.q : null;
   const dk = Q && Q.calc && Q.calc.doc ? (Q.calc.doc[kind] || null) : null;
@@ -19747,7 +20505,7 @@ const paneOf = function (tab) { let pane = null; /* v686: لوحات الخطو�
           : rules.length ? e('div', { class: 'cu-mgr-docs' }, rowsDoc) : CF_EMPTY('لا مرفقات مطلوبة لحالته الوظيفية.'),
       e('div', { class: 't2-pb-actions' }, [DS.button('طلب مرفق من العميل', { size: 'sm', ui: 'paperclip', onClick: function () { c.tab = 'fix'; const W = c.fix || (c.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false }); W.form = true; W.type = 'doc'; paint(); } }),
         DS.button('فتح ملف العميل', { size: 'sm', ui: 'user-circle', onClick: function () { ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); } })])]);
-    else if (tab === 'adm') pane = egAdmPane(x, ctT, ctNo, ctj, paint); /* v691 */
+    else if (tab === 'adm') pane = TQN ? e('div', { class: 'srd' }, [srdAdm(x, ctT, ctNo, ctj, paint)]) : egAdmPane(x, ctT, ctNo, ctj, paint); /* v691 · v852 */
     else if (tab === 'fix') pane = eligFixBox(x, c, paint);
     else if (tab === 'rep') pane = eligReportBox(x, c, paint);
     else if (['inv', 'ct', 'apv', 'pv', 'snd', 'log'].indexOf(tab) >= 0) pane = egJourney(x, c, paint, live, tab); /* v684: كانت «jr» واحدة — صارت 6 خطوات */
@@ -19758,6 +20516,7 @@ const paneOf = function (tab) { let pane = null; /* v686: لوحات الخطو�
     const P6 = function (k) { try { return paneOf(k); } catch (err) { try { console.warn('[elig-pane]', k, err && err.message); } catch (y) { void y; } return null; } };
     /* v806: إعداد العرض داخل المرحلة بدل النافذة الجانبية — eqEdit يفتح هنا ما دام الطلب ظاهرًا */
     EQ_INL[x.id] = { open: function (Qx, mode, done) { c.qed = { Q: Qx, mode: mode, done: done }; c.tab = 'qt'; (c.sub || (c.sub = {})).quote = 'setup'; paint(); } };
+    SRD_CUR.x = x; SRD_CUR.c = c; SRD_CUR.RF = RF; SRD_CUR.live = live; /* v852: لوحتا السجل والمراسلة */
     /* v811: القائمة الجانبية — حالة كل قسم بكلمة، بلا أيقونات */
     const NAVD = [['التجهيز', [['docs', SD.docs], ['decision', SD.rep && SD.rep[3] === 'ok' ? SD.res : SD.rep]]],
       ['ما يصل العميل بالترتيب', [['quote', OURS.quote], ['purchase', SD.inv], ['contract', SD.ct]]],
@@ -20049,6 +20808,7 @@ function egJourney(x, c, paint, live, part) {
   });
   if (d.contract && d.contract.signed_at) ev.push([d.contract.signed_at, 'وقّع العميل العقد ' + (d.contract.no || ''), [d.contract.method === 'draw' ? 'رسم التوقيع' : d.contract.method === 'type' ? 'كتابة الاسم' : d.contract.method === 'upload' ? 'صورة التوقيع' : '', egjFac(d.contract.factor), egjUa(d.contract.ua)].filter(Boolean).join(' · ')]);
   ev.sort(function (a, b) { return new Date(b[0]) - new Date(a[0]); });
+  EGJEV[x.id] = ev.slice(); /* v852 */
   const log = ev.length ? e('div', { class: 'cu-mgr-docs' }, ev.map(function (r) { return cfRow(r[1], [egjDt(r[0]), r[2]].filter(Boolean).join(' · '), null); })) : CF_EMPTY('لا أحداث بعد.');
   if (!part) part = 'pv'; /* v686: المراحل المختصرة — «المعاينة والإرسال» و«فاتورة المنتج» و«العقد» والسجل، بلا شروح مكرّرة */
   const lastBtn = function (k) { return S.lastUrl && (!k || S.lastStage === k) ? liveOk(DS.button('فتح معاينة «' + (EGJ_ST[S.lastStage] || '') + '»', { size: 'sm', ui: 'eye', onClick: function () { window.open(S.lastUrl, '_blank', 'noopener'); } })) : null; };
@@ -20839,7 +21599,7 @@ function reqMsgBox(kind, x, RF, who) {
     if (m.ask) kids.push(DS.note(m.open ? 'warn' : 'ok', (m.open ? 'مطلوب مرفق: ' : 'طُلب مرفق: ') + m.ask.label, (SRM_TN[m.ask.types] || '') + ' · حتى ' + m.ask.mb + ' ميجا' + (m.open ? '' : ' · أُرفق')));
     if (m.ask && m.open && !staff) { const ph = e('input', { type: 'file' }); ph.click = function () { upload(m); }; kids.push(tqAttach({ input: ph, label: m.ask.label, need: true, mb: Number(m.ask.mb) || 0, types: SRM_TN[m.ask.types] || null, busy: !!c.busy, missing: 'مطلوب منك — أرفقه هنا.' })); } /* v696: القالب الموحّد */
     if (m.file) kids.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('عرض المرفق' + (m.file.name ? ' · ' + m.file.name : ''), { size: 'sm', ui: 'file-text', onClick: function () { view(m); } }))]));
-    return e('li', { style: 'border-radius:12px;padding:10px 12px;border:1px solid rgba(15,23,42,.12);background:' + (mine ? 'rgba(15,76,129,.06)' : 'transparent') }, kids);
+    return e('li', { class: 'srm-i' + (mine ? ' is-me' : ''), style: 'border-radius:12px;padding:10px 12px;border:1px solid rgba(15,23,42,.12);background:' + (mine ? 'rgba(15,76,129,.06)' : 'transparent') }, kids); /* v852 */
   })) : e('small', { class: 'cu-dr-hint' }, c.busy ? 'جارٍ التحميل…' : (staff ? 'لا رسائل بعد — راسل ' + K.who + ' أو اطلب منه مرفقًا إضافيًا.' : 'لا رسائل بعد — راسل فريق تيرا عن طلبك من هنا.'));
   const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '1000', placeholder: staff ? 'رسالة إلى ' + K.who + ' — تظهر في حسابه' : 'رسالتك لفريق تيرا', onInput: function (ev) { c.txt = ev.target.value; } });
   ta.value = c.txt || '';

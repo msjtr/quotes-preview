@@ -2386,7 +2386,7 @@ function geoQ() {
       if (A) { var op = A.querySelector('.tqn-pf'); if (op) T.appendChild(op); A.remove(); }
       A = mk('div', 'tqn-hacts'); A.__sig = K.join('|');
       K.filter(function (k) { return k !== 'العمل على الطلب' && k !== 'الإسناد' && k !== EGSEND; }).forEach(function (k) {
-        var b = egBtn('t2-btn is-sm tqn-ha', SRLBL[k] || k, function () { ST.srT = ST.srT === k ? 'العمل على الطلب' : k; apply(); }); b.__k = k; A.appendChild(b);
+        var b = egBtn('t2-btn is-sm tqn-ha', SRLBL[k] || k, function () { if ((k === 'المراسلة' || k === 'مسار الطلب') && window.tqSrdDrawer && window.tqSrdDrawer(k === 'المراسلة' ? 'msg' : 'log')) return; /* v852: لوحتا التصميم من المنصة */ ST.srT = ST.srT === k ? 'العمل على الطلب' : k; apply(); }); b.__k = k; A.appendChild(b);
       });
       var host = T.querySelector('.tqn-sr-acts'); if (host) host.parentNode.insertBefore(A, host); else T.appendChild(A);
     }
