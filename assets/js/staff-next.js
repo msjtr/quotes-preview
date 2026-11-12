@@ -588,10 +588,10 @@ function geoQ() {
   soon();
 })();
 
-/* v846: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v847: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · v827: طلب الأهلية — زرّا «إلغاء الطلب» و«إرسال إشعار للعميل» ثابتان في رأس الطلب، وخطوات العمل شريطًا أفقيًا يعطي المحتوى العرض كاملًا، وقرار الأهلية بنموذج منظّم (حقول بعناوينها · مؤشرات · توصية)، والأرقام إنجليزية فقط.
-   · v846: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
+   · v847: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
    · v829: طلب الأهلية — التوصية عنوانًا وشارات قصيرة، وترتيب كل تبويب: العنوان وحده ← البيانات/القالب ← المعاينة والإرفاق ← الحفظ، ورسالة «ما وصل للعميل» فقاعة رسالة واضحة.
    · v828: قرار الأهلية — المؤشر وحدّه في سطر واحد، والتوصية مرة واحدة (بلا تكرارها في تقرير الأهلية)، وزر «معاينة ما وصل للعميل»، والرسالة: المعاينة أولًا وتفاصيل القالب بنصّ كامل غير مقصوص.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
@@ -1681,7 +1681,7 @@ function geoQ() {
   }
   /* طلبات الخدمات: بطاقات الطلبات (sr-brief) صفوفًا، وأرقام الحالات من بطاقات المنصة */
 
-  /* v846: مؤشر المراحل الست بالألوان (مكتملة · الآن · لم تبدأ) والإجراء التالي من مرحلة الطلب الفعلية */
+  /* v847: مؤشر المراحل الست بالألوان (مكتملة · الآن · لم تبدأ) والإجراء التالي من مرحلة الطلب الفعلية */
   var RQSTK = { docs: 0, rep: 1, qt: 2, inv: 3, ct: 4, adm: 5, done: 6 };
   function rqDots(k) {
     var n = RQSTK[k], d = mk('div', 'tqn-dots'); d.setAttribute('title', 'المراحل الست'); if (n === undefined) return d;
@@ -1816,10 +1816,10 @@ function geoQ() {
     });
     [].forEach.call(F.querySelectorAll('button'), function (x) { if (txt(x) !== 'ما وصل العميل') return; [].forEach.call(x.childNodes, function (n) { if (n.nodeType === 3 && /ما وصل العميل/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace('ما وصل العميل', 'معاينة ما وصل للعميل'); }); });
   }
-  /* v846: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
+  /* v847: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
      المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد) وكل تبويب يحمل المعاينة والمرفقات داخله؛ ملخص ثابت بجانب العمل؛ زر للإجراء التالي */
   var EGS = [
-    /* v846: المراحل الست كما في التصميم المعتمد */
+    /* v847: المراحل الست كما في التصميم المعتمد */
     { t: 'المستندات', k: [[/^المستندات$/, 'المرفقات'], [/^بيانات الطلب/, 'بيانات الطلب']] },
     { t: 'القرار', k: [[/^قرار الأهلية/, 'قرار الأهلية']] },
     { t: 'عرض السعر', k: [[/^عرض السعر/, 'عرض السعر']] },
@@ -1870,7 +1870,7 @@ function geoQ() {
       [].forEach.call(out.querySelectorAll('.eg-out-b .eg-hd'), function (h) { var hb = txt(h.querySelector(':scope > b')); if (hb && hb === ht) cls(h, 'tqn-hide', true); });
     }
     var sig = I.map(function (x) { return x.t + x.s + x.st + (x.on ? 1 : 0); }).join('|') + nt + (send ? '|S' : '|W');
-    if (W.__egSig === sig && W.querySelector(':scope > .tqn-egs') && main.querySelector(':scope > .tqn-egd, :scope > .tqn-egd-none') && lay.querySelector(':scope > .tqn-egsum')) return;
+    if (W.__egSig === sig && W.querySelector(':scope > .tqn-egs') && main.querySelector(':scope > .tqn-egd, :scope > .tqn-egd-none') && lay.querySelector(':scope > .tqn-egsum') && (!SN.length || W.querySelector('.tqn-sndb'))) return;
     W.__egSig = sig; cls(W, 'tqn-egf', true);
     var go = function (x) { return function () { var t = x.snd ? EGSEND : EGWORK, ch = ST.srT !== t; ST.srT = t; if (!x.on) x.b.click(); else if (ch) apply(); }; };
     /* 1) الخطوات */
@@ -1893,6 +1893,9 @@ function geoQ() {
       if (nx && !nx.on) { var gb = mk('button', 't2-btn is-primary is-sm tqn-egn-b', 'انتقل إليه'); gb.type = 'button'; gb.setAttribute('data-live-ok', ''); gb.addEventListener('click', go(nx)); nb.appendChild(gb); }
       var lb = nb.querySelector(':scope > div > small'); if (lb && txt(lb) === 'الخطوة التالية') lb.textContent = 'الإجراء التالي';
     }
+    /* v847: «الإرسال للعميل» داخل المرحلة (لا في الرأس)، و«رجوع إلى العمل على الطلب» داخل صفحة الإرسال */
+    var sbH = nb || R, osb = sbH.querySelector(':scope > .tqn-sndb'); if (osb) osb.remove();
+    if (SN.length) sbH.appendChild(egBtn('t2-btn is-sm tqn-sndb' + (send ? '' : ' is-primary'), send ? 'رجوع إلى العمل على الطلب' : 'الإرسال للعميل وسجله', function () { ST.srT = send ? EGWORK : EGSEND; apply(); }));
     /* 3) تبويبات داخل الخطوة (المستندات: عرض السعر · فاتورة المنتج · العقد) */
     var od = main.querySelector(':scope > .tqn-egd, :scope > .tqn-egd-none'); if (od) od.remove();
     var G = send ? { it: SN } : S[cur];
@@ -1970,7 +1973,7 @@ function geoQ() {
     }
     egPlace(D, anchor); if (!D.classList.contains('is-sheet')) setTimeout(function () { q.focus(); }, 0);
   }
-  /* v846: مكان القائمة — على الجوال لوحة من أسفل الشاشة بخلفية معتمة، وعلى الويب تحت الزر داخل صفحة الطلب فلا يقصّها حدّ القسم */
+  /* v847: مكان القائمة — على الجوال لوحة من أسفل الشاشة بخلفية معتمة، وعلى الويب تحت الزر داخل صفحة الطلب فلا يقصّها حدّ القسم */
   function egPlace(D, anchor) {
     var host = anchor.closest('.sr-full') || document.body;
     if (window.innerWidth <= 700) {
@@ -1984,7 +1987,7 @@ function geoQ() {
     host.appendChild(D); egDDo = D;
   }
   /* قائمة البنود فوق حقل «سطر لكل بند»: ترقيم · تعديل في المكان · إخفاء بالعين · أعلى/أسفل · حذف · إضافة من المكتبة
-     البند المخفي يبقى في مكانه وأوله «⊘» فلا يظهر في المستند (v846) ويرجع بالعين */
+     البند المخفي يبقى في مكانه وأوله «⊘» فلا يظهر في المستند (v847) ويرجع بالعين */
   var EGOFF = '⊘ ';
   function egOff(x) { return x.charAt(0) === '⊘'; }
   function egBare(x) { return x.replace(/^⊘\s*/, ''); }
@@ -2027,8 +2030,8 @@ function geoQ() {
     ta.addEventListener('input', function (ev) { if (raw && ev.isTrusted) { var n = box.querySelector('.tqn-cl-n'); if (n) n.textContent = String(egLn(ta.value).length); } });
     paint();
   }
-  /* v846: أقسام صفحة الرابط المضافة لهذا العميل — قسم من المكتبة أو فارغ، عنوان يُعدَّل في مكانه، وبنود تُضاف من المكتبة
-     أو تُكتب، ولكل قسم وبند: إخفاء بالعين · أعلى/أسفل · حذف. المضيف .eg-pg-blk من المنصة (v846) يحمل get/set/mark/can */
+  /* v847: أقسام صفحة الرابط المضافة لهذا العميل — قسم من المكتبة أو فارغ، عنوان يُعدَّل في مكانه، وبنود تُضاف من المكتبة
+     أو تُكتب، ولكل قسم وبند: إخفاء بالعين · أعلى/أسفل · حذف. المضيف .eg-pg-blk من المنصة (v847) يحمل get/set/mark/can */
   var egPgEd = {};
   function egPgBlk(h, kd) {
     var G = h.__pg; if (!G || h.__tqnPg) return; h.__tqnPg = 1;
@@ -2102,7 +2105,7 @@ function geoQ() {
     var fld = ta.closest('.t2-field') || ta.parentNode, box = mk('div', 'tqn-cl is-one'); ta.__tqnCl = box; fld.parentNode.insertBefore(box, fld);
     box.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', 'اختيار نص جاهز ▾', function (ev) { egDD(ev.currentTarget, { sug: sug, have: [ta.value.trim()], title: 'اختيار نص جاهز', pick: function (x) { egSet(ta, x.trim()); } }); }));
   }
-  /* v846: عنوان المستند — قائمة منسدلة بالعناوين الجاهزة، و«عنوان آخر…» يفتح مربع الكتابة */
+  /* v847: عنوان المستند — قائمة منسدلة بالعناوين الجاهزة، و«عنوان آخر…» يفتح مربع الكتابة */
   var EGTTL = { q: ['عرض السعر', 'عرض سعر منتج', 'عرض سعر وخطة دفع', 'عرض سعر بالتقسيط'], p: ['فاتورة المنتج', 'فاتورة شراء المنتج', 'موافقة شراء المنتج', 'فاتورة سداد قيمة المنتج'], c: ['العقد', 'عقد بيع بالتقسيط', 'عقد شراء منتج بالتقسيط', 'عقد البيع'] };
   function egTitle(ta, kd) {
     var fld = ta.closest('.t2-field') || ta.parentNode, L = EGTTL[kd] || [], box = mk('div', 'tqn-ttl'); ta.__tqnCl = box;
@@ -2116,7 +2119,7 @@ function geoQ() {
     box.appendChild(mk('span', 't2-field-k', 'عنوان المستند')); box.appendChild(sel);
     fld.parentNode.insertBefore(box, fld);
   }
-  /* v846: صلاحية عرض السعر — بعدد الأيام أو بتاريخ (المضيف .eg-valid من المنصة يحمل until/can/save؛ الحفظ admin_elig_quote_valid — stf_262) */
+  /* v847: صلاحية عرض السعر — بعدد الأيام أو بتاريخ (المضيف .eg-valid من المنصة يحمل until/can/save؛ الحفظ admin_elig_quote_valid — stf_262) */
   function egValid(h) {
     var V = h.__v; if (!V || h.__tqnV) return; h.__tqnV = 1;
     var pad = function (n) { return (n < 10 ? '0' : '') + n; }, iso = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
@@ -2144,7 +2147,7 @@ function geoQ() {
     h.appendChild(box);
   }
 
-  /* v846: الأقسام مطويّة افتراضيًا، تُفتح بالضغط على عنوانها، وفتح قسم يُغلق غيره (المستند · إعداد عرض السعر) */
+  /* v847: الأقسام مطويّة افتراضيًا، تُفتح بالضغط على عنوانها، وفتح قسم يُغلق غيره (المستند · إعداد عرض السعر) */
   var EGACC = {};
   function egAcc(scope, secSel, hdSel, key) {
     var S = [].slice.call(scope.querySelectorAll(secSel)); if (!S.length) return;
@@ -2163,7 +2166,7 @@ function geoQ() {
     });
     if (!d2) EGACC[key + '#d2'] = 0;
   }
-  /* v846: التاريخ يوم/شهر/سنة واسم اليوم، وتقويم داخل الإطار بدل حقل المتصفح (كان يخرج عن الإطار ويعرض الصيغة الأمريكية) */
+  /* v847: التاريخ يوم/شهر/سنة واسم اليوم، وتقويم داخل الإطار بدل حقل المتصفح (كان يخرج عن الإطار ويعرض الصيغة الأمريكية) */
   var AR_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   var AR_D = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'], AR_DS = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
   function dIso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -2211,7 +2214,7 @@ function geoQ() {
   }
   document.addEventListener('change', function (ev) { if (ev.target && ev.target.closest && ev.target.closest('.eg-valid')) soon(); }, true);
 
-  /* v846: معاينة المستند PDF بجانب المحرر (على الشاشات العريضة) وتتحدّث بعد كل تعديل */
+  /* v847: معاينة المستند PDF بجانب المحرر (على الشاشات العريضة) وتتحدّث بعد كل تعديل */
   var DOCK = false, dockT = 0;
   function egDockBtn() { return [].filter.call(document.querySelectorAll('.eg-out-b .eg-doc button'), function (b) { return txt(b) === 'معاينة PDF'; })[0]; }
   function dockOff() { DOCK = false; cls(document.body, 'tqn-dock', false); [].forEach.call(document.querySelectorAll('#axp-root'), function (x) { x.remove(); }); document.body.classList.remove('axp-on'); }
@@ -2245,7 +2248,7 @@ function geoQ() {
         if (ta.__tqnCl && ta.__tqnCl.isConnected) return;
         var ar = ta.closest('.stl-dc-add'); if (ar) { egClList(ta, [], ar); return; }
         var k = txt(ta.closest('.t2-field') && ta.closest('.t2-field').querySelector('.t2-field-k'));
-        /* v846: عنوان المستند قائمة منسدلة، وكل نص آخر (الشروط · التنويه · الإقرار) بنود في صفوف */
+        /* v847: عنوان المستند قائمة منسدلة، وكل نص آخر (الشروط · التنويه · الإقرار) بنود في صفوف */
         if (/عنوان المستند/.test(k)) egTitle(ta, kd);
         else if (/سطر لكل/.test(k) || EGSUG[h]) egClList(ta, EGSUG[h] || []);
       });
@@ -2272,7 +2275,7 @@ function geoQ() {
     [].forEach.call(M.querySelectorAll('.eg-out-b .eg-valid'), egValid);
     egAcc(M, '.eg-out-b section.stl-dc', '.stl-dc-h', 'dc:' + kd);
     try { egDock(M, st); } catch (e) { void e; }
-    /* v846: «فتح العرض» يفتح صفحة ثانية تكرر ما داخل الطلب (العرض · ما يراه العميل · سجل العرض · معاينات المستندات) */
+    /* v847: «فتح العرض» يفتح صفحة ثانية تكرر ما داخل الطلب (العرض · ما يراه العميل · سجل العرض · معاينات المستندات) */
     [].forEach.call(M.querySelectorAll('.eg-out-b button'), function (b) { if (txt(b) === 'فتح العرض') cls(b, 'tqn-hide', true); });
     /* صفحة الرابط: نص الإقرار من النصوص الجاهزة */
     [].forEach.call(M.querySelectorAll('.eg-out-b .t2-field'), function (f) {
@@ -2287,7 +2290,7 @@ function geoQ() {
     try { egFlow(F); } catch (e) { void e; }
     try { egCl(F); } catch (e) { void e; }
     try { egAcc(F, '.eq-inl section.stl-one-s', '.stl-one-h', 'eq'); egDates(F); } catch (e) { void e; }
-    /* v846: «إرسال إشعار للعميل» في رأس طلب الأهلية مكرر مع تبويب «المراسلة» */
+    /* v847: «إرسال إشعار للعميل» في رأس طلب الأهلية مكرر مع تبويب «المراسلة» */
     if (F.querySelector('.eg-work')) [].forEach.call(root.querySelectorAll('button'), function (b) { if (txt(b) === 'إرسال إشعار للعميل' && !b.closest('.sr-full')) cls(b, 'tqn-hide', true); });
     var G = { 'العمل على الطلب': [], 'الإسناد': [], 'المراسلة': [], 'إرسال المستندات': [], 'مسار الطلب': [] };
     [].forEach.call(F.children, function (x) {
@@ -2305,9 +2308,11 @@ function geoQ() {
     K.forEach(function (k) { G[k].forEach(function (x) { cls(x, 'tqn-st-hide', G[cur].indexOf(x) < 0); }); });
     try { srHead(F, K, cur); } catch (e) { void e; }
   }
-  /* v846: تصميم صفحة الطلب المعتمد — لا تبويبات علوية: أزرار في رأس الطلب، و«الإسناد · المراسلة · مسار الطلب» لوحة جانبية فوق العمل دون مغادرته، و«إرسال المستندات» يفتح من الرأس ويرجع منه */
+  /* v847: تصميم صفحة الطلب المعتمد — لا تبويبات علوية: أزرار في رأس الطلب، و«الإسناد · المراسلة · مسار الطلب» لوحة جانبية فوق العمل دون مغادرته، و«إرسال المستندات» يفتح من الرأس ويرجع منه */
   var SRDRW = { 'الإسناد': 1, 'المراسلة': 1, 'مسار الطلب': 1 };
-  /* v846: أعداد المراسلة والمسار للأزرار، والمسنَد إليه من قسم الإسناد */
+  /* v847: أزرار الرأس كما في التصميم — المراسلة · السجل · ملف العميل · •••؛ الإرسال من داخل المرحلة */
+  var SRLBL = { 'مسار الطلب': 'السجل' };
+  /* v847: أعداد المراسلة والمسار للأزرار، والمسنَد إليه من قسم الإسناد */
   function srCnt(F) {
     var o = {};
     [].forEach.call(F.querySelectorAll(':scope > section'), function (s) {
@@ -2325,8 +2330,8 @@ function geoQ() {
     if (!A || A.__sig !== K.join('|')) {
       if (A) { var op = A.querySelector('.tqn-pf'); if (op) T.appendChild(op); A.remove(); }
       A = mk('div', 'tqn-hacts'); A.__sig = K.join('|');
-      K.filter(function (k) { return k !== 'العمل على الطلب' && k !== 'الإسناد'; }).forEach(function (k) {
-        var b = egBtn('t2-btn is-sm tqn-ha', k, function () { ST.srT = ST.srT === k ? 'العمل على الطلب' : k; apply(); }); b.__k = k; A.appendChild(b);
+      K.filter(function (k) { return k !== 'العمل على الطلب' && k !== 'الإسناد' && k !== EGSEND; }).forEach(function (k) {
+        var b = egBtn('t2-btn is-sm tqn-ha', SRLBL[k] || k, function () { ST.srT = ST.srT === k ? 'العمل على الطلب' : k; apply(); }); b.__k = k; A.appendChild(b);
       });
       var host = T.querySelector('.tqn-sr-acts'); if (host) host.parentNode.insertBefore(A, host); else T.appendChild(A);
     }
@@ -2342,7 +2347,7 @@ function geoQ() {
     var CN = srCnt(F);
     [].forEach.call(A.children, function (b) {
       if (!b.__k) return;
-      var on = cur === b.__k, t = on && !SRDRW[b.__k] ? 'رجوع إلى الطلب' : b.__k, n = on ? '' : (CN[b.__k] || ''), sg = t + '|' + n;
+      var on = cur === b.__k, t = on && !SRDRW[b.__k] ? 'رجوع إلى الطلب' : (SRLBL[b.__k] || b.__k), n = on ? '' : (CN[b.__k] || ''), sg = t + '|' + n;
       cls(b, 'is-on', on); if (b.__s !== sg) { b.__s = sg; b.textContent = t; if (n) b.appendChild(mk('span', 'tqn-ha-n', n)); }
     });
     /* المسنَد إليه: زر بصورة رمزية بجانب الحالة، يفتح الإسناد */
@@ -2354,7 +2359,7 @@ function geoQ() {
       if (G.__s !== at) { G.__s = at; G.textContent = ''; G.appendChild(mk('span', 'tqn-asg-av', un ? '؟' : at.trim().charAt(0))); G.appendChild(document.createTextNode(un ? 'غير مسنَد — إسناد' : 'مسنَد إلى: ' + at)); }
       cls(G, 'is-un', un); cls(G, 'is-on', cur === 'الإسناد');
     } else if (G) G.remove();
-    /* v846: رقم الطلب في العنوان لا ينكسر عند الشرطة */
+    /* v847: رقم الطلب في العنوان لا ينكسر عند الشرطة */
     var tb = T.querySelector(':scope > .sr-full-h > b'); if (tb) [].forEach.call(tb.childNodes, function (n) { if (n.nodeType === 3 && /SR-/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/SR-([0-9A-F-]+)/g, function (z) { return z.replace(/-/g, '\u2011'); }); });
     cls(F, 'tqn-hd', true);
     var dr = !!SRDRW[cur]; cls(F, 'tqn-drw-on', dr); cls(document.body, 'tqn-drw-open', dr);

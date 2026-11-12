@@ -19217,10 +19217,10 @@ function egDocTools(x, c, kind, paint, full) { sgLogLoad(x, paint);
   const cur = function () { return D.d ? Object.assign({}, Q, { calc: Object.assign({}, c0, { doc: Object.assign({}, c0.doc || {}, (function () { const o = {}; o[kind] = D.d; return o; })()) }) }) : Q; };
   const save = async function () {
     if (D.busy) return; D.busy = true; D.err = ''; paint();
-    try { await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: D.d ? stlDocClean(Object.assign({}, D.d, { page: (c0.doc && c0.doc[kind] && c0.doc[kind].page) || D.d.page })) : null, p_attach: !!D.att }); D.busy = false; D.dirty = false; D.open = false; delete EQG[Q.id]; snack('حُفظ ' + EQ_DOC_NAME[kind] + ' — أعد معاينته على رقمك قبل الإرسال.'); paint(); }
+    try { await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: D.d ? stlDocClean(Object.assign({}, D.d, { page: (c0.doc && c0.doc[kind] && c0.doc[kind].page) || D.d.page })) : null, p_attach: full ? null : !!D.att }); /* v847: الإرفاق من صفحة الرابط */ D.busy = false; D.dirty = false; D.open = false; delete EQG[Q.id]; snack('حُفظ ' + EQ_DOC_NAME[kind] + ' — أعد معاينته على رقمك قبل الإرسال.'); paint(); }
     catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
   };
-  const kids = [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('إرفاق المستند', canDoc ? DS.select({ value: D.att ? 'pdf' : 'none', options: EQ_ATT, onChange: function (v) { D.att = v === 'pdf'; D.dirty = true; paint(); } }) : e('div', { class: 't2-input cu-bd-ro' }, D.att ? 'إرفاق المستند PDF' : 'بدون إرفاق'))]),
+  const kids = [full ? null : e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('إرفاق المستند', canDoc ? DS.select({ value: D.att ? 'pdf' : 'none', options: EQ_ATT, onChange: function (v) { D.att = v === 'pdf'; D.dirty = true; paint(); } }) : e('div', { class: 't2-input cu-bd-ro' }, D.att ? 'إرفاق المستند PDF' : 'بدون إرفاق'))]),
     e('div', { class: 't2-pb-actions' }, [DS.button('معاينة PDF', { size: 'sm', ui: 'file-pdf', onClick: function () { dcPdf(dcEqDoc(kind, cur(), ['sent', 'accepted'].indexOf(Q.status) < 0, { recv: kind === 'quote' ? '' : egRecvInfo(x).now })); } }),
       canDoc && !full ? DS.button(D.open ? 'إخفاء العناصر' : 'عناصر المستند — إضافة وحذف وإخفاء', { size: 'sm', ui: 'sliders-horizontal', onClick: function () { D.open = !D.open; if (D.open && !D.d) D.d = stlDocNorm(JSON.parse(JSON.stringify((c0.doc && c0.doc[kind]) || eqTplDoc(kind)))); paint(); } }) : null])];
   if (kind === 'quote' && Q && D.open) kids.push((function () { /* v837: صلاحية العرض (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-valid' }); h.__v = { until: Q.valid_until || '', can: !!canDoc && ['accepted', 'declined', 'expired', 'cancelled'].indexOf(Q.status) < 0, save: function (to) { return eqCall('admin_elig_quote_valid', { p_q: Q.id, p_until: to }).then(function () { Q.valid_until = to; delete EQG[Q.id]; snack('حُدّثت صلاحية عرض السعر.'); paint(); }); } }; return h; })());
@@ -19383,7 +19383,7 @@ function egPgSecs(kind, D, G, saved, paint) {
   const inp = function (f) {
     const x = e(f[3] ? 'textarea' : 'input', Object.assign({ class: 't2-input', placeholder: String(G[f[0]] || f[2] || ''), maxlength: f[3] ? '700' : '120', 'aria-label': f[1] }, f[3] ? { rows: '2' } : { type: 'text' }));
     x.value = V[f[0]] || '';
-    x.addEventListener('input', function () { V[f[0]] = x.value; D.dirty = true; });
+    x.addEventListener('input', function () { V[f[0]] = x.value; D.dirty = true; if (D.pvUp) D.pvUp(); });
     x.addEventListener('change', function () { paint(); });
     const row = DS.editField(f[1] + (saved[f[0]] ? ' — معدّل لهذا العميل' : ''), x);
     if (!f[4] || !P) return row;
@@ -19397,6 +19397,7 @@ function egPgSecs(kind, D, G, saved, paint) {
     const big = String(V[k] || '').length > 700;
     return e('div', { class: 'eg-ps-ack' }, L.map(function (t, i) {
       const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '700', 'aria-label': 'الإقرار ' + (i + 1) }); ta.value = t;
+      ta.addEventListener('input', function () { const A = L.slice(); A[i] = ta.value.trim(); V[k] = A.filter(Boolean).join('\n'); D.dirty = true; if (D.pvUp) D.pvUp(); });
       ta.addEventListener('change', function () { const A = L.slice(); A[i] = ta.value.trim(); put(A.filter(Boolean)); });
       return e('div', { class: 'eg-ps-ai' }, [e('span', { class: 'eg-ps-n' }, String(i + 1)), ta, e('div', { class: 'eg-ps-ab' }, [
         DS.button('↑', { size: 'sm', disabled: i === 0, onClick: function () { const A = L.slice(); A.splice(i - 1, 0, A.splice(i, 1)[0]); put(A); } }),
@@ -19421,6 +19422,14 @@ function egPgSecs(kind, D, G, saved, paint) {
     return e('section', { class: 'eg-ps-s' + (open ? ' is-open' : '') + (on ? '' : ' is-off') }, [hd, body]);
   }));
 }
+/* v847: «إرفاق المستند PDF» مكانه صفحة الرابط (ما يصل العميل مع الرابط) — يُحفظ مع «حفظ لهذا العميل» */
+function egPgAtt2(c, kind, Q, D, paint) {
+  if (['quote', 'purchase', 'contract'].indexOf(kind) < 0 || !Q) return null;
+  const D0 = c && c.doc && c.doc[kind], cs = Q.calc_staff || {};
+  const cur = D.att !== undefined ? !!D.att : (D0 && D0.q === Q.id ? !!D0.att : !!(cs.attach && cs.attach[kind]));
+  return e('div', { class: 'eg-pg-att' + (cur ? ' is-on' : '') }, [e('div', {}, [e('b', {}, 'المستند PDF مع الرابط'), e('small', {}, cur ? 'يُرفق مع رسالة واتساب والبريد عند الإرسال، فيفتحه العميل وينزّله منها.' : 'لن يُرفق المستند — تصل العميلَ صفحةُ الرابط وحدها.')]),
+    DS.select({ value: cur ? 'pdf' : 'none', options: EQ_ATT, onChange: function (v) { D.att = v === 'pdf'; D.dirty = true; paint(); } })]);
+}
 function egPvPage(x, c, kind, live, J, paint) {
   const V = egPvGet(x, kind, paint), F = EGP_F[kind] || [];
   const Q = J ? J.q : null, c0 = (Q && Q.calc) || {}, base = (c0.doc && c0.doc[kind]) || {}, saved = base.page || {};
@@ -19433,7 +19442,8 @@ function egPvPage(x, c, kind, live, J, paint) {
     try {
       const pg = reset ? {} : clean(), doc = Object.assign({}, base);
       if (Object.keys(pg).length) doc.page = pg; else delete doc.page;
-      await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: doc, p_attach: null });
+      await eqCall('admin_elig_quote_doc_save', { p_q: Q.id, p_kind: kind, p_doc: doc, p_attach: reset || D.att === undefined ? null : !!D.att });
+      if (D.att !== undefined && c.doc && c.doc[kind]) c.doc[kind].att = !!D.att; /* v847 */
       D.busy = false; D.dirty = false; if (reset) D.v = {}; delete EQG[Q.id]; egPvGet(x, kind, paint, true);
       snack(reset ? 'عادت صفحة الرابط للنسخة الافتراضية.' : 'حُفظت نصوص صفحة الرابط لهذا العميل.'); paint();
     } catch (err) { D.busy = false; D.err = (err && err.message) || 'تعذّر الحفظ.'; paint(); }
@@ -19452,13 +19462,15 @@ function egPvPage(x, c, kind, live, J, paint) {
     pl.kind = kind === 'result' ? 'elig' : kind; pl.preview = true; pl.can_decide = false;
     window.__ELIG_PV = pl;
     pv = e('iframe', { class: 'eq-cpv-f', title: 'معاينة صفحة الرابط كما يراها العميل', src: '/elig/?local=1&r=' + Date.now() });
+    /* v847: المعاينة تتحدّث أثناء الكتابة (بلا إعادة رسم المحرّر) */
+    const pvF = pv; D.pvUp = function () { clearTimeout(D.pvT); D.pvT = setTimeout(function () { if (!pvF.isConnected) return; const p2 = JSON.parse(JSON.stringify(V.d)); p2.doc = Object.assign({}, p2.doc || {}); p2.doc.page = Object.assign({}, p2.doc.page || {}, clean()); p2.kind = pl.kind; p2.preview = true; p2.can_decide = false; window.__ELIG_PV = p2; try { pvF.contentWindow.location.reload(); } catch (er) { pvF.src = '/elig/?local=1&r=' + Date.now(); } }, 450); };
   }
   const own = Object.keys(saved).length > 0;
   return e('div', { class: 'eg-pg' }, [
     e('div', { class: 'eg-pg-ed' }, [
       e('div', { class: 'eg-hd' }, [e('b', {}, 'صفحة الرابط'), DS.badge(F.length ? (own ? 'نسخة هذا العميل' : 'النسخة الافتراضية') : 'من القرار والتوصية', own ? 'info' : null)]),
       e('small', { class: 'cu-dr-hint' }, F.length ? 'ما تكتبه هنا لهذا العميل فقط، والحقل الفارغ يأخذ النص العام من «قوالب العقد ← صفحات الرابط».' : 'صفحة النتيجة تُبنى من التوصية والقرار كما يراها العميل.'),
-      F.length ? (egPgSecs(kind, D, G, saved, paint) || e('div', { class: 'sys-form cu-bd-form' }, fields)) : null, egPgAtt(c, kind, Q), F.length ? (function () { /* v834: مضيف أقسام صفحة الرابط (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-pg-blk' }); h.__pg = { can: canSave, get: function () { if (!Array.isArray(D.v.blocks)) D.v.blocks = []; return D.v.blocks; }, mark: function () { D.dirty = true; }, set: function (b) { D.v.blocks = b; D.dirty = true; paint(); } }; return h; })() : null,
+      F.length ? (egPgSecs(kind, D, G, saved, paint) || e('div', { class: 'sys-form cu-bd-form' }, fields)) : null, egPgAtt2(c, kind, Q, D, paint), F.length ? (function () { /* v834: مضيف أقسام صفحة الرابط (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-pg-blk' }); h.__pg = { can: canSave, get: function () { if (!Array.isArray(D.v.blocks)) D.v.blocks = []; return D.v.blocks; }, mark: function () { D.dirty = true; }, set: function (b) { D.v.blocks = b; D.dirty = true; paint(); } }; return h; })() : null,
       D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null,
       F.length && Q && !canSave ? e('small', { class: 'cu-dr-hint' }, 'تعديل نصوص هذه المرحلة غير متاح الآن بحسب حالة العرض أو صلاحيتك.') : null,
       e('div', { class: 't2-pb-actions' }, [
