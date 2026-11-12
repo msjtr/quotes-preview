@@ -588,10 +588,10 @@ function geoQ() {
   soon();
 })();
 
-/* v842: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
+/* v843: قسم العملاء بالتصوّر المعتمد (v735) + إصلاحات (v736–v748) —
    · v746: الملف بصفوف عرضية بلا عمودين، والمحتوى بعرض الصفحة، وبلا تكرار للأزرار والأرقام.
    · v827: طلب الأهلية — زرّا «إلغاء الطلب» و«إرسال إشعار للعميل» ثابتان في رأس الطلب، وخطوات العمل شريطًا أفقيًا يعطي المحتوى العرض كاملًا، وقرار الأهلية بنموذج منظّم (حقول بعناوينها · مؤشرات · توصية)، والأرقام إنجليزية فقط.
-   · v842: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
+   · v843: طلب الأهلية — خمس خطوات أفقية، المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد)، ملخص جانبي، وزر للإجراء التالي
    · v829: طلب الأهلية — التوصية عنوانًا وشارات قصيرة، وترتيب كل تبويب: العنوان وحده ← البيانات/القالب ← المعاينة والإرفاق ← الحفظ، ورسالة «ما وصل للعميل» فقاعة رسالة واضحة.
    · v828: قرار الأهلية — المؤشر وحدّه في سطر واحد، والتوصية مرة واحدة (بلا تكرارها في تقرير الأهلية)، وزر «معاينة ما وصل للعميل»، والرسالة: المعاينة أولًا وتفاصيل القالب بنصّ كامل غير مقصوص.
    · v822: «الطلبات والعقود» بتصميم جديد موحّد — لكل صفحة شريط علوي (الأيقونة · الاسم · وصف سطر · أرقام الحالات تصفّي · أزرار الصفحة) ثم بحث ثم جدول واحد (الرقم · العميل · التفاصيل · الحالة · فتح)، وصفحة الطلب برأس داكن وتبويبات (ومنها طلب الأهلية: العمل على الطلب · الإسناد · المراسلة · المسار).
@@ -1793,7 +1793,7 @@ function geoQ() {
     });
     [].forEach.call(F.querySelectorAll('button'), function (x) { if (txt(x) !== 'ما وصل العميل') return; [].forEach.call(x.childNodes, function (n) { if (n.nodeType === 3 && /ما وصل العميل/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace('ما وصل العميل', 'معاينة ما وصل للعميل'); }); });
   }
-  /* v842: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
+  /* v843: طلب الأهلية — خمس خطوات أفقية (البيانات · القرار · المستندات · الإرسال · الإغلاق) بدل القائمة الجانبية الطويلة؛
      المستندات تبويبات (عرض السعر · فاتورة المنتج · العقد) وكل تبويب يحمل المعاينة والمرفقات داخله؛ ملخص ثابت بجانب العمل؛ زر للإجراء التالي */
   var EGS = [
     { t: 'البيانات', k: [[/^المستندات$/, 'المرفقات'], [/^بيانات الطلب/, 'بيانات الطلب']] },
@@ -1943,7 +1943,7 @@ function geoQ() {
     }
     egPlace(D, anchor); if (!D.classList.contains('is-sheet')) setTimeout(function () { q.focus(); }, 0);
   }
-  /* v842: مكان القائمة — على الجوال لوحة من أسفل الشاشة بخلفية معتمة، وعلى الويب تحت الزر داخل صفحة الطلب فلا يقصّها حدّ القسم */
+  /* v843: مكان القائمة — على الجوال لوحة من أسفل الشاشة بخلفية معتمة، وعلى الويب تحت الزر داخل صفحة الطلب فلا يقصّها حدّ القسم */
   function egPlace(D, anchor) {
     var host = anchor.closest('.sr-full') || document.body;
     if (window.innerWidth <= 700) {
@@ -1957,7 +1957,7 @@ function geoQ() {
     host.appendChild(D); egDDo = D;
   }
   /* قائمة البنود فوق حقل «سطر لكل بند»: ترقيم · تعديل في المكان · إخفاء بالعين · أعلى/أسفل · حذف · إضافة من المكتبة
-     البند المخفي يبقى في مكانه وأوله «⊘» فلا يظهر في المستند (v842) ويرجع بالعين */
+     البند المخفي يبقى في مكانه وأوله «⊘» فلا يظهر في المستند (v843) ويرجع بالعين */
   var EGOFF = '⊘ ';
   function egOff(x) { return x.charAt(0) === '⊘'; }
   function egBare(x) { return x.replace(/^⊘\s*/, ''); }
@@ -2000,8 +2000,8 @@ function geoQ() {
     ta.addEventListener('input', function (ev) { if (raw && ev.isTrusted) { var n = box.querySelector('.tqn-cl-n'); if (n) n.textContent = String(egLn(ta.value).length); } });
     paint();
   }
-  /* v842: أقسام صفحة الرابط المضافة لهذا العميل — قسم من المكتبة أو فارغ، عنوان يُعدَّل في مكانه، وبنود تُضاف من المكتبة
-     أو تُكتب، ولكل قسم وبند: إخفاء بالعين · أعلى/أسفل · حذف. المضيف .eg-pg-blk من المنصة (v842) يحمل get/set/mark/can */
+  /* v843: أقسام صفحة الرابط المضافة لهذا العميل — قسم من المكتبة أو فارغ، عنوان يُعدَّل في مكانه، وبنود تُضاف من المكتبة
+     أو تُكتب، ولكل قسم وبند: إخفاء بالعين · أعلى/أسفل · حذف. المضيف .eg-pg-blk من المنصة (v843) يحمل get/set/mark/can */
   var egPgEd = {};
   function egPgBlk(h, kd) {
     var G = h.__pg; if (!G || h.__tqnPg) return; h.__tqnPg = 1;
@@ -2075,7 +2075,7 @@ function geoQ() {
     var fld = ta.closest('.t2-field') || ta.parentNode, box = mk('div', 'tqn-cl is-one'); ta.__tqnCl = box; fld.parentNode.insertBefore(box, fld);
     box.appendChild(egBtn('t2-btn is-sm tqn-cl-dd', 'اختيار نص جاهز ▾', function (ev) { egDD(ev.currentTarget, { sug: sug, have: [ta.value.trim()], title: 'اختيار نص جاهز', pick: function (x) { egSet(ta, x.trim()); } }); }));
   }
-  /* v842: عنوان المستند — قائمة منسدلة بالعناوين الجاهزة، و«عنوان آخر…» يفتح مربع الكتابة */
+  /* v843: عنوان المستند — قائمة منسدلة بالعناوين الجاهزة، و«عنوان آخر…» يفتح مربع الكتابة */
   var EGTTL = { q: ['عرض السعر', 'عرض سعر منتج', 'عرض سعر وخطة دفع', 'عرض سعر بالتقسيط'], p: ['فاتورة المنتج', 'فاتورة شراء المنتج', 'موافقة شراء المنتج', 'فاتورة سداد قيمة المنتج'], c: ['العقد', 'عقد بيع بالتقسيط', 'عقد شراء منتج بالتقسيط', 'عقد البيع'] };
   function egTitle(ta, kd) {
     var fld = ta.closest('.t2-field') || ta.parentNode, L = EGTTL[kd] || [], box = mk('div', 'tqn-ttl'); ta.__tqnCl = box;
@@ -2089,7 +2089,7 @@ function geoQ() {
     box.appendChild(mk('span', 't2-field-k', 'عنوان المستند')); box.appendChild(sel);
     fld.parentNode.insertBefore(box, fld);
   }
-  /* v842: صلاحية عرض السعر — بعدد الأيام أو بتاريخ (المضيف .eg-valid من المنصة يحمل until/can/save؛ الحفظ admin_elig_quote_valid — stf_262) */
+  /* v843: صلاحية عرض السعر — بعدد الأيام أو بتاريخ (المضيف .eg-valid من المنصة يحمل until/can/save؛ الحفظ admin_elig_quote_valid — stf_262) */
   function egValid(h) {
     var V = h.__v; if (!V || h.__tqnV) return; h.__tqnV = 1;
     var pad = function (n) { return (n < 10 ? '0' : '') + n; }, iso = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
@@ -2117,7 +2117,7 @@ function geoQ() {
     h.appendChild(box);
   }
 
-  /* v842: الأقسام مطويّة افتراضيًا، تُفتح بالضغط على عنوانها، وفتح قسم يُغلق غيره (المستند · إعداد عرض السعر) */
+  /* v843: الأقسام مطويّة افتراضيًا، تُفتح بالضغط على عنوانها، وفتح قسم يُغلق غيره (المستند · إعداد عرض السعر) */
   var EGACC = {};
   function egAcc(scope, secSel, hdSel, key) {
     var S = [].slice.call(scope.querySelectorAll(secSel)); if (!S.length) return;
@@ -2136,7 +2136,7 @@ function geoQ() {
     });
     if (!d2) EGACC[key + '#d2'] = 0;
   }
-  /* v842: التاريخ يوم/شهر/سنة واسم اليوم، وتقويم داخل الإطار بدل حقل المتصفح (كان يخرج عن الإطار ويعرض الصيغة الأمريكية) */
+  /* v843: التاريخ يوم/شهر/سنة واسم اليوم، وتقويم داخل الإطار بدل حقل المتصفح (كان يخرج عن الإطار ويعرض الصيغة الأمريكية) */
   var AR_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   var AR_D = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'], AR_DS = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
   function dIso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -2183,6 +2183,25 @@ function geoQ() {
     });
   }
   document.addEventListener('change', function (ev) { if (ev.target && ev.target.closest && ev.target.closest('.eg-valid')) soon(); }, true);
+
+  /* v843: معاينة المستند PDF بجانب المحرر (على الشاشات العريضة) وتتحدّث بعد كل تعديل */
+  var DOCK = false, dockT = 0;
+  function egDockBtn() { return [].filter.call(document.querySelectorAll('.eg-out-b .eg-doc button'), function (b) { return txt(b) === 'معاينة PDF'; })[0]; }
+  function dockOff() { DOCK = false; cls(document.body, 'tqn-dock', false); [].forEach.call(document.querySelectorAll('#axp-root'), function (x) { x.remove(); }); document.body.classList.remove('axp-on'); }
+  function dockOpen() { var b = egDockBtn(); if (!b) return; b.click(); setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 250); }
+  function dockRefresh() { clearTimeout(dockT); dockT = setTimeout(function () { if (DOCK) dockOpen(); }, 900); }
+  document.addEventListener('change', function (ev) { if (DOCK && ev.target && ev.target.closest && ev.target.closest('.eg-doc')) dockRefresh(); }, true);
+  document.addEventListener('click', function (ev) { var b = ev.target && ev.target.closest && ev.target.closest('.eg-doc button, .eg-doc input, .eg-doc label'); if (DOCK && b && !b.closest('.tqn-dock-b') && txt(b) !== 'معاينة PDF') dockRefresh(); }, true);
+  setInterval(function () { if (DOCK && !document.querySelector('.eg-out-b .eg-doc')) dockOff(); }, 1500);
+  function egDock(M, st) {
+    var doc = st === 'المستند' ? M.querySelector('.eg-out-b .eg-doc') : null;
+    if (!doc) { if (DOCK) dockOff(); return; }
+    if (DOCK && !document.querySelector('#axp-root')) { DOCK = false; cls(document.body, 'tqn-dock', false); }
+    var row = [].filter.call(doc.querySelectorAll('.t2-pb-actions'), function (r) { return /معاينة PDF/.test(txt(r)); })[0]; if (!row) return;
+    var tb = row.querySelector('.tqn-dock-b');
+    if (!tb) { tb = egBtn('t2-btn is-sm tqn-dock-b', '', function () { if (DOCK) dockOff(); else { DOCK = true; cls(document.body, 'tqn-dock', true); dockOpen(); } apply(); }); row.appendChild(tb); }
+    var t = DOCK ? 'إغلاق المعاينة الجانبية' : 'معاينة بجانب المحرر'; if (tb.textContent !== t) tb.textContent = t;
+  }
   function egKind(M) { var on = M.closest('.eg-work'); on = on && on.querySelector('.eg-nav-i.is-on'); var t = txt(on && on.querySelector('span')); return /فاتورة/.test(t) ? 'p' : /العقد/.test(t) ? 'c' : /عرض السعر/.test(t) ? 'q' : ''; }
   function egCl(F) {
     var M = F.querySelector('.eg-work .eg-main'); if (!M) return;
@@ -2199,7 +2218,7 @@ function geoQ() {
         if (ta.__tqnCl && ta.__tqnCl.isConnected) return;
         var ar = ta.closest('.stl-dc-add'); if (ar) { egClList(ta, [], ar); return; }
         var k = txt(ta.closest('.t2-field') && ta.closest('.t2-field').querySelector('.t2-field-k'));
-        /* v842: عنوان المستند قائمة منسدلة، وكل نص آخر (الشروط · التنويه · الإقرار) بنود في صفوف */
+        /* v843: عنوان المستند قائمة منسدلة، وكل نص آخر (الشروط · التنويه · الإقرار) بنود في صفوف */
         if (/عنوان المستند/.test(k)) egTitle(ta, kd);
         else if (/سطر لكل/.test(k) || EGSUG[h]) egClList(ta, EGSUG[h] || []);
       });
@@ -2225,7 +2244,8 @@ function geoQ() {
     [].forEach.call(M.querySelectorAll('.eg-out-b .eg-pg-blk'), function (h) { egPgBlk(h, kd); });
     [].forEach.call(M.querySelectorAll('.eg-out-b .eg-valid'), egValid);
     egAcc(M, '.eg-out-b section.stl-dc', '.stl-dc-h', 'dc:' + kd);
-    /* v842: «فتح العرض» يفتح صفحة ثانية تكرر ما داخل الطلب (العرض · ما يراه العميل · سجل العرض · معاينات المستندات) */
+    try { egDock(M, st); } catch (e) { void e; }
+    /* v843: «فتح العرض» يفتح صفحة ثانية تكرر ما داخل الطلب (العرض · ما يراه العميل · سجل العرض · معاينات المستندات) */
     [].forEach.call(M.querySelectorAll('.eg-out-b button'), function (b) { if (txt(b) === 'فتح العرض') cls(b, 'tqn-hide', true); });
     /* صفحة الرابط: نص الإقرار من النصوص الجاهزة */
     [].forEach.call(M.querySelectorAll('.eg-out-b .t2-field'), function (f) {
@@ -2240,11 +2260,11 @@ function geoQ() {
     try { egFlow(F); } catch (e) { void e; }
     try { egCl(F); } catch (e) { void e; }
     try { egAcc(F, '.eq-inl section.stl-one-s', '.stl-one-h', 'eq'); egDates(F); } catch (e) { void e; }
-    /* v842: «إرسال إشعار للعميل» في رأس طلب الأهلية مكرر مع تبويب «المراسلة» */
+    /* v843: «إرسال إشعار للعميل» في رأس طلب الأهلية مكرر مع تبويب «المراسلة» */
     if (F.querySelector('.eg-work')) [].forEach.call(root.querySelectorAll('button'), function (b) { if (txt(b) === 'إرسال إشعار للعميل' && !b.closest('.sr-full')) cls(b, 'tqn-hide', true); });
     var G = { 'العمل على الطلب': [], 'الإسناد': [], 'المراسلة': [], 'إرسال المستندات': [], 'مسار الطلب': [] };
     [].forEach.call(F.children, function (x) {
-      if (x.classList.contains('tqn-st') || x.classList.contains('tqn-dd')) return;
+      if (x.classList.contains('tqn-st') || String(x.className).indexOf('tqn-dd') >= 0 || String(x.className).indexOf('tqn-drw') >= 0) return;
       var h = txt(x.querySelector(':scope > .t2-sec-h .t2-group-t, :scope > .t2-sec-h h2, :scope > header h2, :scope > h3'));
       var k = /الإسناد/.test(h) ? 'الإسناد' : /مسار|السجل/.test(h) ? 'مسار الطلب' : x.matches('.sr-msg') || /مراسلة|رسالة/.test(h) ? 'المراسلة' : 'العمل على الطلب';
       G[k].push(x);
@@ -2256,7 +2276,30 @@ function geoQ() {
     var b = bar(F, first, K.map(function (k) { return { k: k, t: k }; }), cur, 'k', function (k) { ST.srT = k; });
     cls(b, 'is-set', true); cls(b, 'tqn-drt', true);
     K.forEach(function (k) { G[k].forEach(function (x) { cls(x, 'tqn-st-hide', G[cur].indexOf(x) < 0); }); });
+    try { srHead(F, K, cur); } catch (e) { void e; }
   }
+  /* v843: تصميم صفحة الطلب المعتمد — لا تبويبات علوية: أزرار في رأس الطلب، و«الإسناد · المراسلة · مسار الطلب» لوحة جانبية فوق العمل دون مغادرته، و«إرسال المستندات» يفتح من الرأس ويرجع منه */
+  var SRDRW = { 'الإسناد': 1, 'المراسلة': 1, 'مسار الطلب': 1 };
+  function srHead(F, K, cur) {
+    var T = F.parentElement && F.parentElement.querySelector(':scope > .sr-full-top'); if (!T) return;
+    var A = T.querySelector('.tqn-hacts');
+    if (!A || A.__sig !== K.join('|')) {
+      if (A) A.remove(); A = mk('div', 'tqn-hacts'); A.__sig = K.join('|');
+      K.filter(function (k) { return k !== 'العمل على الطلب'; }).forEach(function (k) {
+        var b = egBtn('t2-btn is-sm tqn-ha', k, function () { ST.srT = ST.srT === k ? 'العمل على الطلب' : k; apply(); }); b.__k = k; A.appendChild(b);
+      });
+      var host = T.querySelector('.tqn-sr-acts'); if (host) host.parentNode.insertBefore(A, host); else T.appendChild(A);
+    }
+    [].forEach.call(A.children, function (b) { var on = cur === b.__k, t = on && !SRDRW[b.__k] ? 'رجوع إلى الطلب' : b.__k; cls(b, 'is-on', on); if (b.textContent !== t) b.textContent = t; });
+    cls(F, 'tqn-hd', true);
+    var dr = !!SRDRW[cur]; cls(F, 'tqn-drw-on', dr); cls(document.body, 'tqn-drw-open', dr);
+    if (!F.querySelector(':scope > .tqn-drw-x')) {
+      var back = function () { ST.srT = 'العمل على الطلب'; apply(); };
+      var sc = mk('div', 'tqn-drw-sc'); sc.addEventListener('click', back); F.appendChild(sc);
+      F.appendChild(egBtn('tqn-drw-x t2-btn is-sm', '✕ إغلاق', back));
+    }
+  }
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && document.body.classList.contains('tqn-drw-open')) { var x = document.querySelector('.sr-full.tqn-drw-on > .tqn-drw-x'); if (x) x.click(); } });
   /* ── 8) v764: صفحات التفاصيل داخل الصفحة (لا أدراج): القائمة الجانبية والهيدر ظاهران، ورأس صفحة، وأيقونة لكل معلومة ── */
   var TQIC = {
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',

@@ -19117,7 +19117,9 @@ function sgLogLoad(x, paint) {
 }
 function dcSgRow(kind, Q) { return Q && Q.id && (kind === 'quote' || kind === 'purchase') ? SGLOG[kind + ':' + Q.id] || null : null; }
 function dcSignBlk(kind, Q) {
-  const g = dcSgRow(kind, Q); if (!g) return null;
+  const g = dcSgRow(kind, Q);
+  /* v843: قبل قبول العميل — مكان التوثيق ظاهر «بانتظار العميل» ويُملأ تلقائيًا من رابطه */
+  if (!g) return kind === 'quote' && Q && ['accepted', 'rejected', 'cancelled', 'expired'].indexOf(Q.status) < 0 ? d3Card('قبول العميل وتوثيقه', 'pen', [d3KV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', 'قبول عرض السعر'], ['وقت العملية', '..............................'], ['التحقق', 'رمز تحقق لمرة واحدة (واتساب أو البريد)'], ['أُرسل الرمز إلى', '..............................'], ['مرجع العملية', '..............................']]), e('p', { class: 'd3-cfs-p is-st' }, 'بانتظار العميل — يُملأ تلقائيًا عند قبوله العرض من رابطه.')], 'is-sign') : null;
   const dt = (function () { try { const t = new Date(g.at); return isNaN(t) ? '—' : t.toLocaleString('en-CA', { timeZone: 'Asia/Riyadh', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') + ' (توقيت الرياض)'; } catch (err) { return '—'; } })();
   const fac = /mail/.test(g.factor || '') ? 'رمز تحقق عبر البريد' : /wa|whats/.test(g.factor || '') ? 'رمز تحقق عبر واتساب' : '—';
   return d3Card(kind === 'purchase' ? 'اعتماد العميل وتوثيقه' : 'قبول العميل وتوثيقه', 'pen', [
