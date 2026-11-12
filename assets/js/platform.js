@@ -19724,7 +19724,7 @@ function srdItems(x, D, C, mark, rerun) {
 function srdPaper(spec, lg) {
   try {
     const P = e('div', { class: 'srd-paper' + (lg ? ' is-lg' : '') });
-    const pg = e('div', { class: 'axp-page srd-pg ' + (spec.cls || '') + (spec.draft ? ' is-draft' : '') });
+    const pg = e('div', { class: 'axp-page dc3 srd-pg ' + (spec.cls || '') + (spec.draft ? ' is-draft' : '') });
     pg.appendChild(e('header', { class: 'srd-pg-h' }, [IMG && IMG.logo ? e('img', { src: IMG.logo, alt: 'تيرا' }) : null, e('div', {}, [e('b', {}, spec.title || spec.label || ''), e('small', {}, spec.sub || '')]), spec.pill ? e('span', { class: 'srd-pg-pill' }, spec.pill) : null]));
     pg.appendChild(e('div', { class: 'srd-pg-m' }, (spec.meta || []).concat(spec.meta3 || []).filter(Boolean).map(function (m) { return e('span', {}, [m[0] + ': ', e('b', { dir: m[2] === false ? null : 'ltr' }, m[1])]); })));
     (spec.blocks || []).forEach(function (b) { if (b && b.nodeType) pg.appendChild(b); });
@@ -20158,7 +20158,7 @@ function srdDrawer(k, x, c, RF, live) {
     const F = [['all', 'الكل'], ['send', 'الإرسال'], ['dec', 'القرارات والإسناد'], ['doc', 'المستندات'], ['msg', 'المراسلة']], A = srdLogRows(x);
     D.appendChild(e('div', { class: 'dr-f' }, F.map(function (f) { const n = f[0] === 'all' ? A.length : A.filter(function (z) { return z[3] === f[0]; }).length; return e('button', { class: 'chip' + (SRD_DRW.f === f[0] ? ' brand' : ''), style: 'border:0', type: 'button', 'aria-pressed': SRD_DRW.f === f[0] ? 'true' : 'false', 'data-live-ok': '', onClick: function () { SRD_DRW.f = f[0]; paint(); } }, [f[1], n ? ' ' + fmtNum(n) : '']); })));
     const S = A.filter(function (z) { return SRD_DRW.f === 'all' || z[3] === SRD_DRW.f; }), IC = { send: 'send', dec: 'ok', doc: 'pdf', msg: 'chat' };
-    D.appendChild(e('div', { class: 'dr-b' }, [S.length ? e('div', { class: 'tl' }, S.map(function (z) { return e('div', { class: 'tl-i' }, [e('span', { class: 'tl-d ' + z[3] }, [srdIc(IC[z[3]])]), e('div', { class: 'tl-t' }, [e('b', {}, z[1]), e('small', {}, [z[2], egjDt(z[0])].filter(Boolean).join(' · '))])]); }))
+    D.appendChild(e('div', { class: 'dr-b' }, [S.length ? e('div', { class: 'srd-tl' }, S.map(function (z) { return e('div', { class: 'srd-tli' }, [e('span', { class: 'srd-tld ' + z[3] }, [srdIc(IC[z[3]])]), e('div', { class: 'srd-tlt' }, [e('b', {}, z[1]), e('small', {}, [z[2], egjDt(z[0])].filter(Boolean).join(' · '))])]); }))
       : e('p', { class: 'hint' }, (EGJ[x.id] || {}).busy ? 'جارٍ القراءة…' : 'لا أحداث في هذا التصنيف.')]));
     D.appendChild(e('div', { class: 'dr-foot' }, [e('p', { class: 'hint', style: 'margin:0' }, 'مسار الطلب وسجل الإرسال والمراسلة في مكان واحد.')]));
   } else {
@@ -20175,22 +20175,22 @@ window.tqSrdCnt = function () { const S = SRD_CUR; if (!S.x) return {}; const M 
 function srdAdmPv(kind, D, x, A) {
   const nm = (A && A.name) || x.client_name || x.name || '—', no = (A && A.contract_no) || '';
   const P = e('div', { class: 'paper' });
-  const kv = function (L) { return e('div', { class: 'pp-kv' }, L.map(function (z) { return e('div', {}, [e('span', {}, z[0]), e('b', { dir: z[2] ? 'ltr' : null }, z[1] || '—')]); })); };
-  P.appendChild(e('div', { class: 'pp-top' }, [e('div', { class: 'pp-logo' }, [e('i', {}, 'ت'), 'تيرا']), e('span', { class: 'pp-tag' }, 'مسودة')]));
+  const kv = function (L) { return e('div', { class: 'spp-kv' }, L.map(function (z) { return e('div', {}, [e('span', {}, z[0]), e('b', { dir: z[2] ? 'ltr' : null }, z[1] || '—')]); })); };
+  P.appendChild(e('div', { class: 'spp-top' }, [e('div', { class: 'spp-logo' }, [e('i', {}, 'ت'), 'تيرا']), e('span', { class: 'spp-tag' }, 'مسودة')]));
   if (kind === 'bond') {
-    P.appendChild(e('div', { class: 'pp-title' }, 'سند لأمر'));
+    P.appendChild(e('div', { class: 'spp-title' }, 'سند لأمر'));
     P.appendChild(kv([['المدين', nm], ['الدائن', 'منصة تيرا للخدمات'], ['المبلغ', D && Number(D.val) > 0 ? srdM(D.val) + ' ر.س' : '—'], ['رقم السند', D && D.no, true], ['التاريخ', D && D.date ? srdDmy(D.date) : '—'], ['العقد', no, true]]));
-    P.appendChild(e('div', { class: 'pp-sign' }, [e('div', {}, 'توقيع المدين'), e('div', {}, 'ختم نافذ')]));
+    P.appendChild(e('div', { class: 'spp-sign' }, [e('div', {}, 'توقيع المدين'), e('div', {}, 'ختم نافذ')]));
   } else if (kind === 'payout') {
     const acct = D ? AX_ACCTS.filter(function (a) { return a[0] === D.acct; })[0] : null;
-    P.appendChild(e('div', { class: 'pp-title' }, 'أمر تحويل للمورّد'));
+    P.appendChild(e('div', { class: 'spp-title' }, 'أمر تحويل للمورّد'));
     P.appendChild(kv([['العميل', nm], ['العقد', no, true], ['المبلغ', D && Number(D.amt) > 0 ? srdM(D.amt) + ' ر.س' : '—'], ['التاريخ', D && D.date ? srdDmy(D.date) : '—'], ['من حساب', acct ? acct[1] + ' ••' + acct[2] : '—'], ['إلى', D && D.own === 'no' ? (D.holder || '—') + ' · ••' + String(D.iban || '').slice(-4) : 'حساب العميل المسجّل']]));
   } else if (kind === 'cheque' || kind === 'standing_order') {
-    P.appendChild(e('div', { class: 'pp-title' }, kind === 'cheque' ? 'الشيكات' : 'الأمر المستديم'));
+    P.appendChild(e('div', { class: 'spp-title' }, kind === 'cheque' ? 'الشيكات' : 'الأمر المستديم'));
     P.appendChild(kv([['العميل', nm], ['العقد', no, true], ['النوع', kind === 'cheque' ? 'شيكات' : 'أمر مستديم']]));
     P.appendChild(e('p', { class: 'hint', style: 'margin:0' }, 'تفاصيل الدفعات كما تُدخلها في النموذج — تُسجَّل في قسمها بملف العميل.'));
   }
-  P.appendChild(e('div', { class: 'pp-foot' }, [e('span', {}, x.req_no || ''), e('span', { class: 'pp-qr' })]));
+  P.appendChild(e('div', { class: 'spp-foot' }, [e('span', {}, x.req_no || ''), e('span', { class: 'spp-qr' })]));
   return P;
 }
 function srdAdm(x, ctT, ctNo, ctj, paint) {
@@ -20202,7 +20202,15 @@ function srdAdm(x, ctT, ctNo, ctj, paint) {
   if (!ctNo) { W.appendChild(e('div', { class: 'lock' }, [srdIc('lock'), 'تبدأ هذه المرحلة بعد صدور العقد وتوقيع العميل.'])); return W; }
   if (x.executed_at && !A) { W.appendChild(egAdmPane(x, ctT, ctNo, ctj, paint)); return W; }
   if (!signed) W.appendChild(e('div', { class: 'lock' }, [srdIc('lock'), 'بانتظار توقيع العميل على العقد ' + ctNo + ' — يمكنك تحديد الإجراءات المطلوبة الآن، و«إغلاق الطلب» بعد التوقيع.']));
-  if (!A) { W.appendChild(e('p', { class: 'hint' }, CTADM.at ? 'لا إجراءات معلّقة على العقد ' + ctNo + '.' : 'جارٍ قراءة إجراءات الإدارة…')); return W; }
+  if (!A) {
+    if (!CTADM.at) { W.appendChild(e('p', { class: 'hint' }, 'جارٍ قراءة إجراءات الإدارة…')); return W; }
+    /* لا إجراءات مسجّلة بعد على هذا العقد: المهام كما في التصميم، وتُحدَّد المطلوبة منها هنا */
+    const can0 = CTADM.can || {};
+    const rpc0 = async function (k) { if (EGADM.busy || !id) return; EGADM.busy = true; EGADM.err = ''; paint(); try { const j = await admRpc('admin_contract_admin_set', { p_contract: id, p_kind: k, p_required: true }); if (j && j.ok === false) throw new Error(ADM_ERR[j.error] || j.message || 'تعذّر تنفيذ الإجراء.'); EGADM.busy = false; snack('أُضيف إلى الإجراءات المطلوبة.'); CTADM.at = 0; await ctAdmLoad(); paint(); } catch (err) { EGADM.busy = false; EGADM.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; paint(); } };
+    W.appendChild(e('div', { class: 'tasks' }, [e('div', { class: 'card' }, CTADM_K.map(function (z, i) { return e('div', { class: 'task' }, [e('span', { class: 'num' }, String(i + 1)), e('span', { class: 'lbl' }, [e('b', {}, z[1]), e('span', {}, 'غير مطلوب لهذا العقد')]), can0.m && id ? srdB('مطلوب', { sm: true, ic: 'plus', dis: EGADM.busy, live: true }, function () { rpc0(z[0]); }) : srdChip('—')]); }).concat([e('div', { class: 'task' }, [e('span', { class: 'num' }, String(CTADM_K.length + 1)), e('span', { class: 'lbl' }, [e('b', {}, 'إغلاق الطلب'), e('span', {}, 'بعد التوقيع واكتمال المطلوب')]), srdChip('لم يبدأ')])])),
+      e('div', { class: 'det' }, [e('p', { class: 'hint' }, 'لا إجراءات مطلوبة بعد على العقد ' + ctNo + '. حدّد ما يلزمه (السند · التحويل · الشيكات · الأمر المستديم) ليُعبّأ هنا بنموذج ومعاينة، ثم «إغلاق الطلب».'), EGADM.err ? e('p', { class: 'warnp' }, EGADM.err) : null])]));
+    return W;
+  }
   const can = CTADM.can || {}, uid = x.user_id, ready = items.length > 0 && nOk === items.length;
   const T = items.map(function (i) { const z = CTADM_K.filter(function (q) { return q[0] === i.kind; })[0]; return { k: i.kind, t: i.label || (z ? z[1] : i.kind), ok: !!i.ok, by: i.required_by || '', it: i }; });
   T.push({ k: 'close', t: 'إغلاق الطلب', ok: false, close: true });
@@ -20217,7 +20225,7 @@ function srdAdm(x, ctT, ctNo, ctj, paint) {
   }));
   const det = e('div', { class: 'det' }, [e('div', { class: 'sh' }, [e('h3', { style: 'font-size:17px' }, cur.t), srdChip(cur.close ? (ready ? 'جاهز' : 'لم يبدأ') : cur.ok ? 'منجز' : 'لم يبدأ', cur.ok ? 'ok' : null)])]);
   if (cur.close) {
-    det.appendChild(e('div', { class: 'card' }, T.filter(function (t) { return !t.close; }).map(function (t) { return e('div', { class: 'chk' }, [e('span', { class: 'tl-d ' + (t.ok ? 'dec' : '') }, [srdIc(t.ok ? 'ok' : 'x')]), e('b', {}, t.t), srdChip(t.ok ? 'منجز' : 'متبقٍّ', t.ok ? 'ok' : 'warn')]); })));
+    det.appendChild(e('div', { class: 'card' }, T.filter(function (t) { return !t.close; }).map(function (t) { return e('div', { class: 'chk' }, [e('span', { class: 'srd-tld ' + (t.ok ? 'dec' : '') }, [srdIc(t.ok ? 'ok' : 'x')]), e('b', {}, t.t), srdChip(t.ok ? 'منجز' : 'متبقٍّ', t.ok ? 'ok' : 'warn')]); })));
     det.appendChild(e('div', { class: 'kv' }, [['توقيع العميل', A.signed_at ? srdDmy(A.signed_at) : 'لم يوقّع بعد'], ['العقد النهائي', A.final_sent_at ? 'أُرسل ' + srdDmy(A.final_sent_at) : 'لم يُرسل بعد'], ['الإجراءات', ctAdmSt(A)[0]]].map(function (z) { return e('div', {}, [e('span', { class: 'k' }, z[0]), e('b', { style: 'font-size:14px' }, z[1])]); })));
     if (can.f) det.appendChild(e('div', { class: 'addrow' }, [ready ? admTwoStep('إغلاق الطلب', 'primary', function () { return rpc('admin_contract_finalize', {}, 'أُغلق الطلب — يظهر العقد الآن كسائر العقود.'); }, 'seal-check') : srdB('إغلاق الطلب', { pri: true, dis: true })]));
     det.appendChild(e('p', { class: 'hint', style: 'margin:0' }, can.f ? 'يُفعَّل «إغلاق الطلب» بعد اكتمال الإجراءات المطلوبة وتوقيع العميل. بعد الإغلاق يمكن إعادة فتحه داخليًا لأي تصحيح.' : 'يُغلقه من يملك صلاحية «إغلاق الطلب».'));
@@ -20274,7 +20282,7 @@ function srdOut(x, c, kind, live, paint, setup) {
     else if (cur === 'page') body = srdPage(x, c, kind, live, J, paint);
   } catch (err) { try { console.warn('[srd-out]', kind, cur, err && err.message); } catch (y) { void y; } body = e('p', { class: 'warnp' }, 'تعذّر عرض هذا القسم — أعد تحميل الصفحة.'); }
   let head = null; try { head = srdStageHead(x, c, kind, live, J, paint); } catch (err) { void err; }
-  return e('div', { class: 'eg-out srd', 'data-srd-k': kind }, [head, nav, e('div', { class: 'srd-b', role: 'tabpanel' }, [body])]);
+  return e('div', { class: 'srd srd-out', 'data-srd-k': kind }, [head, nav, e('div', { class: 'srd-b', role: 'tabpanel' }, [body])]);
 }
 
 function egOut(x, c, kind, live, paint, setup, head) {
