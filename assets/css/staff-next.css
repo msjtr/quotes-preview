@@ -3894,3 +3894,21 @@ html .srd .sh.sh,html .srd-l .sh.sh,html #pv-host .srd .sh.sh{position:static;ov
 html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .srd p,.srd-l p{margin:0}
 .srd h2,.srd h3,.srd h4,.srd-l h3{margin:0;color:inherit}
+/* v853: شريط التبويبات بلا تمرير رأسي (كان يُظهر سهمين بجانبه) */
+.srd .subnav{overflow-y:hidden}
+/* v853: رأس الطلب كحلي كما في التصميم */
+.tq-next .sr-full-top{background:linear-gradient(160deg,#123349,#0c2638)!important;border-radius:16px!important}
+/* v853: رأس قائمة طلبات الخدمات بسيط — «الطلبات والعقود» فوق العنوان، والتصفية شرائح */
+.tq-next .ax-top.srd-lh{background:none!important;box-shadow:none!important;border:0!important;padding:0!important;color:#0f2236!important;min-height:0!important}
+.tq-next .ax-top.srd-lh::before,.tq-next .ax-top.srd-lh::after{display:none!important}
+.tq-next .ax-top.srd-lh .ax-top-t b{color:#0f2236!important;font-size:24px!important}
+.tq-next .ax-top.srd-lh .ax-top-t b::before{content:"الطلبات والعقود";display:block;font-size:12px;font-weight:500;color:#5c6c7c}
+.tq-next .ax-top.srd-lh .ax-top-t small{display:none!important}
+.tq-next .ax-top.srd-lh .t2-btn{background:#fff!important;color:#0a737a!important;border:1px solid #dce3e9!important}
+.tq-next .ax-top.srd-lh .cu-kpis{display:flex!important;flex-wrap:wrap;gap:6px}
+.tq-next .ax-top.srd-lh .cu-kpi{flex:none!important;display:inline-flex!important;flex-direction:row-reverse;align-items:center;gap:6px;min-height:0!important;padding:4px 12px!important;border:1px solid #dce3e9!important;border-radius:99px!important;background:#fff!important;color:#5c6c7c!important;box-shadow:none!important}
+.tq-next .ax-top.srd-lh .cu-kpi .cu-kpi-ic{display:none!important}
+.tq-next .ax-top.srd-lh .cu-kpi b{font-size:11.5px!important;background:#edf2f5;border-radius:99px;padding:0 7px;color:#0f2236!important}
+.tq-next .ax-top.srd-lh .cu-kpi small{font-size:13px!important;font-weight:600;color:inherit!important}
+.tq-next .ax-top.srd-lh .cu-kpi.is-on{border-color:#0a737a!important;color:#0a737a!important;background:#e1f1f1!important}
+.srd .att .vld{justify-content:flex-end}

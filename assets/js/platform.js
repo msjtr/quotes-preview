@@ -20507,7 +20507,26 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
     };
     
 const paneOf = function (tab) { let pane = null; /* v686: لوحات الخطوات تُجمع في المراحل الست */
-    if (tab === 'docs') pane = e('div', { class: 'sr-stl' }, [e('b', {}, 'المستندات'),
+    if (tab === 'docs' && TQN) { /* v853: مرحلة المستندات كما في التصميم */
+      const askMore = function () { c.tab = 'fix'; const W = c.fix || (c.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false }); W.form = true; W.type = 'doc'; paint(); };
+      const L = rules.map(function (r) {
+        const d = docs.filter(function (y) { return y.doc_type === r.doc_type; })[0], ak = asked[r.doc_type], st = d ? (DOCST[d.status] || [d.status, 'info']) : ['لم يرفعه العميل', null];
+        const tone = ({ ok: 'ok', warn: 'warn', danger: 'bad', info: 'info' })[st[1]] || null, lbl = (r.doc_type === 'job_other' && ak ? 'مرفق آخر: ' + ak.label : (r.label || r.doc_type));
+        const sub = d ? [d.name || '', d.uploaded_at ? srdDmy(d.uploaded_at) : '', d.reject_reason ? 'السبب: ' + d.reject_reason : ''].filter(Boolean).join(' · ') : (ak && ak.note ? 'المطلوب: ' + ak.note : (r.note || (r.requirement === 'required' ? 'مطلوب' : 'اختياري')));
+        const acts = [srdChip(st[0], tone, true)];
+        if (d && d.path) acts.push(srdB('عرض', { sm: true, ic: 'eye' }, function () { egDocOpen(Object.assign({ label: r.label }, d)); }));
+        if (d && d.status !== 'accepted') acts.push(srdB(c.dec === d.id ? 'جارٍ…' : 'قبول', { sm: true, pri: true, ic: 'ok', dis: !!c.dec, live: true }, function () { decide(d, 'accepted'); }));
+        if (d && d.status !== 'rejected') acts.push(srdB('رفض بسبب', { sm: true, ic: 'x', dis: !!c.dec }, function () { c.rej = c.rej === d.id ? '' : d.id; c.why = ''; paint(); }));
+        const row = e('div', { class: 'att' }, [e('span', { class: 'srd-tld ' + (d && d.status === 'accepted' ? 'dec' : d ? 'msg' : '') }, [srdIc(d && d.status === 'accepted' ? 'ok' : 'pdf')]), e('div', { class: 'lbl' }, [e('b', {}, lbl), e('span', {}, sub)]), e('div', { class: 'vld' }, acts)]);
+        if (!(d && c.rej === d.id)) return row;
+        const ta = e('textarea', { class: 'fin', rows: '2', maxlength: '300', placeholder: 'سبب الرفض — يصل للعميل', 'aria-label': 'سبب الرفض' }); ta.value = c.why || ''; ta.addEventListener('input', function () { c.why = ta.value; });
+        return e('div', {}, [row, e('div', { class: 'inl', style: 'padding:8px 12px' }, [ta, e('div', { class: 'bb' }, [srdB('تأكيد الرفض', { sm: true, danger: true, dis: !!c.dec, live: true }, function () { const w = String(c.why || '').trim(); if (w.length < 3) { snack('اكتب سبب الرفض — يصل للعميل.'); return; } decide(d, 'rejected', w); }), srdB('إلغاء', { sm: true }, function () { c.rej = ''; c.why = ''; paint(); })])])]);
+      });
+      pane = e('div', { class: 'srd' }, [e('section', { class: 'stage-simple', 'aria-label': 'المستندات' }, [
+        e('div', { class: 'sh' }, [e('h2', {}, 'المستندات'), rules.length ? srdChip(fmtNum(acc) + ' من ' + fmtNum(rules.length) + ' مقبول', acc === rules.length ? 'ok' : 'warn') : null, e('span', { class: 'sp' }), e('div', { class: 'sh-acts' }, [srdB('طلب مستند إضافي', { ic: 'plus' }, askMore), srdB('ملف العميل', { ic: 'user' }, function () { ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); })])]),
+        !c.at ? e('p', { class: 'hint' }, 'جارٍ قراءة مستندات العميل…') : !J ? e('p', { class: 'warnp' }, 'تعذّرت قراءة مرفقات الوظيفة — تحتاج صلاحية إدارة العملاء.') : rules.length ? e('div', { class: 'card' }, L) : e('p', { class: 'hint' }, 'لا مرفقات مطلوبة لحالته الوظيفية.')])]);
+    }
+    else if (tab === 'docs') pane = e('div', { class: 'sr-stl' }, [e('b', {}, 'المستندات'),
       !c.at ? e('small', { class: 'cu-dr-hint' }, 'جارٍ قراءة مستندات العميل…')
         : !J ? DS.note('warn', 'تعذّرت قراءة مرفقات الوظيفة', 'تحتاج صلاحية إدارة العملاء.')
           : rules.length ? e('div', { class: 'cu-mgr-docs' }, rowsDoc) : CF_EMPTY('لا مرفقات مطلوبة لحالته الوظيفية.'),
@@ -21216,7 +21235,7 @@ function srFullPage(x, RF) {
   ADM.svFocus = x.id;
   return [e('div', { class: 'sr-full-top' }, [
       liveOk(DS.button('كل الطلبات', { size: 'sm', ui: 'arrow-right', onClick: function () { ADM.svOpen = ''; RF.paint(); } })),
-      e('div', { class: 'sr-full-h' }, [e('b', {}, 'طلب ' + K[1] + ' · ' + x.req_no), e('small', {}, srName(x.user_id) + ' · ' + iso(new Date(x.created_at)))]),
+      e('div', { class: 'sr-full-h' }, [e('b', {}, 'طلب ' + K[1] + ' · ' + x.req_no), e('small', {}, [srName(x.user_id) || x.client_name || '—', iso(new Date(x.created_at))].concat(TQN && x.kind === 'elig' ? (function () { try { const N = egNums(x); return N.inc ? ['الدخل ' + srdM(N.inc), 'الصافي ' + srdM(N.net)] : []; } catch (err) { return []; } })() : []).join(' · '))]), /* v853 */
       DS.badge(st[0], st[1] || null),
       DS.button('ملف العميل', { size: 'sm', ui: 'user-circle', onClick: function () { ADM.pfc = x.user_id; FX.pfc = x.user_id; go('other', 'cu-pf-file'); } })])].concat(TQN ? [tqnSrStage(x)] : [] /* v704 */, [srCard(x, RF, { who: false, kp: 'svp:', full: true })]);
 }
@@ -21770,7 +21789,7 @@ function lvSvcPage() {
       return e('button', { type: 'button', class: 'cu-kpi is-pick' + (on ? ' is-on' : '') + (k[0] === 'open' && n ? ' is-warn' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { ADM.svF = k[0]; paint(); } },
         [e('span', { class: 'cu-kpi-ic' }, frag(ui(k[2], 18))), e('b', {}, fmtNum(n)), e('small', {}, k[1])]); });
     const opts = []; A.forEach(function (x) { if (!opts.some(function (o) { return o[0] === x.user_id; })) opts.push([x.user_id, srName(x.user_id)]); }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
-    return [e('div', { class: 'ax-top' }, [e('div', { class: 'ax-top-t' }, [e('b', {}, tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات'), e('small', {}, tqnSvFin() ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته، وينعكس في ملف العميل نفسه.' : TQN ? 'التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته. طلبات سداد قيمة المنتج والتأجيل والتوحيد في «الطلبات المالية».' : 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
+    return [e('div', { class: 'ax-top' + (TQN && !tqnSvFin() ? ' srd-lh' : '') }, [e('div', { class: 'ax-top-t' }, [e('b', {}, tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات'), e('small', {}, tqnSvFin() ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته، وينعكس في ملف العميل نفسه.' : TQN ? 'التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته. طلبات سداد قيمة المنتج والتأجيل والتوحيد في «الطلبات المالية».' : 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
       e('div', { class: 'cu-kpis sr-kpis' }, kp),
       e('div', { class: 'm3-tools ax-tools' }, [e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM.svC = v === '*' ? '' : v; paint(); } }))]), tqnSvLink(), TQN ? liveOk(DS.button(ADM.tqnTest ? 'إخفاء طلبات الاختبار' : 'إظهار طلبات الاختبار', { size: 'sm', ui: 'eye', onClick: function () { ADM.tqnTest = !ADM.tqnTest; paint(); } })) : null /* v705 */]),
       (!TQN || tqnSvFin()) ? lvSec('إنشاء طلب', null, [srCreate(RF, {})], 'svc:new') : null /* v709: الإنشاء (سداد · تأجيل · توحيد) في «الطلبات المالية» وحدها على staff/next/ */].concat(SR_K.filter(function (k) { return tqnSvK({ kind: k[0] }); }).map(function (k) { const L = R.filter(function (x) { return x.kind === k[0]; });
