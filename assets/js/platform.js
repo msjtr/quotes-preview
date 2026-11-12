@@ -12755,6 +12755,7 @@ function d3KV(pairs, tots) {
 }
 /* خطة الدفع بستة أعمدة: ثلاثة مقابل ثلاثة */
 function d3Plan6(P) {
+  if (P.length < 4) return e('table', { class: 'd3-p6 is-1' }, [e('thead', {}, e('tr', {}, ['الدفعة', 'موعد الدفع', 'قيمة الدفعة'].map(function (x) { return e('th', {}, x); }))), e('tbody', {}, P.map(function (p) { return e('tr', {}, [e('td', {}, e('i', { class: 'd3-pill' }, String(p[0]))), e('td', { dir: 'ltr' }, p[1]), e('td', { class: 'is-amt' }, p[2])]); }))]); /* v846 */
   const h = Math.ceil(P.length / 2), rows = [], cell = function (p) { return p ? [e('td', {}, e('i', { class: 'd3-pill' }, String(p[0]))), e('td', { dir: 'ltr' }, p[1]), e('td', { class: 'is-amt' }, p[2])] : [e('td', { class: 'is-empty', colspan: '3' }, '')]; };
   for (let i = 0; i < h; i++) rows.push(e('tr', {}, cell(P[i]).concat(cell(P[i + h]))));
   const hd = ['الدفعة', 'موعد الدفع', 'قيمة الدفعة'];
@@ -18548,6 +18549,7 @@ const EQ_EL = {
     { g: 'خطة الدفع', c: 'q_c_plan', k: [['q_s_start', 'أول دفعة', 'أول دفعة', 2], ['q_s_end', 'آخر دفعة', 'آخر دفعة', 2], ['q_s_n', 'عدد الدفعات', 'عدد الدفعات', 2], ['q_s_amt', 'قيمة الدفعة', 'قيمة الدفعة', 2], ['q_s_tbl', 'جدول الدفعات', 'جدول الدفعات', 2]] },
     { g: 'الشروط', c: 'q_c_terms', tx: [['terms', 'الشروط (سطر لكل شرط)', 3]] },
     { g: 'تنويه', c: 'q_c_note', tx: [['note', 'نص التنويه', 2]] },
+    { g: 'قبول العميل وتوثيقه', c: 'q_c_sign', k: [['q_g_name', 'اسم العميل', 'اسم العميل'], ['q_g_op', 'العملية', 'العملية'], ['q_g_at', 'وقت العملية', 'وقت العملية'], ['q_g_fac', 'التحقق', 'التحقق'], ['q_g_to', 'أُرسل الرمز إلى', 'أُرسل الرمز إلى'], ['q_g_ref', 'مرجع العملية', 'مرجع العملية']] }, /* v846 */
     { g: 'الاعتماد', c: 'q_c_appr', k: [['q_a_seal', 'الختم ورمز المستند', '', 1]] }],
   purchase: [
     { g: 'الترويسة', k: [['p_h_no', 'رقم الفاتورة', 'رقم الفاتورة'], ['p_h_date', 'التاريخ', 'التاريخ'], ['p_h_pill', 'شارة النسخة', 'نسخة العميل'], ['p_h_iss', 'الجهة المُصدِرة', '', 1]], tx: [['title', 'عنوان المستند', 1]] },
@@ -18556,7 +18558,7 @@ const EQ_EL = {
     { g: 'التكاليف', c: 'p_c_items', items: 1, k: [['p_t_vat', 'ضريبة القيمة المضافة', 'ضريبة القيمة المضافة', 2], ['p_t_total', 'الإجمالي شامل الضريبة', 'الإجمالي شامل الضريبة', 2]] },
     { g: 'خطة الدفع', c: 'p_c_plan', k: [['p_s_tbl', 'جدول الدفعات', 'جدول الدفعات']] },
     { g: 'تنويه', c: 'p_c_note', tx: [['note', 'نص التنويه', 2]] },
-    { g: 'إقرار العميل', c: 'p_c_sign', tx: [['ack', 'نص الإقرار', 2]] }, { g: 'الاعتماد', c: 'p_c_appr', k: [['p_a_seal', 'الختم ورمز المستند', '', 1]] }],
+    { g: 'إقرار العميل وتوثيقه', c: 'p_c_sign', tx: [['ack', 'نص الإقرار', 2]], k: [['p_g_name', 'اسم العميل', 'اسم العميل'], ['p_g_op', 'العملية', 'العملية'], ['p_g_at', 'وقت العملية', 'وقت العملية'], ['p_g_fac', 'التحقق', 'التحقق'], ['p_g_to', 'أُرسل الرمز إلى', 'أُرسل الرمز إلى'], ['p_g_ref', 'مرجع العملية', 'مرجع العملية']] }, /* v846 */ { g: 'الاعتماد', c: 'p_c_appr', k: [['p_a_seal', 'الختم ورمز المستند', '', 1]] }],
   contract: [
     { g: 'الترويسة', k: [['c_h_no', 'رقم العقد', 'رقم العقد'], ['c_h_date', 'التاريخ', 'التاريخ'], ['c_h_iss', 'الجهة المُصدِرة', '', 1]], tx: [['title', 'عنوان المستند', 1]] },
     { g: 'بيانات العقد', c: 'c_c_data', k: [['c_d_client', 'اسم العميل', 'اسم العميل'], ['c_d_prod', 'المنتج', 'المنتج'], ['c_d_total', 'قيمة العقد', 'قيمة العقد'], ['c_d_n', 'عدد الدفعات', 'عدد الدفعات'], ['c_d_first', 'أول دفعة', 'أول دفعة'], ['c_d_last', 'آخر دفعة', 'آخر دفعة']], add: 'kv' },
@@ -18636,7 +18638,7 @@ function dcEqDoc(kind, Q, draft, X) {
   if (D.texts.note && on(pre + '_c_note')) B.push(d3Card(lb(pre + '_c_note', 'تنويه'), 'info', [dcEqTxt(D.texts.note)], 'is-note', true));
   if (kind === 'purchase' && TT && on('p_c_sign') && !dcSgRow(kind, Q)) B.push(d3Card(lb('p_c_sign', 'إقرار العميل'), 'pen', [dcEqTxt(D.texts.ack || (TT.doc.texts && TT.doc.texts.ack) || 'أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.'), d3KV([['اعتماد العميل برمز التحقق', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
   if (kind === 'contract' && on('c_c_sign')) B.push(d3Card(lb('c_c_sign', 'التوقيع'), 'pen', [d3KV([['توقيع العميل', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
-  { const sgB = dcSignBlk(kind, Q); if (sgB) B.push(sgB); } if (on(pre + '_c_appr') && on(pre + '_a_seal')) B.push(d3ApprWide(no, kind, {}));
+  { const sgB = dcSignBlk(kind, Q, { on: on, lb: lb, p: pre }); if (sgB) B.push(sgB); } if (on(pre + '_c_appr') && on(pre + '_a_seal')) B.push(d3ApprWide(no, kind, {}));
   const H0 = Object.assign({}, QT.hdr || {});
   return { lk: kind, hdr: Object.assign(H0, { stl_no: H0.no !== false && on(pre + '_h_no'), stl_date: H0.date !== false && on(pre + '_h_date') }), label: name, title: D.texts.title || (TT && TT.doc && TT.doc.texts && TT.doc.texts.title) || name, sub: TT ? [SH.org, on(pre + '_h_iss') ? TT.issuer : ''].filter(Boolean).join(' · ') : QT0.org, org: TT ? SH.org : QT0.org, foot: TT ? eqFootOf(TT, SH).foot : QT0.org + ' · ' + QT0.auto,
     pill: on(pre + '_h_pill') ? lb(pre + '_h_pill', 'نسخة العميل') : null, auto: QT0.auto, slogan: TT ? eqFootOf(TT, SH).slogan : d2Slogan(QT0), slogan0: QT0.slogan, dsn: 2, cls: 'is-pq is-stl', en: (TT && TT.en) || (kind === 'contract' ? 'CONTRACT' : kind === 'purchase' ? 'PRODUCT INVOICE' : 'PRICE QUOTATION'),
@@ -18940,10 +18942,10 @@ function eqEdit(x, Q, mode, done, inl) {
         D.hide.length ? DS.editField('اسم السطر الذي يجمع البنود المخفية للعميل', DS.input({ value: D.svcLabel, placeholder: EQ_SVC, onInput: function (v) { D.svcLabel = v && v.target ? v.target.value : v; } })) : null,
         null]),
       sec(3, 'الدفعات', eqPlanBox(D, C, rerun)),
-      sec(4, 'ما يظهر للعميل والمعاينة', [e('div', { class: 'sys-form is-2 cu-bd-form eq-3' }, [['value', 'قيمة المنتج'], ['items', 'تفصيل البنود'], ['vat', 'سطر الضريبة'], ['valid', 'صالح حتى'], ['plan_start', 'أول دفعة'], ['plan_end', 'آخر دفعة'], ['plan_n', 'عدد الدفعات'], ['plan_amt', 'قيمة الدفعة'], ['plan_tbl', 'جدول الدفعات']].map(function (k) { return eqVisSel(D, k[0], k[1], rerun); })),
-        e('div', { class: 't2-pb-actions' }, [DS.button('معاينة عرض السعر PDF', { size: 'sm', ui: 'file-pdf', disabled: !C, onClick: function () { dcPdf(dcEqDoc('quote', Object.assign({}, Q || {}, { product_type: D.type, customer_name: (Q && Q.customer_name) || x.client_name || x.name || '', req_no: x.req_no, calc: eqCalcOf(D) }), true)); } })]),
+      sec(4, inl ? 'ملاحظة التعديل' : 'ما يظهر للعميل والمعاينة', [inl ? null : e('div', { class: 'sys-form is-2 cu-bd-form eq-3' }, [['value', 'قيمة المنتج'], ['items', 'تفصيل البنود'], ['vat', 'سطر الضريبة'], ['valid', 'صالح حتى'], ['plan_start', 'أول دفعة'], ['plan_end', 'آخر دفعة'], ['plan_n', 'عدد الدفعات'], ['plan_amt', 'قيمة الدفعة'], ['plan_tbl', 'جدول الدفعات']].map(function (k) { return eqVisSel(D, k[0], k[1], rerun); })),
+        inl ? null : e('div', { class: 't2-pb-actions' }, [DS.button('معاينة عرض السعر PDF', { size: 'sm', ui: 'file-pdf', disabled: !C, onClick: function () { dcPdf(dcEqDoc('quote', Object.assign({}, Q || {}, { product_type: D.type, customer_name: (Q && Q.customer_name) || x.client_name || x.name || '', req_no: x.req_no, calc: eqCalcOf(D) }), true)); } })]),
         inl ? null : eqClientPv(x, Q, D, C, rerun), /* v802 · v806: داخل المرحلة نصوص الصفحة في تبويب «صفحة الرابط» */
-        e('small', { class: 'cu-dr-hint' }, 'عناصر المستند (العنوان والشروط والتنويه) وإرفاقه عند الإرسال في مرحلة «عرض السعر» — وفاتورة المنتج والعقد في مرحلتيهما.'),
+        inl ? e('small', { class: 'cu-dr-hint' }, 'ما يظهر للعميل في المستند PDF يُضبط من تبويب «المستند»، وما يظهر في صفحته من تبويب «صفحة الرابط».') : e('small', { class: 'cu-dr-hint' }, 'عناصر المستند (العنوان والشروط والتنويه) وإرفاقه عند الإرسال في مرحلة «عرض السعر» — وفاتورة المنتج والعقد في مرحلتيهما.'),
         DS.editField('ملاحظة التعديل (تُسجَّل في سجل العرض — اختياري)', e('textarea', { class: 't2-input', rows: '2', maxlength: '300', onInput: function (ev) { D.note = ev.target.value; } }, D.note || ''))])]),
     D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null];
   const btn = function (t, sub, tone) { return liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : t, { tone: tone || null, ui: 'check', disabled: D.busy || !C, onClick: function () { save(sub); } })); };
@@ -19172,14 +19174,17 @@ function sgLogLoad(x, paint) {
   }).catch(function () { SGLOG['sr:' + x.id] = 'err'; });
 }
 function dcSgRow(kind, Q) { return Q && Q.id && (kind === 'quote' || kind === 'purchase') ? SGLOG[kind + ':' + Q.id] || null : null; }
-function dcSignBlk(kind, Q) {
+const SGK = ['name', 'op', 'at', 'fac', 'to', 'ref'];
+function dcSignBlk(kind, Q, ON) {
+  if (ON && !ON.on(ON.p + '_c_sign')) return null; /* v846: القسم وصفوفه من «المستند» */
+  const sgKV = function (L) { return d3KV(L.map(function (r, i) { return ON ? [ON.lb(ON.p + '_g_' + SGK[i], r[0])].concat(r.slice(1)) : r; }).filter(function (r, i) { return !ON || ON.on(ON.p + '_g_' + SGK[i]); })); };
   const g = dcSgRow(kind, Q);
   /* v843: قبل قبول العميل — مكان التوثيق ظاهر «بانتظار العميل» ويُملأ تلقائيًا من رابطه */
-  if (!g) return kind === 'quote' && Q && ['accepted', 'rejected', 'cancelled', 'expired'].indexOf(Q.status) < 0 ? d3Card('قبول العميل وتوثيقه', 'pen', [d3KV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', 'قبول عرض السعر'], ['وقت العملية', '..............................'], ['التحقق', 'رمز تحقق لمرة واحدة (واتساب أو البريد)'], ['أُرسل الرمز إلى', '..............................'], ['مرجع العملية', '..............................']]), e('p', { class: 'd3-cfs-p is-st' }, 'بانتظار العميل — يُملأ تلقائيًا عند قبوله العرض من رابطه.')], 'is-sign') : null;
+  if (!g) return kind === 'quote' && Q && ['accepted', 'rejected', 'cancelled', 'expired'].indexOf(Q.status) < 0 ? d3Card('قبول العميل وتوثيقه', 'pen', [sgKV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', 'قبول عرض السعر'], ['وقت العملية', '..............................'], ['التحقق', 'رمز تحقق لمرة واحدة (واتساب أو البريد)'], ['أُرسل الرمز إلى', '..............................'], ['مرجع العملية', '..............................']]), e('p', { class: 'd3-cfs-p is-st' }, 'بانتظار العميل — يُملأ تلقائيًا عند قبوله العرض من رابطه.')], 'is-sign') : null;
   const dt = (function () { try { const t = new Date(g.at); return isNaN(t) ? '—' : t.toLocaleString('en-CA', { timeZone: 'Asia/Riyadh', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') + ' (توقيت الرياض)'; } catch (err) { return '—'; } })();
   const fac = /mail/.test(g.factor || '') ? 'رمز تحقق عبر البريد' : /wa|whats/.test(g.factor || '') ? 'رمز تحقق عبر واتساب' : '—';
   return d3Card(kind === 'purchase' ? 'اعتماد العميل وتوثيقه' : 'قبول العميل وتوثيقه', 'pen', [
-    d3KV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', kind === 'purchase' ? 'اعتماد الفاتورة' : 'قبول عرض السعر'], ['وقت العملية', dt, true], ['التحقق', fac], ['أُرسل الرمز إلى', g.to || '—', true], ['مرجع العملية', g.ref || '—', true]]),
+    sgKV([['اسم العميل', Q.customer_name || Q.client_name || '—'], ['العملية', kind === 'purchase' ? 'اعتماد الفاتورة' : 'قبول عرض السعر'], ['وقت العملية', dt, true], ['التحقق', fac], ['أُرسل الرمز إلى', g.to || '—', true], ['مرجع العملية', g.ref || '—', true]]),
     e('p', { class: 'd3-cfs-p is-st' }, '✓ وُثّقت العملية إلكترونيًا عبر منصة تيرا برمز تحقق لمرة واحدة، ولا يلزم توقيع خطي.')], 'is-sign');
 }
 /* v841: «إرفاق المستند PDF» ظاهر في «صفحة الرابط» — حالته من المستند نفسه، والتغيير من «المستند ← إرفاق المستند» (نفس الحفظ) */
@@ -19193,6 +19198,13 @@ function egPgAtt(c, kind, Q) {
       /* v842: يفتح خانة «إرفاق المستند» نفسها (قائمة اختيار المنصة) لا يكتفي بالتبويب */ (function go(n) { const f = [].filter.call(document.querySelectorAll('.eg-out-b .t2-field'), function (y) { const k = y.querySelector('.t2-field-k'); return k && String(k.textContent || '').trim() === 'إرفاق المستند' && !y.closest('.eg-pg-att'); })[0]; if (!f) { if (n < 20) setTimeout(function () { go(n + 1); }, 120); return; } f.scrollIntoView({ block: 'center' }); const b = f.querySelector('.t2-cb-btn, select'); if (b) { b.focus(); if (b.tagName !== 'SELECT' && b.getAttribute('aria-expanded') !== 'true') b.click(); } })(0);
     } })]);
 }
+/* v846: ما أُخفي قديمًا من «البيانات ← ما يظهر للعميل» يظهر مخفيًا في عناصر المستند نفسها — مكان واحد للقالب */
+function egShowMerge(d, kind, c0) {
+  if (kind !== 'quote' || !d || !Array.isArray(d.hide)) return;
+  const sh = (c0 && c0.show) || {}, M = { value: 'q_p_val', vat: 'q_t_vat', valid: 'q_h_valid', plan_start: 'q_s_start', plan_end: 'q_s_end', plan_n: 'q_s_n', plan_amt: 'q_s_amt', plan_tbl: 'q_s_tbl' };
+  Object.keys(M).forEach(function (k) { if (sh[k] === false && d.hide.indexOf(M[k]) < 0) d.hide.push(M[k]); });
+  if (sh.items === false) ((c0 && c0.items) || []).forEach(function (y) { if (y && y.id && d.hide.indexOf('i_' + y.id) < 0) d.hide.push('i_' + y.id); });
+}
 function egDocTools(x, c, kind, paint, full) { sgLogLoad(x, paint);
   if (c.wrapDoc && !full) return null; /* v806: المستند تبويب داخل المرحلة */
   const Q0 = (c.qs || []).filter(function (q) { return ['rejected', 'cancelled', 'declined', 'expired'].indexOf(q.status) < 0 || (q.status === 'rejected' && q.returned); })[0];
@@ -19201,7 +19213,7 @@ function egDocTools(x, c, kind, paint, full) { sgLogLoad(x, paint);
   if (!J) return G.st === 'load' ? CF_EMPTY('جارٍ تجهيز ' + EQ_DOC_NAME[kind] + '…') : null;
   const Q = J.q, c0 = Q.calc || {}, cs = Q.calc_staff || {}, canDoc = !!(J.can && J.can.doc && J.can.doc[kind]);
   const T = c.doc || (c.doc = {}), D = T[kind] && T[kind].q === Q.id ? T[kind] : (T[kind] = { q: Q.id, open: false, busy: false, err: '', d: null, att: !!(cs.attach && cs.attach[kind]), dirty: false });
-  if (full && !D.auto) { D.auto = true; if (canDoc) { D.open = true; if (!D.d) D.d = stlDocNorm(JSON.parse(JSON.stringify((c0.doc && c0.doc[kind]) || eqTplDoc(kind)))); } } /* v806: العناصر مفتوحة في تبويب «المستند» */
+  if (full && !D.auto) { D.auto = true; if (canDoc) { D.open = true; if (!D.d) { D.d = stlDocNorm(JSON.parse(JSON.stringify((c0.doc && c0.doc[kind]) || eqTplDoc(kind)))); egShowMerge(D.d, kind, c0); } } } /* v806: العناصر مفتوحة في تبويب «المستند» */
   const cur = function () { return D.d ? Object.assign({}, Q, { calc: Object.assign({}, c0, { doc: Object.assign({}, c0.doc || {}, (function () { const o = {}; o[kind] = D.d; return o; })()) }) }) : Q; };
   const save = async function () {
     if (D.busy) return; D.busy = true; D.err = ''; paint();
@@ -19210,7 +19222,7 @@ function egDocTools(x, c, kind, paint, full) { sgLogLoad(x, paint);
   };
   const kids = [e('div', { class: 'sys-form is-2 cu-bd-form' }, [DS.editField('إرفاق المستند', canDoc ? DS.select({ value: D.att ? 'pdf' : 'none', options: EQ_ATT, onChange: function (v) { D.att = v === 'pdf'; D.dirty = true; paint(); } }) : e('div', { class: 't2-input cu-bd-ro' }, D.att ? 'إرفاق المستند PDF' : 'بدون إرفاق'))]),
     e('div', { class: 't2-pb-actions' }, [DS.button('معاينة PDF', { size: 'sm', ui: 'file-pdf', onClick: function () { dcPdf(dcEqDoc(kind, cur(), ['sent', 'accepted'].indexOf(Q.status) < 0, { recv: kind === 'quote' ? '' : egRecvInfo(x).now })); } }),
-      canDoc ? DS.button(D.open ? 'إخفاء العناصر' : 'عناصر المستند — إضافة وحذف وإخفاء', { size: 'sm', ui: 'sliders-horizontal', onClick: function () { D.open = !D.open; if (D.open && !D.d) D.d = stlDocNorm(JSON.parse(JSON.stringify((c0.doc && c0.doc[kind]) || eqTplDoc(kind)))); paint(); } }) : null])];
+      canDoc && !full ? DS.button(D.open ? 'إخفاء العناصر' : 'عناصر المستند — إضافة وحذف وإخفاء', { size: 'sm', ui: 'sliders-horizontal', onClick: function () { D.open = !D.open; if (D.open && !D.d) D.d = stlDocNorm(JSON.parse(JSON.stringify((c0.doc && c0.doc[kind]) || eqTplDoc(kind)))); paint(); } }) : null])];
   if (kind === 'quote' && Q && D.open) kids.push((function () { /* v837: صلاحية العرض (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-valid' }); h.__v = { until: Q.valid_until || '', can: !!canDoc && ['accepted', 'declined', 'expired', 'cancelled'].indexOf(Q.status) < 0, save: function (to) { return eqCall('admin_elig_quote_valid', { p_q: Q.id, p_until: to }).then(function () { Q.valid_until = to; delete EQG[Q.id]; snack('حُدّثت صلاحية عرض السعر.'); paint(); }); } }; return h; })());
   if (D.open && D.d) kids.push(e('div', { class: 'stl-dc' }, eqDocAll(D.d, kind, c0.items || [], function () { D.dirty = true; paint(); }, function () { D.dirty = true; })));
   if (canDoc && (D.open || D.dirty)) kids.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ ' + EQ_DOC_NAME[kind], { size: 'sm', tone: 'primary', ui: 'check', disabled: D.busy, onClick: save }))]));
@@ -19225,8 +19237,8 @@ function egDocTools(x, c, kind, paint, full) { sgLogLoad(x, paint);
 const EGO_T = { result: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
 const EGM_KEY = { quote: 'elig_quote', purchase: 'elig_purchase', contract: 'contract_new' };
 const EGP_F = {
-  quote: [['q_title', 'عنوان الصفحة', 'صدر عرض السعر', 0], ['q_status', 'سطر الحالة', 'بانتظار اعتمادك', 0], ['q_note', 'رسالة المراجعة', '', 1], ['q_ack', 'نص الإقرار', '', 1], ['q_accept', 'زر القبول', 'قبول عرض السعر', 0], ['q_decline', 'زر الرفض', 'رفض عرض السعر', 0]],
-  purchase: [['inv_title', 'عنوان الفاتورة', '', 0], ['inv_status', 'سطر الحالة', '', 0], ['inv_note', 'رسالة المراجعة', '', 1], ['inv_ack', 'نص الإقرار', '', 1], ['inv_confirm_title', 'عنوان نافذة التأكيد', '', 0], ['inv_confirm_note', 'نص نافذة التأكيد', '', 1], ['inv_done_title', 'عنوان شاشة «تم الاعتماد»', '', 0], ['inv_done_text', 'نص شاشة «تم الاعتماد»', '', 1], ['inv_decline_title', 'عنوان شاشة الاعتذار', '', 0], ['inv_decline_text', 'نص شاشة الاعتذار', '', 1]],
+  quote: [['q_title', 'عنوان الصفحة', 'صدر عرض السعر', 0], ['q_status', 'سطر الحالة', 'بانتظار اعتمادك', 0], ['q_note', 'رسالة المراجعة', '', 1], ['q_ack', 'نص الإقرار', '', 1], ['q_accept', 'زر القبول', 'قبول عرض السعر', 0], ['q_decline', 'زر الرفض', 'رفض عرض السعر', 0], ['q_tag', 'شارة المرحلة', '', 0], ['q_help', 'نص التواصل', '', 1], ['q_foot', 'نص التذييل', '', 1], ['q_sum', 'الملخص', '', 0], ['q_off', 'الأقسام المخفية', '', 0]],
+  purchase: [['inv_title', 'عنوان الفاتورة', '', 0], ['inv_status', 'سطر الحالة', '', 0], ['inv_note', 'رسالة المراجعة', '', 1], ['inv_ack', 'نص الإقرار', '', 1], ['inv_confirm_title', 'عنوان نافذة التأكيد', '', 0], ['inv_confirm_note', 'نص نافذة التأكيد', '', 1], ['inv_done_title', 'عنوان شاشة «تم الاعتماد»', '', 0], ['inv_done_text', 'نص شاشة «تم الاعتماد»', '', 1], ['inv_decline_title', 'عنوان شاشة الاعتذار', '', 0], ['inv_decline_text', 'نص شاشة الاعتذار', '', 1], ['inv_tag', 'شارة المرحلة', '', 0], ['inv_help', 'نص التواصل', '', 1], ['inv_foot', 'نص التذييل', '', 1], ['inv_accept', 'زر الاعتماد', '', 0], ['inv_decline', 'زر الاعتذار', '', 0], ['inv_sum', 'الملخص', '', 0], ['inv_off', 'الأقسام المخفية', '', 0]],
   contract: [['status', 'سطر الحالة', '', 0], ['hint', 'تنويه الصفحة', '', 1], ['sign_title', 'عنوان قسم التوقيع', '', 0], ['ack', 'نص الإقرار', '', 1], ['confirm_title', 'عنوان نافذة التأكيد', '', 0], ['confirm_note', 'نص نافذة التأكيد', '', 1], ['done_title', 'عنوان شاشة «تم التوقيع»', '', 0], ['done_text', 'نص شاشة «تم التوقيع»', '', 1], ['sig', 'عبارة الختام', '', 1]]
 };
 const EGV = {};
@@ -19331,6 +19343,84 @@ function egMsgPane(x, c, kind, live, Q, paint) {
   kids.push(e('div', { class: 't2-pb-actions' }, [egPvBtn(x, kind, paint)]));
   return e('div', { class: 'sr-stl' }, kids);
 }
+/* v846: صفحة الرابط بأقسام التصميم المعتمد — كل قسم يُطوى (قسم واحد مفتوح) ويُظهر أو يُخفى، والملخص صفوف تُخفى، والإقرار بنود؛
+   المفاتيح الجديدة في doc.page (q_tag · q_help · q_foot · q_sum · q_off · inv_*) يقبلها elig_doc_norm (stf_258) وتقرؤها صفحة العميل */
+const EGPS = {
+  quote: { p: 'q', sum: [['no', 'رقم العرض'], ['req', 'رقم الطلب'], ['prod', 'المنتج'], ['val', 'قيمة المنتج'], ['items', 'البنود والرسوم'], ['vat', 'ضريبة القيمة المضافة'], ['total', 'الإجمالي'], ['n', 'عدد الدفعات'], ['amt', 'الدفعة الأولى'], ['first', 'أول دفعة'], ['last', 'آخر دفعة'], ['tbl', 'جدول الدفعات'], ['valid', 'صالح حتى']],
+    secs: [['hd', 'رأس الصفحة', 0, [['q_tag', 'شارة المرحلة', 'عرض السعر', 0, 'tag'], ['q_title', 'العنوان', 'صدر عرض السعر', 0], ['q_status', 'سطر الحالة', 'بانتظار اعتمادك', 0, 'status']]],
+      ['sum', 'ملخص عرض السعر', 'sum'],
+      ['note', 'رسالة المراجعة', 'note', [['q_note', 'نص الرسالة', 'نأمل مراجعة العرض واعتماده قبل انتهاء صلاحيته.', 1]]],
+      ['ack', 'الإقرار', 0, 'q_ack', 'أقرّ بقبول عرض السعر الموضّح وما يترتب عليه من إصدار العقد وجدول الدفعات.'],
+      ['help', 'التواصل', 'help', [['q_help', 'نص التواصل', 'لأي استفسار راسلنا عبر واتساب المنصة.', 1]]],
+      ['btn', 'الأزرار', 0, [['q_accept', 'زر القبول', 'قبول عرض السعر', 0], ['q_decline', 'زر الرفض', 'رفض عرض السعر', 0]]],
+      ['foot', 'التذييل', 'foot', [['q_foot', 'نص التذييل', 'لأمانك تنتهي مهلة هذه الصفحة بعد 15 دقيقة من رمز التحقق.', 1]]]] },
+  purchase: { p: 'inv', sum: [['req', 'رقم الطلب'], ['prod', 'المنتج'], ['recv', 'طريقة الاستلام'], ['val', 'قيمة المنتج'], ['items', 'البنود والرسوم'], ['vat', 'ضريبة القيمة المضافة'], ['total', 'الإجمالي'], ['n', 'عدد الدفعات'], ['amt', 'قيمة الدفعة'], ['first', 'أول استحقاق'], ['last', 'آخر استحقاق']],
+    secs: [['hd', 'رأس الصفحة', 0, [['inv_tag', 'شارة المرحلة', 'فاتورة المنتج', 0, 'tag'], ['inv_title', 'العنوان', 'فاتورة المنتج', 0], ['inv_status', 'سطر الحالة', 'بانتظار اعتمادك', 0, 'status']]],
+      ['sum', 'ملخص الفاتورة', 'sum'],
+      ['note', 'رسالة المراجعة', 'note', [['inv_note', 'نص الرسالة', 'راجع الفاتورة واعتمدها ليصدر العقد للتوقيع.', 1]]],
+      ['ack', 'الإقرار', 0, 'inv_ack', 'أقرّ باعتماد فاتورة المنتج الموضّحة بقيمتها وتكاليفها وخطة الدفع، وأوافق على إصدار العقد.'],
+      ['help', 'التواصل', 'help', [['inv_help', 'نص التواصل', 'لأي استفسار راسلنا عبر واتساب المنصة.', 1]]],
+      ['btn', 'الأزرار', 0, [['inv_accept', 'زر الاعتماد', 'اعتماد فاتورة المنتج', 0], ['inv_decline', 'زر الاعتذار', 'الاعتذار عن الشراء', 0]]],
+      ['dlg', 'نافذة التأكيد', 0, [['inv_confirm_title', 'عنوان النافذة', 'تأكيد اعتماد فاتورة المنتج', 0], ['inv_confirm_note', 'نص النافذة', '', 1]]],
+      ['done', 'شاشة ما بعد القرار', 0, [['inv_done_title', 'عنوان «تم الاعتماد»', 'تم اعتماد فاتورة المنتج', 0], ['inv_done_text', 'نص «تم الاعتماد»', '', 1], ['inv_decline_title', 'عنوان الاعتذار', 'تم الاعتذار عن الشراء', 0], ['inv_decline_text', 'نص الاعتذار', '', 1]]],
+      ['foot', 'التذييل', 'foot', [['inv_foot', 'نص التذييل', 'لأمانك تنتهي مهلة هذه الصفحة بعد 15 دقيقة من رمز التحقق.', 1]]]] },
+  contract: { p: '', secs: [['hd', 'رأس الصفحة', 0, [['status', 'سطر الحالة', 'بانتظار توقيعك', 0]]],
+      ['note', 'تنويه الصفحة', 0, [['hint', 'نص التنويه', '', 1]]],
+      ['ack', 'التوقيع والإقرار', 0, [['sign_title', 'عنوان قسم التوقيع', 'التوقيع', 0], ['ack', 'نص الإقرار', '', 1]]],
+      ['dlg', 'نافذة التأكيد', 0, [['confirm_title', 'عنوان النافذة', 'تأكيد توقيع العقد', 0], ['confirm_note', 'نص النافذة', '', 1]]],
+      ['done', 'شاشة «تم التوقيع»', 0, [['done_title', 'العنوان', 'تم توقيع العقد', 0], ['done_text', 'النص', '', 1]]],
+      ['sig', 'عبارة الختام', 0, [['sig', 'النص', '', 1]]]] }
+};
+function egPsSw(on, fn) { return e('button', { type: 'button', class: 'eg-ps-sw' + (on ? ' is-on' : ''), 'aria-pressed': String(on), 'data-live-ok': '', onClick: function (ev) { ev.stopPropagation(); fn(!on); } }, on ? 'ظاهر' : 'مخفي'); }
+function egPgSecs(kind, D, G, saved, paint) {
+  const S = EGPS[kind]; if (!S) return null;
+  const P = S.p, V = D.v, ofK = P + '_off', smK = P + '_sum';
+  const list = function (k) { return String(V[k] || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
+  const setL = function (k, L) { V[k] = L.join(','); D.dirty = true; paint(); };
+  const off = P ? list(ofK) : [], hid = P ? list(smK) : [];
+  if (D.secOpen === undefined) D.secOpen = 'hd';
+  const tog = function (key) { return function (v) { setL(ofK, v ? off.filter(function (z) { return z !== key; }) : off.concat([key])); }; };
+  const inp = function (f) {
+    const x = e(f[3] ? 'textarea' : 'input', Object.assign({ class: 't2-input', placeholder: String(G[f[0]] || f[2] || ''), maxlength: f[3] ? '700' : '120', 'aria-label': f[1] }, f[3] ? { rows: '2' } : { type: 'text' }));
+    x.value = V[f[0]] || '';
+    x.addEventListener('input', function () { V[f[0]] = x.value; D.dirty = true; });
+    x.addEventListener('change', function () { paint(); });
+    const row = DS.editField(f[1] + (saved[f[0]] ? ' — معدّل لهذا العميل' : ''), x);
+    if (!f[4] || !P) return row;
+    const on = off.indexOf(f[4]) < 0;
+    return e('div', { class: 'eg-ps-fr' + (on ? '' : ' is-off') }, [row, egPsSw(on, tog(f[4]))]);
+  };
+  const ackEd = function (k, def) {
+    const raw = String(V[k] || '').trim() || String(G[k] || '').trim() || def;
+    const L = raw.split('\n').map(function (t) { return t.trim(); }).filter(Boolean);
+    const put = function (A) { V[k] = A.join('\n'); D.dirty = true; paint(); };
+    const big = String(V[k] || '').length > 700;
+    return e('div', { class: 'eg-ps-ack' }, L.map(function (t, i) {
+      const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '700', 'aria-label': 'الإقرار ' + (i + 1) }); ta.value = t;
+      ta.addEventListener('change', function () { const A = L.slice(); A[i] = ta.value.trim(); put(A.filter(Boolean)); });
+      return e('div', { class: 'eg-ps-ai' }, [e('span', { class: 'eg-ps-n' }, String(i + 1)), ta, e('div', { class: 'eg-ps-ab' }, [
+        DS.button('↑', { size: 'sm', disabled: i === 0, onClick: function () { const A = L.slice(); A.splice(i - 1, 0, A.splice(i, 1)[0]); put(A); } }),
+        DS.button('↓', { size: 'sm', disabled: i === L.length - 1, onClick: function () { const A = L.slice(); A.splice(i + 1, 0, A.splice(i, 1)[0]); put(A); } }),
+        DS.button('حذف', { size: 'sm', disabled: L.length < 2, onClick: function () { const A = L.slice(); A.splice(i, 1); put(A); } })])]);
+    }).concat([e('div', { class: 't2-pb-actions' }, [DS.button('إضافة إقرار', { size: 'sm', ui: 'plus', onClick: function () { put(L.concat(['أقرّ بأن البيانات التي قدّمتها صحيحة ومحدَّثة.'])); } })]),
+      big ? DS.note('warn', 'الإقرارات أطول من 700 حرف', 'يُحفظ أول 700 حرف فقط — اختصر النص.') : null,
+      e('small', { class: 'cu-dr-hint' }, 'كل إقرار يظهر للعميل بمربع اختيار مستقل، ولا يكتمل القرار إلا بتحديدها كلها.')]));
+  };
+  const sumEd = function () {
+    return e('div', { class: 'eg-ps-sum' }, (S.sum || []).map(function (z) {
+      const on = hid.indexOf(z[0]) < 0;
+      return e('div', { class: 'eg-ps-sr' + (on ? '' : ' is-off') }, [e('span', {}, z[1]), egPsSw(on, function (v) { setL(smK, v ? hid.filter(function (q) { return q !== z[0]; }) : hid.concat([z[0]])); })]);
+    }).concat([e('small', { class: 'cu-dr-hint' }, 'الأرقام من بيانات العرض؛ ما يُخفى هنا يُخفى من صفحة العميل وحدها، والمستند PDF يُضبط من تبويب «المستند».')]));
+  };
+  return e('div', { class: 'eg-ps' }, S.secs.map(function (s) {
+    const id = s[0], on = !s[2] || off.indexOf(s[2]) < 0, open = D.secOpen === id;
+    const sm = id === 'sum' ? ((S.sum.length - hid.length) + ' من ' + S.sum.length + ' ظاهر') : '';
+    const hd = e('div', { class: 'eg-ps-h', role: 'button', tabindex: '0', 'aria-expanded': String(open), 'data-live-ok': '', onClick: function () { D.secOpen = open ? '' : id; paint(); } },
+      [e('span', { class: 'eg-ps-c', 'aria-hidden': 'true' }, open ? '▾' : '▸'), e('b', {}, s[1]), sm ? e('small', {}, sm) : null, s[2] && P ? egPsSw(on, tog(s[2])) : e('small', { class: 'eg-ps-req' }, 'أساسي')]);
+    const body = open ? e('div', { class: 'eg-ps-b' }, id === 'sum' ? [sumEd()] : typeof s[3] === 'string' ? [ackEd(s[3], s[4])] : s[3].map(inp)) : null;
+    return e('section', { class: 'eg-ps-s' + (open ? ' is-open' : '') + (on ? '' : ' is-off') }, [hd, body]);
+  }));
+}
 function egPvPage(x, c, kind, live, J, paint) {
   const V = egPvGet(x, kind, paint), F = EGP_F[kind] || [];
   const Q = J ? J.q : null, c0 = (Q && Q.calc) || {}, base = (c0.doc && c0.doc[kind]) || {}, saved = base.page || {};
@@ -19368,7 +19458,7 @@ function egPvPage(x, c, kind, live, J, paint) {
     e('div', { class: 'eg-pg-ed' }, [
       e('div', { class: 'eg-hd' }, [e('b', {}, 'صفحة الرابط'), DS.badge(F.length ? (own ? 'نسخة هذا العميل' : 'النسخة الافتراضية') : 'من القرار والتوصية', own ? 'info' : null)]),
       e('small', { class: 'cu-dr-hint' }, F.length ? 'ما تكتبه هنا لهذا العميل فقط، والحقل الفارغ يأخذ النص العام من «قوالب العقد ← صفحات الرابط».' : 'صفحة النتيجة تُبنى من التوصية والقرار كما يراها العميل.'),
-      F.length ? e('div', { class: 'sys-form cu-bd-form' }, fields) : null, egPgAtt(c, kind, Q), F.length ? (function () { /* v834: مضيف أقسام صفحة الرابط (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-pg-blk' }); h.__pg = { can: canSave, get: function () { if (!Array.isArray(D.v.blocks)) D.v.blocks = []; return D.v.blocks; }, mark: function () { D.dirty = true; }, set: function (b) { D.v.blocks = b; D.dirty = true; paint(); } }; return h; })() : null,
+      F.length ? (egPgSecs(kind, D, G, saved, paint) || e('div', { class: 'sys-form cu-bd-form' }, fields)) : null, egPgAtt(c, kind, Q), F.length ? (function () { /* v834: مضيف أقسام صفحة الرابط (تبنيها كتلة TQN) */ const h = e('div', { class: 'eg-pg-blk' }); h.__pg = { can: canSave, get: function () { if (!Array.isArray(D.v.blocks)) D.v.blocks = []; return D.v.blocks; }, mark: function () { D.dirty = true; }, set: function (b) { D.v.blocks = b; D.dirty = true; paint(); } }; return h; })() : null,
       D.err ? e('span', { class: 'cu-err', role: 'alert' }, D.err) : null,
       F.length && Q && !canSave ? e('small', { class: 'cu-dr-hint' }, 'تعديل نصوص هذه المرحلة غير متاح الآن بحسب حالة العرض أو صلاحيتك.') : null,
       e('div', { class: 't2-pb-actions' }, [
