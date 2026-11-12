@@ -18374,12 +18374,14 @@ const srRow = (no) => ((LIVE_ADM.rows || {})[no] || {}).r || {};
 const srOpenCts = (cid) => ((LIVE_ADM.ct || {})[cid] || []).filter(function (c) { return !srRow(c.no).closed && c.n && cInfo(c).remain > 0.004; });
 /* v837: مرحلة طلب الأهلية الفعلية في القائمة وصفحة الطلب (admin_elig_stage_list — stf_262)؛ قبلها تبقى الحالة كما كانت */
 const SRSTG = { m: {}, q: {}, rf: [], busy: false, off: false };
+/* v844: مفتاح المرحلة الفعلية (docs · rep · qt · inv · ct · adm · done) لمؤشر المراحل الست في القائمة */
+function srStgK(x) { if (!x || x.kind !== 'elig') return ''; if (x.executed_at) return 'done'; if (x.status !== 'approved') return ['submitted', 'in_review'].indexOf(x.status) >= 0 ? 'docs' : ''; const h = SRSTG.m[x.id]; return (h && h.k) || ''; }
 function srStgOr(x, RF) {
   if (!x || x.kind !== 'elig' || x.status !== 'approved' || x.executed_at || SRSTG.off) return srStat(x);
   const h = SRSTG.m[x.id];
   if (!h || Date.now() - h.at > 120000) {
     SRSTG.q[x.id] = 1; if (RF && typeof RF.paint === 'function' && SRSTG.rf.indexOf(RF.paint) < 0) SRSTG.rf.push(RF.paint);
-    if (!SRSTG.busy) { SRSTG.busy = true; setTimeout(function () { const ids = Object.keys(SRSTG.q); SRSTG.q = {}; admRpc('admin_elig_stage_list', { p_ids: ids }).then(function (j) { SRSTG.busy = false; if (!j || j.ok === false || !j.st) { SRSTG.off = true; return; } ids.forEach(function (id) { const s = j.st[id]; SRSTG.m[id] = { at: Date.now(), v: s && s.t ? [s.t, s.tone || 'ok'] : null }; }); SRSTG.rf.splice(0).forEach(function (f) { try { f(); } catch (err) { void err; } }); }).catch(function () { SRSTG.busy = false; SRSTG.off = true; }); }, 80); }
+    if (!SRSTG.busy) { SRSTG.busy = true; setTimeout(function () { const ids = Object.keys(SRSTG.q); SRSTG.q = {}; admRpc('admin_elig_stage_list', { p_ids: ids }).then(function (j) { SRSTG.busy = false; if (!j || j.ok === false || !j.st) { SRSTG.off = true; return; } ids.forEach(function (id) { const s = j.st[id]; SRSTG.m[id] = { at: Date.now(), v: s && s.t ? [s.t, s.tone || 'ok'] : null, k: (s && s.k) || '' }; }); SRSTG.rf.splice(0).forEach(function (f) { try { f(); } catch (err) { void err; } }); }).catch(function () { SRSTG.busy = false; SRSTG.off = true; }); }, 80); }
   }
   return (h && h.v) || srStat(x);
 }
@@ -20122,7 +20124,7 @@ function srBrief(x, RF) {
     } else if ((x.contract_nos || []).length) info.push((x.contract_nos || []).join(' + '));
   } catch (err) { void err; }
   const openIt = function () { ADM.svOpen = x.id; ADM.svFocus = x.id; RF.paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } };
-  return e('div', { class: 'sr-brief is-' + (st[1] || 'off') }, [
+  return e('div', { class: 'sr-brief is-' + (st[1] || 'off'), 'data-stk': srStgK(x) }, [
     e('div', { class: 'sr-brief-t' }, [e('b', {}, K[1] + ' · ' + x.req_no), e('small', {}, srName(x.user_id) + ' · ' + iso(new Date(x.created_at)))]),
     e('div', { class: 'sr-brief-i' }, [DS.badge(st[0], st[1] || null), srAsChip(x, RF) /* v684: المسنَد إليه */].concat(info.map(function (t) { return e('small', {}, t); }))),
     liveOk(DS.button('فتح الطلب', { size: 'sm', tone: 'primary', ui: 'caret-left', onClick: openIt }))]);
