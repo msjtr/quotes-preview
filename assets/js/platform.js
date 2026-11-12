@@ -19024,6 +19024,59 @@ function eqOpen(id, refetch, x) {
 /* ═════ مراحل الموظف الست (eligWork): الترتيب الحقيقي · شريط ملخص واحد · القرار داخل مرحلته · المستندات داخل مراحلها ═════ */
 const EG6 = { docs: 'docs', fix: 'docs', rep: 'rep', res: 'rep', qt: 'qt', apv: 'qt', pv: 'rep', snd: 'rep', jr: 'rep', log: 'rep', inv: 'inv', ct: 'ct', adm: 'adm' }; /* v691: adm · v806: «المعاينة والإرسال» لم تعد مرحلة — النتيجة وإرسالها في «القرار والنتيجة»، والمعاينة داخل كل مرحلة */
 /* v691: المرحلة السابعة — إجراءات الإدارة وإغلاق الطلب. الإجراءات نفسها في «ملفات الإدارة» ببطاقة العقد (ملف العميل)، و«إنهاء العقد» بعد توقيع العميل يُغلق الطلب */
+/* v845: «إجراءات الإدارة» داخل الطلب كما في التصميم المعتمد — قائمة المهام (رقم أو ✓ · الاسم · الحالة) وتفاصيل المهمة المختارة،
+   وإضافة المطلوب وإزالته وإغلاق الطلب من هنا (admin_contract_admin_set · admin_contract_finalize — الدوال نفسها في «ملفات الإدارة»)؛
+   تعبئة الحوالة والسند والشيكات والأمر المستديم تُسجَّل في أقسامها بملف العميل مرتبطةً بالعقد (زر لكل مهمة)، فتظهر هنا «منجز» */
+const EGADM = { sel: {}, pick: {}, busy: false, err: '' };
+function egAdmTasks(x, A, ctNo, paint) {
+  const can = CTADM.can || {}, items = A.items || [], req = {}, id = A.contract_id;
+  items.forEach(function (i) { req[i.kind] = i; });
+  const nReq = items.length, nOk = items.filter(function (i) { return i.ok; }).length, ready = nReq > 0 && nOk === nReq;
+  const SEC = { payout: 'تحويلات تيرا', bond: 'السندات', cheque: 'الشيكات', standing_order: 'الأوامر المستديمة' };
+  const rpc = async function (fn, args, msg) {
+    if (EGADM.busy) return; EGADM.busy = true; EGADM.err = ''; paint();
+    try {
+      const j = await admRpc(fn, Object.assign({ p_contract: id }, args));
+      if (j && j.ok === false) throw new Error(ADM_ERR[j.error] || j.message || 'تعذّر تنفيذ الإجراء.');
+      EGADM.busy = false; if (msg) toast(msg); await ctAdmLoad(); paint();
+    } catch (err) { EGADM.busy = false; EGADM.err = (err && err.message) || 'تعذّر تنفيذ الإجراء.'; paint(); }
+  };
+  const T = items.map(function (i) { const z = CTADM_K.filter(function (q) { return q[0] === i.kind; })[0]; return { k: i.kind, t: i.label || (z ? z[1] : i.kind), ok: !!i.ok, by: i.required_by || '' }; });
+  T.push({ k: 'close', t: 'إغلاق الطلب', ok: false, close: true });
+  let sel = EGADM.sel[id]; if (!T.some(function (t) { return t.k === sel; })) sel = (T.filter(function (t) { return !t.ok; })[0] || T[0]).k; EGADM.sel[id] = sel;
+  const cur = T.filter(function (t) { return t.k === sel; })[0];
+  const stOf = function (t) { return t.close ? (ready ? ['جاهز', 'ok'] : ['لم يبدأ', null]) : t.ok ? ['منجز', 'ok'] : ['متبقٍّ', 'warn']; };
+  const list = e('div', { class: 'eg-adm-l', role: 'list' }, T.map(function (t, i) {
+    const s = stOf(t), at = { type: 'button', class: 'eg-adm-t' + (t.ok ? ' is-ok' : '') + (t.k === sel ? ' is-on' : ''), 'data-live-ok': '', onClick: function () { EGADM.sel[id] = t.k; paint(); } };
+    if (t.k === sel) at['aria-current'] = 'true';
+    return e('button', at, [e('span', { class: 'eg-adm-n' }, t.ok ? '✓' : String(i + 1)),
+      e('span', { class: 'eg-adm-x' }, [e('b', {}, t.t), e('small', {}, t.close ? (ready ? 'اكتملت الإجراءات' : 'بعد إنجاز ما سبق') : t.ok ? 'سُجّل في ملف العميل' : 'بانتظار الاستكمال' + (t.by ? ' · حدّده ' + t.by : ''))]),
+      DS.badge(s[0], s[1])]);
+  }));
+  const det = [], cs = stOf(cur);
+  det.push(e('div', { class: 'eg-adm-dh' }, [e('b', {}, cur.t), DS.badge(cs[0], cs[1])]));
+  if (cur.close) {
+    if (!nReq) det.push(DS.note('warn', 'لم تُحدَّد الإجراءات المطلوبة', 'أضف ما يلزم هذا العقد من «إضافة إجراء مطلوب» قبل إغلاق الطلب.'));
+    else det.push(e('div', { class: 'eg-adm-ck' }, T.filter(function (t) { return !t.close; }).map(function (t) {
+      return e('div', { class: 'eg-adm-ci' + (t.ok ? ' is-ok' : '') }, [e('span', { class: 'eg-adm-n' }, t.ok ? '✓' : '!'), e('b', {}, t.t), DS.badge(t.ok ? 'منجز' : 'متبقٍّ', t.ok ? 'ok' : 'warn')]);
+    })));
+    det.push(DS.fields([['توقيع العميل', A.signed_at ? bdiD(String(A.signed_at).slice(0, 10)) : 'لم يوقّع بعد'], ['العقد النهائي', A.final_sent_at ? 'أُرسل ' + String(A.final_sent_at).slice(0, 10) : 'لم يُرسل بعد'], ['الإجراءات', ctAdmSt(A)[0]]]));
+    if (can.f) det.push(e('div', { class: 't2-pb-actions' }, [ready ? admTwoStep('إغلاق الطلب', 'primary', function () { return rpc('admin_contract_finalize', {}, 'أُغلق الطلب — يظهر العقد الآن كسائر العقود.'); }, 'seal-check')
+      : DS.button('إغلاق الطلب', { size: 'sm', ui: 'seal-check', disabled: true })]));
+    det.push(e('small', { class: 'cu-dr-hint' }, can.f ? 'يرفض النظام الإغلاق ما دام إجراء مطلوب لم يكتمل. بعد الإغلاق يمكن إعادة فتح الطلب داخليًا لأي تصحيح.' : 'يُغلقه من يملك صلاحية «إغلاق الطلب».'));
+  } else {
+    det.push(e('p', { class: 'eg-adm-p' }, cur.ok ? 'اكتمل هذا الإجراء وسُجّل في «' + SEC[cur.k] + '» بملف العميل مرتبطًا بالعقد ' + ctNo + '.'
+      : 'يُعبَّأ ويُسجَّل في «' + SEC[cur.k] + '» بملف العميل مرتبطًا بالعقد ' + ctNo + ' (مع ملفاته)، ثم يظهر هنا «منجز» تلقائيًا.'));
+    det.push(e('div', { class: 't2-pb-actions' }, [DS.button(cur.ok ? 'عرضه في ملف العميل' : 'تعبئته في ملف العميل', { size: 'sm', tone: cur.ok ? undefined : 'primary', ui: 'user-circle', onClick: function () { ctAdmGo({ user_id: x.user_id, contract_no: ctNo, name: A.name || '' }); } }),
+      can.m && !cur.ok ? admTwoStep('إزالة من المطلوب', 'danger', function () { return rpc('admin_contract_admin_set', { p_kind: cur.k, p_required: false }, 'أُزيل من الإجراءات المطلوبة.'); }, 'x') : null]));
+  }
+  const left = CTADM_K.filter(function (z) { return !req[z[0]]; });
+  const add = can.m && left.length ? e('div', { class: 'eg-adm-add' }, [DS.editField('إضافة إجراء مطلوب لهذا العقد', DS.select({ value: EGADM.pick[id] || '', ph: '— اختر الإجراء —', options: left, onChange: function (v) { EGADM.pick[id] = v; } })),
+    e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(EGADM.busy ? 'جارٍ التنفيذ…' : 'إضافة إلى المطلوب', { size: 'sm', ui: 'plus', disabled: EGADM.busy, onClick: function () {
+      const v = EGADM.pick[id]; if (!v) { EGADM.err = 'اختر الإجراء.'; paint(); return; } EGADM.pick[id] = ''; rpc('admin_contract_admin_set', { p_kind: v, p_required: true }, 'أُضيف إلى الإجراءات المطلوبة.');
+    } }))])]) : null;
+  return e('div', { class: 'eg-adm' }, [e('div', { class: 'eg-adm-g' }, [list, e('div', { class: 'eg-adm-d' }, det)]), add, EGADM.err ? DS.note('danger', 'تعذّر التنفيذ', EGADM.err) : null]);
+}
 function egAdmPane(x, ctT, ctNo, ctj, paint) {
   const out = [e('b', {}, 'إجراءات الإدارة وإغلاق الطلب')];
   if (!ctNo) { out.push(CF_EMPTY('تظهر بعد صدور العقد.')); return e('div', { class: 'sr-stl' }, out); }
@@ -19034,7 +19087,8 @@ function egAdmPane(x, ctT, ctNo, ctj, paint) {
   else if (!signed) out.push(DS.note('warn', 'بانتظار توقيع العميل على العقد ' + ctNo, 'يمكنك تحديد الإجراءات المطلوبة الآن؛ «إغلاق الطلب» بعد التوقيع.'));
   else if (A) out.push(DS.note(st[1] === 'ok' ? 'ok' : 'warn', 'العقد ' + ctNo + ' — ' + st[0], 'حدّد المطلوب وارفع ملفاته ثم «إغلاق الطلب» — يبقى العقد ودفعاته في ملف العميل.'));
   else out.push(DS.note('info', 'العقد ' + ctNo, CTADM.at ? 'لا إجراءات معلّقة عليه.' : 'جارٍ قراءة إجراءات الإدارة…'));
-  if (A && (A.items || []).length) out.push(e('ol', { class: 'eg-how' }, A.items.map(function (i) { return e('li', {}, [e('b', {}, i.label || i.kind || ''), ' — ', i.ok ? 'مكتمل' : 'متبقٍّ']); })));
+  if (A && !x.executed_at) out.push(egAdmTasks(x, A, ctNo, paint)); /* v845 */
+  else if (A && (A.items || []).length) out.push(e('ol', { class: 'eg-how' }, A.items.map(function (i) { return e('li', {}, [e('b', {}, i.label || i.kind || ''), ' — ', i.ok ? 'مكتمل' : 'متبقٍّ']); })));
   if (!x.executed_at || A) out.push(e('div', { class: 't2-pb-actions' }, [DS.button('فتح إجراءات الإدارة في ملف العميل', { size: 'sm', tone: 'primary', ui: 'user-circle', onClick: function () { ctAdmGo({ user_id: x.user_id, contract_no: ctNo, name: (A && A.name) || '' }); } })]));
   return e('div', { class: 'sr-stl' }, out);
 }
