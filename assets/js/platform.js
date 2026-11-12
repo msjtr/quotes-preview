@@ -19286,7 +19286,7 @@ const EGM_KEY = { quote: 'elig_quote', purchase: 'elig_purchase', contract: 'con
 const EGP_F = {
   quote: [['q_title', 'عنوان الصفحة', 'صدر عرض السعر', 0], ['q_status', 'سطر الحالة', 'بانتظار اعتمادك', 0], ['q_note', 'رسالة المراجعة', '', 1], ['q_ack', 'نص الإقرار', '', 1], ['q_accept', 'زر القبول', 'قبول عرض السعر', 0], ['q_decline', 'زر الرفض', 'رفض عرض السعر', 0], ['q_tag', 'شارة المرحلة', '', 0], ['q_help', 'نص التواصل', '', 1], ['q_foot', 'نص التذييل', '', 1], ['q_sum', 'الملخص', '', 0], ['q_off', 'الأقسام المخفية', '', 0]],
   purchase: [['inv_title', 'عنوان الفاتورة', '', 0], ['inv_status', 'سطر الحالة', '', 0], ['inv_note', 'رسالة المراجعة', '', 1], ['inv_ack', 'نص الإقرار', '', 1], ['inv_confirm_title', 'عنوان نافذة التأكيد', '', 0], ['inv_confirm_note', 'نص نافذة التأكيد', '', 1], ['inv_done_title', 'عنوان شاشة «تم الاعتماد»', '', 0], ['inv_done_text', 'نص شاشة «تم الاعتماد»', '', 1], ['inv_decline_title', 'عنوان شاشة الاعتذار', '', 0], ['inv_decline_text', 'نص شاشة الاعتذار', '', 1], ['inv_tag', 'شارة المرحلة', '', 0], ['inv_help', 'نص التواصل', '', 1], ['inv_foot', 'نص التذييل', '', 1], ['inv_accept', 'زر الاعتماد', '', 0], ['inv_decline', 'زر الاعتذار', '', 0], ['inv_sum', 'الملخص', '', 0], ['inv_off', 'الأقسام المخفية', '', 0]],
-  contract: [['status', 'سطر الحالة', '', 0], ['hint', 'تنويه الصفحة', '', 1], ['sign_title', 'عنوان قسم التوقيع', '', 0], ['ack', 'نص الإقرار', '', 1], ['confirm_title', 'عنوان نافذة التأكيد', '', 0], ['confirm_note', 'نص نافذة التأكيد', '', 1], ['done_title', 'عنوان شاشة «تم التوقيع»', '', 0], ['done_text', 'نص شاشة «تم التوقيع»', '', 1], ['sig', 'عبارة الختام', '', 1]]
+  contract: [['c_title', 'عنوان الصفحة', '', 0], ['status', 'سطر الحالة', '', 0], ['c_doc_title', 'عنوان العقد', '', 0], ['c_sched_t', 'عنوان جدول الدفعات', '', 0], ['c_cl_t', 'عنوان بنود العقد', '', 0], ['hint', 'تنويه الصفحة', '', 1], ['sign_title', 'عنوان قسم التوقيع', '', 0], ['ack', 'نص الإقرار', '', 1], ['c_btn', 'زر التوقيع', '', 0], ['confirm_title', 'عنوان نافذة التأكيد', '', 0], ['confirm_note', 'نص نافذة التأكيد', '', 1], ['done_title', 'عنوان شاشة «تم التوقيع»', '', 0], ['done_status', 'سطر حالة «تم التوقيع»', '', 0], ['done_text', 'نص شاشة «تم التوقيع»', '', 1], ['sig', 'عبارة الختام', '', 1], ['c_foot', 'نص التذييل', '', 1], ['c_sum', 'الملخص', '', 0], ['c_off', 'الأقسام المخفية', '', 0], ['c_on', 'الأقسام المُظهرة', '', 0]] /* v855 */
 };
 const EGV = {};
 function egPvBtn(x, kind, paint) {
@@ -19411,12 +19411,20 @@ const EGPS = {
       ['dlg', 'نافذة التأكيد', 0, [['inv_confirm_title', 'عنوان النافذة', 'تأكيد اعتماد فاتورة المنتج', 0], ['inv_confirm_note', 'نص النافذة', '', 1]]],
       ['done', 'شاشة ما بعد القرار', 0, [['inv_done_title', 'عنوان «تم الاعتماد»', 'تم اعتماد فاتورة المنتج', 0], ['inv_done_text', 'نص «تم الاعتماد»', '', 1], ['inv_decline_title', 'عنوان الاعتذار', 'تم الاعتذار عن الشراء', 0], ['inv_decline_text', 'نص الاعتذار', '', 1]]],
       ['foot', 'التذييل', 'foot', [['inv_foot', 'نص التذييل', 'لأمانك تنتهي مهلة هذه الصفحة بعد 15 دقيقة من رمز التحقق.', 1]]]] },
-  contract: { p: '', secs: [['hd', 'رأس الصفحة', 0, [['status', 'سطر الحالة', 'بانتظار توقيعك', 0]]],
-      ['note', 'تنويه الصفحة', 0, [['hint', 'نص التنويه', '', 1]]],
-      ['ack', 'التوقيع والإقرار', 0, [['sign_title', 'عنوان قسم التوقيع', 'التوقيع', 0], ['ack', 'نص الإقرار', '', 1]]],
-      ['dlg', 'نافذة التأكيد', 0, [['confirm_title', 'عنوان النافذة', 'تأكيد توقيع العقد', 0], ['confirm_note', 'نص النافذة', '', 1]]],
-      ['done', 'شاشة «تم التوقيع»', 0, [['done_title', 'العنوان', 'تم توقيع العقد', 0], ['done_text', 'النص', '', 1]]],
-      ['sig', 'عبارة الختام', 0, [['sig', 'النص', '', 1]]]] }
+  /* v855: صفحة العقد كلها لهذا العميل — كل جزء يظهر أو يُخفى (c_off · c_on يغلبان الإعداد العام)، وصفوف الملخص (c_sum)، وكل عنوان ونص (c_*) — تقرؤها صفحة العميل ويقبلها elig_doc_norm (stf_264) */
+  contract: { p: 'c', def: { status: 'show_status', hint: 'show_hint', sig: 'show_sig', dlgnote: 'show_confirm_note', donetx: 'show_done_text', date: 'show_date', client: 'show_client', prod: 'show_prod', fees: '!fees', sched: '!sched' },
+    sum: [['no', 'رقم العقد'], ['date', 'تاريخ العقد'], ['client', 'اسم العميل'], ['prod', 'المنتج'], ['val', 'قيمة المنتج'], ['fees', 'الرسوم والضريبة'], ['total', 'إجمالي العقد'], ['n', 'عدد الدفعات']],
+    secs: [['hd', 'رأس الصفحة', 0, [['c_title', 'العنوان', 'صدر عقدك', 0], ['status', 'سطر الحالة', 'بانتظار توقيعك', 0, 'status']]],
+      ['doc', 'رأس العقد', 0, [['c_doc_title', 'عنوان العقد', 'عنوان المستند', 0], ['', 'تمهيد العقد', 'من «المستند»', 2, 'pre']]],
+      ['sum', 'ملخص العقد', 'sum'],
+      ['sched', 'جدول الدفعات', 'sched', [['c_sched_t', 'عنوان الجدول', 'جدول الدفعات', 0]]],
+      ['cl', 'بنود العقد', 'clauses', [['c_cl_t', 'عنوان البنود', 'بنود العقد', 0], ['', 'نص ما قبل التوقيع', 'من «المستند»', 2, 'signtx']]],
+      ['note', 'تنويه الصفحة', 'hint', [['hint', 'نص التنويه', '', 1]]],
+      ['ack', 'التوقيع والإقرار', 0, [['sign_title', 'عنوان قسم التوقيع', 'التوقيع', 0], ['ack', 'نص الإقرار', '', 1], ['c_btn', 'زر التوقيع', 'توقيع العقد', 0]]],
+      ['dlg', 'نافذة التأكيد', 0, [['confirm_title', 'عنوان النافذة', 'تأكيد توقيع العقد', 0], ['confirm_note', 'نص النافذة', '', 1, 'dlgnote']]],
+      ['done', 'شاشة «تم التوقيع»', 0, [['done_title', 'العنوان', 'تم توقيع العقد', 0], ['done_status', 'سطر الحالة', 'عقد معتمد', 0], ['done_text', 'النص', '', 1, 'donetx']]],
+      ['sig', 'عبارة الختام', 'sig', [['sig', 'النص', '', 1]]],
+      ['foot', 'التذييل', 'foot', [['c_foot', 'نص التذييل', 'لأمانك تنتهي مهلة هذه الصفحة بعد 15 دقيقة من رمز التحقق.', 1]]]] }
 };
 function egPsSw(on, fn) { return e('button', { type: 'button', class: 'eg-ps-sw' + (on ? ' is-on' : ''), 'aria-pressed': String(on), 'data-live-ok': '', onClick: function (ev) { ev.stopPropagation(); fn(!on); } }, on ? 'ظاهر' : 'مخفي'); }
 function egPgSecs(kind, D, G, saved, paint) {
@@ -19428,6 +19436,7 @@ function egPgSecs(kind, D, G, saved, paint) {
   if (D.secOpen === undefined) D.secOpen = 'hd';
   const tog = function (key) { return function (v) { setL(ofK, v ? off.filter(function (z) { return z !== key; }) : off.concat([key])); }; };
   const inp = function (f) {
+    if (f[3] === 2) { const on2 = off.indexOf(f[4]) < 0; return e('div', { class: 'eg-ps-fr' + (on2 ? '' : ' is-off') }, [e('span', {}, f[1]), egPsSw(on2, tog(f[4]))]); } /* v855 */
     const x = e(f[3] ? 'textarea' : 'input', Object.assign({ class: 't2-input', placeholder: String(G[f[0]] || f[2] || ''), maxlength: f[3] ? '700' : '120', 'aria-label': f[1] }, f[3] ? { rows: '2' } : { type: 'text' }));
     x.value = V[f[0]] || '';
     x.addEventListener('input', function () { V[f[0]] = x.value; D.dirty = true; if (D.pvUp) D.pvUp(); });
@@ -20010,12 +20019,18 @@ function srdPgSecs(kind, D, G, saved, paint, ro, att) {
   const P = S.p, V = D.v, ofK = P + '_off', smK = P + '_sum';
   const list = function (k) { return String(V[k] || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean); };
   const setL = function (k, L) { V[k] = L.join(','); D.dirty = true; paint(); };
-  const off = P ? list(ofK) : [], hid = P ? list(smK) : [];
+  const off = P ? list(ofK) : [], hid = P ? list(smK) : [], onK = P + '_on', onL = P && S.def ? list(onK) : [];
   const U = D.srd || (D.srd = { open: 'hd', ed: '' });
-  const tog = function (key, on) { setL(ofK, on ? off.concat([key]) : off.filter(function (z) { return z !== key; })); };
+  /* v855: الإظهار لهذا العميل يغلب الإعداد العام في الاتجاهين — *_off يُخفي، و*_on يُظهر ما أخفاه الإعداد العام (S.def: مفتاح الإعداد العام لكل قسم أو صف) */
+  const dflt = function (k) { const sk = S.def && S.def[k]; if (!sk) return true; const v = sk.charAt(0) === '!' ? (D.show || {})[sk.slice(1)] : G[sk]; return v !== false && v !== 'false'; };
+  const isOn = function (k, L) { if (!k) return true; if ((L || off).indexOf(k) >= 0) return false; if (onL.indexOf(k) >= 0) return true; return dflt(k); };
+  const flip = function (lk, L, key, on) { const want = !on, A = L.filter(function (z) { return z !== key; }), B = onL.filter(function (z) { return z !== key; }); if (want !== dflt(key)) (want ? B : A).push(key); V[lk] = A.join(','); if (S.def) V[onK] = B.join(','); D.dirty = true; paint(); };
+  const tog = function (key, on) { flip(ofK, off, key, on); };
   const up = function () { D.dirty = true; if (D.pvUp) D.pvUp(); };
   const field = function (f) {
-    const on = !f[4] || off.indexOf(f[4]) < 0, x = e(f[3] ? 'textarea' : 'input', Object.assign({ class: 'fin', placeholder: String(G[f[0]] || f[2] || ''), maxlength: f[3] ? '700' : '120', 'aria-label': f[1], disabled: ro }, f[3] ? { rows: '2' } : { type: 'text' }));
+    const on = isOn(f[4]);
+    if (f[3] === 2) return e('div', { class: 'row prow' + (on ? '' : ' off') }, [srdSw(on, f[1], function () { tog(f[4], on); }, ro), e('div', { class: 'lbl' }, [e('b', {}, f[1]), f[2] ? e('span', {}, f[2]) : null]), e('span', {})]); /* v855: جزء يظهر أو يُخفى بلا نص */
+    const x = e(f[3] ? 'textarea' : 'input', Object.assign({ class: 'fin', placeholder: String(G[f[0]] || f[2] || ''), maxlength: f[3] ? '700' : '120', 'aria-label': f[1], disabled: ro }, f[3] ? { rows: '2' } : { type: 'text' }));
     x.value = V[f[0]] || '';
     x.addEventListener('input', function () { V[f[0]] = x.value; up(); });
     return e('div', { class: 'row prow' + (on ? '' : ' off') }, [f[4] && P ? srdSw(on, f[1], function () { tog(f[4], on); }, ro) : e('span', { class: 'pin', title: 'أساسي' }, [srdIc('lock')]),
@@ -20037,7 +20052,7 @@ function srdPgSecs(kind, D, G, saved, paint, ro, att) {
     return out;
   };
   const sumRows = function () {
-    return (S.sum || []).map(function (z) { const on = hid.indexOf(z[0]) < 0; return e('div', { class: 'row' + (on ? '' : ' off') }, [srdSw(on, z[1], function () { setL(smK, on ? hid.concat([z[0]]) : hid.filter(function (q) { return q !== z[0]; })); }, ro), e('div', { class: 'lbl' }, [e('b', {}, z[1])]), e('span', {})]); })
+    return (S.sum || []).map(function (z) { const on = isOn(z[0], hid); return e('div', { class: 'row' + (on ? '' : ' off') }, [srdSw(on, z[1], function () { flip(smK, hid, z[0], on); }, ro), e('div', { class: 'lbl' }, [e('b', {}, z[1])]), e('span', {})]); })
       .concat([e('p', { class: 'hint', style: 'margin:0' }, 'الأرقام من «البيانات»؛ ما يُخفى هنا يُخفى من صفحة العميل وحدها، والمستند PDF يُضبط من «المستند».')]);
   };
   const card = function (id, name, cnt, on, o, kids) {
@@ -20051,8 +20066,8 @@ function srdPgSecs(kind, D, G, saved, paint, ro, att) {
   };
   const out = [];
   S.secs.forEach(function (s) {
-    const id = s[0], on = !s[2] || off.indexOf(s[2]) < 0;
-    const cnt = id === 'sum' ? fmtNum(S.sum.length - hid.length) + ' / ' + fmtNum(S.sum.length) : typeof s[3] === 'string' ? fmtNum((String(V[s[3]] || G[s[3]] || s[4] || '').split('\n').filter(function (t) { return t.trim(); })).length) + ' بند' : Array.isArray(s[3]) ? fmtNum(s[3].filter(function (f) { return !f[4] || off.indexOf(f[4]) < 0; }).length) + ' / ' + fmtNum(s[3].length) : '';
+    const id = s[0], on = isOn(s[2]);
+    const cnt = id === 'sum' ? fmtNum(S.sum.filter(function (z) { return isOn(z[0], hid); }).length) + ' / ' + fmtNum(S.sum.length) : typeof s[3] === 'string' ? fmtNum((String(V[s[3]] || G[s[3]] || s[4] || '').split('\n').filter(function (t) { return t.trim(); })).length) + ' بند' : Array.isArray(s[3]) ? fmtNum(s[3].filter(function (f) { return isOn(f[4]); }).length) + ' / ' + fmtNum(s[3].length) : '';
     out.push(card(id, s[1], cnt, on, { sw: s[2] && P ? function () { tog(s[2], on); } : null }, function () { return id === 'sum' ? sumRows() : typeof s[3] === 'string' ? ackRows(s[3], s[4]) : s[3].map(field); }));
     if (id === 'note' && att) out.push(card('att', 'مستند PDF', att.on ? '1 / 1' : '0 / 1', att.on, { sw: function () { att.set(!att.on); } }, function () {
       return [e('div', { class: 'attbox' + (att.on ? ' on' : '') }, [e('span', { class: 'fi' }, [srdIc('pdf')]), e('div', { class: 'fn' }, [e('b', {}, att.name + ' (PDF)'), e('small', {}, att.on ? 'يُرفق مع رسالة واتساب والبريد عند الإرسال، ويظهر للعميل زر «' + att.name + ' كاملًا (PDF)» في صفحته.' : 'لن يُرفق المستند — تصل العميلَ صفحةُ الرابط وحدها.')]), ro ? null : srdB(att.on ? 'إلغاء الإرفاق' : 'إرفاق المستند PDF', { sm: true, ic: 'clip' }, function () { att.set(!att.on); })])];
@@ -20082,7 +20097,7 @@ function srdPage(x, c, kind, live, J, paint) {
   const V = egPvGet(x, kind, paint), F = EGP_F[kind] || [];
   const Q = J ? J.q : null, c0 = (Q && Q.calc) || {}, base = (c0.doc && c0.doc[kind]) || {}, saved = base.page || {};
   const W = c.pg || (c.pg = {}), D = W[kind] && W[kind].q === (Q && Q.id) ? W[kind] : (W[kind] = { q: Q && Q.id, v: JSON.parse(JSON.stringify(saved)), dirty: false, busy: false, err: '' });
-  const G = (V.d && V.d.page) || {};
+  const G = (V.d && V.d.page) || {}; D.show = (V.d && V.d.show) || {};
   const clean = function () { const o = {}; F.forEach(function (f) { const v = String(D.v[f[0]] || '').trim(); if (v) o[f[0]] = v.slice(0, 700); }); const bl = (Array.isArray(D.v.blocks) ? D.v.blocks : []).map(function (b) { b = b || {}; return { t: String(b.t || '').trim().slice(0, 80), off: !!b.off, lib: /^[a-z]{2,12}$/.test(String(b.lib || '')) ? b.lib : undefined, items: (Array.isArray(b.items) ? b.items : []).map(function (y) { y = y || {}; return { v: String(y.v || '').trim().slice(0, 700), off: !!y.off }; }).filter(function (y) { return y.v; }).slice(0, 20) }; }).filter(function (b) { return b.t || b.items.length; }).slice(0, 12); if (bl.length) o.blocks = bl; return o; };
   const canSave = !!(Q && J && J.can && J.can.doc && J.can.doc[kind]), ro = !canSave;
   const save = async function (reset) {
