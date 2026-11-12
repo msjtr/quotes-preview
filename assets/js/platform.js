@@ -19132,7 +19132,7 @@ function egPgAtt(c, kind, Q) {
   return e('div', { class: 'eg-pg-att' + (on ? ' is-on' : '') }, [e('div', {}, [e('b', {}, on ? 'المستند PDF مرفق' : 'المستند PDF غير مرفق'), e('small', {}, on ? 'يُرفق مع رسالة واتساب والبريد عند الإرسال، فيفتحه العميل وينزّله منها.' : 'لن يُرفق المستند — تصل العميلَ صفحةُ الرابط وحدها.')]),
     DS.button(on ? 'تغيير الإرفاق' : 'إرفاق المستند PDF', { size: 'sm', ui: 'paperclip', onClick: function () {
       const t = [].filter.call(document.querySelectorAll('.eg-sub > .eg-sub-t'), function (b) { return /^المستند/.test(String(b.textContent || '').trim()); })[0]; if (t) t.click();
-      setTimeout(function () { const s = [].filter.call(document.querySelectorAll('.eg-out-b select'), function (y) { return [].some.call(y.options, function (o) { return o.value === 'pdf'; }); })[0]; if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); } }, 350);
+      /* v842: يفتح خانة «إرفاق المستند» نفسها (قائمة اختيار المنصة) لا يكتفي بالتبويب */ (function go(n) { const f = [].filter.call(document.querySelectorAll('.eg-out-b .t2-field'), function (y) { const k = y.querySelector('.t2-field-k'); return k && String(k.textContent || '').trim() === 'إرفاق المستند' && !y.closest('.eg-pg-att'); })[0]; if (!f) { if (n < 20) setTimeout(function () { go(n + 1); }, 120); return; } f.scrollIntoView({ block: 'center' }); const b = f.querySelector('.t2-cb-btn, select'); if (b) { b.focus(); if (b.tagName !== 'SELECT' && b.getAttribute('aria-expanded') !== 'true') b.click(); } })(0);
     } })]);
 }
 function egDocTools(x, c, kind, paint, full) { sgLogLoad(x, paint);
