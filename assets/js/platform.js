@@ -19477,7 +19477,7 @@ function egPvPage(x, c, kind, live, J, paint) {
         F.length && canSave ? liveOk(DS.button(D.busy ? 'جارٍ الحفظ…' : 'حفظ لهذا العميل', { size: 'sm', tone: 'primary', ui: 'check', disabled: D.busy, onClick: function () { save(false); } })) : null,
         F.length && canSave && own ? liveOk(DS.button('إعادة للافتراضي', { size: 'sm', ui: 'arrows-clockwise', disabled: D.busy, onClick: function () { if (tqConfirm('إلغاء نصوص هذا العميل والرجوع للنسخة الافتراضية؟')) save(true); } })) : null,
         egPvBtn(x, kind, paint)])]),
-    e('figure', { class: 'eg-pg-pv' }, [e('figcaption', { class: 'cu-dr-hint' }, F.length ? 'كما يراه العميل — تتحدّث عند مغادرة الحقل' : 'كما يراه العميل'),
+    e('figure', { class: 'eg-pg-pv' }, [e('figcaption', { class: 'cu-dr-hint' }, F.length ? 'كما يراه العميل على الجوال — تتحدّث أثناء الكتابة' : 'كما يراه العميل على الجوال'),
       pv || (V.err ? DS.note('warn', 'تعذّرت المعاينة', V.err) : CF_EMPTY('جارٍ تجهيز الصفحة…'))])]);
 }
 function egOut(x, c, kind, live, paint, setup, head) { /* v811: head = رأس المرحلة؛ الترتيب: البيانات · المستند · صفحة الرابط · الرسالة */
