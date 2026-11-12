@@ -1237,7 +1237,7 @@ html.tq-next.pv-dark { --tqn-bg: #0A1120; --tqn-line: #1F2C44; --tqn-ink: #E7EDF
 
 
 
-/* ═══ v849 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
+/* ═══ v850 — قسم العملاء: مهمة واحدة في كل تبويب · رأس ملف واضح · بطاقة رأس واحدة للعقد · مسار صحيح ═══ */
 .tq-next .tqn-st-hide { display: none !important; }
 .tq-next .t2-sec-h.tqn-st-nh { display: none !important; }
 .tq-next .tqn-dup-t, .tq-next .tqn-dup-k { display: none !important; }
@@ -2740,7 +2740,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
   .tq-next .sr-full .stl-dc-h, .tq-next .sr-full .stl-dc-r { grid-template-columns: auto minmax(0, 1fr) !important; }
   .tq-next .sr-full .stl-dc-h .t2-input, .tq-next .sr-full .stl-dc-r .t2-input { grid-column: 1 / -1; }
 }
-/* v849: طلب الأهلية — التصميم المعتمد: خطوات أفقية · الإجراء التالي بزر · تبويبات المستندات · ملخص جانبي */
+/* v850: طلب الأهلية — التصميم المعتمد: خطوات أفقية · الإجراء التالي بزر · تبويبات المستندات · ملخص جانبي */
 .tq-next #pv-root .tqn-stage:has(+ .sr-full .eg-work) { display: none !important; }
 .tq-next .sr-full .eg-work.tqn-egf { display: grid !important; gap: 14px !important; container-type: inline-size; }
 .tq-next .sr-full .eg-work.tqn-egf .eg-nav { display: none !important; }
@@ -2791,11 +2791,11 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-r:hover, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-p:hover, .tq-next.pv-dark #pv-host .sr-full .tqn-egsum-r.is-on { background: #0F1829; }
 .tq-next .sr-full .eg-work.tqn-egf .eg-sh { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .tq-next .sr-full .eg-work.tqn-egf .eg-sh-m { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12.5px; color: var(--tqn-mut, #66748C); }
-/* v849: تبويبات الطلب العليا تعمل (المراسلة · مسار الطلب) + «الإرسال للعميل» تبويب أعلى مستقل */
+/* v850: تبويبات الطلب العليا تعمل (المراسلة · مسار الطلب) + «الإرسال للعميل» تبويب أعلى مستقل */
 .tq-next .sr-full .eg-work.tqn-egf.tqn-st-hide { display: none !important; }
 .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend > .tqn-egs, .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .eg-nextbar, .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .tqn-egsum { display: none !important; }
 .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .eg-lay { grid-template-columns: minmax(0, 1fr) !important; }
-/* v849: مكتبة البنود داخل «المستند» — قائمة البنود والقائمة المنسدلة */
+/* v850: مكتبة البنود داخل «المستند» — قائمة البنود والقائمة المنسدلة */
 .tq-next .sr-full .t2-field.tqn-cl-raw { display: none !important; }
 .tq-next .sr-full .tqn-cl { position: relative; display: grid; gap: 6px; padding: 10px; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 14px; background: #FAFBFD; }
 .tq-next .sr-full .tqn-cl.is-one { padding: 0; border: 0; background: none; display: flex; justify-content: flex-start; }
@@ -2843,7 +2843,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next.pv-dark #pv-host .sr-full .tqn-dd-q { background: #0F1829; color: var(--tqn-ink); border-color: var(--tqn-line); }
 .tq-next.pv-dark #pv-host .sr-full .tqn-dd-i:hover:not(:disabled), .tq-next.pv-dark #pv-host .sr-full .tqn-dd-g summary:hover, .tq-next.pv-dark #pv-host .sr-full .tqn-cl-b:hover:not(:disabled) { background: #0F1829; }
 .tq-next .sr-full:has(> .tqn-dd) { position: relative; }
-/* v849: إخفاء البند بالعين + أقسام صفحة الرابط المضافة */
+/* v850: إخفاء البند بالعين + أقسام صفحة الرابط المضافة */
 .tq-next .sr-full .tqn-cl-r.is-off { background: #F6F7F9; border-style: dashed; }
 .tq-next .sr-full .tqn-cl-r.is-off .tqn-cl-t { color: #8A94A6; text-decoration: line-through; text-decoration-color: rgba(138, 148, 166, .5); }
 .tq-next .sr-full .tqn-cl-off { font-style: normal; font-size: 11px; font-weight: 800; color: #8A5A00; background: #FDF0DC; border-radius: 99px; padding: 0 7px; margin-inline-start: 6px; text-decoration: none; display: inline-block; }
@@ -2861,13 +2861,13 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .sr-full .tqn-dd-i.is-blank { border: 1px dashed #9FD3D8; margin: 4px 0; }
 .tq-next.pv-dark #pv-host .sr-full .tqn-pgb-s, .tq-next.pv-dark #pv-host .sr-full .tqn-pgb-s .tqn-cl-r { background: #121C30; border-color: var(--tqn-line); }
 .tq-next.pv-dark #pv-host .sr-full .tqn-cl-r.is-off, .tq-next.pv-dark #pv-host .sr-full .tqn-pgb-s.is-off { background: #0F1829; }
-/* v849: عنوان المستند قائمة · قوائم بنود للتنويه والإقرار والأقسام المضافة */
+/* v850: عنوان المستند قائمة · قوائم بنود للتنويه والإقرار والأقسام المضافة */
 .tq-next .sr-full .tqn-cl-raw { display: none !important; }
 .tq-next .sr-full .tqn-ttl { display: grid; gap: 4px; }
 .tq-next .sr-full .tqn-ttl-s { max-width: 360px; }
 .tq-next .sr-full .tqn-cl.is-add { margin-top: 6px; }
 .tq-next .sr-full .stl-dc-add:has(+ .tqn-cl.is-add) { align-items: start; }
-/* v849: صلاحية عرض السعر في «المستند» */
+/* v850: صلاحية عرض السعر في «المستند» */
 .tq-next .sr-full .eg-valid { display: block; }
 .tq-next .sr-full .tqn-vld { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 14px; background: #FAFBFD; }
 .tq-next .sr-full .tqn-vld-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -2878,8 +2878,8 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next.pv-dark #pv-host .sr-full .tqn-vld { background: #0F1829; border-color: var(--tqn-line); }
 .tq-next .sr-full .tqn-ttl-s { appearance: auto; -webkit-appearance: menulist; cursor: pointer; }
 
-/* ═══ v849 — «البنود والرسوم»: جدول واحد + «توزيع مبلغ» داخل الجدول + الملخص المالي ثابت بجانب النموذج ═══ */
-/* v849: الملخص بجانب النموذج حين يتسع مكان المحرر (لا حين تضيق الشاشة) — وإلا أعلاه؛ ويثبت أسفل شريط تبويبات الطلب */
+/* ═══ v850 — «البنود والرسوم»: جدول واحد + «توزيع مبلغ» داخل الجدول + الملخص المالي ثابت بجانب النموذج ═══ */
+/* v850: الملخص بجانب النموذج حين يتسع مكان المحرر (لا حين تضيق الشاشة) — وإلا أعلاه؛ ويثبت أسفل شريط تبويبات الطلب */
 *:has(> .eq-inl){container-type:inline-size}
 .eq-inl>*{min-width:0}
 .eq-inl>.q2-sum{margin-bottom:12px}
@@ -2919,7 +2919,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .q2-amt small{font-size:11px;color:#5d6a86}
 @media (max-width:700px){.eq-tr.is-d2{grid-template-columns:36px minmax(0,1fr) minmax(0,1fr)}.eq-tr.is-d2>.eq-c.is-nm{grid-column:2 / -1}}
 
-/* ═══ v849 — الأقسام مطويّة (فتح قسم يُغلق غيره) · التاريخ بتقويم داخل الإطار · القوائم على الجوال لوحة من أسفل ═══ */
+/* ═══ v850 — الأقسام مطويّة (فتح قسم يُغلق غيره) · التاريخ بتقويم داخل الإطار · القوائم على الجوال لوحة من أسفل ═══ */
 .tq-next .sr-full .eg-out-b section.stl-dc:not(.is-open) > :not(.stl-dc-h) { display: none !important; }
 .tq-next .sr-full .eq-inl section.stl-one-s:not(.is-open) > :not(.stl-one-h) { display: none !important; }
 .tq-next .sr-full section.tqn-acc > .stl-dc-h, .tq-next .sr-full section.tqn-acc > .stl-one-h { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px; }
@@ -2954,14 +2954,14 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .sr-full .tqn-dd-grab { width: 44px; height: 5px; border-radius: 99px; background: #d5dce8; margin: 8px auto 4px; }
 
 
-/* ═══ v849 — «إرفاق المستند PDF» ظاهر في «صفحة الرابط» ═══ */
+/* ═══ v850 — «إرفاق المستند PDF» ظاهر في «صفحة الرابط» ═══ */
 .tq-next .sr-full .eg-pg-att { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: space-between; border: 1px dashed #d5dce8; background: #f7f9fc; border-radius: 12px; padding: 10px 12px; margin: 4px 0 10px; }
 .tq-next .sr-full .eg-pg-att.is-on { border-style: solid; border-color: #9fd6d9; background: #eef8f8; }
 .tq-next .sr-full .eg-pg-att > div { display: grid; gap: 2px; min-width: 0; flex: 1 1 220px; }
 .tq-next .sr-full .eg-pg-att b { color: #0B2552; font-size: 14px; }
 .tq-next .sr-full .eg-pg-att small { color: #5d6a86; font-size: 12.5px; line-height: 1.6; }
 
-/* ═══ v849 — صفحة الطلب بالتصميم المعتمد: أزرار الرأس بدل التبويبات · لوحة جانبية للإسناد والمراسلة والمسار · المحرر والمعاينة جنبًا إلى جنب · شريط إجراء سفلي على الجوال ═══ */
+/* ═══ v850 — صفحة الطلب بالتصميم المعتمد: أزرار الرأس بدل التبويبات · لوحة جانبية للإسناد والمراسلة والمسار · المحرر والمعاينة جنبًا إلى جنب · شريط إجراء سفلي على الجوال ═══ */
 .tq-next .sr-full.tqn-hd > .tqn-st { display: none !important; }
 .tq-next .sr-full-top .tqn-hacts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tq-next .sr-full-top .tqn-ha.is-on { background: #0a737a; color: #fff; border-color: #0a737a; }
@@ -2995,7 +2995,7 @@ body.tqn-drw-open { overflow: hidden; }
   .tq-next .sr-full-top .tqn-ha { flex: 1 1 auto; justify-content: center; }
 }
 
-/* ═══ v849 — التصميم المعتمد بدقة: شريط المراحل الست بمؤشرات الألوان · قائمة الطلبات بأعمدتها ونقاط المراحل · صفحة العمل بعرض كامل ═══ */
+/* ═══ v850 — التصميم المعتمد بدقة: شريط المراحل الست بمؤشرات الألوان · قائمة الطلبات بأعمدتها ونقاط المراحل · صفحة العمل بعرض كامل ═══ */
 /* شريط المراحل */
 .tq-next .sr-full .tqn-egs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; background: #fff; border: 1px solid #e3e8f2; border-radius: 16px; padding: 6px; overflow-x: auto; }
 .tq-next .sr-full .tqn-egs-i { display: grid; gap: 3px; align-content: start; text-align: start; border: 0; background: none; border-radius: 12px; padding: 10px 12px; position: relative; min-width: 120px; cursor: pointer; color: #0B2552; }
@@ -3039,7 +3039,7 @@ body.tqn-drw-open { overflow: hidden; }
   .tq-next .tqn-rqt.is-srv .tqn-rqr > :nth-child(5) { grid-column: 2; grid-row: 1; justify-self: end; }
 }
 
-/* ═══ v849 — مطابقة التصميم المعتمد: رأس الطلب (مسار · العنوان · الحالة · المسنَد إليه · أزرار بأعدادها · ⋯) · شريط المراحل بعرض المحتوى · القائمة بطاقات عند ضيق المساحة ═══ */
+/* ═══ v850 — مطابقة التصميم المعتمد: رأس الطلب (مسار · العنوان · الحالة · المسنَد إليه · أزرار بأعدادها · ⋯) · شريط المراحل بعرض المحتوى · القائمة بطاقات عند ضيق المساحة ═══ */
 /* رأس الطلب */
 .tq-next .sr-full-top { display: grid !important; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px 14px; }
 .tq-next .sr-full-top > * { grid-column: 1 / -1; }
@@ -3118,7 +3118,7 @@ body.tqn-drw-open { overflow: hidden; }
 @container (max-width: 640px) { .tq-next .eg-adm-g { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { .tq-next .eg-adm-g { grid-template-columns: minmax(0, 1fr); } }
 
-/* ═══ v849 — صفحة الرابط بأقسام التصميم · محرّر المستند لا ينضغط · المعاينة الجانبية بعرض محسوب · شريط المراحل تحت القوائم المنسدلة ═══ */
+/* ═══ v850 — صفحة الرابط بأقسام التصميم · محرّر المستند لا ينضغط · المعاينة الجانبية بعرض محسوب · شريط المراحل تحت القوائم المنسدلة ═══ */
 /* صفحة الرابط: أقسام تُطوى، لكل قسم إظهار/إخفاء */
 .tq-next .eg-ps { display: grid; gap: 8px; }
 .tq-next .eg-ps-s { border: 1px solid #e3e8f2; border-radius: 12px; background: #fff; overflow: hidden; }
@@ -3157,7 +3157,7 @@ body.tqn-dock .t2-stack.adm-live { margin-left: calc(clamp(380px, 36vw, 560px) +
 /* قوائم الاختيار الضيقة في جدول البنود: عرض كافٍ للخيارات */
 .tq-next .t2-cb-pop, .tq-next .t2-cb-list { min-width: 220px; }
 
-/* ═══ v849 — إصلاح التعليق · صفحة الرابط بمعاينة جوال جانبية حيّة · الإرفاق في صفحة الرابط · الدُرج بشكل التصميم · الإرسال داخل المرحلة ═══ */
+/* ═══ v850 — إصلاح التعليق · صفحة الرابط بمعاينة جوال جانبية حيّة · الإرفاق في صفحة الرابط · الدُرج بشكل التصميم · الإرسال داخل المرحلة ═══ */
 /* صفحة الرابط: المحرّر وبجانبه الجوال (ثابت أثناء التمرير) */
 @container (min-width: 760px) {
   .tq-next .eg-pg { display: grid !important; grid-template-columns: minmax(0, 1fr) 340px !important; gap: 18px !important; align-items: start !important; }
@@ -3182,16 +3182,41 @@ body.tqn-dock .t2-stack.adm-live { margin-left: calc(clamp(380px, 36vw, 560px) +
 .tq-next .sr-full .eg-nextbar .tqn-sndb { margin-inline-start: auto; }
 .tq-next .sr-full .tqn-egs > .tqn-sndb { grid-column: 1 / -1; justify-self: start; }
 
-/* ═══ v849 — صفحة الرابط: الجوال بجانب المحرّر فعليًا (قاعدة أقوى من .sr-full .eg-pg) ═══ */
+/* ═══ v850 — صفحة الرابط: الجوال بجانب المحرّر فعليًا (قاعدة أقوى من .sr-full .eg-pg) ═══ */
 @container (min-width: 620px) {
   .tq-next .sr-full .eg-out-b .eg-pg { display: grid !important; grid-template-columns: minmax(0, 1fr) 320px !important; gap: 16px !important; align-items: start !important; }
   .tq-next .sr-full .eg-out-b .eg-pg > .eg-pg-pv { position: sticky; top: 190px; }
 }
 .tq-next .sr-full .eg-out-b .eg-pg-pv { max-width: 320px; }
 
-/* ═══ v849 — صفحة العمل بعرض كامل فعليًا: عمود الملخص المخفي (270px) كان يحجز مساحة فارغة ═══ */
+/* ═══ v850 — صفحة العمل بعرض كامل فعليًا: عمود الملخص المخفي (270px) كان يحجز مساحة فارغة ═══ */
 .tq-next .sr-full .eg-work.tqn-egf > .eg-lay { display: block !important; grid-template-columns: none !important; }
 .tq-next .sr-full .eg-work.tqn-egf > .eg-lay > .eg-main { width: 100% !important; max-width: none !important; }
+
+/* ═══ v850 — جدول البنود مرن (لا يخرج عن الإطار) · ترتيب أقسام المستند · الإجراء التالي جملة · بطاقات البنود أوضح ═══ */
+/* جدول البنود: أعمدة مرنة تتسع للمكان بدل عرض ثابت يخرج عن الإطار */
+.tq-next .sr-full .eg-out-b .eq-inl > * { min-width: 0; }
+.tq-next .sr-full .eg-out-b .eq-tb .eq-tr { grid-template-columns: minmax(120px, 1.5fr) minmax(76px, .8fr) minmax(92px, 1fr) minmax(110px, 1.2fr) auto !important; gap: 8px !important; }
+.tq-next .sr-full .eg-out-b .eq-tb .eq-tr.is-d2 { grid-template-columns: 34px minmax(120px, 1.5fr) minmax(76px, .8fr) minmax(92px, 1fr) minmax(110px, 1.2fr) auto !important; }
+.tq-next .sr-full .eg-out-b .eq-tb .eq-c { min-width: 0; }
+.tq-next .sr-full .eg-out-b .eq-tb .eq-c .t2-input, .tq-next .sr-full .eg-out-b .eq-tb .eq-c .t2-cb-btn { min-width: 0; width: 100%; }
+@media (max-width: 760px) {
+  .tq-next .sr-full .eg-out-b .eq-tb .eq-tr.is-h { display: none !important; }
+  .tq-next .sr-full .eg-out-b .eq-tb .eq-tr, .tq-next .sr-full .eg-out-b .eq-tb .eq-tr.is-d2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; border: 1px solid #e3e8f2; border-radius: 12px; padding: 10px; }
+  .tq-next .sr-full .eg-out-b .eq-tb .eq-c.is-nm { grid-column: 1 / -1; }
+}
+/* ترتيب أقسام المستند */
+.tq-next .eg-out-b .stl-dc-h .tqn-mv { display: inline-flex; gap: 4px; margin-inline-start: 8px; }
+.tq-next .eg-out-b .stl-dc-h .tqn-mv-b { width: 30px; height: 30px; border: 1px solid #cfd8e6; border-radius: 8px; background: #fff; color: #0B2552; cursor: pointer; display: grid; place-items: center; font-size: 15px; line-height: 1; padding: 0; }
+.tq-next .eg-out-b .stl-dc-h .tqn-mv-b:hover:not(:disabled) { border-color: #0a737a; color: #0a737a; background: #e1f1f1; }
+.tq-next .eg-out-b .stl-dc-h .tqn-mv-b:disabled { opacity: .35; cursor: default; }
+.tq-next .eg-out-b .stl-dc-h .tqn-mv-b.is-up::before { content: '↑'; }
+.tq-next .eg-out-b .stl-dc-h .tqn-mv-b.is-dn::before { content: '↓'; }
+/* الإجراء التالي: جملة واضحة */
+.tq-next .sr-full .eg-nextbar b.tqn-nx-o { display: none !important; }
+.tq-next .sr-full .eg-nextbar b.tqn-nx-t { display: block; font-size: 14.5px; color: #0B2552; }
+/* بطاقات البنود (الشروط · التنويه · الإقرار): صفوف أوضح ومسافات مريحة */
+.tq-next .eg-out-b .tqn-cl-l > *, .tq-next .eg-out-b .tqn-cl-i { padding: 10px 12px !important; border: 1px solid #e3e8f2 !important; border-radius: 12px !important; margin-bottom: 8px !important; background: #fff; line-height: 1.8; }
 /* v760: قبل التدشين — الخطوات شريط واحد ثم عمودان، وخيارات السبب والقرار */
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp { display: grid !important; grid-auto-rows: max-content; align-content: start; gap: 16px; }
 .tq-next .cu-dr.tqn-dr-cu .cu-dr-b.tqn-lchp > .lch-steps { margin: 0 !important; padding: 10px !important; gap: 8px !important; border: 1px solid var(--tqn-line, #E3E8F0); border-radius: 18px; background: linear-gradient(180deg, #F7FCFC, #fff); }

@@ -18581,16 +18581,54 @@ function eqShared() { const E = (typeof ES !== 'undefined' && ES) || {}; const L
 function eqFootOf(TT, SH) { const L = (SH.foot || []).map(function (x) { return Object.assign({}, x, { sh: 1 }); }); (Array.isArray(TT.footL) ? TT.footL : []).forEach(function (x) { L.splice(Math.min(Number(x.at) || 0, L.length), 0, { v: x.v, show: x.show !== false }); }); const vis = L.filter(function (x) { return x.show !== false && String(x.v || '').trim(); }); const sl = vis.filter(function (x) { return x.fr === 'slogan'; })[0]; return { foot: vis.filter(function (x) { return x.fr !== 'slogan'; }).map(function (x) { return String(x.v).trim(); }).join(' · '), slogan: sl ? [SH.org, String(sl.v).trim()].filter(Boolean).join(' · ') : '' }; }
 /* عرض تجريبي لمعاينة القالب من الإعدادات (لا يُحفظ ولا يُرسل) */
 function eqSampleQ(kind) { const t = lvToday(), y = +t.slice(0, 4), m = +t.slice(5, 7), d = Math.min(28, +t.slice(8, 10)); const plan = []; for (let i = 1; i <= 12; i++) plan.push({ no: i, due: new Date(Date.UTC(y, m - 1 + i, d)).toISOString().slice(0, 10), amount: i < 12 ? 540.83 : 540.87 }); const tm = new Date(Date.UTC(y, m - 1, +t.slice(8, 10) + 1)).toISOString().slice(0, 10); const no = (kind === 'quote' ? 'TS-' : kind === 'purchase' ? 'PI-' : 'TRA-') + t.replace(/-/g, '') + '-000'; return { quotation_number: no, issue_date: t, valid_until: tm, customer_name: 'عميل تجريبي', req_no: 'EL-' + t.replace(/-/g, '') + '-000', product_type: 'iPhone 17 Pro · 256GB', status: 'draft', calc: { value: 4600, vat: 690, vat_rate: 0.15, total: 6490, items: [{ id: 's1', t: 'رسوم معالجة الطلب', amt: 250 }, { id: 's2', t: 'فرق بيع المنتج', amt: 920 }, { id: 's3', t: 'رسوم السند الإلكتروني', amt: 30 }], plan: plan, show: {} } }; }
+/* v850: ترتيب أقسام المستند (أعلى/أسفل) — يُحفظ في labels.zz_ord (مفاتيح الأقسام المختصرة بالترتيب) فلا تغيير في القاعدة */
+const EQDC = {};
+const egSk = function (g) { return String(g.c || '').replace(/^[qpc]_c_/, ''); };
+function egElOrd(EL, d) {
+  const o = String((d && d.labels && d.labels.zz_ord) || '').split(',').filter(Boolean);
+  if (!o.length || !Array.isArray(EL)) return EL;
+  const head = EL.filter(function (g) { return !g.c; }), rest = EL.filter(function (g) { return g.c; }).map(function (g, i) { return [g, i]; });
+  rest.sort(function (a, b) { const x = o.indexOf(egSk(a[0])), y = o.indexOf(egSk(b[0])); return ((x < 0 ? 90 + a[1] : x) - (y < 0 ? 90 + b[1] : y)); });
+  return head.concat(rest.map(function (z) { return z[0]; }));
+}
+window.tqDocMove = function (kind, title, dir, i) {
+  const X = EQDC[kind]; if (!X || !EQ_EL[kind]) return false;
+  const L = egElOrd(EQ_EL[kind], X.d).filter(function (g) { return g.c; });
+  let a = -1; L.forEach(function (g, j) { if (a < 0 && (g.g === title || (X.d.labels && X.d.labels[g.c] === title))) a = j; }); if (a < 0) a = i;
+  const b = a + dir; if (!(a >= 0 && b >= 0 && a < L.length && b < L.length)) return false;
+  const t = L[a]; L[a] = L[b]; L[b] = t;
+  X.d.labels = X.d.labels || {}; X.d.labels.zz_ord = L.map(egSk).join(',');
+  X.onCh(); return true;
+};
+/* الـPDF يتبع الترتيب نفسه: كل بطاقة تُعرف بعنوانها، وما لا يُعرف يبقى مع ما قبله */
+function egBOrd(B, D, kind, lb) {
+  const o = String((D && D.labels && D.labels.zz_ord) || '').split(',').filter(Boolean); if (!o.length || !B.length) return;
+  const EL = (EQ_EL[kind] || []).filter(function (g) { return g.c; });
+  const keyOf = function (el) {
+    const t = String((el && el.firstChild && el.firstChild.textContent) || '').trim();
+    if (el && el.classList && el.classList.contains('is-sign')) return 'sign';
+    const g = EL.filter(function (g) { const tt = lb(g.c, g.g); return t && (t === tt || t === g.g || (t.length > 3 && (t.indexOf(tt) === 0 || tt.indexOf(t) === 0))); })[0];
+    if (g) return egSk(g);
+    return /^\s*الاعتماد/.test(String((el && el.textContent) || '').slice(0, 40)) ? 'appr' : null;
+  };
+  const grp = [{ k: '', i: -1, els: [] }];
+  B.forEach(function (el, i) { const k = keyOf(el); if (k) grp.push({ k: k, i: i, els: [el] }); else grp[grp.length - 1].els.push(el); });
+  const pre = grp.shift();
+  grp.sort(function (a, b) { const x = o.indexOf(a.k), y = o.indexOf(b.k); return ((x < 0 ? 90 + a.i : x) - (y < 0 ? 90 + b.i : y)); });
+  const out = pre.els.concat.apply(pre.els, grp.map(function (g) { return g.els; }));
+  B.length = 0; out.forEach(function (x) { B.push(x); });
+}
 function eqDocAll(d, kind, items, onCh, mark) {
   const R = { items: (items || []).map(function (l) { return { k: 'i_' + l.id, t: l.t, disc: 0, before: l.amt }; }) };
-  return stlDocAll(stlDocNorm(d), R, onCh, mark, 'gateway', EQ_EL[kind]);
+  stlDocNorm(d); EQDC[kind] = { d: d, onCh: onCh }; /* v850 */
+  return stlDocAll(d, R, onCh, mark, 'gateway', egElOrd(EQ_EL[kind], d));
 }
 /* v687: PDF بهوية «فاتورة سداد قيمة المنتج» نفسها (التصميم 2: بطاقات d3) — من calc العرض (نسخة العميل) وإعداد المستند doc[kind] وخيارات الإظهار show */
 /* v836: نص من عدة أسطر يصير قائمة بنود، والبند المخفي (أوله ⊘) لا يظهر */
 function dcEqTxt(v) { const L = String(v || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return t && t.charAt(0) !== '⊘'; }); return L.length > 1 ? d3List(L, 0, false) : e('p', { class: 'd3-p' }, L[0] || ''); }
 function dcEqDoc(kind, Q, draft, X) {
   X = X || {};
-  const c = Q.calc || {}, sh = kind === 'contract' ? {} : (c.show || {}), TT = (draft || X.tpl || kind !== 'quote') ? Object.assign(eqTpl(kind), X.tpl || {}) : null, SH = X.shared || eqShared(), D = stlDocNorm(JSON.parse(JSON.stringify((c.doc && c.doc[kind]) || (TT ? TT.doc : {}))));
+  const c = Q.calc || {}, sh = kind === 'contract' || (c.doc && c.doc[kind] && c.doc[kind].labels && c.doc[kind].labels.zz_shm) ? {} : (c.show || {}), TT = (draft || X.tpl || kind !== 'quote') ? Object.assign(eqTpl(kind), X.tpl || {}) : null, SH = X.shared || eqShared(), D = stlDocNorm(JSON.parse(JSON.stringify((c.doc && c.doc[kind]) || (TT ? TT.doc : {}))));
   const pre = kind === 'quote' ? 'q' : kind === 'purchase' ? 'p' : 'c', name = EQ_DOC_NAME[kind] || 'المستند';
   const on = function (k) { return D.hide.indexOf(k) < 0; }, lb = function (k, def) { return D.labels[k] || def; };
   const row = function (k, t, v, ltr) { return v !== null && v !== undefined && v !== '' && on(k) ? [lb(k, t), v, ltr] : null; };
@@ -18639,6 +18677,7 @@ function dcEqDoc(kind, Q, draft, X) {
   if (kind === 'purchase' && TT && on('p_c_sign') && !dcSgRow(kind, Q)) B.push(d3Card(lb('p_c_sign', 'إقرار العميل'), 'pen', [dcEqTxt(D.texts.ack || (TT.doc.texts && TT.doc.texts.ack) || 'أقرّ بصحة البيانات وأوافق على شراء المنتج وخطة الدفع.'), d3KV([['اعتماد العميل برمز التحقق', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
   if (kind === 'contract' && on('c_c_sign')) B.push(d3Card(lb('c_c_sign', 'التوقيع'), 'pen', [d3KV([['توقيع العميل', '..............................'], ['التاريخ', '..............................']])], 'is-sign'));
   { const sgB = dcSignBlk(kind, Q, { on: on, lb: lb, p: pre }); if (sgB) B.push(sgB); } if (on(pre + '_c_appr') && on(pre + '_a_seal')) B.push(d3ApprWide(no, kind, {}));
+  egBOrd(B, D, kind, lb); /* v850 */
   const H0 = Object.assign({}, QT.hdr || {});
   return { lk: kind, hdr: Object.assign(H0, { stl_no: H0.no !== false && on(pre + '_h_no'), stl_date: H0.date !== false && on(pre + '_h_date') }), label: name, title: D.texts.title || (TT && TT.doc && TT.doc.texts && TT.doc.texts.title) || name, sub: TT ? [SH.org, on(pre + '_h_iss') ? TT.issuer : ''].filter(Boolean).join(' · ') : QT0.org, org: TT ? SH.org : QT0.org, foot: TT ? eqFootOf(TT, SH).foot : QT0.org + ' · ' + QT0.auto,
     pill: on(pre + '_h_pill') ? lb(pre + '_h_pill', 'نسخة العميل') : null, auto: QT0.auto, slogan: TT ? eqFootOf(TT, SH).slogan : d2Slogan(QT0), slogan0: QT0.slogan, dsn: 2, cls: 'is-pq is-stl', en: (TT && TT.en) || (kind === 'contract' ? 'CONTRACT' : kind === 'purchase' ? 'PRODUCT INVOICE' : 'PRICE QUOTATION'),
@@ -19201,6 +19240,7 @@ function egPgAtt(c, kind, Q) {
 /* v846: ما أُخفي قديمًا من «البيانات ← ما يظهر للعميل» يظهر مخفيًا في عناصر المستند نفسها — مكان واحد للقالب */
 function egShowMerge(d, kind, c0) {
   if (kind !== 'quote' || !d || !Array.isArray(d.hide)) return;
+  d.labels = d.labels || {}; d.labels.zz_shm = '1'; /* v850: بعد حفظ المستند يتبع الـPDF عناصر المستند وحدها (لا الإخفاء القديم) */
   const sh = (c0 && c0.show) || {}, M = { value: 'q_p_val', vat: 'q_t_vat', valid: 'q_h_valid', plan_start: 'q_s_start', plan_end: 'q_s_end', plan_n: 'q_s_n', plan_amt: 'q_s_amt', plan_tbl: 'q_s_tbl' };
   Object.keys(M).forEach(function (k) { if (sh[k] === false && d.hide.indexOf(M[k]) < 0) d.hide.push(M[k]); });
   if (sh.items === false) ((c0 && c0.items) || []).forEach(function (y) { if (y && y.id && d.hide.indexOf('i_' + y.id) < 0) d.hide.push('i_' + y.id); });
