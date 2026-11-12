@@ -1840,6 +1840,7 @@ function geoQ() {
   function egNxSent(nt, st) {
     if (/المستندات|استكمال/.test(nt)) return 'راجع المرفقات واقبلها أو اطلب البديل، ثم أصدر القرار.';
     if (/القرار|التوصية|نتيجة/.test(nt)) return 'أصدر قرار الأهلية وأرسل النتيجة للعميل.';
+    if (/موافقته على النتيجة/.test(nt + ' ' + st)) return 'أُرسلت النتيجة للعميل — تابع موافقته عليها، وبعدها يصله عرض السعر تلقائيًا.'; /* v858 */
     if (/عرض السعر/.test(nt)) return /بانتظار الاعتماد/.test(st) ? 'راجع البيانات والمستند ثم اعتمد عرض السعر.' : /معتمد/.test(st) ? 'أرسل عرض السعر للعميل من «الإرسال للعميل وسجله».' : /أُرسل|بانتظار العميل/.test(st) ? 'تابع رد العميل على عرض السعر.' : 'أكمل إعداد عرض السعر ثم أحِله للاعتماد.';
     if (/فاتورة/.test(nt)) return /اعتمد/.test(st) ? 'صدر العقد — تابعه في مرحلة «العقد».' : 'راجع فاتورة المنتج وأرسلها للعميل لاعتمادها.';
     if (/العقد/.test(nt)) return /وقّع/.test(st) ? 'ارفع العقد النهائي ثم أرسله للعميل.' : 'تابع توقيع العميل على العقد.';
@@ -1847,7 +1848,7 @@ function geoQ() {
     if (/الإرسال/.test(nt)) return 'أرسل المستند للعميل وتابع وصوله.';
     return '';
   }
-  function egStOf(sm) { var c = sm ? sm.className : ''; return /is-ok/.test(c) ? 'ok' : /is-now/.test(c) ? 'now' : /is-bad|is-err/.test(c) ? 'bad' : 'pend'; }
+  function egStOf(sm) { var c = sm ? sm.className : ''; return /is-ok/.test(c) ? 'ok' : /is-now/.test(c) ? 'now' : /is-wait/.test(c) ? 'wait' : /is-bad|is-err/.test(c) ? 'bad' : 'pend'; } /* v858: «بانتظار العميل» حالة مستقلة */
   function egFlow(F) {
     var W = F.querySelector('.eg-work'); if (!W) return;
     var nav = W.querySelector('.eg-nav'), lay = W.querySelector('.eg-lay'), main = W.querySelector('.eg-main'); if (!nav || !lay || !main) return;
@@ -1894,11 +1895,11 @@ function geoQ() {
     var old = W.querySelector(':scope > .tqn-egs'); if (old) old.remove();
     var R = mk('nav', 'tqn-egs'); R.setAttribute('aria-label', 'خطوات الطلب');
     S.forEach(function (g, i) {
-      var sd = g.it.filter(function (x) { return x.s; }), done = sd.length && sd.every(function (x) { return x.st === 'ok'; }), now = g.it.filter(function (x) { return x.st === 'now' || x.st === 'bad'; })[0];
+      var sd = g.it.filter(function (x) { return x.s; }), done = sd.length && sd.every(function (x) { return x.st === 'ok'; }), now = g.it.filter(function (x) { return x.st === 'now' || x.st === 'bad' || x.st === 'wait'; })[0];
       var main1 = now || sd.filter(function (x) { return x.st !== 'ok'; })[0] || sd[0] || g.it[0];
       var b = mk('button', 'tqn-egs-i' + (i === cur ? ' is-on' : '') + (done ? ' is-ok' : '') + (now ? ' is-now' : ''));
       b.type = 'button'; b.setAttribute('data-live-ok', ''); if (i === cur) b.setAttribute('aria-current', 'step');
-      var tp = mk('span', 'tqn-egs-top'); tp.appendChild(mk('span', 'tqn-egs-n', done ? '✓' : String(i + 1))); tp.appendChild(mk('small', 'tqn-egs-w', done ? 'مكتملة' : now ? 'الآن' : 'لم تبدأ')); b.appendChild(tp);
+      var tp = mk('span', 'tqn-egs-top'); tp.appendChild(mk('span', 'tqn-egs-n', done ? '✓' : String(i + 1))); tp.appendChild(mk('small', 'tqn-egs-w', done ? 'مكتملة' : now ? (now.st === 'wait' ? 'بانتظار العميل' : 'الآن') : 'لم تبدأ')); b.appendChild(tp);
       b.appendChild(mk('b', '', g.t)); b.appendChild(mk('small', 'tqn-egs-s', main1.s || (done ? 'مكتملة' : '—')));
       b.addEventListener('click', go(g.it.filter(function (x) { return x.on; })[0] || main1));
       R.appendChild(b);

@@ -20154,7 +20154,8 @@ function srdPage(x, c, kind, live, J, paint) {
 /* ═════ v852: رأس المرحلة (الاسم والحالة وأزرارها) والتبويبات الفرعية بخط سفلي — كما في التصميم ═════ */
 const SRD_ST = { quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد', result: 'القرار والنتيجة' };
 function srdStageHead(x, c, kind, live, J, paint) {
-  const Q = J ? J.q : null, st = Q ? eqStLabel(Q) : live ? (EGQ_ST[live.status] || [live.status, null]) : null;
+  const Q = J ? J.q : null, M = x.meta || {}, wtR = kind === 'quote' && (Q || live) && (Q || live).status === 'approved' && M.released && !M.accept; /* v858: أُرسلت النتيجة ولم يوافق العميل بعد */
+  const st = wtR ? ['أُرسل مع النتيجة — يصله بعد موافقة العميل عليها', 'warn'] : Q ? eqStLabel(Q) : live ? (EGQ_ST[live.status] || [live.status, null]) : null;
   const tone = st ? ({ ok: 'ok', warn: 'warn', danger: 'bad', info: 'info' })[st[1]] || null : null;
   const acts = [];
   if (Q && kind !== 'result') acts.push(srdB('معاينة PDF', { ic: 'pdf' }, function () { dcPdf(dcEqDoc(kind, Q, ['sent', 'accepted'].indexOf(Q.status) < 0, { recv: kind === 'quote' ? '' : egRecvInfo(x).now })); }));
@@ -20499,7 +20500,8 @@ function eligWork(x, RF, more) { /* v686: more = أقسام مطويّة أسف�
       ['fix', 'الإعادة والاستكمال', fx && fx.open ? 'بانتظار العميل' : fx && fx.done_at ? 'أكمل العميل' : 'عند الحاجة', fx && fx.open ? 'wait' : fx && fx.done_at ? 'ok' : ''],
       ['rep', 'القرار والتوصية', Rp ? (EG_REC[Rp.rec] || Rp.rec) : 'لم تُسجَّل', Rp ? 'ok' : open ? 'now' : ''],
       ['res', 'النتيجة', appr ? 'مؤهَّل' : x.status === 'rejected' ? 'غير مؤهَّل' : open && Rp ? 'جاهز للقرار' : 'لم تصدر', appr ? 'ok' : x.status === 'rejected' ? 'bad' : (open && Rp && !(fx && fx.open)) ? 'now' : '', 'الأهلية بناءً على التوصية'],
-      ['qt', 'عرض السعر', live ? ((EGQ_ST[live.status] || [live.status])[0]) : appr ? 'لم يُعدّ' : 'بعد النتيجة', live ? 'ok' : appr ? 'now' : ''],
+      live && live.status === 'approved' && (mm.released || auto) && !mm.accept ? ['qt', 'عرض السعر', 'يصله بعد موافقته على النتيجة', 'wait'] /* v858 */
+        : ['qt', 'عرض السعر', live ? ((EGQ_ST[live.status] || [live.status])[0]) : appr ? 'لم يُعدّ' : 'بعد النتيجة', live ? 'ok' : appr ? 'now' : ''],
       ['inv', 'فاتورة المنتج', pur ? (pur.decision === 'accept' ? 'اعتمدها العميل' : 'اعتذر العميل') : live && live.status === 'accepted' ? 'بانتظار العميل' : qHas ? 'جاهزة للمعاينة' : 'بعد عرض السعر', pur ? (pur.decision === 'accept' ? 'ok' : 'bad') : live && live.status === 'accepted' ? 'wait' : ''],
       ['ct', 'العقد', ctF && ctF.sent_ok ? 'أُرسل النهائي' : ctj && ctj.signed_at ? 'وقّعه العميل' : ctNo ? 'بانتظار التوقيع' : 'بعد الفاتورة', ctF && ctF.sent_ok ? 'ok' : ctj && ctj.signed_at ? 'now' : ctNo ? 'wait' : ''],
       ['adm', 'إجراءات الإدارة', x.executed_at ? 'أُغلق الطلب' : (ctj && ctj.signed_at) ? 'بانتظار الإنهاء' : ctNo ? 'بعد التوقيع' : 'بعد العقد', x.executed_at ? 'ok' : (ctj && ctj.signed_at) ? 'now' : ''], /* v691 */
@@ -20588,7 +20590,7 @@ const paneOf = function (tab) { let pane = null; /* v686: لوحات الخطو�
     /* v811: الخطوة التالية — سطر واحد بزر يفتح قسمها */
     const nk = firstNow(['docs', 'fix', 'rep', 'res', 'apv', 'qt', 'inv', 'ct', 'pv', 'snd', 'adm']) || (steps.filter(function (s) { return s[3] === 'wait'; })[0] || [])[0] || '';
     const ns = nk ? SD[nk] : null, nsec = nk ? SEC_OF[nk] : '';
-    const nextBar = e('div', { class: 'eg-nextbar' }, [e('div', {}, [e('small', {}, 'الخطوة التالية'), e('b', {}, ns ? (ns[3] === 'wait' ? 'بانتظار العميل — ' : '') + (({ docs: 'مراجعة المستندات', fix: 'استكمال العميل للمطلوب', rep: 'تسجيل القرار والتوصية', res: 'إصدار نتيجة الأهلية', apv: 'اعتماد عرض السعر', qt: 'إعداد عرض السعر', inv: 'فاتورة المنتج', ct: 'العقد', pv: 'الإرسال للعميل', snd: 'الإرسال للعميل', adm: 'إجراءات الإغلاق' })[nk] || ns[1]) /* v812: اسم الإجراء بدل «الاعتماد · بانتظار الاعتماد» */ : x.executed_at ? 'اكتمل الطلب' : '—')]),
+    const nextBar = e('div', { class: 'eg-nextbar' }, [e('div', {}, [e('small', {}, 'الخطوة التالية'), e('b', {}, ns ? (ns[3] === 'wait' ? 'بانتظار العميل — ' : '') + (nk === 'qt' && ns[3] === 'wait' ? 'موافقته على النتيجة، ثم يصله عرض السعر' : '') + (nk === 'qt' && ns[3] === 'wait' ? '' : ({ docs: 'مراجعة المستندات', fix: 'استكمال العميل للمطلوب', rep: 'تسجيل القرار والتوصية', res: 'إصدار نتيجة الأهلية', apv: 'اعتماد عرض السعر', qt: 'إعداد عرض السعر', inv: 'فاتورة المنتج', ct: 'العقد', pv: 'الإرسال للعميل', snd: 'الإرسال للعميل', adm: 'إجراءات الإغلاق' })[nk] || ns[1]) /* v812: اسم الإجراء بدل «الاعتماد · بانتظار الاعتماد» */ : x.executed_at ? 'اكتمل الطلب' : '—')]),
       ns && nsec && nsec !== sec ? DS.button('فتح ' + SEC_T[nsec], { size: 'sm', tone: 'primary', onClick: function () { c.tab = nk; paint(); } }) : null]);
     const later = function (t) { return DS.note('info', t, 'يظهر هذا القسم بعد قرار «مؤهَّل».'); };
     const decData = function () { return e('div', { class: 'eg-dec' }, [TQN ? tqnExtPanel(x, docs, paint) : null, P6('rep'), P6('res')]); };
@@ -20828,7 +20830,7 @@ function egJourney(x, c, paint, live, part) {
     if (S.busy) return;
     if (!tqConfirm((noPv ? 'لم تُعاين كل المراحل على رقمك (المعاينة اختيارية) — ' : '') + 'إرسال نتيجة الأهلية للعميل الآن؟ بعد موافقته تصله المراحل التالية تلقائيًا (عرض السعر ثم فاتورة المنتج ثم العقد).')) return; /* v697: تأكيد واحد */
     S.busy = 'rel'; S.err = ''; paint();
-    try { const j = await egjRpc('adm_elig_release', { p_sr: x.id }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.'); snack('أُرسلت نتيجة الأهلية للعميل.'); S.busy = ''; egjLoad(x, paint, true); }
+    try { const j = await egjRpc('adm_elig_release', { p_sr: x.id }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.'); snack('أُرسلت نتيجة الأهلية للعميل.'); S.busy = ''; x.meta = Object.assign({}, x.meta || {}, { released: { at: new Date().toISOString() } }); delete x.meta.held; try { delete SRSTG.m[x.id]; } catch (er) { void er; } egjLoad(x, paint, true); } /* v858: تتحدّث الحالة دون إعادة تحميل */
     catch (err) { S.busy = ''; S.err = (err && err.message) || 'تعذّر الإرسال.'; paint(); }
   };
   const busy = !!S.busy;
