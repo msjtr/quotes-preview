@@ -1918,7 +1918,9 @@ function geoQ() {
       if (bb && sent) { cls(bb, 'tqn-nx-o', true); bb.parentNode.insertBefore(mk('b', 'tqn-nx-t', sent), bb.nextSibling); }
     }
     /* v851: «الإرسال للعميل» داخل المرحلة (لا في الرأس)، و«رجوع إلى العمل على الطلب» داخل صفحة الإرسال */
-    var sbH = nb || R, osb = sbH.querySelector(':scope > .tqn-sndb'); if (osb) osb.remove();
+    /* v854: في صفحة الإرسال يبقى شريط المراحل ظاهرًا، و«رجوع إلى العمل على الطلب» أعلى الصفحة (كان داخل «الإجراء التالي» المخفي فلا رجوع) */
+    var w0 = main.querySelector(':scope > .tqn-sndw'); if (w0 && !send) w0.remove();
+    var sbH = send ? (main.querySelector(':scope > .tqn-sndw') || main.insertBefore(mk('div', 'tqn-sndw'), main.firstChild)) : (nb || R), osb = sbH.querySelector(':scope > .tqn-sndb'); if (osb) osb.remove();
     if (SN.length) sbH.appendChild(egBtn('t2-btn is-sm tqn-sndb' + (send ? '' : ' is-primary'), send ? 'رجوع إلى العمل على الطلب' : 'الإرسال للعميل وسجله', function () { ST.srT = send ? EGWORK : EGSEND; apply(); }));
     /* 3) تبويبات داخل الخطوة (المستندات: عرض السعر · فاتورة المنتج · العقد) */
     var od = main.querySelector(':scope > .tqn-egd, :scope > .tqn-egd-none'); if (od) od.remove();

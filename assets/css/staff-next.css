@@ -2793,7 +2793,7 @@ html.tq-next.tqn-inpg body { overflow: visible !important; }
 .tq-next .sr-full .eg-work.tqn-egf .eg-sh-m { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12.5px; color: var(--tqn-mut, #66748C); }
 /* v851: تبويبات الطلب العليا تعمل (المراسلة · مسار الطلب) + «الإرسال للعميل» تبويب أعلى مستقل */
 .tq-next .sr-full .eg-work.tqn-egf.tqn-st-hide { display: none !important; }
-.tq-next .sr-full .eg-work.tqn-egf.tqn-egsend > .tqn-egs, .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .eg-nextbar, .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .tqn-egsum { display: none !important; }
+.tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .eg-nextbar, .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .tqn-egsum { display: none !important; }
 .tq-next .sr-full .eg-work.tqn-egf.tqn-egsend .eg-lay { grid-template-columns: minmax(0, 1fr) !important; }
 /* v851: مكتبة البنود داخل «المستند» — قائمة البنود والقائمة المنسدلة */
 .tq-next .sr-full .t2-field.tqn-cl-raw { display: none !important; }
@@ -3912,3 +3912,5 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .ax-top.srd-lh .cu-kpi small{font-size:13px!important;font-weight:600;color:inherit!important}
 .tq-next .ax-top.srd-lh .cu-kpi.is-on{border-color:#0a737a!important;color:#0a737a!important;background:#e1f1f1!important}
 .srd .att .vld{justify-content:flex-end}
+/* v854: زر الرجوع أعلى صفحة الإرسال */
+.tq-next .eg-main > .tqn-sndw{display:flex;justify-content:flex-end;margin-bottom:10px}

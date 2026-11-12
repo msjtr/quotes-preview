@@ -20130,7 +20130,7 @@ function srdStageHead(x, c, kind, live, J, paint) {
   const acts = [];
   if (Q && kind !== 'result') acts.push(srdB('معاينة PDF', { ic: 'pdf' }, function () { dcPdf(dcEqDoc(kind, Q, ['sent', 'accepted'].indexOf(Q.status) < 0, { recv: kind === 'quote' ? '' : egRecvInfo(x).now })); }));
   if (kind === 'quote' && J) { const W = c.qa || (c.qa = { mode: '', why: '', note: '' }); const A = eqActs(J, x, W, function (msg) { delete EQG[live.id]; if (msg) snack(msg); W.mode = ''; c.reload(); }, paint); if (A && c.qed) [].slice.call(A.querySelectorAll('button')).forEach(function (b) { if (/^تعديل/.test(String(b.textContent || '').trim())) b.remove(); }); if (A) acts.push(A); }
-  if (kind !== 'result' && Q && ['approved', 'sent', 'accepted'].indexOf(Q.status) >= 0) acts.push(srdB('إرسال للعميل', { ic: 'send' }, function () { c.tab = 'pv'; paint(); }));
+  if (kind !== 'result' && Q && ['approved', 'sent', 'accepted'].indexOf(Q.status) >= 0) acts.push(srdB('إرسال للعميل', { ic: 'send' }, function () { const sb = document.querySelector('.eg-work[data-sr="' + x.id + '"] .tqn-sndb'); if (sb && !/رجوع/.test(sb.textContent)) { sb.click(); return; } c.tab = 'pv'; paint(); })); /* v854: صفحة الإرسال من طبقة المنصة الجديدة */
   return e('div', { class: 'sh' }, [e('h2', {}, SRD_ST[kind] || ''), st ? srdChip(st[0], tone) : null, e('span', { class: 'sp' }), e('div', { class: 'sh-acts' }, acts)]);
 }
 /* ═════ v852: «السجل» لوحة جانبية واحدة بتصفية (الكل · الإرسال · القرارات والإسناد · المستندات · المراسلة) — مسار الطلب وسجل الإرسال والمراسلة في مكان واحد ═════ */
