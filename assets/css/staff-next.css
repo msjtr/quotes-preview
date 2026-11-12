@@ -3914,3 +3914,5 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .srd .att .vld{justify-content:flex-end}
 /* v854: زر الرجوع أعلى صفحة الإرسال */
 .tq-next .eg-main > .tqn-sndw{display:flex;justify-content:flex-end;margin-bottom:10px}
+/* v856: نص الجزء الذي يُظهر أو يُخفى (التمهيد · البنود · نص ما قبل التوقيع) */
+.srd .srd-pgtx{display:block;white-space:pre-line;line-height:1.7}
