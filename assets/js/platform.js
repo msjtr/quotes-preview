@@ -11699,6 +11699,16 @@ function pcDbSave(c) {
   admRpc('adm_contract_tpl_save', { p_cfg: { title: c.title, pre: c.pre, sign: c.sign, clauses: (c.clauses || []).filter(function (t) { return String(t[0] || '').trim() && String(t[1] || '').trim(); }), show: c.show, page: c.page } })
     .then(function () { snack('حُفظ وطُبّق على رابط توقيع العقد'); }, function (x) { snack('حُفظ هنا وتعذّر حفظه في المنصة: ' + ((x && x.message) || 'خطأ')); });
 }
+/* v867: صفحتا رابط طلبات تأجيل الدفعة (الموافقة ثم التوقيع) — محرّر كامل بالألوان والنصوص والأقسام ومعاينة حيّة (crq-staff.js · /crq/lp.js) */
+let CRQ_LPS = null, CRQ_FEES = null;
+function crqLpSec() {
+const box = e('div', { class: 'cu-bd-wide' }, [DS.note('info', 'صفحتا رابط طلبات تأجيل الدفعة', 'الموافقة على العرض ثم توقيع الملحق — الألوان والنصوص والأقسام والأزرار والنوافذ. ولطلب واحد: تبويب «صفحة العميل» داخله.')]);
+if (window.CRQS && window.CRQS.lpSettings) { if (!CRQ_LPS) CRQ_LPS = window.CRQS.lpSettings(); box.appendChild(CRQ_LPS); }
+else box.appendChild(DS.note('warn', 'يُحرَّر من المنصة الجديدة', 'افتح «قوالب المستندات» من منصة الموظفين الجديدة لتحرير صفحتي الرابط.'));
+return box;
+}
+/* v867: القائمة الجاهزة لبنود رسوم طلبات العقود — تظهر في «+ إضافة بند» داخل كل طلب */
+function crqFeeSec() { return formSec('بنود رسوم طلبات العقود (تأجيل دفعة)', 'القائمة الجاهزة داخل كل طلب', [window.CRQS && window.CRQS.feesSettings ? (CRQ_FEES || (CRQ_FEES = window.CRQS.feesSettings())) : DS.note('info', 'تُدار من المنصة الجديدة', 'افتح «الرسوم والضرائب والعمولات» من منصة الموظفين الجديدة.')]); }
 function pcPageSec(D) {
   const P = D.page || (D.page = Object.assign({}, PCP0)), I = tqInp(P), A = tqTa(P);
   return tmFs('صفحات الرابط: عرض السعر وفاتورة المنتج وتوقيع العقد', 'تُطبَّق على الروابط', [
@@ -11723,7 +11733,7 @@ function pcPageSec(D) {
       DS.editField('عنوان نافذة تأكيد الاعتماد', I('inv_confirm_title')), tmCk(P, 'show_inv_confirm_note', 'نص نافذة التأكيد', false, true), DS.editField('نص نافذة التأكيد', A('inv_confirm_note', 2)),
       DS.editField('عنوان شاشة «تم الاعتماد»', I('inv_done_title')), DS.editField('حالة شاشة «تم الاعتماد»', I('inv_done_status')),
       tmCk(P, 'show_inv_done_text', 'نص شاشة «تم الاعتماد»', false, true), DS.editField('نص شاشة «تم الاعتماد»', A('inv_done_text', 2)),
-      DS.editField('عنوان شاشة الاعتذار عن الشراء', I('inv_decline_title')), DS.editField('نص شاشة الاعتذار عن الشراء', A('inv_decline_text', 2))])]);
+      DS.editField('عنوان شاشة الاعتذار عن الشراء', I('inv_decline_title')), DS.editField('نص شاشة الاعتذار عن الشراء', A('inv_decline_text', 2))]), crqLpSec()]);
 }
 function esxCfgPc() { /* v761: قسم «القوالب والصفحات» لعقد الشركاء في «قوالب المستندات» — حلّ محل صفحة القالب القديمة */
   TM_FSP = 'pc'; pcDbLoad(); /* v679 */
@@ -12821,7 +12831,7 @@ function qrSvgOf(text, lib) {
     return '<svg viewBox="0 0 ' + (n + 4) + ' ' + (n + 4) + '" shape-rendering="crispEdges" aria-hidden="true"><rect width="100%" height="100%" fill="#fff"/><g fill="#0b2552">' + r + '</g></svg>'; } catch (err) { return ''; }
 }
 const TB_PRESETS = [['lines', 'خطوط أفقية (الافتراضي، بلا خلفيات)'], ['grid', 'شبكة كاملة'], ['min', 'بسيط بلا خطوط داخلية'], ['box', 'إطار خارجي مستدير'], ['head', 'رأس ملوّن'], ['zebra', 'صفوف متناوبة']];
-const TB_DOCS = [['rc', 'إيصال السداد'], ['th', 'خطاب الشكر'], ['cs', 'كشف العقد'], ['ce', 'شهادة تقدير ووفاء'], ['sq', 'عرض سعر المتاجر'], ['cq', 'عرض حسب الطلب'], ['si', 'فاتورة المتاجر'], ['pq', 'عرض سعر الشركاء'], ['pc', 'عقد الشركاء'], ['tl', 'الخطاب الرسمي']];
+const TB_DOCS = [['rc', 'إيصال السداد'], ['df', 'ملحق تأجيل الدفعة'], ['th', 'خطاب الشكر'], ['cs', 'كشف العقد'], ['ce', 'شهادة تقدير ووفاء'], ['sq', 'عرض سعر المتاجر'], ['cq', 'عرض حسب الطلب'], ['si', 'فاتورة المتاجر'], ['pq', 'عرض سعر الشركاء'], ['pc', 'عقد الشركاء'], ['tl', 'الخطاب الرسمي']];
 const tbRepl = function (T, c) { Object.keys(T).forEach(function (k) { delete T[k]; }); Object.assign(T, c); };
 const tbHex = function (v, d) { return /^#[0-9a-f]{6}$/i.test(String(v || '')) ? v : d; };
 function tblApply(el) { /* الصفحة: نمط الجداول ولونها حسب الإعداد العام أو إعداد المستند */
@@ -23702,7 +23712,7 @@ function esRun(C) {
 }
 /* v729: صفحة القالب بالتصميم المعتمد — المحرّر أعلاه، والحاسبة أسفله */
 /* v740 (P4): القوالب الخمسة القديمة في «قوالب المستندات» — المحتوى في المحرّر الموحّد بمواصفة لكل قالب، والإعدادات الحسابية (التصميم · الترقيم · الصلاحية · الضريبة · البنود وطرق الاحتساب) بلوحتها الحالية داخل المستند نفسه. كل قالب يُحفظ في مفتاحه كما كان، والرسم لم يتغيّر. */
-const ESX_ALLK = ['es', 'qt', 'qs', 'qc', 'pc', 'si', 'tax', 'stamp', 'rc', 'th', 'cs', 'ce'];
+const ESX_ALLK = ['es', 'qt', 'qs', 'qc', 'pc', 'si', 'tax', 'stamp', 'rc', 'th', 'cs', 'ce', 'df'];
 const ESX_HDRV = function () { return TQ_HDR.map(function (x) { return { l: x[1], p: 'hdr.' + x[0] }; }); };
 function esxRepl(T, X) { Object.keys(T).forEach(function (k) { delete T[k]; }); Object.assign(T, X); }
 /* لوحة الإعدادات: من صفحة القالب القديمة نفسها، بلا أقسام المحتوى التي صارت في المحرّر */
@@ -23812,7 +23822,18 @@ function docxCore(H) {
       honM: 'السيد', honF: 'السيدة',
       tailM: 'لما أولانا إياه من ثقة نعتزّ بها، ولتعامله الراقي معنا، فقد كان مثالًا للعميل الذي نفخر بخدمته، وشريكًا نسعد بانتمائه إلى أسرة تيرا. ونعده بأن نبقى عند حسن ظنه دائمًا، متمنّين له دوام التوفيق.',
       tailF: 'لما أولتنا إياه من ثقة نعتزّ بها، ولتعاملها الراقي معنا، فقد كانت مثالًا للعميل الذي نفخر بخدمته، وشريكًا نسعد بانتمائه إلى أسرة تيرا. ونعدها بأن نبقى عند حسن ظنها دائمًا، متمنّين لها دوام التوفيق.',
-      cap: 'صدرت آليًا من المنصة — التحقق برقم الشهادة', auto: 'صدرت الشهادة إلكترونيًا — التحقق برقمها من موقع المنصة' }
+      cap: 'صدرت آليًا من المنصة — التحقق برقم الشهادة', auto: 'صدرت الشهادة إلكترونيًا — التحقق برقمها من موقع المنصة' },
+/* v867: ملحق تأجيل الدفعة — قالب في «قوالب المستندات» (platform_settings: df)، ولكل طلب نسخته الخاصة إن وُجدت */
+df: { org: ORG, title: 'ملحق تأجيل دفعة', en: 'PAYMENT DEFERRAL ADDENDUM', issuer: 'قسم التحصيل', pill: 'ملحق عقد',
+tt: { parties: 'أطراف الملحق', defer: 'تفاصيل التأجيل', fees: 'رسوم التأجيل', sched: 'جدول الدفعات بعد التعديل', terms: 'بنود الملحق', sign: 'إقرار الطرف الثاني وتوقيعه', note: 'تنويه' },
+p1: 'منصة تيرا للخدمات المتكاملة',
+intro: 'بناءً على طلب الطرف الثاني تأجيل الدفعة المبيّنة أدناه، اتُّفق على تعديل جدول الدفع في العقد المذكور وفق ما يلي:',
+terms: ['يُعدّ هذا الملحق جزءًا لا يتجزأ من العقد الأصلي، وتبقى بقية بنود العقد سارية دون تغيير.', 'تُضاف رسوم التأجيل إلى قيمة العقد وتوزَّع على الدفعات المتبقية وفق الجدول الوارد في هذا الملحق.', 'يلتزم الطرف الثاني بسداد الدفعات في مواعيدها الجديدة الواردة في الجدول.', 'لا يسري هذا الملحق إلا بعد توقيع الطرف الثاني عليه إلكترونيًا.'],
+ack: 'أقرّ بأنني اطّلعت على تفاصيل التأجيل والجدول الجديد ورسوم التأجيل، وأوافق على تعديل العقد وفقها.',
+pend: 'يوقّع الطرف الثاني إلكترونيًا من الرابط الذي يصله، ويُوثَّق التوقيع برمز تحقق.',
+note: 'صدر هذا الملحق إلكترونيًا من منصة تيرا، ويُعتدّ بالتوقيع الإلكتروني الموثّق برمز التحقق.',
+show: { product: true, intro: true, defer: true, fees: true, contract: true, sched: true, terms: true, sign: true, note: true },
+auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقيع الطرف الثاني' }
   };
   /* المحفوظ فوق الافتراضي: النص الفارغ يعود للافتراضي (ما عدا الحقول الفارغة أصلًا)، والقوائم تُستبدل كاملة */
   const merge = function (d, v) {
@@ -23950,7 +23971,40 @@ function docxCore(H) {
       meta: [['رقم التحقق', code, 'hash'], ['تاريخ الإصدار', dmy(o.issued || new Date().toISOString().slice(0, 10))], tier && on(T, 'tier') ? ['نوع العضوية', tier, 'shield'] : null], auto: T.auto };
   }
 
-  return { DEF: DEF, tpl: tpl, esc: esc, icMeta: icMeta, isLtr: isLtr, dCard: dCard, sar: sar, dmy: dmy, receiptPages: receiptPages, thanksPage: thanksPage, genericPage: genericPage, certPage: certPage };
+
+/* ═══ v867: ملحق تأجيل الدفعة — o: عرض الطلب (crq_client_view): no · name · contract_no · product · org · calc{client_lines,vat,vat_rate,total,contract,rows} · sign · consented_at
+* صفحة واحدة إن اتسعت، وإلا صفحتان (البيانات والجدول، ثم البنود والتوقيع والاعتماد) — جسم الصفحة ثابت الارتفاع فلا يُقصّ شيء ═══ */
+const DF_METHOD = { draw: 'توقيع بالرسم', type: 'توقيع بكتابة الاسم', upload: 'صورة التوقيع' }, DF_FACTOR = { whatsapp: 'رمز تحقق عبر واتساب', email: 'رمز تحقق عبر البريد الإلكتروني' };
+function dfAt(t) { if (!t) return ''; const d = new Date(new Date(t).getTime() + 3 * 3600 * 1000); return isNaN(d.getTime()) ? String(t) : dmy(d.toISOString().slice(0, 10)) + ' · ' + d.toISOString().slice(11, 16); }
+function deferPages(o, T) {
+T = T || tpl('df'); o = o || {};
+const S = function (k) { return on(T, k); }, c = o.calc || {}, rows = Array.isArray(c.rows) ? c.rows : [], no = o.no || '';
+const tg = rows.filter(function (r) { return r.target; });
+const op = rows.filter(function (r) { return r.open; }).slice().sort(function (a, b) { return String(a.due_after).localeCompare(String(b.due_after)); });
+const L = Array.isArray(c.client_lines) ? c.client_lines : [];
+const terms = (T.terms || []).filter(Boolean), g = o.sign || null, pad = 'padding:8px 18px;line-height:1.95;margin:0';
+const A = [], B = [];
+const org = (o.org && (o.org.legal || o.org.brand)) || T.p1;
+A.push(dCard(T.tt.parties, 'users', dKV([['الطرف الأول', org, false], ['الطرف الثاني', o.name || 'العميل', false], ['رقم العقد', o.contract_no || '', true], S('product') && o.product ? ['المنتج', o.product, false] : null])
++ (S('intro') && T.intro ? dP(T.intro, pad) : '')));
+if (S('defer') && tg.length) A.push(dCard(T.tt.defer, 'cal', dTbl(['الدفعة', 'الموعد السابق', 'الموعد الجديد', 'قيمة الدفعة'], tg.map(function (r) { return [String(r.seq), dmy(r.due_before), dmy(r.due_after), sar(r.amt_before)]; }))));
+if (S('fees')) A.push(dCard(T.tt.fees, 'receipt', dKV(L.map(function (l) { return [l.t, sar(l.amt) + (Number(l.tax) > 0 ? ' + ضريبة ' + sar(l.tax) : ''), false, null, true]; }),
+[['ضريبة القيمة المضافة' + (c.vat_rate != null ? ' (' + Number(c.vat_rate) + '%)' : ''), sar(c.vat)], S('contract') && c.contract ? ['قيمة العقد بعد التعديل', sar(c.contract.total_after)] : null, ['إجمالي رسوم التأجيل', sar(c.total), 'gt']])));
+if (S('sched') && op.length) A.push(dCard(T.tt.sched, 'list', dTbl(['الدفعة', 'تاريخ الاستحقاق', 'القيمة قبل', 'الإضافة', 'القيمة بعد'], op.map(function (r) { return [String(r.seq) + (r.target ? ' — المؤجلة' : ''), dmy(r.due_after), sar(r.amt_before), sar(r.add), sar(r.amt_after)]; }))));
+if (S('terms') && terms.length) B.push(dCard(T.tt.terms, 'doc', terms.map(function (t, i) { return dP((i + 1) + '. ' + t, pad); }).join('')));
+if (S('sign')) B.push(dCard(T.tt.sign, 'pen', (T.ack ? dP(T.ack, pad + ';font-weight:700') : '') + (g ? dKV([['الاسم', g.name || '', false], ['طريقة التوقيع', DF_METHOD[g.method] || '', false], ['التحقق', DF_FACTOR[g.factor] || '', false], ['وقت التوقيع', dfAt(g.at), false]])
++ (g.image ? '<div style="text-align:center;padding:8px 0 14px"><img src="' + esc(g.image) + '" alt="توقيع الطرف الثاني" style="max-height:90px;max-width:60%"></div>' : g.method === 'type' ? '<div style="text-align:center;padding:6px 0 14px;font-size:24px;font-weight:700;color:#0b2552">' + esc(g.name) + '</div>' : '') : (T.pend ? dP(T.pend, pad + ';color:#5b6b86') : ''))));
+if (S('note') && T.note) B.push(dCard(T.tt.note, 'info', dP(T.note), 'is-note', true));
+B.push(H.appr(no || 'TERA'));
+const date = (g && g.at) || o.consented_at || new Date(Date.now() + 3 * 3600 * 1000).toISOString();
+const base = { org: T.org, issuer: T.issuer, en: T.en, title: T.title, pill: T.pill, no: no, auto: T.auto };
+const P1 = Object.assign({}, base, { meta: [['رقم الملحق', no], ['رقم العقد', o.contract_no || ''], ['التاريخ', dmy(new Date(new Date(date).getTime() + (g && g.at || o.consented_at ? 3 * 3600 * 1000 : 0)).toISOString().slice(0, 10))]] });
+/* تقدير الارتفاع بالأسطر: تتسع الصفحة نحو 30 */
+const h = 5 + (tg.length ? tg.length + 3 : 0) + L.length + 5 + (op.length ? op.length + 3 : 0) + terms.reduce(function (s, t) { return s + Math.ceil(String(t).length / 95); }, terms.length ? 2 : 0) + (S('sign') ? (g ? 9 : 4) : 0) + (S('note') && T.note ? 3 : 0) + 8;
+if (h <= 30) return [Object.assign(P1, { cards: A.concat(B) })];
+return [Object.assign(P1, { cards: A }), Object.assign({}, base, { first: false, cards: B })];
+}
+  return { DEF: DEF, tpl: tpl, esc: esc, icMeta: icMeta, isLtr: isLtr, dCard: dCard, sar: sar, dmy: dmy, receiptPages: receiptPages, thanksPage: thanksPage, genericPage: genericPage, certPage: certPage, deferPages: deferPages };
 }
 
 /* v790: قوالب مستندات الخادم في «قوالب المستندات» — إيصال السداد · خطاب الشكر · كشف العقد · شهادة «تقدير ووفاء».
@@ -24042,7 +24096,31 @@ function esxGCe() {
       { id: 'cea', title: 'الاعتماد والتذييل', kind: 'fields', fields: [{ l: 'سطر الاعتماد', p: 'cap' }, { l: 'سطر التذييل', p: 'auto' }] }],
     preview: function (X) { const s = docxSample(); docxPv(DOCX.certPage({ name: s.nm, addr: 'm', tier: 'plus', member_no: 'TM-000123', since: '2025-03-01', issued: s.today, code: 'TC-26-000001', contract: s.ct }, DOCX.tpl('ce', X))); } });
 }
-function esxGdocs() { const L = []; [function () { return esxGQuote('pq'); }, function () { return esxGQuote('sq'); }, function () { return esxGQuote('cq'); }, esxGPc, esxGSi, esxGRc, esxGTh, esxGCs, esxGCe].forEach(function (f) { try { L.push(f()); } catch (x) { try { console.error('[esx gdoc]', x); } catch (y) { void y; } } }); return L; }
+/* v867: «ملحق تأجيل الدفعة» — قالب طلبات تأجيل الدفعة في «قوالب المستندات»؛ الخادم يولّده بالنواة نفسها (d3doc: df)، ولكل طلب نسخته الخاصة من تبويب «المستند» داخله */
+function dfSample() {
+const s = docxSample(), d = function (n) { return new Date(Date.now() + n * 864e5).toISOString().slice(0, 10); };
+return { no: 'DF-261114-000001', name: s.nm, contract_no: s.ct, product: 'iPhone 17 Pro · 256GB',
+calc: { client_lines: [{ t: 'رسم التأجيل', amt: 100, tax: 15 }], vat: 15, vat_rate: 15, total: 115, contract: { total_before: 7500, total_after: 7615 },
+rows: [{ seq: 3, target: true, open: true, due_before: d(5), due_after: d(185), amt_before: 1250, add: 0, amt_after: 1250 }, { seq: 4, open: true, due_before: d(35), due_after: d(35), amt_before: 1250, add: 38.33, amt_after: 1288.33 },
+{ seq: 5, open: true, due_before: d(65), due_after: d(65), amt_before: 1250, add: 38.33, amt_after: 1288.33 }, { seq: 6, open: true, due_before: d(95), due_after: d(95), amt_before: 1250, add: 38.34, amt_after: 1288.34 }] } };
+}
+function esxGDf() {
+return esxGDocx('df', { name: 'ملحق تأجيل الدفعة', tabL: 'الملحق', icon: 'ct',
+applies: 'يُطبَّق على كل طلب تأجيل لم يُعتمد بعد وليست له نسخة خاصة — الطلبات المعتمدة تبقى كما اعتُمدت.',
+hdr: ESX_DXH('عنوان الملحق').concat([{ k: 'pill', l: 'شارة الملحق', p: 'pill' }]),
+secs: [
+{ id: 'dfp', title: 'أطراف الملحق', titleP: 'tt.parties', kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }], hint: 'الطرف الثاني ورقم العقد من الطلب نفسه.' },
+{ id: 'dfx', title: 'المنتج في الأطراف', kind: 'toggles', items: [{ l: 'اسم المنتج', p: 'show.product' }] },
+{ id: 'dfd', title: 'تفاصيل التأجيل', titleP: 'tt.defer', kind: 'info', show: 'show.defer', info: 'الدفعة المؤجلة وموعدها السابق والجديد وقيمتها — من حسبة الطلب.' },
+{ id: 'dff', title: 'رسوم التأجيل', titleP: 'tt.fees', kind: 'toggles', show: 'show.fees', items: [{ l: 'قيمة العقد بعد التعديل', p: 'show.contract' }], hint: 'بنود الرسوم كما يراها العميل وضريبتها والإجمالي — من حسبة الطلب.' },
+{ id: 'dfs', title: 'جدول الدفعات بعد التعديل', titleP: 'tt.sched', kind: 'info', show: 'show.sched', info: 'الدفعات المتبقية بمواعيدها الجديدة والإضافة على كل دفعة.' },
+{ id: 'dft', title: 'بنود الملحق', titleP: 'tt.terms', kind: 'lines', p: 'terms', show: 'show.terms', hint: 'كل سطر بند مرقّم في الملحق.' },
+{ id: 'dfg', title: 'إقرار الطرف الثاني وتوقيعه', titleP: 'tt.sign', kind: 'fields', fields: [{ l: 'نص الإقرار', p: 'ack', hp: 'show.sign' }, { l: 'قبل التوقيع', p: 'pend' }], hint: 'بعد التوقيع يظهر الاسم وطريقة التوقيع والتحقق ووقته وصورة التوقيع.' },
+{ id: 'dfn', title: 'تنويه', titleP: 'tt.note', kind: 'text', p: 'note', show: 'show.note' },
+{ id: 'dfa', title: 'سطر التذييل', kind: 'fields', fields: [{ l: 'سطر التذييل', p: 'auto' }] }],
+preview: function (X) { const P = DOCX.deferPages(dfSample(), DOCX.tpl('df', X)); docxPv(Object.assign({}, P[0], { cards: P.reduce(function (a, p) { return a.concat(p.cards || []); }, []) })); } });
+}
+function esxGdocs() { const L = []; [function () { return esxGQuote('pq'); }, function () { return esxGQuote('sq'); }, function () { return esxGQuote('cq'); }, esxGPc, esxGSi, esxGRc, esxGTh, esxGCs, esxGCe, esxGDf].forEach(function (f) { try { L.push(f()); } catch (x) { try { console.error('[esx gdoc]', x); } catch (y) { void y; } } }); return L; }
 /* v744 (P5): «رسائل العميل» في «قوالب المستندات» تعرض الرسالة الموحّدة المعتمدة للمستند من «قوالب الرسائل» (msg_catalog) —
    نص واحد لواتساب والبريد والإشعارات ويُعدَّل من هناك؛ فلا نصوص رسائل مكررة داخل قوالب المستندات. */
 const ESX_MSGK = { es: ['sr_settle'], quote: ['elig_quote'], purchase: ['elig_purchase'], contract: [] };
@@ -29055,6 +29133,9 @@ const LIVE_PAGES = { client: {},
 if (window.__teraApp) {
 window.__teraApp.page = function (k, t, ic, run, up) { try { ICON[k] = ic; lp(k, t, up || null, k, run); /* v862: الأصل للمسار ورأس الصفحة */ LIVE_PAGES.admin[k] = run; return true; } catch (err) { return false; } };
 window.__teraApp.token = function () { return liveToken(); };
+/* v867: جسر «قوالب المستندات» لصفحة طلبات العقود (crq-staff.js): مواصفة «ملحق تأجيل الدفعة» ونواته، وفتح القالب العام */
+window.__teraApp.docx = { spec: function () { return esxGDf(); }, tpl: function (X) { return DOCX ? DOCX.tpl('df', X || {}) : {}; },
+open: function () { ADM.esxStart = 'df'; go('sys-es'); setTimeout(function () { try { if (ADM.esxEl && ADM.esxEl.__esxGo) ADM.esxEl.__esxGo('df'); } catch (x) { void x; } }, 450); } };
 (window.__crqQ || []).forEach(function (f) { try { f(); } catch (err) { void err; } }); window.__crqQ = null;
 }
 
@@ -30037,6 +30118,7 @@ function lvFeeCfgPage() {
           x.kind === 'manual' ? null : DS.editField(x.kind === 'pct' ? 'النسبة (%)' : 'المبلغ (ر.س)', num({ value: x.value, placeholder: '0' }, function (v) { x.value = v; })),
           sw(x.taxable, function (v) { x.taxable = v; }, 'خاضع للضريبة'), sw(x.active, function (v) { x.active = v; }, 'مفعّل'), x.id ? null : del(D.ch, i)], E['c' + i]); })
         .concat([add('إضافة بند رسوم', function () { D.ch.push({ id: '', name: '', kind: 'fixed', value: '', taxable: true, active: true }); })]))]),
+crqFeeSec(),
       formSec('3. العمولات', 'من قيمة المنتج', [e('div', { class: 'sys-form is-2 cu-bd-form' }, [
         sw(D.mktOn, function (v) { D.mktOn = v; }, 'عمولة المسوّق مفعّلة'), fld('mkt', 'نسبة المسوّق الافتراضية (%)', num({ value: D.mkt }, function (v) { D.mkt = v; })),
         sw(D.empOn, function (v) { D.empOn = v; }, 'عمولة الموظف مفعّلة'), fld('emp', 'نسبة الموظف الافتراضية (%)', num({ value: D.emp }, function (v) { D.emp = v; }))])]),
@@ -30626,7 +30708,7 @@ const LV_SETP = { 'sys-sla': ['sla'], 'sys-replies': ['replies'], 'sys-ntpl': ['
 /* v741 (P4): «قوالب المستندات» الموحّدة — الحفظ منها يشمل مفاتيح القوالب كلها (مساراتها القديمة تفتح الصفحة نفسها) */
 ['sys-es'].forEach(function (r) { LV_SETP[r] = ['es', 'qt', 'qs', 'qc', 'pc', 'si', 'tax']; }); /* v725: es — v790: أُزيل اختيار التصميم القديم (dsn) */
 /* v790: قوالب مستندات الخادم (الإيصال · خطاب الشكر · كشف العقد · الشهادة) — محفوظة في القاعدة ويقرؤها الخادم (db/stf_248) */
-['rc', 'th', 'cs', 'ce'].forEach(function (k) { LV_SETS[k] = [function () { return qtClone(docxT(k)); }, function (v) { docxSet(k, v); }]; LV_SETP['sys-es'].push(k); });
+['rc', 'th', 'cs', 'ce', 'df'].forEach(function (k) { LV_SETS[k] = [function () { return qtClone(docxT(k)); }, function (v) { docxSet(k, v); }]; LV_SETP['sys-es'].push(k); });
 /* v793: تنسيق الجداول وصفحة التحقق — platform_settings: tbl · vf (db/stf_250) */
 const TBL = { preset: 'lines', acc: '#0b2552', line: '#d5dbe8', zb: '#f3f6fb', per: {} };
 const VFS = { on: true, title: 'التحقق من المستند', intro: 'أدخل رقم المستند المطبوع عليه، أو امسح الرمز الموجود في خانة الاعتماد، للتأكد من أنه صادر من منصة تيرا.', show: { type: true, date: true, status: true, holder: true, amount: false, ref: true, issuer: true }, okText: 'مستند صحيح صادر من منصة تيرا للخدمات المتكاملة', noText: 'لم نجد مستندًا بهذا الرقم. تأكد من الرقم كما هو مطبوع، أو تواصل معنا.', contact: 'للاستفسار: support@tera-services.com.sa · 0597771565', origin: '' };
