@@ -350,7 +350,7 @@ function tqnHome(o) {
   });
   RQ.sort(function (a, b) { return String(b.at || '') < String(a.at || '') ? -1 : 1; });
   const rqF = ADM.hmR || 'all';
-  const RQT = [['all', 'الكل'], ['pay', 'السداد والتأجيل'], ['oth', 'الأهلية وغيرها']].filter(function (x) { return x[0] === 'all' || RQ.some(function (r) { return r.g === x[0]; }); });
+  const RQT = [['all', 'الكل'], ['pay', TQN ? 'السداد والتوحيد' : 'السداد والتأجيل'], ['oth', 'الأهلية وغيرها']].filter(function (x) { return x[0] === 'all' || RQ.some(function (r) { return r.g === x[0]; }); });
   const RQf = RQ.filter(function (r) { return rqF === 'all' || r.g === rqF; });
   const rqRow = function (r) {
     return e('li', { class: 'tqn-rq-i' }, [e('span', { class: 'tqn-rq-ic' }, T3(r.ic)),
@@ -8596,7 +8596,7 @@ function cuHubPage() {
     ['pf', 'الملف الشخصي', 'identification-card:teal', [{ ic: 'identification-card:teal', t: 'الملف الشخصي', d: LIVE.on ? 'ملفات العملاء وحساباتها وأمانها · طلبات الملف الشخصي · طلبات التوثيق · تدشين الحساب' : 'ملفات العملاء · طلبات الملف الشخصي · طلبات التوثيق · العملاء المرحّلون · التدشين', n: w(pfOpen), big: true, go: function () { go('other', 'cu-pf'); } }]],
     ['ct', 'العقود وعروض الأسعار', 'contract', CC.p],
     /* v579: عمليات الدفع في «قسم المالية» وحده؛ تظهر هنا فقط لمن يملك صلاحية العملاء دون المالية — مكان واحد لكل مستخدم */
-    ['wk', 'الطلبات والإجراءات', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: LIVE.on ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — الإنشاء والقرار والتنفيذ' : 'سداد كامل · تأجيل · توحيد · تحويل بنكي · استرداد · أهلية', n: w(LIVE.on ? (LV_SR.all || []).filter(function (x) { return srOpenSt(x) || srWaitExec(x); }).length : n('svc')), go: function () { if (LIVE.on) go('other', 'cu-svc'); else { ADM.cuf = 'svc'; go('other', 'cu-inbox'); } } }].concat(LIVE.on && (typeof cuSecOk !== 'function' || (cuSecOk('cu-trin') && !cuSecOk('fin'))) ? [(function () {
+    ['wk', 'الطلبات والإجراءات', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: LIVE.on ? 'سداد قيمة المنتج · ' + (TQN ? '' : 'تأجيل دفعة · ') + 'توحيد العقود — الإنشاء والقرار والتنفيذ' : 'سداد كامل · تأجيل · توحيد · تحويل بنكي · استرداد · أهلية', n: w(LIVE.on ? (LV_SR.all || []).filter(function (x) { return srOpenSt(x) || srWaitExec(x); }).length : n('svc')), go: function () { if (LIVE.on) go('other', 'cu-svc'); else { ADM.cuf = 'svc'; go('other', 'cu-inbox'); } } }].concat(LIVE.on && (typeof cuSecOk !== 'function' || (cuSecOk('cu-trin') && !cuSecOk('fin'))) ? [(function () {
       if (!LV_PAY.at && !LV_PAY.busy) lvPayLoad().then(function () { draw(); }).catch(function () { /* */ });
       const k = LV_PAY.TR.filter(function (t) { return t.status === 'submitted'; }).length;
       return { ic: 'bank:teal', t: 'إيصالات التحويل البنكي', d: 'تحويلات العملاء لدفعاتهم — اعتماد أو رفض، ثم تنتقل إلى ملف العميل بحالتها', n: LV_PAY.at ? w(k) : null, badge: k ? [fmtNum(k) + ' بانتظار الاعتماد', 'warn'] : null, go: function () { go('other', 'cu-trin'); } }; })(),
@@ -15079,7 +15079,7 @@ const meId = (LIVE.me && (LIVE.me.id || LIVE.me.user_id)) || '', sup = LIVE.sup 
   if (ADM.hq) runS(ADM.hq);
   /* أدوات سريعة */
   const tools = [cuOk ? ['cu-list', 'ملفات العملاء', fmtNum(nC) + ' عميل' + (nn ? ' · ' + fmtNum(nn) + ' جديد' : ''), null, goP('cu-pf-files')] : null,
-    cuOk ? ['services', 'طلب خدمة لعميل', 'سداد قيمة المنتج · تأجيل · توحيد', null, srGo('', 'fin-req') /* v709 */] : null,
+    cuOk ? ['services', 'طلب خدمة لعميل', 'سداد قيمة المنتج · ' + (TQN ? '' : 'تأجيل · ') + 'توحيد', null, srGo('', 'fin-req') /* v709 */] : null,
     cuOk ? ['mail', 'مركز الإرسال', 'رسالة لعميل أو لفئة بالقوالب المعتمدة', null, goP('comm-send')] : null,
     payOk ? ['link', 'روابط الدفع', 'إنشاء رابط دفع وإرساله', null, goP('cu-paylinks')] : null].filter(Boolean);
   const nav = [cuOk ? ['cu', 'قسم العملاء', 'الملفات والتوثيق والطلبات والمتجر', null, goP('cu')] : null,
@@ -21754,7 +21754,7 @@ function lvSvcPage() {
       return e('button', { type: 'button', class: 'cu-kpi is-pick' + (on ? ' is-on' : '') + (k[0] === 'open' && n ? ' is-warn' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { ADM.svF = k[0]; paint(); } },
         [e('span', { class: 'cu-kpi-ic' }, frag(ui(k[2], 18))), e('b', {}, fmtNum(n)), e('small', {}, k[1])]); });
     const opts = []; A.forEach(function (x) { if (!opts.some(function (o) { return o[0] === x.user_id; })) opts.push([x.user_id, srName(x.user_id)]); }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
-    return [e('div', { class: 'ax-top' + (TQN && !tqnSvFin() ? ' srd-lh' : '') }, [e('div', { class: 'ax-top-t' }, [e('b', {}, tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات'), e('small', {}, tqnSvFin() ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته، وينعكس في ملف العميل نفسه.' : TQN ? 'كل طلبات العملاء: التحقق من الأهلية · سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته.' : 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
+    return [e('div', { class: 'ax-top' + (TQN && !tqnSvFin() ? ' srd-lh' : '') }, [e('div', { class: 'ax-top-t' }, [e('b', {}, tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات'), e('small', {}, tqnSvFin() ? 'سداد قيمة المنتج · ' + (TQN ? '' : 'تأجيل دفعة · ') + 'توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته، وينعكس في ملف العميل نفسه.' : TQN ? 'كل طلبات العملاء: التحقق من الأهلية · سداد قيمة المنتج · ' + (TQN ? '' : 'تأجيل دفعة · ') + 'توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته.' : 'سداد قيمة المنتج · ' + (TQN ? '' : 'تأجيل دفعة · ') + 'توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
       e('div', { class: 'cu-kpis sr-kpis' }, kp),
       e('div', { class: 'm3-tools ax-tools' }, [e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM.svC = v === '*' ? '' : v; paint(); } }))]), tqnSvLink(), TQN ? liveOk(DS.button(ADM.tqnTest ? 'إخفاء طلبات الاختبار' : 'إظهار طلبات الاختبار', { size: 'sm', ui: 'eye', onClick: function () { ADM.tqnTest = !ADM.tqnTest; paint(); } })) : null /* v705 */]),
       lvSec('إنشاء طلب', null, [srCreate(RF, {})], 'svc:new') /* v860 */ /* v709: الإنشاء (سداد · تأجيل · توحيد) في «الطلبات المالية» وحدها على staff/next/ */].concat(SR_K.filter(function (k) { return tqnSvK({ kind: k[0] }); }).map(function (k) { const L = R.filter(function (x) { return x.kind === k[0]; });
@@ -24817,7 +24817,7 @@ function cfCtActs(id, c, r, f, C, RF) {
   const tiles = [
     ['settle', 'bank', 'سداد قيمة المنتج', rem > 0.10 ? (function () { const q = ((LIVE_ADM.sq || {})[r.id] || []).filter(function (x) { return x.status === 'pending' || x.status === 'approved'; })[0]; return q ? 'العرض ' + q.quote_no + ' · ' + SR(q.amount) + ' — ' + STL_ST[q.status][0] : 'حساب سداد قيمة المنتج من المتبقي ' + SR(rem) + ' بالإعفاء والخصومات — ثم الاعتماد والتنفيذ'; })() : rem ? 'المتبقي فرق هللات — أغلق بـ«اكتمل السداد»' : 'لا متبقٍّ', !closed && rem > 0.10, 'brand'],
     ['waive', 'ok', 'إعفاء فرق دفعة', diffs.length ? fmtNum(diffs.length) + ' دفعة فيها فرق' : 'لا فروق', !closed && diffs.length > 0, 'info'],
-    ['link', 'rfreq', 'ربط دفعة بعقد تأجيل أو توحيد', unpaid.length ? fmtNum(unpaid.length) + ' دفعات غير مسدَّدة' : 'لا دفعات غير مسدَّدة', !closed && unpaid.length > 0 && others.length > 0, 'warn'],
+    ['link', 'rfreq', (TQN ? 'ربط دفعة بعقد توحيد' : 'ربط دفعة بعقد تأجيل أو توحيد'), unpaid.length ? fmtNum(unpaid.length) + ' دفعات غير مسدَّدة' : 'لا دفعات غير مسدَّدة', !closed && unpaid.length > 0 && others.length > 0, 'warn'],
     ['close', 'lock', 'إغلاق العقد', closed ? 'مغلق — ' + (CF_CLOSE[r.close_reason] || 'مغلق') : rem > 0.10 ? 'بقي ' + SR(rem) : rem ? 'فرق تقريب ' + SR(rem) + ' — جاهز للإغلاق' : 'اكتمل السداد — جاهز للإغلاق', !closed, rem > 0.10 ? 'danger' : 'ok'],
     ['unset', 'rfreq', 'التراجع عن تسديد دفعة', settledK.length ? fmtNum(settledK.length) + ' دفعة مسدَّدة بالتأجيل أو التوحيد أو سداد قيمة المنتج أو الإعفاء' : 'لا دفعات من هذا النوع', !closed && settledK.length > 0, 'info'],
     ['reopen', 'lock', 'إعادة فتح العقد', closed ? 'لتعديل دفعاته أو إجراءاته' : 'العقد مفتوح', closed, 'warn'],
@@ -24853,10 +24853,10 @@ function cfCtActs(id, c, r, f, C, RF) {
         run('admin_payment_waive', { p_payment: p0.pid, p_note: S.note }, 'أُعفي فرق الدفعة ' + p0.i + '.'); } }))])];
   } else if (W.a === 'link') {
     /* v463: الربط بالدالة نفسها التي تنفّذ طلبات التأجيل والتوحيد — طلب واحد منفّذ لا طلبان */
-    const S = cfSt('ln:' + c.no, { pick: {}, kind: 'defer', ref: '', note: '' }), sel = unpaid.filter(function (p) { return S.pick[p.i]; });
+    const S = cfSt('ln:' + c.no, { pick: {}, kind: TQN ? 'merge' : 'defer', ref: '', note: '' }), sel = unpaid.filter(function (p) { return S.pick[p.i]; });
     const tg = others.filter(function (x) { const rr = ((LIVE_ADM.rows || {})[x.no] || {}).r || {}; return !rr.closed && (rr.contract_type || 'new') === S.kind; });
     form = [e('div', { class: 'cf-picks' }, unpaid.map(function (p) { return e('label', { class: 'cf-pick' }, [e('input', { type: 'checkbox', checked: S.pick[p.i] ? 'checked' : null, onChange: function (ev) { S.pick[p.i] = ev.target.checked; RF.paint(); } }), e('span', {}, [e('b', {}, 'الدفعة ' + p.i), e('small', {}, ' · ' + SR(p.amount) + ' · ' + iso(p.due))])]); })),
-      DS.editField('نوع الربط', DS.select({ value: S.kind, options: [['defer', 'تأجيل — الدفعة تنتقل إلى عقد التأجيل'], ['merge', 'توحيد — الدفعة تنتقل إلى العقد الموحّد']], onChange: function (v) { S.kind = v; S.ref = ''; RF.paint(); } })),
+      DS.editField('نوع الربط', DS.select({ value: S.kind, options: [['defer', 'تأجيل — الدفعة تنتقل إلى عقد التأجيل'], ['merge', 'توحيد — الدفعة تنتقل إلى العقد الموحّد']].filter(function (o) { return !TQN || o[0] !== 'defer'; }) /* v863 */, onChange: function (v) { S.kind = v; S.ref = ''; RF.paint(); } })),
       tg.length ? DS.editField(S.kind === 'merge' ? 'العقد الموحّد' : 'عقد التأجيل', DS.select({ value: S.ref, ph: '— اختر العقد —', options: tg.map(function (x) { return [x.no, x.no + ' · ' + (CF_TYPE[S.kind] || CF_TYPE.new)[0]]; }), onChange: function (v) { S.ref = v; RF.paint(); } }))
         : DS.note('warn', 'لا ' + (S.kind === 'merge' ? 'عقد توحيد' : 'عقد تأجيل') + ' مفتوح لهذا العميل', 'يصدر العقد من عرض سعر بنوعه أولًا.'),
       DS.editField('السبب (إلزامي، يُسجَّل في الطلب)', e('textarea', { class: 't2-input', rows: '2', placeholder: 'مثل: طلب العميل', onInput: function (ev) { S.note = ev.target.value; } }, S.note)),
@@ -28970,7 +28970,7 @@ async function lvSrLoad() {
   const P2 = await Promise.all([lvRole('client') ? liveSb('client_service_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').catch(function () { return null; }) : null,
     lvRole('admin') ? liveSb('client_service_requests?select=*&order=created_at.desc&limit=300').catch(function () { return null; }) : null]);
   if (lvRole('client')) LV_SR.mine = Array.isArray(P2[0]) ? P2[0] : [];
-  if (lvRole('admin')) { LV_SR.all = Array.isArray(P2[1]) ? P2[1] : []; LV_SR.ok = Array.isArray(P2[1]); }
+  if (lvRole('admin')) { LV_SR.all = Array.isArray(P2[1]) ? P2[1] : []; LV_SR.ok = Array.isArray(P2[1]); if (TQN) LV_SR.all = LV_SR.all.filter(function (x) { return !x || x.kind !== 'defer'; }); /* v863: في المنصة الجديدة التأجيل من «طلبات تأجيل دفعة» وحدها — لا طلبات تأجيل بالمسار القديم في أي قائمة أو لوحة */ }
   for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr || REQS[i].crq) REQS.splice(i, 1); /* v861 */
   LV_SR.mine = LV_SR.mine.filter(function (x) { return !(x.status === 'cancelled' && x.origin === 'staff'); });
   LV_SR.mine = LV_SR.mine.map(function (x) { return x.kind === 'elig' && x.meta && x.meta.held ? Object.assign({}, x, { status: 'in_review', decision_note: null, meta: Object.assign({}, x.meta, { report: null }) }) : x; }); /* v680: النتيجة المحجوزة لا تظهر للعميل قبل إرسالها */
@@ -35493,7 +35493,7 @@ if (LIVE.on) {
           { ic: 'arrows-clockwise:teal', t: 'المنقولون من النظام السابق', d: 'رسالة «تدشين الهوية الجديدة» وحالة الدخول والتوثيق', n: w(Mg.filter(function (x) { return x.open; }).length), badge: lt(Mg), go: function () { go('other', 'cu-pf-mig'); } },
           { ic: 'rocket-launch:teal', t: 'تدشين الحساب', d: 'الحسابات المعتمدة بانتظار التدشين', n: LCH.at ? fmtNum(LCH.w) + ' بانتظار · ' + fmtNum(LCH.d) + ' مدشّنة' : null, badge: LCH.w ? ['بانتظار ' + fmtNum(LCH.w), 'warn'] : null, go: function () { ADM.lchF = 'wait'; go('other', 'cu-pf-launch'); } },
           { ic: 'crown-simple:gold', t: 'العضويات والنقاط', d: 'المستوى والنقاط وحالة العضوية', n: (typeof LIVE_LOY !== 'undefined' && LIVE_LOY.mem) ? fmtNum(LIVE_LOY.mem.length) + ' أعضاء' : 'الأعضاء والنقاط', go: function () { go('other', 'cu-mem'); } }]],
-        ['rq', 'الطلبات والعقود', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · تحقق من الأهلية', n: w(svcN), go: function () { go('other', 'cu-svc'); } }].concat(CC.p || [], payCards, [{ ic: 'envelope-simple:navy', t: 'الخطابات الرسمية', d: 'خطابات رسمية للجهات الحكومية والشركات والعملاء والشركاء — رقم لا يتكرر وسجل وملف PDF', n: ADM.tlN != null ? fmtNum(ADM.tlN) + ' خطابات' : 'السجل والإصدار', go: function () { go('other', 'cu-docs-tl'); } }])] /* v757 */,
+        ['rq', 'الطلبات والعقود', 'clipboard-text:teal', [{ ic: 'services', t: 'طلبات الخدمات', d: 'سداد قيمة المنتج · ' + (TQN ? '' : 'تأجيل دفعة · ') + 'توحيد العقود · تحقق من الأهلية', n: w(svcN), go: function () { go('other', 'cu-svc'); } }].concat(CC.p || [], payCards, [{ ic: 'envelope-simple:navy', t: 'الخطابات الرسمية', d: 'خطابات رسمية للجهات الحكومية والشركات والعملاء والشركاء — رقم لا يتكرر وسجل وملف PDF', n: ADM.tlN != null ? fmtNum(ADM.tlN) + ' خطابات' : 'السجل والإصدار', go: function () { go('other', 'cu-docs-tl'); } }])] /* v757 */,
         ['st', 'المتجر', 'store', [{ ic: 'store', t: 'طلبات المتجر', d: 'الطلبات والشحن · حسب الطلب · الخدمات الرقمية', n: w(n('store')), go: function () { ADM.cuf = 'store'; go('other', 'cu-inbox'); } }].concat(CC.s || [])],
         ['sc', 'الأمن والوصول', 'shield-check:teal', [{ ic: 'shield-check:teal', t: 'مركز الأمن', d: 'النشاط والدخول · التنبيهات · العمليات الحساسة · الأجهزة · سجل التدقيق', n: secN ? fmtNum(secN) + ' تنبيهًا هذا الأسبوع' : 'لا تنبيهات أمنية', go: function () { go('other', 'cu-secc'); } },
           (typeof cuSecOk !== 'function' || cuSecOk('cpg')) ? { ic: 'user-circle:navy', t: 'صفحة العميل', d: 'الدخول إلى صفحة العميل كما يراها بسبب مُسجَّل · سجل توثيق الوصول', go: function () { go('other', 'cpg'); } } : null].filter(Boolean)]];
