@@ -3389,7 +3389,6 @@ const payStepper = (i) => {
 };
 /* مراحل تفاصيل الدفعة: أين أنا وما المراحل الباقية بعدها */
 const pdStepper = (p) => e('div', { class: 'fx-pstp' }, [DS.stepper([{ label: 'تفاصيل الدفعة', state: 'now' }, { label: 'السداد' }], 'مراحل السداد'), e('p', { class: 'fx-pstp-n' }, 'السداد في خطوة واحدة: المبلغ وطريقة الدفع ثم التأكيد، ويصدر الإيصال في الصفحة نفسها.')]);
-const deferStepper = () => DS.stepper([{ label: 'تفاصيل الدفعة', state: 'done' }, { label: 'طلب التأجيل', state: FX.done ? 'done' : 'now' }, { label: 'مراجعة الإدارة', state: FX.done ? 'now' : null }, { label: 'عقد التأجيل' }], 'مراحل التأجيل', function (k) { if (k === 0 && !FX.done) { FX.pid = FX.payPid; go('payment'); } });
 /* مسار التنقل لتفاصيل الدفعة ومراحلها، وزر الرجوع */
 const RKL = { all: 'كل السجلات', pay: 'السداد', part: 'السداد الجزئي', review: 'بانتظار الاعتماد', defer: 'التأجيل', refund: 'الاسترداد', void: 'الإلغاء' };
 const QVL = { late: 'المتأخرة', in7: 'خلال 7 أيام', in30: 'خلال 30 يومًا', all: 'كل الدفعات' };
@@ -3784,7 +3783,6 @@ function paynowPage() {
 const ST_WHY = [['save', 'توفّر سيولة لسداد المتبقي'], ['close', 'الرغبة في إنهاء الالتزام مبكرًا'], ['new', 'التقدّم لطلب منتج أو خدمة جديدة'], ['other', 'سبب آخر']];
 const ST_HOW = [['gw', 'بوابة الدفع الإلكتروني (مدى / بطاقة)'], ['bank', 'تحويل بنكي']];
 const ST_STEPS = [['rsent', 'إرسال الطلب', 'يصل الطلب لفريق تيرا برقم متابعة.'], ['rrev', 'مراجعة الإدارة', 'تحديد مبلغ المخالصة النهائي وإبلاغك به.'], ['card', 'السداد', 'تسدّد مبلغ المخالصة بالطريقة التي تختارها.'], ['thanks', 'إغلاق العقد', 'يُغلق العقد وتصدر المخالصة النهائية.']];
-const DF_STEPS = [['rsent', 'إرسال الطلب', 'يصل الطلب لفريق تيرا برقم متابعة.'], ['rrev', 'مراجعة الإدارة', 'دراسة الطلب والرد عليه بالموافقة أو الرفض.'], ['ok', 'الموافقة', 'تُسجَّل الدفعة «تم الدفع بنظام التأجيل».'], ['contract', 'عقد التأجيل', 'عقد جديد بقيمة الدفعة يظهر في «عقودي».']];
 const stFlow = (at, steps) => e('ol', { class: 'st-flow', 'aria-label': 'ما يحدث بعد الإرسال' }, (steps || ST_STEPS).map(function (s, i) {
   return e('li', { class: 'st-flow-i' + (i < at ? ' is-done' : i === at ? ' is-now' : '') }, [e('span', { class: 'st-flow-ic' }, frag(tile(s[0]))), e('span', { class: 'st-flow-n' }, i < at ? '✓' : String(i + 1)), e('b', {}, s[1]), e('small', {}, s[2])]);
 }));
@@ -3981,64 +3979,15 @@ function mergePage() {
   out.push(DS.actionBar({ buttons: [DS.button('رجوع', { onClick: toOrigin }), DS.button('إرسال طلب التوحيد', { tone: 'primary', onClick: function () { FX.miss = ['mg']; draw(); } })] }));
   return out;
 }
-/* ===== طلب تأجيل دفعة: اختيار الدفعة ← المراجعة والتأكيد ← مراجعة الإدارة ← عقد التأجيل ===== */
-const DF_WHY = [['income', 'تأخر الراتب أو الدخل'], ['emerg', 'ظرف طارئ'], ['travel', 'سفر'], ['medical', 'ظرف صحي'], ['other', 'سبب آخر']];
-const DF_N = [['1', 'دفعة واحدة'], ['2', 'دفعتان'], ['3', '3 دفعات'], ['4', '4 دفعات'], ['5', '5 دفعات'], ['6', '6 دفعات'], ['more', 'أكثر من 6 دفعات']];
-/* إحصاء الدفعة أعلى صفحة التأجيل — بنفس قالب مؤشرات المنصة */
-function dfStats(p) {
-  const s = payState(p), f = cInfo(p.c);
-  return e('section', { class: 'fx-kpis df-kpis' }, [kpi('cal', 'تاريخ الاستحقاق', ltr(iso(p.due)), s.k === 'late' ? 'متأخرة ' + dayWord(s.late) : AR_DAY[p.due.getDay()], s.k === 'late' ? 'bad' : ''), kpi('orders', 'رقم الدفعة', String(p.i), 'من ' + p.c.n + ' دفعات'), kpi('wallet', 'قيمة الدفعة', SR(p.amount), p.paid > 0 ? 'سُدّد منها ' + SR(p.paid) : 'لم يُسدَّد منها شيء'), kpi('contract', 'المتبقي من العقد', SR(f.remain), f.leftN + ' دفعات متبقية')]);
-}
-function dfHero(p, toPd) {
-  const s = payState(p), f = cInfo(p.c);
-  return e('section', { class: 'st-hero is-' + (s.k === 'late' ? (s.late > LATE_MAX ? 'danger' : 'warn') : 'ok') }, [
-    e('div', { class: 'st-hero-h' }, [e('span', { class: 'st-hero-ic' }, frag(tile(p.c.icon))), e('div', { class: 'st-hero-t' }, [e('small', {}, 'الدفعة المراد تأجيلها'), e('b', {}, p.c.product), e('span', {}, [ltr(p.c.no), ' · الدفعة ' + p.i + ' من ' + p.c.n])]), e('span', { class: 'st-pill is-' + s.tone }, s.k === 'late' ? 'متأخرة ' + dayWord(s.late) : s.t)]),
-    e('div', { class: 'st-hero-v' }, [e('span', {}, 'المبلغ المراد تأجيله'), e('b', {}, [SAR(dueAmt(p)), e('small', {}, ' ريال')]), e('em', {}, p.paid > 0 ? 'المتبقي من الدفعة بعد سداد ' + SR(p.paid) : 'قيمة الدفعة كاملة')]),
-    false && e('div', { class: 'st-tiles' }, [
-      [iso(p.due), AR_DAY[p.due.getDay()], 'تاريخ الاستحقاق', s.k === 'late' ? 'bad' : ''],
-      [String(p.i), 'من ' + p.c.n + ' دفعات', 'رقم الدفعة', ''],
-      [SAR(p.amount), 'ريال', 'قيمة الدفعة', ''],
-      [SAR(f.remain), 'ريال · ' + f.leftN + ' دفعات', 'المتبقي من العقد', '']].map(function (t) { return e('div', { class: 'st-tile' + (t[3] ? ' is-' + t[3] : '') }, [e('span', {}, t[2]), e('b', {}, ltr(t[0])), e('small', {}, t[1])]); })),
-    toPd ? e('button', { type: 'button', class: 'st-hero-go', onClick: toPd }, [frag(ui('file-text', 16)), 'تفاصيل الدفعة', frag(ui('caret-left', 14))]) : null]);
-}
+/* ===== v861: طلب تأجيل دفعة — منظومة طلبات العقود الموحّدة (assets/js/crq-client.js) =====
+العقد والدفعة ← الإرسال ← العرض للموافقة برابط ← الملحق للتوقيع برابط ← تعديل العقد نفسه آليًا. لا عقد تأجيل جديد ولا مسار قديم. */
+let CRQ_HOST = null;
 function deferPage() {
-  const toOrigin = function () { const t = FX.trail && FX.trail.defer; if (t && t.length && t[t.length - 1][1]) t[t.length - 1][1](); else go('svc'); };
-  if (FX.done) {
-    const r = REQS.filter(function (x) { return x.no === FX.done[2]; })[0], fv = function (k) { return r ? (r.fields.filter(function (x) { return x[0] === k; })[0] || ['', '—'])[1] : '—'; };
-    return stDone('أُرسل طلب التأجيل', 'وصل طلبك لفريق تيرا، وتصلك الإشعارات بكل تغيير في حالته.', FX.done[2], [['العقد', ltr(fv('العقد'))], ['الدفعة', fv('الدفعة')], ['تاريخ الاستحقاق', fv('تاريخ الاستحقاق')]], stFlow(1, DF_STEPS), DS.button('مدفوعاتي', { onClick: function () { go('pay'); } }));
-  }
-  const fromPd = !!(FX.payPid && payById(FX.payPid));
-  const list = CONTRACTS.filter(function (x) { return !x.from && unsettled(x).length; });
-  const c = cByNo(FX.cid);
-  const L = c ? unsettled(c).filter(function (q) { return !q.deferTo; }) : [];
-  let p = fromPd ? payById(FX.payPid) : (FX.dpid && payById(FX.dpid) && payById(FX.dpid).c === c ? payById(FX.dpid) : (c ? pinnedPay(c) : null));
-  const pendR = p ? REQS.filter(function (r) { return r.type === 'defer' && r.contract === p.c.no && r.status !== 'done' && r.status !== 'rejected' && r.fields.some(function (x) { return x[0] === 'الدفعة' && String(x[1]).indexOf(p.i + ' من') === 0; }); })[0] : null;
-  const steps = DS.stepper([{ label: fromPd ? 'تفاصيل الدفعة' : 'اختيار الدفعة', state: p ? 'done' : 'now' }, { label: 'المراجعة والتأكيد', state: p ? 'now' : null }, { label: 'مراجعة الإدارة' }, { label: 'عقد التأجيل' }], 'مراحل طلب التأجيل', function (i) { if (i === 0 && fromPd) { FX.pid = FX.payPid; go('payment'); } });
-  const pick = [];
-  if (FX.lock && c) pick.push(e('div', { class: 'st-lock' }, [lockedContract(c), fromPd ? null : e('button', { type: 'button', class: 'fx-link', onClick: function () { FX.lock = false; draw(); } }, 'تغيير العقد')]));
-  else pick.push(contractPick('العقد', 'cid', list, list.length + ' عقود لها دفعات متبقية.'));
-  if (c && !fromPd) pick.push(fxReq('الدفعة المراد تأجيلها', 'dpid', DS.select({ value: p ? p.c.no + ':' + p.i : '', options: opts(L.map(function (q) { const s = payState(q); return [q.c.no + ':' + q.i, 'الدفعة ' + q.i + ' · ' + iso(q.due) + ' · ' + SR(dueAmt(q)) + (s.k === 'late' ? ' · متأخرة' : '')]; })), onChange: function (v) { FX.dpid = v; FX.ok = false; FX.miss = []; draw(); } }), 'الافتراضي أقرب دفعة مستحقة.', true));
-  /* الترتيب: المراحل ← إحصاء الدفعة ← الدفعة وتفاصيلها ← التأجيل (عدد الدفعات المقترح + الإقرار) */
-  const out = [steps];
-  if (p) out.push(dfStats(p));
-  out.push(formSec(fromPd ? 'الدفعة' : '1. اختيار الدفعة', null, [e('div', { class: c && !fromPd ? 'st-grid' : '' }, pick)].concat(p ? [dfHero(p, fromPd ? null : function () { const t = document.getElementById('pv-title'); FX.pfrom = { tab: 'defer', title: t ? t.textContent : 'طلب تأجيل دفعة', cid: FX.cid, path: originTrail(null) }; FX.pid = p.c.no + ':' + p.i; go('payment'); })] : [])));
-  if (!p) out.push(e('section', { class: 'st-empty' }, [e('span', { class: 'st-empty-ic' }, frag(tile('clock'))), e('b', {}, 'اختر العقد ثم الدفعة')]), stFlow(-1, DF_STEPS));
-  else if (pendR) out.push(DS.note('warn', 'يوجد طلب تأجيل قيد المراجعة لهذه الدفعة', 'الطلب ' + pendR.no + ' — تابع حالته قبل تقديم طلب جديد.', DS.button('متابعة الطلب ' + pendR.no, { size: 'sm', tone: 'primary', onClick: function () { FX.rid = pendR.no; go('req'); } })));
-  else {
-    const cb = e('input', { type: 'checkbox', onChange: function (ev) { FX.ok = ev.target.checked; FX.miss = []; draw(); } }); cb.checked = !!FX.ok;
-    out.push(formSec((fromPd ? '' : '2. ') + 'التأجيل', null, [
-      fxReq('عدد دفعات عقد التأجيل (مقترح)', 'dfn', DS.select({ value: FX.dfn || '', options: opts(DF_N), onChange: function (v) { FX.dfn = v; FX.miss = []; draw(); } }), null, true),
-      DS.note('info', 'اختيارك اقتراح وليس موافقة', 'تراجع الإدارة الطلب وتحدد عدد الدفعات النهائي عند الموافقة، وتصلك النتيجة في الإشعارات.'),
-      e('label', { class: 'st-agree' + (FX.miss && FX.miss.indexOf('ok') >= 0 ? ' is-miss' : '') }, [cb, e('span', {}, ['أطلب تأجيل الدفعة ' + p.i + ' من العقد ', ltr(p.c.no), '، وأعلم أن الموافقة تُنشئ عقد تأجيل جديدًا بقيمة الدفعة.'])])]));
-  }
-  out.push(DS.actionBar({ buttons: [DS.button('رجوع', { onClick: fromPd ? function () { FX.pid = FX.payPid; go('payment'); } : toOrigin }), pendR ? null : DS.button('إرسال طلب التأجيل', { tone: 'primary', onClick: function () {
-    const m = []; if (!p) m.push('cid'); else { if (!FX.dfn) m.push('dfn'); if (!FX.ok) m.push('ok'); } FX.miss = m; if (m.length) { draw(); const f = document.querySelector('.t2-field.is-missing, .st-agree.is-miss'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
-    const nn = DF_N.filter(function (x) { return x[0] === FX.dfn; })[0];
-    const r = addReq('defer', [['العقد', p.c.no], ['الدفعة', p.i + ' من ' + p.c.n + ' · ' + SR(dueAmt(p))], ['تاريخ الاستحقاق', isoT(p.due)], ['عدد الدفعات المقترح', nn[1] + ' (اقتراح — تحدده الإدارة)']],
-      [['تم إرسال الطلب', T0], ['مراجعة الإدارة', null], ['الموافقة على التأجيل'], ['إنشاء عقد التأجيل']], p.c.no);
-    FX.done = ['أُرسل طلب التأجيل', '', r.no]; draw(); toTop();
-  } })] }));
-  return out;
+if (!window.CRQC || !window.CRQC.page) return [DS.note('warn', 'تعذّر تحميل صفحة طلب التأجيل', 'حدّث الصفحة وحاول مرة أخرى.')];
+const p = FX.payPid ? payById(FX.payPid) : null;
+const key = (FX.cid || '') + '|' + ((p && p.pid) || '');
+if (!CRQ_HOST || CRQ_HOST.key !== key) CRQ_HOST = { key: key, el: window.CRQC.page({ cid: p ? p.c.no : (FX.cid || ''), pid: (p && p.pid) || '', token: liveToken, back: function () { if (p) { FX.pid = FX.payPid; go('payment'); } else go('svc'); } }) };
+return [CRQ_HOST.el];
 }
 
 /* ===== طلباتي ===== */
@@ -6998,20 +6947,6 @@ function cuForm(r, D, rerun) {
         r.note = ['info', 'مبلغ المخالصة جاهز', 'مبلغ المخالصة للعقد ' + r.contract + ' هو ' + SR(a) + (a < rem ? ' بدلًا من ' + SR(rem) : '') + '، صالح حتى ' + D.until + '. سدّده من هذه الصفحة ليُغلق العقد.'];
         cuNotify(r, 'cudinfo', 'مبلغ المخالصة جاهز — ' + r.no, 'حدّدنا مبلغ المخالصة للعقد ' + r.contract + ' بقيمة ' + SR(a) + '، صالح حتى ' + D.until + '. سدّده من صفحة الطلب ليُغلق العقد.');
         cuLog(r, 'حدّد مبلغ المخالصة ' + SR(a) + ' — صالح حتى ' + D.until); return 'أُرسل مبلغ المخالصة للعميل'; } };
-  }
-  if (r.type === 'defer') {
-    const p = cuPayOf(r), amt = p ? dueAmt(p) : 0, prop = /^(\d)/.exec(String(cuFld(r, /عدد الدفعات/))) || (/دفعتان/.test(cuFld(r, /عدد الدفعات/)) ? [0, '2'] : /دفعة واحدة/.test(cuFld(r, /عدد الدفعات/)) ? [0, '1'] : null);
-    if (D.n === undefined) D.n = prop ? String(Math.min(6, +prop[1])) : '2'; if (D.first === undefined) D.first = iso(p ? addMonths(p.due, 1) : addMonths(T0, 1));
-    const rows = p && amt ? cuSplit(amt, +D.n, parseIso(D.first), 'm') : [];
-    return { cta: 'اعتماد التأجيل وإنشاء عقد التأجيل', body: [DS.fields([['الدفعة المؤجلة', p ? 'الدفعة ' + p.i + ' من ' + p.c.n + ' · ' + SR(amt) : '—'], ['تاريخ الاستحقاق', p ? ltr(iso(p.due)) : '—'], ['اقتراح العميل', cuFld(r, /عدد الدفعات/) || '—']]),
-      grid([DS.editField('عدد دفعات عقد التأجيل', DS.select({ value: D.n, options: DF_N.filter(function (x) { return x[0] !== 'more'; }), onChange: function (v) { D.n = v; rerun(); } })), DS.editField('أول دفعة في عقد التأجيل', datePick({ value: D.first, min: iso(T0), max: iso(addMonths(T0, 6)), onChange: function (v) { D.first = v; rerun(); } }))]),
-      rows.length ? plan(rows) : DS.note('warn', 'لا مبلغ مستحق', 'هذه الدفعة مسدّدة أو مؤجّلة بالفعل — ارفض الطلب مع ذكر السبب.')],
-      check: function () { if (!p || !amt) return 'الدفعة مسدّدة أو مؤجّلة — لا يمكن اعتماد التأجيل.'; return null; },
-      run: function () { const no = cuNewCNo(); CONTRACTS.push(mkC({ no: no, product: 'عقد تأجيل — الدفعة ' + p.i + ' من ' + p.c.no, icon: 'clock', amount: rows[0].amount, req: T0, from: p.c.no, plan: rows.map(function (x) { return { due: iso(x.due), amount: x.amount }; }) }));
-        p.deferTo = no; p.admin = 'معتمد'; p.method = 'تأجيل'; p.at = T0;
-        r.status = 'done'; cuDone(r, 'إنشاء عقد التأجيل ' + no); r.fields = r.fields.concat([['العقد الجديد', no + ' — ' + fmtNum(rows.length) + ' × ' + SR(rows[0].amount)]]);
-        r.note = ['ok', 'تمت الموافقة على التأجيل', 'أُنشئ عقد التأجيل ' + no + ' بـ' + (rows.length === 1 ? 'دفعة واحدة' : rows.length === 2 ? 'دفعتين' : fmtNum(rows.length) + ' دفعات') + ' تبدأ في ' + D.first + '، وسُجّلت الدفعة ' + p.i + ' «تم الدفع بنظام التأجيل».'];
-        cuNotify(r, 'cudok', 'تمت الموافقة على تأجيل الدفعة ' + p.i + ' — العقد ' + no, r.note[2], 'contract'); cuLog(r, 'اعتمد التأجيل وأنشأ العقد ' + no); return 'اعتُمد التأجيل وأُنشئ العقد ' + no; } };
   }
   if (r.type === 'transfer') {
     const P = cuTrPays(r);
@@ -13602,7 +13537,6 @@ function requestPage(title, subtitle, what) {
   };
 }
 const CL_PAYOFF = requestPage('سداد عقد كامل', 'طلبُ سدادِ المتبقّي من عقدٍ دفعةً واحدة.', 'طلبِ السداد');
-const CL_DEFER = requestPage('طلب تأجيل دفعة', 'طلبُ تأجيلِ دفعةٍ مستحقّةٍ ضمنَ المدّةِ المسموحة.', 'طلبِ التأجيل');
 const CL_PARTNERS = {
   title: 'تحقق من أهليتك مع شركائنا',
   subtitle: 'عروضٌ من الموردينَ والشركاءِ المعتمدينَ لدى تيرا.',
@@ -13820,7 +13754,7 @@ const ADM_LAUNCH = {
 const PAGES_MEMBER = {
   'cl-wait': CL_WAIT, 'mem-film': MEM_FILM, 'adm-launch': ADM_LAUNCH,
   'mem-level': MEM_LEVEL, 'mem-points': MEM_POINTS, 'mem-ledger': MEM_LEDGER, 'mem-about': MEM_ABOUT, 'mem-about-pts': MEM_ABOUT_PTS,
-  'cl-contracts': CL_CONTRACTS, 'cl-payments': CL_PAYMENTS, 'cl-payoff': CL_PAYOFF, 'cl-defer': CL_DEFER, 'cl-partners': CL_PARTNERS,
+  'cl-contracts': CL_CONTRACTS, 'cl-payments': CL_PAYMENTS, 'cl-payoff': CL_PAYOFF, 'cl-partners': CL_PARTNERS,
   'cl-al-sys': CL_AL_SYS, 'cl-al-adm': CL_AL_ADM,
 };
 
@@ -18419,7 +18353,7 @@ function srCreate(RF, o) {
   const reset = function () { S.nos = []; S.pids = []; S.err = ''; };
   return e('div', { class: 'cf-form sr-new' }, [
     o.cid ? null : DS.editField('العميل', DS.select({ value: S.cid, ph: '— اختر العميل —', options: ids, onChange: function (v) { S.cid = v; reset(); RF.paint(); } })),
-    o.kind ? null : DS.editField('نوع الطلب', DS.select({ value: S.kind, ph: '— اختر النوع —', options: SR_K.filter(function (k) { return k[0] !== 'elig'; }).map(function (k) { return [k[0], k[1] + ' — ' + k[3]]; }), onChange: function (v) { S.kind = v; reset(); RF.paint(); } })),
+    o.kind ? null : DS.editField('نوع الطلب', DS.select({ value: S.kind, ph: '— اختر النوع —', options: SR_K.filter(function (k) { return k[0] !== 'elig' && k[0] !== 'defer'; }) /* v861: التأجيل من «طلبات تأجيل دفعة» وحدها */.map(function (k) { return [k[0], k[1] + ' — ' + k[3]]; }), onChange: function (v) { S.kind = v; reset(); RF.paint(); } })),
     S.cid && S.kind ? e('div', { class: 'sr-pick' }, [e('b', {}, S.kind === 'merge' ? 'العقود' : 'العقد')].concat(srPick(S, S.cid, S.kind, RF))) : null,
     S.cid && S.kind ? DS.editField('السبب (يُسجَّل في الطلب)', e('textarea', { class: 't2-input', rows: '2', onInput: function (ev) { S.note = ev.target.value; } }, S.note)) : null,
     S.kind === 'settle' ? e('small', { class: 'cu-dr-hint' }, 'بعد الإنشاء يُعدّ فاتورة سداد قيمة المنتج من بطاقة الطلب، ثم يُعتمد ويُرسل مبلغه للعميل.') : null,
@@ -29021,16 +28955,30 @@ function lvSrReq(x) {
   return mkR({ no: x.req_no, type: x.kind, at: at, status: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === true) ? 'fix' : (LV_SR_ST[x.status] || 'sent'), /* v669 */ contract: (x.contract_nos || [])[0] || '', fields: f, path: path, live: true, sr: x,
     note: (x.kind === 'elig' && x.status === 'in_review' && x.meta && x.meta.fix && x.meta.fix.open === false && x.meta.fix.done_at) ? ['info', 'قيد المراجعة — أُعيد الإرسال بعد الاستكمال', 'وصل طلبك بعد استكماله ' + iso(new Date(x.meta.fix.done_at)) + '، وعاد إلى مراجعة الفريق. يصلك الرد فور صدور النتيجة.'] : undefined }); /* v672 */
 }
+/* v861: طلب من منظومة العقود الموحّدة (crq_) بصيغة «طلبات خدماتي» — الحالة والمراحل من الخادم */
+const LV_CRQ_ST = { received: 'sent', decision: 'review', consent: 'review', sign: 'review', done: 'done', closed: 'rejected' };
+function lvCrqReq(x) {
+const f = [['العقد', x.contract_no]].concat((x.targets || []).map(function (t) { return ['الدفعة', t.seq + ' · ' + iso(new Date(t.due))]; }));
+if (x.total != null) f.push(['يُضاف إلى العقد', SR(Number(x.total))]);
+if (x.close_t) f.push(['سبب الإغلاق', x.close_t]);
+return mkR({ no: x.no, type: x.kind, at: new Date(x.created_at), status: LV_CRQ_ST[x.state] || 'sent', contract: x.contract_no, fields: f, live: true, crq: x,
+path: (x.path || []).map(function (s) { return [s.t, new Date(s.at)]; }),
+note: x.state === 'consent' ? ['info', 'العرض بانتظار موافقتك', 'افتح الرابط الذي وصلك على واتساب أو البريد للموافقة أو الاعتذار.'] : x.state === 'sign' ? ['info', 'الملحق بانتظار توقيعك', 'افتح الرابط الذي وصلك على واتساب أو البريد للتوقيع.'] : null });
+}
 async function lvSrLoad() {
   const uid = LIVE.me.id;
   const P2 = await Promise.all([lvRole('client') ? liveSb('client_service_requests?select=*&user_id=eq.' + encodeURIComponent(uid) + '&order=created_at.desc').catch(function () { return null; }) : null,
     lvRole('admin') ? liveSb('client_service_requests?select=*&order=created_at.desc&limit=300').catch(function () { return null; }) : null]);
   if (lvRole('client')) LV_SR.mine = Array.isArray(P2[0]) ? P2[0] : [];
   if (lvRole('admin')) { LV_SR.all = Array.isArray(P2[1]) ? P2[1] : []; LV_SR.ok = Array.isArray(P2[1]); }
-  for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr) REQS.splice(i, 1);
+  for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr || REQS[i].crq) REQS.splice(i, 1); /* v861 */
   LV_SR.mine = LV_SR.mine.filter(function (x) { return !(x.status === 'cancelled' && x.origin === 'staff'); });
   LV_SR.mine = LV_SR.mine.map(function (x) { return x.kind === 'elig' && x.meta && x.meta.held ? Object.assign({}, x, { status: 'in_review', decision_note: null, meta: Object.assign({}, x.meta, { report: null }) }) : x; }); /* v680: النتيجة المحجوزة لا تظهر للعميل قبل إرسالها */
   LV_SR.mine.forEach(function (x) { REQS.push(lvSrReq(x)); });
+if (lvRole('client')) { /* v861: طلبات منظومة العقود الموحّدة (crq_) */
+try { const t = await liveToken(); const r = await fetch('/api/account/crq', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + t, Accept: 'application/json' } }); const j = r.ok ? await r.json() : null;
+(j && Array.isArray(j.rows) ? j.rows : []).forEach(function (x) { REQS.push(lvCrqReq(x)); }); } catch (err) { void err; } }
+
   REQS.sort(function (a, b) { return b.at - a.at; });
 }
 /* إرسال الطلب: تُعرض صفحة «أُرسل الطلب» فورًا، ويُستبدل الرقم المؤقت برقم الخادم — أو يُلغى الطلب المحلي إن رفضه الخادم */
@@ -29101,6 +29049,13 @@ const LIVE_PAGES = { client: {},
   admin: {  'pay-center': function () { ADM.payMode = 'set'; return admPayPage(); }, 'cs-customer': admPfFilePage, 'cu-file': admPfFilePage, 'cu-pf-file': admPfFilePage, 'cu-pf-mig': function () { return e('div', { class: 't2-stack adm-live' }, cuPfMigPage()); }, /* v499: العملاء المنقولون (حساباتهم في المنصة) — رسالة تدشين الهوية الجديدة */ 'cu-pf-files': admPfFilesPage, 'cu-list': admPfFilesPage, 'cs-customers': admPfFilesPage, 'cu-pf-ver': admVerPage, 'cs-requests': admQuotesPage,
     sys: admSysPage, 'sys-roles': admRolesPage, 'sys-role': admRolesPage, 'sys-titles': admTitlesPage, 'sys-org': admOrgPage,
     'sys-pay': function () { ADM.payMode = 'set'; return admPayPage(); } } };
+/* v861: واجهة صغيرة للوحدات المستقلة (منظومة طلبات العقود assets/js/crq-staff.js) — تسجيل صفحة في القائمة ورمز الجلسة فقط، بلا منطق هنا */
+if (window.__teraApp) {
+window.__teraApp.page = function (k, t, ic, run) { try { ICON[k] = ic; lp(k, t, null, k, run); LIVE_PAGES.admin[k] = run; return true; } catch (err) { return false; } };
+window.__teraApp.token = function () { return liveToken(); };
+(window.__crqQ || []).forEach(function (f) { try { f(); } catch (err) { void err; } }); window.__crqQ = null;
+}
+
 /* ---------- v283: قسم العملاء — إدارة الحساب ومركز الأمن وطلبات الملف والتدشين من القاعدة مباشرة ----------
    المصادر: admin_accounts_list · admin_account_detail · admin_session_log · admin_session_close · admin_2fa_accounts · admin_audit_list
             admin_profile_update_requests · admin_profile_update_decide · admin_launch_list — كلها تتحقق من صلاحية الموظف في القاعدة. */
