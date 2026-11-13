@@ -1,4 +1,4 @@
-/* v862 — منظومة طلبات العقود الموحّدة (crq_) — صفحة الفريق: «طلبات تأجيل دفعة»
+/* v865 (طلبات التأجيل السابقة المنقولة: للسجل) · v862 — منظومة طلبات العقود الموحّدة (crq_) — صفحة الفريق: «طلبات تأجيل دفعة»
 * ملف مستقل (لا طبقات فوق platform.js): المنصة تعطي مكان الصفحة ورأسها (المسار والأيقونة والعنوان) ورمز الجلسة،
 * وهذه الوحدة ترسم المحتوى بلغة قسم العملاء المعتمدة، والخادم والقاعدة يفرضان كل قاعدة.
 * القائمة: بطاقات مؤشرات هي الفلتر الوحيد ← شريط أدوات ← جدول بصفوف.
@@ -65,7 +65,9 @@ draw();
 function back() { ST.id = null; ST.x = null; ST.ask = null; draw(); toTop(); loadList(); }
 function toTop() { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } }
 async function reload() { if (!ST.id) return loadList(); try { var j = await api('GET', '/admin/api/crq/' + ST.id); ST.x = j.req; } catch (e) { toast(false, e.message); } draw(); }
-function defaultTab(x) { return x.state === 'received' || x.state === 'decision' ? (x.result && x.result.ok ? 'calc' : 'req') : x.state === 'done' || x.state === 'closed' ? 'log' : 'links'; }
+/* طلب تأجيل نُفّذ قبل المنظومة (نُقل بالهجرة stf_269): نُقلت دفعته إلى عقد آخر — لا حسبة ولا ملحق، للسجل فقط */
+function legacy(x) { return !!(x && x.executed_ref && x.executed_ref.legacy); }
+function defaultTab(x) { if (legacy(x)) return 'req'; return x.state === 'received' || x.state === 'decision' ? (x.result && x.result.ok ? 'calc' : 'req') : x.state === 'done' || x.state === 'closed' ? 'log' : 'links'; }
 function editable(x) { return x && (x.state === 'received' || x.state === 'decision') && !x.need_approval; }
 
 /* ═════════ القائمة ═════════ */
@@ -166,6 +168,7 @@ return '';
 }
 /* الإجراء الرئيسي الوحيد في الحالة الحالية */
 function primary(x) {
+if (legacy(x)) return null;
 var sup = x.me && x.me.super, ok = x.result && x.result.ok;
 if (x.state === 'received' || x.state === 'decision') {
 if (sup) return btn('اعتماد وإرسال رابط الموافقة', { ic: 'send', cls: 'is-pri is-wide', disabled: !ok || ST.busy || ST.save.st === 'saving', title: ok ? '' : 'أكمل الحسبة أولًا', on: function () { ask('اعتماد العرض وإرسال رابط الموافقة', 'يصل العميل رابط الموافقة على واتساب والبريد بمدة صلاحية ' + (x.valid_hours || (x.settings || {}).consent_hours || 48) + ' ساعة. بانتهائها يُغلق الطلب.', 'اعتماد وإرسال', function () { act('approve', { stamp: ST.x.updated_at }); }); } });
@@ -179,6 +182,7 @@ return null;
 }
 /* بقية الإجراءات — ظاهرة تحت الإجراء الرئيسي (لا قائمة منسدلة) */
 function moreItems(x) {
+if (legacy(x)) return [];
 var sup = x.me && x.me.super, L = [];
 if ((x.state === 'consent' || x.state === 'sign') && (!x.signed_at || x.exec_error)) L.push(['سحب العرض وتعديله', 'undo', function () { askNote('سحب العرض وتعديله', 'يُلغى رابط العميل ويعود الطلب إلى قرار الفريق.', 'سبب السحب (اختياري)', false, function (n) { act('withdraw', { note: n }, 'سُحب العرض — عدّل ثم أعد الاعتماد.'); }); }]);
 if (sup && x.state === 'decision' && x.need_approval) L.push(['إعادة للمُعِدّ للتعديل', 'undo', function () { askNote('إعادة للمُعِدّ', 'يعود العرض للمُعِدّ بملاحظتك.', 'الملاحظة', true, function (n) { act('return', { note: n }, 'أُعيد العرض للمُعِدّ.'); }); }]);
@@ -238,7 +242,7 @@ el('button', { type: 'button', class: 'cr-allb', 'data-live-ok': '', onclick: ba
 el('div', { class: 'cr-chips' }, [badge(x), x.need_approval ? el('span', { class: 'cr-badge is-warn', text: 'بانتظار اعتماد المشرف العام' }) : null, x.exec_error ? el('span', { class: 'cr-badge is-bad', text: 'تعذّر التنفيذ' }) : null,
 el('span', { class: 'cr-badge is-off', text: x.origin === 'client' ? 'من حساب العميل' : 'أنشأه الفريق' })]),
 el('div', { class: 'cr-facts' }, [fact('العميل', x.client || '—'), fact('العقد', ltr(x.contract_no || '—')), fact('الدفعة المؤجلة', tg || '—'),
-fact('إجمالي الإضافة على العقد', ok ? el('span', {}, [ltr(money(x.result.total)), ' ر.س']) : 'لم تكتمل الحسبة', ok ? 'is-hi' : ''),
+legacy(x) ? fact('نُقلت الدفعة إلى العقد', ltr(x.executed_ref.to || '—'), 'is-hi') : fact('إجمالي الإضافة على العقد', ok ? el('span', {}, [ltr(money(x.result.total)), ' ر.س']) : 'لم تكتمل الحسبة', ok ? 'is-hi' : ''),
 x.link ? fact(x.link.step === 'sign' ? 'رابط التوقيع صالح حتى' : 'رابط الموافقة صالح حتى', at(x.link.expires_at)) : fact('تاريخ الطلب', at(x.created_at)),
 fact('مسند إلى', x.assigned_t || 'غير مسند')])])]);
 }
@@ -248,6 +252,7 @@ function stepAt(x) { return x.state === 'received' ? 0 : x.state === 'decision' 
 /* المرحلة التي أُغلق عندها الطلب */
 function closedAt(x) { var S = x.signs || []; if (S.some(function (g) { return g.step === 'consent' && g.decision === 'accept'; })) return 3; if (S.some(function (g) { return g.step === 'consent'; }) || x.close_reason === 'expired' || x.close_reason === 'declined') return 2; return x.close_reason === 'cancelled' ? 0 : 1; }
 function nextText(x) {
+if (legacy(x)) return 'نُفّذ الطلب' + (x.executed_at ? ' في ' + at(x.executed_at) : '') + ' بنقل الدفعة إلى العقد ' + (x.executed_ref.to || '—') + '. للاطلاع فقط — لا حسبة ولا ملحق لهذا الطلب.';
 var sup = x.me && x.me.super, ok = x.result && x.result.ok, exp = x.link ? at(x.link.expires_at) : '';
 if (x.state === 'received' || x.state === 'decision') {
 if (!ok) return 'أكمل الحسبة: الدفعة المؤجلة والرسم والتوزيع والموعد الجديد — يظهر الملخص جانبها أثناء الإدخال.';
@@ -273,7 +278,7 @@ steps, el('p', { text: nextText(x) }), primary(x),
 more.length ? el('div', { class: 'cr-more' }, more.map(function (m) { return el('button', { type: 'button', class: m[3] || '', disabled: ST.busy, 'data-live-ok': '', onclick: m[2] }, [icon(m[1]), m[0]]); })) : null]);
 }
 function tabsEl(x) {
-return el('nav', { class: 'cr-tabs', role: 'tablist', 'aria-label': 'أقسام الطلب' }, TABS.map(function (t) {
+return el('nav', { class: 'cr-tabs', role: 'tablist', 'aria-label': 'أقسام الطلب' }, TABS.filter(function (t) { return !legacy(x) || t[0] === 'req' || t[0] === 'log'; }).map(function (t) {
 var s = tabState(x, t[0]);
 return el('button', { type: 'button', role: 'tab', 'aria-selected': ST.tab === t[0] ? 'true' : 'false', class: ST.tab === t[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.tab = t[0]; draw(); } },
 [icon(t[2]), t[1], s === 'ok' ? el('i', { class: 'cr-dot is-ok', title: 'مكتمل' }) : s === 'miss' ? el('i', { class: 'cr-dot is-miss', title: 'ينقصه' }) : s === 'live' ? el('i', { class: 'cr-dot is-live', title: 'رابط نشط' }) : null]);
@@ -310,7 +315,7 @@ function paintHead() { var h = R.querySelector('.cr-r1'), t = R.querySelector('.
 /* ── 1) الطلب ── */
 function tabReq(x) {
 var u = x.user || {}, c = x.contract || {}, ed = editable(x);
-var pays = (x.payments || []).map(function (p) {
+var pays = (x.payments || []).filter(function (p) { return ed || (x.payment_ids || []).indexOf(p.pid) >= 0; }).map(function (p) {
 var on = (x.payment_ids || []).indexOf(p.pid) >= 0;
 return el('label', { class: 'cr-pick' + (on ? ' is-on' : '') + (p.open ? '' : ' is-off') }, [el('input', { type: 'checkbox', checked: on, disabled: !ed || !p.open, onchange: function (e) {
 x.payment_ids = (x.payment_ids || []).filter(function (id) { return id !== p.pid; }); if (e.target.checked) x.payment_ids.push(p.pid); queue({ payment_ids: x.payment_ids }); draw(); } }),
@@ -463,7 +468,8 @@ return el('div', { class: 'cr-sg' }, [el('b', { text: (s.step === 'sign' ? 'ال
 s.image ? el('img', { src: s.image, alt: 'توقيع العميل' }) : s.method === 'type' ? el('span', { class: 'cr-typed', text: s.name }) : null,
 kvs([['الاسم', s.name || '—'], ['الوقت', at(s.at)], ['التحقق', s.factor === 'whatsapp' ? 'واتساب' : s.factor === 'email' ? 'البريد' : '—'], ['السبب', s.reason || '—']])]);
 });
-var ex = x.executed_ref ? el('section', { class: 'cr-card' }, [el('h2', { text: 'التنفيذ' }), kvs([['نُفّذ', at(x.executed_at)], ['قيمة العقد قبل', ltr(money(x.executed_ref.contract_before))], ['قيمة العقد بعد', ltr(money(x.executed_ref.contract_after))], ['الدفعات المعدّلة', String(x.executed_ref.changed || 0)]]),
+var ex = legacy(x) ? el('section', { class: 'cr-card' }, [el('h2', { text: 'التنفيذ' }), kvs([['نُفّذ', at(x.executed_at)], ['نُقلت الدفعة إلى العقد', ltr(x.executed_ref.to || '—')], ['ملاحظة التنفيذ', x.executed_ref.note || '—']])])
+: x.executed_ref ? el('section', { class: 'cr-card' }, [el('h2', { text: 'التنفيذ' }), kvs([['نُفّذ', at(x.executed_at)], ['قيمة العقد قبل', ltr(money(x.executed_ref.contract_before))], ['قيمة العقد بعد', ltr(money(x.executed_ref.contract_after))], ['الدفعات المعدّلة', String(x.executed_ref.changed || 0)]]),
 x.state === 'done' ? el('div', { class: 'cr-acts' }, [btn('تنزيل الملحق PDF', { ic: 'down', on: pdf }), btn('إرسال الملحق للعميل', { ic: 'send', on: function () { ask('إرسال الملحق للعميل', 'يصل العميل الملحق PDF مع رسالة «نُفّذ طلبك».', 'إرسال', function () { act('send-doc', null, 'أُرسل الملحق للعميل.'); }); } })]) : null]) : null;
 return [el('div', { class: 'cr-cols' }, [el('section', { class: 'cr-card' }, [el('h2', { text: 'مراحل الطلب' }), tl]), el('div', { class: 'cr-stack' }, [ex, sg.length ? el('section', { class: 'cr-card' }, [el('h2', { text: 'قرارات العميل وتوقيعه' })].concat(sg)) : null])])];
 }

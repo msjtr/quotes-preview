@@ -28973,6 +28973,8 @@ async function lvSrLoad() {
   if (lvRole('admin')) { LV_SR.all = Array.isArray(P2[1]) ? P2[1] : []; LV_SR.ok = Array.isArray(P2[1]); if (TQN) LV_SR.all = LV_SR.all.filter(function (x) { return !x || x.kind !== 'defer'; }); /* v863: في المنصة الجديدة التأجيل من «طلبات تأجيل دفعة» وحدها — لا طلبات تأجيل بالمسار القديم في أي قائمة أو لوحة */ }
   for (let i = REQS.length - 1; i >= 0; i--) if (REQS[i].sr || REQS[i].crq) REQS.splice(i, 1); /* v861 */
   LV_SR.mine = LV_SR.mine.filter(function (x) { return !(x.status === 'cancelled' && x.origin === 'staff'); });
+/* v865: طلب التأجيل السابق المنقول إلى «طلبات تأجيل دفعة» (meta.crq — stf_269) لا يظهر في أي قائمة بعد نقله، ولا يُعالج مرتين */
+LV_SR.mine = LV_SR.mine.filter(function (x) { return !(x && x.kind === 'defer' && x.meta && x.meta.crq); }); LV_SR.all = (LV_SR.all || []).filter(function (x) { return !(x && x.kind === 'defer' && x.meta && x.meta.crq); });
   LV_SR.mine = LV_SR.mine.map(function (x) { return x.kind === 'elig' && x.meta && x.meta.held ? Object.assign({}, x, { status: 'in_review', decision_note: null, meta: Object.assign({}, x.meta, { report: null }) }) : x; }); /* v680: النتيجة المحجوزة لا تظهر للعميل قبل إرسالها */
   LV_SR.mine.forEach(function (x) { REQS.push(lvSrReq(x)); });
 if (lvRole('client')) { /* v861: طلبات منظومة العقود الموحّدة (crq_) */
