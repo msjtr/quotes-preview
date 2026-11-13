@@ -29051,7 +29051,7 @@ const LIVE_PAGES = { client: {},
     'sys-pay': function () { ADM.payMode = 'set'; return admPayPage(); } } };
 /* v861: واجهة صغيرة للوحدات المستقلة (منظومة طلبات العقود assets/js/crq-staff.js) — تسجيل صفحة في القائمة ورمز الجلسة فقط، بلا منطق هنا */
 if (window.__teraApp) {
-window.__teraApp.page = function (k, t, ic, run) { try { ICON[k] = ic; lp(k, t, null, k, run); LIVE_PAGES.admin[k] = run; return true; } catch (err) { return false; } };
+window.__teraApp.page = function (k, t, ic, run, up) { try { ICON[k] = ic; lp(k, t, up || null, k, run); /* v862: الأصل للمسار ورأس الصفحة */ LIVE_PAGES.admin[k] = run; return true; } catch (err) { return false; } };
 window.__teraApp.token = function () { return liveToken(); };
 (window.__crqQ || []).forEach(function (f) { try { f(); } catch (err) { void err; } }); window.__crqQ = null;
 }
