@@ -21783,7 +21783,7 @@ const SR_F = [['open', 'بانتظار قرار', 'tray'], ['exec', 'بانتظ�
 const srFit = (x, f) => f === 'all' ? true : f === 'mine' ? srAsMine(x) /* v684 */ : f === 'open' ? srOpenSt(x) : f === 'exec' ? (srWaitExec(x) || (x.kind === 'elig' && x.status === 'approved' && !x.executed_at)) /* v689: الأهلية المؤهَّلة قيد العمل (عرض · فاتورة · عقد) */ : f === 'done' ? (x.status === 'approved' && !!x.executed_at) : (x.status === 'rejected' || x.status === 'cancelled');
 /* v709: في staff/next/ — الطلب المالي يُفتح في «الطلبات المالية» وغيره في «طلبات الخدمات» */
 function tqnSrPage(id, pg) {
-  if (!TQN || !LP['fin-req']) return 'cu-svc';
+  if (!TQN || !LP['fin-req'] || true) return 'cu-svc'; /* v860: كل الطلبات تُفتح في «طلبات الخدمات» */
   if (pg) return pg;
   const x = id ? (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0] : null;
   return x && TQFK[x.kind] ? 'fin-req' : 'cu-svc';
@@ -21804,9 +21804,9 @@ function tqnSrActs(SRA, srGo, ok) {
 /* v707: في staff/next/ — «الطلبات المالية» (fin-req) لسداد قيمة المنتج والتأجيل والتوحيد، و«طلبات الخدمات» لغيرها؛ خارج staff/next/ لا تصفية */
 const TQFK = { settle: 1, defer: 1, merge: 1 };
 function tqnSvFin() { return TQN && S.tab === 'other' && S.other === 'fin-req'; }
-function tqnSvK(x) { if (!TQN) return true; return tqnSvFin() ? !!TQFK[x && x.kind] : !TQFK[x && x.kind]; }
+function tqnSvK(x) { if (!TQN) return true; return tqnSvFin() ? !!TQFK[x && x.kind] : true; } /* v860: كل الأنواع في «طلبات الخدمات» */
 function tqnSvLink() {
-  if (!TQN || tqnSvFin() || !LP['fin-req']) return null;
+  return null; /* v860: لا حاجة للانتقال — كل الطلبات هنا */
   const n = (LV_SR.all || []).filter(function (x) { return x && TQFK[x.kind] && !(x.status === 'cancelled' && x.internal) && !(!ADM.tqnTest && /^SR-TEST/i.test(String(x.req_no || ''))) && (srOpenSt(x) || srWaitExec(x)); }).length;
   return liveOk(DS.button('الطلبات المالية' + (n ? ' · ' + fmtNum(n) + ' مفتوحة' : ''), { size: 'sm', ui: 'list', onClick: function () { go('other', 'fin-req'); } }));
 }
@@ -21820,10 +21820,10 @@ function lvSvcPage() {
       return e('button', { type: 'button', class: 'cu-kpi is-pick' + (on ? ' is-on' : '') + (k[0] === 'open' && n ? ' is-warn' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { ADM.svF = k[0]; paint(); } },
         [e('span', { class: 'cu-kpi-ic' }, frag(ui(k[2], 18))), e('b', {}, fmtNum(n)), e('small', {}, k[1])]); });
     const opts = []; A.forEach(function (x) { if (!opts.some(function (o) { return o[0] === x.user_id; })) opts.push([x.user_id, srName(x.user_id)]); }); opts.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
-    return [e('div', { class: 'ax-top' + (TQN && !tqnSvFin() ? ' srd-lh' : '') }, [e('div', { class: 'ax-top-t' }, [e('b', {}, tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات'), e('small', {}, tqnSvFin() ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته، وينعكس في ملف العميل نفسه.' : TQN ? 'التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته. طلبات سداد قيمة المنتج والتأجيل والتوحيد في «الطلبات المالية».' : 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
+    return [e('div', { class: 'ax-top' + (TQN && !tqnSvFin() ? ' srd-lh' : '') }, [e('div', { class: 'ax-top-t' }, [e('b', {}, tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات'), e('small', {}, tqnSvFin() ? 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته، وينعكس في ملف العميل نفسه.' : TQN ? 'كل طلبات العملاء: التحقق من الأهلية · سداد قيمة المنتج · تأجيل دفعة · توحيد العقود — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل صفحته.' : 'سداد قيمة المنتج · تأجيل دفعة · توحيد العقود · التحقق من الأهلية — كل طلب بقراره وتعديله وإلغائه وتنفيذه داخل بطاقته، وينعكس في ملف العميل نفسه.')])]),
       e('div', { class: 'cu-kpis sr-kpis' }, kp),
       e('div', { class: 'm3-tools ax-tools' }, [e('div', { class: 'cu-bd-cf' }, [DS.editField('العميل', DS.select({ value: cq || '*', options: [['*', 'كل العملاء']].concat(opts), onChange: function (v) { ADM.svC = v === '*' ? '' : v; paint(); } }))]), tqnSvLink(), TQN ? liveOk(DS.button(ADM.tqnTest ? 'إخفاء طلبات الاختبار' : 'إظهار طلبات الاختبار', { size: 'sm', ui: 'eye', onClick: function () { ADM.tqnTest = !ADM.tqnTest; paint(); } })) : null /* v705 */]),
-      (!TQN || tqnSvFin()) ? lvSec('إنشاء طلب', null, [srCreate(RF, {})], 'svc:new') : null /* v709: الإنشاء (سداد · تأجيل · توحيد) في «الطلبات المالية» وحدها على staff/next/ */].concat(SR_K.filter(function (k) { return tqnSvK({ kind: k[0] }); }).map(function (k) { const L = R.filter(function (x) { return x.kind === k[0]; });
+      lvSec('إنشاء طلب', null, [srCreate(RF, {})], 'svc:new') /* v860 */ /* v709: الإنشاء (سداد · تأجيل · توحيد) في «الطلبات المالية» وحدها على staff/next/ */].concat(SR_K.filter(function (k) { return tqnSvK({ kind: k[0] }); }).map(function (k) { const L = R.filter(function (x) { return x.kind === k[0]; });
         return lvSec(k[1], fmtNum(L.length), [L.length ? e('div', { class: 'cf-srs' }, L.map(function (x) { return srBrief(x, RF); })) : CF_EMPTY('لا طلبات ' + k[1] + ' في هذا الاختيار.')], 'svc:k:' + k[0], L.length > 0); }));
   });
 }
