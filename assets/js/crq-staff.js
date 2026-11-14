@@ -1,4 +1,5 @@
-/* v867: مصدر واحد — «المستند» ملحق من «قوالب المستندات» (df) و«صفحة العميل» صفحتا الرابط من «صفحات الرابط» (lp.js)،
+/* v871: «تغطية الضمانات» في تبويب البنود والحسبة — تنبيه للموظف غير إلزامي (crq_svc_guar).
+* v867: مصدر واحد — «المستند» ملحق من «قوالب المستندات» (df) و«صفحة العميل» صفحتا الرابط من «صفحات الرابط» (lp.js)،
 * لكلٍّ القالب العام أو نسخة لهذا العميل بالمحرّر نفسه ومعاينته الحقيقية، والبنود من القائمة الجاهزة («الرسوم والضرائب والعمولات»).
 * v865 (طلبات التأجيل السابقة المنقولة: للسجل) · v862 — منظومة طلبات العقود الموحّدة (crq_) — صفحة الفريق: «طلبات تأجيل دفعة»
 * ملف مستقل (لا طبقات فوق platform.js): المنصة تعطي مكان الصفحة ورأسها (المسار والأيقونة والعنوان) ورمز الجلسة،
@@ -414,8 +415,79 @@ field('جدولة الدفعة المؤجلة', opts(c.sched.mode, [['end', 'ت�
 var main = el('div', { class: 'cr-main' }, [el('section', { class: 'cr-card' }, [el('div', { class: 'cr-h2row' }, [el('h2', { text: 'البنود والرسوم' }), ed ? saveInd() : null]), tbl, add, svc]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'التوزيع والجدولة' }), setup]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'جدول الدفع قبل وبعد' }), el('div', { id: 'cr-sched', class: 'cr-tw' }, [schedTable(x, c, ed, upd)])])]);
-return [el('div', { class: 'cr-split' }, [main, el('aside', { class: 'cr-side', id: 'cr-sum' }, [sidePanel(x)])])];
+return [el('div', { class: 'cr-split' }, [main, el('aside', { class: 'cr-side' }, [el('div', { id: 'cr-sum' }, [sidePanel(x)]), el('div', { id: 'cr-guar' }, [guarCard(x)])])])];
 }
+/* ── تغطية الضمانات (v871): تنبيه للموظف — غير إلزامي ──
+* يقارن التزام العميل بعد التعديل (المتبقي في كل عقوده المفتوحة + رسوم الطلب) بضماناته القائمة:
+* السندات لأمر (الساري والمهلة؛ المحكمة يُعرض ولا يُحسب) والشيكات غير المصروفة والأمر المستديم.
+* الحساب كله في القاعدة (crq_svc_guar)، وقرار الموظف يُسجَّل في سجل الطلب فقط ولا يمنع الإكمال. */
+var GST_T = { active: 'ساري', grace: 'في المهلة' };
+function guarKey(x) { var r = x.result || {}; return x.id + '|' + (r.ok ? r.total + '|' + (r.rows || []).map(function (z) { return z.due_after + ':' + z.amt_after; }).join(',') : 'x'); }
+async function loadGuar(x, force) {
+var k = guarKey(x); if (!force && ST.guar && ST.guar.key === k && (ST.guar.d || ST.guar.busy)) return;
+var me = ST.guar = { key: k, busy: true, d: null, err: '', code: '', pick: (ST.guar && ST.guar.key && ST.guar.key.split('|')[0] === x.id) ? ST.guar.pick : {}, note: (ST.guar && ST.guar.note) || '' };
+paintGuar();
+try { var j = await api('GET', '/admin/api/crq/' + x.id + '/guar'); if (ST.guar !== me) return; me.d = j.guar; }
+catch (e) { if (ST.guar !== me) return; me.err = e.message; me.code = e.code || ''; }
+me.busy = false; paintGuar();
+}
+function paintGuar() { var g = R.querySelector('#cr-guar'); if (g && ST.x) { g.innerHTML = ''; g.appendChild(guarCard(ST.x)); } }
+function guarSugs(d) {
+var S = [];
+(d.alerts || []).forEach(function (a) {
+if (a.k === 'gap') S.push(['bond', 'طلب سند لأمر إضافي بقيمة ' + money(a.gap) + ' ر.س']);
+else if (a.k === 'ck_moved') S.push(['ck_' + a.no, 'طلب شيك بديل للشيك رقم ' + a.no + ' بتاريخ الموعد الجديد']);
+else if (a.k === 'dd_short') S.push(['dd_end', 'تمديد الأمر المستديم حتى ' + day(a.last)]);
+else if (a.k === 'dd_low') S.push(['dd_per', 'رفع مبلغ الأمر المستديم إلى ' + money(a.need) + ' ر.س شهريًا']);
+});
+return S;
+}
+function guarAlert(a) {
+if (a.k === 'gap') return ['bad', 'الضمانات أقل من الالتزام بعد التعديل بـ ' + money(a.gap) + ' ر.س.'];
+if (a.k === 'ck_moved') return ['warn', 'الشيك رقم ' + a.no + ' بتاريخ ' + day(a.due) + ' مرتبط بموعد تغيّر في هذا الطلب.'];
+if (a.k === 'dd_short') return ['warn', 'الأمر المستديم ينتهي ' + day(a.end) + '، وآخر موعد في الجدول المعدّل ' + day(a.last) + '.'];
+if (a.k === 'dd_low') return ['warn', 'مبلغ الأمر المستديم ' + money(a.per) + ' أقل من مبلغ الشهر الجديد ' + money(a.need) + '.'];
+if (a.k === 'court') return ['info', 'لدى العميل ' + a.n + ' سند في المحكمة — يُعرض ولا يُحسب في التغطية.'];
+return null;
+}
+function guarCard(x) {
+var g = ST.guar, head = function (pill) { return el('div', { class: 'cr-gh' }, [el('h2', { text: 'تغطية الضمانات' }), pill || null, el('small', { class: 'cr-gopt', text: 'تنبيه للموظف · غير إلزامي' })]); };
+if (!g || g.key !== guarKey(x)) { setTimeout(function () { loadGuar(ST.x); }, 0); return el('section', { class: 'cr-card is-guar' }, [head(), el('p', { class: 'cr-hint', text: 'جارٍ حساب التغطية…' })]); }
+if (g.busy && !g.d) return el('section', { class: 'cr-card is-guar' }, [head(), el('p', { class: 'cr-hint', text: 'جارٍ حساب التغطية…' })]);
+if (g.err) return el('section', { class: 'cr-card is-guar' }, [head(), g.code === 'not_ready' ? el('p', { class: 'cr-hint', text: 'تعمل بعد تطبيق تحديث قاعدة البيانات stf_271.' })
+: note('warn', 'تعذّر حساب التغطية', [el('span', { text: g.err })]), btn('إعادة المحاولة', { cls: 'is-sm', on: function () { loadGuar(ST.x, true); } })]);
+var d = g.d, st = d.state, pill = el('span', { class: 'cr-badge is-' + (st === 'covered' ? 'ok' : st === 'partial' ? 'warn' : 'bad'), text: st === 'covered' ? 'مغطّى' : st === 'partial' ? 'تغطية جزئية' : 'لا توجد ضمانات' });
+var pct = Math.max(0, Math.min(100, Number(d.pct) || 0));
+var kp = function (t, v, sub, cls) { return el('div', { class: 'cr-gk' + (cls ? ' ' + cls : '') }, [el('small', { text: t }), el('b', {}, [ltr(money(v))]), sub ? el('span', { text: sub }) : null]); };
+var items = [];
+(d.bonds || []).forEach(function (b) { items.push(['sign', 'سند لأمر' + (b.no ? ' · ' + b.no : ''), GST_T[b.status] + (b.date ? ' · ' + day(b.date) : ''), b.value, 'ok', 'يُحسب']); });
+(d.court || []).forEach(function (b) { items.push(['sign', 'سند لأمر' + (b.no ? ' · ' + b.no : ''), 'في المحكمة', b.value, 'mut', 'لا يُحسب']); });
+(d.cheques || []).forEach(function (c) { items.push(['file', 'شيك' + (c.no ? ' · ' + c.no : ''), day(c.due) + (c.this ? '' : ' · عقد ' + c.contract), c.amount, c.moved ? 'warn' : 'ok', c.moved ? 'يحتاج بديل' : 'يُحسب']); });
+(d.dd || []).forEach(function (o) { items.push(['clock', 'أمر مستديم' + (o.bank ? ' · ' + o.bank : ''), money(o.per) + ' شهريًا حتى ' + day(o.end) + (o.this ? '' : ' · عقد ' + o.contract), o.cap, o.short_end || o.low_per ? 'warn' : 'ok', o.short_end ? 'يحتاج تمديد' : o.low_per ? 'مبلغ أقل' : 'يُحسب']); });
+var list = items.length ? el('ul', { class: 'cr-gl' }, items.map(function (i) { return el('li', {}, [icon(i[0]), el('div', {}, [el('b', { text: i[1] }), el('small', { text: i[2] })]), ltr(money(i[3])), el('span', { class: 'cr-sub is-' + (i[4] === 'mut' ? 'x' : i[4]), text: i[5] })]); }))
+: el('p', { class: 'cr-hint', text: 'لا توجد ضمانات مسجّلة في الملف الشخصي للعميل.' });
+var al = (d.alerts || []).map(guarAlert).filter(Boolean).map(function (a) { return el('div', { class: 'cr-ga is-' + a[0] }, [icon('alert'), el('span', { text: a[1] })]); });
+var cs = (d.contracts || []).length > 1 ? el('p', { class: 'cr-hint' }, ['عقوده المفتوحة: '].concat((d.contracts || []).map(function (c, i) { return el('span', {}, [i ? ' · ' : '', ltr(c.no), c.this ? ' (هذا العقد) ' : ' ', ltr(money(c.left))]); }))) : null;
+var sg = guarSugs(d), ed = editable(x), kids;
+if (st === 'covered') kids = [note('ok', 'الضمانات القائمة تغطي الالتزام بعد التعديل — لا حاجة لضمان إضافي.')];
+else kids = [el('h3', { text: 'اقتراحات · اختر ما يناسب' }), el('div', { class: 'cr-gs' }, sg.map(function (s) { return el('label', {}, [el('input', { type: 'checkbox', checked: !!g.pick[s[0]], disabled: !ed, onchange: function (e) { g.pick[s[0]] = e.target.checked; } }), el('span', { text: s[1] })]); })),
+ed ? el('input', { type: 'text', class: 'cr-gn', maxlength: '300', value: g.note, placeholder: 'ملاحظة على القرار (اختياري)', 'aria-label': 'ملاحظة على القرار', oninput: function (e) { g.note = e.target.value; } }) : null,
+ed ? el('div', { class: 'cr-acts' }, [btn('تسجيل المختار في السجل', { ic: 'check', cls: 'is-pri', on: function () { guarDecide(x, false); } }), btn('متابعة دون ضمان إضافي', { on: function () { guarDecide(x, true); } })]) : null,
+el('small', { class: 'cr-hint', text: 'قرارك يُسجَّل في سجل الطلب، ولا يمنع إكمال الطلب.' })];
+return el('section', { class: 'cr-card is-guar' }, [head(pill),
+d.calc_ok ? null : el('p', { class: 'cr-hint', text: 'الحسبة لم تكتمل بعد — المعروض بلا رسوم الطلب.' }),
+el('div', { class: 'cr-gks' }, [kp('الالتزام بعد التعديل', d.obligation, 'المتبقي ' + money(d.now) + ' + الرسوم ' + money(d.fees)), kp('الضمانات المحسوبة', d.cover), kp('الفارق', d.gap, null, Number(d.gap) > 0 ? 'is-bad' : 'is-ok')]),
+el('div', { class: 'cr-gbar', role: 'img', 'aria-label': 'نسبة التغطية ' + pct + '٪' }, [el('i', { class: st === 'covered' ? 'is-ok' : 'is-warn', style: 'width:' + pct + '%' })]), el('small', { class: 'cr-gpct', text: 'نسبة التغطية ' + (Number(d.pct) || 0) + '٪' }),
+cs, el('h3', { text: 'الضمانات القائمة' }), list, al.length ? el('div', { class: 'cr-gal' }, al) : null].concat(kids));
+}
+async function guarDecide(x, skip) {
+var g = ST.guar, d = g && g.d; if (!d) return;
+var ch = skip ? [] : guarSugs(d).filter(function (s) { return g.pick[s[0]]; }).map(function (s) { return s[1]; });
+if (!skip && !ch.length) { toast(false, 'اختر اقتراحًا واحدًا على الأقل، أو اختر «متابعة دون ضمان إضافي».'); return; }
+try { await api('POST', '/admin/api/crq/' + x.id + '/guar-note', { skip: !!skip, choice: ch, note: g.note || '' }); g.note = ''; toast(true, 'سُجّل القرار في سجل الطلب'); reload(); }
+catch (e) { toast(false, e.message); }
+}
+
 /* اللوحة الجانبية: الملخص المالي أو الملحق نفسه */
 function sidePanel(x) {
 var seg = el('div', { class: 'cr-seg is-sm' }, [['sum', 'الملخص المالي'], ['doc', 'المستند']].map(function (m) { return el('button', { type: 'button', class: (ST.side || 'sum') === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.side = m[0]; paintSide(x); } }, [m[1]]); }));
@@ -452,7 +524,7 @@ el('td', { 'data-l': 'الإضافة', class: 'c-add' }, [add]), el('td', { 'dat
 }
 /* بعد الحفظ: تُحدَّث اللوحة الجانبية والخلايا المحسوبة فقط — لا يُعاد رسم الحقول فلا يضيع موضع الكتابة */
 function paintCalcOut() {
-if (ST.tab === 'calc') paintSide(ST.x);
+if (ST.tab === 'calc') { paintSide(ST.x); loadGuar(ST.x); }
 if (ST.tab === 'doc') docPv(ST.x);
 var r = ST.x.result || {}; if (!r.ok) return;
 (r.rows || []).forEach(function (z) {

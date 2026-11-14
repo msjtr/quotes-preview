@@ -357,3 +357,33 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .cr-ed-sep { font-weight: 900; font-size: 12.5px; color: var(--k-mut); padding: 6px 4px 0; }
 .cr-ed-sec.is-add { border-style: dashed; }
 @container crq (max-width: 900px) { .cr-split.is-msg, .cr-msgg { grid-template-columns: minmax(0, 1fr); } }
+
+/* ═══ v871 — تغطية الضمانات (تنبيه للموظف) ═══ */
+.cr-side #cr-guar { margin-top: 14px; }
+.cr-card.is-guar { display: grid; gap: 10px; }
+.cr-gh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.cr-gh .cr-gopt { margin-inline-start: auto; color: var(--k-mut); font-size: 11.5px; font-weight: 700; }
+.cr-gks { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.cr-gk { background: var(--k-soft2); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.cr-gk small { display: block; color: var(--k-mut); font-size: 11.5px; font-weight: 700; }
+.cr-gk b { display: block; font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.cr-gk span { display: block; color: var(--k-mut); font-size: 11px; }
+.cr-gk.is-bad b { color: var(--k-bad); } .cr-gk.is-ok b { color: var(--k-ok); }
+.cr-gbar { height: 8px; border-radius: 99px; background: var(--k-soft2); overflow: hidden; }
+.cr-gbar i { display: block; height: 100%; border-radius: 99px; }
+.cr-gbar i.is-ok { background: var(--k-ok); } .cr-gbar i.is-warn { background: var(--k-warn); }
+.cr-gpct { color: var(--k-mut); font-size: 12px; font-weight: 700; margin-top: -4px; }
+.cr-gl { list-style: none; margin: 0; padding: 0; border: 1px solid var(--k-line); border-radius: 10px; }
+.cr-gl li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--k-line); font-size: 13px; }
+.cr-gl li:first-child { border-top: 0; }
+.cr-gl li .cr-ic { color: var(--k-mut); }
+.cr-gl li b { display: block; font-weight: 800; } .cr-gl li small { display: block; color: var(--k-mut); font-size: 11.5px; }
+.cr-gl li .cr-sub { font-size: 11.5px; } .cr-gl li .cr-sub.is-ok { color: var(--k-ok); } .cr-gl li .cr-sub.is-x { color: var(--k-mut); }
+.cr-gal { display: grid; gap: 6px; }
+.cr-ga { display: flex; gap: 8px; align-items: flex-start; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 700; line-height: 1.6; }
+.cr-ga .cr-ic { flex: none; margin-top: 2px; }
+.cr-ga.is-bad { background: var(--k-badw); color: var(--k-bad); } .cr-ga.is-warn { background: var(--k-warnw); color: var(--k-warn); } .cr-ga.is-info { background: var(--k-infow); color: var(--k-info); }
+.cr-gs { display: grid; gap: 6px; } .cr-gs label { display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 700; cursor: pointer; }
+.cr-gn { width: 100%; }
+.cr-card.is-guar .cr-acts { margin-top: 2px; }
+@container crq (max-width: 520px) { .cr-gl li { grid-template-columns: auto minmax(0, 1fr) auto; } .cr-gl li .cr-sub { grid-column: 2 / -1; } }
