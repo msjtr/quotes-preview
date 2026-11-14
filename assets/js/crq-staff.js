@@ -19,6 +19,7 @@ if (!/^\/staff\/next(\/|$)/.test(location.pathname)) return;
 var KEY = 'cu-crq-defer', UP = 'cu', KIND = 'defer', TITLE = 'طلبات تأجيل دفعة';
 var NS = 'http://www.w3.org/2000/svg';
 var IC = {
+mvUp: 'M12 19V5M6 11l6-6 6 6', mvDn: 'M12 5v14M6 13l6 6 6-6',
 plus: 'M12 5v14M5 12h14', lt: 'M15 6l-6 6 6 6', minus: 'M5 12h14', chev: 'M6 9l6 6 6-6', mail: 'M4 6h16v12H4zM4 7l8 6 8-6', idc: 'M4 5h16v14H4zM8 10h.01M12 10h4M8 14h8', cal: 'M5 6h14v14H5zM5 10h14M9 4v4M15 4v4', note: 'M6 4h12v16H6zM9 9h6M9 13h6M9 17h3', box: 'M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8', back: 'M15 6l-6 6 6 6', more: 'M5 12h.01M12 12h.01M19 12h.01', check: 'M5 12.5l4.5 4.5L19 7.5',
 send: 'M4 12l16-8-6 16-3-7-7-1z', user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', file: 'M14 3H6v18h12V7l-4-4zM14 3v4h4',
 clock: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', link: 'M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1',
@@ -737,15 +738,15 @@ var DOC_IDS = ['السجل التجاري', 'الرقم الضريبي', 'الر
 /* v885: صف قابل للتحريك — رقم · محتوى · أعلى · أسفل · إظهار/إخفاء */
 function mvRow(i, n, body, on, onEye, onMove, lab) {
 return el('div', { class: 'cr-mv' + (on ? '' : ' is-off') }, [el('span', { class: 'cr-mv-n', text: String(i + 1) }), body,
-onMove ? el('button', { type: 'button', class: 'cr-x', title: 'نقل لأعلى', 'aria-label': 'نقل ' + lab + ' لأعلى', disabled: !i, 'data-live-ok': '', onclick: function () { onMove(-1); } }, ['↑']) : el('span'),
-onMove ? el('button', { type: 'button', class: 'cr-x', title: 'نقل لأسفل', 'aria-label': 'نقل ' + lab + ' لأسفل', disabled: i >= n - 1, 'data-live-ok': '', onclick: function () { onMove(1); } }, ['↓']) : el('span'),
+onMove ? el('button', { type: 'button', class: 'cr-x', title: 'نقل لأعلى', 'aria-label': 'نقل ' + lab + ' لأعلى', disabled: !i, 'data-live-ok': '', onclick: function () { onMove(-1); } }, [icon('mvUp')]) : el('span'),
+onMove ? el('button', { type: 'button', class: 'cr-x', title: 'نقل لأسفل', 'aria-label': 'نقل ' + lab + ' لأسفل', disabled: i >= n - 1, 'data-live-ok': '', onclick: function () { onMove(1); } }, [icon('mvDn')]) : el('span'),
 onEye && !mvRow.ro ? el('button', { type: 'button', class: 'cr-x' + (on ? ' is-show' : ''), title: on ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', 'aria-label': (on ? 'إخفاء ' : 'إظهار ') + lab, 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onclick: onEye }, [icon(on ? 'eye' : 'eyeOff')]) : el('span')]);
 }
 function specEditor(spec, T, ro, onCh, org, dat) {
 org = org || {}; dat = dat || {}; mvRow.ro = !!ro;
 var sw = function (p, lab) { var on = gp(T, p) !== false; return el('button', { type: 'button', class: 'cr-sw' + (on ? ' is-on' : ''), role: 'switch', 'aria-checked': on ? 'true' : 'false', title: on ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', 'aria-label': (on ? 'إخفاء ' : 'إظهار ') + (lab || ''), disabled: ro, 'data-live-ok': '', onclick: function () { sp(T, p, !on); onCh(true); } }, [el('i', {})]); };
 var inp = function (p, lab, area) { var n = el(area ? 'textarea' : 'input', { type: area ? null : 'text', rows: area ? '3' : null, value: gp(T, p) || '', disabled: ro, 'aria-label': lab, oninput: function (e) { sp(T, p, e.target.value); onCh(false); } }); return n; };
-var row = function (lab, ctl, hp) { return el('div', { class: 'cr-ed-row' + (hp && gp(T, hp) === false ? ' is-off' : '') }, [el('label', { text: lab }), ctl, hp ? sw(hp, lab) : null]); };
+var row = function (lab, ctl, hp) { return el('div', { class: 'cr-ed-row' + (hp && gp(T, hp) === false ? ' is-off' : '') }, [el('label', { text: lab }), ctl, hp ? sw(hp, lab) : el('span', { class: 'cr-sw-gap', 'aria-hidden': 'true' })]); };
 var cur = ST.docOpen || 'hdr';
 /* درج: الرأس زر يفتح ويغلق (بلا إعادة رسم)، ومفتاح الإخفاء بجانبه */
 var acc = function (id, title, sub, on, swEl, body) {
@@ -755,7 +756,7 @@ el('div', { class: 'cr-acc-h' }, [el('button', { type: 'button', class: 'cr-acc-
 var me = e.currentTarget.closest('.cr-acc'), was = me.classList.contains('is-open');
 me.parentNode.querySelectorAll('.cr-acc.is-open').forEach(function (n) { n.classList.remove('is-open'); var b = n.querySelector('.cr-acc-t'); if (b) b.setAttribute('aria-expanded', 'false'); });
 if (!was) { me.classList.add('is-open'); e.currentTarget.setAttribute('aria-expanded', 'true'); }
-ST.docOpen = was ? '-' : id; } }, [el('b', { text: title }), sub ? el('small', { text: sub }) : null, el('i', { class: 'cr-acc-chev', 'aria-hidden': 'true' }, [icon('chev')])]), swEl]),
+ST.docOpen = was ? '-' : id; } }, [el('b', { text: title }), sub ? el('small', { text: sub }) : null, el('i', { class: 'cr-acc-chev', 'aria-hidden': 'true' }, [icon('chev')])]), swEl || el('span', { class: 'cr-acc-sw0', 'aria-hidden': 'true' })]),
 el('div', { class: 'cr-ed-b' }, body)]);
 return s;
 };
