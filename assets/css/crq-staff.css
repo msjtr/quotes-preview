@@ -819,3 +819,23 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 /* شريط الأدوات في العرض المتوسط: البحث سطرًا كاملًا، ثم النطاق والأزرار */
 @container crq (max-width: 900px) { .crq .cr-ltb > .cr-lq { flex: 1 1 100%; } .crq .cr-ltb > .cr-seg { flex: 1 1 auto; } }
 @container crq (max-width: 560px) { .crq .cr-ltb > .cr-btn { flex: 1 1 0; } .crq .cr-ltb > .cr-seg { flex: 1 1 100%; } .crq .cr-ltb > .cr-seg button { flex: 1; } }
+/* v881: رقم الطلب والعقد لا يتجاوزان عمود العميل */
+.crq .cr-lr > .cr-who > div { flex: 1; min-width: 0; }
+.crq .cr-lr .cr-who small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ═══ v882 — صفحة الطلب بلا تكرار: بطاقة علوية مختصرة · الإسناد سطر في اللوحة ═══ */
+.crq .cr-hero.cr-hero2 { display: flex; align-items: center; gap: 16px; padding: 18px 20px; flex-wrap: wrap; }
+.crq .cr-hero2-av { width: 56px; height: 56px; border-radius: 16px; font-size: 22px; }
+.crq .cr-hero2-t { flex: 1 1 220px; display: grid; gap: 4px; min-width: 0; }
+.crq .cr-hero2-t small { color: var(--k-mut); font-size: 12px; font-weight: 700; }
+.crq .cr-hero2-t h2 { font-size: 20px; margin: 0; overflow-wrap: anywhere; }
+.crq .cr-hero2-t > span { color: var(--k-mut); font-size: 12.5px; font-weight: 600; }
+.crq .cr-hero2-up { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--k-mut); background: var(--k-soft); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+.crq .cr-hero2-up .cr-ic { width: 14px; height: 14px; }
+.crq .cr-hero2 .cr-allb { margin: 0; }
+.crq .cr-asg { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 9px 12px; border-radius: 12px; background: var(--k-soft); font-size: 12.5px; color: var(--k-mut); }
+.crq .cr-asg b { color: var(--k-ink); font-size: 13px; }
+.crq .cr-asg button { border: 0; background: none; color: var(--k-brand); font: inherit; font-weight: 800; cursor: pointer; padding: 2px 4px; border-radius: 8px; } .crq .cr-asg button:hover { background: var(--k-tint2); }
+.crq .cr-next-h .cr-save.is-idle { display: none; }
+@container crq (max-width: 560px) { .crq .cr-hero.cr-hero2 { padding: 14px; } .crq .cr-hero2-up { order: 3; } .crq .cr-hero2 .cr-allb { order: 4; } }
+.crq .cr-r1 { align-items: start; }
