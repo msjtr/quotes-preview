@@ -406,3 +406,41 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 @container crq (max-width: 900px) { .cr-gv-cols { grid-template-columns: minmax(0, 1fr); } }
 @container crq (max-width: 620px) { .cr-gv-band { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cr-gv-k:nth-child(3) { border-inline-start: 0; } .cr-gv-k:nth-child(n+3) { border-top: 1px solid var(--k-line); } .cr-gv-k b { font-size: 16px; } }
 @container crq (max-width: 480px) { .cr-gv-tbl.is-g, .cr-gv-tbl.is-g tbody, .cr-gv-tbl.is-g tfoot { display: block; width: 100%; } .cr-gv-tbl.is-g tfoot tr { display: flex; justify-content: space-between; background: var(--k-soft); border-top: 1px solid var(--k-line); } .cr-gv-tbl.is-g tfoot td { background: none; border: 0; } .cr-gv-tbl.is-g tfoot td:empty { display: none; } .cr-gv-tbl.is-g tbody td:nth-child(3) { justify-self: end; } .cr-gv-tbl.is-g thead { display: none; } .cr-gv-tbl.is-g tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 9px 12px; border-top: 1px solid var(--k-line); } .cr-gv-tbl.is-g tbody tr:first-child { border-top: 0; } .cr-gv-tbl.is-g tbody td { padding: 0; border: 0; } .cr-gv-tbl.is-g tbody td:nth-child(1) { grid-column: 1; grid-row: 1; } .cr-gv-tbl.is-g tbody td:nth-child(2) { grid-column: 1; grid-row: 2; } .cr-gv-tbl.is-g tbody td:nth-child(3) { grid-column: 2; grid-row: 1; } .cr-gv-tbl.is-g tbody td:nth-child(4) { grid-column: 2; grid-row: 2; justify-self: end; } .cr-gv-row .cr-btn { flex: 1 1 auto; justify-content: center; } }
+
+/* ═══ v873 — تبويب البنود والحسبة: جدول البنود، المبلغ بعملته، أعمدة الضريبة والإجمالي، المجموع، وخيارات التوزيع والجدولة ═══ */
+.cr-it2 { font-size: 13.5px; }
+.cr-it2 th { white-space: nowrap; }
+.cr-it2 th.n, .cr-it2 td.n { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cr-it2 td { vertical-align: middle; }
+.cr-it2 td.c-name { min-width: 180px; }
+.cr-it2 td.c-name input { max-width: none; }
+.cr-it2 td.c-amt { width: 150px; } .cr-it2 td.c-vat { width: 150px; } .cr-it2 td.c-show { width: 190px; } .cr-it2 td.c-del { width: 44px; }
+.cr-it2 td.c-tax { width: 96px; color: var(--k-mut); } .cr-it2 td.c-tot { width: 110px; font-weight: 800; }
+.cr-it2 select { width: 100%; min-height: 38px; }
+.cr-it2 tfoot td { background: var(--k-soft); border-top: 1px solid var(--k-line); font-weight: 900; padding-top: 10px; padding-bottom: 10px; }
+.cr-it2 .cr-it-empty { text-align: center; color: var(--k-mut); padding: 18px; }
+.cr-money { display: flex; align-items: stretch; border: 1px solid var(--k-line); border-radius: 10px; overflow: hidden; background: var(--k-card); min-height: 38px; }
+.cr-money:focus-within { border-color: var(--k-brand); box-shadow: 0 0 0 3px var(--k-tint); }
+.cr-money input { border: 0 !important; box-shadow: none !important; outline: 0; min-width: 0; flex: 1; max-width: none !important; min-height: 36px; background: transparent; padding: 4px 10px; }
+.cr-money span { display: grid; place-items: center; padding: 0 10px; background: var(--k-soft); color: var(--k-mut); font-size: 12px; font-weight: 800; border-inline-start: 1px solid var(--k-line); }
+.cr-ds { display: grid; gap: 18px; }
+.cr-ds-g h3 { margin: 0 0 8px; }
+.cr-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cr-opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--k-line); border-radius: 12px; padding: 10px 12px; cursor: pointer; background: var(--k-card); }
+.cr-opt input { margin-top: 4px; flex: none; accent-color: var(--k-brand); }
+.cr-opt b { display: block; font-size: 13.5px; font-weight: 800; } .cr-opt small { display: block; color: var(--k-mut); font-size: 12px; line-height: 1.6; margin-top: 2px; }
+.cr-opt.is-on { border-color: var(--k-brand); background: var(--k-tint2); box-shadow: inset 0 0 0 1px var(--k-brand); }
+.cr-opt.is-ro { cursor: default; }
+@container crq (max-width: 760px) { .cr-opts { grid-template-columns: minmax(0, 1fr); } }
+@container crq (max-width: 640px) {
+.cr-it2 td.c-name, .cr-it2 td.c-amt, .cr-it2 td.c-vat, .cr-it2 td.c-show, .cr-it2 td.c-tax, .cr-it2 td.c-tot, .cr-it2 td.c-del { width: 100%; min-width: 0; }
+.cr-it2 td.c-name { display: block; padding-bottom: 6px; } .cr-it2 td.c-name::before { display: none; }
+.cr-it2 td.c-amt .cr-money, .cr-it2 td.c-vat select, .cr-it2 td.c-show select { max-width: 60%; }
+.cr-it2 tbody tr { position: relative; } .cr-it2 td.c-del { position: absolute; top: 8px; inset-inline-end: 10px; width: auto !important; padding: 0; } .cr-it2 td.c-del::before { display: none; } .cr-it2 td.c-name { padding-inline-end: 52px; }
+.cr-it2 tfoot td:empty, .cr-it2 tfoot td.c-vat, .cr-it2 tfoot td.c-show, .cr-it2 tfoot td.c-del { display: none; }
+.cr-it2 tfoot, .cr-it2 tfoot tr { display: block; width: 100%; }
+.cr-it2 tfoot tr { padding: 8px 12px; background: var(--k-soft); }
+.cr-it2 tfoot td { background: none; border: 0; padding: 3px 0; }
+}
+
+.cr-side .cr-grand { flex-wrap: wrap; } .cr-side .cr-grand span { font-size: 13.5px; } .cr-side .cr-grand b { white-space: nowrap; }
