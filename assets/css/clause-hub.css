@@ -1,4 +1,5 @@
-/* v874 — «مكتبة البنود» (clause-hub.js): تبويب في «قوالب المستندات». فاتح وليلي، أرقام لاتينية، يتكيّف مع عرض المكان (container queries). */
+/* v875: عرض كامل داخل لوحة «قوالب المستندات» (اللوحة flex بالمنتصف فكانت تنكمش إلى صفر مع container-type).
+* v874 — «مكتبة البنود» (clause-hub.js): تبويب في «قوالب المستندات». فاتح وليلي، أرقام لاتينية، يتكيّف مع عرض المكان (container queries). */
 .clh { --h-ink: #0F1B33; --h-mut: #66748C; --h-line: #E3E8F0; --h-card: #fff; --h-soft: #F8FAFC; --h-soft2: #F1F5F9; --h-brand: #06707A; --h-brand2: #0B8F99; --h-acc: #2BC6C9;
 --h-tint: #E0F2F3; --h-tint2: #F2FAFA; --h-navy: #0B2552; --h-ok: #15803D; --h-okw: #E6F6EE; --h-warn: #B45309; --h-warnw: #FEF3C7; --h-bad: #B91C1C; --h-badw: #FEE2E2;
 --h-vio: #6D28D9; --h-viow: #EDE9FE; --h-shadow: 0 16px 40px -30px rgba(11, 27, 51, .55);
@@ -222,3 +223,7 @@ color: var(--h-ink); display: grid; gap: 14px; min-width: 0; container-type: inl
 .clh-grid2 { grid-template-columns: minmax(0, 1fr); }
 .clh .clh-sf .clh-btn { flex: 1; }
 }
+
+/* v875: داخل محرّر «قوالب المستندات» — يأخذ عرض اللوحة كاملًا */
+.esx .extm[data-clib] { flex: 1 1 100%; width: 100%; max-width: 100%; min-width: 0; border-top: 0; padding: 0; overflow: visible; }
+.clh { width: 100%; }
