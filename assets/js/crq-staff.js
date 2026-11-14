@@ -605,7 +605,7 @@ el('td', { 'data-l': 'أُرسل', text: at(l.created_at) }), el('td', { 'data-l
 var edv = el('div', { class: 'cr-ed' }, lpEditor(T, !ed, onCh, function (st) { (ST.lpv || (ST.lpv = { step: 'consent', screen: 'page', dev: 'phone' })).step = st; }));
 return [bar, el('div', { class: 'cr-split is-ed' }, [edv, frameBox]), lk];
 }
-function loadLp() { if (window.CRQLP || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=867'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if (window.CRQLP || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=868'; /* v868: رقم جديد — نسخة 867 حُفظت 404 في الشبكة قبل إعادة تشغيل الخادم */ sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحتي الرابط («صفحات الرابط» في الإعدادات) — المحرّر نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
