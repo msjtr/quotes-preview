@@ -12694,7 +12694,7 @@ function d3ApprWide0(seed, stk, sh) {
 function d3KV(pairs, tots) {
   const P = pairs.filter(Boolean), rows = [];
   for (let i = 0; i < P.length; i += 2) { const a = P[i], b = P[i + 1];
-    rows.push(e('tr', {}, [e('th', {}, a[0]), e('td', { dir: a[2] ? 'ltr' : null, class: a[3] || null }, a[1])].concat(b ? [e('th', {}, b[0]), e('td', { dir: b[2] ? 'ltr' : null, class: b[3] || null }, b[1])] : [e('td', { class: 'is-empty', colspan: '2' }, '')]))); }
+    rows.push(e('tr', {}, [e('th', {}, a[0]), e('td', { dir: a[2] ? 'ltr' : null, class: a[3] || null, colspan: b ? null : '3' }, a[1])].concat(b ? [e('th', {}, b[0]), e('td', { dir: b[2] ? 'ltr' : null, class: b[3] || null }, b[1])] : []))); } /* v869: بلا خلية فارغة عند الإخفاء */
   (tots || []).filter(Boolean).forEach(function (t) { rows.push(e('tr', { class: 'is-tot' + (t[2] ? ' is-' + t[2] : '') }, [e('th', { colspan: '3' }, t[0]), e('td', {}, t[1])])); });
   return e('table', { class: 'd3-kv' }, [e('colgroup', {}, [e('col', { class: 'k' }), e('col', { class: 'v' }), e('col', { class: 'k' }), e('col', { class: 'v' })]), e('tbody', {}, rows)]);
 }
@@ -23778,7 +23778,7 @@ function docxCore(H) {
       const a = P[i];
       if (a[4]) { rows += '<tr><th>' + esc(a[0]) + '</th>' + td(a) + '</tr>'; i++; continue; }
       const b = P[i + 1] && !P[i + 1][4] ? P[i + 1] : null;
-      rows += '<tr><th>' + esc(a[0]) + '</th>' + td(a) + (b ? '<th>' + esc(b[0]) + '</th>' + td(b) : '<td class="is-empty" colspan="2"></td>') + '</tr>';
+      rows += '<tr><th>' + esc(a[0]) + '</th>' + td(b ? a : [a[0], a[1], a[2], a[3], true]) + (b ? '<th>' + esc(b[0]) + '</th>' + td(b) : '') /* v869: المعلومة الأخيرة بلا نظير تمتد على الصف — لا خلية فارغة عند الإخفاء */ + '</tr>';
       i += b ? 2 : 1;
     }
     (tots || []).filter(Boolean).forEach(function (t) { rows += '<tr class="is-tot' + (t[2] ? ' is-' + t[2] : '') + '"><th colspan="3">' + esc(t[0]) + '</th><td>' + esc(t[1]) + '</td></tr>'; });
@@ -23832,12 +23832,13 @@ terms: ['يُعدّ هذا الملحق جزءًا لا يتجزأ من العق
 ack: 'أقرّ بأنني اطّلعت على تفاصيل التأجيل والجدول الجديد ورسوم التأجيل، وأوافق على تعديل العقد وفقها.',
 pend: 'يوقّع الطرف الثاني إلكترونيًا من الرابط الذي يصله، ويُوثَّق التوقيع برمز تحقق.',
 note: 'صدر هذا الملحق إلكترونيًا من منصة تيرا، ويُعتدّ بالتوقيع الإلكتروني الموثّق برمز التحقق.',
-show: { product: true, intro: true, defer: true, fees: true, contract: true, sched: true, terms: true, sign: true, note: true },
+adds: [],
+show: { product: true, intro: true, defer: true, fees: true, contract: true, sched: true, terms: true, sign: true, note: true, s_name: true, s_op: true, s_method: true, s_factor: true, s_time: true, s_img: true },
 auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقيع الطرف الثاني' }
   };
   /* المحفوظ فوق الافتراضي: النص الفارغ يعود للافتراضي (ما عدا الحقول الفارغة أصلًا)، والقوائم تُستبدل كاملة */
   const merge = function (d, v) {
-    if (Array.isArray(d)) return Array.isArray(v) ? v.map(function (x) { return String(x == null ? '' : x).trim(); }).filter(Boolean) : d.slice();
+    if (Array.isArray(d)) return Array.isArray(v) ? v.map(function (x) { return x && typeof x === 'object' ? x : String(x == null ? '' : x).trim(); }).filter(Boolean) : d.slice(); /* v870: الأقسام المضافة كائنات */
     if (d && typeof d === 'object') { const o = {}, w = v && typeof v === 'object' && !Array.isArray(v) ? v : {}; Object.keys(d).forEach(function (k) { o[k] = merge(d[k], w[k]); }); return o; }
     if (typeof d === 'boolean') return typeof v === 'boolean' ? v : d;
     if (typeof d === 'string') return typeof v === 'string' && (v.trim() || d === '') ? v.trim() : d;
@@ -23992,15 +23993,23 @@ if (S('fees')) A.push(dCard(T.tt.fees, 'receipt', dKV(L.map(function (l) { retur
 [['ضريبة القيمة المضافة' + (c.vat_rate != null ? ' (' + Number(c.vat_rate) + '%)' : ''), sar(c.vat)], S('contract') && c.contract ? ['قيمة العقد بعد التعديل', sar(c.contract.total_after)] : null, ['إجمالي رسوم التأجيل', sar(c.total), 'gt']])));
 if (S('sched') && op.length) A.push(dCard(T.tt.sched, 'list', dTbl(['الدفعة', 'تاريخ الاستحقاق', 'القيمة قبل', 'الإضافة', 'القيمة بعد'], op.map(function (r) { return [String(r.seq) + (r.target ? ' — المؤجلة' : ''), dmy(r.due_after), sar(r.amt_before), sar(r.add), sar(r.amt_after)]; }))));
 if (S('terms') && terms.length) B.push(dCard(T.tt.terms, 'doc', terms.map(function (t, i) { return dP((i + 1) + '. ' + t, pad); }).join('')));
-if (S('sign')) B.push(dCard(T.tt.sign, 'pen', (T.ack ? dP(T.ack, pad + ';font-weight:700') : '') + (g ? dKV([['الاسم', g.name || '', false], ['طريقة التوقيع', DF_METHOD[g.method] || '', false], ['التحقق', DF_FACTOR[g.factor] || '', false], ['وقت التوقيع', dfAt(g.at), false]])
-+ (g.image ? '<div style="text-align:center;padding:8px 0 14px"><img src="' + esc(g.image) + '" alt="توقيع الطرف الثاني" style="max-height:90px;max-width:60%"></div>' : g.method === 'type' ? '<div style="text-align:center;padding:6px 0 14px;font-size:24px;font-weight:700;color:#0b2552">' + esc(g.name) + '</div>' : '') : (T.pend ? dP(T.pend, pad + ';color:#5b6b86') : ''))));
+/* v870: أقسام مضافة من المكتبة أو فارغة — { t, lines[], on } */
+(Array.isArray(T.adds) ? T.adds : []).forEach(function (x) { if (!x || x.on === false || !String(x.t || '').trim()) return; const L2 = (Array.isArray(x.lines) ? x.lines : []).filter(Boolean); B.push(dCard(String(x.t), 'doc', L2.length > 1 ? L2.map(function (t, i) { return dP((i + 1) + '. ' + t, pad); }).join('') : L2.map(function (t) { return dP(t, pad); }).join(''))); });
+/* v870: التوقيع والإثبات — صفوف الإثبات تظهر وتُخفى، وقبل التوقيع مكان التوقيع ظاهر «بانتظار الطرف الثاني»، و«نموذج» في معاينة بعد التوقيع */
+if (S('sign')) {
+const gr = g ? [S('s_name') ? ['الاسم', g.name || '', false] : null, S('s_op') ? ['العملية', 'توقيع ملحق تأجيل الدفعة', false] : null, S('s_method') ? ['طريقة التوقيع', DF_METHOD[g.method] || '', false] : null,
+S('s_factor') ? ['التحقق', DF_FACTOR[g.factor] || '', false] : null, S('s_time') ? ['وقت التوقيع', dfAt(g.at) + (g.sample ? ' — نموذج' : ''), false] : null] : [];
+const img = g && S('s_img') ? (g.image ? '<div style="text-align:center;padding:8px 0 12px"><img src="' + esc(g.image) + '" alt="توقيع الطرف الثاني" style="max-height:90px;max-width:60%"></div>' : g.method === 'type' ? '<div style="text-align:center;padding:6px 0 12px;font-size:24px;font-weight:700;color:#0b2552">' + esc(g.name) + '</div>' : '') : '';
+const wait = !g && S('s_img') ? '<div style="margin:6px 18px 14px;border:1.5px dashed #b9c4d6;border-radius:12px;height:74px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;color:#7a8aa6;font-size:11px">توقيع الطرف الثاني — بانتظار التوقيع</div>' : '';
+B.push(dCard(T.tt.sign, 'pen', (T.ack ? dP(T.ack, pad + ';font-weight:700') : '') + (g ? img + dKV(gr) + (g.sample ? dP('نموذج للمعاينة — يُملأ تلقائيًا عند توقيع العميل.', pad + ';color:#8a6a1f;font-size:11px') : '') : (T.pend ? dP(T.pend, pad + ';color:#5b6b86') : '') + wait)));
+}
 if (S('note') && T.note) B.push(dCard(T.tt.note, 'info', dP(T.note), 'is-note', true));
 B.push(H.appr(no || 'TERA'));
 const date = (g && g.at) || o.consented_at || new Date(Date.now() + 3 * 3600 * 1000).toISOString();
 const base = { org: T.org, issuer: T.issuer, en: T.en, title: T.title, pill: T.pill, no: no, auto: T.auto };
 const P1 = Object.assign({}, base, { meta: [['رقم الملحق', no], ['رقم العقد', o.contract_no || ''], ['التاريخ', dmy(new Date(new Date(date).getTime() + (g && g.at || o.consented_at ? 3 * 3600 * 1000 : 0)).toISOString().slice(0, 10))]] });
 /* تقدير الارتفاع بالأسطر: تتسع الصفحة نحو 30 */
-const h = 5 + (tg.length ? tg.length + 3 : 0) + L.length + 5 + (op.length ? op.length + 3 : 0) + terms.reduce(function (s, t) { return s + Math.ceil(String(t).length / 95); }, terms.length ? 2 : 0) + (S('sign') ? (g ? 9 : 4) : 0) + (S('note') && T.note ? 3 : 0) + 8;
+const h = 5 + (tg.length ? tg.length + 3 : 0) + L.length + 5 + (op.length ? op.length + 3 : 0) + terms.reduce(function (s, t) { return s + Math.ceil(String(t).length / 95); }, terms.length ? 2 : 0) + (S('sign') ? (g ? 9 : 6) : 0) + (Array.isArray(T.adds) ? T.adds.reduce(function (s, x) { return s + (x && x.on !== false ? 3 + ((x.lines || []).length) : 0); }, 0) : 0) + (S('note') && T.note ? 3 : 0) + 8;
 if (h <= 30) return [Object.assign(P1, { cards: A.concat(B) })];
 return [Object.assign(P1, { cards: A }), Object.assign({}, base, { first: false, cards: B })];
 }
@@ -24116,6 +24125,7 @@ secs: [
 { id: 'dfs', title: 'جدول الدفعات بعد التعديل', titleP: 'tt.sched', kind: 'info', show: 'show.sched', info: 'الدفعات المتبقية بمواعيدها الجديدة والإضافة على كل دفعة.' },
 { id: 'dft', title: 'بنود الملحق', titleP: 'tt.terms', kind: 'lines', p: 'terms', show: 'show.terms', hint: 'كل سطر بند مرقّم في الملحق.' },
 { id: 'dfg', title: 'إقرار الطرف الثاني وتوقيعه', titleP: 'tt.sign', kind: 'fields', fields: [{ l: 'نص الإقرار', p: 'ack', hp: 'show.sign' }, { l: 'قبل التوقيع', p: 'pend' }], hint: 'بعد التوقيع يظهر الاسم وطريقة التوقيع والتحقق ووقته وصورة التوقيع.' },
+{ id: 'dfq', title: 'صفوف الإثبات بعد التوقيع', kind: 'toggles', items: [{ l: 'اسم الموقّع', p: 'show.s_name' }, { l: 'العملية', p: 'show.s_op' }, { l: 'طريقة التوقيع', p: 'show.s_method' }, { l: 'وسيلة التحقق', p: 'show.s_factor' }, { l: 'وقت التوقيع', p: 'show.s_time' }, { l: 'صورة التوقيع (ومكانه قبل التوقيع)', p: 'show.s_img' }], hint: 'طرق التوقيع المسموحة للعميل من «صفحات الرابط ← صفحة التوقيع».' },
 { id: 'dfn', title: 'تنويه', titleP: 'tt.note', kind: 'text', p: 'note', show: 'show.note' },
 { id: 'dfa', title: 'سطر التذييل', kind: 'fields', fields: [{ l: 'سطر التذييل', p: 'auto' }] }],
 preview: function (X) { const P = DOCX.deferPages(dfSample(), DOCX.tpl('df', X)); docxPv(Object.assign({}, P[0], { cards: P.reduce(function (a, p) { return a.concat(p.cards || []); }, []) })); } });
@@ -29135,6 +29145,8 @@ window.__teraApp.page = function (k, t, ic, run, up) { try { ICON[k] = ic; lp(k,
 window.__teraApp.token = function () { return liveToken(); };
 /* v867: جسر «قوالب المستندات» لصفحة طلبات العقود (crq-staff.js): مواصفة «ملحق تأجيل الدفعة» ونواته، وفتح القالب العام */
 window.__teraApp.docx = { spec: function () { return esxGDf(); }, tpl: function (X) { return DOCX ? DOCX.tpl('df', X || {}) : {}; },
+lib: function () { return SRD_LIB; },
+msg: { list: function () { return admRpc('admin_msg_list', {}); }, preview: function (key, row, name) { return clPost('/admin/api/msg/preview', { key: key, name: name || '', row: row }); }, test: function (key, row, ch) { return clPost('/admin/api/msg/test', { key: key, row: row, ch: ch }); } },
 open: function () { ADM.esxStart = 'df'; go('sys-es'); setTimeout(function () { try { if (ADM.esxEl && ADM.esxEl.__esxGo) ADM.esxEl.__esxGo('df'); } catch (x) { void x; } }, 450); } };
 (window.__crqQ || []).forEach(function (f) { try { f(); } catch (err) { void err; } }); window.__crqQ = null;
 }

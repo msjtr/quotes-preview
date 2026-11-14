@@ -9292,3 +9292,24 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg-sh-m b{font-weight:700}
 .eg-dec{display:flex;flex-direction:column;gap:14px}
 @media (max-width:1000px){.eg-lay{grid-template-columns:minmax(0,1fr)}.eg-nav{position:static;flex-direction:row;flex-wrap:wrap}.eg-nav-g{display:none}.eg-nav-i small{max-width:none}}
+/* ═══ v869: تصميم موحّد لجداول كل المستندات وبطاقاتها — رأس الجدول وشريط الإجمالي بلون «تنسيق الجداول»، وصفوف متناوبة وحدود خفيفة وأرقام بعرض ثابت ═══ */
+.dc3.dc3.dc3 .d3-card{border:1px solid #D3DCEA!important;border-radius:14px!important;background:#fff!important;overflow:hidden}
+.dc3.dc3.dc3 .d3-ch{background:linear-gradient(180deg,#F8FAFD,#EEF2F9)!important;padding:7px 14px!important;border-bottom:1px solid #D3DCEA!important}
+.dc3.dc3.dc3 .d3-ch b{font-size:14px!important;color:#0B2552!important}
+.dc3.dc3.dc3 .d3-kv th,.dc3.dc3.dc3 .d3-kv td,.dc3.dc3.dc3 .d3-dt th,.dc3.dc3.dc3 .d3-dt td{border:0!important;border-top:1px solid #E3E9F2!important;font-size:11.5px!important;line-height:1.55}
+.dc3.dc3.dc3 .d3-kv th,.dc3.dc3.dc3 .d3-kv td{padding:7px 12px!important}
+.dc3.dc3.dc3 .d3-kv tbody tr:first-child>*,.dc3.dc3.dc3 .d3-dt thead th{border-top:0!important}
+.dc3.dc3.dc3 .d3-kv tr>*+*,.dc3.dc3.dc3 .d3-dt tbody tr>*+*{border-inline-start:1px solid #E3E9F2!important}
+.dc3.dc3.dc3 .d3-kv th{background:#F3F6FB!important;color:#3B4F75!important;font-weight:700!important}
+.dc3.dc3.dc3 .d3-kv td{color:#0B1D3A!important;font-weight:800!important;font-variant-numeric:tabular-nums}
+.dc3.dc3.dc3 .d3-kv td.is-empty{background:#FAFBFD!important}
+.dc3.dc3.dc3 .d3-kv tr.is-tot th{background:#F3F6FB!important;color:#0B2552!important;font-weight:800!important}
+.dc3.dc3.dc3 .d3-kv tr.is-tot td{text-align:left!important;font-size:12px!important}
+.dc3.dc3.dc3 .d3-kv tr.is-gt th,.dc3.dc3.dc3 .d3-kv tr.is-gt td{background:var(--tb-acc,#0B2552)!important;color:#fff!important;font-size:12.5px!important;font-weight:900!important;border-top:2px solid #C99A2E!important}
+.dc3.dc3.dc3 .d3-kv tr.is-gt td{color:#F3D580!important}
+.dc3.dc3.dc3 .d3-dt th,.dc3.dc3.dc3 .d3-dt td{padding:6px 10px!important;text-align:center}
+.dc3.dc3.dc3 .d3-dt thead th{background:var(--tb-acc,#0B2552)!important;color:#fff!important;font-weight:700!important;border-bottom:2px solid #C99A2E!important}
+.dc3.dc3.dc3 .d3-dt thead tr>*+*{border-inline-start:1px solid rgba(255,255,255,.16)!important}
+.dc3.dc3.dc3 .d3-dt tbody tr:nth-child(even) td{background:#F6F8FC!important}
+.dc3.dc3.dc3 .d3-dt td{color:#0B1D3A!important;font-weight:700!important;font-variant-numeric:tabular-nums}
+.dc3.dc3.dc3 .d3-dt .is-txt{text-align:right!important}
