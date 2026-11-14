@@ -1,4 +1,5 @@
-/* v873: تبويب «البنود والحسبة» — جدول بنود بأعمدة الضريبة والإجمالي والمجموع، التوزيع والجدولة خيارات واضحة، الملخص المالي وحده جانبًا،
+/* v876: «البنود والحسبة» بتصميم جديد — البنود بطاقات تتكيّف مع العرض (مفاتيح بدل القوائم المنسدلة)، قائمة «إضافة بند» بأيقونات وحالة «مُضاف»، والملخص المالي بلا تكرار.
+* v873: تبويب «البنود والحسبة» — جدول بنود بأعمدة الضريبة والإجمالي والمجموع، التوزيع والجدولة خيارات واضحة، الملخص المالي وحده جانبًا،
 * و«إضافة بند» تعرض أيضًا البنود المالية العامة (fee_charge_items).
 * v872: «تغطية الضمانات» بطاقة بعرض العمود الرئيسي (جدولا الالتزام والضمانات، العقود الخمسة الأولى ثم «عرض الكل»).
 * v871: «تغطية الضمانات» في تبويب البنود والحسبة — تنبيه للموظف غير إلزامي (crq_svc_guar).
@@ -374,14 +375,20 @@ function paintL() {
 var t = q.value.trim(); L.innerHTML = '';
 o.groups.forEach(function (g) {
 var it = g[1].filter(function (z) { return !t || String(z[0]).indexOf(t) >= 0 || String(z[1] || '').indexOf(t) >= 0; }); if (!it.length) return;
-L.appendChild(el('div', { class: 'cr-pop-g', text: g[0] }));
-it.forEach(function (z) { L.appendChild(el('button', { type: 'button', class: 'cr-pop-i', disabled: !!z[2], 'data-live-ok': '', onclick: function () { popClose(); o.pick(z[3] !== undefined ? z[3] : z[0]); } }, [el('span', {}, [el('b', { text: z[0] }), z[1] ? el('small', { text: z[1] }) : null]), el('i', { text: z[2] ? 'مضاف' : '+' })])); });
+L.appendChild(el('div', { class: 'cr-pop-g' }, [el('span', { text: g[0] }), el('i', { text: String(it.length) })]));
+it.forEach(function (z) {
+var chips = String(z[1] || '').split(' · ').filter(Boolean);
+L.appendChild(el('button', { type: 'button', class: 'cr-pop-i' + (z[2] ? ' is-had' : ''), disabled: !!z[2], 'data-live-ok': '', onclick: function () { popClose(); o.pick(z[3] !== undefined ? z[3] : z[0]); } }, [
+el('span', { class: 'cr-pop-ic' }, [icon(z[2] ? 'check' : 'plus')]),
+el('span', { class: 'cr-pop-tx' }, [el('b', { text: z[0] }), chips.length ? el('span', { class: 'cr-pop-ch' }, chips.map(function (c) { return el('small', { class: /غير خاضع/.test(c) ? 'is-n' : '', text: c }); })) : null]),
+el('em', { text: z[2] ? 'مُضاف' : 'إضافة' })]));
 });
-if (!L.children.length) L.appendChild(el('p', { class: 'cr-hint', text: 'لا نتائج.' }));
+});
+if (!L.children.length) L.appendChild(el('p', { class: 'cr-pop-0', text: 'لا نتائج — جرّب كلمة أخرى.' }));
 }
 q.addEventListener('input', paintL); paintL();
-if (o.free) F.appendChild(btn(o.free, { cls: 'is-sm', ic: 'plus', on: function () { var t = el('textarea', { rows: '2', placeholder: o.freePh || 'اكتب النص' }); F.innerHTML = ''; F.appendChild(t); F.appendChild(el('div', { class: 'cr-acts' }, [btn('إضافة', { cls: 'is-pri is-sm', on: function () { var v = t.value.trim(); if (v.length < 2) { t.focus(); return; } popClose(); o.pick({ free: v }); } }), btn('إلغاء', { cls: 'is-sm', on: popClose })])); t.focus(); } }));
-p.appendChild(el('div', { class: 'cr-pop-h' }, [q])); p.appendChild(L); if (o.free) p.appendChild(F);
+if (o.free) F.appendChild(el('button', { type: 'button', class: 'cr-pop-new', 'data-live-ok': '', onclick: function () { var t = el('textarea', { rows: '2', placeholder: o.freePh || 'اكتب النص' }); F.innerHTML = ''; F.appendChild(t); F.appendChild(el('div', { class: 'cr-acts' }, [btn('إضافة', { cls: 'is-pri is-sm', on: function () { var v = t.value.trim(); if (v.length < 2) { t.focus(); return; } popClose(); o.pick({ free: v }); } }), btn('إلغاء', { cls: 'is-sm', on: popClose })])); t.focus(); } }, [icon('plus'), el('span', { text: o.free })]));
+p.appendChild(el('div', { class: 'cr-pop-h' }, [o.title ? el('div', { class: 'cr-pop-tt' }, [el('b', { text: o.title }), el('button', { type: 'button', class: 'cr-pop-x', 'aria-label': 'إغلاق', 'data-live-ok': '', onclick: popClose }, [icon('x')])]) : null, el('label', { class: 'cr-pop-q' }, [icon('search'), q])])); p.appendChild(L); if (o.free) p.appendChild(F);
 });
 }
 /* v873: بنود عامة من «الرسوم والضرائب والعمولات» (fee_charge_items) — تُجلب مرة وتُضاف للقائمة الجاهزة */
@@ -399,39 +406,40 @@ function upd() { c.lines.forEach(function (l) { l.amt = String(l.amt || '').repl
 /* تحديث خلايا الضريبة والإجمالي والمجاميع دون إعادة رسم الحقول */
 function paintRow(tr, l) { var a = tr.querySelector('.c-tax'), b = tr.querySelector('.c-tot'); if (a) { a.innerHTML = ''; a.appendChild(ltr(l.vat ? money(tax(l)) : '—')); } if (b) { b.innerHTML = ''; b.appendChild(ltr(money((Number(l.amt) || 0) + tax(l)))); } }
 function foot() { var s = 0, t = 0; c.lines.forEach(function (l) { s += Number(l.amt) || 0; t += tax(l); }); return [s, t, s + t]; }
-function paintFoot() { var f = foot(), r = R.querySelector('.cr-it2 tfoot'); if (!r) return; ['.f-sum', '.f-tax', '.f-tot'].forEach(function (k, i) { var n = r.querySelector(k); if (n) { n.innerHTML = ''; n.appendChild(ltr(money(f[i]))); } }); }
+function paintFoot() { var f = foot(), r = R.querySelector('.cr-li-foot'); if (!r) return; ['.f-sum', '.f-tax', '.f-tot'].forEach(function (k, i) { var n = r.querySelector(k); if (n) { n.innerHTML = ''; n.appendChild(ltr(money(f[i]))); } }); }
+/* v876: مفتاح من خيارين بدل القائمة المنسدلة — يُقرأ كاملًا في أي عرض */
+function sw(opts, cur, on, label) { return el('div', { class: 'cr-seg2', role: 'group', 'aria-label': label }, opts.map(function (o) { return el('button', { type: 'button', class: cur === o[0] ? 'is-on' : '', 'aria-pressed': cur === o[0] ? 'true' : 'false', disabled: !ed, title: o[2] || null, 'data-live-ok': '', onclick: function () { if (cur !== o[0]) on(o[0]); } }, [o[1]]); })); }
 var rows = c.lines.map(function (l, i) {
 var f = readyOf(x, l.id), hid = c.hide.indexOf(l.id) >= 0;
-var nm = f ? el('div', { class: 'cr-it-n' }, [el('b', { text: l.t }), el('small', { text: (f.gen ? 'بند عام' : 'بند طلبات العقود') + ' · ' + (f.calc === 'pct' ? Number(f.value) + '٪' : f.calc === 'fixed' ? 'ثابت ' + money(f.value) : 'يُدخل لكل طلب') })])
-: el('input', { type: 'text', value: l.t, maxlength: '80', disabled: !ed, placeholder: 'مسمّى البند', 'aria-label': 'اسم البند', oninput: function (e) { l.t = e.target.value; upd(); } });
+var nm = f ? el('div', { class: 'cr-it-n' }, [el('b', { text: l.t }), el('small', { text: (f.gen ? 'بند عام' : 'بند طلبات العقود') + ' · ' + (f.calc === 'pct' ? Number(f.value) + '٪ من المؤجَّل' : f.calc === 'fixed' ? 'مبلغ ثابت ' + money(f.value) : 'يُدخل لكل طلب') })])
+: el('input', { type: 'text', class: 'cr-li-in', value: l.t, maxlength: '80', disabled: !ed, placeholder: 'مسمّى البند', 'aria-label': 'اسم البند', oninput: function (e) { l.t = e.target.value; upd(); } });
 var am = el('label', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: l.amt === '0' ? '' : l.amt, placeholder: '0.00', disabled: !ed, 'aria-label': 'المبلغ',
-oninput: function (e) { l.amt = e.target.value.replace(/[^\d.]/g, ''); paintRow(e.target.closest('tr'), l); paintFoot(); upd(); } }), el('span', { text: 'ر.س' })]);
-return el('tr', {}, [
-el('td', { 'data-l': 'البند', class: 'c-name' }, [nm]),
-el('td', { 'data-l': 'المبلغ', class: 'c-amt' }, [am]),
-el('td', { 'data-l': 'الضريبة', class: 'c-vat' }, [el('select', { disabled: !ed, 'aria-label': 'ضريبة القيمة المضافة', onchange: function (e) { l.vat = e.target.value === '1'; paintRow(e.target.closest('tr'), l); paintFoot(); upd(); } }, [el('option', { value: '1', selected: !!l.vat, text: R0 + '٪' }), el('option', { value: '0', selected: !l.vat, text: 'غير خاضع' })])]),
-el('td', { 'data-l': 'قيمة الضريبة', class: 'c-tax n' }, [ltr(l.vat ? money(tax(l)) : '—')]),
-el('td', { 'data-l': 'الإجمالي', class: 'c-tot n' }, [ltr(money((Number(l.amt) || 0) + tax(l)))]),
-el('td', { 'data-l': 'يظهر للعميل', class: 'c-show' }, [el('select', { disabled: !ed, 'aria-label': 'الظهور للعميل', onchange: function (e) { c.hide = c.hide.filter(function (k) { return k !== l.id; }); if (e.target.value === 'h') c.hide.push(l.id); upd(); draw(); } }, [el('option', { value: 's', selected: !hid, text: 'سطر مستقل' }), el('option', { value: 'h', selected: hid, text: 'ضمن «' + svcOf(c) + '»' })])]),
-el('td', { class: 'c-del' }, [ed ? el('button', { type: 'button', class: 'cr-x', title: 'حذف البند', 'aria-label': 'حذف البند', 'data-live-ok': '', onclick: function () { c.lines.splice(i, 1); c.hide = c.hide.filter(function (k) { return k !== l.id; }); upd(); draw(); } }, [icon('trash')]) : null])]);
+oninput: function (e) { l.amt = e.target.value.replace(/[^\d.]/g, ''); paintRow(e.target.closest('.cr-li'), l); paintFoot(); upd(); } }), el('span', { text: 'ر.س' })]);
+return el('div', { class: 'cr-li' + (hid ? ' is-hid' : '') }, [
+el('div', { class: 'cr-li-n' }, [nm]),
+el('div', { class: 'cr-li-f is-amt' }, [el('span', { class: 'cr-li-l', text: 'المبلغ' }), am]),
+el('div', { class: 'cr-li-f is-vat' }, [el('span', { class: 'cr-li-l', text: 'ضريبة القيمة المضافة' }), sw([['1', R0 + '٪'], ['0', 'غير خاضع']], l.vat ? '1' : '0', function (v) { l.vat = v === '1'; upd(); draw(); }, 'ضريبة القيمة المضافة')]),
+el('div', { class: 'cr-li-f is-show' }, [el('span', { class: 'cr-li-l', text: 'يظهر للعميل' }), sw([['s', 'سطر مستقل'], ['h', 'مدمج', 'يظهر ضمن سطر «' + svcOf(c) + '»']], hid ? 'h' : 's', function (v) { c.hide = c.hide.filter(function (k) { return k !== l.id; }); if (v === 'h') c.hide.push(l.id); upd(); draw(); }, 'الظهور للعميل')]),
+el('div', { class: 'cr-li-t' }, [el('span', { class: 'cr-li-tx' }, ['الضريبة ', el('span', { class: 'c-tax' }, [ltr(l.vat ? money(tax(l)) : '—')])]), el('span', { class: 'cr-li-tt' }, [el('small', { text: 'الإجمالي' }), el('b', { class: 'c-tot' }, [ltr(money((Number(l.amt) || 0) + tax(l)))])])]),
+ed ? el('button', { type: 'button', class: 'cr-x cr-li-d', title: 'حذف البند', 'aria-label': 'حذف البند', 'data-live-ok': '', onclick: function () { c.lines.splice(i, 1); c.hide = c.hide.filter(function (k) { return k !== l.id; }); upd(); draw(); } }, [icon('trash')]) : el('span', { class: 'cr-li-d' })]);
 });
 var F = foot();
-var tbl = el('div', { class: 'cr-tw' }, [el('table', { class: 'cr-tbl cr-it2' }, [
-el('thead', {}, [el('tr', {}, [['البند', ''], ['المبلغ', ''], ['الضريبة', ''], ['قيمة الضريبة', 'n'], ['الإجمالي', 'n'], ['يظهر للعميل', ''], ['', '']].map(function (h) { return el('th', { text: h[0], class: h[1] }); }))]),
-el('tbody', {}, rows.length ? rows : [el('tr', {}, [el('td', { colspan: '7', class: 'cr-it-empty', text: 'لا بنود بعد — أضف بندًا من القائمة أو بندًا جديدًا.' })])]),
-el('tfoot', {}, [el('tr', {}, [el('td', { 'data-l': '', text: 'المجموع' }), el('td', { 'data-l': 'المبالغ', class: 'f-sum n' }, [ltr(money(F[0]))]), el('td', { class: 'c-vat' }), el('td', { 'data-l': 'الضريبة', class: 'f-tax n' }, [ltr(money(F[1]))]), el('td', { 'data-l': 'الإجمالي', class: 'f-tot n' }, [ltr(money(F[2]))]), el('td', { class: 'c-show' }), el('td', { class: 'c-del' })])])])]);
+var tbl = el('div', { class: 'cr-li-wrap' }, [
+el('div', { class: 'cr-li-hd', 'aria-hidden': 'true' }, ['البند', 'المبلغ', 'الضريبة', 'يظهر للعميل', 'الإجمالي', ''].map(function (h) { return el('span', { text: h }); })),
+el('div', { class: 'cr-li-list' }, rows.length ? rows : [el('div', { class: 'cr-li-empty' }, [icon('list'), el('b', { text: 'لا بنود بعد' }), el('span', { text: 'أضف بندًا من القائمة أو بندًا جديدًا لهذا الطلب.' })])]),
+rows.length ? el('div', { class: 'cr-li-foot' }, [el('div', {}, [el('small', { text: 'مجموع البنود' }), el('b', { class: 'f-sum' }, [ltr(money(F[0]))])]), el('div', {}, [el('small', { text: 'ضريبة القيمة المضافة' }), el('b', { class: 'f-tax' }, [ltr(money(F[1]))])]), el('div', { class: 'is-tot' }, [el('small', { text: 'الإجمالي' }), el('b', {}, [el('span', { class: 'f-tot' }, [ltr(money(F[2]))]), ' ر.س'])])]) : null]);
 var add = ed && c.lines.length < 12 ? el('div', { class: 'cr-addrow' }, [(function () {
 var b = btn('إضافة بند', { ic: 'plus', on: async function () { await loadCharges();
 var have = c.lines.map(function (l) { return l.id; }), crqNames = (x.ready || []).map(function (f) { return f.name; });
-var row = function (f) { return [f.name, CH_T[f.calc] + (f.calc === 'manual' ? '' : ' · ' + (f.calc === 'pct' ? Number(f.value) + '٪' : money(f.value) + ' ر.س')) + (f.taxable ? ' · خاضع للضريبة' : ' · غير خاضع'), have.indexOf(f.k) >= 0, f]; };
+var row = function (f) { return [f.name, [CH_T[f.calc] + (f.calc === 'manual' ? '' : ' ' + (f.calc === 'pct' ? Number(f.value) + '٪' : money(f.value) + ' ر.س')), f.taxable ? 'خاضع للضريبة' : 'غير خاضع'].join(' · '), have.indexOf(f.k) >= 0, f]; };
 var gen = (ST.charges || []).filter(function (f) { return crqNames.indexOf(f.name) < 0; });
-picker(b, { ph: 'ابحث في البنود المالية والرسوم…', groups: [['بنود طلبات العقود', (x.ready || []).map(row)], ['البنود المالية العامة — «الرسوم والضرائب والعمولات»', gen.map(row)]],
+picker(b, { title: 'إضافة بند', ph: 'ابحث باسم البند…', groups: [['بنود طلبات العقود', (x.ready || []).map(row)], ['البنود المالية العامة', gen.map(row)]],
 free: 'بند جديد لهذا الطلب فقط', freePh: 'مسمّى البند',
 pick: function (v) {
 if (v && v.free) { var n = 1; while (c.lines.some(function (l) { return l.id === 'b' + n; })) n++; c.lines.push({ id: 'b' + n, t: v.free.slice(0, 80), amt: '0', vat: true }); }
 else if (v) { var a = readyAmt(x, v); c.lines.push({ id: v.k, t: v.name, amt: a ? String(a) : '0', vat: v.taxable !== false }); }
 else return;
-upd(); draw(); var ins = R.querySelectorAll('.cr-it2 tbody tr'); var last = ins[ins.length - 1]; if (last) { var i2 = last.querySelector('input.cr-num'); if (i2) i2.focus(); } } });
+upd(); draw(); var ins = R.querySelectorAll('.cr-li-list .cr-li'); var last = ins[ins.length - 1]; if (last) { var i2 = last.querySelector('input.cr-num'); if (i2) i2.focus(); } } });
 } }); return b; })(), el('small', { class: 'cr-hint', text: 'القائمتان تُداران من «الإعدادات ← الرسوم والضرائب والعمولات».' })]) : null;
 var svc = c.hide.length ? field('اسم السطر الذي يراه العميل للبنود المدمجة', el('input', { type: 'text', value: c.svc_label || '', placeholder: 'الرسوم الإدارية والخدمة', maxlength: '60', disabled: !ed, oninput: function (e) { c.svc_label = e.target.value; upd(); } })) : null;
 /* التوزيع والجدولة: خيارات واضحة بوصف قصير بدل القوائم المنسدلة */
@@ -539,18 +547,20 @@ function sidePanel(x) { return el('div', { class: 'cr-sidein' }, [summary(x)]); 
 function paintSide(x) { var s = R.querySelector('#cr-sum'); if (s) { s.innerHTML = ''; s.appendChild(sidePanel(x)); } }
 function summary(x) {
 var r = x.result || {}, c = calcOf(x), R0 = rate(x);
-if (!r.ok) return el('section', { class: 'cr-card is-sum' }, [el('div', { class: 'cr-sum-h' }, [el('h2', { text: 'الملخص المالي' }), saveInd()]), note('warn', ERRT[r.error] || 'أكمل الحسبة', r.seq ? [el('span', { text: 'الدفعة ' + r.seq })] : r.error === 'dist_sum' ? [el('span', { text: 'المطلوب ' + money(r.need) + ' · المدخل ' + money(r.got) })] : [])]);
-var ln = function (t, v, cls, tag) { return el('li', { class: cls || '' }, [el('span', {}, [t, tag ? el('small', { class: 'cr-tg', text: tag }) : null]), ltr(v)]); };
-var L = [];
-c.lines.forEach(function (l) { if (String(l.t || '').trim()) L.push(ln(l.t, money(l.amt), Number(l.amt) > 0 ? 'is-it' : 'is-it is-z', c.hide.indexOf(l.id) >= 0 ? 'مدمج' : !l.vat ? 'غير خاضع' : null)); });
-var taxb = c.lines.reduce(function (s, l) { return s + (l.vat ? Number(l.amt) || 0 : 0); }, 0);
-L.push(ln('مجموع البنود', money(r.fees), 'is-sub'), ln('الخاضع للضريبة', money(taxb), 'is-mut'), ln('ضريبة القيمة المضافة ' + R0 + '٪', money(r.vat)));
-var adm = c.lines.reduce(function (s, l) { return s + (c.hide.indexOf(l.id) >= 0 ? Number(l.amt) || 0 : 0); }, 0);
-return el('section', { class: 'cr-card is-sum' }, [el('div', { class: 'cr-sum-h' }, [el('h2', { text: 'الملخص المالي' }), saveInd()]),
-el('ul', { class: 'cr-sum' }, L), el('div', { class: 'cr-grand' }, [el('span', { text: 'إجمالي الإضافة على العقد' }), el('b', {}, [ltr(money(r.total)), ' ر.س'])]),
-el('ul', { class: 'cr-sum' }, [ln('قيمة العقد قبل', money(r.contract && r.contract.total_before), 'is-mut'), ln('قيمة العقد بعد', money(r.contract && r.contract.total_after), 'is-t'),
-ln('الدفعات المعدّلة', String((r.rows || []).filter(function (z) { return z.open && (Number(z.add) !== 0 || z.due_after !== z.due_before); }).length), 'is-mut'), adm > 0 ? ln('يراه العميل سطرًا واحدًا «' + svcOf(c) + '»', money(adm), 'is-mut') : null].filter(Boolean)),
-el('h3', { text: 'ما يراه العميل' }), el('ul', { class: 'cr-sum is-cl' }, (r.client_lines || []).map(function (l) { return el('li', {}, [el('span', { text: l.t }), ltr(money(l.amt))]); }))]);
+if (!r.ok) return el('section', { class: 'cr-card is-sum' }, [el('div', { class: 'cr-sum-h' }, [el('h2', { text: 'الملخص المالي' })]), note('warn', ERRT[r.error] || 'أكمل الحسبة', r.seq ? [el('span', { text: 'الدفعة ' + r.seq })] : r.error === 'dist_sum' ? [el('span', { text: 'المطلوب ' + money(r.need) + ' · المدخل ' + money(r.got) })] : [])]);
+var ln = function (t, v, cls, tag) { return el('li', { class: cls || '' }, [el('span', {}, [el('span', { class: 'cr-sum-t', text: t }), tag ? el('small', { class: 'cr-tg', text: tag }) : null]), ltr(v)]); };
+var items = c.lines.filter(function (l) { return String(l.t || '').trim(); });
+var taxb = items.reduce(function (s, l) { return s + (l.vat ? Number(l.amt) || 0 : 0); }, 0);
+var nRows = (r.rows || []).filter(function (z) { return z.open && (Number(z.add) !== 0 || z.due_after !== z.due_before); }).length;
+var cl = r.client_lines || [];
+return el('section', { class: 'cr-card is-sum' }, [
+el('div', { class: 'cr-sum-h' }, [el('h2', { text: 'الملخص المالي' }), el('span', { class: 'cr-sum-n', text: items.length + (items.length === 1 ? ' بند' : ' بنود') })]),
+el('div', { class: 'cr-grand' }, [el('span', {}, [el('small', { text: 'إجمالي الإضافة على العقد' }), el('em', { text: 'شامل الضريبة ' + money(r.vat) })]), el('b', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })])]),
+el('div', { class: 'cr-sum-b' }, [el('h3', { text: 'البنود' }), el('ul', { class: 'cr-sum' }, items.map(function (l) { return ln(l.t, money(l.amt), Number(l.amt) > 0 ? 'is-it' : 'is-it is-z', c.hide.indexOf(l.id) >= 0 ? 'مدمج' : !l.vat ? 'غير خاضع' : null); }).concat([
+ln('مجموع البنود', money(r.fees), 'is-sub'), el('li', { class: 'is-tax' }, [el('span', {}, [el('span', { class: 'cr-sum-t', text: 'ضريبة القيمة المضافة ' + R0 + '٪' }), el('small', { class: 'cr-sum-on', text: 'على ' + money(taxb) })]), ltr(money(r.vat))])]))]),
+el('div', { class: 'cr-sum-b' }, [el('h3', { text: 'أثرها على العقد' }), el('div', { class: 'cr-cmp' }, [el('div', {}, [el('small', { text: 'قبل' }), ltr(money(r.contract && r.contract.total_before))]), el('i', {}, [icon('back')]), el('div', { class: 'is-after' }, [el('small', { text: 'بعد' }), ltr(money(r.contract && r.contract.total_after))])]),
+el('p', { class: 'cr-sum-m' }, [icon('calc'), nRows + ' ' + (nRows === 1 ? 'مبلغ يتغيّر' : 'مبالغ تتغيّر') + ' في الجدول'])]),
+!cl.length ? null : !items.some(function (l) { return c.hide.indexOf(l.id) >= 0; }) ? el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('p', { class: 'cr-sum-m', text: 'كل بند سطرًا مستقلًا كما في القائمة أعلاه.' })]) : el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('ul', { class: 'cr-sum' }, cl.map(function (l) { return el('li', {}, [el('span', { class: 'cr-sum-t', text: l.t }), ltr(money(l.amt))]); }))])]);
 }
 function schedTable(x, c, ed, upd) {
 var r = x.result || {}, rows = r.ok ? r.rows : (x.payments || []).map(function (p) { return { pid: p.pid, seq: p.seq, open: p.open, target: (x.payment_ids || []).indexOf(p.pid) >= 0, due_before: p.due, due_after: p.due, amt_before: p.amount, add: 0, amt_after: p.amount }; });

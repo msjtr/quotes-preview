@@ -444,3 +444,114 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 }
 
 .cr-side .cr-grand { flex-wrap: wrap; } .cr-side .cr-grand span { font-size: 13.5px; } .cr-side .cr-grand b { white-space: nowrap; }
+
+/* ═══ v876 — «البنود والحسبة»: البنود بطاقات متكيّفة، مفاتيح بدل القوائم، قائمة «إضافة بند» جديدة، وملخص مالي بلا تكرار ═══ */
+.cr-li-wrap { display: grid; gap: 10px; }
+.cr-li-hd { display: none; }
+.cr-li-list { display: grid; gap: 10px; }
+.cr-li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr) 40px; grid-template-areas: "n n n d" "a v s s" "t t t t"; gap: 10px 12px; align-items: end; padding: 12px 14px; border: 1px solid var(--k-line); border-radius: 14px; background: var(--k-card); transition: border-color .15s, box-shadow .15s; }
+.cr-li:focus-within { border-color: var(--k-brand); box-shadow: 0 0 0 3px var(--k-tint); }
+.cr-li.is-hid { background: linear-gradient(0deg, var(--k-soft), var(--k-card)); }
+.cr-li-n { grid-area: n; min-width: 0; align-self: center; }
+.cr-li-n .cr-it-n b { font-size: 14px; }
+.cr-li-in { width: 100%; max-width: none !important; min-height: 40px; font-weight: 800; }
+.cr-li-f { display: grid; gap: 5px; min-width: 0; }
+.cr-li-f.is-amt { grid-area: a; } .cr-li-f.is-vat { grid-area: v; } .cr-li-f.is-show { grid-area: s; }
+.cr-li-l { font-size: 11.5px; font-weight: 800; color: var(--k-mut); }
+.cr-li .cr-money { min-height: 40px; }
+.cr-li .cr-money input { min-height: 38px; font-weight: 800; font-size: 14px; }
+.cr-li-d { grid-area: d; justify-self: end; align-self: start; }
+.cr-li-t { grid-area: t; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px dashed var(--k-line); font-variant-numeric: tabular-nums; }
+.cr-li-tx { color: var(--k-mut); font-size: 12.5px; font-weight: 700; }
+.cr-li-tt { display: inline-flex; align-items: baseline; gap: 8px; }
+.cr-li-tt small { color: var(--k-mut); font-size: 12px; font-weight: 700; }
+.cr-li-tt b { font-size: 16px; font-weight: 900; color: var(--k-ink); }
+.cr-seg2 { display: flex; background: var(--k-soft2); border-radius: 10px; padding: 3px; gap: 3px; min-height: 40px; }
+.cr-seg2 button { flex: 1 1 0; min-width: 0; border: 0; background: none; border-radius: 8px; padding: 4px 8px; font: inherit; font-size: 12.5px; font-weight: 800; color: var(--k-mut); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cr-seg2 button.is-on { background: var(--k-card); color: var(--k-brand); box-shadow: 0 1px 3px rgba(11, 27, 51, .14); }
+.cr-seg2 button:disabled { cursor: default; }
+:is(.pv-dark, .t2.is-dark) .crq .cr-seg2 button.is-on { color: var(--k-acc); }
+.cr-li-empty { display: grid; justify-items: center; gap: 4px; text-align: center; padding: 24px 12px; border: 1px dashed var(--k-line); border-radius: 14px; color: var(--k-mut); font-size: 13px; }
+.cr-li-empty .cr-ic { width: 26px; height: 26px; color: var(--k-brand); } .cr-li-empty b { color: var(--k-ink); font-size: 14px; }
+.cr-li-foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--k-line); border-radius: 14px; overflow: hidden; background: var(--k-soft); font-variant-numeric: tabular-nums; }
+.cr-li-foot > div { display: grid; gap: 2px; padding: 10px 14px; }
+.cr-li-foot > div + div { border-inline-start: 1px solid var(--k-line); }
+.cr-li-foot small { color: var(--k-mut); font-size: 11.5px; font-weight: 800; }
+.cr-li-foot b { font-size: 15px; font-weight: 900; }
+.cr-li-foot .is-tot { background: var(--k-tint2); } .cr-li-foot .is-tot b { color: var(--k-brand); font-size: 17px; }
+:is(.pv-dark, .t2.is-dark) .crq .cr-li-foot .is-tot b { color: var(--k-acc); }
+/* عرض العمود الرئيسي نفسه (لا الصفحة) يحدد شكل البنود */
+.crq .cr-split > .cr-main { container-type: inline-size; container-name: crm; }
+/* عرض واسع: سطر واحد لكل بند برأس أعمدة */
+@container crm (min-width: 960px) {
+.cr-li-hd { display: grid; grid-template-columns: minmax(170px, 1.6fr) 150px 160px 200px 130px 40px; gap: 12px; padding: 0 14px; font-size: 11.5px; font-weight: 800; color: var(--k-mut); }
+.cr-li-hd span:nth-child(5) { text-align: end; }
+.cr-li { grid-template-columns: minmax(170px, 1.6fr) 150px 160px 200px 130px 40px; grid-template-areas: "n a v s t d"; align-items: center; }
+.cr-li-l { display: none; }
+.cr-li-d { align-self: center; }
+.cr-li-t { border-top: 0; padding-top: 0; flex-direction: column; align-items: flex-end; gap: 0; }
+.cr-li-tt small { display: none; }
+}
+@container crm (max-width: 520px) {
+.cr-li { grid-template-columns: minmax(0, 1fr) 40px; grid-template-areas: "n d" "a a" "v v" "s s" "t t"; padding: 12px; }
+.cr-li-foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cr-li-foot .is-tot { grid-column: 1 / -1; border-inline-start: 0 !important; border-top: 1px solid var(--k-line); display: flex; justify-content: space-between; align-items: baseline; }
+}
+
+/* القائمة المنسدلة «إضافة بند» */
+.cr-pop { border-radius: 18px; box-shadow: 0 28px 70px -28px rgba(11, 27, 51, .55), 0 0 0 1px rgba(11, 27, 51, .04); max-height: min(520px, 76vh); }
+.cr-pop-h { display: grid; gap: 8px; padding: 12px; background: var(--k-soft, #F8FAFC); }
+.cr-pop-tt { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .cr-pop-tt b { font-size: 14.5px; font-weight: 900; }
+.cr-pop-x { border: 0; background: none; color: var(--k-mut, #66748C); width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; } .cr-pop-x:hover { background: var(--k-soft2, #F1F5F9); }
+.cr-pop-q { display: flex; align-items: center; gap: 8px; border: 1px solid var(--k-line, #E3E8F0); background: var(--k-card, #fff); border-radius: 12px; padding: 0 10px; color: var(--k-mut, #66748C); }
+.cr-pop-q:focus-within { border-color: var(--k-brand, #06707A); box-shadow: 0 0 0 3px var(--k-tint, #E0F2F3); }
+.cr-pop-h .cr-pop-q input { border: 0; outline: 0; box-shadow: none; min-height: 40px; padding: 0; background: none; flex: 1; min-width: 0; }
+.cr-pop-l { padding: 4px 8px 8px; }
+.cr-pop-g { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; background: var(--k-card, #fff); padding: 10px 6px 6px; font-size: 11.5px; font-weight: 900; color: var(--k-mut, #66748C); letter-spacing: .01em; }
+.cr-pop-g i { font-style: normal; background: var(--k-soft2, #F1F5F9); border-radius: 999px; padding: 0 8px; font-size: 11px; }
+.cr-pop-i { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 12px; margin-bottom: 2px; }
+.cr-pop-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--k-tint2, #F2FAFA); color: var(--k-brand, #06707A); }
+.cr-pop-ic .cr-ic { width: 16px; height: 16px; }
+.cr-pop-tx { display: grid; gap: 3px; min-width: 0; } .cr-pop-tx b { font-size: 13.5px; font-weight: 800; }
+.cr-pop-ch { display: flex; flex-wrap: wrap; gap: 4px; }
+.cr-pop-ch small { display: inline-block; font-size: 11px; font-weight: 700; color: var(--k-mut, #66748C); background: var(--k-soft2, #F1F5F9); border-radius: 999px; padding: 0 8px; }
+.cr-pop-ch small.is-n { color: var(--k-warn, #B45309); background: var(--k-warnw, #FEF3C7); }
+.cr-pop-i em { font-style: normal; font-size: 12px; font-weight: 900; color: var(--k-brand, #06707A); border: 1px solid var(--k-tint, #E0F2F3); background: var(--k-tint2, #F2FAFA); border-radius: 999px; padding: 3px 12px; }
+.cr-pop-i:hover:not(:disabled) { background: var(--k-tint2, #F2FAFA); } .cr-pop-i:hover:not(:disabled) em { background: var(--k-brand, #06707A); color: #fff; border-color: var(--k-brand, #06707A); }
+.cr-pop-i.is-had { opacity: 1; } .cr-pop-i.is-had .cr-pop-ic { background: var(--k-okw, #E6F6EE); color: var(--k-ok, #15803D); } .cr-pop-i.is-had em { color: var(--k-ok, #15803D); background: var(--k-okw, #E6F6EE); border-color: transparent; } .cr-pop-i.is-had b { color: var(--k-mut, #66748C); }
+.cr-pop-0 { text-align: center; color: var(--k-mut, #66748C); font-size: 13px; padding: 20px 8px; }
+.cr-pop-f { background: var(--k-soft, #F8FAFC); }
+.cr-pop-new { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 40px; border: 1.5px dashed var(--k-brand, #06707A); background: var(--k-card, #fff); color: var(--k-brand, #06707A); border-radius: 12px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.cr-pop-new:hover { background: var(--k-tint2, #F2FAFA); }
+
+/* الملخص المالي */
+.cr-card.is-sum { display: grid; gap: 12px; }
+.cr-card.is-sum .cr-sum-h { margin-bottom: 0; }
+.cr-sum-n { font-size: 12px; font-weight: 800; color: var(--k-mut); background: var(--k-soft2); border-radius: 999px; padding: 1px 10px; }
+.cr-card.is-sum .cr-grand { margin: 0; padding: 14px 16px; border-radius: 16px; align-items: center; }
+.cr-grand > span { display: grid; gap: 2px; } .cr-grand > span small { font-size: 13px; font-weight: 800; opacity: .95; } .cr-grand > span em { font-style: normal; font-size: 11.5px; font-weight: 700; opacity: .8; }
+.cr-grand > b { font-size: 22px; white-space: nowrap; } .cr-grand > b small { font-size: 12px; font-weight: 800; opacity: .9; }
+.cr-sum-b { display: grid; gap: 4px; }
+.cr-sum-b h3 { margin: 0; font-size: 11.5px; font-weight: 900; color: var(--k-mut); letter-spacing: .01em; }
+.cr-sum li { align-items: baseline; }
+.cr-sum li > span { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; min-width: 0; }
+.cr-sum-t { color: var(--k-ink); }
+.cr-sum li.is-tax .cr-sum-t { color: var(--k-mut); }
+.cr-sum-on { font-size: 11px; color: var(--k-mut); font-weight: 700; }
+.cr-sum li bdi { font-weight: 800; white-space: nowrap; }
+.cr-cmp { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.cr-cmp > div { display: grid; gap: 2px; padding: 8px 10px; border-radius: 12px; background: var(--k-soft); border: 1px solid var(--k-line); font-variant-numeric: tabular-nums; font-weight: 800; }
+.cr-cmp > div small { font-size: 11px; color: var(--k-mut); font-weight: 800; }
+.cr-cmp > div.is-after { background: var(--k-tint2); border-color: var(--k-tint); color: var(--k-brand); }
+:is(.pv-dark, .t2.is-dark) .crq .cr-cmp > div.is-after { color: var(--k-acc); }
+.cr-cmp > i { color: var(--k-mut); display: grid; place-items: center; }
+.cr-cmp > i .cr-ic { width: 16px; height: 16px; }
+.cr-sum-m { display: flex; align-items: center; gap: 6px; color: var(--k-mut); font-size: 12.5px; font-weight: 700; margin-top: 4px; }
+.cr-sum-m .cr-ic { width: 15px; height: 15px; }
+.cr-sum-b.is-cl { padding: 10px 12px; border-radius: 12px; background: var(--k-soft); border: 1px solid var(--k-line); }
+.cr-sum-b.is-cl li { padding: 6px 0; }
+/* عند تكدّس العمود الجانبي فوق المحتوى: الملخص في عمودين مضغوطين */
+@container crq (max-width: 1000px) and (min-width: 621px) {
+.cr-card.is-sum { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.cr-card.is-sum > .cr-sum-h, .cr-card.is-sum > .cr-grand { grid-column: 1 / -1; }
+}
