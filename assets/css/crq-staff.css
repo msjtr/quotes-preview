@@ -839,3 +839,43 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-next-h .cr-save.is-idle { display: none; }
 @container crq (max-width: 560px) { .crq .cr-hero.cr-hero2 { padding: 14px; } .crq .cr-hero2-up { order: 3; } .crq .cr-hero2 .cr-allb { order: 4; } }
 .crq .cr-r1 { align-items: start; }
+
+/* ═══ v883 — محرّر الملحق بأدراج · بيانات المنشأة (مسمّى وقيمة) ═══ */
+.crq .cr-ed { display: grid; gap: 8px; align-content: start; }
+.crq .cr-acc { opacity: 1; transition: border-color .15s, box-shadow .15s; }
+.crq .cr-acc.is-open { border-color: var(--k-brand); box-shadow: 0 0 0 3px var(--k-tint); }
+.crq .cr-acc-h { display: flex; align-items: center; gap: 10px; padding: 0 12px 0 0; }
+.crq .cr-acc-t { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t c" "s c"; align-items: center; column-gap: 10px; padding: 12px 14px; border: 0; background: none; font: inherit; color: inherit; text-align: start; cursor: pointer; }
+.crq .cr-acc-t b { grid-area: t; font-size: 13.5px; font-weight: 900; }
+.crq .cr-acc-t small { grid-area: s; font-size: 11.5px; color: var(--k-mut); font-weight: 600; }
+.crq .cr-acc-chev { grid-area: c; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: var(--k-soft2); color: var(--k-mut); transition: transform .2s; }
+.crq .cr-acc-chev .cr-ic { width: 15px; height: 15px; }
+.crq .cr-acc.is-open .cr-acc-chev { transform: rotate(180deg); background: var(--k-tint); color: var(--k-brand); }
+.crq .cr-acc > .cr-ed-b { border-top: 1px solid var(--k-line); background: var(--k-soft); }
+.crq .cr-acc:not(.is-open) > .cr-ed-b { display: none; }
+.crq .cr-acc.is-off .cr-acc-t b, .crq .cr-acc.is-off .cr-acc-t small { color: var(--k-mut); }
+.crq .cr-acc.is-off .cr-acc-t small { font-style: italic; }
+.crq .cr-ed-pr { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) 32px 32px; gap: 8px; align-items: center; }
+.crq .cr-ed-pr input { min-height: 38px; border: 1px solid var(--k-line); border-radius: 10px; padding: 0 10px; font: inherit; font-size: 13px; background: var(--k-card); color: var(--k-ink); min-width: 0; }
+.crq .cr-ed-pr .cr-ed-pl { font-weight: 800; }
+.crq .cr-ed-pr.is-off { opacity: .6; } .crq .cr-ed-pr.is-off > span { font-size: 12.5px; padding: 0 10px; text-decoration: line-through; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crq .cr-ed-pr .cr-x.is-show { color: var(--k-brand); }
+.crq .cr-ed-empty { display: flex; align-items: center; gap: 8px; padding: 12px; border: 1.5px dashed var(--k-line); border-radius: 12px; background: var(--k-card); color: var(--k-mut); font-size: 12.5px; }
+.crq .cr-ed-empty .cr-ic { width: 18px; height: 18px; flex: none; }
+@container crq (max-width: 560px) { .crq .cr-ed-pr { grid-template-columns: minmax(0, 1fr) 32px 32px; row-gap: 6px; padding-bottom: 8px; border-bottom: 1px dashed var(--k-line); } .crq .cr-ed-pr > :nth-child(1) { grid-column: 1; grid-row: 1; } .crq .cr-ed-pr > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; } }
+/* v885: تحكم كامل في الملحق — ترتيب الأقسام والأعمدة وإخفاء الصفوف */
+.crq .cr-mv { display: grid; grid-template-columns: 26px minmax(0, 1fr) 34px 34px 34px; gap: 6px; align-items: center; padding: 4px 0; }
+.crq .cr-mv-n { width: 26px; height: 26px; border-radius: 8px; background: var(--k-soft, #F1F5F9); color: var(--k-mut); font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+.crq .cr-mv-l { font-size: 13px; font-weight: 800; color: var(--k-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crq .cr-mv-in { min-height: 36px; min-width: 0; border: 1px solid var(--k-line); border-radius: 10px; padding: 0 10px; font: inherit; font-size: 13px; font-weight: 700; background: var(--k-card); color: var(--k-ink); }
+.crq .cr-mv .cr-x { width: 34px; height: 34px; color: var(--k-mut); font-weight: 900; }
+.crq .cr-mv .cr-x:disabled { opacity: .35; cursor: default; }
+.crq .cr-mv .cr-x.is-show { color: var(--k-brand); }
+.crq .cr-mv.is-off .cr-mv-l, .crq .cr-mv.is-off .cr-mv-in { opacity: .5; text-decoration: line-through; }
+.crq .cr-ed-subh { margin: 10px 0 2px; font-size: 12px; font-weight: 900; color: var(--k-brand); }
+.crq .cr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.crq .cr-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--k-line); border-radius: 999px; background: var(--k-card); color: var(--k-ink); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.crq .cr-chip svg { width: 16px; height: 16px; color: var(--k-brand); }
+.crq .cr-chip.is-off { background: var(--k-soft, #F1F5F9); color: var(--k-mut); text-decoration: line-through; }
+.crq .cr-chip.is-off svg { color: var(--k-mut); }
+@media (max-width: 640px) { .crq .cr-mv { grid-template-columns: 24px minmax(0, 1fr) 32px 32px 32px; gap: 4px; } }

@@ -23826,15 +23826,20 @@ function docxCore(H) {
       cap: 'صدرت آليًا من المنصة — التحقق برقم الشهادة', auto: 'صدرت الشهادة إلكترونيًا — التحقق برقمها من موقع المنصة' },
 /* v867: ملحق تأجيل الدفعة — قالب في «قوالب المستندات» (platform_settings: df)، ولكل طلب نسخته الخاصة إن وُجدت */
 df: { org: ORG, title: 'ملحق تأجيل دفعة', en: 'PAYMENT DEFERRAL ADDENDUM', issuer: 'قسم التحصيل', pill: 'ملحق عقد',
-tt: { parties: 'أطراف الملحق', defer: 'تفاصيل التأجيل', fees: 'رسوم التأجيل', sched: 'جدول الدفعات بعد التعديل', terms: 'بنود الملحق', sign: 'إقرار الطرف الثاني وتوقيعه', note: 'تنويه' },
+tt: { parties: 'أطراف الملحق', defer: 'جدول الدفعات قبل التأجيل', fees: 'رسوم التأجيل', sched: 'جدول الدفعات الجديد بعد التأجيل', terms: 'الشروط والأحكام', contract: 'قيمة العقد قبل التأجيل وبعده', ids: 'بيانات المنشأة', sign: 'إقرار الطرف الثاني وتوقيعه', note: 'تنويه', summary: 'ملخص الطلب' },
 p1: 'منصة تيرا للخدمات المتكاملة',
 intro: 'بناءً على طلب الطرف الثاني تأجيل الدفعة المبيّنة أدناه، اتُّفق على تعديل جدول الدفع في العقد المذكور وفق ما يلي:',
-terms: ['يُعدّ هذا الملحق جزءًا لا يتجزأ من العقد الأصلي، وتبقى بقية بنود العقد سارية دون تغيير.', 'تُضاف رسوم التأجيل إلى قيمة العقد وتوزَّع على الدفعات المتبقية وفق الجدول الوارد في هذا الملحق.', 'يلتزم الطرف الثاني بسداد الدفعات في مواعيدها الجديدة الواردة في الجدول.', 'لا يسري هذا الملحق إلا بعد توقيع الطرف الثاني عليه إلكترونيًا.'],
+terms: [],
+ids: [['السجل التجاري', ''], ['الرقم الضريبي', ''], ['رقم وثيقة العمل الحر', ''], ['العنوان', ''], ['الجوال', ''], ['البريد الإلكتروني', '']],
+_hid: { ids: [], defer: [], sched: [], fees: [] },
+order: [],
+cols: { summary: [], defer: [], sched: [] },
 ack: 'أقرّ بأنني اطّلعت على تفاصيل التأجيل والجدول الجديد ورسوم التأجيل، وأوافق على تعديل العقد وفقها.',
 pend: 'يوقّع الطرف الثاني إلكترونيًا من الرابط الذي يصله، ويُوثَّق التوقيع برمز تحقق.',
 note: 'صدر هذا الملحق إلكترونيًا من منصة تيرا، ويُعتدّ بالتوقيع الإلكتروني الموثّق برمز التحقق.',
 adds: [],
-show: { product: true, intro: true, defer: true, fees: true, contract: true, sched: true, terms: true, sign: true, note: true, s_name: true, s_op: true, s_method: true, s_factor: true, s_time: true, s_img: true },
+att: false,
+show: { parties: true, ids: true, icons: true, p1: true, p2: true, pno: true, f_sub: true, f_vat: true, f_tot: true, c_before: true, c_after: true, summary: true, h_en: true, h_issuer: true, h_pill: true, product: true, intro: true, defer: true, fees: true, contract: true, sched: true, terms: true, sign: true, note: true, s_name: true, s_op: true, s_method: true, s_factor: true, s_time: true, s_img: true },
 auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقيع الطرف الثاني' }
   };
   /* المحفوظ فوق الافتراضي: النص الفارغ يعود للافتراضي (ما عدا الحقول الفارغة أصلًا)، والقوائم تُستبدل كاملة */
@@ -23980,40 +23985,159 @@ const DF_METHOD = { draw: 'توقيع بالرسم', type: 'توقيع بكتا�
 function dfAt(t) { if (!t) return ''; const d = new Date(new Date(t).getTime() + 3 * 3600 * 1000); return isNaN(d.getTime()) ? String(t) : dmy(d.toISOString().slice(0, 10)) + ' · ' + d.toISOString().slice(11, 16); }
 function deferPages(o, T) {
 T = T || tpl('df'); o = o || {};
+/* v885: تحكم كامل — ترتيب الأقسام (T.order)، وأعمدة كل جدول ترتيبًا وإخفاءً وتسمية (T.cols) بعرض متساوٍ، وإخفاء الصفوف والحقول (T._hid · show)، والفراغ يُسحب تلقائيًا · v884: الترتيب للعميل — الدفعات قبل التأجيل كاملة · الرسوم · قيمة العقد قبل وبعد · الدفعات الجديدة. بيانات المنشأة بطاقات بهوية المستند ومن الإعدادات كاملة، والملخص جدول · v883: الملحق أوضح للعميل — ملخص بلغة واضحة، رسوم مفصّلة بلا تكرار الضريبة، أثر العقد في بطاقة مستقلة، بيانات المنشأة قابلة للتعديل والإخفاء، وتوقيع الطرفين في مربعين واضحين */
 const S = function (k) { return on(T, k); }, c = o.calc || {}, rows = Array.isArray(c.rows) ? c.rows : [], no = o.no || '';
 const tg = rows.filter(function (r) { return r.target; });
 const op = rows.filter(function (r) { return r.open; }).slice().sort(function (a, b) { return String(a.due_after).localeCompare(String(b.due_after)); });
+const all = rows.slice().sort(function (a, b) { return (Number(a.seq) || 0) - (Number(b.seq) || 0); });
 const L = Array.isArray(c.client_lines) ? c.client_lines : [];
 const terms = (T.terms || []).filter(Boolean), g = o.sign || null, pad = 'padding:8px 18px;line-height:1.95;margin:0';
-const A = [], B = [];
-const org = (o.org && (o.org.legal || o.org.brand)) || T.p1;
-A.push(dCard(T.tt.parties, 'users', dKV([['الطرف الأول', org, false], ['الطرف الثاني', o.name || 'العميل', false], ['رقم العقد', o.contract_no || '', true], S('product') && o.product ? ['المنتج', o.product, false] : null])
-+ (S('intro') && T.intro ? dP(T.intro, pad) : '')));
-if (S('defer') && tg.length) A.push(dCard(T.tt.defer, 'cal', dTbl(['الدفعة', 'الموعد السابق', 'الموعد الجديد', 'قيمة الدفعة'], tg.map(function (r) { return [String(r.seq), dmy(r.due_before), dmy(r.due_after), sar(r.amt_before)]; }))));
-if (S('fees')) A.push(dCard(T.tt.fees, 'receipt', dKV(L.map(function (l) { return [l.t, sar(l.amt) + (Number(l.tax) > 0 ? ' + ضريبة ' + sar(l.tax) : ''), false, null, true]; }),
-[['ضريبة القيمة المضافة' + (c.vat_rate != null ? ' (' + Number(c.vat_rate) + '%)' : ''), sar(c.vat)], S('contract') && c.contract ? ['قيمة العقد بعد التعديل', sar(c.contract.total_after)] : null, ['إجمالي رسوم التأجيل', sar(c.total), 'gt']])));
-if (S('sched') && op.length) A.push(dCard(T.tt.sched, 'list', dTbl(['الدفعة', 'تاريخ الاستحقاق', 'القيمة قبل', 'الإضافة', 'القيمة بعد'], op.map(function (r) { return [String(r.seq) + (r.target ? ' — المؤجلة' : ''), dmy(r.due_after), sar(r.amt_before), sar(r.add), sar(r.amt_after)]; }))));
-if (S('terms') && terms.length) B.push(dCard(T.tt.terms, 'doc', terms.map(function (t, i) { return dP((i + 1) + '. ' + t, pad); }).join('')));
-/* v870: أقسام مضافة من المكتبة أو فارغة — { t, lines[], on } */
-(Array.isArray(T.adds) ? T.adds : []).forEach(function (x) { if (!x || x.on === false || !String(x.t || '').trim()) return; const L2 = (Array.isArray(x.lines) ? x.lines : []).filter(Boolean); B.push(dCard(String(x.t), 'doc', L2.length > 1 ? L2.map(function (t, i) { return dP((i + 1) + '. ' + t, pad); }).join('') : L2.map(function (t) { return dP(t, pad); }).join(''))); });
-/* v870: التوقيع والإثبات — صفوف الإثبات تظهر وتُخفى، وقبل التوقيع مكان التوقيع ظاهر «بانتظار الطرف الثاني»، و«نموذج» في معاينة بعد التوقيع */
-if (S('sign')) {
+const TT = Object.assign({}, T.tt || {}); if (!TT.terms || TT.terms === 'بنود الملحق') TT.terms = 'الشروط والأحكام';
+if (!TT.defer || TT.defer === 'تفاصيل التأجيل') TT.defer = 'جدول الدفعات قبل التأجيل';
+if (!TT.contract || TT.contract === 'أثر التأجيل على قيمة العقد') TT.contract = 'قيمة العقد قبل التأجيل وبعده';
+if (!TT.sched || TT.sched === 'جدول الدفعات بعد التعديل') TT.sched = 'جدول الدفعات الجديد بعد التأجيل';
+if (!TT.summary) TT.summary = 'ملخص الطلب'; if (!TT.note) TT.note = 'تنويه'; if (!TT.sign) TT.sign = 'إقرار الطرف الثاني وتوقيعه';
+const HID = T._hid && typeof T._hid === 'object' ? T._hid : {};
+const hidOf = function (k) { return (Array.isArray(HID[k]) ? HID[k] : []).map(function (x) { return String(x && typeof x === 'object' ? x.t : x); }); };
+/* أعمدة الجدول: الافتراضي ثم المحفوظ (ترتيب · تسمية · إخفاء)، والعمود الجديد يُلحق في مكانه الافتراضي */
+const colsOf = function (key, defs) {
+const sv = (T.cols && Array.isArray(T.cols[key]) ? T.cols[key] : []).filter(function (x) { return x && defs.some(function (d) { return d.k === x.k; }); });
+const out = sv.map(function (x) { const d = defs.filter(function (q) { return q.k === x.k; })[0]; return { k: d.k, l: String(x.l || '').trim() || d.l, on: x.on !== false && d.on !== 'never' }; });
+defs.forEach(function (d, i) { if (out.some(function (x) { return x.k === d.k; })) return; out.splice(Math.min(i, out.length), 0, { k: d.k, l: d.l, on: d.on !== false }); });
+return out.filter(function (x) { return x.on; });
+};
+/* عرض متساوٍ لكل الأعمدة الظاهرة */
+const eqTbl = function (head, rows) { const n = head.length || 1, w = (100 / n).toFixed(2); return dTbl(head, rows).replace(/<colgroup>[\s\S]*?<\/colgroup>/, '<colgroup>' + head.map(function () { return '<col style="width:' + w + '%">'; }).join('') + '</colgroup>'); };
+const A = [], W = []; /* v883: كل بطاقة بارتفاعها التقريبي بالبكسل — تُوزَّع على الصفحات بلا قصّ */
+const add = function (html) { A.push(html); W.push((add.w || 120) + 12); add.w = 0; };
+/* v884: بطاقة قابلة للتقسيم (جدول أو بنود) — تملأ ما بقي من الصفحة وتكمل في التالية بعنوان «تابع»، فلا فراغات ولا صفحات فارغة */
+const addSplit = function (sp) { if (sp.items.length) { A.push(sp); W.push(0); } };
+const OG = o.org || {};
+const org = (OG.legal || OG.brand) || T.p1;
+const card = function (t, ic, inner, cls, gold) { const h = dCard(t, ic, inner, cls, gold); return S('icons') ? h : h.replace(/<span class="d3-ic">[\s\S]*?<\/span><b>/, '<b>'); };
+/* بيانات المنشأة: مسمّى وقيمة لكل سطر — القيمة الفارغة تُقرأ من «بيانات المنشأة» في الإعدادات */
+const OF = { 'السجل التجاري': OG.cr, 'رقم السجل التجاري': OG.cr, 'س.ت': OG.cr, 'الرقم الضريبي': OG.vat, 'رقم ضريبة القيمة المضافة': OG.vat, 'الرقم الموحّد': OG.unified, 'الرقم الموحد': OG.unified, 'رقم وثيقة العمل الحر': OG.freelance, 'وثيقة العمل الحر': OG.freelance,
+'العنوان': OG.address || OG.city || OG.region, 'المدينة': OG.city || OG.region, 'المنطقة': OG.region, 'الدولة': OG.country, 'الجوال': OG.mobile || OG.phone, 'الهاتف': OG.phone || OG.mobile, 'رقم التواصل': OG.phone || OG.mobile, 'واتساب': OG.whatsapp, 'رقم الواتساب': OG.whatsapp,
+'البريد الإلكتروني': OG.email, 'البريد': OG.email, 'الموقع الإلكتروني': OG.website, 'الموقع': OG.website, 'الاسم النظامي': OG.legal, 'الاسم التجاري': OG.brand, 'النشاط الرئيسي': OG.activity, 'النشاط': OG.activity, 'الكيان': OG.entity };
+const ids = S('ids') ? (Array.isArray(T.ids) ? T.ids : []).map(function (x) { const l = String((x && x[0]) || '').trim(), v = String((x && x[1]) || '').trim() || String(OF[l] || '').trim(); return l && v ? [l, v] : null; }).filter(Boolean) : [];
+/* v884: بيانات المنشأة بطاقات صغيرة بهوية المستند — شريط ذهبي وأيقونة لكل حقل، والقيمة الطويلة تأخذ عمودين */
+const idIc = function (l) { return /ضريب/.test(l) ? 'receipt' : /سجل|رقم|وثيقة|موحّد|موحد/.test(l) && !/جوال|هاتف|تواصل|واتساب/.test(l) ? 'hash' : /عنوان|مدينة|منطقة|دولة/.test(l) ? 'box' : /جوال|هاتف|تواصل|واتساب/.test(l) ? 'user' : /بريد/.test(l) ? 'doc' : /نشاط|كيان/.test(l) ? 'shield' : 'info'; };
+const gBar = 'background:linear-gradient(90deg,#a87a22,#f3d580,#a87a22)';
+const SEC = {};
+SEC.ids = function () {
+if (ids.length) {
+const N = ids.length >= 3 ? 3 : ids.length;
+const span = function (x) { return N === 3 && String(x[1]).length > 26 ? 2 : 1; };
+const rowsN = Math.ceil(ids.reduce(function (s, x) { return s + span(x); }, 0) / N);
+add.w = 58 + 56 * rowsN;
+add('<div class="d3-ids" style="margin:0 0 12px;padding:10px 12px 12px;border:1px solid #e3e8f0;border-radius:16px;background:linear-gradient(180deg,#f6fafb,#fff 70%);break-inside:avoid">'
++ '<div style="display:flex;align-items:center;gap:10px;margin:0 4px 9px"><b style="position:relative;font-size:12.5px;font-weight:800;color:#0b2552;padding-bottom:5px">' + esc(TT.ids || 'بيانات المنشأة') + '<i style="position:absolute;right:0;bottom:0;width:30px;height:3px;border-radius:3px;' + gBar + '"></i></b>'
++ '</div>'
++ '<div style="display:flex;flex-wrap:wrap;gap:8px">' + ids.map(function (x) {
+return '<div style="position:relative;display:flex;align-items:center;gap:8px;min-width:0;padding:10px 10px 7px;border:1px solid #e3e8f0;border-radius:12px;background:#fff;overflow:hidden;box-sizing:border-box;flex:1 1 calc(' + (100 * span(x) / N).toFixed(2) + '% - 8px)">'
++ '<i style="position:absolute;top:0;right:14px;left:14px;height:3px;border-radius:0 0 3px 3px;' + gBar + '"></i>'
++ (S('icons') ? '<span style="flex:none;display:block;width:26px;height:26px">' + d2Icon(idIc(x[0]), true).replace('<svg ', '<svg style="width:26px;height:26px;display:block" ') + '</span>' : '')
++ '<div style="min-width:0"><small style="display:block;font-size:10px;font-weight:600;color:#66748c;line-height:1.4">' + esc(x[0]) + '</small><b style="display:block;font-size:12px;font-weight:800;color:#0b2552;line-height:1.5;overflow-wrap:anywhere"><bdi' + (isLtr(x[1]) ? ' dir="ltr"' : '') + '>' + esc(x[1]) + '</bdi></b></div></div>';
+}).join('') + '</div></div>');
+}
+};
+SEC.parties = function () {
+const P = [S('p1') ? ['الطرف الأول', org, false] : null, S('p2') ? ['الطرف الثاني', o.name || 'العميل', false] : null, S('pno') ? ['رقم العقد', o.contract_no || '', true] : null, S('product') && o.product ? ['المنتج', o.product, false] : null].filter(Boolean);
+const intro = S('intro') && T.intro ? dP(T.intro, pad) : '';
+if (!P.length && !intro) return;
+add.w = 52 + 44 * Math.ceil(P.length / 2) + (intro ? 42 : 0), add(card(TT.parties, 'users', dKV(P) + intro));
+};
+/* ملخص الطلب — كم دفعة طلب العميل تأجيلها وقيمتها ورسومها، في جدول واحد مختصر (أعمدته قابلة للترتيب والإخفاء) */
+const tgAmt = tg.map(function (r) { return Number(r.amt_before) || 0; });
+const tgSum = tgAmt.reduce(function (s, v) { return s + v; }, 0);
+const mn = Math.min.apply(null, tgAmt.length ? tgAmt : [0]), mx = Math.max.apply(null, tgAmt.length ? tgAmt : [0]);
+SEC.summary = function () {
+if (!tg.length) return;
+const V = { n: tg.length > 1 ? String(tg.length) : 'رقم ' + tg[0].seq, per: tg.length > 1 ? (Math.abs(mx - mn) < 0.005 ? sar(mx) : 'من ' + sar(mn) + ' إلى ' + sar(mx)) : '', total: sar(tgSum), fees: Number(c.total) > 0 ? sar(c.total) : '' };
+const C = colsOf('summary', [{ k: 'n', l: tg.length > 1 ? 'عدد الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها' }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }]).filter(function (x) { return V[x.k]; });
+if (!C.length) return;
+add.w = 113, add(card(TT.summary, 'info', eqTbl(C.map(function (x) { return x.l; }), [C.map(function (x) { return V[x.k]; })])));
+};
+/* الجدولان بالترتيب نفسه (رقم الدفعة) وبالحالات نفسها — قبل التأجيل ثم بعده؛ وكل صف أو عمود قابل للإخفاء */
+const stOf = function (r, after) { return r.target ? (after ? 'مؤجَّلة' : 'مطلوب تأجيلها') : r.open ? 'غير مسددة' : 'مسددة'; };
+const payTbl = function (key, t, ic, defs, val) {
+const C = colsOf(key, defs), hr = hidOf(key), R = all.filter(function (r) { return hr.indexOf(String(r.seq)) < 0; });
+if (!C.length || !R.length) return;
+addSplit({ t: t, ic: ic, head: C.map(function (x) { return x.l; }), items: R.map(function (r) { return C.map(function (x) { return val(r, x.k); }); }) });
+};
+SEC.defer = function () { payTbl('defer', TT.defer, 'cal', [{ k: 'seq', l: 'الدفعة' }, { k: 'due', l: 'تاريخ الاستحقاق' }, { k: 'amt', l: 'القيمة' }, { k: 'st', l: 'الحالة' }],
+function (r, k) { return k === 'seq' ? String(r.seq) : k === 'due' ? dmy(r.due_before) : k === 'amt' ? sar(r.amt_before) : stOf(r, false); }); };
+SEC.sched = function () { payTbl('sched', TT.sched, 'list', [{ k: 'seq', l: 'الدفعة' }, { k: 'due', l: 'تاريخ الاستحقاق' }, { k: 'before', l: 'القيمة قبل التأجيل', on: false }, { k: 'add', l: 'منها رسوم التأجيل' }, { k: 'amt', l: 'القيمة بعد التأجيل' }, { k: 'st', l: 'الحالة' }],
+function (r, k) { return k === 'seq' ? String(r.seq) : k === 'due' ? dmy(r.due_after) : k === 'before' ? sar(r.amt_before) : k === 'add' ? sar(r.add) : k === 'amt' ? sar(r.amt_after) : stOf(r, true); }); };
+/* الرسوم: كل بند بمبلغه (قابل للإخفاء)، ثم المجموع والضريبة والإجمالي — كلٌّ قابل للإخفاء */
+SEC.fees = function () {
+const hf = hidOf('fees'), LL = L.filter(function (l) { return hf.indexOf(String(l.t)) < 0; });
+const sub = L.reduce(function (s, l) { return s + (Number(l.amt) || 0); }, 0);
+const tot = [S('f_sub') && L.length > 1 ? ['المجموع قبل الضريبة', sar(sub)] : null, S('f_vat') && Number(c.vat) > 0 ? ['ضريبة القيمة المضافة' + (c.vat_rate != null ? ' (' + Number(c.vat_rate) + '%)' : ''), sar(c.vat)] : null, S('f_tot') ? ['إجمالي رسوم التأجيل' + (Number(c.vat) > 0 ? ' شاملة الضريبة' : ''), sar(c.total), 'gt'] : null].filter(Boolean);
+if (!LL.length && !tot.length) return;
+add.w = 52 + 34 * LL.length + 34 * tot.length, add(card(TT.fees, 'receipt', dKV(LL.map(function (l) { return [l.t, sar(l.amt), false, null, true]; }), tot)));
+};
+SEC.contract = function () {
+if (!c.contract) return;
+const P = [S('c_before') ? ['قيمة العقد قبل التأجيل', sar(c.contract.total_before)] : null, S('c_after') ? ['قيمة العقد بعد التأجيل', sar(c.contract.total_after)] : null].filter(Boolean);
+if (P.length) add.w = 86, add(card(TT.contract, 'receipt', dKV(P)));
+};
+SEC.terms = function () { if (terms.length) addSplit({ t: TT.terms, ic: 'doc', para: true, num: true, items: terms }); };
+/* أقسام مضافة من المكتبة أو فارغة — { t, lines[], on } */
+SEC.adds = function () { (Array.isArray(T.adds) ? T.adds : []).forEach(function (x) { if (!x || x.on === false || !String(x.t || '').trim()) return; const L2 = (Array.isArray(x.lines) ? x.lines : []).filter(Boolean); if (L2.length) addSplit({ t: String(x.t), ic: 'doc', para: true, num: L2.length > 1, items: L2 }); }); };
+SEC.sign = function () {
 const gr = g ? [S('s_name') ? ['الاسم', g.name || '', false] : null, S('s_op') ? ['العملية', 'توقيع ملحق تأجيل الدفعة', false] : null, S('s_method') ? ['طريقة التوقيع', DF_METHOD[g.method] || '', false] : null,
-S('s_factor') ? ['التحقق', DF_FACTOR[g.factor] || '', false] : null, S('s_time') ? ['وقت التوقيع', dfAt(g.at) + (g.sample ? ' — نموذج' : ''), false] : null] : [];
-const img = g && S('s_img') ? (g.image ? '<div style="text-align:center;padding:8px 0 12px"><img src="' + esc(g.image) + '" alt="توقيع الطرف الثاني" style="max-height:90px;max-width:60%"></div>' : g.method === 'type' ? '<div style="text-align:center;padding:6px 0 12px;font-size:24px;font-weight:700;color:#0b2552">' + esc(g.name) + '</div>' : '') : '';
-const wait = !g && S('s_img') ? '<div style="margin:6px 18px 14px;border:1.5px dashed #b9c4d6;border-radius:12px;height:74px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;color:#7a8aa6;font-size:11px">توقيع الطرف الثاني — بانتظار التوقيع</div>' : '';
-B.push(dCard(T.tt.sign, 'pen', (T.ack ? dP(T.ack, pad + ';font-weight:700') : '') + (g ? img + dKV(gr) + (g.sample ? dP('نموذج للمعاينة — يُملأ تلقائيًا عند توقيع العميل.', pad + ';color:#8a6a1f;font-size:11px') : '') : (T.pend ? dP(T.pend, pad + ';color:#5b6b86') : '') + wait)));
-}
-if (S('note') && T.note) B.push(dCard(T.tt.note, 'info', dP(T.note), 'is-note', true));
-B.push(H.appr(no || 'TERA'));
+S('s_factor') ? ['التحقق', DF_FACTOR[g.factor] || '', false] : null, S('s_time') ? ['وقت التوقيع', dfAt(g.at) + (g.sample ? ' — نموذج' : ''), false] : null].filter(Boolean) : [];
+const mark = g ? (g.image ? '<img src="' + esc(g.image) + '" alt="توقيع الطرف الثاني" style="max-height:58px;max-width:92%">' : g.method === 'type' ? '<span style="font-size:18px;font-weight:700;color:#0b2552;line-height:1.35">' + esc(g.name) + '</span>' : '<span style="font-size:12px;font-weight:700;color:#0b6f79">وُقّع إلكترونيًا</span>') : '';
+const box = function (inner, done, hint) { return '<div style="min-height:64px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;text-align:center;' + (done ? 'border:1.5px solid #0b6f79;background:#fff' : 'border:1.5px dashed #9fb0c8;background:#f8fafc') + '">' + (inner || '<b style="font-size:12px;color:#41506b">مكان توقيع الطرف الثاني</b><small style="font-size:10.5px;color:#7a8aa6">' + esc(hint || 'بانتظار التوقيع') + '</small>') + '</div>'; };
+const party = function (who, name, inner) { return '<div style="flex:1;min-width:0;display:grid;gap:6px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px"><b style="color:#0b6f79">' + who + '</b><span style="color:#0b2552;font-weight:700;overflow-wrap:anywhere;text-align:left">' + esc(name) + '</span></div>' + inner + '</div>'; };
+const p1 = party('الطرف الأول', org, box('<b style="font-size:12px;color:#0b6f79">معتمد إلكترونيًا</b><small style="font-size:10.5px;color:#7a8aa6">بالختم الرسمي في بطاقة الاعتماد</small>', true));
+const p2 = party('الطرف الثاني', o.name || 'العميل', S('s_img') || !g ? box(g ? mark : '', !!g) : box('<b style="font-size:12px;color:#0b6f79">وُقّع إلكترونيًا</b>', true));
+add.w = g ? 308 : 248, add(card(TT.sign, 'pen', (T.ack ? dP(T.ack, pad + ';font-weight:700') : '') + '<div style="display:flex;gap:14px;padding:4px 18px 10px;break-inside:avoid">' + p1 + p2 + '</div>'
++ (g ? dKV(gr) : (T.pend ? dP(T.pend, pad + ';color:#5b6b86;font-size:11.5px') : ''))));
+};
+SEC.note = function () { if (T.note) add.w = 88, add(card(TT.note, 'info', dP(T.note), 'is-note', true)); };
+/* ترتيب الصفحة: المحفوظ أولًا ثم ما لم يُذكر بترتيبه الافتراضي، والقسم المخفي لا يأخذ مكانًا */
+const ORD0 = ['ids', 'parties', 'summary', 'defer', 'fees', 'contract', 'sched', 'terms', 'adds', 'sign', 'note'];
+const ord = (Array.isArray(T.order) ? T.order : []).map(String).filter(function (k, i, a) { return ORD0.indexOf(k) >= 0 && a.indexOf(k) === i; });
+ORD0.forEach(function (k) { if (ord.indexOf(k) < 0) ord.push(k); });
+ord.forEach(function (k) { if (k === 'ids' || k === 'adds' || S(k)) SEC[k](); });
 const date = (g && g.at) || o.consented_at || new Date(Date.now() + 3 * 3600 * 1000).toISOString();
-const base = { org: T.org, issuer: T.issuer, en: T.en, title: T.title, pill: T.pill, no: no, auto: T.auto };
+const base = { org: T.org, issuer: S('h_issuer') ? T.issuer : '', en: S('h_en') ? T.en : '', title: T.title, pill: S('h_pill') ? T.pill : '', no: no, auto: T.auto, nobar: true };
 const P1 = Object.assign({}, base, { meta: [['رقم الملحق', no], ['رقم العقد', o.contract_no || ''], ['التاريخ', dmy(new Date(new Date(date).getTime() + (g && g.at || o.consented_at ? 3 * 3600 * 1000 : 0)).toISOString().slice(0, 10))]] });
-/* تقدير الارتفاع بالأسطر: تتسع الصفحة نحو 30 */
-const h = 5 + (tg.length ? tg.length + 3 : 0) + L.length + 5 + (op.length ? op.length + 3 : 0) + terms.reduce(function (s, t) { return s + Math.ceil(String(t).length / 95); }, terms.length ? 2 : 0) + (S('sign') ? (g ? 9 : 6) : 0) + (Array.isArray(T.adds) ? T.adds.reduce(function (s, x) { return s + (x && x.on !== false ? 3 + ((x.lines || []).length) : 0); }, 0) : 0) + (S('note') && T.note ? 3 : 0) + 8;
-if (h <= 30) return [Object.assign(P1, { cards: A.concat(B) })];
-return [Object.assign(P1, { cards: A }), Object.assign({}, base, { first: false, cards: B })];
+/* v884: توزيع على الصفحات بالأوزان (بكسل تقريبًا) — البطاقة الثابتة تنتقل كاملة، والجدول والبنود تملأ ما بقي ثم تكمل في الصفحة التالية */
+const cap = function (i) { return i ? 875 : 800; }; /* جسم الصفحة نحو 880px، والأولى ينقصها شريط البيانات */
+const ROW = 31, HEAD = 82, PH = 50; /* صف الجدول · رأس البطاقة مع رأس الجدول · رأس بطاقة البنود */
+const pW = function (t) { return 26 * Math.ceil(String(t).length / 110) + 8; };
+const chunk = function (sp, from, to, cont) {
+const t = sp.t + (cont ? ' — تابع' : ''), part = sp.items.slice(from, to);
+if (sp.para) return card(t, sp.ic, part.map(function (x, k) { return dP((sp.num ? (from + k + 1) + '. ' : '') + x, pad); }).join(''));
+return card(t, sp.ic, dTbl(sp.head, part));
+};
+const pages = [[]]; let used = 0;
+const nextPage = function () { pages.push([]); used = 0; };
+A.forEach(function (h, i) {
+if (typeof h === 'string') { const w = W[i]; if (pages[pages.length - 1].length && used + w > cap(pages.length - 1)) nextPage(); pages[pages.length - 1].push(h); used += w; return; }
+const sp = h, base = sp.para ? PH : HEAD, iw = function (k) { return sp.para ? pW(sp.items[k]) : ROW; };
+let from = 0, cont = false;
+while (from < sp.items.length) {
+let room = cap(pages.length - 1) - used - base - 12, to = from;
+while (to < sp.items.length && room - iw(to) >= 0) { room -= iw(to); to++; }
+const min = Math.min(2, sp.items.length - from); /* لا يُترك صف وحيد في آخر الصفحة */
+if (to - from < min && pages[pages.length - 1].length) { nextPage(); continue; }
+if (to === from) to = from + 1; /* صفحة فارغة لا تتسع — نضع صفًا على الأقل */
+if (to < sp.items.length && sp.items.length - to < 2 && to - from > 2) to--; /* ولا صف وحيد في أول الصفحة التالية */
+pages[pages.length - 1].push(chunk(sp, from, to, cont)); used += base + 12; for (let k = from; k < to; k++) used += iw(k);
+from = to; cont = true; if (from < sp.items.length) nextPage();
 }
+});
+/* الاعتماد في آخر صفحة — وإن لم يتسع ينتقل معه آخر قسم قبله حتى لا يبقى وحده */
+if (pages[pages.length - 1].length && used + 150 > cap(pages.length - 1)) { const lastC = pages[pages.length - 1].pop(); nextPage(); if (lastC) pages[pages.length - 1].push(lastC); }
+pages[pages.length - 1].push(H.appr(no || 'TERA'));
+for (let i = pages.length - 1; i >= 0; i--) if (!pages[i].length && pages.length > 1) pages.splice(i, 1); /* لا صفحة فارغة */
+return pages.map(function (cards, i) { return i ? Object.assign({}, base, { first: false, cards: cards }) : Object.assign(P1, { cards: cards }); });
+}
+
   return { DEF: DEF, tpl: tpl, esc: esc, icMeta: icMeta, isLtr: isLtr, dCard: dCard, sar: sar, dmy: dmy, receiptPages: receiptPages, thanksPage: thanksPage, genericPage: genericPage, certPage: certPage, deferPages: deferPages };
 }
 
@@ -24117,15 +24241,20 @@ rows: [{ seq: 3, target: true, open: true, due_before: d(5), due_after: d(185), 
 function esxGDf() {
 return esxGDocx('df', { name: 'ملحق تأجيل الدفعة', tabL: 'الملحق', icon: 'ct',
 applies: 'يُطبَّق على كل طلب تأجيل لم يُعتمد بعد وليست له نسخة خاصة — الطلبات المعتمدة تبقى كما اعتُمدت.',
-hdr: ESX_DXH('عنوان الملحق').concat([{ k: 'pill', l: 'شارة الملحق', p: 'pill' }]),
+hdr: [{ k: 'title', l: 'عنوان الملحق', p: 'title', imp: 1 }, { k: 'org', l: 'اسم المنشأة', p: 'org' }, { k: 'en', l: 'العنوان بالإنجليزية', p: 'en', hp: 'show.h_en' }, { k: 'issuer', l: 'الجهة المُصدِرة', p: 'issuer', hp: 'show.h_issuer' }, { k: 'pill', l: 'شارة الملحق', p: 'pill', hp: 'show.h_pill' }],
 secs: [
-{ id: 'dfp', title: 'أطراف الملحق', titleP: 'tt.parties', kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }], hint: 'الطرف الثاني ورقم العقد من الطلب نفسه.' },
-{ id: 'dfx', title: 'المنتج في الأطراف', kind: 'toggles', items: [{ l: 'اسم المنتج', p: 'show.product' }] },
-{ id: 'dfd', title: 'تفاصيل التأجيل', titleP: 'tt.defer', kind: 'info', show: 'show.defer', info: 'الدفعة المؤجلة وموعدها السابق والجديد وقيمتها — من حسبة الطلب.' },
-{ id: 'dff', title: 'رسوم التأجيل', titleP: 'tt.fees', kind: 'toggles', show: 'show.fees', items: [{ l: 'قيمة العقد بعد التعديل', p: 'show.contract' }], hint: 'بنود الرسوم كما يراها العميل وضريبتها والإجمالي — من حسبة الطلب.' },
-{ id: 'dfs', title: 'جدول الدفعات بعد التعديل', titleP: 'tt.sched', kind: 'info', show: 'show.sched', info: 'الدفعات المتبقية بمواعيدها الجديدة والإضافة على كل دفعة.' },
-{ id: 'dft', title: 'بنود الملحق', titleP: 'tt.terms', kind: 'lines', p: 'terms', show: 'show.terms', hint: 'كل سطر بند مرقّم في الملحق.' },
-{ id: 'dfg', title: 'إقرار الطرف الثاني وتوقيعه', titleP: 'tt.sign', kind: 'fields', fields: [{ l: 'نص الإقرار', p: 'ack', hp: 'show.sign' }, { l: 'قبل التوقيع', p: 'pend' }], hint: 'بعد التوقيع يظهر الاسم وطريقة التوقيع والتحقق ووقته وصورة التوقيع.' },
+{ id: 'dfl', title: 'المستند PDF مع الرابط', kind: 'toggles', items: [{ l: 'إرفاق الملحق PDF مع رسالتي رابط الموافقة ورابط التوقيع', p: 'att' }], hint: 'عند التفعيل يُرفق الملحق مع رسالة واتساب والبريد فيفتحه العميل وينزّله منها؛ وعند الإيقاف تصل العميلَ صفحةُ الرابط وحدها.' },
+{ id: 'dfz', title: 'ترتيب الصفحة', kind: 'info', info: 'رتّب أقسام الملحق وأخفِها من نسخة الطلب — ما يُخفى لا يأخذ مكانًا في الصفحة.', parts: [{ kind: 'order', items: [{ k: 'ids', l: 'بيانات المنشأة', tp: 'tt.ids', show: 'show.ids' }, { k: 'parties', l: 'أطراف الملحق', tp: 'tt.parties', show: 'show.parties' }, { k: 'summary', l: 'ملخص الطلب', tp: 'tt.summary', show: 'show.summary' }, { k: 'defer', l: 'جدول الدفعات قبل التأجيل', tp: 'tt.defer', show: 'show.defer' }, { k: 'fees', l: 'رسوم التأجيل', tp: 'tt.fees', show: 'show.fees' }, { k: 'contract', l: 'قيمة العقد قبل التأجيل وبعده', tp: 'tt.contract', show: 'show.contract' }, { k: 'sched', l: 'جدول الدفعات بعد التأجيل', tp: 'tt.sched', show: 'show.sched' }, { k: 'terms', l: 'الشروط والأحكام', tp: 'tt.terms', show: 'show.terms' }, { k: 'adds', l: 'الأقسام المضافة' }, { k: 'sign', l: 'الإقرار والتوقيع', tp: 'tt.sign', show: 'show.sign' }, { k: 'note', l: 'تنويه', tp: 'tt.note', show: 'show.note' }] }], hint: 'الختم والاعتماد في آخر الملحق دائمًا.' },
+{ id: 'dfi', title: 'بيانات المنشأة', titleP: 'tt.ids', kind: 'pairs', p: 'ids', show: 'show.ids', hint: 'القيمة الفارغة تُقرأ من «بيانات المنشأة» في الإعدادات، والحقل بلا قيمة لا يظهر — غيّر المسمّى أو القيمة، أو أضف حقلًا، أو أخفِه.' },
+{ id: 'dfo', title: 'خيارات العرض', kind: 'toggles', items: [{ l: 'أيقونات الأقسام', p: 'show.icons' }] },
+{ id: 'dfp', title: 'أطراف الملحق', titleP: 'tt.parties', show: 'show.parties', kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }], parts: [{ kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }] }, { sub: 'الحقول الظاهرة', kind: 'toggles', items: [{ l: 'الطرف الأول', p: 'show.p1' }, { l: 'الطرف الثاني', p: 'show.p2' }, { l: 'رقم العقد', p: 'show.pno' }, { l: 'اسم المنتج', p: 'show.product' }] }], hint: 'الطرف الثاني ورقم العقد والمنتج من الطلب نفسه.' },
+{ id: 'dfm', title: 'ملخص الطلب', titleP: 'tt.summary', kind: 'info', show: 'show.summary', info: 'كم دفعة طلب العميل تأجيلها وقيمتها ورسومها.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'summary', defs: [{ k: 'n', l: 'الدفعة / عدد الدفعات' }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }] }], hint: '«قيمة كل دفعة» تظهر عند تأجيل أكثر من دفعة.' },
+{ id: 'dfd', title: 'جدول الدفعات قبل التأجيل', titleP: 'tt.defer', kind: 'info', show: 'show.defer', info: 'كل الدفعات بمواعيدها وقيمها وحالتها قبل التأجيل — من حسبة الطلب.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'defer', defs: [{ k: 'seq', l: 'الدفعة' }, { k: 'due', l: 'تاريخ الاستحقاق' }, { k: 'amt', l: 'القيمة' }, { k: 'st', l: 'الحالة' }] }, { sub: 'الدفعات الظاهرة', kind: 'rowsHide', p: 'defer', src: 'rows' }], hint: 'الأعمدة الظاهرة تتوزّع بعرض متساوٍ.' },
+{ id: 'dff', title: 'رسوم التأجيل', titleP: 'tt.fees', kind: 'toggles', show: 'show.fees', items: [{ l: 'المجموع قبل الضريبة', p: 'show.f_sub' }, { l: 'ضريبة القيمة المضافة', p: 'show.f_vat' }, { l: 'إجمالي الرسوم', p: 'show.f_tot' }], parts: [{ kind: 'toggles', items: [{ l: 'المجموع قبل الضريبة', p: 'show.f_sub' }, { l: 'ضريبة القيمة المضافة', p: 'show.f_vat' }, { l: 'إجمالي الرسوم', p: 'show.f_tot' }] }, { sub: 'بنود الرسوم الظاهرة', kind: 'rowsHide', p: 'fees', src: 'fees' }], hint: 'بنود الرسوم كما يراها العميل — من حسبة الطلب.' },
+{ id: 'dfc', title: 'قيمة العقد قبل التأجيل وبعده', titleP: 'tt.contract', kind: 'toggles', show: 'show.contract', items: [{ l: 'قيمة العقد قبل التأجيل', p: 'show.c_before' }, { l: 'قيمة العقد بعد التأجيل', p: 'show.c_after' }] },
+{ id: 'dfs', title: 'جدول الدفعات بعد التأجيل', titleP: 'tt.sched', kind: 'info', show: 'show.sched', info: 'كل الدفعات بمواعيدها الجديدة وحصة كل دفعة من الرسوم.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'sched', defs: [{ k: 'seq', l: 'الدفعة' }, { k: 'due', l: 'تاريخ الاستحقاق' }, { k: 'before', l: 'القيمة قبل التأجيل', on: false }, { k: 'add', l: 'منها رسوم التأجيل' }, { k: 'amt', l: 'القيمة بعد التأجيل' }, { k: 'st', l: 'الحالة' }] }, { sub: 'الدفعات الظاهرة', kind: 'rowsHide', p: 'sched', src: 'rows' }], hint: 'الأعمدة الظاهرة تتوزّع بعرض متساوٍ.' },
+{ id: 'dft', title: 'الشروط والأحكام', titleP: 'tt.terms', kind: 'lines', p: 'terms', show: 'show.terms', hint: 'يبدأ فارغًا — أضف البنود من مكتبة البنود، وكل بند يُرقَّم في الملحق.' },
+{ id: 'dfg', title: 'إقرار الطرف الثاني وتوقيعه', titleP: 'tt.sign', kind: 'fields', show: 'show.sign', fields: [{ l: 'نص الإقرار', p: 'ack' }, { l: 'قبل التوقيع', p: 'pend' }], hint: 'بعد التوقيع يظهر الاسم وطريقة التوقيع والتحقق ووقته وصورة التوقيع.' },
 { id: 'dfq', title: 'صفوف الإثبات بعد التوقيع', kind: 'toggles', items: [{ l: 'اسم الموقّع', p: 'show.s_name' }, { l: 'العملية', p: 'show.s_op' }, { l: 'طريقة التوقيع', p: 'show.s_method' }, { l: 'وسيلة التحقق', p: 'show.s_factor' }, { l: 'وقت التوقيع', p: 'show.s_time' }, { l: 'صورة التوقيع (ومكانه قبل التوقيع)', p: 'show.s_img' }], hint: 'طرق التوقيع المسموحة للعميل من «صفحات الرابط ← صفحة التوقيع».' },
 { id: 'dfn', title: 'تنويه', titleP: 'tt.note', kind: 'text', p: 'note', show: 'show.note' },
 { id: 'dfa', title: 'سطر التذييل', kind: 'fields', fields: [{ l: 'سطر التذييل', p: 'auto' }] }],

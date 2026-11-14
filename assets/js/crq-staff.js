@@ -22,7 +22,7 @@ var IC = {
 plus: 'M12 5v14M5 12h14', lt: 'M15 6l-6 6 6 6', minus: 'M5 12h14', chev: 'M6 9l6 6 6-6', mail: 'M4 6h16v12H4zM4 7l8 6 8-6', idc: 'M4 5h16v14H4zM8 10h.01M12 10h4M8 14h8', cal: 'M5 6h14v14H5zM5 10h14M9 4v4M15 4v4', note: 'M6 4h12v16H6zM9 9h6M9 13h6M9 17h3', box: 'M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8', back: 'M15 6l-6 6 6 6', more: 'M5 12h.01M12 12h.01M19 12h.01', check: 'M5 12.5l4.5 4.5L19 7.5',
 send: 'M4 12l16-8-6 16-3-7-7-1z', user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', file: 'M14 3H6v18h12V7l-4-4zM14 3v4h4',
 clock: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', link: 'M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1',
-eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', eyeOff: 'M3 3l18 18M10.6 5.1A10.7 10.7 0 0 1 12 5c6 0 10 7 10 7a17.6 17.6 0 0 1-3.2 3.9M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.8 9.8 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2', list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
 calc: 'M6 3h12v18H6zM9 7h6M9 11h.01M12 11h.01M15 11h.01M9 15h.01M12 15h.01M15 15h.01', trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',
 down: 'M12 4v12M7 11l5 5 5-5M5 20h14', search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4', gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-2-4-2 1-2-2V4h-4l-1 2-2 1-2-1-2 4 2 1v2l-2 1 2 4 2-1 2 2v2h4l1-2 2-1 2 1 2-4-2-1z',
 alert: 'M12 7.5v6M12 16.6v.01M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', phone: 'M8 2h8v20H8zM11 18h2', screen: 'M3 4h18v12H3zM8 20h8M12 16v4', sign: 'M3 17c3-4 5-9 7-9s-2 9 1 9 3-5 5-5 1 4 5 4M3 21h18',
@@ -708,7 +708,7 @@ function DX() { return window.__teraApp && window.__teraApp.docx ? window.__tera
 function gp(o, p) { return p.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); }
 function sp(o, p, v) { var k = p.split('.'), L = k.pop(); var t = k.reduce(function (a, z) { if (!a[z] || typeof a[z] !== 'object') a[z] = {}; return a[z]; }, o); t[L] = v; }
 function own(part) { return !!(part && part.tpl && typeof part.tpl === 'object' && part.own !== false); }
-function docTpl(x) { var D = DX(); var base = own(x.doc) ? x.doc.tpl : (x.tpl && x.tpl.df) || {}; return D ? D.tpl(base) : clone(base); }
+function docTpl(x) { var D = DX(); var base = own(x.doc) ? x.doc.tpl : (x.tpl && x.tpl.df) || {}; var T = D ? D.tpl(base) : clone(base); if (T.tt) { var NT = { terms: [['بنود الملحق'], 'الشروط والأحكام'], defer: [['تفاصيل التأجيل'], 'جدول الدفعات قبل التأجيل'], contract: [['أثر التأجيل على قيمة العقد'], 'قيمة العقد قبل التأجيل وبعده'], sched: [['جدول الدفعات بعد التعديل'], 'جدول الدفعات الجديد بعد التأجيل'], summary: [[], 'ملخص الطلب'] }; Object.keys(NT).forEach(function (k) { if (!T.tt[k] || NT[k][0].indexOf(T.tt[k]) >= 0) T.tt[k] = NT[k][1]; }); } return T; }
 var DOC_LIB = ['يُعدّ هذا الملحق جزءًا لا يتجزأ من العقد الأصلي، وتبقى بقية بنود العقد سارية دون تغيير.', 'تُضاف رسوم التأجيل إلى قيمة العقد وتوزَّع على الدفعات المتبقية وفق الجدول الوارد في هذا الملحق.', 'يلتزم الطرف الثاني بسداد الدفعات في مواعيدها الجديدة الواردة في الجدول.', 'لا يسري هذا الملحق إلا بعد توقيع الطرف الثاني عليه إلكترونيًا.', 'تُعدّ الدفعة متأخرة من اليوم الأول بعد موعدها الجديد.', 'لا يُقبل تأجيل الدفعة نفسها مرة أخرى إلا بموافقة المنصة.', 'يحق للطرف الثاني سداد الدفعة المؤجلة قبل موعدها الجديد دون رسوم إضافية.'];
 /* v870: مكتبة البنود الموحّدة — مكتبة طلبات الخدمات الجديدة (EGLIB في staff-next.js) وفيها «تأجيل الدفعة»، مجمّعة حسب مجموعتها */
 function LIB() { var L = Array.isArray(window.EGLIB) && window.EGLIB.length ? window.EGLIB : [{ i: 'defer', t: 'تأجيل الدفعة', g: 'طلبات العقود', e: DOC_LIB }]; var d = L.filter(function (x) { return /^defer/.test(x.i); }); return d.concat(L.filter(function (x) { return d.indexOf(x) < 0; })); }
@@ -731,33 +731,126 @@ if (!ro && arr.length < 12) out.push((function () { var b = btn('إضافة قس
 return out;
 }
 /* محرّر قالب بمواصفة «قوالب المستندات»: الترويسة ثم الأقسام (حقول · مفاتيح · أسطر · نص · معلومة) — مشترك بين نسخة الطلب وأي قالب بالمواصفة نفسها */
-function specEditor(spec, T, ro, onCh) {
+/* v883: محرّر القالب بأدراج — درج واحد مفتوح، لكل قسم إخفاء كامل ولكل عنصر إخفاء، و«بيانات المنشأة» مسمّى وقيمة قابلان للتعديل والإضافة (القيمة الفارغة من الإعدادات) */
+var DOC_OG = { 'السجل التجاري': 'cr', 'رقم السجل التجاري': 'cr', 'س.ت': 'cr', 'الرقم الضريبي': 'vat', 'رقم ضريبة القيمة المضافة': 'vat', 'الرقم الموحّد': 'unified', 'الرقم الموحد': 'unified', 'رقم وثيقة العمل الحر': 'freelance', 'وثيقة العمل الحر': 'freelance', 'العنوان': 'address', 'المدينة': 'city', 'المنطقة': 'region', 'الدولة': 'country', 'الجوال': 'mobile', 'الهاتف': 'phone', 'رقم التواصل': 'phone', 'واتساب': 'whatsapp', 'رقم الواتساب': 'whatsapp', 'البريد الإلكتروني': 'email', 'البريد': 'email', 'الموقع الإلكتروني': 'website', 'الموقع': 'website', 'الاسم النظامي': 'legal', 'الاسم التجاري': 'brand', 'النشاط الرئيسي': 'activity', 'النشاط': 'activity', 'الكيان': 'entity' };
+var DOC_IDS = ['السجل التجاري', 'الرقم الضريبي', 'الرقم الموحّد', 'رقم وثيقة العمل الحر', 'العنوان', 'المدينة', 'المنطقة', 'الجوال', 'واتساب', 'البريد الإلكتروني', 'الموقع الإلكتروني', 'النشاط الرئيسي', 'الكيان', 'الاسم النظامي', 'الاسم التجاري'];
+/* v885: صف قابل للتحريك — رقم · محتوى · أعلى · أسفل · إظهار/إخفاء */
+function mvRow(i, n, body, on, onEye, onMove, lab) {
+return el('div', { class: 'cr-mv' + (on ? '' : ' is-off') }, [el('span', { class: 'cr-mv-n', text: String(i + 1) }), body,
+onMove ? el('button', { type: 'button', class: 'cr-x', title: 'نقل لأعلى', 'aria-label': 'نقل ' + lab + ' لأعلى', disabled: !i, 'data-live-ok': '', onclick: function () { onMove(-1); } }, ['↑']) : el('span'),
+onMove ? el('button', { type: 'button', class: 'cr-x', title: 'نقل لأسفل', 'aria-label': 'نقل ' + lab + ' لأسفل', disabled: i >= n - 1, 'data-live-ok': '', onclick: function () { onMove(1); } }, ['↓']) : el('span'),
+onEye && !mvRow.ro ? el('button', { type: 'button', class: 'cr-x' + (on ? ' is-show' : ''), title: on ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', 'aria-label': (on ? 'إخفاء ' : 'إظهار ') + lab, 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onclick: onEye }, [icon(on ? 'eye' : 'eyeOff')]) : el('span')]);
+}
+function specEditor(spec, T, ro, onCh, org, dat) {
+org = org || {}; dat = dat || {}; mvRow.ro = !!ro;
 var sw = function (p, lab) { var on = gp(T, p) !== false; return el('button', { type: 'button', class: 'cr-sw' + (on ? ' is-on' : ''), role: 'switch', 'aria-checked': on ? 'true' : 'false', title: on ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', 'aria-label': (on ? 'إخفاء ' : 'إظهار ') + (lab || ''), disabled: ro, 'data-live-ok': '', onclick: function () { sp(T, p, !on); onCh(true); } }, [el('i', {})]); };
 var inp = function (p, lab, area) { var n = el(area ? 'textarea' : 'input', { type: area ? null : 'text', rows: area ? '3' : null, value: gp(T, p) || '', disabled: ro, 'aria-label': lab, oninput: function (e) { sp(T, p, e.target.value); onCh(false); } }); return n; };
 var row = function (lab, ctl, hp) { return el('div', { class: 'cr-ed-row' + (hp && gp(T, hp) === false ? ' is-off' : '') }, [el('label', { text: lab }), ctl, hp ? sw(hp, lab) : null]); };
+var cur = ST.docOpen || 'hdr';
+/* درج: الرأس زر يفتح ويغلق (بلا إعادة رسم)، ومفتاح الإخفاء بجانبه */
+var acc = function (id, title, sub, on, swEl, body) {
+var open = cur === id;
+var s = el('section', { class: 'cr-ed-sec cr-acc' + (open ? ' is-open' : '') + (on ? '' : ' is-off'), 'data-acc': id }, [
+el('div', { class: 'cr-acc-h' }, [el('button', { type: 'button', class: 'cr-acc-t', 'aria-expanded': open ? 'true' : 'false', 'data-live-ok': '', onclick: function (e) {
+var me = e.currentTarget.closest('.cr-acc'), was = me.classList.contains('is-open');
+me.parentNode.querySelectorAll('.cr-acc.is-open').forEach(function (n) { n.classList.remove('is-open'); var b = n.querySelector('.cr-acc-t'); if (b) b.setAttribute('aria-expanded', 'false'); });
+if (!was) { me.classList.add('is-open'); e.currentTarget.setAttribute('aria-expanded', 'true'); }
+ST.docOpen = was ? '-' : id; } }, [el('b', { text: title }), sub ? el('small', { text: sub }) : null, el('i', { class: 'cr-acc-chev', 'aria-hidden': 'true' }, [icon('chev')])]), swEl]),
+el('div', { class: 'cr-ed-b' }, body)]);
+return s;
+};
 var out = [];
-out.push(el('section', { class: 'cr-ed-sec is-open' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'الترويسة' })]), el('div', { class: 'cr-ed-b' }, (spec.hdr || []).map(function (h) { return row(h.l, inp(h.p, h.l)); }))]));
+out.push(acc('hdr', 'الترويسة', 'العنوان واسم المنشأة والشارة', true, null, (spec.hdr || []).map(function (h) { return row(h.l, inp(h.p, h.l), h.hp); })));
 (spec.secs || []).forEach(function (s) {
-var on = !s.show || gp(T, s.show) !== false, kids = [];
+var on = !s.show || gp(T, s.show) !== false, kids = [], sub = '';
+if (s.titleP) kids.push(row('عنوان القسم', el('input', { type: 'text', value: gp(T, s.titleP) || s.title, disabled: ro, 'aria-label': 'عنوان القسم', oninput: function (e) { sp(T, s.titleP, e.target.value); onCh(false); } })));
+var one = function (s) {
 if (s.kind === 'fields') (s.fields || []).forEach(function (f) { kids.push(row(f.l, inp(f.p, f.l, String(gp(T, f.p) || '').length > 60), f.hp)); });
-else if (s.kind === 'toggles') (s.items || []).forEach(function (f) { kids.push(el('div', { class: 'cr-ed-row is-tg' }, [el('label', { text: f.l }), sw(f.p, f.l)])); });
+else if (s.kind === 'toggles') { (s.items || []).forEach(function (f) { kids.push(el('div', { class: 'cr-ed-row is-tg' }, [el('label', { text: f.l }), sw(f.p, f.l)])); }); }
 else if (s.kind === 'text') kids.push(inp(s.p, s.title, true));
 else if (s.kind === 'info') kids.push(el('p', { class: 'cr-hint', text: s.info || '' }));
+else if (s.kind === 'pairs') {
+/* مسمّى وقيمة لكل سطر — المخفي يُحفظ في _hid ليعود في مكانه */
+var P = Array.isArray(gp(T, s.p)) ? gp(T, s.p) : []; sp(T, s.p, P);
+if (!T._hid || typeof T._hid !== 'object') T._hid = {}; var HP = Array.isArray(T._hid[s.p]) ? T._hid[s.p] : (T._hid[s.p] = []);
+sub = P.length + (P.length === 1 ? ' حقل ظاهر' : ' حقول ظاهرة') + (HP.length ? ' · ' + HP.length + ' مخفي' : '');
+P.forEach(function (x, i) {
+if (!Array.isArray(x)) return; var dv = org[DOC_OG[String(x[0] || '').trim()]] || '';
+kids.push(el('div', { class: 'cr-ed-pr' }, [
+el('input', { type: 'text', class: 'cr-ed-pl', value: x[0] || '', disabled: ro, maxlength: '40', placeholder: 'المسمّى', 'aria-label': 'مسمّى الحقل', oninput: function (e) { x[0] = e.target.value; var v = e.target.parentNode.querySelector('.cr-ed-pv'); if (v) v.placeholder = org[DOC_OG[e.target.value.trim()]] || 'القيمة'; onCh(false); } }),
+el('input', { type: 'text', class: 'cr-ed-pv', value: x[1] || '', disabled: ro, maxlength: '120', placeholder: dv || 'القيمة', 'aria-label': 'قيمة ' + (x[0] || 'الحقل'), title: dv ? 'فارغ = من «بيانات المنشأة»: ' + dv : '', oninput: function (e) { x[1] = e.target.value; onCh(false); } }),
+ro ? null : el('button', { type: 'button', class: 'cr-x', title: 'إخفاء من المستند', 'aria-label': 'إخفاء ' + (x[0] || 'الحقل'), 'data-live-ok': '', onclick: function () { HP.push({ t: x[0] || '', v: x[1] || '', at: i }); P.splice(i, 1); onCh(true); } }, [icon('eye')]),
+ro ? null : el('button', { type: 'button', class: 'cr-x', title: 'حذف', 'aria-label': 'حذف ' + (x[0] || 'الحقل'), 'data-live-ok': '', onclick: function () { P.splice(i, 1); onCh(true); } }, [icon('trash')])]));
+});
+HP.forEach(function (h, j) {
+kids.push(el('div', { class: 'cr-ed-pr is-off' }, [el('span', { class: 'cr-ed-pl', text: h.t || '—' }), el('span', { class: 'cr-ed-pv', text: h.v || org[DOC_OG[String(h.t || '').trim()]] || 'من الإعدادات' }),
+ro ? null : el('button', { type: 'button', class: 'cr-x is-show', title: 'إظهار في المستند', 'aria-label': 'إظهار ' + (h.t || 'الحقل'), 'data-live-ok': '', onclick: function () { P.splice(Math.min(+h.at || 0, P.length), 0, [h.t || '', h.v || '']); HP.splice(j, 1); onCh(true); } }, [icon('eye')]),
+ro ? null : el('button', { type: 'button', class: 'cr-x', title: 'حذف', 'aria-label': 'حذف ' + (h.t || 'الحقل'), 'data-live-ok': '', onclick: function () { HP.splice(j, 1); onCh(true); } }, [icon('trash')])]));
+});
+if (!ro) kids.push((function () { var b = btn('إضافة حقل ▾', { ic: 'plus', cls: 'is-sm', on: function () {
+var have = P.concat(HP.map(function (h) { return [h.t]; })).map(function (x) { return String(x[0] || '').trim(); });
+picker(b, { title: 'إضافة حقل', ph: 'ابحث…', groups: [['حقول المنشأة', DOC_IDS.map(function (l) { var v = org[DOC_OG[l]]; return [l, v ? 'من الإعدادات · ' + v : 'تكتب قيمته هنا', have.indexOf(l) >= 0, l]; })]],
+free: 'حقل مخصص', freePh: 'مسمّى الحقل', freeLine: true, freeOk: 'إضافة الحقل', freeNote: 'يظهر في الترويسة بالمسمّى الذي تكتبه، وتكتب قيمته بعد الإضافة.',
+pick: function (v) { P.push([v && v.free ? v.free : v, '']); onCh(true); } }); } }); return b; })());
+}
 else if (s.kind === 'lines') {
 var L = Array.isArray(gp(T, s.p)) ? gp(T, s.p) : []; sp(T, s.p, L);
+sub = L.length ? L.length + (L.length === 1 ? ' بند' : ' بنود') : 'فارغ — أضف من المكتبة';
+if (!L.length) kids.push(el('div', { class: 'cr-ed-empty' }, [icon('list'), el('span', { text: 'لا بنود بعد — أضف من مكتبة البنود، ولا يظهر القسم في المستند وهو فارغ.' })]));
 L.forEach(function (t, i) {
 kids.push(el('div', { class: 'cr-ed-ln' }, [el('span', { class: 'cr-ed-n', text: String(i + 1) }), el('textarea', { rows: '2', value: t, disabled: ro, 'aria-label': 'البند ' + (i + 1), oninput: function (e) { L[i] = e.target.value; onCh(false); } }),
 ro ? null : el('div', { class: 'cr-ed-ops' }, [i ? el('button', { type: 'button', class: 'cr-x', title: 'أعلى', 'aria-label': 'نقل لأعلى', 'data-live-ok': '', onclick: function () { L.splice(i - 1, 0, L.splice(i, 1)[0]); onCh(true); } }, ['↑']) : null,
 el('button', { type: 'button', class: 'cr-x', title: 'حذف', 'aria-label': 'حذف البند', 'data-live-ok': '', onclick: function () { L.splice(i, 1); onCh(true); } }, [icon('trash')])])]));
 });
-if (!ro) kids.push((function () { var b = btn('إضافة بند ▾', { ic: 'plus', cls: 'is-sm', on: function () { picker(b, { ph: 'ابحث في كل البنود…', groups: libGroups(L), free: 'كتابة بند جديد', freePh: 'نص البند', pick: function (v) { L.push(v && v.free ? v.free : v); onCh(true); } }); } }); return el('div', { class: 'cr-addrow' }, [b]); })());
+if (!ro) kids.push((function () { var b = btn('إضافة بند ▾', { ic: 'plus', cls: 'is-sm', on: function () { picker(b, { title: 'إضافة بند', ph: 'ابحث في كل البنود…', groups: libGroups(L), free: 'كتابة بند جديد', freePh: 'نص البند', pick: function (v) { L.push(v && v.free ? v.free : v); onCh(true); } }); } }); return b; })());
 }
+/* v885: ترتيب الصفحة — كل قسم بسهمي التحريك ومفتاح الإخفاء */
+else if (s.kind === 'order') {
+var K0 = (s.items || []).map(function (i) { return i.k; });
+var O = (Array.isArray(T.order) ? T.order : []).map(String).filter(function (k, i, a) { return K0.indexOf(k) >= 0 && a.indexOf(k) === i; });
+K0.forEach(function (k) { if (O.indexOf(k) < 0) O.push(k); }); T.order = O;
+O.forEach(function (k, i) {
+var it = (s.items || []).filter(function (q) { return q.k === k; })[0] || { l: k };
+var lab = it.tp ? String(gp(T, it.tp) || it.l) : it.l, onv = !it.show || gp(T, it.show) !== false;
+kids.push(mvRow(i, O.length, el('b', { class: 'cr-mv-l', text: lab }), onv, it.show ? function () { sp(T, it.show, !onv); onCh(true); } : null, ro ? null : function (d) { O.splice(i + d, 0, O.splice(i, 1)[0]); onCh(true); }, lab));
+});
+sub = O.length + ' أقسام';
+}
+/* v885: أعمدة الجدول — ترتيب وتسمية وإخفاء، والظاهر يتوزّع بعرض متساوٍ */
+else if (s.kind === 'cols') {
+if (!T.cols || typeof T.cols !== 'object') T.cols = {};
+var D0 = s.defs || [], SV = (Array.isArray(T.cols[s.key]) ? T.cols[s.key] : []).filter(function (x) { return x && D0.some(function (d) { return d.k === x.k; }); });
+var CL = SV.map(function (x) { return { k: x.k, l: String(x.l || ''), on: x.on !== false }; });
+D0.forEach(function (d, i) { if (!CL.some(function (x) { return x.k === d.k; })) CL.splice(Math.min(i, CL.length), 0, { k: d.k, l: '', on: d.on !== false }); });
+T.cols[s.key] = CL;
+CL.forEach(function (x, i) {
+var d = D0.filter(function (q) { return q.k === x.k; })[0] || { l: x.k };
+var ip = el('input', { type: 'text', class: 'cr-mv-in', value: x.l, placeholder: d.l, disabled: ro, maxlength: '40', 'aria-label': 'عنوان العمود ' + d.l, oninput: function (e) { x.l = e.target.value; onCh(false); } });
+kids.push(mvRow(i, CL.length, ip, x.on, function () { x.on = !x.on; onCh(true); }, ro ? null : function (dd) { CL.splice(i + dd, 0, CL.splice(i, 1)[0]); onCh(true); }, d.l));
+});
+}
+/* v885: إخفاء صفوف بعينها (دفعة أو بند رسوم) */
+else if (s.kind === 'rowsHide') {
+if (!T._hid || typeof T._hid !== 'object') T._hid = {};
+var HR = Array.isArray(T._hid[s.p]) ? T._hid[s.p].map(String) : []; T._hid[s.p] = HR;
+var SRC = s.src === 'fees' ? (Array.isArray(dat.client_lines) ? dat.client_lines : []).map(function (l) { return [String(l.t), String(l.t)]; })
+: (Array.isArray(dat.rows) ? dat.rows : []).slice().sort(function (a, b) { return (+a.seq || 0) - (+b.seq || 0); }).map(function (r) { return [String(r.seq), 'الدفعة ' + r.seq + (r.target ? ' · المؤجَّلة' : '')]; });
+if (!SRC.length) kids.push(el('p', { class: 'cr-hint', text: 'لا صفوف بعد.' }));
+else kids.push(el('div', { class: 'cr-chips' }, SRC.map(function (q) {
+var off = HR.indexOf(q[0]) >= 0;
+return el('button', { type: 'button', class: 'cr-chip' + (off ? ' is-off' : ''), disabled: ro, 'aria-pressed': off ? 'false' : 'true', title: off ? 'مخفي — اضغط للإظهار' : 'ظاهر — اضغط للإخفاء', 'data-live-ok': '', onclick: function () { if (off) HR.splice(HR.indexOf(q[0]), 1); else HR.push(q[0]); onCh(true); } }, [icon(off ? 'eyeOff' : 'eye'), el('span', { text: q[1] })]);
+})));
+}
+};
+(s.parts || [s]).forEach(function (q) { if (q.sub) kids.push(el('div', { class: 'cr-ed-subh', text: q.sub })); one(q); });
 if (s.hint) kids.push(el('small', { class: 'cr-hint', text: s.hint }));
-var title = s.titleP ? el('input', { type: 'text', class: 'cr-ed-t', value: gp(T, s.titleP) || s.title, disabled: ro, 'aria-label': 'عنوان القسم', oninput: function (e) { sp(T, s.titleP, e.target.value); onCh(false); } }) : el('b', { text: s.title });
-out.push(el('section', { class: 'cr-ed-sec' + (on ? '' : ' is-off') }, [el('div', { class: 'cr-ed-h' }, [title, s.show ? sw(s.show, s.title) : null]), on ? el('div', { class: 'cr-ed-b' }, kids) : null]));
+var title = s.titleP ? String(gp(T, s.titleP) || s.title) : s.title;
+out.push(acc(s.id || title, title, on ? sub : 'مخفي من المستند', on, s.show ? sw(s.show, title) : null, kids));
 });
 return out;
 }
+/* v885: صفوف الدفعات وبنود الرسوم لمحرّر الملحق (إخفاء صف بعينه) — من الحسبة، أو من دفعات العقد قبلها */
+function docDat(x) { var r = x.result || {}; return { rows: r.ok && Array.isArray(r.rows) ? r.rows : (x.payments || []).map(function (p) { return { seq: p.seq, open: p.open, target: (x.payment_ids || []).indexOf(p.pid) >= 0 }; }), client_lines: Array.isArray(r.client_lines) ? r.client_lines : [] }; }
 function tabDoc(x) {
 var D = DX(), ed = editable(x), mine = own(x.doc);
 if (!D) return [note('warn', 'تعذّر تحميل محرّر المستندات — حدّث الصفحة.')];
@@ -769,7 +862,7 @@ el('div', { class: 'cr-seg', role: 'group', 'aria-label': 'مصدر المستن
 D.open ? btn('فتح القالب العام', { cls: 'is-sm', ic: 'file', on: function () { D.open(); } }) : null]); };
 var bar = mkBar();
 if (!Array.isArray(T.adds)) T.adds = [];
-var edv = el('div', { class: 'cr-ed' }, specEditor(D.spec(), T, !ed, onCh).concat([el('div', { class: 'cr-ed-sep', text: 'أقسام مضافة إلى الملحق' })], addsEditor(T.adds, !ed, onCh, 'تظهر في الملحق بعد بنوده — من مكتبة البنود الموحّدة أو قسم فارغ.')));
+var edv = el('div', { class: 'cr-ed' }, specEditor(D.spec(), T, !ed, onCh, x.org, docDat(x)).concat([el('div', { class: 'cr-ed-sep', text: 'أقسام مضافة إلى الملحق' })], addsEditor(T.adds, !ed, onCh, 'تظهر في الملحق بعد بنوده — من مكتبة البنود الموحّدة أو قسم فارغ.')));
 var pv = el('div', { class: 'cr-pvcol' }, [el('div', { class: 'cr-h2row' }, [el('b', { text: 'المعاينة — الملحق كما يُطبع ويصل العميل' }), el('div', { class: 'cr-seg is-sm' }, [[false, 'قبل التوقيع'], [true, 'بعد التوقيع (نموذج)']].map(function (m) { return el('button', { type: 'button', class: !!ST.docAfter === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.docAfter = m[0]; draw(); } }, [m[1]]); })), btn('تنزيل PDF', { cls: 'is-sm', ic: 'down', on: pdf })]), docFrame(x, T, '')]);
 return [bar, el('div', { class: 'cr-split is-ed' }, [edv, pv])];
 }
