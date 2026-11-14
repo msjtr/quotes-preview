@@ -12670,7 +12670,7 @@ function d3Mk(o, first) {
       .concat(no ? [e('div', { class: 'd3-chip is-bar' }, [frag(d3Bar(no)), e('small', { dir: 'ltr' }, no)])] : [])));
   }
   const micro = [org, 'TERA INTEGRATED SERVICES PLATFORM', o.meta && o.meta[0] ? o.meta[0][1] : ''].filter(Boolean).join(' · ');
-  const foot = e('footer', { class: 'd3-foot' }, [e('div', { class: 'd3-micro' }, (micro + ' · ').repeat(6)), e('div', { class: 'd3-fb is-one' }, d3FootLine([o.auto || o.foot, org, o.slogan0 || 'عالمك بلا حدود', o.meta && o.meta[0] ? o.meta[0][1] : ''], pg))]);
+  const foot = e('footer', { class: 'd3-foot' }, [e('div', { class: 'd3-micro' }, (micro + ' · ').repeat(6)), e('div', { class: 'd3-fb is-one' }, d3FootLine(o.footMin ? [o.meta && o.meta[0] ? o.meta[0][1] : ''] : [o.auto || o.foot, org, o.slogan0 || 'عالمك بلا حدود', o.meta && o.meta[0] ? o.meta[0][1] : ''], pg))]);
   const page = tblApply(e('div', { class: 'axp-page dc2 dc3' + (o.draft ? ' is-draft' : '') + (o.cls ? ' ' + o.cls : '') }, [top, body, foot, e('div', { class: 'd3-wm', 'aria-hidden': 'true' }, frag(d3WmSvg()))])); /* v793 */
   return { page: page, body: body, pg: pg };
 }
@@ -24042,7 +24042,7 @@ return '<div style="position:relative;display:flex;align-items:center;gap:8px;mi
 }
 };
 SEC.parties = function () {
-const P = [S('p1') ? ['الطرف الأول', org, false] : null, S('p2') ? ['الطرف الثاني', o.name || 'العميل', false] : null, S('pno') ? ['رقم العقد', o.contract_no || '', true] : null, S('product') && o.product ? ['المنتج', o.product, false] : null].filter(Boolean);
+const P = [S('p1') ? ['الطرف الأول', org, false] : null, S('p2') ? ['الطرف الثاني', o.name || 'العميل', false] : null, S('product') && o.product ? ['المنتج', o.product, false] : null].filter(Boolean);
 const intro = S('intro') && T.intro ? dP(T.intro, pad) : '';
 if (!P.length && !intro) return;
 add.w = 52 + 44 * Math.ceil(P.length / 2) + (intro ? 42 : 0), add(card(TT.parties, 'users', dKV(P) + intro));
@@ -24103,7 +24103,7 @@ const ord = (Array.isArray(T.order) ? T.order : []).map(String).filter(function 
 ORD0.forEach(function (k) { if (ord.indexOf(k) < 0) ord.push(k); });
 ord.forEach(function (k) { if (k === 'ids' || k === 'adds' || S(k)) SEC[k](); });
 const date = (g && g.at) || o.consented_at || new Date(Date.now() + 3 * 3600 * 1000).toISOString();
-const base = { org: T.org, issuer: S('h_issuer') ? T.issuer : '', en: S('h_en') ? T.en : '', title: T.title, pill: S('h_pill') ? T.pill : '', no: no, auto: T.auto, nobar: true };
+const base = { org: T.org, issuer: S('h_issuer') ? T.issuer : '', en: S('h_en') ? T.en : '', title: T.title, pill: S('h_pill') ? T.pill : '', no: no, auto: '', footMin: true, nobar: true }; /* v885: التذييل رقم الملحق والصفحة فقط — بلا تكرار التنويه واسم المنشأة */
 const P1 = Object.assign({}, base, { meta: [['رقم الملحق', no], ['رقم العقد', o.contract_no || ''], ['التاريخ', dmy(new Date(new Date(date).getTime() + (g && g.at || o.consented_at ? 3 * 3600 * 1000 : 0)).toISOString().slice(0, 10))]] });
 /* v884: توزيع على الصفحات بالأوزان (بكسل تقريبًا) — البطاقة الثابتة تنتقل كاملة، والجدول والبنود تملأ ما بقي ثم تكمل في الصفحة التالية */
 const cap = function (i) { return i ? 875 : 800; }; /* جسم الصفحة نحو 880px، والأولى ينقصها شريط البيانات */
@@ -24133,7 +24133,7 @@ from = to; cont = true; if (from < sp.items.length) nextPage();
 });
 /* الاعتماد في آخر صفحة — وإن لم يتسع ينتقل معه آخر قسم قبله حتى لا يبقى وحده */
 if (pages[pages.length - 1].length && used + 150 > cap(pages.length - 1)) { const lastC = pages[pages.length - 1].pop(); nextPage(); if (lastC) pages[pages.length - 1].push(lastC); }
-pages[pages.length - 1].push(H.appr(no || 'TERA'));
+pages[pages.length - 1].push(H.appr(no || 'TERA', '-')); /* v885: '-' = الختم والرمز بلا تكرار الرقم والجملة */
 for (let i = pages.length - 1; i >= 0; i--) if (!pages[i].length && pages.length > 1) pages.splice(i, 1); /* لا صفحة فارغة */
 return pages.map(function (cards, i) { return i ? Object.assign({}, base, { first: false, cards: cards }) : Object.assign(P1, { cards: cards }); });
 }
@@ -24153,7 +24153,7 @@ function docxPv(pg) {
   const B = [];
   (pg.cards || []).filter(Boolean).forEach(function (h) {
     const m = /^<!--appr:([^|]*)\|(.*)-->$/.exec(h);
-    if (m) { const a = d3ApprWide(decodeURIComponent(m[1]), 'es', {}), cap = decodeURIComponent(m[2]); if (cap && a && a.querySelector) { const s = a.querySelector('.is-bar small'); if (s) s.textContent = cap; } B.push(a); return; }
+    if (m) { const a = d3ApprWide(decodeURIComponent(m[1]), 'es', {}), cap = decodeURIComponent(m[2]); if (cap === '-' && a && a.querySelector) { a.querySelectorAll('.is-bar b, .is-bar small').forEach(function (x) { x.remove(); }); } else if (cap && a && a.querySelector) { const s = a.querySelector('.is-bar small'); if (s) s.textContent = cap; } B.push(a); return; }
     const tp = document.createElement('template'); tp.innerHTML = h; if (tp.content.firstElementChild) B.push(tp.content.firstElementChild);
   });
   const meta = (pg.meta || []).filter(function (m) { return m && m[1] != null && String(m[1]) !== ''; }).map(function (m) { return [m[0], m[1], DOCX.isLtr(m[1]) ? undefined : false]; });
@@ -24247,7 +24247,7 @@ secs: [
 { id: 'dfz', title: 'ترتيب الصفحة', kind: 'info', info: 'رتّب أقسام الملحق وأخفِها من نسخة الطلب — ما يُخفى لا يأخذ مكانًا في الصفحة.', parts: [{ kind: 'order', items: [{ k: 'ids', l: 'بيانات المنشأة', tp: 'tt.ids', show: 'show.ids' }, { k: 'parties', l: 'أطراف الملحق', tp: 'tt.parties', show: 'show.parties' }, { k: 'summary', l: 'ملخص الطلب', tp: 'tt.summary', show: 'show.summary' }, { k: 'defer', l: 'جدول الدفعات قبل التأجيل', tp: 'tt.defer', show: 'show.defer' }, { k: 'fees', l: 'رسوم التأجيل', tp: 'tt.fees', show: 'show.fees' }, { k: 'contract', l: 'قيمة العقد قبل التأجيل وبعده', tp: 'tt.contract', show: 'show.contract' }, { k: 'sched', l: 'جدول الدفعات بعد التأجيل', tp: 'tt.sched', show: 'show.sched' }, { k: 'terms', l: 'الشروط والأحكام', tp: 'tt.terms', show: 'show.terms' }, { k: 'adds', l: 'الأقسام المضافة' }, { k: 'sign', l: 'الإقرار والتوقيع', tp: 'tt.sign', show: 'show.sign' }, { k: 'note', l: 'تنويه', tp: 'tt.note', show: 'show.note' }] }], hint: 'الختم والاعتماد في آخر الملحق دائمًا.' },
 { id: 'dfi', title: 'بيانات المنشأة', titleP: 'tt.ids', kind: 'pairs', p: 'ids', show: 'show.ids', hint: 'القيمة الفارغة تُقرأ من «بيانات المنشأة» في الإعدادات، والحقل بلا قيمة لا يظهر — غيّر المسمّى أو القيمة، أو أضف حقلًا، أو أخفِه.' },
 { id: 'dfo', title: 'خيارات العرض', kind: 'toggles', items: [{ l: 'أيقونات الأقسام', p: 'show.icons' }] },
-{ id: 'dfp', title: 'أطراف الملحق', titleP: 'tt.parties', show: 'show.parties', kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }], parts: [{ kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }] }, { sub: 'الحقول الظاهرة', kind: 'toggles', items: [{ l: 'الطرف الأول', p: 'show.p1' }, { l: 'الطرف الثاني', p: 'show.p2' }, { l: 'رقم العقد', p: 'show.pno' }, { l: 'اسم المنتج', p: 'show.product' }] }], hint: 'الطرف الثاني ورقم العقد والمنتج من الطلب نفسه.' },
+{ id: 'dfp', title: 'أطراف الملحق', titleP: 'tt.parties', show: 'show.parties', kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }], parts: [{ kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }] }, { sub: 'الحقول الظاهرة', kind: 'toggles', items: [{ l: 'الطرف الأول', p: 'show.p1' }, { l: 'الطرف الثاني', p: 'show.p2' }, { l: 'اسم المنتج', p: 'show.product' }] }], hint: 'الطرف الثاني والمنتج من الطلب نفسه، ورقم العقد في الترويسة.' },
 { id: 'dfm', title: 'ملخص الطلب', titleP: 'tt.summary', kind: 'info', show: 'show.summary', info: 'كم دفعة طلب العميل تأجيلها وقيمتها ورسومها.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'summary', defs: [{ k: 'n', l: 'الدفعة / عدد الدفعات' }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }] }], hint: '«قيمة كل دفعة» تظهر عند تأجيل أكثر من دفعة.' },
 { id: 'dfd', title: 'جدول الدفعات قبل التأجيل', titleP: 'tt.defer', kind: 'info', show: 'show.defer', info: 'كل الدفعات بمواعيدها وقيمها وحالتها قبل التأجيل — من حسبة الطلب.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'defer', defs: [{ k: 'seq', l: 'الدفعة' }, { k: 'due', l: 'تاريخ الاستحقاق' }, { k: 'amt', l: 'القيمة' }, { k: 'st', l: 'الحالة' }] }, { sub: 'الدفعات الظاهرة', kind: 'rowsHide', p: 'defer', src: 'rows' }], hint: 'الأعمدة الظاهرة تتوزّع بعرض متساوٍ.' },
 { id: 'dff', title: 'رسوم التأجيل', titleP: 'tt.fees', kind: 'toggles', show: 'show.fees', items: [{ l: 'المجموع قبل الضريبة', p: 'show.f_sub' }, { l: 'ضريبة القيمة المضافة', p: 'show.f_vat' }, { l: 'إجمالي الرسوم', p: 'show.f_tot' }], parts: [{ kind: 'toggles', items: [{ l: 'المجموع قبل الضريبة', p: 'show.f_sub' }, { l: 'ضريبة القيمة المضافة', p: 'show.f_vat' }, { l: 'إجمالي الرسوم', p: 'show.f_tot' }] }, { sub: 'بنود الرسوم الظاهرة', kind: 'rowsHide', p: 'fees', src: 'fees' }], hint: 'بنود الرسوم كما يراها العميل — من حسبة الطلب.' },
@@ -24256,8 +24256,7 @@ secs: [
 { id: 'dft', title: 'الشروط والأحكام', titleP: 'tt.terms', kind: 'lines', p: 'terms', show: 'show.terms', hint: 'يبدأ فارغًا — أضف البنود من مكتبة البنود، وكل بند يُرقَّم في الملحق.' },
 { id: 'dfg', title: 'إقرار الطرف الثاني وتوقيعه', titleP: 'tt.sign', kind: 'fields', show: 'show.sign', fields: [{ l: 'نص الإقرار', p: 'ack' }, { l: 'قبل التوقيع', p: 'pend' }], hint: 'بعد التوقيع يظهر الاسم وطريقة التوقيع والتحقق ووقته وصورة التوقيع.' },
 { id: 'dfq', title: 'صفوف الإثبات بعد التوقيع', kind: 'toggles', items: [{ l: 'اسم الموقّع', p: 'show.s_name' }, { l: 'العملية', p: 'show.s_op' }, { l: 'طريقة التوقيع', p: 'show.s_method' }, { l: 'وسيلة التحقق', p: 'show.s_factor' }, { l: 'وقت التوقيع', p: 'show.s_time' }, { l: 'صورة التوقيع (ومكانه قبل التوقيع)', p: 'show.s_img' }], hint: 'طرق التوقيع المسموحة للعميل من «صفحات الرابط ← صفحة التوقيع».' },
-{ id: 'dfn', title: 'تنويه', titleP: 'tt.note', kind: 'text', p: 'note', show: 'show.note' },
-{ id: 'dfa', title: 'سطر التذييل', kind: 'fields', fields: [{ l: 'سطر التذييل', p: 'auto' }] }],
+{ id: 'dfn', title: 'تنويه', titleP: 'tt.note', kind: 'text', p: 'note', show: 'show.note' }],
 preview: function (X) { const P = DOCX.deferPages(dfSample(), DOCX.tpl('df', X)); docxPv(Object.assign({}, P[0], { cards: P.reduce(function (a, p) { return a.concat(p.cards || []); }, []) })); } });
 }
 function esxGdocs() { const L = []; [function () { return esxGQuote('pq'); }, function () { return esxGQuote('sq'); }, function () { return esxGQuote('cq'); }, esxGPc, esxGSi, esxGRc, esxGTh, esxGCs, esxGCe, esxGDf].forEach(function (f) { try { L.push(f()); } catch (x) { try { console.error('[esx gdoc]', x); } catch (y) { void y; } } }); return L; }
