@@ -23984,6 +23984,7 @@ auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقي
 const DF_METHOD = { draw: 'توقيع بالرسم', type: 'توقيع بكتابة الاسم', upload: 'صورة التوقيع' }, DF_FACTOR = { whatsapp: 'رمز تحقق عبر واتساب', email: 'رمز تحقق عبر البريد الإلكتروني' };
 function dfAt(t) { if (!t) return ''; const d = new Date(new Date(t).getTime() + 3 * 3600 * 1000); return isNaN(d.getTime()) ? String(t) : dmy(d.toISOString().slice(0, 10)) + ' · ' + d.toISOString().slice(11, 16); }
 function deferPages(o, T) {
+const kvDf = function (p, t) { return dKV(p, t).replace('<table class="d3-kv"', '<table class="d3-kv is-df"'); }; /* v886: جداول الملحق بخطوط ثابتة */
 T = T || tpl('df'); o = o || {};
 /* v885: تحكم كامل — ترتيب الأقسام (T.order)، وأعمدة كل جدول ترتيبًا وإخفاءً وتسمية (T.cols) بعرض متساوٍ، وإخفاء الصفوف والحقول (T._hid · show)، والفراغ يُسحب تلقائيًا · v884: الترتيب للعميل — الدفعات قبل التأجيل كاملة · الرسوم · قيمة العقد قبل وبعد · الدفعات الجديدة. بيانات المنشأة بطاقات بهوية المستند ومن الإعدادات كاملة، والملخص جدول · v883: الملحق أوضح للعميل — ملخص بلغة واضحة، رسوم مفصّلة بلا تكرار الضريبة، أثر العقد في بطاقة مستقلة، بيانات المنشأة قابلة للتعديل والإخفاء، وتوقيع الطرفين في مربعين واضحين */
 const S = function (k) { return on(T, k); }, c = o.calc || {}, rows = Array.isArray(c.rows) ? c.rows : [], no = o.no || '';
@@ -24042,10 +24043,10 @@ return '<div style="position:relative;display:flex;align-items:center;gap:8px;mi
 }
 };
 SEC.parties = function () {
-const P = [S('p1') ? ['الطرف الأول', org, false] : null, S('p2') ? ['الطرف الثاني', o.name || 'العميل', false] : null, S('product') && o.product ? ['المنتج', o.product, false] : null].filter(Boolean);
+const P = [S('p1') ? ['الطرف الأول', org, false, null, true] : null, S('p2') ? ['الطرف الثاني', o.name || 'العميل', false, null, true] : null, S('product') && o.product ? ['المنتج', o.product, false, null, true] : null].filter(Boolean); /* v886: كل طرف في صف كامل — الإخفاء يحذف صفًّا ولا يكسر الخطوط */
 const intro = S('intro') && T.intro ? dP(T.intro, pad) : '';
 if (!P.length && !intro) return;
-add.w = 52 + 44 * Math.ceil(P.length / 2) + (intro ? 42 : 0), add(card(TT.parties, 'users', dKV(P) + intro));
+add.w = 52 + 34 * P.length + (intro ? 42 : 0), add(card(TT.parties, 'users', kvDf(P) + intro));
 };
 /* ملخص الطلب — كم دفعة طلب العميل تأجيلها وقيمتها ورسومها، في جدول واحد مختصر (أعمدته قابلة للترتيب والإخفاء) */
 const tgAmt = tg.map(function (r) { return Number(r.amt_before) || 0; });
@@ -24075,12 +24076,12 @@ const hf = hidOf('fees'), LL = L.filter(function (l) { return hf.indexOf(String(
 const sub = L.reduce(function (s, l) { return s + (Number(l.amt) || 0); }, 0);
 const tot = [S('f_sub') && L.length > 1 ? ['المجموع قبل الضريبة', sar(sub)] : null, S('f_vat') && Number(c.vat) > 0 ? ['ضريبة القيمة المضافة' + (c.vat_rate != null ? ' (' + Number(c.vat_rate) + '%)' : ''), sar(c.vat)] : null, S('f_tot') ? ['إجمالي رسوم التأجيل' + (Number(c.vat) > 0 ? ' شاملة الضريبة' : ''), sar(c.total), 'gt'] : null].filter(Boolean);
 if (!LL.length && !tot.length) return;
-add.w = 52 + 34 * LL.length + 34 * tot.length, add(card(TT.fees, 'receipt', dKV(LL.map(function (l) { return [l.t, sar(l.amt), false, null, true]; }), tot)));
+add.w = 52 + 34 * LL.length + 34 * tot.length, add(card(TT.fees, 'receipt', kvDf([], LL.map(function (l) { return [l.t, sar(l.amt), 'ln']; }).concat(tot)))); /* v886: كل مبالغ الرسوم في عمود واحد */
 };
 SEC.contract = function () {
 if (!c.contract) return;
 const P = [S('c_before') ? ['قيمة العقد قبل التأجيل', sar(c.contract.total_before)] : null, S('c_after') ? ['قيمة العقد بعد التأجيل', sar(c.contract.total_after)] : null].filter(Boolean);
-if (P.length) add.w = 86, add(card(TT.contract, 'receipt', dKV(P)));
+if (P.length) add.w = 86, add(card(TT.contract, 'receipt', kvDf(P)));
 };
 SEC.terms = function () { if (terms.length) addSplit({ t: TT.terms, ic: 'doc', para: true, num: true, items: terms }); };
 /* أقسام مضافة من المكتبة أو فارغة — { t, lines[], on } */
@@ -24094,7 +24095,7 @@ const party = function (who, name, inner) { return '<div style="flex:1;min-width
 const p1 = party('الطرف الأول', org, box('<b style="font-size:12px;color:#0b6f79">معتمد إلكترونيًا</b><small style="font-size:10.5px;color:#7a8aa6">بالختم الرسمي في بطاقة الاعتماد</small>', true));
 const p2 = party('الطرف الثاني', o.name || 'العميل', S('s_img') || !g ? box(g ? mark : '', !!g) : box('<b style="font-size:12px;color:#0b6f79">وُقّع إلكترونيًا</b>', true));
 add.w = g ? 308 : 248, add(card(TT.sign, 'pen', (T.ack ? dP(T.ack, pad + ';font-weight:700') : '') + '<div style="display:flex;gap:14px;padding:4px 18px 10px;break-inside:avoid">' + p1 + p2 + '</div>'
-+ (g ? dKV(gr) : (T.pend ? dP(T.pend, pad + ';color:#5b6b86;font-size:11.5px') : ''))));
++ (g ? kvDf(gr) : (T.pend ? dP(T.pend, pad + ';color:#5b6b86;font-size:11.5px') : ''))));
 };
 SEC.note = function () { if (T.note) add.w = 88, add(card(TT.note, 'info', dP(T.note), 'is-note', true)); };
 /* ترتيب الصفحة: المحفوظ أولًا ثم ما لم يُذكر بترتيبه الافتراضي، والقسم المخفي لا يأخذ مكانًا */

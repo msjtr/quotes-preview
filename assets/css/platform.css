@@ -9313,3 +9313,8 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .dc3.dc3.dc3 .d3-dt tbody tr:nth-child(even) td{background:#F6F8FC!important}
 .dc3.dc3.dc3 .d3-dt td{color:#0B1D3A!important;font-weight:700!important;font-variant-numeric:tabular-nums}
 .dc3.dc3.dc3 .d3-dt .is-txt{text-align:right!important}
+
+/* v886: جداول ملحق التأجيل — خط بين المسمّى وقيمته وخط قبل التمهيد، ثابتان عند إخفاء أي حقل */
+.dc3.dc3.dc3 .d3-kv.is-df th + td, .dc3.dc3.dc3 .d3-kv.is-df td + th { border-inline-start: 1px solid #E3E9F2 !important; }
+.dc3.dc3.dc3 .d3-kv.is-df + .d3-p { border-top: 1px solid #E3E9F2; margin-top: 0; }
+.dc3.dc3.dc3 .d3-kv.is-df tr.is-ln th { font-weight: 700; }
