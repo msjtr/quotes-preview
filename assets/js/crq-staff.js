@@ -19,7 +19,7 @@ if (!/^\/staff\/next(\/|$)/.test(location.pathname)) return;
 var KEY = 'cu-crq-defer', UP = 'cu', KIND = 'defer', TITLE = 'طلبات تأجيل دفعة';
 var NS = 'http://www.w3.org/2000/svg';
 var IC = {
-plus: 'M12 5v14M5 12h14', chev: 'M6 9l6 6 6-6', mail: 'M4 6h16v12H4zM4 7l8 6 8-6', idc: 'M4 5h16v14H4zM8 10h.01M12 10h4M8 14h8', cal: 'M5 6h14v14H5zM5 10h14M9 4v4M15 4v4', note: 'M6 4h12v16H6zM9 9h6M9 13h6M9 17h3', box: 'M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8', back: 'M15 6l-6 6 6 6', more: 'M5 12h.01M12 12h.01M19 12h.01', check: 'M5 12.5l4.5 4.5L19 7.5',
+plus: 'M12 5v14M5 12h14', lt: 'M15 6l-6 6 6 6', minus: 'M5 12h14', chev: 'M6 9l6 6 6-6', mail: 'M4 6h16v12H4zM4 7l8 6 8-6', idc: 'M4 5h16v14H4zM8 10h.01M12 10h4M8 14h8', cal: 'M5 6h14v14H5zM5 10h14M9 4v4M15 4v4', note: 'M6 4h12v16H6zM9 9h6M9 13h6M9 17h3', box: 'M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8', back: 'M15 6l-6 6 6 6', more: 'M5 12h.01M12 12h.01M19 12h.01', check: 'M5 12.5l4.5 4.5L19 7.5',
 send: 'M4 12l16-8-6 16-3-7-7-1z', user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', file: 'M14 3H6v18h12V7l-4-4zM14 3v4h4',
 clock: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', link: 'M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1',
 eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
@@ -41,6 +41,8 @@ function btn(label, o) { o = o || {}; var b = el('button', { type: 'button', cla
 function money(x) { var n = Math.round((Number(x) || 0) * 100) / 100; return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function day(d) { if (!d) return '—'; try { return new Date(String(d).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return String(d); } }
 function at(t) { if (!t) return '—'; try { return new Date(t).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); } catch (e) { return String(t); } }
+function rel(t) { if (!t) return '—'; var d = (Date.now() - new Date(t).getTime()) / 6e4; if (!(d >= 0)) return at(t); if (d < 1) return 'الآن'; if (d < 60) { var m = Math.round(d); return 'قبل ' + (m === 1 ? 'دقيقة' : m === 2 ? 'دقيقتين' : m <= 10 ? m + ' دقائق' : m + ' دقيقة'); }
+var h = Math.round(d / 60); if (h < 24) return 'قبل ' + (h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : h <= 10 ? h + ' ساعات' : h + ' ساعة'); var n = Math.round(h / 24); if (n < 7) return n === 1 ? 'أمس' : 'قبل ' + (n === 2 ? 'يومين' : n + ' أيام'); return day(t); }
 function ltr(t) { return el('bdi', { dir: 'ltr', class: 'cr-ltr', text: String(t == null ? '' : t) }); }
 function clone(o) { return JSON.parse(JSON.stringify(o || {})); }
 
@@ -101,20 +103,18 @@ el('div', { class: 'cr-seg', role: 'group', 'aria-label': 'النطاق' }, [[''
 return el('button', { type: 'button', class: (!!o[0] === ST.mine) ? 'is-on' : '', 'aria-pressed': (!!o[0] === ST.mine) ? 'true' : 'false', 'data-live-ok': '', onclick: function () { ST.mine = !!o[0]; draw(); } }, [o[1]]); })),
 ST.sup ? btn('الإعدادات', { ic: 'gear', cls: ST.set ? 'is-on' : '', on: function () { ST.set = ST.set ? null : { load: true }; ST.create = null; draw(); if (ST.set) loadSettings(); } }) : null,
 btn('طلب تأجيل جديد', { ic: 'plus', cls: 'is-pri', on: function () { ST.create = ST.create ? null : { q: '', clients: null }; ST.set = null; draw(); if (ST.create) loadClients(); } })]);
-var head = el('div', { class: 'cr-lr is-h' }, ['العميل والطلب', 'العقد', 'الدفعة المؤجلة', 'الإضافة', 'الحالة', 'آخر تحديث', ''].map(function (h) { return el('span', { text: h }); }));
+/* v880: صف مختصر — العميل والطلب · الحالة · آخر تحديث (التفاصيل داخل الطلب) */
+var head = el('div', { class: 'cr-lr is-h' }, ['العميل والطلب', 'الحالة', 'آخر تحديث', ''].map(function (h) { return el('span', { text: h }); }));
 var body = !ST.rows ? el('div', { class: 'cr-load', text: 'جارٍ التحميل…' })
 : !rows.length ? el('div', { class: 'cr-empty' }, [el('i', {}, [icon('inbox')]), el('b', { text: 'لا طلبات تأجيل بعد' }), el('span', { class: 'cr-hint', text: 'تظهر هنا طلبات العملاء من حساباتهم والطلبات التي ينشئها الفريق.' })])
 : !L.length ? el('div', { class: 'cr-empty' }, [el('i', {}, [icon('search')]), el('b', { text: ST.q ? 'لا نتائج لهذا البحث' : 'لا طلبات ' + ({ open: 'مفتوحة', team: 'بانتظار الفريق', client: 'بانتظار العميل', done: 'منفّذة', closed: 'مغلقة' }[ST.f] || '') + ' الآن' }), rows.length && ST.f !== 'all' ? btn('عرض كل الطلبات', { cls: 'is-sm', on: function () { ST.f = 'all'; ST.q = ''; draw(); } }) : null])
 : el('div', {}, [head].concat(L.map(function (r) {
-var tg = (r.targets || []).map(function (t) { return 'الدفعة ' + t.seq + ' · ' + day(t.due); }).join('، ') || '—';
-return el('div', { class: 'cr-lr', role: 'button', tabindex: '0', 'data-live-ok': '', onclick: function () { open(r.id); }, onkeydown: function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(r.id); } } }, [
-el('div', { class: 'cr-who' }, [el('span', { class: 'cr-av', 'aria-hidden': 'true', text: initial(r.client) }), el('div', { style: 'min-width:0' }, [el('b', { text: r.client || '—' }), el('small', {}, [ltr(r.no), r.origin === 'staff' ? ' · أنشأه الفريق' : ''])])]),
-el('b', {}, [ltr(r.contract_no || '—')]),
-el('span', { text: tg }),
-el('b', { class: r.total != null ? '' : 'cr-mut' }, [r.total != null ? ltr(money(r.total)) : '—']),
-el('div', {}, [badge(r), r.need_approval ? el('small', { class: 'cr-sub is-warn', text: 'بانتظار اعتماد المشرف العام' }) : r.exec_error ? el('small', { class: 'cr-sub is-bad', text: 'تعذّر التنفيذ' }) : r.assigned_t ? el('small', { class: 'cr-sub', text: 'مسند إلى ' + r.assigned_t }) : null]),
-el('span', { class: 'cr-mut', text: at(r.updated_at) }),
-btn('فتح الطلب', { cls: 'is-pri is-sm', on: function (e) { e.stopPropagation(); open(r.id); } })]);
+var sub = r.need_approval ? el('small', { class: 'cr-sub is-warn', text: 'بانتظار اعتماد المشرف العام' }) : r.exec_error ? el('small', { class: 'cr-sub is-bad', text: 'تعذّر التنفيذ' }) : r.assigned_t ? el('small', { class: 'cr-sub', text: 'مسند إلى ' + r.assigned_t }) : null;
+return el('div', { class: 'cr-lr', role: 'button', tabindex: '0', 'aria-label': 'فتح طلب ' + (r.client || '') + ' ' + (r.no || ''), 'data-live-ok': '', onclick: function () { open(r.id); }, onkeydown: function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(r.id); } } }, [
+el('div', { class: 'cr-who' }, [el('span', { class: 'cr-av', 'aria-hidden': 'true', text: initial(r.client) }), el('div', { style: 'min-width:0' }, [el('b', { text: r.client || '—' }), el('small', {}, [ltr(r.no), r.contract_no ? el('span', { class: 'cr-dotsep' }, [' · ', ltr(r.contract_no)]) : null])])]),
+el('div', { class: 'cr-lr-st' }, [badge(r), sub]),
+el('span', { class: 'cr-lr-at', title: at(r.updated_at) }, [icon('clock'), rel(r.updated_at)]),
+el('span', { class: 'cr-lr-go', 'aria-hidden': 'true' }, [icon('lt')])]);
 })));
 var foot = ST.rows && rows.length ? el('div', { class: 'cr-lf', text: 'عرض ' + L.length + ' من ' + rows.length + ' طلبًا' }) : null;
 return [kpis, tools, ST.set ? settingsPanel() : null, ST.create ? createPanel() : null, ST.err ? note('bad', ST.err) : null, el('div', { class: 'cr-lt' }, [body]), foot];
@@ -125,43 +125,90 @@ function note(k, t, kids) { return el('div', { class: 'cr-note is-' + k, role: k
 /* إنشاء طلب من الفريق: العميل ← العقد ← الدفعة */
 async function loadClients() { try { var j = await api('GET', '/admin/api/clients'); ST.create.clients = (j.reg || []).filter(function (c) { return c.status === 'active'; }); } catch (e) { ST.create.err = e.message; ST.create.clients = []; } draw(); }
 async function loadOpts(uid) { ST.create.uid = uid; ST.create.opts = null; draw(); try { var j = await api('GET', '/admin/api/crq-options/' + uid); ST.create.opts = j.contracts || []; } catch (e) { ST.create.err = e.message; } draw(); }
+/* v880: إنشاء طلب — ثلاث خطوات واضحة: العميل (بحث) ← العقد ← الدفعة */
 function createPanel() {
-var C = ST.create, kids = [el('h2', { text: 'طلب تأجيل جديد لعميل' })];
-var cl = (C.clients || []).filter(function (c) { return !C.q || (c.name + ' ' + (c.phone || '') + ' ' + (c.no || '')).indexOf(C.q) >= 0; }).slice(0, 30);
-kids.push(field('العميل', C.clients ? el('select', { onchange: function (e) { if (e.target.value) loadOpts(e.target.value); } }, [el('option', { value: '', text: '— اختر العميل —' })].concat(cl.map(function (c) { return el('option', { value: c.id, selected: C.uid === c.id, text: c.name + (c.phone ? ' · ' + c.phone : '') }); }))) : el('span', { text: 'جارٍ تحميل العملاء…' })));
-if (C.uid && C.opts) {
-if (!C.opts.length) kids.push(note('warn', 'لا عقود مفتوحة بدفعات مستحقة لهذا العميل'));
+var C = ST.create, cl = C.clients || [], cur = cl.filter(function (c) { return c.id === C.uid; })[0];
+var o = (C.opts || []).filter(function (x) { return x.no === C.no; })[0], step = !cur ? 1 : !o ? 2 : 3;
+var stp = el('ol', { class: 'cr-nw-st' }, [['العميل', 1], ['العقد', 2], ['الدفعة', 3]].map(function (t) { return el('li', { class: step > t[1] ? 'is-done' : step === t[1] ? 'is-cur' : '' }, [el('i', {}, [step > t[1] ? icon('check') : ltr(String(t[1]))]), t[0]]); }));
+var sec = function (n, title, kids, done) { return el('div', { class: 'cr-nw-s' + (done ? ' is-done' : '') }, [el('div', { class: 'cr-nw-sh' }, [el('span', { class: 'cr-nw-n' }, [done ? icon('check') : ltr(String(n))]), el('b', { text: title })])].concat(kids)); };
+var parts = [];
+/* 1) العميل */
+if (cur) parts.push(sec(1, 'العميل', [el('div', { class: 'cr-nw-pk' }, [el('span', { class: 'cr-av', text: initial(cur.name) }), el('div', {}, [el('b', { text: cur.name }), el('small', {}, [cur.phone ? ltr(cur.phone) : '', cur.no ? el('span', {}, [' · ', ltr(cur.no)]) : null])]),
+el('button', { type: 'button', class: 'cr-nw-ch', 'data-live-ok': '', onclick: function () { C.uid = null; C.opts = null; C.no = null; C.pids = []; draw(); var i = R.querySelector('.cr-nw-q input'); if (i) i.focus(); } }, ['تغيير'])])], true));
 else {
-kids.push(field('العقد', el('select', { onchange: function (e) { C.no = e.target.value; C.pids = []; draw(); } }, [el('option', { value: '', text: '— اختر العقد —' })].concat(C.opts.map(function (o) { return el('option', { value: o.no, selected: C.no === o.no, disabled: !!o.busy, text: o.no + (o.product ? ' · ' + o.product : '') + (o.busy ? ' · عليه طلب ' + o.busy : '') }); })))));
-var o = C.opts.filter(function (x) { return x.no === C.no; })[0];
-if (o) kids.push(field('الدفعة المراد تأجيلها', el('div', { class: 'cr-picks' }, (o.payments || []).map(function (p) {
-var on = (C.pids || []).indexOf(p.pid) >= 0;
-return el('label', { class: 'cr-pick' + (on ? ' is-on' : '') }, [el('input', { type: 'checkbox', checked: on, onchange: function (e) { C.pids = (C.pids || []).filter(function (x) { return x !== p.pid; }); if (e.target.checked) C.pids.push(p.pid); draw(); } }), 'الدفعة ' + p.seq + ' · ' + day(p.due) + ' · ', ltr(money(p.amount))]);
-}))));
-kids.push(field('ملاحظة (اختياري)', el('input', { type: 'text', value: C.note || '', oninput: function (e) { C.note = e.target.value; } })));
+var q = String(C.q || '').trim(), hits = cl.filter(function (c) { return !q || (c.name + ' ' + (c.phone || '') + ' ' + (c.no || '')).indexOf(q) >= 0; });
+parts.push(sec(1, 'اختر العميل', [
+el('label', { class: 'cr-lq cr-nw-q' }, [icon('search'), el('input', { type: 'search', value: C.q || '', placeholder: 'ابحث بالاسم أو الجوال أو رقم العميل…', 'aria-label': 'بحث عن عميل', oninput: function (e) { C.q = e.target.value; var p = e.target.selectionStart; draw(); var i = R.querySelector('.cr-nw-q input'); if (i) { i.focus(); try { i.setSelectionRange(p, p); } catch (er) { void er; } } } })]),
+!C.clients ? el('div', { class: 'cr-load', text: 'جارٍ تحميل العملاء…' })
+: el('div', { class: 'cr-nw-l', role: 'listbox', 'aria-label': 'العملاء' }, hits.length ? hits.slice(0, 40).map(function (c) {
+return el('button', { type: 'button', role: 'option', class: 'cr-nw-c', 'data-live-ok': '', onclick: function () { C.q = ''; C.no = null; C.pids = []; loadOpts(c.id); } }, [el('span', { class: 'cr-av', text: initial(c.name) }), el('span', { class: 'cr-nw-ct' }, [el('b', { text: c.name }), el('small', {}, [c.phone ? ltr(c.phone) : '—', c.no ? el('span', {}, [' · ', ltr(c.no)]) : null])]), icon('lt')]); })
+: [el('p', { class: 'cr-pop-0', text: 'لا عميل بهذا البحث.' })]),
+C.clients && hits.length > 40 ? el('small', { class: 'cr-hint', text: 'يظهر أول 40 — دقّق البحث لتضييق النتائج.' }) : null]));
 }
+/* 2) العقد */
+if (cur) {
+if (!C.opts) parts.push(sec(2, 'اختر العقد', [el('div', { class: 'cr-load', text: 'جارٍ تحميل العقود…' })]));
+else if (!C.opts.length) parts.push(sec(2, 'العقد', [note('warn', 'لا عقود مفتوحة بدفعات مستحقة لهذا العميل.')]));
+else parts.push(sec(2, o ? 'العقد' : 'اختر العقد', [el('div', { class: 'cr-nw-k', role: 'radiogroup', 'aria-label': 'العقود' }, C.opts.map(function (k) {
+var on = C.no === k.no, n = (k.payments || []).length;
+return el('label', { class: 'cr-opt cr-nw-o' + (on ? ' is-on' : '') + (k.busy ? ' is-ro' : '') }, [el('input', { type: 'radio', name: 'crq-nw-k', value: k.no, checked: on, disabled: !!k.busy, onchange: function () { C.no = k.no; C.pids = []; draw(); } }),
+el('span', {}, [el('b', {}, [ltr(k.no)]), el('small', { text: (k.product || 'عقد') + ' · ' + n + (n === 1 ? ' دفعة مستحقة' : ' دفعات مستحقة') }), k.busy ? el('em', { class: 'cr-py-s is-warn', text: 'عليه طلب مفتوح ' + k.busy }) : null])]); }))], !!o));
 }
-if (C.err) kids.push(note('bad', C.err));
-kids.push(el('div', { class: 'cr-acts' }, [btn('إنشاء الطلب', { cls: 'is-pri', disabled: !(C.uid && C.no && C.pids && C.pids.length) || ST.busy, on: async function () {
+/* 3) الدفعة */
+if (o) {
+var pays = (o.payments || []).map(function (p) { var on = (C.pids || []).indexOf(p.pid) >= 0;
+return el('label', { class: 'cr-py' + (on ? ' is-on' : '') }, [el('input', { type: 'checkbox', checked: on, 'aria-label': 'الدفعة ' + p.seq, onchange: function (e) { C.pids = (C.pids || []).filter(function (x) { return x !== p.pid; }); if (e.target.checked) C.pids.push(p.pid); draw(); } }),
+el('span', { class: 'cr-py-ck', 'aria-hidden': 'true' }, [icon('check')]), el('span', { class: 'cr-py-n' }, [ltr(String(p.seq))]),
+el('span', { class: 'cr-py-d' }, [el('b', { text: 'الدفعة ' + p.seq }), el('small', {}, [icon('cal'), day(p.due)])]),
+el('span', { class: 'cr-py-a' }, [ltr(money(p.amount)), el('small', { text: ' ر.س' })]), el('span', { class: 'cr-py-s' + (on ? ' is-sel' : ' is-open'), text: on ? 'مطلوب تأجيلها' : 'مستحقة' })]); });
+var selP = (o.payments || []).filter(function (p) { return (C.pids || []).indexOf(p.pid) >= 0; }), selAmt = selP.reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0);
+parts.push(sec(3, 'حدّد الدفعة المطلوب تأجيلها', [el('div', { class: 'cr-pys' }, pays.length ? pays : [el('p', { class: 'cr-hint', text: 'لا دفعات مستحقة في هذا العقد.' })]),
+el('label', { class: 'cr-field cr-nw-nt' }, [el('span', { text: 'ملاحظة (اختياري)' }), el('input', { type: 'text', maxlength: '300', value: C.note || '', placeholder: 'تظهر للفريق في «بيانات الطلب»', oninput: function (e) { C.note = e.target.value; } })])], selP.length > 0));
+}
+var ready = !!(cur && o && C.pids && C.pids.length);
+return el('section', { class: 'cr-card cr-nw' }, [
+el('div', { class: 'cr-nw-h' }, [el('span', { class: 'cr-nw-ic' }, [icon('plus')]), el('div', {}, [el('h2', { text: 'طلب تأجيل جديد' }), el('small', { text: 'يُنشأ باسم الفريق ثم يُكمَل من صفحة الطلب.' })]),
+el('button', { type: 'button', class: 'cr-pop-x', 'aria-label': 'إغلاق', 'data-live-ok': '', onclick: function () { ST.create = null; draw(); } }, [icon('x')])]),
+stp].concat(parts, [C.err ? note('bad', C.err) : null,
+el('div', { class: 'cr-nw-f' }, [ready ? el('span', { class: 'cr-nw-sum' }, [el('small', { text: selP.length === 1 ? 'دفعة واحدة' : selP.length + ' دفعات' }), el('b', {}, [ltr(money(selAmt)), ' ر.س'])]) : el('small', { class: 'cr-hint', text: step === 1 ? 'ابدأ باختيار العميل.' : step === 2 ? 'اختر العقد.' : 'حدّد دفعة واحدة على الأقل.' }),
+el('div', { class: 'cr-acts' }, [btn('إلغاء', { on: function () { ST.create = null; draw(); } }), btn(ST.busy ? 'جارٍ الإنشاء…' : 'إنشاء الطلب', { ic: 'check', cls: 'is-pri', disabled: !ready || ST.busy, on: async function () {
 ST.busy = true; draw();
 try { var j = await api('POST', '/admin/api/crq', { user_id: C.uid, contract_no: C.no, payment_ids: C.pids, note: C.note || '', kind: KIND }); ST.create = null; ST.busy = false; await loadList(); open(j.id); }
 catch (e) { ST.busy = false; C.err = e.message; draw(); }
-} }), btn('إلغاء', { on: function () { ST.create = null; draw(); } })]));
-return el('section', { class: 'cr-card' }, kids);
+} })])])]));
 }
 function field(label, ctl, hint) { return el('div', { class: 'cr-field' }, [el('label', { text: label }), ctl, hint ? el('small', { text: hint }) : null]); }
 
 /* إعدادات التأجيل (المشرف العام): مدة الرابطين — النصوص والألوان والبنود من مصادرها الواحدة */
 function loadSettings() { ST.set = { s: clone(ST.settings || { consent_hours: 48, sign_hours: 48 }) }; draw(); }
+/* v880: الإعدادات — مدتا الرابطين بعدّاد وخيارات سريعة، ومصادر بقية الإعدادات */
 function settingsPanel() {
-var s = ST.set && ST.set.s; if (!s) return el('section', { class: 'cr-card' }, [el('span', { text: 'جارٍ التحميل…' })]);
-function num(k, lab, hint) { return field(lab, el('input', { type: 'number', min: '1', max: '720', step: '1', value: s[k], oninput: function (e) { s[k] = e.target.value; } }), hint); }
-return el('section', { class: 'cr-card' }, [el('h2', { text: 'إعدادات طلبات التأجيل' }), el('div', { class: 'cr-grid' }, [
-num('consent_hours', 'مدة رابط الموافقة (ساعة)', 'بانتهائها يُغلق الطلب «انتهت مدة العرض».'), num('sign_hours', 'مدة رابط التوقيع (ساعة)')]),
-el('ul', { class: 'cr-src' }, [el('li', {}, [el('b', { text: 'المستند (ملحق تأجيل الدفعة): ' }), 'الإعدادات ← قوالب المستندات ← ملحق تأجيل الدفعة.']),
-el('li', {}, [el('b', { text: 'صفحتا الرابط (الألوان والنصوص والأقسام): ' }), 'الإعدادات ← قوالب المستندات ← عقد الشركاء ← صفحات الرابط.']),
-el('li', {}, [el('b', { text: 'بنود الرسوم الجاهزة: ' }), 'الإعدادات ← الرسوم والضرائب والعمولات ← بنود رسوم طلبات العقود.'])]),
-el('div', { class: 'cr-acts' }, [btn('حفظ الإعدادات', { cls: 'is-pri', on: async function () { try { await api('POST', '/admin/api/crq-settings', { consent_hours: s.consent_hours, sign_hours: s.sign_hours }); ST.set = null; loadList(); toast(true, 'حُفظت الإعدادات.'); } catch (e) { toast(false, e.message); } } }), btn('إغلاق', { on: function () { ST.set = null; draw(); } })])]);
+var s = ST.set && ST.set.s; if (!s) return el('section', { class: 'cr-card' }, [el('div', { class: 'cr-load', text: 'جارٍ التحميل…' })]);
+var o0 = ST.settings || {}, valid = function (v) { v = Number(v); return v >= 1 && v <= 720 && Math.floor(v) === v; };
+var ok = valid(s.consent_hours) && valid(s.sign_hours), dirty = String(s.consent_hours) !== String(o0.consent_hours) || String(s.sign_hours) !== String(o0.sign_hours);
+var hrs = function (k, title, desc) { var v = s[k], set = function (n) { s[k] = String(Math.max(1, Math.min(720, n))); draw(); };
+var bad = !valid(v), dd = valid(v) ? (Number(v) % 24 === 0 ? (Number(v) / 24 === 1 ? 'يوم واحد' : Number(v) / 24 === 2 ? 'يومان' : Number(v) / 24 + ' أيام') : '') : '';
+return el('div', { class: 'cr-set-r' + (bad ? ' is-bad' : '') }, [el('div', { class: 'cr-set-t' }, [el('b', { text: title }), el('small', { text: desc })]),
+el('div', { class: 'cr-set-c' }, [el('div', { class: 'cr-stp' }, [
+el('button', { type: 'button', 'aria-label': 'إنقاص', 'data-live-ok': '', disabled: Number(v) <= 1, onclick: function () { set((Number(v) || 0) - 1); } }, [icon('minus')]),
+el('label', {}, [el('input', { type: 'number', inputmode: 'numeric', min: '1', max: '720', step: '1', value: v, 'aria-label': title, oninput: function (e) { s[k] = e.target.value; var p = e.target.selectionStart; draw(); var i = R.querySelector('.cr-set-r[data-k="' + k + '"] input'); if (i) i.focus(); } }), el('span', { text: 'ساعة' })]),
+el('button', { type: 'button', 'aria-label': 'زيادة', 'data-live-ok': '', disabled: Number(v) >= 720, onclick: function () { set((Number(v) || 0) + 1); } }, [icon('plus')])]),
+el('div', { class: 'cr-set-q' }, [24, 48, 72, 168].map(function (n) { return el('button', { type: 'button', class: Number(v) === n ? 'is-on' : '', 'data-live-ok': '', onclick: function () { set(n); } }, [n === 168 ? 'أسبوع' : n + ' س']); })),
+el('small', { class: 'cr-set-m', text: bad ? 'أدخل رقمًا صحيحًا من 1 إلى 720 ساعة.' : dd ? '= ' + dd : '' })])]); };
+var src = function (ic, t, path) { return el('li', {}, [el('span', { class: 'cr-pf-ic' }, [icon(ic)]), el('div', {}, [el('b', { text: t }), el('span', { class: 'cr-set-p' }, path.map(function (x, i) { return el('span', {}, [i ? el('i', { text: '‹' }) : null, x]); }))])]); };
+var r1 = hrs('consent_hours', 'مدة رابط الموافقة', 'المدة المتاحة للعميل ليوافق على العرض. بانتهائها يُغلق الطلب «انتهت مدة العرض».'), r2 = hrs('sign_hours', 'مدة رابط التوقيع', 'المدة المتاحة للعميل ليوقّع الملحق بعد موافقته.');
+r1.setAttribute('data-k', 'consent_hours'); r2.setAttribute('data-k', 'sign_hours');
+return el('section', { class: 'cr-card cr-set' }, [
+el('div', { class: 'cr-nw-h' }, [el('span', { class: 'cr-nw-ic' }, [icon('gear')]), el('div', {}, [el('h2', { text: 'إعدادات طلبات التأجيل' }), el('small', { text: 'تُطبَّق على الروابط التي تُرسل بعد الحفظ.' })]),
+el('button', { type: 'button', class: 'cr-pop-x', 'aria-label': 'إغلاق', 'data-live-ok': '', onclick: function () { ST.set = null; draw(); } }, [icon('x')])]),
+el('div', { class: 'cr-set-g' }, [r1, r2]),
+el('div', { class: 'cr-set-src' }, [el('b', { class: 'cr-rp-sh', text: 'بقية الإعدادات تُدار من مصادرها' }), el('ul', {}, [
+src('file', 'المستند — ملحق تأجيل الدفعة', ['الإعدادات', 'قوالب المستندات', 'ملحق تأجيل الدفعة']),
+src('phone', 'صفحتا الرابط — الألوان والنصوص والأقسام', ['الإعدادات', 'قوالب المستندات', 'عقد الشركاء', 'صفحات الرابط']),
+src('list', 'بنود الرسوم الجاهزة', ['الإعدادات', 'الرسوم والضرائب والعمولات', 'بنود رسوم طلبات العقود'])])]),
+el('div', { class: 'cr-nw-f' }, [el('small', { class: 'cr-hint', text: !ok ? 'صحّح القيم قبل الحفظ.' : dirty ? 'لديك تغييرات غير محفوظة.' : 'لا تغييرات.' }),
+el('div', { class: 'cr-acts' }, [btn('إلغاء', { on: function () { ST.set = null; draw(); } }), btn(ST.busy ? 'جارٍ الحفظ…' : 'حفظ الإعدادات', { ic: 'check', cls: 'is-pri', disabled: !ok || !dirty || ST.busy, on: async function () {
+ST.busy = true; draw(); try { await api('POST', '/admin/api/crq-settings', { consent_hours: Number(s.consent_hours), sign_hours: Number(s.sign_hours) }); ST.busy = false; ST.set = null; loadList(); toast(true, 'حُفظت الإعدادات.'); } catch (e) { ST.busy = false; toast(false, e.message); } } })])])]);
 }
 
 /* ═════════ صفحة الطلب ═════════ */
