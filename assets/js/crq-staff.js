@@ -358,10 +358,16 @@ function popOut(e) { if (POP && !POP.contains(e.target) && !(POP.__a && POP.__a.
 function pop(anchor, build) {
 if (POP && POP.__a === anchor) { popClose(); return; } popClose();
 var p = el('div', { class: 'cr-pop', role: 'dialog' }); p.__a = anchor; build(p);
+/* v878: القائمة تُلحق بالصفحة خارج .crq — تحمل ألوان الوضع الحالي (فاتح/ليلي) */
+var k = anchor.closest('.crq'); if (k) { var cs = getComputedStyle(k); ['ink', 'mut', 'line', 'card', 'soft', 'soft2', 'brand', 'brand2', 'acc', 'tint', 'tint2', 'ok', 'okw', 'warn', 'warnw', 'bad', 'badw'].forEach(function (n) { var v = cs.getPropertyValue('--k-' + n); if (v) p.style.setProperty('--k-' + n, v.trim()); }); }
+p.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); if (p.__back) p.__back(); else { popClose(); anchor.focus(); } } });
 document.body.appendChild(p); POP = p;
 /* يتبع الزر عند التمرير أو تغيّر ارتفاع المعاينة — لا يُغلق */
-p.__place = function () { if (!anchor.isConnected) { popClose(); return; } var r = anchor.getBoundingClientRect(), w = Math.min(380, innerWidth - 24);
-p.style.width = w + 'px'; p.style.top = Math.max(12, Math.min(r.bottom + 6, innerHeight - p.offsetHeight - 12)) + 'px';
+p.__place = function () { if (!anchor.isConnected) { popClose(); return; } var r = anchor.getBoundingClientRect();
+/* الجوال: لوح سفلي بعرض الشاشة · غير ذلك: تحت الزر، أو فوقه إن كان المكان أوسع */
+if (innerWidth < 560) { p.classList.add('is-sheet'); p.style.width = innerWidth + 'px'; p.style.left = '0px'; p.style.top = Math.max(8, innerHeight - p.offsetHeight) + 'px'; return; }
+p.classList.remove('is-sheet'); var w = Math.min(400, innerWidth - 24), h = p.offsetHeight, below = innerHeight - r.bottom - 12, above = r.top - 12;
+p.style.width = w + 'px'; p.style.top = Math.max(12, Math.min(below >= h || below >= above ? r.bottom + 6 : r.top - 6 - h, innerHeight - h - 12)) + 'px';
 p.style.left = Math.max(12, Math.min(r.right - w, innerWidth - w - 12)) + 'px'; };
 p.__place();
 setTimeout(function () { document.addEventListener('mousedown', popOut, true); var q = p.querySelector('input'); if (q) q.focus(); }, 0);
@@ -387,7 +393,21 @@ el('em', { text: z[2] ? 'مُضاف' : 'إضافة' })]));
 if (!L.children.length) L.appendChild(el('p', { class: 'cr-pop-0', text: 'لا نتائج — جرّب كلمة أخرى.' }));
 }
 q.addEventListener('input', paintL); paintL();
-if (o.free) F.appendChild(el('button', { type: 'button', class: 'cr-pop-new', 'data-live-ok': '', onclick: function () { var t = el('textarea', { rows: '2', placeholder: o.freePh || 'اكتب النص' }); F.innerHTML = ''; F.appendChild(t); F.appendChild(el('div', { class: 'cr-acts' }, [btn('إضافة', { cls: 'is-pri is-sm', on: function () { var v = t.value.trim(); if (v.length < 2) { t.focus(); return; } popClose(); o.pick({ free: v }); } }), btn('إلغاء', { cls: 'is-sm', on: popClose })])); t.focus(); } }, [icon('plus'), el('span', { text: o.free })]));
+/* v878: «بند جديد» يفتح نموذجًا كاملًا داخل القائمة (لا يُقصّ أسفلها) — رجوع للقائمة أو إضافة */
+function freeForm() {
+var t = o.freeLine ? el('input', { type: 'text', maxlength: '80', placeholder: o.freePh || 'اكتب النص', 'aria-label': o.freePh || 'النص' }) : el('textarea', { rows: '5', placeholder: o.freePh || 'اكتب النص', 'aria-label': o.freePh || 'النص' }), er = el('small', { class: 'cr-pop-er', hidden: true, text: 'اكتب مسمّى من حرفين على الأقل.' });
+var go = function () { var v = t.value.trim(); if (v.length < 2) { er.hidden = false; t.focus(); return; } popClose(); o.pick({ free: v }); };
+var back = function () { p.__back = null; p.classList.remove('is-form'); V.remove(); q.focus(); p.__place(); };
+t.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (o.freeLine || e.ctrlKey || e.metaKey)) { e.preventDefault(); go(); } });
+t.addEventListener('input', function () { er.hidden = true; });
+var V = el('div', { class: 'cr-pop-fm' }, [
+el('div', { class: 'cr-pop-fh' }, [el('button', { type: 'button', class: 'cr-pop-x', 'aria-label': 'رجوع للقائمة', title: 'رجوع للقائمة', 'data-live-ok': '', onclick: back }, [icon('back')]), el('b', { text: o.free })]),
+el('label', { class: 'cr-pop-lb' }, [el('span', { text: o.freePh || 'النص' }), el('span', { class: 'cr-pop-in' }, [t])]), er,
+o.freeNote ? el('p', { class: 'cr-pop-nt', text: o.freeNote }) : null,
+el('div', { class: 'cr-pop-ac' }, [el('button', { type: 'button', class: 'cr-pop-ok', 'data-live-ok': '', onclick: go }, [icon('plus'), el('span', { text: o.freeOk || 'إضافة' })]), el('button', { type: 'button', class: 'cr-pop-bk', 'data-live-ok': '', onclick: back }, [el('span', { text: 'رجوع' })])])]);
+p.__back = back; p.classList.add('is-form'); p.appendChild(V); p.__place(); t.focus();
+}
+if (o.free) F.appendChild(el('button', { type: 'button', class: 'cr-pop-new', 'data-live-ok': '', onclick: freeForm }, [icon('plus'), el('span', { text: o.free })]));
 p.appendChild(el('div', { class: 'cr-pop-h' }, [o.title ? el('div', { class: 'cr-pop-tt' }, [el('b', { text: o.title }), el('button', { type: 'button', class: 'cr-pop-x', 'aria-label': 'إغلاق', 'data-live-ok': '', onclick: popClose }, [icon('x')])]) : null, el('label', { class: 'cr-pop-q' }, [icon('search'), q])])); p.appendChild(L); if (o.free) p.appendChild(F);
 });
 }
@@ -430,11 +450,11 @@ el('div', { class: 'cr-li-list' }, rows.length ? rows : [el('div', { class: 'cr-
 rows.length ? el('div', { class: 'cr-li-foot' }, [el('div', {}, [el('small', { text: 'مجموع البنود' }), el('b', { class: 'f-sum' }, [ltr(money(F[0]))])]), el('div', {}, [el('small', { text: 'ضريبة القيمة المضافة' }), el('b', { class: 'f-tax' }, [ltr(money(F[1]))])]), el('div', { class: 'is-tot' }, [el('small', { text: 'الإجمالي' }), el('b', {}, [el('span', { class: 'f-tot' }, [ltr(money(F[2]))]), ' ر.س'])])]) : null]);
 var add = ed && c.lines.length < 12 ? el('div', { class: 'cr-addrow' }, [(function () {
 var b = btn('إضافة بند', { ic: 'plus', on: async function () { await loadCharges();
-var have = c.lines.map(function (l) { return l.id; }), crqNames = (x.ready || []).map(function (f) { return f.name; });
-var row = function (f) { return [f.name, [CH_T[f.calc] + (f.calc === 'manual' ? '' : ' ' + (f.calc === 'pct' ? Number(f.value) + '٪' : money(f.value) + ' ر.س')), f.taxable ? 'خاضع للضريبة' : 'غير خاضع'].join(' · '), have.indexOf(f.k) >= 0, f]; };
+var have = c.lines.map(function (l) { return l.id; }), names = c.lines.map(function (l) { return String(l.t || '').trim(); }), crqNames = (x.ready || []).map(function (f) { return f.name; });
+var row = function (f) { return [f.name, [CH_T[f.calc] + (f.calc === 'manual' ? '' : ' ' + (f.calc === 'pct' ? Number(f.value) + '٪' : money(f.value) + ' ر.س')), f.taxable ? 'خاضع للضريبة' : 'غير خاضع'].join(' · '), have.indexOf(f.k) >= 0 || names.indexOf(String(f.name || '').trim()) >= 0, f]; };
 var gen = (ST.charges || []).filter(function (f) { return crqNames.indexOf(f.name) < 0; });
 picker(b, { title: 'إضافة بند', ph: 'ابحث باسم البند…', groups: [['بنود طلبات العقود', (x.ready || []).map(row)], ['البنود المالية العامة', gen.map(row)]],
-free: 'بند جديد لهذا الطلب فقط', freePh: 'مسمّى البند',
+free: 'بند جديد لهذا الطلب فقط', freePh: 'مسمّى البند', freeLine: true, freeOk: 'إضافة البند', freeNote: 'يُضاف إلى هذا الطلب وحده، ثم تحدّد مبلغه وضريبته وظهوره للعميل من بطاقته.',
 pick: function (v) {
 if (v && v.free) { var n = 1; while (c.lines.some(function (l) { return l.id === 'b' + n; })) n++; c.lines.push({ id: 'b' + n, t: v.free.slice(0, 80), amt: '0', vat: true }); }
 else if (v) { var a = readyAmt(x, v); c.lines.push({ id: v.k, t: v.name, amt: a ? String(a) : '0', vat: v.taxable !== false }); }
@@ -450,8 +470,8 @@ el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'الموعد الجديد ل�
 var main = el('div', { class: 'cr-main' }, [el('section', { class: 'cr-card' }, [el('div', { class: 'cr-h2row' }, [el('h2', { text: 'البنود والرسوم' }), ed ? saveInd() : null]), tbl, add, svc]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'التوزيع والجدولة' }), setup]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'الجدول قبل وبعد' }), el('div', { id: 'cr-sched', class: 'cr-tw' }, [schedTable(x, c, ed, upd)])])]);
-main.appendChild(el('div', { id: 'cr-guar' }, [guarCard(x)]));
-return [el('div', { class: 'cr-split' }, [main, el('aside', { class: 'cr-side', id: 'cr-sum' }, [sidePanel(x)])])];
+/* v878: الترتيب حتى الإجراء — البنود ← التوزيع ← الجدول ← الملخص ← الضمانات والإجراء */
+return [el('div', { class: 'cr-split' }, [main, el('aside', { class: 'cr-side', id: 'cr-sum' }, [sidePanel(x)])]), el('div', { id: 'cr-guar', class: 'cr-guarw' }, [guarCard(x)])];
 }
 /* ── تغطية الضمانات (v871): تنبيه للموظف — غير إلزامي ──
 * يقارن التزام العميل بعد التعديل (المتبقي في كل عقوده المفتوحة + رسوم الطلب) بضماناته القائمة:
@@ -556,9 +576,9 @@ var cl = r.client_lines || [];
 return el('section', { class: 'cr-card is-sum' }, [
 el('div', { class: 'cr-sum-h' }, [el('h2', { text: 'الملخص المالي' }), el('span', { class: 'cr-sum-n', text: items.length + (items.length === 1 ? ' بند' : ' بنود') })]),
 el('div', { class: 'cr-grand' }, [el('span', {}, [el('small', { text: 'إجمالي الإضافة على العقد' }), el('em', { text: 'شامل الضريبة ' + money(r.vat) })]), el('b', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })])]),
-el('div', { class: 'cr-sum-b' }, [el('h3', { text: 'البنود' }), el('ul', { class: 'cr-sum' }, items.map(function (l) { return ln(l.t, money(l.amt), Number(l.amt) > 0 ? 'is-it' : 'is-it is-z', c.hide.indexOf(l.id) >= 0 ? 'مدمج' : !l.vat ? 'غير خاضع' : null); }).concat([
+el('div', { class: 'cr-sum-b is-it' }, [el('h3', { text: 'البنود' }), el('ul', { class: 'cr-sum' }, items.map(function (l) { return ln(l.t, money(l.amt), Number(l.amt) > 0 ? 'is-it' : 'is-it is-z', c.hide.indexOf(l.id) >= 0 ? 'مدمج' : !l.vat ? 'غير خاضع' : null); }).concat([
 ln('مجموع البنود', money(r.fees), 'is-sub'), el('li', { class: 'is-tax' }, [el('span', {}, [el('span', { class: 'cr-sum-t', text: 'ضريبة القيمة المضافة ' + R0 + '٪' }), el('small', { class: 'cr-sum-on', text: 'على ' + money(taxb) })]), ltr(money(r.vat))])]))]),
-el('div', { class: 'cr-sum-b' }, [el('h3', { text: 'أثرها على العقد' }), el('div', { class: 'cr-cmp' }, [el('div', {}, [el('small', { text: 'قبل' }), ltr(money(r.contract && r.contract.total_before))]), el('i', {}, [icon('back')]), el('div', { class: 'is-after' }, [el('small', { text: 'بعد' }), ltr(money(r.contract && r.contract.total_after))])]),
+el('div', { class: 'cr-sum-b is-im' }, [el('h3', { text: 'أثرها على العقد' }), el('div', { class: 'cr-cmp' }, [el('div', {}, [el('small', { text: 'قبل' }), ltr(money(r.contract && r.contract.total_before))]), el('i', {}, [icon('back')]), el('div', { class: 'is-after' }, [el('small', { text: 'بعد' }), ltr(money(r.contract && r.contract.total_after))])]),
 el('p', { class: 'cr-sum-m' }, [icon('calc'), nRows + ' ' + (nRows === 1 ? 'مبلغ يتغيّر' : 'مبالغ تتغيّر') + ' في الجدول'])]),
 !cl.length ? null : !items.some(function (l) { return c.hide.indexOf(l.id) >= 0; }) ? el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('p', { class: 'cr-sum-m', text: 'كل بند سطرًا مستقلًا كما في القائمة أعلاه.' })]) : el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('ul', { class: 'cr-sum' }, cl.map(function (l) { return el('li', {}, [el('span', { class: 'cr-sum-t', text: l.t }), ltr(money(l.amt))]); }))])]);
 }

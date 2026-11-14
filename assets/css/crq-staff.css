@@ -555,3 +555,51 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .cr-card.is-sum { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 .cr-card.is-sum > .cr-sum-h, .cr-card.is-sum > .cr-grand { grid-column: 1 / -1; }
 }
+
+/* ═══ v878 — إصلاحات «البنود والحسبة»: حلقة التركيز داخل خانة المبلغ · نموذج «بند جديد» · لوح الجوال · الترتيب حتى الإجراء ═══ */
+/* خانة المبلغ: الإطار على الغلاف وحده (لا حلقة خضراء داخل المربع) */
+.crq .cr-money input:focus, .crq .cr-money input:focus-visible { outline: 0 !important; box-shadow: none !important; }
+.crq .cr-money:focus-within { border-color: var(--k-brand); box-shadow: 0 0 0 3px var(--k-tint); }
+.crq .cr-li-in { width: 100%; min-height: 40px; border: 1px solid var(--k-line); border-radius: 10px; padding: 0 12px; font: inherit; font-weight: 800; font-size: 14px; background: var(--k-card); color: var(--k-ink); }
+.crq .cr-li-in:focus { outline: 0; border-color: var(--k-brand); box-shadow: 0 0 0 3px var(--k-tint); }
+/* بعد الجدول: الضمانات والإجراء بعرض الصفحة */
+.crq .cr-guarw { min-width: 0; }
+.crq .cr-side { order: 0; }
+/* القائمة: ألوان من الصفحة، صفوف مرنة، وحقول بلا حلقة مزدوجة */
+.cr-pop { grid-template-rows: auto minmax(0, 1fr) auto; }
+.cr-pop .cr-pop-q input:focus, .cr-pop .cr-pop-q input:focus-visible { outline: 0 !important; box-shadow: none !important; }
+.cr-pop :focus-visible { outline: 2px solid var(--k-acc, #2BC6C9); outline-offset: 2px; }
+.cr-pop .cr-pop-new { min-height: 44px; }
+/* نموذج «بند جديد» — يحلّ محل القائمة داخل اللوح نفسه */
+.cr-pop.is-form > .cr-pop-h, .cr-pop.is-form > .cr-pop-l, .cr-pop.is-form > .cr-pop-f { display: none; }
+.cr-pop.is-form { grid-template-rows: auto; }
+.cr-pop-fm { display: grid; gap: 12px; padding: 14px; }
+.cr-pop-fh { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--k-line, #E3E8F0); }
+.cr-pop-fh b { font-size: 14.5px; font-weight: 900; }
+.cr-pop-fh .cr-pop-x .cr-ic { transform: scaleX(-1); }
+.cr-pop-lb { display: grid; gap: 6px; } .cr-pop-lb > span:first-child { font-size: 12px; font-weight: 800; color: var(--k-mut, #66748C); }
+.cr-pop-in { display: flex; border: 1px solid var(--k-line, #E3E8F0); border-radius: 12px; background: var(--k-card, #fff); transition: border-color .15s, box-shadow .15s; }
+.cr-pop-in:focus-within { border-color: var(--k-brand, #06707A); box-shadow: 0 0 0 3px var(--k-tint, #E0F2F3); }
+.cr-pop-in input, .cr-pop-in textarea { flex: 1; min-width: 0; border: 0 !important; outline: 0 !important; box-shadow: none !important; background: transparent; color: var(--k-ink, #0F1B33); font: inherit; font-size: 14px; font-weight: 700; padding: 10px 12px; resize: vertical; }
+.cr-pop-in input { min-height: 44px; }
+.cr-pop-er { color: var(--k-bad, #B91C1C); font-size: 12px; font-weight: 700; margin-top: -6px; }
+.cr-pop-nt { margin: 0; font-size: 12px; line-height: 1.7; color: var(--k-mut, #66748C); background: var(--k-soft, #F8FAFC); border-radius: 10px; padding: 8px 10px; }
+.cr-pop-ac { display: flex; gap: 8px; }
+.cr-pop-ok, .cr-pop-bk { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 16px; border-radius: 12px; font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; }
+.cr-pop-ok { flex: 1; border: 0; color: #fff; background: linear-gradient(135deg, var(--k-brand, #06707A), var(--k-brand2, #0B8F99)); box-shadow: 0 10px 20px -12px rgba(6, 112, 122, .9); }
+.cr-pop-ok:hover { filter: brightness(1.06); } .cr-pop-ok .cr-ic { width: 16px; height: 16px; }
+.cr-pop-bk { border: 1px solid var(--k-line, #E3E8F0); background: var(--k-card, #fff); color: var(--k-ink, #0F1B33); }
+.cr-pop-bk:hover { background: var(--k-soft2, #F1F5F9); }
+/* الجوال: لوح سفلي بعرض الشاشة */
+.cr-pop.is-sheet { border-radius: 20px 20px 0 0; max-height: 82vh; border-bottom: 0; box-shadow: 0 -18px 50px -20px rgba(11, 27, 51, .5); padding-bottom: env(safe-area-inset-bottom, 0); }
+.cr-pop.is-sheet::before { content: ""; position: absolute; top: 6px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 4px; background: var(--k-line, #E3E8F0); }
+.cr-pop.is-sheet .cr-pop-h { padding-top: 16px; }
+.cr-pop.is-sheet .cr-pop-i { min-height: 52px; }
+/* الملخص في عرض متوسط: البنود يمينًا، والأثر وما يراه العميل يسارًا — بلا فراغ */
+@container crq (max-width: 1000px) and (min-width: 621px) {
+.crq .cr-card.is-sum { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-areas: "h h" "g g" "it im" "it cl"; align-items: start; column-gap: 20px; }
+.crq .cr-card.is-sum > .cr-sum-h { grid-area: h; } .crq .cr-card.is-sum > .cr-grand { grid-area: g; }
+.crq .cr-card.is-sum > .is-it { grid-area: it; } .crq .cr-card.is-sum > .is-im { grid-area: im; } .crq .cr-card.is-sum > .is-cl { grid-area: cl; }
+}
+@container crq (max-width: 1000px) and (min-width: 621px) { .crq .cr-card.is-sum { grid-template-rows: auto auto auto 1fr; } }
+.cr-pop-in input { height: 44px; min-height: 44px; padding: 0 12px; }
