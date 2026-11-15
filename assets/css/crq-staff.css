@@ -1,3 +1,4 @@
+/* v893: نصوص المستند في بطاقة «المحتوى من المستند». */
 /* v891: عيّنات ألوان الهوية في «صفحة العميل». */
 /* v890: «صفحة العميل» رحلة واحدة — شريط الخطوات (رمز التحقق ← العرض ← تأكيد الموافقة ← الملحق والتوقيع ← تأكيد التوقيع ← التنفيذ والتقييم · الاعتذار · الهوية)، إعدادات الخطوة فقط، والمحتوى من «المستند»، والمعاينة تفاعلية. */
 /* v867: محرّرا المستند وصفحة العميل والقائمة الجاهزة · v862 — منظومة طلبات العقود (crq_) — صفحة الفريق «طلبات تأجيل دفعة»
@@ -919,3 +920,9 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-swc { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; font-weight: 700; }
 .crq .cr-swc > i { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--k-line); }
 .crq .cr-swc > code { font-size: 11.5px; color: var(--k-mut); }
+
+/* v893: نصوص المستند (للقراءة) */
+.crq .cr-dtx { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--k-line); }
+.crq .cr-dtx > small { color: var(--k-mut); font-weight: 700; font-size: 12px; }
+.crq .cr-dtx > span { font-weight: 700; line-height: 1.7; }
+@container crq (max-width: 560px) { .crq .cr-dtx { grid-template-columns: minmax(0, 1fr); gap: 2px; } }

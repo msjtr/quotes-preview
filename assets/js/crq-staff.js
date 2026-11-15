@@ -1,3 +1,4 @@
+/* v893: محرّر صفحة العميل للرابط وحده — العنوان والتمهيد والإقرار والأقسام والمنشأة من «المستند» (تُعرض للقراءة في بطاقة «المحتوى من المستند»)، وأُزيلت «الأقسام المضافة» وخطوة «الهوية». */
 /* v892: رقم جديد لقالب الرابط — نسخة 891 حُفظت في الشبكة قديمةً أثناء النشر. */
 /* v891: ألوان صفحة العميل ثابتة من هوية المستند — خطوة «الهوية» تعرض العيّنات للقراءة فقط. */
 /* v890: «صفحة العميل» رحلة واحدة — شريط الخطوات (رمز التحقق ← العرض ← تأكيد الموافقة ← الملحق والتوقيع ← تأكيد التوقيع ← التنفيذ والتقييم · الاعتذار · الهوية)، إعدادات الخطوة فقط، والمحتوى من «المستند»، والمعاينة تفاعلية. */
@@ -940,11 +941,6 @@ el('div', { class: 'cr-ed-b' }, [s.hint ? el('p', { class: 'cr-hint', text: s.hi
 if (s.sw && L.IDL) ed.appendChild(el('section', { class: 'cr-ed-sec is-open is-doc' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'ألوان الهوية' }), el('small', { text: 'من هوية المستند (الـ PDF) — ثابتة' })]),
 el('div', { class: 'cr-ed-b cr-sws' }, L.IDL.map(function (c) { return el('div', { class: 'cr-swc' }, [el('i', { style: 'background:' + L.IDC[c[0]] }), el('span', { text: c[1] }), el('code', { dir: 'ltr', text: L.IDC[c[0]] })]); }))]));
 if (s.doc && o.doc) ed.appendChild(o.doc(V, s));
-if (s.adds) {
-var A = T[s.adds]; if (!Array.isArray(A.adds)) A.adds = [];
-ed.appendChild(el('section', { class: 'cr-ed-sec is-open' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'أقسام مضافة لهذه الصفحة' }), el('small', { text: A.adds.length + ' قسم' })]),
-el('div', { class: 'cr-ed-b' }, addsEditor(A.adds, ro, onCh, 'تظهر بعد محتوى المستند في صفحة العميل.'))]));
-}
 }
 f = el('iframe', { class: 'cr-pv is-' + P.dev, title: 'معاينة صفحة العميل', src: '/crq/?preview=1' });
 var lis = function (e) {
@@ -965,18 +961,20 @@ var LPV = {};
 async function lpViews(x) {
 if (LPV.id === x.id && LPV.at === x.updated_at) return LPV;
 var out = { id: x.id, at: x.updated_at };
-for (var s of ['consent', 'sign']) { try { var j = await api('GET', '/admin/api/crq/' + x.id + '/view/' + s); out[s] = { view: j.view, doc_html: j.doc_html || '', secs: j.secs || null, link: j.link || null, exp: x.link && x.link.expires_at }; } catch (e) { out[s] = null; out.err = e.message; } }
+for (var s of ['consent', 'sign']) { try { var j = await api('GET', '/admin/api/crq/' + x.id + '/view/' + s); out[s] = { view: j.view, doc_html: j.doc_html || '', secs: j.secs || null, link: j.link || null, dc: j.dc || null, exp: x.link && x.link.expires_at }; } catch (e) { out[s] = null; out.err = e.message; } }
 if (out.err && !out.consent) throw new Error(out.err);
 LPV = out; return out;
 }
 /* المحتوى من المستند: الأقسام التي تظهر في الرابط — للقراءة هنا، وتُعدَّل في «المستند» */
 function lpDocCard(V, s, jump) {
-var x = V && (V[s.st] || V.consent), lk = (x && x.link) || null;
+var x = V && (V[s.st] || V.consent), lk = (x && x.link) || null, dc = (x && x.dc) || null;
 var rows = lk ? LP_DOC.map(function (d, i) { var on = lk[d[0]] === true; return el('div', { class: 'cr-dl' + (on ? '' : ' is-off') }, [el('i', { text: String(i + 1) }), el('span', { text: d[1] }), el('span', { class: 'cr-badge is-' + (on ? 'ok' : 'off'), text: on ? 'يظهر في الرابط' : 'في الـ PDF فقط' })]); })
 : [el('p', { class: 'cr-hint', text: 'جارٍ قراءة أقسام المستند…' })];
 var pdf = lk ? el('p', { class: 'cr-hint' }, [el('b', { text: lk.pdf === true ? 'الملحق PDF ظاهر في صفحة التوقيع' : 'الملحق PDF لا يظهر للعميل' }), lk.pdf === true ? ' — يظهر فوقه ملخص قصير، وتُخفى الأقسام.' : ' — تظهر الأقسام المفعّلة بدلًا منه. يُفعَّل من «المستند» عند الحاجة فقط.']) : null;
+/* v893: نصوص الصفحة من المستند نفسه — للقراءة هنا */
+var tx = dc ? [['المنشأة في الرأس', dc.org], ['العنوان', dc.title], ['التمهيد', dc.intro || '— مخفي في المستند'], ['الإقرار قبل القرار', dc.ack], ['عنوان التوقيع', dc.sign_t]].map(function (r) { return el('div', { class: 'cr-dtx' }, [el('small', { text: r[0] }), el('span', { text: r[1] || '—' })]); }) : [];
 return el('section', { class: 'cr-ed-sec is-open is-doc' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'المحتوى من المستند' }), el('small', { text: 'لا يُكتب هنا' }), jump ? btn('تعديله في «المستند»', { cls: 'is-sm', ic: 'file', on: jump }) : null]),
-el('div', { class: 'cr-ed-b' }, rows.concat([pdf, el('p', { class: 'cr-hint', text: 'العناوين والأعمدة والجداول والشروط تأتي من المستند كما هي — أي تعديل فيه يظهر في الرابط وفي الـ PDF معًا.' })]))]);
+el('div', { class: 'cr-ed-b' }, tx.concat(rows, [pdf, el('p', { class: 'cr-hint', text: 'العناوين والأعمدة والجداول والشروط تأتي من المستند كما هي — أي تعديل فيه يظهر في الرابط وفي الـ PDF معًا.' })]))]);
 }
 function tabPage(x) {
 var L = LPX();
@@ -998,7 +996,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=892'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=893'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
