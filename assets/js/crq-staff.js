@@ -1,3 +1,4 @@
+/* v890: «صفحة العميل» رحلة واحدة — شريط الخطوات (رمز التحقق ← العرض ← تأكيد الموافقة ← الملحق والتوقيع ← تأكيد التوقيع ← التنفيذ والتقييم · الاعتذار · الهوية)، إعدادات الخطوة فقط، والمحتوى من «المستند»، والمعاينة تفاعلية. */
 /* v876: «البنود والحسبة» بتصميم جديد — البنود بطاقات تتكيّف مع العرض (مفاتيح بدل القوائم المنسدلة)، قائمة «إضافة بند» بأيقونات وحالة «مُضاف»، والملخص المالي بلا تكرار.
 * v873: تبويب «البنود والحسبة» — جدول بنود بأعمدة الضريبة والإجمالي والمجموع، التوزيع والجدولة خيارات واضحة، الملخص المالي وحده جانبًا،
 * و«إضافة بند» تعرض أيضًا البنود المالية العامة (fee_charge_items).
@@ -887,88 +888,114 @@ f.onload = function () { try { var w = f.parentNode, k = w.clientWidth / 794; f.
 } catch (e) { f.replaceWith(note('bad', e.message)); }
 }
 
-/* ── 4) صفحة العميل: صفحتا الرابط (الموافقة ثم التوقيع) من «صفحات الرابط» — القالب العام أو نسخة لهذا العميل،
-* بمحرّر كامل (الألوان والهوية والنصوص والأقسام والأزرار والنوافذ)، والمعاينة صفحة العميل نفسها حيّة ── */
+/* ── 4) صفحة العميل (v890): رابط واحد من الموافقة حتى التنفيذ — رحلة العميل خطوةً خطوة، وفي كل خطوة إعدادات الرابط فقط
+* (النصوص والأزرار والنوافذ والإظهار)؛ أما المحتوى (أقسام الملحق وعناوينها وجداولها وشروطها) فمن «المستند».
+* المعاينة صفحة العميل نفسها وتفاعلية: يمرّ الموظف بالمسار كما يفعل العميل، والمحرّر يتبع الخطوة. القالب العام أو نسخة لهذا العميل. ── */
 function LPX() { return window.CRQLP || null; }
 function lpTpl(x) { var L = LPX(); var base = own(x.page) ? x.page.tpl : (x.tpl && x.tpl.lp) || {}; return L.tpl(base); }
-/* المحرّر: أقسام lp.js — لون · نص · مفتاح إظهار — مشترك بين نسخة الطلب والقالب العام */
-function lpEditor(T, ro, onCh, step) {
-var L = LPX();
-return L.SECS.map(function (s) {
-var openK = 'lp:' + s.id, open = ST.lpOpen ? ST.lpOpen === s.id : s.id === 'look';
-var rows = open ? s.f.map(function (f) {
+/* أقسام الملحق كما في «المستند ← الملحق في الرابط» */
+var LP_DOC = [['summary', 'ملخص الطلب'], ['defer', 'جدول الدفعات قبل التأجيل'], ['fees', 'رسوم التأجيل'], ['contract', 'قيمة العقد قبل التأجيل وبعده'], ['sched', 'جدول الدفعات الجديد'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['parties', 'أطراف الملحق'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
+/* صفوف خطوة واحدة: نص · نص طويل · لون · مفتاح · رقم، ومفتاح الإظهار بجانب العنصر */
+function lpRows(L, T, s, ro, onCh) {
+return s.f.map(function (f) {
 var p = f[0], lab = f[1], kd = f[2], hp = f[3], v = L.get(T, p), ctl;
 if (kd === 'c') ctl = el('span', { class: 'cr-col' }, [el('input', { type: 'color', value: v, disabled: ro, 'aria-label': lab, oninput: function (e) { L.set(T, p, e.target.value); e.target.nextSibling.value = e.target.value; onCh(false); } }), el('input', { type: 'text', value: v, maxlength: '7', dir: 'ltr', disabled: ro, 'aria-label': lab + ' (رمز)', onchange: function (e) { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) { L.set(T, p, e.target.value); onCh(true); } } })]);
 else if (kd === 'b') { var on = v !== false; ctl = el('button', { type: 'button', class: 'cr-sw' + (on ? ' is-on' : ''), role: 'switch', 'aria-checked': on ? 'true' : 'false', disabled: ro, 'aria-label': lab, 'data-live-ok': '', onclick: function () { L.set(T, p, !on); onCh(true); } }, [el('i', {})]); }
 else if (kd === 'n') ctl = el('input', { type: 'number', min: '0', max: '28', value: v, disabled: ro, 'aria-label': lab, oninput: function (e) { L.set(T, p, String(e.target.value)); onCh(false); } });
 else ctl = el(kd === 'a' ? 'textarea' : 'input', { type: kd === 'a' ? null : 'text', rows: kd === 'a' ? '2' : null, value: v, disabled: ro, 'aria-label': lab, oninput: function (e) { L.set(T, p, e.target.value); onCh(false); } });
 var hon = hp ? L.get(T, hp) !== false : true;
-var eye = hp ? el('button', { type: 'button', class: 'cr-sw' + (hon ? ' is-on' : ''), role: 'switch', 'aria-checked': hon ? 'true' : 'false', title: hon ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', disabled: ro, 'aria-label': (hon ? 'إخفاء ' : 'إظهار ') + lab, 'data-live-ok': '', onclick: function () { L.set(T, hp, !hon); onCh(true); } }, [el('i', {})]) : null;
+var eye = hp ? el('button', { type: 'button', class: 'cr-sw' + (hon ? ' is-on' : ''), role: 'switch', 'aria-checked': hon ? 'true' : 'false', title: hon ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', disabled: ro, 'aria-label': (hon ? 'إخفاء ' : 'إظهار ') + lab, 'data-live-ok': '', onclick: function () { L.set(T, hp, !hon); onCh(true); } }, [el('i', {})]) : el('span', {});
 return el('div', { class: 'cr-ed-row' + (kd === 'c' ? ' is-c' : '') + (hon ? '' : ' is-off') }, [el('label', { text: lab }), ctl, eye]);
-}) : [];
-return el('section', { class: 'cr-ed-sec' + (open ? ' is-open' : '') }, [el('button', { type: 'button', class: 'cr-ed-h is-btn', 'aria-expanded': open ? 'true' : 'false', 'data-live-ok': '', onclick: function () { ST.lpOpen = open ? '-' : s.id; if (s.step && step) step(s.step); onCh(true, true); } }, [el('b', { text: s.t }), el('small', { text: s.f.length + ' عنصر' }), el('i', { class: 'cr-chev', text: open ? '−' : '+' })]), open ? el('div', { class: 'cr-ed-b' }, rows) : null]);
-}).concat(['consent', 'sign'].map(function (st) {
-/* v870: أقسام مضافة لكل صفحة — من مكتبة البنود الموحّدة أو قسم فارغ */
-var id = 'adds_' + st, open = ST.lpOpen === id, P = T[st]; if (!Array.isArray(P.adds)) P.adds = [];
-return el('section', { class: 'cr-ed-sec' + (open ? ' is-open' : '') }, [el('button', { type: 'button', class: 'cr-ed-h is-btn', 'aria-expanded': open ? 'true' : 'false', 'data-live-ok': '', onclick: function () { ST.lpOpen = open ? '-' : id; if (step) step(st); onCh(true, true); } }, [el('b', { text: 'أقسام مضافة — صفحة ' + (st === 'sign' ? 'التوقيع' : 'الموافقة') }), el('small', { text: P.adds.length + ' قسم' }), el('i', { class: 'cr-chev', text: open ? '−' : '+' })]),
-open ? el('div', { class: 'cr-ed-b' }, addsEditor(P.adds, ro, onCh, 'تظهر بعد ملخص الطلب في صفحة العميل.')) : null]);
-}));
+});
 }
-/* المعاينة الحية: صفحة العميل الحقيقية (/crq/?preview=1) والقالب يصلها مع كل تعديل */
-function lpFrame(getView, getTpl) {
-var P = ST.lpv || (ST.lpv = { step: 'consent', screen: 'page', dev: 'phone' });
-var f = el('iframe', { class: 'cr-pv is-' + P.dev, title: 'معاينة صفحة العميل', src: '/crq/?preview=1' });
-var send = function () { var v = getView(P.step); if (!v || !f.contentWindow) return; f.contentWindow.postMessage({ type: 'crq-preview', view: v.view, doc_html: v.doc_html || '', secs: v.secs || null, link: v.link || null, expires_at: v.exp || null, tpl: getTpl(), screen: P.screen }, location.origin); };
-var ready = function (e) { if (e.origin !== location.origin || !e.data || e.data.type !== 'crq-preview-ready' || e.source !== f.contentWindow) return; f.__ok = true; send(); };
-window.addEventListener('message', ready);
-f.__send = send;
-var seg = function (L, k) { return el('div', { class: 'cr-seg is-sm' }, L.map(function (m) { return el('button', { type: 'button', class: P[k] === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function (e) { P[k] = m[0]; [].forEach.call(e.currentTarget.parentNode.children, function (b) { b.className = b === e.currentTarget ? 'is-on' : ''; }); if (k === 'dev') f.className = 'cr-pv is-' + P.dev; else send(); } }, [m[1]]); })); };
-var bar = el('div', { class: 'cr-pvbar' }, [seg([['consent', 'الموافقة'], ['sign', 'التوقيع']], 'step'), seg([['verify', 'رمز التحقق'], ['page', 'الصفحة'], ['done', 'بعد القرار'], ['declined', 'الاعتذار']], 'screen'), seg([['phone', 'جوال'], ['web', 'شاشة']], 'dev')]);
-return el('div', { class: 'cr-pvcol' }, [bar, el('div', { class: 'cr-pv-w' }, [f])]);
+/* الاستوديو: شريط الرحلة + إعدادات الخطوة + المعاينة التفاعلية — مشترك بين الطلب والقالب العام
+* o: { T, ro, views() → Promise({consent, sign}), onT(), doc: function (V) → عقدة بطاقة المحتوى, msg: function () (الانتقال للرسائل) } */
+function lpStudio(o) {
+var L = LPX(), T = o.T, ro = !!o.ro;
+var P = ST.lpv || (ST.lpv = { dev: 'phone' }), seen = ST.lpSeen || (ST.lpSeen = {});
+var ALL = L.J.concat(L.JS), cur = ALL.some(function (s) { return s.k === ST.lpk; }) ? ST.lpk : 'v1';
+var V = null, f = null;
+var jr = el('div', { class: 'cr-jr', role: 'navigation', 'aria-label': 'رحلة العميل' }), ed = el('div', { class: 'cr-ed' });
+var post = function (m) { if (!V || !f || !f.contentWindow || !f.__ok) return; f.contentWindow.postMessage(Object.assign({ type: 'crq-preview', views: V, tpl: T }, m), location.origin); };
+var go = function (k) { cur = k; ST.lpk = k; paintJr(); paintEd(); post({ go: k }); };
+var onCh = function (redraw) { if (o.onT) o.onT(); if (redraw) paintEd(); post({ keep: true }); };
+var stp = function (s, i, all) { var on = s.k === cur, sn = seen[s.k] && !on;
+return el('button', { type: 'button', class: 'cr-stp' + (on ? ' is-on' : '') + (sn ? ' is-seen' : ''), 'aria-current': on ? 'step' : null, 'data-live-ok': '', onclick: function () { go(s.k); } }, [el('em', { text: sn ? '✓' : all ? String(i + 1) : '•' }), s.t]); };
+function paintJr() {
+jr.innerHTML = '';
+var a = []; L.J.forEach(function (s, i) { if (i) a.push(el('span', { class: 'cr-arw', 'aria-hidden': 'true', text: '←' })); a.push(stp(s, i, true)); });
+jr.appendChild(el('div', { class: 'cr-trk' }, [el('b', {}, [icon('phone'), ' رابط واحد للعميل']), el('div', { class: 'cr-stps' }, a)]));
+var b = L.JS.map(function (s, i) { return stp(s, i, false); });
+if (o.msg) b.push(el('button', { type: 'button', class: 'cr-stp is-lnk', 'data-live-ok': '', onclick: o.msg }, [el('em', { text: '↗' }), 'الرسائل']));
+jr.appendChild(el('div', { class: 'cr-trk' }, [el('b', {}, [icon('team'), ' مشترك']), el('div', { class: 'cr-stps' }, b)]));
+}
+function paintEd() {
+ed.innerHTML = '';
+var s = ALL.filter(function (z) { return z.k === cur; })[0] || L.J[0];
+ed.appendChild(el('section', { class: 'cr-ed-sec is-open' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: s.t }), el('span', { class: 'cr-badge is-info', text: 'إعدادات الرابط' })]),
+el('div', { class: 'cr-ed-b' }, [s.hint ? el('p', { class: 'cr-hint', text: s.hint }) : null].concat(lpRows(L, T, s, ro, onCh)))]));
+if (s.doc && o.doc) ed.appendChild(o.doc(V, s));
+if (s.adds) {
+var A = T[s.adds]; if (!Array.isArray(A.adds)) A.adds = [];
+ed.appendChild(el('section', { class: 'cr-ed-sec is-open' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'أقسام مضافة لهذه الصفحة' }), el('small', { text: A.adds.length + ' قسم' })]),
+el('div', { class: 'cr-ed-b' }, addsEditor(A.adds, ro, onCh, 'تظهر بعد محتوى المستند في صفحة العميل.'))]));
+}
+}
+f = el('iframe', { class: 'cr-pv is-' + P.dev, title: 'معاينة صفحة العميل', src: '/crq/?preview=1' });
+var lis = function (e) {
+if (e.origin !== location.origin || !e.data || e.source !== f.contentWindow) return;
+if (!document.body.contains(f)) { window.removeEventListener('message', lis); return; }
+if (e.data.type === 'crq-preview-ready') { f.__ok = true; post({ go: cur }); return; }
+if (e.data.type === 'crq-preview-at') { var k = e.data.k === 'xd' ? 'x' : e.data.k; seen[k] = true; if (k !== cur) { cur = k; ST.lpk = k; paintJr(); paintEd(); } else paintJr(); }
+};
+window.addEventListener('message', lis);
+var dev = el('div', { class: 'cr-seg is-sm' }, [['phone', 'جوال'], ['web', 'شاشة']].map(function (m) { return el('button', { type: 'button', class: P.dev === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function (e) { P.dev = m[0]; [].forEach.call(e.currentTarget.parentNode.children, function (b) { b.className = b === e.currentTarget ? 'is-on' : ''; }); f.className = 'cr-pv is-' + P.dev; } }, [m[1]]); }));
+var pv = el('div', { class: 'cr-pvcol' }, [el('div', { class: 'cr-pvbar' }, [el('b', { class: 'cr-pvt', text: 'المعاينة التفاعلية' }), dev, btn('من البداية', { cls: 'is-sm', ic: 'undo', on: function () { ST.lpSeen = seen = {}; go('v1'); } })]),
+el('div', { class: 'cr-pv-w' }, [f]), el('p', { class: 'cr-hint', text: 'جرّب داخل المعاينة كما يفعل العميل: اختر الوسيلة، أدخل أي رمز من 6 أرقام، أقرّ ووافق فتنتقل مباشرة إلى الملحق والتوقيع، ثم التنفيذ والتقييم. لا يُرسل شيء ولا يُحفظ قرار.' })]);
+paintJr(); paintEd();
+Promise.resolve(o.views()).then(function (v) { V = v; paintEd(); post({ go: cur }); }, function (e) { pv.insertBefore(note('warn', (e && e.message) || 'تعذّر تجهيز المعاينة.'), pv.firstChild); });
+return [jr, el('div', { class: 'cr-split is-ed' }, [ed, pv])];
 }
 var LPV = {};
 async function lpViews(x) {
 if (LPV.id === x.id && LPV.at === x.updated_at) return LPV;
 var out = { id: x.id, at: x.updated_at };
 for (var s of ['consent', 'sign']) { try { var j = await api('GET', '/admin/api/crq/' + x.id + '/view/' + s); out[s] = { view: j.view, doc_html: j.doc_html || '', secs: j.secs || null, link: j.link || null, exp: x.link && x.link.expires_at }; } catch (e) { out[s] = null; out.err = e.message; } }
+if (out.err && !out.consent) throw new Error(out.err);
 LPV = out; return out;
+}
+/* المحتوى من المستند: الأقسام التي تظهر في الرابط — للقراءة هنا، وتُعدَّل في «المستند» */
+function lpDocCard(V, s, jump) {
+var x = V && (V[s.st] || V.consent), lk = (x && x.link) || null;
+var rows = lk ? LP_DOC.map(function (d, i) { var on = lk[d[0]] === true; return el('div', { class: 'cr-dl' + (on ? '' : ' is-off') }, [el('i', { text: String(i + 1) }), el('span', { text: d[1] }), el('span', { class: 'cr-badge is-' + (on ? 'ok' : 'off'), text: on ? 'يظهر في الرابط' : 'في الـ PDF فقط' })]); })
+: [el('p', { class: 'cr-hint', text: 'جارٍ قراءة أقسام المستند…' })];
+var pdf = lk ? el('p', { class: 'cr-hint' }, [el('b', { text: lk.pdf === true ? 'الملحق PDF ظاهر في صفحة التوقيع' : 'الملحق PDF لا يظهر للعميل' }), lk.pdf === true ? ' — يظهر فوقه ملخص قصير، وتُخفى الأقسام.' : ' — تظهر الأقسام المفعّلة بدلًا منه. يُفعَّل من «المستند» عند الحاجة فقط.']) : null;
+return el('section', { class: 'cr-ed-sec is-open is-doc' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'المحتوى من المستند' }), el('small', { text: 'لا يُكتب هنا' }), jump ? btn('تعديله في «المستند»', { cls: 'is-sm', ic: 'file', on: jump }) : null]),
+el('div', { class: 'cr-ed-b' }, rows.concat([pdf, el('p', { class: 'cr-hint', text: 'العناوين والأعمدة والجداول والشروط تأتي من المستند كما هي — أي تعديل فيه يظهر في الرابط وفي الـ PDF معًا.' })]))]);
 }
 function tabPage(x) {
 var L = LPX();
-if (!L) { loadLp(); return [el('div', { class: 'cr-load', text: 'جارٍ تحميل محرّر صفحة العميل…' })]; }
+if (!L || !L.J) { loadLp(); return [el('div', { class: 'cr-load', text: 'جارٍ تحميل محرّر صفحة العميل…' })]; }
 var ed = editable(x), mine = own(x.page), T = lpTpl(x), s = x.settings || {};
-var frameBox = el('div', { class: 'cr-pvhost' }, [el('div', { class: 'cr-load', text: 'جارٍ تجهيز المعاينة…' })]);
-var fr = null;
-var push = function () { if (fr && fr.querySelector('iframe').__send) fr.querySelector('iframe').__send(); };
-var onCh = function (redraw, keepOwn) {
-if (!ed && !keepOwn) return;
-if (!keepOwn) { if (!own(x.page)) { x.page = { tpl: T, own: true }; mine = true; var b0 = R.querySelector('.cr-srcbar'); if (b0) b0.replaceWith(mkBar()); } else x.page.tpl = T; queue({ page: x.page }); }
-if (redraw) { draw(); return; }
-push();
-};
-lpViews(x).then(function (V) {
-fr = lpFrame(function (st) { return V[st]; }, function () { return T; });
-frameBox.innerHTML = ''; frameBox.appendChild(fr); if (V.err) frameBox.insertBefore(note('warn', V.err), fr);
-});
+var mkBar = function () { return el('div', { class: 'cr-srcbar' }, [el('div', {}, [el('b', { text: 'صفحة العميل — رابط واحد من الموافقة حتى التنفيذ' }), el('small', { class: 'cr-hint', text: (mine ? 'نسخة لهذا العميل — لا تغيّر القالب العام. ' : 'القالب العام من «قوالب المستندات ← عقد الشركاء ← صفحات الرابط» — أي تعديل هنا ينشئ نسخة لهذا العميل. ') + 'هنا إعدادات الرابط فقط، والمحتوى من «المستند».' })]),
+el('div', { class: 'cr-seg', role: 'group', 'aria-label': 'مصدر الصفحة' }, [['def', 'القالب العام'], ['own', 'نسخة لهذا العميل']].map(function (m) { var on = (m[0] === 'own') === mine; return el('button', { type: 'button', class: on ? 'is-on' : '', 'aria-pressed': on ? 'true' : 'false', disabled: !ed, 'data-live-ok': '', onclick: function () { setSrc(m[0]); } }, [m[1]]); }))]); };
+var onT = function () { if (!ed) return; if (!own(x.page)) { x.page = { tpl: T, own: true }; mine = true; var b0 = R.querySelector('.cr-srcbar'); if (b0) b0.replaceWith(mkBar()); } else x.page.tpl = T; queue({ page: x.page }); };
 var setSrc = function (k) { if (k === 'own' && !mine) { x.page = { tpl: clone(T), own: true }; queue({ page: x.page }); } else if (k === 'def' && mine) { x.page = {}; queue({ page: {} }); } draw(); };
-var mkBar = function () { return el('div', { class: 'cr-srcbar' }, [el('div', {}, [el('b', { text: 'صفحتا الرابط: الموافقة ثم التوقيع' }), el('small', { class: 'cr-hint', text: mine ? 'نسخة لهذا العميل — لا تغيّر القالب العام.' : 'القالب العام من «قوالب المستندات ← عقد الشركاء ← صفحات الرابط». أي تعديل هنا ينشئ نسخة لهذا العميل.' })]),
-el('div', { class: 'cr-seg', role: 'group', 'aria-label': 'مصدر الصفحة' }, [['def', 'القالب العام'], ['own', 'نسخة لهذا العميل']].map(function (m) { var on = (m[0] === 'own') === mine; return el('button', { type: 'button', class: on ? 'is-on' : '', 'aria-pressed': on ? 'true' : 'false', disabled: !ed, 'data-live-ok': '', onclick: function () { setSrc(m[0]); } }, [m[1]]); })),
-]); };
-var bar = mkBar();
 var hrs = x.valid_hours || s.consent_hours || 48;
 var links = (x.links || []).slice().reverse();
 var ST2 = { active: ['نشط', 'ok'], used: ['استُخدم', 'info'], expired: ['انتهى', 'warn'], locked: ['أُقفل', 'bad'], revoked: ['أُلغي', 'off'] };
-var lk = el('section', { class: 'cr-card' }, [el('h2', { text: 'الرابطان ومدة الصلاحية' }), el('div', { class: 'cr-grid' }, [field('مدة رابط الموافقة', el('select', { disabled: !ed, onchange: function (e) { x.valid_hours = e.target.value ? Number(e.target.value) : null; queue({ valid_hours: x.valid_hours }); } },
-[['', 'الافتراضي (' + (s.consent_hours || 48) + ' ساعة)'], ['24', '24 ساعة'], ['48', '48 ساعة'], ['72', '72 ساعة'], ['168', 'أسبوع']].map(function (o) { return el('option', { value: o[0], selected: String(x.valid_hours || '') === o[0], text: o[1] }); })), 'رابط التوقيع بمدة ' + (s.sign_hours || 48) + ' ساعة من الموافقة. الحالية: ' + hrs + ' ساعة. بانتهاء أي رابط يُغلق الطلب تلقائيًا.')]),
-links.length ? el('div', { class: 'cr-tw' }, [el('table', { class: 'cr-tbl' }, [el('thead', {}, [el('tr', {}, ['الرابط', 'الحالة', 'أُرسل', 'صالح حتى', 'فُتح', 'التحقق', 'مرات طلب الرمز'].map(function (h) { return el('th', { text: h }); }))]),
-el('tbody', {}, links.map(function (l) { var s2 = ST2[l.state] || [l.state, 'info']; return el('tr', {}, [el('td', { 'data-l': 'الرابط', text: l.step === 'sign' ? 'التوقيع' : 'الموافقة' }), el('td', { 'data-l': 'الحالة' }, [el('span', { class: 'cr-badge is-' + s2[1], text: s2[0] })]),
-el('td', { 'data-l': 'أُرسل', text: at(l.created_at) }), el('td', { 'data-l': 'صالح حتى', text: at(l.expires_at) }), el('td', { 'data-l': 'فُتح', text: l.opened_at ? at(l.opened_at) : '—' }), el('td', { 'data-l': 'التحقق', text: l.factor === 'whatsapp' ? 'واتساب' : l.factor === 'email' ? 'البريد' : '—' }), el('td', { 'data-l': 'مرات طلب الرمز', text: String(l.sends || 0) })]); }))])]) : null]);
-var edv = el('div', { class: 'cr-ed' }, lpEditor(T, !ed, onCh, function (st) { (ST.lpv || (ST.lpv = { step: 'consent', screen: 'page', dev: 'phone' })).step = st; }));
-return [bar, el('div', { class: 'cr-split is-ed' }, [edv, frameBox]), lk];
+var lk = el('section', { class: 'cr-card' }, [el('h2', { text: 'مدة الرابط وسجله' }), el('div', { class: 'cr-grid' }, [field('مدة الموافقة على العرض', el('select', { disabled: !ed, onchange: function (e) { x.valid_hours = e.target.value ? Number(e.target.value) : null; queue({ valid_hours: x.valid_hours }); } },
+[['', 'الافتراضي (' + (s.consent_hours || 48) + ' ساعة)'], ['24', '24 ساعة'], ['48', '48 ساعة'], ['72', '72 ساعة'], ['168', 'أسبوع']].map(function (o) { return el('option', { value: o[0], selected: String(x.valid_hours || '') === o[0], text: o[1] }); })), 'الحالية: ' + hrs + ' ساعة. بعد الموافقة يكمل العميل إلى التوقيع في الرابط نفسه، ومدته ' + (s.sign_hours || 48) + ' ساعة من الموافقة. بانتهاء المدة يُغلق الطلب تلقائيًا.')]),
+links.length ? el('div', { class: 'cr-tw' }, [el('table', { class: 'cr-tbl' }, [el('thead', {}, [el('tr', {}, ['المرحلة', 'الحالة', 'أُنشئت', 'صالحة حتى', 'فُتح', 'التحقق', 'مرات طلب الرمز'].map(function (h) { return el('th', { text: h }); }))]),
+el('tbody', {}, links.map(function (l) { var s2 = ST2[l.state] || [l.state, 'info']; return el('tr', {}, [el('td', { 'data-l': 'المرحلة', text: l.step === 'sign' ? 'التوقيع' : 'الموافقة' }), el('td', { 'data-l': 'الحالة' }, [el('span', { class: 'cr-badge is-' + s2[1], text: s2[0] })]),
+el('td', { 'data-l': 'أُنشئت', text: at(l.created_at) }), el('td', { 'data-l': 'صالحة حتى', text: at(l.expires_at) }), el('td', { 'data-l': 'فُتح', text: l.opened_at ? at(l.opened_at) : '—' }), el('td', { 'data-l': 'التحقق', text: l.factor === 'whatsapp' ? 'واتساب' : l.factor === 'email' ? 'البريد' : '—' }), el('td', { 'data-l': 'مرات طلب الرمز', text: String(l.sends || 0) })]); }))])]) : null]);
+var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT: onT, doc: function (V, st) { return lpDocCard(V, st, function () { ST.tab = 'doc'; draw(); }); }, msg: function () { ST.tab = 'msg'; draw(); } });
+return [mkBar()].concat(S, [lk]);
 }
-function loadLp() { if (window.CRQLP || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=870'; /* v870: رقم جديد مع كل تغيير في القالب — النسخة القديمة محفوظة في الشبكة برقمها */ sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+/* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=890'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
-/* ── القالب العام لصفحتي الرابط («صفحات الرابط» في الإعدادات) — المحرّر نفسه بمعاينة نموذجية ── */
+/* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
 var d = function (n) { return new Date(Date.now() + n * 864e5).toISOString().slice(0, 10); };
 var rows = [{ seq: 3, target: true, open: true, due_before: d(5), due_after: d(185), amt_before: 500, add: 0, amt_after: 500 }, { seq: 4, open: true, due_before: d(35), due_after: d(35), amt_before: 500, add: 57.5, amt_after: 557.5 }, { seq: 5, open: true, due_before: d(65), due_after: d(65), amt_before: 500, add: 57.5, amt_after: 557.5 }];
@@ -980,19 +1007,19 @@ var box = el('div', { class: 'crq crq-embed', dir: 'rtl' });
 var S2 = { T: null, err: '', busy: false, dirty: false };
 var paint = function () {
 box.innerHTML = '';
-if (!LPX()) { loadLp(); setTimeout(paint, 400); box.appendChild(el('div', { class: 'cr-load', text: 'جارٍ التحميل…' })); return; }
+if (!LPX() || !LPX().J) { loadLp(); setTimeout(paint, 400); box.appendChild(el('div', { class: 'cr-load', text: 'جارٍ التحميل…' })); return; }
 if (!S2.T) { box.appendChild(el('div', { class: 'cr-load', text: S2.err || 'جارٍ تحميل القالب…' })); return; }
-var fr = lpFrame(function (st) { return sampleView(st); }, function () { return S2.T; });
-var onCh = function (redraw, keep) { if (!keep) S2.dirty = true; if (redraw) paint(); else { var f = fr.querySelector('iframe'); if (f.__send) f.__send(); var b = box.querySelector('[data-lpsave]'); if (b) b.disabled = false; } };
 var save = btn(S2.busy ? 'جارٍ الحفظ…' : 'حفظ القالب العام', { cls: 'is-pri', ic: 'check', disabled: S2.busy || !S2.dirty, on: async function () {
 S2.busy = true; paint();
 try { await api('POST', '/admin/api/crq-tpl', { key: 'crqlp', value: S2.T }); S2.dirty = false; S2.msg = 'حُفظ — يُطبَّق على كل طلب جديد وكل طلب لم يُعتمد بعد، والطلبات المرسلة تبقى كما اعتُمدت.'; } catch (e) { S2.msg = e.message; }
 S2.busy = false; paint(); } });
 save.setAttribute('data-lpsave', '');
-box.appendChild(el('div', { class: 'cr-srcbar' }, [el('div', {}, [el('b', { text: 'صفحتا رابط طلبات تأجيل الدفعة: الموافقة ثم التوقيع' }), el('small', { class: 'cr-hint', text: 'القالب العام لكل الطلبات — ولكل طلب نسخته الخاصة من تبويب «صفحة العميل» داخل الطلب. المعاينة ببيانات نموذجية.' })]), save,
+box.appendChild(el('div', { class: 'cr-srcbar' }, [el('div', {}, [el('b', { text: 'صفحة العميل — رابط واحد من الموافقة حتى التنفيذ' }), el('small', { class: 'cr-hint', text: 'القالب العام لكل الطلبات — ولكل طلب نسخته من تبويب «صفحة العميل» داخل الطلب. هنا إعدادات الرابط فقط، والمحتوى من قالب الملحق. المعاينة ببيانات نموذجية.' })]), save,
 btn('استعادة الافتراضي', { cls: 'is-sm', on: function () { S2.T = LPX().tpl({}); S2.dirty = true; paint(); } })]));
 if (S2.msg) box.appendChild(note(/تعذّر|صلاحية/.test(S2.msg) ? 'bad' : 'ok', S2.msg));
-box.appendChild(el('div', { class: 'cr-split is-ed' }, [el('div', { class: 'cr-ed' }, lpEditor(S2.T, false, onCh, function (st) { (ST.lpv || (ST.lpv = { step: 'consent', screen: 'page', dev: 'phone' })).step = st; })), fr]));
+var docC = function () { return el('section', { class: 'cr-ed-sec is-open is-doc' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'المحتوى من المستند' }), el('small', { text: 'لا يُكتب هنا' })]),
+el('div', { class: 'cr-ed-b' }, [el('p', { class: 'cr-hint', text: 'أقسام الملحق التي تظهر في الرابط تُختار من «قوالب المستندات ← ملحق التأجيل ← الملحق في الرابط»، ولكل طلب من تبويب «المستند». والـ PDF لا يظهر للعميل إلا إذا فُعّل هناك.' })])]); };
+lpStudio({ T: S2.T, ro: false, views: function () { return { consent: sampleView('consent'), sign: sampleView('sign') }; }, onT: function () { S2.dirty = true; var b = box.querySelector('[data-lpsave]'); if (b) b.disabled = false; }, doc: docC }).forEach(function (n) { box.appendChild(n); });
 };
 api('GET', '/admin/api/crq-tpl').then(function (j) { S2.T = (LPX() ? LPX().tpl(j.lp) : null); if (!S2.T) { var w = setInterval(function () { if (LPX()) { clearInterval(w); S2.T = LPX().tpl(j.lp); paint(); } }, 300); } paint(); }, function (e) { S2.err = e.message; paint(); });
 loadLp(); paint();

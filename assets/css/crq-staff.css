@@ -1,3 +1,4 @@
+/* v890: «صفحة العميل» رحلة واحدة — شريط الخطوات (رمز التحقق ← العرض ← تأكيد الموافقة ← الملحق والتوقيع ← تأكيد التوقيع ← التنفيذ والتقييم · الاعتذار · الهوية)، إعدادات الخطوة فقط، والمحتوى من «المستند»، والمعاينة تفاعلية. */
 /* v867: محرّرا المستند وصفحة العميل والقائمة الجاهزة · v862 — منظومة طلبات العقود (crq_) — صفحة الفريق «طلبات تأجيل دفعة»
 * بلغة قسم العملاء المعتمدة في المنصة الجديدة: رأس الصفحة من الغلاف نفسه (المسار والأيقونة والعنوان)،
 * بطاقات مؤشرات هي الفلتر الوحيد، شريط أدوات، جدول بصفوف، وصفحة طلب: بطاقة حقائق + «الخطوة التالية» جانبًا + تبويبات.
@@ -882,3 +883,32 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-chip.is-off { background: var(--k-soft, #F1F5F9); color: var(--k-mut); text-decoration: line-through; }
 .crq .cr-chip.is-off svg { color: var(--k-mut); }
 @media (max-width: 640px) { .crq .cr-mv { grid-template-columns: 24px minmax(0, 1fr) 32px 32px 32px; gap: 4px; } }
+
+/* v890: صفحة العميل — رحلة واحدة (شريط الخطوات) + إعدادات الخطوة + المعاينة التفاعلية */
+.crq .cr-jr { display: grid; gap: 8px; background: var(--k-card); border: 1px solid var(--k-line); border-radius: 18px; padding: 12px 14px; }
+.crq .cr-trk { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.crq .cr-trk > b { display: inline-flex; align-items: center; gap: 6px; min-width: 128px; font-size: 12.5px; font-weight: 900; color: var(--k-mut); }
+.crq .cr-trk > b .cr-ic { width: 16px; height: 16px; }
+.crq .cr-stps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.crq .cr-stp { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 4px 12px 4px 8px; border: 1px solid var(--k-line); border-radius: 999px; background: var(--k-card); font: inherit; font-size: 12.5px; font-weight: 800; color: var(--k-ink); cursor: pointer; white-space: nowrap; }
+.crq .cr-stp em { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 900; background: var(--k-soft2); color: var(--k-mut); }
+.crq .cr-stp:hover { border-color: var(--k-brand); }
+.crq .cr-stp.is-on { border-color: var(--k-brand); background: var(--k-tint); color: var(--k-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-brand) 12%, transparent); }
+.crq .cr-stp.is-on em { background: var(--k-brand); color: #fff; }
+.crq .cr-stp.is-seen em { background: #0E7C7A; color: #fff; }
+.crq .cr-stp.is-lnk { border-style: dashed; color: var(--k-mut); }
+.crq .cr-stp:focus-visible { outline: 3px solid var(--k-brand); outline-offset: 2px; }
+.crq .cr-arw { color: var(--k-mut); font-size: 12px; font-weight: 900; }
+.crq .cr-ed-h .cr-badge { margin-inline-start: auto; }
+.crq .cr-ed-h .cr-btn { margin-inline-start: auto; }
+.crq .cr-ed-b > .cr-hint { margin: 0; }
+.crq .cr-ed-sec.is-doc { border-color: color-mix(in srgb, #C99A2E 45%, var(--k-line)); }
+.crq .cr-ed-sec.is-doc > .cr-ed-h { background: color-mix(in srgb, #C99A2E 10%, var(--k-card)); }
+.crq .cr-dl { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px; font-weight: 700; padding: 3px 0; }
+.crq .cr-dl > i { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 900; background: var(--k-tint); color: var(--k-brand); }
+.crq .cr-dl.is-off > span:first-of-type { color: var(--k-mut); }
+.crq .cr-pvt { font-weight: 900; font-size: 13.5px; margin-inline-end: auto; align-self: center; }
+.crq .cr-pvbar { align-items: center; }
+@container crq (max-width: 720px) { .crq .cr-trk > b { min-width: 0; width: 100%; } .crq .cr-arw { display: none; } }
+.crq .cr-pvcol .cr-pv { height: min(720px, calc(100vh - 150px)); min-height: 540px; }
+.crq .cr-pvcol .cr-pv.is-phone { height: min(780px, calc(100vh - 150px)); }
