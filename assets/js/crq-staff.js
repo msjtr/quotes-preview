@@ -996,7 +996,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=893'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=894'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1063,9 +1063,9 @@ return box;
 }
 window.CRQS = { lpSettings: lpSettings, feesSettings: feesSettings };
 
-/* ── 5) رسائل العميل: الرسائل الخمس من «قوالب الرسائل» (القسم 21) برقم فهرسها، كل رسالة كما تصل في واتساب والبريد وإشعار الجوال وإشعار المنصة
+/* ── 5) رسائل العميل: رسائل القسم 8 «الطلبات» من «قوالب الرسائل» (v894) برقم فهرسها، كل رسالة كما تصل في واتساب والبريد وإشعار الجوال وإشعار المنصة
 * ببيانات هذا الطلب، و«إرسال معاينة لجوالي» اختياري — يصل صاحب الجلسة وحده، ولا يصل العميل شيء. النص نفسه يُعدَّل من «قوالب الرسائل». ── */
-var CRQ_MSGS = [['crq_received', 'عند تقديم الطلب'], ['crq_offer', 'عند اعتماد العرض وإرسال رابط الموافقة'], ['crq_sign', 'بعد موافقة العميل — رابط التوقيع'], ['crq_done', 'بعد التنفيذ'], ['crq_closed', 'عند إغلاق الطلب']];
+var CRQ_MSGS = [['sr_received', 'عند تقديم الطلب'], ['req_offer', 'عند اعتماد العرض وإرسال الرابط (الموافقة والتوقيع)'], ['req_done', 'بعد التنفيذ'], ['sr_rejected', 'عند عدم اعتماد الطلب'], ['req_declined', 'عند اعتذار العميل عن العرض'], ['req_expired', 'بانتهاء مدة الرابط'], ['req_cancelled', 'عند إلغاء العميل طلبه']]; /* v894: القسم 8 «الطلبات» */
 var MS = { rows: null, err: '', pv: {}, busy: '' };
 function MX() { return window.__teraApp && window.__teraApp.docx && window.__teraApp.docx.msg; }
 function msgVars(x) { var exp = x.link && x.link.expires_at ? at(x.link.expires_at) : 'بعد ' + ((x.settings || {}).consent_hours || 48) + ' ساعة من الإرسال';
