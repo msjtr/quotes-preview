@@ -1,3 +1,4 @@
+/* v891: ألوان صفحة العميل ثابتة من هوية المستند — خطوة «الهوية» تعرض العيّنات للقراءة فقط. */
 /* v890: «صفحة العميل» رحلة واحدة — شريط الخطوات (رمز التحقق ← العرض ← تأكيد الموافقة ← الملحق والتوقيع ← تأكيد التوقيع ← التنفيذ والتقييم · الاعتذار · الهوية)، إعدادات الخطوة فقط، والمحتوى من «المستند»، والمعاينة تفاعلية. */
 /* v876: «البنود والحسبة» بتصميم جديد — البنود بطاقات تتكيّف مع العرض (مفاتيح بدل القوائم المنسدلة)، قائمة «إضافة بند» بأيقونات وحالة «مُضاف»، والملخص المالي بلا تكرار.
 * v873: تبويب «البنود والحسبة» — جدول بنود بأعمدة الضريبة والإجمالي والمجموع، التوزيع والجدولة خيارات واضحة، الملخص المالي وحده جانبًا،
@@ -934,6 +935,9 @@ ed.innerHTML = '';
 var s = ALL.filter(function (z) { return z.k === cur; })[0] || L.J[0];
 ed.appendChild(el('section', { class: 'cr-ed-sec is-open' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: s.t }), el('span', { class: 'cr-badge is-info', text: 'إعدادات الرابط' })]),
 el('div', { class: 'cr-ed-b' }, [s.hint ? el('p', { class: 'cr-hint', text: s.hint }) : null].concat(lpRows(L, T, s, ro, onCh)))]));
+/* v891: ألوان هوية المستند — للعرض فقط */
+if (s.sw && L.IDL) ed.appendChild(el('section', { class: 'cr-ed-sec is-open is-doc' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'ألوان الهوية' }), el('small', { text: 'من هوية المستند (الـ PDF) — ثابتة' })]),
+el('div', { class: 'cr-ed-b cr-sws' }, L.IDL.map(function (c) { return el('div', { class: 'cr-swc' }, [el('i', { style: 'background:' + L.IDC[c[0]] }), el('span', { text: c[1] }), el('code', { dir: 'ltr', text: L.IDC[c[0]] })]); }))]));
 if (s.doc && o.doc) ed.appendChild(o.doc(V, s));
 if (s.adds) {
 var A = T[s.adds]; if (!Array.isArray(A.adds)) A.adds = [];
@@ -993,7 +997,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=890'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=891'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
