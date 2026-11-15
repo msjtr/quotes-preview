@@ -24050,15 +24050,30 @@ if (!P.length && !intro) return;
 add.w = 52 + 34 * P.length + (intro ? 42 : 0), add(card(TT.parties, 'users', kvDf(P) + intro));
 };
 /* ملخص الطلب — كم دفعة طلب العميل تأجيلها وقيمتها ورسومها، في جدول واحد مختصر (أعمدته قابلة للترتيب والإخفاء) */
-const tgAmt = tg.map(function (r) { return Number(r.amt_before) || 0; });
+const rq = Array.isArray(c.req) && c.req.length ? c.req.map(function (q) { return { seq: q.seq, amt_before: q.amount }; }) : tg; /* v902: «ملخص الطلب» من طلب العميل كما قدّمه، و«قرار الفريق» بطاقة مستقلة بما أضافه الفريق */
+const decOf = function () {
+const rs = c.resched, out = [], ss = function (a) { return a.map(function (r) { return r.seq; }).join('، '); }, pn = function (n) { return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتين' : n <= 10 ? n + ' دفعات' : n + ' دفعة'; };
+if (c.sched === 'resched' && rs) {
+out.push('أعاد الفريق جدولة المتبقي (' + sar(rs.base) + ') على ' + pn(Number(rs.count)) + ' بدل ' + pn(Number(rs.open_before)) + '، أولها في ' + dmy(rs.start) + '.');
+const ad = rows.filter(function (r) { return r.added; }), mg = rows.filter(function (r) { return r.merged; });
+if (ad.length) out.push('أُضيفت ' + (ad.length === 1 ? 'دفعة جديدة واحدة' : ad.length === 2 ? 'دفعتان جديدتان' : pn(ad.length) + ' جديدة') + ': ' + ss(ad) + '.');
+if (mg.length) out.push('دُمجت ' + (mg.length === 1 ? 'الدفعة ' : 'الدفعات ') + ss(mg) + ' في الجدول الجديد.');
+} else {
+const a = rq.map(function (r) { return String(r.seq); }).sort().join(','), b = tg.map(function (r) { return String(r.seq); }).sort().join(',');
+if (tg.length && rq !== tg && a !== b) out.push('اعتمد الفريق تأجيل ' + pn(tg.length) + ' بدل ' + pn(rq.length) + ': ' + (tg.length === 1 ? 'الدفعة ' : 'الدفعات ') + ss(tg) + '.');
+}
+return out;
+};
+const tgAmt = rq.map(function (r) { return Number(r.amt_before) || 0; });
 const tgSum = tgAmt.reduce(function (s, v) { return s + v; }, 0);
 const mn = Math.min.apply(null, tgAmt.length ? tgAmt : [0]), mx = Math.max.apply(null, tgAmt.length ? tgAmt : [0]);
 SEC.summary = function () {
-if (!tg.length) return;
-const V = { n: tg.length > 1 ? String(tg.length) : 'رقم ' + tg[0].seq, per: tg.length > 1 ? (Math.abs(mx - mn) < 0.005 ? sar(mx) : 'من ' + sar(mn) + ' إلى ' + sar(mx)) : '', total: sar(tgSum), fees: Number(c.total) > 0 ? sar(c.total) : '' };
-const C = colsOf('summary', [{ k: 'n', l: tg.length > 1 ? 'عدد الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها' }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }]).filter(function (x) { return V[x.k]; });
+if (!rq.length) return;
+const V = { n: rq.length > 1 ? String(rq.length) : 'رقم ' + rq[0].seq, per: tg.length > 1 ? (Math.abs(mx - mn) < 0.005 ? sar(mx) : 'من ' + sar(mn) + ' إلى ' + sar(mx)) : '', total: sar(tgSum), fees: Number(c.total) > 0 ? sar(c.total) : '' };
+const C = colsOf('summary', [{ k: 'n', l: c.origin === 'client' ? (rq.length > 1 ? 'عدد الدفعات التي طلب العميل تأجيلها' : 'الدفعة التي طلب العميل تأجيلها') : (rq.length > 1 ? 'عدد الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها') }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }]).filter(function (x) { return V[x.k]; });
 if (!C.length) return;
 add.w = 113, add(card(TT.summary, 'info', eqTbl(C.map(function (x) { return x.l; }), [C.map(function (x) { return V[x.k]; })])));
+const D = decOf(); if (D.length) { add.w = 52 + 30 * D.length; add(card('قرار الفريق', 'shield', D.map(function (t) { return dP(t, pad); }).join(''))); } /* v902 */
 };
 /* الجدولان بالترتيب نفسه (رقم الدفعة) وبالحالات نفسها — قبل التأجيل ثم بعده؛ وكل صف أو عمود قابل للإخفاء */
 const stOf = function (r, after) { return after && r.merged ? 'أُدمجت في إعادة الجدولة' : after && r.added ? 'دفعة جديدة' : after && c.sched === 'resched' && r.open ? 'أُعيدت جدولتها' : r.target ? (after ? 'مؤجَّلة' : 'مطلوب تأجيلها') : r.open ? 'غير مسددة' : 'مسددة'; }; /* v899-900: إعادة الجدولة — الجديدة والمدمجة والمعاد جدولتها */
