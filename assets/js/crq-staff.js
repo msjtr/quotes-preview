@@ -875,7 +875,7 @@ if (!ro) kids.push((function () { var b = btn('إضافة بند ▾', { ic: 'pl
 else if (s.kind === 'order') {
 var K0 = (s.items || []).map(function (i) { return i.k; });
 var O = (Array.isArray(T.order) ? T.order : []).map(String).filter(function (k, i, a) { return K0.indexOf(k) >= 0 && a.indexOf(k) === i; });
-K0.forEach(function (k) { if (O.indexOf(k) < 0) O.push(k); }); T.order = O;
+K0.forEach(function (k, i) { if (O.indexOf(k) >= 0) return; var pv = i ? O.indexOf(K0[i - 1]) : -1; O.splice(pv + 1, 0, k); }); /* v905 */ T.order = O;
 O.forEach(function (k, i) {
 var it = (s.items || []).filter(function (q) { return q.k === k; })[0] || { l: k };
 var lab = it.tp ? String(gp(T, it.tp) || it.l) : it.l, onv = !it.show || gp(T, it.show) !== false;
@@ -959,7 +959,7 @@ f.onload = function () { try { var w = f.parentNode, k = w.clientWidth / 794; f.
 function LPX() { return window.CRQLP || null; }
 function lpTpl(x) { var L = LPX(); var base = own(x.page) ? x.page.tpl : (x.tpl && x.tpl.lp) || {}; return L.tpl(base); }
 /* أقسام الملحق كما في «المستند ← الملحق في الرابط» */
-var LP_DOC = [['summary', 'ملخص الطلب'], ['defer', 'جدول الدفعات قبل التأجيل'], ['fees', 'رسوم التأجيل'], ['contract', 'قيمة العقد قبل التأجيل وبعده'], ['sched', 'جدول الدفعات الجديد'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['parties', 'أطراف الملحق'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
+var LP_DOC = [['summary', 'ملخص الطلب'], ['decision', 'قرار الفريق'], ['defer', 'جدول الدفعات قبل التأجيل'], ['fees', 'رسوم التأجيل'], ['contract', 'قيمة العقد قبل التأجيل وبعده'], ['sched', 'جدول الدفعات الجديد'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['parties', 'أطراف الملحق'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
 /* صفوف خطوة واحدة: نص · نص طويل · لون · مفتاح · رقم، ومفتاح الإظهار بجانب العنصر */
 function lpRows(L, T, s, ro, onCh) {
 return s.f.map(function (f) {
@@ -1058,7 +1058,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=904'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=905'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
