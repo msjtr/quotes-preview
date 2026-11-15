@@ -449,7 +449,7 @@ function monthsEl(x, ed, P, sel) {
 var open = P.filter(function (p) { return p.open; }).sort(function (a, b) { return a.seq - b.seq; });
 var cl = x.calc && Array.isArray(x.calc.client_pids) ? x.calc.client_pids : sel;
 var from = open.filter(function (p) { return cl.indexOf(p.pid) >= 0 || sel.indexOf(p.pid) >= 0; })[0];
-if (!from || !sel.length) return null;
+if (!from || !sel.length || (x.calc && x.calc.sched && x.calc.sched.mode === 'resched')) return null; /* v899: في إعادة الجدولة العدد من «البنود والحسبة» */
 var chain = open.filter(function (p) { return p.seq >= from.seq; }), n = sel.length, clN = cl.length, max = Math.min(6, chain.length);
 var go = function (m) { if (!ed || m < 1 || m > max) return; setPids(x, chain.slice(0, m).map(function (p) { return p.pid; })); };
 return el('div', { class: 'cr-mo' }, [
@@ -459,10 +459,31 @@ ed ? el('button', { type: 'button', class: 'cr-mo-b', 'aria-label': 'إنقاص 
 el('output', { class: 'cr-mo-v', 'aria-live': 'polite', text: monthWord(n) }),
 ed ? el('button', { type: 'button', class: 'cr-mo-b', 'aria-label': 'إضافة شهر', 'data-live-ok': '', disabled: n >= max, onclick: function () { go(n + 1); } }, [icon('plus')]) : null])]);
 }
+/* v899: إعادة جدولة كاملة — عدد دفعات جديد بلا حد أعلى يحدده الموظف، وتاريخ أول دفعة، والمتبقي مع الرسوم يُوزَّع شهريًا (الحساب في القاعدة crq_calc_defer) */
+function rsInit(x, c) {
+var open = (x.payments || []).filter(function (p) { return p.open; }).sort(function (a, b) { return a.seq - b.seq; });
+if (!Number(c.sched.count)) c.sched.count = open.length || 1;
+if (!c.sched.start) { var t = new Date(); t.setHours(0, 0, 0, 0); var f = open[0] && open[0].due ? new Date(String(open[0].due).slice(0, 10) + 'T00:00:00') : null; var d = f && f > t ? f : new Date(t.getFullYear(), t.getMonth() + 1, t.getDate());
+c.sched.start = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+}
+function rsCtl(x, c, ed, upd) {
+var open = (x.payments || []).filter(function (p) { return p.open; }), n = Math.max(1, Number(c.sched.count) || open.length || 1);
+var left = open.reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0);
+var setN = function (v) { v = Math.max(1, Math.floor(Number(v) || 1)); c.sched.count = v; upd(); draw(); };
+var pw = function (k) { return k === 1 ? 'دفعة واحدة' : k === 2 ? 'دفعتان' : k <= 10 ? k + ' دفعات' : k + ' دفعة'; };
+return el('div', { class: 'cr-ds-g cr-rs' }, [el('h3', { text: 'إعادة الجدولة' }),
+el('div', { class: 'cr-mo' }, [el('div', { class: 'cr-mo-t' }, [el('b', { text: 'عدد الدفعات الجديد' }), el('small', {}, ['الحالي: ' + pw(open.length) + ' مفتوحة · المتبقي ', ltr(money(left)), ' ر.س', n !== open.length ? el('em', { text: ' · ' + (n > open.length ? 'زيادة ' + pw(n - open.length) : 'نقص ' + pw(open.length - n)) }) : null])]),
+el('div', { class: 'cr-mo-s', role: 'group', 'aria-label': 'عدد الدفعات الجديد' }, [
+ed ? el('button', { type: 'button', class: 'cr-mo-b', 'aria-label': 'إنقاص دفعة', 'data-live-ok': '', disabled: n <= 1, onclick: function () { setN(n - 1); } }, [icon('minus')]) : null,
+el('input', { type: 'number', class: 'cr-mo-n', min: '1', step: '1', inputmode: 'numeric', value: String(n), disabled: !ed, 'aria-label': 'عدد الدفعات الجديد', onchange: function (e) { setN(e.target.value); } }),
+ed ? el('button', { type: 'button', class: 'cr-mo-b', 'aria-label': 'إضافة دفعة', 'data-live-ok': '', onclick: function () { setN(n + 1); } }, [icon('plus')]) : null])]),
+el('label', { class: 'cr-field cr-rs-d' }, [el('span', { text: 'تاريخ أول دفعة' }), el('input', { type: 'date', value: c.sched.start || '', disabled: !ed, 'aria-label': 'تاريخ أول دفعة', onchange: function (e) { c.sched.start = e.target.value; upd(); draw(); } })]),
+el('small', { class: 'cr-hint', text: 'المتبقي مع رسوم الطلب يُوزَّع على الدفعات شهريًا من تاريخ أول دفعة. عند النقص تُدمج الدفعات الزائدة ولا تُحذف، وعند الزيادة تُضاف دفعات جديدة بعد آخر دفعة.' })]);
+}
 function kvs(L) { return el('dl', { class: 'cr-kv' }, [].concat.apply([], L.map(function (r) { return [el('dt', { text: r[0] }), el('dd', {}, [r[1] == null || r[1] === '' ? '—' : r[1]])]; }))); }
 
 /* ── 2) البنود والحسبة: البنود من القائمة الجاهزة («+ إضافة بند ▾») بضريبة لكل بند وظهوره للعميل، ثم التوزيع والجدولة — والملخص المالي جانبًا ── */
-var ERRT = { no_targets: 'اختر الدفعة المطلوب تأجيلها من تبويب «الطلب».', target_not_open: 'الدفعة المختارة لم تعد مستحقة.', bad_line: 'لكل بند اسم من حرفين على الأقل.', bad_amount: 'مبلغ غير صحيح', bad_date: 'تاريخ غير صحيح — الموعد الجديد بعد موعد الدفعة وبعد اليوم', date_required: 'حدد الموعد الجديد للدفعة المؤجلة', dist_sum: 'مجموع التوزيع اليدوي لا يساوي إجمالي الإضافة', no_open: 'لا دفعات مستحقة في العقد', contract_closed: 'العقد مغلق', bad_input: 'بيانات غير صالحة', kind_inactive: 'النوع غير مفعّل' };
+var ERRT = { bad_count: 'أدخل عدد الدفعات الجديد — دفعة واحدة على الأقل.', start_required: 'حدّد تاريخ أول دفعة في إعادة الجدولة.', no_targets: 'اختر الدفعة المطلوب تأجيلها من تبويب «الطلب».', target_not_open: 'الدفعة المختارة لم تعد مستحقة.', bad_line: 'لكل بند اسم من حرفين على الأقل.', bad_amount: 'مبلغ غير صحيح', bad_date: 'تاريخ غير صحيح — الموعد الجديد بعد موعد الدفعة وبعد اليوم', date_required: 'حدد الموعد الجديد للدفعة المؤجلة', dist_sum: 'مجموع التوزيع اليدوي لا يساوي إجمالي الإضافة', no_open: 'لا دفعات مستحقة في العقد', contract_closed: 'العقد مغلق', bad_input: 'بيانات غير صالحة', kind_inactive: 'النوع غير مفعّل' };
 var CALC_T = { fixed: 'مبلغ ثابت', pct: 'نسبة من الدفعة المؤجلة', manual: 'يُدخل لكل طلب' };
 function rate(x) { var r = x.result && x.result.vat_rate != null ? Number(x.result.vat_rate) : Number(x.vat_rate); return isFinite(r) ? r : 15; }
 function tgSum(x) { return (x.payments || []).filter(function (p) { return (x.payment_ids || []).indexOf(p.pid) >= 0; }).reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0); }
@@ -547,6 +568,7 @@ function tabCalc(x) {
 var ed = editable(x), c = calcOf(x), R0 = rate(x);
 loadCharges();
 function tax(l) { return l.vat ? Math.round((Number(l.amt) || 0) * R0) / 100 : 0; }
+ST.cc = c; ST.cu = upd; /* v899: لإعادة رسم جدول إعادة الجدولة بعد الحفظ */
 function upd() { c.lines.forEach(function (l) { l.amt = String(l.amt || '').replace(/[^\d.]/g, '') || '0'; }); x.calc = c; queue({ calc: c }); paintSide(x); }
 /* تحديث خلايا الضريبة والإجمالي والمجاميع دون إعادة رسم الحقول */
 function paintRow(tr, l) { var a = tr.querySelector('.c-tax'), b = tr.querySelector('.c-tot'); if (a) { a.innerHTML = ''; a.appendChild(ltr(l.vat ? money(tax(l)) : '—')); } if (b) { b.innerHTML = ''; b.appendChild(ltr(money((Number(l.amt) || 0) + tax(l)))); } }
@@ -591,7 +613,7 @@ var svc = c.hide.length ? field('اسم السطر الذي يراه العمي�
 var choose = function (name, cur, L, on) { return el('div', { class: 'cr-opts', role: 'radiogroup' }, L.map(function (o) { return el('label', { class: 'cr-opt' + (cur === o[0] ? ' is-on' : '') + (ed ? '' : ' is-ro') }, [el('input', { type: 'radio', name: name, value: o[0], checked: cur === o[0], disabled: !ed, onchange: function () { on(o[0]); } }), el('span', {}, [el('b', { text: o[1] }), el('small', { text: o[2] })])]); })); };
 var setup = el('div', { class: 'cr-ds' }, [
 el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'توزيع الرسوم على المبالغ المتبقية' }), choose('crq-dist', c.dist.mode, [['equal', 'بالتساوي', 'تُقسم الرسوم بالتساوي على كل المبالغ المتبقية.'], ['ratio', 'بنسبة كل مبلغ', 'يأخذ كل مبلغ نصيبًا بقدر قيمته.'], ['manual', 'يدويًا', 'تحدّد إضافة كل موعد في الجدول أدناه.']], function (v) { c.dist.mode = v; upd(); draw(); })]),
-el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'الموعد الجديد للمبلغ المؤجَّل' }), choose('crq-sched', c.sched.mode, [['end', 'إلى نهاية الجدول', 'ينتقل بعد آخر موعد في الجدول.'], ['shift', 'ترحيل ما بعده', 'تتأخر المواعيد منه شهرًا لكل مبلغ مؤجَّل.'], ['manual', 'يدويًا', 'تحدّد التاريخ الجديد في الجدول أدناه.']], function (v) { c.sched.mode = v; upd(); draw(); })])]);
+el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'الموعد الجديد للمبلغ المؤجَّل' }), choose('crq-sched', c.sched.mode, [['end', 'إلى نهاية الجدول', 'ينتقل بعد آخر موعد في الجدول.'], ['shift', 'ترحيل ما بعده', 'تتأخر المواعيد منه شهرًا لكل مبلغ مؤجَّل.'], ['manual', 'يدويًا', 'تحدّد التاريخ الجديد في الجدول أدناه.'], ['resched', 'إعادة جدولة كاملة', 'يُوزَّع المتبقي على عدد دفعات جديد تحدده.']], function (v) { c.sched.mode = v; if (v === 'resched') rsInit(x, c); upd(); draw(); })]), c.sched.mode === 'resched' ? rsCtl(x, c, ed, upd) : null]);
 var main = el('div', { class: 'cr-main' }, [el('section', { class: 'cr-card' }, [el('h2', { text: 'البنود والرسوم' }), tbl, add, svc]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'التوزيع والجدولة' }), setup]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'الجدول قبل وبعد' }), el('div', { id: 'cr-sched', class: 'cr-tw' }, [schedTable(x, c, ed, upd)])])]);
@@ -709,12 +731,13 @@ el('p', { class: 'cr-sum-m' }, [icon('calc'), nRows + ' ' + (nRows === 1 ? 'مب
 }
 function schedTable(x, c, ed, upd) {
 var r = x.result || {}, rows = r.ok ? r.rows : (x.payments || []).map(function (p) { return { pid: p.pid, seq: p.seq, open: p.open, target: (x.payment_ids || []).indexOf(p.pid) >= 0, due_before: p.due, due_after: p.due, amt_before: p.amount, add: 0, amt_after: p.amount }; });
-var md = c.sched.mode === 'manual', ma = c.dist.mode === 'manual';
+var md = c.sched.mode === 'manual', ma = c.dist.mode === 'manual', rs = c.sched.mode === 'resched';
 return el('table', { class: 'cr-tbl is-sched' }, [el('thead', {}, [el('tr', {}, ['الدفعة', 'الموعد الحالي', 'الموعد الجديد', 'القيمة', 'الإضافة', 'القيمة الجديدة'].map(function (h) { return el('th', { text: h }); }))]),
 el('tbody', {}, rows.map(function (z) {
 var due = md && z.open && ed ? el('input', { type: 'date', value: c.sched.dates[z.pid] || (z.target ? '' : String(z.due_after).slice(0, 10)), 'aria-label': 'الموعد الجديد للدفعة ' + z.seq, onchange: function (e) { if (e.target.value) c.sched.dates[z.pid] = e.target.value; else delete c.sched.dates[z.pid]; upd(); } }) : el('span', { class: z.due_after !== z.due_before ? 'is-ch' : '', text: day(z.due_after) });
-var add = ma && z.open && ed ? el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: c.dist.amounts[z.pid] || '', placeholder: '0', 'aria-label': 'إضافة الدفعة ' + z.seq, oninput: function (e) { var v = e.target.value.replace(/[^\d.]/g, ''); if (v) c.dist.amounts[z.pid] = v; else delete c.dist.amounts[z.pid]; upd(); } }) : ltr(money(z.add));
-return el('tr', { class: (z.target ? 'is-t ' : '') + (z.open ? '' : 'is-off'), 'data-pid': z.pid }, [el('td', { 'data-l': 'الدفعة' }, [String(z.seq), z.target ? el('small', { class: 'cr-sub', text: 'مؤجَّلة' }) : null, !z.open ? el('small', { class: 'cr-sub', text: 'مسدَّدة' }) : null]),
+var ak = rs ? z.k : z.pid; /* v899: في إعادة الجدولة تُحفظ رسوم كل دفعة بترتيبها (#1…#n) */
+var add = ma && z.open && ed && !z.merged && ak ? el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: c.dist.amounts[ak] || '', placeholder: '0', 'aria-label': 'إضافة الدفعة ' + z.seq, oninput: function (e) { var v = e.target.value.replace(/[^\d.]/g, ''); if (v) c.dist.amounts[ak] = v; else delete c.dist.amounts[ak]; upd(); } }) : ltr(money(z.add));
+return el('tr', { class: (z.target && !rs ? 'is-t ' : '') + (z.added ? 'is-new ' : '') + (z.open && !z.merged ? '' : 'is-off'), 'data-pid': z.pid || z.k }, [el('td', { 'data-l': 'الدفعة' }, [String(z.seq), z.target && !rs ? el('small', { class: 'cr-sub', text: 'مؤجَّلة' }) : null, z.added ? el('small', { class: 'cr-sub', text: 'جديدة' }) : null, z.merged ? el('small', { class: 'cr-sub', text: 'أُدمجت' }) : null, !z.open ? el('small', { class: 'cr-sub', text: 'مسدَّدة' }) : null]),
 el('td', { 'data-l': 'الموعد الحالي', text: day(z.due_before) }), el('td', { 'data-l': 'الموعد الجديد', class: 'c-due' }, [due]), el('td', { 'data-l': 'القيمة' }, [ltr(money(z.amt_before))]),
 el('td', { 'data-l': 'الإضافة', class: 'c-add' }, [add]), el('td', { 'data-l': 'القيمة الجديدة', class: 'c-after' }, [ltr(money(z.amt_after))])]);
 }))]);
@@ -724,8 +747,10 @@ function paintCalcOut() {
 if (ST.tab === 'calc') { paintSide(ST.x); loadGuar(ST.x); }
 if (ST.tab === 'doc') docPv(ST.x);
 var r = ST.x.result || {}; if (!r.ok) return;
+/* v899: إعادة الجدولة يتغيّر فيها عدد الصفوف — يُعاد رسم الجدول ما لم يكن الموظف يكتب فيه */
+if (ST.tab === 'calc' && r.sched === 'resched' && ST.cc) { var w = R.querySelector('#cr-sched'); if (w && !w.contains(document.activeElement)) { w.innerHTML = ''; w.appendChild(schedTable(ST.x, ST.cc, editable(ST.x), ST.cu)); } return; }
 (r.rows || []).forEach(function (z) {
-var tr = R.querySelector('tr[data-pid="' + z.pid + '"]'); if (!tr) return;
+var tr = R.querySelector('tr[data-pid="' + (z.pid || z.k) + '"]'); if (!tr) return;
 var a = tr.querySelector('.c-after'); if (a) { a.innerHTML = ''; a.appendChild(ltr(money(z.amt_after))); }
 var d = tr.querySelector('.c-add'); if (d && !d.querySelector('input')) { d.innerHTML = ''; d.appendChild(ltr(money(z.add))); }
 var u = tr.querySelector('.c-due'); if (u && !u.querySelector('input')) { u.innerHTML = ''; u.appendChild(el('span', { class: z.due_after !== z.due_before ? 'is-ch' : '', text: day(z.due_after) })); }
@@ -1021,7 +1046,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=898'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=899'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {

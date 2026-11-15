@@ -939,3 +939,9 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-mo-b .cr-ic { width: 18px; height: 18px; }
 .crq .cr-mo-v { min-width: 96px; text-align: center; font-size: 16px; font-weight: 900; color: var(--k-brand); }
 :is(.pv-dark, .t2.is-dark) .crq .cr-mo-t em, :is(.pv-dark, .t2.is-dark) .crq .cr-mo-v { color: var(--k-acc); }
+/* v899: إعادة الجدولة الكاملة — عدد الدفعات الجديد وتاريخ أول دفعة */
+.crq .cr-rs { grid-column: 1 / -1; display: grid; gap: 10px; }
+.crq .cr-rs .cr-mo { margin-bottom: 0; }
+.crq .cr-mo-n { width: 84px; height: 40px; padding: 0 6px; text-align: center; font: inherit; font-size: 16px; font-weight: 900; color: var(--k-ink); background: var(--k-card); border: 1px solid var(--k-line); border-radius: 12px; }
+.crq .cr-rs-d input { max-width: 220px; }
+.crq .cr-tbl.is-sched tr.is-new td { background: var(--k-tint2); }
