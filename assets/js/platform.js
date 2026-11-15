@@ -32126,6 +32126,7 @@ const SC_PAYV = ['amount', 'payment', 'contract', 'due', 'days', 'paid', 'remain
 const SC_AUTO = ['name', 'ref', 'phone', 'email', 'link'];
 const SC_CLB = { l1: 'السطر 1', l2: 'السطر 2', l3: 'السطر 3', l4: 'السطر 4', due: 'الموعد', note: 'الملاحظة', product: 'المنتج أو الخدمة', req: 'رقم الطلب', service: 'الخدمة', bank: 'البنك', amount: 'المبلغ' };
 const SC_SVK = { rate_pay: 'pay', rate_launch: 'launch' };
+const SC_REQK = ['sr_received', 'sr_approved', 'sr_rejected', 'req_fix', 'req_offer', 'req_done', 'req_declined', 'req_expired', 'req_cancelled', 'req_preparing', 'req_shipped', 'req_transit', 'req_pickup', 'req_delivered']; /* v895: قوالب القسم 8 «الطلبات» — تختار طلب العميل وتُملأ بياناته تلقائيًا */
 const SC_UUID = { 'a4980000-0498-4498-8498-000000000498': 'cat:acct_ready', 'a5100000-0510-4510-8510-000000000001': 'cat:launch_films' }; /* روابط قديمة بمعرّف القالب → قالبه في الكتالوج */
 function scCatVars(r) { return ([r.title, r.status, r.l1, r.l2, r.l3, r.l4, r.btn_path].join(' ').match(/\{([a-z0-9_]+)\}/g) || []).map(function (x) { return x.slice(1, -1); }).filter(function (x, i, s) { return s.indexOf(x) === i; }); }
 function scCatSv(r) { const s = String(r.src || '').trim(); return /^survey:/.test(s) ? s.slice(7).split(/\s/)[0] : (SC_SVK[r.key] || ''); }
@@ -32144,6 +32145,7 @@ return;
 const V = scCatVars(r), pay = scCatPay(r, V);
 const sub = SC_REM.indexOf(r.key) >= 0 ? 'لعميل أو أكثر — تختار الدفعات، ويصل رابط السداد الآمن'
 : r.key === 'settle_done' ? 'لعميل أو أكثر — تختار العقد المغلق بسداد قيمة المنتج'
+: SC_REQK.indexOf(r.key) >= 0 ? (r.key === 'req_offer' ? 'تختار طلب العميل — يُعاد إرسال رابط العرض' : 'تختار طلب العميل وتُملأ بياناته تلقائيًا')
 : pay ? 'لعميل أو أكثر — تختار العقود والدفعات'
 : r.key === 'collect_demand' ? 'لكل عميل بمتأخراته تلقائيًا'
 : V.some(function (k) { return SC_AUTO.indexOf(k) < 0; }) ? 'تكمل بياناته قبل الإرسال' : 'جاهز للإرسال';
@@ -32172,7 +32174,7 @@ if (!opts.length) return !Array.isArray(SC.CT) || !Array.isArray(SC.SV) ? clWait
 const G = [], by = {};
 opts.forEach(function (o) { const g = o[3] && o[3].grp; if (!o[0] || !g) return; if (!by[g]) { by[g] = []; G.push(g); } by[g].push(o); });
 const q = String(SC.tq || '').trim().toLowerCase();
-const pick = function (v) { SC.tpl = v; SC.CV = {}; SC.sel = {}; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.quiet = false; SC.ask = false; scDrawKeep('tp'); };
+const pick = function (v) { SC.tpl = v; SC.CV = {}; SC.sel = {}; SC.rq = null; SC.W.html = ''; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.quiet = false; SC.ask = false; scDrawKeep('tp'); };
 const groups = G.map(function (g) {
 SC.tgs = SC.tgs || {}; const open = !!SC.tgs[g], L = by[g]; /* v646: كل قسم يُفتح ويُغلق بيد المستخدم */
 const hit = function (o) { return !q || (String(o[1]) + ' ' + g).toLowerCase().indexOf(q) >= 0; };
@@ -32278,6 +32280,32 @@ const cap = T.rem ? 30 : 100;
 return e('div', { class: 'sc-py' }, blocks.concat([n > cap ? DS.note('warn', 'المختار أكثر من الحد', 'الحد ' + fmtNum(cap) + ' في المرة الواحدة — قلّل المختار.')
 : e('div', { class: 'sc-selbar' + (n ? '' : ' is-empty') }, n ? [e('b', {}, 'المختار ' + fmtNum(n) + (T.pmode === 'contract' ? ' عقد' : ' دفعة')), e('small', {}, 'كل واحدة في رسالة مستقلة')] : [e('small', {}, 'لم تختر شيئًا بعد.')])]));
 }
+/* v895: طلبات كل عميل مختار لقوالب «الطلبات» — تُحمَّل مرة لكل عميل، ويُختار طلب واحد تُملأ منه الرسالة */
+function scReqs(uid) { SC.RQM = SC.RQM || {}; const c = SC.RQM[uid]; if (c && c.rows) return c; if (c && c.busy) return null; SC.RQM[uid] = { busy: true };
+clApi('/admin/api/send-center/reqs?user=' + encodeURIComponent(uid)).then(function (j) { SC.RQM[uid] = { rows: (j && j.rows) || [], err: j && j.ok === false ? (j.message || 'تعذّر جلب الطلبات.') : '' }; draw(); })
+.catch(function (err) { SC.RQM[uid] = { rows: [], err: (err && err.message) || 'تعذّر جلب الطلبات.' }; draw(); }); return null; }
+function scReqIt() { const it = SC.rq; return it && SC.mode === 'pick' && SC.ids.indexOf(it.user_id) >= 0 ? it : null; }
+function scReqVars(T) { const it = T && T.reqk ? scReqIt() : null; return it ? Object.assign({}, SC.CV || {}, { product: it.product, req: it.no, service: it.product }) : (SC.CV || {}); }
+function scReqPick(T) {
+const offer = T.key === 'req_offer';
+if (SC.mode !== 'pick' || !SC.ids.length) return DS.note('info', 'قالب مرتبط بطلب', 'اختر في «المستهدفون» ← «أشخاص محددون» العميل، ثم اختر هنا طلبه — تُملأ بيانات الطلب في الرسالة تلقائيًا.');
+const cur = scReqIt();
+const blocks = SC.ids.map(function (uid) {
+const nm = (SC.PD[uid] && SC.PD[uid].name) || SC.nm[uid] || '—';
+const head = e('div', { class: 'sc-pu-h' }, [e('span', { class: 'ci-pk-av' }, String(nm || '؟').charAt(0)), e('b', { class: 'sc-py-n' }, nm)]);
+const D = scReqs(uid);
+if (!D) return e('div', { class: 'sc-py-u' }, [head, clWait('الطلبات')]);
+const rows = D.rows.filter(function (r) { return !offer || r.offer; });
+if (!rows.length) return e('div', { class: 'sc-py-u' }, [head, e('small', { class: 'cu-dr-hint' }, D.err || (offer ? 'لا طلب بانتظار موافقة العميل أو توقيعه.' : 'لا طلبات لهذا العميل.'))]);
+return e('div', { class: 'sc-py-u' }, [head].concat(rows.map(function (r) {
+const on = !!(cur && cur.user_id === uid && cur.id === r.id && cur.src === r.src);
+return e('label', { class: 'sc-py-c is-pick' + (on ? ' is-on' : ''), 'data-sk': 'r:' + r.id }, [e('input', { type: 'radio', name: 'sc-rq', checked: on ? 'checked' : null, onChange: function () { SC.rq = { user_id: uid, src: r.src, id: r.id, no: r.no, product: r.product }; SC.PV = null; SC.pvAt = ''; SC.err = ''; SC.ask = false; scDrawKeep('r:' + r.id); } }),
+e('span', {}, [e('b', {}, [r.product, ' · ', ltr(r.no || '—')]), e('small', {}, r.state_t || '—')])]);
+})));
+});
+return e('div', { class: 'sc-py' }, blocks.concat([offer ? DS.note('info', 'يُعاد إرسال رابط العرض', 'يصل العميل رابط جديد للطلب المختار بكل الوسائل، ويُلغى الرابط السابق — كما في «إعادة الإرسال» داخل الطلب.') : null,
+e('div', { class: 'sc-selbar' + (cur ? '' : ' is-empty') }, cur ? [e('b', {}, ['الطلب ', ltr(cur.no || '')]), e('small', {}, cur.product)] : [e('small', {}, 'لم تختر طلبًا بعد.')])]));
+}
 function scCatFields() {
 const T = scTpl(); if (!T) return null;
 if (T.kind === 'off') return DS.note('warn', 'الاستبانة موقوفة', 'فعّلها من «إعدادات تجربة العملاء والجودة» ثم أرسلها من هنا.');
@@ -32285,6 +32313,7 @@ if (T.kind !== 'cat') return null;
 SC.CV = SC.CV || {};
 const kids = [];
 if (T.pay) kids.push(scPayPick(T));
+if (T.reqk) kids.push(scReqPick(T));
 if (T.rem) kids.push(DS.note('info', 'تصل رسالة التذكير المناسبة لحالة كل دفعة', 'مستحقة · مؤجلة · متبقٍّ منها · متأخرة — برابط السداد الآمن، وبوسائل قاعدة التذكير المعتمدة، من محرك «إدارة التذكير» نفسه (30 دفعة في المرة).'));
 if (T.bad && T.bad.length) kids.push(DS.note('warn', 'لا يُرسل يدويًا', 'في القالب بيانات لا تُكتب من هنا (' + T.bad.join('، ') + ') — يرسله حدثه تلقائيًا.'));
 if (T.key === 'collect_demand') kids.push(DS.note('info', 'تُملأ تلقائيًا لكل عميل', 'عدد الدفعات المتأخرة وإجماليها والعقد — ومن لا متأخرات عليه لا تصله.'));
@@ -32303,10 +32332,10 @@ if (/^off:/.test(id)) { const k = id.slice(4), r = CT.filter(function (x) { retu
 if (/^cat:/.test(id)) {
 const k = id.slice(4), r = CT.filter(function (x) { return x.key === k; })[0];
 if (!r) return null;
-const V = scCatVars(r), rem = SC_REM.indexOf(k) >= 0, pay = scCatPay(r, V) || k === 'settle_done';
-const rest = rem ? [] : V.filter(function (x) { return SC_AUTO.indexOf(x) < 0 && !(pay && SC_PAYV.indexOf(x) >= 0) && !(k === 'collect_demand' && ['amount', 'contract', 'count'].indexOf(x) >= 0); });
+const V = scCatVars(r), rem = SC_REM.indexOf(k) >= 0, pay = scCatPay(r, V) || k === 'settle_done', reqk = SC_REQK.indexOf(k) >= 0;
+const rest = rem ? [] : V.filter(function (x) { return SC_AUTO.indexOf(x) < 0 && !(pay && SC_PAYV.indexOf(x) >= 0) && !(k === 'collect_demand' && ['amount', 'contract', 'count'].indexOf(x) >= 0) && !(reqk && ['product', 'req', 'service', 'link', 'valid'].indexOf(x) >= 0); });
 const fields = rest.filter(function (x) { return SC_CLB.hasOwnProperty(x) && !(SC_BTK[k] && x === 'bank'); }), bad = rest.filter(function (x) { return !SC_CLB.hasOwnProperty(x); }).concat(k === 'film' ? ['الفيلم يُرسل من محادثة واتساب — أرسل 11.01 ويصل معه زر «شاهد الأفلام»'] : []); /* المراجعة المستقلة: الحقول نفسها التي يقبلها الخادم */
-return { kind: 'cat', id: id, key: k, name: r.code + ' — ' + r.title, subject: r.title, body: '', channel: 'both', manual: true, rem: rem, pay: pay, pmode: scPMode(k), fields: fields, bad: bad, attach: /^pdf_/.test(String(r.attach || '')) ? String(r.attach) : '' };
+return { kind: 'cat', id: id, key: k, name: r.code + ' — ' + r.title, subject: r.title, body: '', channel: 'both', manual: true, rem: rem, pay: pay, pmode: scPMode(k), reqk: reqk, fields: fields, bad: bad, attach: /^pdf_/.test(String(r.attach || '')) ? String(r.attach) : '' };
 }
 if (/^sv:/.test(id)) { const k = id.slice(3), t = (Array.isArray(SC.SV) ? SC.SV : []).filter(function (x) { return x.key === k; })[0]; return t ? { kind: 'survey', key: k, name: t.name, subject: t.email_subject || t.name, body: t.wa_body || t.email_body || '', channel: 'both' } : null; }
 return null;
@@ -32332,6 +32361,12 @@ if (!r || r.ok !== true) { if (r && r.error === 'quiet_hours') SC.quiet = true; 
 const R = r.rows || [], ok = R.filter(function (x) { return x.ok; }).length;
 if (!ok) throw new Error((R[0] && R[0].why) || 'لم تُرسل رسائل التذكير.');
 SC.res = { ok: true, rem: true, n: ok, skip: R.length - ok }; SC.quiet = false; SC.sel = {}; SC.PYM = {};
+} else if (T.kind === 'cat' && T.reqk) {
+/* v895: قالب «الطلبات» لطلب مختار — بياناته من الطلب نفسه، والعرض بإعادة إرسال رابطه */
+const it = scReqIt(); if (!it) throw new Error('اختر طلب العميل.');
+if (T.key === 'req_offer') { if (it.src !== 'crq') throw new Error('العرض يُرسل لطلبات العقود وحدها.'); const r = await clPost('/admin/api/crq/' + it.id + '/resend', {}); if (!r || r.ok !== true) throw new Error((r && r.message) || (r && r.error === 'locked' ? 'الطلب لم يعد بانتظار موافقة العميل أو توقيعه.' : 'تعذّر إعادة إرسال الرابط.')); SC.res = { ok: true, n: 1 }; }
+else { const r = await clPost('/admin/api/send-center/send', { groups: [], ids: [it.user_id], exclude: [], tpl_id: T.id, vars: scReqVars(T), channels: C.length ? C : ['inbox'] }); if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الإرسال.'); SC.res = { ok: true, batch: r.batch, n: r.total }; }
+SC.rq = null; SC.RQM = {};
 } else {
 const r = await clPost('/admin/api/send-center/send', { groups: scGrps(), ids: scAllIds(), exclude: SC.ex, tpl_id: T.id, vars: T.kind === 'cat' ? (SC.CV || {}) : undefined, items: T.kind === 'cat' && T.pay ? scItems() : undefined, channels: C.length ? C : ['inbox'] });
 if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الإرسال.');
@@ -32364,9 +32399,9 @@ W.after && W.after.length ? e('div', { class: 'sc-wa-tap' }, [e('b', {}, 'بعد
 }
 function scPvLoad(T, uid) {
 const it0 = T.kind === 'cat' && T.pay ? scItems()[0] || null : null, pid = it0 ? scSelKey(it0) : '';
-const k = T.id + '|' + (uid || '') + (T.kind === 'cat' ? '|' + JSON.stringify(SC.CV || {}) + '|' + pid : ''); SC.pvWant = k; if (SC.pvAt === k || SC.pvBusy) return;
+const k = T.id + '|' + (uid || '') + (T.kind === 'cat' ? '|' + JSON.stringify(scReqVars(T)) + '|' + pid : ''); SC.pvWant = k; if (SC.pvAt === k || SC.pvBusy) return;
 SC.pvBusy = true; SC.pvErr = '';
-clPost('/admin/api/send-center/preview', { tpl_id: T.id, user_id: uid || null, vars: T.kind === 'cat' ? (SC.CV || {}) : undefined, items: it0 ? [it0] : undefined }).then(function (j) { SC.pvBusy = false; if (SC.pvWant !== k) { draw(); return; } /* المراجعة المستقلة: لا تظهر معاينة قديمة تحت قالب جديد */ SC.pvAt = k; if (j && j.ok) SC.PV = j; else { SC.PV = null; SC.pvErr = (j && j.message) || 'تعذّرت المعاينة.'; } draw(); })
+clPost('/admin/api/send-center/preview', { tpl_id: T.id, user_id: uid || null, vars: T.kind === 'cat' ? scReqVars(T) : undefined, items: it0 ? [it0] : undefined }).then(function (j) { SC.pvBusy = false; if (SC.pvWant !== k) { draw(); return; } /* المراجعة المستقلة: لا تظهر معاينة قديمة تحت قالب جديد */ SC.pvAt = k; if (j && j.ok) SC.PV = j; else { SC.PV = null; SC.pvErr = (j && j.message) || 'تعذّرت المعاينة.'; } draw(); })
 .catch(function (err) { SC.pvBusy = false; if (SC.pvWant !== k) { draw(); return; } SC.pvAt = k; SC.PV = null; SC.pvErr = (err && err.message) || 'تعذّرت المعاينة.'; draw(); });
 }
 function scChBadges(p) {
@@ -32405,7 +32440,7 @@ const s3 = scStep(3, 'القالب', [scTplPick(tOpts), scCatFields(),
 e('div', { class: 't2-pb-actions' }, [DS.button('قوالب الرسائل في الإعدادات', { size: 'sm', ui: 'gear-six', onClick: function () { go('other', 'sys-msgc'); } })])], 'افتح القسم ثم اختر القالب — والقالب المرتبط بعقد أو دفعة تختار له العميل ودفعته.');
 /* 4) المعاينة — كما تصل فعلًا */
 const it1 = T && T.kind === 'cat' && T.pay ? scItems()[0] : null; /* v642: المعاينة بأول عنصر مختار */
-const uid = (it1 && it1.user_id) || SC.ids[0] || (rows[0] && rows[0].id) || '';
+const uid = (it1 && it1.user_id) || (T && T.reqk && scReqIt() ? scReqIt().user_id : '') || SC.ids[0] || (rows[0] && rows[0].id) || '';
 const smpName = (SC.PD[uid] && SC.PD[uid].name) || (rows[0] && rows[0].name) || 'اسم العميل';
 let pv = DS.note('info', 'اختر القالب لتظهر المعاينة', 'تظهر الرسالة كما تصل للمستلم في كل وسيلة.');
 if (T && T.kind === 'off') pv = DS.note('warn', 'الاستبانة موقوفة', 'لا معاينة ولا إرسال حتى تُفعَّل.');
@@ -32432,7 +32467,7 @@ const s4 = scStep(4, 'المعاينة', [pv]);
 /* 5) الإرسال — v641: قالب العقد والدفعة لعميل واحد بدفعة مختارة، وبيانات القالب مكتملة */
 const NI = T && T.kind === 'cat' && T.pay ? scItems().length : 0;
 const payOk = !(T && T.kind === 'cat' && T.pay) || (SC.mode === 'pick' && NI > 0 && NI <= (T.rem ? 30 : 100));
-const ready = !!(T && n) && T.kind !== 'off' && payOk && !(T.kind === 'cat' && T.bad && T.bad.length) && !(T.kind === 'cat' && T.fields.some(function (k) { return !String((SC.CV || {})[k] || '').trim(); }));
+const ready = !!(T && n) && T.kind !== 'off' && payOk && (!(T && T.kind === 'cat' && T.reqk) || !!scReqIt()) && !(T.kind === 'cat' && T.bad && T.bad.length) && !(T.kind === 'cat' && T.fields.some(function (k) { return !String((SC.CV || {})[k] || '').trim(); }));
 const s5 = scStep(5, 'الإرسال', [DS.fields([['المستلمون', fmtNum(n)], ['الوسيلة', T && T.rem ? 'وسائل قاعدة التذكير المعتمدة' : C.map(function (k) { return SC_CHT[k]; }).concat(['داخل المنصة']).join(' · ')], ['القالب', T ? T.name : '—']].concat(NI ? [['الرسائل', fmtNum(NI) + ' رسالة مستقلة (' + (T.pmode === 'contract' ? 'عقد' : 'دفعة') + ' لكل رسالة)']] : [])),
 SC.err ? DS.note('warn', 'لم يُرسل', SC.err) : null,
 SC.quiet && !SC.busy ? e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('أرسل رغم أنه خارج أوقات الإرسال', { ui: 'paper-plane-tilt', onClick: function () { SC.force = true; SC.quiet = false; scSend(); } }))]) : null,
