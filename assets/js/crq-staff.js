@@ -748,7 +748,7 @@ if (ST.tab === 'calc') { paintSide(ST.x); loadGuar(ST.x); }
 if (ST.tab === 'doc') docPv(ST.x);
 var r = ST.x.result || {}; if (!r.ok) return;
 /* v899: إعادة الجدولة يتغيّر فيها عدد الصفوف — يُعاد رسم الجدول ما لم يكن الموظف يكتب فيه */
-if (ST.tab === 'calc' && r.sched === 'resched' && ST.cc) { var w = R.querySelector('#cr-sched'); if (w && !w.contains(document.activeElement)) { w.innerHTML = ''; w.appendChild(schedTable(ST.x, ST.cc, editable(ST.x), ST.cu)); } return; }
+if (ST.tab === 'calc' && ST.cc && (r.sched === 'resched' || R.querySelectorAll('#cr-sched tbody tr').length !== (r.rows || []).length)) { /* v900: وعند الخروج من إعادة الجدولة يتغيّر عدد الصفوف أيضًا */ var w = R.querySelector('#cr-sched'); if (w && !w.contains(document.activeElement)) { w.innerHTML = ''; w.appendChild(schedTable(ST.x, ST.cc, editable(ST.x), ST.cu)); } return; }
 (r.rows || []).forEach(function (z) {
 var tr = R.querySelector('tr[data-pid="' + (z.pid || z.k) + '"]'); if (!tr) return;
 var a = tr.querySelector('.c-after'); if (a) { a.innerHTML = ''; a.appendChild(ltr(money(z.amt_after))); }
@@ -1046,7 +1046,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=899'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=900'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {

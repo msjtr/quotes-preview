@@ -24061,7 +24061,7 @@ if (!C.length) return;
 add.w = 113, add(card(TT.summary, 'info', eqTbl(C.map(function (x) { return x.l; }), [C.map(function (x) { return V[x.k]; })])));
 };
 /* الجدولان بالترتيب نفسه (رقم الدفعة) وبالحالات نفسها — قبل التأجيل ثم بعده؛ وكل صف أو عمود قابل للإخفاء */
-const stOf = function (r, after) { return after && r.merged ? 'أُدمجت في إعادة الجدولة' : after && r.added ? 'دفعة جديدة' : r.target ? (after ? 'مؤجَّلة' : 'مطلوب تأجيلها') : r.open ? 'غير مسددة' : 'مسددة'; }; /* v899: إعادة الجدولة — الجديدة والمدمجة */
+const stOf = function (r, after) { return after && r.merged ? 'أُدمجت في إعادة الجدولة' : after && r.added ? 'دفعة جديدة' : after && c.sched === 'resched' && r.open ? 'أُعيدت جدولتها' : r.target ? (after ? 'مؤجَّلة' : 'مطلوب تأجيلها') : r.open ? 'غير مسددة' : 'مسددة'; }; /* v899-900: إعادة الجدولة — الجديدة والمدمجة والمعاد جدولتها */
 const payTbl = function (key, t, ic, defs, val) {
 const C = colsOf(key, defs), hr = hidOf(key), R = all.filter(function (r) { return hr.indexOf(String(r.seq)) < 0 && !(key === 'defer' && r.added); }); /* v899: الدفعات الجديدة لا تظهر في جدول «قبل» */
 if (!C.length || !R.length) return;
