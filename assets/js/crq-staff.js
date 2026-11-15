@@ -1,3 +1,4 @@
+/* v892: رقم جديد لقالب الرابط — نسخة 891 حُفظت في الشبكة قديمةً أثناء النشر. */
 /* v891: ألوان صفحة العميل ثابتة من هوية المستند — خطوة «الهوية» تعرض العيّنات للقراءة فقط. */
 /* v890: «صفحة العميل» رحلة واحدة — شريط الخطوات (رمز التحقق ← العرض ← تأكيد الموافقة ← الملحق والتوقيع ← تأكيد التوقيع ← التنفيذ والتقييم · الاعتذار · الهوية)، إعدادات الخطوة فقط، والمحتوى من «المستند»، والمعاينة تفاعلية. */
 /* v876: «البنود والحسبة» بتصميم جديد — البنود بطاقات تتكيّف مع العرض (مفاتيح بدل القوائم المنسدلة)، قائمة «إضافة بند» بأيقونات وحالة «مُضاف»، والملخص المالي بلا تكرار.
@@ -997,7 +998,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=891'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=892'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
