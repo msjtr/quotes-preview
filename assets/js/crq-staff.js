@@ -460,6 +460,18 @@ el('output', { class: 'cr-mo-v', 'aria-live': 'polite', text: monthWord(n) }),
 ed ? el('button', { type: 'button', class: 'cr-mo-b', 'aria-label': 'إضافة شهر', 'data-live-ok': '', disabled: n >= max, onclick: function () { go(n + 1); } }, [icon('plus')]) : null])]);
 }
 /* v899: إعادة جدولة كاملة — عدد دفعات جديد بلا حد أعلى يحدده الموظف، وتاريخ أول دفعة، والمتبقي مع الرسوم يُوزَّع شهريًا (الحساب في القاعدة crq_calc_defer) */
+/* v901: صفوف إعادة الجدولة من العدد وتاريخ أول دفعة — تُعرض حين لا تكتمل الحسبة بعد (التوزيع اليدوي للرسوم يحتاج خانة لكل دفعة جديدة) */
+function rsRows(x, c) {
+var P = (x.payments || []).slice().sort(function (a, b) { return a.seq - b.seq; }), open = P.filter(function (p) { return p.open; });
+var n = Math.max(1, Number(c.sched.count) || open.length || 1), mx = P.reduce(function (m, p) { return Math.max(m, Number(p.seq) || 0); }, 0), A = c.dist.amounts || {};
+var st = /^\d{4}-\d{2}-\d{2}$/.test(String(c.sched.start || '')) ? new Date(c.sched.start + 'T00:00:00') : null;
+var dt = function (i) { if (!st) return null; var d = new Date(st.getFullYear(), st.getMonth() + i, st.getDate()); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+var out = P.filter(function (p) { return !p.open; }).map(function (p) { return { pid: p.pid, seq: p.seq, open: false, due_before: p.due, due_after: p.due, amt_before: p.amount, add: 0, amt_after: p.amount }; });
+open.forEach(function (p, i) { out.push(i < n ? { pid: p.pid, k: '#' + (i + 1), seq: p.seq, open: true, due_before: p.due, due_after: dt(i), amt_before: p.amount, add: Number(A['#' + (i + 1)]) || 0, amt_after: null }
+: { pid: p.pid, seq: p.seq, open: true, merged: true, due_before: p.due, due_after: p.due, amt_before: p.amount, add: 0, amt_after: 0 }); });
+for (var i = open.length; i < n; i++) out.push({ pid: null, k: '#' + (i + 1), seq: mx + i - open.length + 1, open: true, added: true, due_before: null, due_after: dt(i), amt_before: 0, add: Number(A['#' + (i + 1)]) || 0, amt_after: null });
+return out.sort(function (a, b) { return a.seq - b.seq; });
+}
 function rsInit(x, c) {
 var open = (x.payments || []).filter(function (p) { return p.open; }).sort(function (a, b) { return a.seq - b.seq; });
 if (!Number(c.sched.count)) c.sched.count = open.length || 1;
@@ -730,7 +742,7 @@ el('p', { class: 'cr-sum-m' }, [icon('calc'), nRows + ' ' + (nRows === 1 ? 'مب
 !cl.length ? null : !items.some(function (l) { return c.hide.indexOf(l.id) >= 0; }) ? el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('p', { class: 'cr-sum-m', text: 'كل بند سطرًا مستقلًا كما في القائمة أعلاه.' })]) : el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('ul', { class: 'cr-sum' }, cl.map(function (l) { return el('li', {}, [el('span', { class: 'cr-sum-t', text: l.t }), ltr(money(l.amt))]); }))])]);
 }
 function schedTable(x, c, ed, upd) {
-var r = x.result || {}, rows = r.ok ? r.rows : (x.payments || []).map(function (p) { return { pid: p.pid, seq: p.seq, open: p.open, target: (x.payment_ids || []).indexOf(p.pid) >= 0, due_before: p.due, due_after: p.due, amt_before: p.amount, add: 0, amt_after: p.amount }; });
+var r = x.result || {}, rs0 = c.sched.mode === 'resched', rows = r.ok && (!rs0 || r.sched === 'resched') ? r.rows : rs0 ? rsRows(x, c) : (x.payments || []).map(function (p) { return { pid: p.pid, seq: p.seq, open: p.open, target: (x.payment_ids || []).indexOf(p.pid) >= 0, due_before: p.due, due_after: p.due, amt_before: p.amount, add: 0, amt_after: p.amount }; }); /* v901: في إعادة الجدولة قبل اكتمال الحسبة (مثل التوزيع اليدوي) تظهر الدفعات الجديدة بعددها لتُدخل رسومها */
 var md = c.sched.mode === 'manual', ma = c.dist.mode === 'manual', rs = c.sched.mode === 'resched';
 return el('table', { class: 'cr-tbl is-sched' }, [el('thead', {}, [el('tr', {}, ['الدفعة', 'الموعد الحالي', 'الموعد الجديد', 'القيمة', 'الإضافة', 'القيمة الجديدة'].map(function (h) { return el('th', { text: h }); }))]),
 el('tbody', {}, rows.map(function (z) {
@@ -739,7 +751,7 @@ var ak = rs ? z.k : z.pid; /* v899: في إعادة الجدولة تُحفظ ر
 var add = ma && z.open && ed && !z.merged && ak ? el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: c.dist.amounts[ak] || '', placeholder: '0', 'aria-label': 'إضافة الدفعة ' + z.seq, oninput: function (e) { var v = e.target.value.replace(/[^\d.]/g, ''); if (v) c.dist.amounts[ak] = v; else delete c.dist.amounts[ak]; upd(); } }) : ltr(money(z.add));
 return el('tr', { class: (z.target && !rs ? 'is-t ' : '') + (z.added ? 'is-new ' : '') + (z.open && !z.merged ? '' : 'is-off'), 'data-pid': z.pid || z.k }, [el('td', { 'data-l': 'الدفعة' }, [String(z.seq), z.target && !rs ? el('small', { class: 'cr-sub', text: 'مؤجَّلة' }) : null, z.added ? el('small', { class: 'cr-sub', text: 'جديدة' }) : null, z.merged ? el('small', { class: 'cr-sub', text: 'أُدمجت' }) : null, !z.open ? el('small', { class: 'cr-sub', text: 'مسدَّدة' }) : null]),
 el('td', { 'data-l': 'الموعد الحالي', text: day(z.due_before) }), el('td', { 'data-l': 'الموعد الجديد', class: 'c-due' }, [due]), el('td', { 'data-l': 'القيمة' }, [ltr(money(z.amt_before))]),
-el('td', { 'data-l': 'الإضافة', class: 'c-add' }, [add]), el('td', { 'data-l': 'القيمة الجديدة', class: 'c-after' }, [ltr(money(z.amt_after))])]);
+el('td', { 'data-l': 'الإضافة', class: 'c-add' }, [add]), el('td', { 'data-l': 'القيمة الجديدة', class: 'c-after' }, [z.amt_after == null ? '—' : ltr(money(z.amt_after))])]);
 }))]);
 }
 /* بعد الحفظ: تُحدَّث اللوحة الجانبية والخلايا المحسوبة فقط — لا يُعاد رسم الحقول فلا يضيع موضع الكتابة */
@@ -1046,7 +1058,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=900'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=901'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
