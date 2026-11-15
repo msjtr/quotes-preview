@@ -405,7 +405,7 @@ var pays = showAll ? P.map(function (p) {
 var on = sel.indexOf(p.pid) >= 0, s3 = st(p), dis = !ed || !p.open;
 return el('label', { class: 'cr-py' + (on ? ' is-on' : '') + (p.open ? '' : ' is-off') + (dis ? ' is-ro' : '') }, [
 el('input', { type: 'checkbox', checked: on, disabled: dis, 'aria-label': 'الدفعة ' + p.seq, onchange: function (e) {
-x.payment_ids = (x.payment_ids || []).filter(function (id) { return id !== p.pid; }); if (e.target.checked) x.payment_ids.push(p.pid); queue({ payment_ids: x.payment_ids }); draw(); } }),
+var ids = (x.payment_ids || []).filter(function (id) { return id !== p.pid; }); if (e.target.checked) ids.push(p.pid); setPids(x, ids); } }),
 el('span', { class: 'cr-py-ck', 'aria-hidden': 'true' }, [icon('check')]),
 el('span', { class: 'cr-py-n' }, [ltr(String(p.seq))]),
 el('span', { class: 'cr-py-d' }, [el('b', { text: 'الدفعة ' + p.seq }), el('small', {}, [icon('cal'), day(p.due)])]),
@@ -416,6 +416,7 @@ var tog = selP.length && P.length > selP.length ? el('button', { type: 'button',
 [icon('list'), el('span', { text: showAll ? 'إخفاء جدول الدفعات' : (ed ? 'عرض جدول الدفعات كاملًا لتغيير الدفعة' : 'عرض جدول الدفعات كاملًا') }), el('em', { text: P.length + ' دفعات' }), icon('chev')]) : null;
 var payCard = el('section', { class: 'cr-card' }, [
 el('h2', { text: selP.length > 1 ? 'الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها' }),
+monthsEl(x, ed, P, sel),
 selP.length ? rps : el('div', { class: 'cr-py-sum is-empty' }, [icon('alert'), el('span', { text: ed ? 'لم تُحدَّد دفعة — اخترها من جدول الدفعات أدناه.' : 'لم تُحدَّد دفعة.' })]),
 tog,
 showAll ? el('div', { class: 'cr-pyw' }, [el('div', { class: 'cr-pyw-h' }, [el('b', { text: 'جدول الدفعات' }), ed ? el('small', { text: 'حدّد الدفعة المطلوب تأجيلها — الدفعات المسدَّدة لا تُختار.' }) : null]),
@@ -433,6 +434,30 @@ el('div', { class: 'cr-mts' }, [mt(x.origin === 'client' ? 'user' : 'team', 'م�
 mt('sign', 'أعدّه', x.prepared_t || 'لم يُعدّ بعد', x.prepared_t ? '' : 'is-mut'), mt('ok', 'اعتمده', x.approved_t ? el('span', {}, [x.approved_t, el('small', { text: ' · ' + at(x.approved_at) })]) : 'لم يُعتمد بعد', x.approved_t ? '' : 'is-mut')]),
 (function () { var cn = String(x.client_note || '').trim(); return el('div', { class: 'cr-cn' + (cn ? '' : ' is-empty') }, [el('small', {}, [icon('note'), 'ملاحظة العميل']), el('p', { text: cn || 'لم يكتب العميل ملاحظة.' })]); })()]);
 return [el('div', { class: 'cr-cols cr-rq' }, [who, con]), payCard, meta];
+}
+/* v898: مدة التأجيل — يزيدها الموظف أو ينقصها بالأشهر: تبدأ من أول دفعة طلبها العميل وتشمل ما بعدها، والحسبة كما هي.
+* طلب العميل الأصلي يُحفظ مرة واحدة في calc.client_pids، وكل تغيير في العدد يُسجَّل في سجل الطلب (stf_279). */
+function monthWord(n) { return n === 1 ? 'شهر واحد' : n === 2 ? 'شهران' : n <= 10 ? n + ' أشهر' : n + ' شهرًا'; }
+function setPids(x, ids) {
+var c = x.calc && typeof x.calc === 'object' && !Array.isArray(x.calc) ? x.calc : {}; x.calc = c;
+if (!Array.isArray(c.client_pids)) c.client_pids = (x.payment_ids || []).slice();
+var gone = (x.payment_ids || []).filter(function (id) { return ids.indexOf(id) < 0; });
+if (c.sched && c.sched.dates) gone.forEach(function (id) { delete c.sched.dates[id]; });
+x.payment_ids = ids; queue({ payment_ids: ids, calc: c }); draw();
+}
+function monthsEl(x, ed, P, sel) {
+var open = P.filter(function (p) { return p.open; }).sort(function (a, b) { return a.seq - b.seq; });
+var cl = x.calc && Array.isArray(x.calc.client_pids) ? x.calc.client_pids : sel;
+var from = open.filter(function (p) { return cl.indexOf(p.pid) >= 0 || sel.indexOf(p.pid) >= 0; })[0];
+if (!from || !sel.length) return null;
+var chain = open.filter(function (p) { return p.seq >= from.seq; }), n = sel.length, clN = cl.length, max = Math.min(6, chain.length);
+var go = function (m) { if (!ed || m < 1 || m > max) return; setPids(x, chain.slice(0, m).map(function (p) { return p.pid; })); };
+return el('div', { class: 'cr-mo' }, [
+el('div', { class: 'cr-mo-t' }, [el('b', { text: 'مدة التأجيل' }), el('small', {}, [(x.origin === 'client' ? 'طلب العميل: ' : 'عند إنشاء الطلب: ') + monthWord(clN), n !== clN ? el('em', { text: ' · ' + (n > clN ? 'زادها الفريق' : 'خفّضها الفريق') }) : null])]),
+el('div', { class: 'cr-mo-s', role: 'group', 'aria-label': 'مدة التأجيل بالأشهر' }, [
+ed ? el('button', { type: 'button', class: 'cr-mo-b', 'aria-label': 'إنقاص شهر', 'data-live-ok': '', disabled: n <= 1, onclick: function () { go(n - 1); } }, [icon('minus')]) : null,
+el('output', { class: 'cr-mo-v', 'aria-live': 'polite', text: monthWord(n) }),
+ed ? el('button', { type: 'button', class: 'cr-mo-b', 'aria-label': 'إضافة شهر', 'data-live-ok': '', disabled: n >= max, onclick: function () { go(n + 1); } }, [icon('plus')]) : null])]);
 }
 function kvs(L) { return el('dl', { class: 'cr-kv' }, [].concat.apply([], L.map(function (r) { return [el('dt', { text: r[0] }), el('dd', {}, [r[1] == null || r[1] === '' ? '—' : r[1]])]; }))); }
 
@@ -996,7 +1021,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=897'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=898'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
