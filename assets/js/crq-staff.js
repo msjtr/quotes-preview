@@ -918,7 +918,7 @@ open ? el('div', { class: 'cr-ed-b' }, addsEditor(P.adds, ro, onCh, 'تظهر ب
 function lpFrame(getView, getTpl) {
 var P = ST.lpv || (ST.lpv = { step: 'consent', screen: 'page', dev: 'phone' });
 var f = el('iframe', { class: 'cr-pv is-' + P.dev, title: 'معاينة صفحة العميل', src: '/crq/?preview=1' });
-var send = function () { var v = getView(P.step); if (!v || !f.contentWindow) return; f.contentWindow.postMessage({ type: 'crq-preview', view: v.view, doc_html: v.doc_html || '', expires_at: v.exp || null, tpl: getTpl(), screen: P.screen }, location.origin); };
+var send = function () { var v = getView(P.step); if (!v || !f.contentWindow) return; f.contentWindow.postMessage({ type: 'crq-preview', view: v.view, doc_html: v.doc_html || '', secs: v.secs || null, link: v.link || null, expires_at: v.exp || null, tpl: getTpl(), screen: P.screen }, location.origin); };
 var ready = function (e) { if (e.origin !== location.origin || !e.data || e.data.type !== 'crq-preview-ready' || e.source !== f.contentWindow) return; f.__ok = true; send(); };
 window.addEventListener('message', ready);
 f.__send = send;
@@ -930,7 +930,7 @@ var LPV = {};
 async function lpViews(x) {
 if (LPV.id === x.id && LPV.at === x.updated_at) return LPV;
 var out = { id: x.id, at: x.updated_at };
-for (var s of ['consent', 'sign']) { try { var j = await api('GET', '/admin/api/crq/' + x.id + '/view/' + s); out[s] = { view: j.view, doc_html: j.doc_html || '', exp: x.link && x.link.expires_at }; } catch (e) { out[s] = null; out.err = e.message; } }
+for (var s of ['consent', 'sign']) { try { var j = await api('GET', '/admin/api/crq/' + x.id + '/view/' + s); out[s] = { view: j.view, doc_html: j.doc_html || '', secs: j.secs || null, link: j.link || null, exp: x.link && x.link.expires_at }; } catch (e) { out[s] = null; out.err = e.message; } }
 LPV = out; return out;
 }
 function tabPage(x) {

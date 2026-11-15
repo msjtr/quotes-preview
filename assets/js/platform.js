@@ -23839,6 +23839,7 @@ pend: 'يوقّع الطرف الثاني إلكترونيًا من الرابط
 note: 'صدر هذا الملحق إلكترونيًا من منصة تيرا، ويُعتدّ بالتوقيع الإلكتروني الموثّق برمز التحقق.',
 adds: [],
 att: false,
+link: { pdf: false, ids: false, parties: false, summary: true, defer: false, fees: true, contract: true, sched: true, terms: true, adds: true, sign: false, note: false },
 show: { parties: true, ids: true, icons: true, p1: true, p2: true, pno: true, f_sub: true, f_vat: true, f_tot: true, c_before: true, c_after: true, summary: true, h_en: true, h_issuer: true, h_pill: true, product: true, intro: true, defer: true, fees: true, contract: true, sched: true, terms: true, sign: true, note: true, s_name: true, s_op: true, s_method: true, s_factor: true, s_time: true, s_img: true },
 auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقيع الطرف الثاني' }
   };
@@ -24102,7 +24103,7 @@ SEC.note = function () { if (T.note) add.w = 88, add(card(TT.note, 'info', dP(T.
 const ORD0 = ['ids', 'parties', 'summary', 'defer', 'fees', 'contract', 'sched', 'terms', 'adds', 'sign', 'note'];
 const ord = (Array.isArray(T.order) ? T.order : []).map(String).filter(function (k, i, a) { return ORD0.indexOf(k) >= 0 && a.indexOf(k) === i; });
 ORD0.forEach(function (k) { if (ord.indexOf(k) < 0) ord.push(k); });
-ord.forEach(function (k) { if (k === 'ids' || k === 'adds' || S(k)) SEC[k](); });
+const KS = []; ord.forEach(function (k) { const n0 = A.length; if (k === 'ids' || k === 'adds' || S(k)) SEC[k](); for (let i = n0; i < A.length; i++) KS[i] = k; }); /* v889: مفتاح كل بطاقة — للرابط */
 const date = (g && g.at) || o.consented_at || new Date(Date.now() + 3 * 3600 * 1000).toISOString();
 const base = { org: T.org, issuer: S('h_issuer') ? T.issuer : '', en: S('h_en') ? T.en : '', title: T.title, pill: S('h_pill') ? T.pill : '', no: no, auto: '', footMin: true, nobar: true }; /* v885: التذييل رقم الملحق والصفحة فقط — بلا تكرار التنويه واسم المنشأة */
 const P1 = Object.assign({}, base, { meta: [['رقم الملحق', no], ['رقم العقد', o.contract_no || ''], ['التاريخ', dmy(new Date(new Date(date).getTime() + (g && g.at || o.consented_at ? 3 * 3600 * 1000 : 0)).toISOString().slice(0, 10))]] });
@@ -24115,6 +24116,8 @@ const t = sp.t + (cont ? ' — تابع' : ''), part = sp.items.slice(from, to);
 if (sp.para) return card(t, sp.ic, part.map(function (x, k) { return dP((sp.num ? (from + k + 1) + '. ' : '') + x, pad); }).join(''));
 return card(t, sp.ic, dTbl(sp.head, part));
 };
+/* v889: الرابط يعرض أقسام الملحق نفسها (المفعّلة له) كاملة بلا صفحات */
+if (o._link) { const LK = T.link && typeof T.link === 'object' ? T.link : {}; return A.map(function (h, i) { return { k: KS[i], html: typeof h === 'string' ? h : chunk(h, 0, h.items.length, false) }; }).filter(function (x) { return LK[x.k] === true; }); }
 const pages = [[]]; let used = 0;
 const nextPage = function () { pages.push([]); used = 0; };
 A.forEach(function (h, i) {
@@ -24244,7 +24247,7 @@ return esxGDocx('df', { name: 'ملحق تأجيل الدفعة', tabL: 'الم�
 applies: 'يُطبَّق على كل طلب تأجيل لم يُعتمد بعد وليست له نسخة خاصة — الطلبات المعتمدة تبقى كما اعتُمدت.',
 hdr: [{ k: 'title', l: 'عنوان الملحق', p: 'title', imp: 1 }, { k: 'org', l: 'اسم المنشأة', p: 'org' }, { k: 'en', l: 'العنوان بالإنجليزية', p: 'en', hp: 'show.h_en' }, { k: 'issuer', l: 'الجهة المُصدِرة', p: 'issuer', hp: 'show.h_issuer' }, { k: 'pill', l: 'شارة الملحق', p: 'pill', hp: 'show.h_pill' }],
 secs: [
-{ id: 'dfl', title: 'المستند PDF مع الرابط', kind: 'toggles', items: [{ l: 'إرفاق الملحق PDF مع رسالتي رابط الموافقة ورابط التوقيع', p: 'att' }], hint: 'عند التفعيل يُرفق الملحق مع رسالة واتساب والبريد فيفتحه العميل وينزّله منها؛ وعند الإيقاف تصل العميلَ صفحةُ الرابط وحدها.' },
+{ id: 'dfl', title: 'الملحق في الرابط', kind: 'toggles', items: [{ l: 'عرض الملحق PDF في صفحة التوقيع', p: 'link.pdf' }, { l: 'إرفاق الملحق PDF مع رسالة الرابط', p: 'att' }, { l: 'يظهر في الرابط: ملخص الطلب', p: 'link.summary' }, { l: 'يظهر في الرابط: جدول الدفعات قبل التأجيل', p: 'link.defer' }, { l: 'يظهر في الرابط: رسوم التأجيل', p: 'link.fees' }, { l: 'يظهر في الرابط: قيمة العقد قبل وبعد', p: 'link.contract' }, { l: 'يظهر في الرابط: جدول الدفعات الجديد', p: 'link.sched' }, { l: 'يظهر في الرابط: الشروط والأحكام', p: 'link.terms' }, { l: 'يظهر في الرابط: الأقسام المضافة', p: 'link.adds' }, { l: 'يظهر في الرابط: أطراف الملحق', p: 'link.parties' }, { l: 'يظهر في الرابط: بيانات المنشأة', p: 'link.ids' }, { l: 'يظهر في الرابط: التنويه', p: 'link.note' }], hint: 'صفحة الرابط تعرض أقسام هذا المستند نفسها بعناوينها وأعمدتها وبنودها — أي تعديل هنا يظهر في الرابط. الملحق PDF لا يظهر للعميل في الرابط إلا إذا فعّلته.' },
 { id: 'dfz', title: 'ترتيب الصفحة', kind: 'info', info: 'رتّب أقسام الملحق وأخفِها من نسخة الطلب — ما يُخفى لا يأخذ مكانًا في الصفحة.', parts: [{ kind: 'order', items: [{ k: 'ids', l: 'بيانات المنشأة', tp: 'tt.ids', show: 'show.ids' }, { k: 'parties', l: 'أطراف الملحق', tp: 'tt.parties', show: 'show.parties' }, { k: 'summary', l: 'ملخص الطلب', tp: 'tt.summary', show: 'show.summary' }, { k: 'defer', l: 'جدول الدفعات قبل التأجيل', tp: 'tt.defer', show: 'show.defer' }, { k: 'fees', l: 'رسوم التأجيل', tp: 'tt.fees', show: 'show.fees' }, { k: 'contract', l: 'قيمة العقد قبل التأجيل وبعده', tp: 'tt.contract', show: 'show.contract' }, { k: 'sched', l: 'جدول الدفعات بعد التأجيل', tp: 'tt.sched', show: 'show.sched' }, { k: 'terms', l: 'الشروط والأحكام', tp: 'tt.terms', show: 'show.terms' }, { k: 'adds', l: 'الأقسام المضافة' }, { k: 'sign', l: 'الإقرار والتوقيع', tp: 'tt.sign', show: 'show.sign' }, { k: 'note', l: 'تنويه', tp: 'tt.note', show: 'show.note' }] }], hint: 'الختم والاعتماد في آخر الملحق دائمًا.' },
 { id: 'dfi', title: 'بيانات المنشأة', titleP: 'tt.ids', kind: 'pairs', p: 'ids', show: 'show.ids', hint: 'القيمة الفارغة تُقرأ من «بيانات المنشأة» في الإعدادات، والحقل بلا قيمة لا يظهر — غيّر المسمّى أو القيمة، أو أضف حقلًا، أو أخفِه.' },
 { id: 'dfo', title: 'خيارات العرض', kind: 'toggles', items: [{ l: 'أيقونات الأقسام', p: 'show.icons' }] },
