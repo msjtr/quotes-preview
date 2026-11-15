@@ -24069,7 +24069,7 @@ const tgSum = tgAmt.reduce(function (s, v) { return s + v; }, 0);
 const mn = Math.min.apply(null, tgAmt.length ? tgAmt : [0]), mx = Math.max.apply(null, tgAmt.length ? tgAmt : [0]);
 SEC.summary = function () {
 if (!rq.length) return;
-const V = { n: rq.length > 1 ? String(rq.length) : 'رقم ' + rq[0].seq, per: tg.length > 1 ? (Math.abs(mx - mn) < 0.005 ? sar(mx) : 'من ' + sar(mn) + ' إلى ' + sar(mx)) : '', total: sar(tgSum), fees: Number(c.total) > 0 ? sar(c.total) : '' };
+const V = { n: rq.length > 1 ? String(rq.length) : 'رقم ' + rq[0].seq, per: rq.length > 1 ? (Math.abs(mx - mn) < 0.005 ? sar(mx) : 'من ' + sar(mn) + ' إلى ' + sar(mx)) : '', total: sar(tgSum), fees: Number(c.total) > 0 ? sar(c.total) : '' };
 const C = colsOf('summary', [{ k: 'n', l: c.origin === 'client' ? (rq.length > 1 ? 'عدد الدفعات التي طلب العميل تأجيلها' : 'الدفعة التي طلب العميل تأجيلها') : (rq.length > 1 ? 'عدد الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها') }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }]).filter(function (x) { return V[x.k]; });
 if (!C.length) return;
 add.w = 113, add(card(TT.summary, 'info', eqTbl(C.map(function (x) { return x.l; }), [C.map(function (x) { return V[x.k]; })])));
