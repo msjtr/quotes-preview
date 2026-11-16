@@ -207,7 +207,8 @@ function anxFacts(a) {
 var R = a.rows || [], before = R.filter(function (x) { return x.open && !x.added; }).length, after = R.filter(function (x) { return (x.open || x.added) && !x.merged; }).length;
 var mg = R.filter(function (x) { return x.merged; }).length, ad = R.filter(function (x) { return x.added; }).length, mv = R.filter(function (x) { return x.open && !x.merged && !x.added && (x.due_after !== x.due_before || Number(x.amt_after) !== Number(x.amt_before)); }).length;
 var f = [];
-if (before !== after) f.push('أُعيدت جدولة ' + before + ' ← ' + after + ' دفعة'); else if (mv) f.push('عُدّلت ' + cntW(mv, '', '').trim());
+var mvd = R.filter(function (x) { return x.open && !x.merged && !x.added && x.due_after !== x.due_before; }).length;
+if (before !== after) f.push('أُعيدت جدولة ' + before + ' ← ' + after + ' دفعة'); else { if (mvd) f.push('نُقل موعد ' + cntW(mvd, '', '').trim()); if (mv > mvd) f.push('وُزّعت الرسوم على ' + cntW(mv, '', '').trim()); }
 if (mg) f.push('دُمجت ' + cntW(mg, '', '').trim());
 if (ad) f.push('أُضيفت ' + cntW(ad, 'جديدة', 'جديدتان'));
 var first = R.filter(function (x) { return (x.open || x.added) && !x.merged; }).map(function (x) { return d10(x.due_after); }).sort()[0];
@@ -219,11 +220,12 @@ function anxTable(a, side) {
 var R = (a.rows || []).slice();
 if (side === 'before') {
 R = R.filter(function (x) { return !x.added; }).sort(function (p, q) { return d10(p.due_before) < d10(q.due_before) ? -1 : d10(p.due_before) > d10(q.due_before) ? 1 : p.seq - q.seq; });
-return el('table', { class: 'cc-at' }, [el('thead', {}, [el('tr', {}, ['#', 'الاستحقاق', 'القيمة', 'نُقلت إلى'].map(function (h) { return el('th', { text: h }); }))]),
+return el('table', { class: 'cc-at' }, [el('thead', {}, [el('tr', {}, ['#', 'الاستحقاق', 'القيمة', 'بعد الملحق'].map(function (h) { return el('th', { text: h }); }))]),
 el('tbody', {}, R.map(function (x) {
-var mv = x.open && !x.merged && (x.due_after !== x.due_before || Number(x.amt_after) !== Number(x.amt_before));
-var what = !x.open ? el('span', { class: 'cc-muted0', text: 'مسدَّدة' }) : x.merged ? el('span', { class: 'cc-mv', text: 'دُمجت' }) : mv ? el('span', { class: 'cc-mv' }, [el('bdi', { dir: 'ltr', text: dmy(x.due_after) })]) : el('span', { class: 'cc-muted0', text: 'لم تتغيّر' });
-return el('tr', { class: (mv || x.merged) ? 'is-mv' : '' }, [el('td', { text: String(x.seq) }), el('td', {}, [(mv || x.merged) ? el('s', {}, [el('bdi', { dir: 'ltr', text: dmy(x.due_before) })]) : el('bdi', { dir: 'ltr', text: dmy(x.due_before) })]), el('td', {}, [el('bdi', { dir: 'ltr', text: money(x.amt_before) })]), el('td', {}, [what])]);
+/* v911: «نُقلت» حين يتغيّر الموعد وحده يُشطب التاريخ، وإن تغيّرت القيمة وحدها تظهر قيمتها الجديدة */
+var mvD = x.open && !x.merged && x.due_after !== x.due_before, mvA = x.open && !x.merged && Number(x.amt_after) !== Number(x.amt_before);
+var what = !x.open ? el('span', { class: 'cc-muted0', text: 'مسدَّدة' }) : x.merged ? el('span', { class: 'cc-mv', text: 'دُمجت' }) : (mvD || mvA) ? el('span', { class: 'cc-mv' }, mvD ? ['نُقلت ', el('bdi', { dir: 'ltr', text: dmy(x.due_after) })] : ['قيمتها ', el('bdi', { dir: 'ltr', text: money(x.amt_after) })]) : el('span', { class: 'cc-muted0', text: 'لم تتغيّر' });
+return el('tr', { class: (mvD || mvA || x.merged) ? 'is-mv' : '' }, [el('td', { text: String(x.seq) }), el('td', {}, [(mvD || x.merged) ? el('s', {}, [el('bdi', { dir: 'ltr', text: dmy(x.due_before) })]) : el('bdi', { dir: 'ltr', text: dmy(x.due_before) })]), el('td', {}, [mvA ? el('s', {}, [el('bdi', { dir: 'ltr', text: money(x.amt_before) })]) : el('bdi', { dir: 'ltr', text: money(x.amt_before) })]), el('td', {}, [what])]);
 }))]);
 }
 R = R.filter(function (x) { return !x.merged && (x.open || x.added || !x.open); }).filter(function (x) { return !x.merged; }).sort(function (p, q) { return d10(p.due_after) < d10(q.due_after) ? -1 : d10(p.due_after) > d10(q.due_after) ? 1 : p.seq - q.seq; });
