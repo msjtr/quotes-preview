@@ -10161,8 +10161,8 @@ function relPreview(f) {
 }
 function relFileBox(label, optional, fk) {
   fk = fk || fk; const fe = fk + 'Err'; /* v576: لحساب العميل الآخر أيضًا */
-  const f = F[fk];
-  const pick = e('input', { type: 'file', accept: DOC_ACCEPT, 'aria-label': label, onChange: function (ev) {
+  const f0 = F[fk], f = f0 && f0.obj ? f0 : null, stale = !!(f0 && !f0.obj); /* v915: الملف نفسه لا يبقى في المسودة بعد مغادرة الصفحة — يظهر غير مرفق ويُطلب إرفاقه من جديد */
+const pick = e('input', { type: 'file', accept: DOC_ACCEPT, 'aria-label': label, onChange: function (ev) {
     const x = (ev.target.files || [])[0]; if (!x) return;
     if (!DOC_EXT.test(x.name)) { S[fe] = 'نوع الملف غير مقبول — PDF أو صورة أو أي مستند.'; draw(); return; }
     if (x.size > 2 * 1024 * 1024) { S[fe] = 'حجم الملف ' + sizeOf(x.size) + ' — الحد 2 ميجابايت.'; draw(); return; }
@@ -10173,7 +10173,7 @@ function relFileBox(label, optional, fk) {
   const box = f ? e('div', { class: 'rel-file' }, [e('span', { class: 'rel-file-th' }, isImg && f.url ? e('img', { src: f.url, alt: '' }) : frag(ui('file-text', 22))), e('span', { class: 'rel-file-n' }, [e('b', {}, e('bdi', {}, f.name)), e('small', {}, sizeOf(f.size || 0))]),
       e('span', { class: 'rel-file-a' }, [DS.button('معاينة', { size: 'sm', ui: 'file-text', onClick: function () { relPreview(f); } }), DS.button('استبدال', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { pick.click(); } }), DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { if (f.url) { try { URL.revokeObjectURL(f.url); } catch (err) { void err; } } F[fk] = null; draw(); } })])])
     : e('div', { class: 't2-drop' }, [e('span', { class: 't2-drop-ic', 'aria-hidden': 'true' }, frag(ui('upload-simple', 20))), e('span', { class: 't2-drop-b' }, [e('span', { class: 't2-drop-t' }, 'اسحبِ الملفَّ هنا أو اخترْه'), e('span', { class: 't2-drop-h' }, 'PDF أو صورة أو أي مستند · حتى 2 ميجابايت · تُعاين قبل الإرسال')]), e('span', { class: 't2-drop-btn', 'aria-hidden': 'true' }, 'اختيارُ ملفّ'), pick]);
-  void box; const fld = req(label, fk, tqAttach({ input: pick, mb: 2, note: 'تُعاين قبل الإرسال', file: f ? { name: f.name, size: f.size } : null, missing: !f && !optional && S.miss.indexOf(fk) >= 0, onPreview: f ? function () { relPreview(f); } : null, onDelete: f ? function () { if (f.url) { try { URL.revokeObjectURL(f.url); } catch (err) { void err; } } F[fk] = null; draw(); } : null }), S[fe] || null, optional, true); /* v696 */
+  void box; const fld = req(label, fk, tqAttach({ input: pick, mb: 2, note: 'تُعاين قبل الإرسال', file: f ? { name: f.name, size: f.size } : null, missing: !f && !optional && (stale || S.miss.indexOf(fk) >= 0) ? (stale ? 'أعد إرفاق الملف — «' + f0.name + '» لم يعد محفوظًا بعد مغادرة الصفحة.' : true) : false, onPreview: f ? function () { relPreview(f); } : null, onDelete: f ? function () { if (f.url) { try { URL.revokeObjectURL(f.url); } catch (err) { void err; } } F[fk] = null; draw(); } : null }), S[fe] || null, optional, true); /* v696 */
   if (S[fe]) { fld.classList.add('is-missing'); }
   return fld;
 }
@@ -10232,8 +10232,8 @@ function relMiss() {
   if (F.rel !== 'yes') return ownMiss(); /* v576: حسابك المسجّل أو حساب آخر باسمك */
   const m = [], need = function (k) { if (!String(F[k] || '').trim()) m.push(k); };
   ['rel_name', 'rel_kin', 'rel_why', 'rel_m'].forEach(need); if (F.rel_why === OTHER) need('rel_why_other');
-  if (F.rel_m === 'bank') { need('rel_bank'); if (F.rel_bank === OTHER) need('rel_bank_other'); if (!relIbanOk(F.rel_iban)) { m.push('rel_iban'); MISS_MSG.rel_iban = F.rel_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!F.rel_file) m.push('rel_file'); }
-  if (F.rel_m === 'wallet') { need('rel_wallet'); if (F.rel_wallet === OTHER) need('rel_wallet_other'); if (!relPhoneOk(F.rel_phone)) { m.push('rel_phone'); MISS_MSG.rel_phone = F.rel_phone ? 'رقم جوال غير صالح — يبدأ بـ 05 من 10 أرقام.' : 'هذا الحقل مطلوب.'; } if (!relIbanOk(F.rel_iban)) { m.push('rel_iban'); MISS_MSG.rel_iban = F.rel_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!F.rel_file) m.push('rel_file'); }
+  if (F.rel_m === 'bank') { need('rel_bank'); if (F.rel_bank === OTHER) need('rel_bank_other'); if (!relIbanOk(F.rel_iban)) { m.push('rel_iban'); MISS_MSG.rel_iban = F.rel_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!(F.rel_file && F.rel_file.obj)) { m.push('rel_file'); if (F.rel_file) MISS_MSG.rel_file = 'أعد إرفاق الملف — لا يبقى المرفق بعد مغادرة الصفحة.'; } /* v915 */ }
+  if (F.rel_m === 'wallet') { need('rel_wallet'); if (F.rel_wallet === OTHER) need('rel_wallet_other'); if (!relPhoneOk(F.rel_phone)) { m.push('rel_phone'); MISS_MSG.rel_phone = F.rel_phone ? 'رقم جوال غير صالح — يبدأ بـ 05 من 10 أرقام.' : 'هذا الحقل مطلوب.'; } if (!relIbanOk(F.rel_iban)) { m.push('rel_iban'); MISS_MSG.rel_iban = F.rel_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!(F.rel_file && F.rel_file.obj)) { m.push('rel_file'); if (F.rel_file) MISS_MSG.rel_file = 'أعد إرفاق الملف — لا يبقى المرفق بعد مغادرة الصفحة.'; } /* v915 */ }
   if (!relAckOk()) { m.push('rel_ack'); MISS_MSG.rel_ack = 'وافق على الإقرار.'; }
   if (LIVE.on) { if (!eligGrantOk()) { m.push('eg_grant'); MISS_MSG.eg_grant = 'أكمل التحقق بالرمز.'; } } else { if (!F.rel_v_mail) m.push('rel_v_mail'); if (!F.rel_v_wa) m.push('rel_v_wa'); }
   return m;
@@ -10487,9 +10487,9 @@ function ownMiss() {
   else MISS_MSG.own_add = 'هذا الحقل مطلوب.';
   if (F.own_add !== 'yes') return m;
   need('own_m');
-  if (F.own_m === 'bank') { need('own_bank'); if (F.own_bank === OTHER) need('own_bank_other'); if (!relIbanOk(F.own_iban)) { m.push('own_iban'); MISS_MSG.own_iban = F.own_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!F.own_file) m.push('own_file'); }
+  if (F.own_m === 'bank') { need('own_bank'); if (F.own_bank === OTHER) need('own_bank_other'); if (!relIbanOk(F.own_iban)) { m.push('own_iban'); MISS_MSG.own_iban = F.own_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!(F.own_file && F.own_file.obj)) { m.push('own_file'); if (F.own_file) MISS_MSG.own_file = 'أعد إرفاق الملف — لا يبقى المرفق بعد مغادرة الصفحة.'; } /* v915 */ }
   if (LIVE.on && F.own_m && !eligGrantOk()) { m.push('eg_grant'); MISS_MSG.eg_grant = 'أكمل التحقق بالرمز.'; }
-  if (F.own_m === 'wallet') { need('own_wallet'); if (F.own_wallet === OTHER) need('own_wallet_other'); if (!relPhoneOk(F.own_phone)) { m.push('own_phone'); MISS_MSG.own_phone = F.own_phone ? 'رقم جوال غير صالح — يبدأ بـ 05 من 10 أرقام.' : 'هذا الحقل مطلوب.'; } if (!relIbanOk(F.own_iban)) { m.push('own_iban'); MISS_MSG.own_iban = F.own_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!F.own_file) m.push('own_file'); }
+  if (F.own_m === 'wallet') { need('own_wallet'); if (F.own_wallet === OTHER) need('own_wallet_other'); if (!relPhoneOk(F.own_phone)) { m.push('own_phone'); MISS_MSG.own_phone = F.own_phone ? 'رقم جوال غير صالح — يبدأ بـ 05 من 10 أرقام.' : 'هذا الحقل مطلوب.'; } if (!relIbanOk(F.own_iban)) { m.push('own_iban'); MISS_MSG.own_iban = F.own_iban ? 'آيبان غير صالح — SA ثم 22 رقمًا.' : 'هذا الحقل مطلوب.'; } if (!(F.own_file && F.own_file.obj)) { m.push('own_file'); if (F.own_file) MISS_MSG.own_file = 'أعد إرفاق الملف — لا يبقى المرفق بعد مغادرة الصفحة.'; } /* v915 */ }
   return m;
 }
 function ownReview() {
@@ -35400,7 +35400,7 @@ async function lvEligSubmit() {
   try {
     const files = [], fk = acct === 'relative' ? 'rel_file' : acct === 'own_other' ? 'own_file' : '';
     if (fk && F[fk]) {
-      const ff = F[fk].obj; if (!ff) throw new Error('أعد إرفاق الملف ثم أرسل الطلب.');
+      const ff = F[fk].obj; if (!ff) { S.step = 1; S.miss = [fk]; MISS_MSG[fk] = 'أعد إرفاق الملف — لا يبقى المرفق بعد مغادرة الصفحة.'; tqCenterNote('أعد إرفاق شهادة الآيبان', ['في «المعلومات العامة» — ' + (fk === 'rel_file' ? 'حساب القريب' : 'الحساب الآخر باسمك') + ': الملف «' + (F[fk].name || '') + '» لم يعد محفوظًا بعد مغادرة الصفحة أو حفظ المسودة.', 'أرفقه من جديد ثم أرسل الطلب.'], 'warn'); return; } /* v915 */
       files.push({ k: fk, path: await lvUploadSigned('/api/account/elig/upload-url', ff), name: ff.name });
     }
     const j = await clPost('/api/account/elig', { acct: acct, fields: eligFields(), rows: acct === 'registered' ? [] : eligRows(), files: files, grant: acct === 'registered' ? '' : S.eg.grant, terms: egTermsBody() /* v695 */ });

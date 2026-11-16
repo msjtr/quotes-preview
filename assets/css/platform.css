@@ -9318,3 +9318,13 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .dc3.dc3.dc3 .d3-kv.is-df th + td, .dc3.dc3.dc3 .d3-kv.is-df td + th { border-inline-start: 1px solid #E3E9F2 !important; }
 .dc3.dc3.dc3 .d3-kv.is-df + .d3-p { border-top: 1px solid #E3E9F2; margin-top: 0; }
 .dc3.dc3.dc3 .d3-kv.is-df tr.is-ln th { font-weight: 700; }
+
+/* v915: بطاقة الملف على الجوال — الأزرار في سطر مستقل تحت الاسم، فلا ينضغط الاسم حرفًا حرفًا ولا تتجاوز الصفحة عرض الشاشة */
+.t2-file-a { max-width: 100%; min-width: 0; }
+@media (max-width: 40rem) {
+  .t2-file { flex-wrap: wrap; row-gap: 10px; }
+  .t2-file-t { flex: 1 1 calc(100% - 56px); }
+  .t2-file-a { flex: 1 1 100%; align-items: stretch; }
+  .t2-file-a > .t2-pb-actions { justify-content: flex-start; }
+  .t2 .t2-file-a .t2-pb-actions .t2-btn { flex: 1 1 0; min-width: 0; min-block-size: 40px; }
+}
