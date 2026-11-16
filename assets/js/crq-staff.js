@@ -159,16 +159,10 @@ var on = C.no === k.no, n = (k.payments || []).length;
 return el('label', { class: 'cr-opt cr-nw-o' + (on ? ' is-on' : '') + (k.busy ? ' is-ro' : '') }, [el('input', { type: 'radio', name: 'crq-nw-k', value: k.no, checked: on, disabled: !!k.busy, onchange: function () { C.no = k.no; C.pids = []; draw(); } }),
 el('span', {}, [el('b', {}, [ltr(k.no)]), el('small', { text: (k.product || 'عقد') + ' · ' + n + (n === 1 ? ' دفعة مستحقة' : ' دفعات مستحقة') }), k.busy ? el('em', { class: 'cr-py-s is-warn', text: 'عليه طلب مفتوح ' + k.busy }) : null])]); }))], !!o));
 }
-/* 3) الدفعة */
+/* 3) الدفعة واقتراح العميل — الجزء نفسه في حساب العميل (CRQC.picker)، فلا يختلف الشكل ولا المحتوى (v909) */
 if (o) {
-var pays = (o.payments || []).map(function (p) { var on = (C.pids || []).indexOf(p.pid) >= 0;
-return el('label', { class: 'cr-py' + (on ? ' is-on' : '') }, [el('input', { type: 'checkbox', checked: on, 'aria-label': 'الدفعة ' + p.seq, onchange: function (e) { C.pids = (C.pids || []).filter(function (x) { return x !== p.pid; }); if (e.target.checked) C.pids.push(p.pid); draw(); } }),
-el('span', { class: 'cr-py-ck', 'aria-hidden': 'true' }, [icon('check')]), el('span', { class: 'cr-py-n' }, [ltr(String(p.seq))]),
-el('span', { class: 'cr-py-d' }, [el('b', { text: 'الدفعة ' + p.seq }), el('small', {}, [icon('cal'), day(p.due)])]),
-el('span', { class: 'cr-py-a' }, [ltr(money(p.amount)), el('small', { text: ' ر.س' })]), el('span', { class: 'cr-py-s' + (on ? ' is-sel' : ' is-open'), text: on ? 'مطلوب تأجيلها' : 'مستحقة' })]); });
 var selP = (o.payments || []).filter(function (p) { return (C.pids || []).indexOf(p.pid) >= 0; }), selAmt = selP.reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0);
-parts.push(sec(3, 'حدّد الدفعة المطلوب تأجيلها', [el('div', { class: 'cr-pys' }, pays.length ? pays : [el('p', { class: 'cr-hint', text: 'لا دفعات مستحقة في هذا العقد.' })]),
-el('label', { class: 'cr-field cr-nw-nt' }, [el('span', { text: 'ملاحظة (اختياري)' }), el('input', { type: 'text', maxlength: '300', value: C.note || '', placeholder: 'تظهر للفريق في «بيانات الطلب»', oninput: function (e) { C.note = e.target.value; } })])], selP.length > 0));
+parts.push(sec(3, 'الدفعة واقتراح العميل', [window.CRQC && window.CRQC.picker ? window.CRQC.picker({ S: C, contract: o, today: C.today, paint: draw, staff: true }) : note('warn', 'تعذّر تحميل جزء الدفعات — حدّث الصفحة.')], selP.length > 0));
 }
 var ready = !!(cur && o && C.pids && C.pids.length);
 return el('section', { class: 'cr-card cr-nw' }, [
@@ -177,8 +171,10 @@ el('button', { type: 'button', class: 'cr-pop-x', 'aria-label': 'إغلاق', 'd
 stp].concat(parts, [C.err ? note('bad', C.err) : null,
 el('div', { class: 'cr-nw-f' }, [ready ? el('span', { class: 'cr-nw-sum' }, [el('small', { text: selP.length === 1 ? 'دفعة واحدة' : selP.length + ' دفعات' }), el('b', {}, [ltr(money(selAmt)), ' ر.س'])]) : el('small', { class: 'cr-hint', text: step === 1 ? 'ابدأ باختيار العميل.' : step === 2 ? 'اختر العقد.' : 'حدّد دفعة واحدة على الأقل.' }),
 el('div', { class: 'cr-acts' }, [btn('إلغاء', { on: function () { ST.create = null; draw(); } }), btn(ST.busy ? 'جارٍ الإنشاء…' : 'إنشاء الطلب', { ic: 'check', cls: 'is-pri', disabled: !ready || ST.busy, on: async function () {
+var m = window.CRQC && window.CRQC.check ? window.CRQC.check(C) : []; if (m.length) { C.miss = m; draw(); var f = R.querySelector('.cr-nw .is-miss'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+var pl = window.CRQC.payload(C);
 ST.busy = true; draw();
-try { var j = await api('POST', '/admin/api/crq', { user_id: C.uid, contract_no: C.no, payment_ids: C.pids, note: C.note || '', kind: KIND }); ST.create = null; ST.busy = false; await loadList(); open(j.id); }
+try { var j = await api('POST', '/admin/api/crq', { user_id: C.uid, contract_no: C.no, payment_ids: pl.payment_ids, note: pl.note, prop: pl.prop, kind: KIND }); ST.create = null; ST.busy = false; await loadList(); open(j.id); }
 catch (e) { ST.busy = false; C.err = e.message; draw(); }
 } })])])]));
 }
@@ -400,7 +396,7 @@ var rps = el('div', { class: 'cr-rps' }, selP.map(function (p) { var dd = due(p)
 return el('div', { class: 'cr-rp' }, [
 el('span', { class: 'cr-rp-n' }, [el('small', { text: 'الدفعة' }), ltr(String(p.seq))]),
 el('div', { class: 'cr-rp-d' }, [el('small', { text: 'تاريخ الاستحقاق' }), el('b', { text: day(p.due) }), dd ? el('span', { class: 'cr-py-s ' + dd[1], text: dd[0] }) : null]),
-el('div', { class: 'cr-rp-a' }, [el('small', { text: 'مبلغ الدفعة' }), el('b', {}, [ltr(money(p.amount)), el('small', { text: ' ر.س' })]), s3[1] !== 'is-open' ? el('span', { class: 'cr-py-s ' + s3[1], text: s3[0] }) : null])]); }));
+el('div', { class: 'cr-rp-a' }, [el('small', { text: 'قيمة الدفعة' }), el('b', {}, [ltr(money(p.amount)), el('small', { text: ' ر.س' })]), s3[1] !== 'is-open' ? el('span', { class: 'cr-py-s ' + s3[1], text: s3[0] }) : null])]); }));
 var pays = showAll ? P.map(function (p) {
 var on = sel.indexOf(p.pid) >= 0, s3 = st(p), dis = !ed || !p.open;
 return el('label', { class: 'cr-py' + (on ? ' is-on' : '') + (p.open ? '' : ' is-off') + (dis ? ' is-ro' : '') }, [
@@ -427,12 +423,12 @@ var cell = function (k, v, cls) { return el('div', { class: cls || '' }, [el('sm
 return el('div', { class: 'cr-rp-sum' }, [el('b', { class: 'cr-rp-sh', text: 'ملخص الدفعات المطلوب تأجيلها' }), el('div', { class: 'cr-rp-st' }, [
 cell('عدد الدفعات', [ltr(String(selP.length))]),
 cell(lo === hi ? 'قيمة كل دفعة' : 'قيمة الدفعات', lo === hi ? [ltr(money(lo)), el('em', { text: ' ر.س' })] : [ltr(money(lo)), ' – ', ltr(money(hi)), el('em', { text: ' ر.س' })]),
-cell('إجمالي المبلغ المؤجَّل', [ltr(money(selAmt)), el('em', { text: ' ر.س' })], 'is-hi')])]); })() : null]);
+cell('إجمالي الدفعات المؤجَّلة', [ltr(money(selAmt)), el('em', { text: ' ر.س' })], 'is-hi')])]); })() : null]);
 var mt = function (ic, k, v, cls) { return el('div', { class: 'cr-mt' + (cls ? ' ' + cls : '') }, [el('span', { class: 'cr-pf-ic' }, [icon(ic)]), el('div', {}, [el('small', { text: k }), el('b', {}, [v || '—'])])]); };
 var meta = el('section', { class: 'cr-card' }, [el('h2', { text: 'بيانات الطلب' }),
 el('div', { class: 'cr-mts' }, [mt(x.origin === 'client' ? 'user' : 'team', 'مصدر الطلب', x.origin === 'client' ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق'), mt('clock', 'تاريخ الطلب', at(x.created_at)),
 mt('sign', 'أعدّه', x.prepared_t || 'لم يُعدّ بعد', x.prepared_t ? '' : 'is-mut'), mt('ok', 'اعتمده', x.approved_t ? el('span', {}, [x.approved_t, el('small', { text: ' · ' + at(x.approved_at) })]) : 'لم يُعتمد بعد', x.approved_t ? '' : 'is-mut')]),
-(function () { var cn = String(x.client_note || '').trim(); return el('div', { class: 'cr-cn' + (cn ? '' : ' is-empty') }, [el('small', {}, [icon('note'), 'ملاحظة العميل']), el('p', { text: cn || 'لم يكتب العميل ملاحظة.' })]); })()]);
+(function () { var cn = String(x.client_note || '').trim(), pr = x.proposal && window.CRQC && window.CRQC.propText ? window.CRQC.propText(x.proposal) : ''; return el('div', { class: 'cr-cn' + (cn || pr ? '' : ' is-empty') }, [el('small', {}, [icon('note'), 'ملاحظة العميل']), el('p', { text: cn || 'لم يكتب العميل ملاحظة.' }), pr ? el('small', {}, [icon('cal'), 'اقتراح العميل']) : null, pr ? el('p', { text: pr }) : null]); })() /* v909 */]);
 return [el('div', { class: 'cr-cols cr-rq' }, [who, con]), payCard, meta];
 }
 /* v898: مدة التأجيل — يزيدها الموظف أو ينقصها بالأشهر: تبدأ من أول دفعة طلبها العميل وتشمل ما بعدها، والحسبة كما هي.
@@ -495,8 +491,8 @@ el('small', { class: 'cr-hint', text: 'المتبقي مع رسوم الطلب �
 function kvs(L) { return el('dl', { class: 'cr-kv' }, [].concat.apply([], L.map(function (r) { return [el('dt', { text: r[0] }), el('dd', {}, [r[1] == null || r[1] === '' ? '—' : r[1]])]; }))); }
 
 /* ── 2) البنود والحسبة: البنود من القائمة الجاهزة («+ إضافة بند ▾») بضريبة لكل بند وظهوره للعميل، ثم التوزيع والجدولة — والملخص المالي جانبًا ── */
-var ERRT = { bad_count: 'أدخل عدد الدفعات الجديد — دفعة واحدة على الأقل.', start_required: 'حدّد تاريخ أول دفعة في إعادة الجدولة.', no_targets: 'اختر الدفعة المطلوب تأجيلها من تبويب «الطلب».', target_not_open: 'الدفعة المختارة لم تعد مستحقة.', bad_line: 'لكل بند اسم من حرفين على الأقل.', bad_amount: 'مبلغ غير صحيح', bad_date: 'تاريخ غير صحيح — الموعد الجديد بعد موعد الدفعة وبعد اليوم', date_required: 'حدد الموعد الجديد للدفعة المؤجلة', dist_sum: 'مجموع التوزيع اليدوي لا يساوي إجمالي الإضافة', no_open: 'لا دفعات مستحقة في العقد', contract_closed: 'العقد مغلق', bad_input: 'بيانات غير صالحة', kind_inactive: 'النوع غير مفعّل' };
-var CALC_T = { fixed: 'مبلغ ثابت', pct: 'نسبة من الدفعة المؤجلة', manual: 'يُدخل لكل طلب' };
+var ERRT = { bad_count: 'أدخل عدد الدفعات الجديد — دفعة واحدة على الأقل.', start_required: 'حدّد تاريخ أول دفعة في إعادة الجدولة.', no_targets: 'اختر الدفعة المطلوب تأجيلها من تبويب «الطلب».', target_not_open: 'الدفعة المختارة لم تعد مستحقة.', bad_line: 'لكل بند اسم من حرفين على الأقل.', bad_amount: 'قيمة غير صحيحة', bad_date: 'تاريخ غير صحيح — الموعد الجديد بعد موعد الدفعة وبعد اليوم', date_required: 'حدد الموعد الجديد للدفعة المؤجلة', dist_sum: 'مجموع التوزيع اليدوي لا يساوي إجمالي الإضافة', no_open: 'لا دفعات مستحقة في العقد', contract_closed: 'العقد مغلق', bad_input: 'بيانات غير صالحة', kind_inactive: 'النوع غير مفعّل' };
+var CALC_T = { fixed: 'قيمة ثابتة', pct: 'نسبة من الدفعة المؤجلة', manual: 'يُدخل لكل طلب' };
 function rate(x) { var r = x.result && x.result.vat_rate != null ? Number(x.result.vat_rate) : Number(x.vat_rate); return isFinite(r) ? r : 15; }
 function tgSum(x) { return (x.payments || []).filter(function (p) { return (x.payment_ids || []).indexOf(p.pid) >= 0; }).reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0); }
 function readyAmt(x, f) { return f.calc === 'fixed' ? Number(f.value) || 0 : f.calc === 'pct' ? Math.round(tgSum(x) * (Number(f.value) || 0)) / 100 : 0; }
@@ -570,7 +566,7 @@ p.appendChild(el('div', { class: 'cr-pop-h' }, [o.title ? el('div', { class: 'cr
 });
 }
 /* v873: بنود عامة من «الرسوم والضرائب والعمولات» (fee_charge_items) — تُجلب مرة وتُضاف للقائمة الجاهزة */
-var CH_T = { fixed: 'مبلغ ثابت', pct: 'نسبة', manual: 'يُدخل لكل طلب' };
+var CH_T = { fixed: 'قيمة ثابتة', pct: 'نسبة', manual: 'يُدخل لكل طلب' };
 function loadCharges() {
 if (ST.chargesP) return ST.chargesP;
 return (ST.chargesP = api('GET', '/admin/api/crq-charges').then(function (j) { ST.charges = (j.items || []).map(function (f) { return { k: 'fc_' + String(f.k || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 21), name: f.name, calc: f.kind === 'pct' ? 'pct' : f.kind === 'fixed' ? 'fixed' : 'manual', value: Number(f.value) || 0, taxable: f.taxable !== false, gen: true }; }); })
@@ -590,13 +586,13 @@ function paintFoot() { var f = foot(), r = R.querySelector('.cr-li-foot'); if (!
 function sw(opts, cur, on, label) { return el('div', { class: 'cr-seg2', role: 'group', 'aria-label': label }, opts.map(function (o) { return el('button', { type: 'button', class: cur === o[0] ? 'is-on' : '', 'aria-pressed': cur === o[0] ? 'true' : 'false', disabled: !ed, title: o[2] || null, 'data-live-ok': '', onclick: function () { if (cur !== o[0]) on(o[0]); } }, [o[1]]); })); }
 var rows = c.lines.map(function (l, i) {
 var f = readyOf(x, l.id), hid = c.hide.indexOf(l.id) >= 0;
-var nm = f ? el('div', { class: 'cr-it-n' }, [el('b', { text: l.t }), el('small', { text: (f.gen ? 'بند عام' : 'بند طلبات العقود') + ' · ' + (f.calc === 'pct' ? Number(f.value) + '٪ من المؤجَّل' : f.calc === 'fixed' ? 'مبلغ ثابت ' + money(f.value) : 'يُدخل لكل طلب') })])
+var nm = f ? el('div', { class: 'cr-it-n' }, [el('b', { text: l.t }), el('small', { text: (f.gen ? 'بند عام' : 'بند طلبات العقود') + ' · ' + (f.calc === 'pct' ? Number(f.value) + '٪ من المؤجَّل' : f.calc === 'fixed' ? 'قيمة ثابتة ' + money(f.value) : 'يُدخل لكل طلب') })])
 : el('input', { type: 'text', class: 'cr-li-in', value: l.t, maxlength: '80', disabled: !ed, placeholder: 'مسمّى البند', 'aria-label': 'اسم البند', oninput: function (e) { l.t = e.target.value; upd(); } });
-var am = el('label', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: l.amt === '0' ? '' : l.amt, placeholder: '0.00', disabled: !ed, 'aria-label': 'المبلغ',
+var am = el('label', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: l.amt === '0' ? '' : l.amt, placeholder: '0.00', disabled: !ed, 'aria-label': 'القيمة',
 oninput: function (e) { l.amt = e.target.value.replace(/[^\d.]/g, ''); paintRow(e.target.closest('.cr-li'), l); paintFoot(); upd(); } }), el('span', { text: 'ر.س' })]);
 return el('div', { class: 'cr-li' + (hid ? ' is-hid' : '') }, [
 el('div', { class: 'cr-li-n' }, [nm]),
-el('div', { class: 'cr-li-f is-amt' }, [el('span', { class: 'cr-li-l', text: 'المبلغ' }), am]),
+el('div', { class: 'cr-li-f is-amt' }, [el('span', { class: 'cr-li-l', text: 'القيمة' }), am]),
 el('div', { class: 'cr-li-f is-vat' }, [el('span', { class: 'cr-li-l', text: 'ضريبة القيمة المضافة' }), sw([['1', R0 + '٪'], ['0', 'غير خاضع']], l.vat ? '1' : '0', function (v) { l.vat = v === '1'; upd(); draw(); }, 'ضريبة القيمة المضافة')]),
 el('div', { class: 'cr-li-f is-show' }, [el('span', { class: 'cr-li-l', text: 'يظهر للعميل' }), sw([['s', 'سطر مستقل'], ['h', 'مدمج', 'يظهر ضمن سطر «' + svcOf(c) + '»']], hid ? 'h' : 's', function (v) { c.hide = c.hide.filter(function (k) { return k !== l.id; }); if (v === 'h') c.hide.push(l.id); upd(); draw(); }, 'الظهور للعميل')]),
 el('div', { class: 'cr-li-t' }, [el('span', { class: 'cr-li-tx' }, ['الضريبة ', el('span', { class: 'c-tax' }, [ltr(l.vat ? money(tax(l)) : '—')])]), el('span', { class: 'cr-li-tt' }, [el('small', { text: 'الإجمالي' }), el('b', { class: 'c-tot' }, [ltr(money((Number(l.amt) || 0) + tax(l)))])])]),
@@ -604,7 +600,7 @@ ed ? el('button', { type: 'button', class: 'cr-x cr-li-d', title: 'حذف الب
 });
 var F = foot();
 var tbl = el('div', { class: 'cr-li-wrap' }, [
-el('div', { class: 'cr-li-hd', 'aria-hidden': 'true' }, ['البند', 'المبلغ', 'الضريبة', 'يظهر للعميل', 'الإجمالي', ''].map(function (h) { return el('span', { text: h }); })),
+el('div', { class: 'cr-li-hd', 'aria-hidden': 'true' }, ['البند', 'القيمة', 'الضريبة', 'يظهر للعميل', 'الإجمالي', ''].map(function (h) { return el('span', { text: h }); })),
 el('div', { class: 'cr-li-list' }, rows.length ? rows : [el('div', { class: 'cr-li-empty' }, [icon('list'), el('b', { text: 'لا بنود بعد' }), el('span', { text: 'أضف بندًا من القائمة أو بندًا جديدًا لهذا الطلب.' })])]),
 rows.length ? el('div', { class: 'cr-li-foot' }, [el('div', {}, [el('small', { text: 'مجموع البنود' }), el('b', { class: 'f-sum' }, [ltr(money(F[0]))])]), el('div', {}, [el('small', { text: 'ضريبة القيمة المضافة' }), el('b', { class: 'f-tax' }, [ltr(money(F[1]))])]), el('div', { class: 'is-tot' }, [el('small', { text: 'الإجمالي' }), el('b', {}, [el('span', { class: 'f-tot' }, [ltr(money(F[2]))]), ' ر.س'])])]) : null]);
 var add = ed && c.lines.length < 12 ? el('div', { class: 'cr-addrow' }, [(function () {
@@ -613,7 +609,7 @@ var have = c.lines.map(function (l) { return l.id; }), names = c.lines.map(funct
 var row = function (f) { return [f.name, [CH_T[f.calc] + (f.calc === 'manual' ? '' : ' ' + (f.calc === 'pct' ? Number(f.value) + '٪' : money(f.value) + ' ر.س')), f.taxable ? 'خاضع للضريبة' : 'غير خاضع'].join(' · '), have.indexOf(f.k) >= 0 || names.indexOf(String(f.name || '').trim()) >= 0, f]; };
 var gen = (ST.charges || []).filter(function (f) { return crqNames.indexOf(f.name) < 0; });
 picker(b, { title: 'إضافة بند', ph: 'ابحث باسم البند…', groups: [['بنود طلبات العقود', (x.ready || []).map(row)], ['البنود المالية العامة', gen.map(row)]],
-free: 'بند جديد لهذا الطلب فقط', freePh: 'مسمّى البند', freeLine: true, freeOk: 'إضافة البند', freeNote: 'يُضاف إلى هذا الطلب وحده، ثم تحدّد مبلغه وضريبته وظهوره للعميل من بطاقته.',
+free: 'بند جديد لهذا الطلب فقط', freePh: 'مسمّى البند', freeLine: true, freeOk: 'إضافة البند', freeNote: 'يُضاف إلى هذا الطلب وحده، ثم تحدّد قيمته وضريبته وظهوره للعميل من بطاقته.',
 pick: function (v) {
 if (v && v.free) { var n = 1; while (c.lines.some(function (l) { return l.id === 'b' + n; })) n++; c.lines.push({ id: 'b' + n, t: v.free.slice(0, 80), amt: '0', vat: true }); }
 else if (v) { var a = readyAmt(x, v); c.lines.push({ id: v.k, t: v.name, amt: a ? String(a) : '0', vat: v.taxable !== false }); }
@@ -624,8 +620,8 @@ var svc = c.hide.length ? field('اسم السطر الذي يراه العمي�
 /* التوزيع والجدولة: خيارات واضحة بوصف قصير بدل القوائم المنسدلة */
 var choose = function (name, cur, L, on) { return el('div', { class: 'cr-opts', role: 'radiogroup' }, L.map(function (o) { return el('label', { class: 'cr-opt' + (cur === o[0] ? ' is-on' : '') + (ed ? '' : ' is-ro') }, [el('input', { type: 'radio', name: name, value: o[0], checked: cur === o[0], disabled: !ed, onchange: function () { on(o[0]); } }), el('span', {}, [el('b', { text: o[1] }), el('small', { text: o[2] })])]); })); };
 var setup = el('div', { class: 'cr-ds' }, [
-el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'توزيع الرسوم على المبالغ المتبقية' }), choose('crq-dist', c.dist.mode, [['equal', 'بالتساوي', 'تُقسم الرسوم بالتساوي على كل المبالغ المتبقية.'], ['ratio', 'بنسبة كل مبلغ', 'يأخذ كل مبلغ نصيبًا بقدر قيمته.'], ['manual', 'يدويًا', 'تحدّد إضافة كل موعد في الجدول أدناه.']], function (v) { c.dist.mode = v; upd(); draw(); })]),
-el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'الموعد الجديد للمبلغ المؤجَّل' }), choose('crq-sched', c.sched.mode, [['end', 'إلى نهاية الجدول', 'ينتقل بعد آخر موعد في الجدول.'], ['shift', 'ترحيل ما بعده', 'تتأخر المواعيد منه شهرًا لكل مبلغ مؤجَّل.'], ['manual', 'يدويًا', 'تحدّد التاريخ الجديد في الجدول أدناه.'], ['resched', 'إعادة جدولة كاملة', 'يُوزَّع المتبقي على عدد دفعات جديد تحدده.']], function (v) { c.sched.mode = v; if (v === 'resched') rsInit(x, c); upd(); draw(); })]), c.sched.mode === 'resched' ? rsCtl(x, c, ed, upd) : null]);
+el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'توزيع الرسوم على الدفعات المتبقية' }), choose('crq-dist', c.dist.mode, [['equal', 'بالتساوي', 'تُقسم الرسوم بالتساوي على كل الدفعات المتبقية.'], ['ratio', 'بنسبة كل دفعة', 'تأخذ كل دفعة نصيبًا بقدر قيمتها.'], ['manual', 'يدويًا', 'تحدّد إضافة كل موعد في الجدول أدناه.']], function (v) { c.dist.mode = v; upd(); draw(); })]),
+el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'الموعد الجديد للدفعة المؤجَّلة' }), choose('crq-sched', c.sched.mode, [['end', 'إلى نهاية الجدول', 'ينتقل بعد آخر موعد في الجدول.'], ['shift', 'ترحيل ما بعده', 'تتأخر المواعيد منه شهرًا لكل دفعة مؤجَّلة.'], ['manual', 'يدويًا', 'تحدّد التاريخ الجديد في الجدول أدناه.'], ['resched', 'إعادة جدولة كاملة', 'يُوزَّع المتبقي على عدد دفعات جديد تحدده.']], function (v) { c.sched.mode = v; if (v === 'resched') rsInit(x, c); upd(); draw(); })]), c.sched.mode === 'resched' ? rsCtl(x, c, ed, upd) : null]);
 var main = el('div', { class: 'cr-main' }, [el('section', { class: 'cr-card' }, [el('h2', { text: 'البنود والرسوم' }), tbl, add, svc]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'التوزيع والجدولة' }), setup]),
 el('section', { class: 'cr-card' }, [el('h2', { text: 'الجدول قبل وبعد' }), el('div', { id: 'cr-sched', class: 'cr-tw' }, [schedTable(x, c, ed, upd)])])]);
@@ -738,7 +734,7 @@ el('div', { class: 'cr-grand' }, [el('span', {}, [el('small', { text: 'إجما�
 el('div', { class: 'cr-sum-b is-it' }, [el('h3', { text: 'البنود' }), el('ul', { class: 'cr-sum' }, items.map(function (l) { return ln(l.t, money(l.amt), Number(l.amt) > 0 ? 'is-it' : 'is-it is-z', c.hide.indexOf(l.id) >= 0 ? 'مدمج' : !l.vat ? 'غير خاضع' : null); }).concat([
 ln('مجموع البنود', money(r.fees), 'is-sub'), el('li', { class: 'is-tax' }, [el('span', {}, [el('span', { class: 'cr-sum-t', text: 'ضريبة القيمة المضافة ' + R0 + '٪' }), el('small', { class: 'cr-sum-on', text: 'على ' + money(taxb) })]), ltr(money(r.vat))])]))]),
 el('div', { class: 'cr-sum-b is-im' }, [el('h3', { text: 'أثرها على العقد' }), el('div', { class: 'cr-cmp' }, [el('div', {}, [el('small', { text: 'قبل' }), ltr(money(r.contract && r.contract.total_before))]), el('i', {}, [icon('back')]), el('div', { class: 'is-after' }, [el('small', { text: 'بعد' }), ltr(money(r.contract && r.contract.total_after))])]),
-el('p', { class: 'cr-sum-m' }, [icon('calc'), nRows + ' ' + (nRows === 1 ? 'مبلغ يتغيّر' : 'مبالغ تتغيّر') + ' في الجدول'])]),
+el('p', { class: 'cr-sum-m' }, [icon('calc'), nRows + ' ' + (nRows === 1 ? 'دفعة تتغيّر' : 'دفعات تتغيّر') + ' في الجدول'])]),
 !cl.length ? null : !items.some(function (l) { return c.hide.indexOf(l.id) >= 0; }) ? el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('p', { class: 'cr-sum-m', text: 'كل بند سطرًا مستقلًا كما في القائمة أعلاه.' })]) : el('div', { class: 'cr-sum-b is-cl' }, [el('h3', { text: 'ما يراه العميل' }), el('ul', { class: 'cr-sum' }, cl.map(function (l) { return el('li', {}, [el('span', { class: 'cr-sum-t', text: l.t }), ltr(money(l.amt))]); }))])]);
 }
 function schedTable(x, c, ed, upd) {
@@ -1058,7 +1054,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=908'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=909'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1103,8 +1099,8 @@ var ro = !S2.can;
 var tb = el('tbody', {}, S2.L.map(function (f, i) {
 return el('tr', { class: f.active ? '' : 'is-off' }, [
 el('td', { 'data-l': 'البند' }, [el('input', { type: 'text', value: f.name, maxlength: '80', disabled: ro, 'aria-label': 'اسم البند', oninput: function (e) { f.name = e.target.value; } })]),
-el('td', { 'data-l': 'طريقة الحساب' }, [el('select', { disabled: ro, onchange: function (e) { f.calc = e.target.value; paint(); } }, [['fixed', 'مبلغ ثابت'], ['pct', 'نسبة من الدفعة المؤجلة'], ['manual', 'يُدخل لكل طلب']].map(function (o) { return el('option', { value: o[0], selected: f.calc === o[0], text: o[1] }); }))]),
-el('td', { 'data-l': f.calc === 'pct' ? 'النسبة (%)' : 'المبلغ (ر.س)' }, [f.calc === 'manual' ? el('span', { class: 'cr-hint', text: '—' }) : el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: String(f.value), disabled: ro, oninput: function (e) { f.value = e.target.value.replace(/[^\d.]/g, ''); } })]),
+el('td', { 'data-l': 'طريقة الحساب' }, [el('select', { disabled: ro, onchange: function (e) { f.calc = e.target.value; paint(); } }, [['fixed', 'قيمة ثابتة'], ['pct', 'نسبة من الدفعة المؤجلة'], ['manual', 'يُدخل لكل طلب']].map(function (o) { return el('option', { value: o[0], selected: f.calc === o[0], text: o[1] }); }))]),
+el('td', { 'data-l': f.calc === 'pct' ? 'النسبة (%)' : 'القيمة (ر.س)' }, [f.calc === 'manual' ? el('span', { class: 'cr-hint', text: '—' }) : el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: String(f.value), disabled: ro, oninput: function (e) { f.value = e.target.value.replace(/[^\d.]/g, ''); } })]),
 el('td', { 'data-l': 'الضريبة' }, [el('select', { disabled: ro, onchange: function (e) { f.taxable = e.target.value === '1'; } }, [el('option', { value: '1', selected: f.taxable, text: 'خاضع' }), el('option', { value: '0', selected: !f.taxable, text: 'غير خاضع' })])]),
 el('td', { 'data-l': 'في كل طلب جديد' }, [el('select', { disabled: ro, onchange: function (e) { f.auto = e.target.value === '1'; } }, [el('option', { value: '1', selected: f.auto, text: 'يُضاف تلقائيًا' }), el('option', { value: '0', selected: !f.auto, text: 'يُختار من القائمة' })])]),
 el('td', { 'data-l': 'الحالة' }, [el('select', { disabled: ro, onchange: function (e) { f.active = e.target.value === '1'; paint(); } }, [el('option', { value: '1', selected: f.active, text: 'مفعّل' }), el('option', { value: '0', selected: !f.active, text: 'موقوف' })])]),

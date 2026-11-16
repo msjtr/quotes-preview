@@ -40,3 +40,70 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .cc-badge.is-ok { background: rgba(19, 128, 79, .12); color: var(--k-ok); } .cc-badge.is-warn { background: rgba(184, 111, 10, .12); color: var(--k-warn); } .cc-badge.is-off { background: var(--k-soft); color: var(--k-muted); }
 .cc-done { text-align: center; } .cc-done .cc-ic { width: 52px; height: 52px; color: var(--k-ok); }
 .cc-confirm { border-color: var(--k-bad); }
+
+/* v909: الدفعات بحالتها (متأخرة · قريبة · قادمة · في طلب قائم) + «اقتراحك» — للعميل والفريق بالشكل نفسه */
+.cc-pk { gap: 10px; }
+.cc-top { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: rgba(185, 58, 42, .08); border: 1px solid rgba(185, 58, 42, .28); color: var(--k-bad); font-size: 14px; font-weight: 600; line-height: 1.7; }
+.cc-top b { font-weight: 800; }
+.cc-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: var(--k-muted); }
+.cc-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: 5px; vertical-align: -1px; background: var(--k-line); }
+.cc-legend i.is-late { background: var(--k-bad); } .cc-legend i.is-soon { background: #E8A93A; } .cc-legend i.is-busy { background: var(--k-soft); border: 1px dashed var(--k-muted); }
+.cc-sh { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 4px; }
+.cc-sh b { font-size: 15px; color: var(--k-navy); } .cc-sh span { font-size: 12.5px; color: var(--k-muted); font-weight: 600; }
+.cc-sh.is-miss b { color: var(--k-bad); }
+.cc-pays { display: flex; flex-direction: column; gap: 8px; }
+.cc-pays.is-miss { outline: 2px solid var(--k-bad); outline-offset: 4px; border-radius: 14px; }
+.cc-pay { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 24px; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--k-line); border-radius: 14px; background: var(--k-card); cursor: pointer; min-width: 0; }
+.cc-pay-n { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--k-soft); font-size: 13px; font-weight: 800; color: var(--k-navy); }
+.cc-pay-m { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.cc-pay-m b { font-size: 14px; color: var(--k-navy); }
+.cc-pay-a { font-size: 14px; font-weight: 800; white-space: nowrap; color: var(--k-navy); }
+.cc-pay input { width: 22px; height: 22px; accent-color: var(--k-acc); margin: 0; }
+.cc-pill { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 9px; border-radius: 999px; background: var(--k-soft); color: var(--k-muted); }
+.cc-pill.is-late { background: rgba(185, 58, 42, .1); color: var(--k-bad); } .cc-pill.is-soon { background: rgba(184, 111, 10, .12); color: var(--k-warn); }
+.cc-pay.is-late { background: rgba(185, 58, 42, .04); border-color: rgba(185, 58, 42, .3); box-shadow: inset -4px 0 0 var(--k-bad); }
+.cc-pay.is-late .cc-pay-n { background: rgba(185, 58, 42, .1); color: var(--k-bad); } .cc-pay.is-late .cc-pay-a { color: var(--k-bad); }
+.cc-pay.is-soon { border-color: rgba(184, 111, 10, .35); } .cc-pay.is-soon .cc-pay-n { background: rgba(184, 111, 10, .12); color: var(--k-warn); }
+.cc-pay.is-busy { cursor: not-allowed; border-style: dashed; background: var(--k-soft); opacity: .85; }
+.cc-pay.is-busy .cc-pay-m b, .cc-pay.is-busy .cc-pay-a, .cc-pay.is-busy .cc-pay-n { color: var(--k-muted); }
+.cc-pay.is-on { border-color: var(--k-acc); box-shadow: 0 0 0 1.5px var(--k-acc); }
+.cc-pay.is-on.is-late { box-shadow: inset -4px 0 0 var(--k-bad), 0 0 0 1.5px var(--k-acc); }
+.cc-pay.is-full { opacity: .6; cursor: not-allowed; }
+.cc-lock { display: grid; place-items: center; color: var(--k-muted); } .cc-lock .cc-ic { width: 18px; height: 18px; }
+.cc-prop { border: 1px solid var(--k-line); border-radius: 16px; padding: 14px; background: var(--k-card); }
+.cc-prop h4 { margin: 0 0 2px; font-size: 14.5px; color: var(--k-navy); }
+.cc-muted { margin: 0 0 10px; font-size: 12.5px; color: var(--k-muted); line-height: 1.6; }
+.cc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.cc-chips.is-miss { outline: 2px solid var(--k-bad); outline-offset: 4px; border-radius: 12px; }
+.cc-chip { font: inherit; font-size: 13px; font-weight: 700; min-height: 36px; padding: 5px 14px; border-radius: 999px; border: 1px solid var(--k-line); background: var(--k-soft); color: var(--k-navy); cursor: pointer; }
+.cc-chip.is-on { border-color: var(--k-acc); background: rgba(15, 163, 168, .12); color: var(--k-acc); }
+.cc textarea, .cc input[type=date] { font: inherit; width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--k-line); border-radius: 12px; background: var(--k-card); color: var(--k-ink); resize: vertical; }
+.cc-hint { font-size: 13px; color: var(--k-acc); background: rgba(15, 163, 168, .08); border-radius: 12px; padding: 9px 12px; line-height: 1.7; font-weight: 600; }
+@media (min-width: 900px) { .cc-pk:not(.is-staff) { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); column-gap: 18px; align-items: start; }
+.cc-pk:not(.is-staff) > .cc-top, .cc-pk:not(.is-staff) > .cc-legend { grid-column: 1 / -1; }
+.cc-pk:not(.is-staff) > .cc-sh.is-a { grid-column: 1; grid-row: 3; } .cc-pk:not(.is-staff) > .cc-pays { grid-column: 1; grid-row: 4; }
+.cc-pk:not(.is-staff) > .cc-sh.is-b { grid-column: 2; grid-row: 3; } .cc-pk:not(.is-staff) > .cc-prop { grid-column: 2; grid-row: 4; } }
+
+/* v909: توحيد العقود — العقد الذي عليه متأخرات بحدّ أحمر وعدد دفعاته المتأخرة وشريط الدفعات */
+.mgx { display: flex; flex-direction: column; gap: 10px; }
+.mgx-top { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: rgba(185, 58, 42, .08); border: 1px solid rgba(185, 58, 42, .28); color: #B3261E; font-size: 14px; font-weight: 600; line-height: 1.7; }
+.mgx-l { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 10px; }
+.mgx-c { font: inherit; text-align: start; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--t2-line, #D4DEEA); background: var(--t2-surface, #fff); color: var(--t2-ink, #0A1F44); cursor: pointer; min-width: 0; }
+.mgx-c.is-on { border-color: var(--t2-brand, #0AA5AD); box-shadow: 0 0 0 1.5px var(--t2-brand, #0AA5AD); }
+.mgx-c.is-late { border-color: rgba(185, 58, 42, .35); box-shadow: inset -4px 0 0 #B3261E; }
+.mgx-c.is-late.is-on { box-shadow: inset -4px 0 0 #B3261E, 0 0 0 1.5px var(--t2-brand, #0AA5AD); }
+.mgx-h { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mgx-h .fx-card-ic { flex: 0 0 auto; }
+.mgx-t { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+.mgx-t b { font-size: 15px; } .mgx-t span { font-size: 12.5px; color: var(--t2-muted, #566A88); }
+.mgx-ck { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px; border: 2px solid #9AA8BF; display: grid; place-items: center; color: #fff; }
+.mgx-c.is-on .mgx-ck { background: var(--t2-brand, #0AA5AD); border-color: var(--t2-brand, #0AA5AD); }
+.mgx-ck svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; }
+.mgx-al { border-radius: 12px; padding: 9px 11px; background: rgba(185, 58, 42, .07); border: 1px solid rgba(185, 58, 42, .22); }
+.mgx-al-t { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 800; color: #B3261E; }
+.mgx-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.mgx-dots i { width: 18px; height: 7px; border-radius: 4px; background: #DCE3EE; }
+.mgx-dots i.is-late { background: #B3261E; } .mgx-dots i.is-paid { background: #0f7a37; }
+.mgx-m { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--t2-muted, #566A88); }
+.mgx-al .mgx-m { margin-top: 6px; color: #B3261E; }
+.t2.is-dark .mgx-dots i { background: #2A3A55; } .t2.is-dark .mgx-top, .t2.is-dark .mgx-al-t, .t2.is-dark .mgx-al .mgx-m { color: #FF8A80; }

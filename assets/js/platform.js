@@ -3897,6 +3897,24 @@ function mgPlan(total, n, freq, first) {
   for (let i = 0; i < n; i++) { const amt = i === n - 1 ? left : base; const due = freq === 'd' ? addDays(first, i) : freq === 'w' ? addDays(first, 7 * i) : addMonths(first, i); left = Math.round((left - amt) * 100) / 100; rows.push({ i: i + 1, due: due, amt: amt, left: left }); }
   return rows;
 }
+/* v909: توحيد العقود — بطاقات العقود: العقد الذي عليه متأخرات بحدّ أحمر، وعدد دفعاته المتأخرة وقيمتها، وشريط الدفعات (مسددة · متأخرة · قادمة) */
+function mgW(n, s, d) { return n === 1 ? 'دفعة واحدة ' + s : n === 2 ? 'دفعتان ' + d : n <= 10 ? n + ' دفعات ' + s.replace(/ة$/, 'ة') : n + ' دفعة ' + s; }
+function mgCards(act, cur, tog) {
+const L = act.map(function (c) { return [c, cInfo(c)]; });
+const lc = L.filter(function (x) { return x[1].late.length; }), ln = lc.reduce(function (a, x) { return a + x[1].late.length; }, 0), ls = lc.reduce(function (a, x) { return a + x[1].lateSum; }, 0);
+return e('div', { class: 'mgx' }, [
+lc.length ? e('div', { class: 'mgx-top', role: 'note' }, ['لديك ' + (lc.length === 1 ? 'عقد واحد عليه ' : lc.length === 2 ? 'عقدان عليهما ' : lc.length + ' عقود عليها ') + mgW(ln, 'متأخرة', 'متأخرتان') + ' بقيمة ' + SR(ls) + ' — تُضم للعقد الموحّد.']) : null,
+e('div', { class: 'mgx-l', role: 'group', 'aria-label': 'العقود القائمة' }, L.map(function (x) {
+const c = x[0], f = x[1], on = cur.indexOf(c.no) >= 0, late = f.late.length > 0;
+const pays = c.payments.slice().sort(function (a, b) { return a.due - b.due; });
+const dots = e('div', { class: 'mgx-dots', 'aria-hidden': 'true' }, pays.map(function (p) { return e('i', { class: settled(p) ? 'is-paid' : p.due < T0 ? 'is-late' : '' }); }));
+const st = DS.badge(f.status, f.tone);
+return e('button', { type: 'button', role: 'checkbox', 'aria-checked': on ? 'true' : 'false', class: 'mgx-c' + (on ? ' is-on' : '') + (late ? ' is-late' : ''), onClick: function () { tog(c.no); } }, [
+e('div', { class: 'mgx-h' }, [e('span', { class: 'fx-card-ic' }, frag(tile(c.icon))), e('div', { class: 'mgx-t' }, [e('b', {}, c.product), e('span', {}, [e('bdi', { dir: 'ltr' }, c.no), ' · المتبقي ' + SR(f.remain)])]), e('span', { class: 'mgx-ck', 'aria-hidden': 'true' }, on ? '✓' : '')]),
+late ? e('div', { class: 'mgx-al' }, [e('div', { class: 'mgx-al-t' }, [e('span', {}, mgW(f.late.length, 'متأخرة', 'متأخرتان')), e('span', {}, SR(f.lateSum))]), dots, e('div', { class: 'mgx-m' }, [e('span', {}, 'أقدم دفعة متأخرة منذ ' + dayWord(f.lateDays)), st])])
+: e('div', { class: 'mgx-m' }, [e('span', {}, f.next ? mgW(f.leftN, 'قادمة', 'قادمتان') + ' · التالية ' + iso(f.next.due) : 'لا دفعات قادمة'), st])]);
+}))]);
+}
 function mergePage() {
   const toOrigin = function () { const t = FX.trail && FX.trail.merge; if (t && t.length && t[t.length - 1][1]) t[t.length - 1][1](); else go('svc'); };
   if (FX.done) {
@@ -3911,10 +3929,10 @@ function mergePage() {
   /* اختيار العقود ببطاقات: الضغط على البطاقة يحددها أو يلغيها — عقد واحد أو أكثر */
   const tog = function (no) { const i = FX.mg.indexOf(no); if (i >= 0) FX.mg.splice(i, 1); else FX.mg.push(no); FX.ok = false; FX.miss = []; draw(); };
   const pick = e('div', { class: 'mg-pick' + (FX.miss && FX.miss.indexOf('mg') >= 0 ? ' is-miss' : '') }, [
-    fxReq('العقود المراد توحيدها', 'mg', DS.select({ multi: true, value: FX.mg, title: 'العقود المراد توحيدها', options: act.map(ctrOpt), summary: function (L) { return L.length === 1 ? 'عقد واحد محدد' : fmtNum(L.length) + ' عقود محددة'; }, onChange: function (v) { FX.mg = v; FX.ok = false; FX.miss = []; draw(); } }), act.length + ' عقود قائمة — اختر عقدًا واحدًا أو أكثر.', true),
+    fxReq('العقود المراد توحيدها', 'mg', mgCards(act, FX.mg, tog), act.length + ' عقود قائمة — اضغط على العقد لاختياره، عقدًا واحدًا أو أكثر.', true),
     e('div', { class: 'mg-bar' }, [e('span', { class: 'mg-cnt' }, [e('b', {}, String(sel.length)), ' من ' + act.length + ' عقود محددة']),
       e('div', { class: 'mg-bar-a' }, [sel.length < act.length ? e('button', { type: 'button', class: 'fx-link', onClick: function () { FX.mg = act.map(function (c) { return c.no; }); FX.ok = false; draw(); } }, 'تحديد الكل') : null, sel.length ? e('button', { type: 'button', class: 'fx-link', onClick: function () { FX.mg = []; FX.ok = false; draw(); } }, 'إلغاء التحديد') : null])]),
-    sel.length ? e('div', { class: 'mg-sel' }, sel.map(function (c) { const cd = lockedContract(c); cd.appendChild(e('button', { type: 'button', class: 'mg-x', 'aria-label': 'إزالة ' + c.product, onClick: function () { tog(c.no); } }, '×')); return cd; })) : null]);
+    null]);
   /* الإحصاء أعلى الصفحة: للعقود المختارة، أو لكل العقود القائمة قبل الاختيار */
   const base = sel.length ? sel : act, sum = function (k) { return base.reduce(function (a, c) { return a + cInfo(c)[k]; }, 0); };
   const sTv = sum('total'), sPd = sum('paid'), sRm = sum('remain'), sLt = sum('lateSum'), sLn = base.reduce(function (a, c) { return a + cInfo(c).late.length; }, 0);
