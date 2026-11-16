@@ -2593,7 +2593,7 @@ function cInfo(c) {
   const late = left.filter(function (p) { return p.due < T0; });
   const lateDays = late.reduce(function (a, p) { return Math.max(a, daysBetween(p.due, T0)); }, 0);
   const st = c.mergedTo ? ['مُغلق بالتوحيد', 'info'] : !left.length ? ['مكتمل', 'ok'] : lateDays === 0 ? ['منتظم', 'ok'] : lateDays <= LATE_MAX ? ['متأخر', 'warn'] : ['متعثر', 'danger'];
-  return { total: total, paid: paidSum, remain: total - paidSum, leftN: left.length, next: left[0] || null, late: late, lateSum: late.reduce(function (a, p) { return a + dueAmt(p); }, 0), lateDays: lateDays, status: st[0], tone: st[1], pct: Math.round(paidSum / total * 100) };
+  return { total: total, paid: paidSum, remain: total - paidSum, leftN: left.length, next: left.slice().sort(function (a, b) { return a.due - b.due; })[0] || null /* v912: أقرب استحقاق لا أول رقم — بعد التأجيل قد تُنقل الدفعة 1 إلى آخر العقد */, late: late, lateSum: late.reduce(function (a, p) { return a + dueAmt(p); }, 0), lateDays: lateDays, status: st[0], tone: st[1], pct: Math.round(paidSum / total * 100) };
 }
 const allPays = () => CONTRACTS.reduce(function (a, c) { return a.concat(c.payments); }, []);
 
@@ -2771,7 +2771,7 @@ function opcard(p) {
   const kv = function (l, v) { return e('span', { class: 'fx-op-kv' }, [e('small', {}, l), e('b', {}, v)]); };
   return e('button', { type: 'button', class: 'fx-op is-' + kd[2] + (p.refund ? ' is-rf' : ''), onClick: function () { FX.pid = p.c.no + ':' + p.i; go('payment'); } }, [
     e('span', { class: 'fx-op-h' }, [e('span', { class: 'fx-op-ic' }, frag(tile(kd[1]))), e('span', { class: 'fx-op-t' }, [e('b', {}, title), e('span', {}, p.c.product)])]),
-    e('span', { class: 'fx-op-m' }, [e('span', { class: 'fx-op-v' }, [e('small', {}, p.deferTo ? (p.method === 'توحيد' ? 'المبلغ المنقول' : p.method === 'سداد قيمة المنتج' ? 'المبلغ المسوّى' : p.method === 'إعفاء' ? 'المبلغ المُعفى' : 'المبلغ المؤجَّل') : 'المبلغ المسدَّد'), e('b', {}, [SAR(p.deferTo ? p.amount : opAmt(p)), e('small', {}, ' ريال')])]), p.refund ? DS.badge(rfLbl(p), 'rf') : DS.badge(adm, adm === 'معتمد' ? 'ok' : 'warn')]),
+    e('span', { class: 'fx-op-m' }, [e('span', { class: 'fx-op-v' }, [e('small', {}, p.deferTo ? (p.method === 'توحيد' ? 'المبلغ المنقول' : p.method === 'سداد قيمة المنتج' ? 'المبلغ المسوّى' : p.method === 'إعفاء' ? 'المبلغ المُعفى' : 'قيمة الدفعة المؤجَّلة') : 'المبلغ المسدَّد'), e('b', {}, [SAR(p.deferTo ? p.amount : opAmt(p)), e('small', {}, ' ريال')])]), p.refund ? DS.badge(rfLbl(p), 'rf') : DS.badge(adm, adm === 'معتمد' ? 'ok' : 'warn')]),
     e('span', { class: 'fx-op-g' }, p.deferTo ? (sk ? [kv('التاريخ', isoT(p.at || p.due)), kv('الطريقة', p.method), kv('العقد', ltr(p.c.no))] : [kv('التاريخ', isoT(p.at || p.due)), kv('الطريقة', p.method === 'توحيد' ? 'توحيد العقود' : 'تأجيل'), kv(p.method === 'توحيد' ? 'العقد الموحّد' : 'العقد الناتج', ltr(p.deferTo)), kv('العقد', ltr(p.c.no))])
       : isGw(p) ? [kv('تاريخ الدفع', isoT(p.at)), kv('بوابة الدفع', e('bdi', {}, p.via || 'Paymob')), kv('رقم العملية (Paymob)', ltr(p.gw.txn)), kv('العقد', ltr(p.c.no))]
       : [kv('تاريخ التحويل', isoT(p.at || p.due)), kv('الطريقة', 'تحويل بنكي'), kv('رقم العملية البنكي', ltr(p.txn || '—')), kv('العقد', ltr(p.c.no))]),
@@ -11272,7 +11272,7 @@ function dcRecOpen(k, A, who, cid) {
   const row = function (r) { const q = SRQ(r); return e('button', { type: 'button', class: 'tm-r' + (q ? ' tm-wrap' : ''), 'data-live-ok': '', onClick: function () { admClose(); if (q) lvSrOpen(q.id); else dcPcOpen(r.x.cid, r.c.no); } }, [e('span', { class: 'tm-no', dir: 'ltr' }, r.c.no),
     e('span', { class: 'tm-sub' }, lvBidi((who ? '' : r.x.name + ' · ') + 'الدفعة ' + r.p.i + ' من ' + r.c.n + ' · ' + iso(r.at) + ' · ' + (q ? 'الطلب ' + q.req_no + ' · ' + lvSrShort(q) : r.ref))), e('span', { class: 'tm-amt' }, sar(r.amt)), e('span', { class: 'tm-go', 'aria-hidden': 'true' }, frag(ui('caret-left', 14)))]); };
   cuDrawer({ key: 'dcrec:' + k, ic: { gw: 'card', tr: 'bank', merge: 'merge', defer: 'clock' }[k] || 'files', title: K[1], sub: (who || 'كل العملاء') + ' · ' + fmtNum(A.length) + ' عملية', onClose: function () { draw(); },
-    body: [axKpis([['العمليات', fmtNum(A.length), '', K[2]], [k === 'merge' ? 'المبلغ المنقول' : k === 'defer' ? 'المبلغ المؤجَّل' : 'المبلغ المسدَّد', sar(tot), k === 'gw' || k === 'tr' ? 'ok' : 'warn', 'coins']]),
+    body: [axKpis([['العمليات', fmtNum(A.length), '', K[2]], [k === 'merge' ? 'المبلغ المنقول' : k === 'defer' ? 'قيمة الدفعات المؤجَّلة' : 'المبلغ المسدَّد', sar(tot), k === 'gw' || k === 'tr' ? 'ok' : 'warn', 'coins']]),
       A.length ? e('div', { class: 'tm-rows' }, A.map(row)) : LDS.emptyState({ icon: K[2], title: 'لا عمليات ' + K[1], compact: true })], foot: admFoot() });
 }
 function dcPaySecs(cid, L, keyP, parts) {
@@ -11365,7 +11365,7 @@ const FIN_RK = { gw: { tt: 'السداد عبر بوابة الدفع', hint: '�
   tr: { tt: 'التحويل البنكي', hint: 'دفعات سُدّدت بتحويل بنكي — إثبات التحويل واعتماده لكل دفعة', ic: 'bank:navy', amt: 'المبلغ المحوَّل' },
   cash: { tt: 'السداد النقدي', hint: 'دفعات قُبضت نقدًا — رقم الإيصال لكل دفعة', ic: 'coins:teal', amt: 'المبلغ المقبوض' },
   merge: { tt: 'توحيد العقود', hint: 'دفعات نُقلت إلى عقد موحّد — بطلبها والإجراء الذي تم', ic: 'stack:gold', amt: 'المبلغ المنقول' },
-  defer: { tt: 'تأجيل الدفعات', hint: 'دفعات أُجّلت إلى عقد تأجيل — بطلبها والإجراء الذي تم', ic: 'clock:sky', amt: 'المبلغ المؤجَّل' },
+  defer: { tt: 'تأجيل الدفعات', hint: 'دفعات أُجّلت إلى عقد تأجيل — بطلبها والإجراء الذي تم', ic: 'clock:sky', amt: 'قيمة الدفعة المؤجَّلة' },
   settle: { tt: 'سداد قيمة المنتج', hint: 'دفعات سُدّدت ضمن سداد قيمة المنتج للعقد', ic: 'handshake:teal', amt: 'المبلغ المسوّى' },
   waive: { tt: 'إعفاء فرق دفعة', hint: 'فروق دفعات أُعفي منها العميل', ic: 'seal-check:teal', amt: 'المبلغ المُعفى' },
   round: { tt: 'فرق تقريب', hint: 'فروق هللات سُجّلت عند إغلاق العقد', ic: 'coins:gold', amt: 'فرق التقريب' },
@@ -24091,7 +24091,7 @@ const mn = Math.min.apply(null, tgAmt.length ? tgAmt : [0]), mx = Math.max.apply
 SEC.summary = function () {
 if (!rq.length) return;
 const V = { n: rq.length > 1 ? String(rq.length) : 'رقم ' + rq[0].seq, per: rq.length > 1 ? (Math.abs(mx - mn) < 0.005 ? sar(mx) : 'من ' + sar(mn) + ' إلى ' + sar(mx)) : '', total: sar(tgSum), fees: Number(c.total) > 0 ? sar(c.total) : '' };
-const C = colsOf('summary', [{ k: 'n', l: c.origin === 'client' ? (rq.length > 1 ? 'عدد الدفعات التي طلب العميل تأجيلها' : 'الدفعة التي طلب العميل تأجيلها') : (rq.length > 1 ? 'عدد الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها') }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }]).filter(function (x) { return V[x.k]; });
+const C = colsOf('summary', [{ k: 'n', l: c.origin === 'client' ? (rq.length > 1 ? 'عدد الدفعات التي طلب العميل تأجيلها' : 'الدفعة التي طلب العميل تأجيلها') : (rq.length > 1 ? 'عدد الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها') }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'قيمة الدفعات المؤجَّلة' }, { k: 'fees', l: 'رسوم التأجيل' }]).filter(function (x) { return V[x.k]; });
 if (!C.length) return;
 add.w = 113, add(card(TT.summary, 'info', eqTbl(C.map(function (x) { return x.l; }), [C.map(function (x) { return V[x.k]; })])));
 /* v905: «قرار الفريق» صار قسمًا مستقلًا (SEC.decision) */
@@ -24119,7 +24119,7 @@ const rqT = rq.length === 1 ? 'الدفعة رقم ' + rq[0].seq : 'الدفعا
 const same = !rs && rq.map(function (r) { return String(r.seq); }).sort().join(',') === tg.map(function (r) { return String(r.seq); }).sort().join(',');
 const pB = mode(aB), pA = mode(aA);
 let it = String(T.dec_intro || '').trim();
-if (!it) it = 'طلب العميل تأجيل ' + rqT + (rs ? '، وبعد مراجعة الطلب قرّر الفريق إعادة جدولة كامل المبلغ المتبقي على ' + pn(post.length) + ' بدل ' + pn(pre.length) + (pA < pB - 0.5 ? ' لتخفيف قيمة الدفعة' : '') + '.'
+if (!it) it = 'طلب العميل تأجيل ' + rqT + (rs ? '، وبعد مراجعة الطلب قرّر الفريق إعادة جدولة كامل قيمة الدفعات المتبقية على ' + pn(post.length) + ' بدل ' + pn(pre.length) + (pA < pB - 0.5 ? ' لتخفيف قيمة الدفعة' : '') + '.'
 : same ? '، ووافق الفريق على الطلب كما قدّمه.' : '، واعتمد الفريق تأجيل ' + (tg.length === 1 ? 'الدفعة رقم ' + tg[0].seq : 'الدفعات ' + tg.map(function (r) { return r.seq; }).join('، ')) + '.') + ' ويبيّن الجدول ما كان عليه العقد قبل القرار وما أصبح عليه بعده:';
 const X = [];
 if (S('d_chg')) {
@@ -24331,7 +24331,7 @@ secs: [
 { id: 'dfi', title: 'بيانات المنشأة', titleP: 'tt.ids', kind: 'pairs', p: 'ids', show: 'show.ids', hint: 'القيمة الفارغة تُقرأ من «بيانات المنشأة» في الإعدادات، والحقل بلا قيمة لا يظهر — غيّر المسمّى أو القيمة، أو أضف حقلًا، أو أخفِه.' },
 { id: 'dfo', title: 'خيارات العرض', kind: 'toggles', items: [{ l: 'أيقونات الأقسام', p: 'show.icons' }] },
 { id: 'dfp', title: 'أطراف الملحق', titleP: 'tt.parties', show: 'show.parties', kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }], parts: [{ kind: 'fields', fields: [{ l: 'الطرف الأول', p: 'p1' }, { l: 'التمهيد', p: 'intro', hp: 'show.intro' }] }, { sub: 'الحقول الظاهرة', kind: 'toggles', items: [{ l: 'الطرف الأول', p: 'show.p1' }, { l: 'الطرف الثاني', p: 'show.p2' }, { l: 'اسم المنتج', p: 'show.product' }] }], hint: 'الطرف الثاني والمنتج من الطلب نفسه، ورقم العقد في الترويسة.' },
-{ id: 'dfm', title: 'ملخص الطلب', titleP: 'tt.summary', kind: 'info', show: 'show.summary', info: 'كم دفعة طلب العميل تأجيلها وقيمتها ورسومها.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'summary', defs: [{ k: 'n', l: 'الدفعة / عدد الدفعات' }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'المبلغ المؤجَّل' }, { k: 'fees', l: 'رسوم التأجيل' }] }], hint: '«قيمة كل دفعة» تظهر عند تأجيل أكثر من دفعة.' },
+{ id: 'dfm', title: 'ملخص الطلب', titleP: 'tt.summary', kind: 'info', show: 'show.summary', info: 'كم دفعة طلب العميل تأجيلها وقيمتها ورسومها.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'summary', defs: [{ k: 'n', l: 'الدفعة / عدد الدفعات' }, { k: 'per', l: 'قيمة كل دفعة' }, { k: 'total', l: 'قيمة الدفعات المؤجَّلة' }, { k: 'fees', l: 'رسوم التأجيل' }] }], hint: '«قيمة كل دفعة» تظهر عند تأجيل أكثر من دفعة.' },
 { id: 'dfr', title: 'قرار الفريق', titleP: 'tt.decision', kind: 'info', show: 'show.decision', info: 'ما قرّره الفريق: جدول قبل القرار وبعده، ثم «ما الذي تغيّر» — يُكتب تلقائيًا من حسبة الطلب.', parts: [{ sub: 'التمهيد — اتركه فارغًا ليُكتب تلقائيًا من القرار', kind: 'text', p: 'dec_intro', title: 'التمهيد' }, { sub: 'الصفوف الظاهرة', kind: 'toggles', items: [{ l: 'عدد الدفعات المتبقية', p: 'show.d_n' }, { l: 'قيمة الدفعة', p: 'show.d_per' }, { l: 'أول دفعة مستحقة', p: 'show.d_first' }, { l: 'آخر دفعة', p: 'show.d_last' }, { l: 'المتبقي', p: 'show.d_rem' }, { l: '«ما الذي تغيّر»', p: 'show.d_chg' }] }], hint: 'يظهر في الملحق وفي رابط العميل، ويمكن إخفاؤه كله أو إخفاء أي صف منه.' },
 { id: 'dfd', title: 'جدول الدفعات قبل التأجيل', titleP: 'tt.defer', kind: 'info', show: 'show.defer', info: 'كل الدفعات بمواعيدها وقيمها وحالتها قبل التأجيل — من حسبة الطلب.', parts: [{ sub: 'الأعمدة', kind: 'cols', key: 'defer', defs: [{ k: 'seq', l: 'الدفعة' }, { k: 'due', l: 'تاريخ الاستحقاق' }, { k: 'amt', l: 'القيمة' }, { k: 'st', l: 'الحالة' }] }, { sub: 'الدفعات الظاهرة', kind: 'rowsHide', p: 'defer', src: 'rows' }], hint: 'الأعمدة الظاهرة تتوزّع بعرض متساوٍ.' },
 { id: 'dff', title: 'رسوم التأجيل', titleP: 'tt.fees', kind: 'toggles', show: 'show.fees', items: [{ l: 'المجموع قبل الضريبة', p: 'show.f_sub' }, { l: 'ضريبة القيمة المضافة', p: 'show.f_vat' }, { l: 'إجمالي الرسوم', p: 'show.f_tot' }], parts: [{ kind: 'toggles', items: [{ l: 'المجموع قبل الضريبة', p: 'show.f_sub' }, { l: 'ضريبة القيمة المضافة', p: 'show.f_vat' }, { l: 'إجمالي الرسوم', p: 'show.f_tot' }] }, { sub: 'بنود الرسوم الظاهرة', kind: 'rowsHide', p: 'fees', src: 'fees' }], hint: 'بنود الرسوم كما يراها العميل — من حسبة الطلب.' },
@@ -34188,7 +34188,7 @@ if (LIVE.on) {
 /* ===== v452: «سجل المدفوعات» واحد للاطلاع — كل عملية مرة واحدة بطريقتها وحالتها (بوابة · تحويل بنكي · توحيد · تأجيل · سداد قيمة المنتج · إعفاء · فرق تقريب)،
    و«عمليات بوابة الدفع» تقرير واحد، والاستحقاق بلا أدراج. الاعتماد والرفض والاسترداد وروابط الدفع من ملف العميل وصندوق «إيصالات التحويل البنكي». ===== */
 if (LIVE.on) {
-  const FP_K = [['gw', 'بوابة الدفع', 'credit-card:teal', 'المبلغ المسدَّد'], ['tr', 'تحويل بنكي', 'bank:navy', 'المبلغ المحوَّل'], ['cash', 'نقدًا', 'coins:teal', 'المبلغ المقبوض'], ['merge', 'توحيد العقود', 'stack:gold', 'المبلغ المنقول'], ['defer', 'تأجيل دفعة', 'clock:sky', 'المبلغ المؤجَّل'],
+  const FP_K = [['gw', 'بوابة الدفع', 'credit-card:teal', 'المبلغ المسدَّد'], ['tr', 'تحويل بنكي', 'bank:navy', 'المبلغ المحوَّل'], ['cash', 'نقدًا', 'coins:teal', 'المبلغ المقبوض'], ['merge', 'توحيد العقود', 'stack:gold', 'المبلغ المنقول'], ['defer', 'تأجيل دفعة', 'clock:sky', 'قيمة الدفعة المؤجَّلة'],
     ['settle', 'سداد قيمة المنتج', 'handshake:teal', 'المبلغ المسوّى'], ['waive', 'إعفاء فرق دفعة', 'seal-check:teal', 'المبلغ المُعفى'], ['round', 'فرق تقريب', 'coins:gold', 'فرق التقريب'], ['oth', 'بلا طريقة مسجّلة', 'receipt:navy', 'المبلغ المسدَّد']];
   const FP_KM = {}; FP_K.forEach(function (x) { FP_KM[x[0]] = x; });
   const FP_CASH = { gw: 1, tr: 1, cash: 1, oth: 1 };

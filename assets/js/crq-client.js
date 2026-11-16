@@ -35,13 +35,15 @@ function payN(n) { return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعت�
 function stateOf(p, today) {
 if (p.busy) return { k: 'busy', t: 'في طلب قائم ' + p.busy };
 var d = diffDays(p.due, today);
+/* v912: المسدَّدة جزئيًا — تُحسب متأخرة كما في «توحيد العقود» وصفحة العقد، ومقفلة: يُسدَّد متبقّيها ولا تُؤجَّل */
+if (p.part) return { k: d > 0 ? 'late' : 'open', lock: true, t: d > 0 ? 'متأخرة ' + daysW(d) + ' — مدفوعة جزئيًا' : 'مدفوعة جزئيًا' };
 if (d > 0) return { k: 'late', d: d, t: 'متأخرة ' + daysW(d) };
 if (d > -30) return { k: 'soon', t: d === 0 ? 'تستحق اليوم' : 'تستحق بعد ' + daysW(-d) };
 return { k: 'open', t: 'قادمة' };
 }
 function lateOf(c, today) {
 var L = (c && c.payments || []).filter(function (p) { return diffDays(p.due, today) > 0; });
-return { n: L.length, sum: L.reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0) };
+return { n: L.length, sum: L.reduce(function (a, p) { return a + (Number(p.part ? p.left : p.amount) || 0); }, 0) };
 }
 function seqList(L) { var s = L.map(function (p) { return String(p.seq); }); return s.length <= 1 ? s.join('') : s.slice(0, -1).join(' و') + ' و' + s[s.length - 1]; }
 function propText(pr) {
@@ -72,7 +74,7 @@ var S = o.S, c = o.contract, today = todayIso(o.today), paint = o.paint || funct
 if (!S.method) S.method = 'end';
 S.miss = S.miss || [];
 var pays = (c && c.payments || []).slice().sort(function (a, b) { return ymd(a.due) < ymd(b.due) ? -1 : ymd(a.due) > ymd(b.due) ? 1 : a.seq - b.seq; });
-S.pids = (S.pids || []).filter(function (id) { return pays.some(function (p) { return p.pid === id && !p.busy; }); });
+S.pids = (S.pids || []).filter(function (id) { return pays.some(function (p) { return p.pid === id && !p.busy && !p.part; }); });
 var lt = lateOf(c, today), sel = pays.filter(function (p) { return S.pids.indexOf(p.pid) >= 0; });
 var out = [];
 if (lt.n) out.push(el('div', { class: 'cc-top' }, [icon('alert'), el('span', {}, ['على هذا العقد ', el('b', { text: cntW(lt.n, 'متأخرة', 'متأخرتان') }), ' بقيمة ', el('b', {}, [el('bdi', { dir: 'ltr', text: money(lt.sum) }), ' ريال']), '.'])]));
@@ -80,11 +82,11 @@ out.push(el('div', { class: 'cc-legend', 'aria-hidden': 'true' }, [['late', 'م�
 out.push(el('div', { class: 'cc-sh is-a' + (S.miss.indexOf('pids') >= 0 ? ' is-miss' : '') }, [el('b', { text: '١. الدفعة المراد تأجيلها' }), el('span', { text: (sel.length ? cntW(sel.length, 'محددة', 'محددتان') : 'لم تُحدَّد') + ' · حتى ' + MAXP })]));
 out.push(el('div', { class: 'cc-pays' + (S.miss.indexOf('pids') >= 0 ? ' is-miss' : ''), role: 'group', 'aria-label': 'الدفعات' }, pays.length ? pays.map(function (p) {
 var st = stateOf(p, today), on = S.pids.indexOf(p.pid) >= 0, full = !on && S.pids.length >= MAXP;
-var ctl = st.k === 'busy' ? el('span', { class: 'cc-lock', title: 'لا يمكن اختيارها حتى يُغلق الطلب ' + p.busy + ' أو يُنفَّذ' }, [icon('lock')])
+var ctl = st.k === 'busy' || st.lock ? el('span', { class: 'cc-lock', title: st.lock ? 'مدفوعة جزئيًا — يُسدَّد متبقّيها من صفحة الدفعات، ولا تُؤجَّل' : 'لا يمكن اختيارها حتى يُغلق الطلب ' + p.busy + ' أو يُنفَّذ' }, [icon('lock')])
 : el('input', { type: 'checkbox', checked: on, disabled: full, 'aria-label': 'الدفعة ' + p.seq, onchange: function (e) { S.pids = S.pids.filter(function (x) { return x !== p.pid; }); if (e.target.checked) S.pids.push(p.pid); S.miss = []; paint(); } });
-return el('label', { class: 'cc-pay is-' + st.k + (on ? ' is-on' : '') + (full ? ' is-full' : '') }, [el('span', { class: 'cc-pay-n', text: String(p.seq) }),
+return el('label', { class: 'cc-pay is-' + st.k + (st.lock ? ' is-lock' : '') + (on ? ' is-on' : '') + (full ? ' is-full' : '') }, [el('span', { class: 'cc-pay-n', text: String(p.seq) }),
 el('span', { class: 'cc-pay-m' }, [el('b', { text: day(p.due) }), el('span', { class: 'cc-pill is-' + st.k, text: st.t })]),
-el('span', { class: 'cc-pay-a' }, [el('bdi', { dir: 'ltr', text: money(p.amount) }), ' ر.س']), ctl]);
+el('span', { class: 'cc-pay-a' }, p.part ? [el('bdi', { dir: 'ltr', text: money(p.left) }), ' ر.س', el('small', { text: 'المتبقي' })] : [el('bdi', { dir: 'ltr', text: money(p.amount) }), ' ر.س']), ctl]);
 }) : [el('p', { class: 'cc-muted', text: 'لا دفعات مستحقة في هذا العقد.' })]));
 /* ٢. اقتراحك */
 var chips = function (L, cur, set, key) { return el('div', { class: 'cc-chips' + (S.miss.indexOf(key) >= 0 ? ' is-miss' : ''), role: 'radiogroup' }, L.map(function (x) { var on = cur === x[0]; return el('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: 'cc-chip' + (on ? ' is-on' : ''), 'data-live-ok': '', onclick: function () { set(x[0]); S.miss = []; paint(); } }, [x[1]]); })); };
