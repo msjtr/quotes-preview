@@ -9538,3 +9538,13 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg9-tools .eg9-btn{flex:1 1 calc(50% - 6px)}.eg9-seg{width:100%}.eg9-seg button{flex:1}
 .eg9-tabs{border-radius:14px}.eg9-tabs button{min-height:2.6rem;padding:0 .8rem;font-size:13.5px}
 .eg9-card{padding:14px}.eg9-rp{grid-template-columns:1fr}.eg9-rp-k{padding-top:0}}
+/* v917 */
+.eg9-lead{display:block;margin:0;color:var(--t2-muted);font-size:14px;line-height:1.7}
+.eg9-c-nx{min-width:150px}
+.eg9-c-st{min-width:180px}
+.eg9 .eg9-grid.is-2 .cu-mgr-doc{flex-wrap:wrap;align-items:flex-start;gap:8px}
+.eg9 .eg9-grid.is-2 .cu-mgr-doc-t{flex:1 1 100%;min-width:0}
+.eg9 .eg9-grid.is-2 .cu-mgr-doc-t small{overflow-wrap:anywhere}
+.eg9 .eg9-grid.is-2 .cu-mgr-doc .t2-pb-actions{flex:1 1 100%;justify-content:flex-start}
+.eg9-note.is-info .eg9-note-i{background:linear-gradient(160deg,#1D3F78,#0A1F44);box-shadow:0 4px 0 #050f22;font-style:italic}
+.eg9-note.is-info .eg9-note-b{background:var(--t2-navy);box-shadow:none}
