@@ -475,7 +475,7 @@ return out.sort(function (a, b) { return a.seq - b.seq; });
 function rsInit(x, c) {
 var open = (x.payments || []).filter(function (p) { return p.open; }).sort(function (a, b) { return a.seq - b.seq; });
 if (!Number(c.sched.count)) c.sched.count = open.length || 1;
-if (!c.sched.start) { var t = new Date(); t.setHours(0, 0, 0, 0); var f = open[0] && open[0].due ? new Date(String(open[0].due).slice(0, 10) + 'T00:00:00') : null; var d = f && f > t ? f : new Date(t.getFullYear(), t.getMonth() + 1, t.getDate());
+if (!c.sched.start) { var t = new Date(); t.setHours(0, 0, 0, 0); var f = open[0] && open[0].due ? new Date(String(open[0].due).slice(0, 10) + 'T00:00:00') : null; if (f && (c.client_pids || x.payment_ids || []).map(String).indexOf(String(open[0].pid)) >= 0) f = new Date(f.getFullYear(), f.getMonth() + 1, f.getDate()); /* v907: الدفعة التي طلب العميل تأجيلها تتأجل فعلًا — أول دفعة بعد موعدها بشهر */ var d = f && f > t ? f : new Date(t.getFullYear(), t.getMonth() + 1, t.getDate());
 c.sched.start = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 }
 function rsCtl(x, c, ed, upd) {
@@ -1058,7 +1058,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=906'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=907'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
