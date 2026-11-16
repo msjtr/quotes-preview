@@ -91,7 +91,7 @@ jobs:
           S="$RUNNER_TEMP/seg"; mkdir -p "$RUNNER_TEMP/out"
           for o in l p; do k=landscape; [ $o = p ] && k=portrait
             bash film/join.sh "$RUNNER_TEMP/out/$k.mp4" "$RUNNER_TEMP/out/$k.jpg" "$S/seg-$o-0.mp4" "$S/seg-$o-525.mp4" "$S/seg-$o-760.mp4"
-            n=$(ffprobe -v error -count_packets -select_streams v:0 -show_entries stream=nb_read_packets,width,height -of csv=p=0 "$RUNNER_TEMP/out/$k.mp4"); echo "$k $n"
+            n=$(ffprobe -v error -count_packets -select_streams v:0 -show_entries stream=nb_read_packets,width,height -of csv=p=0 "$RUNNER_TEMP/out/$k.mp4" | tr -d '[:space:]' | sed -E 's/,+$//'); echo "$k $n" # v914: ffmpeg 8 (Ubuntu 26) يضيف فاصلة في آخر السطر فكان الفيلم السليم يُرفض «غير مكتمل»
             case "$n" in (1920,1080,975|1080,1920,975) ;; (*) echo "فيلم غير مكتمل: $k $n"; exit 1;; esac
           done
       - name: الرفع إلى Cloudflare R2
