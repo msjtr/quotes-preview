@@ -107,3 +107,37 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .mgx-m { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--t2-muted, #566A88); }
 .mgx-al .mgx-m { margin-top: 6px; color: #B3261E; }
 .t2.is-dark .mgx-dots i { background: #2A3A55; } .t2.is-dark .mgx-top, .t2.is-dark .mgx-al-t, .t2.is-dark .mgx-al .mgx-m { color: #FF8A80; }
+
+/* v910: ملاحق العقد في صفحة العقد — قبل الملحق وبعده */
+.cc-anx { margin: 0; }
+.cc-anx-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.cc-anx-h h3 { margin: 0; }
+.cc-anx-l { display: flex; flex-direction: column; }
+.cc-anx-i { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px dashed var(--k-line); }
+.cc-anx-i:first-child { border-top: 0; }
+.cc-anx-n { width: 44px; height: 46px; border-radius: 12px; background: rgba(184, 111, 10, .12); color: var(--k-warn); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1.2; }
+.cc-anx-n b { font-size: 16px; }
+.cc-anx-t { min-width: 0; }
+.cc-anx-t > b { font-size: 14.5px; color: var(--k-navy); display: block; }
+.cc-anx-t > small { font-size: 12.5px; color: var(--k-muted); }
+.cc-anx-f { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cc-anx-f span { font-size: 12px; background: var(--k-soft); border-radius: 8px; padding: 3px 9px; color: var(--k-navy); }
+.cc-anx-a { margin-top: 8px; }
+.cc-anx-tb { margin-top: 10px; }
+.cc-anx-seg { display: flex; gap: 6px; margin-bottom: 8px; }
+.cc-anx-2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.cc-anx-2 .cc-anx-c.is-a { display: none; } .cc-anx-2.is-after .cc-anx-c.is-a { display: block; } .cc-anx-2.is-after .cc-anx-c.is-b { display: none; }
+.cc-anx-c { border: 1px solid var(--k-line); border-radius: 14px; overflow: hidden; min-width: 0; }
+.cc-anx-c > b { display: block; padding: 9px 12px; font-size: 13.5px; color: var(--k-navy); border-bottom: 1px solid var(--k-line); }
+.cc-at { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cc-at th { background: var(--k-navy); color: #fff; font-weight: 600; padding: 7px 8px; text-align: start; font-size: 12px; }
+.t2.is-dark .cc-at th { color: #04121F; }
+.cc-at th:first-child, .cc-at td:first-child { width: 2.4rem; }
+.cc-anx-c { overflow-x: auto; }
+.cc-at td { white-space: nowrap; padding: 7px 8px; border-bottom: 1px solid var(--k-line); font-variant-numeric: tabular-nums; }
+.cc-at tr.is-mv td { background: rgba(184, 111, 10, .06); }
+.cc-at s { color: var(--k-muted); }
+.cc-mv { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--k-warn); background: rgba(184, 111, 10, .12); border-radius: 6px; padding: 1px 7px; }
+.cc-ed { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--k-acc); background: rgba(15, 163, 168, .1); border-radius: 6px; padding: 1px 7px; }
+.cc-muted0 { font-size: 12px; color: var(--k-muted); }
+@media (min-width: 1100px) { .cc-anx-seg { display: none; } .cc-anx-2 { grid-template-columns: 1fr 1fr; } .cc-anx-2 .cc-anx-c.is-a, .cc-anx-2 .cc-anx-c.is-b { display: block !important; } }

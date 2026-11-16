@@ -120,7 +120,7 @@ return j;
 async function load() {
 try { var a = await Promise.all([api('GET', '/api/account/crq/options'), api('GET', '/api/account/crq')]); S.opts = a[0].contracts || []; S.today = a[0].today || ''; S.mine = (a[1].rows || []).filter(function (r) { return r.kind === 'defer'; }); S.err = ''; }
 catch (e) { S.err = e.message; S.opts = S.opts || []; S.mine = S.mine || []; }
-if (!S.no && o.cid && S.opts.some(function (c) { return c.no === o.cid; })) S.no = o.cid;
+if (!S.no && o.cid && S.opts.some(function (c) { return c.no === o.cid && !c.busy; })) S.no = o.cid;
 if (o.pid && !S.pids.length) S.pids = [o.pid];
 paint();
 }
@@ -134,7 +134,7 @@ var out = [stepper(0)];
 if (!S.opts.length) return out.concat([el('div', { class: 'cc-note' }, [icon('alert'), el('span', { text: 'لا توجد دفعات مستحقة في عقودك يمكن تأجيلها الآن.' })])]);
 out.push(field('العقد', el('select', { onchange: function (e) { S.no = e.target.value; S.pids = []; S.miss = []; paint(); } }, [el('option', { value: '', text: '— اختر العقد —' })].concat(S.opts.map(function (x) {
 var lt = lateOf(x, todayIso(S.today));
-return el('option', { value: x.no, selected: S.no === x.no, text: x.no + (x.product ? ' · ' + x.product : '') + (lt.n ? ' · ' + cntW(lt.n, 'متأخرة', 'متأخرتان') : '') });
+return el('option', { value: x.no, selected: S.no === x.no, disabled: !!x.busy, text: x.no + (x.product ? ' · ' + x.product : '') + (x.busy ? ' · عليه طلب قائم ' + x.busy : lt.n ? ' · ' + cntW(lt.n, 'متأخرة', 'متأخرتان') : '') });
 }))), S.miss.indexOf('no') >= 0));
 if (c) {
 out.push(picker({ S: S, contract: c, today: S.today, paint: paint }));
@@ -142,6 +142,7 @@ out.push(el('div', { class: 'cc-note is-info' }, [icon('clock'), el('span', { te
 out.push(el('label', { class: 'cc-ack' + (S.miss.indexOf('ack') >= 0 ? ' is-miss' : '') }, [el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; S.miss = []; } }),
 el('span', { text: 'أطلب تأجيل الدفعة المختارة من العقد ' + c.no + '، وأعلم أن الموافقة على العرض والتوقيع على الملحق يعدّلان عقدي نفسه.' })]));
 }
+if (S.opts.some(function (x) { return x.busy; })) out.push(el('div', { class: 'cc-note is-info' }, [icon('alert'), el('span', { text: 'طلب تأجيل واحد مفتوح لكل عقد: العقد الذي عليه طلب قائم يُتاح بعد إغلاق طلبه، وباقي عقودك متاحة الآن.' })]));
 if (S.err) out.push(el('p', { class: 'cc-err', role: 'alert', text: S.err }));
 out.push(el('div', { class: 'cc-acts' }, [el('button', { type: 'button', class: 'cc-btn is-pri', disabled: S.busy, 'data-live-ok': '', onclick: submit }, ['إرسال طلب التأجيل']), o.back ? el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: o.back }, ['رجوع']) : null]));
 return out;
@@ -189,5 +190,69 @@ if (r) root.appendChild(el('div', { class: 'cc-card cc-confirm', 'data-cc-confir
 paint(); load();
 return root;
 }
-window.CRQC = { page: page, picker: picker, check: check, payload: payload, propText: propText, lateOf: lateOf };
+
+/* ===== v910: ملاحق العقد — كل تأجيل منفَّذ ملحق مرقّم في صفحة العقد، بجدوله قبل وبعد ===== */
+var ANX = { at: 0, rows: null, wait: null };
+function anxLoad(token) {
+if (ANX.rows && Date.now() - ANX.at < 60000) return Promise.resolve(ANX.rows);
+if (ANX.wait) return ANX.wait;
+ANX.wait = Promise.resolve(token()).then(function (t) { return fetch('/api/account/crq/annexes', { cache: 'no-store', credentials: 'same-origin', headers: { Authorization: 'Bearer ' + t, Accept: 'application/json' } }); })
+.then(function (r) { return r.json(); }).then(function (j) { ANX.rows = (j && j.ok && j.rows) || []; ANX.at = Date.now(); ANX.wait = null; return ANX.rows; })
+.catch(function () { ANX.wait = null; return ANX.rows || []; });
+return ANX.wait;
+}
+function d10(s) { return String(s || '').slice(0, 10); }
+function dmy(s) { var d = d10(s).split('-'); return d.length === 3 ? d[2] + '/' + d[1] + '/' + d[0] : d10(s); }
+function anxFacts(a) {
+var R = a.rows || [], before = R.filter(function (x) { return x.open && !x.added; }).length, after = R.filter(function (x) { return (x.open || x.added) && !x.merged; }).length;
+var mg = R.filter(function (x) { return x.merged; }).length, ad = R.filter(function (x) { return x.added; }).length, mv = R.filter(function (x) { return x.open && !x.merged && !x.added && (x.due_after !== x.due_before || Number(x.amt_after) !== Number(x.amt_before)); }).length;
+var f = [];
+if (before !== after) f.push('أُعيدت جدولة ' + before + ' ← ' + after + ' دفعة'); else if (mv) f.push('عُدّلت ' + cntW(mv, '', '').trim());
+if (mg) f.push('دُمجت ' + cntW(mg, '', '').trim());
+if (ad) f.push('أُضيفت ' + cntW(ad, 'جديدة', 'جديدتان'));
+var first = R.filter(function (x) { return (x.open || x.added) && !x.merged; }).map(function (x) { return d10(x.due_after); }).sort()[0];
+if (first) f.push('أول دفعة ' + day(first));
+if (a.total != null) f.push('رسوم ' + money(a.total) + ' ريال');
+return f;
+}
+function anxTable(a, side) {
+var R = (a.rows || []).slice();
+if (side === 'before') {
+R = R.filter(function (x) { return !x.added; }).sort(function (p, q) { return d10(p.due_before) < d10(q.due_before) ? -1 : d10(p.due_before) > d10(q.due_before) ? 1 : p.seq - q.seq; });
+return el('table', { class: 'cc-at' }, [el('thead', {}, [el('tr', {}, ['#', 'الاستحقاق', 'القيمة', 'نُقلت إلى'].map(function (h) { return el('th', { text: h }); }))]),
+el('tbody', {}, R.map(function (x) {
+var mv = x.open && !x.merged && (x.due_after !== x.due_before || Number(x.amt_after) !== Number(x.amt_before));
+var what = !x.open ? el('span', { class: 'cc-muted0', text: 'مسدَّدة' }) : x.merged ? el('span', { class: 'cc-mv', text: 'دُمجت' }) : mv ? el('span', { class: 'cc-mv' }, [el('bdi', { dir: 'ltr', text: dmy(x.due_after) })]) : el('span', { class: 'cc-muted0', text: 'لم تتغيّر' });
+return el('tr', { class: (mv || x.merged) ? 'is-mv' : '' }, [el('td', { text: String(x.seq) }), el('td', {}, [(mv || x.merged) ? el('s', {}, [el('bdi', { dir: 'ltr', text: dmy(x.due_before) })]) : el('bdi', { dir: 'ltr', text: dmy(x.due_before) })]), el('td', {}, [el('bdi', { dir: 'ltr', text: money(x.amt_before) })]), el('td', {}, [what])]);
+}))]);
+}
+R = R.filter(function (x) { return !x.merged && (x.open || x.added || !x.open); }).filter(function (x) { return !x.merged; }).sort(function (p, q) { return d10(p.due_after) < d10(q.due_after) ? -1 : d10(p.due_after) > d10(q.due_after) ? 1 : p.seq - q.seq; });
+return el('table', { class: 'cc-at' }, [el('thead', {}, [el('tr', {}, ['#', 'الاستحقاق', 'القيمة', ''].map(function (h) { return el('th', { text: h }); }))]),
+el('tbody', {}, R.map(function (x) {
+var ch = x.added || (x.open && (x.due_after !== x.due_before || Number(x.amt_after) !== Number(x.amt_before)));
+return el('tr', {}, [el('td', { text: String(x.seq) }), el('td', {}, [el('bdi', { dir: 'ltr', text: dmy(x.due_after) })]), el('td', {}, [el('bdi', { dir: 'ltr', text: money(x.amt_after) })]), el('td', {}, [x.added ? el('span', { class: 'cc-ed', text: 'دفعة جديدة' }) : ch ? el('span', { class: 'cc-ed', text: 'بالملحق ' + a.n }) : !x.open ? el('span', { class: 'cc-muted0', text: 'مسدَّدة' }) : null])]);
+}))]);
+}
+function annexes(o) {
+var root = el('div', { class: 'cc cc-anx', dir: 'rtl' }), open = {}, side = {};
+function paint(L) {
+root.innerHTML = '';
+var A = (L || []).filter(function (a) { return a.contract_no === o.no; }).sort(function (p, q) { return q.n - p.n; });
+if (!A.length) { root.hidden = true; return; }
+root.hidden = false;
+root.appendChild(el('section', { class: 'cc-card' }, [el('div', { class: 'cc-anx-h' }, [el('h3', { text: 'ملاحق العقد' }), el('span', { class: 'cc-badge is-warn', text: A.length === 1 ? 'ملحق واحد' : A.length === 2 ? 'ملحقان' : A.length + ' ملاحق' })]),
+el('div', { class: 'cc-anx-l' }, A.map(function (a) {
+var k = a.no, isOpen = !!open[k], sd = side[k] || 'before';
+var body = isOpen ? el('div', { class: 'cc-anx-tb' }, [el('div', { class: 'cc-anx-seg', role: 'tablist' }, [['before', 'قبل الملحق'], ['after', 'بعد الملحق']].map(function (s) { return el('button', { type: 'button', role: 'tab', 'aria-selected': sd === s[0] ? 'true' : 'false', class: 'cc-chip' + (sd === s[0] ? ' is-on' : ''), 'data-live-ok': '', onclick: function () { side[k] = s[0]; paint(L); } }, [s[1]]); })),
+el('div', { class: 'cc-anx-2' + (sd === 'after' ? ' is-after' : '') }, [el('div', { class: 'cc-anx-c is-b' }, [el('b', { text: 'الجدول قبل الملحق' }), anxTable(a, 'before')]), el('div', { class: 'cc-anx-c is-a' }, [el('b', { text: 'الجدول بعد الملحق' }), anxTable(a, 'after')])])]) : null;
+return el('div', { class: 'cc-anx-i' }, [el('span', { class: 'cc-anx-n' }, ['ملحق', el('b', { text: String(a.n) })]), el('div', { class: 'cc-anx-t' }, [el('b', {}, ['تأجيل دفعة · ', el('bdi', { dir: 'ltr', text: a.no })]), el('small', { text: 'نُفّذ ' + day(a.executed_at) + ' · بتوقيعك' }),
+el('div', { class: 'cc-anx-f' }, anxFacts(a).map(function (t) { return el('span', { text: t }); })),
+el('div', { class: 'cc-anx-a' }, [el('button', { type: 'button', class: 'cc-btn is-sm', 'aria-expanded': isOpen ? 'true' : 'false', 'data-live-ok': '', onclick: function () { open[k] = !isOpen; paint(L); } }, [isOpen ? 'إخفاء الجدول' : 'الجدول قبل وبعد'])]), body])]);
+}))]));
+}
+root.hidden = true;
+anxLoad(o.token).then(paint);
+return root;
+}
+window.CRQC = { page: page, picker: picker, check: check, payload: payload, propText: propText, lateOf: lateOf, annexes: annexes };
 })();

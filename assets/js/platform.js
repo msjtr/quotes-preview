@@ -3253,7 +3253,9 @@ function contractPage() {
   void canPay; void canDefer;
   /* «الدفعة القادمة» مكانها السداد والتأجيل، و«طلب سداد العقد» مكانه بطاقته في خدماتي — العقد يعرض بياناته وجدوله فقط */
   void dueBox; void sched;
-  return [head, money, schedTimeline(c), ind, facts, statusNote()].filter(Boolean);
+  /* v910: ملاحق العقد (كل تأجيل منفَّذ ملحق مرقّم بجدوله قبل وبعد) — من crq-client.js */
+if (!CRQ_ANX[c.no] && window.CRQC && window.CRQC.annexes) CRQ_ANX[c.no] = window.CRQC.annexes({ no: c.no, token: liveToken });
+return [head, money, schedTimeline(c), CRQ_ANX[c.no] || null, ind, facts, statusNote()].filter(Boolean);
 }
 
 /* ===== سداد: دفعة من عقد، أو المستحقات خلال 30 يومًا — اختيار ← تأكيد ← إيصال ===== */
@@ -4000,6 +4002,7 @@ function mergePage() {
 /* ===== v861: طلب تأجيل دفعة — منظومة طلبات العقود الموحّدة (assets/js/crq-client.js) =====
 العقد والدفعة ← الإرسال ← العرض للموافقة برابط ← الملحق للتوقيع برابط ← تعديل العقد نفسه آليًا. لا عقد تأجيل جديد ولا مسار قديم. */
 let CRQ_HOST = null;
+const CRQ_ANX = {}; /* v910 */
 function deferPage() {
 if (!window.CRQC || !window.CRQC.page) return [DS.note('warn', 'تعذّر تحميل صفحة طلب التأجيل', 'حدّث الصفحة وحاول مرة أخرى.')];
 const p = FX.payPid ? payById(FX.payPid) : null;
