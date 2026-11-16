@@ -9548,3 +9548,7 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg9 .eg9-grid.is-2 .cu-mgr-doc .t2-pb-actions{flex:1 1 100%;justify-content:flex-start}
 .eg9-note.is-info .eg9-note-i{background:linear-gradient(160deg,#1D3F78,#0A1F44);box-shadow:0 4px 0 #050f22;font-style:italic}
 .eg9-note.is-info .eg9-note-b{background:var(--t2-navy);box-shadow:none}
+/* v918: مستندات «المستندات والقرار» في نصف العرض — الاسم بعرض البطاقة والأزرار تحته */
+.eg9 .eg9-grid.is-2 .srd .att{grid-template-columns:auto minmax(0,1fr)}
+.eg9 .eg9-grid.is-2 .srd .att>.vld{grid-column:1/-1;justify-content:flex-start}
+.eg9 .eg9-grid.is-2 .srd .att>.lbl{min-width:0;overflow-wrap:anywhere}
