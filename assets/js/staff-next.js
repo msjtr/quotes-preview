@@ -635,7 +635,7 @@ function geoQ() {
   var SHORT = [[/^جدول السداد/, 'جدول السداد'], [/^مكوّنات|^مكونات/, 'مكوّنات القيمة'], [/^تفاصيل العقد/, 'التفاصيل'], [/^مستندات العقد/, 'المستندات'], [/^سجل الأحداث/, 'السجل']];
   var SKIPK = /المسددة|آخر دفعة|عرض السعر/, DIAC = /[ً-ْ]/g;
   /* v804: تبويبات العقد — مهمة واحدة لكل تبويب، والأقسام المتقاربة في تبويب واحد */
-  var CGRP = [['جدول السداد', /جدول السداد/], ['التفاصيل والقيمة', /مكوّنات|مكونات|تفاصيل|عرض السعر|الرسوم|المصاريف/], ['الوسائل المرتبطة', /الوسائل/], ['الإيصالات', /إيصال/], ['المستندات', /مستندات/], ['السجل', /سجل/]];
+  var CGRP = [['جدول السداد', /جدول السداد/], ['إعادة الجدولة', /إعادة الجدولة/], ['التفاصيل والقيمة', /مكوّنات|مكونات|تفاصيل|عرض السعر|الرسوم|المصاريف/], ['الوسائل المرتبطة', /الوسائل/], ['الإيصالات', /إيصال/], ['المستندات', /مستندات/], ['السجل', /سجل/]];
   var AG = [['التحصيل والسداد', ['pset', 'plink', 'btr', 'gwop']], ['تعديل الدفعات', ['edit', 'waive', 'link', 'unset']], ['حالة العقد', ['settle', 'close', 'reopen', 'cedit']]];
   var AIC = { pset: '✓', plink: '⛓', btr: '⇄', settle: '◎', gwop: '↺', edit: '✎', waive: '½', link: '⤳', unset: '↶', close: '■', reopen: '□', cedit: '✎' };
   function txt(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
@@ -975,7 +975,7 @@ function geoQ() {
     var no = ch ? txt(ch.querySelector('.rq-no bdi')) : '';
     if (!no) no = title(s).replace(CT, '').split('·')[0].trim();
     var pills = ch ? [].map.call(ch.querySelectorAll('.fx-chead-s .t2-pill'), function (p) { return { t: txt(p), c: tone(p) }; }) : [];
-    var st = pills.filter(function (p) { return !/عقد جديد|مرحّل|منقول/.test(p.t); })[0] || pills[pills.length - 1] || { t: count(s), c: '' };
+    var st = pills.filter(function (p) { return !/عقد جديد|مرحّل|منقول|أُعيدت جدولته/.test(p.t); })[0] || pills[pills.length - 1] || { t: count(s), c: '' };
     var left = '', pct = -1;
     if (tr) {
       [].forEach.call(tr.querySelectorAll('.fx-trio-i'), function (i) { if (/المتبقي/.test(txt(i.querySelector('span')))) left = txt(i.querySelector('b')); });
@@ -984,13 +984,14 @@ function geoQ() {
     }
     var lateV = 0; [].forEach.call(s.querySelectorAll('.fx-kpi'), function (q) { if (/^المتأخر$/.test(txt(q.querySelector('.fx-kpi-l')))) lateV = num(txt(q.querySelector('.fx-kpi-v'))); });
     if (lateV > 0 && !/متأخر|متعثر/.test(st.t)) st = { t: 'عليه متأخر', c: 'bad' };
-    return { no: no, st: st, left: left, pct: pct, closed: /مغلق|ملغ|مكتمل/.test(st.t) && !(lateV > 0) };
+    return { no: no, st: st, left: left, pct: pct, rs: pills.some(function (p) { return /أُعيدت جدولته/.test(p.t); }) /* v913 */, closed: /مغلق|ملغ|مكتمل/.test(st.t) && !(lateV > 0) };
   }
   function cCard(c) {
     var w = mk('span', 'tqn-cc');
     var top = mk('span', 'tqn-cc-top');
     top.appendChild(mk('bdi', 'tqn-cc-no', c.no));
-    top.appendChild(mk('span', 'tqn-cc-st' + (c.st.c ? ' is-' + c.st.c : ''), c.st.t));
+    if (c.rs) top.appendChild(mk('span', 'tqn-cc-rs', '↻ أُعيدت جدولته')); /* v913 */
+top.appendChild(mk('span', 'tqn-cc-st' + (c.st.c ? ' is-' + c.st.c : ''), c.st.t));
     w.appendChild(top);
     var ft = mk('span', 'tqn-cc-ft');
     ft.appendChild(mk('small', '', 'المتبقي'));

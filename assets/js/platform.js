@@ -25663,7 +25663,7 @@ function cfContractP(id, c, D, C, RF) {
     e('div', { class: 'fx-chead-t' }, [e('b', {}, product), e('span', { class: 'rq-ids' }, [e('span', { class: 'rq-no' }, [e('small', {}, 'العقد'), ltr(c.no)]), c.legacy ? e('span', { class: 'rq-no' }, [e('small', {}, 'الرقم السابق'), ltr(c.legacy)]) : null,
       c.n ? e('span', { class: 'rq-dt' }, [frag(ui('calendar-blank', 13)), ltr(iso(c.payments[0].due)), e('small', {}, '←'), ltr(iso(c.payments[c.n - 1].due))]) : null, c.n ? e('span', { class: 'rq-dt' }, c.n + ' دفعات') : null,
       orig.length ? e('span', { class: 'rq-dt is-from' }, [ctype === 'merge' ? 'ناتج عن توحيد ' : 'ناتج عن تأجيل ', orig.map(function (o) { return 'الدفعة ' + o.seq + ' من '; })[0] || '', ltr(orig[0].contract)]) : null])]),
-    e('div', { class: 'fx-chead-s' }, [DS.badge(CF_TYPE[ctype][0], CF_TYPE[ctype][1]), (function () { const ed = cfEdits(D.EV, r.id); return ed.n ? DS.badge('معدّل · ' + String(ed.at).slice(0, 10), 'info') : null; })(), DS.badge(stB[0], stB[1]),
+    e('div', { class: 'fx-chead-s' }, [DS.badge(CF_TYPE[ctype][0], CF_TYPE[ctype][1]), cfCrqBadge(id, c, RF), (function () { const ed = cfEdits(D.EV, r.id); return ed.n ? DS.badge('معدّل · ' + String(ed.at).slice(0, 10), 'info') : null; })(), DS.badge(stB[0], stB[1]),
       f && !closed ? e('span', {}, f.lateDays ? 'تأخر ' + dayWord(f.lateDays) : f.leftN ? 'لا مستحقات متأخرة' : 'العقد مكتمل') : null])]);
   const money = f ? trio([['إجمالي قيمة المنتجات', f.total, ''], ['المدفوع', f.paid, 'ok'], ['المتبقي', f.remain, f.late.length ? 'bad' : 'brand']], f.pct, 'سُدّد ' + f.pct + '% · ' + f.leftN + ' دفعات متبقية من ' + c.n) : null;
   const qn = qc && (qc.plan || []).length ? qc.plan.length : (Number(r.months) || c.n), qInst = qc && (qc.plan || []).length ? Number(qc.plan[0].amount) || c.amount : c.amount;
@@ -25704,9 +25704,32 @@ const ind = f ? cfKpis([['wallet', nxt ? 'الدفعة القادمة' : 'قيم
   /* v465: العقد والاستحقاق متسقان — المغلق عليه متبقٍّ للمراجعة، والمكتمل غير المغلق جاهز للإغلاق */
   const cnote = f && closed && f.remain > 0.004 ? DS.note('warn', 'عقد مغلق عليه متبقٍّ ' + SR(f.remain), 'لا يُحسب في الدفعات المستحقة متأخرًا — راجعه: إعفاء الفرق، أو إعادة فتح العقد وتسويته.')
     : f && !closed && c.n && f.remain <= 0.004 ? DS.note('info', 'اكتمل السداد — جاهز للإغلاق', 'أغلقه من «إجراء على العقد ← إغلاق العقد ← اكتمل السداد».') : null;
-  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0] + (cfEdits(D.EV, r.id).n ? ' · معدّل' : ''), stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, ctAdmSec(r.user_id || id, c, r, RF, k) /* v684 */, cnote, money, ind, cfParts(qc, r, c, k), facts, quote, sched, trin, opsec, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
+  return lvSec('العقد ' + c.no + ' · ' + CF_TYPE[ctype][0] + (cfEdits(D.EV, r.id).n ? ' · معدّل' : ''), stB[0] + (f && !closed ? ' · ' + SR(f.remain) + ' متبقٍّ' : ''), [head, ctAdmSec(r.user_id || id, c, r, RF, k) /* v684 */, cnote, money, ind, cfParts(qc, r, c, k), facts, quote, sched, cfCrqAnx(id, c, RF), trin, opsec, cfLinked(id, c, r, C, CU_BONDS.filter(function (b) { return b.cid === id; }), D.PL || [], RF), tr, att, fees, cfCtActs(id, c, r, f, C, RF), log], k);
 }
 
+/* v913: ملف العميل في staff/next — طلبات التأجيل في المنظومة (crq) ضمن «الطلبات»، وعلامة «أُعيدت جدولته» وتبويب «إعادة الجدولة» على العقد
+ * (الملحق: القيمة قبل وبعد · ما تغيّر · الجدولان). البيانات من /admin/api/crq-user/:user عبر crq-client.js (CRQC). */
+function cfCrqAnx(uid, c, RF) {
+if (!TQN || !window.CRQC || !window.CRQC.staffAnx) return null;
+const A = window.CRQC.staffAnx(uid, c.no, function () { RF.paint(); });
+if (!A.length) return null;
+return lvSec('إعادة الجدولة', fmtNum(A.length) + (A.length === 1 ? ' ملحق' : ' ملاحق'), [window.CRQC.annexView({ rows: A, staff: true })], 'cf:' + uid + ':' + c.no + ':rs');
+}
+function cfCrqBadge(uid, c, RF) {
+if (!TQN || !window.CRQC || !window.CRQC.staffAnx) return null;
+const A = window.CRQC.staffAnx(uid, c.no, function () { RF.paint(); });
+if (!A.length) return null;
+const last = A.slice().sort(function (p, q) { return q.n - p.n; })[0];
+return DS.badge('↻ أُعيدت جدولته · ملحق ' + fmtNum(last.n) + ' · ' + String(last.executed_at || '').slice(0, 10), 'info');
+}
+function cfCrqReqs(id, RF, old) {
+if (!TQN || !window.CRQC || !window.CRQC.staffReqs) return old;
+const n = window.CRQC.staffReqs({ uid: id, paint: function () { RF.paint(); } });
+if (!n) return old;
+const L = (window.CRQC.staffUser(id) || {}).reqs || [], op = L.filter(function (r) { return r.state !== 'done' && r.state !== 'closed'; }).length;
+const s = lvSec('طلبات تأجيل دفعة', op ? fmtNum(op) + ' مفتوحة' : fmtNum(L.length), [n], 'cf:' + id + ':crq');
+return old ? e('div', { class: 'cf-crqw' }, [s, old]) : s;
+}
 /* ===== v445: الوسائل (السندات · تحويلات تيرا · الشيكات · الأوامر المستديمة) تُضاف وتُعدَّل وتُربط بالعقد من الملف،
    وكل حدث في السجل الداخلي بمن قام به ومتى (client_internal_events — للفريق وحده، لا يراه العميل). ===== */
 const CF_EVD = { list: [] };
@@ -25950,7 +25973,7 @@ function cfPilotPage(id, D, P, hero, pi, ok, all, C, BD, RF) {
       .concat(C.length ? C.map(function (c) { return cfContractP(id, c, D, C, RF); }) : [CF_EMPTY('لا عقود لهذا العميل.')]), 'cf:' + id + ':ct'),
     RH.length ? lvSec('سجلات طلبات عليها سداد — للإدارة فقط', fmtNum(RH.length), [DS.note('warn', 'لا يراها العميل ولا تدخل في العقود والتقارير', 'سُجّلت في النظام السابق «طلبات» مع أن عليها دفعات وسندات. راجعها ثم قرّر لكل منها: تُعتمد عقدًا، أو تُوحَّد في عقد آخر، أو تُلغى.')]
       .concat(RH.map(function (c) { return cfContractP(id, c, D, C.concat(RH), RF); })), 'cf:' + id + ':rh') : null,
-    cfReqCard(id, 'defer', RF), cfReqCard(id, 'merge', RF), cfReqCard(id, 'settle', RF), cfEligSec(id, RF), cfDeskSec(id, RF)]); /* v704: tqnCf تُرجع filter(Boolean) خارج staff/next */ /* v578 */
+    cfCrqReqs(id, RF, cfReqCard(id, 'defer', RF)), cfReqCard(id, 'merge', RF), cfReqCard(id, 'settle', RF), cfEligSec(id, RF), cfDeskSec(id, RF)]); /* v704: tqnCf تُرجع filter(Boolean) خارج staff/next */ /* v578 */
 }
 
 /* ===== طلبات توثيق الملف (cu-pf-ver) ===== */

@@ -3916,3 +3916,7 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .eg-main > .tqn-sndw{display:flex;justify-content:flex-end;margin-bottom:10px}
 /* v856: نص الجزء الذي يُظهر أو يُخفى (التمهيد · البنود · نص ما قبل التوقيع) */
 .srd .srd-pgtx{display:block;white-space:pre-line;line-height:1.7}
+/* v913: علامة «أُعيدت جدولته» على بطاقة العقد المصغّرة في ملف العميل */
+.tqn-cc-rs { font-size: 10.5px; font-weight: 800; color: #5B3DB8; background: #EEE8FF; border-radius: 999px; padding: 1px 8px; white-space: nowrap; margin-inline-start: auto; }
+.tqn-cc-top .tqn-cc-rs + .tqn-cc-st { margin-inline-start: 6px; }
+.cf-crqw { display: grid; gap: 14px; }
