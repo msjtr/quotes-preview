@@ -9673,7 +9673,10 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg11-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .eg11-tiles>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--t2-surface-2)}
 .eg11-tiles span{font-size:12px;color:var(--t2-muted)}
-.eg11-tiles b{font:800 15px/1.4 var(--t2-ff-display);color:var(--t2-navy)}
+.eg11-tiles b{font:800 15px/1.4 var(--t2-ff-display);color:var(--t2-navy);overflow-wrap:anywhere}
+.eg11-fld>.eg11-seg,.eg11-col>.eg11-seg{align-self:flex-start}
+.eg10-id h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eg10-id small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eg11-tiles>div.is-tot{background:var(--t2-ok-wash)}
 .eg11-tiles>div.is-tot b{color:var(--t2-ok)}
 .eg11-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}

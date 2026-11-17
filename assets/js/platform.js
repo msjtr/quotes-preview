@@ -29873,7 +29873,7 @@ function eg11Ta(val, on, o) { o = o || {}; const t = e('textarea', { class: 'eg1
 function eg11Fld(label, ctl, note) { return e('div', { class: 'eg11-fld' }, [e('label', {}, [label, note ? e('em', {}, ' — ' + note) : null]), ctl]); }
 function eg11Seg(val, opts, on) { return e('div', { class: 'eg11-seg', role: 'group' }, opts.map(function (p) { return e('button', { type: 'button', class: p[0] === val ? 'is-on' : '', 'aria-pressed': p[0] === val ? 'true' : 'false', 'data-live-ok': '', onClick: function () { on(p[0]); } }, p[1]); })); }
 function eg11Row(kids) { return e('div', { class: 'eg11-f2' }, kids.filter(Boolean)); }
-function eg11Tiles(L) { return e('div', { class: 'eg11-tiles' }, L.filter(Boolean).map(function (r) { return e('div', { class: r[2] ? 'is-tot' : '' }, [e('span', {}, r[0]), e('b', {}, e('bdi', { dir: 'ltr' }, r[1]))]); })); }
+function eg11Tiles(L) { return e('div', { class: 'eg11-tiles' }, L.filter(Boolean).map(function (r) { return e('div', { class: r[2] ? 'is-tot' : '' }, [e('span', {}, r[0]), e('b', {}, /[\u0600-\u06FF]/.test(String(r[1])) ? r[1] : e('bdi', { dir: 'ltr' }, r[1]))]); })); }
 function eg11Err(m) { return m ? e('div', { class: 'eg10-warn', role: 'alert' }, m) : null; }
 function eg11Acts(L) { return e('div', { class: 'eg9-acts eg11-acts' }, L.filter(Boolean)); }
 function eg11Main(label, o) { o = o || {}; return eg9Btn(label, { cls: 'is-pri is-main' + (o.danger ? ' is-danger' : ''), ic: o.ic || 'check-circle', disabled: o.disabled, on: o.on }); }
@@ -29912,7 +29912,7 @@ const rows = O.rules.map(function (r) {
 const d = O.docs.filter(function (y) { return y.doc_type === r.doc_type; })[0], ak = O.asked[r.doc_type], st = d ? (DST[d.status] || [d.status, 'info']) : ['لم يرفعه العميل', 'danger'];
 const lbl = r.doc_type === 'job_other' && ak ? 'مرفق آخر: ' + ak.label : (r.label || r.doc_type);
 const acts = [];
-if (d && d.path) acts.push(eg9Btn('عرض', { ic: 'eye', on: function () { egDocOpen(Object.assign({ label: lbl }, d)); } }));
+if (d && d.path) acts.push(eg9Btn('عرض', { on: function () { egDocOpen(Object.assign({ label: lbl }, d)); } }));
 if (d && d.status !== 'accepted') acts.push(eg9Btn(W.busy === d.id ? 'جارٍ…' : 'قبول', { cls: 'is-pri', ic: 'check-circle', disabled: !!W.busy, on: function () { decide(Object.assign({ label: lbl }, d), 'accepted'); } }));
 if (d && d.status !== 'rejected') acts.push(eg9Btn('رفض بسبب', { disabled: !!W.busy, on: function () { W.rej = W.rej === d.id ? '' : d.id; W.why = ''; paint(); } }));
 if (!d || d.status === 'rejected') acts.push(eg9Btn('طلب من العميل', { ic: 'clipboard-text', on: function () { show(null, 'fix'); } }));
@@ -30074,7 +30074,7 @@ D.hide.length ? eg11Fld('اسم السطر الذي يجمع البنود الم
 eg11Row([eg11Fld('خطة الدفع', e('div', { class: 'eg11-in2' }, [eg11Sel(String(D.n || '1'), ns, function (v) { D.n = v; paint(); }, { label: 'عدد الدفعات' }), eg11In(D.first, function (v) { D.first = v; }, { type: 'date', label: 'أول دفعة', change: function () { paint(); } })]), 'العدد وتاريخ أول دفعة'),
 eg11Fld('خصم بطاقة العضوية في الرابط', e('div', { class: 'eg11-col' }, [eg11Seg(off ? 'off' : 'on', [['on', 'متاح'], ['off', 'غير متاح']], function (v) { const L = String(D.qpage.q_off || '').split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s && s !== 'pts'; }); if (v === 'off') L.push('pts'); D.qpage.q_off = L.join(','); D.qpDirty = true; paint(); }),
 off ? null : eg11In(D.qpage.q_pts_max || '', function (v) { D.qpage.q_pts_max = String(v).replace(/[^0-9]/g, ''); D.qpDirty = true; }, { num: true, ph: 'الحد الأعلى: رصيد العميل كاملًا', label: 'الحد الأعلى للنقاط' })]))]),
-C ? eg11Tiles([['قيمة المنتج', eg10N(C.value, 2)], ['الرسوم', eg10N(C.fees, 2)], ['الضريبة', eg10N(C.vat, 2)], ['الإجمالي', eg10N(C.total, 2), 1], C.plan && C.plan.length ? ['قيمة الدفعة', fmtNum(C.plan.length) + ' × ' + eg10N(C.plan[0].amount, 2)] : null]) : e('small', { class: 'eg9-hint' }, 'أدخل قيمة المنتج لتظهر المجاميع.'),
+C ? eg11Tiles([['قيمة المنتج', eg10N(C.value, 2)], ['الرسوم', eg10N(C.fees, 2)], ['الضريبة', eg10N(C.vat, 2)], ['الإجمالي', eg10N(C.total, 2), 1], C.plan && C.plan.length ? ['قيمة الدفعة', C.plan.length > 1 ? fmtNum(C.plan.length) + ' دفعات × ' + eg10N(C.plan[0].amount, 2) : 'دفعة واحدة'] : null]) : e('small', { class: 'eg9-hint' }, 'أدخل قيمة المنتج لتظهر المجاميع.'),
 e('details', { class: 'eg11-dt' }, [e('summary', {}, [e('b', {}, 'نصوص صفحة الرابط'), e('span', {}, ' العنوان والإقرار والأزرار — الافتراضي من قوالب المستندات'), e('em', {}, 'تعديل')]), (function () { try { return eqClientPv(x, Q, D, C, rr); } catch (err) { return e('small', { class: 'eg9-hint' }, 'تعذّر عرض النصوص.'); } })()]),
 Q ? e('details', { class: 'eg11-dt' }, [e('summary', {}, [e('b', {}, 'الأحكام والشروط ومستند العرض'), e('span', {}, ' بنود هذا العرض وعناصر المستند PDF'), e('em', {}, 'تعديل')]), (function () { try { const c = EGW[x.id] || (EGW[x.id] = { at: Date.now(), busy: false, job: null, qs: null, rej: '', why: '', dec: '', tab: '' }); c.qs = (EG11.qs[x.id] || {}).rows || c.qs; c.reload = c.reload || function () { eg11QtReload(x, Q.id); paint(); }; return egDocTools(x, c, 'quote', paint); } catch (err) { return e('small', { class: 'eg9-hint' }, 'تعذّر عرض المستند.'); } })()]) : e('small', { class: 'eg9-hint' }, 'الأحكام والشروط ومستند العرض تُعدّل بعد حفظ العرض أول مرة.'),
 eg11Fld('ملاحظة', eg11Ta(D.note, function (v) { D.note = v; }, { max: '300', ph: 'تُسجَّل في سجل العرض — اختياري' })),
@@ -30100,7 +30100,7 @@ eg11Row([eg11Fld('المنتج', e('div', { class: 'eg11-in is-ro' }, Q.product_
 items.length ? e('table', { class: 'eg11-tbl' }, [e('thead', {}, e('tr', {}, ['البند', 'المبلغ', 'الضريبة', 'للعميل'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, items.map(function (y) { const hid = (c.hide || []).indexOf(y.id) >= 0; return e('tr', {}, [e('td', {}, y.t), e('td', {}, eg10N(y.amt, 2)), e('td', {}, y.vat === false ? 'غير خاضع' : eg10N(qr2((Number(y.amt) || 0) * eqRate()), 2)), e('td', {}, hid ? 'مخفي' : 'ظاهر')]); }))]) : null,
 eg11Row([eg11Fld('خطة الدفع', e('div', { class: 'eg11-in is-ro' }, P.length ? (P.length > 1 ? fmtNum(P.length) + ' دفعات شهرية' : 'دفعة واحدة') + ' · أول دفعة ' + (P[0].due || '') : '—')), eg11Fld('خصم بطاقة العضوية في الرابط', e('div', { class: 'eg11-in is-ro' }, eg11PtsOff(eg11QtPage(Q)) ? 'غير متاح' : 'متاح' + (eg11QtPage(Q).q_pts_max ? ' · الحد الأعلى ' + fmtNum(eg11QtPage(Q).q_pts_max) + ' نقطة' : ' · الحد الأعلى: رصيد العميل كاملًا')))]),
 d ? e('div', { class: 'eg10-ok' }, 'اختار العميل خصم ' + fmtNum(d.points) + ' نقطة = ' + eg10N(d.amount, 2) + ' ريال — ' + ({ issued: 'محجوزة حتى توقيع العقد', applied: 'نهائية بعد التوقيع', reversed: 'عادت إلى رصيده' }[(B && B.red && B.red.st) || ''] || '')) : null,
-eg11Tiles([['قيمة المنتج', eg10N(c.value, 2)], ['الرسوم', eg10N(fees, 2)], ['الضريبة', eg10N(c.vat, 2)], ['الإجمالي', eg10N(Q.total || c.total, 2), 1], P.length ? ['قيمة الدفعة', fmtNum(P.length) + ' × ' + eg10N(P[0].amount, 2)] : null])];
+eg11Tiles([['قيمة المنتج', eg10N(c.value, 2)], ['الرسوم', eg10N(fees, 2)], ['الضريبة', eg10N(c.vat, 2)], ['الإجمالي', eg10N(Q.total || c.total, 2), 1], P.length ? ['قيمة الدفعة', P.length > 1 ? fmtNum(P.length) + ' دفعات × ' + eg10N(P[0].amount, 2) : 'دفعة واحدة'] : null])];
 const why = function (opts, label, go) {
 return e('div', { class: 'eg11-inl' }, [e('b', {}, label), eg11Row([eg11Fld('السبب', eg11Sel(T.why, opts, function (v) { T.why = v; paint(); }, { ph: '— اختر السبب —' })), eg11Fld('ملاحظة', eg11Ta(T.note, function (v) { T.note = v; }, { max: '400' }))]),
 eg11Acts([eg9Btn(EG9.busy ? 'جارٍ…' : 'تأكيد', { cls: 'is-danger', disabled: !!EG9.busy, on: function () { const w = eqWhy(T); if (!w) { eg9Note('تنبيه', [T.why === 'أخرى' ? 'اكتب السبب في الملاحظة.' : 'اختر السبب.'], 'warn'); return; } go(w); } }), eg9Btn('رجوع', { on: function () { T.act = ''; T.why = ''; T.note = ''; paint(); } })])]);
@@ -30151,10 +30151,10 @@ eg11Acts([Q ? eg9Btn('عرض الفاتورة', { ic: 'file-text', on: function 
 function eg11Ct(x, B, paint, full) {
 const Q = eg11QFull(x, B, paint), q = B && B.q, sg = B && B.sign, P = Q && Q.calc && Array.isArray(Q.calc.plan) ? Q.calc.plan : [];
 const M = { draw: 'رسم التوقيع', type: 'كتابة الاسم', upload: 'صورة التوقيع' };
-const kids = [eg11Tiles([['رقم العقد', (q && q.ct) || '—'], ['الإجمالي', q ? eg10N(q.total, 2) : '—', 1], ['خطة الدفع', P.length ? fmtNum(P.length) + ' × ' + eg10N(P[0].amount, 2) : '—'], ['التوقيع', sg ? 'وُقّع ' + iso(new Date(sg.at)) : 'لم يوقّع بعد']]),
+const kids = [eg11Tiles([['رقم العقد', (q && q.ct) || '—'], ['الإجمالي', q ? eg10N(q.total, 2) : '—', 1], ['خطة الدفع', P.length ? (P.length > 1 ? fmtNum(P.length) + ' دفعات × ' + eg10N(P[0].amount, 2) : 'دفعة واحدة ' + eg10N(P[0].amount, 2)) : '—'], ['التوقيع', sg ? 'وُقّع ' + iso(new Date(sg.at)) : 'لم يوقّع بعد']]),
 eg9Kv([['المنتج', (Q && Q.product_type) || (B && B.prod) || '—'], ['طريقة التوقيع', sg ? (M[sg.method] || sg.method || '—') : '—'], ['وقت التوقيع', sg ? eg10Dt(sg.at) : '—'], ['أول دفعة', P.length ? P[0].due : '—'], ['آخر دفعة', P.length ? P[P.length - 1].due : '—']]),
 eg11Acts([Q ? eg11Main('عرض العقد', { ic: 'file-text', on: function () { try { dcPdf(dcEqDoc('contract', Q, false)); } catch (err) { eg11Fail(err); } } }) : e('small', { class: 'eg9-hint' }, q && q.ct ? 'جارٍ القراءة…' : 'يصدر العقد عند اعتماد العميل للفاتورة وتوقيعه.')])];
-if (full && q && q.cid) { try { const f = cfFinal({ rid: q.cid, no: q.ct }, { r: { id: q.cid, user_id: x.user_id } }); if (f) kids.push(e('div', { class: 'eg11-sub' }, [e('h4', { class: 'eg11-h' }, 'العقد النهائي'), f])); } catch (err) { void err; } }
+if (full && q && q.cid) { try { const f = cfFinal({ rid: q.cid, no: q.ct }, { r: { id: q.cid, user_id: x.user_id } }); if (f) kids.push(e('div', { class: 'eg11-sub eg11-host' }, [f])); } catch (err) { void err; } }
 return eg9Card('عقد بيع منتج', 'file-text', kids, { tag: e('small', { class: 'eg9-card-n' }, sg ? 'وقّعه العميل' : 'بانتظار التوقيع') });
 }
 
@@ -30167,7 +30167,7 @@ e('div', { class: 'eg11-list' }, [e('div', { class: 'eg11-chk' + (sg ? ' is-d' :
 e('small', { class: 'eg9-hint' }, 'العقد النهائي والإجراءات المطلوبة وإغلاق الطلب أدناه — «تم التنفيذ» يُحسب بعدها النقاط المكتسبة.')], { tag: e('small', { class: 'eg9-card-n' }, 'الخطوة الحالية') });
 let fin = null; if (q && q.cid) { try { fin = cfFinal({ rid: q.cid, no: q.ct }, { r: { id: q.cid, user_id: x.user_id } }); } catch (err) { void err; } }
 const acts = (function () { try { return eg9Work(x, RF, 'adm', [], NX); } catch (err) { return null; } })();
-return [top, fin ? eg9Card('العقد النهائي', 'file-text', [fin], { cls: 'eg11-host' }) : null, acts ? eg9Card('الإجراءات المطلوبة وإغلاق الطلب', 'check-circle', [acts], { cls: 'eg11-host' }) : null];
+return [top, fin ? e('section', { class: 'eg9-card eg11-host' }, [fin]) : null, acts ? eg9Card('الإجراءات المطلوبة وإغلاق الطلب', 'check-circle', [acts], { cls: 'eg11-host' }) : null];
 }
 
 /* ── ما سيراه العميل (جانبًا) حسب المرحلة ── */
