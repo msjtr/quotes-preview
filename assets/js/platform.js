@@ -29457,7 +29457,7 @@ function eg9BdRun() {
 const ids = Object.keys(EG9B.q).slice(0, 200); ids.forEach(function (id) { delete EG9B.q[id]; });
 if (!ids.length) { EG9B.busy = false; return; }
 eg9Rpc('admin_elig_board', { p_ids: ids }).then(function (j) { const R = (j && j.rows) || {}, now = Date.now(); ids.forEach(function (id) { EG9B.m[id] = { at: now, d: R[id] || null }; }); })
-.catch(function () { const now = Date.now(); ids.forEach(function (id) { if (EG9B.m[id]) EG9B.m[id].at = now; else EG9B.m[id] = { at: now, d: null }; }); })
+.catch(function () { const now = Date.now() - 50000, fs = EG9B.rf.slice(); ids.forEach(function (id) { if (EG9B.m[id]) EG9B.m[id].at = now; else EG9B.m[id] = { at: now, d: null }; }); setTimeout(function () { fs.forEach(function (f) { try { f(); } catch (err) { void err; } }); }, 11000); }) /* v925: إعادة المحاولة بعد ثوانٍ عند تعذّر الاتصال */
 .then(function () { if (Object.keys(EG9B.q).length) { setTimeout(eg9BdRun, 60); return; } EG9B.busy = false; EG9B.rf.splice(0).forEach(function (f) { try { f(); } catch (err) { void err; } }); });
 }
 function eg9BdDrop(id) { delete EG9B.m[id]; }
