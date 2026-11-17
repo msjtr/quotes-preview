@@ -9594,7 +9594,7 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg10-as[disabled]{cursor:default;opacity:.85}
 .eg10-menu{position:relative}
 .eg10-more{min-width:2.9rem;font-size:20px;letter-spacing:1px}
-.eg10-dd{position:absolute;inset-inline-start:0;top:calc(100% + 6px);z-index:30;display:flex;flex-direction:column;min-width:230px;padding:6px;border:1px solid var(--t2-line);border-radius:14px;background:#fff;box-shadow:var(--t2-sh-3)}
+.eg10-dd{position:absolute;left:0;right:auto;top:calc(100% + 6px);z-index:30;display:flex;flex-direction:column;min-width:230px;padding:6px;border:1px solid var(--t2-line);border-radius:14px;background:#fff;box-shadow:var(--t2-sh-3)}
 .eg10-dd button{display:flex;align-items:center;gap:10px;min-height:2.6rem;padding:0 10px;border:0;border-radius:10px;background:none;color:var(--t2-navy);font:700 13.5px var(--t2-ff-display);text-align:start;cursor:pointer}
 .eg10-dd button:hover{background:var(--t2-surface-2)}
 .eg10-dd button.is-danger{color:var(--t2-danger)}

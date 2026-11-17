@@ -29675,7 +29675,7 @@ else if (!dead && [1, 2, 3, 5, 6].indexOf(k) >= 0 && !(k === 1 && eg9Fix(x))) pr
 const menu = eg10Menu(x, V, open, paint, show);
 const top = e('section', { class: 'eg10-top' }, [
 e('span', { class: 'eg10-av', 'aria-hidden': 'true' }, String(nm).trim().charAt(0) || '؟'),
-e('div', { class: 'eg10-id' }, [e('h2', {}, nm), e('small', {}, [e('bdi', { dir: 'ltr' }, x.req_no || ''), ' · أهلية شراء منتج · ', iso(new Date(x.created_at))])]),
+e('div', { class: 'eg10-id' }, [e('h2', {}, nm), e('small', {}, [e('bdi', { dir: 'ltr' }, x.req_no || ''), ' · أهلية شراء منتج · ', e('bdi', { dir: 'ltr' }, iso(new Date(x.created_at)))])]),
 kp,
 e('span', { class: 'eg9-pill eg10-st is-' + (st[1] || 'off') }, st[0]),
 e('button', { type: 'button', class: 'eg10-as', 'data-live-ok': '', disabled: srAsOpen(x) ? null : true, 'aria-expanded': EG9.asg[x.id] ? 'true' : 'false', title: 'إسناد الطلب', onClick: function () { EG9.asg[x.id] = !EG9.asg[x.id]; paint(); } }, 'المسؤول: ' + asg + (srAsOpen(x) ? ' ▾' : '')),
@@ -29694,7 +29694,7 @@ if (String(W.note || '').trim().length < 4) { eg9Note('تنبيه', ['اكتب �
 eg9Do('admin_sr_cancel', { p_id: x.id, p_note: String(W.note).trim(), p_internal: !!W.internal }, 'أُلغي الطلب', ['أُلغي الطلب ' + x.req_no + (W.internal ? ' — تصحيح داخلي لا يراه العميل.' : ' — وصل العميلَ السبب.')], paint, 'إلغاء الطلب ' + x.req_no + '؟', function () { EG9.cx[x.id] = null; eg9BdDrop(x.id); }); } }), eg9Btn('رجوع', { on: function () { EG9.cx[x.id] = null; paint(); } })])]));
 }
 const rail = eg10Rail(x, B, k, dead, reach, V.view ? -1 : cur, show);
-const side = e('aside', { class: 'eg10-side', 'aria-label': 'ما يراه العميل والسجل' }, [eg10Client(x, B, k, dead, paint, show), eg10Log(x, B, paint, false, show)]);
+const side = e('aside', { class: 'eg10-side', 'aria-label': 'ما يراه العميل والسجل' }, [eg10Client(x, B, k, dead, paint, show), V.view === 'log' ? null : eg10Log(x, B, paint, false, show)]);
 return [e('div', { class: 'eg9 eg10 eg10-p', 'data-sr': x.id }, [backBar, top, extra.length ? e('div', { class: 'eg9-extra' }, extra) : null, rail,
 e('div', { class: 'eg10-g' }, [e('div', { class: 'eg10-main', role: 'region', 'aria-label': V.view ? (EG10_VIEW[V.view] || '') : cur === null ? 'حالة الطلب' : EG10_ST[cur] }, main), side])])];
 }
@@ -29846,7 +29846,7 @@ ev.sort(function (a, b) { return new Date(b[0]) - new Date(a[0]); });
 const seen = {}, U = ev.filter(function (r) { const key = r[1].slice(0, 40) + '|' + String(r[0]).slice(0, 16); if (seen[key]) return false; seen[key] = 1; return true; });
 const V = full ? U : U.slice(0, 7);
 const list = V.length ? e('ol', { class: 'eg10-log' }, V.map(function (r) { return e('li', {}, [e('b', {}, lvBidi(r[1])), e('small', {}, [r[2], ' · ', eg10Dt(r[0])])]); })) : e('small', { class: 'eg9-hint' }, 'لا أحداث بعد.');
-return eg9Card(full ? 'السجل الكامل' : 'السجل', 'clock-counter-clockwise', [list, !full && U.length > V.length && show ? e('div', { class: 'eg9-acts' }, [eg9Btn('السجل الكامل (' + fmtNum(U.length) + ')', { on: function () { show(null, 'log'); } })]) : null], { tag: e('small', { class: 'eg9-card-n' }, 'واحد ومقروء') });
+return eg9Card(full ? 'كل الأحداث' : 'السجل', 'clock-counter-clockwise', [list, !full && U.length > V.length && show ? e('div', { class: 'eg9-acts' }, [eg9Btn('السجل الكامل (' + fmtNum(U.length) + ')', { on: function () { show(null, 'log'); } })]) : null], { tag: e('small', { class: 'eg9-card-n' }, 'واحد ومقروء') });
 }
 /* قائمة «⋯» */
 function eg10Menu(x, V, open, paint, show) {
