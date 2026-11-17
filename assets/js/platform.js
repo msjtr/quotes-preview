@@ -17671,6 +17671,26 @@ function loyFixForm(a) {
     err,
     e('div', { class: 'loy-fix-a' }, [DS.button('تسجيل التصحيح', { tone: 'primary', ui: 'check', onClick: ok }), DS.button('إلغاء', { onClick: function () { ADM.loyFix = ''; ADM.loyFixD = null; draw(); } })])]);
 }
+/* v921: «كيف تُحسب النقاط؟» للموظف — القاعدة وأمثلة من الإعدادات السارية */
+function loyHowBox() {
+try {
+const s = (typeof loyCfgBy === 'function' && loyCfgBy(LOY.cur)) || {}, TS = [['plus', 'بلس'], ['premium', 'بريميوم'], ['elite', 'إيليت']];
+const rt = function (t) { return Number(((s.tiers || {})[t] || {}).earn_spend) || ({ plus: 25, premium: 20, elite: 15 })[t]; };
+const p5 = function (t) { return Number(((s.tiers || {})[t] || {}).redeem_per_500) || ({ plus: 2, premium: 4, elite: 6 })[t]; };
+const fx = function (v, r) { const p = v / r, w = Math.floor(p + 1e-9), f = p - w; return fmtN(w) + ' نقطة' + (f > 0.004 ? ' (كسر ' + f.toFixed(2) + ' يُحفظ)' : ''); };
+const d1 = 1500 * p5('plus') / 500, d2 = 3250 * p5('plus') / 500;
+const ex = [['بلس · بدون خصم', '5,000 ÷ ' + rt('plus'), fx(5000, rt('plus'))],
+['بلس · خصم 1,500 نقطة (' + d1.toFixed(2) + ' ريال)', fmtN(5000 - d1) + ' ÷ ' + rt('plus'), fx(5000 - d1, rt('plus'))],
+['بلس · خصم 3,250 نقطة (' + d2.toFixed(2) + ' ريال)', fmtN(5000 - d2) + ' ÷ ' + rt('plus'), fx(5000 - d2, rt('plus'))],
+['بريميوم · بدون خصم', '5,000 ÷ ' + rt('premium'), fx(5000, rt('premium'))],
+['إيليت · بدون خصم', '5,000 ÷ ' + rt('elite'), fx(5000, rt('elite'))],
+['تراكم الكسور: 0.76 سابق + 0.48 جديد', '0.76 + 0.48 = 1.24', 'تُضاف نقطة ويبقى 0.24']];
+return e('details', { class: 'loy-row' }, [e('summary', {}, [e('span', { class: 'loy-row-n' }, [e('b', {}, 'كيف تُحسب النقاط؟'), e('small', {}, 'القاعدة وأمثلة — من الإعدادات السارية')])]),
+e('ul', { class: 'loy-diff' }, ['تُحسب على قيمة المنتج بعد خصم النقاط فقط.', 'لا تدخل: الرسوم، ضريبة القيمة المضافة، الشحن، الخدمة.', 'المعدّل حسب البطاقة: ' + TS.map(function (t) { return t[1] + ' نقطة لكل ' + rt(t[0]) + ' ريال'; }).join(' · ') + '.', 'القسمة: القيمة المحتسبة ÷ معدّل البطاقة، ويُضاف العدد الصحيح، والكسر يُحفظ ويُجمع مع المشتريات القادمة.', 'تبقى معلّقة حتى تعتمدها، ثم تُضاف وتنتهي بعد ' + (Number(s.expiry_months) || 12) + ' شهرًا.', 'العقد الملغى أو المسترد لا تُحتسب نقاطه، وإن أُضيفت تُسحب.'].map(function (t) { return e('li', {}, t); })),
+e('small', { class: 'cu-dr-hint' }, 'أمثلة على منتج قيمته 5,000 ريال — الرسوم والضريبة لا تدخل:'),
+e('dl', { class: 'loy-dl is-row' }, ex.map(function (r) { return e('div', {}, [e('dt', {}, r[0]), e('dd', {}, [e('bdi', { dir: 'ltr' }, r[1]), ' ← ', r[2]])]); }))]);
+} catch (err) { return null; }
+}
 function loyApprPage() {
   const can = cuCan('loyalty.approve'), f = ADM.loyF || '', q = String(ADM.loyQ || '').trim();
   const cnt = function (st) { return LOY.acc.filter(function (a) { return a.st === st; }).length; };
@@ -17690,11 +17710,12 @@ function loyApprPage() {
           Object.assign(a, { st: n < (a.pts || 0) ? 'reversal_review' : 'reversed', why: 'سُحبت ' + fmtN(n) + ' من ' + fmtN(a.pts || 0) + ' — ' + rs, by: cuWho(), dAt: new Date() }); snack(n < (a.pts || 0) ? 'سُحب المتاح وأُحيل الباقي للمراجعة' : 'سُحبت نقاط العملية'); draw(); } }),
         DS.button('تصحيح النقاط', { size: 'sm', ui: 'pencil-simple', onClick: function () { ADM.loyFix = ADM.loyFix === a.q ? '' : a.q; ADM.loyOpen = a.q; ADM.loyFixD = { dir: 'add', n: '', rs: '' }; draw(); } })] : [];
     return e('details', { class: 'loy-row', open: ADM.loyOpen === a.q, onToggle: function (ev) { if (ev.target.open) ADM.loyOpen = a.q; else if (ADM.loyOpen === a.q) ADM.loyOpen = ''; } }, [e('summary', {}, [e('span', { class: 'loy-row-n' }, [e('b', { dir: 'ltr' }, a.q), e('small', {}, a.client + (t ? ' · ' + LOY_T[t][1] : ''))]), e('span', { class: 'loy-row-p' }, (a.st === 'approved' ? fmtN(a.pts) + ' نقطة' : t ? fmtN(Math.floor(x.pts)) + ' نقطة' : 'بانتظار الربط')), DS.badge(stl[0], stl[1])]),
-      e('dl', { class: 'loy-dl is-row' }, [['قيمة المنتجات المؤهلة', sar(x.eligible)], ['الرسوم المستبعدة', sar(a.excl)], ['النقاط المحسوبة', x.ok ? x.pts.toFixed(2) + ' (' + fmtN(x.rate) + ' ريال للنقطة)' : x.msg], ['تاريخ التنفيذ', iso(a.at)], ['نوع المنتج', LOY_PT[a.type] || a.type], ['الربط بالعميل', a.link === 'matched' ? 'مطابقة الجوال' : a.link === 'manual' ? 'ربط المشرف' : 'بانتظار الربط'],
-        ['نسخة الإعدادات', String(a.sid)], ['المعتمِد', a.by || '—'], ['السبب', a.why || '—']].concat((a.fixes || []).map(function (f, k) { return ['تصحيح ' + (k + 1), (f.n > 0 ? '+' : '') + fmtN(f.n) + ' نقطة — ' + f.rs]; })).map(function (r) { return e('div', {}, [e('dt', {}, r[0]), e('dd', {}, r[1])]); })),
+      e('dl', { class: 'loy-dl is-row' }, [['قيمة المنتجات المؤهلة', sar(x.eligible)], ['الرسوم المستبعدة', sar(a.excl)], ['النقاط المحسوبة', x.ok ? x.pts.toFixed(2) + ' (' + fmtN(x.rate) + ' ريال للنقطة)' : x.msg],
+x.ok ? ['كيف حُسبت؟', e('span', {}, [e('bdi', { dir: 'ltr' }, fmtN(x.eligible) + ' ÷ ' + fmtN(x.rate) + ' = ' + x.pts.toFixed(2)), ' ← تُضاف ' + fmtN(Math.floor(x.pts + 1e-9)) + ' نقطة' + (x.pts - Math.floor(x.pts + 1e-9) > 0.004 ? '، والكسر ' + (x.pts - Math.floor(x.pts + 1e-9)).toFixed(2) + ' يُحفظ في رصيده للمرة القادمة' : '')])] : null, /* v921 */ ['تاريخ التنفيذ', iso(a.at)], ['نوع المنتج', LOY_PT[a.type] || a.type], ['الربط بالعميل', a.link === 'matched' ? 'مطابقة الجوال' : a.link === 'manual' ? 'ربط المشرف' : 'بانتظار الربط'],
+        ['نسخة الإعدادات', String(a.sid)], ['المعتمِد', a.by || '—'], ['السبب', a.why || '—']].filter(Boolean).concat((a.fixes || []).map(function (f, k) { return ['تصحيح ' + (k + 1), (f.n > 0 ? '+' : '') + fmtN(f.n) + ' نقطة — ' + f.rs]; })).map(function (r) { return e('div', {}, [e('dt', {}, r[0]), e('dd', {}, r[1])]); })),
       acts.length ? e('div', { class: 'loy-row-a', onPointerdown: function () { ADM.loyOpen = a.q; }, onKeydown: function () { ADM.loyOpen = a.q; } }, [why].concat(acts)) : null, can && a.st === 'approved' && ADM.loyFix === a.q ? loyFixForm(a) : null]);
   });
-  return [can ? null : cuRO('loyalty.approve'), DS.note('info', 'اعتماد النقاط', 'تنشأ العملية معلّقة عند تنفيذ الطلب، ولا تُضاف للمحفظة إلا باعتماد المشرف. لا يُعدَّل السجل الأصلي ولا يُعتمد مرتين، والتصحيح بحركة مستقلة مبرّرة.'), kpis, filt,
+  return [can ? null : cuRO('loyalty.approve'), DS.note('info', 'اعتماد النقاط', 'تنشأ العملية معلّقة عند تنفيذ الطلب، ولا تُضاف للمحفظة إلا باعتماد المشرف. لا يُعدَّل السجل الأصلي ولا يُعتمد مرتين، والتصحيح بحركة مستقلة مبرّرة.'), loyHowBox(), kpis, filt,
     rows.length ? e('div', { class: 'loy-rows' }, rows) : DS.note('info', 'لا عمليات مطابقة', '')].filter(Boolean);
 }
 lp('mem-points', 'نقاطي', 'member', 'points', function () { return loyWalletPage('w'); });
@@ -19361,6 +19382,7 @@ const EGPS = {
   quote: { p: 'q', sum: [['no', 'رقم العرض'], ['req', 'رقم الطلب'], ['prod', 'المنتج'], ['val', 'قيمة المنتج'], ['items', 'البنود والرسوم'], ['vat', 'ضريبة القيمة المضافة'], ['total', 'الإجمالي'], ['n', 'عدد الدفعات'], ['amt', 'الدفعة الأولى'], ['first', 'أول دفعة'], ['last', 'آخر دفعة'], ['tbl', 'جدول الدفعات'], ['valid', 'صالح حتى']],
     secs: [['hd', 'رأس الصفحة', 0, [['q_tag', 'شارة المرحلة', 'عرض السعر', 0, 'tag'], ['q_title', 'العنوان', 'صدر عرض السعر', 0], ['q_status', 'سطر الحالة', 'بانتظار اعتمادك', 0, 'status']]],
       ['sum', 'ملخص عرض السعر', 'sum'],
+['pts', 'خصم بطاقة العضوية', 'pts', [['q_pts_max', 'الحد الأعلى للنقاط في هذا العرض — فارغ يعني رصيد العميل كاملًا', '', 0]]], /* v921: يختار العميل في الرابط: كامل الرصيد · نقاط معيّنة · بدون خصم — وإخفاء القسم يمنع الخصم في هذا العرض */
       ['note', 'رسالة المراجعة', 'note', [['q_note', 'نص الرسالة', 'نأمل مراجعة العرض واعتماده قبل انتهاء صلاحيته.', 1]]],
       ['ack', 'الإقرار', 0, 'q_ack', 'أقرّ بقبول عرض السعر الموضّح وما يترتب عليه من إصدار العقد وجدول الدفعات.'],
       ['help', 'التواصل', 'help', [['q_help', 'نص التواصل', 'لأي استفسار راسلنا عبر واتساب المنصة.', 1]]],
@@ -20366,7 +20388,7 @@ async function egRecvSave(x, W, paint) {
 }
 /* العميل: «تفاصيل التقييم» مطويّة داخل بطاقة النتيجة (كانت لوحة ثانية تكرّر النتيجة) */
 function egResDetails(x, R) {
-  return lvSec('تفاصيل التقييم', null, [DS.fields([['إجمالي الدخل الشهري', SR(Number(R.inc) || 0)], ['إجمالي المصاريف الشهرية', SR(Number(R.exp) || 0)], ['الصافي الشهري', SR(Number(R.net) || 0)], R.note ? ['ملاحظة الفريق', R.note] : null].filter(Boolean))], 'egdet:' + x.id, false);
+  return lvSec('تفاصيل التقييم', null, [DS.fields([['إجمالي الدخل الشهري', SR(Number(R.inc) || 0)], ['إجمالي المصاريف الشهرية', SR(Number(R.exp) || 0)], ['الصافي الشهري', SR(Number(R.net) || 0)], null /* v921: رأي الفريق داخلي — لا يظهر للعميل */].filter(Boolean))], 'egdet:' + x.id, false);
 }
 /* v686: «طلبات توثيق الملف» — عدد البنود «بانتظار المطابقة» في بطاقة القائمة (pending من admin_verification_list، وإلا total − مطابق − غير مطابق) */
 function egVerPend(r) {
@@ -20892,6 +20914,7 @@ function egRepNums(x, W, N) {
   if (W.rec === 'eligible' || W.rec === 'eligible_less') {
     Object.assign(o, { elig_amt: String(egNum(W.amt) || ''), n: String(egNum(W.n) || ''), prod_sec: W.sec === '__other' ? '' : (W.sec || ''), prod: egRepProd(W), prod_other: W.sec === '__other' || W.prod === '__other' });
     if (W.rvSet) { o.recv_mode = W.rv && W.rv !== '__client' ? W.rv : ''; o.recv_note = o.recv_mode ? String(W.rn || '').trim().slice(0, 300) : ''; }
+if (W.rec === 'eligible_less') { o.less_reason = String(W.lr || '').trim().slice(0, 300); o.less_show = W.ls === false ? 'false' : 'true'; } /* v921 */
   }
   return o;
 }
@@ -20928,9 +20951,28 @@ function eligAcceptPanel(x) { /* v686: بطاقة نتيجة مختصرة — ا
 /* v687: نتيجة الأهلية قابلة للتعديل بعد صدورها ما دامت محجوزة (لم تُرسل) ولم يقرّر العميل */
 function egResEd(x) { const m = (x && x.meta) || {}, R = m.report || {}; return !!(x && x.status === 'approved' && (R.rec === 'eligible' || R.rec === 'eligible_less') && m.held && !m.released && !m.accept && !m.decline); }
 function egResWhy(x) { const m = (x && x.meta) || {}; return m.accept || m.decline ? 'سجّل العميل قراره على النتيجة — لا تعديل.' : m.released ? 'أُرسلت النتيجة للعميل — لا تعديل بعد الإرسال.' : ''; }
+/* v921: سبب خفض المبلغ — ردود جاهزة (admin_elig_less_reasons · stf_297) أو «أخرى» يكتبها الموظف، وظهوره للعميل يختاره الموظف */
+const EGLR = { rows: null, busy: false };
+function egLessLoad(paint, add, del) {
+if (EGLR.busy) return; EGLR.busy = true;
+admRpc('admin_elig_less_reasons', { p_add: add || null, p_del: del || null }).then(function (j) { EGLR.busy = false; EGLR.rows = (j && j.rows) || []; paint(); }, function () { EGLR.busy = false; EGLR.rows = EGLR.rows || []; paint(); });
+}
+function egLessBox(x, W, paint) {
+if (W.rec !== 'eligible_less') return null;
+if (EGLR.rows === null) egLessLoad(paint);
+const L = EGLR.rows || [], inL = L.some(function (r) { return r.t === W.lr; });
+const sel = W.lrO ? '__other' : (W.lr && !inL ? (EGLR.rows ? '__other' : '') : (W.lr || ''));
+const oth = e('input', { class: 't2-input', type: 'text', maxlength: '200', placeholder: 'اكتب سبب خفض المبلغ', 'aria-label': 'سبب خفض المبلغ', onInput: function (ev) { W.lr = ev.target.value; } });
+oth.value = sel === '__other' ? (W.lr || '') : '';
+return e('div', { class: 'eg-less' }, [
+DS.editField('سبب خفض المبلغ', DS.select({ value: sel, ph: EGLR.rows ? '— اختر السبب —' : 'جارٍ تحميل الأسباب…', options: L.map(function (r) { return [r.t, r.t]; }).concat([['__other', 'أخرى — يكتبها الموظف']]), onChange: function (v) { if (v === '__other') { W.lrO = true; W.lr = ''; } else { W.lrO = false; W.lr = v; } paint(); } })),
+sel === '__other' ? e('div', { class: 'eg-less-o' }, [oth, e('div', { class: 't2-pb-actions' }, [DS.button('إضافة للقائمة كرد جاهز', { size: 'sm', ui: 'plus', onClick: function () { const t = String(W.lr || '').trim(); if (t.length < 3) { snack('اكتب السبب أولًا'); return; } W.lrO = false; egLessLoad(paint, t); snack('أُضيف السبب إلى الردود الجاهزة'); } })])]) : null,
+sel && sel !== '__other' ? e('div', { class: 't2-pb-actions' }, [DS.button('حذف هذا الرد من القائمة', { size: 'sm', ui: 'trash', onClick: function () { const r = L.filter(function (z) { return z.t === sel; })[0]; if (r) { W.lr = ''; egLessLoad(paint, null, r.id); } } })]) : null,
+DS.editField('ظهور السبب للعميل', DS.select({ value: W.ls === false ? 'hide' : 'show', options: [['show', 'يظهر للعميل في الرابط'], ['hide', 'مخفي — للفريق فقط']], onChange: function (v) { W.ls = v !== 'hide'; paint(); } }))]);
+}
 function eligReportBox(x, c, paint) {
   const m = x.meta || {}, R = m.report || null, N = egNums(x);
-  const W = c.rep || (c.rep = { rec: R ? R.rec : '', note: R ? (R.note || '') : '', busy: false, err: '', open: !R, amt: R && R.elig_amt ? String(R.elig_amt) : '', n: R && R.n ? String(R.n) : String(Number(egNum(egFv(x, /مدة السداد/))) || ''), sec: R ? (R.prod_other ? '__other' : (R.prod_sec || '')) : '', prod: R && !R.prod_other ? (R.prod || '') : '', otherTxt: R && R.prod_other ? (R.prod || '') : '', pv: false }); /* v673 */
+  const W = c.rep || (c.rep = { rec: R ? R.rec : '', note: R ? (R.note || '') : '', busy: false, err: '', open: !R, amt: R && R.elig_amt ? String(R.elig_amt) : '', n: R && R.n ? String(R.n) : String(Number(egNum(egFv(x, /مدة السداد/))) || ''), sec: R ? (R.prod_other ? '__other' : (R.prod_sec || '')) : '', prod: R && !R.prod_other ? (R.prod || '') : '', otherTxt: R && R.prod_other ? (R.prod || '') : '', pv: false, lr: R ? (R.less_reason || '') : '', ls: R ? R.less_show !== false : true }); /* v673 · v921: سبب الخفض وظهوره */
   const rows = [['إجمالي الدخل الشهري', sar(N.inc)], ['الالتزامات الشهرية', sar(N.ob)], ['المصروفات الشخصية', sar(N.ex)], ['إجمالي المصاريف الشهرية', sar(N.exp)], ['الصافي الشهري', e('b', {}, sar(N.net))]]
     .concat(N.score != null ? [['سجل الالتزام في عقوده', fmtNum(N.score) + (N.cls ? ' · ' + ((typeof AX_CLS !== 'undefined' && AX_CLS[N.cls]) ? AX_CLS[N.cls][0] : N.cls) : '')]] : []);
   const head = [e('b', {}, 'تقرير الأهلية والتوصية'), DS.fields(rows), N.ex <= 0 ? DS.note('warn', 'المصروفات الشخصية صفر', 'المصروفات الشهرية إلزامية — اطلب تصحيحها بالإعادة للاستكمال.') : null];
@@ -20943,6 +20985,7 @@ function eligReportBox(x, c, paint) {
     if (W.rec === 'eligible' || W.rec === 'eligible_less') { /* v673 */ const am = Number(egNum(W.amt)) || 0, rq = egReq(x), nn = Number(egNum(W.n)) || 0;
       if (!(am > 0)) { W.err = 'اكتب المبلغ المؤهَّل.'; paint(); return; }
       if (W.rec === 'eligible_less' && !(rq > 0 && am < rq)) { W.err = 'المبلغ المؤهَّل يجب أن يكون أقل من المبلغ المطلوب (' + fmtNum(rq) + ').'; paint(); return; }
+if (W.rec === 'eligible_less' && String(W.lr || '').trim().length < 3) { W.err = 'اختر سبب خفض المبلغ أو اكتبه في «أخرى».'; paint(); return; } /* v921 */
       if (!(nn >= 1 && nn <= 60)) { W.err = 'اكتب عدد الدفعات (1 إلى 60).'; paint(); return; }
       if (egRepProd(W).length < 2) { W.err = 'اختر المنتج أو اكتبه في «أخرى».'; paint(); return; } }
     if (W.busy) return; W.busy = true; W.err = ''; paint();
@@ -20952,12 +20995,13 @@ function eligReportBox(x, c, paint) {
       c.rep = null; snack(resEd ? 'عُدّلت النتيجة — عاينها على رقمك من جديد قبل إرسالها' + (jr && jr.has_quote ? '، وراجع عرض السعر القائم ليوافق النتيجة الجديدة.' : '.') : 'حُفظ تقرير الأهلية والتوصية — أصدر القرار من «القرار» أدناه.'); if (resEd && typeof egjLoad === 'function') egjLoad(x, paint, true); c.tab = 'rep'; /* v683 */ try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } c.reload(); }
     catch (err) { W.busy = false; W.err = egErr(err); paint(); }
   };
-  const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '600', placeholder: 'ملاحظة التوصية — تظهر للعميل في التقرير', onInput: function (ev) { W.note = ev.target.value; } });
+  const ta = e('textarea', { class: 't2-input', rows: '2', maxlength: '600', placeholder: 'رأي الفريق — داخلي لا يظهر للعميل', onInput: function (ev) { W.note = ev.target.value; } });
   ta.value = W.note || '';
   return e('div', { class: 'sr-stl' }, head.concat([
     DS.editField('التوصية', DS.select({ value: W.rec, ph: '— اختر التوصية —', options: Object.keys(EG_REC).map(function (k) { return [k, EG_REC[k]]; }), onChange: function (v) { W.rec = v; paint(); } })),
     egRepFields(x, W, paint), /* v673 */
-    DS.editField('ملاحظة', ta),
+    egLessBox(x, W, paint), /* v921 */
+DS.editField('رأي الفريق (داخلي — لا يظهر للعميل)', ta),
     W.err ? e('span', { class: 'cu-err', role: 'alert' }, W.err) : null,
     e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy ? 'جارٍ الحفظ…' : 'حفظ التقرير والتوصية', { size: 'sm', tone: 'primary', ui: 'check', disabled: W.busy, onClick: save }))])]));
 }
