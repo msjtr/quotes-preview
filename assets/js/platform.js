@@ -29446,6 +29446,7 @@ const EG9_F = [['open', 'المفتوحة', 'tray', eg9IsOpen], ['new', 'جدي�
 /* ── v922: لوحة الأهلية من القاعدة (admin_elig_board) — الاسم الكامل والمنتج والمبالغ والمرحلة من 8 وتقدّم العميل والنقاط، دفعة واحدة لكل الصفوف ── */
 const EG9B = { m: {}, q: {}, busy: false, rf: [] };
 function eg9Bd(x, paint) {
+if (paint) EG9B.last = paint; /* v926: آخر دالة رسم — السابقة قد ترسم في صفحة لم تعد ظاهرة */
 const h = EG9B.m[x.id];
 if ((!h || Date.now() - h.at > 60000) && !EG9B.q[x.id]) {
 EG9B.q[x.id] = 1; if (paint && EG9B.rf.indexOf(paint) < 0) EG9B.rf.push(paint);
@@ -29457,8 +29458,8 @@ function eg9BdRun() {
 const ids = Object.keys(EG9B.q).slice(0, 200); ids.forEach(function (id) { delete EG9B.q[id]; });
 if (!ids.length) { EG9B.busy = false; return; }
 eg9Rpc('admin_elig_board', { p_ids: ids }).then(function (j) { const R = (j && j.rows) || {}, now = Date.now(); ids.forEach(function (id) { EG9B.m[id] = { at: now, d: R[id] || null }; }); })
-.catch(function () { const now = Date.now() - 50000, fs = EG9B.rf.slice(); ids.forEach(function (id) { if (EG9B.m[id]) EG9B.m[id].at = now; else EG9B.m[id] = { at: now, d: null }; }); setTimeout(function () { fs.forEach(function (f) { try { f(); } catch (err) { void err; } }); }, 11000); }) /* v925: إعادة المحاولة بعد ثوانٍ عند تعذّر الاتصال */
-.then(function () { if (Object.keys(EG9B.q).length) { setTimeout(eg9BdRun, 60); return; } EG9B.busy = false; EG9B.rf.splice(0).forEach(function (f) { try { f(); } catch (err) { void err; } }); });
+.catch(function () { const now = Date.now() - 50000, fs = EG9B.rf.slice(); ids.forEach(function (id) { if (EG9B.m[id]) EG9B.m[id].at = now; else EG9B.m[id] = { at: now, d: null }; }); setTimeout(function () { try { if (EG9B.last) EG9B.last(); } catch (err) { void err; } }, 11000); }) /* v925: إعادة المحاولة بعد ثوانٍ عند تعذّر الاتصال */
+.then(function () { if (Object.keys(EG9B.q).length) { setTimeout(eg9BdRun, 60); return; } EG9B.busy = false; EG9B.rf.splice(0); try { if (EG9B.last) EG9B.last(); } catch (err) { void err; } });
 }
 function eg9BdDrop(id) { delete EG9B.m[id]; }
 const EG10_ST = ['مراجعة الطلب', 'قرار الأهلية', 'عرض سعر منتج', 'الإرسال للعميل', 'موافقات العميل', 'إجراءات الإدارة', 'التنفيذ والنقاط', 'الإغلاق'];
