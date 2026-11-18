@@ -30433,8 +30433,10 @@ function eg11Ct(x, B, paint, full) {
 const Q = eg11QFull(x, B, paint), q = B && B.q, sg = B && B.sign, P = Q && Q.calc && Array.isArray(Q.calc.plan) ? Q.calc.plan : [];
 const M = { draw: 'رسم التوقيع', type: 'كتابة الاسم', upload: 'صورة التوقيع' };
 if (!Q && !(q && q.ct)) return eg12Wait('يُبنى العقد من عرض السعر المعتمد، ويصدر رقمه عند توقيع العميل.');
-const L = [['رقم العقد', (q && q.ct) || 'يصدر عند التوقيع'], ['التوقيع', sg ? (M[sg.method] || sg.method || 'وُقّع') + ' · ' + eg10Dt(sg.at) : 'لم يوقّع بعد'], ['أول دفعة', P.length ? P[0].due : '—'], ['آخر دفعة', P.length ? P[P.length - 1].due : '—']];
-const kids = [e('section', { class: 'eg13-blk' }, [e('h4', {}, [frag(ui('handshake', 17)), e('span', {}, 'العقد')]), eg13Dl(L, 'is-4')])];
+/* رقم العقد في عنوان القسم، والتوقيع داخل «العقد النهائي» — لا يتكرران هنا */
+void M; void sg;
+const kids = [];
+if (P.length === 1) kids.push(e('section', { class: 'eg13-blk' }, [e('h4', {}, [frag(ui('calendar-blank', 17)), e('span', {}, 'الدفعة')]), eg13Dl([['الاستحقاق', P[0].due || '—'], ['المبلغ', eg10N(P[0].amount, 2)]], '')]));
 if (P.length > 1) kids.push(e('section', { class: 'eg13-blk' }, [e('h4', {}, [frag(ui('calendar-blank', 17)), e('span', {}, 'جدول الدفعات')]), e('div', { class: 'eg12-tw' }, e('table', { class: 'eg11-tbl' }, [e('thead', {}, e('tr', {}, ['الدفعة', 'الاستحقاق', 'المبلغ'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, P.map(function (p, i) { return e('tr', {}, [e('td', {}, fmtNum(i + 1)), e('td', {}, e('bdi', { dir: 'ltr' }, p.due || '—')), e('td', {}, e('bdi', { dir: 'ltr' }, eg10N(p.amount, 2)))]); }))]))]));
 if (full && q && q.cid) { try { const f = cfFinal({ rid: q.cid, no: q.ct }, { r: { id: q.cid, user_id: x.user_id } }); if (f) kids.push(e('section', { class: 'eg13-blk eg13-fin' }, [f])); } catch (err) { void err; } }
 return e('div', { class: 'eg13-stack' }, kids);
