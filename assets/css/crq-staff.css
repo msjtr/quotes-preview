@@ -1151,3 +1151,6 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-fld.is-miss .cr-pbtn{outline:2px solid #f1b8b2;outline-offset:1px}
 @media (max-width:820px){.crq .cr-mgsum{grid-template-columns:1fr}.crq .cr-mgx col.is-c{width:104px}.crq .cr-mgx col.is-v{width:130px}.crq .cr-mgx td.is-v .cr-money{max-width:120px}}
 @media (max-width:560px){.crq .cr-mgx col.is-c{width:88px}.crq .cr-mgx td.is-c .cr-seg2 button{padding:4px 6px;font-size:11px}}
+
+/* v952: ضريبة واحدة — سطر «المجموع قبل الضريبة» */
+.crq .cr-mgx tr.is-sub td{font-weight:700;color:#334155;border-top:1px solid #d5deea}

@@ -1180,7 +1180,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=951'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=952'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1311,7 +1311,8 @@ return ex ? [el('div', { class: 'cr-cols' }, [el('section', { class: 'cr-card' }
 * فلا تختلف الفكرة ولا المحتوى. الحسبة على الخادم (crq_calc_merge): المتبقي على العقود + المنتج الإضافي وضريبته + رسوم التوحيد = قيمة العقد الموحّد، ثم خطة الدفع. */
 var MG = (function () {
 if (KIND !== 'merge') return {};
-/* v951: الملخص أعلى الحسبة · جدول البنود بأعمدة · «إضافة بند» قائمة واحدة بلا تكرار · اختيار المنتج بقائمة بحث
+/* v952: ضريبة واحدة في الحسبة والملخص (على المنتج والبنود) — قبل الضريبة ثم الضريبة ثم الإجمالي
+* v951: الملخص أعلى الحسبة · جدول البنود بأعمدة · «إضافة بند» قائمة واحدة بلا تكرار · اختيار المنتج بقائمة بحث
 * v949: صفحة طلب التوحيد بأقسام منفصلة — الطلب (ملخص فقط) · توحيد العقود · طلب المنتج (من قائمة المنتجات مع وسيلة الاستلام) · الحسبة (جدول واحد و«إضافة بند» من البنود الجاهزة) */
 var MGE = { need_two: 'اختر عقدين أو أكثر، أو عقدًا واحدًا مع منتج إضافي.', bad_product: 'اكتب قيمة المنتج في تبويب «طلب المنتج».', no_contracts: 'اختر العقود من تبويب «توحيد العقود».', contract_mismatch: 'أحد العقود لم يعد متاحًا — راجع تبويب «توحيد العقود».', no_open: 'لا دفعات متبقية على العقود المختارة.', bad_count: 'أدخل عدد الدفعات — من 1 إلى 120.', bad_date: 'تاريخ أول دفعة يكون بعد اليوم.', dist_sum: 'مجموع التوزيع اليدوي لا يساوي قيمة العقد الموحّد', contract_closed: 'أحد العقود مغلق', bad_line: 'مسمّى البند حرفان على الأقل.', bad_amount: 'قيمة البند غير صحيحة.' };
 var TABS = [['req', 'الطلب', 'user'], ['mgc', 'توحيد العقود', 'list'], ['prod', 'طلب المنتج', 'box'], ['calc', 'الحسبة', 'calc'], ['guar', 'الضمانات', 'sign'], ['doc', 'المستند', 'file'], ['page', 'صفحة العميل', 'phone'], ['chat', 'المراسلات والمرفقات', 'inbox'], ['msg', 'رسائل العميل', 'send'], ['log', 'السجل', 'clock']];
@@ -1453,13 +1454,15 @@ var r = rs(x), out = [grpRow('العقود المُوحَّدة', ['mgc', 'تع�
 if (!r) return out.concat([el('tr', {}, [el('td', { colspan: '4', class: 'cr-mgx-0 is-bad', text: errT(x) })])]);
 (r.contracts || []).forEach(function (k) { out.push(valRow('المتبقي على العقد ' + k.no, k.remain)); });
 var pr = r.product || {};
-if (pr.on) { out.push(grpRow('المنتج', ['prod', 'تعديل'])); out.push(valRow(pr.type || 'منتج إضافي', pr.value)); if (Number(pr.vat) > 0) out.push(valRow('ضريبة المنتج ' + r.vat_rate + '٪', pr.vat, 'is-tax')); }
+if (pr.on) { out.push(grpRow('المنتج', ['prod', 'تعديل'])); out.push(valRow((pr.type || 'منتج إضافي') + (pr.det ? ' — ' + pr.det : ''), pr.value)); }
 return out;
 }
 function footRows(x) {
 var r = rs(x); if (!r) return [];
-return (Number(r.vat) > 0 ? [valRow('ضريبة البنود ' + r.vat_rate + '٪', r.vat, 'is-tax')] : []).concat([el('tr', { class: 'is-tot' }, [el('td', { colspan: '3', text: 'قيمة العقد الموحّد' }), el('td', { class: 'is-v' }, [ltr(money(r.total)), el('small', { text: ' ر.س' })])])]);
+var vt = vatOf(r); /* v952: ضريبة واحدة على المنتج والبنود */
+return (vt > 0 ? [valRow('المجموع قبل الضريبة', (Number(r.total) || 0) - vt, 'is-sub'), valRow('ضريبة القيمة المضافة ' + r.vat_rate + '٪ — على المنتج والبنود', vt, 'is-tax')] : []).concat([el('tr', { class: 'is-tot' }, [el('td', { colspan: '3', text: 'قيمة العقد الموحّد' }), el('td', { class: 'is-v' }, [ltr(money(r.total)), el('small', { text: ' ر.س' })])])]);
 }
+function vatOf(r) { var pr = r.product || {}; return Math.round(((pr.on ? Number(pr.vat) || 0 : 0) + (Number(r.vat) || 0)) * 100) / 100; }
 function lnW(n) { return n === 1 ? 'بند واحد' : n === 2 ? 'بندان' : n + ' بنود'; }
 function tabCalc(x) {
 var ed = editable(x), c = x.calc && typeof x.calc === 'object' ? x.calc : (x.calc = {}), r = rs(x), R0 = Number(x.vat_rate) || 15, P = x.proposal || {};
@@ -1512,11 +1515,11 @@ function summary(x) {
 var r = rs(x);
 if (!r) return el('section', { class: 'cr-card cr-mgsum' }, [el('h2', { text: 'الملخص المالي' }), note('warn', errT(x))]);
 var pr = r.product || {}, pl = r.plan || {}, L = r.lines || [];
-var fees = L.reduce(function (a, l) { return a + (Number(l.amt) || 0); }, 0) + (Number(r.vat) || 0);
+var fees = L.reduce(function (a, l) { return a + (Number(l.amt) || 0); }, 0), vt = vatOf(r);
 var part = function (k, v, sub, go) { var kids = [el('small', { text: k }), el('b', {}, [ltr(money(v))]), el('span', { text: sub })]; return go ? el('button', { type: 'button', class: 'cr-mgsum-p is-go', 'data-live-ok': '', onclick: function () { goTab(go); } }, kids) : el('div', { class: 'cr-mgsum-p' }, kids); };
 return el('section', { class: 'cr-card cr-mgsum' }, [
 el('div', { class: 'cr-mgsum-tot' }, [el('small', { text: 'قيمة العقد الموحّد' }), el('b', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })]), el('span', { text: pW(pl.count) + ' × ' + money(pl.per) + ' ر.س' })]),
-el('div', { class: 'cr-mgsum-ps' }, [part('المتبقي على العقود', r.remain, cnW((r.contracts || []).length), 'mgc'), pr.on ? part('المنتج وضريبته', pr.total, pr.type || 'منتج إضافي', 'prod') : null, part('البنود وضريبتها', fees, L.length ? lnW(L.length) : 'لا بنود')]),
+el('div', { class: 'cr-mgsum-ps' }, [part('المتبقي على العقود', r.remain, cnW((r.contracts || []).length), 'mgc'), pr.on ? part('المنتج', pr.value, pr.type || 'منتج إضافي', 'prod') : null, part('البنود', fees, L.length ? lnW(L.length) : 'لا بنود'), vt > 0 ? part('ضريبة القيمة المضافة', vt, r.vat_rate + '٪ على المنتج والبنود') : null]),
 el('div', { class: 'cr-mgsum-f' }, [el('span', {}, [icon('cal'), 'أول دفعة ', el('b', { text: day(pl.start) }), ' · آخر دفعة ', el('b', { text: day(pl.last) })]), pr.on ? el('span', {}, [icon('box'), 'الاستلام: ', el('b', { text: pr.recv_t || 'لم تُحدَّد' })]) : null])]);
 }
 function repaint(x) {
