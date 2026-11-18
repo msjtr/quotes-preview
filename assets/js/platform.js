@@ -29634,7 +29634,7 @@ n.classList.add('eg9-ew'); return n;
 }
 
 /* ── صفحة الطلب ── */
-/* ── صفحة الطلب (v929): نمط «طلب تأجيل دفعة» — رأس كامل + «الخطوة التالية» + ثمانية تبويبات رئيسية بنقاط الحالة + تبويبات فرعية لكل قسم (البيانات · المستند · صفحة العميل · المعاينة) + شريط إجراءات مثبَّت أسفل الشاشة ── */
+/* ── صفحة الطلب (v929–930): نمط «طلب تأجيل دفعة» — رأس كامل + «الخطوة التالية» + ثمانية تبويبات رئيسية بنقاط الحالة + تبويبات فرعية لكل قسم (البيانات · المستند · صفحة العميل · المعاينة) + شريط إجراءات مثبَّت أسفل الشاشة ── */
 const EG12 = { open: null, bound: false };
 const EG12_T = [['req', 'الطلب والمستندات', 'tray'], ['dec', 'قرار الأهلية', 'seal-check'], ['qt', 'عرض سعر منتج', 'receipt'], ['lnk', 'الرابط وموافقات العميل', 'paper-plane-tilt'],
 ['inv', 'فاتورة المنتج', 'file-text'], ['ct', 'عقد بيع منتج', 'handshake'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
@@ -29651,6 +29651,8 @@ document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && 
 }
 /* القائمة تفتح داخل الشاشة: تنقلب للأعلى إن لم يتسع ما تحتها */
 function eg12Fit() { setTimeout(function () { document.querySelectorAll('.eg12-pop').forEach(function (p) { p.classList.remove('is-up'); const r = p.getBoundingClientRect(), t = p.parentNode.getBoundingClientRect(); if (r.bottom > window.innerHeight - 8 && t.top - r.height - 8 > 70) p.classList.add('is-up'); }); }, 0); }
+/* المعاينة الورقية تُصغَّر لتملأ عرض عمودها — بلا تمرير أفقي */
+function eg12Zoom() { setTimeout(function () { document.querySelectorAll('.eg12 .srd-paper').forEach(function (pp) { const cw = pp.clientWidth; if (!cw) return; Array.prototype.forEach.call(pp.children, function (pg) { if (!pg.dataset.w) { pg.style.zoom = ''; pg.dataset.w = String(pg.offsetWidth || 0); } const w = Number(pg.dataset.w) || 0; if (w > 0) pg.style.zoom = String(Math.min(1, (cw - 2) / w)); }); }); }, 30); }
 function eg12Ic(n, s) { return frag(ui(n, s || 18)); }
 function eg9Page(x, paint) {
 eg12Bind();
@@ -29690,6 +29692,7 @@ return e('button', { type: 'button', role: 'tab', class: 'eg12-tab' + (on ? ' is
 let sec = null;
 try { sec = eg12Sec(tab, ctx); } catch (err) { try { console.warn('[eg12-sec]', err && err.message); } catch (y) { void y; } sec = e('section', { class: 'eg12-sec' }, [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')]); }
 if (V.menu || V.asg) eg12Fit();
+eg12Zoom();
 const backBar = e('div', { class: 'eg10-backbar' }, [eg9Btn('كل الطلبات', { ic: 'caret-right', cls: 'eg10-back', on: function () { eg9Go(''); paint(); } })]);
 return [e('div', { class: 'eg9 eg10 eg12', 'data-sr': x.id }, [backBar, top, extra.length ? e('div', { class: 'eg9-extra' }, extra) : null, tabs, sec])];
 }
@@ -29714,7 +29717,7 @@ eg10Kp(x, B).forEach(function (p) { if (p[0] === '—') return; chips.push(e('sp
 chips.push(e('span', { class: 'eg12-chip' }, [eg12Ic('clock', 16), 'آخر تحديث: ', e('b', {}, eg10Ago(eg10Upd(x, B)))]));
 const ch = (B && B.ch) || {}, q = B && B.q, cs = eg10Cs(B);
 const note = function (i) {
-if (i === 0) return x.status === 'submitted' ? '' : iso(new Date(x.created_at));
+if (i === 0) return x.status === 'submitted' ? '' : 'استُلم';
 if (i === 1) return B && EG10_REC[B.rec] ? EG10_REC[B.rec] : x.status === 'approved' ? 'مؤهَّل' : x.status === 'rejected' ? 'غير مؤهَّل' : '';
 if (i === 2) return q ? ({ approved: 'معتمد', sent: 'معتمد', accepted: 'قبله العميل', declined: 'اعتذر', pending_approval: 'بانتظار الاعتماد' })[q.st] || 'قيد الإعداد' : '';
 if (i === 3) return B && B.link ? 'أُرسل' : '';
@@ -30327,7 +30330,7 @@ const Q = eg11QFull(x, B, paint), q = B && B.q, sg = B && B.sign, P = Q && Q.cal
 const M = { draw: 'رسم التوقيع', type: 'كتابة الاسم', upload: 'صورة التوقيع' };
 if (!Q && !(q && q.ct)) return eg9Card('عقد بيع منتج', 'handshake', [e('div', { class: 'eg12-empty' }, [frag(ui('info', 20)), e('span', {}, 'يُبنى العقد من عرض السعر المعتمد، ويصدر رقمه عند توقيع العميل.')])]);
 const kids = [eg11Tiles([['رقم العقد', (q && q.ct) || 'يصدر عند التوقيع'], ['الإجمالي', q ? eg10N(q.total, 2) : '—', 1], ['خطة الدفع', P.length ? (P.length > 1 ? fmtNum(P.length) + ' × ' + eg10N(P[0].amount, 2) : 'دفعة واحدة') : '—'], ['التوقيع', sg ? 'وُقّع ' + iso(new Date(sg.at)) : 'لم يوقّع بعد']]),
-eg9Kv([['الطرف الأول (البائع)', 'منصة تيرا'], ['الطرف الثاني (المشتري)', eg9Name(x)], ['المنتج', (Q && Q.product_type) || (B && B.prod) || '—'], ['طريقة التوقيع', sg ? (M[sg.method] || sg.method || '—') : '—'], ['وقت التوقيع', sg ? eg10Dt(sg.at) : '—'], ['أول دفعة', P.length ? P[0].due : '—'], ['آخر دفعة', P.length ? P[P.length - 1].due : '—']])];
+eg9Kv([['المشتري', eg9Name(x)], ['المنتج', (Q && Q.product_type) || (B && B.prod) || '—'], ['طريقة التوقيع', sg ? (M[sg.method] || sg.method || '—') : '—'], ['وقت التوقيع', sg ? eg10Dt(sg.at) : '—'], ['أول دفعة', P.length ? P[0].due : '—'], ['آخر دفعة', P.length ? P[P.length - 1].due : '—']])];
 if (full && q && q.cid) { try { const f = cfFinal({ rid: q.cid, no: q.ct }, { r: { id: q.cid, user_id: x.user_id } }); if (f) kids.push(e('h4', { class: 'eg11-h' }, 'العقد النهائي'), e('div', { class: 'eg11-sub eg11-host' }, [f])); } catch (err) { void err; } }
 return eg9Card('عقد بيع منتج', 'handshake', kids);
 }
