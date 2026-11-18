@@ -52,7 +52,7 @@ sum: 'M18 5H6l6 7-6 7h12', undo: 'M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3', ban: 
 function icon(n) { var s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('class', 'cr-ic'); var p = document.createElementNS(NS, 'path'); p.setAttribute('d', IC[n] || ''); s.appendChild(p); return s; }
 function el(tag, a, kids) {
 var n = document.createElement(tag);
-Object.keys(a || {}).forEach(function (k) { var v = a[k]; if (v == null || v === false) return; if (k === 'class') n.className = v; else if (k === 'text') n.textContent = W(v); else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v); else if (k === 'value') n.value = v; else if (k === 'checked') n.checked = !!v; else if (k === 'selected') n.selected = !!v; else n.setAttribute(k, v === true ? '' : v); });
+Object.keys(a || {}).forEach(function (k) { var v = a[k]; if (v == null || v === false) return; if (k === 'class') n.className = v; else if (k === 'text') n.textContent = W(v); else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v); else if (k === 'value') n.value = v; else if (k === 'checked') n.checked = !!v; else if (k === 'selected') n.selected = !!v; else n.setAttribute(k, v === true ? '' : k === 'title' || k === 'aria-label' ? W(v) : v); });
 (kids || []).forEach(function (c) { if (c == null || c === false) return; n.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(W(String(c))) : c); });
 return n;
 }
@@ -334,7 +334,7 @@ return [el('div', { class: 'cr-r1' }, [heroEl(x), nextEl(x)]), askView(x)].conca
 function heroEl(x) {
 return el('section', { class: 'cr-hero cr-hero2' }, [
 el('span', { class: 'cr-av cr-hero2-av', 'aria-hidden': 'true', text: initial(x.client) }),
-el('div', { class: 'cr-hero2-t' }, [el('small', {}, [(x.kind_t || 'طلب تأجيل دفعة') + ' · ', ltr(x.no)]), el('h2', { text: x.client || '—' }), el('div', { class: 'cr-hero2-m' }, [x.contract_no ? el('span', { class: 'cr-chip' }, ['العقد ', ltr(x.contract_no)]) : null, x.assigned_t ? el('span', { class: 'cr-chip' }, ['مسند إلى: ', x.assigned_t]) : null, x.chat && x.chat.wait ? el('span', { class: 'cr-chip is-warn', text: 'بانتظار العميل · استكمال' }) : null])]),
+el('div', { class: 'cr-hero2-t' }, [el('small', {}, [(x.kind_t || 'طلب تأجيل دفعة') + ' · ', ltr(x.no)]), el('h2', { text: x.client || '—' }), el('div', { class: 'cr-hero2-m' }, [x.contract_no ? el('span', { class: 'cr-chip' }, [KIND === 'merge' ? 'العقود ' : 'العقد ', ltr(x.contract_no)]) : null, x.assigned_t ? el('span', { class: 'cr-chip' }, ['مسند إلى: ', x.assigned_t]) : null, x.chat && x.chat.wait ? el('span', { class: 'cr-chip is-warn', text: 'بانتظار العميل · استكمال' }) : null])]),
 el('span', { class: 'cr-hero2-up', title: at(x.updated_at) }, [icon('clock'), 'آخر تحديث: ', rel(x.updated_at)]),
 el('button', { type: 'button', class: 'cr-allb', 'data-live-ok': '', onclick: back }, [icon('back'), 'كل الطلبات']), pathEl(x)]);
 }
@@ -1179,7 +1179,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=946'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=947'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
