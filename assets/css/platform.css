@@ -10100,3 +10100,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 @media (max-width:900px){.eg13-path{overflow-x:auto;scrollbar-width:thin}.eg13-st{flex:0 0 96px}.eg13-tool{flex:0 0 104px}.eg13-tp,.eg13-tp.is-wide,.eg13-tp.is-doc,.eg13-qg,.eg13-pay{grid-template-columns:1fr}.eg13-pv,.eg13-qs,.eg13-adpv{position:static}.eg13-dl.is-4{grid-template-columns:repeat(2,minmax(0,1fr))}.eg13-row2{grid-template-columns:1fr}.eg13-ctl .eg12-dsel{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.eg13 .eg12-hd-r{flex-wrap:wrap}.eg13 .eg12-hd-a{width:100%}.eg13-dl,.eg13-dl.is-4{grid-template-columns:1fr 1fr}}
 .eg13-ab .sr-stl{border:0;padding:0;margin:0;background:none}
+.eg13-stack{display:flex;flex-direction:column;gap:16px}
+.eg13-fin .lv-sec,.eg13-fin section{border:0;box-shadow:none;padding:0;margin:0;background:none}
