@@ -692,7 +692,7 @@ var ch = guarSugs(d).filter(function (s) { return g.pick[s[0]]; }).map(function 
 if (!ch.length) { toast(false, 'اختر اقتراحًا واحدًا على الأقل، ثم «طلبه من العميل».'); return; }
 items = ch.map(function (t) { return /كفيل/.test(t) ? 'guarantor' : /مستديم/.test(t) ? 'standing' : /شيك/.test(t) ? 'cheques' : /سند/.test(t) ? 'promissory' : { kind: 'other', title: t }; });
 }
-ST.askPre = { id: x.id, items: items, reset: !!items, open: true }; ST.tab = 'chat'; keep(); draw(); setTimeout(function () { var a = R.querySelector('.cx-askw'); if (a) a.scrollIntoView({ block: 'start', behavior: 'smooth' }); else toTop(); }, 80); /* v941: يفتح على النموذج مباشرة */
+ST.askPre = { id: x.id, items: items, reset: !!items, open: true }; ST.tab = 'chat'; keep(); draw(); (function go(n) { var a = R.querySelector('.cx-askw'); if (a) a.scrollIntoView({ block: 'start', behavior: 'smooth' }); else if (n < 30) setTimeout(function () { go(n + 1); }, 120); else toTop(); })(0); /* v942: ينتظر تحميل المراسلات ثم يفتح على النموذج */
 }
 /* v913: تبويب «المراسلات والمرفقات» */
 function tabChat(x) {
@@ -1134,7 +1134,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=941'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=942'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
