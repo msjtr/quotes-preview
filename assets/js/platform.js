@@ -18148,11 +18148,11 @@ function cfFinSigned(d) { /* v796: العقد الموقّع بالقالب ال
   B.push(d3Card('بيانات العقد', 'file-text', [d3KV([['رقم العقد', no, true], ['تاريخ العقد', D.date || '—', true], ['اسم العميل', d.client || '—'], ['المنتج', D.product || '—'],
     ['قيمة المنتج', money(D.product_value)], ['إجمالي العقد', money(D.total)], ['عدد الدفعات', D.n ? String(D.n) : '—']])]));
   if (sched.length) B.push(d3DT('جدول الدفعات', 'calendar', ['الدفعة', 'تاريخ الاستحقاق', 'المبلغ'], sched.map(function (p) { return [String(p.no || ''), e('bdi', { dir: 'ltr' }, String(p.due || '')), money(p.amount)]; })));
-  for (let i = 0; i < cls.length; i += 4) B.push(d3Card(i ? 'بنود العقد (تابع)' : 'بنود العقد', 'list', cls.slice(i, i + 4).map(function (c) { return e('div', { class: 'd3-cfs-cl' }, [c[0] ? e('b', {}, String(c[0])) : null, e('p', {}, String(c[1] || ''))]); })));
+  if (cls.length) B.push(d3Card('بنود العقد', 'list', [e('div', { class: 'd3-exp d3-cfs-cls' }, cls.map(function (c) { return e('div', { class: 'd3-cfs-cl' }, [c[0] ? e('b', {}, String(c[0])) : null, e('p', {}, String(c[1] || ''))]); }))])); /* v938: بطاقة واحدة — يقسمها d3Paginate عند حدود البنود فلا تتكرّر «(تابع)» */
   if (D.sign) B.push(e('p', { class: 'd3-cfs-p' }, String(D.sign)));
   const img = /^data:image\/(png|jpeg);base64,/.test(g.image || '');
   const fac = /email/.test(g.factor || '') ? 'رمز البريد' : /wa|whats/.test(g.factor || '') ? 'رمز واتساب' : (g.factor || '—');
-  B.push(d3Card('توقيع العميل', 'pen', [e('div', { class: 'd3-cfs-sig' }, [img ? e('img', { src: g.image, alt: 'توقيع العميل' }) : e('b', { class: 'is-typed' }, g.name || '—'), img && g.name ? e('small', {}, g.name) : null]),
+  B.push(d3Card('توقيع العميل', 'pen', [e('div', { class: 'd3-cfs-sig' }, [img ? e('img', { src: g.image, alt: 'توقيع العميل' }) : e('b', { class: 'is-typed' }, g.name || '—'), null /* v938: الاسم مرّة واحدة في الجدول */]),
     d3KV([['الاسم', g.name || '—'], ['طريقة التوقيع', CF_FIN_M[g.method] || g.method || '—'], ['وقت التوقيع', sdt, true], ['التحقق', fac]]),
     g.statement ? e('p', { class: 'd3-cfs-p is-st' }, 'الإقرار: ' + g.statement) : null]));
   try { B.push(d3ApprWide(no, 'ct', {})); } catch (err) { void err; }
@@ -19276,7 +19276,7 @@ const EGP_F = {
 };
 const EGV = {};
 function egPvBtn(x, kind, paint) {
-if (TQN) return null; /* v936: المنصة الجديدة تعاين بمحرّك رابط الرحلة نفسه داخل «القوالب والمعاينة» — لا رابط معاينة قديم (/elig/) */
+return null; /* v938: أُزيلت «معاينة على رقمي» القديمة (/elig/) من المنصتين — المعاينة بمحرّك رابط الرحلة داخل «القوالب والمعاينة» */
   const S = EGJ[x.id] || {}, k = kind === 'result' ? 'result' : kind;
   return liveOk(DS.button(S.busy === 'pv:' + k ? 'جارٍ الإرسال…' : 'إرسال معاينة لجوالي', { size: 'sm', ui: 'device-mobile', disabled: !!S.busy, onClick: function () { egjPreview(x, k, paint); } }));
 }
@@ -20762,14 +20762,8 @@ function egRecvBox(x, paint) { /* v686: اختيار الفريق يحلّ مح�
       e('div', { class: 't2-pb-actions' }, [liveOk(DS.button(W.busy === 'recv' ? 'جارٍ الحفظ…' : 'حفظ طريقة الاستلام', { size: 'sm', tone: 'primary', ui: 'truck', disabled: !!W.busy, onClick: function () { egRecvSave(x, W, paint); } }))])])]);
 }
 /* v684: المعاينة على رقم الموظف — نُقلت كما هي من egJourney لتُستدعى أيضًا من «ملفات الطلب» (فاتورة المنتج) */
-async function egjPreview(x, k, paint) {
-  const S = egjLoad(x, paint);
-  if (S.busy) return; S.busy = 'pv:' + k; S.err = ''; paint();
-  const j = await clPost('/admin/api/elig/' + encodeURIComponent(x.id) + '/preview', { stage: k }).catch(function () { return null; });
-  S.busy = '';
-  if (!j || j.ok === false && !j.url) { S.err = (j && j.message) || 'تعذّر إرسال المعاينة.'; paint(); return; }
-  snack(j.ok ? 'وصلتك معاينة «' + EGJ_ST[k] + '» على واتساب وبريدك كما تصل العميل — افتح الرابط وراجع الصفحة.' : 'جُهّز رابط المعاينة، لكن تعذّر إرساله إلى رقمك — افتحه من «فتح المعاينة».');
-  S.lastUrl = j.url; S.lastStage = k; egjLoad(x, paint, true);
+async function egjPreview(x, k, paint) { /* v938: أُوقف مسار المعاينة القديم (svc_elig_preview) — لا طلب للخادم */
+  const S = egjLoad(x, paint); S.err = 'أُوقفت المعاينة القديمة — عاين من «القوالب والمعاينة» في المنصة الجديدة.'; paint();
 }
 /* v684: معرّف العقد الصادر من الطلب — من صفوف العقود المحمّلة إن وُجدت، وإلا من تفاصيل العرض المقبول (admin_quotation_detail → contract_id كما في lvQtOpen) */
 function egCtId(x, c, Q, paint) {
