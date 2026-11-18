@@ -29634,7 +29634,7 @@ n.classList.add('eg9-ew'); return n;
 }
 
 /* ── صفحة الطلب ── */
-/* ── صفحة الطلب (v929–930): نمط «طلب تأجيل دفعة» — رأس كامل + «الخطوة التالية» + ثمانية تبويبات رئيسية بنقاط الحالة + تبويبات فرعية لكل قسم (البيانات · المستند · صفحة العميل · المعاينة) + شريط إجراءات مثبَّت أسفل الشاشة ── */
+/* ── صفحة الطلب (v929–931): نمط «طلب تأجيل دفعة» — رأس كامل + «الخطوة التالية» + ثمانية تبويبات رئيسية بنقاط الحالة + تبويبات فرعية لكل قسم (البيانات · المستند · صفحة العميل · المعاينة) + شريط إجراءات مثبَّت أسفل الشاشة ── */
 const EG12 = { open: null, bound: false };
 const EG12_T = [['req', 'الطلب والمستندات', 'tray'], ['dec', 'قرار الأهلية', 'seal-check'], ['qt', 'عرض سعر منتج', 'receipt'], ['lnk', 'الرابط وموافقات العميل', 'paper-plane-tilt'],
 ['inv', 'فاتورة المنتج', 'file-text'], ['ct', 'عقد بيع منتج', 'handshake'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
@@ -30268,7 +30268,7 @@ catch (err) { EG9.busy = ''; paint(); eg11Fail(err); }
 const accepted = Q.status === 'accepted' || (B && B.ch && B.ch.quote && B.ch.quote.d === 'accept');
 const tiles = eg11Tiles([['قيمة المنتج', eg10N(c.value, 2)], ['الرسوم', eg10N(fees, 2)], ['الضريبة', eg10N(c.vat, 2)], P.length ? ['خطة الدفع', P.length > 1 ? fmtNum(P.length) + ' × ' + eg10N(P[0].amount, 2) : 'دفعة واحدة'] : null, ['الإجمالي', eg10N(Q.total || c.total, 2), 1]]);
 const kids = [R && Q.status === 'draft' ? e('div', { class: 'eg10-warn' }, 'أُعيد للتعديل: ' + (R.note || '')) : null,
-Q.prepared_by_name || Q.approved_by_name ? e('small', { class: 'eg9-hint' }, [Q.prepared_by_name ? 'أعدّه ' + Q.prepared_by_name : '', Q.approved_by_name ? ' · اعتمده ' + Q.approved_by_name : ''].join('')) : null];
+Q.approved_by_name ? e('small', { class: 'eg9-hint' }, 'اعتمده ' + Q.approved_by_name) : null];
 if (part === 'plan') {
 const pg = eg11QtPage(Q);
 kids.push(e('div', { class: 'eg12-g2' }, [eg11Fld('خطة الدفع', e('div', { class: 'eg11-in is-ro' }, P.length ? (P.length > 1 ? fmtNum(P.length) + ' دفعات شهرية' : 'دفعة واحدة') + ' · أول دفعة ' + (P[0].due || '') : '—')), eg11Fld('خصم بطاقة العضوية في الرابط', e('div', { class: 'eg11-in is-ro' }, eg11PtsOff(pg) ? 'غير متاح' : 'متاح' + (pg.q_pts_max ? ' · الحد الأعلى ' + fmtNum(pg.q_pts_max) + ' نقطة' : ' · الحد الأعلى: رصيد العميل كاملًا')))]),

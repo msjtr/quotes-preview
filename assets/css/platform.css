@@ -9914,3 +9914,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg12-pv-p>.srd-paper{width:100%;max-width:620px}
 .eg12-ht td{white-space:nowrap}
 .eg12-ht td:nth-child(4),.eg12-ht td:nth-child(6){white-space:normal;min-width:140px}
+.eg12-pv-p{position:relative;contain:paint}
+.eg12-pv-p>.srd-paper{width:100% !important;max-width:640px !important;flex:1 1 auto}
