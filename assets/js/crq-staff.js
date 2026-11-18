@@ -1030,7 +1030,7 @@ var setSrc = function (k) { if (k === 'own' && !mine) { x.doc = { tpl: clone(doc
 var onCh = function (redraw) { if (!ed) return; if (!own(x.doc)) { x.doc = { tpl: T, own: true }; mine = true; var b0 = R.querySelector('.cr-srcbar'); if (b0) b0.replaceWith(mkBar()); } else x.doc.tpl = T; queue({ doc: x.doc }); if (redraw) draw(); else docPv(x); };
 var mkBar = function () { return el('div', { class: 'cr-srcbar' }, [el('div', {}, [el('b', { text: 'ملحق تأجيل الدفعة' }), el('small', { class: 'cr-hint', text: mine ? 'نسخة لهذا العميل — لا تغيّر القالب العام.' : 'القالب العام من «قوالب المستندات». أي تعديل هنا ينشئ نسخة لهذا العميل.' })]),
 el('div', { class: 'cr-seg', role: 'group', 'aria-label': 'مصدر المستند' }, [['def', 'القالب العام'], ['own', 'نسخة لهذا العميل']].map(function (m) { var on = (m[0] === 'own') === mine; return el('button', { type: 'button', class: on ? 'is-on' : '', 'aria-pressed': on ? 'true' : 'false', disabled: !ed, 'data-live-ok': '', onclick: function () { setSrc(m[0]); } }, [m[1]]); })),
-D.open ? btn('فتح القالب العام', { cls: 'is-sm', ic: 'file', on: function () { D.open(); } }) : null]); };
+KIND === 'merge' ? MG.tplBtn(T) : D.open ? btn('فتح القالب العام', { cls: 'is-sm', ic: 'file', on: function () { D.open(); } }) : null]); }; /* v948 */
 var bar = mkBar();
 if (!Array.isArray(T.adds)) T.adds = [];
 var edv = el('div', { class: 'cr-ed' }, specEditor(D.spec(), T, !ed, onCh, x.org, docDat(x)).concat([el('div', { class: 'cr-ed-sep', text: 'أقسام مضافة إلى الملحق' })], addsEditor(T.adds, !ed, onCh, 'تظهر في الملحق بعد بنوده — من مكتبة البنود الموحّدة أو قسم فارغ.')));
@@ -1179,7 +1179,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=947'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=948'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1493,7 +1493,17 @@ ST.create = null; ST.busy = false; await loadList(); open(j.id); toast(true, 'أ
 catch (e) { ST.busy = false; C.err = e.message; draw(); }
 } })])])]));
 }
-return { tabReq: tabReq, tabCalc: tabCalc, summary: summary, repaint: repaint, execCard: execCard, createPanel: createPanel };
+/* v948: القالب العام لعقد التوحيد — يُعتمد من مستند الطلب نفسه (تأكيد بضغطتين)، ويظهر في كل طلبات التوحيد الجديدة ولا يغيّر ما أُرسل */
+function tplBtn(T) {
+var armed = ST.mgTpl === true;
+return btn(armed ? 'تأكيد: اعتماده قالبًا عامًا' : 'اعتماده قالبًا عامًا لعقد التوحيد', { cls: 'is-sm' + (armed ? ' is-pri' : ''), ic: 'file', disabled: ST.busy, title: 'يصير هذا المستند القالب العام لكل طلبات التوحيد الجديدة — لا يغيّر الطلبات المرسلة', on: async function () {
+if (!armed) { ST.mgTpl = true; draw(); return; }
+ST.busy = true; draw();
+try { var v = clone(T); delete v._org; await api('POST', '/admin/api/crq-tpl', { key: 'mg', value: v }); ST.mgTpl = false; ST.busy = false; if (ST.x) { ST.x.tpl = ST.x.tpl || {}; ST.x.tpl.df = clone(v); } toast(true, 'اعتُمد قالبًا عامًا لعقد التوحيد — يظهر في كل طلبات التوحيد الجديدة.'); draw(); }
+catch (e) { ST.busy = false; ST.mgTpl = false; draw(); toast(false, e.message); }
+} });
+}
+return { tabReq: tabReq, tabCalc: tabCalc, summary: summary, repaint: repaint, execCard: execCard, createPanel: createPanel, tplBtn: tplBtn };
 })();
 
 /* ═════════ الرسم ═════════ */
