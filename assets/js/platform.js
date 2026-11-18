@@ -29881,7 +29881,7 @@ const reqL = fv(G.req.filter(function (y) { return !/طريقة الاستلام
 reqL.push(['طريقة الاستلام', recv || '—'], ['سجل الالتزام', N.score !== null && N.score !== undefined ? fmtNum(N.score) + (N.cls && typeof AX_CLS !== 'undefined' && AX_CLS[N.cls] ? ' · ' + AX_CLS[N.cls][0] : '') : '—'], ['طلبات أهلية سابقة', fmtNum(prev)]);
 const incL = fv(G.inc); incL.push(['الصافي الشهري', eg10N(N.net, 2), 1]);
 let ab = null; try { ab = eligAdmBox(x); } catch (err) { void err; }
-if (ab) eg12Strip(ab, ['حساب الاستلام والتحقق']);
+if (ab) { try { ab.querySelectorAll('b,h3,h4').forEach(function (h) { if (String(h.textContent || '').trim() === 'حساب الاستلام والتحقق') h.remove(); }); } catch (err) { void err; } }
 const out = [blk('الطلب', 'storefront', dl(reqL, 'is-4')),
 e('div', { class: 'eg13-row2' }, [blk('الدخل والالتزامات', 'coins', dl(incL, 'is-2')), G.work.length ? blk('العمل', 'briefcase', dl(fv(G.work), 'is-2')) : null].filter(Boolean)),
 N.ex !== undefined && Number(N.ex) <= 0 ? e('div', { class: 'eg10-warn' }, 'المصروفات الشخصية صفر — اطلب تصحيحها من العميل.') : null,
@@ -30368,7 +30368,7 @@ void fees;
 const kids = [R && Q.status === 'draft' ? e('div', { class: 'eg10-warn' }, 'أُعيد للتعديل: ' + (R.note || '')) : null,
 Q.approved_by_name ? e('small', { class: 'eg9-hint' }, 'اعتمده ' + Q.approved_by_name) : null];
 const planK = [], itemK = [];
-itemK.push(e('div', { class: 'eg12-g2' }, [eg11Fld('المنتج', e('div', { class: 'eg11-in is-ro' }, Q.product_type || '—')), eg11Fld('قيمة المنتج (قبل الضريبة)', e('div', { class: 'eg11-in is-ro' }, eg10N(d ? d.value_before : c.value, 2) + (c.value_vat === false ? ' · بلا ضريبة' : ' · ضريبة ' + fmtNum(Math.round(eqRate() * 100)) + '٪')))]),
+itemK.push(eg11Fld('المنتج', e('div', { class: 'eg11-in is-ro' }, (Q.product_type || '—') + (c.value_vat === false ? ' · قيمة المنتج بلا ضريبة' : ''))),
 items.length ? e('div', { class: 'eg12-tw' }, e('table', { class: 'eg11-tbl' }, [e('thead', {}, e('tr', {}, ['البند', 'المبلغ (ر.س)', 'الضريبة', 'للعميل'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, items.map(function (y) { const hid = (c.hide || []).indexOf(y.id) >= 0; return e('tr', {}, [e('td', {}, y.t), e('td', {}, e('bdi', { dir: 'ltr' }, eg10N(y.amt, 2))), e('td', {}, y.vat === false ? 'غير خاضع' : e('bdi', { dir: 'ltr' }, eg10N(qr2((Number(y.amt) || 0) * eqRate()), 2))), e('td', {}, e('span', { class: 'eg9-pill is-' + (hid ? 'off' : 'ok') }, hid ? 'مخفي' : 'ظاهر'))]); }))])) : null);
 const pg = eg11QtPage(Q);
 planK.push(e('div', { class: 'eg12-g2' }, [eg11Fld('خطة الدفع', e('div', { class: 'eg11-in is-ro' }, P.length ? (P.length > 1 ? fmtNum(P.length) + ' دفعات شهرية' : 'دفعة واحدة') + ' · أول دفعة ' + (P[0].due || '') : '—')), eg11Fld('خصم بطاقة العضوية في الرابط', e('div', { class: 'eg11-in is-ro' }, eg11PtsOff(pg) ? 'غير متاح' : 'متاح' + (pg.q_pts_max ? ' · الحد الأعلى ' + fmtNum(pg.q_pts_max) + ' نقطة' : ' · الحد الأعلى: رصيد العميل كاملًا')))]),
