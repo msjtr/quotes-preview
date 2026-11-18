@@ -980,3 +980,37 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-gq .cr-guarw { margin: 0; }
 .crq .cr-set-ls { display: grid; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--k-line); }
 .crq .cx .cc-btn, .crq .cx-ask .cc-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+/* v940: «الضمانات» مبسّطة — النتيجة · شريطا المقارنة · على العميل مقابل لدى المنصة · القرار عند النقص فقط */
+.cr-g2-vd { border: 1px solid var(--k-line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 14px; }
+.cr-g2-vd.is-ok { background: var(--k-okw); border-color: transparent; } .cr-g2-vd.is-wr { background: var(--k-warnw); border-color: transparent; }
+.cr-g2-vh { display: flex; align-items: center; gap: 12px; }
+.cr-g2-vi { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; font-weight: 900; flex: none; background: var(--k-card); }
+.is-ok .cr-g2-vi { color: var(--k-ok); } .is-wr .cr-g2-vi { color: var(--k-warn); }
+.cr-g2-vh h3 { margin: 0; font-size: 17px; color: var(--k-ink); } .cr-g2-vh small { display: block; color: var(--k-mut); font-size: 12.5px; font-weight: 600; margin-top: 2px; }
+.cr-g2-bars { display: grid; gap: 8px; }
+.cr-g2-bar { display: grid; grid-template-columns: 92px minmax(0, 1fr) 110px; align-items: center; gap: 12px; font-size: 13px; }
+.cr-g2-bar > span { color: var(--k-mut); font-weight: 700; } .cr-g2-bar > b { font-size: 14.5px; color: var(--k-ink); text-align: left; }
+.cr-g2-tr { height: 12px; border-radius: 99px; background: var(--k-card); overflow: hidden; }
+.cr-g2-tr i { display: block; height: 100%; border-radius: 99px; min-width: 4px; }
+.cr-g2-bar.is-o i { background: var(--k-navy); } .cr-g2-bar.is-c i { background: var(--k-acc); }
+.cr-g2-sum { margin: 0; font-weight: 800; font-size: 13.5px; } .is-ok .cr-g2-sum { color: var(--k-ok); } .is-wr .cr-g2-sum { color: var(--k-warn); }
+.cr-g2-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.cr-g2-l { border: 1px solid var(--k-line); border-radius: 14px; padding: 12px 16px; display: grid; align-content: start; }
+.cr-g2-l h4 { margin: 0 0 6px; font-size: 14.5px; color: var(--k-ink); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cr-g2-l h4 small { color: var(--k-mut); font-size: 11.5px; font-weight: 600; }
+.cr-g2-r { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--k-line); font-size: 13.5px; }
+.cr-g2-l h4 + .cr-g2-r { border-top: 0; }
+.cr-g2-n { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--k-ink); font-weight: 700; }
+.cr-g2-n em { font-style: normal; color: var(--k-mut); font-size: 12px; font-weight: 600; }
+.cr-g2-r > b { color: var(--k-ink); white-space: nowrap; }
+.cr-g2-r.is-mut { opacity: .6; } .cr-g2-r.is-this .cr-g2-n { color: var(--k-brand); }
+.cr-g2-w { font-size: 11px; font-weight: 800; color: var(--k-warn); background: var(--k-warnw); border-radius: 6px; padding: 1px 7px; }
+.cr-g2-t { display: flex; justify-content: space-between; margin-top: 6px; padding: 10px 12px; background: var(--k-soft); border-radius: 10px; font-weight: 900; color: var(--k-ink); }
+.cr-g2-empty { margin: 6px 0; color: var(--k-mut); font-size: 12.5px; }
+.cr-g2-l .cr-gv-link { justify-self: start; padding: 8px 0; }
+.cr-g2-more { display: flex; }
+.cr-g2-act { border: 1px solid var(--k-line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; }
+.cr-g2-act h3 { margin: 0; font-size: 15px; color: var(--k-ink); }
+.cr-g2-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 760px) { .cr-g2-two { grid-template-columns: minmax(0, 1fr); } .cr-g2-bar { grid-template-columns: 78px minmax(0, 1fr) 96px; gap: 8px; } }
