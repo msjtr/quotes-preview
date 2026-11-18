@@ -25,7 +25,7 @@
       ['cpg', 'صفحة العميل', ['cu']]
     ]],
     ['الطلبات والعقود', [
-      ['cu-crq-defer', 'طلبات تأجيل دفعة', ['cu']],
+      ['cu-crq-defer', 'طلبات تأجيل دفعة', ['cu']], ['cu-crq-merge', 'طلبات توحيد العقود', ['cu']], /* v946 */
 ['cu-elig', 'طلبات التحقق من الأهلية', ['cu']], /* v916: صفحة مستقلة بأيقونتها */ /* v862: مفتاح cu- ليظهر رأس الصفحة ومسارها — v861: منظومة طلبات العقود الموحّدة — صفحة مستقلة (crq-staff.js) */
 ['cu-svc', 'طلبات الخدمات', ['cu']],
       ['cu-inbox', 'طلبات المتجر', ['cu']],
@@ -87,7 +87,7 @@ function upOf(k) { return /^fin-rec-/.test(k) ? 'fin-pay' : (UP[k] || ''); }
 var VIEWS = [
   ['fin-due', [['fin-due', 'الدفعات المستحقة'], ['cu-admx-dd', 'الاستقطاع البنكي'], ['cu-admx-ck', 'الشيكات'], ['cu-admx-bd', 'السندات التنفيذية']]],
   ['fin-pay', [['fin-pay', 'سجل المدفوعات'], ['fin-gw', 'عمليات بوابة الدفع'], ['cu-trin', 'التحويلات البنكية'], ['fin-rec-gw', 'سجل السداد', 'fin-rec-'], ['cu-admx-tr', 'الحوالات الصادرة']]],
-  ['fin-req', [['fin-req', 'سداد قيمة المنتج والتوحيد'] /* v863: التأجيل في «طلبات تأجيل دفعة» */, ['cu-opin', 'الإلغاء والاسترداد']]],
+  ['fin-req', [['fin-req', 'سداد قيمة المنتج'] /* v863: التأجيل في «طلبات تأجيل دفعة» */, ['cu-opin', 'الإلغاء والاسترداد']]],
   ['cu-admx-rp', [['cu-admx-rp', 'تقرير العملاء'], ['cu-admx-fee', 'الرسوم والإيراد']]],
   ['comm-send', [['comm-send', 'الإرسال'], ['comm-rep', 'تقرير الإرسال']]]
 ];
@@ -98,7 +98,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
   /* v703: بلاطة ثلاثية الأبعاد لكل بند — رمز من مكتبة رموز المنصة (window.__PGL) بوصفة البلاطة نفسها */
   var GLY = {
     'cu-list': 'identification-card', 'cu-new': 'user', 'cu-pf-ver': 'seal-check', 'cu-pf-launch': 'rocket-launch', 'cu-pf-req': 'note-pencil', 'cu-mem': 'crown-simple', 'cu-secc': 'shield-check', 'cpg': 'user-circle', 'cu-inbox': 'tray',
-    'cu-svc': 'clipboard-text', 'cu-crq-defer': 'clock', 'cu-elig': 'identification-badge', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront', 'cu-docs-tl': 'envelope-simple',
+    'cu-svc': 'clipboard-text', 'cu-crq-defer': 'clock', 'cu-crq-merge': 'stack', 'cu-elig': 'identification-badge', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront', 'cu-docs-tl': 'envelope-simple',
     'fin-due': 'calendar-check', 'cu-trin': 'bank', 'cu-opin': 'arrow-counter-clockwise', 'cu-paylinks': 'link-simple',
     'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'comm-rem': 'bell-ringing', 'comm-dir': 'users-three', 'cs-tickets': 'ticket', 'cx': 'star'
   };
@@ -121,7 +121,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
   };
   var COLK = {
     'adm-home': 'teal', 'cu-list': 'blue', 'cu-new': 'blue', 'cu-pf-ver': 'blue', 'cu-pf-launch': 'blue', 'cu-pf-req': 'blue', 'cu-mem': 'blue', 'cu-secc': 'teal', 'cpg': 'teal', 'cu-inbox': 'violet',
-    'cu-svc': 'violet', 'cu-crq-defer': 'violet', 'cu-elig': 'teal', 'cu-docs-pq': 'violet', 'cu-docs-pc': 'teal', 'cu-docs-sq': 'violet',
+    'cu-svc': 'violet', 'cu-crq-defer': 'violet', 'cu-crq-merge': 'teal', 'cu-elig': 'teal', 'cu-docs-pq': 'violet', 'cu-docs-pc': 'teal', 'cu-docs-sq': 'violet',
     'fin-due': 'saffron', 'fin-pay': 'saffron', 'cu-paylinks': 'saffron', 'fin-req': 'saffron', 'cu-admx-rp': 'blue',
     'comm-send': 'red', 'cs-tickets': 'red', 'cx': 'red', 'team-hub': 'teal', 'sys': 'slate', 'fin-fee': 'slate', 'pay-center': 'slate'
   };
@@ -1614,7 +1614,7 @@ top.appendChild(mk('span', 'tqn-cc-st' + (c.st.c ? ' is-' + c.st.c : ''), c.st.t
   }
 
   /* ═══ v822: «الطلبات والعقود» — هيكل واحد لكل صفحات القسم ═══ */
-  var RQI = { 'طلبات الخدمات': ['clip', 'سداد قيمة المنتج وتوحيد العقود — القرار والتنفيذ من صفحة الطلب.'], 'طلبات المتجر': ['card', 'طلبات المتجر التي تنتظر إجراءً: عرض سعر أو تأكيد طلب.'], 'عروض الشركاء': ['note', 'عروض أسعار الشركاء — الإعداد والاعتماد والإرسال للعميل.'], 'عروض المتاجر': ['note', 'عروض أسعار المتاجر — الإعداد والاعتماد والإرسال للعميل.'], 'عقود العملاء': ['id', 'عقود كل عميل وحالاتها — المراجعة والسداد والتعثّر.'] };
+  var RQI = { 'طلبات الخدمات': ['clip', 'سداد قيمة المنتج — القرار والتنفيذ من صفحة الطلب. توحيد العقود في «طلبات توحيد العقود».'], 'طلبات المتجر': ['card', 'طلبات المتجر التي تنتظر إجراءً: عرض سعر أو تأكيد طلب.'], 'عروض الشركاء': ['note', 'عروض أسعار الشركاء — الإعداد والاعتماد والإرسال للعميل.'], 'عروض المتاجر': ['note', 'عروض أسعار المتاجر — الإعداد والاعتماد والإرسال للعميل.'], 'عقود العملاء': ['id', 'عقود كل عميل وحالاتها — المراجعة والسداد والتعثّر.'] };
   function rqTone(t) { return /مكتمل|منتظم|مقبول|معتمد|منفّذ|مؤهَّل|مسدد/.test(t) && !/غير|بانتظار/.test(t) ? 'ok' : /متعثر|متأخر|مرفوض|ملغا|رفض/.test(t) ? 'bad' : /بانتظار|مراجعة|قيد|معدّل|معلّق|جديد/.test(t) ? 'warn' : ''; }
   function rqNum(el) { var t = txt(el), m = t.match(/\d[\d,]*/); return m ? m[0] : '0'; }
   function rqLab(el) { return txt(el).replace(/\d[\d,]*/g, '').replace(/\s+/g, ' ').trim(); }

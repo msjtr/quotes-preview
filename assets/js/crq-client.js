@@ -558,7 +558,7 @@ function staffUser(uid, paint) {
   staffApi()('GET', '/admin/api/crq-user/' + uid).then(function (j) { var nr = j.reqs || [], na = j.annexes || [], chg = JSON.stringify([nr, na]) !== JSON.stringify([c.reqs, c.anx]); c.st = 'ok'; c.at = Date.now(); c.reqs = nr; c.anx = na; if (chg && paint) paint(); }, function (e) { c.st = 'err'; c.err = e.message; });
   return c;
 }
-function goReq(id) { try { sessionStorage.setItem('crq.nav', JSON.stringify({ id: id, tab: 'req', nav: 1 })); } catch (e) { void e; } if (window.__teraApp && window.__teraApp.go) window.__teraApp.go('cu-crq-defer'); }
+function goReq(id, kind) { try { sessionStorage.setItem('crq.nav', JSON.stringify({ id: id, tab: 'req', nav: 1, kind: kind || 'defer' })); } catch (e) { void e; } if (window.__teraApp && window.__teraApp.go) window.__teraApp.go(kind === 'merge' ? 'cu-crq-merge' : 'cu-crq-defer'); } /* v946 */
 function staffReqs(o) {
   var c = staffUser(o.uid, o.paint);
   var L = c.reqs || [];
@@ -568,7 +568,7 @@ function staffReqs(o) {
     return el('div', { class: 'cx-rl' }, [el('span', { class: 'cx-ic is-rs' }, [icon('resched')]), el('div', { class: 'cx-rl-t' }, [el('b', {}, [(r.kind_t || 'تأجيل دفعة') + ' · ', el('bdi', { dir: 'ltr', text: r.no })]),
       el('small', { text: 'العقد ' + r.contract_no + ' · قُدّم ' + day(r.created_at) + (r.executed_at ? ' · نُفّذ ' + day(r.executed_at) : '') + (an ? ' — ملحق ' + an.n : '') + (r.wait ? ' · بانتظار استكمال العميل' : '') })]),
       el('span', { class: 'cc-badge is-' + (r.tone || 'info'), text: r.state === 'closed' && r.close_t ? 'مغلق · ' + r.close_t : r.state_t || r.state }),
-      el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { goReq(r.id); } }, ['فتح الطلب'])]);
+      el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { goReq(r.id, r.kind); } }, ['فتح الطلب'])]);
   }));
 }
 function staffAnx(uid, no, paint) { var c = staffUser(uid, paint); return (c.anx || []).filter(function (a) { return a.contract_no === no; }); }
@@ -642,5 +642,128 @@ function listsEditor(o) {
   return root;
 }
 
-window.CRQC = { page: page, picker: picker, check: check, payload: payload, propText: propText, lateOf: lateOf, annexes: annexes, msgBox: msgBox, askPanel: askPanel, needCard: needCard, staffReqs: staffReqs, staffAnx: staffAnx, staffUser: staffUser, annexView: annexView, listsEditor: listsEditor, goReq: goReq };
+/* ===== v946: «توحيد عقودي» — طلب توحيد العقود في منظومة طلبات العقود (crq_) =====
+* الأجزاء والهوية نفسها في «طلب تأجيل دفعة»: العقود المتأخرة بالأحمر، والعقد الذي عليه طلب قائم مقفل، وسطر واحد للمتبقي بلا تكرار.
+* الطلب نوعان: توحيد عقدين أو أكثر، أو توحيد مع منتج إضافي (قيمة المنتج يحددها العميل، والفريق يراجع ويصلك العرض برابط واحد). */
+var MG_STEPS = ['اختيار العقود', 'مراجعة فريق تيرا', 'موافقتك على العرض', 'توقيع العقد', 'العقد الموحّد'];
+var MG_MONTHS = [['6', '6 أشهر'], ['12', '12 شهرًا'], ['18', '18 شهرًا'], ['24', '24 شهرًا'], ['team', 'يحددها الفريق']];
+function mgCnt(n) { n = Number(n) || 0; return n === 1 ? 'عقد واحد' : n === 2 ? 'عقدان' : n <= 10 ? n + ' عقود' : n + ' عقدًا'; }
+function mgPay(n) { n = Number(n) || 0; return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتان' : n <= 10 ? n + ' دفعات' : n + ' دفعة'; }
+function mergePage(o) {
+o = o || {};
+var S = { opts: null, mine: null, today: '', note0: '', err: '', sel: [], prod: '', pv: '', pt: '', months: '', note: '', ack: false, miss: [], busy: false, done: null, chat: null, confirm: null };
+var root = el('div', { class: 'cc cc-mg', dir: 'rtl' });
+async function api(method, path, body) {
+var t = await o.token();
+var r = await fetch(path, { method: method, cache: 'no-store', credentials: 'same-origin', headers: Object.assign({ Authorization: 'Bearer ' + t, Accept: 'application/json' }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
+var j = null; try { j = await r.json(); } catch (e) { j = null; }
+if (!r.ok || !j || j.ok === false) throw new Error((j && j.message) || 'تعذّر تنفيذ الطلب الآن.');
+return j;
+}
+async function load() {
+try { var a = await Promise.all([api('GET', '/api/account/crq/options'), api('GET', '/api/account/crq')]); S.opts = a[0].contracts || []; S.today = a[0].today || ''; S.note0 = a[0].mg_note || ''; S.mine = (a[1].rows || []).filter(function (r) { return r.kind === 'merge'; }); S.err = ''; }
+catch (e) { S.err = e.message; S.opts = S.opts || []; S.mine = S.mine || []; }
+S.sel = S.sel.filter(function (n) { return S.opts.some(function (c) { return c.no === n && !c.busy; }); });
+paint();
+}
+function remOf(c) { return (c.payments || []).reduce(function (a, p) { return a + (Number(p.part ? p.left : p.amount) || 0); }, 0); }
+function stepper(cur) { return el('ol', { class: 'cc-steps', 'aria-label': 'مراحل طلب التوحيد' }, MG_STEPS.map(function (t, i) { return el('li', { class: i < cur ? 'is-done' : i === cur ? 'is-now' : '' }, [el('span', { text: String(i + 1) }), t]); })); }
+function miss(k) { return S.miss.indexOf(k) >= 0 ? ' is-miss' : ''; }
+function chips(L, cur, set, key) { return el('div', { class: 'cc-chips' + miss(key), role: 'radiogroup' }, L.map(function (x) { var on = cur === x[0]; return el('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: 'cc-chip' + (on ? ' is-on' : ''), 'data-live-ok': '', onclick: function () { set(x[0]); S.miss = []; paint(); } }, [x[1]]); })); }
+function form() {
+var today = todayIso(S.today), out = [stepper(0)];
+if (!S.opts.length) return out.concat([el('div', { class: 'cc-note' }, [icon('alert'), el('span', { text: 'لا توجد عقود قائمة بدفعات متبقية يمكن توحيدها الآن.' })])]);
+var sel = S.opts.filter(function (c) { return S.sel.indexOf(c.no) >= 0; });
+out.push(el('div', { class: 'cc-legend', 'aria-hidden': 'true' }, [['late', 'عليه دفعات متأخرة'], ['open', 'منتظم'], ['busy', 'في طلب قائم']].map(function (x) { return el('span', {}, [el('i', { class: 'is-' + x[0] }), x[1]]); })));
+out.push(el('div', { class: 'cc-sh is-a' + miss('sel') }, [el('b', { text: '١. العقود المراد توحيدها' }), el('span', { text: (sel.length ? mgCnt(sel.length) + ' محددة' : 'لم تُحدَّد') + ' · عقدان على الأقل، أو عقد مع منتج' })]));
+out.push(el('div', { class: 'cc-pays cc-mgcs' + miss('sel'), role: 'group', 'aria-label': 'العقود' }, S.opts.map(function (c, i) {
+var lt = lateOf(c, today), on = S.sel.indexOf(c.no) >= 0, k = c.busy ? 'busy' : lt.n ? 'late' : 'open';
+var ctl = c.busy ? el('span', { class: 'cc-lock', title: 'لا يمكن اختياره حتى يُغلق الطلب ' + c.busy + ' أو يُنفَّذ' }, [icon('lock')])
+: el('input', { type: 'checkbox', checked: on, 'aria-label': 'العقد ' + c.no, onchange: function (e) { S.sel = S.sel.filter(function (n) { return n !== c.no; }); if (e.target.checked) S.sel.push(c.no); S.miss = []; paint(); } });
+return el('label', { class: 'cc-pay cc-mgc is-' + k + (on ? ' is-on' : '') }, [el('span', { class: 'cc-pay-n', text: String(i + 1) }),
+el('span', { class: 'cc-pay-m' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: c.no })]), el('small', { class: 'cc-muted', text: (c.product ? c.product + ' · ' : '') + mgPay((c.payments || []).length) + ' متبقية' }),
+el('span', { class: 'cc-pill is-' + k, text: c.busy ? 'في طلب قائم ' + c.busy : lt.n ? cntW(lt.n, 'متأخرة', 'متأخرتان') : 'منتظم' })]),
+el('span', { class: 'cc-pay-a' }, [el('bdi', { dir: 'ltr', text: money(remOf(c)) }), ' ر.س', el('small', { text: 'المتبقي' })]), ctl]);
+})));
+if (sel.length) {
+var rem = sel.reduce(function (a, c) { return a + remOf(c); }, 0), late = sel.reduce(function (a, c) { return a + lateOf(c, today).sum; }, 0);
+out.push(el('div', { class: 'cc-mg-line' }, [el('span', {}, ['المتبقي على العقود المختارة', late > 0 ? el('em', {}, ['منه متأخر ', el('bdi', { dir: 'ltr', text: money(late) })]) : null]), el('b', {}, [el('bdi', { dir: 'ltr', text: money(rem) }), ' ر.س'])]));
+}
+var prod = [el('h4', { text: 'هل ترغب بشراء منتج آخر مع التوحيد؟' }), el('p', { class: 'cc-muted', text: 'يُضاف المنتج إلى العقد الموحّد بخطة دفع واحدة.' }), chips([['no', 'لا، توحيد فقط'], ['yes', 'نعم، مع منتج']], S.prod, function (v) { S.prod = v; }, 'prod')];
+if (S.prod === 'yes') {
+prod.push(el('div', { class: 'cc-field' + miss('pv') }, [el('label', { text: 'قيمة المنتج (ريال، قبل الضريبة)' }), el('input', { type: 'text', inputmode: 'decimal', value: S.pv || '', placeholder: 'مثال: 1500', maxlength: '9', oninput: function (e) { S.pv = e.target.value.replace(/[^\d.]/g, ''); e.target.value = S.pv; } })]));
+prod.push(el('div', { class: 'cc-field' }, [el('label', { text: 'نوع المنتج (اختياري)' }), el('input', { type: 'text', value: S.pt || '', maxlength: '80', placeholder: 'مثال: جوال، بطاقات شحن…', oninput: function (e) { S.pt = e.target.value; } })]));
+}
+var prop = [el('h4', { text: 'مدة خطة الدفع التي تقترحها' }), el('p', { class: 'cc-muted', text: 'اقتراح يراه الفريق عند دراسة طلبك — القرار النهائي في العرض الذي يصلك للموافقة.' }), chips(MG_MONTHS, S.months, function (v) { S.months = v; }, 'months'),
+el('div', { class: 'cc-field' }, [el('label', { text: 'ملاحظة للفريق (اختياري)' }), el('textarea', { rows: '2', maxlength: '300', placeholder: 'اكتب ما تريد أن يعرفه الفريق…', oninput: function (e) { S.note = e.target.value; } }, [S.note || ''])])];
+out.push(el('div', { class: 'cc-mg-grid' }, [el('div', {}, [el('div', { class: 'cc-sh is-b' }, [el('b', { text: '٢. منتج إضافي' })]), el('div', { class: 'cc-prop' }, prod)]),
+el('div', {}, [el('div', { class: 'cc-sh is-b' }, [el('b', { text: '٣. اقتراحك' })]), el('div', { class: 'cc-prop' }, prop)])]));
+out.push(el('div', { class: 'cc-note is-info' }, [icon('clock'), el('span', { text: S.note0 || 'يراجع فريق تيرا طلبك ويحدد خطة الدفع ورسم التوحيد، ويصلك العرض برابط للموافقة قبل أي تغيير على عقودك.' })]));
+if (sel.length) out.push(el('label', { class: 'cc-ack' + miss('ack') }, [el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; S.miss = []; } }),
+el('span', { text: 'أطلب توحيد العقود المختارة' + (S.prod === 'yes' ? ' مع المنتج الإضافي' : '') + ' في عقد واحد، وأعلم أن العقود السابقة تُغلق بعد توقيعي على العقد الموحّد.' })]));
+if (S.opts.some(function (x) { return x.busy; })) out.push(el('div', { class: 'cc-note is-info' }, [icon('alert'), el('span', { text: 'العقد الذي عليه طلب قائم (تأجيل أو توحيد) يُتاح بعد إغلاق طلبه، وباقي عقودك متاحة الآن.' })]));
+if (S.err) out.push(el('p', { class: 'cc-err', role: 'alert', text: S.err }));
+out.push(el('div', { class: 'cc-acts' }, [el('button', { type: 'button', class: 'cc-btn is-pri', disabled: S.busy, 'data-live-ok': '', onclick: submit }, ['إرسال طلب التوحيد']), o.back ? el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: o.back }, ['رجوع']) : null]));
+return out;
+}
+function check() {
+var m = [], n = S.sel.length;
+if (!n || (n < 2 && S.prod !== 'yes')) m.push('sel');
+if (!S.prod) m.push('prod');
+if (S.prod === 'yes' && !(Number(S.pv) > 0)) m.push('pv');
+if (!S.months) m.push('months');
+if (n && !S.ack) m.push('ack');
+return m;
+}
+async function submit() {
+var m = check(); S.miss = m;
+if (m.length) { S.err = m.indexOf('sel') >= 0 ? (S.sel.length === 1 ? 'لتوحيد عقد واحد اختر «نعم، مع منتج»، أو اختر عقدًا آخر.' : 'اختر العقود المراد توحيدها.') : ''; paint(); var f = root.querySelector('.is-miss'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+S.busy = true; S.err = ''; paint();
+try {
+var j = await api('POST', '/api/account/crq', { kind: 'merge', contract_nos: S.sel.slice(), note: String(S.note || '').trim(), prop: { months: S.months === 'team' ? null : S.months, team: S.months === 'team', product: S.prod === 'yes' ? { on: true, value: S.pv, type: String(S.pt || '').trim() } : null } });
+S.done = j; S.busy = false; S.sel = []; S.prod = ''; S.pv = ''; S.pt = ''; S.months = ''; S.note = ''; S.ack = false; load();
+} catch (e) { S.busy = false; S.err = e.message; paint(); }
+}
+function mineList() {
+if (!S.mine || !S.mine.length) return null;
+return el('section', { class: 'cc-card' }, [el('h3', { text: 'طلبات التوحيد' }), el('div', { class: 'cc-rows' }, S.mine.map(function (r) {
+var st = STEP_OF[r.state], pr = r.product && r.product.on ? r.product : null;
+return el('div', { class: 'cc-row is-' + (r.tone || 'info') }, [el('div', { class: 'cc-row-h' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: r.no })]), el('span', { class: 'cc-badge is-' + (r.tone || 'info'), text: r.state === 'closed' && r.close_t ? 'مغلق · ' + r.close_t : r.state_t })]),
+el('p', {}, ['العقود ', el('bdi', { dir: 'ltr', text: r.contract_no || '' }), pr ? ' · منتج إضافي بقيمة ' + money(pr.value) + ' ر.س' : '']),
+r.total != null ? el('p', { text: 'قيمة العقد الموحّد: ' + money(r.total) + ' ر.س' }) : null,
+r.new_contract ? el('p', {}, ['عقدك الموحّد: ', el('bdi', { dir: 'ltr', text: r.new_contract })]) : null,
+st >= 0 ? stepper(st) : null,
+r.state === 'consent' || r.state === 'sign' ? el('div', { class: 'cc-note is-info' }, [icon('link'), el('span', { text: r.state === 'consent' ? 'أرسلنا لك العرض برابط على واتساب والبريد — افتحه للموافقة أو الاعتذار.' : 'أرسلنا لك عقد التوحيد للتوقيع برابط على واتساب والبريد.' })]) : null,
+r.state === 'received' ? el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['إلغاء الطلب']) : null,
+chatOf(r)]);
+}))]);
+}
+function chatOf(r) {
+var c = r.chat || {}, need = Number(c.open) > 0 || Number(c.done) > 0;
+if (r.state === 'closed' && !Number(c.n)) return null;
+if (need || S.chat === r.id) return needCard({ r: r, token: o.token, onChange: load });
+return el('button', { type: 'button', class: 'cc-btn is-sm cx-chatb', 'data-live-ok': '', onclick: function () { S.chat = r.id; paint(); } }, [icon('mail'), 'المراسلة مع فريق تيرا' + (Number(c.n) ? ' (' + c.n + ')' : '')]);
+}
+async function cancel(r) {
+if (S.confirm !== r.id) { S.confirm = r.id; paint(); return; }
+try { await api('POST', '/api/account/crq/' + r.id + '/cancel', {}); S.confirm = null; load(); } catch (e) { S.err = e.message; paint(); }
+}
+function paint() {
+root.innerHTML = '';
+if (!S.opts) { root.appendChild(el('div', { class: 'cc-card' }, [el('p', { text: 'جارٍ التحميل…' })])); return; }
+if (S.done) {
+root.appendChild(el('section', { class: 'cc-card cc-done' }, [icon('check'), el('h2', { text: 'أُرسل طلب التوحيد' }), el('p', {}, ['رقم الطلب ', el('bdi', { dir: 'ltr', text: S.done.no })]),
+el('p', { text: 'يراجعه فريق تيرا ويصلك العرض برابط للموافقة على واتساب والبريد.' }), el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: function () { S.done = null; paint(); } }, ['طلب آخر'])]));
+} else root.appendChild(el('section', { class: 'cc-card' }, [el('h2', { text: 'طلب توحيد العقود' })].concat(form())));
+var ml = mineList(); if (ml) root.appendChild(ml);
+if (S.confirm) {
+var r = (S.mine || []).filter(function (x) { return x.id === S.confirm; })[0];
+if (r) root.appendChild(el('div', { class: 'cc-card cc-confirm' }, [el('p', { text: 'إلغاء الطلب ' + r.no + '؟ لا يمكن التراجع.' }), el('div', { class: 'cc-acts' }, [el('button', { type: 'button', class: 'cc-btn is-pri', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['نعم، ألغِ الطلب']), el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: function () { S.confirm = null; paint(); } }, ['رجوع'])])]));
+}
+}
+paint(); load();
+return root;
+}
+
+window.CRQC = { page: page, mergePage: mergePage, picker: picker, check: check, payload: payload, propText: propText, lateOf: lateOf, annexes: annexes, msgBox: msgBox, askPanel: askPanel, needCard: needCard, staffReqs: staffReqs, staffAnx: staffAnx, staffUser: staffUser, annexView: annexView, listsEditor: listsEditor, goReq: goReq };
 })();

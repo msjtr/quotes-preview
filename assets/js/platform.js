@@ -2001,7 +2001,7 @@ function pointsPage() {
 /* المزيد (تطبيق الجوال) */
 function morePage() {
   /* «الأقسام» — كل أقسام المنصة في مكان واحد، مع الوضع الليلي وتسجيل الخروج */
-  const rs = function (k) { return function () { Object.assign(FX, { cid: '', lock: false, ok: false, done: null, miss: [], payPid: '', dpid: '' }); if (k === 'merge') Object.assign(FX, { mg: [] }); go(k); }; };
+  const rs = function (k) { return function () { Object.assign(FX, { cid: '', lock: false, ok: false, done: null, miss: [], payPid: '', dpid: '' }); go(k); }; };
   const G = [['الأساسي', [['dash', 'لوحتي الرئيسية', function () { go('dash'); }], ['profile', 'ملفي الشخصي', function () { go('other', 'profile'); }], ['shield', 'مركزُ الأمان', function () { go('other', 'shield'); }]]],
     ['خدماتي', [['contract', 'عقودي', function () { go('contracts'); }], ['wallet', 'مدفوعاتي لعقودي', function () { go('pay'); }], ['orders', 'الطلبات', function () { go('reqs'); }], ['receipt', 'سجلات مدفوعاتي لعقودي', function () { go('payrec'); }],
       ['people', 'تحقق من أهليتك مع شركائنا', function () { go('other', 'cl-partners'); }], ['bank', 'سداد عقد كامل', rs('settle')], ['clock', 'طلب تأجيل دفعة', rs('defer')], ['merge', 'توحيد عقودي في عقد واحد', rs('merge')], ['briefcase:navy', 'معلوماتي الوظيفية', function () { go('other', 'job-info'); }], ['coins:teal', 'معلوماتي المالية', function () { go('other', 'fin-info'); }], ['files', 'مرفقاتي', function () { go('other', 'my-docs'); }]]],
@@ -2058,7 +2058,7 @@ try { S.dark = localStorage.getItem('tera-preview-dark') === '1'; } catch (err) 
 const ACCT = { profile: profilePage, shield: shieldPage, member: memberPage, points: pointsPage, more: morePage };
 function svcPage() { if (typeof svcHubPage === 'function') return svcHubPage();
   /* بطاقات «خدماتي» كما في المنصة، ومعها ما اعتُمد في العينة (سجلات مدفوعاتي، توحيد العقود) */
-  const rs = function (k) { return function () { Object.assign(FX, { cid: '', lock: false, ok: false, done: null, miss: [], reason: '', payPid: '', dpid: '', dfw: '', dfn: '', stw: '', sth: '' }); if (k === 'merge') Object.assign(FX, { mg: [], mgn: '', mgf: '', mgd: '' }); go(k); }; };
+  const rs = function (k) { return function () { Object.assign(FX, { cid: '', lock: false, ok: false, done: null, miss: [], reason: '', payPid: '', dpid: '', dfw: '', dfn: '', stw: '', sth: '' }); go(k); }; };
   return [DS.cardGrid([
     DS.card({ icon: 'contract', title: 'عقودي', onClick: function () { go('contracts'); } }),
     DS.card({ icon: 'wallet', title: 'مدفوعاتي', onClick: function () { go('pay'); } }),
@@ -3886,118 +3886,20 @@ function settlePage() {
   } })] }));
   return out;
 }
-/* ===== توحيد العقود في عقد واحد: اختيار العقود ← العقد الموحّد التقديري ← مراجعة الإدارة ← توقيع العقد الموحّد ===== */
-const MG_STEPS = [['rsent', 'إرسال الطلب', 'يصل الطلب لفريق تيرا برقم متابعة.'], ['rrev', 'مراجعة الإدارة', 'دراسة الطلب واعتماد الجدول النهائي.'], ['letter', 'اعتماد العقد الموحّد', 'توافق على الجدول وتوقّع بالتحقق برمز.'], ['merge', 'العقد الموحّد', 'تُغلق العقود السابقة ويبدأ عقد واحد بدفعة واحدة.']];
+/* ===== v946: ثوابت خطة التوحيد — تبقى لصفحة طلبات التوحيد القديمة في /staff/ (للسجل) حتى التنظيف النهائي؛ طلب التوحيد الجديد في crq-client.js ===== */
 const MG_N = [3, 6, 9, 12, 18, 24]; /* مدة السداد بالأشهر */
 const mgCount = (months, freq, first) => { const end = addMonths(first, months), days = Math.round((end - first) / 864e5); return freq === 'd' ? days : freq === 'w' ? Math.ceil(days / 7) : months; };
-const MG_PG = { d: 30, w: 12, m: 12 };
 const MG_F = [['d', 'يومي'], ['w', 'أسبوعي'], ['m', 'شهري']];
 const MG_FW = { d: 'يومية', w: 'أسبوعية', m: 'شهرية' };
 const curInst = (c) => { const p = unsettled(c)[0]; return p ? p.amount : 0; };
-function mgPlan(total, n, freq, first) {
-  const base = Math.floor(total / n), rows = []; let left = total;
-  for (let i = 0; i < n; i++) { const amt = i === n - 1 ? left : base; const due = freq === 'd' ? addDays(first, i) : freq === 'w' ? addDays(first, 7 * i) : addMonths(first, i); left = Math.round((left - amt) * 100) / 100; rows.push({ i: i + 1, due: due, amt: amt, left: left }); }
-  return rows;
-}
 /* v909: توحيد العقود — بطاقات العقود: العقد الذي عليه متأخرات بحدّ أحمر، وعدد دفعاته المتأخرة وقيمتها، وشريط الدفعات (مسددة · متأخرة · قادمة) */
 function mgW(n, s, d) { return n === 1 ? 'دفعة واحدة ' + s : n === 2 ? 'دفعتان ' + d : n <= 10 ? n + ' دفعات ' + s.replace(/ة$/, 'ة') : n + ' دفعة ' + s; }
-function mgCards(act, cur, tog) {
-const L = act.map(function (c) { return [c, cInfo(c)]; });
-const lc = L.filter(function (x) { return x[1].late.length; }), ln = lc.reduce(function (a, x) { return a + x[1].late.length; }, 0), ls = lc.reduce(function (a, x) { return a + x[1].lateSum; }, 0);
-return e('div', { class: 'mgx' }, [
-lc.length ? e('div', { class: 'mgx-top', role: 'note' }, ['لديك ' + (lc.length === 1 ? 'عقد واحد عليه ' : lc.length === 2 ? 'عقدان عليهما ' : lc.length + ' عقود عليها ') + mgW(ln, 'متأخرة', 'متأخرتان') + ' بقيمة ' + SR(ls) + ' — تُضم للعقد الموحّد.']) : null,
-e('div', { class: 'mgx-l', role: 'group', 'aria-label': 'العقود القائمة' }, L.map(function (x) {
-const c = x[0], f = x[1], on = cur.indexOf(c.no) >= 0, late = f.late.length > 0;
-const pays = c.payments.slice().sort(function (a, b) { return a.due - b.due; });
-const dots = e('div', { class: 'mgx-dots', 'aria-hidden': 'true' }, pays.map(function (p) { return e('i', { class: settled(p) ? 'is-paid' : p.due < T0 ? 'is-late' : '' }); }));
-const st = DS.badge(f.status, f.tone);
-return e('button', { type: 'button', role: 'checkbox', 'aria-checked': on ? 'true' : 'false', class: 'mgx-c' + (on ? ' is-on' : '') + (late ? ' is-late' : ''), onClick: function () { tog(c.no); } }, [
-e('div', { class: 'mgx-h' }, [e('span', { class: 'fx-card-ic' }, frag(tile(c.icon))), e('div', { class: 'mgx-t' }, [e('b', {}, c.product), e('span', {}, [e('bdi', { dir: 'ltr' }, c.no), ' · المتبقي ' + SR(f.remain)])]), e('span', { class: 'mgx-ck', 'aria-hidden': 'true' }, on ? '✓' : '')]),
-late ? e('div', { class: 'mgx-al' }, [e('div', { class: 'mgx-al-t' }, [e('span', {}, mgW(f.late.length, 'متأخرة', 'متأخرتان')), e('span', {}, SR(f.lateSum))]), dots, e('div', { class: 'mgx-m' }, [e('span', {}, 'أقدم دفعة متأخرة منذ ' + dayWord(f.lateDays)), st])])
-: e('div', { class: 'mgx-m' }, [e('span', {}, f.next ? mgW(f.leftN, 'قادمة', 'قادمتان') + ' · التالية ' + iso(f.next.due) : 'لا دفعات قادمة'), st])]);
-}))]);
-}
+/* v946: «توحيد عقودي» صار طلبًا في منظومة طلبات العقود (crq-client.js · CRQC.mergePage) بالهوية نفسها لطلب التأجيل — أُزيلت الصفحة القديمة وجدولها التقديري ومراحلها */
+let CRQ_MG = null, CRQ_MG_AT = 0;
 function mergePage() {
-  const toOrigin = function () { const t = FX.trail && FX.trail.merge; if (t && t.length && t[t.length - 1][1]) t[t.length - 1][1](); else go('svc'); };
-  if (FX.done) {
-    const r = REQS.filter(function (x) { return x.no === FX.done[2]; })[0], fv = function (k) { return r ? (r.fields.filter(function (x) { return x[0] === k; })[0] || ['', '—'])[1] : '—'; };
-    return stDone('أُرسل طلب توحيد العقود', 'وصل طلبك لفريق تيرا، ويصلك الجدول النهائي للعقد الموحّد لاعتماده.', FX.done[2], [['العقود', fv('العقود')], ['إجمالي المتبقي', fv('إجمالي المتبقي')], ['الجدول المقترح', fv('الجدول المقترح')]], stFlow(1, MG_STEPS), DS.button('عقودي', { onClick: function () { go('contracts'); } }));
-  }
-  const act = CONTRACTS.filter(function (c) { return cInfo(c).leftN > 0; });
-  FX.mg = (FX.mg || []).filter(function (no) { return act.some(function (c) { return c.no === no; }); });
-  const sel = act.filter(function (c) { return FX.mg.indexOf(c.no) >= 0; }), ok2 = sel.length >= 1;
-  const pendR = REQS.filter(function (r) { return r.type === 'merge' && r.status !== 'done' && r.status !== 'rejected'; })[0];
-  const steps = DS.stepper([{ label: 'اختيار العقود', state: ok2 ? 'done' : 'now' }, { label: 'العقد الموحّد والتأكيد', state: ok2 ? 'now' : null }, { label: 'مراجعة الإدارة' }, { label: 'اعتماد العقد الموحّد' }], 'مراحل توحيد العقود');
-  /* اختيار العقود ببطاقات: الضغط على البطاقة يحددها أو يلغيها — عقد واحد أو أكثر */
-  const tog = function (no) { const i = FX.mg.indexOf(no); if (i >= 0) FX.mg.splice(i, 1); else FX.mg.push(no); FX.ok = false; FX.miss = []; draw(); };
-  const pick = e('div', { class: 'mg-pick' + (FX.miss && FX.miss.indexOf('mg') >= 0 ? ' is-miss' : '') }, [
-    fxReq('العقود المراد توحيدها', 'mg', mgCards(act, FX.mg, tog), act.length + ' عقود قائمة — اضغط على العقد لاختياره، عقدًا واحدًا أو أكثر.', true),
-    e('div', { class: 'mg-bar' }, [e('span', { class: 'mg-cnt' }, [e('b', {}, String(sel.length)), ' من ' + act.length + ' عقود محددة']),
-      e('div', { class: 'mg-bar-a' }, [sel.length < act.length ? e('button', { type: 'button', class: 'fx-link', onClick: function () { FX.mg = act.map(function (c) { return c.no; }); FX.ok = false; draw(); } }, 'تحديد الكل') : null, sel.length ? e('button', { type: 'button', class: 'fx-link', onClick: function () { FX.mg = []; FX.ok = false; draw(); } }, 'إلغاء التحديد') : null])]),
-    null]);
-  /* الإحصاء أعلى الصفحة: للعقود المختارة، أو لكل العقود القائمة قبل الاختيار */
-  const base = sel.length ? sel : act, sum = function (k) { return base.reduce(function (a, c) { return a + cInfo(c)[k]; }, 0); };
-  const sTv = sum('total'), sPd = sum('paid'), sRm = sum('remain'), sLt = sum('lateSum'), sLn = base.reduce(function (a, c) { return a + cInfo(c).late.length; }, 0);
-  const out = [steps, e('section', { class: 'fx-kpis mg-kpis' }, [
-    kpi('contract', sel.length ? 'العقود المختارة' : 'العقود القائمة', String(base.length), sel.length ? 'من ' + act.length + ' عقود قائمة' : 'لم تُحدَّد عقود بعد'),
-    kpi('wallet', 'إجمالي قيمة العقود', SR(sTv), ''),
-    kpi('ok', 'إجمالي المدفوع', SR(sPd), sTv ? Math.round(sPd / sTv * 100) + '% من القيمة' : '', 'ok'),
-    kpi('points', 'إجمالي المتبقي', SR(sRm), sTv ? Math.round(sRm / sTv * 100) + '% من القيمة' : ''),
-    kpi('warn', 'المتأخرات', sLn ? SR(sLt) : '0', sLn ? sLn + ' دفعات متأخرة تُضم للعقد' : 'لا متأخرات', sLn ? 'bad' : 'ok')])];
-  if (pendR) out.push(DS.note('warn', 'لديك طلب توحيد قيد المراجعة', 'الطلب ' + pendR.no + ' — تابع حالته قبل تقديم طلب جديد.', DS.button('متابعة الطلب ' + pendR.no, { size: 'sm', tone: 'primary', onClick: function () { FX.rid = pendR.no; go('req'); } })));
-  out.push(formSec('1. اختيار العقود', null, [pick]));
-  if (!ok2) { out.push(e('section', { class: 'st-empty' }, [e('span', { class: 'st-empty-ic' }, frag(tile('merge'))), e('b', {}, 'اختر العقود المراد توحيدها')])); }
-  else {
-    const total = sel.reduce(function (a, c) { return a + cInfo(c).remain; }, 0), lateSum = sel.reduce(function (a, c) { return a + cInfo(c).lateSum; }, 0), lateN = sel.reduce(function (a, c) { return a + cInfo(c).late.length; }, 0);
-    const nowInst = sel.reduce(function (a, c) { return a + curInst(c); }, 0);
-    const freq = FX.mgf || 'm', months = Number(FX.mgn || 12);
-    const firstOpts = [1, 2].map(function (k) { return addMonths(new Date(T0.getFullYear(), T0.getMonth(), 1), k); }).reduce(function (a, m) { return a.concat([1, 15, 27].map(function (d) { return new Date(m.getFullYear(), m.getMonth(), d); })); }, []);
-    const dMin = addDays(T0, 1), dMax = addDays(T0, 60), fx = FX.mgd ? parseIso(FX.mgd) : null;
-    const first = fx && fx >= dMin && fx <= dMax ? fx : firstOpts[0];
-    const n = mgCount(months, freq, first), plan = mgPlan(total, n, freq, first);
-    const tv = sel.reduce(function (a, c) { return a + cInfo(c).total; }, 0), pd = sel.reduce(function (a, c) { return a + cInfo(c).paid; }, 0);
-    /* الجدول بصفحات: السابق · التالي · اختيار رقم الصفحة */
-    const per = MG_PG[freq], pages = Math.max(1, Math.ceil(plan.length / per));
-    if (!FX.mgp || FX.mgp > pages) FX.mgp = 1;
-    const pg = FX.mgp, rows = plan.slice((pg - 1) * per, pg * per);
-    const setPg = function (k) { FX.mgp = Math.min(pages, Math.max(1, k)); draw(); const t = document.querySelector('.mg-plan'); if (t) t.scrollIntoView({ block: 'nearest' }); };
-    const pager = pages > 1 ? e('div', { class: 'mg-pager' }, [DS.button('السابق', { size: 'sm', ui: 'caret-right', disabled: pg === 1, onClick: function () { if (pg > 1) setPg(pg - 1); } }),
-      e('div', { class: 'mg-pager-m' }, [e('span', {}, 'الصفحة'), DS.select({ value: String(pg), options: Array.from({ length: pages }, function (_, i) { return [String(i + 1), String(i + 1)]; }), onChange: function (v) { setPg(Number(v)); } }), e('span', {}, 'من ' + pages)]),
-      DS.button('التالي', { size: 'sm', ui: 'caret-left', disabled: pg === pages, onClick: function () { if (pg < pages) setPg(pg + 1); } })]) : null;
-    out.push(e('section', { class: 'st-hero is-' + (lateN ? (sel.some(function (c) { return cInfo(c).lateDays > LATE_MAX; }) ? 'danger' : 'warn') : 'ok') }, [
-      e('div', { class: 'st-hero-h' }, [e('span', { class: 'st-hero-ic' }, frag(tile('merge'))), e('div', { class: 'st-hero-t' }, [e('small', {}, 'العقد الموحّد (تقديري)'), e('b', {}, sel.length === 1 ? 'إعادة جدولة العقد ' + sel[0].no : 'توحيد ' + sel.length + ' عقود في عقد واحد'), e('span', {}, sel.map(function (c) { return c.no; }).join(' · '))]), e('span', { class: 'st-pill is-info' }, 'بانتظار الإرسال')]),
-      e('div', { class: 'mg-cmp' }, [
-        e('div', { class: 'mg-cmp-i' }, [e('span', {}, 'قيمة الدفعة الحالية ' + (sel.length === 1 ? 'لعقد واحد' : sel.length === 2 ? 'لعقدين' : 'لعدد ' + sel.length + (sel.length <= 10 ? ' عقود' : ' عقدًا'))), e('b', {}, [SAR(nowInst), e('small', {}, ' ريال')])]),
-        e('span', { class: 'mg-cmp-ar', 'aria-hidden': 'true' }, frag(ui('caret-left', 22))),
-        e('div', { class: 'mg-cmp-i is-new is-tbd' }, [e('span', {}, 'قيمة الدفعة الجديدة'), e('b', {}, 'تُحدَّد لاحقًا من الإدارة')])]),
-      false && e('div', { class: 'st-tiles' }, [
-        [SAR(tv), 'ريال', 'إجمالي قيمة العقود', ''], [SAR(pd), 'ريال · ' + Math.round(pd / tv * 100) + '%', 'إجمالي المدفوع', 'ok'], [SAR(total), 'ريال · ' + Math.round(total / tv * 100) + '%', 'إجمالي المتبقي', ''],
-        [lateN ? SAR(lateSum) : '0', lateN ? 'ريال · ' + lateN + ' متأخرة تُضم للعقد' : 'لا متأخرات', 'المتأخرات', lateN ? 'bad' : 'ok'],
-        [String(months), 'شهرًا', 'مدة السداد', ''], [String(n), (n <= 10 ? 'دفعات ' : 'دفعة ') + MG_FW[freq], 'عدد الدفعات', ''], [iso(first), AR_DAY[first.getDay()], 'أول دفعة', ''], [iso(plan[plan.length - 1].due), AR_DAY[plan[plan.length - 1].due.getDay()], 'آخر دفعة', '']].map(function (t) { return e('div', { class: 'st-tile' + (t[3] ? ' is-' + t[3] : '') }, [e('span', {}, t[2]), e('b', {}, ltr(t[0])), e('small', {}, t[1])]); }))]));
-    const cb = e('input', { type: 'checkbox', onChange: function (ev) { FX.ok = ev.target.checked; FX.miss = []; draw(); } }); cb.checked = !!FX.ok;
-    void tv; void pd; void lateSum;
-    out.push(formSec('2. العقد الموحّد والتأكيد', null, [
-      e('div', { class: 'mg-grid' }, [
-        fxReq('نوع السداد', 'mgf', DS.select({ value: freq, options: MG_F, onChange: function (v) { FX.mgf = v; FX.mgp = 1; draw(); } })),
-        fxReq('مدة السداد', 'mgn', DS.select({ value: String(months), options: MG_N.map(function (k) { const c = mgCount(k, freq, first); return [String(k), k + (k <= 10 ? ' أشهر' : ' شهرًا') + ' · ' + c + (c <= 10 ? ' دفعات' : ' دفعة')]; }), onChange: function (v) { FX.mgn = v; FX.mgp = 1; draw(); } })),
-        fxReq('تاريخ أول دفعة', 'mgd', datePick({ value: iso(first), min: iso(dMin), max: iso(dMax), onChange: function (v) { FX.mgd = v; FX.mgp = 1; draw(); } }), 'خلال 60 يومًا من اليوم.')]),
-      /* ملخص الجدول المقترح */
-      e('div', { class: 'mg-sum' }, [['مدة السداد', months + (months <= 10 ? ' أشهر' : ' شهرًا')], ['عدد الدفعات', n + (n <= 10 ? ' دفعات ' : ' دفعة ') + MG_FW[freq]], ['أول دفعة', ltr(iso(first))], ['آخر دفعة', ltr(iso(plan[plan.length - 1].due))]].map(function (x) { return e('div', {}, [e('span', {}, x[0]), e('b', {}, x[1])]); })),
-      e('div', { class: 'mg-plan-h' }, [e('b', {}, 'جدول الدفعات (' + n + (n <= 10 ? ' دفعات' : ' دفعة') + ')'), pages > 1 ? e('span', {}, 'الدفعات ' + ((pg - 1) * per + 1) + '–' + Math.min(pg * per, n)) : null]),
-      e('div', { class: 'st-tw mg-plan' }, e('table', { class: 'st-t mg-t' }, [e('thead', {}, e('tr', {}, ['الدفعة', 'تاريخ الاستحقاق', 'قيمة الدفعة'].map(function (h) { return e('th', {}, h); }))),
-        e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('td', {}, String(r.i)), e('td', { class: 'mg-td-d' }, [e('b', {}, ltr(iso(r.due))), e('small', {}, AR_DAY[r.due.getDay()])]), e('td', { class: 'is-tbd' }, 'تُحدَّد لاحقًا من الإدارة')]); }))])), pager,
-      DS.note('info', 'جدول تقديري', 'تعتمد الإدارة الجدول النهائي وأي رسوم إعادة جدولة، ويصلك للموافقة قبل إنشاء العقد الموحّد.'),
-      e('label', { class: 'st-agree' + (FX.miss && FX.miss.indexOf('ok') >= 0 ? ' is-miss' : '') }, [cb, e('span', {}, sel.length === 1 ? 'أطلب إعادة جدولة العقد المختار بجدول دفعات جديد.' : 'أطلب توحيد العقود المختارة في عقد واحد، وأعلم أن العقود السابقة تُغلق بعد اعتماد العقد الموحّد.')])]));
-    out.push(DS.actionBar({ buttons: [DS.button('رجوع', { onClick: toOrigin }), pendR ? null : DS.button('إرسال طلب التوحيد', { tone: 'primary', onClick: function () {
-      if (!FX.ok) { FX.miss = ['ok']; draw(); return; }
-      const r = addReq('merge', [['العقود', sel.map(function (c) { return c.no; }).join(' + ')], ['إجمالي المتبقي', SR(total)], ['الجدول المقترح', months + ' شهرًا · ' + n + (n <= 10 ? ' دفعات ' : ' دفعة ') + MG_FW[freq] + ' · القيمة تُحدَّد لاحقًا من الإدارة'], ['أول دفعة', iso(first)]],
-        [['تم إرسال الطلب', T0], ['مراجعة الإدارة', null], ['اعتماد العقد الموحّد'], ['إنشاء العقد الموحّد']], sel[0].no);
-      FX.done = ['أُرسل طلب التوحيد', '', r.no]; draw(); toTop();
-    } })] }));
-    return out;
-  }
-  out.push(DS.actionBar({ buttons: [DS.button('رجوع', { onClick: toOrigin }), DS.button('إرسال طلب التوحيد', { tone: 'primary', onClick: function () { FX.miss = ['mg']; draw(); } })] }));
-  return out;
+if (!window.CRQC || !window.CRQC.mergePage) return [DS.note('warn', 'تعذّر تحميل صفحة توحيد العقود', 'حدّث الصفحة وحاول مرة أخرى.')];
+if (!CRQ_MG || Date.now() - CRQ_MG_AT > 60000) { CRQ_MG = window.CRQC.mergePage({ token: liveToken, back: function () { const t = FX.trail && FX.trail.merge; if (t && t.length && t[t.length - 1][1]) t[t.length - 1][1](); else go('svc'); } }); CRQ_MG_AT = Date.now(); }
+return [CRQ_MG];
 }
 /* ===== v861: طلب تأجيل دفعة — منظومة طلبات العقود الموحّدة (assets/js/crq-client.js) =====
 العقد والدفعة ← الإرسال ← العرض للموافقة برابط ← الملحق للتوقيع برابط ← تعديل العقد نفسه آليًا. لا عقد تأجيل جديد ولا مسار قديم. */
@@ -6188,7 +6090,7 @@ function secHub(key, head, groups) {
     .concat(secs))];
 }
 function svcHubPage() {
-  const rs = function (k) { return function () { Object.assign(FX, { cid: '', lock: false, ok: false, done: null, miss: [], reason: '', payPid: '', dpid: '', dfw: '', dfn: '', stw: '', sth: '' }); if (k === 'merge') Object.assign(FX, { mg: [], mgn: '', mgf: '', mgd: '' }); go(k); }; };
+  const rs = function (k) { return function () { Object.assign(FX, { cid: '', lock: false, ok: false, done: null, miss: [], reason: '', payPid: '', dpid: '', dfw: '', dfn: '', stw: '', sth: '' }); go(k); }; };
   const nx = docsExpired().length;
   return secHub('svc', { t: 'خدماتي', s: 'عقودك ومدفوعاتك وبياناتك وطلبات الشركاء.', ic: 'services' }, [
     ['ct', 'العقود', 'contract', [{ ic: 'contract', t: 'عقودي', d: 'عقودك القائمة وتفاصيلها', go: function () { go('contracts'); } }, { ic: 'merge', t: 'توحيد عقودي في عقد واحد', d: 'دمج عقودك بدفعة شهرية واحدة', go: rs('merge') }, { ic: 'bank', t: 'سداد عقد كامل', d: 'سداد المتبقي على عقد دفعة واحدة', go: rs('settle') }, { ic: 'clock', t: 'طلب تأجيل دفعة', d: 'تأجيل دفعة مستحقة', go: rs('defer') }]],

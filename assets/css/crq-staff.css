@@ -1032,3 +1032,28 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 /* v944: حقول بيانات المنشأة — اسم · قيمة · ترتيب · إخفاء · حذف */
 .crq .cr-ed-pr.is-mv { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) 32px 32px 32px 32px; }
 @container crq (max-width: 560px) { .crq .cr-ed-pr.is-mv { grid-template-columns: minmax(0, 1fr) 32px 32px 32px 32px; } }
+
+/* v946: «طلبات توحيد العقود» — العقود صفوفًا كدفعات التأجيل، والمتأخر بالأحمر · حقول المنتج وخطة الدفع · جدول الخطة */
+.crq .cr-mg-c.is-late:not(.is-on){border-color:#f1b8b2;background:#fff8f7}
+.crq .cr-mg-c.is-late.is-on{border-color:#b42318}
+.crq .cr-mg-c .cr-py-n .cr-ic{width:18px;height:18px}
+.crq .cr-mg-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 16px;margin-top:12px;padding:11px 14px;border-radius:12px;background:#0b2552;color:#fff;font-size:13.5px}
+.crq .cr-mg-bar b{font-weight:800}.crq .cr-mg-bar em{font-style:normal;opacity:.85}
+.crq .cr-mg-bar .cr-ltr{font-weight:800;font-size:15px}
+.crq .cr-mg-err{color:#ffd9d4;font-weight:700}
+.crq .cr-mg-pf,.crq .cr-mg-pl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:12px}
+.crq .cr-fld{display:grid;gap:6px;align-content:start;min-width:0}
+.crq .cr-fld>span:first-child{font-size:12.5px;font-weight:700;color:#5a6578}
+.crq .cr-fld input[type=text],.crq .cr-fld input[type=number],.crq .cr-fld input[type=date],.crq .cr-fld textarea{width:100%;box-sizing:border-box;border:1px solid #e2e8f2;border-radius:11px;padding:9px 11px;font:inherit;font-size:14px;background:#fff;color:#14213d}
+.crq .cr-fld.is-wide{grid-column:1/-1}
+.crq .cr-fld.is-miss input,.crq .cr-fld.is-miss .cr-seg2,.crq .cr-pys.is-miss{outline:2px solid #b42318;outline-offset:2px;border-radius:12px}
+.crq .cr-mg-ls{display:grid;gap:10px}
+.crq .cr-mg-add{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.crq .cr-mg-t{width:100%;border-collapse:separate;border-spacing:0;margin-top:14px;font-size:13.5px}
+.crq .cr-mg-t th{background:#0b2552;color:#fff;font-weight:700;padding:9px 12px;text-align:right}
+.crq .cr-mg-t th:first-child{border-radius:0 10px 0 0}.crq .cr-mg-t th:last-child{border-radius:10px 0 0 0;text-align:left}
+.crq .cr-mg-t td{padding:8px 12px;border-bottom:1px solid #e2e8f2}
+.crq .cr-mg-t td:last-child{text-align:left}
+.crq .cr-mg-t td .cr-money{max-width:160px;margin-inline-start:auto}
+.crq .cr-mg-dl{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+@media (max-width:640px){.crq .cr-mg-bar{font-size:12.5px}.crq .cr-mg-t{font-size:12.5px}.crq .cr-mg-t th,.crq .cr-mg-t td{padding:7px 8px}}

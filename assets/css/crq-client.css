@@ -276,3 +276,11 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .cx-askbtn.is-on { background: var(--k-soft); }
 .cx-ask .cx-h .cx-close { margin-inline-start: auto; }
 .cx-askw { scroll-margin-top: 200px; } /* v941–944 */
+
+/* v946: «توحيد عقودي» — العقود بطاقات كدفعات التأجيل، وسطر واحد للمتبقي، والمنتج والاقتراح عمودان على الشاشة وعمود على الجوال */
+.cc .cc-mgc .cc-pay-m small{display:block;font-size:12px;margin:2px 0 4px}
+.cc .cc-mg-line{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 14px;margin:10px 0 4px;padding:12px 14px;border-radius:12px;background:#0b2552;color:#fff;font-size:13.5px}
+.cc .cc-mg-line em{font-style:normal;margin-inline-start:8px;padding:2px 8px;border-radius:7px;background:rgba(255,255,255,.14);font-size:12px}
+.cc .cc-mg-line b{font-size:16px;font-weight:800}
+.cc .cc-mg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+@media (max-width:760px){.cc .cc-mg-grid{grid-template-columns:1fr;gap:4px}}
