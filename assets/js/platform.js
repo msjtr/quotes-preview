@@ -29634,10 +29634,10 @@ n.classList.add('eg9-ew'); return n;
 }
 
 /* ── صفحة الطلب ── */
-/* ── صفحة الطلب (v929–932): عشرة تبويبات بمسؤولية واحدة لكل تبويب — البيانات في أقسامها، والقوالب والنصوص في مكان واحد، والمعاينة في مكان واحد بالرابط نفسه الذي يصل العميل (هوية رابط تيرا) ── */
+/* ── صفحة الطلب (v929–933): عشرة تبويبات بمسؤولية واحدة لكل تبويب — البيانات في أقسامها، والقوالب والنصوص في مكان واحد، والمعاينة في مكان واحد بالرابط نفسه الذي يصل العميل (هوية رابط تيرا) ── */
 const EG12 = { open: null, bound: false };
 const EG12_T = [['req', 'الطلب والمستندات', 'tray'], ['dec', 'قرار الأهلية', 'seal-check'], ['qt', 'عرض سعر منتج', 'receipt'], ['inv', 'فاتورة المنتج', 'file-text'], ['ct', 'عقد بيع منتج', 'handshake'],
-['tpl', 'القوالب والنصوص', 'note-pencil'], ['pv', 'المعاينة', 'device-mobile'], ['lnk', 'الرابط وموافقات العميل', 'paper-plane-tilt'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
+['tpl', 'القوالب والنصوص', 'note-pencil'], ['pv', 'المعاينة', 'device-mobile'], ['lnk', 'الرابط والموافقات', 'paper-plane-tilt'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
 const EG12_STG = [['req', 'rev'], ['dec', ''], ['qt', 'items'], ['lnk', ''], ['lnk', ''], ['adm', ''], ['adm', ''], ['adm', '']];
 const EG12_VW = { fix: ['req', 'rev'], msg: ['log', ''], ct: ['ct', ''], inv: ['inv', ''], req: ['req', 'data'], log: ['log', ''], cl: ['req', 'data'] };
 const EG12_OLD = { docs: ['req', 'rev'], fix: ['req', 'rev'], rep: ['dec', ''], res: ['dec', ''], qt: ['qt', 'items'], apv: ['qt', 'items'], inv: ['inv', ''], ct: ['ct', ''], pv: ['lnk', ''], snd: ['lnk', ''], adm: ['adm', ''], log: ['log', ''], data: ['req', 'data'] };
@@ -29990,8 +29990,8 @@ eg12Foot(eg11Acts(acts), L ? (k === 4 ? 'متابعة حيّة — لا إجرا
 /* «الإدارة والتنفيذ»: صفحة واحدة بالترتيب — الإجراءات ثم النقاط ثم الإغلاق */
 function eg12Adm(C) {
 const x = C.x, B = C.B, k = C.k, paint = C.paint, RF = C.RF, NX = C.NX, sg = B && B.sign, q = B && B.q, a = B && B.acc;
-const steps = [[sg ? 'd' : '', 'توقيع العميل على عقد بيع المنتج', sg ? 'تلقائي من الرابط · ' + eg10Dt(sg.at) : 'بانتظار العميل'], [x.executed_at ? 'd' : k === 5 ? 'o' : '', 'الإجراءات المطلوبة ثم «تم التنفيذ»', x.executed_at ? 'نُفّذ ' + eg10Dt(x.executed_at) : k === 5 ? 'الخطوة الحالية — أدناه' : '—'],
-[a && a.st === 'approved' ? 'd' : k === 6 ? 'o' : '', 'اعتماد النقاط المكتسبة', a ? (a.st === 'approved' ? '+' + fmtNum(a.pts || 0) + ' نقطة معتمدة' : a.st === 'pending' ? 'بانتظار اعتمادك' : a.st === 'rejected' ? 'رُفض منح النقاط' : a.st) : x.executed_at ? 'لا نقاط مكتسبة' : '—'], [k >= 7 ? 'd' : '', 'إغلاق الطلب', k >= 7 ? 'مكتمل' : '—']];
+const steps = [[sg ? 'd' : '', 'توقيع العميل على عقد بيع المنتج', sg ? 'تلقائي من الرابط · ' + eg10Dt(sg.at) : 'بانتظار العميل'], [x.executed_at ? 'd' : k === 5 ? 'o' : '', 'الإجراءات المطلوبة وإغلاق الطلب', x.executed_at ? 'نُفّذ ' + eg10Dt(x.executed_at) : k === 5 ? 'الخطوة الحالية — أدناه' : '—'],
+[a && a.st === 'approved' ? 'd' : k === 6 ? 'o' : '', 'اعتماد النقاط المكتسبة', a ? (a.st === 'approved' ? '+' + fmtNum(a.pts || 0) + ' نقطة معتمدة' : a.st === 'pending' ? 'بانتظار اعتمادك' : a.st === 'rejected' ? 'رُفض منح النقاط' : a.st) : x.executed_at ? 'لا نقاط مكتسبة' : '—']];
 const out = [e('ol', { class: 'eg12-tl is-row' }, steps.map(function (r) { return e('li', { class: r[0] ? 'is-' + r[0] : '' }, [e('b', {}, r[1]), e('small', {}, r[2])]); }))];
 if (C.dead) return out.concat([eg12Wait('أُغلق الطلب قبل هذه المرحلة.')]);
 if (k < 5) return out.concat([eg12Wait('تبدأ إجراءات الإدارة بعد توقيع العميل على عقد بيع المنتج. العقد النهائي يُرفع من تبويب «عقد بيع منتج».')]);
@@ -30020,7 +30020,7 @@ e('tbody', {}, R.map(function (r, i) { return e('tr', { class: i === 0 ? 'is-now
 /* رسالة نتيجة الأهلية كما تصل العميل */
 function eg12Msg(x) {
 let msg = ''; try { const R = (x.meta || {}).report || {}; msg = egMsgText(egMsgVals(x.status === 'rejected' ? 'not_eligible' : (R.rec || 'eligible'), egReq(x), Number(R.elig_amt) || 0, Number(R.n) || 0, Number(egNum(egFv(x, /^مدة السداد/))) || 0)); } catch (err) { void err; }
-return e('div', { class: 'eg12-wa' }, [e('div', { class: 'eg12-wa-h' }, [eg12Ic('chat-circle-dots', 16), 'واتساب · البريد · الحساب — بالقالب المعتمد']), e('div', { class: 'eg11-wa' }, [e('div', { class: 'eg11-wa-b' }, String(msg || 'رسالة النتيجة بالقالب المعتمد مع زر «فتح الطلب».')), e('div', { class: 'eg11-wa-bt' }, 'فتح الطلب')])]);
+return e('div', { class: 'eg12-wa' }, [e('div', { class: 'eg11-wa' }, [e('div', { class: 'eg11-wa-b' }, String(msg || 'رسالة النتيجة بالقالب المعتمد مع زر «فتح الطلب».')), e('div', { class: 'eg11-wa-bt' }, 'فتح الطلب')])]);
 }
 function eg10Kp(x, B) {
 const q = B && B.q, d = q && q.disc;
