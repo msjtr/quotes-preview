@@ -29634,15 +29634,17 @@ n.classList.add('eg9-ew'); return n;
 }
 
 /* ── صفحة الطلب ── */
-/* ── صفحة الطلب (v929–931): نمط «طلب تأجيل دفعة» — رأس كامل + «الخطوة التالية» + ثمانية تبويبات رئيسية بنقاط الحالة + تبويبات فرعية لكل قسم (البيانات · المستند · صفحة العميل · المعاينة) + شريط إجراءات مثبَّت أسفل الشاشة ── */
+/* ── صفحة الطلب (v929–932): عشرة تبويبات بمسؤولية واحدة لكل تبويب — البيانات في أقسامها، والقوالب والنصوص في مكان واحد، والمعاينة في مكان واحد بالرابط نفسه الذي يصل العميل (هوية رابط تيرا) ── */
 const EG12 = { open: null, bound: false };
-const EG12_T = [['req', 'الطلب والمستندات', 'tray'], ['dec', 'قرار الأهلية', 'seal-check'], ['qt', 'عرض سعر منتج', 'receipt'], ['lnk', 'الرابط وموافقات العميل', 'paper-plane-tilt'],
-['inv', 'فاتورة المنتج', 'file-text'], ['ct', 'عقد بيع منتج', 'handshake'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
-const EG12_STG = [['req', 'rev'], ['dec', 'dec'], ['qt', 'items'], ['lnk', 'send'], ['lnk', 'prog'], ['adm', 'adm'], ['adm', 'pts'], ['adm', 'close']];
-const EG12_VW = { fix: ['req', 'fix'], msg: ['log', 'msg'], ct: ['ct', 'data'], inv: ['inv', 'data'], req: ['req', 'data'], log: ['log', 'log'], cl: ['req', 'cl'] };
-const EG12_OLD = { docs: ['req', 'rev'], fix: ['req', 'fix'], rep: ['dec', 'dec'], res: ['dec', 'dec'], qt: ['qt', 'items'], apv: ['qt', 'items'], inv: ['inv', 'data'], ct: ['ct', 'data'], pv: ['lnk', 'send'], snd: ['lnk', 'send'], adm: ['adm', 'adm'], log: ['log', 'log'], data: ['req', 'data'] };
+const EG12_T = [['req', 'الطلب والمستندات', 'tray'], ['dec', 'قرار الأهلية', 'seal-check'], ['qt', 'عرض سعر منتج', 'receipt'], ['inv', 'فاتورة المنتج', 'file-text'], ['ct', 'عقد بيع منتج', 'handshake'],
+['tpl', 'القوالب والنصوص', 'note-pencil'], ['pv', 'المعاينة', 'device-mobile'], ['lnk', 'الرابط وموافقات العميل', 'paper-plane-tilt'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
+const EG12_STG = [['req', 'rev'], ['dec', ''], ['qt', 'items'], ['lnk', ''], ['lnk', ''], ['adm', ''], ['adm', ''], ['adm', '']];
+const EG12_VW = { fix: ['req', 'rev'], msg: ['log', ''], ct: ['ct', ''], inv: ['inv', ''], req: ['req', 'data'], log: ['log', ''], cl: ['req', 'data'] };
+const EG12_OLD = { docs: ['req', 'rev'], fix: ['req', 'rev'], rep: ['dec', ''], res: ['dec', ''], qt: ['qt', 'items'], apv: ['qt', 'items'], inv: ['inv', ''], ct: ['ct', ''], pv: ['lnk', ''], snd: ['lnk', ''], adm: ['adm', ''], log: ['log', ''], data: ['req', 'data'] };
+/* الخطوات الأربع للرابط: المفتاح · الاسم · الأيقونة · نوع المستند (لا PDF لخطوة الأهلية) */
+const EG12_STEPS = [['elig', 'أهلية شراء منتج', 'seal-check', ''], ['quote', 'عرض سعر منتج', 'receipt', 'quote'], ['purchase', 'فاتورة المنتج', 'file-text', 'purchase'], ['contract', 'عقد بيع منتج', 'handshake', 'contract']];
 const EG12_SHORT = ['الطلب', 'قرار الأهلية', 'عرض السعر', 'الإرسال', 'موافقات العميل', 'الإدارة', 'التنفيذ والنقاط', 'الإغلاق'];
-function eg10V(x) { const M = EG9.v12 || (EG9.v12 = {}); return M[x.id] || (M[x.id] = { tab: '', sub: {}, menu: false, asg: false }); }
+function eg10V(x) { const M = EG9.v12 || (EG9.v12 = {}); return M[x.id] || (M[x.id] = { tab: '', sub: {}, menu: false, asg: false, fix: false, step: '', part: 'page', wide: false }); }
 function eg12Bind() {
 if (EG12.bound) return; EG12.bound = true;
 const shut = function () { const P = EG12.open; if (!P) return; EG12.open = null; P.V.menu = false; P.V.asg = false; P.paint(); };
@@ -29665,7 +29667,7 @@ const c0 = EGW[x.id];
 if (c0 && c0.__eg9 && c0.tab && c0.tab !== c0.__eg9 && EG12_OLD[c0.tab]) { V.tab = EG12_OLD[c0.tab][0]; V.sub[V.tab] = EG12_OLD[c0.tab][1]; c0.__eg9 = c0.tab; }
 const go = function (tab, sub) { V.tab = tab; if (sub) V.sub[tab] = sub; V.menu = false; V.asg = false; EG12.open = null; paint(); setTimeout(function () { const m = document.querySelector('.eg12-tabs'); if (m) { const y = m.getBoundingClientRect().top + window.scrollY - 84; if (window.scrollY > y || m.getBoundingClientRect().top > window.innerHeight * .55) window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); } }, 60); };
 /* توافق: أزرار البطاقات تستدعي show(مرحلة, عرض) */
-const show = function (stg, view) { if (view && EG12_VW[view]) return go(EG12_VW[view][0], EG12_VW[view][1]); const s = typeof stg === 'number' ? stg : Math.max(0, k); const t = EG12_STG[Math.min(7, Math.max(0, s))]; go(t[0], t[1]); };
+const show = function (stg, view) { if (view === 'fix') V.fix = true; if (view && EG12_VW[view]) return go(EG12_VW[view][0], EG12_VW[view][1]); const s = typeof stg === 'number' ? stg : Math.max(0, k); const t = EG12_STG[Math.min(7, Math.max(0, s))]; go(t[0], t[1]); };
 const defTab = EG12_STG[Math.min(7, Math.max(0, dead ? Math.min(reach, 2) : k))];
 const tab = V.tab && EG12_T.some(function (t) { return t[0] === V.tab; }) ? V.tab : defTab[0];
 if (!V.sub[tab] && tab === defTab[0]) V.sub[tab] = defTab[1];
@@ -29705,6 +29707,7 @@ if (t === 'qt') return qok ? 'ok' : k === 2 ? 'w' : x.status !== 'approved' ? 'o
 if (t === 'lnk') return k >= 5 ? 'ok' : (k === 3 || k === 4) && !C.dead ? 'w' : !qok ? 'off' : '';
 if (t === 'inv') return ch.purchase && ch.purchase.d === 'accept' ? 'ok' : k === 4 && cs === 2 && !C.dead ? 'w' : !q ? 'off' : '';
 if (t === 'ct') return B && B.sign ? 'ok' : k === 4 && cs === 3 && !C.dead ? 'w' : !q ? 'off' : '';
+if (t === 'tpl' || t === 'pv' || t === 'log') return '';
 if (t === 'adm') return k >= 7 ? 'ok' : (k === 5 || k === 6) && !C.dead ? 'w' : 'off';
 return '';
 }
@@ -29737,10 +29740,8 @@ return e('section', { class: 'eg12-hd' }, [
 e('div', { class: 'eg12-hd-r' }, [e('span', { class: 'eg12-av', 'aria-hidden': 'true' }, String(nm).trim().charAt(0) || '؟'),
 e('div', { class: 'eg12-id' }, [e('small', {}, ['أهلية شراء منتج · ', e('bdi', { dir: 'ltr' }, x.req_no || '')]), e('h2', {}, nm)]),
 e('div', { class: 'eg12-hd-a' }, [e('span', { class: 'eg9-pill eg12-st is-' + (st[1] || 'off') }, st[0]), menu])]),
-e('div', { class: 'eg12-chips' }, chips), steps,
-e('div', { class: 'eg12-now' }, [eg12Ic('info', 16), e('b', {}, 'الآن: '), e('span', {}, eg10Next(x, B, k, dead) + (dead ? '' : eg12NowHint(C)))])]);
+e('div', { class: 'eg12-chips' }, chips), steps]);
 }
-function eg12NowHint(C) { const k = C.k, B = C.B; if (k === 0) return ' — استلم الطلب لتبدأ المراجعة.'; if (k === 1) return eg9Fix(C.x) ? '' : ' — راجع المستندات ثم اعتمد القرار.'; if (k === 2) return B && B.q && B.q.st === 'pending_approval' ? ' — راجع البنود ثم «اعتماد العرض».' : ' — أكمل البنود ثم «حفظ وإحالة للاعتماد».'; if (k === 3) return ' — من «الرابط وموافقات العميل».'; if (k === 5) return ' — أكمل الإجراءات ثم «تم التنفيذ».'; return ''; }
 /* «الخطوة التالية»: الإجراء الواحد · المسؤول · الإلغاء */
 function eg12Next(C) {
 const x = C.x, B = C.B, k = C.k, dead = C.dead, busy = !!EG9.busy, me = srAsMe();
@@ -29748,14 +29749,14 @@ let txt = '', btn = null;
 const goBtn = function (label, ic, t, s) { return eg9Btn(label, { cls: 'is-pri eg12-full', ic: ic, on: function () { C.go(t, s); setTimeout(function () { const b = document.querySelector('.eg12-foot .is-main, .eg12-sec .is-main'); if (b) { try { b.focus({ preventScroll: true }); } catch (err) { void err; } } }, 200); } }); };
 if (dead) txt = x.status === 'rejected' ? 'أُغلق الطلب بقرار «غير مؤهَّل».' : B && B.dec ? 'اعتذر العميل وأُغلق الطلب — لا إجراء مطلوب.' : 'الطلب ملغى — لا إجراء مطلوب.';
 else if (k === 0) { txt = 'طلب جديد — استلمه لتبدأ مراجعة المستندات.'; btn = eg9Btn(EG9.busy === 'admin_sr_decide' ? 'جارٍ الاستلام…' : 'استلام الطلب', { cls: 'is-pri eg12-full', ic: 'tray', disabled: busy, on: function () { eg9Do('admin_sr_decide', { p_id: x.id, p_act: 'review', p_note: null }, 'تم استلام الطلب', ['الطلب ' + x.req_no + ' الآن «قيد المراجعة» — راجع المستندات واعتمد قرار الأهلية.', 'وصل العميلَ: «استلمنا طلبك وهو قيد المراجعة».'], C.paint, null, function () { eg9BdDrop(x.id); C.V.tab = 'req'; }); } }); }
-else if (k === 1 && eg9Fix(x)) { txt = 'الطلب عند العميل لاستكمال المطلوب — القرار بعد عودته.'; btn = goBtn('عرض المطلوب من العميل', 'clipboard-text', 'req', 'fix'); }
-else if (k === 1) { txt = 'راجع المستندات ثم اعتمد قرار الأهلية.'; btn = goBtn('فتح قرار الأهلية', 'seal-check', 'dec', 'dec'); }
+else if (k === 1 && eg9Fix(x)) { txt = 'الطلب عند العميل لاستكمال المطلوب — القرار بعد عودته.'; btn = goBtn('عرض المطلوب من العميل', 'clipboard-text', 'req', 'rev'); }
+else if (k === 1) { txt = 'راجع المستندات ثم اعتمد قرار الأهلية.'; btn = goBtn('فتح قرار الأهلية', 'seal-check', 'dec', ''); }
 else if (k === 2) { const pa = B && B.q && B.q.st === 'pending_approval'; txt = pa ? 'عرض السعر بانتظار الاعتماد — راجعه ثم اعتمده أو أعده للمُعِدّ.' : 'أكمل عرض سعر المنتج ثم أحِله للاعتماد.'; btn = goBtn('فتح عرض السعر', 'receipt', 'qt', 'items'); }
-else if (k === 3) { txt = 'العرض معتمد — أرسل الرابط للعميل ليمر بخطواته.'; btn = goBtn('الإرسال للعميل', 'paper-plane-tilt', 'lnk', 'send'); }
-else if (k === 4) { const n = eg10Cs(B); txt = 'بانتظار العميل · ' + (EG10_CS[n] ? EG10_CS[n][1] : 'التقييم') + ' — لا إجراء مطلوب منك الآن.'; btn = goBtn('متابعة موافقات العميل', 'hourglass-medium', 'lnk', 'prog'); }
-else if (k === 5) { txt = 'وقّع العميل العقد — أكمل إجراءات الإدارة ثم «تم التنفيذ».'; btn = goBtn('فتح إجراءات الإدارة', 'shield-check', 'adm', 'adm'); }
-else if (k === 6) { txt = 'نُفّذ الطلب — اعتمد النقاط المكتسبة.'; btn = goBtn('اعتماد النقاط', 'star', 'adm', 'pts'); }
-else { txt = 'اكتمل الطلب.'; btn = goBtn('ملخص الإغلاق', 'check-circle', 'adm', 'close'); }
+else if (k === 3) { txt = 'العرض معتمد — أرسل الرابط للعميل ليمر بخطواته.'; btn = goBtn('الإرسال للعميل', 'paper-plane-tilt', 'lnk', ''); }
+else if (k === 4) { const n = eg10Cs(B); txt = 'بانتظار العميل · ' + (EG10_CS[n] ? EG10_CS[n][1] : 'التقييم') + ' — لا إجراء مطلوب منك الآن.'; btn = goBtn('متابعة موافقات العميل', 'hourglass-medium', 'lnk', ''); }
+else if (k === 5) { txt = 'وقّع العميل العقد — أكمل إجراءات الإدارة ثم «تم التنفيذ».'; btn = goBtn('فتح إجراءات الإدارة', 'shield-check', 'adm', ''); }
+else if (k === 6) { txt = 'نُفّذ الطلب — اعتمد النقاط المكتسبة.'; btn = goBtn('اعتماد النقاط', 'star', 'adm', ''); }
+else { txt = 'اكتمل الطلب.'; btn = goBtn('ملخص الإغلاق', 'check-circle', 'adm', ''); }
 const asg = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : (srAsOpen(x) ? 'غير مسنَد' : '—');
 const asRow = e('div', { class: 'eg12-as' }, [e('span', {}, ['مسند إلى: ', e('b', {}, asg)]), srAsOpen(x) ? e('div', { class: 'eg12-popw' }, [
 e('button', { type: 'button', class: 'eg12-lnk eg12-pop-t', 'aria-haspopup': 'listbox', 'aria-expanded': C.V.asg ? 'true' : 'false', 'data-live-ok': '', onClick: function () { C.V.asg = !C.V.asg; C.V.menu = false; EG12.open = C.V.asg ? { V: C.V, paint: C.paint } : null; C.paint(); } }, ['إسناد ', eg12Ic('caret-down', 14)]),
@@ -29813,97 +29814,199 @@ return c;
 }
 function eg12Srd(node) { return e('div', { class: 'srd eg12-srd' }, [node]); }
 function eg12Wait(t) { return e('div', { class: 'eg12-empty' }, [eg12Ic('info', 20), e('span', {}, t)]); }
-/* تعريف التبويبات الفرعية لكل قسم */
-function eg12Subs(t, C) {
-const x = C.x, open = C.open;
-if (t === 'req') return [['rev', 'المراجعة والمستندات', 'tray'], ['data', 'بيانات الطلب كاملة', 'list'], open ? ['fix', 'طلب استكمال من العميل', 'clipboard-text'] : null, ['cl', 'ملف العميل', 'user-circle']].filter(Boolean);
-if (t === 'dec') return [['dec', 'القرار', 'seal-check'], ['page', 'صفحة النتيجة للعميل', 'device-mobile'], ['msg', 'الرسالة كما تصل', 'chat-circle-dots']];
-if (t === 'qt') return [['items', 'البنود والحسبة', 'list-bullets'], ['plan', 'خطة الدفع والخصم', 'calendar-blank'], ['doc', 'المستند', 'file-text'], ['page', 'صفحة العميل', 'device-mobile'], ['pv', 'المعاينة', 'file-pdf'], ['hist', 'سجل العرض', 'clock-counter-clockwise']];
-if (t === 'lnk') return [['send', 'الإرسال للعميل', 'paper-plane-tilt'], ['prog', 'موافقات العميل', 'hourglass-medium']];
-if (t === 'inv') return [['data', 'بيانات الفاتورة', 'list-bullets'], ['doc', 'المستند', 'file-text'], ['page', 'صفحة العميل', 'device-mobile'], ['pv', 'المعاينة', 'file-pdf']];
-if (t === 'ct') return [['data', 'بيانات العقد', 'list-bullets'], ['doc', 'المستند', 'file-text'], ['page', 'صفحة العميل', 'device-mobile'], ['pv', 'المعاينة', 'file-pdf']];
-if (t === 'adm') return [['adm', 'إجراءات الإدارة', 'clipboard-text'], ['pts', 'التنفيذ والنقاط', 'star'], ['close', 'الإغلاق', 'check-circle']];
-void x; return [['msg', 'مراسلة العميل', 'chat-circle-dots'], ['log', 'السجل الكامل', 'clock-counter-clockwise']];
+/* التبويبات الفرعية — فقط حيث يلزم (الطلب · عرض السعر)؛ بقية الأقسام صفحة واحدة */
+function eg12Subs(t) {
+if (t === 'req') return [['rev', 'المراجعة والمستندات', 'tray'], ['data', 'بيانات الطلب كاملة', 'list']];
+if (t === 'qt') return [['items', 'البنود', 'list-bullets'], ['plan', 'خطة الدفع والخصم', 'calendar-blank']];
+return null;
 }
-/* بطاقة القسم: الرأس + التبويبات الفرعية + المحتوى */
+/* بطاقة القسم: الرأس (العنوان والحالة مرة واحدة) + التبويبات الفرعية إن وُجدت + المحتوى */
 function eg12Sec(t, C) {
 const x = C.x, B = C.B, k = C.k, V = C.V, paint = C.paint;
-const subs = eg12Subs(t, C);
-let sub = V.sub[t]; if (!subs.some(function (s) { return s[0] === sub; })) sub = subs[0][0];
+const subs = eg12Subs(t);
+let sub = V.sub[t]; if (subs && !subs.some(function (s) { return s[0] === sub; })) sub = subs[0][0];
 const T = EG12_T.filter(function (z) { return z[0] === t; })[0];
 let hsub = '', pill = null;
 const q = B && B.q;
-if (t === 'req') { hsub = 'أهلية شراء منتج · ' + eg10Dt(x.created_at); pill = x.status === 'submitted' ? ['جديد', 'warn'] : ['استُلم', 'ok']; }
+if (t === 'req') { hsub = 'أهلية شراء منتج · أُرسل ' + eg10Dt(x.created_at); pill = x.status === 'submitted' ? ['جديد', 'warn'] : ['استُلم', 'ok']; }
 else if (t === 'dec') { const R = (x.meta || {}).report; hsub = x.decided_at ? 'صدر ' + eg10Dt(x.decided_at) : 'لم يصدر بعد'; pill = R && EG10_REC[R.rec] && (x.status === 'approved' || x.status === 'rejected') ? [EG10_REC[R.rec], x.status === 'rejected' ? 'danger' : 'ok'] : x.status === 'rejected' ? ['غير مؤهَّل', 'danger'] : ['لم يصدر', 'off']; }
 else if (t === 'qt') { const S = EG11.qs[x.id], lv = S && eg11Live(S.rows), G = lv ? eqGet(lv.id, paint) : null, Q = G && G.j ? G.j.q : null; hsub = Q ? [Q.quotation_number || '', Q.prepared_by_name ? 'أعدّه ' + Q.prepared_by_name : ''].filter(Boolean).join(' · ') : x.status === 'approved' ? 'لم يُعدّ بعد' : 'يُعدّ بعد قرار «مؤهَّل»'; if (Q) { let s2 = null; try { s2 = eqStLabel(Q); } catch (err) { void err; } pill = s2 || [Q.status, 'info']; } }
-else if (t === 'lnk') { hsub = 'رابط واحد يمر فيه العميل بالأهلية ثم العرض ثم الفاتورة ثم العقد'; pill = B && B.link ? ['أُرسل', 'ok'] : ['لم يُرسل', 'off']; }
-else if (t === 'inv') { const c2 = B && B.ch && B.ch.purchase; hsub = 'المنتج وحده: قيمته وضريبته'; pill = c2 && c2.d ? (c2.d === 'accept' ? ['اعتمدها العميل', 'ok'] : ['اعتذر', 'danger']) : ['لم تصله بعد', 'off']; }
-else if (t === 'ct') { hsub = q && q.ct ? 'رقم العقد ' + q.ct : 'يُبنى من العرض المعتمد'; pill = B && B.sign ? ['وقّعه العميل', 'ok'] : ['لم يوقَّع', 'off']; }
-else if (t === 'adm') { hsub = x.executed_at ? 'نُفّذ ' + eg10Dt(x.executed_at) : 'بعد توقيع العميل'; pill = k >= 7 ? ['مكتمل', 'ok'] : k === 6 ? ['النقاط بانتظار الاعتماد', 'warn'] : k === 5 ? ['الخطوة الحالية', 'warn'] : null; }
-else { hsub = 'مراسلة العميل وكل أحداث الطلب'; }
-const nav = e('div', { class: 'eg12-sub', role: 'tablist', 'aria-label': 'أعمال ' + T[1] }, subs.map(function (s) {
+else if (t === 'inv') { const c2 = B && B.ch && B.ch.purchase; hsub = 'من عرض السعر المعتمد — المنتج وحده'; pill = c2 && c2.d ? (c2.d === 'accept' ? ['اعتمدها العميل', 'ok'] : ['اعتذر', 'danger']) : ['لم تصل العميل', 'off']; }
+else if (t === 'ct') { hsub = q && q.ct ? 'رقم العقد ' + q.ct : 'يُبنى من العرض المعتمد · يصدر رقمه عند التوقيع'; pill = B && B.sign ? ['وقّعه العميل', 'ok'] : ['لم يوقَّع', 'off']; }
+else if (t === 'tpl') hsub = 'كل نصوص الرابط والمستندات والرسائل لهذا الطلب في مكان واحد';
+else if (t === 'pv') hsub = 'للاطلاع فقط — الرابط نفسه الذي يصل العميل والمستند كما يصدر';
+else if (t === 'lnk') { const L = B && B.link; hsub = 'رابط واحد ورمز تحقق واحد' + (L && L.exp ? ' · صالح حتى ' + iso(new Date(L.exp)) : ''); pill = L ? ['أُرسل', 'ok'] : ['لم يُرسل', 'off']; }
+else if (t === 'adm') { hsub = x.executed_at ? 'نُفّذ ' + eg10Dt(x.executed_at) : 'بعد توقيع العميل'; pill = k >= 7 ? ['مكتمل', 'ok'] : k === 6 ? ['النقاط بانتظار الاعتماد', 'warn'] : k === 5 ? ['الخطوة الحالية', 'warn'] : ['لم يحن بعد', 'off']; }
+else hsub = 'المحادثة مع العميل وكل أحداث الطلب';
+const nav = subs ? e('div', { class: 'eg12-sub', role: 'tablist', 'aria-label': 'أعمال ' + T[1] }, subs.map(function (s) {
 const on = s[0] === sub;
 return e('button', { type: 'button', role: 'tab', class: on ? 'is-on' : '', 'aria-selected': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { V.sub[t] = s[0]; paint(); } }, [eg12Ic(s[2], 16), e('span', {}, s[1])]);
-}));
+})) : null;
 let body;
 try { body = eg12Body(t, sub, C); } catch (err) { try { console.warn('[eg12-body]', t, sub, err && err.message); } catch (y) { void y; } body = [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')]; }
-return e('section', { class: 'eg12-sec', 'data-t': t, 'data-s': sub }, [
+return e('section', { class: 'eg12-sec' + (subs ? '' : ' is-flat'), 'data-t': t, 'data-s': sub || '' }, [
 e('div', { class: 'eg12-sh' }, [e('span', { class: 'eg12-sh-ic', 'aria-hidden': 'true' }, eg12Ic(T[2], 20)), e('div', {}, [e('h3', {}, T[1]), e('small', {}, hsub)]), pill ? e('span', { class: 'eg9-pill is-' + (pill[1] || 'info') }, pill[0]) : null]),
-nav, e('div', { class: 'eg12-bd', role: 'tabpanel' }, (Array.isArray(body) ? body : [body]).filter(Boolean))]);
+nav, e('div', { class: 'eg12-bd', role: subs ? 'tabpanel' : null }, (Array.isArray(body) ? body : [body]).filter(Boolean))]);
 }
 function eg12Body(t, s, C) {
-const x = C.x, B = C.B, k = C.k, paint = C.paint, show = C.show, RF = C.RF, NX = C.NX, q = B && B.q;
+const x = C.x, B = C.B, k = C.k, paint = C.paint, show = C.show, RF = C.RF, NX = C.NX;
 if (t === 'req') {
-if (s === 'rev') return [eg11Review(x, B, paint, show, k === 0)];
-if (s === 'fix') { const cc = EGW[x.id] || (EGW[x.id] = { at: 0, busy: false, job: null, qs: null, rej: '', why: '', dec: '', tab: '' }); const W = cc.fix || (cc.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false }); if (!W.items.length && !W.form) { W.form = true; W.type = W.type || 'doc'; } const jb = eg11Job(x, paint); if (jb.j) { cc.job = jb.j; cc.at = cc.at || Date.now(); } cc.reload = cc.reload || function () { eg11Job(x, paint, true); paint(); }; let fb = null; try { fb = eligFixBox(x, cc, paint); } catch (err) { void err; } return [e('div', { class: 'eg11-host' }, [fb || eg12Wait('تعذّر عرض النموذج.')])]; }
-return eg9TabBody(x, RF, s === 'data' ? 'req' : 'cl', NX, paint);
+if (s === 'data') { const a = eg9TabBody(x, RF, 'req', NX, paint) || [], b = eg9TabBody(x, RF, 'cl', NX, paint) || []; const out = [].concat(a, b).filter(Boolean); out.forEach(function (n) { eg12Strip(n, ['الإسناد']); }); return out; }
+const out = [eg11Review(x, B, paint, show, k === 0)];
+if (C.V.fix && C.open) out.push(eg12Fix(C));
+return out;
 }
-if (t === 'dec') {
-if (s === 'dec') return [k === 1 ? eg11DocsLine(x, paint, show) : null, eg11Decision(x, B, paint, show, k === 1)];
-if (s === 'page') { if (!(x.meta || {}).report) return [eg12Wait('تُعدّ صفحة النتيجة بعد حفظ القرار.')]; return [eg12Srd(srdPage(x, eg12C(x, paint), 'result', null, null, paint))]; }
-return [eg12Msg(x)];
+if (t === 'dec') return [eg11Decision(x, B, paint, show, k === 1)];
+if (t === 'qt') return [eg11Quote(x, B, paint, show, k === 2, s)];
+if (t === 'inv') return [eg11Inv(x, B, paint)];
+if (t === 'ct') return [eg11Ct(x, B, paint, true)];
+if (t === 'tpl') return eg12Tpl(C);
+if (t === 'pv') return eg12Prev(C);
+if (t === 'lnk') return [eg12Lnk(C)];
+if (t === 'adm') return eg12Adm(C);
+return [eg12LogTab(C)];
 }
-if (t === 'qt') {
-if (s === 'items' || s === 'plan') return [eg11Quote(x, B, paint, show, k === 2, s)];
-if (s === 'hist') return [eg12Hist(x, paint)];
-return eg12Doc(x, B, 'quote', s, paint);
+/* يحذف من عرض قديم بطاقة عنوانها أحد العناوين (مثل الإسناد المكرر) */
+function eg12Strip(root, titles) {
+if (!root || !root.querySelectorAll) return;
+root.querySelectorAll('h2,h3,h4,b').forEach(function (h) {
+const t = String(h.textContent || '').trim(); if (titles.indexOf(t) < 0) return;
+const card = h.closest('section,.eg9-card,.cu-card,.t2-card,.card'); if (card && card !== root) card.remove();
+});
 }
-if (t === 'lnk') return s === 'send' ? [eg11Send(x, B, paint, k === 3)] : [eg10Prog(x, B, paint, show)];
-if (t === 'inv' || t === 'ct') {
-const kind = t === 'inv' ? 'purchase' : 'contract';
-if (s === 'data') return [t === 'inv' ? eg11Inv(x, B, paint) : eg11Ct(x, B, paint, true)];
-return eg12Doc(x, B, kind, s, paint);
+/* طلب الاستكمال داخل «المراجعة والمستندات» — لا تبويب مستقل */
+function eg12Fix(C) {
+const x = C.x, paint = C.paint;
+const cc = EGW[x.id] || (EGW[x.id] = { at: 0, busy: false, job: null, qs: null, rej: '', why: '', dec: '', tab: '' });
+const W = cc.fix || (cc.fix = { items: [], type: '', key: '', lbl: '', note: '', gnote: '', busy: false, err: '', form: false });
+if (!W.items.length && !W.form) { W.form = true; W.type = W.type || 'doc'; }
+const jb = eg11Job(x, paint); if (jb.j) { cc.job = jb.j; cc.at = cc.at || Date.now(); }
+cc.reload = cc.reload || function () { eg11Job(x, paint, true); paint(); };
+let fb = null; try { fb = eligFixBox(x, cc, paint); } catch (err) { void err; }
+return eg9Card('طلب استكمال من العميل', 'clipboard-text', [fb || eg12Wait('تعذّر عرض النموذج.'), e('div', { class: 'eg9-acts' }, [eg9Btn('إغلاق', { on: function () { C.V.fix = false; paint(); } })])], { cls: 'eg11-host eg12-fixc' });
 }
-if (t === 'adm') {
-if (s === 'adm') return k >= 5 && !C.dead ? eg11Admin(x, RF, B, paint, show, NX) : [eg12Wait(k > 5 ? 'أُنجزت إجراءات الإدارة — نُفّذ الطلب ' + (x.executed_at ? eg10Dt(x.executed_at) : '') + '.' : 'تبدأ إجراءات الإدارة بعد توقيع العميل على عقد بيع المنتج.')];
-if (s === 'pts') return [eg10Pts(x, B, paint)];
-return k >= 7 ? [eg10Close(x, B, paint, show)] : [eg12Wait('يُغلق الطلب بعد التنفيذ واعتماد النقاط.')];
+/* مختار الخطوة — مشترك بين «القوالب والنصوص» و«المعاينة» */
+function eg12StepSel(C, can) {
+const V = C.V;
+return e('div', { class: 'eg12-dsel', role: 'group', 'aria-label': 'الخطوة' }, EG12_STEPS.map(function (st) {
+const ok = can(st), on = V.step === st[0];
+return e('button', { type: 'button', class: on ? 'is-on' : '', 'aria-pressed': on ? 'true' : 'false', disabled: ok ? null : true, title: ok ? null : 'يتاح بعد إعداد عرض السعر', 'data-live-ok': '', onClick: function () { V.step = st[0]; C.paint(); } }, [eg12Ic(st[2], 16), st[1]]);
+}));
 }
-if (s === 'msg') return eg9TabBody(x, RF, 'msg', NX, paint);
-void q; return [eg10Log(x, B, paint, true)];
+function eg12Seg(val, opts, on) { return e('div', { class: 'eg12-seg', role: 'group' }, opts.map(function (p) { return e('button', { type: 'button', class: p[0] === val ? 'is-on' : '', 'aria-pressed': p[0] === val ? 'true' : 'false', disabled: p[2] ? true : null, 'data-live-ok': '', onClick: function () { on(p[0]); } }, p[1]); })); }
+/* العرض الحالي ومحرّراته المشتركة */
+function eg12QJ(x, paint) {
+const S = eg11Qs(x, paint), live = eg11Live(S.rows), G = live ? eqGet(live.id, paint) : null;
+return { S: S, live: live, J: G ? G.j : null, st: G ? G.st : '' };
 }
-/* المستند · صفحة العميل · المعاينة لكل مستند (عرض السعر · فاتورة المنتج · عقد بيع منتج) */
-function eg12Doc(x, B, kind, s, paint) {
-if (x.status !== 'approved') return [eg12Wait('يُعدّ بعد اعتماد قرار «مؤهَّل».')];
-const S = eg11Qs(x, paint), live = eg11Live(S.rows);
-if (!S.rows) return [eg12Wait(S.st === 'err' ? 'تعذّرت قراءة العروض — أعد المحاولة.' : 'جارٍ القراءة…')];
-if (!live) return [eg12Wait('يظهر بعد حفظ عرض السعر أول مرة.')];
-const G = eqGet(live.id, paint), J = G.j;
-if (!J) return [eg12Wait(G.st === 'err' ? 'تعذّرت قراءة العرض.' : 'جارٍ القراءة…')];
+/* «القوالب والنصوص»: مكان واحد — الخطوة × (صفحة الرابط · المستند PDF · الرسالة) */
+function eg12Tpl(C) {
+const x = C.x, V = C.V, paint = C.paint;
+const QJ = eg12QJ(x, paint), hasQ = !!QJ.live;
+if (!V.step || (V.step !== 'elig' && !hasQ)) V.step = hasQ && C.k >= 2 ? 'quote' : 'elig';
+const st = EG12_STEPS.filter(function (z) { return z[0] === V.step; })[0], kind = st[3];
+if (!kind && V.part === 'doc') V.part = 'page';
+const bar = e('div', { class: 'eg12-bar' }, [eg12Seg(V.part, [['page', 'صفحة الرابط'], ['doc', 'المستند PDF', !kind], ['msg', 'الرسالة']], function (v) { V.part = v; paint(); }),
+e('span', { class: 'eg12-sp' }), eg9Btn('عرض في المعاينة', { ic: 'device-mobile', on: function () { C.go('pv', ''); } })]);
+let body = null;
 const c = eg12C(x, paint);
-if (s === 'doc') return [eg12Srd(srdDoc(x, c, kind, paint))];
-if (s === 'page') return [eg12Srd(srdPage(x, c, kind, live, J, paint))];
-return [eg12Pv(x, B, J.q, kind)];
+if (V.part === 'msg') { try { body = egMsgPane(x, c, kind || 'result', QJ.live, QJ.J ? QJ.J.q : null, paint); } catch (err) { body = eg12Wait('تعذّر عرض محرّر الرسالة.'); } }
+else if (!kind) body = eg12EligEd(C);
+else if (!QJ.J) body = eg12Wait(QJ.st === 'err' ? 'تعذّرت قراءة العرض.' : 'جارٍ القراءة…');
+else if (V.part === 'doc') body = eg12Srd(srdDoc(x, c, kind, paint));
+else body = eg12Srd(srdPage(x, c, kind, QJ.live, QJ.J, paint));
+return [eg12StepSel(C, function (z) { return z[0] === 'elig' || hasQ; }), bar, e('div', { class: 'eg12-tpl' }, [body])];
 }
-function eg12Pv(x, B, Q, kind) {
-const draft = ['sent', 'accepted'].indexOf(Q.status) < 0;
+/* نصوص خطوة «أهلية شراء منتج» لهذا العميل — فارغ = النص الافتراضي */
+const EG12_EF = [['e_title', 'عنوان الخطوة', 'الموافقة على أهلية شراء منتج', 0], ['e_note', 'السطر تحت العنوان', 'الموافقة لا تُلزمك بالشراء حتى توقيع عقد بيع المنتج.', 1], ['e_box', 'عنوان النتيجة', 'صدرت الموافقة على أهلية شراء منتج', 0], ['e_box_less', 'عنوان النتيجة (بمبلغ أقل)', 'صدرت الموافقة على أهلية شراء منتج بمبلغ أقل', 0], ['e_ack', 'نص الإقرار', 'اطّلعت على أهلية شراء المنتج وأوافق عليها.', 1], ['e_accept', 'زر الموافقة', 'أوافق على أهلية الشراء', 0]];
+function eg12EligEd(C) {
+const x = C.x, paint = C.paint, M = x.meta || {}, saved = M.elig_page || {};
+const W = EG12.ep || (EG12.ep = {}), D = W[x.id] || (W[x.id] = { v: Object.assign({}, saved), dirty: false, busy: false });
+const offNote = (',' + String(D.v.e_off || '') + ',').indexOf(',note,') >= 0;
+const fld = function (f) { const ctl = f[3] ? eg11Ta(D.v[f[0]] || '', function (v) { D.v[f[0]] = v; if (!D.dirty) { D.dirty = true; paint(); } }, { ph: f[2], max: '700' }) : eg11In(D.v[f[0]] || '', function (v) { D.v[f[0]] = v; if (!D.dirty) { D.dirty = true; paint(); } }, { ph: f[2], max: '200' }); return eg11Fld(f[1], ctl); };
+const save = async function (reset) {
+if (EG9.busy) return; EG9.busy = 'ep'; paint();
+try { const j = await admRpc('adm_elig_page_save', { p_sr: x.id, p_page: reset ? {} : D.v }); if (!j || j.ok === false) throw new Error((j && j.error) || 'تعذّر الحفظ.'); W[x.id] = null; await eg11After(x, reset ? 'أُعيدت نصوص الأهلية للقالب العام' : 'حُفظت نصوص الأهلية لهذا العميل', ['تظهر في رابط العميل وفي «المعاينة».']); paint(); }
+catch (err) { EG9.busy = ''; paint(); eg11Fail(err); }
+};
+const own = Object.keys(saved).length > 0;
+return e('div', { class: 'eg12-ef' }, [e('div', { class: 'eg12-info' }, [eg12Ic('info', 17), e('span', {}, own ? 'نسخة لهذا العميل — لا تغيّر النص العام. الحقل الفارغ يأخذ النص الافتراضي.' : 'النص الافتراضي معروض في كل حقل. أي تعديل هنا يُحفظ نسخة لهذا العميل فقط.')]),
+e('div', { class: 'eg12-g2' }, EG12_EF.map(fld)),
+eg11Fld('السطر تحت العنوان', eg11Seg(offNote ? 'off' : 'on', [['on', 'يظهر'], ['off', 'مخفي']], function (v) { D.v.e_off = v === 'off' ? 'note' : ''; D.dirty = true; paint(); })),
+eg12Foot(eg11Acts([eg11Main(EG9.busy === 'ep' ? 'جارٍ الحفظ…' : 'حفظ لهذا العميل', { ic: 'download-simple', disabled: !!EG9.busy || !D.dirty, on: function () { save(false); } }),
+own ? eg9Btn('استعادة القالب العام', { ic: 'arrows-clockwise', disabled: !!EG9.busy, on: function () { if (tqConfirm('حذف نصوص هذا العميل والعودة للنص الافتراضي؟')) save(true); } }) : null,
+D.dirty ? eg9Btn('تجاهل التغييرات', { on: function () { W[x.id] = null; paint(); } }) : null]), D.dirty ? 'تعديلات غير محفوظة' : own ? 'نسخة لهذا العميل' : 'النص الافتراضي')]);
+}
+/* «المعاينة»: مكان واحد — صفحة الرابط الحقيقية (محرّك رابط تيرا) + المستند PDF أو الرسالة */
+function eg12Prev(C) {
+const x = C.x, V = C.V, paint = C.paint;
+const QJ = eg12QJ(x, paint), hasQ = !!QJ.live;
+if (!V.step || (V.step !== 'elig' && !hasQ)) V.step = hasQ && C.k >= 2 ? 'quote' : 'elig';
+const st = EG12_STEPS.filter(function (z) { return z[0] === V.step; })[0], kind = st[3];
+const Q = QJ.J ? QJ.J.q : null, draft = Q ? ['sent', 'accepted'].indexOf(Q.status) < 0 : true;
 let recv = ''; try { recv = kind === 'quote' ? '' : egRecvInfo(x).now; } catch (err) { void err; }
-let spec = null; try { spec = dcEqDoc(kind, Q, draft, { recv: recv }); } catch (err) { void err; }
-const sg = B && B.sign, q = B && B.q;
-const kv = [['المستند', EQ_DOC_NAME[kind] === 'العقد' ? 'عقد بيع منتج' : EQ_DOC_NAME[kind]], ['الرقم', kind === 'contract' ? ((q && q.ct) || 'يُولَّد عند التوقيع') : (Q.quotation_number || '—')], ['الحالة', kind === 'contract' ? (sg ? 'وقّعه العميل ' + eg10Dt(sg.at) : 'لم يوقَّع') : kind === 'purchase' ? (B && B.ch && B.ch.purchase && B.ch.purchase.d ? (B.ch.purchase.d === 'accept' ? 'اعتمدها العميل' : 'اعتذر') : 'لم تصله بعد') : (function () { try { return eqStLabel(Q)[0]; } catch (err) { return Q.status; } })()], ['النسخة', draft ? 'مسودة — تظهر علامة «مسودة»' : 'نهائية']];
-return e('div', { class: 'eg12-pv' }, [e('div', { class: 'eg12-pv-p srd' }, [spec ? srdPaper(spec) : eg12Wait('تعذّرت المعاينة.')]),
-e('div', { class: 'eg12-pv-s' }, [eg9Kv(kv), e('div', { class: 'eg12-vst' }, [eg9Btn('فتح المستند PDF', { cls: 'is-pri', ic: 'file-pdf', disabled: spec ? null : true, on: function () { try { dcPdf(dcEqDoc(kind, Q, draft, { recv: recv })); } catch (err) { eg11Fail(err); } } })]),
-e('small', { class: 'eg9-hint' }, 'من نافذة المستند: التنزيل والطباعة. التعديل من تبويب «المستند».')])]);
+let pvb = null; try { pvb = egPvBtn(x, kind || 'result', paint); } catch (err) { void err; }
+const bar = e('div', { class: 'eg12-bar' }, [eg12Seg(V.wide ? 'w' : 'm', [['m', 'جوال'], ['w', 'شاشة']], function (v) { V.wide = v === 'w'; paint(); }), e('span', { class: 'eg12-sp' }), pvb,
+kind && Q ? eg9Btn('فتح PDF', { ic: 'file-pdf', on: function () { try { dcPdf(dcEqDoc(kind, Q, draft, { recv: recv })); } catch (err) { eg11Fail(err); } } }) : null,
+eg9Btn('تعديل النصوص', { ic: 'note-pencil', on: function () { C.go('tpl', ''); } })]);
+const link = e('div', { class: 'eg12-pvl' }, [e('div', { class: 'eg12-lab' }, [eg12Ic('device-mobile', 15), 'صفحة الرابط كما يراها العميل']), eg12PvFrame(x, V.step, V.wide)]);
+let side;
+if (kind) { let spec = null; if (Q) { try { spec = dcEqDoc(kind, Q, draft, { recv: recv }); } catch (err) { void err; } } side = e('div', { class: 'eg12-pvd' }, [e('div', { class: 'eg12-lab' }, [eg12Ic('file-text', 15), 'المستند PDF كما يصدر' + (draft ? ' — مسودة' : '')]), spec ? e('div', { class: 'eg12-pv-p srd' }, [srdPaper(spec)]) : eg12Wait(QJ.st === 'err' ? 'تعذّرت قراءة العرض.' : 'جارٍ القراءة…')]); }
+else side = e('div', { class: 'eg12-pvd' }, [e('div', { class: 'eg12-lab' }, [eg12Ic('chat-circle-dots', 15), 'رسالة النتيجة كما تصل (واتساب · البريد · الحساب)']), eg12Msg(x)]);
+return [eg12StepSel(C, function (z) { return z[0] === 'elig' || hasQ; }), bar, e('div', { class: 'eg12-pvg' + (V.wide ? ' is-wide' : '') }, [link, side])];
+}
+/* إطار المعاينة: /crq/?preview=1&k=elig — يستلم بيانات الخطوة من admin RPC بلا رمز ولا قرار */
+function eg12PvFrame(x, step, wide) {
+const M = EG12.pvd || (EG12.pvd = {}), K = x.id + ':' + step, S = M[K] || (M[K] = { st: '', d: null, at: 0 });
+if (!S.st || (S.st !== 'load' && Date.now() - S.at > 30000)) { S.st = 'load'; admRpc('adm_elig_pv', { p_sr: x.id, p_step: step }).then(function (j) { S.d = j; S.st = 'ok'; S.at = Date.now(); eg12PvPush(); }).catch(function () { S.st = 'err'; S.at = Date.now(); }); }
+if (S.st === 'ok' && S.d && S.d.ok === false) return eg12Wait(S.d.error === 'no_quote' ? 'تظهر هذه الخطوة بعد إعداد عرض السعر.' : S.d.error === 'forbidden' ? 'تحتاج صلاحية إدارة العملاء.' : 'تعذّرت المعاينة.');
+if (S.st === 'err') return eg12Wait('تعذّر تجهيز المعاينة — أعد المحاولة.');
+const f = e('iframe', { class: 'eg12-pvf' + (wide ? ' is-wide' : ''), title: 'معاينة الرابط كما يراه العميل', src: '/crq/?preview=1&k=elig&r=' + Date.now() });
+EG12.pvf = { f: f, K: K, ready: false };
+if (!EG12.pvBound) { EG12.pvBound = true; window.addEventListener('message', function (ev) { const P = EG12.pvf; if (!P || ev.origin !== location.origin || !ev.data || ev.data.type !== 'crq-preview-ready') return; if (P.f.contentWindow !== ev.source) return; P.ready = true; eg12PvPush(); }); }
+return f;
+}
+function eg12PvPush() { const P = EG12.pvf; if (!P || !P.ready || !P.f.isConnected) return; const S = (EG12.pvd || {})[P.K]; if (!S || !S.d || S.d.ok === false) return; try { P.f.contentWindow.postMessage({ type: 'crq-preview', elj: S.d }, location.origin); } catch (err) { void err; } }
+/* «الرابط وموافقات العميل»: خط زمني واحد — الإرسال ثم فتح الرابط ثم كل خطوة بقرار العميل */
+function eg12Lnk(C) {
+const x = C.x, B = C.B, k = C.k, paint = C.paint, L = B && B.link, ch = (B && B.ch) || {}, n = eg10Cs(B), q = B && B.q, qok = q && ['approved', 'sent', 'accepted'].indexOf(q.st) >= 0;
+const rows = [];
+rows.push([L ? 'd' : k === 3 ? 'o' : '', 'أُرسل الرابط', L ? 'واتساب · البريد · الحساب — ' + eg10Dt(L.at) : qok ? 'جاهز للإرسال' : 'بعد اعتماد عرض السعر']);
+rows.push([L && L.open ? 'd' : L ? 'o' : '', 'فتح الرابط وتحقق', L && L.open ? eg10Dt(L.open) + (L.fac ? ' · ' + (/wa|whats/i.test(L.fac) ? 'رمز واتساب' : /mail/i.test(L.fac) ? 'رمز البريد' : L.fac) : '') : L ? 'لم يفتحه بعد' : '—']);
+EG10_CS.forEach(function (s, i) { const c = ch[s[0]], ok = c && c.d === 'accept', no = c && c.d === 'decline'; rows.push([ok ? 'd' : no ? 'x' : i === n && L && L.open ? 'o' : '', s[1], ok ? s[2] + ' · ' + eg10Dt(c.at) : no ? 'اعتذر · ' + eg10Dt(c.at) : i === n && L ? (c && c.open ? 'يطّلع الآن · لم يقرّر' : 'بانتظاره') : '—']); });
+rows.push([k >= 5 ? 'd' : '', 'التقييم', k >= 5 ? 'داخل الرابط بعد التوقيع' : '—']);
+const tl = e('ol', { class: 'eg12-tl' }, rows.map(function (r) { return e('li', { class: r[0] ? 'is-' + r[0] : '' }, [e('b', {}, r[1]), e('small', {}, r[2])]); }));
+const busy = !!EG9.busy, acts = [];
+if (!L && k === 3) acts.push(eg11Main(EG9.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال الرابط للعميل', { ic: 'paper-plane-tilt', disabled: busy || !qok, on: async function () {
+if (!tqConfirm('إرسال الرابط للعميل الآن؟ يمر فيه بالأهلية ثم عرض السعر ثم الفاتورة ثم العقد.')) return;
+EG9.busy = 'rel'; paint();
+try { const j = await egjRpc('adm_elig_release', { p_sr: x.id }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.'); try { delete SRSTG.m[x.id]; } catch (er) { void er; } await eg11After(x, 'أُرسل الرابط للعميل', ['وصل العميلَ الرابط على واتساب والبريد وفي حسابه.', 'تتابع موافقاته هنا حيّةً.']); paint(); }
+catch (err) { EG9.busy = ''; paint(); eg11Fail(err); } } }));
+if (L && k === 4) acts.push(eg9Btn(EG9.busy === 'admin_sr_notify' ? 'جارٍ الإرسال…' : 'تذكير العميل', { ic: 'bell', disabled: busy, on: function () { eg9Do('admin_sr_notify', { p_id: x.id }, 'أُرسل التذكير', ['وصل العميلَ إشعار بحالة طلبه ' + x.req_no + ' — داخل المنصة والبريد وواتساب.'], paint, 'إرسال تذكير للعميل بحالة الطلب ' + x.req_no + '؟'); } }));
+acts.push(eg9Btn('المعاينة', { ic: 'device-mobile', on: function () { C.go('pv', ''); } }));
+return e('div', { class: 'eg12-lnk' }, [!qok && !L && k <= 3 ? e('div', { class: 'eg10-warn' }, 'اعتمد عرض السعر أولًا ليُرسل الرابط.') : null, tl,
+eg12Foot(eg11Acts(acts), L ? (k === 4 ? 'متابعة حيّة — لا إجراء مطلوب منك الآن.' : '') : 'يصل الرابط العميلَ على واتساب والبريد وفي حسابه، ويدخل برمز تحقق واحد.')]);
+}
+/* «الإدارة والتنفيذ»: صفحة واحدة بالترتيب — الإجراءات ثم النقاط ثم الإغلاق */
+function eg12Adm(C) {
+const x = C.x, B = C.B, k = C.k, paint = C.paint, RF = C.RF, NX = C.NX, sg = B && B.sign, q = B && B.q, a = B && B.acc;
+const steps = [[sg ? 'd' : '', 'توقيع العميل على عقد بيع المنتج', sg ? 'تلقائي من الرابط · ' + eg10Dt(sg.at) : 'بانتظار العميل'], [x.executed_at ? 'd' : k === 5 ? 'o' : '', 'الإجراءات المطلوبة ثم «تم التنفيذ»', x.executed_at ? 'نُفّذ ' + eg10Dt(x.executed_at) : k === 5 ? 'الخطوة الحالية — أدناه' : '—'],
+[a && a.st === 'approved' ? 'd' : k === 6 ? 'o' : '', 'اعتماد النقاط المكتسبة', a ? (a.st === 'approved' ? '+' + fmtNum(a.pts || 0) + ' نقطة معتمدة' : a.st === 'pending' ? 'بانتظار اعتمادك' : a.st === 'rejected' ? 'رُفض منح النقاط' : a.st) : x.executed_at ? 'لا نقاط مكتسبة' : '—'], [k >= 7 ? 'd' : '', 'إغلاق الطلب', k >= 7 ? 'مكتمل' : '—']];
+const out = [e('ol', { class: 'eg12-tl is-row' }, steps.map(function (r) { return e('li', { class: r[0] ? 'is-' + r[0] : '' }, [e('b', {}, r[1]), e('small', {}, r[2])]); }))];
+if (C.dead) return out.concat([eg12Wait('أُغلق الطلب قبل هذه المرحلة.')]);
+if (k < 5) return out.concat([eg12Wait('تبدأ إجراءات الإدارة بعد توقيع العميل على عقد بيع المنتج. العقد النهائي يُرفع من تبويب «عقد بيع منتج».')]);
+if (k === 5) { const acts = (function () { try { return eg9Work(x, RF, 'adm', [], NX); } catch (err) { return null; } })(); if (acts) out.push(e('div', { class: 'eg11-host eg12-adm' }, [acts])); if (q && q.cid) out.push(e('small', { class: 'eg9-hint' }, 'العقد النهائي يُرفع من تبويب «عقد بيع منتج».')); }
+if (x.executed_at) out.push(eg10Pts(x, B, paint));
+if (k >= 7) out.push(eg10Close(x, B, paint, C.show));
+return out;
+}
+/* «المراسلات والسجل»: المحادثة + السجل (ومعه نسخ عرض السعر) — بلا تكرار المطلوب والمرفقات */
+function eg12LogTab(C) {
+const x = C.x, B = C.B, paint = C.paint;
+const m = (eg9TabBody(x, C.RF, 'msg', C.NX, paint) || []).filter(Boolean);
+m.forEach(function (n) { eg12Strip(n, ['المطلوب من العميل', 'كل المرفقات']); });
+const S = EG11.qs[x.id];
+return e('div', { class: 'eg12-g2 eg12-logg' }, [e('div', { class: 'eg12-col' }, m), e('div', { class: 'eg12-col' }, [eg10Log(x, B, paint, true), S && S.rows && S.rows.length ? eg9Card('نسخ عرض السعر', 'receipt', [eg12Hist(x, paint)]) : null])]);
 }
 /* سجل العرض: كل نسخ عرض السعر لهذا الطلب */
 function eg12Hist(x, paint) {
@@ -29945,20 +30048,6 @@ if (!L.length) return null;
 return e('div', { class: 'eg10-sum' }, L.map(function (r) {
 return e('button', { type: 'button', class: 'eg10-sum-i', 'data-live-ok': '', onClick: function () { if (typeof r[0] === 'number') show(r[0], ''); else show(null, r[0]); } }, [e('span', {}, [e('b', {}, r[1] + ' ›'), e('small', {}, r[2])]), r[3] ? e('em', {}, r[3]) : null]);
 }));
-}
-/* موافقات العميل — متابعة حيّة */
-function eg10Prog(x, B, paint, show) {
-const ch = (B && B.ch) || {}, L = B && B.link, n = eg10Cs(B);
-const rows = [e('div', { class: L && L.open ? 'is-done' : 'is-now' }, [e('b', {}, 'فتح الرابط وتحقق'), e('span', {}, L && L.open ? hm(new Date(L.open)) + (L.fac ? ' · ' + (/wa|whats/i.test(L.fac) ? 'رمز واتساب' : /mail/i.test(L.fac) ? 'رمز البريد' : L.fac) : '') : 'لم يفتحه بعد')])];
-EG10_CS.forEach(function (s, i) {
-const c = ch[s[0]], ok = c && c.d === 'accept', no = c && c.d === 'decline';
-rows.push(e('div', { class: ok ? 'is-done' : no ? 'is-stop' : i === n && L && L.open ? 'is-now' : '' }, [e('b', {}, (i + 1) + '. ' + s[1]), e('span', {}, ok ? s[2] + ' · ' + eg10Dt(c.at) : no ? 'اعتذر · ' + eg10Dt(c.at) : i === n ? (c && c.open ? 'يطّلع الآن · لم يقرّر' : 'بانتظاره') : '—')]));
-});
-const busy = !!EG9.busy;
-return eg9Card('موافقات العميل', 'hourglass-medium', [e('small', { class: 'eg9-hint' }, 'متابعة حيّة — لا إجراء مطلوب منك الآن.'), e('div', { class: 'eg10-prog' }, rows),
-e('div', { class: 'eg9-acts' }, [eg9Btn(EG9.busy === 'admin_sr_notify' ? 'جارٍ الإرسال…' : 'تذكير العميل بحالة الطلب', { ic: 'bell', disabled: busy, on: function () { eg9Do('admin_sr_notify', { p_id: x.id }, 'أُرسل التذكير', ['وصل العميلَ إشعار بحالة طلبه ' + x.req_no + ' — داخل المنصة والبريد وواتساب.'], paint, 'إرسال تذكير للعميل بحالة الطلب ' + x.req_no + '؟'); } }),
-eg9Btn('مراسلة العميل', { ic: 'chat-circle-dots', on: function () { show(null, 'msg'); } })]),
-e('small', { class: 'eg9-hint' }, 'إن اعتذر العميل يُغلق الطلب ويظهر السبب هنا، وتعود أي نقاط محجوزة إلى رصيده.')], { tag: L && L.exp ? e('small', { class: 'eg9-card-n' }, 'الرابط صالح حتى ' + iso(new Date(L.exp))) : null });
 }
 /* التنفيذ والنقاط: النقاط المكتسبة معلّقة حتى الاعتماد — مع طريقة الحساب */
 function eg10Pts(x, B, paint) {
@@ -30092,7 +30181,6 @@ if (now && x.status === 'submitted') kids.push(eg11Acts([eg11Main(EG9.busy === '
 else if (eg9IsOpen(x) && ['submitted', 'in_review'].indexOf(x.status) >= 0) kids.push(eg11Acts([eg9Btn('طلب استكمال من العميل', { ic: 'clipboard-text', on: function () { show(null, 'fix'); } })]));
 return eg9Card('مراجعة الطلب', 'tray', kids, { tag: e('small', { class: 'eg9-card-n' }, now ? 'الخطوة الحالية' : 'تمت') });
 }
-function eg11DocsLine(x, paint, show) { const O = eg11DocsOf(x, paint); if (!O.rules.length) return null; return e('button', { type: 'button', class: 'eg10-sum-i eg11-dl', 'data-live-ok': '', onClick: function () { show(0, ''); } }, [e('span', {}, [e('b', {}, 'المستندات ›'), e('small', {}, fmtNum(O.acc) + ' من ' + fmtNum(O.rules.length) + ' مقبول' + (O.acc < O.rules.length ? ' — راجعها قبل القرار' : ''))]), e('em', { class: O.acc === O.rules.length ? '' : 'is-w' }, O.acc === O.rules.length ? 'مكتملة' : 'ناقصة')]); }
 
 /* ── 2) قرار الأهلية: نموذج واحد يُحفظ ويُعتمد هنا ── */
 function eg11RepW(x) {
@@ -30133,7 +30221,9 @@ await eg11After(x, act ? 'اعتُمد القرار' : resEd ? 'عُدّلت ا�
 if (W.rec === 'need_docs') show(null, 'fix'); else paint();
 } catch (er) { EG9.busy = ''; W.err = (er && er.message) || 'تعذّر الحفظ.'; paint(); }
 }
-function eg12Foot(acts, note) { if (!acts) return note ? e('small', { class: 'eg9-hint' }, note) : null; return e('div', { class: 'eg12-foot' }, [acts, note ? e('small', { class: 'eg12-foot-n' }, note) : null]); }
+function eg12Foot(acts, note, chip) { if (!acts && !chip) return note ? e('small', { class: 'eg9-hint' }, note) : null; return e('div', { class: 'eg12-foot' }, [acts, chip || null, note ? e('small', { class: 'eg12-foot-n' }, note) : null]); }
+/* الإجمالي مرة واحدة — في شريط الحفظ */
+function eg12Tot(total, vat) { return e('span', { class: 'eg12-tot' }, ['الإجمالي ', e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(total, 2))), vat !== undefined && vat !== null ? e('small', {}, 'شامل الضريبة ' + eg10N(vat, 2)) : null]); }
 function eg12Pick(val, opts, on) { return e('div', { class: 'eg12-pick', role: 'radiogroup', 'aria-label': 'نتيجة الأهلية' }, opts.map(function (p) { const sel = p[0] === val; return e('button', { type: 'button', role: 'radio', class: sel ? 'is-on' : '', 'aria-checked': sel ? 'true' : 'false', 'data-live-ok': '', onClick: function () { on(p[0]); } }, [e('span', { class: 'eg12-pick-ic', 'aria-hidden': 'true' }, frag(ui(p[3], 18))), e('span', {}, [e('b', {}, p[1]), e('small', {}, p[2])])]); })); }
 const EG12_REC = { eligible: ['بالمبلغ المطلوب', 'seal-check'], eligible_less: ['مع ذكر السبب', 'coins'], not_eligible: ['يُغلق الطلب ويصل السبب', 'x-circle'], need_docs: ['يُعاد للعميل للاستكمال', 'clipboard-text'] };
 function eg11Decision(x, B, paint, show, now) {
@@ -30236,7 +30326,7 @@ e('td', {}, sw),
 e('td', {}, l.cfg ? (Number(l.amt) > 0 ? e('button', { type: 'button', class: 'eg9-lnk', 'data-live-ok': '', title: 'تصفير المبلغ', onClick: function () { l.amt = ''; paint(); } }, 'تصفير') : null) : e('button', { type: 'button', class: 'eg12-del', 'data-live-ok': '', 'aria-label': 'حذف البند', title: 'حذف البند', onClick: function () { D.lines.splice(i, 1); paint(); } }, frag(ui('trash', 16))))]);
 };
 const ns = []; for (let n = 1; n <= 36; n++) ns.push([String(n), n === 1 ? 'دفعة واحدة' : fmtNum(n) + ' دفعات']);
-const tiles = C ? eg11Tiles([['قيمة المنتج', eg10N(C.value, 2)], ['الرسوم', eg10N(C.fees, 2)], ['الضريبة', eg10N(C.vat, 2)], C.plan && C.plan.length ? ['خطة الدفع', C.plan.length > 1 ? fmtNum(C.plan.length) + ' × ' + eg10N(C.plan[0].amount, 2) : 'دفعة واحدة'] : null, ['الإجمالي', eg10N(C.total, 2), 1]]) : e('small', { class: 'eg9-hint' }, 'أدخل قيمة المنتج لتظهر المجاميع.');
+const tiles = C ? null : e('small', { class: 'eg9-hint' }, 'أدخل قيمة المنتج ليظهر الإجمالي.'), chip = C ? eg12Tot(C.total, C.vat) : null;
 const kids = [R ? e('div', { class: 'eg10-warn' }, 'أُعيد للتعديل' + (R.by_name ? ' — ' + R.by_name : '') + (R.note ? ': ' + R.note : '')) : null];
 if (part === 'plan') {
 kids.push(e('h4', { class: 'eg11-h' }, 'خطة الدفع'), e('div', { class: 'eg12-g2' }, [eg11Fld('عدد الدفعات', eg11Sel(String(D.n || '1'), ns, function (v) { D.n = v; paint(); }, { label: 'عدد الدفعات' })), eg11Fld('تاريخ أول دفعة', eg11In(D.first, function (v) { D.first = v; }, { type: 'date', label: 'أول دفعة', change: function () { paint(); } }))]),
@@ -30254,7 +30344,7 @@ e('div', { class: 'eg12-g2' }, [D.hide.length ? eg11Fld('اسم سطر البن�
 kids.push(eg11Err(D.err));
 kids.push(eg12Foot(eg11Acts(draftish ? [eg11Main(EG9.busy === 'qt' ? 'جارٍ الحفظ…' : !Q ? 'إصدار العرض وإحالته للاعتماد' : 'حفظ وإحالة للاعتماد', { ic: 'paper-plane-tilt', disabled: !!EG9.busy || !C, on: function () { save(true); } }), eg9Btn('حفظ مسودة', { ic: 'download-simple', disabled: !!EG9.busy || !C, on: function () { save(false); } }), Q && T.form ? eg9Btn('تجاهل التغييرات', { on: function () { delete CUD[key]; T.form = false; paint(); } }) : null]
 : [eg11Main(EG9.busy === 'qt' ? 'جارٍ الحفظ…' : 'حفظ التعديل', { ic: 'download-simple', disabled: !!EG9.busy || !C, on: function () { save(false); } }), eg9Btn('تجاهل التغييرات', { on: function () { delete CUD[key]; T.form = false; paint(); } })]),
-draftish ? 'التبويبان «البنود والحسبة» و«خطة الدفع والخصم» نموذج واحد — يُحفظان معًا.' : 'تعديل العرض قبل اعتماده — يبقى بانتظار الاعتماد.'));
+draftish ? '«البنود» و«خطة الدفع والخصم» نموذج واحد يُحفظ معًا.' : 'تعديل العرض قبل اعتماده — يبقى بانتظار الاعتماد.', chip));
 return eg9Card('عرض سعر منتج', 'receipt', kids.filter(Boolean));
 }
 function eg11QtView(x, B, Q, can, T, paint, show, part) {
@@ -30266,7 +30356,7 @@ try { const r = await eqCall(fn, args); T.act = ''; T.why = ''; T.note = ''; eg1
 catch (err) { EG9.busy = ''; paint(); eg11Fail(err); }
 };
 const accepted = Q.status === 'accepted' || (B && B.ch && B.ch.quote && B.ch.quote.d === 'accept');
-const tiles = eg11Tiles([['قيمة المنتج', eg10N(c.value, 2)], ['الرسوم', eg10N(fees, 2)], ['الضريبة', eg10N(c.vat, 2)], P.length ? ['خطة الدفع', P.length > 1 ? fmtNum(P.length) + ' × ' + eg10N(P[0].amount, 2) : 'دفعة واحدة'] : null, ['الإجمالي', eg10N(Q.total || c.total, 2), 1]]);
+const tiles = null, chip = eg12Tot(Q.total || c.total, c.vat); void fees;
 const kids = [R && Q.status === 'draft' ? e('div', { class: 'eg10-warn' }, 'أُعيد للتعديل: ' + (R.note || '')) : null,
 Q.approved_by_name ? e('small', { class: 'eg9-hint' }, 'اعتمده ' + Q.approved_by_name) : null];
 if (part === 'plan') {
@@ -30293,27 +30383,13 @@ if (can.edit) A.push(eg9Btn('تعديل العرض', { ic: 'note-pencil', on: fu
 else if (can.reopen && !accepted) A.push(eg9Btn('تعديل العرض', { ic: 'note-pencil', on: function () { T.act = 'reopen'; T.why = ''; T.note = ''; paint(); } }));
 if (can.return) A.push(eg9Btn('إعادة للمُعِدّ', { ic: 'arrows-clockwise', on: function () { T.act = 'return'; T.why = ''; T.note = ''; paint(); } }));
 if (Q.status === 'approved' && x.status === 'approved' && !(B && B.link)) A.push(eg9Btn('التالي: الإرسال للعميل', { cls: A.length ? '' : 'is-pri is-main', ic: 'caret-left', on: function () { show(3, ''); } }));
-foot = eg12Foot(A.length ? eg11Acts(A) : null, accepted ? 'قبل العميل هذا العرض — لا يُعدَّل بعد قبوله.' : !can.edit && !can.reopen && !can.approve ? 'لا تملك صلاحية تعديل هذا العرض أو اعتماده.' : Q.status === 'pending_approval' ? 'بانتظار الاعتماد — راجع البنود وخطة الدفع والمستند قبل الاعتماد.' : '');
+foot = eg12Foot(A.length ? eg11Acts(A) : null, accepted ? 'قبل العميل هذا العرض — لا يُعدَّل بعد قبوله.' : !can.edit && !can.reopen && !can.approve ? 'لا تملك صلاحية تعديل هذا العرض أو اعتماده.' : Q.status === 'pending_approval' ? 'بانتظار الاعتماد — راجع البنود وخطة الدفع والمستند قبل الاعتماد.' : '', chip);
 }
 kids.push(foot);
 return eg9Card('عرض سعر منتج', 'receipt', kids.filter(Boolean));
 }
 
 /* ── 4) الإرسال للعميل: رابط واحد يمر بكل الخطوات ── */
-function eg11Send(x, B, paint, now) {
-const q = B && B.q, rec = B && B.rec, L = B && B.link, qok = q && ['approved', 'sent', 'accepted'].indexOf(q.st) >= 0;
-const rows = [[1, 'أهلية شراء منتج', EG10_REC[rec] ? EG10_REC[rec] + ' — جاهزة' : 'جاهزة', true], [2, 'عرض سعر منتج', q ? (qok ? 'معتمد · ' + q.no : 'لم يُعتمد بعد') : 'لم يُعدّ بعد', qok], [3, 'فاتورة المنتج', 'جاهزة من العرض', qok], [4, 'عقد بيع منتج', 'يصدر عند التوقيع', qok], [5, 'التقييم', 'داخل الرابط', true]];
-const kids = [e('div', { class: 'eg10-prog' }, rows.map(function (r) { return e('div', { class: r[3] ? 'is-done' : 'is-now' }, [e('b', {}, r[0] + '. ' + r[1]), e('span', {}, r[2])]); })),
-e('div', { class: 'eg11-note' }, 'يصل الرابط العميلَ على واتساب والبريد وفي حسابه، ويدخل برمز تحقق واحد ويمر بالخطوات بالترتيب.')];
-if (L) kids.push(e('div', { class: 'eg10-ok' }, 'أُرسل الرابط ' + eg10Dt(L.at) + (L.exp ? ' · صالح حتى ' + iso(new Date(L.exp)) : '')));
-else if (now) kids.push(eg11Acts([eg11Main(EG9.busy === 'rel' ? 'جارٍ الإرسال…' : 'إرسال الرابط للعميل', { ic: 'paper-plane-tilt', disabled: !!EG9.busy || !qok, on: async function () {
-if (!tqConfirm('إرسال الرابط للعميل الآن؟ يمر فيه بالأهلية ثم عرض السعر ثم الفاتورة ثم العقد.')) return;
-EG9.busy = 'rel'; paint();
-try { const j = await egjRpc('adm_elig_release', { p_sr: x.id }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.'); try { delete SRSTG.m[x.id]; } catch (er) { void er; } await eg11After(x, 'أُرسل الرابط للعميل', ['وصل العميلَ الرابط على واتساب والبريد وفي حسابه.', 'التالي: موافقات العميل — تتابعها هنا حيّةً.']); paint(); }
-catch (err) { EG9.busy = ''; paint(); eg11Fail(err); } } })]));
-if (!qok && now) kids.push(e('div', { class: 'eg10-warn' }, 'اعتمد عرض السعر أولًا ليُرسل الرابط.'));
-return eg9Card('الإرسال للعميل', 'paper-plane-tilt', kids, { tag: e('small', { class: 'eg9-card-n' }, 'رابط واحد يمر بكل الخطوات · رمز تحقق واحد') });
-}
 
 /* ── فاتورة المنتج · عقد بيع منتج: الاطلاع والمستند ── */
 function eg11QFull(x, B, paint) { const q = B && B.q; if (!q) return null; const S = eg11Qs(x, paint), live = eg11Live(S.rows); if (!live) return null; const G = eqGet(live.id, paint); return G.j ? G.j.q : null; }
@@ -30336,16 +30412,6 @@ return eg9Card('عقد بيع منتج', 'handshake', kids);
 }
 
 /* ── 6) إجراءات الإدارة: العقد · العقد النهائي · الإجراءات المطلوبة · تم التنفيذ ── */
-function eg11Admin(x, RF, B, paint, show, NX) {
-const q = B && B.q, sg = B && B.sign;
-let recv = ''; try { recv = egRecvInfo(x).now || ''; } catch (err) { void err; }
-const top = eg9Card('إجراءات الإدارة', 'clipboard-text', [eg11Tiles([['العقد', (q && q.ct) || '—'], ['تاريخ التوقيع', sg ? iso(new Date(sg.at)) : '—'], ['طريقة الاستلام', recv || '—']]),
-e('div', { class: 'eg11-list' }, [e('div', { class: 'eg11-chk' + (sg ? ' is-d' : '') }, [e('i', { 'aria-hidden': 'true' }), e('div', {}, [e('b', {}, 'توقيع العميل على العقد'), e('small', {}, sg ? 'تلقائي من الرابط · ' + eg10Dt(sg.at) : 'بانتظار التوقيع')]), e('div', { class: 'eg11-chk-a' }, [eg9Btn('عرض العقد', { ic: 'file-text', on: function () { show(null, 'ct'); } })])])]),
-e('small', { class: 'eg9-hint' }, 'العقد النهائي والإجراءات المطلوبة وإغلاق الطلب أدناه — «تم التنفيذ» يُحسب بعدها النقاط المكتسبة.')], { tag: e('small', { class: 'eg9-card-n' }, 'الخطوة الحالية') });
-let fin = null; if (q && q.cid) { try { fin = cfFinal({ rid: q.cid, no: q.ct }, { r: { id: q.cid, user_id: x.user_id } }); } catch (err) { void err; } }
-const acts = (function () { try { return eg9Work(x, RF, 'adm', [], NX); } catch (err) { return null; } })();
-return [top, fin ? e('section', { class: 'eg9-card eg11-host' }, [fin]) : null, acts ? eg9Card('الإجراءات المطلوبة وإغلاق الطلب', 'check-circle', [acts], { cls: 'eg11-host' }) : null];
-}
 
 function eg9Card(title, ic, kids, o) { o = o || {}; return e('section', { class: 'eg9-card' + (o.cls ? ' ' + o.cls : '') }, [e('div', { class: 'eg9-card-h' }, [ic ? e('span', { class: 'eg9-card-ic', 'aria-hidden': 'true' }, frag(ui(ic, 18))) : null, e('h3', {}, title), o.tag || null]), kids]); }
 function eg9Kv(list) { return e('div', { class: 'eg9-kv' }, list.filter(Boolean).map(function (f) { const v = f[1]; const empty = v === '' || v === null || v === undefined || v === '—'; return e('div', { class: 'eg9-kv-i' + (empty ? ' is-empty' : '') }, [e('small', {}, f[0]), e('b', {}, empty ? '—' : v)]); })); }
