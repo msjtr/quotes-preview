@@ -1105,3 +1105,8 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-mgx td .cr-money{max-width:170px;margin-inline-start:auto}
 .crq .cr-sum-m .cr-ic{flex:none}
 @media (max-width:760px){.crq .cr-mgp{grid-template-columns:1fr}.crq .cr-mgx th:last-child{width:130px}.crq .cr-mgx td,.crq .cr-mgx th{padding:8px 10px}.crq .cr-mgx td .cr-money{max-width:130px}}
+
+/* v950: أزرار الضريبة والظهور في صفوف البنود كاملة النص · مسافة تلميح الاستلام */
+.crq .cr-mgx-o .cr-seg2{display:inline-flex;width:auto;flex:none}
+.crq .cr-mgx-o .cr-seg2 button{flex:none;width:auto;min-width:0;white-space:nowrap;overflow:visible;text-overflow:clip}
+.crq .cr-rcv~.cr-hint{margin-top:12px}
