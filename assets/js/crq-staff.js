@@ -259,6 +259,7 @@ var TABS = [['req', 'الطلب', 'user'], ['calc', 'البنود والحسبة
 /* v913: عدّاد على التبويب — ردود العميل ومرفقاته، والمطلوب المفتوح */
 function tabCnt(x, k) { var c = x.chat || {}, n = k === 'chat' ? (Number(c.client_n) || 0) + (Number(c.open) || 0) : 0; /* v940: المطلوب من العميل في «المراسلات والمرفقات» */ return n ? el('em', { class: 'cr-tcnt', text: String(n) }) : null; }
 function tabState(x, k) {
+if (KIND === 'merge') { var mgs = MG.state(x, k); if (mgs !== undefined) return mgs; } /* v949: أقسام التوحيد */
 if (k === 'req') return (KIND === 'merge' ? x.sel || [] : x.payment_ids || []).length ? 'ok' : 'miss';
 if (k === 'calc') return x.result && x.result.ok ? 'ok' : 'miss';
 if (k === 'doc') return 'ok';
@@ -326,7 +327,7 @@ var notes = [];
 if (x.need_approval) notes.push(note('warn', x.me && x.me.super ? 'رُفع العرض لاعتمادك — راجعه ثم اعتمده أو أعده للمُعِدّ.' : 'العرض بانتظار اعتماد المشرف العام — لا يصل العميل قبل اعتماده.'));
 if (x.exec_error) notes.push(note('bad', x.state === 'decision' ? 'تغيّر العقد بعد العرض فلم يُنفَّذ — راجع الحسبة وأعد الاعتماد ليصل العميل عرض محدّث.' : 'وقّع العميل وتعذّر التنفيذ الآلي — لم يتغير العقد.', [el('span', { text: x.exec_error })]));
 if (!editable(x) && (x.state === 'consent' || x.state === 'sign')) notes.push(note('info', 'الحسبة والمستند للقراءة فقط بعد إرسال الرابط — للتعديل: «سحب العرض وتعديله» من «الخطوة التالية».'));
-var body = ST.tab === 'req' ? (KIND === 'merge' ? MG.tabReq(x) : tabReq(x)) : ST.tab === 'calc' ? (KIND === 'merge' ? MG.tabCalc(x) : tabCalc(x)) : ST.tab === 'guar' ? tabGuar(x) : ST.tab === 'chat' ? tabChat(x) : ST.tab === 'doc' ? tabDoc(x) : ST.tab === 'page' ? tabPage(x) : ST.tab === 'msg' ? tabMsg(x) : tabLog(x);
+var body = KIND === 'merge' && MG.TABK.indexOf(ST.tab) >= 0 ? MG.tab(x, ST.tab) : ST.tab === 'req' ? tabReq(x) : ST.tab === 'calc' ? tabCalc(x) : ST.tab === 'guar' ? tabGuar(x) : ST.tab === 'chat' ? tabChat(x) : ST.tab === 'doc' ? tabDoc(x) : ST.tab === 'page' ? tabPage(x) : ST.tab === 'msg' ? tabMsg(x) : tabLog(x);
 return [el('div', { class: 'cr-r1' }, [heroEl(x), nextEl(x)]), askView(x)].concat(notes, [tabsEl(x), el('div', { class: 'cr-body', role: 'tabpanel' }, [].concat(body))]);
 }
 /* بطاقة الحقائق — كبطاقة ملف العميل: شريط متدرّج بأيقونة الطلب، الرقم والحالة، ثم الحقائق الأساسية */
@@ -395,7 +396,7 @@ catch (e) { ST.busy = false; draw(); toast(false, e.message); }
 function asgEl(x) { if (legacy(x) || x.state === 'done' || x.state === 'closed') return null; var sup = x.me && x.me.super;
 return el('div', { class: 'cr-asg' }, [el('span', {}, ['مسند إلى: ', el('b', { text: x.assigned_t || 'غير مسند' })]), sup ? el('button', { type: 'button', 'data-live-ok': '', disabled: ST.busy, onclick: function () { ST.ask = { kind: 'assign', to: x.assigned_to || '' }; draw(); } }, [x.assigned_t ? 'تغيير الإسناد' : 'إسناد لموظف']) : null]); }
 function tabsEl(x) {
-return el('nav', { class: 'cr-tabs', role: 'tablist', 'aria-label': 'أقسام الطلب' }, TABS.filter(function (t) { return !legacy(x) || t[0] === 'req' || t[0] === 'log'; }).map(function (t) {
+return el('nav', { class: 'cr-tabs', role: 'tablist', 'aria-label': 'أقسام الطلب' }, (KIND === 'merge' ? MG.TABS : TABS).filter(function (t) { return !legacy(x) || t[0] === 'req' || t[0] === 'log'; }).map(function (t) {
 var s = tabState(x, t[0]);
 return el('button', { type: 'button', role: 'tab', 'aria-selected': ST.tab === t[0] ? 'true' : 'false', class: ST.tab === t[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.tab = t[0]; keep(); draw(); } },
 [icon(t[2]), t[1], tabCnt(x, t[0]), s === 'ok' ? el('i', { class: 'cr-dot is-ok', title: 'مكتمل' }) : s === 'miss' ? el('i', { class: 'cr-dot is-miss', title: 'ينقصه' }) : s === 'live' ? el('i', { class: 'cr-dot is-live', title: 'رابط نشط' }) : null]);
@@ -1179,7 +1180,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=948'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=949'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1310,36 +1311,67 @@ return ex ? [el('div', { class: 'cr-cols' }, [el('section', { class: 'cr-card' }
 * فلا تختلف الفكرة ولا المحتوى. الحسبة على الخادم (crq_calc_merge): المتبقي على العقود + المنتج الإضافي وضريبته + رسوم التوحيد = قيمة العقد الموحّد، ثم خطة الدفع. */
 var MG = (function () {
 if (KIND !== 'merge') return {};
-var MGE = { need_two: 'اختر عقدين أو أكثر، أو عقدًا واحدًا مع منتج إضافي.', bad_product: 'اكتب قيمة المنتج الإضافي في تبويب «الطلب».', no_contracts: 'اختر العقود المطلوب توحيدها من تبويب «الطلب».', contract_mismatch: 'أحد العقود لم يعد متاحًا — راجع العقود في تبويب «الطلب».', no_open: 'لا دفعات متبقية على العقود المختارة.', bad_count: 'أدخل عدد الدفعات — من 1 إلى 120.', bad_date: 'تاريخ أول دفعة يكون بعد اليوم.', dist_sum: 'مجموع التوزيع اليدوي لا يساوي قيمة العقد الموحّد', contract_closed: 'أحد العقود مغلق' };
+/* v949: صفحة طلب التوحيد بأقسام منفصلة — الطلب (ملخص فقط) · توحيد العقود · طلب المنتج (من قائمة المنتجات مع وسيلة الاستلام) · الحسبة (جدول واحد و«إضافة بند» من البنود الجاهزة) */
+var MGE = { need_two: 'اختر عقدين أو أكثر، أو عقدًا واحدًا مع منتج إضافي.', bad_product: 'اكتب قيمة المنتج في تبويب «طلب المنتج».', no_contracts: 'اختر العقود من تبويب «توحيد العقود».', contract_mismatch: 'أحد العقود لم يعد متاحًا — راجع تبويب «توحيد العقود».', no_open: 'لا دفعات متبقية على العقود المختارة.', bad_count: 'أدخل عدد الدفعات — من 1 إلى 120.', bad_date: 'تاريخ أول دفعة يكون بعد اليوم.', dist_sum: 'مجموع التوزيع اليدوي لا يساوي قيمة العقد الموحّد', contract_closed: 'أحد العقود مغلق', bad_line: 'مسمّى البند حرفان على الأقل.', bad_amount: 'قيمة البند غير صحيحة.' };
+var TABS = [['req', 'الطلب', 'user'], ['mgc', 'توحيد العقود', 'list'], ['prod', 'طلب المنتج', 'box'], ['calc', 'الحسبة', 'calc'], ['guar', 'الضمانات', 'sign'], ['doc', 'المستند', 'file'], ['page', 'صفحة العميل', 'phone'], ['chat', 'المراسلات والمرفقات', 'inbox'], ['msg', 'رسائل العميل', 'send'], ['log', 'السجل', 'clock']];
+var TABK = ['req', 'mgc', 'prod', 'calc'];
+/* وسائل الاستلام — الوسائل القائمة في طلبات الأهلية و«تسليم إلكتروني» للمنتجات الرقمية */
+var RCV = [['ship', 'شحن إلى العنوان', 'العنوان الوطني المسجّل للعميل'], ['pickup', 'استلام من مقر المنصة', 'مقر منصة تيرا — بموعد بعد التوقيع'], ['proxy', 'استلام بالتوكيل (وكيل)', 'بوكالة سارية تتضمن الاستلام'], ['sellproxy', 'توكيل بالبيع لطرف ثالث', 'يُنسَّق مع الفريق بعد التوقيع'], ['digital', 'تسليم إلكتروني', 'للمنتجات الرقمية — إلى الجوال أو البريد']];
+var RD_L = { ship: 'عنوان الشحن (إن كان غير العنوان المسجّل)', proxy: 'اسم الوكيل وجواله', digital: 'الجوال أو البريد للتسليم (إن كان غير المسجّل)' };
+function rcvName(k) { var o = RCV.filter(function (z) { return z[0] === k; })[0]; return o ? o[1] : ''; }
+var PRD = { rows: null, p: null };
+function loadProds() { if (PRD.p) return PRD.p; PRD.p = api('GET', '/admin/api/crq-products').then(function (j) { PRD.rows = j.rows || []; draw(); }).catch(function () { PRD.rows = []; PRD.p = null; draw(); }); return PRD.p; }
 function rs(x) { return x && x.result && x.result.ok ? x.result : null; }
 function cnW(n) { n = Number(n) || 0; return n === 1 ? 'عقد واحد' : n === 2 ? 'عقدان' : n <= 10 ? n + ' عقود' : n + ' عقدًا'; }
 function pW(n) { n = Number(n) || 0; return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتان' : n <= 10 ? n + ' دفعات' : n + ' دفعة'; }
 function mW(n) { n = Number(n) || 0; return n === 1 ? 'شهر واحد' : n === 2 ? 'شهران' : n <= 10 ? n + ' أشهر' : n + ' شهرًا'; }
 function errT(x) { var e = (x && x.result && x.result.error) || ''; return MGE[e] || ERRT[e] || 'أكمل الحسبة'; }
-function propT(p) { if (!p) return ''; var a = []; if (p.months) a.push('مدة خطة الدفع: ' + mW(p.months)); if (p.team) a.push('المدة يحددها الفريق'); if (p.product && p.product.on) a.push('منتج إضافي بقيمة ' + money(p.product.value) + ' ر.س' + (p.product.type ? ' (' + p.product.type + ')' : '')); return a.join(' · '); }
 function seg(opts, cur, on, dis) { return el('div', { class: 'cr-seg2', role: 'group' }, opts.map(function (o) { return el('button', { type: 'button', class: cur === o[0] ? 'is-on' : '', 'aria-pressed': cur === o[0] ? 'true' : 'false', disabled: dis, 'data-live-ok': '', onclick: function () { if (cur !== o[0]) on(o[0]); } }, [o[1]]); })); }
 function lateTag(n) { return n ? el('span', { class: 'cr-py-s is-bad', text: n === 1 ? 'دفعة متأخرة' : n === 2 ? 'دفعتان متأخرتان' : n + ' دفعات متأخرة' }) : el('span', { class: 'cr-py-s is-ok', text: 'منتظم' }); }
+function goTab(k) { ST.tab = k; keep(); draw(); toTop(); }
+/* المنتج: قرار الفريق (في الحسبة) فوق طلب العميل (في الاقتراح) — حقلًا حقلًا */
+var PK = ['on', 'value', 'type', 'vat', 'sec', 'pk', 'det', 'recv', 'rd'];
+function prodOf(x) { var c0 = x.calc && typeof x.calc === 'object' ? x.calc : {}, pr = c0.product || {}, pp = (x.proposal || {}).product || {}, o = {}; PK.forEach(function (k) { o[k] = pr[k] != null ? pr[k] : pp[k]; }); o.on = o.on === true; if (o.vat == null) o.vat = true; return o; }
+function setP(x, patch, redraw) { var cc = x.calc && typeof x.calc === 'object' ? x.calc : {}; cc.product = Object.assign(prodOf(x), patch); x.calc = cc; queue({ calc: cc }); if (redraw) draw(); }
+function tabState(x, k) {
+if (k === 'req') return '';
+if (k === 'mgc') return (x.sel || []).length ? 'ok' : 'miss';
+if (k === 'prod') { var p = prodOf(x); return !p.on ? '' : Number(p.value) > 0 && String(p.type || '').trim() && p.recv ? 'ok' : 'miss'; }
+return undefined;
+}
 
-/* ── 1) الطلب: العميل · المنتج الإضافي · العقود (يضيف الفريق عقدًا أو يحذفه) · بيانات الطلب ── */
+/* ── 1) الطلب: ملخص فقط — طلب العميل كما قدّمه (لا يتغيّر) · قرار الفريق حتى الآن · بيانات الطلب ── */
+function tile(k, v, sub, go) {
+var kids = [el('small', { text: k }), el('b', {}, [v || '—']), sub ? el('span', { class: 'cr-mgs-s', text: sub }) : null, go ? el('i', { class: 'cr-mgs-go' }, [icon('lt')]) : null];
+return go ? el('button', { type: 'button', class: 'cr-mgs-t is-go', 'data-live-ok': '', 'aria-label': k + ' — فتح التبويب', onclick: function () { goTab(go); } }, kids) : el('div', { class: 'cr-mgs-t' }, kids);
+}
 function tabReq(x) {
-var u = x.user || {}, ed = editable(x), S0 = (x.sel || []).slice(), all = x.contracts || [], P = x.proposal || {}, rq = Array.isArray(P.contracts) ? P.contracts : [];
-var nm = String(u.name || '').trim();
-var who = el('section', { class: 'cr-card cr-pf' }, [el('div', { class: 'cr-pf-h' }, [el('span', { class: 'cr-pf-av', text: nm ? nm.charAt(0) : '؟' }), el('div', { class: 'cr-pf-t' }, [el('small', { text: 'العميل' }), el('b', { text: nm || '—' })])]),
-el('div', { class: 'cr-k4' }, [el('span', { class: 'cr-k4-k', text: 'الجوال' }), el('span', { class: 'cr-k4-v' }, [u.phone ? ltr(u.phone) : '—']), el('span', { class: 'cr-k4-k', text: 'رقم العميل' }), el('span', { class: 'cr-k4-v' }, [u.tera_id ? ltr(u.tera_id) : '—']),
-el('span', { class: 'cr-k4-k', text: 'البريد' }), el('span', { class: 'cr-k4-v is-wide' }, [u.email ? ltr(u.email) : '—'])])]);
-/* المنتج الإضافي — كما طلبه العميل، ويعدّله الفريق (يُحفظ في الحسبة) */
-var c0 = x.calc && typeof x.calc === 'object' ? x.calc : {}, pr = c0.product || {}, pp = P.product || {};
-var pOn = pr.on != null ? pr.on === true : pp.on === true;
-var pVal = pr.value != null ? String(pr.value) : pp.value != null ? String(pp.value) : '', pTyp = pr.type != null ? pr.type : (pp.type || '');
-var setP = function (k, v, redraw) { var cc = x.calc && typeof x.calc === 'object' ? x.calc : {}; cc.product = Object.assign({ on: pOn, value: pVal, type: pTyp, vat: pr.vat !== false }, cc.product || {}); cc.product[k] = v; x.calc = cc; queue({ calc: cc }); if (redraw) draw(); };
-var prCard = el('section', { class: 'cr-card' }, [el('h2', { text: 'المنتج الإضافي' }),
-el('p', { class: 'cr-hint', text: pp.on ? 'طلب العميل منتجًا إضافيًا بقيمة ' + money(pp.value) + ' ر.س' + (pp.type ? ' (' + pp.type + ')' : '') + '.' : 'لم يطلب العميل منتجًا إضافيًا في طلبه.' }),
-seg([['0', 'توحيد فقط'], ['1', 'توحيد مع منتج إضافي']], pOn ? '1' : '0', function (v) { setP('on', v === '1', true); }, !ed),
-pOn ? el('div', { class: 'cr-mg-pf' }, [
-el('label', { class: 'cr-fld' }, [el('span', { text: 'قيمة المنتج (قبل الضريبة)' }), el('span', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: pVal, placeholder: '0.00', disabled: !ed, oninput: function (e) { setP('value', e.target.value.replace(/[^\d.]/g, '')); } }), el('span', { text: 'ر.س' })])]),
-el('label', { class: 'cr-fld' }, [el('span', { text: 'نوع المنتج' }), el('input', { type: 'text', maxlength: '80', value: pTyp, disabled: !ed, placeholder: 'اختياري', oninput: function (e) { setP('type', e.target.value); } })]),
-el('div', { class: 'cr-fld' }, [el('span', { text: 'ضريبة المنتج' }), seg([['1', (Number(x.vat_rate) || 15) + '٪'], ['0', 'غير خاضع']], pr.vat === false ? '0' : '1', function (v) { setP('vat', v === '1', true); }, !ed)])]) : null]);
-var r = rs(x);
+var P = x.proposal || {}, pp = P.product || {}, rq = Array.isArray(P.contracts) ? P.contracts : [], r = rs(x), p = prodOf(x), S0 = x.sel || [], cli = x.origin === 'client';
+var nos = function (L) { return el('span', { class: 'cr-mgs-nos' }, L.map(function (n, i) { return el('span', {}, [i ? ' + ' : '', ltr(n)]); })); };
+var cn = String(x.client_note || '').trim();
+var reqCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: cli ? 'طلب العميل كما قدّمه' : 'الطلب كما أنشأه الفريق' }), el('small', { class: 'cr-hint', text: 'لا يتغيّر بقرار الفريق' })]),
+el('div', { class: 'cr-mgs' }, [
+tile('العقود المطلوب توحيدها', rq.length ? nos(rq) : '—', rq.length ? cnW(rq.length) : ''),
+tile('المنتج المطلوب', pp.on ? (pp.type || 'منتج إضافي') : 'لا', pp.on ? [money(pp.value) + ' ر.س', pp.recv ? 'الاستلام: ' + rcvName(pp.recv) : ''].filter(Boolean).join(' · ') : (cli ? 'لم يطلب منتجًا في طلبه' : 'توحيد فقط')),
+tile('مدة خطة الدفع المقترحة', P.team ? 'يحددها الفريق' : P.months ? mW(P.months) : '—', '')]),
+cn ? el('p', { class: 'cr-mgs-n' }, [el('b', { text: (cli ? 'ملاحظة العميل' : 'ملاحظة') + ': ' }), cn]) : null]);
+var added = S0.filter(function (n) { return cli && rq.length && rq.indexOf(n) < 0; });
+var pl = r && r.plan || {};
+var decCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'قرار الفريق حتى الآن' }), el('small', { class: 'cr-hint', text: 'التفاصيل في تبويباتها' })]),
+el('div', { class: 'cr-mgs' }, [
+tile('توحيد العقود', S0.length ? cnW(S0.length) : 'لم تُحدَّد العقود', added.length ? 'أضاف الفريق ' + added.join('، ') : r ? 'المتبقي ' + money(r.remain) + ' ر.س' : '', 'mgc'),
+tile('طلب المنتج', p.on ? (String(p.type || '').trim() || 'لم يُختر المنتج') + (Number(p.value) > 0 ? ' · ' + money(p.value) : '') : 'توحيد فقط', p.on ? (p.recv ? 'الاستلام: ' + rcvName(p.recv) : 'لم تُحدَّد وسيلة الاستلام') : '', 'prod'),
+tile('قيمة العقد الموحّد', r ? el('span', {}, [ltr(money(r.total)), ' ر.س']) : '—', r ? pW(pl.count) + ' × ' + money(pl.per) : errT(x), 'calc')])]);
+var mt = function (ic, k, v, cls) { return el('div', { class: 'cr-mt' + (cls ? ' ' + cls : '') }, [el('span', { class: 'cr-pf-ic' }, [icon(ic)]), el('div', {}, [el('small', { text: k }), el('b', {}, [v || '—'])])]); };
+var meta = el('section', { class: 'cr-card' }, [el('h2', { text: 'بيانات الطلب' }),
+el('div', { class: 'cr-mts' }, [mt(cli ? 'user' : 'team', 'مصدر الطلب', cli ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق'), mt('clock', 'تاريخ الطلب', at(x.created_at)),
+mt('sign', 'أعدّه', x.prepared_t || 'لم يُعدّ بعد', x.prepared_t ? '' : 'is-mut'), mt('ok', 'اعتمده', x.approved_t ? el('span', {}, [x.approved_t, el('small', { text: ' · ' + at(x.approved_at) })]) : 'لم يُعتمد بعد', x.approved_t ? '' : 'is-mut')])]);
+return [reqCard, decCard, meta];
+}
+
+/* ── 2) توحيد العقود: العقود فقط — يضيف الفريق عقدًا أو يحذفه، والمتأخر بالأحمر ── */
+function tabCts(x) {
+var ed = editable(x), S0 = (x.sel || []).slice(), all = x.contracts || [], P = x.proposal || {}, rq = Array.isArray(P.contracts) ? P.contracts : [], r = rs(x);
 var rows = all.map(function (c) {
 var on = S0.indexOf(c.no) >= 0, dis = !ed || (!!c.busy && !on), byTeam = on && x.origin === 'client' && rq.length && rq.indexOf(c.no) < 0;
 return el('label', { class: 'cr-py cr-mg-c' + (on ? ' is-on' : '') + (c.late_n ? ' is-late' : '') + (dis ? ' is-ro' : '') }, [
@@ -1350,25 +1382,78 @@ el('span', { class: 'cr-py-d' }, [el('b', {}, [ltr(c.no)]), el('small', { text: 
 el('span', { class: 'cr-py-a' }, [ltr(money(c.remain)), el('small', { text: ' ر.س' })]),
 c.busy && !on ? el('span', { class: 'cr-py-s is-warn', text: 'في طلب قائم ' + c.busy }) : byTeam ? el('span', { class: 'cr-py-s is-sel', text: 'أضافه الفريق' }) : lateTag(Number(c.late_n) || 0)]);
 });
-var ctCard = el('section', { class: 'cr-card' }, [el('h2', { text: 'العقود المطلوب توحيدها' }),
+return [el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'العقود المطلوب توحيدها' }), el('small', { class: 'cr-hint', text: 'عقدان أو أكثر، أو عقد واحد مع منتج' })]),
 rq.length && x.origin === 'client' ? el('p', { class: 'cr-hint', text: 'طلب العميل: ' + rq.join(' + ') + (ed ? ' — يضيف الفريق عقدًا أو يحذفه من هنا.' : '') }) : null,
 el('div', { class: 'cr-pys', role: 'group', 'aria-label': 'عقود العميل' }, rows.length ? rows : [el('p', { class: 'cr-hint', text: 'لا عقود قائمة بدفعات متبقية.' })]),
-el('div', { class: 'cr-mg-bar' }, [el('span', {}, [el('b', { text: cnW(S0.length) }), ' محددة']), r ? el('span', {}, ['المتبقي عليها ', ltr(money(r.remain)), ' ر.س', Number(r.late) > 0 ? el('em', { text: ' · منه متأخر ' + money(r.late) }) : null]) : el('span', { class: 'cr-mg-err', text: errT(x) })])]);
-var mt = function (ic, k, v, cls) { return el('div', { class: 'cr-mt' + (cls ? ' ' + cls : '') }, [el('span', { class: 'cr-pf-ic' }, [icon(ic)]), el('div', {}, [el('small', { text: k }), el('b', {}, [v || '—'])])]); };
-var meta = el('section', { class: 'cr-card' }, [el('h2', { text: 'بيانات الطلب' }),
-el('div', { class: 'cr-mts' }, [mt(x.origin === 'client' ? 'user' : 'team', 'مصدر الطلب', x.origin === 'client' ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق'), mt('clock', 'تاريخ الطلب', at(x.created_at)),
-mt('sign', 'أعدّه', x.prepared_t || 'لم يُعدّ بعد', x.prepared_t ? '' : 'is-mut'), mt('ok', 'اعتمده', x.approved_t ? el('span', {}, [x.approved_t, el('small', { text: ' · ' + at(x.approved_at) })]) : 'لم يُعتمد بعد', x.approved_t ? '' : 'is-mut')]),
-(function () { var cn = String(x.client_note || '').trim(), pt = propT(P); return el('div', { class: 'cr-cn' + (cn || pt ? '' : ' is-empty') }, [el('small', {}, [icon('note'), 'ملاحظة العميل']), el('p', { text: cn || 'لم يكتب العميل ملاحظة.' }), pt ? el('small', {}, [icon('cal'), 'اقتراح العميل']) : null, pt ? el('p', { text: pt }) : null]); })()]);
-return [el('div', { class: 'cr-cols cr-rq' }, [who, prCard]), ctCard, meta];
+el('div', { class: 'cr-mg-bar' }, [el('span', {}, [el('b', { text: cnW(S0.length) }), ' محددة']), r ? el('span', {}, ['المتبقي عليها ', ltr(money(r.remain)), ' ر.س', Number(r.late) > 0 ? el('em', { text: ' · منه متأخر ' + money(r.late) }) : null]) : el('span', { class: 'cr-mg-err', text: errT(x) })])])];
 }
 
-/* ── 2) الحسبة: رسوم التوحيد (من القائمة الجاهزة أو بند آخر) · خطة الدفع — والملخص المالي جانبًا ── */
+/* ── 3) طلب المنتج: المنتج من القائمة (البطاقات · أجهزة المتجر · أخرى) وقيمته وتفاصيله · وسيلة الاستلام ── */
+function tabProd(x) {
+var ed = editable(x), p = prodOf(x), pp = (x.proposal || {}).product || {}, R0 = Number(x.vat_rate) || 15;
+if (!PRD.rows) loadProds();
+var set = function (o, redraw) { setP(x, o, redraw); };
+var head = el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'المنتج' }), el('small', { class: 'cr-hint', text: pp.on ? 'طلب العميل: ' + (pp.type || 'منتج إضافي') + ' بقيمة ' + money(pp.value) + ' ر.س' : x.origin === 'client' ? 'لم يطلب العميل منتجًا في طلبه' : 'من قائمة المنتجات أو «أخرى»' })]);
+var parts = [head, seg([['0', 'توحيد فقط'], ['1', 'توحيد مع منتج']], p.on ? '1' : '0', function (v) { set({ on: v === '1' }, true); }, !ed)];
+if (p.on) {
+var rows = PRD.rows || [], secs = [];
+rows.forEach(function (z) { if (secs.indexOf(z.section) < 0) secs.push(z.section); });
+var curK = p.pk || (String(p.type || '').trim() ? '__other' : '');
+var known = !curK || curK === '__other' || rows.some(function (z) { return z.key === curK; });
+var opts = [el('option', { value: '', selected: !curK, text: PRD.rows ? 'اختر المنتج…' : 'جارٍ تحميل المنتجات…' })];
+if (!known) opts.push(el('option', { value: curK, selected: true, text: p.type || curK }));
+secs.forEach(function (s) { opts.push(el('optgroup', { label: s }, rows.filter(function (z) { return z.section === s; }).map(function (z) { return el('option', { value: z.key, selected: curK === z.key, text: z.name + (Number(z.price) > 0 ? ' — ' + money(z.price) + ' ر.س' : '') }); }))); });
+opts.push(el('option', { value: '__other', selected: curK === '__other', text: 'أخرى — يكتب الفريق اسم المنتج' }));
+var sel = el('select', { class: 'cr-sel', disabled: !ed, 'aria-label': 'المنتج', onchange: function (e) {
+var k = e.target.value;
+if (k === '__other') { set({ pk: '__other', sec: '', type: curK === '__other' ? p.type : '' }, true); return; }
+var z = rows.filter(function (q) { return q.key === k; })[0];
+if (!z) { set({ pk: '', sec: '', type: '' }, true); return; }
+set({ pk: z.key, sec: z.section, type: z.name, value: Number(p.value) > 0 ? String(p.value) : Number(z.price) > 0 ? String(z.price) : '' }, true);
+} }, opts);
+var v = Number(p.value) || 0;
+parts.push(el('div', { class: 'cr-mgp' }, [
+el('label', { class: 'cr-fld is-wide' + (String(p.type || '').trim() ? '' : ' is-miss') }, [el('span', { text: 'المنتج' }), sel]),
+curK === '__other' ? el('label', { class: 'cr-fld is-wide' }, [el('span', { text: 'اسم المنتج' }), el('input', { type: 'text', maxlength: '80', value: p.type || '', disabled: !ed, placeholder: 'مثال: بطاقات قوقل بلاي', oninput: function (e) { set({ type: e.target.value }); } })]) : null,
+el('label', { class: 'cr-fld' + (v > 0 ? '' : ' is-miss') }, [el('span', { text: 'قيمة المنتج (قبل الضريبة)' }), el('span', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: p.value != null ? String(p.value) : '', placeholder: '0.00', disabled: !ed, oninput: function (e) { set({ value: e.target.value.replace(/[^\d.]/g, '') }); } }), el('span', { text: 'ر.س' })])]),
+el('div', { class: 'cr-fld' }, [el('span', { text: 'ضريبة المنتج' }), seg([['1', R0 + '٪'], ['0', 'غير خاضع']], p.vat === false ? '0' : '1', function (q) { set({ vat: q === '1' }, true); }, !ed)]),
+el('label', { class: 'cr-fld is-wide' }, [el('span', { text: 'تفاصيل المنتج — تظهر في فاتورة المنتج والعقد' }), el('textarea', { rows: '2', maxlength: '300', disabled: !ed, placeholder: 'مثال: 4 بطاقات فئة 100 ريال', oninput: function (e) { set({ det: e.target.value }); } }, [p.det || ''])])]));
+}
+var cards = [el('section', { class: 'cr-card' }, parts)];
+if (p.on) {
+var cur = p.recv || '';
+var hint = pp.recv ? 'اختار العميل: ' + rcvName(pp.recv) + (cur && cur !== pp.recv ? ' — وغيّرها الفريق إلى «' + rcvName(cur) + '»' : ' — للفريق تغييرها') : 'لم يحدّد العميل وسيلة الاستلام — يحدّدها الفريق.';
+cards.push(el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'وسيلة الاستلام' }), el('small', { class: 'cr-hint', text: hint })]),
+el('div', { class: 'cr-rcv' + (cur ? '' : ' is-miss'), role: 'radiogroup', 'aria-label': 'وسيلة الاستلام' }, RCV.map(function (o) {
+return el('label', { class: 'cr-rcv-i' + (cur === o[0] ? ' is-on' : '') + (ed ? '' : ' is-ro') }, [el('input', { type: 'radio', name: 'cr-rcv', value: o[0], checked: cur === o[0], disabled: !ed, onchange: function () { set({ recv: o[0] }, true); } }), el('b', { text: o[1] }), el('small', { text: o[2] }), pp.recv === o[0] ? el('em', { text: 'اختيار العميل' }) : null]);
+})),
+cur ? el('label', { class: 'cr-fld cr-rcv-d' }, [el('span', { text: RD_L[cur] || 'ملاحظة الاستلام (اختياري)' }), el('input', { type: 'text', maxlength: '200', value: p.rd || '', disabled: !ed, oninput: function (e) { set({ rd: e.target.value }); } })]) : null,
+el('p', { class: 'cr-hint', text: 'تظهر وسيلة الاستلام في «فاتورة المنتج» والعقد، ويُسجَّل تسليم المنتج بعد التنفيذ من «السجل».' })]));
+}
+return cards;
+}
+
+/* ── 4) الحسبة: جدول واحد بالمجموعات (العقود · المنتج · البنود) و«إضافة بند» من البنود الجاهزة · خطة الدفع · الملخص جانبًا ── */
 function planTbl(x) {
 var r = rs(x), c = x.calc || {}, pl = c.plan || {}, ed = editable(x), man = pl.mode === 'manual';
 if (!r) return note('warn', errT(x));
 return el('table', { class: 'cr-mg-t' }, [el('thead', {}, [el('tr', {}, ['الدفعة', 'تاريخ الاستحقاق', 'قيمة الدفعة'].map(function (h) { return el('th', { text: h }); }))]),
 el('tbody', {}, (r.rows || []).map(function (z) { return el('tr', { 'data-k': z.k }, [el('td', {}, [ltr(String(z.seq))]), el('td', { text: day(z.due) }),
 el('td', {}, [man && ed ? el('label', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: (pl.amounts && pl.amounts[z.k]) || '', 'aria-label': 'قيمة الدفعة ' + z.seq, oninput: function (e) { pl.amounts = pl.amounts || {}; pl.amounts[z.k] = e.target.value.replace(/[^\d.]/g, ''); c.plan = pl; x.calc = c; queue({ calc: c }); } }), el('span', { text: 'ر.س' })]) : el('span', {}, [ltr(money(z.amt)), el('small', { text: ' ر.س' })])])]); }))]);
+}
+function grpRow(t, go) { return el('tr', { class: 'is-grp' }, [el('td', { colspan: '2' }, [t, go ? el('button', { type: 'button', class: 'cr-mgx-go', 'data-live-ok': '', onclick: function () { goTab(go[0]); } }, [go[1]]) : null])]); }
+function valRow(t, v, cls) { return el('tr', { class: cls || '' }, [el('td', { text: t }), el('td', {}, [ltr(money(v))])]); }
+function fixRows(x) {
+var r = rs(x), out = [grpRow('العقود المُوحَّدة', ['mgc', 'من «توحيد العقود»'])];
+if (!r) return out.concat([el('tr', {}, [el('td', { colspan: '2', class: 'cr-mgx-0 is-bad', text: errT(x) })])]);
+(r.contracts || []).forEach(function (k) { out.push(valRow('المتبقي · ' + k.no, k.remain)); });
+var pr = r.product || {};
+if (pr.on) { out.push(grpRow('المنتج', ['prod', 'من «طلب المنتج»'])); out.push(valRow(pr.type || 'منتج إضافي', pr.value)); if (Number(pr.vat) > 0) out.push(valRow('ضريبة المنتج ' + r.vat_rate + '٪', pr.vat, 'is-tax')); }
+return out;
+}
+function footRows(x) {
+var r = rs(x); if (!r) return [];
+return (Number(r.vat) > 0 ? [valRow('ضريبة البنود ' + r.vat_rate + '٪', r.vat, 'is-tax')] : []).concat([el('tr', { class: 'is-tot' }, [el('td', { text: 'قيمة العقد الموحّد' }), el('td', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })])])]);
 }
 function tabCalc(x) {
 var ed = editable(x), c = x.calc && typeof x.calc === 'object' ? x.calc : (x.calc = {}), r = rs(x), R0 = Number(x.vat_rate) || 15, P = x.proposal || {};
@@ -1377,58 +1462,70 @@ if (!Array.isArray(c.hide)) c.hide = (r && Array.isArray(r.hide) ? r.hide : []).
 if (!c.plan || typeof c.plan !== 'object') c.plan = {};
 var pl = c.plan;
 var upd = function (redraw) { x.calc = c; queue({ calc: c }); if (redraw) draw(); };
-var lines = el('div', { class: 'cr-mg-ls' }, c.lines.length ? c.lines.map(function (l, i) {
+var feeRows = [grpRow('البنود')].concat(c.lines.length ? c.lines.map(function (l, i) {
 var hid = c.hide.indexOf(l.id) >= 0;
-return el('div', { class: 'cr-li' + (hid ? ' is-hid' : '') }, [
-el('div', { class: 'cr-li-n' }, [el('input', { type: 'text', class: 'cr-li-in', value: l.t, maxlength: '80', disabled: !ed, placeholder: 'مسمّى البند', 'aria-label': 'اسم البند', oninput: function (e) { l.t = e.target.value; upd(); } })]),
-el('div', { class: 'cr-li-f is-amt' }, [el('span', { class: 'cr-li-l', text: 'القيمة' }), el('label', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: l.amt === '0' ? '' : l.amt, placeholder: '0.00', disabled: !ed, 'aria-label': 'القيمة', oninput: function (e) { l.amt = e.target.value.replace(/[^\d.]/g, '') || '0'; upd(); } }), el('span', { text: 'ر.س' })])]),
-el('div', { class: 'cr-li-f is-vat' }, [el('span', { class: 'cr-li-l', text: 'ضريبة القيمة المضافة' }), seg([['1', R0 + '٪'], ['0', 'غير خاضع']], l.vat ? '1' : '0', function (v) { l.vat = v === '1'; upd(true); }, !ed)]),
-el('div', { class: 'cr-li-f is-show' }, [el('span', { class: 'cr-li-l', text: 'يظهر للعميل' }), seg([['s', 'سطر مستقل'], ['h', 'مدمج']], hid ? 'h' : 's', function (v) { c.hide = c.hide.filter(function (k) { return k !== l.id; }); if (v === 'h') c.hide.push(l.id); upd(true); }, !ed)]),
-ed ? el('button', { type: 'button', class: 'cr-x cr-li-d', title: 'حذف البند', 'aria-label': 'حذف البند', 'data-live-ok': '', onclick: function () { c.lines.splice(i, 1); c.hide = c.hide.filter(function (k) { return k !== l.id; }); upd(true); } }, [icon('trash')]) : null]);
-}) : [el('p', { class: 'cr-hint', text: 'لا رسوم على هذا الطلب.' })]);
-var ready = (x.ready || []).filter(function (f) { return !c.lines.some(function (l) { return l.id === f.k; }); });
-var add = ed ? el('div', { class: 'cr-mg-add' }, ready.map(function (f) { return btn(f.name, { cls: 'is-sm', ic: 'plus', on: function () { c.lines.push({ id: f.k, t: f.name, amt: String(f.calc === 'fixed' ? Number(f.value) || 0 : f.calc === 'pct' && r ? Math.round((Number(r.remain) || 0) * Number(f.value)) / 100 : 0), vat: !!f.taxable }); upd(true); } }); })
-.concat([btn('بند آخر', { cls: 'is-sm', ic: 'plus', on: function () { c.lines.push({ id: 'x' + Date.now().toString(36).slice(-8), t: 'بند', amt: '0', vat: false }); upd(true); } })])) : null;
+return el('tr', { class: 'is-fee' + (hid ? ' is-hid' : '') }, [
+el('td', {}, [el('input', { type: 'text', class: 'cr-li-in', value: l.t, maxlength: '80', disabled: !ed, placeholder: 'مسمّى البند', 'aria-label': 'اسم البند', oninput: function (e) { l.t = e.target.value; upd(); } }),
+el('div', { class: 'cr-mgx-o' }, [el('span', { text: 'الضريبة' }), seg([['1', R0 + '٪'], ['0', 'غير خاضع']], l.vat ? '1' : '0', function (v) { l.vat = v === '1'; upd(true); }, !ed),
+el('span', { text: 'للعميل' }), seg([['s', 'سطر مستقل'], ['h', 'مدمج']], hid ? 'h' : 's', function (v) { c.hide = c.hide.filter(function (k) { return k !== l.id; }); if (v === 'h') c.hide.push(l.id); upd(true); }, !ed),
+ed ? el('button', { type: 'button', class: 'cr-x cr-li-d', title: 'حذف البند', 'aria-label': 'حذف البند', 'data-live-ok': '', onclick: function () { c.lines.splice(i, 1); c.hide = c.hide.filter(function (k) { return k !== l.id; }); upd(true); } }, [icon('trash')]) : null])]),
+el('td', {}, [el('label', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: l.amt === '0' ? '' : l.amt, placeholder: '0.00', disabled: !ed, 'aria-label': 'قيمة ' + (l.t || 'البند'), oninput: function (e) { l.amt = e.target.value.replace(/[^\d.]/g, '') || '0'; upd(); } }), el('span', { text: 'ر.س' })])])]);
+}) : [el('tr', {}, [el('td', { colspan: '2', class: 'cr-mgx-0', text: 'لا بنود على هذا الطلب — أضف بندًا من القائمة.' })])]);
+var tbl = el('table', { class: 'cr-mgx' }, [el('thead', {}, [el('tr', {}, [el('th', { text: 'البند' }), el('th', { text: 'القيمة ر.س' })])]),
+el('tbody', { id: 'cr-mg-fx' }, fixRows(x)), el('tbody', {}, feeRows), el('tfoot', { id: 'cr-mg-ft' }, footRows(x))]);
+var add = ed && c.lines.length < 12 ? el('div', { class: 'cr-addrow' }, [(function () {
+var b = btn('إضافة بند', { ic: 'plus', on: async function () {
+await loadCharges();
+var have = c.lines.map(function (l) { return l.id; }), names = c.lines.map(function (l) { return String(l.t || '').trim(); }), crqNames = (x.ready || []).map(function (f) { return f.name; });
+var row = function (f) { return [f.name, [CH_T[f.calc] + (f.calc === 'manual' ? '' : ' ' + (f.calc === 'pct' ? Number(f.value) + '٪' : money(f.value) + ' ر.س')), f.taxable ? 'خاضع للضريبة' : 'غير خاضع'].join(' · '), have.indexOf(f.k) >= 0 || names.indexOf(String(f.name || '').trim()) >= 0, f]; };
+var gen = (ST.charges || []).filter(function (f) { return crqNames.indexOf(f.name) < 0; });
+picker(b, { title: 'إضافة بند', ph: 'ابحث باسم البند…', groups: [['بنود طلبات العقود', (x.ready || []).map(row)], ['البنود الجاهزة — الرسوم والضرائب والعمولات', gen.map(row)]],
+free: 'بند جديد لهذا الطلب فقط', freePh: 'مسمّى البند', freeLine: true, freeOk: 'إضافة البند', freeNote: 'يُضاف إلى هذا الطلب وحده، ثم تحدّد قيمته وضريبته من صفّه في الجدول.',
+pick: function (v) {
+if (v && v.free) { var n = 1; while (c.lines.some(function (l) { return l.id === 'b' + n; })) n++; c.lines.push({ id: 'b' + n, t: v.free.slice(0, 80), amt: '0', vat: true }); }
+else if (v) { var a = v.calc === 'fixed' ? Number(v.value) || 0 : v.calc === 'pct' && r ? Math.round((Number(r.remain) || 0) * Number(v.value)) / 100 : 0; c.lines.push({ id: v.k, t: v.name, amt: a ? String(a) : '0', vat: v.taxable !== false }); }
+else return;
+upd(true); var ins = R.querySelectorAll('.cr-mgx tr.is-fee'), last = ins[ins.length - 1]; if (last) { var i2 = last.querySelector('input.cr-num'); if (i2) i2.focus(); } } });
+} }); return b; })(), el('small', { class: 'cr-hint', text: 'البنود الجاهزة نفسها في طلبات الأهلية — تُدار من «الإعدادات ← الرسوم والضرائب والعمولات».' })]) : null;
 var cnt = pl.count != null && pl.count !== '' ? String(pl.count) : String((r && r.plan && r.plan.count) || P.months || 12);
 var st = pl.start || (r && r.plan && r.plan.start) || '';
-var planCard = el('section', { class: 'cr-card' }, [el('h2', { text: 'خطة الدفع' }),
-P.months || P.team ? el('p', { class: 'cr-hint', text: 'مقترح العميل: ' + (P.team ? 'يحددها الفريق' : mW(P.months)) + ' — القرار لك.' }) : null,
+var planCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'خطة الدفع' }), P.months || P.team ? el('small', { class: 'cr-hint', text: 'مقترح العميل: ' + (P.team ? 'يحددها الفريق' : mW(P.months)) }) : null]),
 el('div', { class: 'cr-mg-pl' }, [
 el('label', { class: 'cr-fld' }, [el('span', { text: 'عدد الدفعات' }), el('input', { type: 'number', min: '1', max: '120', value: cnt, disabled: !ed, oninput: function (e) { pl.count = e.target.value.replace(/\D/g, ''); if (pl.mode === 'manual') pl.amounts = {}; upd(); } })]),
 el('label', { class: 'cr-fld' }, [el('span', { text: 'تاريخ أول دفعة' }), el('input', { type: 'date', value: st ? String(st).slice(0, 10) : '', disabled: !ed, onchange: function (e) { pl.start = e.target.value; upd(); } })]),
 el('div', { class: 'cr-fld' }, [el('span', { text: 'التوزيع' }), seg([['equal', 'بالتساوي'], ['manual', 'يدويًا']], pl.mode || 'equal', function (v) { pl.mode = v; if (v === 'manual' && r) { pl.amounts = {}; (r.rows || []).forEach(function (z) { pl.amounts[z.k] = String(z.amt); }); } upd(true); }, !ed)])]),
 el('div', { id: 'cr-mg-plan', class: 'cr-tw' }, [planTbl(x)])]);
-var main = el('div', { class: 'cr-main' }, [el('section', { class: 'cr-card' }, [el('h2', { text: 'رسوم التوحيد' }), lines, add, el('p', { class: 'cr-hint', text: 'المتبقي على العقود والمنتج الإضافي من تبويب «الطلب»، وضريبة المنتج تُحسب تلقائيًا.' })]), planCard]);
+var main = el('div', { class: 'cr-main' }, [el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'مكوّنات قيمة العقد الموحّد' })]), el('div', { class: 'cr-tw' }, [tbl]), add]), planCard]);
 return [el('div', { class: 'cr-split' }, [main, el('aside', { class: 'cr-side', id: 'cr-sum' }, [el('div', { class: 'cr-sidein' }, [summary(x)])])]),
-note('info', 'تغطية الضمانات في تبويب «الضمانات»، وطلب أي مستند أو ضمان من العميل في «المراسلات والمرفقات».', [el('div', {}, [btn('فتح «الضمانات»', { cls: 'is-sm', ic: 'sign', on: function () { ST.tab = 'guar'; keep(); draw(); toTop(); } })])])];
+note('info', 'تغطية الضمانات في تبويب «الضمانات»، وطلب أي مستند أو ضمان من العميل في «المراسلات والمرفقات».', [el('div', {}, [btn('فتح «الضمانات»', { cls: 'is-sm', ic: 'sign', on: function () { goTab('guar'); } })])])];
 }
 function summary(x) {
 var r = rs(x);
 if (!r) return el('section', { class: 'cr-card is-sum' }, [el('div', { class: 'cr-sum-h' }, [el('h2', { text: 'الملخص المالي' })]), note('warn', errT(x))]);
 var li = function (t, v, cls) { return el('li', { class: cls || '' }, [el('span', {}, [el('span', { class: 'cr-sum-t', text: t })]), ltr(money(v))]); };
 var pr = r.product || {}, pl = r.plan || {};
+var fees = (r.lines || []).reduce(function (a, l) { return a + (Number(l.amt) || 0); }, 0) + (Number(r.vat) || 0);
 return el('section', { class: 'cr-card is-sum' }, [
 el('div', { class: 'cr-sum-h' }, [el('h2', { text: 'الملخص المالي' }), el('span', { class: 'cr-sum-n', text: cnW((r.contracts || []).length) })]),
 el('div', { class: 'cr-grand' }, [el('span', {}, [el('small', { text: 'قيمة العقد الموحّد' }), el('em', { text: pW(pl.count) + ' × ' + money(pl.per) })]), el('b', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })])]),
-el('div', { class: 'cr-sum-b is-it' }, [el('h3', { text: 'مكوّنات القيمة' }), el('ul', { class: 'cr-sum' }, [].concat(
-(r.contracts || []).map(function (k) { return li('المتبقي على ' + k.no, k.remain, 'is-it'); }),
-pr.on ? [li('قيمة المنتج' + (pr.type ? ' — ' + pr.type : ''), pr.value, 'is-it'), li('ضريبة المنتج ' + r.vat_rate + '٪', pr.vat, 'is-tax')] : [],
-(r.lines || []).filter(function (l) { return Number(l.amt) > 0; }).map(function (l) { return li(l.t, l.amt, 'is-it'); }),
-Number(r.vat) > 0 ? [li('ضريبة الرسوم', r.vat, 'is-tax')] : []))]),
-el('div', { class: 'cr-sum-b is-im' }, [el('h3', { text: 'قبل وبعد' }), el('div', { class: 'cr-cmp' }, [el('div', {}, [el('small', { text: 'المتبقي على العقود' }), ltr(money(r.remain))]), el('i', {}, [icon('back')]), el('div', { class: 'is-after' }, [el('small', { text: 'العقد الموحّد' }), ltr(money(r.total))])]),
-el('p', { class: 'cr-sum-m' }, [icon('cal'), 'أول دفعة ' + day(pl.start) + ' · آخر دفعة ' + day(pl.last)])])]);
+el('ul', { class: 'cr-sum' }, [li('المتبقي على العقود', r.remain, 'is-it'), pr.on ? li('المنتج وضريبته', pr.total, 'is-it') : null, li('البنود' + (Number(r.vat) > 0 ? ' وضريبتها' : ''), fees, 'is-it')]),
+pr.on ? el('p', { class: 'cr-sum-m' }, [icon('box'), (pr.type || 'منتج إضافي') + ' · ' + (pr.recv_t || 'لم تُحدَّد وسيلة الاستلام')]) : null,
+el('p', { class: 'cr-sum-m' }, [icon('cal'), 'أول دفعة ' + day(pl.start) + ' · آخر دفعة ' + day(pl.last)])]);
 }
 function repaint(x) {
 if (ST.tab !== 'calc') return;
 var w = R.querySelector('#cr-mg-plan'); if (w && !w.contains(document.activeElement)) { w.innerHTML = ''; w.appendChild(planTbl(x)); }
+[['#cr-mg-fx', fixRows], ['#cr-mg-ft', footRows]].forEach(function (q) { var b = R.querySelector(q[0]); if (b) { b.innerHTML = ''; q[1](x).forEach(function (tr) { b.appendChild(tr); }); } });
 }
 
-/* ── التنفيذ في «السجل»: العقد الموحّد والعقود المغلقة، وتسليم المنتج الإضافي ── */
+/* ── التنفيذ في «السجل»: العقد الموحّد والعقود المغلقة، وتسليم المنتج ووسيلة استلامه ── */
 function execCard(x) {
 var e = x.executed_ref || {}, pr = e.product && typeof e.product === 'object' ? e.product : null;
 var L = [['نُفّذ', at(x.executed_at)], ['العقد الموحّد', ltr(e.new_contract_no || '—')], ['العقود المغلقة بالتوحيد', (e.closed || []).join(' · ') || '—'], ['قيمة العقد الموحّد', ltr(money(e.total))], ['الدفعات المسدَّدة بالتوحيد', String(e.changed || 0)]];
-if (pr) L.push(['المنتج الإضافي', el('span', { class: 'cr-mg-dl' }, [el('span', {}, [ltr(money(pr.value)), ' ر.س' + (pr.type ? ' · ' + pr.type : '')]),
-pr.delivered ? el('b', { class: 'cr-py-s is-ok', text: 'سُلّم · ' + at(pr.delivered_at) }) : deliverBtn(x)])]);
+if (pr) {
+L.push(['المنتج', el('span', { class: 'cr-mg-dl' }, [el('span', {}, [(pr.type ? pr.type + ' · ' : ''), ltr(money(pr.value)), ' ر.س']), pr.delivered ? el('b', { class: 'cr-py-s is-ok', text: 'سُلّم · ' + at(pr.delivered_at) }) : deliverBtn(x)])]);
+if (pr.recv_t) L.push(['وسيلة الاستلام', pr.recv_t + (pr.rd ? ' — ' + pr.rd : '')]);
+}
 return kvs(L);
 }
 function deliverBtn(x) {
@@ -1436,12 +1533,12 @@ var armed = ST.mgDel === x.id;
 return btn(armed ? 'تأكيد تسليم المنتج' : 'تسجيل تسليم المنتج', { cls: 'is-sm' + (armed ? ' is-pri' : ''), ic: 'check', disabled: ST.busy, on: async function () {
 if (!armed) { ST.mgDel = x.id; draw(); return; }
 ST.busy = true; draw();
-try { await api('POST', '/admin/api/crq/' + x.id + '/product-done', {}); ST.mgDel = null; ST.busy = false; toast(true, 'سُجّل تسليم المنتج الإضافي للعميل.'); await reload(); }
+try { await api('POST', '/admin/api/crq/' + x.id + '/product-done', {}); ST.mgDel = null; ST.busy = false; toast(true, 'سُجّل تسليم المنتج للعميل.'); await reload(); }
 catch (er) { ST.busy = false; draw(); toast(false, er.message); }
 } });
 }
 
-/* ── إنشاء طلب من الفريق: العميل ← العقود ← المنتج والاقتراح — بالمحتوى نفسه في حساب العميل ── */
+/* ── إنشاء طلب من الفريق: العميل ← العقود ← المنتج والاقتراح — المنتج من القائمة نفسها، وتفاصيله ووسيلة استلامه في «طلب المنتج» ── */
 function createPanel() {
 var C = ST.create, cl = C.clients || [], cur = cl.filter(function (c) { return c.id === C.uid; })[0];
 C.sel = C.sel || []; C.miss = C.miss || [];
@@ -1470,13 +1567,19 @@ el('span', { class: 'cr-py-d' }, [el('b', {}, [ltr(o.no)]), el('small', { text: 
 el('span', { class: 'cr-py-a' }, [ltr(money(remOf(o))), el('small', { text: ' ر.س' })]), o.busy ? el('span', { class: 'cr-py-s is-warn', text: 'في طلب قائم ' + o.busy }) : null]); }))], selO.length > 0));
 }
 if (selO.length) {
+if (C.prod === 'yes' && !PRD.rows) loadProds();
 var chips = function (L, curV, set) { return el('div', { class: 'cr-seg2' }, L.map(function (o) { return el('button', { type: 'button', class: curV === o[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { set(o[0]); C.miss = []; draw(); } }, [o[1]]); })); };
-parts.push(sec(3, 'المنتج الإضافي واقتراح العميل', [el('div', { class: 'cr-mg-pf' }, [
+var rows = PRD.rows || [], secs = []; rows.forEach(function (z) { if (secs.indexOf(z.section) < 0) secs.push(z.section); });
+var psel = C.prod === 'yes' ? el('select', { class: 'cr-sel', 'aria-label': 'المنتج', onchange: function (e) { var z = rows.filter(function (q) { return q.key === e.target.value; })[0]; C.pk = e.target.value; C.pz = z || null; if (z && !(Number(C.pv) > 0) && Number(z.price) > 0) C.pv = String(z.price); draw(); } },
+[el('option', { value: '', selected: !C.pk, text: PRD.rows ? 'اختر المنتج…' : 'جارٍ تحميل المنتجات…' })].concat(secs.map(function (s) { return el('optgroup', { label: s }, rows.filter(function (z) { return z.section === s; }).map(function (z) { return el('option', { value: z.key, selected: C.pk === z.key, text: z.name + (Number(z.price) > 0 ? ' — ' + money(z.price) + ' ر.س' : '') }); })); }), [el('option', { value: '__other', selected: C.pk === '__other', text: 'أخرى — يكتب الفريق اسم المنتج' })])) : null;
+parts.push(sec(3, 'المنتج واقتراح العميل', [el('div', { class: 'cr-mg-pf' }, [
 el('div', { class: 'cr-fld' + (C.miss.indexOf('prod') >= 0 ? ' is-miss' : '') }, [el('span', { text: 'منتج إضافي' }), chips([['no', 'توحيد فقط'], ['yes', 'مع منتج إضافي']], C.prod, function (v) { C.prod = v; })]),
+C.prod === 'yes' ? el('label', { class: 'cr-fld' + (C.miss.indexOf('pk') >= 0 ? ' is-miss' : '') }, [el('span', { text: 'المنتج' }), psel]) : null,
+C.prod === 'yes' && C.pk === '__other' ? el('label', { class: 'cr-fld' }, [el('span', { text: 'اسم المنتج' }), el('input', { type: 'text', maxlength: '80', value: C.pt || '', oninput: function (e) { C.pt = e.target.value; } })]) : null,
 C.prod === 'yes' ? el('label', { class: 'cr-fld' + (C.miss.indexOf('pv') >= 0 ? ' is-miss' : '') }, [el('span', { text: 'قيمة المنتج (قبل الضريبة)' }), el('span', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: C.pv || '', oninput: function (e) { C.pv = e.target.value.replace(/[^\d.]/g, ''); } }), el('span', { text: 'ر.س' })])]) : null,
-C.prod === 'yes' ? el('label', { class: 'cr-fld' }, [el('span', { text: 'نوع المنتج' }), el('input', { type: 'text', maxlength: '80', value: C.pt || '', placeholder: 'اختياري', oninput: function (e) { C.pt = e.target.value; } })]) : null,
 el('div', { class: 'cr-fld' + (C.miss.indexOf('months') >= 0 ? ' is-miss' : '') }, [el('span', { text: 'مدة خطة الدفع المقترحة' }), chips([['6', '6 أشهر'], ['12', '12 شهرًا'], ['18', '18 شهرًا'], ['24', '24 شهرًا'], ['team', 'يحددها الفريق']], C.months, function (v) { C.months = v; })]),
-el('label', { class: 'cr-fld is-wide' }, [el('span', { text: 'ملاحظة' }), el('textarea', { rows: '2', maxlength: '300', oninput: function (e) { C.note = e.target.value; } }, [C.note || ''])])])], false));
+el('label', { class: 'cr-fld is-wide' }, [el('span', { text: 'ملاحظة' }), el('textarea', { rows: '2', maxlength: '300', oninput: function (e) { C.note = e.target.value; } }, [C.note || ''])])]),
+C.prod === 'yes' ? el('p', { class: 'cr-hint', text: 'تفاصيل المنتج ووسيلة الاستلام تُحدَّد بعد الإنشاء في تبويب «طلب المنتج».' }) : null], false));
 }
 var tot = selO.reduce(function (a, o) { return a + remOf(o); }, 0);
 return el('section', { class: 'cr-card cr-nw' }, [
@@ -1485,10 +1588,11 @@ el('button', { type: 'button', class: 'cr-pop-x', 'aria-label': 'إغلاق', 'd
 stp].concat(parts, [C.err ? note('bad', C.err) : null,
 el('div', { class: 'cr-nw-f' }, [selO.length ? el('span', { class: 'cr-nw-sum' }, [el('small', { text: cnW(selO.length) + ' · المتبقي' }), el('b', {}, [ltr(money(tot)), ' ر.س'])]) : el('small', { class: 'cr-hint', text: step === 1 ? 'ابدأ باختيار العميل.' : 'اختر عقدين أو أكثر، أو عقدًا مع منتج إضافي.' }),
 el('div', { class: 'cr-acts' }, [btn('إلغاء', { on: function () { ST.create = null; draw(); } }), btn(ST.busy ? 'جارٍ الإنشاء…' : 'إنشاء الطلب', { ic: 'check', cls: 'is-pri', disabled: !selO.length || ST.busy, on: async function () {
-var m = []; if (!C.prod) m.push('prod'); if (C.prod === 'yes' && !(Number(C.pv) > 0)) m.push('pv'); if (C.prod !== 'yes' && selO.length < 2) m.push('sel'); if (!C.months) m.push('months');
+var m = []; if (!C.prod) m.push('prod'); if (C.prod === 'yes' && !C.pk) m.push('pk'); if (C.prod === 'yes' && !(Number(C.pv) > 0)) m.push('pv'); if (C.prod !== 'yes' && selO.length < 2) m.push('sel'); if (!C.months) m.push('months');
 if (m.length) { C.miss = m; C.err = m.indexOf('sel') >= 0 ? 'اختر عقدين أو أكثر، أو عقدًا واحدًا مع منتج إضافي.' : ''; draw(); return; }
 ST.busy = true; draw();
-try { var j = await api('POST', '/admin/api/crq', { kind: 'merge', user_id: C.uid, contract_nos: C.sel, note: C.note || '', prop: { months: C.months === 'team' ? null : C.months, team: C.months === 'team', product: C.prod === 'yes' ? { on: true, value: C.pv, type: C.pt || '' } : null } });
+var z = C.pz, pd = C.prod === 'yes' ? { on: true, value: C.pv, type: C.pk === '__other' ? (C.pt || '') : (z ? z.name : ''), sec: z ? z.section : '', pk: C.pk } : null;
+try { var j = await api('POST', '/admin/api/crq', { kind: 'merge', user_id: C.uid, contract_nos: C.sel, note: C.note || '', prop: { months: C.months === 'team' ? null : C.months, team: C.months === 'team', product: pd } });
 ST.create = null; ST.busy = false; await loadList(); open(j.id); toast(true, 'أُنشئ الطلب ' + (j.no || '') + ' وأُضيف إلى القائمة.'); }
 catch (e) { ST.busy = false; C.err = e.message; draw(); }
 } })])])]));
@@ -1503,7 +1607,8 @@ try { var v = clone(T); delete v._org; await api('POST', '/admin/api/crq-tpl', {
 catch (e) { ST.busy = false; ST.mgTpl = false; draw(); toast(false, e.message); }
 } });
 }
-return { tabReq: tabReq, tabCalc: tabCalc, summary: summary, repaint: repaint, execCard: execCard, createPanel: createPanel, tplBtn: tplBtn };
+function tab(x, k) { return k === 'req' ? tabReq(x) : k === 'mgc' ? tabCts(x) : k === 'prod' ? tabProd(x) : tabCalc(x); }
+return { TABS: TABS, TABK: TABK, tab: tab, state: tabState, tabReq: tabReq, tabCalc: tabCalc, summary: summary, repaint: repaint, execCard: execCard, createPanel: createPanel, tplBtn: tplBtn };
 })();
 
 /* ═════════ الرسم ═════════ */

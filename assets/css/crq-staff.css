@@ -1057,3 +1057,51 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .crq .cr-mg-t td .cr-money{max-width:160px;margin-inline-start:auto}
 .crq .cr-mg-dl{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
 @media (max-width:640px){.crq .cr-mg-bar{font-size:12.5px}.crq .cr-mg-t{font-size:12.5px}.crq .cr-mg-t th,.crq .cr-mg-t td{padding:7px 8px}}
+
+/* v949: طلب التوحيد بأقسام منفصلة — بطاقات الملخص · طلب المنتج ووسيلة الاستلام · جدول الحسبة بالمجموعات */
+.crq .cr-mgs-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 14px;margin-bottom:12px}
+.crq .cr-mgs-h h2{margin:0}.crq .cr-mgs-h .cr-hint{margin:0}
+.crq .cr-mgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.crq .cr-mgs-t{position:relative;display:grid;gap:4px;align-content:start;text-align:right;padding:14px 16px;border:1px solid #e2e8f2;border-radius:14px;background:#fff;font:inherit;color:#14213d;min-width:0}
+.crq .cr-mgs-t small{font-size:12.5px;font-weight:700;color:#5a6578}
+.crq .cr-mgs-t b{font-size:16px;font-weight:800;line-height:1.5;overflow-wrap:anywhere}
+.crq .cr-mgs-s{font-size:12.5px;color:#5a6578;line-height:1.6}
+.crq .cr-mgs-t.is-go{cursor:pointer;padding-inline-end:38px;transition:border-color .15s,box-shadow .15s}
+.crq .cr-mgs-t.is-go:hover,.crq .cr-mgs-t.is-go:focus-visible{border-color:#0f8b8d;box-shadow:0 0 0 3px rgba(15,139,141,.12);outline:none}
+.crq .cr-mgs-go{position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);color:#9aa4b5;display:flex}
+.crq .cr-mgs-go .cr-ic{width:16px;height:16px}
+.crq .cr-mgs-nos{display:inline}
+.crq .cr-mgs-n{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:#f3f6fa;font-size:13.5px;line-height:1.7;color:#334155}
+.crq .cr-mgp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin-top:14px}
+.crq .cr-sel{width:100%;box-sizing:border-box;border:1px solid #e2e8f2;border-radius:11px;padding:10px 12px;font:inherit;font-size:14.5px;font-weight:700;background:#fff;color:#14213d}
+.crq .cr-sel:disabled{background:#f6f8fb;color:#5a6578}
+.crq .cr-fld.is-miss .cr-sel,.crq .cr-fld.is-miss .cr-money{outline:2px solid #f1b8b2;outline-offset:1px;border-radius:12px}
+.crq .cr-rcv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.crq .cr-rcv.is-miss{outline:2px solid #f1b8b2;outline-offset:4px;border-radius:14px}
+.crq .cr-rcv-i{position:relative;display:grid;gap:3px;padding:12px 14px;border:1px solid #e2e8f2;border-radius:13px;background:#fff;cursor:pointer;text-align:center}
+.crq .cr-rcv-i input{position:absolute;opacity:0;pointer-events:none}
+.crq .cr-rcv-i b{font-size:14px;font-weight:800;color:#14213d}.crq .cr-rcv-i small{font-size:12px;color:#5a6578;line-height:1.5}
+.crq .cr-rcv-i em{font-style:normal;font-size:11px;font-weight:700;color:#0f8b8d}
+.crq .cr-rcv-i.is-on{border-color:#0f8b8d;background:#eef8f7;box-shadow:inset 0 0 0 1px #0f8b8d}.crq .cr-rcv-i.is-on b{color:#0b6e70}
+.crq .cr-rcv-i:focus-within{box-shadow:0 0 0 3px rgba(15,139,141,.18)}
+.crq .cr-rcv-i.is-ro{cursor:default}
+.crq .cr-rcv-d{margin-top:12px;max-width:520px}
+.crq .cr-mgx{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+.crq .cr-mgx th{background:#0b2552;color:#fff;font-weight:700;padding:10px 14px;text-align:right}
+.crq .cr-mgx th:first-child{border-radius:0 10px 0 0}.crq .cr-mgx th:last-child{border-radius:10px 0 0 0;text-align:left;width:190px}
+.crq .cr-mgx td{padding:10px 14px;border-bottom:1px solid #e9eef5;vertical-align:middle}
+.crq .cr-mgx td:last-child{text-align:left}
+.crq .cr-mgx tr.is-grp td{background:#f3f6fa;font-size:12.5px;font-weight:800;color:#0b2552;padding:8px 14px}
+.crq .cr-mgx-go{margin-inline-start:8px;border:0;background:none;padding:0;font:inherit;font-size:12px;font-weight:700;color:#0f8b8d;cursor:pointer}
+.crq .cr-mgx-go:hover{text-decoration:underline}
+.crq .cr-mgx tr.is-tax td{color:#5a6578;font-size:13px}
+.crq .cr-mgx tfoot tr.is-tot td{background:#eef3fa;font-weight:800;font-size:15px;border-bottom:0}
+.crq .cr-mgx-0{color:#5a6578;font-size:13px;text-align:right!important}.crq .cr-mgx-0.is-bad{color:#b42318;font-weight:700}
+.crq .cr-mgx tr.is-fee .cr-li-in{width:100%;box-sizing:border-box;border:1px solid #e2e8f2;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;font-weight:700;color:#14213d;background:#fff}
+.crq .cr-mgx tr.is-fee.is-hid .cr-li-in{color:#5a6578;background:#f6f8fb}
+.crq .cr-mgx-o{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:12px;color:#5a6578}
+.crq .cr-mgx-o .cr-seg2 button{padding:4px 10px;font-size:12px}
+.crq .cr-mgx-o .cr-li-d{margin-inline-start:auto}
+.crq .cr-mgx td .cr-money{max-width:170px;margin-inline-start:auto}
+.crq .cr-sum-m .cr-ic{flex:none}
+@media (max-width:760px){.crq .cr-mgp{grid-template-columns:1fr}.crq .cr-mgx th:last-child{width:130px}.crq .cr-mgx td,.crq .cr-mgx th{padding:8px 10px}.crq .cr-mgx td .cr-money{max-width:130px}}

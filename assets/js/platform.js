@@ -1254,13 +1254,14 @@ function profSeed() {
   F.docs = { salary: { date: iso(addDays(today0(), -(FRESH + 4))), file: { name: 'تعريف-بالراتب.pdf', size: 184320 } }, stmt3: { from: iso(addDays(addMonths(today0(), -3), -2)), to: iso(addDays(today0(), -2)), file: { name: 'كشف-حساب-3-أشهر.pdf', size: 421888 } } };
 }
 /* طريقة الاستلام — في استمارة التحقق وفي عرض السعر */
-const RECV = [['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم']]; /* v680 */
+const RECV = [['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم'], ['digital', 'تسليم إلكتروني (للمنتجات الرقمية)']]; /* v949: + تسليم إلكتروني */ /* v680 */
 const RECV_IC = { ship: 'rship', pickup: 'rpick', proxy: 'rproxy' };
 const recvName = (m) => (RECV.filter(function (x) { return x[0] === m; })[0] || ['', '—'])[1];
 function recvDetail(r) {
   if (!r || !r.m) return '';
   if (r.m === 'ship') return [r.region, r.city, r.addr ? 'العنوان الوطني ' + r.addr : ''].filter(Boolean).join(' · ');
   if (r.m === 'proxy') return [r.name ? 'الوكيل: ' + r.name : '', r.phone || ''].filter(Boolean).join(' · ') + ' — بوكالة سارية تتضمن الاستلام';
+  if (r.m === 'digital') return 'تسليم إلكتروني — يُرسَل إلى جوالك أو بريدك المسجّل بعد توقيع العقد';
   return 'مقر منصة تيرا — يُحدَّد موعد الاستلام برسالة بعد توقيع العقد';
 }
 /* الشروحات: تُحذف ملاحظات الشرح، وتبقى ملاحظات الحالة والتنبيه */
@@ -20625,7 +20626,7 @@ const EGJ = {};
 const EGJ_ST = { result: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
 const EGJ_KEY = { elig_ok: 'نتيجة الأهلية (مؤهَّل)', elig_less: 'نتيجة الأهلية (مؤهَّل بمبلغ أقل)', elig_no: 'نتيجة الأهلية (غير مؤهَّل)', elig_quote: 'صدر عرض السعر', elig_purchase: 'فاتورة المنتج', elig_accepted: 'تأكيد الموافقة', elig_declined: 'تأكيد الاعتذار', contract_new: 'صدر عقدك', elig_new: 'استلام الطلب', elig_fix: 'الإعادة للاستكمال', elig_back: 'إعادة الإرسال' };
 const EGJ_PUR = { elig: 'نتيجة الأهلية', quote: 'عرض السعر', purchase: 'فاتورة المنتج', contract: 'العقد' };
-const EGJ_RECV = [['__client', 'كما اختار العميل (بلا ترشيح)'], /* v681 */ ['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم']];
+const EGJ_RECV = [['__client', 'كما اختار العميل (بلا ترشيح)'], /* v681 */ ['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم'], ['digital', 'تسليم إلكتروني (للمنتجات الرقمية)']]; /* v949: + تسليم إلكتروني */
 function egjDt(v) { if (!v) return ''; try { return new Date(v).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (err) { return String(v).slice(0, 16); } }
 function egjUa(ua) {
   const u = String(ua || ''); if (!u) return '';

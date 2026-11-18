@@ -649,9 +649,11 @@ var MG_STEPS = ['اختيار العقود', 'مراجعة فريق تيرا', '
 var MG_MONTHS = [['6', '6 أشهر'], ['12', '12 شهرًا'], ['18', '18 شهرًا'], ['24', '24 شهرًا'], ['team', 'يحددها الفريق']];
 function mgCnt(n) { n = Number(n) || 0; return n === 1 ? 'عقد واحد' : n === 2 ? 'عقدان' : n <= 10 ? n + ' عقود' : n + ' عقدًا'; }
 function mgPay(n) { n = Number(n) || 0; return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتان' : n <= 10 ? n + ' دفعات' : n + ' دفعة'; }
+var MG_RECV = [['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم'], ['digital', 'تسليم إلكتروني (للمنتجات الرقمية)']];
+var MG_RD = { proxy: 'اسم الوكيل وجواله', ship: 'عنوان الشحن (إن كان غير عنوانك المسجّل)', digital: 'الجوال أو البريد للتسليم (إن كان غير المسجّل)' };
 function mergePage(o) {
 o = o || {};
-var S = { opts: null, mine: null, today: '', note0: '', err: '', sel: [], prod: '', pv: '', pt: '', months: '', note: '', ack: false, miss: [], busy: false, done: null, chat: null, confirm: null };
+var S = { opts: null, mine: null, today: '', note0: '', err: '', sel: [], prod: '', pv: '', pt: '', pk: '', pz: null, det: '', recv: '', rd: '', prods: null, months: '', note: '', ack: false, miss: [], busy: false, done: null, chat: null, confirm: null };
 var root = el('div', { class: 'cc cc-mg', dir: 'rtl' });
 async function api(method, path, body) {
 var t = await o.token();
@@ -661,6 +663,7 @@ if (!r.ok || !j || j.ok === false) throw new Error((j && j.message) || 'تعذّ
 return j;
 }
 async function load() {
+if (!S.prods) api('GET', '/api/account/crq/products').then(function (j) { S.prods = j.rows || []; paint(); }).catch(function () { S.prods = []; paint(); }); /* v949: قائمة المنتجات */
 try { var a = await Promise.all([api('GET', '/api/account/crq/options'), api('GET', '/api/account/crq')]); S.opts = a[0].contracts || []; S.today = a[0].today || ''; S.note0 = a[0].mg_note || ''; S.mine = (a[1].rows || []).filter(function (r) { return r.kind === 'merge'; }); S.err = ''; }
 catch (e) { S.err = e.message; S.opts = S.opts || []; S.mine = S.mine || []; }
 S.sel = S.sel.filter(function (n) { return S.opts.some(function (c) { return c.no === n && !c.busy; }); });
@@ -691,8 +694,15 @@ out.push(el('div', { class: 'cc-mg-line' }, [el('span', {}, ['المتبقي ع�
 }
 var prod = [el('h4', { text: 'هل ترغب بشراء منتج آخر مع التوحيد؟' }), el('p', { class: 'cc-muted', text: 'يُضاف المنتج إلى العقد الموحّد بخطة دفع واحدة.' }), chips([['no', 'لا، توحيد فقط'], ['yes', 'نعم، مع منتج']], S.prod, function (v) { S.prod = v; }, 'prod')];
 if (S.prod === 'yes') {
-prod.push(el('div', { class: 'cc-field' + miss('pv') }, [el('label', { text: 'قيمة المنتج (ريال، قبل الضريبة)' }), el('input', { type: 'text', inputmode: 'decimal', value: S.pv || '', placeholder: 'مثال: 1500', maxlength: '9', oninput: function (e) { S.pv = e.target.value.replace(/[^\d.]/g, ''); e.target.value = S.pv; } })]));
-prod.push(el('div', { class: 'cc-field' }, [el('label', { text: 'نوع المنتج (اختياري)' }), el('input', { type: 'text', value: S.pt || '', maxlength: '80', placeholder: 'مثال: جوال، بطاقات شحن…', oninput: function (e) { S.pt = e.target.value; } })]));
+/* v949: المنتج من القائمة (البطاقات · الأجهزة · أخرى) · القيمة · التفاصيل · وسيلة الاستلام */
+var PR = S.prods || [], secs = []; PR.forEach(function (z) { if (secs.indexOf(z.section) < 0) secs.push(z.section); });
+prod.push(el('div', { class: 'cc-field' + miss('pk') }, [el('label', { text: 'المنتج' }), el('select', { class: 'cc-sel', onchange: function (e) { var z = PR.filter(function (q) { return q.key === e.target.value; })[0]; S.pk = e.target.value; S.pz = z || null; if (z && !(Number(S.pv) > 0) && Number(z.price) > 0) S.pv = String(z.price); S.miss = []; paint(); } },
+[el('option', { value: '', selected: !S.pk, text: S.prods ? 'اختر المنتج…' : 'جارٍ تحميل المنتجات…' })].concat(secs.map(function (g) { return el('optgroup', { label: g }, PR.filter(function (z) { return z.section === g; }).map(function (z) { return el('option', { value: z.key, selected: S.pk === z.key, text: z.name }); })); }), [el('option', { value: '__other', selected: S.pk === '__other', text: 'منتج آخر' })]))]));
+if (S.pk === '__other') prod.push(el('div', { class: 'cc-field' + miss('pt') }, [el('label', { text: 'اسم المنتج' }), el('input', { type: 'text', value: S.pt || '', maxlength: '80', placeholder: 'اكتب اسم المنتج', oninput: function (e) { S.pt = e.target.value; } })]));
+prod.push(el('div', { class: 'cc-field' + miss('pv') }, [el('label', { text: 'قيمة المنتج (ريال، قبل الضريبة)' }), el('input', { type: 'text', inputmode: 'decimal', value: S.pv || '', placeholder: 'مثال: 400', maxlength: '9', oninput: function (e) { S.pv = e.target.value.replace(/[^\d.]/g, ''); e.target.value = S.pv; } })]));
+prod.push(el('div', { class: 'cc-field' }, [el('label', { text: 'تفاصيل المنتج (اختياري)' }), el('input', { type: 'text', value: S.det || '', maxlength: '300', placeholder: 'مثال: 4 بطاقات فئة 100 ريال، أو اللون والسعة', oninput: function (e) { S.det = e.target.value; } })]));
+prod.push(el('div', { class: 'cc-field' + miss('recv') }, [el('label', { text: 'وسيلة الاستلام' }), chips(MG_RECV, S.recv, function (v) { S.recv = v; }, 'recv')]));
+if (MG_RD[S.recv]) prod.push(el('div', { class: 'cc-field' }, [el('label', { text: MG_RD[S.recv] }), el('input', { type: 'text', value: S.rd || '', maxlength: '200', oninput: function (e) { S.rd = e.target.value; } })]));
 }
 var prop = [el('h4', { text: 'مدة خطة الدفع التي تقترحها' }), el('p', { class: 'cc-muted', text: 'اقتراح يراه الفريق عند دراسة طلبك — القرار النهائي في العرض الذي يصلك للموافقة.' }), chips(MG_MONTHS, S.months, function (v) { S.months = v; }, 'months'),
 el('div', { class: 'cc-field' }, [el('label', { text: 'ملاحظة للفريق (اختياري)' }), el('textarea', { rows: '2', maxlength: '300', placeholder: 'اكتب ما تريد أن يعرفه الفريق…', oninput: function (e) { S.note = e.target.value; } }, [S.note || ''])])];
@@ -711,6 +721,9 @@ var m = [], n = S.sel.length;
 if (!n || (n < 2 && S.prod !== 'yes')) m.push('sel');
 if (!S.prod) m.push('prod');
 if (S.prod === 'yes' && !(Number(S.pv) > 0)) m.push('pv');
+if (S.prod === 'yes' && !S.pk) m.push('pk');
+if (S.prod === 'yes' && S.pk === '__other' && String(S.pt || '').trim().length < 2) m.push('pt');
+if (S.prod === 'yes' && !S.recv) m.push('recv');
 if (!S.months) m.push('months');
 if (n && !S.ack) m.push('ack');
 return m;
@@ -720,8 +733,8 @@ var m = check(); S.miss = m;
 if (m.length) { S.err = m.indexOf('sel') >= 0 ? (S.sel.length === 1 ? 'لتوحيد عقد واحد اختر «نعم، مع منتج»، أو اختر عقدًا آخر.' : 'اختر العقود المراد توحيدها.') : ''; paint(); var f = root.querySelector('.is-miss'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
 S.busy = true; S.err = ''; paint();
 try {
-var j = await api('POST', '/api/account/crq', { kind: 'merge', contract_nos: S.sel.slice(), note: String(S.note || '').trim(), prop: { months: S.months === 'team' ? null : S.months, team: S.months === 'team', product: S.prod === 'yes' ? { on: true, value: S.pv, type: String(S.pt || '').trim() } : null } });
-S.done = j; S.busy = false; S.sel = []; S.prod = ''; S.pv = ''; S.pt = ''; S.months = ''; S.note = ''; S.ack = false; load();
+var j = await api('POST', '/api/account/crq', { kind: 'merge', contract_nos: S.sel.slice(), note: String(S.note || '').trim(), prop: { months: S.months === 'team' ? null : S.months, team: S.months === 'team', product: S.prod === 'yes' ? { on: true, value: S.pv, type: S.pk === '__other' ? String(S.pt || '').trim() : (S.pz ? S.pz.name : ''), sec: S.pz ? S.pz.section : '', pk: S.pk, det: String(S.det || '').trim(), recv: S.recv, rd: String(S.rd || '').trim() } : null } });
+S.done = j; S.busy = false; S.sel = []; S.prod = ''; S.pv = ''; S.pt = ''; S.pk = ''; S.pz = null; S.det = ''; S.recv = ''; S.rd = ''; S.months = ''; S.note = ''; S.ack = false; load();
 } catch (e) { S.busy = false; S.err = e.message; paint(); }
 }
 function mineList() {
@@ -729,7 +742,7 @@ if (!S.mine || !S.mine.length) return null;
 return el('section', { class: 'cc-card' }, [el('h3', { text: 'طلبات التوحيد' }), el('div', { class: 'cc-rows' }, S.mine.map(function (r) {
 var st = STEP_OF[r.state], pr = r.product && r.product.on ? r.product : null;
 return el('div', { class: 'cc-row is-' + (r.tone || 'info') }, [el('div', { class: 'cc-row-h' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: r.no })]), el('span', { class: 'cc-badge is-' + (r.tone || 'info'), text: r.state === 'closed' && r.close_t ? 'مغلق · ' + r.close_t : r.state_t })]),
-el('p', {}, ['العقود ', el('bdi', { dir: 'ltr', text: r.contract_no || '' }), pr ? ' · منتج إضافي بقيمة ' + money(pr.value) + ' ر.س' : '']),
+el('p', {}, ['العقود ', el('bdi', { dir: 'ltr', text: r.contract_no || '' }), pr ? ' · ' + (pr.type || 'منتج إضافي') + ' بقيمة ' + money(pr.value) + ' ر.س' + (pr.recv_t ? ' · ' + pr.recv_t : '') : '']),
 r.total != null ? el('p', { text: 'قيمة العقد الموحّد: ' + money(r.total) + ' ر.س' }) : null,
 r.new_contract ? el('p', {}, ['عقدك الموحّد: ', el('bdi', { dir: 'ltr', text: r.new_contract })]) : null,
 st >= 0 ? stepper(st) : null,
@@ -764,6 +777,7 @@ if (r) root.appendChild(el('div', { class: 'cc-card cc-confirm' }, [el('p', { te
 paint(); load();
 return root;
 }
+
 
 window.CRQC = { page: page, mergePage: mergePage, picker: picker, check: check, payload: payload, propText: propText, lateOf: lateOf, annexes: annexes, msgBox: msgBox, askPanel: askPanel, needCard: needCard, staffReqs: staffReqs, staffAnx: staffAnx, staffUser: staffUser, annexView: annexView, listsEditor: listsEditor, goReq: goReq };
 })();

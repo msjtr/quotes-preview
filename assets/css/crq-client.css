@@ -284,3 +284,7 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .cc .cc-mg-line b{font-size:16px;font-weight:800}
 .cc .cc-mg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
 @media (max-width:760px){.cc .cc-mg-grid{grid-template-columns:1fr;gap:4px}}
+
+/* v949: طلب التوحيد — قائمة المنتجات */
+.cc-mg .cc-sel{width:100%;box-sizing:border-box;border:1px solid #e2e8f2;border-radius:12px;padding:11px 12px;font:inherit;font-size:15px;font-weight:700;background:#fff;color:#14213d}
+.cc-mg .cc-field.is-miss .cc-sel,.cc-mg .cc-field.is-miss input{outline:2px solid #b42318;outline-offset:1px}
