@@ -293,3 +293,31 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .cc-mg .cc-steps{flex-wrap:wrap;overflow:visible}
 .cc-mg .cc-steps li{flex:1 1 auto;white-space:normal}
 @media (max-width:560px){.cc-mg .cc-steps{display:grid;grid-template-columns:1fr 1fr}.cc-mg .cc-steps li:last-child:nth-child(odd){grid-column:1/-1}}
+
+/* ═══ v953: مدة الخطة بالدورية والعدد · طلب الضمان (أوافق / لا أوافق ثم البيانات) ═══ */
+.cx-dur { display: grid; gap: 10px; }
+.cx-dur.is-miss .cx-dur-u { outline: 2px solid #B42318; outline-offset: 3px; border-radius: 12px; }
+.cx-dur-u { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.cx-dur-i { display: grid; gap: 2px; justify-items: center; padding: 10px 4px; border: 1px solid #E4E8F1; border-radius: 12px; background: #fff; color: #0B2552; font: inherit; cursor: pointer; }
+.cx-dur-i b { font-weight: 800; font-size: 13.5px; } .cx-dur-i small { font-size: 11px; color: #5B6478; }
+.cx-dur-i.is-on { background: #0B2552; border-color: #0B2552; color: #fff; } .cx-dur-i.is-on small { color: #F3D580; }
+.cx-dur-r { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.cx-dur-n { display: grid; gap: 4px; font-size: 12.5px; font-weight: 700; color: #5B6478; } .cx-dur-n input { width: 130px; padding: 9px 11px; border: 1px solid #E4E8F1; border-radius: 10px; font: inherit; direction: ltr; text-align: center; }
+.cx-dur-t { display: flex; gap: 6px; align-items: center; font-weight: 700; color: #0B2552; padding-bottom: 9px; }
+@media (max-width: 480px) { .cx-dur-u { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cx-ni.gx { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: start; }
+.cx-ni.gx > :not(.cx-n) { grid-column: 2; }
+.gx-t { display: grid; gap: 3px; } .gx-t small { color: #5B6478; font-size: 11.5px; } .gx-t b { color: #0B2552; font-size: 14.5px; }
+.gx-a { font-weight: 800; color: #0E7C70; font-size: 16px; direction: rtl; }
+.gx-d { margin: 2px 0 0; font-size: 13px; white-space: pre-line; }
+.gx-bs { display: flex; gap: 8px; flex-wrap: wrap; }
+.gx-btn { flex: 1 1 120px; padding: 10px 12px; border-radius: 10px; border: 1px solid #E4E8F1; background: #fff; font: inherit; font-weight: 800; cursor: pointer; color: #0B2552; }
+.gx-btn.is-pri { background: #0E7C70; border-color: #0E7C70; color: #fff; } .gx-btn.is-no { border-color: #B42318; color: #B42318; }
+.gx-btn:disabled { opacity: .6; cursor: default; }
+.gx-h { margin: 6px 0 0; color: #0B2552; font-size: 13.5px; }
+.gx-form { display: grid; gap: 10px; }
+.gx-f { display: grid; gap: 4px; font-size: 12.5px; font-weight: 700; color: #5B6478; }
+.gx-f input, .gx-f select, .gx-ta { width: 100%; padding: 9px 11px; border: 1px solid #E4E8F1; border-radius: 10px; font: inherit; color: #1D2742; background: #fff; }
+.gx-f.is-ack { display: flex; gap: 8px; align-items: flex-start; color: #1D2742; } .gx-f.is-ack input { width: auto; margin-top: 4px; }
+.gx-req { color: #B42318; font-style: normal; }
+.gx-res { padding: 8px 10px; border-radius: 10px; font-weight: 700; font-size: 13px; } .gx-res.is-ok { background: #E3F4F1; color: #0A615A; } .gx-res.is-no { background: #FDECEA; color: #B42318; }

@@ -523,7 +523,7 @@ function needCard(o) {
   }
   function paint() {
     root.innerHTML = '';
-    var A = (M.asks || []), open = A.filter(function (a) { return a.state === 'open'; }), dn = A.filter(function (a) { return a.state === 'done'; });
+    var A = (M.asks || []), open = A.filter(function (a) { return (a.state === 'open' || a.state === 'accepted'); }), dn = A.filter(function (a) { return a.state === 'done'; });
     if (!M.rows) { root.appendChild(el('p', { class: 'cx-hint', text: 'جارٍ التحميل…' })); return; }
     var team = (M.rows || []).filter(function (m) { return m.file && m.who === 'staff'; });
     if (open.length || dn.length) {
@@ -533,6 +533,7 @@ function needCard(o) {
       if (open.length && M.sum && M.sum.due) kids.push(el('small', { class: 'cx-hint', text: 'المهلة حتى ' + stamp(M.sum.due) }));
       kids.push(el('div', { class: 'cx-prog' }, [el('i', { style: 'width:' + Math.round(dn.length / (A.length || 1) * 100) + '%' })]), el('small', { class: 'cx-hint', text: 'أرفقت ' + dn.length + ' من ' + A.length }));
       A.forEach(function (a, i) {
+        if (a.kind === 'guar' && window.CRQG) { kids.push(window.CRQG.item(a, i, { api: api, reload: load, up: up })); return; }
         kids.push(el('div', { class: 'cx-ni is-' + a.state }, [el('span', { class: 'cx-n', text: a.state === 'done' ? '✓' : String(i + 1) }), el('div', {}, [el('b', { text: a.title }), el('small', { text: a.state === 'done' ? ((a.file && a.file.name) || 'مرفق') + ' · أُرسل للفريق' : (a.detail ? a.detail + ' · ' : '') + (TYPE_T[a.types] || '') + ' · حتى ' + a.mb + ' ميجا' })]),
           a.state === 'open' ? el('button', { type: 'button', class: 'cx-up', disabled: !!M.busy, 'data-live-ok': '', onclick: function () { up(a); } }, [icon('up'), M.busy === a.id ? 'جارٍ الرفع…' : 'اختر الملف أو صوّره']) : (a.file_msg ? el('button', { type: 'button', class: 'cx-lnk', 'data-live-ok': '', onclick: function () { view(a.file_msg); } }, ['عرض']) : null)]));
       });
@@ -647,13 +648,27 @@ function listsEditor(o) {
 * الطلب نوعان: توحيد عقدين أو أكثر، أو توحيد مع منتج إضافي (قيمة المنتج يحددها العميل، والفريق يراجع ويصلك العرض برابط واحد). */
 var MG_STEPS = ['اختيار العقود', 'مراجعة فريق تيرا', 'موافقتك على العرض', 'توقيع العقد', 'العقد الموحّد'];
 var MG_MONTHS = [['6', '6 أشهر'], ['12', '12 شهرًا'], ['18', '18 شهرًا'], ['24', '24 شهرًا'], ['team', 'يحددها الفريق']];
+/* v953: مدة خطة الدفع التي يقترحها العميل — الدورية بأيقونة (يومي · أسبوعي · شهري · نصف سنوي) والعدد في المربع، أو «يحددها الفريق» */
+var MG_UNITS = [['day', 'يومي', 'كل يوم'], ['week', 'أسبوعي', 'كل أسبوع'], ['month', 'شهري', 'كل شهر'], ['half', 'نصف سنوي', 'كل 6 أشهر']];
+function durCtl() {
+var team = S.months === 'team', w = el('div', { class: 'cx-dur' + (S.miss && S.miss.indexOf('months') >= 0 ? ' is-miss' : '') });
+var paintD = function () {
+w.innerHTML = ''; team = S.months === 'team';
+w.appendChild(el('div', { class: 'cx-dur-u', role: 'radiogroup', 'aria-label': 'دورية الدفعات' }, MG_UNITS.map(function (u) { var on = !team && (S.unit || 'month') === u[0]; return el('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: 'cx-dur-i' + (on ? ' is-on' : ''), onclick: function () { S.unit = u[0]; if (S.months === 'team') S.months = ''; paintD(); } }, [el('b', { text: u[1] }), el('small', { text: u[2] })]); })));
+var inp = el('input', { type: 'number', min: '1', max: '120', inputmode: 'numeric', value: team ? '' : S.months, placeholder: 'العدد', disabled: team, 'aria-label': 'عدد الدفعات', oninput: function (e) { var v = e.target.value.replace(/\D/g, '').slice(0, 3); S.months = v && Number(v) >= 1 && Number(v) <= 120 ? v : ''; } });
+w.appendChild(el('div', { class: 'cx-dur-r' }, [el('label', { class: 'cx-dur-n' }, [el('span', { text: 'عدد الدفعات' }), inp]),
+el('label', { class: 'cx-dur-t' }, [el('input', { type: 'checkbox', checked: team, onchange: function (e) { S.months = e.target.checked ? 'team' : ''; paintD(); } }), el('span', { text: 'يحددها الفريق' })])]));
+};
+paintD();
+return w;
+}
 function mgCnt(n) { n = Number(n) || 0; return n === 1 ? 'عقد واحد' : n === 2 ? 'عقدان' : n <= 10 ? n + ' عقود' : n + ' عقدًا'; }
 function mgPay(n) { n = Number(n) || 0; return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتان' : n <= 10 ? n + ' دفعات' : n + ' دفعة'; }
 var MG_RECV = [['ship', 'شحن إلى عنواني'], ['pickup', 'استلام من مقر المنصة'], ['proxy', 'استلام بالتوكيل (وكيل)'], ['sellproxy', 'توكيل بالبيع لطرف ثالث نيابة عنكم'], ['digital', 'تسليم إلكتروني (للمنتجات الرقمية)']];
 var MG_RD = { proxy: 'اسم الوكيل وجواله', ship: 'عنوان الشحن (إن كان غير عنوانك المسجّل)', digital: 'الجوال أو البريد للتسليم (إن كان غير المسجّل)' };
 function mergePage(o) {
 o = o || {};
-var S = { opts: null, mine: null, today: '', note0: '', err: '', sel: [], prod: '', pv: '', pt: '', pk: '', pz: null, det: '', recv: '', rd: '', prods: null, months: '', note: '', ack: false, miss: [], busy: false, done: null, chat: null, confirm: null };
+var S = { opts: null, mine: null, today: '', note0: '', err: '', sel: [], prod: '', pv: '', pt: '', pk: '', pz: null, det: '', recv: '', rd: '', prods: null, months: '', unit: 'month', note: '', ack: false, miss: [], busy: false, done: null, chat: null, confirm: null };
 var root = el('div', { class: 'cc cc-mg', dir: 'rtl' });
 async function api(method, path, body) {
 var t = await o.token();
@@ -704,7 +719,7 @@ prod.push(el('div', { class: 'cc-field' }, [el('label', { text: 'تفاصيل ا
 prod.push(el('div', { class: 'cc-field' + miss('recv') }, [el('label', { text: 'وسيلة الاستلام' }), chips(MG_RECV, S.recv, function (v) { S.recv = v; }, 'recv')]));
 if (MG_RD[S.recv]) prod.push(el('div', { class: 'cc-field' }, [el('label', { text: MG_RD[S.recv] }), el('input', { type: 'text', value: S.rd || '', maxlength: '200', oninput: function (e) { S.rd = e.target.value; } })]));
 }
-var prop = [el('h4', { text: 'مدة خطة الدفع التي تقترحها' }), el('p', { class: 'cc-muted', text: 'اقتراح يراه الفريق عند دراسة طلبك — القرار النهائي في العرض الذي يصلك للموافقة.' }), chips(MG_MONTHS, S.months, function (v) { S.months = v; }, 'months'),
+var prop = [el('h4', { text: 'مدة خطة الدفع التي تقترحها' }), el('p', { class: 'cc-muted', text: 'اقتراح يراه الفريق عند دراسة طلبك — القرار النهائي في العرض الذي يصلك للموافقة.' }), durCtl(),
 el('div', { class: 'cc-field' }, [el('label', { text: 'ملاحظة للفريق (اختياري)' }), el('textarea', { rows: '2', maxlength: '300', placeholder: 'اكتب ما تريد أن يعرفه الفريق…', oninput: function (e) { S.note = e.target.value; } }, [S.note || ''])])];
 out.push(el('div', { class: 'cc-mg-grid' }, [el('div', {}, [el('div', { class: 'cc-sh is-b' }, [el('b', { text: '٢. منتج إضافي' })]), el('div', { class: 'cc-prop' }, prod)]),
 el('div', {}, [el('div', { class: 'cc-sh is-b' }, [el('b', { text: '٣. اقتراحك' })]), el('div', { class: 'cc-prop' }, prop)])]));
@@ -733,8 +748,8 @@ var m = check(); S.miss = m;
 if (m.length) { S.err = m.indexOf('sel') >= 0 ? (S.sel.length === 1 ? 'لتوحيد عقد واحد اختر «نعم، مع منتج»، أو اختر عقدًا آخر.' : 'اختر العقود المراد توحيدها.') : ''; paint(); var f = root.querySelector('.is-miss'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
 S.busy = true; S.err = ''; paint();
 try {
-var j = await api('POST', '/api/account/crq', { kind: 'merge', contract_nos: S.sel.slice(), note: String(S.note || '').trim(), prop: { months: S.months === 'team' ? null : S.months, team: S.months === 'team', product: S.prod === 'yes' ? { on: true, value: S.pv, type: S.pk === '__other' ? String(S.pt || '').trim() : (S.pz ? S.pz.name : ''), sec: S.pz ? S.pz.section : '', pk: S.pk, det: String(S.det || '').trim(), recv: S.recv, rd: String(S.rd || '').trim() } : null } });
-S.done = j; S.busy = false; S.sel = []; S.prod = ''; S.pv = ''; S.pt = ''; S.pk = ''; S.pz = null; S.det = ''; S.recv = ''; S.rd = ''; S.months = ''; S.note = ''; S.ack = false; load();
+var j = await api('POST', '/api/account/crq', { kind: 'merge', contract_nos: S.sel.slice(), note: String(S.note || '').trim(), prop: { months: S.months === 'team' ? null : S.months, unit: S.unit || 'month', team: S.months === 'team', product: S.prod === 'yes' ? { on: true, value: S.pv, type: S.pk === '__other' ? String(S.pt || '').trim() : (S.pz ? S.pz.name : ''), sec: S.pz ? S.pz.section : '', pk: S.pk, det: String(S.det || '').trim(), recv: S.recv, rd: String(S.rd || '').trim() } : null } });
+S.done = j; S.busy = false; S.sel = []; S.prod = ''; S.pv = ''; S.pt = ''; S.pk = ''; S.pz = null; S.det = ''; S.recv = ''; S.rd = ''; S.months = ''; S.unit = 'month'; S.note = ''; S.ack = false; load();
 } catch (e) { S.busy = false; S.err = e.message; paint(); }
 }
 function mineList() {
@@ -780,4 +795,132 @@ return root;
 
 
 window.CRQC = { page: page, mergePage: mergePage, picker: picker, check: check, payload: payload, propText: propText, lateOf: lateOf, annexes: annexes, msgBox: msgBox, askPanel: askPanel, needCard: needCard, staffReqs: staffReqs, staffAnx: staffAnx, staffUser: staffUser, annexView: annexView, listsEditor: listsEditor, goReq: goReq };
+})();
+
+/* ═════════ v953 ═════════
+* CRQG: طلب الضمان عند العميل — أوافق / لا أوافق (بسبب)، ثم استمارة البيانات التي حددها الفريق، ثم رفع المستند إن طُلب
+* الردود الجاهزة: قائمة بحث بدل القائمة الأصلية ذات الرموز · معاينة الرسالة «كما تصل للعميل» تحت مربع الكتابة عند الفريق */
+(function () {
+'use strict';
+function el(t, a, k) {
+var e = document.createElement(t); a = a || {};
+Object.keys(a).forEach(function (n) { var v = a[n]; if (v == null || v === false) return; if (n === 'text') e.textContent = v; else if (n === 'class') e.className = v; else if (n === 'value') e.value = v; else if (n === 'checked') e.checked = !!v; else if (n.slice(0, 2) === 'on' && typeof v === 'function') e.addEventListener(n.slice(2), v); else e.setAttribute(n, v === true ? '' : v); });
+(k || []).forEach(function f(c) { if (c == null || c === false) return; if (Array.isArray(c)) return c.forEach(f); e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+return e;
+}
+function money(v) { var n = Number(v) || 0; return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+var PH = { number: 'أرقام فقط', money: '0.00', phone: '05xxxxxxxx', nid: 'رقم الهوية (10 أرقام)', text: '' };
+var IM = { number: 'numeric', money: 'decimal', phone: 'tel', nid: 'numeric' };
+function item(a, i, cx) {
+var F = Array.isArray(a.fields) ? a.fields : [], data = {}, mode = '', box = el('div', { class: 'cx-ni gx is-' + a.state });
+var head = function () { return [el('span', { class: 'cx-n', text: a.state === 'done' ? '✓' : String(i + 1) }), el('div', { class: 'gx-t' }, [el('small', { text: 'المطلوب منك' }), el('b', { text: a.title || a.gtype || 'ضمان' }), Number(a.val) > 0 ? el('span', { class: 'gx-a', text: money(a.val) + ' ريال' }) : null, a.detail ? el('p', { class: 'gx-d', text: a.detail }) : null])]; };
+var err = el('p', { class: 'cx-err', role: 'alert' });
+var call = async function (body) {
+err.textContent = '';
+try {
+var j = await cx.api('POST', '/api/account/crq/ask/' + a.id + '/reply', body);
+if (j && j.ok === false) throw new Error(j.message || 'تعذّر الإرسال — أعد المحاولة.');
+if (j && j.need_file) { a.state = 'accepted'; a.decision = 'accept'; }
+if (cx.reload) cx.reload(); else paint();
+} catch (e) { err.textContent = e.message || 'تعذّر الإرسال — أعد المحاولة.'; Array.prototype.forEach.call(box.querySelectorAll('button'), function (b) { b.disabled = false; }); }
+};
+function form() {
+var rows = F.filter(function (z) { return z.type !== 'file'; }).map(function (z) {
+var lab = el('span', {}, [z.t, z.req !== false ? el('i', { class: 'gx-req', text: ' *' }) : null]);
+if (z.type === 'ack') return el('label', { class: 'gx-f is-ack' }, [el('input', { type: 'checkbox', onchange: function (e) { data[z.k] = e.target.checked ? 'true' : ''; } }), lab]);
+if (z.type === 'select') return el('label', { class: 'gx-f' }, [lab, el('select', { onchange: function (e) { data[z.k] = e.target.value; } }, [el('option', { value: '', text: 'اختر' })].concat((z.opts || []).map(function (o) { return el('option', { value: o, text: o }); })))]);
+return el('label', { class: 'gx-f' }, [lab, el('input', { type: z.type === 'date' ? 'date' : 'text', inputmode: IM[z.type] || null, dir: /number|money|phone|nid|date/.test(z.type) ? 'ltr' : null, placeholder: PH[z.type] || null, maxlength: '200', oninput: function (e) { data[z.k] = e.target.value.trim(); } })]);
+});
+var files = F.filter(function (z) { return z.type === 'file'; });
+return [rows.length ? el('div', { class: 'gx-form' }, rows) : null, files.length ? el('p', { class: 'cx-hint', text: 'بعد الإرسال ترفع: ' + files.map(function (z) { return z.t; }).join('، ') + '.' }) : null];
+}
+function paint() {
+box.innerHTML = ''; box.className = 'cx-ni gx is-' + a.state;
+var kids = head();
+if (a.state === 'done' || a.state === 'cancelled' || a.state === 'expired') {
+kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? 'أكملت المطلوب — شكرًا لك' : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
+} else if (a.state === 'accepted') {
+kids.push(el('div', { class: 'gx-res is-ok', text: 'وافقت — بقي رفع المستند' }), el('button', { type: 'button', class: 'gx-btn is-pri', onclick: function () { if (cx.up) cx.up(a); } }, ['ارفع صورة أو PDF']));
+} else if (mode === 'no') {
+var ta = el('textarea', { class: 'gx-ta', rows: '3', maxlength: '300', placeholder: 'اكتب سببًا مختصرًا' });
+kids.push(el('label', { class: 'gx-f' }, [el('span', { text: 'سبب عدم الموافقة' }), ta]), err, el('div', { class: 'gx-bs' }, [
+el('button', { type: 'button', class: 'gx-btn is-no', onclick: function (e) { if (ta.value.trim().length < 3) { err.textContent = 'اكتب سببًا مختصرًا.'; return; } e.target.disabled = true; call({ decision: 'decline', reason: ta.value.trim() }); } }, ['إرسال الرد']),
+el('button', { type: 'button', class: 'gx-btn', onclick: function () { mode = ''; paint(); } }, ['رجوع'])]));
+} else if (mode === 'yes') {
+kids.push(el('h5', { class: 'gx-h', text: 'أكمل البيانات' + (a.gtype ? ' — ' + a.gtype : '') }), form(), err, el('div', { class: 'gx-bs' }, [
+el('button', { type: 'button', class: 'gx-btn is-pri', onclick: function (e) {
+var miss = F.filter(function (z) { return z.type !== 'file' && z.req !== false && !data[z.k]; })[0];
+if (miss) { err.textContent = 'أكمل: ' + miss.t; return; }
+e.target.disabled = true; call({ decision: 'accept', data: data }); } }, ['إرسال البيانات']),
+el('button', { type: 'button', class: 'gx-btn', onclick: function () { mode = ''; paint(); } }, ['رجوع'])]));
+} else {
+kids.push(el('div', { class: 'gx-bs' }, [
+el('button', { type: 'button', class: 'gx-btn is-pri', onclick: function () { mode = 'yes'; paint(); } }, ['أوافق']),
+el('button', { type: 'button', class: 'gx-btn is-no', onclick: function () { mode = 'no'; paint(); } }, ['لا أوافق'])]),
+el('small', { class: 'cx-hint', text: 'عند «لا أوافق» يُطلب سبب مختصر، ويصل ردك للفريق.' }));
+}
+kids.forEach(function (k) { if (k) [].concat(k).forEach(function (q) { if (q) box.appendChild(q); }); });
+}
+paint();
+return box;
+}
+window.CRQG = { item: item };
+
+/* الردود الجاهزة: زر بحث بدل القائمة الأصلية (تبقى مخفية وتُحدَّث كما كانت) */
+var CODE = /^\s*\d+(\.\d+)*\s*·\s*/;
+function isReady(s) { if (!s.querySelector('optgroup')) return false; var o = s.options; for (var i = 0; i < o.length; i++) if (CODE.test(o[i].text)) return true; return false; }
+function nm(t) { return String(t || '').replace(CODE, ''); }
+function closePop() { var p = document.querySelector('.gx-pop'); if (p) p.remove(); document.removeEventListener('keydown', escK, true); }
+function escK(e) { if (e.key === 'Escape') closePop(); }
+function openPop(s, b) {
+closePop();
+var q = el('input', { type: 'search', class: 'gx-q', placeholder: 'ابحث في الردود الجاهزة…', 'aria-label': 'بحث في الردود الجاهزة' });
+var list = el('div', { class: 'gx-l', role: 'listbox' });
+var pop = el('div', { class: 'gx-pop', role: 'dialog', 'aria-label': 'الردود الجاهزة' }, [el('div', { class: 'gx-pop-in' }, [el('div', { class: 'gx-pop-h' }, [el('b', { text: 'الردود الجاهزة' }), el('button', { type: 'button', class: 'gx-x', 'aria-label': 'إغلاق', onclick: closePop }, ['✕'])]), q, list])]);
+pop.addEventListener('click', function (e) { if (e.target === pop) closePop(); });
+var draw = function () {
+list.innerHTML = ''; var t = q.value.trim(), n = 0;
+Array.prototype.forEach.call(s.children, function (g) {
+var opts = g.tagName === 'OPTGROUP' ? Array.prototype.slice.call(g.children) : [g];
+var hit = opts.filter(function (o) { return o.value && (!t || nm(o.text).indexOf(t) >= 0 || (g.label || '').indexOf(t) >= 0); });
+if (!hit.length) return;
+if (g.tagName === 'OPTGROUP') list.appendChild(el('div', { class: 'gx-g', text: g.label }));
+hit.forEach(function (o) { n++; list.appendChild(el('button', { type: 'button', role: 'option', class: 'gx-o' + (o.value === s.value ? ' is-on' : ''), onclick: function () { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); s.dispatchEvent(new Event('input', { bubbles: true })); sync(s, b); closePop(); } }, [nm(o.text)])); });
+});
+if (!n) list.appendChild(el('p', { class: 'gx-0', text: 'لا نتائج — جرّب كلمة أخرى.' }));
+};
+q.addEventListener('input', draw); draw();
+document.body.appendChild(pop); document.addEventListener('keydown', escK, true); setTimeout(function () { q.focus(); }, 0);
+}
+function sync(s, b) { var o = s.options[s.selectedIndex]; b.querySelector('span').textContent = o && o.value ? nm(o.text) : 'اختر ردًا جاهزًا'; }
+function enhSel(s) {
+if (s.__gx) return; s.__gx = 1;
+var b = el('button', { type: 'button', class: 'gx-pick', 'aria-haspopup': 'dialog', onclick: function () { openPop(s, b); } }, [el('span'), el('i', { class: 'gx-ar', text: '▾' })]);
+s.classList.add('gx-hid'); s.setAttribute('tabindex', '-1'); s.setAttribute('aria-hidden', 'true');
+s.parentNode.insertBefore(b, s.nextSibling); sync(s, b);
+s.addEventListener('change', function () { sync(s, b); });
+}
+/* معاينة الرسالة كما تصل للعميل — عند الفريق فقط */
+var STAFF = /^\/(staff|admin)/.test(location.pathname) || !!document.querySelector('[data-staff], .crq-staff');
+function fmt(t) {
+var d = el('div', { class: 'gx-wa-t' });
+String(t || '').split(/(https?:\/\/\S+)/).forEach(function (p, i) { if (i % 2) d.appendChild(el('span', { class: 'gx-wa-l', text: p })); else p.split(/(\*[^*\n]+\*)/).forEach(function (q, j) { d.appendChild(j % 2 ? el('b', { text: q.slice(1, -1) }) : document.createTextNode(q)); }); });
+return d;
+}
+function enhTa(ta) {
+if (ta.__gx || !STAFF) return; ta.__gx = 1;
+var body = el('div', { class: 'gx-wa-b' }), last = null;
+var pv = el('div', { class: 'gx-wa', 'aria-live': 'polite' }, [el('div', { class: 'gx-wa-h' }, [el('b', { text: 'معاينة — كما تصل للعميل' }), el('small', { text: 'في حسابه وعلى واتساب' })]), body]);
+ta.parentNode.insertBefore(pv, ta.nextSibling);
+var up = function () { if (!ta.isConnected) { clearInterval(tm); return; } if (ta.value === last) return; last = ta.value; body.innerHTML = ''; pv.hidden = !ta.value.trim(); if (ta.value.trim()) body.appendChild(el('div', { class: 'gx-wa-m' }, [fmt(ta.value), el('small', { class: 'gx-wa-s', text: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) })])); };
+var tm = setInterval(up, 400); ta.addEventListener('input', up); up();
+}
+function scan(r) {
+if (!r || !r.querySelectorAll) return;
+Array.prototype.forEach.call(r.querySelectorAll('select'), function (s) { if (isReady(s)) enhSel(s); });
+Array.prototype.forEach.call(r.querySelectorAll('textarea.cx-ta'), enhTa);
+}
+var pend = false;
+new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; scan(document.body); }); }).observe(document.documentElement, { childList: true, subtree: true });
+if (document.body) scan(document.body);
 })();
