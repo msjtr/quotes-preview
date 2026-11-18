@@ -919,9 +919,11 @@ if (!T._hid || typeof T._hid !== 'object') T._hid = {}; var HP = Array.isArray(T
 sub = P.length + (P.length === 1 ? ' حقل ظاهر' : ' حقول ظاهرة') + (HP.length ? ' · ' + HP.length + ' مخفي' : '');
 P.forEach(function (x, i) {
 if (!Array.isArray(x)) return; var dv = org[DOC_OG[String(x[0] || '').trim()]] || '';
-kids.push(el('div', { class: 'cr-ed-pr' }, [
+kids.push(el('div', { class: 'cr-ed-pr' + (ro ? '' : ' is-mv') }, [
 el('input', { type: 'text', class: 'cr-ed-pl', value: x[0] || '', disabled: ro, maxlength: '40', placeholder: 'المسمّى', 'aria-label': 'مسمّى الحقل', oninput: function (e) { x[0] = e.target.value; var v = e.target.parentNode.querySelector('.cr-ed-pv'); if (v) v.placeholder = org[DOC_OG[e.target.value.trim()]] || 'القيمة'; onCh(false); } }),
 el('input', { type: 'text', class: 'cr-ed-pv', value: x[1] || '', disabled: ro, maxlength: '120', placeholder: dv || 'القيمة', 'aria-label': 'قيمة ' + (x[0] || 'الحقل'), title: dv ? 'فارغ = من «بيانات المنشأة»: ' + dv : '', oninput: function (e) { x[1] = e.target.value; onCh(false); } }),
+ro ? null : el('button', { type: 'button', class: 'cr-x', title: 'نقل لأعلى', 'aria-label': 'نقل ' + (x[0] || 'الحقل') + ' لأعلى', disabled: !i, 'data-live-ok': '', onclick: function () { P.splice(i - 1, 0, P.splice(i, 1)[0]); onCh(true); } }, [icon('mvUp')]), /* v944: ترتيب حقول بيانات المنشأة */
+ro ? null : el('button', { type: 'button', class: 'cr-x', title: 'نقل لأسفل', 'aria-label': 'نقل ' + (x[0] || 'الحقل') + ' لأسفل', disabled: i >= P.length - 1, 'data-live-ok': '', onclick: function () { P.splice(i + 1, 0, P.splice(i, 1)[0]); onCh(true); } }, [icon('mvDn')]),
 ro ? null : el('button', { type: 'button', class: 'cr-x', title: 'إخفاء من المستند', 'aria-label': 'إخفاء ' + (x[0] || 'الحقل'), 'data-live-ok': '', onclick: function () { HP.push({ t: x[0] || '', v: x[1] || '', at: i }); P.splice(i, 1); onCh(true); } }, [icon('eye')]),
 ro ? null : el('button', { type: 'button', class: 'cr-x', title: 'حذف', 'aria-label': 'حذف ' + (x[0] || 'الحقل'), 'data-live-ok': '', onclick: function () { P.splice(i, 1); onCh(true); } }, [icon('trash')])]));
 });
@@ -1050,7 +1052,7 @@ var t = await window.__teraApp.token();
 var r = await fetch('/admin/api/crq/' + x.id + '/doc-html', { method: 'POST', cache: 'no-store', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ tpl: T || (own(x.doc) ? x.doc.tpl : null), after: !!ST.docAfter && ST.tab === 'doc' }) });
 if (!r.ok) throw new Error('تعذّرت المعاينة.');
 var h = await r.text();
-f.srcdoc = h.replace('</head>', '<style>html,body{background:#e9edf3;margin:0}html body .axp-page.axp-page{margin:0 auto 22px!important;box-shadow:0 6px 24px rgba(11,37,82,.18)!important}html body{padding:14px 0 0!important}</style></head>'); /* v943: فاصل وظل بين الصفحات */
+f.srcdoc = h.replace('</head>', '<style>html,body{background:#e9edf3;margin:0}html body .axp-page.axp-page.axp-page.axp-page{margin:0 auto 22px!important;box-shadow:0 6px 24px rgba(11,37,82,.18)!important}html body{padding:14px 0 0!important}</style></head>'); /* v943: فاصل وظل بين الصفحات */
 f.onload = function () { try { var w = f.parentNode, k = w.clientWidth / 794; f.style.transform = 'scale(' + Math.min(1, k) + ')'; f.style.width = '794px'; var hh = f.contentDocument ? f.contentDocument.body.scrollHeight : 1123; f.style.height = hh + 'px'; w.style.height = Math.ceil(hh * Math.min(1, k)) + 'px'; } catch (e) { void e; } };
 } catch (e) { f.replaceWith(note('bad', e.message)); }
 }
@@ -1164,7 +1166,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=943'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=944'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {

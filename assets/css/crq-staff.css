@@ -1028,3 +1028,7 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .cr-pv-in > .cr-pv { position: absolute; top: 0; left: 0; transform-origin: top left; }
 /* v943: اسم ثابت لحقل لا يُعاد تسميته */
 .cr-mv-tx { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--k-ink); padding: 0 4px; }
+
+/* v944: حقول بيانات المنشأة — اسم · قيمة · ترتيب · إخفاء · حذف */
+.crq .cr-ed-pr.is-mv { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) 32px 32px 32px 32px; }
+@container crq (max-width: 560px) { .crq .cr-ed-pr.is-mv { grid-template-columns: minmax(0, 1fr) 32px 32px 32px 32px; } }
