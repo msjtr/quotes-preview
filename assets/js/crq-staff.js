@@ -976,15 +976,14 @@ kids.push(mvRow(i, CL.length, ip, x.on, function () { x.on = !x.on; onCh(true); 
 }
 /* v943: حقول القسم — لكل حقل اسمه (يُغيَّر) وترتيبه وإظهاره، كالأعمدة */
 else if (s.kind === 'items') {
-if (!T.cols || typeof T.cols !== 'object') T.cols = {};
 var I0 = (s.items || []).map(function (f) { return { k: f.k || String(f.p || '').replace(/^show\./, ''), l: f.l, p: f.p, nl: !!f.nl }; });
 var IL = (Array.isArray(T.cols[s.fx]) ? T.cols[s.fx] : []).filter(function (q) { return q && I0.some(function (d) { return d.k === q.k; }); }).map(function (q) { return { k: q.k, l: String(q.l || '') }; });
 I0.forEach(function (d, i) { if (!IL.some(function (q) { return q.k === d.k; })) IL.splice(Math.min(i, IL.length), 0, { k: d.k, l: '' }); });
-T.cols[s.fx] = IL;
+var keepIL = function () { if (!T.cols || typeof T.cols !== 'object') T.cols = {}; T.cols[s.fx] = IL; }; /* v945: يُكتب في المستند عند التعديل فقط — لا كتابة عند الفتح */
 IL.forEach(function (q, i) {
 var d = I0.filter(function (z) { return z.k === q.k; })[0], on = gp(T, d.p) !== false;
-var ip = d.nl ? el('span', { class: 'cr-mv-tx', text: d.l }) : el('input', { type: 'text', class: 'cr-mv-in', value: q.l, placeholder: d.l, disabled: ro, maxlength: '60', 'aria-label': 'اسم الحقل ' + d.l, title: 'اكتب اسمًا جديدًا، أو اتركه فارغًا للاسم الافتراضي', oninput: function (e) { q.l = e.target.value; onCh(false); } });
-kids.push(mvRow(i, IL.length, ip, on, function () { sp(T, d.p, !on); onCh(true); }, ro ? null : function (dd) { IL.splice(i + dd, 0, IL.splice(i, 1)[0]); onCh(true); }, d.l));
+var ip = d.nl ? el('span', { class: 'cr-mv-tx', text: d.l }) : el('input', { type: 'text', class: 'cr-mv-in', value: q.l, placeholder: d.l, disabled: ro, maxlength: '60', 'aria-label': 'اسم الحقل ' + d.l, title: 'اكتب اسمًا جديدًا، أو اتركه فارغًا للاسم الافتراضي', oninput: function (e) { q.l = e.target.value; keepIL(); onCh(false); } });
+kids.push(mvRow(i, IL.length, ip, on, function () { sp(T, d.p, !on); onCh(true); }, ro ? null : function (dd) { IL.splice(i + dd, 0, IL.splice(i, 1)[0]); keepIL(); onCh(true); }, d.l));
 });
 }
 /* v885: إخفاء صفوف بعينها (دفعة أو بند رسوم) */
@@ -1026,7 +1025,7 @@ return [bar, el('div', { class: 'cr-split is-ed' }, [edv, pv])];
 }
 /* v943: معاينة الملحق بحجمه الكامل في وسط الشاشة — تنزيل · طباعة · إغلاق */
 function docModal(x, T, pdf) {
-var ov = el('div', { class: 'cr-dm', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'معاينة الملحق' });
+var ov = el('div', { class: 'cr-dm crq', dir: 'rtl', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'معاينة الملحق' }); /* v945: داخل نطاق الألوان والأزرار */
 var f = el('iframe', { class: 'cr-dm-f', title: 'معاينة الملحق' }), inner = el('div', { class: 'cr-dm-in' }, [f]);
 var onKey = function (e) { if (e.key === 'Escape') close(); };
 var close = function () { ov.remove(); document.removeEventListener('keydown', onKey); };
@@ -1166,7 +1165,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=944'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=945'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
