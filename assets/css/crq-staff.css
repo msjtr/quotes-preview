@@ -1014,3 +1014,17 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .cr-g2-act h3 { margin: 0; font-size: 15px; color: var(--k-ink); }
 .cr-g2-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 760px) { .cr-g2-two { grid-template-columns: minmax(0, 1fr); } .cr-g2-bar { grid-template-columns: 78px minmax(0, 1fr) 96px; gap: 8px; } }
+
+/* v943: معاينة الملحق بحجمه الكامل (وسط الشاشة) */
+.cr-dm { position: fixed; inset: 0; z-index: 2147483000; background: rgba(9, 20, 48, .62); display: grid; place-items: center; padding: 18px; }
+.cr-dm-box { width: min(900px, 100%); height: min(96vh, 100%); background: var(--k-card); border-radius: 18px; box-shadow: 0 24px 70px rgba(0, 0, 0, .35); display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+.cr-dm-h { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--k-line); }
+.cr-dm-h b { margin-inline-end: auto; font-size: 15px; color: var(--k-ink); }
+.cr-dm-b { overflow: auto; background: #e9edf3; padding: 0 0 10px; }
+.cr-dm-in { margin: 0 auto; width: 100%; max-width: 794px; position: relative; }
+.cr-dm-f { border: 0; display: block; transform-origin: top right; }
+/* v943: معاينة صفحة العميل بمقاسات حقيقية مصغّرة */
+.cr-pv-in { position: relative; overflow: hidden; flex: none; margin: 0 auto; }
+.cr-pv-in > .cr-pv { position: absolute; top: 0; left: 0; transform-origin: top left; }
+/* v943: اسم ثابت لحقل لا يُعاد تسميته */
+.cr-mv-tx { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--k-ink); padding: 0 4px; }

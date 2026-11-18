@@ -972,6 +972,19 @@ var ip = el('input', { type: 'text', class: 'cr-mv-in', value: x.l, placeholder:
 kids.push(mvRow(i, CL.length, ip, x.on, function () { x.on = !x.on; onCh(true); }, ro ? null : function (dd) { CL.splice(i + dd, 0, CL.splice(i, 1)[0]); onCh(true); }, d.l));
 });
 }
+/* v943: حقول القسم — لكل حقل اسمه (يُغيَّر) وترتيبه وإظهاره، كالأعمدة */
+else if (s.kind === 'items') {
+if (!T.cols || typeof T.cols !== 'object') T.cols = {};
+var I0 = (s.items || []).map(function (f) { return { k: f.k || String(f.p || '').replace(/^show\./, ''), l: f.l, p: f.p, nl: !!f.nl }; });
+var IL = (Array.isArray(T.cols[s.fx]) ? T.cols[s.fx] : []).filter(function (q) { return q && I0.some(function (d) { return d.k === q.k; }); }).map(function (q) { return { k: q.k, l: String(q.l || '') }; });
+I0.forEach(function (d, i) { if (!IL.some(function (q) { return q.k === d.k; })) IL.splice(Math.min(i, IL.length), 0, { k: d.k, l: '' }); });
+T.cols[s.fx] = IL;
+IL.forEach(function (q, i) {
+var d = I0.filter(function (z) { return z.k === q.k; })[0], on = gp(T, d.p) !== false;
+var ip = d.nl ? el('span', { class: 'cr-mv-tx', text: d.l }) : el('input', { type: 'text', class: 'cr-mv-in', value: q.l, placeholder: d.l, disabled: ro, maxlength: '60', 'aria-label': 'اسم الحقل ' + d.l, title: 'اكتب اسمًا جديدًا، أو اتركه فارغًا للاسم الافتراضي', oninput: function (e) { q.l = e.target.value; onCh(false); } });
+kids.push(mvRow(i, IL.length, ip, on, function () { sp(T, d.p, !on); onCh(true); }, ro ? null : function (dd) { IL.splice(i + dd, 0, IL.splice(i, 1)[0]); onCh(true); }, d.l));
+});
+}
 /* v885: إخفاء صفوف بعينها (دفعة أو بند رسوم) */
 else if (s.kind === 'rowsHide') {
 if (!T._hid || typeof T._hid !== 'object') T._hid = {};
@@ -1006,8 +1019,21 @@ D.open ? btn('فتح القالب العام', { cls: 'is-sm', ic: 'file', on: f
 var bar = mkBar();
 if (!Array.isArray(T.adds)) T.adds = [];
 var edv = el('div', { class: 'cr-ed' }, specEditor(D.spec(), T, !ed, onCh, x.org, docDat(x)).concat([el('div', { class: 'cr-ed-sep', text: 'أقسام مضافة إلى الملحق' })], addsEditor(T.adds, !ed, onCh, 'تظهر في الملحق بعد بنوده — من مكتبة البنود الموحّدة أو قسم فارغ.')));
-var pv = el('div', { class: 'cr-pvcol' }, [el('div', { class: 'cr-h2row' }, [el('b', { text: 'المعاينة — الملحق كما يُطبع ويصل العميل' }), el('div', { class: 'cr-seg is-sm' }, [[false, 'قبل التوقيع'], [true, 'بعد التوقيع (نموذج)']].map(function (m) { return el('button', { type: 'button', class: !!ST.docAfter === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.docAfter = m[0]; draw(); } }, [m[1]]); })), btn('تنزيل PDF', { cls: 'is-sm', ic: 'down', on: pdf })]), docFrame(x, T, '')]);
+var pv = el('div', { class: 'cr-pvcol' }, [el('div', { class: 'cr-h2row' }, [el('b', { text: 'المعاينة — الملحق كما يُطبع ويصل العميل' }), el('div', { class: 'cr-seg is-sm' }, [[false, 'قبل التوقيع'], [true, 'بعد التوقيع (نموذج)']].map(function (m) { return el('button', { type: 'button', class: !!ST.docAfter === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.docAfter = m[0]; draw(); } }, [m[1]]); })), btn('معاينة', { cls: 'is-sm', ic: 'eye', on: function () { docModal(x, T, pdf); } }), btn('تنزيل PDF', { cls: 'is-sm', ic: 'down', on: pdf })]), docFrame(x, T, '')]); /* v943: زر «معاينة» بالحجم الكامل */
 return [bar, el('div', { class: 'cr-split is-ed' }, [edv, pv])];
+}
+/* v943: معاينة الملحق بحجمه الكامل في وسط الشاشة — تنزيل · طباعة · إغلاق */
+function docModal(x, T, pdf) {
+var ov = el('div', { class: 'cr-dm', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'معاينة الملحق' });
+var f = el('iframe', { class: 'cr-dm-f', title: 'معاينة الملحق' }), inner = el('div', { class: 'cr-dm-in' }, [f]);
+var onKey = function (e) { if (e.key === 'Escape') close(); };
+var close = function () { ov.remove(); document.removeEventListener('keydown', onKey); };
+ov.appendChild(el('div', { class: 'cr-dm-box' }, [el('div', { class: 'cr-dm-h' }, [el('b', { text: 'معاينة الملحق' + (x.no ? ' — ' + x.no : '') }),
+btn('تنزيل PDF', { cls: 'is-sm', ic: 'down', on: pdf }), btn('طباعة', { cls: 'is-sm', on: function () { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { void e; } } }), btn('إغلاق', { cls: 'is-sm', ic: 'x', on: close })]),
+el('div', { class: 'cr-dm-b' }, [inner])]));
+ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+document.body.appendChild(ov); document.addEventListener('keydown', onKey);
+loadDoc(x, f, T);
 }
 /* الملحق نفسه من الخادم بقالب المحرّر (قبل الحفظ) — المعاينة الحقيقية */
 var PVT = null;
@@ -1024,7 +1050,7 @@ var t = await window.__teraApp.token();
 var r = await fetch('/admin/api/crq/' + x.id + '/doc-html', { method: 'POST', cache: 'no-store', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ tpl: T || (own(x.doc) ? x.doc.tpl : null), after: !!ST.docAfter && ST.tab === 'doc' }) });
 if (!r.ok) throw new Error('تعذّرت المعاينة.');
 var h = await r.text();
-f.srcdoc = h.replace('</head>', '<style>html,body{background:#e9edf3;margin:0}.axp-page{margin:0 auto 14px!important;box-shadow:0 6px 24px rgba(11,37,82,.15)}</style></head>');
+f.srcdoc = h.replace('</head>', '<style>html,body{background:#e9edf3;margin:0}html body .axp-page.axp-page{margin:0 auto 22px!important;box-shadow:0 6px 24px rgba(11,37,82,.18)!important}html body{padding:14px 0 0!important}</style></head>'); /* v943: فاصل وظل بين الصفحات */
 f.onload = function () { try { var w = f.parentNode, k = w.clientWidth / 794; f.style.transform = 'scale(' + Math.min(1, k) + ')'; f.style.width = '794px'; var hh = f.contentDocument ? f.contentDocument.body.scrollHeight : 1123; f.style.height = hh + 'px'; w.style.height = Math.ceil(hh * Math.min(1, k)) + 'px'; } catch (e) { void e; } };
 } catch (e) { f.replaceWith(note('bad', e.message)); }
 }
@@ -1088,9 +1114,13 @@ if (e.data.type === 'crq-preview-ready') { f.__ok = true; post({ go: cur }); ret
 if (e.data.type === 'crq-preview-at') { var k = e.data.k === 'xd' ? 'x' : e.data.k; seen[k] = true; if (k !== cur) { cur = k; ST.lpk = k; paintJr(); paintEd(); } else paintJr(); }
 };
 window.addEventListener('message', lis);
-var dev = el('div', { class: 'cr-seg is-sm' }, [['phone', 'جوال'], ['web', 'شاشة']].map(function (m) { return el('button', { type: 'button', class: P.dev === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function (e) { P.dev = m[0]; [].forEach.call(e.currentTarget.parentNode.children, function (b) { b.className = b === e.currentTarget ? 'is-on' : ''; }); f.className = 'cr-pv is-' + P.dev; } }, [m[1]]); }));
+var dev = el('div', { class: 'cr-seg is-sm' }, [['phone', 'جوال'], ['web', 'شاشة']].map(function (m) { return el('button', { type: 'button', class: P.dev === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function (e) { P.dev = m[0]; [].forEach.call(e.currentTarget.parentNode.children, function (b) { b.className = b === e.currentTarget ? 'is-on' : ''; }); f.className = 'cr-pv is-' + P.dev; fit(); } }, [m[1]]); }));
+/* v943: مقاسات حقيقية — الجوال 390×844 والشاشة 1280×800 — مصغّرة لتناسب المساحة دون قص */
+var pvin = el('div', { class: 'cr-pv-in' }, [f]), pvw = el('div', { class: 'cr-pv-w' }, [pvin]);
+var fit = function () { var W = pvw.clientWidth - 36; if (W <= 0) return; var ph = P.dev === 'phone', dw = ph ? 390 : 1280, dh = ph ? 844 : 800, k = Math.min(1, W / dw); if (ph) k = Math.min(k, Math.max(.6, (window.innerHeight - 200) / dh)); f.style.width = dw + 'px'; f.style.height = dh + 'px'; f.style.maxWidth = 'none'; f.style.minHeight = '0'; f.style.transform = 'scale(' + k + ')'; pvin.style.width = Math.round(dw * k) + 'px'; pvin.style.height = Math.round(dh * k) + 'px'; };
+setTimeout(fit, 0); if (window.ResizeObserver) new ResizeObserver(function () { fit(); }).observe(pvw);
 var pv = el('div', { class: 'cr-pvcol' }, [el('div', { class: 'cr-pvbar' }, [el('b', { class: 'cr-pvt', text: 'المعاينة التفاعلية' }), dev, btn('من البداية', { cls: 'is-sm', ic: 'undo', on: function () { ST.lpSeen = seen = {}; go('v1'); } })]),
-el('div', { class: 'cr-pv-w' }, [f]), el('p', { class: 'cr-hint', text: 'جرّب داخل المعاينة كما يفعل العميل: اختر الوسيلة، أدخل أي رمز من 6 أرقام، أقرّ ووافق فتنتقل مباشرة إلى الملحق والتوقيع، ثم التنفيذ والتقييم. لا يُرسل شيء ولا يُحفظ قرار.' })]);
+pvw, el('p', { class: 'cr-hint', text: 'جرّب داخل المعاينة كما يفعل العميل: اختر الوسيلة، أدخل أي رمز من 6 أرقام، أقرّ ووافق فتنتقل مباشرة إلى الملحق والتوقيع، ثم التنفيذ والتقييم. لا يُرسل شيء ولا يُحفظ قرار.' })]);
 paintJr(); paintEd();
 Promise.resolve(o.views()).then(function (v) { V = v; paintEd(); post({ go: cur }); }, function (e) { pv.insertBefore(note('warn', (e && e.message) || 'تعذّر تجهيز المعاينة.'), pv.firstChild); });
 return [jr, el('div', { class: 'cr-split is-ed' }, [ed, pv])];
@@ -1134,7 +1164,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=942'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=943'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
