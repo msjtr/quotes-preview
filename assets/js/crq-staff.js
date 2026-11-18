@@ -1107,9 +1107,9 @@ LPV = out; return out;
 /* المحتوى من المستند: الأقسام التي تظهر في الرابط — للقراءة هنا، وتُعدَّل في «المستند» */
 function lpDocCard(V, s, jump) {
 var x = V && (V[s.st] || V.consent), lk = (x && x.link) || null, dc = (x && x.dc) || null;
-var rows = lk ? LP_DOC.map(function (d, i) { var on = lk[d[0]] === true; return el('div', { class: 'cr-dl' + (on ? '' : ' is-off') }, [el('i', { text: String(i + 1) }), el('span', { text: d[1] }), el('span', { class: 'cr-badge is-' + (on ? 'ok' : 'off'), text: on ? 'يظهر في الرابط' : 'في الـ PDF فقط' })]); })
+var rows = lk ? LP_DOC.map(function (d, i) { var on = !!(x && Array.isArray(x.secs) && x.secs.some(function (q) { return q.k === d[0]; })); /* v939: الرابط يعرض ما يظهر في الملحق */ return el('div', { class: 'cr-dl' + (on ? '' : ' is-off') }, [el('i', { text: String(i + 1) }), el('span', { text: d[1] }), el('span', { class: 'cr-badge is-' + (on ? 'ok' : 'off'), text: on ? 'في الملحق والرابط' : 'مخفي في الملحق' })]); })
 : [el('p', { class: 'cr-hint', text: 'جارٍ قراءة أقسام المستند…' })];
-var pdf = lk ? el('p', { class: 'cr-hint' }, [el('b', { text: lk.pdf === true ? 'الملحق PDF ظاهر في صفحة التوقيع' : 'الملحق PDF لا يظهر للعميل' }), lk.pdf === true ? ' — يظهر فوقه ملخص قصير، وتُخفى الأقسام.' : ' — تظهر الأقسام المفعّلة بدلًا منه. يُفعَّل من «المستند» عند الحاجة فقط.']) : null;
+var pdf = lk ? el('p', { class: 'cr-hint' }, [el('b', { text: 'الـ PDF هو الأساس' }), ' — يرى العميل في الرابط أقسام الملحق نفسها في العرض وفي التوقيع. لإخفاء قسم أخفِه من «المستند».']) : null;
 /* v893: نصوص الصفحة من المستند نفسه — للقراءة هنا */
 var tx = dc ? [['المنشأة في الرأس', dc.org], ['العنوان', dc.title], ['التمهيد', dc.intro || '— مخفي في المستند'], ['الإقرار قبل القرار', dc.ack], ['عنوان التوقيع', dc.sign_t]].map(function (r) { return el('div', { class: 'cr-dtx' }, [el('small', { text: r[0] }), el('span', { text: r[1] || '—' })]); }) : [];
 return el('section', { class: 'cr-ed-sec is-open is-doc' }, [el('div', { class: 'cr-ed-h' }, [el('b', { text: 'المحتوى من المستند' }), el('small', { text: 'لا يُكتب هنا' }), jump ? btn('تعديله في «المستند»', { cls: 'is-sm', ic: 'file', on: jump }) : null]),
@@ -1135,7 +1135,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=938'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=939'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
