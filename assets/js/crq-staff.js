@@ -1643,7 +1643,7 @@ var vt = vatOf(r); /* v952: ضريبة واحدة على المنتج والبن
 return (vt > 0 ? [valRow('المجموع قبل الضريبة', (Number(r.total) || 0) - vt, 'is-sub'), valRow('ضريبة القيمة المضافة ' + r.vat_rate + '٪ — على المنتج والبنود', vt, 'is-tax')] : []).concat([el('tr', { class: 'is-tot' }, [el('td', { colspan: '3', text: 'قيمة العقد الموحّد' }), el('td', { class: 'is-v' }, [ltr(money(r.total)), el('small', { text: ' ر.س' })])])]);
 }
 var UW = { day: 'يومية', week: 'أسبوعية', month: 'شهرية', half: 'نصف سنوية' };
-function resLine(x) { var r = rs(x), rp = r && r.plan || {}; if (!r) return []; var eq = rp.fdist !== 'pick' && rp.mode !== 'manual'; return ['النتيجة: ', el('b', { text: pW(rp.count) + ' ' + (UW[rp.unit || 'month'] || '') }), eq ? [' قيمة كل منها ', el('b', {}, [ltr(money(rp.per))]), ' ر.س'] : ' — تختلف قيمها حسب الدفعات التي عليها البنود', ' · من ', el('b', { text: day(rp.start) }), ' إلى ', el('b', { text: day(rp.last) })]; }
+function resLine(x) { var r = rs(x), rp = r && r.plan || {}; if (!r) return []; var eq = rp.fdist !== 'pick' && rp.mode !== 'manual'; return ['النتيجة: ', el('b', { text: pW(rp.count) + ' ' + (UW[rp.unit || 'month'] || '') })].concat(eq ? [' قيمة كل منها ', el('b', {}, [ltr(money(rp.per))]), ' ر.س'] : [' — تختلف قيمها حسب الدفعات التي عليها البنود'], [' · من ', el('b', { text: day(rp.start) }), ' إلى ', el('b', { text: day(rp.last) })]); }
 function vatOf(r) { var pr = r.product || {}; return Math.round(((pr.on ? Number(pr.vat) || 0 : 0) + (Number(r.vat) || 0)) * 100) / 100; }
 function lnW(n) { return n === 1 ? 'بند واحد' : n === 2 ? 'بندان' : n + ' بنود'; }
 function tabCalc(x) {
@@ -1719,7 +1719,7 @@ el('div', { class: 'cr-mgsum-f' }, [el('span', {}, [icon('cal'), 'أول دفع�
 function repaint(x) {
 if (ST.tab !== 'calc') return;
 var w = R.querySelector('#cr-mg-plan'); if (w && !w.contains(document.activeElement)) { w.innerHTML = ''; w.appendChild(planTbl(x)); }
-var rl = R.querySelector('#cr-mg-res'); if (rl) { rl.innerHTML = ''; resLine(x).flat(2).forEach(function (n) { if (n != null) rl.appendChild(typeof n === 'string' ? document.createTextNode(n) : n); }); }
+var rl = R.querySelector('#cr-mg-res'); if (rl) { rl.innerHTML = ''; resLine(x).forEach(function (n) { if (n != null) rl.appendChild(typeof n === 'string' ? document.createTextNode(n) : n); }); }
 [['#cr-mg-fx', fixRows], ['#cr-mg-ft', footRows]].forEach(function (q) { var b = R.querySelector(q[0]); if (b) { b.innerHTML = ''; q[1](x).forEach(function (tr) { b.appendChild(tr); }); } });
 }
 
