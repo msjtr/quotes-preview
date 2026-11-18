@@ -882,7 +882,7 @@ var draw = function () {
 list.innerHTML = ''; var t = q.value.trim(), n = 0;
 Array.prototype.forEach.call(s.children, function (g) {
 var opts = g.tagName === 'OPTGROUP' ? Array.prototype.slice.call(g.children) : [g];
-var hit = opts.filter(function (o) { return o.value && (!t || nm(o.text).indexOf(t) >= 0 || (g.label || '').indexOf(t) >= 0); });
+var hit = opts.filter(function (o) { return (o.value || o.text.trim()) && (!t || nm(o.text).indexOf(t) >= 0 || (g.label || '').indexOf(t) >= 0); });
 if (!hit.length) return;
 if (g.tagName === 'OPTGROUP') list.appendChild(el('div', { class: 'gx-g', text: g.label }));
 hit.forEach(function (o) { n++; list.appendChild(el('button', { type: 'button', role: 'option', class: 'gx-o' + (o.value === s.value ? ' is-on' : ''), onclick: function () { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); s.dispatchEvent(new Event('input', { bubbles: true })); sync(s, b); closePop(); } }, [nm(o.text)])); });

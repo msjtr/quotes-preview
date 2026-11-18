@@ -32,8 +32,8 @@ var MGD = { title: 'عقد توحيد العقود', pill: 'عقد توحيد', 
 intro: 'يوحّد هذا المستند العقودَ المذكورة فيه في عقد واحد بخطة دفع واحدة، وفق ما وافق عليه الطرف الثاني.',
 ack: 'أقرّ أنا الطرف الثاني بأنني اطّلعت على هذا المستند ووافقت على توحيد العقود المذكورة فيه، وعلى قيمة العقد الموحّد وخطة الدفع الواردة فيه، وأن العقود السابقة تُغلق بعد توقيعي وتُسجَّل دفعاتها المتبقية مسدَّدة بالتوحيد.',
 terms: ['يحلّ العقد الموحّد محل العقود المذكورة في هذا المستند، وتُغلق تلك العقود بعد توقيعه وتُسجَّل دفعاتها المتبقية «مسدَّدة بالتوحيد».', 'تتكوّن قيمة العقد الموحّد من المتبقي على العقود السابقة، وقيمة المنتج الإضافي وضريبته إن وُجد، ورسوم التوحيد الواردة في هذا المستند.', 'يلتزم الطرف الثاني بسداد الدفعات في مواعيدها الواردة في جدول الدفعات الجديد.', 'تُعدّ الدفعة متأخرة من اليوم الأول بعد موعد استحقاقها.', 'لا يسري هذا المستند إلا بعد توقيع الطرف الثاني عليه إلكترونيًا.'],
-tt: { summary: 'ملخص الطلب', decision: 'قرار الفريق', defer: 'العقود المُوحَّدة', fees: 'قيمة العقد الموحّد', contract: 'العقود السابقة بعد التوحيد', sched: 'جدول الدفعات الجديد', terms: 'الشروط والأحكام', sign: 'إقرار الطرف الثاني وتوقيعه' } };
-function mgT(t) { t = t && typeof t === 'object' ? t : {}; return Object.assign({}, MGD, t, { tt: Object.assign({}, MGD.tt, t.tt || {}) }); }
+tt: { parties: 'أطراف العقد', summary: 'موضوع العقد', decision: 'طلبك وقرار الفريق', defer: 'تفاصيل قيمة العقد الموحّد', fees: 'خطة الدفع', contract: 'العقود السابقة بعد التوقيع', sched: 'جدول الدفعات', terms: 'الشروط والأحكام', sign: 'إقرار الطرف الثاني وتوقيعه' } };
+function mgT(t) { t = t && typeof t === 'object' ? t : {}; return Object.assign({}, MGD, t, { tt: Object.assign({}, MGD.tt, t.tt || {}), show: Object.assign({ ids: false }, t.show || {}) }); }
 
 var NS = 'http://www.w3.org/2000/svg';
 var IC = {
@@ -1211,7 +1211,7 @@ KIND === 'merge' ? MG.tplBtn(T) : D.open ? btn('فتح القالب العام',
 var bar = mkBar();
 if (!Array.isArray(T.adds)) T.adds = [];
 var edv = el('div', { class: 'cr-ed' }, specEditor(D.spec(), T, !ed, onCh, x.org, docDat(x)).concat([el('div', { class: 'cr-ed-sep', text: 'أقسام مضافة إلى الملحق' })], addsEditor(T.adds, !ed, onCh, 'تظهر في الملحق بعد بنوده — من مكتبة البنود الموحّدة أو قسم فارغ.')));
-var pv = el('div', { class: 'cr-pvcol' }, [el('div', { class: 'cr-h2row' }, [el('b', { text: 'المعاينة — الملحق كما يُطبع ويصل العميل' }), el('div', { class: 'cr-seg is-sm' }, [[false, 'قبل التوقيع'], [true, 'بعد التوقيع (نموذج)']].map(function (m) { return el('button', { type: 'button', class: !!ST.docAfter === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.docAfter = m[0]; draw(); } }, [m[1]]); })), btn('معاينة', { cls: 'is-sm', ic: 'eye', on: function () { docModal(x, T, pdf); } }), btn('تنزيل PDF', { cls: 'is-sm', ic: 'down', on: pdf })]), docFrame(x, T, '')]); /* v943: زر «معاينة» بالحجم الكامل */
+var pv = el('div', { class: 'cr-pvcol' }, [el('div', { class: 'cr-h2row' }, [el('b', { text: 'المعاينة — الملحق كما يُطبع ويصل العميل' }), el('div', { class: 'cr-seg is-sm' }, [[false, 'قبل التوقيع'], [true, 'بعد التوقيع (نموذج)']].map(function (m) { return el('button', { type: 'button', class: !!ST.docAfter === m[0] ? 'is-on' : '', 'data-live-ok': '', onclick: function () { ST.docAfter = m[0]; draw(); } }, [m[1]]); })), btn('معاينة PDF كاملة', { cls: 'is-sm', ic: 'eye', on: function () { docModal(x, T, pdf); } }), btn('تنزيل PDF', { cls: 'is-sm', ic: 'down', on: pdf })]), docFrame(x, T, '')]); /* v943: زر «معاينة» بالحجم الكامل */
 return [bar, el('div', { class: 'cr-split is-ed' }, [edv, pv])];
 }
 /* v943: معاينة الملحق بحجمه الكامل في وسط الشاشة — تنزيل · طباعة · إغلاق */
@@ -1254,6 +1254,9 @@ function LPX() { return window.CRQLP || null; }
 function lpTpl(x) { var L = LPX(); var base = own(x.page) ? x.page.tpl : (x.tpl && x.tpl.lp) || {}; return L.tpl(base); }
 /* أقسام الملحق كما في «المستند ← الملحق في الرابط» */
 var LP_DOC = [['summary', 'ملخص الطلب'], ['decision', 'قرار الفريق'], ['defer', 'جدول الدفعات قبل التأجيل'], ['fees', 'رسوم التأجيل'], ['contract', 'قيمة العقد قبل التأجيل وبعده'], ['sched', 'جدول الدفعات الجديد'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['parties', 'أطراف الملحق'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
+/* v953: معاينة PDF — إطار واحد بلا شريط تمرير داخلي */
+(function () { function fit(f) { try { var d = f.contentDocument; if (!d || !d.body) return; d.documentElement.style.overflow = 'hidden'; d.body.style.overflow = 'hidden'; var h = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight), cur = parseFloat(f.style.height) || 0; if (h > cur) f.style.height = h + 'px'; } catch (e) {} }
+new MutationObserver(function () { document.querySelectorAll('.cr-dm iframe').forEach(function (f) { if (f.__fit) return; f.__fit = 1; f.addEventListener('load', function () { fit(f); setTimeout(function () { fit(f); }, 500); }); fit(f); }); }).observe(document.documentElement, { childList: true, subtree: true }); })();
 var LP_MG = [['parties', 'أطراف العقد'], ['summary', 'موضوع العقد'], ['decision', 'طلبك وقرار الفريق'], ['defer', 'تفاصيل قيمة العقد الموحّد'], ['fees', 'خطة الدفع'], ['contract', 'العقود السابقة بعد التوقيع'], ['sched', 'جدول الدفعات'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
 /* صفوف خطوة واحدة: نص · نص طويل · لون · مفتاح · رقم، ومفتاح الإظهار بجانب العنصر */
 function lpRows(L, T, s, ro, onCh) {

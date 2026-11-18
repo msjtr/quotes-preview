@@ -1246,3 +1246,5 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .gq-mod { position: fixed; inset: 0; z-index: 1000; background: rgba(11, 37, 82, .35); display: grid; place-items: center; padding: 16px; }
 .gq-mod-in { width: min(460px, 100%); background: #fff; border-radius: 16px; padding: 16px; border-top: 4px solid #C9962E; display: grid; gap: 12px; }
 .gq-mod-in > b { color: #0B2552; font-size: 15px; }
+/* v953: مهلة الرد بلا قطع */
+.gq .cr-seg2 { flex-wrap: wrap; } .gq .cr-seg2 button { flex: 1 0 auto; white-space: nowrap; min-width: 0; padding-inline: 10px; overflow: visible; text-overflow: clip; }
