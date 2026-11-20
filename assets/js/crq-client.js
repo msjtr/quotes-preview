@@ -515,7 +515,7 @@ function needCard(o) {
   var M = MB[r.id] || (MB[r.id] = { rows: null, asks: [], sum: null, busy: false, err: '' });
   var view = function (mid) { openFile(api, '/api/account/crq-file/' + mid); };
   function pick(a, cb) { pickFile(a.types, a.mb, function (f, er) { if (er) { M.err = er; paint(); return; } M.err = ''; cb(f); }); }
-async function sendFile(a, f) { try { M.busy = a.id; M.err = ''; M.ok = ''; paint(); await uploadTo(api, '/api/account/crq/' + r.id + '/ask-file/' + a.id, f); M.busy = false; M.ok = 'تم الإرسال — وصل «' + a.title + '» إلى فريق تيرا، وسنبلغك بالنتيجة.'; load(); if (o.onChange) o.onChange(); return true; } catch (e) { M.busy = false; M.err = e.message || 'تعذّر الإرسال — أعد المحاولة.'; paint(); return false; } }
+async function sendFile(a, f) { try { M.busy = a.id; M.err = ''; M.ok = ''; paint(); await uploadTo(api, '/api/account/crq/' + r.id + '/ask-file/' + a.id, f); M.busy = false; M.ok = 'تم الإرسال — وصل «' + a.title + '» إلى فريق تيرا، وسنبلغك بالنتيجة.'; load(); if (o.onChange) o.onChange(); return true; } catch (e) { M.busy = false; if (/لا يوجد مطلوب مفتوح/.test(String(e && e.message))) { M.err = ''; M.ok = 'هذا المطلوب أُرسل لفريق تيرا من قبل — لا حاجة لإعادة إرساله.'; load(); return true; } M.err = (e && e.message) || 'تعذّر الإرسال — أعد المحاولة.'; paint(); return false; } }
 async function load() { try { var j = await api('GET', '/api/account/crq/' + r.id + '/msgs'); M.rows = j.rows || []; M.asks = j.asks || []; M.sum = j.sum; } catch (e) { M.err = e.message; M.rows = M.rows || []; } paint(); }
   function up(a) {
     pickFile(a.types, a.mb, async function (f, er) {
@@ -691,7 +691,7 @@ function remOf(c) { return (c.payments || []).reduce(function (a, p) { return a 
 function stepper(cur) { return el('ol', { class: 'cc-steps', 'aria-label': 'مراحل طلب التوحيد' }, MG_STEPS.map(function (t, i) { return el('li', { class: i < cur ? 'is-done' : i === cur ? 'is-now' : '' }, [el('span', { text: String(i + 1) }), t]); })); }
 function miss(k) { return S.miss.indexOf(k) >= 0 ? ' is-miss' : ''; }
 function chips(L, cur, set, key) { return el('div', { class: 'cc-chips' + miss(key), role: 'radiogroup' }, L.map(function (x) { var on = cur === x[0]; return el('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: 'cc-chip' + (on ? ' is-on' : ''), 'data-live-ok': '', onclick: function () { set(x[0]); S.miss = []; paint(); } }, [x[1]]); })); }
-function form() {
+function form0() {
 var today = todayIso(S.today), out = [stepper(0)];
 if (!S.opts.length) return out.concat([el('div', { class: 'cc-note' }, [icon('alert'), el('span', { text: 'لا توجد عقود قائمة بدفعات متبقية يمكن توحيدها الآن.' })])]);
 var sel = S.opts.filter(function (c) { return S.sel.indexOf(c.no) >= 0; });
@@ -733,6 +733,48 @@ if (S.opts.some(function (x) { return x.busy; })) out.push(el('div', { class: 'c
 if (S.err) out.push(el('p', { class: 'cc-err', role: 'alert', text: S.err }));
 out.push(el('div', { class: 'cc-acts' }, [el('button', { type: 'button', class: 'cc-btn is-pri', disabled: S.busy, 'data-live-ok': '', onclick: submit }, ['إرسال طلب التوحيد']), o.back ? el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: o.back }, ['رجوع']) : null]));
 return out;
+}
+/* v969: نموذج «طلب توحيد جديد» — صفحة مستقلة بأربع خطوات مرقّمة ومراجعة حيّة قبل الإرسال */
+function form() {
+var P = form0(), isEl = function (n) { return n && n.nodeType === 1; };
+var pick = function (cls) { return P.filter(function (n) { return isEl(n) && n.classList.contains(cls); })[0] || null; };
+var all = function (cls) { return P.filter(function (n) { return isEl(n) && n.classList.contains(cls); }); };
+var hasMine = (S.mine || []).length > 0;
+var top = el('div', { class: 'mgf-top' }, [
+el('span', { class: 'mgf-ic', 'aria-hidden': 'true' }, [typeof IC !== 'undefined' && IC.file ? icon('file') : icon('check')]),
+el('div', { class: 'mgf-tt' }, [el('h2', { text: 'طلب توحيد جديد' }), el('p', { text: 'اجمع عقودك في عقد واحد بخطة دفع واحدة — أربع خطوات ثم ترسل الطلب لفريق تيرا.' })]),
+hasMine ? el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.newReq = false; S.list = true; S.miss = []; S.err = ''; paint(); } }, ['طلباتي (' + S.mine.length + ')']) : null]);
+if (!S.opts || !S.opts.length) return [el('div', { class: 'mgf' }, [top].concat(P.filter(isEl).filter(function (n) { return !n.classList.contains('cc-steps'); })))];
+var grid = pick('cc-mg-grid'), gb = grid ? [].slice.call(grid.querySelectorAll('.cc-prop')) : [];
+var selN = S.sel.length;
+function sec(n, title, hint, key, body, done) {
+return el('section', { class: 'mgf-sec' + (key ? miss(key) : '') + (done ? ' is-done' : '') }, [
+el('div', { class: 'mgf-h' }, [el('span', { class: 'mgf-n', text: done ? '✓' : String(n) }), el('div', {}, [el('h3', { text: title }), hint ? el('small', { text: hint }) : null])]),
+el('div', { class: 'mgf-b' }, body.filter(isEl))]);
+}
+var unitT = function () { var u = (typeof MG_UNITS !== 'undefined' ? MG_UNITS : []).filter(function (x) { return x[0] === (S.unit || 'month'); })[0]; return u ? u[1] : ''; };
+var rv = el('dl', { class: 'mg-kv mgf-rv' });
+var upd = function () {
+var sel = S.opts.filter(function (c) { return S.sel.indexOf(c.no) >= 0; });
+var pn = S.prod === 'yes' ? ((S.pk === '__other' ? String(S.pt || '').trim() : (S.pz ? S.pz.name : '')) || 'منتج إضافي') + (Number(S.pv) > 0 ? ' · ' + money(S.pv) + ' ر.س' : '') : S.prod === 'no' ? 'لا — توحيد فقط' : 'لم يُحدَّد بعد';
+var rows = [
+['العقود', sel.length ? sel.map(function (c, i) { return 'العقد ' + (i + 1) + ': ' + c.no; }).join(' · ') : 'لم تُختَر بعد'],
+['المتبقي عليها', sel.length ? money(sel.reduce(function (a, c) { return a + remOf(c); }, 0)) + ' ر.س' : '—'],
+['منتج إضافي', pn],
+['خطة الدفع المقترحة', S.months === 'team' ? 'يحددها فريق تيرا' : S.months ? S.months + ' دفعات · ' + unitT() : 'لم تُحدَّد بعد']];
+rv.innerHTML = '';
+rows.forEach(function (r) { rv.appendChild(el('dt', { text: r[0] })); rv.appendChild(el('dd', {}, [el('bdi', { text: r[1] })])); });
+};
+upd();
+var notes = all('cc-note'), errs = all('cc-err');
+var body = [top,
+sec(1, 'اختر العقود', selN ? 'اخترت ' + mgCnt(selN) : 'عقدان على الأقل، أو عقد واحد مع منتج إضافي.', 'sel', [pick('cc-legend'), pick('cc-pays'), pick('cc-mg-line')], selN >= 2 || (selN === 1 && S.prod === 'yes')),
+sec(2, 'منتج إضافي (اختياري)', 'يُضاف المنتج إلى العقد الموحّد بخطة دفع واحدة.', 'prod', [gb[0]], S.prod === 'no' || (S.prod === 'yes' && Number(S.pv) > 0)),
+sec(3, 'خطة الدفع المقترحة', 'اقتراحك يراجعه الفريق — القرار النهائي في العرض الذي يصلك للموافقة.', 'months', [gb[1]], !!S.months),
+sec(4, 'راجع ثم أرسل', 'تأكّد من البيانات قبل الإرسال.', 'ack', [rv].concat(notes, [pick('cc-ack')], errs, [pick('cc-acts')]))];
+var wrap = el('div', { class: 'mgf' }, body);
+wrap.addEventListener('input', upd); wrap.addEventListener('change', upd); wrap.addEventListener('click', function () { setTimeout(upd, 0); });
+return [wrap];
 }
 function check() {
 var m = [], n = S.sel.length;
@@ -809,7 +851,7 @@ out.push(el('div', { class: 'mg-pane', role: 'tabpanel' }, pane));
 return el('div', { class: 'mg-rb' }, out);
 }
 function row(r) { var on = S.open === r.id; return el('div', { class: 'cc-row mg-r is-' + (r.tone || 'info') + (on ? ' is-on' : '') }, [head(r, on), on ? body(r) : null]); }
-var top = el('div', { class: 'mg-lh' }, [el('h3', { text: act.length ? 'طلباتك الحالية' : 'طلبات التوحيد' }), withNew ? el('button', { type: 'button', class: 'cc-btn is-sm is-pri', 'data-live-ok': '', onclick: function () { S.newReq = true; paint(); } }, ['+ طلب توحيد جديد']) : null]);
+var top = el('div', { class: 'mg-lh' }, [el('h3', { text: act.length ? 'طلباتك الحالية' : 'طلبات التوحيد' }), withNew ? el('button', { type: 'button', class: 'cc-btn is-sm is-pri', 'data-live-ok': '', onclick: function () { S.newReq = true; S.miss = []; S.err = ''; paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { void e; } } }, ['+ طلب توحيد جديد']) : null]);
 var kids = [top];
 if (act.length) kids.push(el('div', { class: 'mg-rows' }, act.map(row)));
 if (past.length) kids.push(el('div', { class: 'mg-past' + (S.past ? ' is-on' : '') }, [el('button', { type: 'button', class: 'mg-past-t', 'data-live-ok': '', 'aria-expanded': S.past ? 'true' : 'false', onclick: function () { S.past = !S.past; paint(); } }, [el('span', { text: 'الطلبات السابقة (' + past.length + ')' }), el('span', { class: 'mg-rh-c' + (S.past ? ' is-on' : ''), 'aria-hidden': 'true' })]), S.past ? el('div', { class: 'mg-rows' }, past.map(row)) : null]));
@@ -828,8 +870,8 @@ root.appendChild(el('section', { class: 'cc-card cc-done' }, [icon('check'), el(
 el('p', { text: 'يراجعه فريق تيرا ويصلك العرض برابط للموافقة على واتساب والبريد.' }), el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: function () { S.done = null; paint(); } }, ['طلب آخر'])]));
 } else { /* v956: طلب قائم أولًا — والنموذج الجديد عند الطلب فقط، بلا ازدواجية */
 var openR = (S.mine || []).filter(function (q) { return ['done', 'closed', 'rejected', 'cancelled', 'withdrawn', 'expired'].indexOf(q.state) < 0; });
-if (openR.length && !S.newReq) { var ml0 = mineList(true); if (ml0) root.appendChild(ml0); }
-else { root.appendChild(el('section', { class: 'cc-card' }, [el('h2', { text: 'طلب توحيد العقود' })].concat(form()))); var ml1 = mineList(); if (ml1) root.appendChild(ml1); }
+if ((openR.length || S.list) && !S.newReq) { var ml0 = mineList(true); if (ml0) root.appendChild(ml0); }
+else { root.appendChild(el('section', { class: 'cc-card mgf-card' }, form())); }
 }
 if (S.done) { var ml = mineList(); if (ml) root.appendChild(ml); }
 if (S.confirm) {
@@ -908,9 +950,11 @@ el('span', { class: 'gx-prev-a' }, [
 a._u ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { window.open(a._u, '_blank'); } }, ['معاينة']) : null,
 a._cf ? null : el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: pickF }, ['تغيير']),
 a._cf ? null : el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { dropU(); a._f = null; a._cf = false; paint(); } }, ['إزالة'])])]));
-if (a._cf) {
+if (a._busy) {
+kids.push(el('div', { class: 'gx-res is-wait', role: 'status', text: 'جارٍ إرسال الملف لفريق تيرا… لا تغلق الصفحة.' }));
+} else if (a._cf) {
 kids.push(el('div', { class: 'gx-confirm', role: 'alertdialog', 'aria-label': 'تأكيد الإرسال' }, [el('b', { text: 'تأكيد الإرسال' }), el('p', { text: 'سيصل «' + a._f.name + '» إلى فريق تيرا لمراجعته. بعد الإرسال لا يمكن تعديله أو استبداله.' }), el('div', { class: 'gx-bs' }, [
-el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: async function (e) { var b = e.currentTarget; b.disabled = true; b.textContent = 'جارٍ الإرسال…'; var ok = cx.send ? await cx.send(a, a._f) : false; if (ok) { dropU(); a._f = null; a._cf = false; } else { b.disabled = false; b.textContent = 'نعم، أرسل'; } } }, ['نعم، أرسل']),
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: async function () { if (a._busy) return; a._busy = true; paint(); var ok = cx.send ? await cx.send(a, a._f) : false; a._busy = false; if (ok) { dropU(); a._f = null; a._cf = false; } else { paint(); } } }, ['نعم، أرسل']),
 el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn', onclick: function () { a._cf = false; paint(); } }, ['رجوع'])])]));
 } else {
 kids.push(el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { a._cf = true; paint(); } }, ['إرسال لفريق تيرا']));

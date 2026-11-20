@@ -1248,3 +1248,6 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 .gq-mod-in > b { color: #0B2552; font-size: 15px; }
 /* v953: مهلة الرد بلا قطع */
 .gq .cr-seg2 { flex-wrap: wrap; } .gq .cr-seg2 button { flex: 1 0 auto; white-space: nowrap; min-width: 0; padding-inline: 10px; overflow: visible; text-overflow: clip; }
+/* v969: طلب أكمل فيه العميل المطلوب — بارز في القائمة */
+.cr-lr.is-back { background: rgba(30, 122, 76, .06); box-shadow: inset -4px 0 0 #1E7A4C; }
+.cr-sub.is-back { color: #1E7A4C; font-weight: 800; }

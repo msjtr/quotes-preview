@@ -453,3 +453,36 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .gx-prev-m small { color: var(--mut, #5B6B85); }
 .gx-prev-a { display: flex; gap: 6px; flex-wrap: wrap; }
 @media (max-width: 600px) { .gx-prev-a { width: 100%; } .gx-prev-a .gx-btn { flex: 1; } }
+/* v969: نموذج «طلب توحيد جديد» — خطوات مرقّمة */
+.cc-mg .mgf-card { padding: 18px; }
+.cc-mg .mgf { display: grid; gap: 14px; }
+.cc-mg .mgf-top { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line, #E3E9F2); }
+.cc-mg .mgf-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--soft, rgba(10, 165, 173, .1)); color: var(--brand, #0AA5AD); flex-shrink: 0; }
+.cc-mg .mgf-ic svg { width: 22px; height: 22px; }
+.cc-mg .mgf-tt { flex: 1; min-width: 0; }
+.cc-mg .mgf-tt h2 { margin: 0; font-size: 19px; }
+.cc-mg .mgf-tt p { margin: 3px 0 0; color: var(--mut, #5B6B85); font-size: 13px; line-height: 1.7; }
+.cc-mg .mgf-sec { border: 1px solid var(--line, #E3E9F2); border-radius: 14px; background: var(--card, #fff); overflow: hidden; }
+.cc-mg .mgf-sec.is-miss { border-color: #E53E3E; box-shadow: 0 0 0 2px rgba(229, 62, 62, .12); }
+.cc-mg .mgf-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--soft, rgba(11, 37, 82, .03)); border-bottom: 1px solid var(--line, #E3E9F2); }
+.cc-mg .mgf-h h3 { margin: 0; font-size: 15.5px; }
+.cc-mg .mgf-h small { display: block; margin-top: 2px; color: var(--mut, #5B6B85); font-size: 12.5px; line-height: 1.6; }
+.cc-mg .mgf-n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--ink, #0b2552); color: #fff; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+.cc-mg .mgf-sec.is-done .mgf-n { background: #1E7A4C; }
+.cc-mg .mgf-b { padding: 14px; display: grid; gap: 12px; }
+.cc-mg .mgf-b > .cc-prop > h4:first-child { display: none; }
+.cc-mg .mgf-b > .cc-prop > h4:first-child + p { margin-top: 0; }
+.cc-mg .mgf-rv { padding: 12px; border-radius: 12px; background: var(--soft, rgba(10, 165, 173, .06)); }
+.cc-mg .mgf-b .cc-acts { margin-top: 2px; }
+@media (max-width: 600px) {
+  .cc-mg .mgf-card { padding: 12px; }
+  .cc-mg .mgf-top { flex-wrap: wrap; }
+  .cc-mg .mgf-top .cc-btn { width: 100%; justify-content: center; }
+  .cc-mg .mgf-b { padding: 12px; }
+  .cc-mg .mgf-b .cc-acts .cc-btn { flex: 1 1 100%; justify-content: center; }
+}
+/* v969: «تم الإرسال» بارز بلون واضح */
+.cx-ni.is-done .gx-res.is-ok { background: #E7F6EE; border: 1.5px solid #1E7A4C; color: #14532D; font-weight: 800; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.7; }
+.cx-need .cc-note.is-ok { background: #E7F6EE; border: 1.5px solid #1E7A4C; color: #14532D; font-weight: 800; }
+.gx-res.is-wait { background: #FFF8E8; border: 1.5px solid #E0B04A; color: #7A5300; font-weight: 700; padding: 12px 14px; border-radius: 12px; }
+@media (prefers-color-scheme: dark) { .cx-ni.is-done .gx-res.is-ok, .cx-need .cc-note.is-ok { background: rgba(30, 122, 76, .18); color: #B7F0CF; } .gx-res.is-wait { background: rgba(224, 176, 74, .15); color: #F5D38A; } }
