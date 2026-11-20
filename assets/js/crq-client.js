@@ -948,7 +948,9 @@ el('button', { type: 'button', class: 'gx-mgent-b', 'data-live-ok': '', onclick:
 var pend = false;
 function scan() {
 if (!window.__teraApp || typeof window.__teraApp.go !== 'function') return;
-var c = host(); if (!c || (c.nextElementSibling && c.nextElementSibling.classList && c.nextElementSibling.classList.contains('gx-mgent'))) return;
+var c = host(), ex = [].slice.call(document.querySelectorAll('.gx-mgent')); /* v957: البطاقة في «عقودي» فقط — تُزال عند مغادرتها */
+ex.forEach(function (x) { if (!c || x !== c.nextElementSibling) x.remove(); });
+if (!c || (c.nextElementSibling && c.nextElementSibling.classList && c.nextElementSibling.classList.contains('gx-mgent'))) return;
 c.parentNode.insertBefore(card(), c.nextSibling);
 }
 new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; scan(); }); }).observe(document.documentElement, { childList: true, subtree: true });
