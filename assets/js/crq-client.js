@@ -889,17 +889,28 @@ if (a.state === 'done' || a.state === 'cancelled' || a.state === 'expired') {
 kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? (a.file_msg ? 'تم الإرسال لفريق تيرا ✓' + (a.done_at ? ' · ' + new Date(a.done_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }) : '') + ' — لا يمكن تعديله بعد الإرسال' : 'أكملت المطلوب — شكرًا لك') : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
 if (a.state === 'done' && a.file_msg && a.decision !== 'decline') kids.push(el('div', { class: 'gx-file' }, [el('span', { class: 'gx-file-n' }, [el('b', { text: 'المرفق: ' }), el('bdi', { text: (a.file && a.file.name) || 'ملف مرفق' })]), el('span', { class: 'gx-file-a' }, [cx.view ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { cx.view(a.file_msg); } }, ['عرض']) : null, cx.canRe && cx.up ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { cx.up(a); } }, ['استبدال']) : null])]));
 } else if (a.state === 'accepted') {
-/* v964: خطوات واضحة — اختيار الملف ← مراجعة ← تأكيد الإرسال ← قفل */
+/* v968: خطوات واضحة — اختيار الملف ← «تم تحميل الملف» + معاينة ← تأكيد الإرسال ← قفل */
 var fnm = F.filter(function (z) { return z.type === 'file'; }).map(function (z) { return z.t; }).join('، ') || 'المستند';
-var pickF = function () { if (cx.pick) cx.pick(a, function (f) { a._f = f; a._cf = false; paint(); }); else if (cx.up) cx.up(a); };
+var dropU = function () { try { if (a._u) URL.revokeObjectURL(a._u); } catch (e) { void e; } a._u = ''; };
+var pickF = function () { if (cx.pick) cx.pick(a, function (f) { dropU(); a._f = f; a._cf = false; paint(); }); else if (cx.up) cx.up(a); };
 kids.push(el('ol', { class: 'gx-steps' }, [el('li', { class: 'is-done', text: 'وافقت' }), el('li', { class: a._f ? 'is-done' : 'is-now', text: 'اختر الملف' }), el('li', { class: a._f ? 'is-now' : '', text: 'أرسل لفريق تيرا' })]));
 if (!a._f) {
 kids.push(el('p', { class: 'gx-hint', text: 'المطلوب: ' + fnm + ' — صورة أو PDF.' }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: pickF }, ['اختيار الملف']));
 } else {
-kids.push(el('div', { class: 'gx-file is-draft' }, [el('span', { class: 'gx-file-n' }, [el('b', { text: 'الملف المختار: ' }), el('bdi', { text: a._f.name })]), a._cf ? null : el('span', { class: 'gx-file-a' }, [el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: pickF }, ['تغيير']), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { a._f = null; a._cf = false; paint(); } }, ['إزالة'])])]));
+if (!a._u) { try { a._u = URL.createObjectURL(a._f); } catch (e) { a._u = ''; } }
+var isImg = /^image\//.test(a._f.type || ''), isPdf = /pdf/i.test(a._f.type || '') || /\.pdf$/i.test(a._f.name || '');
+var sz = Number(a._f.size) || 0, szT = sz >= 1048576 ? (Math.round(sz / 104857.6) / 10) + ' م.ب' : Math.max(1, Math.round(sz / 1024)) + ' ك.ب';
+kids.push(el('div', { class: 'gx-res is-ok', text: a._cf ? 'راجع الملف ثم أكّد الإرسال.' : 'تم تحميل الملف ✓ — لم يُرسل بعد. راجعه ثم اضغط «إرسال لفريق تيرا».' }));
+kids.push(el('div', { class: 'gx-prev' }, [
+isImg && a._u ? el('img', { class: 'gx-prev-img', src: a._u, alt: 'معاينة الملف المختار' }) : el('span', { class: 'gx-prev-ic' + (isPdf ? ' is-pdf' : ''), text: isPdf ? 'PDF' : 'ملف' }),
+el('span', { class: 'gx-prev-m' }, [el('bdi', { text: a._f.name }), el('small', { text: (isPdf ? 'ملف PDF' : isImg ? 'صورة' : 'ملف') + ' · ' + szT })]),
+el('span', { class: 'gx-prev-a' }, [
+a._u ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { window.open(a._u, '_blank'); } }, ['معاينة']) : null,
+a._cf ? null : el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: pickF }, ['تغيير']),
+a._cf ? null : el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { dropU(); a._f = null; a._cf = false; paint(); } }, ['إزالة'])])]));
 if (a._cf) {
 kids.push(el('div', { class: 'gx-confirm', role: 'alertdialog', 'aria-label': 'تأكيد الإرسال' }, [el('b', { text: 'تأكيد الإرسال' }), el('p', { text: 'سيصل «' + a._f.name + '» إلى فريق تيرا لمراجعته. بعد الإرسال لا يمكن تعديله أو استبداله.' }), el('div', { class: 'gx-bs' }, [
-el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: async function (e) { var b = e.currentTarget; b.disabled = true; b.textContent = 'جارٍ الإرسال…'; var ok = cx.send ? await cx.send(a, a._f) : false; if (ok) { a._f = null; a._cf = false; } else { b.disabled = false; b.textContent = 'نعم، أرسل'; } } }, ['نعم، أرسل']),
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: async function (e) { var b = e.currentTarget; b.disabled = true; b.textContent = 'جارٍ الإرسال…'; var ok = cx.send ? await cx.send(a, a._f) : false; if (ok) { dropU(); a._f = null; a._cf = false; } else { b.disabled = false; b.textContent = 'نعم، أرسل'; } } }, ['نعم، أرسل']),
 el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn', onclick: function () { a._cf = false; paint(); } }, ['رجوع'])])]));
 } else {
 kids.push(el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { a._cf = true; paint(); } }, ['إرسال لفريق تيرا']));

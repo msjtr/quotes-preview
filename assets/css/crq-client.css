@@ -443,3 +443,13 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
   .cc-mg .mg-rb .cc-steps li { flex: 0 0 30px !important; width: 30px; min-width: 0; padding: 6px 0 !important; justify-content: center; }
   .cc-mg .mg-rb .cc-steps li.is-now { flex: 1 1 0 !important; width: auto; padding: 6px 8px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: flex-start; gap: 6px; }
 }
+/* v968: معاينة الملف المختار قبل الإرسال */
+.gx-prev { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; padding: 10px; border: 1.5px dashed var(--brand, #0AA5AD); border-radius: 12px; background: var(--card, #fff); }
+.gx-prev-img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line, #E3E9F2); flex-shrink: 0; }
+.gx-prev-ic { width: 56px; height: 72px; display: grid; place-items: center; border-radius: 10px; background: rgba(11, 37, 82, .07); color: var(--ink, #0b2552); font-weight: 800; font-size: 13px; flex-shrink: 0; }
+.gx-prev-ic.is-pdf { background: #FDECEC; color: #C53030; }
+.gx-prev-m { display: grid; gap: 2px; min-width: 0; flex: 1 1 140px; }
+.gx-prev-m bdi { font-weight: 700; overflow-wrap: anywhere; }
+.gx-prev-m small { color: var(--mut, #5B6B85); }
+.gx-prev-a { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 600px) { .gx-prev-a { width: 100%; } .gx-prev-a .gx-btn { flex: 1; } }
