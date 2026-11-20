@@ -650,7 +650,7 @@ var MG_STEPS = ['اختيار العقود', 'مراجعة فريق تيرا', '
 var MG_MONTHS = [['6', '6 أشهر'], ['12', '12 شهرًا'], ['18', '18 شهرًا'], ['24', '24 شهرًا'], ['team', 'يحددها الفريق']];
 /* v953: مدة خطة الدفع التي يقترحها العميل — الدورية بأيقونة (يومي · أسبوعي · شهري · نصف سنوي) والعدد في المربع، أو «يحددها الفريق» */
 var MG_UNITS = [['day', 'يومي', 'كل يوم'], ['week', 'أسبوعي', 'كل أسبوع'], ['month', 'شهري', 'كل شهر'], ['half', 'نصف سنوي', 'كل 6 أشهر']];
-function durCtl() {
+function durCtl(S) { /* v954: حالة صفحة التوحيد تُمرَّر صراحة — كانت خارج نطاقها فتتوقف الصفحة */
 var team = S.months === 'team', w = el('div', { class: 'cx-dur' + (S.miss && S.miss.indexOf('months') >= 0 ? ' is-miss' : '') });
 var paintD = function () {
 w.innerHTML = ''; team = S.months === 'team';
@@ -719,7 +719,7 @@ prod.push(el('div', { class: 'cc-field' }, [el('label', { text: 'تفاصيل ا
 prod.push(el('div', { class: 'cc-field' + miss('recv') }, [el('label', { text: 'وسيلة الاستلام' }), chips(MG_RECV, S.recv, function (v) { S.recv = v; }, 'recv')]));
 if (MG_RD[S.recv]) prod.push(el('div', { class: 'cc-field' }, [el('label', { text: MG_RD[S.recv] }), el('input', { type: 'text', value: S.rd || '', maxlength: '200', oninput: function (e) { S.rd = e.target.value; } })]));
 }
-var prop = [el('h4', { text: 'مدة خطة الدفع التي تقترحها' }), el('p', { class: 'cc-muted', text: 'اقتراح يراه الفريق عند دراسة طلبك — القرار النهائي في العرض الذي يصلك للموافقة.' }), durCtl(),
+var prop = [el('h4', { text: 'مدة خطة الدفع التي تقترحها' }), el('p', { class: 'cc-muted', text: 'اقتراح يراه الفريق عند دراسة طلبك — القرار النهائي في العرض الذي يصلك للموافقة.' }), durCtl(S),
 el('div', { class: 'cc-field' }, [el('label', { text: 'ملاحظة للفريق (اختياري)' }), el('textarea', { rows: '2', maxlength: '300', placeholder: 'اكتب ما تريد أن يعرفه الفريق…', oninput: function (e) { S.note = e.target.value; } }, [S.note || ''])])];
 out.push(el('div', { class: 'cc-mg-grid' }, [el('div', {}, [el('div', { class: 'cc-sh is-b' }, [el('b', { text: '٢. منتج إضافي' })]), el('div', { class: 'cc-prop' }, prod)]),
 el('div', {}, [el('div', { class: 'cc-sh is-b' }, [el('b', { text: '٣. اقتراحك' })]), el('div', { class: 'cc-prop' }, prop)])]));
@@ -868,15 +868,15 @@ window.CRQG = { item: item };
 
 /* الردود الجاهزة: زر بحث بدل القائمة الأصلية (تبقى مخفية وتُحدَّث كما كانت) */
 var CODE = /^\s*\d+(\.\d+)*\s*·\s*/;
-function isReady(s) { if (!s.querySelector('optgroup')) return false; var o = s.options; for (var i = 0; i < o.length; i++) if (CODE.test(o[i].text)) return true; return false; }
+function isReady(s) { if (!s.querySelector('optgroup')) return false; if (s.classList.contains('cc-sel') && s.closest('.cc-mg')) { s.__gxT = 'اختيار المنتج'; s.__gxQ = 'ابحث باسم المنتج…'; return true; } var o = s.options; for (var i = 0; i < o.length; i++) if (CODE.test(o[i].text)) return true; return false; }
 function nm(t) { return String(t || '').replace(CODE, ''); }
 function closePop() { var p = document.querySelector('.gx-pop'); if (p) p.remove(); document.removeEventListener('keydown', escK, true); }
 function escK(e) { if (e.key === 'Escape') closePop(); }
 function openPop(s, b) {
 closePop();
-var q = el('input', { type: 'search', class: 'gx-q', placeholder: 'ابحث في الردود الجاهزة…', 'aria-label': 'بحث في الردود الجاهزة' });
+var q = el('input', { type: 'search', class: 'gx-q', placeholder: s.__gxQ || 'ابحث في الردود الجاهزة…', 'aria-label': s.__gxQ || 'بحث في الردود الجاهزة' });
 var list = el('div', { class: 'gx-l', role: 'listbox' });
-var pop = el('div', { class: 'gx-pop', role: 'dialog', 'aria-label': 'الردود الجاهزة' }, [el('div', { class: 'gx-pop-in' }, [el('div', { class: 'gx-pop-h' }, [el('b', { text: 'الردود الجاهزة' }), el('button', { type: 'button', class: 'gx-x', 'aria-label': 'إغلاق', onclick: closePop }, ['✕'])]), q, list])]);
+var pop = el('div', { class: 'gx-pop', role: 'dialog', 'aria-label': 'الردود الجاهزة' }, [el('div', { class: 'gx-pop-in' }, [el('div', { class: 'gx-pop-h' }, [el('b', { text: s.__gxT || 'الردود الجاهزة' }), el('button', { type: 'button', class: 'gx-x', 'aria-label': 'إغلاق', onclick: closePop }, ['✕'])]), q, list])]);
 pop.addEventListener('click', function (e) { if (e.target === pop) closePop(); });
 var draw = function () {
 list.innerHTML = ''; var t = q.value.trim(), n = 0;
@@ -892,7 +892,7 @@ if (!n) list.appendChild(el('p', { class: 'gx-0', text: 'لا نتائج — ج�
 q.addEventListener('input', draw); draw();
 document.body.appendChild(pop); document.addEventListener('keydown', escK, true); setTimeout(function () { q.focus(); }, 0);
 }
-function sync(s, b) { var o = s.options[s.selectedIndex]; b.querySelector('span').textContent = o && o.value ? nm(o.text) : 'اختر ردًا جاهزًا'; }
+function sync(s, b) { var o = s.options[s.selectedIndex]; b.querySelector('span').textContent = o && o.value ? nm(o.text) : (s.__gxT ? 'اختر المنتج من القائمة' : 'اختر ردًا جاهزًا'); }
 function enhSel(s) {
 if (s.__gx) return; s.__gx = 1;
 var b = el('button', { type: 'button', class: 'gx-pick', 'aria-haspopup': 'dialog', onclick: function () { openPop(s, b); } }, [el('span'), el('i', { class: 'gx-ar', text: '▾' })]);

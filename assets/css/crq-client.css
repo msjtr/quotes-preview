@@ -321,3 +321,18 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .gx-f.is-ack { display: flex; gap: 8px; align-items: flex-start; color: #1D2742; } .gx-f.is-ack input { width: auto; margin-top: 4px; }
 .gx-req { color: #B42318; font-style: normal; }
 .gx-res { padding: 8px 10px; border-radius: 10px; font-weight: 700; font-size: 13px; } .gx-res.is-ok { background: #E3F4F1; color: #0A615A; } .gx-res.is-no { background: #FDECEA; color: #B42318; }
+
+/* ═══ v954: قائمة بحث المنتجات عند العميل (نفس قائمة الردود الجاهزة) ═══ */
+.gx-hid { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; }
+.gx-pick { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 9px 12px; border: 1px solid var(--k-line, #E4E8F1); border-radius: 10px; background: var(--k-card, #fff); font: inherit; font-weight: 700; color: #0B2552; cursor: pointer; text-align: start; }
+.gx-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gx-pop { position: fixed; inset: 0; z-index: 1000; background: rgba(11, 37, 82, .35); display: grid; place-items: center; padding: 16px; }
+.gx-pop-in { width: min(560px, 100%); max-height: min(640px, calc(100vh - 32px)); display: grid; grid-template-rows: auto auto 1fr; gap: 10px; background: #fff; border-radius: 16px; padding: 14px; border-top: 4px solid #C9962E; }
+.gx-pop-h { display: flex; justify-content: space-between; align-items: center; } .gx-pop-h b { color: #0B2552; font-size: 15px; }
+.gx-x { border: 0; background: #EEF2F8; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
+.gx-q { width: 100%; padding: 10px 12px; border: 1px solid #E4E8F1; border-radius: 10px; font: inherit; }
+.gx-l { overflow: auto; display: grid; gap: 4px; align-content: start; }
+.gx-g { font-size: 12px; font-weight: 800; color: #8A5A00; padding: 8px 4px 2px; }
+.gx-o { text-align: start; padding: 9px 12px; border: 1px solid transparent; border-radius: 10px; background: #F8FAFD; font: inherit; font-size: 13.5px; color: #1D2742; cursor: pointer; }
+.gx-o:hover, .gx-o:focus-visible { border-color: #C9962E; background: #fff; } .gx-o.is-on { background: #0B2552; color: #fff; }
+.gx-0 { color: #5B6478; text-align: center; }
