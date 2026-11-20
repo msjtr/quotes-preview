@@ -32,7 +32,7 @@ var MGD = { title: 'عقد توحيد العقود', pill: 'عقد توحيد', 
 intro: 'يوحّد هذا المستند العقودَ المذكورة فيه في عقد واحد بخطة دفع واحدة، وفق ما وافق عليه الطرف الثاني.',
 ack: 'أقرّ أنا الطرف الثاني بأنني اطّلعت على هذا المستند ووافقت على توحيد العقود المذكورة فيه، وعلى قيمة العقد الموحّد وخطة الدفع الواردة فيه، وأن العقود السابقة تُغلق بعد توقيعي وتُسجَّل دفعاتها المتبقية مسدَّدة بالتوحيد.',
 terms: ['يحلّ العقد الموحّد محل العقود المذكورة في هذا المستند، وتُغلق تلك العقود بعد توقيعه وتُسجَّل دفعاتها المتبقية «مسدَّدة بالتوحيد».', 'تتكوّن قيمة العقد الموحّد من المتبقي على العقود السابقة، وقيمة المنتج الإضافي وضريبته إن وُجد، ورسوم التوحيد الواردة في هذا المستند.', 'يلتزم الطرف الثاني بسداد الدفعات في مواعيدها الواردة في جدول الدفعات الجديد.', 'تُعدّ الدفعة متأخرة من اليوم الأول بعد موعد استحقاقها.', 'لا يسري هذا المستند إلا بعد توقيع الطرف الثاني عليه إلكترونيًا.'],
-tt: { parties: 'أطراف العقد', summary: 'موضوع العقد', decision: 'طلبك وقرار الفريق', defer: 'تفاصيل قيمة العقد الموحّد', fees: 'خطة الدفع', contract: 'العقود السابقة بعد التوقيع', sched: 'جدول الدفعات', terms: 'الشروط والأحكام', sign: 'إقرار الطرف الثاني وتوقيعه' } };
+tt: { parties: 'أطراف العقد', summary: 'موضوع العقد', decision: 'طلبك وقرار الفريق', defer: 'تفاصيل قيمة العقد الموحّد', fees: 'خطة الدفع', contract: 'قبل التوحيد وبعده', sched: 'جدول الدفعات', terms: 'الشروط والأحكام', sign: 'إقرار الطرف الثاني وتوقيعه' } };
 function mgT(t) { t = t && typeof t === 'object' ? t : {}; return Object.assign({}, MGD, t, { tt: Object.assign({}, MGD.tt, t.tt || {}), show: Object.assign({ ids: false }, t.show || {}) }); }
 
 var NS = 'http://www.w3.org/2000/svg';
@@ -325,7 +325,7 @@ var x = ST.x;
 if (!x) return [el('div', { class: 'cr-load', text: 'جارٍ تحميل الطلب…' })];
 var notes = [];
 if (x.need_approval) notes.push(note('warn', x.me && x.me.super ? 'رُفع العرض لاعتمادك — راجعه ثم اعتمده أو أعده للمُعِدّ.' : 'العرض بانتظار اعتماد المشرف العام — لا يصل العميل قبل اعتماده.'));
-if (x.exec_error) notes.push(note('bad', x.state === 'decision' ? 'تغيّر العقد بعد العرض فلم يُنفَّذ — راجع الحسبة وأعد الاعتماد ليصل العميل عرض محدّث.' : (x.exec_error === 'await_admin' ? 'وقّع العميل عقد التوحيد — التنفيذ وإغلاق العقود السابقة بيد المشرف العام، والعميل يرى «بانتظار تنفيذ الإدارة».' : 'وقّع العميل وتعذّر التنفيذ الآلي — لم يتغير العقد.'), [el('span', { text: x.exec_error })]));
+if (x.exec_error) notes.push(note(x.exec_error === 'await_admin' ? 'warn' : 'bad', x.state === 'decision' ? 'تغيّر العقد بعد العرض فلم يُنفَّذ — راجع الحسبة وأعد الاعتماد ليصل العميل عرض محدّث.' : (x.exec_error === 'await_admin' ? 'وقّع العميل عقد التوحيد — التنفيذ وإغلاق العقود السابقة بيد المشرف العام، والعميل يرى «بانتظار تنفيذ الإدارة».' : 'وقّع العميل وتعذّر التنفيذ الآلي — لم يتغير العقد.'), [x.exec_error === 'await_admin' ? null : el('span', { text: x.exec_error })]));
 if (!editable(x) && (x.state === 'consent' || x.state === 'sign')) notes.push(note('info', 'الحسبة والمستند للقراءة فقط بعد إرسال الرابط — للتعديل: «سحب العرض وتعديله» من «الخطوة التالية».'));
 var body = KIND === 'merge' && MG.TABK.indexOf(ST.tab) >= 0 ? MG.tab(x, ST.tab) : ST.tab === 'req' ? tabReq(x) : ST.tab === 'calc' ? tabCalc(x) : ST.tab === 'guar' ? tabGuar(x) : ST.tab === 'chat' || ST.tab === 'msg' ? [].concat(tabChat(x), [el('h2', { class: 'cr-msgsep', text: 'رسائل العميل الجاهزة' })], tabMsg(x)) : ST.tab === 'doc' ? tabDoc(x) : ST.tab === 'page' ? tabPage(x) : ST.tab === 'msg' ? tabMsg(x) : tabLog(x);
 return [el('div', { class: 'cr-r1' }, [heroEl(x), nextEl(x)]), askView(x)].concat(notes, [tabsEl(x), el('div', { class: 'cr-body', role: 'tabpanel' }, [].concat(body))]);
@@ -335,14 +335,14 @@ return [el('div', { class: 'cr-r1' }, [heroEl(x), nextEl(x)]), askView(x)].conca
 function heroEl(x) {
 return el('section', { class: 'cr-hero cr-hero2' }, [
 el('span', { class: 'cr-av cr-hero2-av', 'aria-hidden': 'true', text: initial(x.client) }),
-el('div', { class: 'cr-hero2-t' }, [el('small', {}, [(x.kind_t || 'طلب تأجيل دفعة') + ' · ', ltr(x.no)]), el('h2', { text: x.client || '—' }), el('div', { class: 'cr-hero2-m' }, [x.contract_no ? el('span', { class: 'cr-chip' }, [KIND === 'merge' ? 'العقود ' : 'العقد ', ltr(x.contract_no)]) : null, x.assigned_t ? el('span', { class: 'cr-chip' }, ['مسند إلى: ', x.assigned_t]) : null, x.chat && x.chat.wait ? el('span', { class: 'cr-chip is-warn', text: 'بانتظار العميل · استكمال' }) : null])]),
+el('div', { class: 'cr-hero2-t' }, [el('small', {}, [(x.kind_t || 'طلب تأجيل دفعة') + ' · ', ltr(x.no)]), el('h2', { text: x.client || '—' }), el('div', { class: 'cr-hero2-m' }, [x.contract_no ? el('span', { class: 'cr-chip' }, [KIND === 'merge' ? 'العقود ' : 'العقد ', ltr(x.contract_no)]) : null, x.assigned_t ? el('span', { class: 'cr-chip' }, ['مسند إلى: ', x.assigned_t]) : null, x.chat && x.chat.wait && ['done', 'closed'].indexOf(x.state) < 0 ? el('span', { class: 'cr-chip is-warn', text: 'بانتظار العميل · استكمال' }) : null])]),
 el('span', { class: 'cr-hero2-up', title: at(x.updated_at) }, [icon('clock'), 'آخر تحديث: ', rel(x.updated_at)]),
 el('button', { type: 'button', class: 'cr-allb', 'data-live-ok': '', onclick: back }, [icon('back'), 'كل الطلبات']), pathEl(x)]);
 }
 /* v913: مسار الطلب تحت اسم العميل — المراحل بتواريخها، وسطر «الآن» */
 function pathEl(x) {
 if (legacy(x)) return null;
-var closed = x.state === 'closed', cur = closed ? closedAt(x) : stepAt(x), bad = closed || !!x.exec_error, c = x.chat || {};
+var closed = x.state === 'closed', cur = closed ? closedAt(x) : stepAt(x), bad = closed || (!!x.exec_error && x.exec_error !== 'await_admin'), c = x.chat || {};
 var whenOf = [x.created_at, x.approved_at || x.sent_at, x.consented_at, x.signed_at, x.executed_at];
 var ol = el('ol', { class: 'cr-path-l', 'aria-label': 'مسار الطلب' }, STEPS.map(function (t, i) {
 var done = i < cur, now = i === cur;
@@ -372,7 +372,7 @@ if (x.state === 'closed') return 'أُغلق الطلب: ' + (x.close_t || '') +
 return '';
 }
 function nextEl(x) {
-var closed = x.state === 'closed', cur = closed ? closedAt(x) : stepAt(x), bad = closed || !!x.exec_error;
+var closed = x.state === 'closed', cur = closed ? closedAt(x) : stepAt(x), bad = closed || (!!x.exec_error && x.exec_error !== 'await_admin');
 var steps = el('ol', { class: 'cr-steps', 'aria-label': 'مراحل الطلب' }, STEPS.map(function (t, i) {
 var done = i < cur, now = i === cur;
 return el('li', { class: 'cr-step' + (done ? ' is-done' : '') + (now ? (bad ? ' is-bad' : ' is-cur') : ''), 'aria-current': now ? 'step' : null }, [el('i', { text: done ? '✓' : now && bad ? '!' : String(i + 1) }), t]);
@@ -749,9 +749,9 @@ Q.f.title = autoTitle();
 function autoTitle() { var f = Q.f; return (f.gtype || 'ضمان') + (f.purpose ? ' — ' + f.purpose : ''); }
 function bName(k) { var L = (Q.cfg && Q.cfg.bases) || []; for (var i = 0; i < L.length; i++) if (L[i][0] === k) return L[i][1]; return k; }
 function client(x) { var p = x.party || {}; return p.name || x.client_name || x.user_name || x.name || 'العميل'; }
-function msgText(x) {
+function msgText(x) { /* v956: نص قصير — لا يتكرر في بطاقة «مطلوب منك» والمراسلة */
 var f = Q.f, h = HRS.filter(function (z) { return z[0] === f.hours; })[0];
-return 'عزيزنا ' + client(x) + '،\nمطلوب منك لإكمال طلبك في منصة تيرا\nالطلب: ' + (x.kind_t || 'طلب') + ' ' + (x.no || '') + '\nالمطلوب: ' + (f.title || f.gtype) + (num(f.amt) > 0 ? ' بقيمة ' + money(num(f.amt)) + ' ريال' : '') + (f.note ? '\n' + f.note : '') + '\nالمهلة: ' + (h ? h[1] : f.hours + ' ساعة') + '\nللاطلاع والرد: الرابط في حسابك';
+return 'مطلوب منك لإكمال ' + (x.kind_t ? 'طلب ' + x.kind_t + ' ' : 'طلبك ') + (x.no || '') + ': ' + (f.title || f.gtype) + (num(f.amt) > 0 ? ' بقيمة ' + money(num(f.amt)) + ' ريال' : '') + ' — المهلة ' + (h ? h[1] : f.hours + ' ساعة') + '. افتح طلبك في حسابك للرد.';
 }
 /* المعاينة الحيّة — بطاقة العميل كما يراها: المطلوب · المبلغ · الملاحظة · المهلة · أوافق / لا أوافق، ثم البيان بعد الموافقة */
 function preview(x) {
@@ -1257,7 +1257,7 @@ var LP_DOC = [['summary', 'ملخص الطلب'], ['decision', 'قرار الف�
 /* v953: معاينة PDF — إطار واحد بلا شريط تمرير داخلي */
 (function () { function fit(f) { try { var d = f.contentDocument; if (!d || !d.body) return; d.documentElement.style.overflow = 'hidden'; d.body.style.overflow = 'hidden'; var h = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight), cur = parseFloat(f.style.height) || 0; if (h > cur) f.style.height = h + 'px'; } catch (e) {} }
 new MutationObserver(function () { document.querySelectorAll('.cr-dm iframe').forEach(function (f) { if (f.__fit) return; f.__fit = 1; f.addEventListener('load', function () { fit(f); setTimeout(function () { fit(f); }, 500); }); fit(f); }); }).observe(document.documentElement, { childList: true, subtree: true }); })();
-var LP_MG = [['parties', 'أطراف العقد'], ['summary', 'موضوع العقد'], ['decision', 'طلبك وقرار الفريق'], ['defer', 'تفاصيل قيمة العقد الموحّد'], ['fees', 'خطة الدفع'], ['contract', 'العقود السابقة بعد التوقيع'], ['sched', 'جدول الدفعات'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
+var LP_MG = [['parties', 'أطراف العقد'], ['summary', 'موضوع العقد'], ['decision', 'طلبك وقرار الفريق'], ['defer', 'تفاصيل قيمة العقد الموحّد'], ['fees', 'خطة الدفع'], ['contract', 'قبل التوحيد وبعده'], ['sched', 'جدول الدفعات'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
 /* صفوف خطوة واحدة: نص · نص طويل · لون · مفتاح · رقم، ومفتاح الإظهار بجانب العنصر */
 function lpRows(L, T, s, ro, onCh) {
 return s.f.map(function (f) {
@@ -1360,7 +1360,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=955'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=956'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {

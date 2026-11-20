@@ -782,8 +782,12 @@ if (!S.opts) { root.appendChild(el('div', { class: 'cc-card' }, [el('p', { text:
 if (S.done) {
 root.appendChild(el('section', { class: 'cc-card cc-done' }, [icon('check'), el('h2', { text: 'أُرسل طلب التوحيد' }), el('p', {}, ['رقم الطلب ', el('bdi', { dir: 'ltr', text: S.done.no })]),
 el('p', { text: 'يراجعه فريق تيرا ويصلك العرض برابط للموافقة على واتساب والبريد.' }), el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: function () { S.done = null; paint(); } }, ['طلب آخر'])]));
-} else root.appendChild(el('section', { class: 'cc-card' }, [el('h2', { text: 'طلب توحيد العقود' })].concat(form())));
-var ml = mineList(); if (ml) root.appendChild(ml);
+} else { /* v956: طلب قائم أولًا — والنموذج الجديد عند الطلب فقط، بلا ازدواجية */
+var openR = (S.mine || []).filter(function (q) { return ['done', 'closed', 'rejected', 'cancelled', 'withdrawn', 'expired'].indexOf(q.state) < 0; });
+if (openR.length && !S.newReq) { var ml0 = mineList(); if (ml0) root.appendChild(ml0); root.appendChild(el('section', { class: 'cc-card cc-mg-new' }, [el('p', { class: 'cc-muted', text: 'طلبك أعلاه قيد المتابعة. ولتوحيد عقود أخرى:' }), el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.newReq = true; paint(); } }, ['طلب توحيد جديد'])])); }
+else { root.appendChild(el('section', { class: 'cc-card' }, [el('h2', { text: 'طلب توحيد العقود' })].concat(form()))); var ml1 = mineList(); if (ml1) root.appendChild(ml1); }
+}
+if (S.done) { var ml = mineList(); if (ml) root.appendChild(ml); }
 if (S.confirm) {
 var r = (S.mine || []).filter(function (x) { return x.id === S.confirm; })[0];
 if (r) root.appendChild(el('div', { class: 'cc-card cc-confirm' }, [el('p', { text: 'إلغاء الطلب ' + r.no + '؟ لا يمكن التراجع.' }), el('div', { class: 'cc-acts' }, [el('button', { type: 'button', class: 'cc-btn is-pri', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['نعم، ألغِ الطلب']), el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: function () { S.confirm = null; paint(); } }, ['رجوع'])])]));
@@ -923,4 +927,29 @@ Array.prototype.forEach.call(r.querySelectorAll('textarea.cx-ta'), enhTa);
 var pend = false;
 new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; scan(document.body); }); }).observe(document.documentElement, { childList: true, subtree: true });
 if (document.body) scan(document.body);
+})();
+
+/* ═════════ v956: توحيد العقود من داخل «عقودي» — بطاقة واحدة أعلى صفحة العقود تفتح طلب التوحيد (مع منتج جديد إن رغب العميل) ═════════ */
+(function () {
+'use strict';
+function el(t, a, k) { var e = document.createElement(t); Object.keys(a || {}).forEach(function (n) { var v = a[n]; if (v == null || v === false) return; if (n === 'text') e.textContent = v; else if (n === 'class') e.className = v; else if (n.slice(0, 2) === 'on') e.addEventListener(n.slice(2), v); else e.setAttribute(n, v === true ? '' : v); }); (k || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); }); return e; }
+function host() {
+var hs = [].slice.call(document.querySelectorAll('h1, h2, .tq-ph-t, [class*="title"]')).filter(function (x) { return x.children.length === 0 && x.textContent.trim() === 'عقودي'; });
+if (!hs.length) return null;
+var h = hs[0], card = h.closest('section, header, .tq-card, .card') || h.parentElement;
+if (!card || !/العقود القائمة/.test(card.textContent)) return null;
+return card;
+}
+function card() {
+return el('section', { class: 'gx-mgent', role: 'region', 'aria-label': 'توحيد العقود' }, [
+el('div', { class: 'gx-mgent-t' }, [el('b', { text: 'توحيد عقودك في عقد واحد' }), el('span', { text: 'اختر عقدين أو أكثر من عقودك — ويمكنك إضافة منتج جديد معها — بخطة دفع واحدة يراجعها فريق تيرا.' })]),
+el('button', { type: 'button', class: 'gx-mgent-b', 'data-live-ok': '', onclick: function () { try { window.__teraApp.go('merge'); } catch (e) { void e; } } }, ['توحيد عقودي'])]);
+}
+var pend = false;
+function scan() {
+if (!window.__teraApp || typeof window.__teraApp.go !== 'function') return;
+var c = host(); if (!c || (c.nextElementSibling && c.nextElementSibling.classList && c.nextElementSibling.classList.contains('gx-mgent'))) return;
+c.parentNode.insertBefore(card(), c.nextSibling);
+}
+new MutationObserver(function () { if (pend) return; pend = true; requestAnimationFrame(function () { pend = false; scan(); }); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
