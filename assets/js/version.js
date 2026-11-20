@@ -1,5 +1,5 @@
 /* رقم الإصدار — يولّده tools/build.py (VERSION/VDATE) */
-window.TQ_VERSION={v:'958',d:'2026-11-20'};
+window.TQ_VERSION={v:'959',d:'2026-11-20'};
 (function(){var V=window.TQ_VERSION;function fill(){document.querySelectorAll('[data-tq-ver]').forEach(function(el){el.innerHTML='الإصدار '+V.v+' · <bdi dir="ltr">'+V.d+'</bdi>'});document.querySelectorAll('.pv-rel').forEach(function(el){el.innerHTML='<i>الإصدار</i> '+V.v+' <small>'+V.d+'</small>'})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fill);else fill()})();
 /* v383 (v386: شريط التحديث تحت الهيدر، و«حسابك»): تحديث التطبيق — يُضمَّن في assets/js/version.js (tools/build.py). يعمل في كل الصفحات ومنها التطبيق المثبّت على الشاشة الرئيسية.
  * • يفحص رقم الإصدار عند الفتح، وعند العودة للتطبيق، وكل 5 دقائق.
@@ -190,7 +190,7 @@ window.TQ_VERSION={v:'958',d:'2026-11-20'};
         try { var se = JSON.parse(localStorage.getItem('tera.admin.session') || 'null'); logged = !!(se && se.access_token && (!se.expires_at || se.expires_at * 1000 > Date.now())); } catch (e) { void e; }
         /* v410: رابط دفع — زر «ادفع الآن» يفتح بوابة الدفع مباشرة */
         if (n.p && /^\/api\/pay\/l\/[A-Za-z0-9_-]+$/.test(n.p)) acts.push({ label: 'ادفع الآن', primary: true, run: function () { location.href = n.p; } });
-        else if (/MG-\d{6}-[0-9A-F]{6}/.test(String(n.t || '') + ' ' + String(n.b || '')) && window.__teraApp && typeof window.__teraApp.go === 'function') acts.push({ label: 'عرض الطلب', primary: true, run: function () { try { window.__teraApp.go(/\/staff\//.test(location.pathname) ? 'cu-crq-merge' : 'merge'); } catch (e) { void e; } } });
+        else if (/MG-\d{6}-[0-9A-F]{6}/.test(String(n.t || '') + ' ' + String(n.b || '')) && window.__teraApp && typeof window.__teraApp.go === 'function') acts.push({ label: 'عرض الطلب', primary: true, run: function () { try { if (/\/staff\//.test(location.pathname)) { var nb = document.querySelector('[data-next-nav="cu-crq-merge"]'); if (nb) nb.click(); else if (window.TQ_PUSH_GO) window.TQ_PUSH_GO(k); } else window.__teraApp.go('merge'); } catch (e) { void e; } } });
       else if (window.TQ_PUSH_GO && window.TQ_PUSH_GO(k, true)) acts.push({ label: 'عرض التفاصيل', primary: true, run: function () { window.TQ_PUSH_GO(k); } });
         else if (n.p && /^\/(staff|clients)\//.test(n.p) && location.pathname.indexOf(n.p) !== 0) acts.push({ label: logged ? 'فتح حسابك' : 'الدخول لحسابك', primary: true, run: function () { try { sessionStorage.setItem('tq.go', 'notif'); } catch (e) { void e; } location.href = n.p; } });
         acts.push({ label: 'إغلاق' });
