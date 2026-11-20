@@ -3932,7 +3932,7 @@ function factTiles(list) {
 const rqIds = (r, pre) => e('span', { class: 'rq-ids' }, [e('span', { class: 'rq-no' }, [e('small', {}, 'رقم الطلب'), e('bdi', { dir: 'ltr' }, r.no)]), e('span', { class: 'rq-dt' }, [frag(ui('calendar-blank', 13)), pre ? e('small', {}, pre) : null, e('bdi', { dir: 'ltr' }, iso(r.at)), e('small', {}, AR_DAY[r.at.getDay()])])]);
 function reqCard(r) {
   const t = rType(r.type), st = rStat(r.status), at = rStage(r), n = r.path.length;
-  return e('button', { type: 'button', class: 'fx-card fx-req is-' + st[2], onClick: function () { if (r.crq && r.type === 'merge') { go('merge'); var no = r.no, k = 0, t = setInterval(function () { k++; var h = [].slice.call(document.querySelectorAll('.cc-mg .cc-row-h bdi')).filter(function (b) { return b.textContent.trim() === no; })[0]; if (h || k > 40) { clearInterval(t); var row = h && h.closest('.cc-row'); if (row) { row.scrollIntoView({ block: 'start', behavior: 'smooth' }); row.classList.add('is-focus'); setTimeout(function () { row.classList.remove('is-focus'); }, 2500); } } }, 150); return; } FX.rid = r.no; go('req'); } }, [
+  return e('button', { type: 'button', class: 'fx-card fx-req is-' + st[2], onClick: function () { if (r.crq && r.type === 'merge') { window.TQ_MG_FOCUS = r.no; go('merge'); var no = r.no, k = 0, t = setInterval(function () { k++; var h = [].slice.call(document.querySelectorAll('.cc-mg .cc-row-h bdi')).filter(function (b) { return b.textContent.trim() === no; })[0]; if (h || k > 40) { clearInterval(t); var row = h && h.closest('.cc-row'); if (row) { row.scrollIntoView({ block: 'start', behavior: 'smooth' }); row.classList.add('is-focus'); setTimeout(function () { row.classList.remove('is-focus'); }, 2500); } } }, 150); return; } FX.rid = r.no; go('req'); } }, [
     e('div', { class: 'fx-card-h' }, [e('span', { class: 'fx-card-ic' }, frag(tile(t[2]))), e('div', { class: 'fx-card-t' }, [e('b', {}, t[1]), rqIds(r)]), DS.badge(st[1], st[2])]),
     r.fields[0] ? factTiles(r.fields.slice(0, 3)) : null,
     e('div', { class: 'fx-path-mini', 'aria-label': 'مراحل الطلب' }, r.path.map(function (s, i) { return e('i', { class: i < at ? 'is-done' : i === at ? 'is-now' : '' }); })),
@@ -6390,7 +6390,7 @@ function soReqCard(r) {
     e('div', { class: 'so-b' }, [e('div', { class: 'so-top' }, [e('bdi', { dir: 'ltr', class: 'so-no' }, r.no), e('span', { class: 'so-pill is-info' }, 'طلب عرض سعر')]),
       e('b', { class: 'so-t' }, t),
       e('span', { class: 'so-m' }, [bdiD(iso(r.at)), ' · ', st[1]]),
-      e('div', { class: 'so-f' }, [e('b', { class: 'so-amt is-quote' }, 'السعر عند الطلب'), DS.button('تفاصيل الطلب', { size: 'sm', ui: 'file-text', onClick: function () { if (r.crq && r.type === 'merge') { go('merge'); var no = r.no, k = 0, t = setInterval(function () { k++; var h = [].slice.call(document.querySelectorAll('.cc-mg .cc-row-h bdi')).filter(function (b) { return b.textContent.trim() === no; })[0]; if (h || k > 40) { clearInterval(t); var row = h && h.closest('.cc-row'); if (row) { row.scrollIntoView({ block: 'start', behavior: 'smooth' }); row.classList.add('is-focus'); setTimeout(function () { row.classList.remove('is-focus'); }, 2500); } } }, 150); return; } FX.rid = r.no; go('req'); } })])])]);
+      e('div', { class: 'so-f' }, [e('b', { class: 'so-amt is-quote' }, 'السعر عند الطلب'), DS.button('تفاصيل الطلب', { size: 'sm', ui: 'file-text', onClick: function () { if (r.crq && r.type === 'merge') { window.TQ_MG_FOCUS = r.no; go('merge'); var no = r.no, k = 0, t = setInterval(function () { k++; var h = [].slice.call(document.querySelectorAll('.cc-mg .cc-row-h bdi')).filter(function (b) { return b.textContent.trim() === no; })[0]; if (h || k > 40) { clearInterval(t); var row = h && h.closest('.cc-row'); if (row) { row.scrollIntoView({ block: 'start', behavior: 'smooth' }); row.classList.add('is-focus'); setTimeout(function () { row.classList.remove('is-focus'); }, 2500); } } }, 150); return; } FX.rid = r.no; go('req'); } })])])]);
 }
 
 /* ===== v141: مركز المراسلات — ثلاثة تصنيفات رئيسية بلا تداخل: شكوى · الدعم الفني · استفسار ===== */
@@ -29242,8 +29242,8 @@ function lvCrqPath(x) {
   return S.map(function (t, i) { return [t, i < cur ? (i === 0 ? new Date(x.created_at) : last) : null]; });
 }
 function lvCrqReq(x) {
-const f = [['العقد', x.contract_no]].concat((x.targets || []).map(function (t) { return ['الدفعة', t.seq + ' · ' + iso(new Date(t.due))]; }));
-if (x.total != null) f.push(['يُضاف إلى العقد', SR(Number(x.total))]);
+const f = [[x.kind === 'merge' ? 'العقود' : 'العقد', x.contract_no]].concat((x.targets || []).map(function (t) { return ['الدفعة', t.seq + ' · ' + iso(new Date(t.due))]; }));
+if (x.total != null) f.push([x.kind === 'merge' ? 'قيمة العقد الموحّد' : 'يُضاف إلى العقد', SR(Number(x.total))]);
 if (x.close_t) f.push(['سبب الإغلاق', x.close_t]);
 return mkR({ no: x.no, type: x.kind, at: new Date(x.created_at), status: LV_CRQ_ST[x.state] || 'sent', contract: x.contract_no, fields: f, live: true, crq: x,
 path: lvCrqPath(x),

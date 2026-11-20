@@ -752,26 +752,52 @@ var j = await api('POST', '/api/account/crq', { kind: 'merge', contract_nos: S.s
 S.done = j; S.busy = false; S.sel = []; S.prod = ''; S.pv = ''; S.pt = ''; S.pk = ''; S.pz = null; S.det = ''; S.recv = ''; S.rd = ''; S.months = ''; S.unit = 'month'; S.note = ''; S.ack = false; load();
 } catch (e) { S.busy = false; S.err = e.message; paint(); }
 }
-function mineList() {
+/* v961: قائمة طلبات التوحيد — صف مضغوط لكل طلب، يُفتح طلب واحد فقط؛ المراسلة عند الطلب؛ السابقة مطويّة */
+function mineList(withNew) {
 if (!S.mine || !S.mine.length) return null;
-return el('section', { class: 'cc-card' }, [el('h3', { text: 'طلبات التوحيد' }), el('div', { class: 'cc-rows' }, S.mine.map(function (r) {
-var st = STEP_OF[r.state], pr = r.product && r.product.on ? r.product : null;
-return el('div', { class: 'cc-row is-' + (r.tone || 'info') }, [el('div', { class: 'cc-row-h' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: r.no })]), el('span', { class: 'cc-badge is-' + (r.tone || 'info'), text: r.state === 'closed' && r.close_t ? 'مغلق · ' + r.close_t : r.state_t })]),
-el('p', {}, ['العقود ', el('bdi', { dir: 'ltr', text: r.contract_no || '' }), pr ? ' · ' + (pr.type || 'منتج إضافي') + ' بقيمة ' + money(pr.value) + ' ر.س' + (pr.recv_t ? ' · ' + pr.recv_t : '') : '']),
-r.total != null ? el('p', { text: 'قيمة العقد الموحّد: ' + money(r.total) + ' ر.س' }) : null,
-r.new_contract ? el('p', {}, ['عقدك الموحّد: ', el('bdi', { dir: 'ltr', text: r.new_contract })]) : null,
-st >= 0 ? stepper(st) : null,
-r.state === 'consent' || r.state === 'sign' ? el('div', { class: 'cc-note is-info' }, [icon('link'), el('span', { text: r.state === 'consent' ? 'أرسلنا لك العرض برابط على واتساب والبريد — افتحه للموافقة أو الاعتذار.' : 'أرسلنا لك عقد التوحيد للتوقيع برابط على واتساب والبريد.' })]) : null,
-r.state === 'received' ? el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['إلغاء الطلب']) : null,
-chatOf(r)]);
-}))]);
+var END = ['done', 'closed', 'rejected', 'cancelled', 'withdrawn', 'expired'];
+var act = S.mine.filter(function (r) { return END.indexOf(r.state) < 0; }), past = S.mine.filter(function (r) { return END.indexOf(r.state) >= 0; });
+if (window.TQ_MG_FOCUS) { var fr = S.mine.filter(function (r) { return r.no === window.TQ_MG_FOCUS; })[0]; if (fr) { S.open = fr.id; if (END.indexOf(fr.state) >= 0) S.past = true; } window.TQ_MG_FOCUS = null; }
+if (S.open == null) S.open = act.length ? act[0].id : -1;
+function stageT(r) {
+var st = STEP_OF[r.state];
+if (r.state === 'done') return 'نُفّذ' + (r.new_contract ? ' — عقدك الموحّد ' + r.new_contract : '');
+if (r.state === 'closed') return r.close_t ? 'مغلق · ' + r.close_t : 'مغلق';
+if (END.indexOf(r.state) >= 0) return r.state_t || '';
+return st >= 0 && st < MG_STEPS.length ? 'المرحلة ' + (st + 1) + ' من ' + MG_STEPS.length + ': ' + MG_STEPS[st] : (r.state_t || '');
 }
-function chatOf(r) {
-var c = r.chat || {}, need = Number(c.open) > 0 || Number(c.done) > 0;
-if (r.state === 'closed' && !Number(c.n)) return null;
-if (need || S.chat === r.id) return needCard({ r: r, token: o.token, onChange: load });
-return el('button', { type: 'button', class: 'cc-btn is-sm cx-chatb', 'data-live-ok': '', onclick: function () { S.chat = r.id; paint(); } }, [icon('mail'), 'المراسلة مع فريق تيرا' + (Number(c.n) ? ' (' + c.n + ')' : '')]);
+function head(r, on) {
+var c = r.chat || {}, need = Number(c.open) > 0;
+return el('button', { type: 'button', class: 'cc-row-h mg-rh', 'data-live-ok': '', 'aria-expanded': on ? 'true' : 'false', onclick: function () { S.open = on ? -1 : r.id; S.chat = null; paint(); } }, [
+el('span', { class: 'mg-rh-m' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: r.no })]), el('small', { text: stageT(r) })]),
+el('span', { class: 'mg-rh-s' }, [need ? el('span', { class: 'cc-badge is-warn', text: 'مطلوب منك' }) : el('span', { class: 'cc-badge is-' + (r.tone || 'info'), text: r.state_t || '' }), el('span', { class: 'mg-rh-c' + (on ? ' is-on' : ''), 'aria-hidden': 'true' })])]);
 }
+function body(r) {
+var pr = r.product && r.product.on ? r.product : null, st = STEP_OF[r.state], c = r.chat || {}, isEnd = END.indexOf(r.state) >= 0, chatOn = S.chat === r.id;
+var kv = [['العقود', r.contract_no || '—']];
+if (pr) kv.push(['منتج إضافي', (pr.type || 'منتج') + ' بقيمة ' + money(pr.value) + ' ر.س']);
+if (r.total != null) kv.push(['قيمة العقد الموحّد', money(r.total) + ' ر.س']);
+if (r.new_contract) kv.push(['عقدك الموحّد', r.new_contract]);
+var out = [];
+if (!isEnd && st >= 0) out.push(stepper(st));
+out.push(el('dl', { class: 'mg-kv' }, [].concat.apply([], kv.map(function (k) { return [el('dt', { text: k[0] }), el('dd', {}, [el('bdi', { text: k[1] })])]; }))));
+if (r.state === 'consent' || r.state === 'sign') out.push(el('div', { class: 'cc-note is-info' }, [icon('link'), el('span', { text: r.state === 'consent' ? 'أرسلنا لك العرض برابط على واتساب والبريد — افتحه للموافقة أو الاعتذار.' : 'أرسلنا لك عقد التوحيد للتوقيع برابط على واتساب والبريد.' })]));
+var asks = Number(c.open) > 0 || (!isEnd && Number(c.done) > 0);
+if (asks || chatOn) out.push(needCard({ r: r, token: o.token, onChange: load, chat: chatOn }));
+var acts = [];
+if (Number(c.n) || !isEnd) acts.push(el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.chat = chatOn ? null : r.id; paint(); } }, [icon('mail'), chatOn ? 'إخفاء المراسلة' : 'المراسلة مع فريق تيرا' + (Number(c.n) ? ' (' + c.n + ')' : '')]));
+if (r.state === 'received') acts.push(el('button', { type: 'button', class: 'cc-btn is-sm is-ghost', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['إلغاء الطلب']));
+if (acts.length) out.push(el('div', { class: 'mg-acts' }, acts));
+return el('div', { class: 'mg-rb' }, out);
+}
+function row(r) { var on = S.open === r.id; return el('div', { class: 'cc-row mg-r is-' + (r.tone || 'info') + (on ? ' is-on' : '') }, [head(r, on), on ? body(r) : null]); }
+var top = el('div', { class: 'mg-lh' }, [el('h3', { text: act.length ? 'طلباتك الحالية' : 'طلبات التوحيد' }), withNew ? el('button', { type: 'button', class: 'cc-btn is-sm is-pri', 'data-live-ok': '', onclick: function () { S.newReq = true; paint(); } }, ['+ طلب توحيد جديد']) : null]);
+var kids = [top];
+if (act.length) kids.push(el('div', { class: 'mg-rows' }, act.map(row)));
+if (past.length) kids.push(el('div', { class: 'mg-past' + (S.past ? ' is-on' : '') }, [el('button', { type: 'button', class: 'mg-past-t', 'data-live-ok': '', 'aria-expanded': S.past ? 'true' : 'false', onclick: function () { S.past = !S.past; paint(); } }, [el('span', { text: 'الطلبات السابقة (' + past.length + ')' }), el('span', { class: 'mg-rh-c' + (S.past ? ' is-on' : ''), 'aria-hidden': 'true' })]), S.past ? el('div', { class: 'mg-rows' }, past.map(row)) : null]));
+return el('section', { class: 'cc-card mg-list' }, kids);
+}
+function chatOf(r) { return null; }
 async function cancel(r) {
 if (S.confirm !== r.id) { S.confirm = r.id; paint(); return; }
 try { await api('POST', '/api/account/crq/' + r.id + '/cancel', {}); S.confirm = null; load(); } catch (e) { S.err = e.message; paint(); }
@@ -784,7 +810,7 @@ root.appendChild(el('section', { class: 'cc-card cc-done' }, [icon('check'), el(
 el('p', { text: 'يراجعه فريق تيرا ويصلك العرض برابط للموافقة على واتساب والبريد.' }), el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: function () { S.done = null; paint(); } }, ['طلب آخر'])]));
 } else { /* v956: طلب قائم أولًا — والنموذج الجديد عند الطلب فقط، بلا ازدواجية */
 var openR = (S.mine || []).filter(function (q) { return ['done', 'closed', 'rejected', 'cancelled', 'withdrawn', 'expired'].indexOf(q.state) < 0; });
-if (openR.length && !S.newReq) { var ml0 = mineList(); root.appendChild(el('section', { class: 'cc-card cc-mg-new' }, [el('p', { class: 'cc-muted', text: 'طلبك أدناه قيد المتابعة. ولتوحيد عقود أخرى:' }), el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.newReq = true; paint(); } }, ['طلب توحيد جديد'])])); if (ml0) root.appendChild(ml0); }
+if (openR.length && !S.newReq) { var ml0 = mineList(true); if (ml0) root.appendChild(ml0); }
 else { root.appendChild(el('section', { class: 'cc-card' }, [el('h2', { text: 'طلب توحيد العقود' })].concat(form()))); var ml1 = mineList(); if (ml1) root.appendChild(ml1); }
 }
 if (S.done) { var ml = mineList(); if (ml) root.appendChild(ml); }

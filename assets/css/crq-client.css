@@ -348,3 +348,36 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .gx-file-n { display: flex; gap: 6px; align-items: center; min-width: 0; font-size: 13px; } .gx-file-n bdi { overflow-wrap: anywhere; }
 .gx-file-a { display: flex; gap: 8px; } .gx-file-a .gx-btn { min-height: 36px; padding: 6px 14px; }
 .cc-mg .cc-row.is-focus { outline: 2px solid var(--brand, #0AA5AD); outline-offset: 3px; transition: outline-color .4s; }
+/* v961: قائمة طلبات التوحيد — صف مضغوط لكل طلب، تفاصيل طلب واحد مفتوح، السابقة مطويّة */
+.cc-mg .mg-list { padding: 16px; }
+.cc-mg .mg-lh { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.cc-mg .mg-lh h3 { margin: 0; }
+.cc-mg .mg-rows { display: grid; gap: 10px; }
+.cc-mg .mg-r { border: 1px solid var(--line, #E3E9F2); border-radius: 14px; background: var(--card, #fff); overflow: hidden; padding: 0; margin: 0; display: block; }
+.cc-mg .mg-r.is-on { border-color: var(--brand, #0AA5AD); box-shadow: 0 2px 12px rgba(11, 37, 82, .07); }
+.cc-mg .mg-rh { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; cursor: pointer; color: inherit; }
+.cc-mg .mg-rh:hover { background: var(--soft, rgba(10, 165, 173, .05)); }
+.cc-mg .mg-rh:focus-visible { outline: 2px solid var(--brand, #0AA5AD); outline-offset: -2px; }
+.cc-mg .mg-rh-m { display: grid; gap: 3px; min-width: 0; }
+.cc-mg .mg-rh-m b { font-size: 15px; }
+.cc-mg .mg-rh-m small { color: var(--mut, #5B6B85); font-size: 12.5px; line-height: 1.6; }
+.cc-mg .mg-rh-s { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.cc-mg .mg-rh-c { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .55; transition: transform .2s; margin-top: -4px; }
+.cc-mg .mg-rh-c.is-on { transform: rotate(-135deg); margin-top: 4px; }
+.cc-mg .mg-rb { padding: 14px; display: grid; gap: 14px; border-top: 1px solid var(--line, #E3E9F2); }
+.cc-mg .mg-rb .cc-steps { margin: 0; }
+.cc-mg .mg-kv { display: grid; grid-template-columns: minmax(110px, max-content) 1fr; gap: 8px 16px; margin: 0; font-size: 13.5px; }
+.cc-mg .mg-kv dt { color: var(--mut, #5B6B85); }
+.cc-mg .mg-kv dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.cc-mg .mg-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.cc-mg .mg-rb .cx-needw > .cx-need { margin: 0; }
+.cc-mg .mg-past { margin-top: 14px; border-top: 1px dashed var(--line, #E3E9F2); padding-top: 6px; }
+.cc-mg .mg-past-t { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 2px; font-weight: 700; color: var(--mut, #5B6B85); }
+.cc-mg .mg-past-t:focus-visible { outline: 2px solid var(--brand, #0AA5AD); }
+.cc-mg .mg-past .mg-rows { margin-top: 6px; }
+@media (max-width: 600px) {
+  .cc-mg .mg-list { padding: 12px; }
+  .cc-mg .mg-kv { grid-template-columns: 1fr; gap: 2px; }
+  .cc-mg .mg-kv dd { margin-bottom: 8px; }
+  .cc-mg .mg-rh { padding: 12px; }
+}
