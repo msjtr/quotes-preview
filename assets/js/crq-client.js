@@ -400,7 +400,7 @@ function msgBox(o) {
     if (staff) kids.push(el('button', { type: 'button', class: 'cc-btn is-sm cx-wide cx-askbtn' + (M.askOpen ? ' is-on' : ''), 'aria-expanded': M.askOpen ? 'true' : 'false', 'data-live-ok': '', onclick: function () { M.askOpen = !M.askOpen; paint(); if (M.askOpen) { var w = root.querySelector('.cx-askw'); if (w) w.scrollIntoView({ block: 'start', behavior: 'smooth' }); } } }, [icon('clip'), M.askOpen ? 'إخفاء نموذج الطلب' : 'طلب استكمال من العميل'])); /* v940: مكان واحد للطلب من العميل */
     if (!A.length) kids.push(el('p', { class: 'cx-hint', text: staff ? 'لا مطلوبات بعد.' : 'لا مطلوبات.' }));
     else {
-      kids.push(el('div', { class: 'cx-prog' }, [el('i', { style: 'width:' + pct + '%' })]), el('small', { class: 'cx-hint', text: 'وصل ' + dn.length + ' من ' + A.length + (M.sum && M.sum.due && open.length ? ' · المهلة حتى ' + stamp(M.sum.due) : '') }));
+      if (open.length) kids.push(el('div', { class: 'cx-prog' }, [el('i', { style: 'width:' + pct + '%' })]), el('small', { class: 'cx-hint', text: 'وصل ' + dn.length + ' من ' + A.length + (M.sum && M.sum.due && open.length ? ' · المهلة حتى ' + stamp(M.sum.due) : '') }));
       kids.push(el('ul', { class: 'cx-fl' }, A.map(function (a) { return el('li', { class: 'is-' + a.state }, [el('i', { text: a.state === 'done' ? '✓' : '…' }), el('div', {}, [el('b', { text: a.title }), el('small', { text: a.state === 'done' ? 'وصل ' + stamp(a.done_at) : 'لم يصل بعد' })]),
         a.state === 'done' && a.file_msg ? el('button', { type: 'button', class: 'cx-lnk', 'data-live-ok': '', onclick: function () { view(a.file_msg); } }, ['عرض']) : null,
         a.state === 'open' ? el('button', { type: 'button', class: 'cx-x', title: 'إلغاء هذا المطلوب', 'aria-label': 'إلغاء ' + a.title, 'data-live-ok': '', onclick: function () { cancelAsk(a); } }, [icon('x')]) : null]); })));
@@ -528,12 +528,12 @@ function needCard(o) {
     var team = (M.rows || []).filter(function (m) { return m.file && m.who === 'staff'; });
     if (open.length || dn.length) {
       var ask = (M.rows || []).filter(function (m) { return m.ask_ids && m.ask_ids.length; }).pop();
-      var kids = [el('div', { class: 'cx-h' }, [el('span', { class: 'cx-ic is-gold', text: open.length ? '!' : '✓' }), el('h3', { text: open.length ? 'مطلوب منك لإكمال طلبك' : 'أرفقت كل المطلوب' })])];
+      var kids = [el('div', { class: 'cx-h' }, [el('span', { class: 'cx-ic is-gold', text: open.length ? '!' : '✓' }), el('h3', { text: open.length ? 'مطلوب منك لإكمال طلبك' : (A.some(function (z) { return z.decision === 'decline'; }) ? 'تم الرد على المطلوب' : 'أرفقت كل المطلوب') })])];
       if (ask && ask.body && open.length && !/مطلوب منك/.test(ask.body)) kids.push(el('p', { class: 'cx-b', text: ask.body }));
       if (open.length && M.sum && M.sum.due) kids.push(el('small', { class: 'cx-hint', text: 'المهلة حتى ' + stamp(M.sum.due) }));
-      kids.push(el('div', { class: 'cx-prog' }, [el('i', { style: 'width:' + Math.round(dn.length / (A.length || 1) * 100) + '%' })]), el('small', { class: 'cx-hint', text: 'أرفقت ' + dn.length + ' من ' + A.length }));
+      if (open.length) kids.push(el('div', { class: 'cx-prog' }, [el('i', { style: 'width:' + Math.round(dn.length / (A.length || 1) * 100) + '%' })]), el('small', { class: 'cx-hint', text: 'أرفقت ' + dn.length + ' من ' + A.length }));
       A.forEach(function (a, i) {
-        if (a.kind === 'guar' && window.CRQG) { kids.push(window.CRQG.item(a, i, { api: api, reload: load, up: up })); return; }
+        if (a.kind === 'guar' && window.CRQG) { kids.push(window.CRQG.item(a, i, { api: api, reload: load, up: up, view: view, canRe: ['received', 'decision'].indexOf(r.state) >= 0 })); return; }
         kids.push(el('div', { class: 'cx-ni is-' + a.state }, [el('span', { class: 'cx-n', text: a.state === 'done' ? '✓' : String(i + 1) }), el('div', {}, [el('b', { text: a.title }), el('small', { text: a.state === 'done' ? ((a.file && a.file.name) || 'مرفق') + ' · أُرسل للفريق' : (a.detail ? a.detail + ' · ' : '') + (TYPE_T[a.types] || '') + ' · حتى ' + a.mb + ' ميجا' })]),
           a.state === 'open' ? el('button', { type: 'button', class: 'cx-up', disabled: !!M.busy, 'data-live-ok': '', onclick: function () { up(a); } }, [icon('up'), M.busy === a.id ? 'جارٍ الرفع…' : 'اختر الملف أو صوّره']) : (a.file_msg ? el('button', { type: 'button', class: 'cx-lnk', 'data-live-ok': '', onclick: function () { view(a.file_msg); } }, ['عرض']) : null)]));
       });
@@ -784,7 +784,7 @@ root.appendChild(el('section', { class: 'cc-card cc-done' }, [icon('check'), el(
 el('p', { text: 'يراجعه فريق تيرا ويصلك العرض برابط للموافقة على واتساب والبريد.' }), el('button', { type: 'button', class: 'cc-btn', 'data-live-ok': '', onclick: function () { S.done = null; paint(); } }, ['طلب آخر'])]));
 } else { /* v956: طلب قائم أولًا — والنموذج الجديد عند الطلب فقط، بلا ازدواجية */
 var openR = (S.mine || []).filter(function (q) { return ['done', 'closed', 'rejected', 'cancelled', 'withdrawn', 'expired'].indexOf(q.state) < 0; });
-if (openR.length && !S.newReq) { var ml0 = mineList(); if (ml0) root.appendChild(ml0); root.appendChild(el('section', { class: 'cc-card cc-mg-new' }, [el('p', { class: 'cc-muted', text: 'طلبك أعلاه قيد المتابعة. ولتوحيد عقود أخرى:' }), el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.newReq = true; paint(); } }, ['طلب توحيد جديد'])])); }
+if (openR.length && !S.newReq) { var ml0 = mineList(); root.appendChild(el('section', { class: 'cc-card cc-mg-new' }, [el('p', { class: 'cc-muted', text: 'طلبك أدناه قيد المتابعة. ولتوحيد عقود أخرى:' }), el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.newReq = true; paint(); } }, ['طلب توحيد جديد'])])); if (ml0) root.appendChild(ml0); }
 else { root.appendChild(el('section', { class: 'cc-card' }, [el('h2', { text: 'طلب توحيد العقود' })].concat(form()))); var ml1 = mineList(); if (ml1) root.appendChild(ml1); }
 }
 if (S.done) { var ml = mineList(); if (ml) root.appendChild(ml); }
@@ -842,7 +842,8 @@ function paint() {
 box.innerHTML = ''; box.className = 'cx-ni gx is-' + a.state;
 var kids = head();
 if (a.state === 'done' || a.state === 'cancelled' || a.state === 'expired') {
-kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? 'أكملت المطلوب — شكرًا لك' : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
+kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? (a.file_msg ? 'تم الإرفاق — يراجعه فريق تيرا' : 'أكملت المطلوب — شكرًا لك') : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
+if (a.state === 'done' && a.file_msg && a.decision !== 'decline') kids.push(el('div', { class: 'gx-file' }, [el('span', { class: 'gx-file-n' }, [el('b', { text: 'المرفق: ' }), el('bdi', { text: (a.file && a.file.name) || 'ملف مرفق' })]), el('span', { class: 'gx-file-a' }, [cx.view ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { cx.view(a.file_msg); } }, ['عرض']) : null, cx.canRe && cx.up ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { cx.up(a); } }, ['استبدال']) : null])]));
 } else if (a.state === 'accepted') {
 kids.push(el('div', { class: 'gx-res is-ok', text: 'وافقت — بقي رفع: ' + (F.filter(function (z) { return z.type === 'file'; }).map(function (z) { return z.t; }).join('، ') || 'المستند') }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { if (cx.up) cx.up(a); } }, ['ارفع صورة أو PDF']));
 } else if (mode === 'no') {

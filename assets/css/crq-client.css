@@ -343,3 +343,8 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .gx-mgent-b { padding: 10px 18px; border-radius: 10px; border: 0; background: #0E7C70; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
 .cc-mg-new { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .cc-mg-new p { margin: 0; }
+/* v960: المرفق بعد الإرسال + إبراز الطلب القادم من «مركز الطلبات» */
+.gx-file { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line, #E3E9F2); border-radius: 12px; background: var(--card, #fff); }
+.gx-file-n { display: flex; gap: 6px; align-items: center; min-width: 0; font-size: 13px; } .gx-file-n bdi { overflow-wrap: anywhere; }
+.gx-file-a { display: flex; gap: 8px; } .gx-file-a .gx-btn { min-height: 36px; padding: 6px 14px; }
+.cc-mg .cc-row.is-focus { outline: 2px solid var(--brand, #0AA5AD); outline-offset: 3px; transition: outline-color .4s; }
