@@ -728,7 +728,7 @@ Q.sentBusy = false; draw();
 }
 function baseAmt(x, k) {
 var r = x.result || {}, pr = r.product || {}, pl = r.plan || {}, f = Q.f;
-if (k === 'remain') return num(r.remain);
+if (k === 'remain') return num(r.remain) || Math.round((x.contracts || []).filter(function (c) { return (x.sel || []).indexOf(c.no) >= 0; }).reduce(function (a, c) { return a + num(c.remain); }, 0) * 100) / 100;
 if (k === 'total') return num(r.total);
 if (k === 'gap') return ST.guar && ST.guar.d && ST.guar.key && String(ST.guar.key).split('|')[0] === x.id ? num(ST.guar.d.gap) : 0;
 if (k === 'product') return pr.on ? num(pr.value) + num(pr.vat) : 0;
@@ -847,6 +847,7 @@ init(x);
 var f = Q.f, c = Q.cfg, ed = !ST.busy && ['closed', 'done', 'rejected', 'withdrawn', 'cancelled'].indexOf(x.state) < 0;
 var bases = (c.bases || []).filter(function (b) { return x.kind === 'merge' || ['remain', 'total', 'gap', 'manual', 'late', 'per'].indexOf(b[0]) >= 0; });
 var setAmt = function () { var a = baseAmt(x, f.basis); if (a != null) f.amt = a ? String(a) : ''; };
+if (!f.adirty && f.basis !== 'manual') setAmt();
 var head = el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'طلب ضمان من العميل' }), el('small', { class: 'cr-hint', text: 'المطلوب الآن من العميل لإكمال الطلب' }),
 Q.can ? btn(Q.edit ? 'إغلاق تحرير القوائم' : 'تحرير القوائم', { cls: 'is-sm', ic: 'gear', on: function () { Q.edit = !Q.edit; draw(); } }) : null]);
 var form = el('div', { class: 'gq-form' }, [
@@ -854,11 +855,11 @@ Q.edit && Q.can ? cfgEditor() : null,
 el('h4', { text: '١. الضمان المطلوب' }),
 el('div', { class: 'gq-g3' }, [
 sel('الغرض من الضمان', f.purpose, (c.purposes || []).map(function (p) { return [p, p]; }), function (v) { f.purpose = v; if (!f.tdirty) f.title = autoTitle(); draw(); }, !ed),
-sel('أساس المبلغ', f.basis, bases.map(function (b) { return [b[0], b[1]]; }), function (v) { f.basis = v; setAmt(); draw(); }, !ed),
+sel('أساس المبلغ', f.basis, bases.map(function (b) { return [b[0], b[1]]; }), function (v) { f.basis = v; f.adirty = false; setAmt(); draw(); }, !ed),
 sel('نوع الضمان', f.gtype, (c.gtypes || []).map(function (g) { return [g.t, g.t]; }), function (v) { f.gtype = v; f.fields = fieldsOf(gtOf(v)); if (!f.tdirty) f.title = autoTitle(); draw(); }, !ed)]),
 el('h4', { text: '٢. تفاصيل الطلب' }),
 el('div', { class: 'gq-g3' }, [
-el('label', { class: 'cr-fld' }, [el('span', { text: f.basis === 'manual' ? 'المبلغ المطلوب' : 'المبلغ المطلوب (محسوب — يمكن تعديله)' }), el('span', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: f.amt, placeholder: '0.00', disabled: !ed, oninput: function (e) { f.amt = e.target.value.replace(/[^\d.]/g, ''); refreshPv(x); } }), el('span', { text: 'ر.س' })])]),
+el('label', { class: 'cr-fld' }, [el('span', { text: f.basis === 'manual' ? 'المبلغ المطلوب' : 'المبلغ المطلوب (محسوب — يمكن تعديله)' }), el('span', { class: 'cr-money' }, [el('input', { type: 'text', inputmode: 'decimal', class: 'cr-num', value: f.amt, placeholder: '0.00', disabled: !ed, oninput: function (e) { f.amt = e.target.value.replace(/[^\d.]/g, ''); f.adirty = true; refreshPv(x); } }), el('span', { text: 'ر.س' })])]),
 f.basis === 'per' ? el('label', { class: 'cr-fld' }, [el('span', { text: 'عدد الدفعات' }), el('input', { type: 'number', min: '1', max: '120', value: String(f.perN), disabled: !ed, onchange: function (e) { f.perN = Math.max(1, Number(e.target.value) || 1); setAmt(); draw(); } })]) : null,
 el('div', { class: 'cr-fld' }, [el('span', { text: 'مهلة الرد' }), seg(HRS, f.hours, function (v) { f.hours = v; draw(); }, !ed)])]),
 el('label', { class: 'cr-fld' }, [el('span', { text: 'عنوان الطلب للعميل' }), el('input', { type: 'text', maxlength: '120', value: f.title, disabled: !ed, oninput: function (e) { f.title = e.target.value; f.tdirty = true; refreshPv(x); } })]),
@@ -948,7 +949,7 @@ el('p', { class: 'cr-g2-sum' }, [cov && extra > 0.004 ? 'زيادة في الض�
 var row = function (kids, v, cls) { return el('div', { class: 'cr-g2-r' + (cls ? ' ' + cls : '') }, [el('span', { class: 'cr-g2-n' }, kids), el('b', {}, [ltr(money(v))])]); };
 /* على العميل: عقوده الفعلية المفتوحة + رسوم هذا الطلب */
 var C = d.contracts || [], LIM = 5, more = C.length > LIM && !g.allC;
-var oR = (more ? C.slice(0, LIM) : C).map(function (k) { return row([ltr(k.no || '—'), k.this ? el('span', { class: 'cr-gv-tag', text: 'هذا الطلب' }) : null], k.left, k.this ? 'is-this' : ''); });
+var oR = (more ? C.slice(0, LIM) : C).map(function (k) { return row([ltr(k.no || '—'), (k.this || (x.sel || []).indexOf(k.no) >= 0) ? el('span', { class: 'cr-gv-tag', text: 'هذا الطلب' }) : null], k.left, k.this ? 'is-this' : ''); });
 if (more) oR.push(el('button', { type: 'button', class: 'cr-gv-link', 'data-live-ok': '', onclick: function () { g.allC = true; paintGuar(); } }, ['عرض كل العقود (' + C.length + ')']));
 if (!C.length) oR.push(el('p', { class: 'cr-g2-empty', text: 'لا مبالغ متبقية في عقود مفتوحة.' }));
 oR.push(row(['رسوم هذا الطلب', el('em', { text: d.calc_ok === false ? 'الحسبة لم تكتمل' : 'شاملة الضريبة' })], d.fees));
@@ -1360,7 +1361,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=957'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=958'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1508,7 +1509,7 @@ function rs(x) { return x && x.result && x.result.ok ? x.result : null; }
 function cnW(n) { n = Number(n) || 0; return n === 1 ? 'عقد واحد' : n === 2 ? 'عقدان' : n <= 10 ? n + ' عقود' : n + ' عقدًا'; }
 function pW(n) { n = Number(n) || 0; return n === 1 ? 'دفعة واحدة' : n === 2 ? 'دفعتان' : n <= 10 ? n + ' دفعات' : n + ' دفعة'; }
 function mW(n) { n = Number(n) || 0; return n === 1 ? 'شهر واحد' : n === 2 ? 'شهران' : n <= 10 ? n + ' أشهر' : n + ' شهرًا'; }
-function errT(x) { var e = (x && x.result && x.result.error) || ''; return MGE[e] || ERRT[e] || 'أكمل الحسبة'; }
+function errT(x) { var e = (x && x.result && x.result.error) || ''; return MGE[e] || ERRT[e] || (x && x.kind === 'merge' ? 'أكمل الحسبة — حدّد عدد الدفعات وتاريخ أول دفعة في «خطة الدفع».' : 'أكمل الحسبة'); }
 function seg(opts, cur, on, dis) { return el('div', { class: 'cr-seg2', role: 'group' }, opts.map(function (o) { return el('button', { type: 'button', class: cur === o[0] ? 'is-on' : '', 'aria-pressed': cur === o[0] ? 'true' : 'false', disabled: dis, 'data-live-ok': '', onclick: function () { if (cur !== o[0]) on(o[0]); } }, [o[1]]); })); }
 function lateTag(n) { return n ? el('span', { class: 'cr-py-s is-bad', text: n === 1 ? 'دفعة متأخرة' : n === 2 ? 'دفعتان متأخرتان' : n + ' دفعات متأخرة' }) : el('span', { class: 'cr-py-s is-ok', text: 'منتظم' }); }
 function goTab(k) { ST.tab = k; keep(); draw(); toTop(); }
@@ -1705,7 +1706,7 @@ el('p', { id: 'cr-mg-res', class: 'cr-mgres' }, resLine(x)),
 el('div', { id: 'cr-mg-plan', class: 'cr-tw' }, [planTbl(x)])]);
 return [el('div', { id: 'cr-sum', class: 'cr-mgsum-w' }, [el('div', { class: 'cr-sidein' }, [summary(x)])]),
 el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'مكوّنات قيمة العقد الموحّد' })]), el('div', { class: 'cr-tw' }, [tbl]), add]), planCard,
-note('info', 'تغطية الضمانات في تبويب «الضمانات»، وطلب أي مستند أو ضمان من العميل في «المراسلات».', [el('div', {}, [btn('فتح «الضمانات»', { cls: 'is-sm', ic: 'sign', on: function () { goTab('guar'); } })])])];
+note('info', 'تغطية الضمانات في تبويب «الضمانات»، ومنه يُطلب الضمان من العميل؛ وأي مستند آخر من «المراسلات».', [el('div', {}, [btn('فتح «الضمانات»', { cls: 'is-sm', ic: 'sign', on: function () { goTab('guar'); } })])])];
 }
 /* الملخص المالي أعلى الحسبة: قيمة العقد الموحّد وخطتها، ثم مكوّناتها الثلاثة، ثم المواعيد ووسيلة الاستلام */
 function summary(x) {

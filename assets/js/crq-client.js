@@ -529,7 +529,7 @@ function needCard(o) {
     if (open.length || dn.length) {
       var ask = (M.rows || []).filter(function (m) { return m.ask_ids && m.ask_ids.length; }).pop();
       var kids = [el('div', { class: 'cx-h' }, [el('span', { class: 'cx-ic is-gold', text: open.length ? '!' : '✓' }), el('h3', { text: open.length ? 'مطلوب منك لإكمال طلبك' : 'أرفقت كل المطلوب' })])];
-      if (ask && ask.body && open.length) kids.push(el('p', { class: 'cx-b', text: ask.body }));
+      if (ask && ask.body && open.length && !/مطلوب منك/.test(ask.body)) kids.push(el('p', { class: 'cx-b', text: ask.body }));
       if (open.length && M.sum && M.sum.due) kids.push(el('small', { class: 'cx-hint', text: 'المهلة حتى ' + stamp(M.sum.due) }));
       kids.push(el('div', { class: 'cx-prog' }, [el('i', { style: 'width:' + Math.round(dn.length / (A.length || 1) * 100) + '%' })]), el('small', { class: 'cx-hint', text: 'أرفقت ' + dn.length + ' من ' + A.length }));
       A.forEach(function (a, i) {
@@ -699,7 +699,7 @@ var lt = lateOf(c, today), on = S.sel.indexOf(c.no) >= 0, k = c.busy ? 'busy' : 
 var ctl = c.busy ? el('span', { class: 'cc-lock', title: 'لا يمكن اختياره حتى يُغلق الطلب ' + c.busy + ' أو يُنفَّذ' }, [icon('lock')])
 : el('input', { type: 'checkbox', checked: on, 'aria-label': 'العقد ' + c.no, onchange: function (e) { S.sel = S.sel.filter(function (n) { return n !== c.no; }); if (e.target.checked) S.sel.push(c.no); S.miss = []; paint(); } });
 return el('label', { class: 'cc-pay cc-mgc is-' + k + (on ? ' is-on' : '') }, [el('span', { class: 'cc-pay-n', text: String(i + 1) }),
-el('span', { class: 'cc-pay-m' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: c.no })]), el('small', { class: 'cc-muted', text: (c.product ? c.product + ' · ' : '') + mgPay((c.payments || []).length) + ' متبقية' }),
+el('span', { class: 'cc-pay-m' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: c.no })]), el('small', { class: 'cc-muted', text: (c.product ? c.product + ' · ' : (/^TRA-/.test(c.no) ? 'عقد موحّد · ' : '')) + mgPay((c.payments || []).length) + ' متبقية' }),
 el('span', { class: 'cc-pill is-' + k, text: c.busy ? 'في طلب قائم ' + c.busy : lt.n ? cntW(lt.n, 'متأخرة', 'متأخرتان') : 'منتظم' })]),
 el('span', { class: 'cc-pay-a' }, [el('bdi', { dir: 'ltr', text: money(remOf(c)) }), ' ر.س', el('small', { text: 'المتبقي' })]), ctl]);
 })));
@@ -844,7 +844,7 @@ var kids = head();
 if (a.state === 'done' || a.state === 'cancelled' || a.state === 'expired') {
 kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? 'أكملت المطلوب — شكرًا لك' : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
 } else if (a.state === 'accepted') {
-kids.push(el('div', { class: 'gx-res is-ok', text: 'وافقت — بقي رفع المستند' }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { if (cx.up) cx.up(a); } }, ['ارفع صورة أو PDF']));
+kids.push(el('div', { class: 'gx-res is-ok', text: 'وافقت — بقي رفع: ' + (F.filter(function (z) { return z.type === 'file'; }).map(function (z) { return z.t; }).join('، ') || 'المستند') }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { if (cx.up) cx.up(a); } }, ['ارفع صورة أو PDF']));
 } else if (mode === 'no') {
 var ta = el('textarea', { class: 'gx-ta', rows: '3', maxlength: '300', placeholder: 'اكتب سببًا مختصرًا' });
 kids.push(el('label', { class: 'gx-f' }, [el('span', { text: 'سبب عدم الموافقة' }), ta]), err, el('div', { class: 'gx-bs' }, [
