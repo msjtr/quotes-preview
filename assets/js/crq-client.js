@@ -787,7 +787,7 @@ if (r.state === 'consent' || r.state === 'sign') out.push(el('div', { class: 'cc
 var asks = Number(c.open) > 0 || (!isEnd && Number(c.done) > 0);
 if (asks || chatOn) out.push(needCard({ r: r, token: o.token, onChange: load, chat: chatOn }));
 var acts = [];
-if (Number(c.n) || !isEnd) acts.push(el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.chat = chatOn ? null : r.id; paint(); } }, [icon('mail'), chatOn ? 'إخفاء المراسلة' : 'المراسلة مع فريق تيرا' + (Number(c.n) ? ' (' + c.n + ')' : '')]));
+if (Number(c.n) || !isEnd) acts.push(el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.chat = chatOn ? null : r.id; paint(); } }, [icon('mail'), chatOn ? 'إخفاء المراسلة' : 'مراسلة فريق تيرا']));
 if (r.state === 'received') acts.push(el('button', { type: 'button', class: 'cc-btn is-sm is-ghost', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['إلغاء الطلب']));
 if (acts.length) out.push(el('div', { class: 'mg-acts' }, acts));
 return el('div', { class: 'mg-rb' }, out);

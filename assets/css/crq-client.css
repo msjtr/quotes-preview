@@ -401,3 +401,10 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
   .cc-mg .gx-file-a { justify-content: stretch; }
   .cc-mg .gx-file-a .gx-btn { flex: 1; }
 }
+/* v963: مراحل الطلب على الجوال في سطر واحد — المرحلة الحالية بالاسم والبقية بالرقم */
+@media (max-width: 600px) {
+  .cc-mg .mg-rb .cc-steps { display: flex !important; flex-wrap: nowrap; gap: 6px; grid-template-columns: none !important; overflow: hidden; }
+  .cc-mg .mg-rb .cc-steps li { flex: 0 0 auto; font-size: 0; min-width: 0; padding-inline: 8px; justify-content: center; }
+  .cc-mg .mg-rb .cc-steps li > span { font-size: 12px; }
+  .cc-mg .mg-rb .cc-steps li.is-now { flex: 1 1 auto; font-size: 13px; }
+}
