@@ -763,12 +763,16 @@ var act = S.mine.filter(function (r) { return END.indexOf(r.state) < 0; }), past
 if (window.TQ_MG_FOCUS) { var fr = S.mine.filter(function (r) { return r.no === window.TQ_MG_FOCUS; })[0]; if (fr) { S.open = fr.id; if (END.indexOf(fr.state) >= 0) S.past = true; } window.TQ_MG_FOCUS = null; }
 if (S.open == null) S.open = act.length ? act[0].id : -1;
 var TB = S.tabs || (S.tabs = {});
+function mgPath(r) { var ch = r.chat || {}, op = Number(ch.open) || 0, has = op + (Number(ch.done) || 0) > 0, st = STEP_OF[r.state];
+if (!has) return { L: MG_STEPS, cur: st };
+return { L: [MG_STEPS[0], MG_STEPS[1], 'استكمال المطلوب منك', 'مراجعة فريق تيرا'].concat(MG_STEPS.slice(2)), cur: st < 0 ? st : st <= 1 ? (op ? 2 : 3) : st + 2 }; }
+function mgSteps(r) { var p = mgPath(r); return el('ol', { class: 'cc-steps is-' + p.L.length, 'aria-label': 'مراحل طلب التوحيد' }, p.L.map(function (t, i) { return el('li', { class: i < p.cur ? 'is-done' : i === p.cur ? 'is-now' : '' }, [el('span', { text: String(i + 1) }), t]); })); }
 function stageT(r) {
 var st = STEP_OF[r.state];
 if (r.state === 'done') return 'نُفّذ' + (r.new_contract ? ' — عقدك الموحّد ' + r.new_contract : '');
 if (r.state === 'closed') return r.close_t ? 'مغلق · ' + r.close_t : 'مغلق';
 if (END.indexOf(r.state) >= 0) return r.state_t || '';
-return st >= 0 && st < MG_STEPS.length ? 'المرحلة ' + (st + 1) + ' من ' + MG_STEPS.length + ': ' + MG_STEPS[st] : (r.state_t || '');
+var ps = mgPath(r); return ps.cur >= 0 && ps.cur < ps.L.length ? 'المرحلة ' + (ps.cur + 1) + ' من ' + ps.L.length + ': ' + ps.L[ps.cur] : (r.state_t || '');
 }
 function head(r, on) {
 var c = r.chat || {}, need = Number(c.open) > 0;
@@ -795,7 +799,7 @@ if (asks) tabs.push(['need', open ? 'مطلوب منك (' + open + ')' : 'الم
 tabs.push(['chat', 'المراسلة']);
 var cur = TB[r.id] || (open ? 'need' : 'info'); if (!tabs.some(function (t) { return t[0] === cur; })) cur = 'info';
 var out = [];
-if (!isEnd && st >= 0) out.push(stepper(st));
+if (!isEnd && st >= 0) out.push(mgSteps(r));
 out.push(el('div', { class: 'mg-tabs', role: 'tablist' }, tabs.map(function (t) { var on = cur === t[0]; return el('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', 'data-live-ok': '', class: 'mg-tab' + (on ? ' is-on' : '') + (t[0] === 'need' && open ? ' is-alert' : ''), onclick: function () { TB[r.id] = t[0]; paint(); } }, [t[1]]); })));
 var pane;
 if (cur === 'need') pane = [needCard({ r: r, token: o.token, onChange: load, chat: false })];

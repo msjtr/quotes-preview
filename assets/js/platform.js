@@ -29235,8 +29235,11 @@ const LV_CRQ_ST = { received: 'sent', decision: 'review', consent: 'review', sig
 /* v960: مراحل بطاقة طلب التوحيد/التأجيل = مراحل صفحة الطلب نفسها — لا «اكتملت المراحل» والطلب قيد المراجعة */
 function lvCrqPath(x) {
   const ev = (x.path || []).map(function (s) { return [s.t, new Date(s.at)]; });
-  const S = x.kind === 'merge' ? ['اختيار العقود', 'مراجعة فريق تيرا', 'موافقتك على العرض', 'توقيع العقد', 'العقد الموحّد'] : x.kind === 'defer' ? ['اختيار الدفعة', 'مراجعة فريق تيرا', 'موافقتك على العرض', 'توقيع الملحق', 'تعديل عقدك'] : null;
-  const cur = { received: 1, decision: 1, consent: 2, sign: 3, done: 5 }[x.state];
+  const ch = x.chat || {}, aOp = Number(ch.open) || 0, aHas = aOp + (Number(ch.done) || 0) > 0;
+  const S0 = x.kind === 'merge' ? ['اختيار العقود', 'مراجعة فريق تيرا', 'موافقتك على العرض', 'توقيع العقد', 'العقد الموحّد'] : x.kind === 'defer' ? ['اختيار الدفعة', 'مراجعة فريق تيرا', 'موافقتك على العرض', 'توقيع الملحق', 'تعديل عقدك'] : null;
+  const S = S0 && aHas ? [S0[0], S0[1], 'استكمال المطلوب منك', 'مراجعة فريق تيرا'].concat(S0.slice(2)) : S0;
+  const c0 = { received: 1, decision: 1, consent: 2, sign: 3, done: 5 }[x.state];
+  const cur = c0 == null ? null : !aHas ? c0 : c0 <= 1 ? (aOp ? 2 : 3) : c0 + 2;
   if (!S || cur == null) return ev;
   const last = ev.length ? ev[ev.length - 1][1] : new Date(x.created_at);
   return S.map(function (t, i) { return [t, i < cur ? (i === 0 ? new Date(x.created_at) : last) : null]; });

@@ -433,3 +433,7 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
   .gx-confirm .gx-bs .gx-btn { flex: 1; }
   .cc-mg .mg-tab { padding: 9px 8px; font-size: 13px; }
 }
+/* v965: مسار من 7 مراحل عند وجود مطلوب من العميل */
+.cc-mg .mg-rb .cc-steps.is-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cc-mg .mg-rb .cc-steps.is-7 li { font-size: 12px; padding-inline: 6px; }
+@media (max-width: 900px) and (min-width: 601px) { .cc-mg .mg-rb .cc-steps.is-7 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
