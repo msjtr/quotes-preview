@@ -526,7 +526,7 @@ async function load() { try { var j = await api('GET', '/api/account/crq/' + r.i
   }
   function paint() {
     root.innerHTML = '';
-    var A = (M.asks || []), open = A.filter(function (a) { return (a.state === 'open' || a.state === 'accepted'); }), dn = A.filter(function (a) { return a.state === 'done'; });
+    var A = (M.asks || []).slice().sort(function (x, y) { return (x.state === 'done' ? 1 : 0) - (y.state === 'done' ? 1 : 0); }), open = A.filter(function (a) { return (a.state === 'open' || a.state === 'accepted'); }), dn = A.filter(function (a) { return a.state === 'done'; });
     if (!M.rows) { root.appendChild(el('p', { class: 'cx-hint', text: 'جارٍ التحميل…' })); return; }
     var team = (M.rows || []).filter(function (m) { return m.file && m.who === 'staff'; });
     if (open.length || dn.length) {
