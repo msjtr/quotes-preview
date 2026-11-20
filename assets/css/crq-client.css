@@ -408,3 +408,28 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
   .cc-mg .mg-rb .cc-steps li > span { font-size: 12px; }
   .cc-mg .mg-rb .cc-steps li.is-now { flex: 1 1 auto; font-size: 13px; }
 }
+/* v964: تبويبات الطلب + خطوات إرسال المطلوب وتأكيده */
+.cc-mg .mg-tabs { display: flex; gap: 6px; padding: 4px; border-radius: 12px; background: var(--soft, rgba(10, 165, 173, .07)); overflow-x: auto; scrollbar-width: none; }
+.cc-mg .mg-tab { all: unset; box-sizing: border-box; flex: 1 0 auto; text-align: center; padding: 9px 12px; border-radius: 9px; font-weight: 700; font-size: 13.5px; color: var(--mut, #5B6B85); cursor: pointer; white-space: nowrap; }
+.cc-mg .mg-tab.is-on { background: var(--card, #fff); color: var(--ink, #0b2552); box-shadow: 0 1px 4px rgba(11, 37, 82, .1); }
+.cc-mg .mg-tab.is-alert:not(.is-on) { color: #B7791F; }
+.cc-mg .mg-tab:focus-visible { outline: 2px solid var(--brand, #0AA5AD); }
+.cc-mg .mg-pane { display: grid; gap: 12px; }
+.cc-mg .mg-pane-h { margin: 0; color: var(--mut, #5B6B85); font-size: 13px; }
+.cc-mg .mg-pane .cx-needw > .cx-need { border: 0; background: transparent; box-shadow: none; padding: 0; }
+.gx-steps { list-style: none; margin: 10px 0; padding: 0; display: flex; gap: 6px; counter-reset: gs; }
+.gx-steps li { counter-increment: gs; flex: 1; display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 10px; background: var(--soft, rgba(11, 37, 82, .05)); color: var(--mut, #5B6B85); font-size: 12.5px; font-weight: 700; }
+.gx-steps li::before { content: counter(gs); display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(11, 37, 82, .12); font-size: 11px; flex-shrink: 0; }
+.gx-steps li.is-done { color: #1E7A4C; } .gx-steps li.is-done::before { content: '✓'; background: #1E7A4C; color: #fff; }
+.gx-steps li.is-now { color: var(--ink, #0b2552); background: var(--card, #fff); box-shadow: inset 0 0 0 1.5px var(--brand, #0AA5AD); } .gx-steps li.is-now::before { background: var(--brand, #0AA5AD); color: #fff; }
+.gx-hint { margin: 4px 0 8px; color: var(--mut, #5B6B85); font-size: 13px; }
+.gx-file.is-draft { border-style: dashed; }
+.gx-confirm { margin-top: 10px; padding: 12px; border-radius: 12px; border: 1.5px solid #E0B04A; background: #FFF8E8; display: grid; gap: 8px; }
+.gx-confirm p { margin: 0; font-size: 13.5px; line-height: 1.7; }
+.gx-confirm .gx-bs { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (prefers-color-scheme: dark) { .gx-confirm { background: rgba(224, 176, 74, .12); } }
+@media (max-width: 600px) {
+  .gx-steps li { font-size: 11.5px; padding: 6px; }
+  .gx-confirm .gx-bs .gx-btn { flex: 1; }
+  .cc-mg .mg-tab { padding: 9px 8px; font-size: 13px; }
+}

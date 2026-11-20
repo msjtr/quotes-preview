@@ -514,7 +514,9 @@ function needCard(o) {
   var api = apiOf(o.token), r = o.r, root = el('div', { class: 'cx-needw' });
   var M = MB[r.id] || (MB[r.id] = { rows: null, asks: [], sum: null, busy: false, err: '' });
   var view = function (mid) { openFile(api, '/api/account/crq-file/' + mid); };
-  async function load() { try { var j = await api('GET', '/api/account/crq/' + r.id + '/msgs'); M.rows = j.rows || []; M.asks = j.asks || []; M.sum = j.sum; } catch (e) { M.err = e.message; M.rows = M.rows || []; } paint(); }
+  function pick(a, cb) { pickFile(a.types, a.mb, function (f, er) { if (er) { M.err = er; paint(); return; } M.err = ''; cb(f); }); }
+async function sendFile(a, f) { try { M.busy = a.id; M.err = ''; M.ok = ''; paint(); await uploadTo(api, '/api/account/crq/' + r.id + '/ask-file/' + a.id, f); M.busy = false; M.ok = 'تم الإرسال — وصل «' + a.title + '» إلى فريق تيرا، وسنبلغك بالنتيجة.'; load(); if (o.onChange) o.onChange(); return true; } catch (e) { M.busy = false; M.err = e.message || 'تعذّر الإرسال — أعد المحاولة.'; paint(); return false; } }
+async function load() { try { var j = await api('GET', '/api/account/crq/' + r.id + '/msgs'); M.rows = j.rows || []; M.asks = j.asks || []; M.sum = j.sum; } catch (e) { M.err = e.message; M.rows = M.rows || []; } paint(); }
   function up(a) {
     pickFile(a.types, a.mb, async function (f, er) {
       if (er) { M.err = er; paint(); return; }
@@ -529,12 +531,12 @@ function needCard(o) {
     var team = (M.rows || []).filter(function (m) { return m.file && m.who === 'staff'; });
     if (open.length || dn.length) {
       var ask = (M.rows || []).filter(function (m) { return m.ask_ids && m.ask_ids.length; }).pop();
-      var kids = [el('div', { class: 'cx-h' }, [el('span', { class: 'cx-ic is-gold', text: open.length ? '!' : '✓' }), el('h3', { text: open.length ? 'مطلوب منك لإكمال طلبك' : (A.some(function (z) { return z.decision === 'decline'; }) ? 'تم الرد على المطلوب' : 'أرفقت كل المطلوب') })])];
+      var kids = [el('div', { class: 'cx-h' }, [el('span', { class: 'cx-ic is-gold', text: open.length ? '!' : '✓' }), el('h3', { text: open.length ? 'مطلوب منك لإكمال طلبك' : (A.some(function (z) { return z.decision === 'decline'; }) ? 'تم الرد على المطلوب' : 'أرسلت المطلوب لفريق تيرا ✓') })])];
       if (ask && ask.body && open.length && !/مطلوب منك/.test(ask.body)) kids.push(el('p', { class: 'cx-b', text: ask.body }));
       if (open.length && M.sum && M.sum.due) kids.push(el('small', { class: 'cx-hint', text: 'المهلة حتى ' + stamp(M.sum.due) }));
       if (open.length) kids.push(el('div', { class: 'cx-prog' }, [el('i', { style: 'width:' + Math.round(dn.length / (A.length || 1) * 100) + '%' })]), el('small', { class: 'cx-hint', text: 'أرفقت ' + dn.length + ' من ' + A.length }));
       A.forEach(function (a, i) {
-        if (a.kind === 'guar' && window.CRQG) { kids.push(window.CRQG.item(a, i, { api: api, reload: load, up: up, view: view, canRe: ['received', 'decision'].indexOf(r.state) >= 0 })); return; }
+        if (a.kind === 'guar' && window.CRQG) { kids.push(window.CRQG.item(a, i, { api: api, reload: load, up: up, view: view, canRe: false, pick: pick, send: sendFile })); return; }
         kids.push(el('div', { class: 'cx-ni is-' + a.state }, [el('span', { class: 'cx-n', text: a.state === 'done' ? '✓' : String(i + 1) }), el('div', {}, [el('b', { text: a.title }), el('small', { text: a.state === 'done' ? ((a.file && a.file.name) || 'مرفق') + ' · أُرسل للفريق' : (a.detail ? a.detail + ' · ' : '') + (TYPE_T[a.types] || '') + ' · حتى ' + a.mb + ' ميجا' })]),
           a.state === 'open' ? el('button', { type: 'button', class: 'cx-up', disabled: !!M.busy, 'data-live-ok': '', onclick: function () { up(a); } }, [icon('up'), M.busy === a.id ? 'جارٍ الرفع…' : 'اختر الملف أو صوّره']) : (a.file_msg ? el('button', { type: 'button', class: 'cx-lnk', 'data-live-ok': '', onclick: function () { view(a.file_msg); } }, ['عرض']) : null)]));
       });
@@ -753,13 +755,14 @@ var j = await api('POST', '/api/account/crq', { kind: 'merge', contract_nos: S.s
 S.done = j; S.busy = false; S.sel = []; S.prod = ''; S.pv = ''; S.pt = ''; S.pk = ''; S.pz = null; S.det = ''; S.recv = ''; S.rd = ''; S.months = ''; S.unit = 'month'; S.note = ''; S.ack = false; load();
 } catch (e) { S.busy = false; S.err = e.message; paint(); }
 }
-/* v961: قائمة طلبات التوحيد — صف مضغوط لكل طلب، يُفتح طلب واحد فقط؛ المراسلة عند الطلب؛ السابقة مطويّة */
+/* v964: قائمة طلبات التوحيد — صف لكل طلب؛ داخل الطلب: المراحل ثم تبويبات منفصلة (تفاصيل الطلب · المطلوب منك · المراسلة) */
 function mineList(withNew) {
 if (!S.mine || !S.mine.length) return null;
 var END = ['done', 'closed', 'rejected', 'cancelled', 'withdrawn', 'expired'];
 var act = S.mine.filter(function (r) { return END.indexOf(r.state) < 0; }), past = S.mine.filter(function (r) { return END.indexOf(r.state) >= 0; });
 if (window.TQ_MG_FOCUS) { var fr = S.mine.filter(function (r) { return r.no === window.TQ_MG_FOCUS; })[0]; if (fr) { S.open = fr.id; if (END.indexOf(fr.state) >= 0) S.past = true; } window.TQ_MG_FOCUS = null; }
 if (S.open == null) S.open = act.length ? act[0].id : -1;
+var TB = S.tabs || (S.tabs = {});
 function stageT(r) {
 var st = STEP_OF[r.state];
 if (r.state === 'done') return 'نُفّذ' + (r.new_contract ? ' — عقدك الموحّد ' + r.new_contract : '');
@@ -769,27 +772,36 @@ return st >= 0 && st < MG_STEPS.length ? 'المرحلة ' + (st + 1) + ' من '
 }
 function head(r, on) {
 var c = r.chat || {}, need = Number(c.open) > 0;
-return el('button', { type: 'button', class: 'cc-row-h mg-rh', 'data-live-ok': '', 'aria-expanded': on ? 'true' : 'false', onclick: function () { S.open = on ? -1 : r.id; S.chat = null; paint(); } }, [
+return el('button', { type: 'button', class: 'cc-row-h mg-rh', 'data-live-ok': '', 'aria-expanded': on ? 'true' : 'false', onclick: function () { S.open = on ? -1 : r.id; paint(); } }, [
 el('span', { class: 'mg-rh-m' }, [el('b', {}, [el('bdi', { dir: 'ltr', text: r.no })]), el('small', { text: stageT(r) })]),
 el('span', { class: 'mg-rh-s' }, [need ? el('span', { class: 'cc-badge is-warn', text: 'مطلوب منك' }) : el('span', { class: 'cc-badge is-' + (r.tone || 'info'), text: r.state_t || '' }), el('span', { class: 'mg-rh-c' + (on ? ' is-on' : ''), 'aria-hidden': 'true' })])]);
 }
-function body(r) {
-var pr = r.product && r.product.on ? r.product : null, st = STEP_OF[r.state], c = r.chat || {}, isEnd = END.indexOf(r.state) >= 0, chatOn = S.chat === r.id;
+function info(r) {
+var pr = r.product && r.product.on ? r.product : null;
 var nos = String(r.contract_no || '').split('+').map(function (s) { return s.trim(); }).filter(Boolean);
 var kv = [['العقود المراد توحيدها (' + nos.length + ')', el('ol', { class: 'mg-cts' }, nos.map(function (no, i) { var oc = (S.opts || []).filter(function (q) { return q.no === no; })[0]; return el('li', {}, [el('span', { class: 'mg-ct-i', text: 'العقد ' + (i + 1) }), el('bdi', { dir: 'ltr', text: no }), oc && oc.product ? el('small', { text: oc.product }) : (/^TRA-/.test(no) ? el('small', { text: 'عقد موحّد سابق' }) : null)]); }))]];
 if (pr) kv.push(['منتج إضافي', (pr.type || 'منتج') + ' بقيمة ' + money(pr.value) + ' ر.س']);
 if (r.total != null) kv.push(['قيمة العقد الموحّد', money(r.total) + ' ر.س']);
 if (r.new_contract) kv.push(['عقدك الموحّد', r.new_contract]);
+var out = [el('dl', { class: 'mg-kv' }, [].concat.apply([], kv.map(function (k) { return [el('dt', { text: k[0] }), el('dd', {}, [typeof k[1] === 'string' ? el('bdi', { text: k[1] }) : k[1]])]; })))];
+if (r.state === 'consent' || r.state === 'sign') out.push(el('div', { class: 'cc-note is-info' }, [icon('link'), el('span', { text: r.state === 'consent' ? 'أرسلنا لك العرض برابط على واتساب والبريد — افتحه للموافقة أو الاعتذار.' : 'أرسلنا لك عقد التوحيد للتوقيع برابط على واتساب والبريد.' })]));
+if (r.state === 'received') out.push(el('div', { class: 'mg-acts' }, [el('button', { type: 'button', class: 'cc-btn is-sm is-ghost', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['إلغاء الطلب'])]));
+return out;
+}
+function body(r) {
+var st = STEP_OF[r.state], c = r.chat || {}, isEnd = END.indexOf(r.state) >= 0, open = Number(c.open) || 0, asks = open > 0 || Number(c.done) > 0;
+var tabs = [['info', 'تفاصيل الطلب']];
+if (asks) tabs.push(['need', open ? 'مطلوب منك (' + open + ')' : 'المطلوب منك']);
+tabs.push(['chat', 'المراسلة']);
+var cur = TB[r.id] || (open ? 'need' : 'info'); if (!tabs.some(function (t) { return t[0] === cur; })) cur = 'info';
 var out = [];
 if (!isEnd && st >= 0) out.push(stepper(st));
-out.push(el('dl', { class: 'mg-kv' }, [].concat.apply([], kv.map(function (k) { return [el('dt', { text: k[0] }), el('dd', {}, [typeof k[1] === 'string' ? el('bdi', { text: k[1] }) : k[1]])]; }))));
-if (r.state === 'consent' || r.state === 'sign') out.push(el('div', { class: 'cc-note is-info' }, [icon('link'), el('span', { text: r.state === 'consent' ? 'أرسلنا لك العرض برابط على واتساب والبريد — افتحه للموافقة أو الاعتذار.' : 'أرسلنا لك عقد التوحيد للتوقيع برابط على واتساب والبريد.' })]));
-var asks = Number(c.open) > 0 || (!isEnd && Number(c.done) > 0);
-if (asks || chatOn) out.push(needCard({ r: r, token: o.token, onChange: load, chat: chatOn }));
-var acts = [];
-if (Number(c.n) || !isEnd) acts.push(el('button', { type: 'button', class: 'cc-btn is-sm', 'data-live-ok': '', onclick: function () { S.chat = chatOn ? null : r.id; paint(); } }, [icon('mail'), chatOn ? 'إخفاء المراسلة' : 'مراسلة فريق تيرا']));
-if (r.state === 'received') acts.push(el('button', { type: 'button', class: 'cc-btn is-sm is-ghost', 'data-live-ok': '', onclick: function () { cancel(r); } }, ['إلغاء الطلب']));
-if (acts.length) out.push(el('div', { class: 'mg-acts' }, acts));
+out.push(el('div', { class: 'mg-tabs', role: 'tablist' }, tabs.map(function (t) { var on = cur === t[0]; return el('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', 'data-live-ok': '', class: 'mg-tab' + (on ? ' is-on' : '') + (t[0] === 'need' && open ? ' is-alert' : ''), onclick: function () { TB[r.id] = t[0]; paint(); } }, [t[1]]); })));
+var pane;
+if (cur === 'need') pane = [needCard({ r: r, token: o.token, onChange: load, chat: false })];
+else if (cur === 'chat') pane = [el('p', { class: 'mg-pane-h', text: 'للأسئلة والاستفسارات عن هذا الطلب. الرد على «المطلوب منك» يكون من تبويبه.' }), msgBox({ mode: 'client', id: r.id, token: o.token, x: { no: r.no, state: r.state }, cached: true })];
+else pane = info(r);
+out.push(el('div', { class: 'mg-pane', role: 'tabpanel' }, pane));
 return el('div', { class: 'mg-rb' }, out);
 }
 function row(r) { var on = S.open === r.id; return el('div', { class: 'cc-row mg-r is-' + (r.tone || 'info') + (on ? ' is-on' : '') }, [head(r, on), on ? body(r) : null]); }
@@ -870,10 +882,25 @@ function paint() {
 box.innerHTML = ''; box.className = 'cx-ni gx is-' + a.state;
 var kids = head();
 if (a.state === 'done' || a.state === 'cancelled' || a.state === 'expired') {
-kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? (a.file_msg ? 'تم الإرفاق — يراجعه فريق تيرا' : 'أكملت المطلوب — شكرًا لك') : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
+kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? (a.file_msg ? 'تم الإرسال لفريق تيرا ✓' + (a.done_at ? ' · ' + new Date(a.done_at).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }) : '') + ' — لا يمكن تعديله بعد الإرسال' : 'أكملت المطلوب — شكرًا لك') : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
 if (a.state === 'done' && a.file_msg && a.decision !== 'decline') kids.push(el('div', { class: 'gx-file' }, [el('span', { class: 'gx-file-n' }, [el('b', { text: 'المرفق: ' }), el('bdi', { text: (a.file && a.file.name) || 'ملف مرفق' })]), el('span', { class: 'gx-file-a' }, [cx.view ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { cx.view(a.file_msg); } }, ['عرض']) : null, cx.canRe && cx.up ? el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { cx.up(a); } }, ['استبدال']) : null])]));
 } else if (a.state === 'accepted') {
-kids.push(el('div', { class: 'gx-res is-ok', text: 'وافقت — بقي رفع: ' + (F.filter(function (z) { return z.type === 'file'; }).map(function (z) { return z.t; }).join('، ') || 'المستند') }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { if (cx.up) cx.up(a); } }, ['ارفع صورة أو PDF']));
+/* v964: خطوات واضحة — اختيار الملف ← مراجعة ← تأكيد الإرسال ← قفل */
+var fnm = F.filter(function (z) { return z.type === 'file'; }).map(function (z) { return z.t; }).join('، ') || 'المستند';
+var pickF = function () { if (cx.pick) cx.pick(a, function (f) { a._f = f; a._cf = false; paint(); }); else if (cx.up) cx.up(a); };
+kids.push(el('ol', { class: 'gx-steps' }, [el('li', { class: 'is-done', text: 'وافقت' }), el('li', { class: a._f ? 'is-done' : 'is-now', text: 'اختر الملف' }), el('li', { class: a._f ? 'is-now' : '', text: 'أرسل لفريق تيرا' })]));
+if (!a._f) {
+kids.push(el('p', { class: 'gx-hint', text: 'المطلوب: ' + fnm + ' — صورة أو PDF.' }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: pickF }, ['اختيار الملف']));
+} else {
+kids.push(el('div', { class: 'gx-file is-draft' }, [el('span', { class: 'gx-file-n' }, [el('b', { text: 'الملف المختار: ' }), el('bdi', { text: a._f.name })]), a._cf ? null : el('span', { class: 'gx-file-a' }, [el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: pickF }, ['تغيير']), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-ghost', onclick: function () { a._f = null; a._cf = false; paint(); } }, ['إزالة'])])]));
+if (a._cf) {
+kids.push(el('div', { class: 'gx-confirm', role: 'alertdialog', 'aria-label': 'تأكيد الإرسال' }, [el('b', { text: 'تأكيد الإرسال' }), el('p', { text: 'سيصل «' + a._f.name + '» إلى فريق تيرا لمراجعته. بعد الإرسال لا يمكن تعديله أو استبداله.' }), el('div', { class: 'gx-bs' }, [
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: async function (e) { var b = e.currentTarget; b.disabled = true; b.textContent = 'جارٍ الإرسال…'; var ok = cx.send ? await cx.send(a, a._f) : false; if (ok) { a._f = null; a._cf = false; } else { b.disabled = false; b.textContent = 'نعم، أرسل'; } } }, ['نعم، أرسل']),
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn', onclick: function () { a._cf = false; paint(); } }, ['رجوع'])])]));
+} else {
+kids.push(el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { a._cf = true; paint(); } }, ['إرسال لفريق تيرا']));
+}
+}
 } else if (mode === 'no') {
 var ta = el('textarea', { class: 'gx-ta', rows: '3', maxlength: '300', placeholder: 'اكتب سببًا مختصرًا' });
 kids.push(el('label', { class: 'gx-f' }, [el('span', { text: 'سبب عدم الموافقة' }), ta]), err, el('div', { class: 'gx-bs' }, [
