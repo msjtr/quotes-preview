@@ -654,7 +654,7 @@ function durCtl(S) { /* v954: حالة صفحة التوحيد تُمرَّر ص
 var team = S.months === 'team', w = el('div', { class: 'cx-dur' + (S.miss && S.miss.indexOf('months') >= 0 ? ' is-miss' : '') });
 var paintD = function () {
 w.innerHTML = ''; team = S.months === 'team';
-w.appendChild(el('div', { class: 'cx-dur-u', role: 'radiogroup', 'aria-label': 'دورية الدفعات' }, MG_UNITS.map(function (u) { var on = !team && (S.unit || 'month') === u[0]; return el('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: 'cx-dur-i' + (on ? ' is-on' : ''), onclick: function () { S.unit = u[0]; if (S.months === 'team') S.months = ''; paintD(); } }, [el('b', { text: u[1] }), el('small', { text: u[2] })]); })));
+w.appendChild(el('div', { class: 'cx-dur-u', role: 'radiogroup', 'aria-label': 'دورية الدفعات' }, MG_UNITS.map(function (u) { var on = !team && (S.unit || 'month') === u[0]; return el('button', { type: 'button', 'data-live-ok': '', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: 'cx-dur-i' + (on ? ' is-on' : ''), onclick: function () { S.unit = u[0]; if (S.months === 'team') S.months = ''; paintD(); } }, [el('b', { text: u[1] }), el('small', { text: u[2] })]); })));
 var inp = el('input', { type: 'number', min: '1', max: '120', inputmode: 'numeric', value: team ? '' : S.months, placeholder: 'العدد', disabled: team, 'aria-label': 'عدد الدفعات', oninput: function (e) { var v = e.target.value.replace(/\D/g, '').slice(0, 3); S.months = v && Number(v) >= 1 && Number(v) <= 120 ? v : ''; } });
 w.appendChild(el('div', { class: 'cx-dur-r' }, [el('label', { class: 'cx-dur-n' }, [el('span', { text: 'عدد الدفعات' }), inp]),
 el('label', { class: 'cx-dur-t' }, [el('input', { type: 'checkbox', checked: team, onchange: function (e) { S.months = e.target.checked ? 'team' : ''; paintD(); } }), el('span', { text: 'يحددها الفريق' })])]));
@@ -840,23 +840,23 @@ var kids = head();
 if (a.state === 'done' || a.state === 'cancelled' || a.state === 'expired') {
 kids.push(el('div', { class: 'gx-res ' + (a.decision === 'decline' ? 'is-no' : 'is-ok'), text: a.decision === 'decline' ? 'اعتذرت' + (a.reason ? ': ' + a.reason : '') : a.state === 'done' ? 'أكملت المطلوب — شكرًا لك' : a.state === 'expired' ? 'انتهت المهلة' : 'أُلغي الطلب' }));
 } else if (a.state === 'accepted') {
-kids.push(el('div', { class: 'gx-res is-ok', text: 'وافقت — بقي رفع المستند' }), el('button', { type: 'button', class: 'gx-btn is-pri', onclick: function () { if (cx.up) cx.up(a); } }, ['ارفع صورة أو PDF']));
+kids.push(el('div', { class: 'gx-res is-ok', text: 'وافقت — بقي رفع المستند' }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { if (cx.up) cx.up(a); } }, ['ارفع صورة أو PDF']));
 } else if (mode === 'no') {
 var ta = el('textarea', { class: 'gx-ta', rows: '3', maxlength: '300', placeholder: 'اكتب سببًا مختصرًا' });
 kids.push(el('label', { class: 'gx-f' }, [el('span', { text: 'سبب عدم الموافقة' }), ta]), err, el('div', { class: 'gx-bs' }, [
-el('button', { type: 'button', class: 'gx-btn is-no', onclick: function (e) { if (ta.value.trim().length < 3) { err.textContent = 'اكتب سببًا مختصرًا.'; return; } e.target.disabled = true; call({ decision: 'decline', reason: ta.value.trim() }); } }, ['إرسال الرد']),
-el('button', { type: 'button', class: 'gx-btn', onclick: function () { mode = ''; paint(); } }, ['رجوع'])]));
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-no', onclick: function (e) { if (ta.value.trim().length < 3) { err.textContent = 'اكتب سببًا مختصرًا.'; return; } e.target.disabled = true; call({ decision: 'decline', reason: ta.value.trim() }); } }, ['إرسال الرد']),
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn', onclick: function () { mode = ''; paint(); } }, ['رجوع'])]));
 } else if (mode === 'yes') {
 kids.push(el('h5', { class: 'gx-h', text: 'أكمل البيانات' + (a.gtype ? ' — ' + a.gtype : '') }), form(), err, el('div', { class: 'gx-bs' }, [
-el('button', { type: 'button', class: 'gx-btn is-pri', onclick: function (e) {
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function (e) {
 var miss = F.filter(function (z) { return z.type !== 'file' && z.req !== false && !data[z.k]; })[0];
 if (miss) { err.textContent = 'أكمل: ' + miss.t; return; }
 e.target.disabled = true; call({ decision: 'accept', data: data }); } }, ['إرسال البيانات']),
-el('button', { type: 'button', class: 'gx-btn', onclick: function () { mode = ''; paint(); } }, ['رجوع'])]));
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn', onclick: function () { mode = ''; paint(); } }, ['رجوع'])]));
 } else {
 kids.push(el('div', { class: 'gx-bs' }, [
-el('button', { type: 'button', class: 'gx-btn is-pri', onclick: function () { mode = 'yes'; paint(); } }, ['أوافق']),
-el('button', { type: 'button', class: 'gx-btn is-no', onclick: function () { mode = 'no'; paint(); } }, ['لا أوافق'])]),
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-pri', onclick: function () { mode = 'yes'; paint(); } }, ['أوافق']),
+el('button', { type: 'button', 'data-live-ok': '', class: 'gx-btn is-no', onclick: function () { mode = 'no'; paint(); } }, ['لا أوافق'])]),
 el('small', { class: 'cx-hint', text: 'عند «لا أوافق» يُطلب سبب مختصر، ويصل ردك للفريق.' }));
 }
 kids.forEach(function (k) { if (k) [].concat(k).forEach(function (q) { if (q) box.appendChild(q); }); });
@@ -876,7 +876,7 @@ function openPop(s, b) {
 closePop();
 var q = el('input', { type: 'search', class: 'gx-q', placeholder: s.__gxQ || 'ابحث في الردود الجاهزة…', 'aria-label': s.__gxQ || 'بحث في الردود الجاهزة' });
 var list = el('div', { class: 'gx-l', role: 'listbox' });
-var pop = el('div', { class: 'gx-pop', role: 'dialog', 'aria-label': 'الردود الجاهزة' }, [el('div', { class: 'gx-pop-in' }, [el('div', { class: 'gx-pop-h' }, [el('b', { text: s.__gxT || 'الردود الجاهزة' }), el('button', { type: 'button', class: 'gx-x', 'aria-label': 'إغلاق', onclick: closePop }, ['✕'])]), q, list])]);
+var pop = el('div', { class: 'gx-pop', role: 'dialog', 'aria-label': 'الردود الجاهزة' }, [el('div', { class: 'gx-pop-in' }, [el('div', { class: 'gx-pop-h' }, [el('b', { text: s.__gxT || 'الردود الجاهزة' }), el('button', { type: 'button', 'data-live-ok': '', class: 'gx-x', 'aria-label': 'إغلاق', onclick: closePop }, ['✕'])]), q, list])]);
 pop.addEventListener('click', function (e) { if (e.target === pop) closePop(); });
 var draw = function () {
 list.innerHTML = ''; var t = q.value.trim(), n = 0;
@@ -885,7 +885,7 @@ var opts = g.tagName === 'OPTGROUP' ? Array.prototype.slice.call(g.children) : [
 var hit = opts.filter(function (o) { return (o.value || o.text.trim()) && (!t || nm(o.text).indexOf(t) >= 0 || (g.label || '').indexOf(t) >= 0); });
 if (!hit.length) return;
 if (g.tagName === 'OPTGROUP') list.appendChild(el('div', { class: 'gx-g', text: g.label }));
-hit.forEach(function (o) { n++; list.appendChild(el('button', { type: 'button', role: 'option', class: 'gx-o' + (o.value === s.value ? ' is-on' : ''), onclick: function () { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); s.dispatchEvent(new Event('input', { bubbles: true })); sync(s, b); closePop(); } }, [nm(o.text)])); });
+hit.forEach(function (o) { n++; list.appendChild(el('button', { type: 'button', 'data-live-ok': '', role: 'option', class: 'gx-o' + (o.value === s.value ? ' is-on' : ''), onclick: function () { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); s.dispatchEvent(new Event('input', { bubbles: true })); sync(s, b); closePop(); } }, [nm(o.text)])); });
 });
 if (!n) list.appendChild(el('p', { class: 'gx-0', text: 'لا نتائج — جرّب كلمة أخرى.' }));
 };
@@ -895,7 +895,7 @@ document.body.appendChild(pop); document.addEventListener('keydown', escK, true)
 function sync(s, b) { var o = s.options[s.selectedIndex]; b.querySelector('span').textContent = o && o.value ? nm(o.text) : (s.__gxT ? 'اختر المنتج من القائمة' : 'اختر ردًا جاهزًا'); }
 function enhSel(s) {
 if (s.__gx) return; s.__gx = 1;
-var b = el('button', { type: 'button', class: 'gx-pick', 'aria-haspopup': 'dialog', onclick: function () { openPop(s, b); } }, [el('span'), el('i', { class: 'gx-ar', text: '▾' })]);
+var b = el('button', { type: 'button', 'data-live-ok': '', class: 'gx-pick', 'aria-haspopup': 'dialog', onclick: function () { openPop(s, b); } }, [el('span'), el('i', { class: 'gx-ar', text: '▾' })]);
 s.classList.add('gx-hid'); s.setAttribute('tabindex', '-1'); s.setAttribute('aria-hidden', 'true');
 s.parentNode.insertBefore(b, s.nextSibling); sync(s, b);
 s.addEventListener('change', function () { sync(s, b); });

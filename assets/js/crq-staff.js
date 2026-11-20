@@ -823,7 +823,7 @@ var s = a.decision === 'decline' ? ['لم يوافق', 'is-bad'] : a.decision ==
 var resp = a.resp && typeof a.resp === 'object' ? a.resp : {}, fl = Array.isArray(a.fields) ? a.fields : [];
 return el('div', { class: 'gq-si' }, [
 el('div', { class: 'gq-si-h' }, [el('b', { text: a.gtype || a.title }), el('span', { class: 'gq-st ' + s[1], text: s[0] })]),
-el('small', { text: [a.title !== a.gtype ? a.title : '', Number(a.val) > 0 ? money(a.val) + ' ريال' : '', a.created_at ? 'أُرسل ' + at(a.created_at) : ''].filter(Boolean).join(' · ') }),
+el('small', { text: [a.title !== a.gtype ? a.title : '', Number(a.val) > 0 ? money(a.val) + ' ريال' : '', (a.at || a.created_at) ? 'أُرسل ' + at(a.at || a.created_at) : '', a.responded_at ? 'ردّ ' + at(a.responded_at) : ''].filter(Boolean).join(' · ') }),
 a.reason ? el('p', { class: 'gq-si-r', text: 'السبب: ' + a.reason }) : null,
 Object.keys(resp).length ? el('dl', { class: 'gq-si-d' }, fl.filter(function (z) { return resp[z.k] != null; }).map(function (z) { return el('div', {}, [el('dt', { text: z.t }), el('dd', { text: z.type === 'ack' ? 'أقرّ ✓' : String(resp[z.k]) })]); })) : null]);
 }));
@@ -1360,7 +1360,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=954'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=955'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1536,7 +1536,7 @@ var reqCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h'
 el('div', { class: 'cr-mgs' }, [
 tile('العقود المطلوب توحيدها', rq.length ? nos(rq) : '—', rq.length ? cnW(rq.length) : ''),
 tile('المنتج المطلوب', pp.on ? (pp.type || 'منتج إضافي') : 'لا', pp.on ? [money(pp.value) + ' ر.س', pp.recv ? 'الاستلام: ' + rcvName(pp.recv) : ''].filter(Boolean).join(' · ') : (cli ? 'لم يطلب منتجًا في طلبه' : 'توحيد فقط')),
-tile('مدة خطة الدفع المقترحة', P.team ? 'يحددها الفريق' : P.months ? mW(P.months) : '—', '')]),
+tile('مدة خطة الدفع المقترحة', P.team ? 'يحددها الفريق' : P.months ? (P.unit && P.unit !== 'month' && UW[P.unit] ? pW(P.months) + ' ' + UW[P.unit] : mW(P.months)) : '—', '')]),
 cn ? el('p', { class: 'cr-mgs-n' }, [el('b', { text: (cli ? 'ملاحظة العميل' : 'ملاحظة') + ': ' }), cn]) : null]);
 var added = S0.filter(function (n) { return cli && rq.length && rq.indexOf(n) < 0; });
 var pl = r && r.plan || {};
@@ -1648,7 +1648,7 @@ return (vt > 0 ? [valRow('المجموع قبل الضريبة', (Number(r.total
 var UW = { day: 'يومية', week: 'أسبوعية', month: 'شهرية', half: 'نصف سنوية' };
 function resLine(x) { var r = rs(x), rp = r && r.plan || {}; if (!r) return []; var eq = rp.fdist !== 'pick' && rp.mode !== 'manual'; return ['النتيجة: ', el('b', { text: pW(rp.count) + ' ' + (UW[rp.unit || 'month'] || '') })].concat(eq ? [' قيمة كل منها ', el('b', {}, [ltr(money(rp.per))]), ' ر.س'] : [' — تختلف قيمها حسب الدفعات التي عليها البنود'], [' · من ', el('b', { text: day(rp.start) }), ' إلى ', el('b', { text: day(rp.last) })]); }
 function vatOf(r) { var pr = r.product || {}; return Math.round(((pr.on ? Number(pr.vat) || 0 : 0) + (Number(r.vat) || 0)) * 100) / 100; }
-function lnW(n) { return n === 1 ? 'بند واحد' : n === 2 ? 'بندان' : n + ' بنود'; }
+function lnW(n) { return !n ? 'بلا بنود' : n === 1 ? 'بند واحد' : n === 2 ? 'بندان' : n + ' بنود'; }
 function tabCalc(x) {
 var ed = editable(x), c = x.calc && typeof x.calc === 'object' ? x.calc : (x.calc = {}), r = rs(x), R0 = Number(x.vat_rate) || 15, P = x.proposal || {};
 if (!Array.isArray(c.lines)) c.lines = (r && Array.isArray(r.lines) ? r.lines : []).map(function (l) { return { id: l.id, t: l.t, amt: String(l.amt), vat: !!l.vat }; });
@@ -1695,7 +1695,7 @@ if (o[0] === 'manual') { pl.mode = 'manual'; pl.amounts = {}; (r && r.rows || []
 else { pl.mode = 'equal'; pl.fdist = o[0]; if (o[0] === 'pick' && !(Array.isArray(pl.fpick) && pl.fpick.length)) pl.fpick = [1]; }
 upd(true); } }), el('span', {}, [el('b', { text: o[1] }), el('small', { text: o[2] })])]); }));
 var rp = r && r.plan || {};
-var planCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'خطة الدفع' }), P.months || P.team ? el('small', { class: 'cr-hint', text: 'مقترح العميل: ' + (P.team ? 'يحددها الفريق' : P.months + ' ' + (UW[P.unit || 'month'] ? 'دفعة ' + UW[P.unit || 'month'] : '')) }) : null]),
+var planCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'خطة الدفع' }), P.months || P.team ? el('small', { class: 'cr-hint', text: 'مقترح العميل: ' + (P.team ? 'يحددها الفريق' : pW(P.months) + ' ' + (UW[P.unit || 'month'] || '')) }) : null]),
 el('div', { class: 'cr-fld' }, [el('span', { text: 'الدورية' }), units]),
 el('div', { class: 'cr-mg-pl' }, [
 el('label', { class: 'cr-fld' }, [el('span', { text: 'عدد الدفعات' }), el('input', { type: 'number', min: '1', max: '120', value: cnt, disabled: !ed, oninput: function (e) { pl.count = e.target.value.replace(/\D/g, ''); if (pl.mode === 'manual') pl.amounts = {}; if (Array.isArray(pl.fpick)) pl.fpick = pl.fpick.filter(function (q) { return q <= (Number(pl.count) || 0); }); upd(); } })]),
@@ -1716,7 +1716,7 @@ var fees = L.reduce(function (a, l) { return a + (Number(l.amt) || 0); }, 0), vt
 var part = function (k, v, sub, go) { var kids = [el('small', { text: k }), el('b', {}, [ltr(money(v))]), el('span', { text: sub })]; return go ? el('button', { type: 'button', class: 'cr-mgsum-p is-go', 'data-live-ok': '', onclick: function () { goTab(go); } }, kids) : el('div', { class: 'cr-mgsum-p' }, kids); };
 return el('section', { class: 'cr-card cr-mgsum' }, [
 el('div', { class: 'cr-mgsum-tot' }, [el('small', { text: 'قيمة العقد الموحّد' }), el('b', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })]), el('span', { text: pW(pl.count) + ' × ' + money(pl.per) + ' ر.س' })]),
-el('div', { class: 'cr-mgsum-ps' }, [part('المتبقي على العقود', r.remain, cnW((r.contracts || []).length), 'mgc'), pr.on ? part('المنتج', pr.value, pr.type || 'منتج إضافي', 'prod') : null, part('البنود', fees, L.length ? lnW(L.length) : 'لا بنود'), vt > 0 ? part('ضريبة القيمة المضافة', vt, r.vat_rate + '٪ على المنتج والبنود') : null]),
+el('div', { class: 'cr-mgsum-ps' }, [part('المتبقي على العقود', r.remain, cnW((r.contracts || []).length), 'mgc'), pr.on ? part('المنتج', pr.value, pr.type || 'منتج إضافي', 'prod') : null, part('البنود', fees, lnW(L.filter(function (l) { return Number(l.amt) > 0; }).length)), vt > 0 ? part('ضريبة القيمة المضافة', vt, r.vat_rate + '٪ على المنتج والبنود') : null]),
 el('div', { class: 'cr-mgsum-f' }, [el('span', {}, [icon('cal'), 'أول دفعة ', el('b', { text: day(pl.start) }), ' · آخر دفعة ', el('b', { text: day(pl.last) })]), pr.on ? el('span', {}, [icon('box'), 'الاستلام: ', el('b', { text: pr.recv_t || 'لم تُحدَّد' })]) : null])]);
 }
 function repaint(x) {
