@@ -381,3 +381,23 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
   .cc-mg .mg-kv dd { margin-bottom: 8px; }
   .cc-mg .mg-rh { padding: 12px; }
 }
+/* v962: قائمة العقود المرقّمة + تسطيح بطاقة «مطلوب منك» داخل الطلب + الجوال */
+.cc-mg .mg-cts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cc-mg .mg-cts li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 8px 10px; border-radius: 10px; background: var(--soft, rgba(10, 165, 173, .06)); }
+.cc-mg .mg-ct-i { color: var(--mut, #5B6B85); font-weight: 700; font-size: 12.5px; }
+.cc-mg .mg-cts bdi { font-weight: 700; }
+.cc-mg .mg-cts small { flex-basis: 100%; color: var(--mut, #5B6B85); font-weight: 400; font-size: 12.5px; line-height: 1.6; }
+.cc-mg .mg-kv { align-items: start; }
+.cc-mg .mg-rb .cx-needw > .cx-need { border: 0; background: transparent; box-shadow: none; padding: 0; }
+.cc-mg .mg-rb .cx-needw > .cx-need > .cx-h { margin-bottom: 8px; }
+.cc-mg .mg-rb .cx-chatw .cc-card { box-shadow: none; }
+@media (max-width: 600px) {
+  .cc-mg .mg-rh { flex-wrap: wrap; }
+  .cc-mg .mg-rh-m { flex: 1 1 100%; }
+  .cc-mg .mg-rh-s { width: 100%; justify-content: space-between; }
+  .cc-mg .mg-lh .cc-btn { width: 100%; justify-content: center; }
+  .cc-mg .mg-acts .cc-btn { flex: 1 1 100%; justify-content: center; }
+  .cc-mg .gx-file { flex-direction: column; align-items: stretch; }
+  .cc-mg .gx-file-a { justify-content: stretch; }
+  .cc-mg .gx-file-a .gx-btn { flex: 1; }
+}

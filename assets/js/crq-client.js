@@ -366,8 +366,8 @@ function msgBox(o) {
     var bar = [];
     if (staff && M.mode === 'msg') bar.push(M.file ? el('span', { class: 'cx-pend' }, [icon('clip'), el('bdi', { text: M.file.name }), el('button', { type: 'button', 'aria-label': 'إزالة المرفق', 'data-live-ok': '', onclick: function () { M.file = null; paint(); } }, [icon('x')])])
       : el('button', { type: 'button', class: 'cx-ib', title: 'إرفاق مستند للعميل (PDF أو صورة أو مستند · حتى 10 ميجا)', 'aria-label': 'إرفاق مستند', 'data-live-ok': '', onclick: function () { pickFile('any', 10, function (f, er) { if (er) { M.err = er; paint(); return; } M.file = f; M.err = ''; paint(); }); } }, [icon('clip')]));
-    bar.push(el('small', { class: 'cx-hint', text: M.mode === 'note' ? 'تظهر للفريق وحده.' : staff ? 'النص قابل للتعديل قبل الإرسال.' : 'يصل فريق تيرا ويردّ عليك هنا.' }));
-    bar.push(el('button', { type: 'button', class: 'cc-btn is-pri cx-send', disabled: M.busy, 'data-live-ok': '', onclick: send }, [icon('send'), M.busy ? 'جارٍ الإرسال…' : M.mode === 'note' ? 'حفظ الملاحظة' : 'إرسال']));
+    bar.push(el('small', { class: 'cx-hint', text: M.mode === 'note' ? 'تظهر للفريق وحده.' : staff ? 'النص قابل للتعديل قبل الإرسال.' : 'لسؤال أو استفسار عن طلبك — تصل رسالتك لفريق تيرا ويصلك الرد هنا وبإشعار.' }));
+    bar.push(el('button', { type: 'button', class: 'cc-btn is-pri cx-send', disabled: M.busy, 'data-live-ok': '', onclick: send }, [icon('send'), M.busy ? 'جارٍ الإرسال…' : M.mode === 'note' ? 'حفظ الملاحظة' : staff ? 'إرسال' : 'إرسال الرسالة']));
     out.push(el('div', { class: 'cx-bar' }, bar));
     if (M.err) out.push(el('p', { class: 'cx-err', role: 'alert', text: M.err }));
     return el('div', { class: 'cx-comp' }, out);
@@ -418,8 +418,9 @@ function msgBox(o) {
   function paint() {
     root.innerHTML = '';
     if (!M.rows) { root.appendChild(el('div', { class: 'cc-card' }, [el('p', { class: 'cx-hint', text: 'جارٍ تحميل المراسلات…' })])); return; }
-    var n = M.rows.length, nf = M.rows.filter(function (m) { return m.file; }).length;
-    var list = n ? el('ol', { class: 'cx-thread' }, M.rows.map(bubble)) : el('p', { class: 'cx-hint cx-empty', text: staff ? 'لا رسائل بعد — راسل العميل، أو اكتب ملاحظة داخلية للفريق.' : 'لا رسائل بعد — راسل فريق تيرا عن طلبك من هنا.' });
+    var RW = staff ? M.rows : M.rows.filter(function (m) { return !(m.ask_ids && m.ask_ids.length) && !(M.asks || []).some(function (a) { return a.file_msg === m.id; }) && !/^أرفق[:：]/.test(String(m.body || '')); });
+var n = RW.length, nf = RW.filter(function (m) { return m.file; }).length;
+    var list = n ? el('ol', { class: 'cx-thread' }, RW.map(bubble)) : el('p', { class: 'cx-hint cx-empty', text: staff ? 'لا رسائل بعد — راسل العميل، أو اكتب ملاحظة داخلية للفريق.' : 'لا رسائل بعد — راسل فريق تيرا عن طلبك من هنا.' });
     var main = el('section', { class: 'cc-card cx-main' }, [el('div', { class: 'cx-h' }, [el('span', { class: 'cx-ic' }, [icon('mail')]), el('h3', { text: staff ? 'المراسلات' : 'المراسلة مع فريق تيرا' }), n ? el('span', { class: 'cc-badge is-info', text: n + (n === 1 ? ' رسالة' : ' رسائل') + (nf ? ' · ' + nf + ' مرفقات' : '') }) : null]), list,
       x.state === 'closed' && !staff ? el('p', { class: 'cx-hint', text: 'أُغلق الطلب — المراسلة للاطلاع.' }) : composer()]);
     if (staff && M.askOpen) { var ap = M.askPre; root.appendChild(el('div', { class: 'cx-askw' }, [askPanel({ x: x, api: api, lists: M.lists, gap: M.askGap || 0, preset: ap ? ap.items : null, reset: !!(ap && ap.reset), toast: o.toast, onClose: function () { M.askOpen = false; paint(); }, onSent: function (j) { M.askOpen = false; M.askPre = null; paint(); load(); if (o.ask && o.ask.onSent) o.ask.onSent(j); } })])); if (ap) ap.reset = false; } /* v940 */
@@ -774,13 +775,14 @@ el('span', { class: 'mg-rh-s' }, [need ? el('span', { class: 'cc-badge is-warn',
 }
 function body(r) {
 var pr = r.product && r.product.on ? r.product : null, st = STEP_OF[r.state], c = r.chat || {}, isEnd = END.indexOf(r.state) >= 0, chatOn = S.chat === r.id;
-var kv = [['العقود', r.contract_no || '—']];
+var nos = String(r.contract_no || '').split('+').map(function (s) { return s.trim(); }).filter(Boolean);
+var kv = [['العقود المراد توحيدها (' + nos.length + ')', el('ol', { class: 'mg-cts' }, nos.map(function (no, i) { var oc = (S.opts || []).filter(function (q) { return q.no === no; })[0]; return el('li', {}, [el('span', { class: 'mg-ct-i', text: 'العقد ' + (i + 1) }), el('bdi', { dir: 'ltr', text: no }), oc && oc.product ? el('small', { text: oc.product }) : (/^TRA-/.test(no) ? el('small', { text: 'عقد موحّد سابق' }) : null)]); }))]];
 if (pr) kv.push(['منتج إضافي', (pr.type || 'منتج') + ' بقيمة ' + money(pr.value) + ' ر.س']);
 if (r.total != null) kv.push(['قيمة العقد الموحّد', money(r.total) + ' ر.س']);
 if (r.new_contract) kv.push(['عقدك الموحّد', r.new_contract]);
 var out = [];
 if (!isEnd && st >= 0) out.push(stepper(st));
-out.push(el('dl', { class: 'mg-kv' }, [].concat.apply([], kv.map(function (k) { return [el('dt', { text: k[0] }), el('dd', {}, [el('bdi', { text: k[1] })])]; }))));
+out.push(el('dl', { class: 'mg-kv' }, [].concat.apply([], kv.map(function (k) { return [el('dt', { text: k[0] }), el('dd', {}, [typeof k[1] === 'string' ? el('bdi', { text: k[1] }) : k[1]])]; }))));
 if (r.state === 'consent' || r.state === 'sign') out.push(el('div', { class: 'cc-note is-info' }, [icon('link'), el('span', { text: r.state === 'consent' ? 'أرسلنا لك العرض برابط على واتساب والبريد — افتحه للموافقة أو الاعتذار.' : 'أرسلنا لك عقد التوحيد للتوقيع برابط على واتساب والبريد.' })]));
 var asks = Number(c.open) > 0 || (!isEnd && Number(c.done) > 0);
 if (asks || chatOn) out.push(needCard({ r: r, token: o.token, onChange: load, chat: chatOn }));

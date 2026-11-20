@@ -29242,7 +29242,7 @@ function lvCrqPath(x) {
   return S.map(function (t, i) { return [t, i < cur ? (i === 0 ? new Date(x.created_at) : last) : null]; });
 }
 function lvCrqReq(x) {
-const f = [[x.kind === 'merge' ? 'العقود' : 'العقد', x.contract_no]].concat((x.targets || []).map(function (t) { return ['الدفعة', t.seq + ' · ' + iso(new Date(t.due))]; }));
+const f = [[x.kind === 'merge' ? 'العقود (' + String(x.contract_no || '').split('+').length + ')' : 'العقد', x.kind === 'merge' ? String(x.contract_no || '').split('+').map(function (s) { return s.trim(); }).join('، ') : x.contract_no]].concat((x.targets || []).map(function (t) { return ['الدفعة', t.seq + ' · ' + iso(new Date(t.due))]; }));
 if (x.total != null) f.push([x.kind === 'merge' ? 'قيمة العقد الموحّد' : 'يُضاف إلى العقد', SR(Number(x.total))]);
 if (x.close_t) f.push(['سبب الإغلاق', x.close_t]);
 return mkR({ no: x.no, type: x.kind, at: new Date(x.created_at), status: LV_CRQ_ST[x.state] || 'sent', contract: x.contract_no, fields: f, live: true, crq: x,
