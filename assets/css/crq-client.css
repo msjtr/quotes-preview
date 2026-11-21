@@ -471,7 +471,8 @@ display: flex; flex-direction: column; gap: 14px; color: var(--k-ink); font-fami
 .cc-mg .mgf-sec.is-done .mgf-n { background: #1E7A4C; }
 .cc-mg .mgf-b { padding: 14px; display: grid; gap: 12px; }
 .cc-mg .mgf-b > .cc-prop > h4:first-child { display: none; }
-.cc-mg .mgf-b > .cc-prop > h4:first-child + p { margin-top: 0; }
+.cc-mg .mgf-b > .cc-prop > h4:first-child + p { display: none; } /* v970: الشرح في رأس الخطوة فقط */
+.cc-mg .mgf-b > .cc-prop { border: 0; padding: 0; background: none; box-shadow: none; }
 .cc-mg .mgf-rv { padding: 12px; border-radius: 12px; background: var(--soft, rgba(10, 165, 173, .06)); }
 .cc-mg .mgf-b .cc-acts { margin-top: 2px; }
 @media (max-width: 600px) {

@@ -1251,3 +1251,12 @@ color: var(--k-mut); font: inherit; font-size: 14px; font-weight: 800; cursor: p
 /* v969: طلب أكمل فيه العميل المطلوب — بارز في القائمة */
 .cr-lr.is-back { background: rgba(30, 122, 76, .06); box-shadow: inset -4px 0 0 #1E7A4C; }
 .cr-sub.is-back { color: #1E7A4C; font-weight: 800; }
+/* v970: إكمال العميل للمطلوب — بارز في صفحة الطلب و«الخطوة التالية» */
+.cr-note.is-back { background: #E7F6EE; border: 1.5px solid #1E7A4C; color: #14532D; box-shadow: inset -5px 0 0 #1E7A4C; padding: 14px 16px; }
+.cr-note.is-back b { font-size: 15px; font-weight: 800; color: #14532D; }
+.cr-note.is-back > svg { color: #1E7A4C; }
+.cr-note.is-back .cr-btn { background: #1E7A4C; border-color: #1E7A4C; color: #fff; margin-top: 8px; }
+.cr-next-back { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: #E7F6EE; border: 1.5px solid #1E7A4C; color: #14532D; font-weight: 800; font-size: 13.5px; line-height: 1.7; }
+.cr-next-back > svg { width: 18px; height: 18px; color: #1E7A4C; margin-top: 3px; }
+.cr-next-back .cr-btn { grid-column: 1 / -1; justify-self: start; background: #1E7A4C; border-color: #1E7A4C; color: #fff; }
+@media (prefers-color-scheme: dark) { .cr-note.is-back, .cr-next-back { background: rgba(30, 122, 76, .18); color: #B7F0CF; } .cr-note.is-back b { color: #B7F0CF; } }
