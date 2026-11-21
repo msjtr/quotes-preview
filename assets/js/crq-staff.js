@@ -1362,7 +1362,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=973'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=974'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1546,7 +1546,7 @@ var decCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h'
 el('div', { class: 'cr-mgs' }, [
 tile('توحيد العقود', S0.length ? cnW(S0.length) : 'لم تُحدَّد العقود', added.length ? 'أضاف الفريق ' + added.join('، ') : r ? 'المتبقي ' + money(r.remain) + ' ر.س' : '', 'mgc'),
 tile('طلب المنتج', p.on ? (String(p.type || '').trim() || 'لم يُختر المنتج') + (Number(p.value) > 0 ? ' · ' + money(p.value) : '') : 'توحيد فقط', p.on ? (p.recv ? 'الاستلام: ' + rcvName(p.recv) : 'لم تُحدَّد وسيلة الاستلام') : '', 'prod'),
-tile('قيمة العقد الموحّد', r ? el('span', {}, [ltr(money(r.total)), ' ر.س']) : '—', r ? pW(pl.count) + ' × ' + money(pl.per) : errT(x), 'calc')])]);
+tile('قيمة العقد الموحّد', r ? el('span', {}, [ltr(money(r.total)), ' ر.س']) : '—', r ? pW(pl.count) + ' · قيمة الدفعة ' + money(pl.per) : errT(x), 'calc')])]);
 var mt = function (ic, k, v, cls) { return el('div', { class: 'cr-mt' + (cls ? ' ' + cls : '') }, [el('span', { class: 'cr-pf-ic' }, [icon(ic)]), el('div', {}, [el('small', { text: k }), el('b', {}, [v || '—'])])]); };
 var meta = el('section', { class: 'cr-card' }, [el('h2', { text: 'بيانات الطلب' }),
 el('div', { class: 'cr-mts' }, [mt(cli ? 'user' : 'team', 'مصدر الطلب', cli ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق'), mt('clock', 'تاريخ الطلب', at(x.created_at)),
@@ -1644,8 +1644,14 @@ return out;
 }
 function footRows(x) {
 var r = rs(x); if (!r) return [];
-var vt = vatOf(r); /* v952: ضريبة واحدة على المنتج والبنود */
-return (vt > 0 ? [valRow('المجموع قبل الضريبة', (Number(r.total) || 0) - vt, 'is-sub'), valRow('ضريبة القيمة المضافة ' + r.vat_rate + '٪ — على المنتج والبنود', vt, 'is-tax')] : []).concat([el('tr', { class: 'is-tot' }, [el('td', { colspan: '3', text: 'قيمة العقد الموحّد' }), el('td', { class: 'is-v' }, [ltr(money(r.total)), el('small', { text: ' ر.س' })])])]);
+/* v974: الضريبة لكل بند في سطره — على المنتج الإضافي والرسوم فقط، ولا ضريبة على المتبقي */
+var pr = r.product || {}, pv = pr.on ? (Number(pr.vat) || 0) : 0, fv = Number(r.vat) || 0, vt = pv + fv, rt = r.vat_rate || 15, out = [];
+if (vt > 0) out.push(valRow('المجموع قبل الضريبة', (Number(r.total) || 0) - vt, 'is-sub'));
+if (pr.on) out.push(pv > 0 ? valRow('الضريبة ' + rt + '% على المنتج الإضافي', pv, 'is-tax') : el('tr', { class: 'is-tax' }, [el('td', { colspan: '3', text: 'المنتج الإضافي غير خاضع للضريبة' }), el('td', { class: 'is-v', text: '—' })]));
+if (fv > 0) out.push(valRow('الضريبة ' + rt + '% على الرسوم والبنود', fv, 'is-tax'));
+else if ((r.lines || []).some(function (l) { return Number(l.amt) > 0; })) out.push(el('tr', { class: 'is-tax' }, [el('td', { colspan: '3', text: 'الرسوم والبنود غير خاضعة للضريبة' }), el('td', { class: 'is-v', text: '—' })]));
+if (vt > 0) out.push(el('tr', { class: 'is-tax' }, [el('td', { colspan: '4', class: 'cr-mgx-0', text: 'لا ضريبة على المتبقي على العقود — محتسبة في العقود السابقة.' })]));
+return out.concat([el('tr', { class: 'is-tot' }, [el('td', { colspan: '3', text: 'قيمة العقد الموحّد' }), el('td', { class: 'is-v' }, [ltr(money(r.total)), el('small', { text: ' ر.س' })])])]);
 }
 var UW = { day: 'يومية', week: 'أسبوعية', month: 'شهرية', half: 'نصف سنوية' };
 function resLine(x) { var r = rs(x), rp = r && r.plan || {}; if (!r) return []; var eq = rp.fdist !== 'pick' && rp.mode !== 'manual'; return ['النتيجة: ', el('b', { text: pW(rp.count) + ' ' + (UW[rp.unit || 'month'] || '') })].concat(eq ? [' قيمة كل منها ', el('b', {}, [ltr(money(rp.per))]), ' ر.س'] : [' — تختلف قيمها حسب الدفعات التي عليها البنود'], [' · من ', el('b', { text: day(rp.start) }), ' إلى ', el('b', { text: day(rp.last) })]); }
@@ -1717,7 +1723,7 @@ var pr = r.product || {}, pl = r.plan || {}, L = r.lines || [];
 var fees = L.reduce(function (a, l) { return a + (Number(l.amt) || 0); }, 0), vt = vatOf(r);
 var part = function (k, v, sub, go) { var kids = [el('small', { text: k }), el('b', {}, [ltr(money(v))]), el('span', { text: sub })]; return go ? el('button', { type: 'button', class: 'cr-mgsum-p is-go', 'data-live-ok': '', onclick: function () { goTab(go); } }, kids) : el('div', { class: 'cr-mgsum-p' }, kids); };
 return el('section', { class: 'cr-card cr-mgsum' }, [
-el('div', { class: 'cr-mgsum-tot' }, [el('small', { text: 'قيمة العقد الموحّد' }), el('b', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })]), el('span', { text: pW(pl.count) + ' × ' + money(pl.per) + ' ر.س' })]),
+el('div', { class: 'cr-mgsum-tot' }, [el('small', { text: 'قيمة العقد الموحّد' }), el('b', {}, [ltr(money(r.total)), el('small', { text: ' ر.س' })]), el('span', { text: pW(pl.count) + ' · قيمة الدفعة ' + money(pl.per) + ' ر.س' })]),
 el('div', { class: 'cr-mgsum-ps' }, [part('المتبقي على العقود', r.remain, cnW((r.contracts || []).length), 'mgc'), pr.on ? part('المنتج', pr.value, pr.type || 'منتج إضافي', 'prod') : null, part('البنود', fees, lnW(L.filter(function (l) { return Number(l.amt) > 0; }).length)), vt > 0 ? part('ضريبة القيمة المضافة', vt, r.vat_rate + '٪ على المنتج والبنود') : null]),
 el('div', { class: 'cr-mgsum-f' }, [el('span', {}, [icon('cal'), 'أول دفعة ', el('b', { text: day(pl.start) }), ' · آخر دفعة ', el('b', { text: day(pl.last) })]), pr.on ? el('span', {}, [icon('box'), 'الاستلام: ', el('b', { text: pr.recv_t || 'لم تُحدَّد' })]) : null])]);
 }
