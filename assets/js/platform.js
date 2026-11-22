@@ -32791,7 +32791,7 @@ function msgcPick(k) {
 function msgcCheck(E) {
   const bad = [];
   ['l1', 'l2', 'l3', 'l4'].forEach(function (k, i) { const v = String(E[k] || '').trim();
-    if (!v) bad.push('السطر ' + (i + 1) + ' فارغ.');
+    if (!v) { /* v991: السطر الفارغ في آخر الرسالة مقبول (رسائل بثلاثة أسطر) — الفراغ بين سطرين أو في السطر الأول لا */ if (i === 0 || ['l2', 'l3', 'l4'].slice(i).some(function (q) { return String(E[q] || '').trim(); })) bad.push('السطر ' + (i + 1) + ' فارغ.'); }
     else if (v.length > 160) bad.push('السطر ' + (i + 1) + ' أطول من 160 حرفًا.');
     if (v.indexOf('·') >= 0) bad.push('السطر ' + (i + 1) + ' فيه «·» — كل معلومة بسطر مستقل.'); });
   if (!String(E.title || '').trim()) bad.push('العنوان مطلوب.');
