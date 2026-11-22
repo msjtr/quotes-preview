@@ -450,7 +450,7 @@ function askPanel(o) {
   if (o.preset && o.preset.length && !S.items.length) { S.items = o.preset.map(preOf); S.fromPre = !lists; }
   async function ensure() { if (lists) return; try { var j = await api('GET', '/admin/api/crq-lists'); lists = j.lists; if (MB[id]) MB[id].lists = lists; if (o.preset && o.preset.length && (S.fromPre || !S.items.length)) { S.items = o.preset.map(preOf); S.fromPre = false; } } catch (e) { S.err = e.message; } paint(); }
   function reply() { var L = (lists && lists.replies || []).filter(function (r) { return r.active !== false; }); return L; }
-  function V() { return { 'الاسم': String(x.client || '').split(' ')[0], 'رقم الطلب': x.no || '', 'العقد': x.contract_no || '', 'المطلوب': S.items.map(function (i) { return i.title; }).filter(Boolean).join('، '), 'المهلة': stamp(new Date(Date.now() + S.hours * 3600e3).toISOString()), 'الفجوة': gap ? money(gap) + ' ريال' : '' }; }
+  function V() { return { 'الاسم': String(x.client || '').split(' ')[0], 'رقم الطلب': x.no || '', 'العقد': x.contract_no || '', 'المطلوب': S.items.map(function (i) { return i.title; }).filter(Boolean).join('، '), 'المستند': S.items.map(function (i) { return i.title; }).filter(Boolean).join('، ') /* v995: {المستند} في 8.44 */, 'المهلة': stamp(new Date(Date.now() + S.hours * 3600e3).toISOString()), 'الفجوة': gap ? money(gap) + ' ريال' : '' }; }
   if (!S.tpl && !S.body) { S.tpl = '8.41'; }
   function paint() {
     root.innerHTML = '';
@@ -472,10 +472,10 @@ function askPanel(o) {
     });
     if (lists && ed && S.items.length < 8) kids.push(el('label', { class: 'cx-add' }, [icon('plus'), el('select', { 'aria-label': 'إضافة مطلوب', onchange: function (e) { if (!e.target.value) return; S.items.push(itemOf(e.target.value)); paint(); } }, [el('option', { value: '', text: '+ إضافة مطلوب — اختر النوع' })].concat(grpOpts(T, '')))]));
     var L = reply();
-    kids.push(el('label', { class: 'cx-f' }, [el('span', { text: 'الرسالة للعميل — من الردود الجاهزة' }), el('select', { disabled: !ed, onchange: function (e) { S.tpl = e.target.value; var r = L.filter(function (z) { return z.k === S.tpl; })[0]; if (r) S.body = fill(r.body, V()); paint(); } },
+    kids.push(el('label', { class: 'cx-f' }, [el('span', { text: 'الرسالة للعميل — من الردود الجاهزة' }), el('select', { disabled: !ed, onchange: function (e) { S.tpl = e.target.value; S.auto = true; var r = L.filter(function (z) { return z.k === S.tpl; })[0]; if (r) S.body = fill(r.body, V()); paint(); } },
       [el('option', { value: '', text: '✎ رسالة أخرى — يكتبها الموظف' })].concat(L.map(function (r) { return el('option', { value: r.k, selected: S.tpl === r.k, text: r.k + ' · ' + r.title }); })))]));
-    if (S.tpl && !S.body) { var r0 = L.filter(function (z) { return z.k === S.tpl; })[0]; if (r0) S.body = fill(r0.body, V()); }
-    var ta = el('textarea', { class: 'cx-ta', rows: '3', maxlength: '2000', disabled: !ed, placeholder: 'رسالتك للعميل…', oninput: function (e) { S.body = e.target.value; } }); ta.value = S.body || '';
+    if (S.tpl && (!S.body || S.auto !== false)) { var r0 = L.filter(function (z) { return z.k === S.tpl; })[0]; if (r0) S.body = fill(r0.body, V()); } /* v995: نص الرد الجاهز يتحدّث مع المطلوبات حتى يعدّله الموظف بيده */
+    var ta = el('textarea', { class: 'cx-ta', rows: '3', maxlength: '2000', disabled: !ed, placeholder: 'رسالتك للعميل…', oninput: function (e) { S.body = e.target.value; S.auto = false; } }); ta.value = S.body || '';
     kids.push(ta);
     kids.push(el('div', { class: 'cx-g2' }, [el('label', { class: 'cx-f' }, [el('span', { text: 'مهلة الاستكمال' }), el('select', { disabled: !ed, onchange: function (e) { S.hours = Number(e.target.value); var r = L.filter(function (z) { return z.k === S.tpl; })[0]; if (r) S.body = fill(r.body, V()); paint(); } }, HOURS.map(function (h) { return el('option', { value: String(h), selected: S.hours === h, text: hoursT(h) }); }))]),
       el('div', { class: 'cx-f' }, [el('span', { text: 'يصل العميل' }), el('div', { class: 'cx-chs' }, ['حسابه', 'واتساب', 'إشعار الجوال', 'البريد'].map(function (c) { return el('span', { class: 'cx-ch', text: c }); }))])]));
