@@ -277,7 +277,7 @@ return btn('رفع للمشرف العام للاعتماد', { ic: 'send', cls:
 }
 if ((x.state === 'consent' || x.state === 'sign') && !x.signed_at) return btn('إعادة إرسال الرابط', { ic: 'send', cls: 'is-pri is-wide', disabled: ST.busy, on: function () { ask('إعادة إرسال الرابط', 'يُلغى الرابط الحالي ويصل العميل رابط جديد بمدة جديدة.', 'إعادة الإرسال', function () { act('resend', null, 'أُرسل رابط جديد للعميل.'); }); } });
 if (x.state === 'sign' && x.signed_at && sup) return btn(x.exec_error === 'await_admin' ? 'تنفيذ التوحيد وإغلاق العقود' : 'إعادة محاولة التنفيذ', { ic: 'check', cls: 'is-pri is-wide', disabled: ST.busy, on: function () { var aw = x.exec_error === 'await_admin'; ask(aw ? 'تنفيذ التوحيد وإغلاق العقود' : 'إعادة محاولة التنفيذ', aw ? 'وقّع العميل عقد التوحيد مع منتج. بالتنفيذ يُنشأ العقد الموحّد وتُغلق العقود السابقة — لا يمكن التراجع.' : 'سيُعاد تنفيذ الطلب على العقد.', aw ? 'تنفيذ وإغلاق العقود' : 'إعادة التنفيذ', function () { act('exec', null, 'نُفّذ الطلب وعُدّل العقد.'); }); } });
-if (x.state === 'done') return x.kind === 'merge' ? btn('إعادة إرسال رسالة التنفيذ', { ic: 'send', cls: 'is-wide', disabled: ST.busy, on: function () { ask('إعادة إرسال رسالة التنفيذ', 'وصلت العميل رسالة «تم تنفيذ طلبك» مع عقد التوحيد PDF عند التنفيذ. تُعاد الرسالة نفسها على واتساب والبريد — استخدمها فقط إن لم تصله.', 'إعادة الإرسال', function () { act('send-doc', null, 'أُعيدت رسالة التنفيذ مع العقد للعميل.'); }); } }) /* v996 */ : btn('إرسال الملحق للعميل', { ic: 'send', cls: 'is-pri is-wide', disabled: ST.busy, on: function () { ask('إرسال الملحق للعميل', 'يصل العميل الملحق PDF مع رسالة «نُفّذ طلبك» على واتساب والبريد.', 'إرسال', function () { act('send-doc', null, 'أُرسل الملحق للعميل.'); }); } });
+if (x.state === 'done') return x.kind === 'merge' ? btn('إعادة إرسال رسالة التنفيذ', { ic: 'send', cls: 'is-wide', disabled: ST.busy, on: function () { ask('إعادة إرسال رسالة التنفيذ', 'تُعاد رسالة «تم تنفيذ طلبك» نفسها على واتساب والبريد، ومعها عقد التوحيد PDF إن اخترت «يُرفق» في المستند — استخدمها فقط إن لم تصله.', 'إعادة الإرسال', function () { act('send-doc', null, 'أُعيدت رسالة التنفيذ للعميل.'); }); } }) /* v996 */ : btn('إرسال الملحق للعميل', { ic: 'send', cls: 'is-pri is-wide', disabled: ST.busy, on: function () { ask('إرسال الملحق للعميل', 'يصل العميل الملحق PDF مع رسالة «نُفّذ طلبك» على واتساب والبريد.', 'إرسال', function () { act('send-doc', null, 'أُرسل الملحق للعميل.'); }); } });
 return null;
 }
 /* بقية الإجراءات — ظاهرة تحت الإجراء الرئيسي (لا قائمة منسدلة) */
@@ -1362,7 +1362,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=996'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=997'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
