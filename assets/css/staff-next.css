@@ -4305,3 +4305,12 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rlg-ic.is-bad { width: 26px; height: 26px; background: rgba(185, 40, 40, .1); color: var(--t2-danger); }
 .tq-next .rlg-okl { margin: 12px 0 0; color: var(--t2-ok, #1F8A5B); font: 600 13px/1.4 var(--t2-ff-display); }
 @media (max-width: 46rem) { .tq-next .rlg-det { padding: 2px 14px 14px; } .tq-next .rlg-infs { flex-direction: column; gap: 10px; } }
+/* v1019: فلاتر السجل الدقيقة وإعادة دعوة التقييم */
+.tq-next .rlg-flt { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; padding: 12px 14px; background: var(--t2-surface); border: 1px solid var(--t2-line); border-radius: 16px; }
+.tq-next .rlg-f { display: flex; flex-direction: column; gap: 4px; flex: 1 1 9.5rem; min-width: 9.5rem; }
+.tq-next .rlg-f small { color: var(--t2-muted); font: 600 12px/1.3 var(--t2-ff-display); }
+.tq-next .rlg-f.is-on small { color: var(--t2-brand-3, #0B5F66); }
+.tq-next .rlg-f.is-on .t2-cb-btn { border-color: var(--t2-brand-2); box-shadow: 0 0 0 1px var(--t2-brand-2); }
+.tq-next .rlg-flt .rmn-link { align-self: center; }
+.tq-next .rlg-ra1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+@media (max-width: 46rem) { .tq-next .rlg-f { flex: 1 1 calc(50% - 10px); min-width: 0; } }

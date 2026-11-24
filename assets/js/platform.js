@@ -34504,6 +34504,30 @@ function rmnLogDay(k, today) {
   if (k === today) return 'اليوم'; if (k === y) return 'أمس';
   const d = new Date(k + 'T12:00:00'); return isNaN(d) ? k : d.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' });
 }
+/* v1019: يوم السجل ووقته بتوقيت الرياض (مثل «اليوم» من الخادم) — حتى لو فُتحت المنصة من بلد آخر */
+const RLG_DF = (function () { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit' }); } catch (err) { return null; } })();
+function rlgDay(v) { const d = new Date(v); if (isNaN(d)) return '—'; return RLG_DF ? RLG_DF.format(d) : iso(d); }
+function rlgTime(v) { const d = new Date(v); if (isNaN(d)) return '—'; try { return d.toLocaleTimeString('ar-SA-u-nu-latn', { timeZone: 'Asia/Riyadh', hour: 'numeric', minute: '2-digit' }); } catch (err) { return rmnT(d); } }
+/* v1019: إعادة دعوة تقييم السداد من السجل — دفعات من 50، وتأكيد خارج نافذة الإرسال، ثم شاشة النتيجة */
+async function rlgRate(list, force) {
+  const F = RM.rq || {};
+  const items = (list || []).map(function (x) { return { user_id: x.user_id, contract_no: x.contract_no, seq: x.seq }; }).filter(function (x) { return x.user_id && x.contract_no; });
+  if (!items.length) return;
+  RM.busy = true; RM.err = ''; rmnPaint();
+  let rows = [];
+  try {
+    for (let i = 0; i < items.length; i += 50) {
+      const r = await clPost('/admin/api/reminders/rate-again', { items: items.slice(i, i + 50), force: !!force });
+      if (r && r.error === 'quiet_hours') { RM.busy = false; F.ra = 'quiet'; RMN.raP = list.slice(i); rmnPaint(); return; }
+      if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر الإرسال.');
+      rows = rows.concat(r.rows || []);
+    }
+    RM.busy = false; F.ra = ''; RMN.raP = null; RM.R = null;
+    const ok = rows.filter(function (o) { return o.ok; }).length;
+    RMN.done = { tone: ok ? 'ok' : 'warn', ic: 'star', t: ok ? 'أُعيدت دعوة التقييم' : 'لم تُرسل أي دعوة', s: 'وصلت ' + fmtNum(ok) + ' من ' + fmtNum(rows.length) + '.', rows: rows.map(function (o) { return Object.assign({}, o, { name: o.name || o.contract_no }); }), back: 'العودة إلى السجل', to: 'log' };
+    rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; }
+  } catch (err) { RM.busy = false; if (err && err.message === 'auth') return; RM.err = (err && err.message) || 'تعذّر الإرسال.'; rmnPaint(); }
+}
 function rlgPaint() { /* v1018: إعادة رسم السجل وحده — بلا رسم الصفحة كلها (لا قفز ولا تعليق) */
   const old = document.querySelector('.tq-next .rlg-root');
   if (!old || !RM.L || RM.L === 'loading' || RMN.t !== 'log') { rmnPaint(); return; }
@@ -34513,7 +34537,8 @@ function rlgPaint() { /* v1018: إعادة رسم السجل وحده — بلا
   if (q) { const i = n.querySelector('input[aria-label="بحث في السجل"]'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (err) { void err; } } }
 }
 function rmnLog(L) {
-  const F = RM.rq || (RM.rq = { q: '', res: 'all', kind: 'all', per: '30', open: '', ps: 20, pg: 0, cf: '', ct: '', err: '' });
+  const F = RM.rq || (RM.rq = { q: '', res: 'all', kind: 'all', per: '30', open: '', ps: 20, pg: 0, cf: '', ct: '', err: '', seg: 'all', paid: 'all', rate: 'all', ra: '' });
+  if (!F.seg) F.seg = 'all'; if (!F.paid) F.paid = 'all'; if (!F.rate) F.rate = 'all';
   if (!F.ps) F.ps = 20; if (!(F.pg >= 0)) F.pg = 0;
   const today = L.today || iso(new Date()), back = function (n) { return iso(new Date(new Date(today + 'T12:00:00').getTime() - n * 864e5)); };
   if (!F.per) F.per = '30';
@@ -34533,9 +34558,17 @@ function rmnLog(L) {
   }
   const bar = e('div', { class: 'rlg-bar' }, [
     seg('الفترة', [['1', 'اليوم'], ['7', '7 أيام'], ['30', '30 يومًا'], ['90', '90 يومًا'], ['180', '6 أشهر'], ['365', 'سنة'], ['c', 'من تاريخ إلى تاريخ']], F.per, function (v) { F.per = v; F.err = ''; if (v === 'c') { F.cf = RM.rf || back(29); F.ct = RM.rt || today; } else RM.R = null; }),
-    seg('النتيجة', [['all', 'الكل'], ['ok', 'وصل'], ['fail', 'لم يصل']], F.res, function (v) { F.res = v; }),
-    seg('النوع', [['all', 'الكل'], ['manual', 'يدوي'], ['auto', 'تلقائي']], F.kind, function (v) { F.kind = v; }),
     e('div', { class: 'rmn-search rlg-q' }, [frag(ui('magnifying-glass', 16)), qi])]);
+  /* v1019: فلاتر دقيقة — النتيجة · النوع · الحالة عند الإرسال · السداد · التقييم */
+  const sel = function (k, lbl, opts) { return e('label', { class: 'rlg-f' + (F[k] !== 'all' ? ' is-on' : '') }, [e('small', {}, lbl), DS.select({ value: F[k], options: opts, onChange: function (v) { F[k] = v; F.pg = 0; F.open = ''; F.ra = ''; rlgPaint(); } })]); };
+  const nOn = ['res', 'kind', 'seg', 'paid', 'rate'].filter(function (k) { return F[k] !== 'all'; }).length;
+  const flt = e('div', { class: 'rlg-flt' }, [
+    sel('res', 'النتيجة', [['all', 'الكل'], ['ok', 'وصل'], ['fail', 'لم يصل']]),
+    sel('kind', 'النوع', [['all', 'الكل'], ['manual', 'يدوي'], ['auto', 'تلقائي']]),
+    sel('seg', 'الحالة عند الإرسال', [['all', 'الكل'], ['regular', 'منتظم (لم يتأخر)'], ['late', 'متأخر (1–60 يومًا)'], ['default', 'متعثر (أكثر من 60)']]),
+    sel('paid', 'السداد', [['all', 'الكل'], ['yes', 'سُدِّدت بعد التذكير'], ['no', 'لم تُسدَّد']]),
+    sel('rate', 'التقييم', [['all', 'الكل'], ['yes', 'قيّم'], ['wait', 'سدّد ولم يقيّم']]),
+    nOn ? e('button', { type: 'button', class: 'rmn-link', onClick: function () { F.res = F.kind = F.seg = F.paid = F.rate = 'all'; F.pg = 0; F.ra = ''; rlgPaint(); } }, 'مسح الفلاتر (' + fmtNum(nOn) + ')') : null]);
   /* v1017: فترة مخصصة بتحقق — من ≤ إلى ≤ اليوم، وبيان عدد الأيام */
   const dd = function (a, b) { const x = Date.parse(a + 'T12:00:00'), y = Date.parse(b + 'T12:00:00'); return isNaN(x) || isNaN(y) ? 0 : Math.round((y - x) / 864e5) + 1; };
   const custom = F.per === 'c' ? e('div', { class: 'rlg-custom' }, [
@@ -34550,14 +34583,22 @@ function rmnLog(L) {
       rlgPaint(); } }),
     e('small', { class: F.err ? 'rmn-late' : 'rmn-sm' }, F.err || (F.cf && F.ct && F.cf <= F.ct ? fmtNum(dd(F.cf, F.ct)) + ' يومًا' : ''))]) : null;
   const root = function (kids) { return [e('div', { class: 'rlg-root' }, kids)]; };
-  if (R === 'loading' || R === null) return root([bar, custom, e('div', { class: 'rlg-wait', role: 'status' }, 'جارٍ تحميل السجل…')]);
-  if (R.fail) return root([bar, custom, DS.note('warn', 'تعذّر تحميل السجل', R.fail, DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { RM.R = null; rlgPaint(); } }))]);
+  if (R === 'loading' || R === null) return root([bar, flt, custom, e('div', { class: 'rlg-wait', role: 'status' }, 'جارٍ تحميل السجل…')]);
+  if (R.fail) return root([bar, flt, custom, DS.note('warn', 'تعذّر تحميل السجل', R.fail, DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { RM.R = null; rlgPaint(); } }))]);
   const P = R.report || {}, q = String(F.q || '').trim().toLowerCase();
   const rows = (P.rows || []).filter(function (x) {
     if (F.res === 'ok' && !x.ok) return false;
     if (F.res === 'fail' && (x.ok || !x.done)) return false;
     if (F.kind === 'manual' && !x.manual) return false;
     if (F.kind === 'auto' && x.manual) return false;
+    const lt = Number(x.late) || 0;
+    if (F.seg === 'regular' && lt > 0) return false;
+    if (F.seg === 'late' && !(lt >= 1 && lt <= 60)) return false;
+    if (F.seg === 'default' && !(lt > 60)) return false;
+    if (F.paid === 'yes' && !x.paid) return false;
+    if (F.paid === 'no' && x.paid) return false;
+    if (F.rate === 'yes' && !x.rating) return false;
+    if (F.rate === 'wait' && !(x.paid && !x.rating)) return false;
     return !q || [x.name, x.tera_id, x.contract_no].some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; });
   });
   const csv = function () {
@@ -34583,7 +34624,7 @@ function rmnLog(L) {
     const n = x.rating && Number(x.rating.score) ? Math.max(1, Math.min(5, Math.round(Number(x.rating.score)))) : 0;
     const head = e('button', { type: 'button', class: 'rlg-row', 'aria-expanded': open ? 'true' : 'false', onClick: function () { F.open = open ? '' : id; rlgPaint(); } }, [
       e('span', { class: 'rlg-dot is-' + st, 'aria-label': st === 'ok' ? 'وصل' : st === 'bad' ? 'لم يصل' : 'جارٍ' }),
-      e('span', { class: 'rlg-time' }, rmnT(d)),
+      e('span', { class: 'rlg-time' }, rlgTime(x.at)),
       e('span', { class: 'rlg-who' }, [e('b', {}, x.name || '—'), e('small', {}, [e('bdi', { dir: 'ltr' }, x.contract_no || '—'), ' · الدفعة ' + fmtNum(x.seq) + (x.n ? ' من ' + fmtNum(x.n) : '')])]),
       e('span', { class: 'rlg-amt' }, [e('b', {}, rmnSar(x.amount)), e('small', { class: late > 0 ? 'rmn-late' : 'rmn-ok' }, rmLate(late))]),
       e('span', { class: 'rlg-chs' }, chs.length ? chs.map(function (k) { return e('i', { class: o[k].ok ? 'is-ok' : 'is-bad', title: o[k].message || '' }, (o[k].ok ? '✓ ' : '✗ ') + CHS[k]); }) : e('small', { class: 'rmn-sm' }, o.merged ? 'ضمن مطالبة العقد' : (x.done ? '—' : 'جارٍ…'))),
@@ -34601,24 +34642,35 @@ function rmnLog(L) {
         x.paid ? (n ? null : info('star', 'التقييم', 'لم يقيّم بعد')) : info('hourglass-medium', 'بعد التذكير', 'لم تُسدَّد بعد')]),
       fl.length ? e('ul', { class: 'rlg-fail' }, fl.map(function (k) { return e('li', {}, [e('span', { class: 'rlg-ic is-bad', 'aria-hidden': 'true' }, frag(ui(CHI[k], 14))), e('b', {}, rmChTx([k]) + ': '), o[k].message || 'لم يصل']); }))
         : chs.length ? e('p', { class: 'rlg-okl' }, 'وصلت كل الوسائل.') : o.merged ? e('p', { class: 'rmn-sm' }, 'مشمولة في مطالبة العقد (أقدم دفعة متأخرة).') : null,
-      o.error ? e('p', { class: 'rmn-sm rmn-late' }, o.error) : null]) : null;
+      o.error ? e('p', { class: 'rmn-sm rmn-late' }, o.error) : null,
+      x.paid && !x.rating ? e('div', { class: 'rlg-ra1' }, [liveOk(DS.button('إعادة دعوة التقييم', { size: 'sm', disabled: RM.busy, onClick: function () { rlgRate([x], false); } })), e('small', { class: 'rmn-sm' }, 'تصله دعوة التقييم نفسها (واتساب والبريد) — مرة في اليوم.')]) : null]) : null;
     return e('article', { class: 'rlg-item' + (open ? ' is-open' : '') + ' is-' + st }, [head, det]);
   };
   const per = F.ps === 'all' ? Math.max(rows.length, 1) : Number(F.ps) || 20, pages = Math.max(1, Math.ceil(rows.length / per));
   if (F.pg > pages - 1) F.pg = pages - 1;
   const shown = rows.slice(F.pg * per, F.pg * per + per), groups = [];
-  shown.forEach(function (x) { const k = iso(new Date(x.at)); const g = groups[groups.length - 1]; if (g && g.k === k) g.l.push(x); else groups.push({ k: k, l: [x] }); });
+  shown.forEach(function (x) { const k = rlgDay(x.at); const g = groups[groups.length - 1]; if (g && g.k === k) g.l.push(x); else groups.push({ k: k, l: [x] }); });
   const list = rows.length ? e('div', { class: 'rlg-list' }, groups.map(function (g) {
-    const all = rows.filter(function (x) { return iso(new Date(x.at)) === g.k; }), bad = all.filter(function (x) { return x.done && !x.ok; }).length;
+    const all = rows.filter(function (x) { return rlgDay(x.at) === g.k; }), bad = all.filter(function (x) { return x.done && !x.ok; }).length;
     return e('section', { class: 'rlg-day' }, [e('h3', {}, [e('span', {}, rmnLogDay(g.k, today)), e('small', {}, (all.length === 1 ? 'تذكير واحد' : fmtNum(all.length) + (all.length <= 10 ? ' تذكيرات' : ' تذكيرًا')) + (bad ? ' · لم يصل ' + fmtNum(bad) : ''))]),
       e('div', { class: 'rlg-items' }, g.l.map(card))]);
   })) : e('div', { class: 'rlg-empty' }, [e('b', {}, (P.rows || []).length ? 'لا نتائج' : 'لا إرسال في هذه الفترة'), e('small', {}, (P.rows || []).length ? 'غيّر الفلاتر أو امسح البحث.' : 'اختر فترة أطول.')]);
   const fmtD = function (v) { const x = new Date(v + 'T12:00:00'); return isNaN(x) ? v : x.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }); };
   const capped = Number(P.total || 0) > (P.rows || []).length;
+  const wait = rows.filter(function (x) { return x.paid && !x.rating; });
+  const waitU = (function () { const S = {}; return wait.filter(function (x) { const k = x.user_id + ':' + x.contract_no + ':' + x.seq; if (S[k]) return false; S[k] = 1; return true; }); })();
+  const raBtn = waitU.length ? (F.ra === 'ask' ? null : DS.button('إعادة دعوة التقييم (' + fmtNum(waitU.length) + ')', { size: 'sm', disabled: RM.busy, onClick: function () { F.ra = 'ask'; rlgPaint(); } })) : null;
+  const raAsk = F.ra === 'ask' && waitU.length ? DS.note('info', 'إعادة دعوة التقييم لـ' + fmtNum(waitU.length) + (waitU.length === 1 ? ' سداد' : ' عملية سداد') + ' بلا تقييم؟', 'تصل الدعوة نفسها (واتساب والبريد) لمن سدّد ولم يقيّم في النتائج الظاهرة الآن — مرة واحدة في اليوم لكل دعوة، ولا تصل من قيّم أو انتهت دعوته.', e('div', { class: 'rmn-acts' }, [
+    liveOk(DS.button('نعم، أرسل', { tone: 'primary', size: 'sm', disabled: RM.busy, onClick: function () { rlgRate(waitU, false); } })),
+    DS.button('تراجع', { size: 'sm', onClick: function () { F.ra = ''; rlgPaint(); } })])) : null;
+  const raQuiet = F.ra === 'quiet' ? DS.note('warn', 'الوقت الآن خارج أوقات الإرسال للعملاء', 'أرسل لاحقًا داخل النافذة، أو أرسل الآن رغم ذلك.', e('div', { class: 'rmn-acts' }, [
+    liveOk(DS.button('أرسل الآن رغم ذلك', { tone: 'danger', size: 'sm', disabled: RM.busy, onClick: function () { rlgRate(RMN.raP || [], true); } })),
+    DS.button('إلغاء', { size: 'sm', onClick: function () { F.ra = ''; RMN.raP = null; rlgPaint(); } })])) : null;
   const head = e('div', { class: 'rlg-head' }, [
     e('div', { class: 'rlg-head-t' }, [e('b', {}, rows.length === 1 ? 'تذكير واحد' : fmtNum(rows.length) + (rows.length > 2 && rows.length <= 10 ? ' تذكيرات' : ' تذكيرًا')), e('span', {}, RM.rf === RM.rt ? fmtD(RM.rf) : 'من ' + fmtD(RM.rf) + ' إلى ' + fmtD(RM.rt))]),
     e('span', { class: 'rmn-grow' }),
     e('span', { class: 'rlg-ps' }, [e('small', {}, 'في الصفحة'), seg('عدد الصفوف', [['20', '20'], ['50', '50'], ['all', 'الكل']], String(F.ps), function (v) { F.ps = v === 'all' ? 'all' : Number(v); })]),
+    raBtn,
     DS.button('تصدير Excel', { size: 'sm', tone: 'primary', disabled: !rows.length, onClick: csv })]);
   const pager = pages > 1 ? e('nav', { class: 'rlg-pager', 'aria-label': 'صفحات السجل' }, [
     DS.button('السابق', { size: 'sm', disabled: F.pg <= 0, onClick: function () { F.pg -= 1; F.open = ''; rlgPaint(); try { document.querySelector('.rlg-head').scrollIntoView({ block: 'start' }); } catch (err) { void err; } } }),
@@ -34626,7 +34678,7 @@ function rmnLog(L) {
     DS.button('التالي', { size: 'sm', disabled: F.pg >= pages - 1, onClick: function () { F.pg += 1; F.open = ''; rlgPaint(); try { document.querySelector('.rlg-head').scrollIntoView({ block: 'start' }); } catch (err) { void err; } } }),
     DS.button('عرض الكل', { size: 'sm', onClick: function () { F.ps = 'all'; F.pg = 0; rlgPaint(); } })]) : null;
   const note = capped ? e('p', { class: 'rmn-sm' }, 'يظهر أحدث ' + fmtNum((P.rows || []).length) + ' من ' + fmtNum(P.total) + ' — ضيّق الفترة لرؤية الأقدم.') : null;
-  return root([bar, custom, sum, head, list, pager, note]);
+  return root([bar, flt, custom, sum, head, raAsk, raQuiet, list, pager, note]);
 }
 function remPage() {
   if (TQN) return rmnPage(); /* v1010: التصميم الجديد في المنصة الجديدة وحدها */
