@@ -33979,8 +33979,9 @@ function rmnHead(L) {
     else if (!S.rem_engine) btn = act.length ? liveOk(DS.button('تشغيل الإرسال التلقائي', { size: 'sm', tone: 'primary', ui: 'rocket-launch', disabled: RM.busy, onClick: function () { rmnAct('/admin/api/reminders/settings', { key: 'rem_engine', on: true }, { tone: 'ok', ic: 'rocket-launch', t: 'شُغّل الإرسال التلقائي', s: 'تعمل القواعد المعتمدة في مواعيدها داخل نافذة الإرسال للعملاء.' }); } })) : null;
     else btn = DS.button(RM.ask === 'pause' ? 'تأكيد الإيقاف' : 'إيقاف مؤقت', { size: 'sm', tone: RM.ask === 'pause' ? 'danger' : null, ui: 'hourglass-medium', disabled: RM.busy, onClick: function () { if (RM.ask !== 'pause') { RM.ask = 'pause'; draw(); return; } rmnAct('/admin/api/reminders/settings', { key: 'rem_pause_all', on: true }, { tone: 'warn', ic: 'hourglass-medium', t: 'أُوقف التذكير مؤقتًا للجميع', s: 'لن يُرسل أي تذكير — تلقائي أو يدوي أو مجدول — حتى تضغط «استئناف الإرسال».' }); } });
   }
-  return e('header', { class: 'rmn-head' }, [rmnTile('bell-ringing'),
-    e('div', { class: 'rmn-head-t' }, [e('h1', {}, 'التذكير'), e('p', {}, 'تذكير العملاء بدفعاتهم — اختر الدفعات وأرسل الآن أو جدول، والقواعد التلقائية لا تعمل قبل الاعتماد.')]),
+  /* عنوان الصفحة في رأس المنصة نفسه — لا يتكرر هنا */
+  return e('header', { class: 'rmn-head' }, [
+    e('div', { class: 'rmn-head-t' }, [e('p', {}, 'تذكير العملاء بدفعاتهم — اختر الدفعات وأرسل الآن أو جدول، والقواعد التلقائية لا تعمل قبل الاعتماد.')]),
     md ? e('div', { class: 'rmn-state is-' + md[1], role: 'status' }, [e('i', { 'aria-hidden': 'true' }), e('span', {}, [e('b', {}, md[0]), ' ', e('small', {}, md[2])]), btn]) : null]);
 }
 function rmnTabs(L) {
@@ -33994,15 +33995,20 @@ function rmnTabs(L) {
       [frag(ui(t[2], 16)), e('span', {}, t[1]), t[3] ? e('i', { class: 'rmn-cnt' + (t[4] ? ' is-' + t[4] : '') }, fmtNum(t[3])) : null]);
   }));
 }
+/* عرض ضيق (التطبيق أو نافذة صغيرة): لوحة الإرسال صفحة مستقلة بشريط «متابعة» — يُقاس عرض مساحة المحتوى لا الشاشة */
+let RMN_NW = null;
+function rmnNarrow() { const b = document.querySelector('.t2-body'); const w = b && b.clientWidth ? b.clientWidth : window.innerWidth; RMN_NW = w < 940; return RMN_NW; }
+let RMN_RZ = false;
+function rmnWatch() { if (RMN_RZ) return; RMN_RZ = true; let t = 0; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { if (!document.querySelector('.tq-next .rmn')) return; const was = RMN_NW; if (rmnNarrow() !== was) draw(); }, 200); }); }
 function rmnPage() {
-  rmCss(); rmLoad(false); rmLoadC(false);
+  rmCss(); rmLoad(false); rmLoadC(false); rmnWatch();
   const L = RM.L;
   if (L === null || L === 'loading') return [e('div', { class: 'rmn' }, [rmnHead(null), clWait('التذكير')])];
   if (L.fail) return [e('div', { class: 'rmn' }, [rmnHead(null), clFail('التذكير', L.fail, function () { RM.L = null; rmLoad(true); draw(); })])];
   if (RMN.done) return [e('div', { class: 'rmn' }, [rmnHead(L), rmnDone(RMN.done)])];
   const flash = RM.err ? DS.note('warn', 'تعذّر التنفيذ', RM.err) : null;
   const body = RMN.t === 'rules' ? rmnRules(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'queue' ? rmnQueue(L) : RMN.t === 'log' ? rmnLog(L) : rmnClients(L);
-  return [e('div', { class: 'rmn' }, [rmnHead(L), rmnTabs(L), flash].concat(body))];
+  return [e('div', { class: 'rmn' + (rmnNarrow() ? ' is-narrow' : '') }, [rmnHead(L), rmnTabs(L), flash].concat(body))];
 }
 /* شاشة التأكيد بعد كل إجراء */
 function rmnDone(D) {
@@ -34060,7 +34066,8 @@ function rmnClients(L) {
   const list = rows.length ? e('div', { class: 'rmn-list' }, rows.map(function (x) { return rmnRow(x, can(x)); }))
     : DS.note('info', seg === 'fav' ? 'لا مفضلة بعد' : q ? 'لا نتائج للبحث' : 'لا أحد في هذه القائمة', seg === 'fav' ? 'ضع نجمة على أي عميل ليظهر هنا.' : q ? 'جرّب الاسم أو رقم تيرا أو رقم العقد.' : 'لا عملاء بدفعات تطابق هذه الفئة الآن.');
   const sel = rmnSel();
-  const bar = sel.length ? e('div', { class: 'rmn-mbar', role: 'region', 'aria-label': 'المحدد للإرسال' }, [
+  let dk = 0; try { const d = document.querySelector('.t2-dock'), cs = d && getComputedStyle(d); if (cs && cs.display !== 'none' && cs.position === 'fixed') dk = Math.round(d.getBoundingClientRect().height); } catch (err) { void err; }
+  const bar = sel.length ? e('div', { class: 'rmn-mbar', role: 'region', 'aria-label': 'المحدد للإرسال', style: 'bottom:' + dk + 'px' }, [
     e('span', {}, [e('b', {}, fmtNum(sel.length) + (sel.length === 1 ? ' دفعة' : ' دفعات') + ' لـ' + fmtNum(new Set(sel.map(function (o) { return o.x.id; })).size) + ' عميل'), e('small', {}, rmnSar(sel.reduce(function (s, o) { return s + Number(o.y.left || 0); }, 0)))]),
     DS.button('متابعة', { tone: 'primary', onClick: function () { RMN.send = true; draw(); try { window.scrollTo(0, 0); } catch (err) { void err; } } })]) : null;
   return [tools, hint, e('div', { class: 'rmn-split' }, [e('section', { class: 'rmn-main', 'aria-label': 'قائمة العملاء' }, [list]), e('aside', { class: 'rmn-side', 'aria-label': 'الإرسال' }, rmnSendBox(L, sel))]), bar];
