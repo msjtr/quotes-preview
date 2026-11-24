@@ -73,7 +73,7 @@
     'cu-admx-tr': 'fin', 'cu-admx-ck': 'fin', 'cu-admx-rp': 'fin', 'cu-admx-rpc': 'fin',
     'cu-admx-fee': 'fin', 'pay-center': 'fin',
     'comm': 'comm-hub', 'comm-dir': 'comm-hub', 'comm-rep': 'comm-send', 'sys-push': 'comm-send',
-    'cs-ticket': 'cs-tickets', 'cx-dash': 'cx', 'cx-review': 'cx', 'cx-send': 'cx', 'cx-log': 'cx',
+    'cs-ticket': 'cs-tickets', 'cx-dash': 'cx', 'cx-review': 'cx', 'cx-send': 'comm-send', 'cx-log': 'comm-send',
     'soon-emp': 'team-hub', 'soon-par': 'team-hub', 'soon-mkt': 'team-hub', 'adm-more': 'adm-home'
   };
   /* v707: الصفحات الفرعية الجديدة ← بندها في القائمة */
@@ -89,7 +89,8 @@ var VIEWS = [
   ['fin-pay', [['fin-pay', 'سجل المدفوعات'], ['fin-gw', 'عمليات بوابة الدفع'], ['cu-trin', 'التحويلات البنكية'], ['fin-rec-gw', 'سجل السداد', 'fin-rec-'], ['cu-admx-tr', 'الحوالات الصادرة']]],
   ['fin-req', [['fin-req', 'سداد قيمة المنتج'] /* v863: التأجيل في «طلبات تأجيل دفعة» */, ['cu-opin', 'الإلغاء والاسترداد']]],
   ['cu-admx-rp', [['cu-admx-rp', 'تقرير العملاء'], ['cu-admx-fee', 'الرسوم والإيراد']]],
-  ['comm-send', [['comm-send', 'الإرسال'], ['comm-rep', 'تقرير الإرسال']]]
+  ['comm-send', [['comm-send', 'الإرسال'], ['comm-rep', 'تقرير الإرسال'], ['cx-log', 'دعوات الاستبانة']]], /* v1012: كل سجل إرسال في مكانه — ودعوات الاستبانة مع الإرسال */
+  ['cx', [['cx', 'المؤشرات'], ['cx-review', 'التقييمات']]] /* v1012: تجربة العملاء للنتائج — بلا صفحة فهرس */
 ];
 /* سجل السداد حسب الطريقة — اختيارات داخل التبويب نفسه */
 var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'], ['cash', 'نقدًا'], ['settle', 'سداد قيمة المنتج'], ['merge', 'توحيد'], ['defer', 'تأجيل'], ['waive', 'إعفاء فرق'], ['round', 'فرق تقريب'], ['oth', 'بلا طريقة مسجّلة']];
