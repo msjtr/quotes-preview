@@ -34170,7 +34170,7 @@ function rmnDone(D) {
     e('h2', {}, D.t), D.s ? e('p', {}, D.s) : null,
     rows && rows.length ? e('ul', { class: 'rmn-done-l' }, rows.map(function (o) {
       return e('li', { class: o.ok ? '' : 'is-bad' }, [e('span', {}, [e('b', {}, (o.name || '—') + (o.seq ? ' · الدفعة ' + fmtNum(o.seq) : '')),
-        e('small', {}, o.ok ? rmChTx(Object.keys(o.out || {}).filter(function (k) { return o.out[k] && o.out[k].ok; })) : (o.why || 'لم يُرسل'))]), rmnPill(o.ok ? 'وصل' : 'لم يُرسل', o.ok ? 'ok' : 'danger')]);
+        e('small', {}, o.ok ? (o.note || rmChTx(Object.keys(o.out || {}).filter(function (k) { return o.out[k] && o.out[k].ok; }))) : (o.why || 'لم يُرسل'))]), rmnPill(o.ok ? 'وصل' : 'لم يُرسل', o.ok ? 'ok' : 'danger')]);
     })) : null,
     e('div', { class: 'rmn-done-a' }, [DS.button(D.back || 'العودة', { tone: 'primary', onClick: function () { const to = D.to || RMN.t; RMN.done = null; RMN.t = to === 'edit' ? 'rules' : to; RM.res = null; rmnPaint(); } }),
       D.log ? DS.button('عرض في السجل', { ui: 'clock-counter-clockwise', onClick: rmnGo('log') }) : null])]);
@@ -34556,7 +34556,7 @@ function rlgRaPage(L) {
   const A = RMN.ra, today = L.today || iso(new Date());
   const ic = function (n, sz) { return e('span', { class: 'rlg-i', 'aria-hidden': 'true' }, frag(ui(n, sz || 14))); };
   const back = e('div', { class: 'rmn-back' }, [DS.button('رجوع إلى السجل', { size: 'sm', onClick: function () { RMN.ra = null; rmnPaint(); } })]);
-  const title = e('div', { class: 'rlg-ra-h' }, [e('h2', {}, 'إعادة دعوة التقييم'), e('small', {}, 'لمن سدّد ولم يقيّم — تصله الدعوة نفسها مرة أخرى، ولا تُنشأ دعوة جديدة.')]);
+  const title = e('div', { class: 'rlg-ra-h' }, [e('h2', {}, 'إعادة دعوة التقييم'), e('small', {}, 'لمن سدّد ولم يقيّم — من وصلته دعوة تصله نفسها مرة أخرى، ومن لم تصله دعوة تُنشأ له دعوته الأولى.')]);
   if (A.chk === 'loading') return [back, title, e('div', { class: 'rlg-wait', role: 'status' }, 'جارٍ فحص الدعوات…')];
   if (A.chk && A.chk.fail) return [back, title, DS.note('warn', 'تعذّر فحص الدعوات', A.chk.fail)];
   const M = A.chk || {}, can = A.list.filter(function (x) { return (M[rlgRaKey(x)] || {}).can; });
@@ -34567,7 +34567,7 @@ function rlgRaPage(L) {
     return e('label', { class: 'rlg-ra-it' + (o.can ? '' : ' is-off') + (on ? ' is-on' : '') }, [
       e('input', { type: 'checkbox', checked: on ? 'checked' : null, disabled: o.can ? null : 'disabled', onChange: function (ev) { A.sel[k] = !!ev.target.checked; rmnPaint(); } }),
       e('span', { class: 'rlg-ra-who' }, [e('b', {}, x.name || '—'), e('small', {}, [x.tera_id ? e('bdi', { dir: 'ltr' }, x.tera_id) : null, x.tera_id ? ' · ' : null, e('bdi', { dir: 'ltr' }, x.contract_no), ' · الدفعة ' + fmtNum(x.seq) + ' · ' + rmnSar(x.amount)])]),
-      o.can ? e('span', { class: 'rlg-ra-st is-ok' }, [ic('check-circle'), 'جاهزة']) : e('span', { class: 'rlg-ra-st' }, [ic('info'), o.why || '—'])]);
+      o.can ? e('span', { class: 'rlg-ra-st is-ok' }, [ic('check-circle'), o.first ? 'جاهزة — دعوته الأولى' : 'جاهزة']) : e('span', { class: 'rlg-ra-st' }, [ic('info'), o.why || '—'])]);
   }));
   const first = pick[0] || can[0] || A.list[0] || {}, fo = M[rlgRaKey(first)] || {};
   const lbl = fo.label || ('الدفعة ' + fmtNum(first.seq) + ' · العقد ' + (first.contract_no || ''));
