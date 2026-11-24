@@ -27109,7 +27109,9 @@ return e('div', { class: 't2-stack-tight' }, [DS.note('info', 'طلب التحو
 e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('إرسال طلب التحويل من مركز الإرسال', { tone: 'primary', ui: 'paper-plane-tilt', disabled: !L.length, onClick: function () { try { SC.sel = {}; SC.CV = {}; } catch (err) { void err; } scGo({ ids: [id], tpl: 'cat:bt_request' }); } }))])]);
 }
 /* ═════ إدارة التذكير: وسيلة السداد في الرسالة — بوابة الدفع (رابط السداد) أو تحويل بنكي (طلب تحويل ببيانات الحساب ورابط الإيصال) ═════ */
-function rmPmItems(items) { const m = RM.pm === 'bank' ? 'bank' : 'gateway'; return (items || []).map(function (x) { return Object.assign({}, x, { method: m }); }); }
+function rmPmItems(items) { const m = RM.pm === 'bank' ? 'bank' : 'gateway', ch = TQN ? rmnCh() : null; return (items || []).map(function (x) { const o = Object.assign({}, x, { method: m }); if (ch) o.ch = ch; return o; }); }
+/* v1013: الإرسال اليدوي في المنصة الجديدة بوسائل يختارها الموظف — مستقل عن القواعد */
+function rmnCh() { const L = Array.isArray(RM.mch) ? RM.mch.filter(function (k) { return ['whatsapp', 'email', 'inbox', 'push'].indexOf(k) >= 0; }) : []; return L.length ? L : ['whatsapp', 'email', 'inbox']; }
 function rmPmSeg() {
   return e('div', { class: 'stl-tl-seg rm-pm', role: 'radiogroup', 'aria-label': 'وسيلة السداد في التذكير' }, [['gateway', 'بوابة الدفع', 'credit-card'], ['bank', 'تحويل بنكي', 'bank']].map(function (m) {
     const on = (RM.pm || 'gateway') === m[0];
@@ -34107,7 +34109,7 @@ function rmnHead(L) {
   const S = (L && L.settings) || {}, P = (L && L.perms) || {}, rules = rmRules(L), act = rules.filter(function (r) { return r.status === 'approved'; });
   const st = (L && L.sentToday) || {}, ready = L && !L.fail && L !== 'loading';
   const md = !ready ? null : S.rem_pause_all ? ['التذكير موقوف مؤقتًا للجميع', 'warn', 'لا يُرسل تلقائي ولا يدوي ولا مجدول حتى تستأنف']
-    : !act.length ? ['لا قاعدة معتمدة بعد', 'warn', 'اعتمد قاعدة ليُفتح الإرسال']
+    : !act.length ? ['لا تذكير تلقائي — لا قاعدة معتمدة', 'info', 'الإرسال اليدوي والمجدول متاحان']
       : !S.rem_engine ? ['الإرسال التلقائي متوقف', 'info', 'الإرسال اليدوي متاح']
         : ['الإرسال التلقائي يعمل', 'ok', fmtNum(act.length) + (act.length === 1 ? ' قاعدة معتمدة' : ' قواعد معتمدة') + ' · أُرسل اليوم ' + fmtNum(st.total || 0)];
   let btn = null;
@@ -34195,8 +34197,8 @@ function rmnClients(L) {
     return (seg === 'fav' ? x.fav : x.seg === seg) && (!q || [x.name, x.tera_id, (x.pay || {}).contract_no].some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; })
       || (x.pays || []).some(function (y) { return String(y.contract_no || '').toLowerCase().indexOf(q) >= 0; }));
   }), seg === 'fav' ? 'late' : seg);
-  const ready = rmReady(L), paused = !!((L.settings || {}).rem_pause_all);
-  const can = function (x) { return ready && !paused && !x.excluded; };
+  const paused = !!((L.settings || {}).rem_pause_all); /* v1013: التحديد والإرسال اليدوي لا يحتاجان قاعدة معتمدة */
+  const can = function (x) { return !paused && !x.excluded; };
   const okAll = rows.filter(function (x) { return can(x) && x.pay && !x.pay.trf; });
   const hint = e('div', { class: 'rmn-hint' }, [e('small', {}, (RMN_SEG.filter(function (s) { return s[0] === seg; })[0] || [])[2]),
     okAll.length ? DS.button('تحديد الدفعة الأهم للجميع (' + fmtNum(okAll.length) + ')', { size: 'sm', ui: 'check', onClick: function () { okAll.forEach(function (x) { RM.sel[x.id] = RM.sel[x.id] || {}; RM.sel[x.id][x.pay.pid] = true; }); draw(); } }) : null]);
@@ -34249,10 +34251,9 @@ function rmnRow(x, can) {
 /* لوحة الإرسال: جانبًا على الويب، وصفحة مستقلة على الجوال («متابعة») */
 function rmnSendBox(L, sel) {
   const S = L.settings || {}, rules = rmRules(L), live = rules.filter(function (r) { return r.status === 'approved'; });
-  const rule = live.filter(function (r) { return r.audience !== 'test'; })[0] || live[0];
+  void live; /* v1013: الإرسال اليدوي لا يحتاج قاعدة */
   const head = e('h2', { class: 'rmn-side-t' }, 'الإرسال');
   if (S.rem_pause_all) return [head, DS.note('warn', 'التذكير موقوف مؤقتًا للجميع', 'استأنف الإرسال من أعلى الصفحة ليُفتح الإرسال اليدوي والمجدول.')];
-  if (!rule) return [head, DS.note('warn', 'اعتمد قاعدة أولًا', 'الإرسال يستخدم وسائل قاعدة معتمدة — أنشئها واعتمدها من «القواعد».', DS.button('القواعد', { size: 'sm', ui: 'list-checks', onClick: rmnGo('rules') }))];
   if (!sel.length) return [head, e('div', { class: 'rmn-empty' }, [rmnTile('paper-plane-tilt', 'soft'), e('p', {}, 'اضغط على أي دفعة في القائمة لتُضاف هنا، ثم أرسل الآن أو جدول.')])];
   const users = new Set(sel.map(function (o) { return o.x.id; })).size, total = sel.reduce(function (s, o) { return s + Number(o.y.left || 0); }, 0);
   const pm = RM.pm === 'bank' ? 'bank' : 'gateway', late = sel.some(function (o) { return Number(o.y.late) > 0; });
@@ -34273,7 +34274,12 @@ function rmnSendBox(L, sel) {
     })),
     pm === 'bank' ? e('small', { class: 'rmn-sm' }, 'يُعاد إرسال طلب التحويل القائم للدفعة بالرقم نفسه، ولا يُنشأ طلب جديد إلا أول مرة.') : null,
     e('p', { class: 'rmn-lbl' }, 'الوسائل'),
-    DS.select({ value: RM.only || 'all', options: [['all', 'وسائل القاعدة: ' + rmChTx(rule.channels)], ['whatsapp', 'واتساب فقط — لإعادة ما لم يصل']], onChange: function (v) { RM.only = v === 'whatsapp' ? 'whatsapp' : ''; draw(); } }),
+    RM.only === 'whatsapp' ? null : e('div', { class: 'rmn-chips', role: 'group', 'aria-label': 'وسائل الإرسال' }, RM_CH.map(function (c) {
+      const cur = rmnCh(), on = cur.indexOf(c[0]) >= 0;
+      return e('button', { type: 'button', class: 'rmn-chip' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () { const L = rmnCh().slice(); RM.mch = on ? L.filter(function (k) { return k !== c[0]; }) : L.concat([c[0]]); if (!RM.mch.length) RM.mch = [c[0]]; draw(); } }, [on ? frag(ui('check', 14)) : null, c[1]]);
+    })),
+    e('label', { class: 'rmn-sm rmn-wa1' }, [e('input', { type: 'checkbox', checked: RM.only === 'whatsapp' ? 'checked' : null, onChange: function (ev) { RM.only = ev.target.checked ? 'whatsapp' : ''; draw(); } }), ' واتساب فقط — لإعادة ما لم يصل اليوم']),
+    e('small', { class: 'rmn-sm' }, 'الإرسال اليدوي مستقل عن القواعد: لا يتغيّر بإنشاء قاعدة أو إنهائها، ولا يُحسب في إحصائها.'),
     e('p', { class: 'rmn-lbl' }, 'ما يصل العميل'),
     e('div', { class: 'rmn-pv' }, [e('img', { src: location.origin + '/assets/brand/wa/' + img, alt: 'صورة رسالة التذكير', loading: 'lazy' }),
       e('span', {}, [e('b', {}, pm === 'bank' ? 'طلب تحويل بنكي' : late ? 'تذكير بدفعة متأخرة' : 'تذكير بموعد الدفعة'), 'قالب خدمي معتمد في واتساب، والنص نفسه في البريد والإشعار، وزر «' + (pm === 'bank' ? 'إرفاق إيصال التحويل' : 'ادفع الآن') + '».'])]),
