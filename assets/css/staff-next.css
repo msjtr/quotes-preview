@@ -4691,3 +4691,8 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rlg-card { padding: 14px; gap: 12px; }
   .tq-next .rlg-facts { gap: 8px 16px; }
 }
+/* v1029: منتقي الوقت في عمود إعادة التقييم — «الفترة» بسطر كامل في العرض الضيق فلا يُقص «صباحًا» */
+.tq-next .rvi-side .rm-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 46rem) { .tq-next .rvi-side .rm-time { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tq-next .rvi-side .rm-time > :last-child { grid-column: 1 / -1; } }
+.tq-next .rmn.is-narrow .rvi-side .rm-time { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tq-next .rmn.is-narrow .rvi-side .rm-time > :last-child { grid-column: 1 / -1; }

@@ -34511,6 +34511,8 @@ function rlgTime(v) { const d = new Date(v); if (isNaN(d)) return '—'; try { r
 /* v1020: «إعادة دعوة التقييم» صفحة داخل السجل — من هم؟ (فحص الأهلية) · تحديد · معاينة الرسالة · الآن أو جدولة */
 function rlgRaKey(x) { return x.user_id + ':' + x.contract_no + ':' + x.seq; }
 /* ═══════════ v1025: «إعادة التقييم» تبويب مستقل في التذكير — فلاتر وفرز مثل السجل، تحديد، موعد، معاينة تفاعلية، سجل ═══════════ */
+/* v1029: العدد مع المعدود (عميل · عميلان · 3 عملاء · 11 عميلًا) */
+function rviN(n) { n = Number(n) || 0; return n === 1 ? 'عميل واحد' : n === 2 ? 'عميلان' : fmtNum(n) + (n >= 3 && n <= 10 ? ' عملاء' : ' عميلًا'); }
 function rvState() {
   const today = (RM.L && RM.L.today) || iso(new Date());
   return RMN.ra || (RMN.ra = { per: '90', q: '', sort: 'new', seg: 'all', st: 'all', kind: 'one', ns: false, R: null, rk: '', chk: {}, busyChk: false, sel: {}, pre: null, list: [],
@@ -34545,7 +34547,7 @@ async function rlgRaSend(force) {
       if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّرت الجدولة.');
       RM.busy = false; reset();
       const d0 = runs[0].slice(0, 10), d1 = runs[runs.length - 1].slice(0, 10);
-      RMN.done = { tone: 'ok', ic: 'calendar-blank', t: runs.length > 1 ? 'جُدولت سلسلة إعادة دعوة التقييم' : 'جُدولت إعادة دعوة التقييم', s: fmtNum(pick.length) + (pick.length === 1 ? ' عميل — ' : ' عملاء — ') + (runs.length > 1 ? fmtNum(runs.length) + ' مرات من ' + rmnDay(d0) + ' إلى ' + rmnDay(d1) + ' الساعة ' + rmTime(A.h, A.m) + '، ويتوقف تلقائيًا لمن يقيّم.' : 'الموعد: ' + rmnDay(d0) + ' · ' + rmTime(A.h, A.m) + ' بتوقيت الرياض.'), back: 'العودة إلى إعادة التقييم', to: 'rate' };
+      RMN.done = { tone: 'ok', ic: 'calendar-blank', t: runs.length > 1 ? 'جُدولت سلسلة إعادة دعوة التقييم' : 'جُدولت إعادة دعوة التقييم', s: rviN(pick.length) + ' — ' + (runs.length > 1 ? fmtNum(runs.length) + ' مرات من ' + rmnDay(d0) + ' إلى ' + rmnDay(d1) + ' الساعة ' + rmTime(A.h, A.m) + '، ويتوقف تلقائيًا لمن يقيّم.' : 'الموعد: ' + rmnDay(d0) + ' · ' + rmTime(A.h, A.m) + ' بتوقيت الرياض.'), back: 'العودة إلى إعادة التقييم', to: 'rate' };
     } else {
       let rows = [];
       for (let i = 0; i < pick.length; i += 50) {
@@ -34629,7 +34631,7 @@ function rlgRaPv(A) {
   } else if (A.pch === 'email') {
     const E = P.email || {};
     const frame = S.step === 3 ? e('div', { class: 'pvx-appv is-web' }, [e('p', { class: 'pvx-sheet-s' }, D.label || ''), rvSimForm(A, Q, function () { S.step = 1; S.n = rvSimScore(A, Q); rmnPaint(); }, 'is-app')]) : S.step ? thanks(S.n) : E.html ? e('iframe', { class: 'pvx-mail-f', title: 'البريد كما يصل', sandbox: 'allow-same-origin', srcdoc: String(E.html), onLoad: function (ev) {
-      try { const d = ev.target.contentDocument; [].forEach.call(d.querySelectorAll('a'), function (a) { a.addEventListener('click', function (x) { x.preventDefault(); const m = /\/api\/rate\/[^/]+\/(\d)/.exec(a.getAttribute('href') || ''); if (m) { S.step = 1; S.n = Number(m[1]); } else S.step = 3; rmnPaint(); }); a.style.cursor = 'pointer'; }); } catch (err) { void err; }
+      try { const d = ev.target.contentDocument; [].forEach.call(d.querySelectorAll('a'), function (a) { a.addEventListener('click', function (x) { x.preventDefault(); const m = /\/api\/rate\/[^/]+\/(\d)/.exec(a.getAttribute('href') || ''); if (m) { S.step = 1; S.n = Number(m[1]); rmnPaint(); } else if (/\/(api\/)?(rate|survey|s)\//.test(a.getAttribute('href') || '')) { S.step = 3; rmnPaint(); } }); a.style.cursor = 'pointer'; }); } catch (err) { void err; }
     } }) : DS.note('warn', 'معاينة البريد غير متاحة', E.error || 'لا قالب بريد.');
     body = e('div', { class: 'pvx-mail' }, [e('div', { class: 'pvx-mail-bar' }, [e('i'), e('i'), e('i'), e('span', {}, S.step ? 'صفحة التقييم — منصة تيرا' : 'البريد الوارد')]),
       S.step ? e('div', { class: 'pvx-mail-h' }, [e('b', {}, 'tera-services.com.sa'), e('small', {}, 'فُتحت بعد الضغط على الوجه في البريد')]) : e('div', { class: 'pvx-mail-h' }, [e('b', {}, E.subject || '—'), e('small', {}, ['من: منصة تيرا ', e('bdi', { dir: 'ltr' }, '<no-reply@tera-services.com.sa>'), E.to ? [' · إلى: ', e('bdi', { dir: 'ltr' }, E.to)] : null])]),
@@ -34801,7 +34803,7 @@ function rmnRate(L) {
     e('div', { class: 'rvi-when-b' }, when), quiet,
     A.err ? DS.note('warn', 'تعذّر التنفيذ', A.err) : null,
     e('div', { class: 'rvi-step' }, [e('i', {}, '3'), e('b', {}, 'الإرسال')]),
-    e('p', { class: 'rvi-sum' }, pick.length ? [e('b', {}, fmtNum(pick.length)), pick.length === 1 ? ' عميل محدد' : ' عملاء محددون'] : 'حدّد العملاء من القائمة.'),
+    e('p', { class: 'rvi-sum' }, pick.length ? ['المحددون: ', e('b', {}, rviN(pick.length))] : 'حدّد العملاء من القائمة.'),
     liveOk(DS.button(btnT + (pick.length ? ' (' + fmtNum(pick.length) + ')' : ''), { tone: 'primary', disabled: RM.busy || !pick.length || A.quiet || (A.mode !== 'now' && (!runs.length || runs.length > 30)), onClick: function () { rlgRaSend(false); } })),
     e('small', { class: 'rmn-sm' }, A.kind === 'rep' ? 'لا تتجاوز مرة في اليوم، وتتوقف لمن يقيّم.' : 'من قيّم لا تصله الدعوة.')]);
   const main = e('section', { class: 'rlg-ra-main' }, [
@@ -34826,7 +34828,7 @@ function rlgRaLog() {
     const st = ST[q.status] || [q.status, null], firstOfSeries = q.series && q.status === 'pending' && !seen[q.series]; if (q.series && q.status === 'pending') seen[q.series] = 1;
     return e('div', { class: 'rlg-ra-lg' }, [
       e('span', { class: 'rlg-ra-lgd' }, [e('b', {}, rlgDay(q.run_at)), e('small', {}, rlgTime(q.run_at))]),
-      e('span', { class: 'rlg-ra-who' }, [e('b', {}, (q.note || 'إعادة دعوة التقييم').replace(/^إعادة دعوة التقييم\s*—?\s*/, '') || 'موعد واحد'), e('small', {}, fmtNum(q.n) + (q.n === 1 ? ' عميل' : ' عملاء') + (q.status === 'done' ? ' · أُرسل ' + fmtNum(q.ok) + ' من ' + fmtNum(q.sent) + (q.skipped ? ' (تخطّى ' + fmtNum(q.skipped) + ')' : '') : '') + (q.error ? ' · ' + q.error : ''))]),
+      e('span', { class: 'rlg-ra-who' }, [e('b', {}, (q.note || 'إعادة دعوة التقييم').replace(/^إعادة دعوة التقييم\s*—?\s*/, '') || 'موعد واحد'), e('small', {}, rviN(q.n) + (q.status === 'done' ? ' · أُرسل ' + fmtNum(q.ok) + ' من ' + fmtNum(q.sent) + (q.skipped ? ' (تخطّى ' + fmtNum(q.skipped) + ')' : '') : '') + (q.error ? ' · ' + q.error : ''))]),
       rmnPill(st[0], st[1]),
       q.status === 'pending' ? e('span', { class: 'rmn-acts' }, [
         DS.button('إلغاء', { size: 'sm', disabled: RM.busy, onClick: function () { RM.busy = true; rmnPaint(); clPost('/admin/api/reminders/queue/' + encodeURIComponent(q.id) + '/cancel', {}).then(function () { RM.busy = false; A.log = null; RM.Q = null; rmnPaint(); }).catch(function () { RM.busy = false; rmnPaint(); }); } }),
@@ -34990,7 +34992,7 @@ function rmnLog(L) {
   const waitU = (function () { const S = {}; return wait.filter(function (x) { const k = x.user_id + ':' + x.contract_no + ':' + x.seq; if (S[k]) return false; S[k] = 1; return true; }); })();
   /* رأس القائمة: العدد والفترة، والإجراءات — وعدد الصفوف والصفحات في مكان واحد أسفل القائمة */
   const head = e('div', { class: 'rlg-head' }, [
-    e('div', { class: 'rlg-head-t' }, [e('b', {}, rows.length === 1 ? 'تذكير واحد' : fmtNum(rows.length) + (rows.length > 2 && rows.length <= 10 ? ' تذكيرات' : ' تذكيرًا')), e('span', {}, RM.rf === RM.rt ? fmtD(RM.rf) : 'من ' + fmtD(RM.rf) + ' إلى ' + fmtD(RM.rt))]),
+    e('div', { class: 'rlg-head-t' }, [e('b', {}, !rows.length ? 'لا تذكيرات' : rows.length === 1 ? 'تذكير واحد' : rows.length === 2 ? 'تذكيران' : fmtNum(rows.length) + (rows.length > 2 && rows.length <= 10 ? ' تذكيرات' : ' تذكيرًا')), e('span', {}, RM.rf === RM.rt ? fmtD(RM.rf) : 'من ' + fmtD(RM.rf) + ' إلى ' + fmtD(RM.rt))]),
     e('span', { class: 'rmn-grow' }),
     DS.button('تصدير Excel', { size: 'sm', tone: 'primary', disabled: !rows.length, onClick: csv })]);
   const toHead = function () { try { document.querySelector('.rlg-head').scrollIntoView({ block: 'start' }); } catch (err) { void err; } };
