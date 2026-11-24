@@ -34647,7 +34647,7 @@ function rlgRaPv(A) {
         e('button', { type: 'button', class: 'pvx-app-it', onClick: function () { S.step = 1; rmnPaint(); } }, [e('span', { class: 'pvx-push-ic' }, 'ت'), e('span', {}, [e('b', {}, N.title || ''), e('p', {}, N.text || ''), e('small', {}, 'الآن · اضغط «قيّم الآن»')]), e('i', { class: 'pvx-dot' })])]);
     }
   }
-  return e('section', { class: 'pvx' }, [head, pick, tabs, e('div', { class: 'pvx-stage' }, body)]);
+  return e('section', { class: 'pvx', 'data-live-ok': '1' }, [head, pick, tabs, e('div', { class: 'pvx-stage' }, body)]);
 }
 function rmnRate(L) {
   const A = rvState(), today = L.today || iso(new Date());
