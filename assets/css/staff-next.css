@@ -4288,3 +4288,20 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rlg-head > .t2-btn { flex: 1 1 auto; }
   .tq-next .rlg-pager > span { order: -1; flex-basis: 100%; }
 }
+/* v1018: السجل — رأس أوضح، تفاصيل مسطّحة بلا بطاقات داخل بطاقة، وعنوان اليوم غير لاصق */
+.tq-next .rlg-day h3 { position: static; background: none; }
+.tq-next .rlg-head-t { flex-direction: column; align-items: flex-start; gap: 2px; }
+.tq-next .rlg-head-t b { font: 800 20px/1.3 var(--t2-ff-display); }
+.tq-next .rlg-head-t span { color: var(--t2-ink-2); font: 600 13.5px/1.5 var(--t2-ff-display); }
+.tq-next .rlg-wait { padding: 28px 16px; text-align: center; color: var(--t2-muted); background: var(--t2-surface); border: 1px solid var(--t2-line); border-radius: 16px; }
+.tq-next .rlg-det { display: block; padding: 2px 16px 16px calc(16px + 10px + 14px); }
+.tq-next .rlg-infs { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.tq-next .rlg-inf { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 0; background: none; border: 0; border-radius: 0; }
+.tq-next .rlg-inf .rlg-ic { grid-row: 1 / 3; width: 32px; height: 32px; }
+.tq-next .rlg-inf small { color: var(--t2-muted); font-size: 12px; }
+.tq-next .rlg-inf b { font: 700 13.5px/1.4 var(--t2-ff-display); }
+.tq-next .rlg-fail { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 0; padding: 10px 12px; }
+.tq-next .rlg-fail li { display: flex; align-items: center; gap: 8px; }
+.tq-next .rlg-ic.is-bad { width: 26px; height: 26px; background: rgba(185, 40, 40, .1); color: var(--t2-danger); }
+.tq-next .rlg-okl { margin: 12px 0 0; color: var(--t2-ok, #1F8A5B); font: 600 13px/1.4 var(--t2-ff-display); }
+@media (max-width: 46rem) { .tq-next .rlg-det { padding: 2px 14px 14px; } .tq-next .rlg-infs { flex-direction: column; gap: 10px; } }
