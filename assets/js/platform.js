@@ -34514,7 +34514,7 @@ function rlgRaOpen(list) {
   const S = {}, L = (list || []).filter(function (x) { const k = rlgRaKey(x); if (!x.user_id || !x.contract_no || S[k]) return false; S[k] = 1; return true; });
   if (!L.length) return;
   const today = (RM.L && RM.L.today) || iso(new Date());
-  RMN.ra = { list: L, chk: 'loading', sel: {}, mode: 'now', day: today, h: 10, m: 0, quiet: false, err: '' };
+  RMN.ra = { list: L, chk: 'loading', sel: {}, mode: 'now', day: today, h: 10, m: 0, quiet: false, err: '', to: iso(new Date(new Date(today + 'T12:00:00').getTime() + 6 * 864e5)), ev: 2, log: null };
   rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; }
   const items = L.map(function (x) { return { user_id: x.user_id, contract_no: x.contract_no, seq: x.seq }; });
   clPost('/admin/api/reminders/rate-again', { items: items.slice(0, 200), dry: true }).then(function (r) {
@@ -34524,18 +34524,29 @@ function rlgRaOpen(list) {
     RMN.ra.chk = M; L.forEach(function (x) { const o = M[rlgRaKey(x)]; if (o && o.can) RMN.ra.sel[rlgRaKey(x)] = true; }); rmnPaint();
   }).catch(function (err) { if (!RMN.ra || (err && err.message === 'auth')) return; RMN.ra.chk = { fail: (err && err.message) || 'تعذّر الفحص.' }; rmnPaint(); });
 }
+function rlgRaRuns(A) {
+  const t = (A.h < 10 ? '0' : '') + A.h + ':' + (A.m < 10 ? '0' : '') + A.m + ':00+03:00', now = Date.now();
+  if (A.mode === 'sch') { const x = A.day + 'T' + t; return Date.parse(x) > now - 60000 ? [x] : []; }
+  const out = [], step = Math.max(1, Number(A.ev) || 1), a = Date.parse(A.day + 'T12:00:00'), b = Date.parse((A.to || A.day) + 'T12:00:00');
+  if (isNaN(a) || isNaN(b) || b < a) return [];
+  for (let d = a, i = 0; d <= b && i < 60; d += step * 864e5, i++) { const k = iso(new Date(d)), x = k + 'T' + t; if (Date.parse(x) > now - 60000) out.push(x); }
+  return out;
+}
 async function rlgRaSend(force) {
   const A = RMN.ra; if (!A) return;
   const pick = A.list.filter(function (x) { return A.sel[rlgRaKey(x)]; }).map(function (x) { return { user_id: x.user_id, contract_no: x.contract_no, seq: x.seq }; });
   if (!pick.length) return;
   RM.busy = true; A.err = ''; rmnPaint();
   try {
-    if (A.mode === 'sch') {
-      const at = A.day + 'T' + (A.h < 10 ? '0' : '') + A.h + ':' + (A.m < 10 ? '0' : '') + A.m + ':00+03:00';
-      const r = await clPost('/admin/api/reminders/rate-again/queue', { items: pick, run_at: at });
+    if (A.mode === 'sch' || A.mode === 'rep') {
+      const runs = rlgRaRuns(A);
+      if (!runs.length) throw new Error('اختر موعدًا قادمًا.');
+      if (runs.length > 30) throw new Error('السلسلة أطول من 30 موعدًا — قصّر الفترة أو باعد المواعيد.');
+      const r = await clPost('/admin/api/reminders/rate-again/queue', { items: pick, runs: runs });
       if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّرت الجدولة.');
       RM.busy = false; RMN.ra = null; RM.Q = null;
-      RMN.done = { tone: 'ok', ic: 'calendar-blank', t: 'جُدولت إعادة دعوة التقييم', s: fmtNum(pick.length) + ' عميل — الموعد: ' + rmnDay(A.day) + ' · ' + rmTime(A.h, A.m) + ' بتوقيت الرياض. تجده في «الجدولة».', back: 'العودة إلى السجل', to: 'log' };
+      const d0 = runs[0].slice(0, 10), d1 = runs[runs.length - 1].slice(0, 10);
+      RMN.done = { tone: 'ok', ic: 'calendar-blank', t: runs.length > 1 ? 'جُدولت سلسلة إعادة دعوة التقييم' : 'جُدولت إعادة دعوة التقييم', s: fmtNum(pick.length) + (pick.length === 1 ? ' عميل — ' : ' عملاء — ') + (runs.length > 1 ? fmtNum(runs.length) + ' مرات من ' + rmnDay(d0) + ' إلى ' + rmnDay(d1) + ' الساعة ' + rmTime(A.h, A.m) + '، ويتوقف تلقائيًا لمن يقيّم.' : 'الموعد: ' + rmnDay(d0) + ' · ' + rmTime(A.h, A.m) + ' بتوقيت الرياض.') + ' تجده في «الجدولة» وفي سجل إعادة الدعوة.', back: 'العودة إلى السجل', to: 'log' };
     } else {
       let rows = [];
       for (let i = 0; i < pick.length; i += 50) {
@@ -34582,12 +34593,20 @@ function rlgRaPage(L) {
     e('div', { class: 'rlg-ra-ch' }, [e('span', { class: 'rlg-ra-chh' }, [ic('envelope-simple'), 'البريد']),
       e('div', { class: 'rlg-mail' }, [e('b', {}, 'شكرًا لسدادك — قيّم تجربتك'), e('p', {}, 'استلمنا سداد ' + lbl + ' بنجاح، شكرًا لالتزامك. كيف كانت تجربة السداد؟'), e('span', { class: 'rlg-stars' }, '★ ★ ★ ★ ★'), e('small', {}, 'يضغط العميل على عدد النجوم مباشرة.')])])]);
   const win = L.window && L.window.on !== false ? L.window : null;
-  const modes = e('div', { class: 'rlg-seg rlg-ra-mode', role: 'radiogroup', 'aria-label': 'موعد الإرسال' }, [['now', 'أرسل الآن'], ['sch', 'جدولة']].map(function (m) {
+  const modes = e('div', { class: 'rlg-seg rlg-ra-mode', role: 'radiogroup', 'aria-label': 'موعد الإرسال' }, [['now', 'الآن'], ['sch', 'موعد واحد'], ['rep', 'تكرار حتى يقيّم']].map(function (m) {
     const on = A.mode === m[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.mode = m[0]; A.quiet = false; rmnPaint(); } }, m[1]);
   }));
+  const runs = A.mode === 'now' ? [] : rlgRaRuns(A);
   const sch = A.mode === 'sch' ? e('div', { class: 'rlg-ra-sch' }, [
-    DS.editField('اليوم', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; } })),
-    rmTimePick(A.h, A.m, function (h, m) { A.h = h; A.m = m; })]) : null;
+    DS.editField('اليوم', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })),
+    e('div', { class: 'rlg-ra-tp' }, [e('small', {}, 'الوقت (الرياض)'), rmTimePick(A.h, A.m, function (h, m) { A.h = h; A.m = m; rmnPaint(); })])])
+    : A.mode === 'rep' ? e('div', { class: 'rlg-ra-sch' }, [
+      e('div', { class: 'rlg-ra-2' }, [DS.editField('من تاريخ', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })),
+        DS.editField('إلى تاريخ', DS.input({ type: 'date', value: A.to, min: A.day || today, onInput: function (v) { A.to = v; rmnPaint(); } }))]),
+      DS.editField('التكرار', DS.select({ value: String(A.ev), options: [['1', 'يوميًا'], ['2', 'كل يومين'], ['3', 'كل 3 أيام'], ['7', 'أسبوعيًا']], onChange: function (v) { A.ev = Number(v); rmnPaint(); } })),
+      e('div', { class: 'rlg-ra-tp' }, [e('small', {}, 'الوقت (الرياض)'), rmTimePick(A.h, A.m, function (h, m) { A.h = h; A.m = m; rmnPaint(); })]),
+      e('p', { class: 'rlg-ra-plan' + (runs.length > 30 || !runs.length ? ' is-bad' : '') }, !runs.length ? 'لا مواعيد قادمة في هذه الفترة.' : runs.length > 30 ? fmtNum(runs.length) + ' موعدًا — الحد 30.'
+        : ['سيُرسل ', e('b', {}, fmtNum(runs.length) + (runs.length === 1 ? ' مرة' : ' مرات')), ': ' + runs.slice(0, 6).map(function (x) { return rmnDay(x.slice(0, 10)); }).join('، ') + (runs.length > 6 ? '…' : '') + '. يتوقف تلقائيًا لمن يقيّم.'])]) : null;
   const quiet = A.quiet ? DS.note('warn', 'الوقت الآن خارج أوقات الإرسال للعملاء', (win ? 'النافذة من ' + rmTime(win.start, 0) + ' إلى ' + rmTime(win.end, 0) + '. ' : '') + 'جدوله لوقت مناسب أو أرسل الآن رغم ذلك.', e('div', { class: 'rmn-acts' }, [
     DS.button('جدولة لأول النافذة', { size: 'sm', tone: 'primary', onClick: function () { const h = win ? Number(win.start) : 9, nowH = Number(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh', hour: '2-digit', hour12: false })) % 24; A.mode = 'sch'; A.quiet = false; A.h = h; A.m = 0; A.day = nowH >= h ? iso(new Date(Date.now() + 864e5)) : today; rmnPaint(); } }),
     liveOk(DS.button('أرسل الآن رغم ذلك', { size: 'sm', tone: 'danger', disabled: RM.busy, onClick: function () { A.quiet = false; rlgRaSend(true); } }))])) : null;
@@ -34595,14 +34614,36 @@ function rlgRaPage(L) {
     e('div', { class: 'rlg-ra-sum' }, [e('b', {}, fmtNum(pick.length)), e('span', {}, pick.length === 1 ? 'عميل محدد' : 'عملاء محددون'), e('small', {}, 'من ' + fmtNum(A.list.length) + ' · جاهزة ' + fmtNum(can.length))]),
     e('p', { class: 'rmn-lbl' }, 'موعد الإرسال'), modes, sch, quiet,
     A.err ? DS.note('warn', 'تعذّر التنفيذ', A.err) : null,
-    liveOk(DS.button((A.mode === 'sch' ? 'جدولة' : 'أرسل الآن') + ' (' + fmtNum(pick.length) + ')', { tone: 'primary', disabled: RM.busy || !pick.length || A.quiet, onClick: function () { rlgRaSend(false); } })),
+    liveOk(DS.button((A.mode === 'now' ? 'أرسل الآن' : A.mode === 'rep' ? 'جدولة السلسلة' : 'جدولة') + ' (' + fmtNum(pick.length) + ')', { tone: 'primary', disabled: RM.busy || !pick.length || A.quiet || (A.mode !== 'now' && (!runs.length || runs.length > 30)), onClick: function () { rlgRaSend(false); } })),
     e('small', { class: 'rmn-sm' }, 'مرة واحدة في اليوم لكل دعوة. من قيّم أو انتهت دعوته لا يُحدَّد.'),
     preview]);
   const main = e('section', { class: 'rlg-ra-main' }, [
     e('div', { class: 'rlg-ra-bar' }, [e('b', {}, fmtNum(A.list.length) + (A.list.length === 1 ? ' سداد بلا تقييم' : ' عملية سداد بلا تقييم')), e('span', { class: 'rmn-grow' }),
       can.length ? DS.button(allOn ? 'إلغاء التحديد' : 'تحديد الجاهزة (' + fmtNum(can.length) + ')', { size: 'sm', onClick: function () { can.forEach(function (x) { A.sel[rlgRaKey(x)] = !allOn; }); rmnPaint(); } }) : null]),
     rows]);
-  return [back, title, e('div', { class: 'rlg-ra' }, [main, side])];
+  return [back, title, e('div', { class: 'rlg-ra' }, [main, side]), rlgRaLog()];
+}
+/* v1023: سجل إعادة دعوة التقييم — كل إرسال فوري أو مجدول أو سلسلة، بنتيجته، وإلغاء القادم */
+function rlgRaLog() {
+  const A = RMN.ra; if (!A) return null;
+  if (A.log === null) { A.log = 'loading'; clApi('/admin/api/reminders/rate-again/log').then(function (j) { if (RMN.ra === A) { A.log = (j && j.rows) || []; rmnPaint(); } }).catch(function (err) { if (RMN.ra === A && !(err && err.message === 'auth')) { A.log = { fail: (err && err.message) || 'تعذّر التحميل.' }; rmnPaint(); } }); }
+  const head = e('div', { class: 'rlg-ra-bar' }, [e('b', {}, 'سجل إعادة الدعوة')]);
+  if (A.log === 'loading') return e('section', { class: 'rlg-ra-logw' }, [head, e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')]);
+  if (A.log && A.log.fail) return e('section', { class: 'rlg-ra-logw' }, [head, DS.note('warn', 'تعذّر تحميل السجل', A.log.fail)]);
+  const L = A.log || [];
+  if (!L.length) return e('section', { class: 'rlg-ra-logw' }, [head, e('p', { class: 'rmn-sm rmn-empty-l' }, 'لم تُرسل إعادة دعوة بعد.')]);
+  const ST = { pending: ['بانتظار موعده', 'info'], running: ['جارٍ الإرسال', 'info'], done: ['نُفّذ', 'ok'], cancelled: ['أُلغي', null] };
+  const seen = {};
+  return e('section', { class: 'rlg-ra-logw' }, [head, e('div', { class: 'rlg-ra-list' }, L.map(function (q) {
+    const st = ST[q.status] || [q.status, null], d = new Date(q.run_at), firstOfSeries = q.series && q.status === 'pending' && !seen[q.series]; if (q.series && q.status === 'pending') seen[q.series] = 1;
+    return e('div', { class: 'rlg-ra-lg' }, [
+      e('span', { class: 'rlg-ra-lgd' }, [e('b', {}, rlgDay(q.run_at)), e('small', {}, rlgTime(q.run_at))]),
+      e('span', { class: 'rlg-ra-who' }, [e('b', {}, (q.note || 'إعادة دعوة التقييم').replace(/^إعادة دعوة التقييم\s*—?\s*/, '') || 'موعد واحد'), e('small', {}, fmtNum(q.n) + (q.n === 1 ? ' عميل' : ' عملاء') + (q.status === 'done' ? ' · أُرسل ' + fmtNum(q.ok) + ' من ' + fmtNum(q.sent) + (q.skipped ? ' (تخطّى ' + fmtNum(q.skipped) + ')' : '') : '') + (q.error ? ' · ' + q.error : ''))]),
+      rmnPill(st[0], st[1]),
+      q.status === 'pending' ? e('span', { class: 'rmn-acts' }, [
+        DS.button('إلغاء', { size: 'sm', disabled: RM.busy, onClick: function () { RM.busy = true; rmnPaint(); clPost('/admin/api/reminders/queue/' + encodeURIComponent(q.id) + '/cancel', {}).then(function () { RM.busy = false; A.log = null; RM.Q = null; rmnPaint(); }).catch(function () { RM.busy = false; rmnPaint(); }); } }),
+        firstOfSeries ? DS.button('إلغاء السلسلة', { size: 'sm', tone: 'danger', disabled: RM.busy, onClick: function () { RM.busy = true; rmnPaint(); clPost('/admin/api/reminders/rate-again/series/' + encodeURIComponent(q.series) + '/cancel', {}).then(function () { RM.busy = false; A.log = null; RM.Q = null; rmnPaint(); }).catch(function () { RM.busy = false; rmnPaint(); }); } }) : null]) : null]);
+  }))]);
 }
 function rlgPaint() { /* v1018: إعادة رسم السجل وحده — بلا رسم الصفحة كلها (لا قفز ولا تعليق) */
   const old = document.querySelector('.tq-next .rlg-root');
@@ -34687,11 +34728,25 @@ function rmnLog(L) {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' })); a.download = 'سجل-التذكير-' + (RM.rf || '') + '-' + (RM.rt || '') + '.csv'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   };
   /* الملخص: شريط واحد — نسبة الوصول ثم الأرقام */
-  const tot = Number(P.total || 0), ok = Number(P.ok || 0), rate = tot ? Math.round(ok * 100 / tot) : 0;
-  const stat = function (k, v, tone) { return e('div', { class: 'rlg-st' + (tone ? ' is-' + tone : '') }, [e('b', {}, fmtNum(v || 0)), e('small', {}, k)]); };
-  const sum = e('section', { class: 'rlg-sum', 'aria-label': 'ملخص الفترة' }, [
+  /* v1023: الملخص يتبع الفلاتر — والأرقام أزرار تصفية مباشرة */
+  const uniqP = function (L) { const S = {}; return L.filter(function (x) { const k = x.user_id + ':' + x.contract_no + ':' + x.seq; if (S[k]) return false; S[k] = 1; return true; }); };
+  const tot = rows.length, ok = rows.filter(function (x) { return x.ok; }).length, rate = tot ? Math.round(ok * 100 / tot) : 0;
+  const nMan = rows.filter(function (x) { return x.manual; }).length, nBad = rows.filter(function (x) { return x.done && !x.ok; }).length;
+  const nPaid = uniqP(rows.filter(function (x) { return x.paid; })).length, nRated = uniqP(rows.filter(function (x) { return x.rating; })).length;
+  const waitL = uniqP(rows.filter(function (x) { return x.paid && !x.rating; }));
+  const stat = function (k, v, tone, on, fn, extra) {
+    return e('div', { class: 'rlg-st' + (tone ? ' is-' + tone : '') + (on ? ' is-on' : '') }, [
+      e('button', { type: 'button', class: 'rlg-st-b', 'aria-pressed': on ? 'true' : 'false', title: on ? 'إلغاء هذه التصفية' : 'عرض هؤلاء فقط', onClick: function () { fn(on); F.pg = 0; F.open = ''; rlgPaint(); } }, [e('b', {}, fmtNum(v || 0)), e('small', {}, k)]), extra || null]);
+  };
+  const sum = e('section', { class: 'rlg-sum', 'aria-label': 'ملخص النتائج الظاهرة' }, [
     e('div', { class: 'rlg-rate' }, [e('div', { class: 'rlg-ring', style: '--p:' + rate }, e('b', {}, fmtNum(rate) + '٪')), e('span', {}, [e('b', {}, 'نسبة الوصول'), e('small', {}, fmtNum(ok) + ' من ' + fmtNum(tot))])]),
-    stat('أُرسل', tot), stat('يدوي', P.manual), stat('لم يصل', P.failed, Number(P.failed) ? 'bad' : ''), stat('سُدِّد بعده', P.paid_after, 'ok'), stat('قيّموا', P.rated)]);
+    stat('أُرسل', tot, '', false, function () { F.res = F.kind = F.seg = F.paid = F.rate = 'all'; }),
+    stat('يدوي', nMan, '', F.kind === 'manual', function (on) { F.kind = on ? 'all' : 'manual'; }),
+    stat('لم يصل', nBad, nBad ? 'bad' : '', F.res === 'fail', function (on) { F.res = on ? 'all' : 'fail'; }),
+    stat('سُدِّد بعده', nPaid, 'ok', F.paid === 'yes', function (on) { F.paid = on ? 'all' : 'yes'; }),
+    stat('قيّموا', nRated, '', F.rate === 'yes', function (on) { F.rate = on ? 'all' : 'yes'; }),
+    stat('بانتظار التقييم', waitL.length, waitL.length ? 'warn' : '', F.rate === 'wait', function (on) { F.rate = on ? 'all' : 'wait'; },
+      waitL.length ? e('button', { type: 'button', class: 'rlg-st-a', onClick: function () { rlgRaOpen(waitL); } }, 'إعادة الدعوة') : null)]);
   /* القائمة: مجموعات حسب اليوم */
   const CH = ['whatsapp', 'email', 'push', 'inbox'], CHS = { whatsapp: 'واتساب', email: 'البريد', push: 'الجوال', inbox: 'المنصة' };
   /* v1020: بطاقة التذكير — أيقونة لكل معلومة، ومجموعات واضحة: من؟ ماذا؟ كيف وصل؟ ماذا حدث بعده؟ */
@@ -34744,7 +34799,6 @@ function rmnLog(L) {
   const head = e('div', { class: 'rlg-head' }, [
     e('div', { class: 'rlg-head-t' }, [e('b', {}, rows.length === 1 ? 'تذكير واحد' : fmtNum(rows.length) + (rows.length > 2 && rows.length <= 10 ? ' تذكيرات' : ' تذكيرًا')), e('span', {}, RM.rf === RM.rt ? fmtD(RM.rf) : 'من ' + fmtD(RM.rf) + ' إلى ' + fmtD(RM.rt))]),
     e('span', { class: 'rmn-grow' }),
-    waitU.length ? DS.button('إعادة دعوة التقييم (' + fmtNum(waitU.length) + ')', { size: 'sm', onClick: function () { rlgRaOpen(waitU); } }) : null,
     DS.button('تصدير Excel', { size: 'sm', tone: 'primary', disabled: !rows.length, onClick: csv })]);
   const toHead = function () { try { document.querySelector('.rlg-head').scrollIntoView({ block: 'start' }); } catch (err) { void err; } };
   const pager = rows.length ? e('nav', { class: 'rlg-pager', 'aria-label': 'صفحات السجل' }, [
