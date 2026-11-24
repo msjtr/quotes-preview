@@ -33285,7 +33285,7 @@ function cdnPage() {
 /* التفاصيل والتعديل صفحة داخل القسم */
 function cdnView() {
   const isNew = CDN.open === 'new', c = isNew ? null : (COMM.ct || []).filter(function (x) { return x.id === CDN.open; })[0];
-  const back = e('div', { class: 'rmn-back' }, [DS.button('رجوع إلى جهات الاتصال', { size: 'sm', ui: 'caret-right', onClick: function () { CDN.open = ''; CDN.ed = null; CDN.err = ''; CDN.ask = ''; draw(); } })]);
+  const back = e('div', { class: 'rmn-back' }, [DS.button('العودة إلى جهات الاتصال', { size: 'sm', ui: 'caret-right', onClick: function () { CDN.open = ''; CDN.ed = null; CDN.err = ''; CDN.ask = ''; draw(); } })]);
   if (!isNew && !c) { CDN.open = ''; CDN.ed = null; return [DS.note('info', 'جهة الاتصال غير موجودة', 'ربما أُرشفت أو حُدّثت القائمة.', liveOk(DS.button('العودة إلى جهات الاتصال', { size: 'sm', onClick: function () { draw(); } })))]; }
   const auto = c && c.source === 'auto';
   if (isNew || CDN.ed) {
@@ -34307,7 +34307,7 @@ function rmnSendBox(L, sel) {
 function rmnSendPage(L) {
   const sel = rmnSel();
   if (!sel.length) { RMN.send = false; return rmnClients(L); }
-  return [e('div', { class: 'rmn-back' }, [DS.button('رجوع إلى القائمة', { size: 'sm', onClick: function () { RMN.send = false; RM.sch = null; RM.ask = ''; rmnPaint(); } })]),
+  return [e('div', { class: 'rmn-back' }, [DS.button('العودة إلى القائمة', { size: 'sm', onClick: function () { RMN.send = false; RM.sch = null; RM.ask = ''; rmnPaint(); } })]),
     e('section', { class: 'rmn-side is-page', 'aria-label': 'الإرسال' }, rmnSendBox(L, sel))];
 }
 function rmnSchedBox(L, items) {
@@ -34555,7 +34555,7 @@ async function rlgRaSend(force) {
 function rlgRaPage(L) {
   const A = RMN.ra, today = L.today || iso(new Date());
   const ic = function (n, sz) { return e('span', { class: 'rlg-i', 'aria-hidden': 'true' }, frag(ui(n, sz || 14))); };
-  const back = e('div', { class: 'rmn-back' }, [DS.button('رجوع إلى السجل', { size: 'sm', onClick: function () { RMN.ra = null; rmnPaint(); } })]);
+  const back = e('div', { class: 'rmn-back' }, [DS.button('العودة إلى السجل', { size: 'sm', onClick: function () { RMN.ra = null; rmnPaint(); } })]);
   const title = e('div', { class: 'rlg-ra-h' }, [e('h2', {}, 'إعادة دعوة التقييم'), e('small', {}, 'لمن سدّد ولم يقيّم — من وصلته دعوة تصله نفسها مرة أخرى، ومن لم تصله دعوة تُنشأ له دعوته الأولى.')]);
   if (A.chk === 'loading') return [back, title, e('div', { class: 'rlg-wait', role: 'status' }, 'جارٍ فحص الدعوات…')];
   if (A.chk && A.chk.fail) return [back, title, DS.note('warn', 'تعذّر فحص الدعوات', A.chk.fail)];
