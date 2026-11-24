@@ -34101,7 +34101,7 @@ function rmnT(d) { if (!d || isNaN(d)) return '—'; const h = d.getHours(), m =
 function rmnDT(v) { if (!v) return '—'; const d = new Date(v); if (isNaN(d)) return '—'; const t = iso(new Date()), y = iso(new Date(Date.now() - 864e5)), k = iso(d); return (k === t ? 'اليوم' : k === y ? 'أمس' : k) + ' · ' + rmnT(d); }
 function rmnDay(v) { if (!v) return '—'; const d = new Date(String(v).length <= 10 ? v + 'T12:00:00' : v); if (isNaN(d)) return String(v); const t = iso(new Date()), k = iso(d); return k === t ? 'اليوم' : k === iso(new Date(Date.now() + 864e5)) ? 'غدًا' : k; }
 function rmnSar(v) { return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ر.س'; }
-function rmnGo(t) { return function () { if (RMN.t === t && !RMN.done && !RMN.ra) return; RMN.t = t; RMN.done = null; RMN.ra = null; RMN.send = false; RM.err = ''; RM.msg = ''; RM.ask = ''; RM.sch = null; RM.res = null; if (t === 'queue' || t === 'rules') RM.Q = null; if (t === 'queue') RMN.t = 'rules'; if (t === 'log') RM.R = null; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } }; }
+function rmnGo(t) { return function () { if (RMN.t === t && !RMN.done) return; if (t === 'rate' && RMN.ra) { RMN.ra.R = null; RMN.ra.chk = {}; RMN.ra.log = null; RMN.ra.err = ''; } RMN.t = t; RMN.done = null; RMN.send = false; RM.err = ''; RM.msg = ''; RM.ask = ''; RM.sch = null; RM.res = null; if (t === 'queue' || t === 'rules') RM.Q = null; if (t === 'queue') RMN.t = 'rules'; if (t === 'log') RM.R = null; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } }; }
 /* إجراء على الخادم ثم شاشة تأكيد واضحة (لا رسالة صغيرة) */
 async function rmnAct(url, body, done) {
   RM.busy = true; RM.err = ''; rmnPaint();
@@ -34138,7 +34138,7 @@ function rmnTabs(L) {
   const qn = Array.isArray(RM.Q) ? RM.Q.filter(function (q) { return q.status === 'pending'; }).length : 0;
   /* v1014: «القواعد» و«المجدول» تبويب واحد «الجدولة» — كل ما يُرسل لاحقًا في مكان واحد */
   const live = rules.filter(function (r) { return r.status === 'approved' || r.status === 'paused'; }).length;
-  const T = [['cl', 'العملاء', 'users-three'], ['rules', 'الجدولة', 'calendar-blank', (live + qn) || null, pend ? 'warn' : ''], ['log', 'السجل', 'clock-counter-clockwise']];
+  const T = [['cl', 'العملاء', 'users-three'], ['rules', 'الجدولة', 'calendar-blank', (live + qn) || null, pend ? 'warn' : ''], ['log', 'السجل', 'clock-counter-clockwise'], ['rate', 'إعادة التقييم', 'star']];
   const cur = RMN.t === 'edit' || RMN.t === 'queue' ? 'rules' : RMN.t;
   return e('nav', { class: 'rmn-tabs', 'aria-label': 'أقسام التذكير' }, T.map(function (t) {
     const on = cur === t[0];
@@ -34159,7 +34159,7 @@ function rmnPage() {
   if (RMN.done) return [e('div', { class: 'rmn' }, [rmnHead(L), rmnDone(RMN.done)])];
   const flash = RM.err ? DS.note('warn', 'تعذّر التنفيذ', RM.err) : null;
   if (RMN.t === 'queue') RMN.t = 'rules';
-  const body = RMN.t === 'rules' ? rmnSched(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'log' ? rmnLog(L) : rmnClients(L);
+  const body = RMN.t === 'rules' ? rmnSched(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'log' ? rmnLog(L) : RMN.t === 'rate' ? [e('div', { class: 'rlg-root rv' }, rmnRate(L))] : rmnClients(L);
   return [e('div', { class: 'rmn' + (rmnNarrow() ? ' is-narrow' : '') }, [rmnHead(L), rmnTabs(L), flash].concat(body))];
 }
 /* شاشة التأكيد بعد كل إجراء */
@@ -34510,19 +34510,17 @@ function rlgDay(v) { const d = new Date(v); if (isNaN(d)) return '—'; return R
 function rlgTime(v) { const d = new Date(v); if (isNaN(d)) return '—'; try { return d.toLocaleTimeString('ar-SA-u-nu-latn', { timeZone: 'Asia/Riyadh', hour: 'numeric', minute: '2-digit' }); } catch (err) { return rmnT(d); } }
 /* v1020: «إعادة دعوة التقييم» صفحة داخل السجل — من هم؟ (فحص الأهلية) · تحديد · معاينة الرسالة · الآن أو جدولة */
 function rlgRaKey(x) { return x.user_id + ':' + x.contract_no + ':' + x.seq; }
-function rlgRaOpen(list) {
-  const S = {}, L = (list || []).filter(function (x) { const k = rlgRaKey(x); if (!x.user_id || !x.contract_no || S[k]) return false; S[k] = 1; return true; });
-  if (!L.length) return;
+/* ═══════════ v1025: «إعادة التقييم» تبويب مستقل في التذكير — فلاتر وفرز مثل السجل، تحديد، موعد، معاينة تفاعلية، سجل ═══════════ */
+function rvState() {
   const today = (RM.L && RM.L.today) || iso(new Date());
-  RMN.ra = { list: L, chk: 'loading', sel: {}, mode: 'now', day: today, h: 10, m: 0, quiet: false, err: '', to: iso(new Date(new Date(today + 'T12:00:00').getTime() + 6 * 864e5)), ev: 2, log: null };
-  rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; }
-  const items = L.map(function (x) { return { user_id: x.user_id, contract_no: x.contract_no, seq: x.seq }; });
-  clPost('/admin/api/reminders/rate-again', { items: items.slice(0, 200), dry: true }).then(function (r) {
-    if (!RMN.ra) return;
-    if (!r || r.ok !== true) { RMN.ra.chk = { fail: (r && r.message) || 'تعذّر الفحص.' }; rmnPaint(); return; }
-    const M = {}; (r.rows || []).forEach(function (o) { M[rlgRaKey(o)] = o; });
-    RMN.ra.chk = M; L.forEach(function (x) { const o = M[rlgRaKey(x)]; if (o && o.can) RMN.ra.sel[rlgRaKey(x)] = true; }); rmnPaint();
-  }).catch(function (err) { if (!RMN.ra || (err && err.message === 'auth')) return; RMN.ra.chk = { fail: (err && err.message) || 'تعذّر الفحص.' }; rmnPaint(); });
+  return RMN.ra || (RMN.ra = { per: '90', q: '', sort: 'new', seg: 'all', st: 'all', who: 'all', R: null, rk: '', chk: {}, busyChk: false, sel: {}, pre: null, list: [],
+    mode: 'now', day: today, h: 10, m: 0, to: iso(new Date(new Date(today + 'T12:00:00').getTime() + 6 * 864e5)), ev: 2, quiet: false, err: '', log: null, pk: '', pv: null, pch: 'wa', sim: null });
+}
+function rlgRaOpen(list) {
+  const A = rvState(), S = {};
+  (list || []).forEach(function (x) { if (x && x.user_id) S[rlgRaKey(x)] = 1; });
+  A.pre = S; A.sel = {}; A.st = 'all'; A.q = (list && list.length === 1) ? (list[0].contract_no || '') : '';
+  RMN.t = 'rate'; RMN.done = null; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; }
 }
 function rlgRaRuns(A) {
   const t = (A.h < 10 ? '0' : '') + A.h + ':' + (A.m < 10 ? '0' : '') + A.m + ':00+03:00', now = Date.now();
@@ -34537,6 +34535,7 @@ async function rlgRaSend(force) {
   const pick = A.list.filter(function (x) { return A.sel[rlgRaKey(x)]; }).map(function (x) { return { user_id: x.user_id, contract_no: x.contract_no, seq: x.seq }; });
   if (!pick.length) return;
   RM.busy = true; A.err = ''; rmnPaint();
+  const reset = function () { A.R = null; A.chk = {}; A.sel = {}; A.log = null; A.pre = null; A.quiet = false; RM.Q = null; RM.R = null; };
   try {
     if (A.mode === 'sch' || A.mode === 'rep') {
       const runs = rlgRaRuns(A);
@@ -34544,9 +34543,9 @@ async function rlgRaSend(force) {
       if (runs.length > 30) throw new Error('السلسلة أطول من 30 موعدًا — قصّر الفترة أو باعد المواعيد.');
       const r = await clPost('/admin/api/reminders/rate-again/queue', { items: pick, runs: runs });
       if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّرت الجدولة.');
-      RM.busy = false; RMN.ra = null; RM.Q = null;
+      RM.busy = false; reset();
       const d0 = runs[0].slice(0, 10), d1 = runs[runs.length - 1].slice(0, 10);
-      RMN.done = { tone: 'ok', ic: 'calendar-blank', t: runs.length > 1 ? 'جُدولت سلسلة إعادة دعوة التقييم' : 'جُدولت إعادة دعوة التقييم', s: fmtNum(pick.length) + (pick.length === 1 ? ' عميل — ' : ' عملاء — ') + (runs.length > 1 ? fmtNum(runs.length) + ' مرات من ' + rmnDay(d0) + ' إلى ' + rmnDay(d1) + ' الساعة ' + rmTime(A.h, A.m) + '، ويتوقف تلقائيًا لمن يقيّم.' : 'الموعد: ' + rmnDay(d0) + ' · ' + rmTime(A.h, A.m) + ' بتوقيت الرياض.') + ' تجده في «الجدولة» وفي سجل إعادة الدعوة.', back: 'العودة إلى السجل', to: 'log' };
+      RMN.done = { tone: 'ok', ic: 'calendar-blank', t: runs.length > 1 ? 'جُدولت سلسلة إعادة دعوة التقييم' : 'جُدولت إعادة دعوة التقييم', s: fmtNum(pick.length) + (pick.length === 1 ? ' عميل — ' : ' عملاء — ') + (runs.length > 1 ? fmtNum(runs.length) + ' مرات من ' + rmnDay(d0) + ' إلى ' + rmnDay(d1) + ' الساعة ' + rmTime(A.h, A.m) + '، ويتوقف تلقائيًا لمن يقيّم.' : 'الموعد: ' + rmnDay(d0) + ' · ' + rmTime(A.h, A.m) + ' بتوقيت الرياض.'), back: 'العودة إلى إعادة التقييم', to: 'rate' };
     } else {
       let rows = [];
       for (let i = 0; i < pick.length; i += 50) {
@@ -34557,120 +34556,211 @@ async function rlgRaSend(force) {
       }
       const N = {}; A.list.forEach(function (x) { N[rlgRaKey(x)] = x.name; });
       const ok = rows.filter(function (o) { return o.ok; }).length;
-      RM.busy = false; RMN.ra = null; RM.R = null;
-      RMN.done = { tone: ok ? 'ok' : 'warn', ic: 'star', t: ok ? 'أُعيدت دعوة التقييم' : 'لم تُرسل أي دعوة', s: 'وصلت ' + fmtNum(ok) + ' من ' + fmtNum(rows.length) + '.', rows: rows.map(function (o) { return Object.assign({}, o, { name: o.name || N[rlgRaKey(o)] || o.contract_no }); }), back: 'العودة إلى السجل', to: 'log' };
+      RM.busy = false; reset();
+      RMN.done = { tone: ok ? 'ok' : 'warn', ic: 'star', t: ok ? 'أُعيدت دعوة التقييم' : 'لم تُرسل أي دعوة', s: 'وصلت ' + fmtNum(ok) + ' من ' + fmtNum(rows.length) + '.', rows: rows.map(function (o) { return Object.assign({}, o, { name: o.name || N[rlgRaKey(o)] || o.contract_no }); }), back: 'العودة إلى إعادة التقييم', to: 'rate' };
     }
     rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; }
   } catch (err) { RM.busy = false; if (err && err.message === 'auth') return; A.err = (err && err.message) || 'تعذّر التنفيذ.'; rmnPaint(); }
 }
-/* v1024: معاينة حية لدعوة التقييم — من الخادم لعميل بعينه، داخل إطار جهاز كما تصله (واتساب · البريد · إشعار الجوال · داخل المنصة) */
+/* المحاكاة التفاعلية: واتساب (زر الاستبانة ← النموذج ← الشكر) · البريد (الضغط على الوجه ← صفحة الشكر) · الإشعار والمنصة (الفتح ← صفحة التقييم ← الشكر) — كلها محلية، لا تصل الخادم */
+const RV_FACE = [[5, '😍', 'ممتاز'], [4, '🙂', 'جيد جدًا'], [3, '😐', 'جيد'], [2, '😕', 'مقبول'], [1, '😞', 'يحتاج إلى تحسين']];
+function rvSimForm(A, Q, onDone, cls) {
+  const S = A.sim;
+  const qs = (Array.isArray(Q) && Q.length ? Q : [{ k: 'p1', t: 'كيف تقيّم تجربة سداد دفعتك؟', type: 'scale5' }]);
+  return e('div', { class: 'pvx-form' + (cls ? ' ' + cls : '') }, [
+    qs.map(function (q, i) {
+      const v = S.ans[q.k || i];
+      const set = function (x) { S.ans[q.k || i] = x; rmnPaint(); };
+      const opts = Array.isArray(q.opts) ? q.opts : Array.isArray(q.options) ? q.options : null;
+      return e('div', { class: 'pvx-q' }, [e('b', {}, (qs.length > 1 ? fmtNum(i + 1) + '. ' : '') + (q.t || q.text || q.q || 'سؤال')),
+        String(q.type || 'scale5').indexOf('scale') === 0 ? e('div', { class: 'pvx-faces' }, RV_FACE.map(function (f) { return e('button', { type: 'button', class: v === f[0] ? 'is-on' : '', title: f[2], onClick: function () { set(f[0]); } }, [e('span', {}, f[1]), e('small', {}, f[2])]); }))
+          : opts ? e('div', { class: 'pvx-opts' }, opts.map(function (o) { const t = typeof o === 'string' ? o : (o.t || o.label || ''); return e('button', { type: 'button', class: v === t ? 'is-on' : '', onClick: function () { set(t); } }, t); }))
+            : e('textarea', { rows: '2', placeholder: 'اكتب ملاحظتك (اختياري)', onInput: function (ev) { S.ans[q.k || i] = ev.target.value; } }, v || '')]);
+    }),
+    e('button', { type: 'button', class: 'pvx-send', disabled: qs.some(function (q, i) { return String(q.type || 'scale5').indexOf('scale') === 0 && !S.ans[q.k || i]; }) ? 'disabled' : null, onClick: onDone }, 'إرسال التقييم')]);
+}
+function rvSimScore(A, Q) { const qs = Array.isArray(Q) && Q.length ? Q : [{ k: 'p1' }]; const v = A.sim.ans[qs[0].k || 0]; return Number(v) || 0; }
 function rlgRaPv(A) {
   const ic = function (n, sz) { return e('span', { class: 'rlg-i', 'aria-hidden': 'true' }, frag(ui(n, sz || 14))); };
-  const M = A.chk && typeof A.chk === 'object' && !A.chk.fail ? A.chk : {};
-  const opts = A.list.filter(function (x) { return (M[rlgRaKey(x)] || {}).can; });
-  const L = opts.length ? opts : A.list;
+  const M = A.chk || {};
+  void M;
+  const L = A.list;
   if (!A.pk || !L.some(function (x) { return rlgRaKey(x) === A.pk; })) { const f = L.filter(function (x) { return A.sel[rlgRaKey(x)]; })[0] || L[0]; A.pk = f ? rlgRaKey(f) : ''; }
   const who = L.filter(function (x) { return rlgRaKey(x) === A.pk; })[0];
   if (who && (!A.pv || A.pv.k !== A.pk)) {
-    const k = A.pk; A.pv = { k: k, st: 'loading' };
+    const k = A.pk; A.pv = { k: k, st: 'loading' }; A.sim = null;
     clPost('/admin/api/reminders/rate-again/preview', { user_id: who.user_id, contract_no: who.contract_no, seq: who.seq }).then(function (r) {
       if (!RMN.ra || !A.pv || A.pv.k !== k) return;
       A.pv = r && r.ok ? { k: k, st: 'ok', d: r } : { k: k, st: 'fail', msg: (r && r.message) || 'تعذّرت المعاينة.' }; rmnPaint();
     }).catch(function (err) { if (A.pv && A.pv.k === k && !(err && err.message === 'auth')) { A.pv = { k: k, st: 'fail', msg: (err && err.message) || 'تعذّرت المعاينة.' }; rmnPaint(); } });
   }
-  const D = A.pv && A.pv.st === 'ok' ? A.pv.d : null, P = (D && D.preview) || {};
+  const D = A.pv && A.pv.st === 'ok' ? A.pv.d : null, P = (D && D.preview) || {}, Q = (D && D.questions) || null;
   const CHS = D && D.first ? [['wa', 'واتساب', 'chat-circle-dots'], ['email', 'البريد', 'envelope-simple'], ['push', 'إشعار الجوال', 'device-mobile'], ['inbox', 'داخل المنصة', 'tray']] : [['wa', 'واتساب', 'chat-circle-dots'], ['email', 'البريد', 'envelope-simple']];
   if (!CHS.some(function (c) { return c[0] === A.pch; })) A.pch = 'wa';
-  const now = new Date().toLocaleTimeString('ar-SA-u-nu-latn', { timeZone: 'Asia/Riyadh', hour: 'numeric', minute: '2-digit' });
+  if (!A.sim || A.sim.ch !== A.pch) A.sim = { ch: A.pch, step: 0, ans: {} };
+  const S = A.sim, now = new Date().toLocaleTimeString('ar-SA-u-nu-latn', { timeZone: 'Asia/Riyadh', hour: 'numeric', minute: '2-digit' });
+  const restart = e('button', { type: 'button', class: 'rmn-link', onClick: function () { A.sim = null; rmnPaint(); } }, 'إعادة المحاكاة');
   const head = e('div', { class: 'pvx-head' }, [
-    e('div', { class: 'pvx-t' }, [e('h3', {}, 'المعاينة الحية'), e('small', {}, D ? 'كما تصل ' + (D.name || '') + ' الآن — ' + (D.first ? 'دعوته الأولى بكل الوسائل' : 'إعادة الدعوة بواتساب والبريد') : 'تُجهَّز من الخادم كما تُرسل')]),
-    L.length > 1 ? e('label', { class: 'pvx-who' }, [e('small', {}, 'معاينة لـ'), DS.select({ value: A.pk, options: L.map(function (x) { return [rlgRaKey(x), (x.name || '—') + ' · الدفعة ' + x.seq]; }), onChange: function (v) { A.pk = v; rmnPaint(); } })]) : null]);
+    e('div', { class: 'pvx-t' }, [e('h3', {}, 'المعاينة التفاعلية'), e('small', {}, D ? 'جرّبها كما يجرّبها ' + (D.name || 'العميل') + ' — اضغط الأزرار والوجوه. المحاكاة لا ترسل شيئًا.' : 'تُجهَّز من الخادم كما تُرسل')]),
+    S.step ? restart : null]);
+  const pick = L.length > 1 ? e('div', { class: 'pvx-pick' }, [e('small', {}, 'معاينة لـ'), DS.select({ value: A.pk, ph: 'اختر عميلًا', title: 'اختر العميل للمعاينة', options: L.map(function (x) { const o = M[rlgRaKey(x)]; return [rlgRaKey(x), x.name || x.contract_no, null, { sub: (x.tera_id ? x.tera_id + ' · ' : '') + x.contract_no + ' · الدفعة ' + x.seq + (o && !o.can ? ' · غير جاهزة' : '') }]; }), onChange: function (v) { A.pk = v; A.pv = null; rmnPaint(); } })]) : null;
   const tabs = e('div', { class: 'rlg-seg pvx-tabs', role: 'tablist' }, CHS.map(function (c) {
-    const on = A.pch === c[0]; return e('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.pch = c[0]; rmnPaint(); } }, [ic(c[2]), c[1]]);
+    const on = A.pch === c[0]; return e('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.pch = c[0]; A.sim = null; rmnPaint(); } }, [ic(c[2]), c[1]]);
   }));
+  const thanks = function (n) { const f = RV_FACE.filter(function (x) { return x[0] === n; })[0] || RV_FACE[0]; return e('div', { class: 'pvx-thx' }, [e('span', { class: 'pvx-thx-f' }, f[1]), e('b', {}, 'شكرًا لتقييمك'), e('p', {}, 'سجّلنا تقييمك «' + f[2] + '» لـ' + ((D && D.label) || 'تجربة السداد') + '. رأيك يساعدنا على خدمتك بشكل أفضل.')]); };
   let body;
   if (!who) body = e('p', { class: 'rmn-sm' }, 'لا أحد للمعاينة.');
   else if (!D) body = A.pv && A.pv.st === 'fail' ? DS.note('warn', 'تعذّرت المعاينة', A.pv.msg) : e('div', { class: 'rlg-wait' }, 'جارٍ تجهيز المعاينة…');
   else if (A.pch === 'wa') {
     const W = P.wa || {};
+    const chat = [e('div', { class: 'pvx-wa-msg' }, [
+        W.img ? e('img', { src: W.img, alt: '', loading: 'lazy', onError: function (ev) { ev.target.style.display = 'none'; } }) : null,
+        W.head ? e('b', { class: 'pvx-wa-h' }, W.head) : null,
+        e('p', {}, W.body || ('نص القالب غير متاح من Meta الآن — يصل باسم العميل و«' + (D.label || '') + '» وزر الاستبانة.')),
+        W.footer ? e('small', { class: 'pvx-wa-f' }, W.footer) : null, e('span', { class: 'pvx-wa-time' }, now)]),
+      e('div', { class: 'pvx-wa-btns' }, (W.buttons && W.buttons.length ? W.buttons : ['ابدأ الاستبانة']).map(function (t) { return e('button', { type: 'button', onClick: function () { if (!S.step) { S.step = 1; rmnPaint(); } } }, [ic('list-checks', 13), t]); }))];
+    if (S.step === 2) chat.push(e('div', { class: 'pvx-wa-me' }, [e('p', {}, 'أُرسلت الاستبانة ✓'), e('span', { class: 'pvx-wa-time' }, now + ' ✓✓')]),
+      e('div', { class: 'pvx-wa-msg' }, [e('p', {}, 'شكرًا ' + String(D.name || '').split(' ')[0] + ' على تقييمك ' + ((RV_FACE.filter(function (f) { return f[0] === rvSimScore(A, Q); })[0] || [0, ''])[1]) + '\nرأيك وصلنا ويهمنا — منصة تيرا'), e('span', { class: 'pvx-wa-time' }, now)]));
     body = e('div', { class: 'pvx-phone' }, [e('div', { class: 'pvx-notch' }),
       e('div', { class: 'pvx-wa-bar' }, [e('span', { class: 'pvx-wa-av' }, 'ت'), e('span', {}, [e('b', {}, ['منصة تيرا ', e('i', { class: 'pvx-ok' }, '✓')]), e('small', {}, 'حساب أعمال' + (W.phone ? ' · إلى ' + W.phone : ''))])]),
-      e('div', { class: 'pvx-wa-chat' }, [
-        W.error ? DS.note('warn', 'تعذّرت معاينة واتساب', W.error) : e('div', { class: 'pvx-wa-msg' }, [
-          W.img ? e('img', { src: W.img, alt: '', loading: 'lazy', onError: function (ev) { ev.target.style.display = 'none'; } }) : null,
-          W.head ? e('b', { class: 'pvx-wa-h' }, W.head) : null,
-          e('p', {}, W.body || (W.missing ? 'نص قالب «' + (W.template || '') + '» غير متاح من Meta الآن — يصل باسم العميل و«' + (D.label || '') + '» وزر الاستبانة.' : '')),
-          W.footer ? e('small', { class: 'pvx-wa-f' }, W.footer) : null,
-          e('span', { class: 'pvx-wa-time' }, now)]),
-        (W.buttons || []).length ? e('div', { class: 'pvx-wa-btns' }, W.buttons.map(function (t) { return e('span', {}, [ic('list-checks', 13), t]); })) : null])]);
+      e('div', { class: 'pvx-wa-chat' }, chat),
+      S.step === 1 ? e('div', { class: 'pvx-sheet' }, [e('div', { class: 'pvx-sheet-h' }, [e('button', { type: 'button', class: 'pvx-x', 'aria-label': 'إغلاق', onClick: function () { S.step = 0; rmnPaint(); } }, '×'), e('b', {}, 'استبانة منصة تيرا')]),
+        e('p', { class: 'pvx-sheet-s' }, D.label || ''), rvSimForm(A, Q, function () { S.step = 2; rmnPaint(); })]) : null]);
   } else if (A.pch === 'email') {
     const E = P.email || {};
-    body = e('div', { class: 'pvx-mail' }, [e('div', { class: 'pvx-mail-bar' }, [e('i'), e('i'), e('i'), e('span', {}, 'البريد الوارد')]),
-      e('div', { class: 'pvx-mail-h' }, [e('b', {}, E.subject || '—'), e('small', {}, ['من: منصة تيرا ', e('bdi', { dir: 'ltr' }, '<no-reply@tera-services.com.sa>'), E.to ? [' · إلى: ', e('bdi', { dir: 'ltr' }, E.to)] : null])]),
-      E.html ? e('iframe', { class: 'pvx-mail-f', title: 'البريد كما يصل', sandbox: '', srcdoc: String(E.html) }) : DS.note('warn', 'معاينة البريد غير متاحة', E.error || 'لا قالب بريد.')]);
-  } else if (A.pch === 'push') {
-    const N = P.push || {};
-    body = e('div', { class: 'pvx-phone is-lock' }, [e('div', { class: 'pvx-notch' }), e('div', { class: 'pvx-lock-t' }, [e('b', {}, now), e('small', {}, new Date().toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' }))]),
-      e('div', { class: 'pvx-push' }, [e('span', { class: 'pvx-push-ic' }, 'ت'), e('span', {}, [e('small', {}, 'تيرا · الآن'), e('b', {}, N.title || ''), e('p', {}, N.text || '')])])]);
+    const frame = S.step === 3 ? e('div', { class: 'pvx-appv is-web' }, [e('p', { class: 'pvx-sheet-s' }, D.label || ''), rvSimForm(A, Q, function () { S.step = 1; S.n = rvSimScore(A, Q); rmnPaint(); }, 'is-app')]) : S.step ? thanks(S.n) : E.html ? e('iframe', { class: 'pvx-mail-f', title: 'البريد كما يصل', sandbox: 'allow-same-origin', srcdoc: String(E.html), onLoad: function (ev) {
+      try { const d = ev.target.contentDocument; [].forEach.call(d.querySelectorAll('a'), function (a) { a.addEventListener('click', function (x) { x.preventDefault(); const m = /\/api\/rate\/[^/]+\/(\d)/.exec(a.getAttribute('href') || ''); if (m) { S.step = 1; S.n = Number(m[1]); } else S.step = 3; rmnPaint(); }); a.style.cursor = 'pointer'; }); } catch (err) { void err; }
+    } }) : DS.note('warn', 'معاينة البريد غير متاحة', E.error || 'لا قالب بريد.');
+    body = e('div', { class: 'pvx-mail' }, [e('div', { class: 'pvx-mail-bar' }, [e('i'), e('i'), e('i'), e('span', {}, S.step ? 'صفحة التقييم — منصة تيرا' : 'البريد الوارد')]),
+      S.step ? e('div', { class: 'pvx-mail-h' }, [e('b', {}, 'tera-services.com.sa'), e('small', {}, 'فُتحت بعد الضغط على الوجه في البريد')]) : e('div', { class: 'pvx-mail-h' }, [e('b', {}, E.subject || '—'), e('small', {}, ['من: منصة تيرا ', e('bdi', { dir: 'ltr' }, '<no-reply@tera-services.com.sa>'), E.to ? [' · إلى: ', e('bdi', { dir: 'ltr' }, E.to)] : null])]),
+      frame]);
   } else {
-    const N = P.inbox || {};
-    body = e('div', { class: 'pvx-app' }, [e('div', { class: 'pvx-app-bar' }, [ic('bell', 16), 'الإشعارات']),
-      e('div', { class: 'pvx-app-it' }, [e('span', { class: 'pvx-push-ic' }, 'ت'), e('span', {}, [e('b', {}, N.title || ''), e('p', {}, N.text || ''), e('small', {}, 'الآن · زر «قيّم الآن»')]), e('i', { class: 'pvx-dot' })])]);
+    const N = (A.pch === 'push' ? P.push : P.inbox) || {};
+    const app = S.step === 1 ? e('div', { class: 'pvx-appv' }, [e('div', { class: 'pvx-app-bar' }, [e('button', { type: 'button', class: 'pvx-x', 'aria-label': 'رجوع', onClick: function () { S.step = 0; rmnPaint(); } }, '‹'), 'قيّم تجربتك']),
+      e('p', { class: 'pvx-sheet-s' }, D.label || ''), rvSimForm(A, Q, function () { S.step = 2; S.n = rvSimScore(A, Q); rmnPaint(); }, 'is-app')])
+      : S.step === 2 ? e('div', { class: 'pvx-appv' }, [e('div', { class: 'pvx-app-bar' }, ['تيرا']), thanks(S.n)]) : null;
+    if (A.pch === 'push') {
+      body = e('div', { class: 'pvx-phone' + (app ? '' : ' is-lock') }, [e('div', { class: 'pvx-notch' }), app || [e('div', { class: 'pvx-lock-t' }, [e('b', {}, now), e('small', {}, new Date().toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' }))]),
+        e('button', { type: 'button', class: 'pvx-push', onClick: function () { S.step = 1; rmnPaint(); } }, [e('span', { class: 'pvx-push-ic' }, 'ت'), e('span', {}, [e('small', {}, 'تيرا · الآن'), e('b', {}, N.title || ''), e('p', {}, N.text || ''), e('em', {}, 'اضغط لفتحه')])])]]);
+    } else {
+      body = e('div', { class: 'pvx-app' }, app ? [app] : [e('div', { class: 'pvx-app-bar' }, [ic('bell', 16), 'الإشعارات']),
+        e('button', { type: 'button', class: 'pvx-app-it', onClick: function () { S.step = 1; rmnPaint(); } }, [e('span', { class: 'pvx-push-ic' }, 'ت'), e('span', {}, [e('b', {}, N.title || ''), e('p', {}, N.text || ''), e('small', {}, 'الآن · اضغط «قيّم الآن»')]), e('i', { class: 'pvx-dot' })])]);
+    }
   }
-  return e('section', { class: 'pvx' }, [head, tabs, e('div', { class: 'pvx-stage' }, body)]);
+  return e('section', { class: 'pvx' }, [head, pick, tabs, e('div', { class: 'pvx-stage' }, body)]);
 }
-function rlgRaPage(L) {
-  const A = RMN.ra, today = L.today || iso(new Date());
+function rmnRate(L) {
+  const A = rvState(), today = L.today || iso(new Date());
   const ic = function (n, sz) { return e('span', { class: 'rlg-i', 'aria-hidden': 'true' }, frag(ui(n, sz || 14))); };
-  const back = e('div', { class: 'rmn-back' }, [DS.button('العودة إلى السجل', { size: 'sm', onClick: function () { RMN.ra = null; rmnPaint(); } })]);
-  const title = e('div', { class: 'rlg-ra-h' }, [e('h2', {}, 'إعادة دعوة التقييم'), e('small', {}, 'لمن سدّد ولم يقيّم — من وصلته دعوة تصله نفسها مرة أخرى، ومن لم تصله دعوة تُنشأ له دعوته الأولى.')]);
-  if (A.chk === 'loading') return [back, title, e('div', { class: 'rlg-wait', role: 'status' }, 'جارٍ فحص الدعوات…')];
-  if (A.chk && A.chk.fail) return [back, title, DS.note('warn', 'تعذّر فحص الدعوات', A.chk.fail)];
-  const M = A.chk || {}, can = A.list.filter(function (x) { return (M[rlgRaKey(x)] || {}).can; });
-  const pick = A.list.filter(function (x) { return A.sel[rlgRaKey(x)]; });
+  const back = function (n) { return iso(new Date(new Date(today + 'T12:00:00').getTime() - n * 864e5)); };
+  const from = A.per === '1' ? today : back(Number(A.per) - 1), rk = from + '|' + today;
+  if (A.rk !== rk) { A.rk = rk; A.R = null; }
+  if (A.R === null) { A.R = 'loading'; clApi('/admin/api/reminders/report?from=' + from + '&to=' + today).then(function (j) { if (A.rk !== rk) return; A.R = (j && j.report && j.report.rows) || []; rmnPaint(); }).catch(function (err) { if (err && err.message === 'auth') return; A.R = { fail: (err && err.message) || 'تعذّر التحميل.' }; rmnPaint(); }); }
+  const segb = function (lbl, opts, val, set) {
+    return e('div', { class: 'rlg-seg', role: 'group', 'aria-label': lbl }, opts.map(function (o) { const on = val === o[0]; return e('button', { type: 'button', class: on ? 'is-on' : '', 'aria-pressed': on ? 'true' : 'false', onClick: function () { if (!on) { set(o[0]); rmnPaint(); } } }, o[1]); }));
+  };
+  const qi = DS.input({ value: A.q, placeholder: 'ابحث بالاسم أو رقم تيرا أو العقد', onInput: function (v) { A.q = v; } });
+  if (qi && qi.addEventListener) {
+    const qf = function () { clearTimeout(RMN.rq2); rmnPaint(); const n = document.querySelector('input[aria-label="بحث في إعادة التقييم"]'); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (err) { void err; } } };
+    qi.setAttribute('aria-label', 'بحث في إعادة التقييم'); qi.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') qf(); }); qi.addEventListener('input', function () { clearTimeout(RMN.rq2); RMN.rq2 = setTimeout(qf, 350); });
+  }
+  const sel = function (k, lbl, opts) { return e('label', { class: 'rlg-f' + (A[k] !== opts[0][0] ? ' is-on' : '') }, [e('small', {}, lbl), DS.select({ value: A[k], options: opts, onChange: function (v) { A[k] = v; rmnPaint(); } })]); };
+  const bar = e('div', { class: 'rlg-bar' }, [segb('الفترة', [['7', '7 أيام'], ['30', '30 يومًا'], ['90', '90 يومًا'], ['180', '6 أشهر'], ['365', 'سنة']], A.per, function (v) { A.per = v; }),
+    e('div', { class: 'rmn-search rlg-q' }, [frag(ui('magnifying-glass', 16)), qi])]);
+  const flt = function (B) {
+    const W = {}, names = [];
+    (B || []).forEach(function (x) { if (W[x.user_id]) return; W[x.user_id] = 1; names.push([String(x.user_id), x.name || x.tera_id || '—', null, { sub: x.tera_id || '' }]); });
+    names.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
+    if (A.who !== 'all' && !W[A.who]) A.who = 'all';
+    return e('div', { class: 'rlg-flt' }, [
+      e('label', { class: 'rlg-f rv-who' + (A.who !== 'all' ? ' is-on' : '') }, [e('small', {}, 'العميل'), DS.select({ value: A.who, title: 'اختر العميل', options: [['all', 'كل العملاء (' + fmtNum(names.length) + ')', null, { sub: 'اعرض الجميع' }]].concat(names), onChange: function (v) { A.who = v; rmnPaint(); } })]),
+      sel('st', 'الحالة', [['all', 'الكل'], ['ready', 'جاهزة للإرسال'], ['first', 'دعوته الأولى'], ['not', 'غير جاهزة']]),
+      sel('seg', 'عند الإرسال', [['all', 'الكل'], ['regular', 'منتظم'], ['late', 'متأخر (1–60)'], ['default', 'متعثر (+60)']]),
+      sel('sort', 'الترتيب', [['new', 'الأحدث سدادًا أولًا'], ['old', 'الأقدم أولًا'], ['amt_d', 'الأعلى مبلغًا'], ['amt_a', 'الأقل مبلغًا'], ['name', 'الاسم (أ–ي)']])]);
+  };
+  const title = e('div', { class: 'rlg-ra-h' }, [e('h2', {}, 'إعادة دعوة التقييم'), e('small', {}, 'لمن سدّد بعد التذكير ولم يقيّم — اختر، وحدّد الموعد، وجرّب الرسالة قبل الإرسال.')]);
+  if (A.R === 'loading' || A.R === null) return [title, bar, flt([]), e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')];
+  if (A.R.fail) return [title, bar, flt([]), DS.note('warn', 'تعذّر التحميل', A.R.fail, DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { A.R = null; rmnPaint(); } }))];
+  /* السداد بلا تقييم — مرة لكل دفعة */
+  const U = {}, base = [];
+  A.R.forEach(function (x) { if (!x.paid || x.rating || !x.user_id || !x.contract_no) return; const k = rlgRaKey(x); if (U[k]) return; U[k] = 1; base.push(x); });
+  /* فحص الأهلية على الخادم لما لم يُفحص بعد */
+  const need = base.filter(function (x) { return !A.chk[rlgRaKey(x)]; });
+  if (need.length && !A.busyChk) {
+    A.busyChk = true;
+    clPost('/admin/api/reminders/rate-again', { items: need.slice(0, 200).map(function (x) { return { user_id: x.user_id, contract_no: x.contract_no, seq: x.seq }; }), dry: true }).then(function (r) {
+      A.busyChk = false; (r && r.rows || []).forEach(function (o) { A.chk[rlgRaKey(o)] = o; });
+      const why = (r && r.ok !== true && r.message) || 'تعذّر الفحص'; need.slice(0, 200).forEach(function (x) { const k = rlgRaKey(x); if (!A.chk[k]) A.chk[k] = { can: false, why: why }; });
+      if (A.pre) { Object.keys(A.pre).forEach(function (k) { if ((A.chk[k] || {}).can) A.sel[k] = true; }); A.pre = null; }
+      rmnPaint();
+    }).catch(function (err) { A.busyChk = false; if (err && err.message === 'auth') return; need.slice(0, 200).forEach(function (x) { const k = rlgRaKey(x); if (!A.chk[k]) A.chk[k] = { can: false, why: 'تعذّر الفحص' }; }); rmnPaint(); });
+  }
+  const q = String(A.q || '').trim().toLowerCase(), M = A.chk;
+  const rows = base.filter(function (x) {
+    const o = M[rlgRaKey(x)], lt = Number(x.late) || 0;
+    if (A.who !== 'all' && String(x.user_id) !== A.who) return false;
+    if (A.st === 'ready' && !(o && o.can)) return false;
+    if (A.st === 'first' && !(o && o.can && o.first)) return false;
+    if (A.st === 'not' && !(o && !o.can)) return false;
+    if (A.seg === 'regular' && lt > 0) return false;
+    if (A.seg === 'late' && !(lt >= 1 && lt <= 60)) return false;
+    if (A.seg === 'default' && !(lt > 60)) return false;
+    return !q || [x.name, x.tera_id, x.contract_no].some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; });
+  });
+  const ts = function (x) { return Date.parse(x.at) || 0; };
+  const SRT = { new: function (a, b) { return ts(b) - ts(a); }, old: function (a, b) { return ts(a) - ts(b); }, amt_d: function (a, b) { return Number(b.amount || 0) - Number(a.amount || 0); }, amt_a: function (a, b) { return Number(a.amount || 0) - Number(b.amount || 0); }, name: function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'ar'); } };
+  rows.sort(SRT[A.sort] || SRT.new);
+  A.list = rows;
+  const can = rows.filter(function (x) { return (M[rlgRaKey(x)] || {}).can; });
+  const pick = base.filter(function (x) { return A.sel[rlgRaKey(x)]; });
   const allOn = can.length && can.every(function (x) { return A.sel[rlgRaKey(x)]; });
-  const rows = e('div', { class: 'rlg-ra-list' }, A.list.map(function (x) {
-    const k = rlgRaKey(x), o = M[k] || {}, on = !!A.sel[k];
-    return e('label', { class: 'rlg-ra-it' + (o.can ? '' : ' is-off') + (on ? ' is-on' : '') }, [
-      e('input', { type: 'checkbox', checked: on ? 'checked' : null, disabled: o.can ? null : 'disabled', onChange: function (ev) { A.sel[k] = !!ev.target.checked; rmnPaint(); } }),
+  const nReady = base.filter(function (x) { return (M[rlgRaKey(x)] || {}).can; }).length, nFirst = base.filter(function (x) { const o = M[rlgRaKey(x)]; return o && o.can && o.first; }).length;
+  const kpi = e('section', { class: 'rv-kpi' }, [
+    e('div', {}, [e('b', {}, fmtNum(base.length)), e('small', {}, 'سدّدوا ولم يقيّموا')]),
+    e('div', { class: 'is-ok' }, [e('b', {}, A.busyChk && !nReady ? '…' : fmtNum(nReady)), e('small', {}, 'جاهزة للإرسال')]),
+    e('div', {}, [e('b', {}, fmtNum(nFirst)), e('small', {}, 'دعوتهم الأولى')]),
+    e('div', { class: 'is-brand' }, [e('b', {}, fmtNum(pick.length)), e('small', {}, 'محددون للإرسال')])]);
+  const list = rows.length ? e('div', { class: 'rlg-ra-list' }, rows.map(function (x) {
+    const k = rlgRaKey(x), o = M[k], on = !!A.sel[k], pv = A.pk === k;
+    return e('div', { class: 'rlg-ra-it' + (o && !o.can ? ' is-off' : '') + (on ? ' is-on' : ''), onClick: function (ev) { if (!o || !o.can || (ev.target.closest && ev.target.closest('button, input'))) return; A.sel[k] = !on; rmnPaint(); } }, [
+      e('input', { type: 'checkbox', 'aria-label': 'تحديد ' + (x.name || ''), checked: on ? 'checked' : null, disabled: o && o.can ? null : 'disabled', onChange: function (ev) { A.sel[k] = !!ev.target.checked; rmnPaint(); } }),
       e('span', { class: 'rlg-ra-who' }, [e('b', {}, x.name || '—'), e('small', {}, [x.tera_id ? e('bdi', { dir: 'ltr' }, x.tera_id) : null, x.tera_id ? ' · ' : null, e('bdi', { dir: 'ltr' }, x.contract_no), ' · الدفعة ' + fmtNum(x.seq) + ' · ' + rmnSar(x.amount)])]),
-      o.can ? e('span', { class: 'rlg-ra-st is-ok' }, [ic('check-circle'), o.first ? 'جاهزة — دعوته الأولى' : 'جاهزة']) : e('span', { class: 'rlg-ra-st' }, [ic('info'), o.why || '—'])]);
-  }));
+      !o ? e('span', { class: 'rlg-ra-st' }, 'جارٍ الفحص…') : o.can ? e('span', { class: 'rlg-ra-st is-ok' }, [ic('check-circle'), o.first ? 'دعوته الأولى' : 'جاهزة']) : e('span', { class: 'rlg-ra-st' }, [ic('info'), o.why || '—']),
+      e('button', { type: 'button', class: 'rv-eye' + (pv ? ' is-on' : ''), title: 'معاينة ما يصله', onClick: function () { A.pk = k; A.pv = null; rmnPaint(); try { document.querySelector('.pvx').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { void err; } } }, [ic('device-mobile'), 'معاينة'])]);
+  })) : e('div', { class: 'rlg-empty' }, [e('b', {}, base.length ? 'لا نتائج' : 'لا أحد بانتظار التقييم'), e('small', {}, base.length ? 'غيّر الفلاتر أو امسح البحث.' : 'اختر فترة أطول.')]);
   const win = L.window && L.window.on !== false ? L.window : null;
   const modes = e('div', { class: 'rlg-seg rlg-ra-mode', role: 'radiogroup', 'aria-label': 'موعد الإرسال' }, [['now', 'الآن'], ['sch', 'موعد واحد'], ['rep', 'تكرار حتى يقيّم']].map(function (m) {
     const on = A.mode === m[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.mode = m[0]; A.quiet = false; rmnPaint(); } }, m[1]);
   }));
   const runs = A.mode === 'now' ? [] : rlgRaRuns(A);
-  const sch = A.mode === 'sch' ? e('div', { class: 'rlg-ra-sch' }, [
-    DS.editField('اليوم', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })),
-    e('div', { class: 'rlg-ra-tp' }, [e('small', {}, 'الوقت (الرياض)'), rmTimePick(A.h, A.m, function (h, m) { A.h = h; A.m = m; rmnPaint(); })])])
+  const tp = e('div', { class: 'rlg-ra-tp' }, [e('small', {}, 'الوقت (الرياض)'), rmTimePick(A.h, A.m, function (h, m) { A.h = h; A.m = m; rmnPaint(); })]);
+  const sch = A.mode === 'sch' ? e('div', { class: 'rlg-ra-sch' }, [DS.editField('اليوم', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })), tp])
     : A.mode === 'rep' ? e('div', { class: 'rlg-ra-sch' }, [
-      e('div', { class: 'rlg-ra-2' }, [DS.editField('من تاريخ', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })),
-        DS.editField('إلى تاريخ', DS.input({ type: 'date', value: A.to, min: A.day || today, onInput: function (v) { A.to = v; rmnPaint(); } }))]),
-      DS.editField('التكرار', DS.select({ value: String(A.ev), options: [['1', 'يوميًا'], ['2', 'كل يومين'], ['3', 'كل 3 أيام'], ['7', 'أسبوعيًا']], onChange: function (v) { A.ev = Number(v); rmnPaint(); } })),
-      e('div', { class: 'rlg-ra-tp' }, [e('small', {}, 'الوقت (الرياض)'), rmTimePick(A.h, A.m, function (h, m) { A.h = h; A.m = m; rmnPaint(); })]),
+      e('div', { class: 'rlg-ra-2' }, [DS.editField('من تاريخ', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })), DS.editField('إلى تاريخ', DS.input({ type: 'date', value: A.to, min: A.day || today, onInput: function (v) { A.to = v; rmnPaint(); } }))]),
+      DS.editField('التكرار', DS.select({ value: String(A.ev), options: [['1', 'يوميًا'], ['2', 'كل يومين'], ['3', 'كل 3 أيام'], ['7', 'أسبوعيًا']], onChange: function (v) { A.ev = Number(v); rmnPaint(); } })), tp,
       e('p', { class: 'rlg-ra-plan' + (runs.length > 30 || !runs.length ? ' is-bad' : '') }, !runs.length ? 'لا مواعيد قادمة في هذه الفترة.' : runs.length > 30 ? fmtNum(runs.length) + ' موعدًا — الحد 30.'
         : ['سيُرسل ', e('b', {}, fmtNum(runs.length) + (runs.length === 1 ? ' مرة' : ' مرات')), ': ' + runs.slice(0, 6).map(function (x) { return rmnDay(x.slice(0, 10)); }).join('، ') + (runs.length > 6 ? '…' : '') + '. يتوقف تلقائيًا لمن يقيّم.'])]) : null;
   const quiet = A.quiet ? DS.note('warn', 'الوقت الآن خارج أوقات الإرسال للعملاء', (win ? 'النافذة من ' + rmTime(win.start, 0) + ' إلى ' + rmTime(win.end, 0) + '. ' : '') + 'جدوله لوقت مناسب أو أرسل الآن رغم ذلك.', e('div', { class: 'rmn-acts' }, [
     DS.button('جدولة لأول النافذة', { size: 'sm', tone: 'primary', onClick: function () { const h = win ? Number(win.start) : 9, nowH = Number(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh', hour: '2-digit', hour12: false })) % 24; A.mode = 'sch'; A.quiet = false; A.h = h; A.m = 0; A.day = nowH >= h ? iso(new Date(Date.now() + 864e5)) : today; rmnPaint(); } }),
     liveOk(DS.button('أرسل الآن رغم ذلك', { size: 'sm', tone: 'danger', disabled: RM.busy, onClick: function () { A.quiet = false; rlgRaSend(true); } }))])) : null;
   const side = e('aside', { class: 'rlg-ra-side' }, [
-    e('div', { class: 'rlg-ra-sum' }, [e('b', {}, fmtNum(pick.length)), e('span', {}, pick.length === 1 ? 'عميل محدد' : 'عملاء محددون'), e('small', {}, 'من ' + fmtNum(A.list.length) + ' · جاهزة ' + fmtNum(can.length))]),
-    e('p', { class: 'rmn-lbl' }, 'موعد الإرسال'), modes, sch, quiet,
+    e('div', { class: 'rv-step' }, [e('i', {}, '2'), e('b', {}, 'متى تُرسل؟')]), modes, sch, quiet,
     A.err ? DS.note('warn', 'تعذّر التنفيذ', A.err) : null,
-    liveOk(DS.button((A.mode === 'now' ? 'أرسل الآن' : A.mode === 'rep' ? 'جدولة السلسلة' : 'جدولة') + ' (' + fmtNum(pick.length) + ')', { tone: 'primary', disabled: RM.busy || !pick.length || A.quiet || (A.mode !== 'now' && (!runs.length || runs.length > 30)), onClick: function () { rlgRaSend(false); } })),
-    e('small', { class: 'rmn-sm' }, 'مرة واحدة في اليوم لكل دعوة. من قيّم أو انتهت دعوته لا يُحدَّد.')]);
+    e('div', { class: 'rv-step' }, [e('i', {}, '3'), e('b', {}, 'الإرسال')]),
+    e('p', { class: 'rv-sum' }, pick.length ? [e('b', {}, fmtNum(pick.length)), pick.length === 1 ? ' عميل محدد' : ' عملاء محددون'] : 'لم تحدد أحدًا بعد — حدّد من القائمة.'),
+    liveOk(DS.button((A.mode === 'now' ? 'أرسل الآن' : A.mode === 'rep' ? 'جدولة السلسلة' : 'جدولة') + (pick.length ? ' (' + fmtNum(pick.length) + ')' : ''), { tone: 'primary', disabled: RM.busy || !pick.length || A.quiet || (A.mode !== 'now' && (!runs.length || runs.length > 30)), onClick: function () { rlgRaSend(false); } })),
+    e('small', { class: 'rmn-sm' }, 'مرة واحدة في اليوم لكل دعوة، ومن قيّم لا تصله.')]);
   const main = e('section', { class: 'rlg-ra-main' }, [
-    e('div', { class: 'rlg-ra-bar' }, [e('b', {}, fmtNum(A.list.length) + (A.list.length === 1 ? ' سداد بلا تقييم' : ' عملية سداد بلا تقييم')), e('span', { class: 'rmn-grow' }),
+    e('div', { class: 'rlg-ra-bar' }, [e('div', { class: 'rv-step' }, [e('i', {}, '1'), e('b', {}, 'من تُرسل له؟'), e('small', {}, fmtNum(rows.length) + ' ظاهر')]), e('span', { class: 'rmn-grow' }),
       can.length ? DS.button(allOn ? 'إلغاء التحديد' : 'تحديد الجاهزة (' + fmtNum(can.length) + ')', { size: 'sm', onClick: function () { can.forEach(function (x) { A.sel[rlgRaKey(x)] = !allOn; }); rmnPaint(); } }) : null]),
-    rows]);
-  return [back, title, e('div', { class: 'rlg-ra' }, [main, side]), rlgRaPv(A), rlgRaLog()];
+    list]);
+  return [title, bar, flt(base), kpi, e('div', { class: 'rlg-ra' }, [main, side]), rows.length ? rlgRaPv(A) : null, rlgRaLog()];
 }
-/* v1023: سجل إعادة دعوة التقييم — كل إرسال فوري أو مجدول أو سلسلة، بنتيجته، وإلغاء القادم */
+/* سجل إعادة دعوة التقييم — كل إرسال فوري أو مجدول أو سلسلة، بنتيجته، وإلغاء القادم */
 function rlgRaLog() {
   const A = RMN.ra; if (!A) return null;
   if (A.log === null) { A.log = 'loading'; clApi('/admin/api/reminders/rate-again/log').then(function (j) { if (RMN.ra === A) { A.log = (j && j.rows) || []; rmnPaint(); } }).catch(function (err) { if (RMN.ra === A && !(err && err.message === 'auth')) { A.log = { fail: (err && err.message) || 'تعذّر التحميل.' }; rmnPaint(); } }); }
-  const head = e('div', { class: 'rlg-ra-bar' }, [e('b', {}, 'سجل إعادة الدعوة')]);
+  const head = e('div', { class: 'rlg-ra-bar' }, [e('div', { class: 'rv-step' }, [e('i', {}, '✓'), e('b', {}, 'سجل إعادة الدعوة')])]);
   if (A.log === 'loading') return e('section', { class: 'rlg-ra-logw' }, [head, e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')]);
   if (A.log && A.log.fail) return e('section', { class: 'rlg-ra-logw' }, [head, DS.note('warn', 'تعذّر تحميل السجل', A.log.fail)]);
   const L = A.log || [];
@@ -34678,7 +34768,7 @@ function rlgRaLog() {
   const ST = { pending: ['بانتظار موعده', 'info'], running: ['جارٍ الإرسال', 'info'], done: ['نُفّذ', 'ok'], cancelled: ['أُلغي', null] };
   const seen = {};
   return e('section', { class: 'rlg-ra-logw' }, [head, e('div', { class: 'rlg-ra-list' }, L.map(function (q) {
-    const st = ST[q.status] || [q.status, null], d = new Date(q.run_at), firstOfSeries = q.series && q.status === 'pending' && !seen[q.series]; if (q.series && q.status === 'pending') seen[q.series] = 1;
+    const st = ST[q.status] || [q.status, null], firstOfSeries = q.series && q.status === 'pending' && !seen[q.series]; if (q.series && q.status === 'pending') seen[q.series] = 1;
     return e('div', { class: 'rlg-ra-lg' }, [
       e('span', { class: 'rlg-ra-lgd' }, [e('b', {}, rlgDay(q.run_at)), e('small', {}, rlgTime(q.run_at))]),
       e('span', { class: 'rlg-ra-who' }, [e('b', {}, (q.note || 'إعادة دعوة التقييم').replace(/^إعادة دعوة التقييم\s*—?\s*/, '') || 'موعد واحد'), e('small', {}, fmtNum(q.n) + (q.n === 1 ? ' عميل' : ' عملاء') + (q.status === 'done' ? ' · أُرسل ' + fmtNum(q.ok) + ' من ' + fmtNum(q.sent) + (q.skipped ? ' (تخطّى ' + fmtNum(q.skipped) + ')' : '') : '') + (q.error ? ' · ' + q.error : ''))]),
@@ -34697,7 +34787,6 @@ function rlgPaint() { /* v1018: إعادة رسم السجل وحده — بلا
   if (q) { const i = n.querySelector('input[aria-label="بحث في السجل"]'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (err) { void err; } } }
 }
 function rmnLog(L) {
-  if (RMN.ra) return [e('div', { class: 'rlg-root' }, rlgRaPage(L))];
   const F = RM.rq || (RM.rq = { q: '', res: 'all', kind: 'all', per: '30', open: '', ps: 20, pg: 0, cf: '', ct: '', err: '', seg: 'all', paid: 'all', rate: 'all', ra: '' });
   if (!F.seg) F.seg = 'all'; if (!F.paid) F.paid = 'all'; if (!F.rate) F.rate = 'all'; if (!F.sort) F.sort = 'new';
   if (!F.ps) F.ps = 20; if (!(F.pg >= 0)) F.pg = 0;
@@ -34795,8 +34884,7 @@ function rmnLog(L) {
     stat('لم يصل', nBad, nBad ? 'bad' : '', F.res === 'fail', function (on) { F.res = on ? 'all' : 'fail'; }),
     stat('سُدِّد بعده', nPaid, 'ok', F.paid === 'yes', function (on) { F.paid = on ? 'all' : 'yes'; }),
     stat('قيّموا', nRated, '', F.rate === 'yes', function (on) { F.rate = on ? 'all' : 'yes'; }),
-    stat('بانتظار التقييم', waitL.length, waitL.length ? 'warn' : '', F.rate === 'wait', function (on) { F.rate = on ? 'all' : 'wait'; },
-      waitL.length ? e('button', { type: 'button', class: 'rlg-st-a', onClick: function () { rlgRaOpen(waitL); } }, 'إعادة الدعوة') : null)]);
+    stat('بانتظار التقييم', waitL.length, waitL.length ? 'warn' : '', F.rate === 'wait', function (on) { F.rate = on ? 'all' : 'wait'; })]);
   /* القائمة: مجموعات حسب اليوم */
   const CH = ['whatsapp', 'email', 'push', 'inbox'], CHS = { whatsapp: 'واتساب', email: 'البريد', push: 'الجوال', inbox: 'المنصة' };
   /* v1020: بطاقة التذكير — أيقونة لكل معلومة، ومجموعات واضحة: من؟ ماذا؟ كيف وصل؟ ماذا حدث بعده؟ */
@@ -34829,7 +34917,7 @@ function rmnLog(L) {
         e('span', {}, [ic('clock'), e('small', {}, 'أُرسل'), e('b', {}, rlgDay(x.at) + ' · ' + rlgTime(x.at))])]),
       fl.length ? e('ul', { class: 'rlg-fail' }, fl.map(function (k) { return e('li', {}, [ic(CHI[k]), e('b', {}, rmChTx([k]) + ': '), o[k].message || 'لم يصل']); })) : null,
       o.error ? e('p', { class: 'rmn-sm rmn-late' }, o.error) : null,
-      x.paid && !x.rating ? e('div', { class: 'rlg-ra1' }, [DS.button('إعادة دعوة التقييم لهذا العميل', { size: 'sm', onClick: function () { rlgRaOpen([x]); } })]) : null]) : null;
+      null]) : null;
     return e('article', { class: 'rlg-item' + (open ? ' is-open' : '') + ' is-' + st }, [body, det]);
   };
   const per = F.ps === 'all' ? Math.max(rows.length, 1) : Number(F.ps) || 20, pages = Math.max(1, Math.ceil(rows.length / per));
