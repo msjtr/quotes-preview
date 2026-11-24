@@ -4653,3 +4653,41 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rvi-it-end { grid-column: 2; flex-wrap: wrap; }
   .tq-next .rvi-ns { min-width: 0; flex-basis: 100%; }
 }
+/* ================= v1028: تباعد آمن في «السجل» و«إعادة التقييم» — مسافة ثابتة بين الأقسام، وبين الأيقونة ونصها ================= */
+.tq-next .rlg-root { display: flex; flex-direction: column; gap: 18px; }
+.tq-next .rlg-root > * { margin-top: 0; margin-bottom: 0; }
+.tq-next .rlg-root.rvi .rvi-bar, .tq-next .rlg-root.rvi .rvi-flt, .tq-next .rlg-root.rvi .rvi-kpi, .tq-next .rlg-root.rvi .rvi-kinds, .tq-next .rlg-root.rvi .rlg-ra-h { margin: 0; }
+.tq-next .rlg-root.rvi .pvx, .tq-next .rlg-root.rvi .rlg-ra-logw { margin-top: 10px; }
+.tq-next .rlg-bar { gap: 12px; }
+.tq-next .rlg-flt { gap: 14px 16px; padding: 16px 18px; }
+.tq-next .rlg-f { gap: 6px; }
+.tq-next .rlg-sum { margin: 0; }
+.tq-next .rlg-head { padding: 6px 2px 2px; gap: 12px 18px; }
+.tq-next .rlg-head-t { gap: 4px; }
+.tq-next .rlg-list { gap: 24px; }
+.tq-next .rlg-day h3 { margin: 0 0 12px; }
+/* البطاقة: مسافات بين السطور، وبين كل أيقونة ونصها */
+.tq-next .rlg-card { gap: 16px; padding: 18px 20px; }
+.tq-next .rlg-c-main { gap: 12px; }
+.tq-next .rlg-c-top { gap: 10px 12px; }
+.tq-next .rlg-facts { gap: 10px 24px; line-height: 1.5; }
+.tq-next .rlg-facts > span { gap: 8px; }
+.tq-next .rlg-c-bot { gap: 10px 16px; }
+.tq-next .rlg-chs { gap: 8px; }
+.tq-next .rlg-chs i { gap: 6px; padding: 4px 10px; }
+.tq-next .rlg-kind { gap: 6px; padding: 4px 10px; }
+.tq-next .rlg-st-p { gap: 7px; padding: 4px 12px; }
+.tq-next .rlg-c-side { gap: 12px; }
+.tq-next .rlg-c-side .rlg-time { gap: 7px; }
+.tq-next .rlg-i { opacity: .75; }
+.tq-next .rlg-det { padding-bottom: 20px; }
+.tq-next .rlg-dl { gap: 12px 30px; padding: 14px 16px; }
+.tq-next .rlg-dl > span { gap: 8px; }
+.tq-next .rlg-fail li, .tq-next .rlg-chd li { gap: 10px; }
+.tq-next .rlg-pager { gap: 12px; padding: 14px 16px; }
+@media (max-width: 46rem) {
+  .tq-next .rlg-root { gap: 14px; }
+  .tq-next .rlg-flt { padding: 12px; gap: 12px 10px; }
+  .tq-next .rlg-card { padding: 14px; gap: 12px; }
+  .tq-next .rlg-facts { gap: 8px 16px; }
+}

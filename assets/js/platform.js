@@ -34662,7 +34662,7 @@ function rvNameSearch(o) {
     const L = names.filter(function (n) { return !k || norm(n.name + ' ' + (n.sub || '')).indexOf(k) >= 0; });
     pop.appendChild(e('div', { class: 'rvi-ns-h' }, k ? 'أسماء مطابقة · ' + fmtNum(L.length) : 'كل العملاء · ' + fmtNum(L.length)));
     L.slice(0, 300).forEach(function (n) {
-      const it = e('div', { class: 'rvi-ns-o' + (n.name === o.value ? ' is-sel' : ''), role: 'option' }, [e('span', { class: 'rvi-ns-av', 'aria-hidden': 'true' }, String(n.name || '؟').trim().charAt(0)), e('span', { class: 'rvi-ns-t' }, [e('b', {}, n.name), n.sub ? e('small', {}, n.sub) : null]), n.n > 1 ? e('i', { class: 'rvi-ns-n' }, fmtNum(n.n)) : null]);
+      const it = e('div', { class: 'rvi-ns-o' + (n.name === o.value ? ' is-sel' : ''), role: 'option' }, [e('span', { class: 'rvi-ns-av', 'aria-hidden': 'true' }, String(n.name || '؟').trim().charAt(0)), e('span', { class: 'rvi-ns-t' }, [e('b', {}, n.name), n.sub ? e('small', {}, n.sub) : null])]);
       it.addEventListener('mousedown', function (ev) { ev.preventDefault(); pick(n); });
       pop.appendChild(it); shown.push([it, n]);
     });
