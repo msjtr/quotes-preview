@@ -34159,7 +34159,7 @@ function rmnPage() {
   if (RMN.done) return [e('div', { class: 'rmn' }, [rmnHead(L), rmnDone(RMN.done)])];
   const flash = RM.err ? DS.note('warn', 'تعذّر التنفيذ', RM.err) : null;
   if (RMN.t === 'queue') RMN.t = 'rules';
-  const body = RMN.t === 'rules' ? rmnSched(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'log' ? rmnLog(L) : RMN.t === 'rate' ? [e('div', { class: 'rlg-root rv' }, rmnRate(L))] : rmnClients(L);
+  const body = RMN.t === 'rules' ? rmnSched(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'log' ? rmnLog(L) : RMN.t === 'rate' ? [e('div', { class: 'rlg-root rvi' }, rmnRate(L))] : rmnClients(L);
   return [e('div', { class: 'rmn' + (rmnNarrow() ? ' is-narrow' : '') }, [rmnHead(L), rmnTabs(L), flash].concat(body))];
 }
 /* شاشة التأكيد بعد كل إجراء */
@@ -34513,7 +34513,7 @@ function rlgRaKey(x) { return x.user_id + ':' + x.contract_no + ':' + x.seq; }
 /* ═══════════ v1025: «إعادة التقييم» تبويب مستقل في التذكير — فلاتر وفرز مثل السجل، تحديد، موعد، معاينة تفاعلية، سجل ═══════════ */
 function rvState() {
   const today = (RM.L && RM.L.today) || iso(new Date());
-  return RMN.ra || (RMN.ra = { per: '90', q: '', sort: 'new', seg: 'all', st: 'all', who: 'all', R: null, rk: '', chk: {}, busyChk: false, sel: {}, pre: null, list: [],
+  return RMN.ra || (RMN.ra = { per: '90', q: '', sort: 'new', seg: 'all', st: 'all', kind: 'one', ns: false, R: null, rk: '', chk: {}, busyChk: false, sel: {}, pre: null, list: [],
     mode: 'now', day: today, h: 10, m: 0, to: iso(new Date(new Date(today + 'T12:00:00').getTime() + 6 * 864e5)), ev: 2, quiet: false, err: '', log: null, pk: '', pv: null, pch: 'wa', sim: null });
 }
 function rlgRaOpen(list) {
@@ -34541,7 +34541,7 @@ async function rlgRaSend(force) {
       const runs = rlgRaRuns(A);
       if (!runs.length) throw new Error('اختر موعدًا قادمًا.');
       if (runs.length > 30) throw new Error('السلسلة أطول من 30 موعدًا — قصّر الفترة أو باعد المواعيد.');
-      const r = await clPost('/admin/api/reminders/rate-again/queue', { items: pick, runs: runs });
+      const r = await clPost('/admin/api/reminders/rate-again/queue', { items: pick, runs: runs, rep: A.mode === 'rep' });
       if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّرت الجدولة.');
       RM.busy = false; reset();
       const d0 = runs[0].slice(0, 10), d1 = runs[runs.length - 1].slice(0, 10);
@@ -34649,41 +34649,88 @@ function rlgRaPv(A) {
   }
   return e('section', { class: 'pvx', 'data-live-ok': '1' }, [head, pick, tabs, e('div', { class: 'pvx-stage' }, body)]);
 }
+/* v1027: خانة بحث واحدة بأسماء العملاء — عند الضغط تظهر كل الأسماء للاختيار، والكتابة تبحث فيها وفي القائمة معًا */
+function rvNameSearch(o) {
+  const st = o.st, names = o.names || [];
+  const inp = e('input', { type: 'search', class: 't2-input rvi-ns-i', value: o.value || '', placeholder: o.ph || 'ابحث باسم العميل أو اختر من القائمة', 'aria-label': o.label, autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
+  const pop = e('div', { class: 'rvi-ns-pop', role: 'listbox' });
+  const clr = e('button', { type: 'button', class: 'rvi-ns-x', 'aria-label': 'مسح البحث', hidden: !o.value }, '×');
+  const wrap = e('div', { class: 'rvi-ns' + (o.cls ? ' ' + o.cls : '') }, [e('span', { class: 'rvi-ns-ic', 'aria-hidden': 'true' }, frag(ui('magnifying-glass', 16))), inp, clr, pop]);
+  let act = -1, shown = [], tm = 0;
+  function fill() {
+    const k = norm(inp.value); pop.textContent = ''; shown = []; act = -1;
+    const L = names.filter(function (n) { return !k || norm(n.name + ' ' + (n.sub || '')).indexOf(k) >= 0; });
+    pop.appendChild(e('div', { class: 'rvi-ns-h' }, k ? 'أسماء مطابقة · ' + fmtNum(L.length) : 'كل العملاء · ' + fmtNum(L.length)));
+    L.slice(0, 300).forEach(function (n) {
+      const it = e('div', { class: 'rvi-ns-o' + (n.name === o.value ? ' is-sel' : ''), role: 'option' }, [e('span', { class: 'rvi-ns-av', 'aria-hidden': 'true' }, String(n.name || '؟').trim().charAt(0)), e('span', { class: 'rvi-ns-t' }, [e('b', {}, n.name), n.sub ? e('small', {}, n.sub) : null]), n.n > 1 ? e('i', { class: 'rvi-ns-n' }, fmtNum(n.n)) : null]);
+      it.addEventListener('mousedown', function (ev) { ev.preventDefault(); pick(n); });
+      pop.appendChild(it); shown.push([it, n]);
+    });
+    if (!L.length) pop.appendChild(e('div', { class: 'rvi-ns-none' }, names.length ? 'لا اسم مطابق — يُبحث أيضًا برقم تيرا والعقد' : 'لا أسماء في هذه الفترة'));
+  }
+  function open() { if (!names.length && !inp.value) return; st.ns = true; fill(); wrap.classList.add('is-open'); inp.setAttribute('aria-expanded', 'true'); }
+  function close() { st.ns = false; wrap.classList.remove('is-open'); inp.setAttribute('aria-expanded', 'false'); }
+  function pick(n) { clearTimeout(tm); inp.value = n.name; close(); inp.blur(); o.onQ(n.name); o.commit(false); }
+  function mark(i) { shown.forEach(function (x, j) { x[0].classList.toggle('is-act', j === i); }); act = i; if (shown[i]) shown[i][0].scrollIntoView({ block: 'nearest' }); }
+  inp.addEventListener('focus', function () { const fresh = !st.ns; open(); if (fresh && inp.value) { try { inp.select(); } catch (err) { void err; } } });
+  inp.addEventListener('click', function () { if (!wrap.classList.contains('is-open')) open(); });
+  inp.addEventListener('blur', function () { setTimeout(close, 120); });
+  inp.addEventListener('input', function () { o.onQ(inp.value); clr.hidden = !inp.value; if (wrap.classList.contains('is-open')) fill(); else open(); clearTimeout(tm); tm = setTimeout(function () { o.commit(true); }, 400); });
+  inp.addEventListener('keydown', function (ev) {
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); if (!wrap.classList.contains('is-open')) open(); mark(Math.min(shown.length - 1, act + 1)); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); mark(Math.max(0, act - 1)); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); if (act >= 0 && shown[act]) pick(shown[act][1]); else { clearTimeout(tm); close(); o.commit(true); } }
+    else if (ev.key === 'Escape') close();
+  });
+  clr.addEventListener('mousedown', function (ev) { ev.preventDefault(); clearTimeout(tm); inp.value = ''; clr.hidden = true; close(); o.onQ(''); o.commit(false); });
+  /* بعد إعادة الرسم أثناء الكتابة: تبقى القائمة مفتوحة */
+  if (st.ns) setTimeout(function () { if (document.activeElement === inp) open(); }, 0);
+  return wrap;
+}
+/* أسماء فريدة من صفوف التقرير — للاختيار */
+function rvNames(rows) {
+  const W = {}, out = [];
+  (rows || []).forEach(function (x) { const k = x.user_id || x.name; if (!k || !x.name) return; if (W[k]) { W[k].n++; return; } W[k] = { name: x.name, sub: x.tera_id || '', n: 1 }; out.push(W[k]); });
+  return out.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'ar'); });
+}
 function rmnRate(L) {
   const A = rvState(), today = L.today || iso(new Date());
+  if (!A.kind) A.kind = A.mode === 'rep' ? 'rep' : 'one';
   const ic = function (n, sz) { return e('span', { class: 'rlg-i', 'aria-hidden': 'true' }, frag(ui(n, sz || 14))); };
   const back = function (n) { return iso(new Date(new Date(today + 'T12:00:00').getTime() - n * 864e5)); };
   const from = A.per === '1' ? today : back(Number(A.per) - 1), rk = from + '|' + today;
   if (A.rk !== rk) { A.rk = rk; A.R = null; }
   if (A.R === null) { A.R = 'loading'; clApi('/admin/api/reminders/report?from=' + from + '&to=' + today).then(function (j) { if (A.rk !== rk) return; A.R = (j && j.report && j.report.rows) || []; rmnPaint(); }).catch(function (err) { if (err && err.message === 'auth') return; A.R = { fail: (err && err.message) || 'تعذّر التحميل.' }; rmnPaint(); }); }
+  /* السداد بلا تقييم — مرة لكل دفعة */
+  const U = {}, base = [];
+  if (Array.isArray(A.R)) A.R.forEach(function (x) { if (!x.paid || x.rating || !x.user_id || !x.contract_no) return; const k = rlgRaKey(x); if (U[k]) return; U[k] = 1; base.push(x); });
+  /* نوعا الإرسال: تبويبان واضحان */
+  const LG = Array.isArray(A.log) ? A.log : [];
+  const pend = function (rep) { return LG.filter(function (q) { return q.status === 'pending' && !!q.series === rep; }).length; };
+  const kinds = e('div', { class: 'rvi-kinds', role: 'tablist', 'aria-label': 'نوع الإرسال' }, [
+    ['one', 'مرة واحدة', 'paper-plane-tilt', 'تُرسل الدعوة مرة واحدة — الآن أو في موعد تحدده.', pend(false)],
+    ['rep', 'متكررة حتى يقيّم', 'arrows-clockwise', 'تُعاد في مواعيد منتظمة، وتتوقف تلقائيًا لمن يقيّم.', pend(true)]].map(function (k) {
+    const on = A.kind === k[0];
+    return e('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', class: 'rvi-kind is-' + k[0] + (on ? ' is-on' : ''), onClick: function () { if (on) return; A.kind = k[0]; A.mode = k[0] === 'rep' ? 'rep' : 'now'; A.quiet = false; A.err = ''; rmnPaint(); } }, [
+      e('span', { class: 'rvi-kind-ic', 'aria-hidden': 'true' }, frag(ui(k[2], 22))),
+      e('span', { class: 'rvi-kind-t' }, [e('b', {}, k[1]), e('small', {}, k[3])]),
+      k[4] ? e('i', { class: 'rvi-kind-n', title: 'قادمة' }, fmtNum(k[4]) + ' قادمة') : null]);
+  }));
+  const commitQ = function (keep) { clearTimeout(RMN.rq2); rmnPaint(); if (keep) { const n = document.querySelector('input[aria-label="بحث في إعادة التقييم"]'); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (err) { void err; } } } };
+  const qbox = rvNameSearch({ st: A, value: A.q, names: rvNames(base), label: 'بحث في إعادة التقييم', ph: 'اسم العميل — اكتب أو اختر من القائمة', onQ: function (v) { A.q = v; }, commit: commitQ });
   const segb = function (lbl, opts, val, set) {
     return e('div', { class: 'rlg-seg', role: 'group', 'aria-label': lbl }, opts.map(function (o) { const on = val === o[0]; return e('button', { type: 'button', class: on ? 'is-on' : '', 'aria-pressed': on ? 'true' : 'false', onClick: function () { if (!on) { set(o[0]); rmnPaint(); } } }, o[1]); }));
   };
-  const qi = DS.input({ value: A.q, placeholder: 'ابحث بالاسم أو رقم تيرا أو العقد', onInput: function (v) { A.q = v; } });
-  if (qi && qi.addEventListener) {
-    const qf = function () { clearTimeout(RMN.rq2); rmnPaint(); const n = document.querySelector('input[aria-label="بحث في إعادة التقييم"]'); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (err) { void err; } } };
-    qi.setAttribute('aria-label', 'بحث في إعادة التقييم'); qi.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') qf(); }); qi.addEventListener('input', function () { clearTimeout(RMN.rq2); RMN.rq2 = setTimeout(qf, 350); });
-  }
   const sel = function (k, lbl, opts) { return e('label', { class: 'rlg-f' + (A[k] !== opts[0][0] ? ' is-on' : '') }, [e('small', {}, lbl), DS.select({ value: A[k], options: opts, onChange: function (v) { A[k] = v; rmnPaint(); } })]); };
-  const bar = e('div', { class: 'rlg-bar' }, [segb('الفترة', [['7', '7 أيام'], ['30', '30 يومًا'], ['90', '90 يومًا'], ['180', '6 أشهر'], ['365', 'سنة']], A.per, function (v) { A.per = v; }),
-    e('div', { class: 'rmn-search rlg-q' }, [frag(ui('magnifying-glass', 16)), qi])]);
-  const flt = function (B) {
-    const W = {}, names = [];
-    (B || []).forEach(function (x) { if (W[x.user_id]) return; W[x.user_id] = 1; names.push([String(x.user_id), x.name || x.tera_id || '—', null, { sub: x.tera_id || '' }]); });
-    names.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'ar'); });
-    if (A.who !== 'all' && !W[A.who]) A.who = 'all';
-    return e('div', { class: 'rlg-flt' }, [
-      e('label', { class: 'rlg-f rv-who' + (A.who !== 'all' ? ' is-on' : '') }, [e('small', {}, 'العميل'), DS.select({ value: A.who, title: 'اختر العميل', options: [['all', 'كل العملاء (' + fmtNum(names.length) + ')', null, { sub: 'اعرض الجميع' }]].concat(names), onChange: function (v) { A.who = v; rmnPaint(); } })]),
-      sel('st', 'الحالة', [['all', 'الكل'], ['ready', 'جاهزة للإرسال'], ['first', 'دعوته الأولى'], ['not', 'غير جاهزة']]),
-      sel('seg', 'عند الإرسال', [['all', 'الكل'], ['regular', 'منتظم'], ['late', 'متأخر (1–60)'], ['default', 'متعثر (+60)']]),
-      sel('sort', 'الترتيب', [['new', 'الأحدث سدادًا أولًا'], ['old', 'الأقدم أولًا'], ['amt_d', 'الأعلى مبلغًا'], ['amt_a', 'الأقل مبلغًا'], ['name', 'الاسم (أ–ي)']])]);
-  };
-  const title = e('div', { class: 'rlg-ra-h' }, [e('h2', {}, 'إعادة دعوة التقييم'), e('small', {}, 'لمن سدّد بعد التذكير ولم يقيّم — اختر، وحدّد الموعد، وجرّب الرسالة قبل الإرسال.')]);
-  if (A.R === 'loading' || A.R === null) return [title, bar, flt([]), e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')];
-  if (A.R.fail) return [title, bar, flt([]), DS.note('warn', 'تعذّر التحميل', A.R.fail, DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { A.R = null; rmnPaint(); } }))];
-  /* السداد بلا تقييم — مرة لكل دفعة */
-  const U = {}, base = [];
-  A.R.forEach(function (x) { if (!x.paid || x.rating || !x.user_id || !x.contract_no) return; const k = rlgRaKey(x); if (U[k]) return; U[k] = 1; base.push(x); });
+  const bar = e('div', { class: 'rlg-bar rvi-bar' }, [qbox, segb('الفترة', [['7', '7 أيام'], ['30', '30 يومًا'], ['90', '90 يومًا'], ['180', '6 أشهر'], ['365', 'سنة']], A.per, function (v) { A.per = v; })]);
+  const flt = e('div', { class: 'rlg-flt rvi-flt' }, [
+    sel('st', 'الحالة', [['all', 'الكل'], ['ready', 'جاهزة للإرسال'], ['first', 'دعوته الأولى'], ['not', 'غير جاهزة']]),
+    sel('seg', 'عند الإرسال', [['all', 'الكل'], ['regular', 'منتظم'], ['late', 'متأخر (1–60)'], ['default', 'متعثر (+60)']]),
+    sel('sort', 'الترتيب', [['new', 'الأحدث سدادًا أولًا'], ['old', 'الأقدم سدادًا أولًا'], ['amt_d', 'الأعلى مبلغًا'], ['amt_a', 'الأقل مبلغًا'], ['name', 'الاسم (أ–ي)']])]);
+  const title = e('div', { class: 'rlg-ra-h' }, [e('h2', {}, 'إعادة دعوة التقييم'), e('small', {}, 'لمن سدّد بعد التذكير ولم يقيّم.')]);
+  const top = [title, kinds, bar, flt];
+  if (A.R === 'loading' || A.R === null) return top.concat([e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')]);
+  if (A.R.fail) return top.concat([DS.note('warn', 'تعذّر التحميل', A.R.fail, DS.button('إعادة المحاولة', { size: 'sm', onClick: function () { A.R = null; rmnPaint(); } }))]);
   /* فحص الأهلية على الخادم لما لم يُفحص بعد */
   const need = base.filter(function (x) { return !A.chk[rlgRaKey(x)]; });
   if (need.length && !A.busyChk) {
@@ -34695,17 +34742,16 @@ function rmnRate(L) {
       rmnPaint();
     }).catch(function (err) { A.busyChk = false; if (err && err.message === 'auth') return; need.slice(0, 200).forEach(function (x) { const k = rlgRaKey(x); if (!A.chk[k]) A.chk[k] = { can: false, why: 'تعذّر الفحص' }; }); rmnPaint(); });
   }
-  const q = String(A.q || '').trim().toLowerCase(), M = A.chk;
+  const q = norm(A.q), M = A.chk;
   const rows = base.filter(function (x) {
     const o = M[rlgRaKey(x)], lt = Number(x.late) || 0;
-    if (A.who !== 'all' && String(x.user_id) !== A.who) return false;
     if (A.st === 'ready' && !(o && o.can)) return false;
     if (A.st === 'first' && !(o && o.can && o.first)) return false;
     if (A.st === 'not' && !(o && !o.can)) return false;
     if (A.seg === 'regular' && lt > 0) return false;
     if (A.seg === 'late' && !(lt >= 1 && lt <= 60)) return false;
     if (A.seg === 'default' && !(lt > 60)) return false;
-    return !q || [x.name, x.tera_id, x.contract_no].some(function (v) { return String(v || '').toLowerCase().indexOf(q) >= 0; });
+    return !q || [x.name, x.tera_id, x.contract_no].some(function (v) { return norm(v).indexOf(q) >= 0; });
   });
   const ts = function (x) { return Date.parse(x.at) || 0; };
   const SRT = { new: function (a, b) { return ts(b) - ts(a); }, old: function (a, b) { return ts(a) - ts(b); }, amt_d: function (a, b) { return Number(b.amount || 0) - Number(a.amount || 0); }, amt_a: function (a, b) { return Number(a.amount || 0) - Number(b.amount || 0); }, name: function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'ar'); } };
@@ -34715,56 +34761,65 @@ function rmnRate(L) {
   const pick = base.filter(function (x) { return A.sel[rlgRaKey(x)]; });
   const allOn = can.length && can.every(function (x) { return A.sel[rlgRaKey(x)]; });
   const nReady = base.filter(function (x) { return (M[rlgRaKey(x)] || {}).can; }).length, nFirst = base.filter(function (x) { const o = M[rlgRaKey(x)]; return o && o.can && o.first; }).length;
-  const kpi = e('section', { class: 'rv-kpi' }, [
+  /* الأرقام: شريط واحد (لا بطاقات فوق بطاقات) */
+  const kpi = e('section', { class: 'rvi-kpi' }, [
     e('div', {}, [e('b', {}, fmtNum(base.length)), e('small', {}, 'سدّدوا ولم يقيّموا')]),
     e('div', { class: 'is-ok' }, [e('b', {}, A.busyChk && !nReady ? '…' : fmtNum(nReady)), e('small', {}, 'جاهزة للإرسال')]),
     e('div', {}, [e('b', {}, fmtNum(nFirst)), e('small', {}, 'دعوتهم الأولى')]),
-    e('div', { class: 'is-brand' }, [e('b', {}, fmtNum(pick.length)), e('small', {}, 'محددون للإرسال')])]);
+    e('div', { class: 'is-brand' }, [e('b', {}, fmtNum(pick.length)), e('small', {}, 'محددون')])]);
   const list = rows.length ? e('div', { class: 'rlg-ra-list' }, rows.map(function (x) {
     const k = rlgRaKey(x), o = M[k], on = !!A.sel[k], pv = A.pk === k;
-    return e('div', { class: 'rlg-ra-it' + (o && !o.can ? ' is-off' : '') + (on ? ' is-on' : ''), onClick: function (ev) { if (!o || !o.can || (ev.target.closest && ev.target.closest('button, input'))) return; A.sel[k] = !on; rmnPaint(); } }, [
+    return e('div', { class: 'rlg-ra-it rvi-it' + (o && !o.can ? ' is-off' : '') + (on ? ' is-on' : ''), onClick: function (ev) { if (!o || !o.can || (ev.target.closest && ev.target.closest('button, input'))) return; A.sel[k] = !on; rmnPaint(); } }, [
       e('input', { type: 'checkbox', 'aria-label': 'تحديد ' + (x.name || ''), checked: on ? 'checked' : null, disabled: o && o.can ? null : 'disabled', onChange: function (ev) { A.sel[k] = !!ev.target.checked; rmnPaint(); } }),
       e('span', { class: 'rlg-ra-who' }, [e('b', {}, x.name || '—'), e('small', {}, [x.tera_id ? e('bdi', { dir: 'ltr' }, x.tera_id) : null, x.tera_id ? ' · ' : null, e('bdi', { dir: 'ltr' }, x.contract_no), ' · الدفعة ' + fmtNum(x.seq) + ' · ' + rmnSar(x.amount)])]),
-      !o ? e('span', { class: 'rlg-ra-st' }, 'جارٍ الفحص…') : o.can ? e('span', { class: 'rlg-ra-st is-ok' }, [ic('check-circle'), o.first ? 'دعوته الأولى' : 'جاهزة']) : e('span', { class: 'rlg-ra-st' }, [ic('info'), o.why || '—']),
-      e('button', { type: 'button', class: 'rv-eye' + (pv ? ' is-on' : ''), title: 'معاينة ما يصله', onClick: function () { A.pk = k; A.pv = null; rmnPaint(); try { document.querySelector('.pvx').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { void err; } } }, [ic('device-mobile'), 'معاينة'])]);
+      e('span', { class: 'rvi-it-end' }, [
+        !o ? e('span', { class: 'rvi-tag' }, 'جارٍ الفحص…') : o.can ? e('span', { class: 'rvi-tag is-ok' }, o.first ? 'دعوته الأولى' : 'جاهزة') : e('span', { class: 'rvi-tag is-off', title: o.why || '' }, o.why || 'غير جاهزة'),
+        e('button', { type: 'button', class: 'rvi-eye' + (pv ? ' is-on' : ''), title: 'معاينة ما يصله', 'aria-label': 'معاينة ما يصل ' + (x.name || ''), onClick: function () { A.pk = k; A.pv = null; rmnPaint(); try { document.querySelector('.pvx').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { void err; } } }, 'معاينة')])]);
   })) : e('div', { class: 'rlg-empty' }, [e('b', {}, base.length ? 'لا نتائج' : 'لا أحد بانتظار التقييم'), e('small', {}, base.length ? 'غيّر الفلاتر أو امسح البحث.' : 'اختر فترة أطول.')]);
   const win = L.window && L.window.on !== false ? L.window : null;
-  const modes = e('div', { class: 'rlg-seg rlg-ra-mode', role: 'radiogroup', 'aria-label': 'موعد الإرسال' }, [['now', 'الآن'], ['sch', 'موعد واحد'], ['rep', 'تكرار حتى يقيّم']].map(function (m) {
-    const on = A.mode === m[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.mode = m[0]; A.quiet = false; rmnPaint(); } }, m[1]);
-  }));
   const runs = A.mode === 'now' ? [] : rlgRaRuns(A);
   const tp = e('div', { class: 'rlg-ra-tp' }, [e('small', {}, 'الوقت (الرياض)'), rmTimePick(A.h, A.m, function (h, m) { A.h = h; A.m = m; rmnPaint(); })]);
-  const sch = A.mode === 'sch' ? e('div', { class: 'rlg-ra-sch' }, [DS.editField('اليوم', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })), tp])
-    : A.mode === 'rep' ? e('div', { class: 'rlg-ra-sch' }, [
-      e('div', { class: 'rlg-ra-2' }, [DS.editField('من تاريخ', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })), DS.editField('إلى تاريخ', DS.input({ type: 'date', value: A.to, min: A.day || today, onInput: function (v) { A.to = v; rmnPaint(); } }))]),
+  let when;
+  if (A.kind === 'one') {
+    when = [e('div', { class: 'rlg-seg rvi-when', role: 'radiogroup', 'aria-label': 'موعد الإرسال' }, [['now', 'الآن'], ['sch', 'في موعد']].map(function (m) {
+      const on = A.mode === m[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.mode = m[0]; A.quiet = false; rmnPaint(); } }, m[1]);
+    })), A.mode === 'sch' ? DS.editField('اليوم', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })) : null, A.mode === 'sch' ? tp : null];
+  } else {
+    A.mode = 'rep';
+    when = [DS.editField('من تاريخ', DS.input({ type: 'date', value: A.day, min: today, onInput: function (v) { A.day = v; rmnPaint(); } })),
+      DS.editField('إلى تاريخ', DS.input({ type: 'date', value: A.to, min: A.day || today, onInput: function (v) { A.to = v; rmnPaint(); } })),
       DS.editField('التكرار', DS.select({ value: String(A.ev), options: [['1', 'يوميًا'], ['2', 'كل يومين'], ['3', 'كل 3 أيام'], ['7', 'أسبوعيًا']], onChange: function (v) { A.ev = Number(v); rmnPaint(); } })), tp,
       e('p', { class: 'rlg-ra-plan' + (runs.length > 30 || !runs.length ? ' is-bad' : '') }, !runs.length ? 'لا مواعيد قادمة في هذه الفترة.' : runs.length > 30 ? fmtNum(runs.length) + ' موعدًا — الحد 30.'
-        : ['سيُرسل ', e('b', {}, fmtNum(runs.length) + (runs.length === 1 ? ' مرة' : ' مرات')), ': ' + runs.slice(0, 6).map(function (x) { return rmnDay(x.slice(0, 10)); }).join('، ') + (runs.length > 6 ? '…' : '') + '. يتوقف تلقائيًا لمن يقيّم.'])]) : null;
+        : ['سيُرسل ', e('b', {}, fmtNum(runs.length) + (runs.length === 1 ? ' مرة' : ' مرات')), ': ' + runs.slice(0, 6).map(function (x) { return rmnDay(x.slice(0, 10)); }).join('، ') + (runs.length > 6 ? '…' : '') + '.'])];
+  }
   const quiet = A.quiet ? DS.note('warn', 'الوقت الآن خارج أوقات الإرسال للعملاء', (win ? 'النافذة من ' + rmTime(win.start, 0) + ' إلى ' + rmTime(win.end, 0) + '. ' : '') + 'جدوله لوقت مناسب أو أرسل الآن رغم ذلك.', e('div', { class: 'rmn-acts' }, [
     DS.button('جدولة لأول النافذة', { size: 'sm', tone: 'primary', onClick: function () { const h = win ? Number(win.start) : 9, nowH = Number(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh', hour: '2-digit', hour12: false })) % 24; A.mode = 'sch'; A.quiet = false; A.h = h; A.m = 0; A.day = nowH >= h ? iso(new Date(Date.now() + 864e5)) : today; rmnPaint(); } }),
     liveOk(DS.button('أرسل الآن رغم ذلك', { size: 'sm', tone: 'danger', disabled: RM.busy, onClick: function () { A.quiet = false; rlgRaSend(true); } }))])) : null;
-  const side = e('aside', { class: 'rlg-ra-side' }, [
-    e('div', { class: 'rv-step' }, [e('i', {}, '2'), e('b', {}, 'متى تُرسل؟')]), modes, sch, quiet,
+  const btnT = A.kind === 'rep' ? 'جدولة الإرسال المتكرر' : A.mode === 'now' ? 'أرسل الآن' : 'جدولة';
+  const side = e('aside', { class: 'rlg-ra-side rvi-side is-' + A.kind }, [
+    e('div', { class: 'rvi-step' }, [e('i', {}, '2'), e('b', {}, A.kind === 'rep' ? 'مواعيد التكرار' : 'متى تُرسل؟')]),
+    e('div', { class: 'rvi-when-b' }, when), quiet,
     A.err ? DS.note('warn', 'تعذّر التنفيذ', A.err) : null,
-    e('div', { class: 'rv-step' }, [e('i', {}, '3'), e('b', {}, 'الإرسال')]),
-    e('p', { class: 'rv-sum' }, pick.length ? [e('b', {}, fmtNum(pick.length)), pick.length === 1 ? ' عميل محدد' : ' عملاء محددون'] : 'لم تحدد أحدًا بعد — حدّد من القائمة.'),
-    liveOk(DS.button((A.mode === 'now' ? 'أرسل الآن' : A.mode === 'rep' ? 'جدولة السلسلة' : 'جدولة') + (pick.length ? ' (' + fmtNum(pick.length) + ')' : ''), { tone: 'primary', disabled: RM.busy || !pick.length || A.quiet || (A.mode !== 'now' && (!runs.length || runs.length > 30)), onClick: function () { rlgRaSend(false); } })),
-    e('small', { class: 'rmn-sm' }, 'مرة واحدة في اليوم لكل دعوة، ومن قيّم لا تصله.')]);
+    e('div', { class: 'rvi-step' }, [e('i', {}, '3'), e('b', {}, 'الإرسال')]),
+    e('p', { class: 'rvi-sum' }, pick.length ? [e('b', {}, fmtNum(pick.length)), pick.length === 1 ? ' عميل محدد' : ' عملاء محددون'] : 'حدّد العملاء من القائمة.'),
+    liveOk(DS.button(btnT + (pick.length ? ' (' + fmtNum(pick.length) + ')' : ''), { tone: 'primary', disabled: RM.busy || !pick.length || A.quiet || (A.mode !== 'now' && (!runs.length || runs.length > 30)), onClick: function () { rlgRaSend(false); } })),
+    e('small', { class: 'rmn-sm' }, A.kind === 'rep' ? 'لا تتجاوز مرة في اليوم، وتتوقف لمن يقيّم.' : 'من قيّم لا تصله الدعوة.')]);
   const main = e('section', { class: 'rlg-ra-main' }, [
-    e('div', { class: 'rlg-ra-bar' }, [e('div', { class: 'rv-step' }, [e('i', {}, '1'), e('b', {}, 'من تُرسل له؟'), e('small', {}, fmtNum(rows.length) + ' ظاهر')]), e('span', { class: 'rmn-grow' }),
+    e('div', { class: 'rlg-ra-bar' }, [e('div', { class: 'rvi-step' }, [e('i', {}, '1'), e('b', {}, 'من تُرسل له؟'), e('small', {}, fmtNum(rows.length) + ' ظاهر')]), e('span', { class: 'rmn-grow' }),
       can.length ? DS.button(allOn ? 'إلغاء التحديد' : 'تحديد الجاهزة (' + fmtNum(can.length) + ')', { size: 'sm', onClick: function () { can.forEach(function (x) { A.sel[rlgRaKey(x)] = !allOn; }); rmnPaint(); } }) : null]),
     list]);
-  return [title, bar, flt(base), kpi, e('div', { class: 'rlg-ra' }, [main, side]), rows.length ? rlgRaPv(A) : null, rlgRaLog()];
+  return top.concat([kpi, e('div', { class: 'rlg-ra' }, [main, side]), rows.length ? rlgRaPv(A) : null, rlgRaLog()]);
 }
 /* سجل إعادة دعوة التقييم — كل إرسال فوري أو مجدول أو سلسلة، بنتيجته، وإلغاء القادم */
 function rlgRaLog() {
   const A = RMN.ra; if (!A) return null;
   if (A.log === null) { A.log = 'loading'; clApi('/admin/api/reminders/rate-again/log').then(function (j) { if (RMN.ra === A) { A.log = (j && j.rows) || []; rmnPaint(); } }).catch(function (err) { if (RMN.ra === A && !(err && err.message === 'auth')) { A.log = { fail: (err && err.message) || 'تعذّر التحميل.' }; rmnPaint(); } }); }
-  const head = e('div', { class: 'rlg-ra-bar' }, [e('div', { class: 'rv-step' }, [e('i', {}, '✓'), e('b', {}, 'سجل إعادة الدعوة')])]);
+  const rep = A.kind === 'rep';
+  const head = e('div', { class: 'rlg-ra-bar' }, [e('div', { class: 'rvi-step' }, [e('i', {}, '✓'), e('b', {}, rep ? 'سجل الإرسال المتكرر' : 'سجل الإرسال لمرة واحدة')])]);
   if (A.log === 'loading') return e('section', { class: 'rlg-ra-logw' }, [head, e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')]);
   if (A.log && A.log.fail) return e('section', { class: 'rlg-ra-logw' }, [head, DS.note('warn', 'تعذّر تحميل السجل', A.log.fail)]);
-  const L = A.log || [];
-  if (!L.length) return e('section', { class: 'rlg-ra-logw' }, [head, e('p', { class: 'rmn-sm rmn-empty-l' }, 'لم تُرسل إعادة دعوة بعد.')]);
+  const L = (A.log || []).filter(function (q) { return !!q.series === rep; });
+  if (!L.length) return e('section', { class: 'rlg-ra-logw' }, [head, e('p', { class: 'rmn-sm rmn-empty-l' }, rep ? 'لا إرسال متكرر بعد.' : 'لا إرسال لمرة واحدة بعد.')]);
   const ST = { pending: ['بانتظار موعده', 'info'], running: ['جارٍ الإرسال', 'info'], done: ['نُفّذ', 'ok'], cancelled: ['أُلغي', null] };
   const seen = {};
   return e('section', { class: 'rlg-ra-logw' }, [head, e('div', { class: 'rlg-ra-list' }, L.map(function (q) {
@@ -34801,14 +34856,12 @@ function rmnLog(L) {
       const on = val === o[0]; return e('button', { type: 'button', class: on ? 'is-on' : '', 'aria-pressed': on ? 'true' : 'false', onClick: function () { if (val !== o[0]) { set(o[0]); F.pg = 0; F.open = ''; rlgPaint(); } } }, o[1]);
     }));
   };
-  const qi = DS.input({ value: F.q, placeholder: 'ابحث بالاسم أو رقم تيرا أو العقد', onInput: function (v) { F.q = v; } });
-  if (qi && qi.addEventListener) {
-    const qf = function () { clearTimeout(RMN.lq); F.pg = 0; F.open = ''; rlgPaint(); };
-    qi.setAttribute('aria-label', 'بحث في السجل'); qi.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') qf(); }); qi.addEventListener('input', function () { clearTimeout(RMN.lq); RMN.lq = setTimeout(qf, 350); });
-  }
+  /* v1027: خانة واحدة — الضغط يعرض كل أسماء العملاء للاختيار، والكتابة تبحث */
+  const qi = rvNameSearch({ st: F, value: F.q, names: rvNames(R && R.report && R.report.rows), label: 'بحث في السجل', ph: 'اسم العميل — اكتب أو اختر من القائمة', cls: 'rlg-q',
+    onQ: function (v) { F.q = v; }, commit: function (keep) { clearTimeout(RMN.lq); F.pg = 0; F.open = ''; if (keep) rlgPaint(); else { const a = document.activeElement; if (a && a.blur) a.blur(); rlgPaint(); } } });
   const bar = e('div', { class: 'rlg-bar' }, [
     seg('الفترة', [['1', 'اليوم'], ['7', '7 أيام'], ['30', '30 يومًا'], ['90', '90 يومًا'], ['180', '6 أشهر'], ['365', 'سنة'], ['c', 'من تاريخ إلى تاريخ']], F.per, function (v) { F.per = v; F.err = ''; if (v === 'c') { F.cf = RM.rf || back(29); F.ct = RM.rt || today; } else RM.R = null; }),
-    e('div', { class: 'rmn-search rlg-q' }, [frag(ui('magnifying-glass', 16)), qi])]);
+    qi]);
   /* v1019: فلاتر دقيقة — النتيجة · النوع · الحالة عند الإرسال · السداد · التقييم */
   const sel = function (k, lbl, opts) { return e('label', { class: 'rlg-f' + (F[k] !== 'all' ? ' is-on' : '') }, [e('small', {}, lbl), DS.select({ value: F[k], options: opts, onChange: function (v) { F[k] = v; F.pg = 0; F.open = ''; F.ra = ''; rlgPaint(); } })]); };
   const nOn = ['res', 'kind', 'seg', 'paid', 'rate'].filter(function (k) { return F[k] !== 'all'; }).length;
