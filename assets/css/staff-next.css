@@ -4442,3 +4442,66 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rlg-ra-lg { grid-template-columns: minmax(0, 1fr) auto; }
   .tq-next .rlg-ra-lg .rmn-acts { grid-column: 1 / -1; }
 }
+/* ================= v1024: صفحة إعادة الدعوة — توزيع، ومعاينة حية بإطار جهاز ================= */
+.tq-next .rlg-ra { grid-template-columns: minmax(0, 1fr) 21rem; }
+.tq-next .rlg-f-sort { flex: 1.2 1 11rem; }
+.tq-next .pvx { display: flex; flex-direction: column; gap: 16px; margin-top: 26px; padding: 22px; background: var(--t2-surface); border: 1px solid var(--t2-line); border-radius: 20px; }
+.tq-next .pvx-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tq-next .pvx-t h3 { margin: 0; font: 800 17px/1.4 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .pvx-t small { color: var(--t2-muted); font-size: 12.5px; line-height: 1.8; }
+.tq-next .pvx-who { display: flex; flex-direction: column; gap: 4px; min-width: 16rem; }
+.tq-next .pvx-who small { color: var(--t2-muted); font: 600 12px/1.3 var(--t2-ff-display); }
+.tq-next .pvx-tabs { align-self: flex-start; }
+.tq-next .pvx-tabs button { display: inline-flex; align-items: center; gap: 6px; }
+.tq-next .pvx-stage { display: flex; justify-content: center; padding: 26px 12px; background: radial-gradient(ellipse at top, #EEF3F8, #E3EAF2); border-radius: 16px; }
+/* هاتف */
+.tq-next .pvx-phone { position: relative; width: 340px; max-width: 100%; min-height: 560px; display: flex; flex-direction: column; border: 10px solid #111827; border-radius: 40px; background: #fff; overflow: hidden; box-shadow: 0 24px 50px rgba(15, 30, 60, .22); }
+.tq-next .pvx-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 22px; background: #111827; border-radius: 0 0 14px 14px; z-index: 2; }
+.tq-next .pvx-wa-bar { display: flex; align-items: center; gap: 10px; padding: 30px 14px 12px; background: #075E54; color: #fff; }
+.tq-next .pvx-wa-bar b { display: block; font: 700 14px/1.3 var(--t2-ff-display); }
+.tq-next .pvx-wa-bar small { color: rgba(255, 255, 255, .8); font-size: 11.5px; }
+.tq-next .pvx-wa-av, .tq-next .pvx-push-ic { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: linear-gradient(135deg, #0FA3A8, #2457C5); color: #fff; font: 800 15px/1 var(--t2-ff-display); }
+.tq-next .pvx-ok { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: #25D366; color: #fff; font-size: 9px; font-style: normal; }
+.tq-next .pvx-wa-chat { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 16px 12px; background: #ECE5DD; }
+.tq-next .pvx-wa-msg { position: relative; align-self: flex-start; max-width: 92%; padding: 6px 6px 18px; background: #fff; border-radius: 4px 12px 12px 12px; box-shadow: 0 1px 1px rgba(0, 0, 0, .12); }
+.tq-next .pvx-wa-msg img { display: block; width: 100%; border-radius: 8px; }
+.tq-next .pvx-wa-h { display: block; padding: 8px 6px 0; font: 700 13.5px/1.5 var(--t2-ff-display); color: #111; }
+.tq-next .pvx-wa-msg p { margin: 0; padding: 8px 6px 2px; color: #111; font-size: 13.5px; line-height: 1.75; white-space: pre-wrap; }
+.tq-next .pvx-wa-f { display: block; padding: 2px 6px; color: #667781; font-size: 11.5px; }
+.tq-next .pvx-wa-time { position: absolute; bottom: 4px; left: 8px; color: #667781; font-size: 10.5px; }
+.tq-next .pvx-wa-btns { align-self: flex-start; display: flex; flex-direction: column; gap: 4px; width: 92%; }
+.tq-next .pvx-wa-btns span { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; background: #fff; border-radius: 10px; color: #027EB5; font: 600 13px/1.3 var(--t2-ff-display); box-shadow: 0 1px 1px rgba(0, 0, 0, .1); }
+/* بريد */
+.tq-next .pvx-mail { width: 100%; max-width: 720px; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--t2-line); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 44px rgba(15, 30, 60, .16); }
+.tq-next .pvx-mail-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #F1F4F8; border-bottom: 1px solid var(--t2-line); }
+.tq-next .pvx-mail-bar i { width: 10px; height: 10px; border-radius: 50%; background: #D5DCE5; }
+.tq-next .pvx-mail-bar span { margin-inline-start: auto; color: var(--t2-muted); font: 600 12px/1 var(--t2-ff-display); }
+.tq-next .pvx-mail-h { display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; border-bottom: 1px solid var(--t2-line); }
+.tq-next .pvx-mail-h b { color: var(--t2-ink); font: 800 15px/1.5 var(--t2-ff-display); }
+.tq-next .pvx-mail-h small { color: var(--t2-muted); font-size: 12px; }
+.tq-next .pvx-mail-f { width: 100%; height: 680px; border: 0; background: #fff; }
+/* شاشة القفل وإشعار المنصة */
+.tq-next .pvx-phone.is-lock { justify-content: flex-start; gap: 22px; padding: 46px 14px 20px; background: linear-gradient(160deg, #0A1F44, #0B5F66); }
+.tq-next .pvx-lock-t { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; }
+.tq-next .pvx-lock-t b { font: 300 52px/1 var(--t2-ff-display); }
+.tq-next .pvx-lock-t small { color: rgba(255, 255, 255, .85); font-size: 13px; }
+.tq-next .pvx-push { display: flex; gap: 10px; padding: 12px; background: rgba(255, 255, 255, .86); border-radius: 18px; backdrop-filter: blur(6px); }
+.tq-next .pvx-push > span:last-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tq-next .pvx-push small { color: #4B5563; font-size: 11.5px; }
+.tq-next .pvx-push b { color: #111; font: 700 13.5px/1.4 var(--t2-ff-display); }
+.tq-next .pvx-push p { margin: 0; color: #1F2937; font-size: 13px; line-height: 1.6; }
+.tq-next .pvx-app { width: 420px; max-width: 100%; background: #fff; border: 1px solid var(--t2-line); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 44px rgba(15, 30, 60, .14); }
+.tq-next .pvx-app-bar { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--t2-line); color: var(--t2-ink); font: 800 14px/1 var(--t2-ff-display); }
+.tq-next .pvx-app-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 16px; background: var(--t2-brand-wash, #E8F6F6); }
+.tq-next .pvx-app-it b { color: var(--t2-ink); font: 700 14px/1.5 var(--t2-ff-display); }
+.tq-next .pvx-app-it p { margin: 4px 0; color: var(--t2-ink-2); font-size: 13px; line-height: 1.7; }
+.tq-next .pvx-app-it small { color: var(--t2-muted); font-size: 11.5px; }
+.tq-next .pvx-dot { width: 9px; height: 9px; margin-top: 6px; border-radius: 50%; background: var(--t2-brand-2, #0FA3A8); }
+@media (max-width: 46rem) {
+  .tq-next .pvx { padding: 14px; }
+  .tq-next .pvx-who { min-width: 0; width: 100%; }
+  .tq-next .pvx-tabs { width: 100%; overflow-x: auto; }
+  .tq-next .pvx-stage { padding: 14px 4px; }
+  .tq-next .pvx-phone { border-width: 8px; border-radius: 32px; min-height: 480px; }
+  .tq-next .pvx-mail-f { height: 560px; }
+}
