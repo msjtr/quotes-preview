@@ -34091,7 +34091,7 @@ function rmnT(d) { if (!d || isNaN(d)) return '—'; const h = d.getHours(), m =
 function rmnDT(v) { if (!v) return '—'; const d = new Date(v); if (isNaN(d)) return '—'; const t = iso(new Date()), y = iso(new Date(Date.now() - 864e5)), k = iso(d); return (k === t ? 'اليوم' : k === y ? 'أمس' : k) + ' · ' + rmnT(d); }
 function rmnDay(v) { if (!v) return '—'; const d = new Date(String(v).length <= 10 ? v + 'T12:00:00' : v); if (isNaN(d)) return String(v); const t = iso(new Date()), k = iso(d); return k === t ? 'اليوم' : k === iso(new Date(Date.now() + 864e5)) ? 'غدًا' : k; }
 function rmnSar(v) { return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ر.س'; }
-function rmnGo(t) { return function () { if (RMN.t === t && !RMN.done) return; RMN.t = t; RMN.done = null; RMN.send = false; RM.err = ''; RM.msg = ''; RM.ask = ''; RM.sch = null; RM.res = null; if (t === 'queue') RM.Q = null; if (t === 'log') RM.R = null; draw(); try { window.scrollTo(0, 0); } catch (err) { void err; } }; }
+function rmnGo(t) { return function () { if (RMN.t === t && !RMN.done) return; RMN.t = t; RMN.done = null; RMN.send = false; RM.err = ''; RM.msg = ''; RM.ask = ''; RM.sch = null; RM.res = null; if (t === 'queue' || t === 'rules') RM.Q = null; if (t === 'queue') RMN.t = 'rules'; if (t === 'log') RM.R = null; draw(); try { window.scrollTo(0, 0); } catch (err) { void err; } }; }
 /* إجراء على الخادم ثم شاشة تأكيد واضحة (لا رسالة صغيرة) */
 async function rmnAct(url, body, done) {
   RM.busy = true; RM.err = ''; draw();
@@ -34120,14 +34120,16 @@ function rmnHead(L) {
   }
   /* عنوان الصفحة في رأس المنصة نفسه — لا يتكرر هنا */
   return e('header', { class: 'rmn-head' }, [
-    e('div', { class: 'rmn-head-t' }, [e('p', {}, 'تذكير العملاء بدفعاتهم — اختر الدفعات وأرسل الآن أو جدول، والقواعد التلقائية لا تعمل قبل الاعتماد.')]),
+    e('div', { class: 'rmn-head-t' }, [e('p', {}, 'تذكير العملاء بدفعاتهم: «العملاء» للإرسال الآن أو لاحقًا، و«الجدولة» لكل ما يُرسل لاحقًا، و«السجل» لما أُرسل.')]),
     md ? e('div', { class: 'rmn-state is-' + md[1], role: 'status' }, [e('i', { 'aria-hidden': 'true' }), e('span', {}, [e('b', {}, md[0]), ' ', e('small', {}, md[2])]), btn]) : null]);
 }
 function rmnTabs(L) {
   const rules = rmRules(L), pend = rules.filter(function (r) { return r.status === 'pending'; }).length;
   const qn = Array.isArray(RM.Q) ? RM.Q.filter(function (q) { return q.status === 'pending'; }).length : 0;
-  const T = [['cl', 'العملاء', 'users-three'], ['rules', 'القواعد', 'list-checks', rules.length, pend ? 'warn' : ''], ['queue', 'المجدول', 'calendar-blank', qn || null], ['log', 'السجل', 'clock-counter-clockwise']];
-  const cur = RMN.t === 'edit' ? 'rules' : RMN.t;
+  /* v1014: «القواعد» و«المجدول» تبويب واحد «الجدولة» — كل ما يُرسل لاحقًا في مكان واحد */
+  const live = rules.filter(function (r) { return r.status === 'approved' || r.status === 'paused'; }).length;
+  const T = [['cl', 'العملاء', 'users-three'], ['rules', 'الجدولة', 'calendar-blank', (live + qn) || null, pend ? 'warn' : ''], ['log', 'السجل', 'clock-counter-clockwise']];
+  const cur = RMN.t === 'edit' || RMN.t === 'queue' ? 'rules' : RMN.t;
   return e('nav', { class: 'rmn-tabs', 'aria-label': 'أقسام التذكير' }, T.map(function (t) {
     const on = cur === t[0];
     return e('button', { type: 'button', class: 'rmn-tab' + (on ? ' is-on' : ''), 'aria-current': on ? 'page' : null, onClick: rmnGo(t[0]) },
@@ -34146,7 +34148,8 @@ function rmnPage() {
   if (L.fail) return [e('div', { class: 'rmn' }, [rmnHead(null), clFail('التذكير', L.fail, function () { RM.L = null; rmLoad(true); draw(); })])];
   if (RMN.done) return [e('div', { class: 'rmn' }, [rmnHead(L), rmnDone(RMN.done)])];
   const flash = RM.err ? DS.note('warn', 'تعذّر التنفيذ', RM.err) : null;
-  const body = RMN.t === 'rules' ? rmnRules(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'queue' ? rmnQueue(L) : RMN.t === 'log' ? rmnLog(L) : rmnClients(L);
+  if (RMN.t === 'queue') RMN.t = 'rules';
+  const body = RMN.t === 'rules' ? rmnSched(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'log' ? rmnLog(L) : rmnClients(L);
   return [e('div', { class: 'rmn' + (rmnNarrow() ? ' is-narrow' : '') }, [rmnHead(L), rmnTabs(L), flash].concat(body))];
 }
 /* شاشة التأكيد بعد كل إجراء */
@@ -34309,7 +34312,7 @@ function rmnSchedBox(L, items) {
     e('div', { class: 'rmn-acts' }, [
       liveOk(DS.button('تأكيد الجدولة', { tone: 'primary', size: 'sm', ui: 'calendar-blank', disabled: RM.busy || !S.day, onClick: function () {
         const at = S.day + 'T' + (S.h < 10 ? '0' : '') + S.h + ':' + (S.m < 10 ? '0' : '') + S.m + ':00+03:00', n = items.length;
-        rmnAct('/admin/api/reminders/queue', { items: rmPmItems(items), run_at: at }, function () { RM.sch = null; RM.sel = {}; RM.Q = null; RMN.send = false; return { tone: 'ok', ic: 'calendar-blank', t: 'جُدول الإرسال', s: fmtNum(n) + (n === 1 ? ' دفعة' : ' دفعات') + ' — الموعد: ' + rmnDay(S.day) + ' · ' + rmTime(S.h, S.m) + ' بتوقيت الرياض. تتابعه في «المجدول».', back: 'العودة إلى العملاء', to: 'cl' }; });
+        rmnAct('/admin/api/reminders/queue', { items: rmPmItems(items), run_at: at }, function () { RM.sch = null; RM.sel = {}; RM.Q = null; RMN.send = false; return { tone: 'ok', ic: 'calendar-blank', t: 'جُدول الإرسال', s: fmtNum(n) + (n === 1 ? ' دفعة' : ' دفعات') + ' — الموعد: ' + rmnDay(S.day) + ' · ' + rmTime(S.h, S.m) + ' بتوقيت الرياض. تتابعه في «الجدولة».', back: 'العودة إلى العملاء', to: 'cl' }; });
       } })),
       DS.button('إلغاء', { size: 'sm', onClick: function () { RM.sch = null; draw(); } })])]);
 }
@@ -34350,8 +34353,8 @@ function rmnRuleTx(r) {
 function rmnRules(L) {
   const P = L.perms || {}, rules = rmRules(L);
   const add = liveOk(DS.button('قاعدة جديدة', { tone: 'primary', ui: 'plus', onClick: function () { RM.S = rmForm(null, L); RMN.step = 1; RMN.t = 'edit'; RM.err = ''; draw(); } }));
-  const top = e('div', { class: 'rmn-hint' }, [e('small', {}, 'تعمل القواعد معًا بلا تكرار: تذكير واحد لكل عميل في اليوم، داخل نافذة الإرسال للعملاء، ويتوقف فور السداد أو الإيقاف أو وجود طلب قيد المعالجة أو إيصال قيد المراجعة.'), add]);
-  if (!rules.length) return [top, DS.note('info', 'لا قواعد بعد', 'أنشئ أول قاعدة — تبدأ تجربةً على حسابك ثم تختار المستلمين.')];
+  const top = e('div', { class: 'rmn-sec-h' }, [e('h3', {}, 'التذكير المتكرر (القواعد)'), e('small', {}, 'تُرسل تلقائيًا بعد اعتمادها — لكل قاعدة جمهورها ومواعيدها، ولا تتداخل: تذكير واحد لكل دفعة في اليوم.'), add]);
+  if (!rules.length) return [top, e('p', { class: 'rmn-sm rmn-empty-l' }, 'لا قواعد — أنشئ قاعدة لتذكير متكرر (تبدأ تجربةً على حسابك ثم تختار المستلمين).')];
   const card = function (r) {
     const st = RM_ST[r.status] || [r.status, null];
     const go = function (a, done, body) { return function () { rmnAct('/admin/api/reminders/rules/' + encodeURIComponent(r.id) + '/' + a, body || {}, done); }; };
@@ -34468,20 +34471,24 @@ function rmnEdit(L) {
 /* ─────────── المجدول ─────────── */
 function rmnQueue(L) {
   if (RM.Q === null) { RM.Q = 'loading'; clApi('/admin/api/reminders/queue').then(function (j) { RM.Q = (j && j.rows) || []; draw(); }).catch(function (err) { if (err && err.message === 'auth') return; RM.Q = { fail: (err && err.message) || 'تعذّر التحميل.' }; draw(); }); }
-  const Q = RM.Q, ST = { pending: ['بانتظار موعده', 'info'], running: ['جارٍ الإرسال', 'info'], done: ['أُرسل', 'ok'], cancelled: ['أُلغي', null] };
+  let Q = RM.Q; const ST = { pending: ['بانتظار موعده', 'info'], running: ['جارٍ الإرسال', 'info'], done: ['أُرسل', 'ok'], cancelled: ['أُلغي', null] };
   if (Q === 'loading') return [clWait('المجدول')];
   if (Q && Q.fail) return [DS.note('warn', 'تعذّر تحميل المجدول', Q.fail, DS.button('إعادة المحاولة', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RM.Q = null; draw(); } }))];
-  const paused = !!((L.settings || {}).rem_pause_all);
-  return [e('div', { class: 'rmn-hint' }, [e('small', {}, 'ما تجدوله من «العملاء» يُرسل في موعده بالقيود نفسها' + (paused ? ' — والتذكير موقوف مؤقتًا الآن فيبقى المجدول في انتظاره حتى الاستئناف.' : '، وما أُرسل يظهر في «السجل».')),
+  const paused = !!((L.settings || {}).rem_pause_all); Q = Q.filter(function (q) { return q.status === 'pending' || q.status === 'running'; }); /* v1014: القادم فقط — ما أُرسل في «السجل» */
+  return [e('div', { class: 'rmn-sec-h' }, [e('h3', {}, 'إرسال لمرة واحدة'), e('small', {}, 'ما تجدوله من «العملاء» يُرسل في موعده بالقيود نفسها' + (paused ? ' — والتذكير موقوف مؤقتًا الآن فيبقى المجدول في انتظاره حتى الاستئناف.' : '، وما أُرسل يظهر في «السجل».')),
     DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { RM.Q = null; draw(); } })]),
   Q.length ? e('div', { class: 'rmn-list' }, Q.map(function (q) {
     const st = ST[q.status] || [q.status, null], d = new Date(q.run_at), ask = RM.ask === 'qc:' + q.id;
     return e('article', { class: 'rmn-q' }, [e('span', { class: 'rmn-q-d' }, [e('b', {}, isNaN(d) ? '—' : fmtNum(d.getDate())), e('small', {}, isNaN(d) ? '' : d.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { month: 'long' }))]),
       e('span', { class: 'rmn-grow' }, [e('b', {}, rmnDT(q.run_at) + ' · ' + fmtNum(q.n) + (q.n === 1 ? ' دفعة' : ' دفعات')), e('small', {}, q.status === 'done' ? 'وصل ' + fmtNum(q.ok) + ' من ' + fmtNum(q.sent) + ' · ' + rmnDT(q.done_at) : (q.note || 'من قائمة العملاء'))]),
       rmnPill(st[0], st[1]),
-      q.status === 'pending' ? (ask ? e('span', { class: 'rmn-acts' }, [liveOk(DS.button('نعم، ألغِ', { tone: 'danger', size: 'sm', disabled: RM.busy, onClick: function () { rmnAct('/admin/api/reminders/queue/' + encodeURIComponent(q.id) + '/cancel', {}, function () { RM.Q = null; return { tone: 'warn', ic: 'x-circle', t: 'أُلغي الإرسال المجدول', s: rmnDT(q.run_at) + ' · ' + fmtNum(q.n) + (q.n === 1 ? ' دفعة' : ' دفعات') + ' — لن يُرسل.', back: 'العودة إلى المجدول', to: 'queue' }; }); } })), DS.button('تراجع', { size: 'sm', onClick: function () { RM.ask = ''; draw(); } })])
+      q.status === 'pending' ? (ask ? e('span', { class: 'rmn-acts' }, [liveOk(DS.button('نعم، ألغِ', { tone: 'danger', size: 'sm', disabled: RM.busy, onClick: function () { rmnAct('/admin/api/reminders/queue/' + encodeURIComponent(q.id) + '/cancel', {}, function () { RM.Q = null; return { tone: 'warn', ic: 'x-circle', t: 'أُلغي الإرسال المجدول', s: rmnDT(q.run_at) + ' · ' + fmtNum(q.n) + (q.n === 1 ? ' دفعة' : ' دفعات') + ' — لن يُرسل.', back: 'العودة إلى الجدولة', to: 'rules' }; }); } })), DS.button('تراجع', { size: 'sm', onClick: function () { RM.ask = ''; draw(); } })])
         : DS.button('إلغاء', { size: 'sm', ui: 'x-circle', onClick: function () { RM.ask = 'qc:' + q.id; draw(); } })) : null]);
-  })) : DS.note('info', 'لا إرسال مجدول', 'حدّد دفعات من «العملاء» ثم «جدولة».')];
+  })) : e('p', { class: 'rmn-sm rmn-empty-l' }, 'لا إرسال قادم — حدّد دفعات من «العملاء» ثم «جدولة».')];
+}
+/* v1014: «الجدولة» — القواعد المتكررة ثم الإرسال لمرة واحدة، بلا تبويب ثانٍ */
+function rmnSched(L) {
+  return [e('section', { class: 'rmn-sec' }, rmnRules(L)), e('section', { class: 'rmn-sec' }, rmnQueue(L))];
 }
 
 /* ─────────── السجل ─────────── */

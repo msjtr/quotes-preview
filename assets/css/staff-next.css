@@ -4166,3 +4166,10 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 /* v1013: وسائل الإرسال اليدوي */
 .tq-next .rmn-wa1 { display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer; }
 .tq-next .rmn-wa1 input { width: 18px; height: 18px; margin: 0; accent-color: var(--t2-brand-2); }
+/* v1014: «الجدولة» — قسمان في تبويب واحد */
+.tq-next .rmn-sec { display: flex; flex-direction: column; gap: 12px; }
+.tq-next .rmn-sec + .rmn-sec { margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--t2-line); }
+.tq-next .rmn-sec-h { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.tq-next .rmn-sec-h h3 { margin: 0; font: 800 16px/1.4 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .rmn-sec-h small { flex: 1 1 18rem; color: var(--t2-muted); font-size: 12.5px; line-height: 1.7; }
+.tq-next .rmn-empty-l { margin: 0; padding: 14px 16px; border: 1px dashed var(--t2-line-2); border-radius: 14px; }
