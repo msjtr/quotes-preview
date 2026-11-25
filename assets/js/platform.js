@@ -34590,7 +34590,7 @@ function rmnRulePv(F, inc, L, noHead, noPick) {
   const key = A.uid + ':' + A.pid + ':' + (F.pm || 'gateway') + ':' + (A.ck || '');
   if (A.pid && (!A.pv || A.pv.k !== key)) {
     A.pv = { k: key, st: 'loading' }; A.sim = 0;
-    clPost('/admin/api/reminders/msg-preview', { user_id: A.uid, pid: A.pid, method: F.pm || 'gateway', cat_key: A.ck || undefined }).then(function (r) { if (!A.pv || A.pv.k !== key) return; A.pv = r && r.ok ? { k: key, st: 'ok', d: r } : { k: key, st: 'fail', msg: (r && r.message) || 'تعذّرت المعاينة.' }; rmnPaint(); })
+    clPost('/admin/api/reminders/msg-preview', { user_id: A.uid, pid: A.pid, method: F.pm || 'gateway', cat_key: A.ck || undefined, rule: true /* v1051: كالمحرك — المطالبة من دفعة البداية */ }).then(function (r) { if (!A.pv || A.pv.k !== key) return; A.pv = r && r.ok ? { k: key, st: 'ok', d: r } : { k: key, st: 'fail', msg: (r && r.message) || 'تعذّرت المعاينة.' }; rmnPaint(); })
       .catch(function (err) { if (A.pv && A.pv.k === key && !(err && err.message === 'auth')) { A.pv = { k: key, st: 'fail', msg: (err && err.message) || 'تعذّرت المعاينة.' }; rmnPaint(); } });
   }
   const CHI = { whatsapp: 'chat-circle-dots', email: 'envelope-simple', push: 'device-mobile', inbox: 'tray' };
@@ -34651,6 +34651,7 @@ function rmnFDiff(A, B, L) {
   const sA = JSON.parse(JSON.stringify(A)), sB = JSON.parse(JSON.stringify(B)); rmnLtSync(sA); rmnLtSync(sB);
   add('المواعيد', rmnAdvTx(sA.adv, sA.segs), rmnAdvTx(sB.adv, sB.segs));
   add('وقت الإرسال', rmTime(A.hour, A.minute), rmTime(B.hour, B.minute));
+  add('آخر وقت للإرسال', A.until ? rmnEndTx(A.until.hour * 60 + (A.until.minute || 0)) : 'نهاية نافذة الإرسال', B.until ? rmnEndTx(B.until.hour * 60 + (B.until.minute || 0)) : 'نهاية نافذة الإرسال'); /* v1051 */
   add('الموعد الثاني في اليوم', A.twice ? rmTime(A.hour2, A.minute2) : 'لا يوجد', B.twice ? rmTime(B.hour2, B.minute2) : 'لا يوجد');
   add('الوسائل', rmChTx(A.channels), rmChTx(B.channels));
   add('حد التذكيرات لكل دفعة', A.cap ? rmnRemN(A.cap) : 'بلا حد', B.cap ? rmnRemN(B.cap) : 'بلا حد');
@@ -34747,7 +34748,7 @@ function rmnRules(L, kind) {
       LG ? null : e('div', { class: 'rsc-facts' }, [
         fact('users-three', 'المستلمون', [rmAudTx(r), nInc !== null ? ' · ' + rviN(nInc) + ' الآن' : '']),
         fact('calendar-blank', 'المواعيد', rmnRuleTx(r)),
-        fact('clock', 'وقت الإرسال', [B ? rmTime(r.send_hour, r.send_minute) + ' و' + rmTime(B.hour, B.minute) : rmTime(r.send_hour, r.send_minute), L.window && L.window.on !== false ? e('small', { class: 'rsc-f-sub' }, 'يُرسل من ' + rmTime(r.send_hour, r.send_minute) + ' حتى ' + rmTime(L.window.end, 0) + ' — ومن فاته الوقت ففي اليوم التالي') : null]),
+        fact('clock', 'وقت الإرسال', [B ? rmTime(r.send_hour, r.send_minute) + ' و' + rmTime(B.hour, B.minute) : rmTime(r.send_hour, r.send_minute), e('small', { class: 'rsc-f-sub' }, 'يُرسل من ' + rmTime(r.send_hour, r.send_minute) + ' حتى ' + rmnEndTx(rmnEndM({ until: r.ch_plan && r.ch_plan.until }, L.window && L.window.on !== false ? L.window : null)) + ' — ومن فاته الوقت ففي اليوم التالي')]),
         fact('calendar-check', 'الفترة', [r.start_date ? 'من ' + rmnDay(r.start_date) : '', r.end_date ? 'إلى ' + rmnDay(r.end_date) : 'بلا نهاية'].filter(Boolean).join(' · '))]),
       LG ? null : e('div', { class: 'rsc-chs' }, plan.map(rmnChChip)),
       scopeN || (r.excluded || []).length ? e('p', { class: 'rmn-sm rsc-note' }, [scopeN ? 'بدء من دفعة محددة لـ' + rviN(scopeN) : '', scopeN && (r.excluded || []).length ? ' · ' : '', (r.excluded || []).length ? 'مستبعد ' + rviN(r.excluded.length) : '']) : null,
@@ -34802,8 +34803,9 @@ function rmnAdvHit(adv, segs, d, day, start) {
 }
 /* v1043 (stf_347): كالمحرك — «قبل الاستحقاق» الفائت يُرسل في أول فرصة ما لم يُرسل، والمتكرر يبدأ بأول فرصة ثم يتبع جدوله.
    يعيد مفتاح الموعد الذي يصيب (أو '') — FIRED يحفظ ما أُرسل في المحاكاة لكل دفعة. */
-function rmnAdvKey(adv, segs, d, day, pid, FIRED) {
-  const sg = rmnSegOfD(d); if (segs.indexOf(sg) < 0) return '';
+function rmnAdvKey(adv, segs, d, day, pid, FIRED, sd) {
+  /* v1051 (stf_357): فئة الدفعة المتأخرة من أقدم متأخرة في عقدها (sd) */
+  const sg = rmnSegOfD(d > 0 && sd != null ? sd : d); if (segs.indexOf(sg) < 0) return '';
   const L = ((adv && adv.items) || []).filter(function (it) { return rmnItSeg(it) === sg; });
   const sent = function (k) { return !!FIRED[pid + k]; };
   for (const it of L) {
@@ -34909,6 +34911,27 @@ function rmnLatePanel(F, today) {
       e('li', {}, 'إن كان في العقد دفعتان متأخرتان أو أكثر تُرسل «مطالبة بسداد المتأخرات» من المرحلة الأولى، برسالة واحدة للعقد.'),
       e('li', {}, 'بعد اليوم 60 ينتقل العميل إلى «المتعثرون» (مرحلة لاحقة).')])]);
 }
+/* v1051: آخر وقت للإرسال — بعده لا يُرسل اليوم ويؤجَّل لليوم التالي */
+function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; return F.until ? Math.min(Number(F.until.hour) * 60 + Number(F.until.minute || 0), wE) : wE; }
+function rmnEndTx(m) { return m >= 24 * 60 ? 'منتصف الليل' : rmTime(Math.floor(m / 60), m % 60); }
+function rmnUntilBox(F, win) {
+  const wE = win ? Number(win.end) : 24, from = (F.twice ? F.hour2 * 60 + F.minute2 : F.hour * 60 + F.minute) + 30, opts = [['', 'حتى نهاية نافذة الإرسال (' + rmnEndTx(wE * 60) + ')']];
+  for (let h = Math.ceil(from / 60); h < wE; h++) opts.push([String(h), 'حتى ' + rmTime(h, 0)]);
+  const cur = F.until ? String(F.until.hour) : '';
+  if (cur && !opts.some(function (o) { return o[0] === cur; })) opts.push([cur, 'حتى ' + rmnEndTx(Number(F.until.hour) * 60 + Number(F.until.minute || 0))]);
+  const endM = rmnEndM(F, win);
+  return [DS.editField('آخر وقت للإرسال في اليوم', DS.select({ value: cur, options: opts, onChange: function (v) { F.until = v ? { hour: Number(v), minute: 0 } : null; rmnPaint(); } })),
+    e('p', { class: 'rmn-sm rsc-until-n' }, ['يُرسل من ', e('b', {}, rmTime(F.hour, F.minute)), ' حتى ', e('b', {}, rmnEndTx(endM)), '. من يدخل القاعدة أثناءها (اعتمادها أو إضافة عميل) يصله في اليوم نفسه، ومن يدخل بعدها يصله في اليوم التالي.' + (win && wE < 24 ? ' لأبعد من ' + rmnEndTx(wE * 60) + ' غيّر «نافذة الإرسال للعملاء» في الإعدادات.' : '')])];
+}
+/* متى يبدأ الإرسال الفعلي بعد الاعتماد — لشاشة التأكيد */
+function rmnStartTx(F, win, today) {
+  let nowM = 0; try { const t = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', hour12: false }).split(':'); nowM = Number(t[0]) * 60 + Number(t[1]); } catch (err) { const d = new Date(); nowM = d.getHours() * 60 + d.getMinutes(); }
+  const st = F.start || today, aM = F.hour * 60 + F.minute, wS = win ? Number(win.start) * 60 : 0, endM = rmnEndM(F, win);
+  if (st > today) return 'يبدأ الإرسال يوم ' + rmnDate(st) + ' الساعة ' + rmTime(F.hour, F.minute) + '.';
+  if (nowM < Math.max(aM, wS)) return 'يبدأ الإرسال اليوم الساعة ' + rmnEndTx(Math.max(aM, wS)) + '.';
+  if (nowM < endM) return 'يبدأ الإرسال الآن — خلال دقائق لمن يستحق تذكيرًا اليوم.';
+  return 'فات آخر وقت للإرسال اليوم (' + rmnEndTx(endM) + ') — يبدأ غدًا الساعة ' + rmTime(F.hour, F.minute) + '.';
+}
 function rmnTimeBox(F, win, bOk, aM, bM) {
   const PRE = [[9, 0], [10, 0], [12, 0], [16, 0], [19, 0]];
   const pre = function (h0, m0, set) { return e('div', { class: 'rsc-pre' }, PRE.filter(function (t) { return !win || (t[0] >= win.start && t[0] < win.end); }).map(function (t) { const on = h0 === t[0] && m0 === t[1]; return e('button', { type: 'button', class: 'rmn-chip' + (on ? ' is-on' : ''), onClick: function () { set(t[0], t[1]); rmnPaint(); } }, rmTime(t[0], t[1])); })); };
@@ -34918,7 +34941,8 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
     e('div', { class: 'rsc-times' }, [e('div', { class: 'rsc-time' }, [e('b', {}, F.twice ? 'الموعد الأول' : 'وقت الإرسال'), pre(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; }), rmTimePick(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; })]),
       F.twice ? e('div', { class: 'rsc-time' }, [e('b', {}, 'الموعد الثاني'), pre(F.hour2, F.minute2, function (h, m) { F.hour2 = h; F.minute2 = m; }), rmTimePick(F.hour2, F.minute2, function (h, m) { F.hour2 = h; F.minute2 = m; })]) : null]),
     win && (F.hour < win.start || F.hour >= win.end) ? e('small', { class: 'rmn-sm is-bad' }, 'الوقت الأول خارج نافذة الإرسال — يُرسل عند بداية النافذة.') : null,
-    F.twice && !bOk ? e('small', { class: 'rmn-sm is-bad' }, bM < aM + 60 ? 'الموعد الثاني بعد الأول بساعة على الأقل.' : 'الموعد الثاني خارج نافذة الإرسال للعملاء.') : null];
+    F.twice && !bOk ? e('small', { class: 'rmn-sm is-bad' }, bM < aM + 60 ? 'الموعد الثاني بعد الأول بساعة على الأقل.' : 'الموعد الثاني خارج نافذة الإرسال للعملاء.') : null,
+    e('div', { class: 'rsc-until' }, rmnUntilBox(F, win))];
 }
 /* v1038: المعاينة — تقويم التذكيرات حسب الفئة المختارة، ثم يوم، ثم عميل ورسالته كما تصل */
 const RMN_WD = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
@@ -34982,7 +35006,7 @@ function rmnCal(F, inc, today, L) {
 function rmnSimPlan(F, inc, today, N) {
   const segOn = function (k) { return F.segs.indexOf(k) >= 0; };
   const FIRED = {};
-  const stepOk = function (d, day, pid, adv) { void segOn; return rmnAdvKey(adv || F.adv, F.segs, d, day, pid, FIRED); };
+  const stepOk = function (d, day, pid, adv, sd) { void segOn; return rmnAdvKey(adv || F.adv, F.segs, d, day, pid, FIRED, sd); };
   const H = {}, out = [], d0 = Date.parse(today + 'T12:00:00Z');
   const due = function (pid, slot, i) {
     return F.channels.filter(function (c) {
@@ -35004,8 +35028,10 @@ function rmnSimPlan(F, inc, today, N) {
       const S = Array.isArray(F.scope[x.id]) ? F.scope[x.id] : null;
       /* v1043 (stf_347): كل دفعة بحالتها، وتذكير واحد للعقد في اليوم لكل نوع (متأخر/قادم) — الأشد تأخرًا */
       const byC = {};
-      (x.pays && x.pays.length ? x.pays : x.pay ? [x.pay] : []).filter(function (p) { return (!S || S.indexOf(p.pid) >= 0) && !p.trf; }).forEach(function (p) {
-        const d = Number(p.late || 0) + i, hk = stepOk(d, day, p.pid, ADV); if (!hk) return; if (F.cap && H[p.pid] && H[p.pid]._n >= F.cap) return;
+      const PS = (x.pays && x.pays.length ? x.pays : x.pay ? [x.pay] : []).filter(function (p) { return !S || S.indexOf(p.pid) >= 0; });
+      const CM = {}; PS.forEach(function (p) { const k = p.contract_no || p.pid; CM[k] = Math.max(CM[k] == null ? -1e9 : CM[k], Number(p.late || 0)); });
+      PS.filter(function (p) { return !p.trf && !p.hold; }).forEach(function (p) {
+        const d = Number(p.late || 0) + i, hk = stepOk(d, day, p.pid, ADV, CM[p.contract_no || p.pid] + i); if (!hk) return; if (F.cap && H[p.pid] && H[p.pid]._n >= F.cap) return;
         const k = (p.contract_no || p.pid) + (d > 0 ? ':l' : ':r'); if (!byC[k] || d > byC[k].d) byC[k] = { p: p, d: d, hk: hk };
       });
       Object.keys(byC).forEach(function (k) {
@@ -35229,7 +35255,7 @@ function rmnEdit(L) {
   const anyStep = rmnAdvAny(F.adv, F.segs);
   const audOk = F.audience === 'list' ? !!F.list_id : F.audience === 'picked' ? F.picked.length > 0 : true;
   const aM = F.hour * 60 + F.minute, bM = F.hour2 * 60 + F.minute2;
-  const bOk = !F.twice || (bM >= aM + 60 && (!win || (F.hour2 >= win.start && F.hour2 < win.end)));
+  const bOk = (!F.twice || (bM >= aM + 60 && (!win || (F.hour2 >= win.start && F.hour2 < win.end)))) && (!F.until || F.until.hour * 60 + F.until.minute >= (F.twice ? bM : aM) + 30);
   const perOk = !F.end || F.end >= (F.start || today);
   const chOk = F.channels.length > 0 && (!F.twice || F.channels.some(function (c) { return (F.chp[c] || {}).slot !== 'b'; }));
   const okS = [String(F.name || '').trim().length >= 3 && F.segs.length > 0 && audOk, !!anyStep && perOk, bOk && chOk, true, true, true];
@@ -35259,7 +35285,8 @@ function rmnEdit(L) {
     const togSel = function () { if (isSel) { F.picked = F.picked.filter(function (u) { return u.id !== x.id; }); delete F.scope[x.id]; } else F.picked.push({ id: x.id, name: x.name, tera_id: x.tera_id }); rmnPaint(); };
     const lead = r.all.filter(function (p) { return !S || S.indexOf(p.pid) >= 0; })[0] || r.all[0];
     const inL = r.all.filter(function (p) { return Number(p.late) > 0 && (!S || S.indexOf(p.pid) >= 0); }), nLate = inL.length;
-    const sub = c.seg === 'regular' ? (lead ? 'الدفعة ' + fmtNum(lead.seq) + ' من ' + fmtNum(lead.n) + ' · تستحق ' + rmnDate(lead.due_date) : '')
+    const held = r.all.length && r.all.every(function (p) { return p.hold; }); /* v1051 */
+    const sub = held ? 'موقوف مؤقتًا — ' + r.all[0].hold + ' (لا يُذكَّر حتى ينتهي)' : c.seg === 'regular' ? (lead ? 'الدفعة ' + fmtNum(lead.seq) + ' من ' + fmtNum(lead.n) + ' · تستحق ' + rmnDate(lead.due_date) : '')
       : (nLate === 1 ? 'دفعة متأخرة واحدة' : fmtNum(nLate) + ' دفعات متأخرة') + (lead ? ' · من الدفعة ' + fmtNum(lead.seq) + ' (' + rmLate(lead.late) + ')' : '') + ' · ' + rmnSar(inL.reduce(function (t, p) { return t + (Number(p.left) || 0); }, 0)) + (S && nLate < r.all.length ? ' · بدفعة بداية محددة' : '');
     return e('div', { class: 'rsc-pr' + (exc ? ' is-exc' : '') + (PK && isSel ? ' is-sel' : '') + (open ? ' is-open' : '') }, [
       e('div', { class: 'rsc-pr-h' }, [PK ? e('input', { type: 'checkbox', class: 'rsc-ck', 'aria-label': 'تحديد ' + (x.name || ''), checked: isSel ? 'checked' : null, onChange: togSel }) : e('span', { class: 'rvi-ns-av', 'aria-hidden': 'true' }, String(x.name || '؟').trim().charAt(0)),
@@ -35376,7 +35403,7 @@ function rmnEdit(L) {
     const CHG = F.id ? rmnFDiff(RMN.F0, F, L) : null, needWhy = !!(CHG && CHG.length && ['approved', 'pending', 'paused'].indexOf(F.status) >= 0), whyOk = !needWhy || String(F.reason || '').trim().length >= 3;
     body = [stepHead('seal-check:teal', 'الاعتماد والنشر', 'لا تُرسل القاعدة قبل اعتمادها.'),
       DS.fields([['الاسم', F.name || '—'], ['المستلمون', audTx + (R && R !== 'loading' ? ' — ' + rviN(inc.length) + ' الآن' : '')], ['الفئات', rmSegTx(F.segs)], ['المواعيد', schedTx],
-        ['الفترة', 'من ' + rmnDay(F.start || today) + (F.end ? ' إلى ' + rmnDay(F.end) : ' · بلا نهاية')], ['مرات اليوم', F.twice ? 'مرتان: ' + rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : 'مرة: ' + rmTime(F.hour, F.minute)],
+        ['الفترة', 'من ' + rmnDay(F.start || today) + (F.end ? ' إلى ' + rmnDay(F.end) : ' · بلا نهاية')], ['مرات اليوم', F.twice ? 'مرتان: ' + rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : 'مرة: ' + rmTime(F.hour, F.minute)], ['آخر وقت للإرسال', rmnEndTx(rmnEndM(F, win)) + ' — بعده يؤجَّل لليوم التالي'],
         ['الوسائل', plan.map(function (p) { return p.t + ' ' + p.at; }).join(' · ') || '—'], ['يتوقف', 'فور سداد الدفعة' + (F.cap ? '، أو بعد ' + rmnRemN(F.cap) : '')],
         ['وسيلة السداد', F.pm === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع'], ['تخصيص العقود والدفعات', scopeN ? 'مخصص لـ' + rviN(scopeN) + ' (استبعاد عقد أو دفعة بداية)' : 'لا تخصيص — كل العقود المشمولة'], ['المستبعدون', F.excluded.length ? rviN(F.excluded.length) : 'لا أحد']]),
       !can ? DS.note('warn', 'أكمل الخطوات الناقصة', L4.filter(function (l, i) { return okS[i] === false; }).join(' · ')) : null,
@@ -35389,10 +35416,10 @@ function rmnEdit(L) {
         const CHP = {}; F.channels.forEach(function (c) { const x = F.chp[c] || {}; CHP[c] = { slot: F.twice ? (x.slot || 'a') : 'a', every: 1, max: 0 }; });
         const body2 = { id: F.id || undefined, pay_method: F.pm || 'gateway', name: F.name, segs: F.segs, before: F.before, due: F.due, late: F.late, def: F.def, hour: F.hour, minute: F.minute, channels: F.channels, tpl_id: F.tpl_id || null,
           audience: F.audience, list_id: F.audience === 'list' ? F.list_id || null : null, picked: ['picked', 'fav', 'list'].indexOf(F.audience) >= 0 ? F.picked.map(function (u) { return u.id; }) : [], excluded: F.excluded.map(function (u) { return u.id; }),
-          start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined }, adv: rmnAdvOut(F),
+          start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined, until: F.until || undefined }, adv: rmnAdvOut(F),
           client_ov: rmnOvOut(F), /* v1048 */
           pay_scope: (function () { const o = {}; Object.keys(F.scope).forEach(function (k) { if (!F.excluded.some(function (u) { return u.id === k; }) && (F.audience !== 'picked' || F.picked.some(function (u) { return u.id === k; }))) o[k] = F.scope[k]; }); return o; })() };
-        const fin = function (appr) { return function () { RM.S = null; return { tone: 'ok', ic: appr ? 'seal-check' : 'paper-plane-tilt', t: appr ? 'حُفظت القاعدة واعتُمدت' : 'حُفظت القاعدة وأُرسلت للاعتماد', s: '«' + F.name + '» — المستلمون: ' + audTx + ' · ' + schedTx + ' · ' + (F.twice ? rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : rmTime(F.hour, F.minute)) + (appr ? '.' : ' — لا تُرسل قبل اعتمادها.') + (CHG && CHG.length ? ' · التعديلات: ' + CHG.map(function (c) { return c.f; }).join('، ') + ' — مسجلة في «سجل العمليات».' : ''), back: 'العودة إلى الجدولة', to: 'rules' }; }; };
+        const fin = function (appr) { return function () { RM.S = null; return { tone: 'ok', ic: appr ? 'seal-check' : 'paper-plane-tilt', t: appr ? 'حُفظت القاعدة واعتُمدت' : 'حُفظت القاعدة وأُرسلت للاعتماد', s: '«' + F.name + '» — المستلمون: ' + audTx + ' · ' + schedTx + ' · ' + (F.twice ? rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : rmTime(F.hour, F.minute)) + ' حتى ' + rmnEndTx(rmnEndM(F, win)) + (appr ? '. ' + rmnStartTx(F, win, today) : ' — لا تُرسل قبل اعتمادها.') + (CHG && CHG.length ? ' · التعديلات: ' + CHG.map(function (c) { return c.f; }).join('، ') + ' — مسجلة في «سجل العمليات».' : ''), back: 'العودة إلى الجدولة', to: 'rules' }; }; };
         body2.reason = String(F.reason || '').trim() || undefined;
         return [P.approve ? liveOk(rmnWhyB(DS.button('حفظ واعتماد', { tone: 'primary', disabled: RM.busy || !can || !whyOk, onClick: function () { rmnAct('/admin/api/reminders/simple', Object.assign({}, body2, { approve: true, reason: String(F.reason || '').trim() || undefined }), fin(true)); } }), can && !RM.busy, needWhy)) : null,
           liveOk(rmnWhyB(DS.button(P.approve ? 'حفظ بلا اعتماد' : 'حفظ وإرسال للاعتماد', { tone: P.approve ? null : 'primary', disabled: RM.busy || !can || !whyOk, onClick: function () { rmnAct('/admin/api/reminders/simple', Object.assign({}, body2, { reason: String(F.reason || '').trim() || undefined }), fin(false)); } }), can && !RM.busy, needWhy))];
@@ -35405,7 +35432,7 @@ function rmnEdit(L) {
   const draftBody = function () { const CHP = {}; F.channels.forEach(function (c) { const x = F.chp[c] || {}; CHP[c] = { slot: F.twice ? (x.slot || 'a') : 'a', every: 1, max: 0 }; });
     return { id: F.id || undefined, draft: true, pay_method: F.pm || 'gateway', name: F.name, segs: F.segs, before: F.before, due: F.due, late: F.late, def: F.def, hour: F.hour, minute: F.minute, channels: F.channels, tpl_id: F.tpl_id || null,
       audience: F.audience, list_id: F.audience === 'list' ? F.list_id || null : null, picked: ['picked', 'fav', 'list'].indexOf(F.audience) >= 0 ? F.picked.map(function (u) { return u.id; }) : [], excluded: F.excluded.map(function (u) { return u.id; }),
-      start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined }, adv: rmnAdvOut(F), pay_scope: F.scope, client_ov: rmnOvOut(F), reason: String(F.reason || '').trim() || undefined }; };
+      start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined, until: F.until || undefined }, adv: rmnAdvOut(F), pay_scope: F.scope, client_ov: rmnOvOut(F), reason: String(F.reason || '').trim() || undefined }; };
   const leave = function () { RM.S = null; RMN.eask = ''; RMN.t = 'rules'; RMN.step = 1; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } };
   const canDel = F.id && (F.status === 'draft' || F.status === 'rejected');
   const hActs = ask === 'cancel' ? DS.note('warn', 'إلغاء التعديل؟', 'تُفقد التغييرات التي لم تُحفظ' + (F.id ? '، وتبقى القاعدة كما كانت.' : '.'), e('div', { class: 'rmn-acts' }, [DS.button('نعم، ألغِ التعديل', { size: 'sm', tone: 'danger', onClick: leave }), DS.button('متابعة التعديل', { size: 'sm', onClick: function () { RMN.eask = ''; rmnPaint(); } })]))
@@ -36159,6 +36186,7 @@ function rmForm(r, L, kind) {
     /* v1036: الجدول المتقدم لكل فئة، وقالب كل فئة */
     adv: r && r.adv && Array.isArray(r.adv.items) ? JSON.parse(JSON.stringify(r.adv)) : rmnAdvDef(),
     cap: r && r.ch_plan && Number(r.ch_plan.cap) || 0,
+    until: r && r.ch_plan && r.ch_plan.until ? { hour: Number(r.ch_plan.until.hour), minute: Number(r.ch_plan.until.minute || 0) } : null, /* v1051: آخر وقت للإرسال */
     lt: r && r.ch_plan && r.ch_plan.lt ? Object.assign({}, RMN_LT_DEF, r.ch_plan.lt) : Object.assign({}, RMN_LT_DEF) };
 }
 function rmRulesView(L) {
