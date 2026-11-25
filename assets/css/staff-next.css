@@ -5267,3 +5267,11 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsm-act .t2-btn { width: 100%; justify-content: center; }
 .tq-next .rsm-act small { color: var(--t2-muted); font-size: 12px; line-height: 1.6; }
 @media (max-width: 900px) { .tq-next .rsm { grid-template-columns: 1fr; } }
+/* v1059: القالب الذي يصل وسببه في المعاينة */
+.tq-next .rsc-tplwhy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid var(--t2-line); border-radius: 12px; background: var(--t2-surface); }
+.tq-next .rsc-tplwhy > span { display: grid; gap: 2px; min-width: 0; }
+.tq-next .rsc-tplwhy b { font: 700 15px/1.5 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .rsc-tplwhy small { color: var(--t2-muted); font-size: 12.5px; line-height: 1.6; }
+.tq-next .rsc-ckbar-pv { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.tq-next .rsc-ckbar-pv small { color: var(--t2-muted); }
+.tq-next .rsc-cal-tp.is-final_notice { background: var(--t2-danger-wash, #fde8e8); color: var(--t2-danger); }
