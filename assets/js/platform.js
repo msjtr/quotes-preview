@@ -34768,7 +34768,7 @@ function rmnChgList(C) {
   }));
 }
 /* سجل عمليات القاعدة — من فعل ماذا ومتى */
-const RMN_LOGA = { simple_approve: 'حفظ واعتماد', simple_submit: 'حفظ وإرسال للاعتماد', simple_draft: 'حفظ مسودة', approve: 'اعتماد', reject: 'رفض', pause: 'إيقاف مؤقت', resume: 'استئناف', end: 'إنهاء', submit: 'إرسال للاعتماد', create: 'إنشاء', update: 'تعديل', create_submit: 'إنشاء', update_submit: 'تعديل', picked_fix: 'تصحيح', client_ov: 'تخصيص عميل' };
+const RMN_LOGA = { simple_approve: 'حفظ واعتماد', simple_submit: 'حفظ وإرسال للاعتماد', simple_draft: 'حفظ مسودة', approve: 'اعتماد', reject: 'رفض', pause: 'إيقاف مؤقت', resume: 'استئناف', end: 'إنهاء', submit: 'إرسال للاعتماد', create: 'إنشاء', update: 'تعديل', create_submit: 'إنشاء', update_submit: 'تعديل', picked_fix: 'تصحيح', client_ov: 'تخصيص عميل', auto_clean: 'إزالة تلقائية' };
 function rmnRuleLog(r) {
   const G = RM.rlog || (RM.rlog = {}), S = G[r.id];
   if (S === undefined) { G[r.id] = 'loading'; clApi('/admin/api/reminders/rules/' + encodeURIComponent(r.id) + '/log').then(function (j) { G[r.id] = (j && j.rows) || []; rmnPaint(); }).catch(function () { G[r.id] = 'fail'; rmnPaint(); }); }
@@ -34780,7 +34780,7 @@ function rmnRuleLog(r) {
     const real = (x.changes || []).filter(function (c) { return c.add || c.rem ? ((c.add || []).length || (c.rem || []).length) : String(c.from == null ? '—' : c.from) !== String(c.to == null ? '—' : c.to); });
     const what = x.created ? { simple_draft: 'أُنشئت القاعدة مسودة.', simple_submit: 'أُنشئت القاعدة وأُرسلت للاعتماد.', simple_approve: 'أُنشئت القاعدة واعتُمدت — بدأت العمل.' }[x.action]
       : { simple_draft: real.length ? 'حُفظت التعديلات مسودة.' : 'حُفظت مسودة بلا تغيير في الإعدادات.', simple_submit: real.length ? 'حُفظت التعديلات وأُرسلت للاعتماد.' : 'أُرسلت للاعتماد بلا تغيير في الإعدادات.',
-        simple_approve: real.length ? 'حُفظت التعديلات واعتُمدت — تعمل بها القاعدة الآن.' : 'اعتُمدت القاعدة بإعداداتها كما هي — تعمل الآن.', approve: 'اعتُمدت القاعدة — تعمل الآن.', reject: 'رُفضت القاعدة.', pause: 'أُوقفت القاعدة مؤقتًا.', resume: 'استُؤنفت القاعدة.', end: 'أُنهيت القاعدة.', submit: 'أُرسلت للاعتماد.', picked_fix: 'تصحيح من النظام.', client_ov: 'خُصص التذكير لعميل واحد — إعدادات القاعدة كما هي.' }[x.action];
+        simple_approve: real.length ? 'حُفظت التعديلات واعتُمدت — تعمل بها القاعدة الآن.' : 'اعتُمدت القاعدة بإعداداتها كما هي — تعمل الآن.', approve: 'اعتُمدت القاعدة — تعمل الآن.', reject: 'رُفضت القاعدة.', pause: 'أُوقفت القاعدة مؤقتًا.', resume: 'استُؤنفت القاعدة.', end: 'أُنهيت القاعدة.', submit: 'أُرسلت للاعتماد.', picked_fix: 'تصحيح من النظام.', client_ov: 'خُصص التذكير لعميل واحد — إعدادات القاعدة كما هي.', auto_clean: 'أسقط النظام إعدادًا يدويًا انتهى سببه (سُددت العقود أو أُغلقت) — إعدادات القاعدة وحالتها كما هي.' }[x.action];
     return e('li', {}, [e('div', { class: 'rsc-log-h' }, [e('b', {}, x.created ? 'إنشاء القاعدة' : (RMN_LOGA[x.action] || x.action)), e('small', {}, [x.by, ' · ', rmnDT(x.at)])]),
       what ? e('p', { class: 'rsc-log-w' }, what) : null,
       x.reason ? e('p', { class: 'rsc-log-r' }, [e('b', {}, 'السبب: '), x.reason]) : null,
@@ -34845,6 +34845,7 @@ function rmnRules(L, kind) {
       open ? (R === null || R === 'loading' ? e('div', { class: 'rlg-wait' }, 'جارٍ تحميل الأسماء…') : rmnNames(ns, [].concat.apply([], R.inc.map(function (x) { return rmnCtRows(x, r.segs || []).filter(function (cr) { return !rmnCtOff(r.pay_scope, cr); }); })), { label: 'بحث في أسماء ' + r.id.slice(0, 6), row: function (cr) { return rmnCtNameRow(cr, r.pay_scope); }, empty: 'لا أحد تشمله القاعدة الآن (لا دفعات قائمة ضمن فئاتها).' })) : null,
       r.status === 'pending' ? e('p', { class: 'rmn-rule-w' }, (r.submitted_by ? 'أرسلها ' + r.submitted_by + ' ' : 'بانتظار الاعتماد ') + (r.submitted_at ? rmnDT(r.submitted_at) : '') + ' — لا تُرسل قبل اعتمادها.') : null,
       r.status === 'rejected' && r.note ? e('p', { class: 'rmn-rule-w is-bad' }, 'سبب الرفض: ' + r.note) : null,
+      r.auto_n ? e('p', { class: 'rmn-rule-w' }, 'أُزيل تلقائيًا (' + fmtNum(r.auto_n) + ') خلال 7 أيام — استبعاد أو تخصيص انتهى سببه. التفاصيل في «سجل العمليات».') : null, /* v1066 */
       (r.status === 'pending' || r.status === 'paused') && rmnClash(L, r.id, r.segs, r.audience, r.kind) ? e('p', { class: 'rmn-rule-w is-bad' }, rmnClash(L, r.id, r.segs, r.audience, r.kind).t) : null].concat(acts));
   };
   if (LGM) return rules.map(card);
