@@ -34915,12 +34915,12 @@ function rmnLatePanel(F, today) {
 function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; return F.until ? Math.min(Number(F.until.hour) * 60 + Number(F.until.minute || 0), wE) : wE; }
 function rmnEndTx(m) { return m >= 24 * 60 ? 'منتصف الليل' : rmTime(Math.floor(m / 60), m % 60); }
 function rmnUntilBox(F, win) {
-  const wE = win ? Number(win.end) : 24, from = (F.twice ? F.hour2 * 60 + F.minute2 : F.hour * 60 + F.minute) + 30, opts = [['', 'حتى نهاية نافذة الإرسال (' + rmnEndTx(wE * 60) + ')']];
+  const wE = win ? Number(win.end) : 24, from = (F.twice ? F.hour2 * 60 + F.minute2 : F.hour * 60 + F.minute) + 30, opts = [['win', 'حتى نهاية نافذة الإرسال (' + rmnEndTx(wE * 60) + ')']];
   for (let h = Math.ceil(from / 60); h < wE; h++) opts.push([String(h), 'حتى ' + rmTime(h, 0)]);
-  const cur = F.until ? String(F.until.hour) : '';
-  if (cur && !opts.some(function (o) { return o[0] === cur; })) opts.push([cur, 'حتى ' + rmnEndTx(Number(F.until.hour) * 60 + Number(F.until.minute || 0))]);
+  const cur = F.until ? String(F.until.hour) : 'win';
+  if (cur !== 'win' && !opts.some(function (o) { return o[0] === cur; })) opts.push([cur, 'حتى ' + rmnEndTx(Number(F.until.hour) * 60 + Number(F.until.minute || 0))]);
   const endM = rmnEndM(F, win);
-  return [DS.editField('آخر وقت للإرسال في اليوم', DS.select({ value: cur, options: opts, onChange: function (v) { F.until = v ? { hour: Number(v), minute: 0 } : null; rmnPaint(); } })),
+  return [DS.editField('آخر وقت للإرسال في اليوم', DS.select({ value: cur, options: opts, onChange: function (v) { F.until = v && v !== 'win' ? { hour: Number(v), minute: 0 } : null; rmnPaint(); } })), /* DS.select يُسقط القيمة الفارغة */
     e('p', { class: 'rmn-sm rsc-until-n' }, ['يُرسل من ', e('b', {}, rmTime(F.hour, F.minute)), ' حتى ', e('b', {}, rmnEndTx(endM)), '. من يدخل القاعدة أثناءها (اعتمادها أو إضافة عميل) يصله في اليوم نفسه، ومن يدخل بعدها يصله في اليوم التالي.' + (win && wE < 24 ? ' لأبعد من ' + rmnEndTx(wE * 60) + ' غيّر «نافذة الإرسال للعملاء» في الإعدادات.' : '')])];
 }
 /* متى يبدأ الإرسال الفعلي بعد الاعتماد — لشاشة التأكيد */
