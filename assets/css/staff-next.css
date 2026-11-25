@@ -5179,3 +5179,27 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-log-r { margin: 0; color: var(--t2-ink-2); font-size: 12.5px; }
 .tq-next .rsc-log .rsc-chg li { background: var(--t2-surface); }
 .tq-next .rsc-f-sub { display: block; margin-top: 2px; color: var(--t2-muted); font: 400 11.5px/1.5 var(--t2-ff-body, inherit); }
+
+/* v1048: تخصيص العميل داخل القاعدة */
+.rsc-ov { margin-top: 10px; padding: 14px; border: 1px solid var(--t2-line, #dfe6ee); border-radius: 14px; background: var(--t2-soft, #f6f9fc); display: grid; gap: 12px; }
+.rsc-ov-h { display: grid; gap: 2px; }
+.rsc-ov-h small { color: var(--t2-muted, #66758a); }
+.rsc-ov-sec { display: grid; gap: 8px; }
+.rsc-ov-ck { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: .93rem; }
+.rsc-ov-ck input { width: 18px; height: 18px; accent-color: var(--t2-teal, #0d9488); flex: none; }
+.rsc-ov-chs { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.rsc-ov-line { margin: 6px 0 0; color: var(--t2-teal, #0d9488); }
+.rsc-ovl { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rsc-ovl li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--t2-soft, #f6f9fc); }
+.rsc-ovl li b { grid-column: 1; } .rsc-ovl li small { grid-column: 1; color: var(--t2-muted, #66758a); } .rsc-ovl li button { grid-column: 2; grid-row: 1 / span 2; }
+/* v1048 (stf_355): الإجراءات القانونية */
+.rlgl-flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; position: relative; }
+.rlgl-flow li { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; position: relative; }
+.rlgl-flow li:not(:last-child)::after { content: ""; position: absolute; inset-inline-start: 13px; top: 36px; bottom: -6px; width: 2px; background: var(--t2-line, #e3e9f0); }
+.rlgl-flow li > span:last-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rlgl-flow li small { color: var(--t2-muted, #66758a); line-height: 1.6; }
+.rlgl-n { flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--t2-soft, #eef4f8); color: var(--t2-navy, #0f2a44); border: 1px solid var(--t2-line, #e3e9f0); }
+.rlgl-flow li.is-you .rlgl-n { background: var(--t2-teal, #0d9488); color: #fff; border-color: transparent; }
+.rlgl-flow li.is-you b { color: var(--t2-teal, #0d9488); }
+.rlgl-cand li { grid-template-columns: 1fr auto; }
+.rlgl-case.is-nominated, .rlgl-case.is-legal_due { border-color: var(--t2-warn-line, #f3d19c); }
