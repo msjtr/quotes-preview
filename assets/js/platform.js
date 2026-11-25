@@ -35051,7 +35051,7 @@ function rmnSimPlan(F, inc, today, N) {
 /* v1033: ملخص القاعدة في مرحلته — بطاقات منظمة بأيقونات ثلاثية الأبعاد، وجدول للوسائل */
 /* ═══ v1057: ملخص القاعدة الموحّد — في المرحلة 4 والاعتماد والبطاقة الخارجية: لمن · متى · كيف، بلا تكرار ═══ */
 function rmnScopeTx(scope) {
-  const C = Array.isArray(RM.C) ? RM.C : [], ex = [], from = [];
+  const C = Array.isArray(RM.C) ? RM.C : [], ex = [], from = [], LT = function (t) { return '\u2066' + t + '\u2069'; }; /* رقم العقد باتجاهه الصحيح داخل النص العربي */
   Object.keys(scope || {}).forEach(function (uid) {
     const L = Array.isArray(scope[uid]) ? scope[uid] : null; if (!L) return;
     const x = C.filter(function (y) { return y.id === uid; })[0]; const nm = (x && x.name) || '—';
@@ -35060,8 +35060,8 @@ function rmnScopeTx(scope) {
     const nos = Object.keys(G); if (!nos.length) { ex.push(nm + (L.length ? '' : ' — كل العقود')); return; }
     const exN = [], frN = [];
     nos.forEach(function (no) { const ps = G[no].slice().sort(function (a, b) { return a.seq - b.seq; }), inS = ps.filter(function (p) { return L.indexOf(p.pid) >= 0; });
-      if (!inS.length) exN.push(no); else if (inS.length < ps.length) frN.push('العقد ' + no + ' من الدفعة ' + fmtNum(inS[0].seq)); });
-    if (exN.length) ex.push(nm + ' — ' + (exN.length === nos.length ? (nos.length > 1 ? 'كل عقوده' : 'العقد ' + nos[0]) : exN.map(function (n) { return 'العقد ' + n; }).join('، ')));
+      if (!inS.length) exN.push(no); else if (inS.length < ps.length) frN.push('العقد ' + LT(no) + ' من الدفعة ' + fmtNum(inS[0].seq)); });
+    if (exN.length) ex.push(nm + ' — ' + (exN.length === nos.length ? (nos.length > 1 ? 'كل عقوده' : 'العقد ' + LT(nos[0])) : exN.map(function (n) { return 'العقد ' + LT(n); }).join('، ')));
     if (frN.length) from.push(nm + ' — ' + frN.join('، '));
   });
   return { ex: ex, from: from };
