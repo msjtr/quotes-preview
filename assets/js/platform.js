@@ -34689,16 +34689,24 @@ function rmnEdit(L) {
   const nav = e('div', { class: 'rmn-nav' }, [step > 1 ? DS.button('السابق', { onClick: function () { RMN.step = step - 1; rmnPaint(); } }) : null, e('span', { class: 'rmn-grow' }),
     step < 4 ? DS.button('التالي', { tone: 'primary', onClick: function () { RMN.step = step + 1; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }) : null]);
   const plan = rmnChPlan(F.channels, { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, ch: F.chp }, F.hour, F.minute);
-  const side = e('aside', { class: 'rmn-side rsc-side', 'aria-label': 'ملخص القاعدة' }, [e('h2', { class: 'rmn-side-t' }, 'القاعدة باختصار'),
-    e('dl', { class: 'rsc-sum' }, [
-      e('div', {}, [e('dt', {}, 'المستلمون'), e('dd', {}, [audTx, R && R !== 'loading' ? e('small', {}, ' — ' + rviN(inc.length) + ' الآن') : null])]),
-      e('div', {}, [e('dt', {}, 'المواعيد'), e('dd', {}, schedTx)]),
-      e('div', {}, [e('dt', {}, 'الفترة'), e('dd', {}, 'من ' + rmnDay(F.start || today) + (F.end ? ' إلى ' + rmnDay(F.end) : ' · بلا نهاية'))]),
-      e('div', {}, [e('dt', {}, 'الوسائل'), e('dd', {}, plan.length ? e('span', { class: 'rsc-chs' }, plan.map(rmnChChip)) : '—')])]),
-    e('button', { type: 'button', class: 'rsc-pv-go', onClick: function () { try { document.querySelector('.rsc-pv').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { void err; } } }, 'المعاينة التفاعلية ↓')]);
+  /* v1032: «القاعدة باختصار» شريط أفقي تحت الخطوات (لا عمود جانبي يضغط المحرّر) — مطويّ في الجوال، ويُفتح بضغطة */
+  const nar = rmnNarrow(), sOpen = RMN.sumOpen === undefined ? !nar : RMN.sumOpen;
+  const cell = function (i, k, v) { return e('div', { class: 'rsc-sb-c' }, [e('small', {}, [e('span', { class: 'rsc-ic', 'aria-hidden': 'true' }, frag(ui(i, 14))), k]), e('b', {}, v)]); };
+  const recTx = R && R !== 'loading' ? rviN(inc.length) : '…';
+  const sumBar = e('section', { class: 'rsc-sb' + (sOpen ? ' is-open' : ''), 'aria-label': 'ملخص القاعدة' }, [
+    e('button', { type: 'button', class: 'rsc-sb-h', 'aria-expanded': sOpen ? 'true' : 'false', onClick: function () { RMN.sumOpen = !sOpen; rmnPaint(); } }, [
+      e('b', {}, 'القاعدة باختصار'), e('span', { class: 'rsc-sb-mini' }, audTx + ' · ' + recTx + ' · ' + (F.twice ? 'مرتان يوميًا' : rmTime(F.hour, F.minute)) + ' · ' + (rmChTx(F.channels) || '—')),
+      e('span', { class: 'rsc-sb-t', 'aria-hidden': 'true' }, sOpen ? 'إخفاء' : 'عرض')]),
+    sOpen ? e('div', { class: 'rsc-sb-g' }, [
+      cell('users-three', 'المستلمون', [audTx, e('small', {}, ' — ' + recTx + ' الآن')]),
+      cell('calendar-blank', 'المواعيد', schedTx),
+      cell('calendar-check', 'الفترة', 'من ' + rmnDay(F.start || today) + (F.end ? ' إلى ' + rmnDay(F.end) : ' · بلا نهاية')),
+      cell('clock', F.twice ? 'مرتان في اليوم' : 'مرة في اليوم', F.twice ? rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : rmTime(F.hour, F.minute))]) : null,
+    sOpen && plan.length ? e('div', { class: 'rsc-chs rsc-sb-chs' }, plan.map(rmnChChip)) : null,
+    sOpen ? e('button', { type: 'button', class: 'rmn-link rsc-sb-go', onClick: function () { try { document.querySelector('.rsc-pv').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { void err; } } }, 'انتقل إلى المعاينة التفاعلية') : null]);
   return [e('div', { class: 'rmn-ed-h' }, [e('h2', {}, F.id ? 'تعديل «' + (F.name || '') + '»' : 'قاعدة جديدة'), F.status ? rmnPill((RM_ST[F.status] || [''])[0], (RM_ST[F.status] || [])[1]) : null, e('span', { class: 'rmn-grow' }),
-    DS.button('إلغاء', { onClick: function () { RM.S = null; RMN.t = 'rules'; rmnPaint(); } })]), steps,
-    e('div', { class: 'rmn-split' }, [e('section', { class: 'rmn-main rmn-card rsc-main' }, body.concat([nav])), side]),
+    DS.button('إلغاء', { onClick: function () { RM.S = null; RMN.t = 'rules'; rmnPaint(); } })]), steps, sumBar,
+    e('section', { class: 'rmn-card rsc-main rsc-full' }, body.concat([nav])),
     R && R !== 'loading' ? rmnRulePv(F, inc, L) : null];
 }
 
