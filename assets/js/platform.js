@@ -34127,7 +34127,7 @@ function rmnHead(L) {
   if (ready && P.approve) {
     if (S.rem_pause_all) btn = liveOk(DS.button('استئناف الإرسال', { size: 'sm', tone: 'primary', ui: 'check-circle', disabled: RM.busy, onClick: function () { rmnAct('/admin/api/reminders/settings', { key: 'rem_pause_all', on: false }, { tone: 'ok', ic: 'check-circle', t: 'استُؤنف التذكير', s: 'عاد الإرسال التلقائي واليدوي والمجدول للعمل.' }); } }));
     else if (!S.rem_engine) btn = act.length ? liveOk(DS.button('تشغيل الإرسال التلقائي', { size: 'sm', tone: 'primary', ui: 'rocket-launch', disabled: RM.busy, onClick: function () { rmnAct('/admin/api/reminders/settings', { key: 'rem_engine', on: true }, { tone: 'ok', ic: 'rocket-launch', t: 'شُغّل الإرسال التلقائي', s: 'تعمل القواعد المعتمدة في مواعيدها داخل نافذة الإرسال للعملاء.' }); } })) : null;
-    else btn = DS.button(RM.ask === 'pause' ? 'تأكيد إيقاف كل الإرسال' : 'إيقاف كل الإرسال', { size: 'sm', tone: RM.ask === 'pause' ? 'danger' : null, ui: 'hourglass-medium', disabled: RM.busy, onClick: function () { if (RM.ask !== 'pause') { RM.ask = 'pause'; rmnPaint(); return; } rmnAct('/admin/api/reminders/settings', { key: 'rem_pause_all', on: true }, { tone: 'warn', ic: 'hourglass-medium', t: 'أُوقف التذكير مؤقتًا للجميع', s: 'لن يُرسل أي تذكير — تلقائي أو يدوي أو مجدول — حتى تضغط «استئناف الإرسال».' }); } });
+    else btn = liveOk(DS.button(RM.ask === 'pause' ? 'تأكيد إيقاف كل الإرسال' : 'إيقاف كل الإرسال', { size: 'sm', tone: RM.ask === 'pause' ? 'danger' : null, ui: 'hourglass-medium', disabled: RM.busy, onClick: function () { if (RM.ask !== 'pause') { RM.ask = 'pause'; rmnPaint(); return; } rmnAct('/admin/api/reminders/settings', { key: 'rem_pause_all', on: true }, { tone: 'warn', ic: 'hourglass-medium', t: 'أُوقف التذكير مؤقتًا للجميع', s: 'لن يُرسل أي تذكير — تلقائي أو يدوي أو مجدول — حتى تضغط «استئناف الإرسال».' }); } }));
   }
   /* عنوان الصفحة في رأس المنصة نفسه — لا يتكرر هنا */
   return e('header', { class: 'rmn-head' }, [
@@ -34593,9 +34593,9 @@ function rmnRules(L) {
           r.status === 'approved' ? liveOk(DS.button('إيقاف مؤقت', { size: 'sm', disabled: RM.busy, onClick: go('pause', { tone: 'warn', ic: 'hourglass-medium', t: 'أُوقفت القاعدة مؤقتًا', s: '«' + r.name + '» لا تُرسل حتى تستأنفها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
           r.status === 'paused' && P.approve ? liveOk(DS.button('استئناف', { tone: 'primary', size: 'sm', disabled: RM.busy, onClick: go('resume', { tone: 'ok', ic: 'check-circle', t: 'استُؤنفت القاعدة', s: '«' + r.name + '» تعمل في مواعيدها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
           e('span', { class: 'rmn-grow' }),
-          r.status === 'pending' && P.approve ? DS.button('رفض', { size: 'sm', onClick: function () { RMN.rej = r.id; RMN.rejTx = ''; rmnPaint(); } }) : null,
-          (r.status === 'draft' || r.status === 'rejected') ? DS.button('حذف', { size: 'sm', onClick: function () { RM.ask = 'del:' + r.id; rmnPaint(); } })
-            : DS.button('إنهاء', { size: 'sm', onClick: function () { RM.ask = 'end:' + r.id; rmnPaint(); } })])];
+          r.status === 'pending' && P.approve ? liveOk(DS.button('رفض', { size: 'sm', onClick: function () { RMN.rej = r.id; RMN.rejTx = ''; rmnPaint(); } })) : null,
+          (r.status === 'draft' || r.status === 'rejected') ? liveOk(DS.button('حذف', { size: 'sm', onClick: function () { RM.ask = 'del:' + r.id; rmnPaint(); } }))
+            : liveOk(DS.button('إنهاء', { size: 'sm', onClick: function () { RM.ask = 'end:' + r.id; rmnPaint(); } }))])];
     const R = rmnRuleReach(r), open = RF.open === r.id, NS = RMN.rns || (RMN.rns = {}), ns = NS[r.id] || (NS[r.id] = { q: '', seg: 'all' });
     const nInc = R && R !== 'loading' ? R.inc.length : null;
     if (r.audience === 'list') rmnLoadLM(r.list_id);
@@ -34613,7 +34613,7 @@ function rmnRules(L) {
       scopeN || (r.excluded || []).length ? e('p', { class: 'rmn-sm rsc-note' }, [scopeN ? 'بدء من دفعة محددة لـ' + rviN(scopeN) : '', scopeN && (r.excluded || []).length ? ' · ' : '', (r.excluded || []).length ? 'مستبعد ' + rviN(r.excluded.length) : '']) : null,
       e('div', { class: 'rsc-k' }, [e('span', {}, [e('small', {}, 'أُرسل'), e('b', {}, fmtNum(r.sent || 0))]), e('span', {}, [e('small', {}, 'وصل'), e('b', { class: 'rmn-ok' }, fmtNum(r.ok || 0))]), e('span', {}, [e('small', {}, 'آخرها'), e('b', {}, r.last ? rmnDT(r.last) : '—')]),
         e('button', { type: 'button', class: 'rsc-names-t' + (open ? ' is-on' : ''), 'aria-expanded': open ? 'true' : 'false', onClick: function () { RF.open = open ? '' : r.id; rmnPaint(); } }, [open ? 'إخفاء الأسماء' : 'أسماء المشمولين', nInc !== null ? ' (' + fmtNum(nInc) + ')' : '']),
-        e('button', { type: 'button', class: 'rsc-names-t' + (RMN.lg === r.id ? ' is-on' : ''), 'aria-expanded': RMN.lg === r.id ? 'true' : 'false', onClick: function () { if (RMN.lg === r.id) RMN.lg = ''; else { RMN.lg = r.id; if (RM.rlog) delete RM.rlog[r.id]; } rmnPaint(); } }, RMN.lg === r.id ? 'إخفاء السجل' : 'سجل العمليات')]),
+        e('button', { type: 'button', class: 'rsc-names-t' + (RMN.lg === r.id ? ' is-on' : ''), 'data-live-ok': '', 'aria-expanded': RMN.lg === r.id ? 'true' : 'false', onClick: function () { if (RMN.lg === r.id) RMN.lg = ''; else { RMN.lg = r.id; if (RM.rlog) delete RM.rlog[r.id]; } rmnPaint(); } }, RMN.lg === r.id ? 'إخفاء السجل' : 'سجل العمليات')]),
       RMN.lg === r.id ? e('section', { class: 'rsc-logbox' }, [e('h4', {}, 'سجل العمليات'), rmnRuleLog(r)]) : null,
       open ? (R === null || R === 'loading' ? e('div', { class: 'rlg-wait' }, 'جارٍ تحميل الأسماء…') : rmnNames(ns, R.inc, { label: 'بحث في أسماء ' + r.id.slice(0, 6), empty: 'لا أحد تشمله القاعدة الآن (لا دفعات قائمة ضمن فئاتها).' })) : null,
       r.status === 'pending' ? e('p', { class: 'rmn-rule-w' }, (r.submitted_by ? 'أرسلها ' + r.submitted_by + ' ' : 'بانتظار الاعتماد ') + (r.submitted_at ? rmnDT(r.submitted_at) : '') + ' — لا تُرسل قبل اعتمادها.') : null,
@@ -34712,7 +34712,7 @@ function rmnSegPanel(F, k, today) {
     const past = it.k === 'date' && it.date < today;
     return e('li', { class: 'rsc-it' + (past ? ' is-past' : '') }, [e('span', { class: 'rsc-it-ic', 'aria-hidden': 'true' }, frag(ui(RMN_ITIC[it.k] || 'bell', 16))),
       e('span', { class: 'rsc-it-t' }, [e('b', {}, rmnItTx(it)), e('small', {}, past ? 'مضى — لن يُرسل' : { before: 'مرة واحدة · إن فات يومه قبل بدء القاعدة يُرسل يوم البداية', due: 'مرة واحدة', after: 'مرة واحدة', rep: 'متكرر · يتوقف عند السداد أو بعد العدد', date: 'تاريخ محدد · مرة واحدة' }[it.k] || '')]),
-      e('button', { type: 'button', class: 'rsc-it-x', 'aria-label': 'حذف الموعد: ' + rmnItTx(it), onClick: function () { F.adv.items = F.adv.items.filter(function (x) { return x !== it; }); rmnPaint(); } }, frag(ui('x', 14)))]);
+      e('button', { type: 'button', class: 'rsc-it-x', 'data-live-ok': '', 'aria-label': 'حذف الموعد: ' + rmnItTx(it), onClick: function () { F.adv.items = F.adv.items.filter(function (x) { return x !== it; }); rmnPaint(); } }, frag(ui('x', 14)))]);
   })) : e('p', { class: 'rmn-sm is-bad rsc-its-empty' }, 'لا مواعيد لهذه الفئة بعد — أضف موعدًا من الأسفل.');
   const add = e('div', { class: 'rsc-add' }, [e('b', { class: 'rsc-add-h' }, 'إضافة موعد'),
     e('div', { class: 'rlg-seg rsc-add-m', role: 'radiogroup', 'aria-label': 'طريقة الموعد' }, RMN_ADDK[k].map(function (m) { const on = A.m === m[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.m = m[0]; rmnPaint(); } }, m[1]); })),
@@ -35083,7 +35083,7 @@ function rmnEdit(L) {
     if (F.id && F.status === 'approved') { RMN.eask = 'draft'; rmnPaint(); return; }
     rmnAct('/admin/api/reminders/simple', draftBody(), function (r) { const nm = F.name; RM.S = null; RMN.step = 1; void r; return { tone: 'ok', ic: 'check-circle', t: 'حُفظت مسودة', s: '«' + nm + '» — تكملها لاحقًا من «تعديل»، ولا تُرسل قبل اعتمادها.', back: 'العودة إلى الجدولة', to: 'rules' }; }); } }));
   return [e('div', { class: 'rmn-ed-h' }, [e('h2', {}, F.id ? 'تعديل «' + (F.name || '') + '»' : 'قاعدة جديدة'), F.status ? rmnPill((RM_ST[F.status] || [''])[0], (RM_ST[F.status] || [])[1]) : null, e('span', { class: 'rmn-grow' }),
-    e('div', { class: 'rmn-acts rsc-eacts' }, [saveDraft, canDel ? DS.button('حذف', { size: 'sm', onClick: function () { RMN.eask = 'del'; rmnPaint(); } }) : null, DS.button('إلغاء التعديل', { size: 'sm', onClick: function () { RMN.eask = 'cancel'; rmnPaint(); } })])]), hActs, steps,
+    e('div', { class: 'rmn-acts rsc-eacts' }, [saveDraft, canDel ? liveOk(DS.button('حذف', { size: 'sm', onClick: function () { RMN.eask = 'del'; rmnPaint(); } })) : null, DS.button('إلغاء التعديل', { size: 'sm', onClick: function () { RMN.eask = 'cancel'; rmnPaint(); } })])]), hActs, steps,
     e('section', { class: 'rmn-card rsc-main rsc-full' }, body.concat([nav]))];
 }
 
@@ -35503,13 +35503,13 @@ function rmnLog(L) {
   const custom = F.per === 'c' ? e('div', { class: 'rlg-custom' }, [
     DS.editField('من تاريخ', DS.input({ type: 'date', value: F.cf || RM.rf, max: today, onInput: function (v) { F.cf = v; } })),
     DS.editField('إلى تاريخ', DS.input({ type: 'date', value: F.ct || RM.rt, max: today, onInput: function (v) { F.ct = v; } })),
-    DS.button('تطبيق', { tone: 'primary', size: 'sm', onClick: function () {
+    liveOk(DS.button('تطبيق', { tone: 'primary', size: 'sm', onClick: function () {
       const a = F.cf || RM.rf, b = F.ct || RM.rt;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(a || '') || !/^\d{4}-\d{2}-\d{2}$/.test(b || '')) F.err = 'اختر التاريخين.';
       else if (a > b) F.err = '«من تاريخ» بعد «إلى تاريخ».';
       else if (b > today) F.err = 'لا سجل بعد اليوم.';
       else { F.err = ''; RM.rf = a; RM.rt = b; RM.R = null; F.pg = 0; }
-      rlgPaint(); } }),
+      rlgPaint(); } })),
     e('small', { class: F.err ? 'rmn-late' : 'rmn-sm' }, F.err || (F.cf && F.ct && F.cf <= F.ct ? fmtNum(dd(F.cf, F.ct)) + ' يومًا' : ''))]) : null;
   const root = function (kids) { return [e('div', { class: 'rlg-root' }, kids)]; };
   if (R === 'loading' || R === null) return root([bar, flt, custom, e('div', { class: 'rlg-wait', role: 'status' }, 'جارٍ تحميل السجل…')]);
