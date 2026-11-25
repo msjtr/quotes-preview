@@ -35548,6 +35548,7 @@ function rmnEdit(L) {
       })())];
   }
   const nav = e('div', { class: 'rmn-nav' }, [step > 1 ? DS.button('السابق', { onClick: function () { RMN.step = step - 1; rmnPaint(); } }) : null, e('span', { class: 'rmn-grow' }),
+    step < L4.length && F.id && F.status === 'approved' ? DS.button('حفظ التعديلات', { onClick: function () { const bad = okS.indexOf(false); RMN.step = bad >= 0 ? bad + 1 : L4.length; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }) : null, /* v1065 */
     step < L4.length ? DS.button('التالي', { tone: 'primary', onClick: function () { RMN.step = step + 1; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }) : null]);
   /* v1033: حفظ مسودة · حذف · إلغاء التعديل — متاحة في كل المراحل */
   const ask = RMN.eask || '';
@@ -35563,8 +35564,10 @@ function rmnEdit(L) {
   const saveDraft = liveOk(DS.button('حفظ مسودة', { size: 'sm', disabled: RM.busy || String(F.name || '').trim().length < 3, onClick: function () {
     if (F.id && F.status === 'approved') { RMN.eask = 'draft'; rmnPaint(); return; }
     const st0 = RMN.step || 1; rmnAct('/admin/api/reminders/simple', draftBody(), function (r) { const nm = F.name; rmnStepSet((r && r.id) || F.id, st0); RM.S = null; RMN.step = 1; return { tone: 'ok', ic: 'check-circle', t: 'حُفظت مسودة', s: '«' + nm + '» — تكملها لاحقًا من «تعديل»، ولا تُرسل قبل اعتمادها.', back: 'العودة إلى الجدولة', to: 'rules' }; }); } }));
+  /* v1065: القاعدة المعتمدة تُحفظ تعديلاتها باعتماد جديد (لا مسودة توقفها) — الزر يذهب لمرحلة «الاعتماد والنشر» أو لأول مرحلة ناقصة */
+  const toPub = liveOk(DS.button('حفظ التعديلات', { size: 'sm', tone: 'primary', ui: 'check', disabled: RM.busy, onClick: function () { const bad = okS.indexOf(false); RMN.step = bad >= 0 ? bad + 1 : L4.length; RM.err = bad >= 0 ? 'أكمل «' + L4[bad] + '» قبل الحفظ.' : ''; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }));
   return [e('div', { class: 'rmn-ed-h' }, [e('h2', {}, F.id ? 'تعديل «' + (F.name || '') + '»' : 'قاعدة جديدة'), F.status ? rmnPill((RM_ST[F.status] || [''])[0], (RM_ST[F.status] || [])[1]) : null, e('span', { class: 'rmn-grow' }),
-    e('div', { class: 'rmn-acts rsc-eacts' }, [saveDraft, canDel ? liveOk(DS.button('حذف', { size: 'sm', onClick: function () { RMN.eask = 'del'; rmnPaint(); } })) : null, DS.button('إلغاء التعديل', { size: 'sm', onClick: function () { RMN.eask = 'cancel'; rmnPaint(); } })])]), hActs, steps,
+    e('div', { class: 'rmn-acts rsc-eacts' }, [F.id && F.status === 'approved' ? toPub : saveDraft, canDel ? liveOk(DS.button('حذف', { size: 'sm', onClick: function () { RMN.eask = 'del'; rmnPaint(); } })) : null, DS.button('إلغاء التعديل', { size: 'sm', onClick: function () { RMN.eask = 'cancel'; rmnPaint(); } })])]), hActs, steps,
     e('section', { class: 'rmn-card rsc-main rsc-full' }, body.concat([nav]))];
 }
 
