@@ -4957,3 +4957,8 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-ct-h > b { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tq-next .rsc-ct-n { color: var(--t2-muted); font: 500 12px/1.4 var(--t2-ff-body, inherit); }
 .tq-next .rmn-row-t .rsc-segs .rmn-pill { white-space: nowrap; }
+/* v1035: عدد العقود القائمة في بطاقة العميل، والعقود بلا دفعات مستحقة وسجلات الطلبات القديمة */
+.tq-next .rsc-ctn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; background: var(--t2-surface-2, #EEF2F7); color: var(--t2-ink-2); font: 700 12px/1.4 var(--t2-ff-display); white-space: nowrap; }
+.tq-next .rsc-xct { display: flex; flex-wrap: wrap; gap: 8px; }
+.tq-next .rsc-xc { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border: 1px dashed var(--t2-line-2, #CBD5E1); border-radius: 10px; color: var(--t2-ink-2); font-size: 12px; }
+.tq-next .rsc-xc.is-rh { color: var(--t2-muted); background: var(--t2-surface-2, #F4F7FA); }
