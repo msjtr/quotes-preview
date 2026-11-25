@@ -5275,3 +5275,25 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-ckbar-pv { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
 .tq-next .rsc-ckbar-pv small { color: var(--t2-muted); }
 .tq-next .rsc-cal-tp.is-final_notice { background: var(--t2-danger-wash, #fde8e8); color: var(--t2-danger); }
+
+/* v1061: تبويب «تخصيص العملاء» */
+.tq-next .rov { display: grid; gap: 16px; }
+.tq-next .rov-lead { margin: 0; color: var(--t2-muted); font-size: 13px; line-height: 1.7; }
+.tq-next .rov-sec { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--t2-line, #dfe6ee); border-radius: 14px; background: var(--t2-surface, #fff); }
+.tq-next .rov-sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tq-next .rov-sec-h h3 { margin: 0; font: 700 15px/1.4 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .rov-sec-h small { color: var(--t2-muted); font-size: 12px; }
+.tq-next .rov-list { display: grid; gap: 0; border: 1px solid var(--t2-line, #e3e9f0); border-radius: 12px; overflow: hidden; }
+.tq-next .rov-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.tq-next .rov-row + .rov-row { border-top: 1px solid var(--t2-line, #e3e9f0); }
+.tq-next .rov-row-t { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.tq-next .rov-row-t b { color: var(--t2-ink); font: 700 14px/1.35 var(--t2-ff-display); }
+.tq-next .rov-row-t small { color: var(--t2-muted); font-size: 12px; line-height: 1.6; }
+.tq-next .rov-back { justify-self: start; }
+.tq-next .rov-ctx { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: var(--t2-soft, #f5f8fb); }
+.tq-next .rov-ctx > span { display: grid; gap: 2px; }
+.tq-next .rov-ctx > span small { color: var(--t2-muted); font-size: 11px; }
+.tq-next .rov-ctx > .rmn-sm { flex-basis: 100%; margin: 0; }
+.tq-next .rov .rsc-ov { margin-top: 0; }
+.tq-next .rov .rsc-nr .t2-btn { flex: none; }
+@media (max-width: 640px) { .tq-next .rov-row, .tq-next .rov .rsc-nr { flex-wrap: wrap; } .tq-next .rov-row .t2-btn, .tq-next .rov .rsc-nr .t2-btn { margin-inline-start: auto; } }
