@@ -5223,3 +5223,22 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .rlgl-empty { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 32px 16px; }
 .rlgl-empty small { max-width: 46ch; line-height: 1.7; }
 @media (max-width: 600px) { .rlgl-sh { flex-wrap: wrap; align-items: center; } }
+/* v1050: تواريخ مواعيد العميل */
+.rsc-ov-lead { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--t2-soft, #f6f9fc); color: var(--t2-ink-2, #33475b); font-size: .9rem; line-height: 1.7; }
+.rsc-ov-days { display: flex; flex-wrap: wrap; gap: 8px; }
+.rsc-ov-day { display: grid; gap: 2px; padding: 8px 12px; border: 1px solid var(--t2-line, #e3e9f0); border-radius: 10px; background: var(--t2-surface, #fff); min-width: 110px; }
+.rsc-ov-day b { font-size: .88rem; } .rsc-ov-day small { color: var(--t2-muted, #66758a); font-size: .78rem; }
+.rsc-ov-day.is-off { opacity: .55; border-style: dashed; }
+
+/* v1050: سجل العمليات — كان/أصبح بسطرين */
+.tq-next .rsc-chg li { display: grid; gap: 6px; padding: 10px 12px; }
+.tq-next .rsc-chg-f { min-width: 0 !important; }
+.tq-next .rsc-chg-b { display: grid; gap: 4px; }
+.tq-next .rsc-chg-r { display: grid; grid-template-columns: 3.2em 1fr; gap: 8px; align-items: baseline; font-size: 13px; line-height: 1.7; }
+.tq-next .rsc-chg-r small { color: var(--t2-muted); font-size: 12px; }
+.tq-next .rsc-chg-r.is-old span { color: var(--t2-muted); }
+.tq-next .rsc-chg-r.is-new span { color: var(--t2-ink); font-weight: 700; }
+.tq-next .rsc-chg-ns { display: flex; flex-wrap: wrap; gap: 6px; }
+.tq-next .rsc-chg-ns i { display: inline-block; padding: 2px 10px; border-radius: 999px; font-style: normal; font-size: 12.5px; background: var(--t2-surface-2); }
+.tq-next .rsc-chg-ns i.is-add { color: var(--t2-ok); } .tq-next .rsc-chg-ns i.is-rem { color: var(--t2-danger); }
+.tq-next .rsc-log-w { margin: 0; color: var(--t2-ink-2); font-size: 13px; }
