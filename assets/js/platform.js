@@ -34399,6 +34399,11 @@ function rmnLoadLM(id) {
   if (RM.lm[id] !== undefined) return; RM.lm[id] = 'loading';
   clApi('/admin/api/reminders/lists/' + encodeURIComponent(id) + '/users').then(function (j) { RM.lm[id] = (j && j.rows) || []; rmnPaint(); }).catch(function () { RM.lm[id] = []; rmnPaint(); });
 }
+/* v1056: عدد العملاء المشمولين فعلًا — من له عقد واحد على الأقل غير مستبعد في فئات القاعدة */
+/* v1056: يكمل التعديل من المرحلة التي حُفظ منها */
+function rmnStepGet(id) { try { return Number(localStorage.getItem('rmn.step.' + id)) || 1; } catch (err) { return 1; } }
+function rmnStepSet(id, n) { try { if (id) localStorage.setItem('rmn.step.' + id, String(n || 1)); } catch (err) { void err; } }
+function rmnIncN(inc, segs, scope) { const U = {}; (inc || []).forEach(function (x) { if (rmnCtRows(x, segs).some(function (cr) { return !rmnCtOff(scope, cr); })) U[x.id] = 1; }); return Object.keys(U).length; }
 function rmnRuleReach(r) { return rmnReach({ audience: r.audience, picked: r.picked || [], excluded: r.excluded || [], list_id: r.list_id, segs: r.segs || ['regular', 'late', 'default'] }); }
 /* v1034: فئة كل عقد على حدة — العميل قد يكون له عقد منتظم وعقد متأخر (الفئة من أشد دفعة متأخرة في العقد نفسه) */
 function rmnSegOf(late) { late = Number(late) || 0; return late > 60 ? 'default' : late >= 1 ? 'late' : 'regular'; }
@@ -34728,7 +34733,7 @@ function rmnRules(L, kind) {
           DS.button('تراجع', { size: 'sm', onClick: function () { RMN.rej = ''; RMN.rejTx = ''; rmnPaint(); } })])])]
         : [e('div', { class: 'rmn-acts rsc-acts' }, [
           r.status === 'pending' && P.approve ? liveOk(DS.button('اعتماد', { tone: 'primary', size: 'sm', disabled: RM.busy, onClick: go('approve', { tone: 'ok', ic: 'seal-check', t: 'اعتُمدت القاعدة', s: '«' + r.name + '» — تعمل في مواعيدها' + (r.audience === 'test' ? ' على حسابك التجريبي فقط.' : ' للمستلمين: ' + rmAudTx(r) + '.'), back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
-          liveOk(DS.button(RM.dirty ? 'جارٍ التحديث…' : r.status === 'pending' ? 'مراجعة وتعديل' : 'تعديل', { size: 'sm', disabled: !!RM.dirty, onClick: function () { if (RM.dirty) return; /* v1054: لا يُفتح التعديل على نسخة ما قبل الحفظ */ RM.S = rmForm(r, L); RMN.F0 = JSON.parse(JSON.stringify(RM.S)); RM.S.reason = ''; RMN.step = 1; RMN.t = 'edit'; RM.err = ''; rmnPaint(); } })),
+          liveOk(DS.button(RM.dirty ? 'جارٍ التحديث…' : r.status === 'pending' ? 'مراجعة وتعديل' : 'تعديل', { size: 'sm', disabled: !!RM.dirty, onClick: function () { if (RM.dirty) return; /* v1054: لا يُفتح التعديل على نسخة ما قبل الحفظ */ RM.S = rmForm(r, L); RMN.F0 = JSON.parse(JSON.stringify(RM.S)); RM.S.reason = ''; RMN.step = rmnStepGet(r.id); RMN.t = 'edit'; RM.err = ''; rmnPaint(); } })),
           (r.status === 'draft' || r.status === 'rejected') ? liveOk(DS.button('إرسال للاعتماد', { size: 'sm', disabled: RM.busy, onClick: go('submit', { tone: 'ok', ic: 'paper-plane-tilt', t: 'أُرسلت القاعدة للاعتماد', s: '«' + r.name + '» — لا تُرسل قبل اعتمادها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
           r.status === 'approved' ? liveOk(DS.button('إيقاف مؤقت', { size: 'sm', disabled: RM.busy, onClick: go('pause', { tone: 'warn', ic: 'hourglass-medium', t: 'أُوقفت القاعدة مؤقتًا', s: '«' + r.name + '» لا تُرسل حتى تستأنفها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
           r.status === 'paused' && P.approve ? liveOk(DS.button('استئناف', { tone: 'primary', size: 'sm', disabled: RM.busy, onClick: go('resume', { tone: 'ok', ic: 'check-circle', t: 'استُؤنفت القاعدة', s: '«' + r.name + '» تعمل في مواعيدها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
@@ -34738,7 +34743,7 @@ function rmnRules(L, kind) {
             : liveOk(DS.button('إنهاء', { size: 'sm', onClick: function () { RM.ask = 'end:' + r.id; rmnPaint(); } }))])];
     const LG = r.kind === 'legal'; /* v1048 */
     const R = LG ? null : rmnRuleReach(r), open = !LG && RF.open === r.id, NS = RMN.rns || (RMN.rns = {}), ns = NS[r.id] || (NS[r.id] = { q: '', seg: 'all' });
-    const nInc = R && R !== 'loading' ? R.inc.length : null;
+    const nInc = R && R !== 'loading' ? rmnIncN(R.inc, r.segs || [], r.pay_scope) : null; /* v1056: بعد استبعاد العقود */
     if (r.audience === 'list') rmnLoadLM(r.list_id);
     const plan = rmnChPlan(r.channels, r.ch_plan, r.send_hour, r.send_minute), B = r.ch_plan && r.ch_plan.b;
     const scopeN = Object.keys(r.pay_scope || {}).length;
@@ -34914,16 +34919,19 @@ function rmnLatePanel(F, today) {
       e('li', {}, 'بعد اليوم 60 ينتقل العميل إلى «المتعثرون» (مرحلة لاحقة).')])]);
 }
 /* v1051: آخر وقت للإرسال — بعده لا يُرسل اليوم ويؤجَّل لليوم التالي */
-function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; return F.until ? Math.min(Number(F.until.hour) * 60 + Number(F.until.minute || 0), wE) : wE; }
+function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; return F.until ? Number(F.until.hour) * 60 + Number(F.until.minute || 0) : wE; } /* v1056: آخر وقت القاعدة يحل محل نهاية النافذة */
 function rmnEndTx(m) { return m >= 24 * 60 ? 'منتصف الليل' : rmTime(Math.floor(m / 60), m % 60); }
 function rmnUntilBox(F, win) {
-  const wE = win ? Number(win.end) : 24, from = (F.twice ? F.hour2 * 60 + F.minute2 : F.hour * 60 + F.minute) + 30, opts = [['win', 'حتى نهاية نافذة الإرسال (' + rmnEndTx(wE * 60) + ')']];
-  for (let h = Math.ceil(from / 60); h < wE; h++) opts.push([String(h), 'حتى ' + rmTime(h, 0)]);
-  const cur = F.until ? String(F.until.hour) : 'win';
-  if (cur !== 'win' && !opts.some(function (o) { return o[0] === cur; })) opts.push([cur, 'حتى ' + rmnEndTx(Number(F.until.hour) * 60 + Number(F.until.minute || 0))]);
+  /* v1056: مفتوح حتى منتصف الليل متاح ولو بعد نافذة الإرسال العامة — آخر وقت القاعدة يحل محلها */
+  const wE = win ? Number(win.end) : 24, from = (F.twice ? F.hour2 * 60 + F.minute2 : F.hour * 60 + F.minute) + 30;
+  const opts = [['24', 'مفتوح حتى منتصف الليل']];
+  for (let h = Math.ceil(from / 60); h < 24; h++) opts.push([String(h), 'حتى ' + rmTime(h, 0)]);
+  if (wE < 24) opts.push(['win', 'حتى نهاية نافذة الإرسال العامة (' + rmnEndTx(wE * 60) + ')']);
+  const cur = F.until ? String(F.until.hour) : (wE < 24 ? 'win' : '24');
+  if (!opts.some(function (o) { return o[0] === cur; })) opts.push([cur, 'حتى ' + rmnEndTx(Number(cur) * 60)]);
   const endM = rmnEndM(F, win);
   return [DS.editField('آخر وقت للإرسال في اليوم', DS.select({ value: cur, options: opts, onChange: function (v) { F.until = v && v !== 'win' ? { hour: Number(v), minute: 0 } : null; rmnPaint(); } })), /* DS.select يُسقط القيمة الفارغة */
-    e('p', { class: 'rmn-sm rsc-until-n' }, ['يُرسل من ', e('b', {}, rmTime(F.hour, F.minute)), ' حتى ', e('b', {}, rmnEndTx(endM)), '. من يدخل القاعدة أثناءها (اعتمادها أو إضافة عميل) يصله في اليوم نفسه، ومن يدخل بعدها يصله في اليوم التالي.' + (win && wE < 24 ? ' لأبعد من ' + rmnEndTx(wE * 60) + ' غيّر «نافذة الإرسال للعملاء» في الإعدادات.' : '')])];
+    e('p', { class: 'rmn-sm rsc-until-n' }, ['يُرسل من ', e('b', {}, rmTime(F.hour, F.minute)), ' حتى ', e('b', {}, rmnEndTx(endM)), '. من يدخل القاعدة أثناءها (اعتمادها أو إضافة عميل) يصله في اليوم نفسه، ومن يدخل بعدها يصله في اليوم التالي.'])];
 }
 /* متى يبدأ الإرسال الفعلي بعد الاعتماد — لشاشة التأكيد */
 function rmnStartTx(F, win, today) {
@@ -35404,7 +35412,7 @@ function rmnEdit(L) {
     /* v1045: ما تغيّر عن القاعدة المحفوظة، وسببه (مطلوب للقاعدة العاملة أو بانتظار الاعتماد) */
     const CHG = F.id ? rmnFDiff(RMN.F0, F, L) : null, needWhy = !!(CHG && CHG.length && ['approved', 'pending', 'paused'].indexOf(F.status) >= 0), whyOk = !needWhy || String(F.reason || '').trim().length >= 3;
     body = [stepHead('seal-check:teal', 'الاعتماد والنشر', 'لا تُرسل القاعدة قبل اعتمادها.'),
-      DS.fields([['الاسم', F.name || '—'], ['المستلمون', audTx + (R && R !== 'loading' ? ' — ' + rviN(inc.length) + ' الآن' : '')], ['الفئات', rmSegTx(F.segs)], ['المواعيد', schedTx],
+      DS.fields([['الاسم', F.name || '—'], ['المستلمون', audTx + (R && R !== 'loading' ? ' — ' + rviN(rmnIncN(inc, F.segs, F.scope)) + ' الآن' : '')], ['الفئات', rmSegTx(F.segs)], ['المواعيد', schedTx],
         ['الفترة', 'من ' + rmnDay(F.start || today) + (F.end ? ' إلى ' + rmnDay(F.end) : ' · بلا نهاية')], ['مرات اليوم', F.twice ? 'مرتان: ' + rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : 'مرة: ' + rmTime(F.hour, F.minute)], ['آخر وقت للإرسال', rmnEndTx(rmnEndM(F, win)) + ' — بعده يؤجَّل لليوم التالي'],
         ['الوسائل', plan.map(function (p) { return p.t + ' ' + p.at; }).join(' · ') || '—'], ['يتوقف', 'فور سداد الدفعة' + (F.cap ? '، أو بعد ' + rmnRemN(F.cap) : '')],
         ['وسيلة السداد', F.pm === 'bank' ? 'تحويل بنكي' : 'بوابة الدفع'], ['تخصيص العقود والدفعات', scopeN ? 'مخصص لـ' + rviN(scopeN) + ' (استبعاد عقد أو دفعة بداية)' : 'لا تخصيص — كل العقود المشمولة'], ['المستبعدون', F.excluded.length ? rviN(F.excluded.length) : 'لا أحد']]),
@@ -35439,10 +35447,10 @@ function rmnEdit(L) {
   const canDel = F.id && (F.status === 'draft' || F.status === 'rejected');
   const hActs = ask === 'cancel' ? DS.note('warn', 'إلغاء التعديل؟', 'تُفقد التغييرات التي لم تُحفظ' + (F.id ? '، وتبقى القاعدة كما كانت.' : '.'), e('div', { class: 'rmn-acts' }, [DS.button('نعم، ألغِ التعديل', { size: 'sm', tone: 'danger', onClick: leave }), DS.button('متابعة التعديل', { size: 'sm', onClick: function () { RMN.eask = ''; rmnPaint(); } })]))
     : ask === 'del' ? DS.note('warn', 'حذف «' + (F.name || '') + '» نهائيًا؟', 'تُحذف المسودة ولا يمكن استرجاعها.', e('div', { class: 'rmn-acts' }, [liveOk(DS.button('نعم، احذف', { size: 'sm', tone: 'danger', disabled: RM.busy, onClick: function () { RMN.eask = ''; rmnAct('/admin/api/reminders/rules/' + encodeURIComponent(F.id) + '/delete', {}, function () { const nm = F.name; RM.S = null; RMN.step = 1; return { tone: 'warn', ic: 'trash', t: 'حُذفت القاعدة', s: '«' + nm + '»', back: 'العودة إلى الجدولة', to: 'rules' }; }); } })), DS.button('تراجع', { size: 'sm', onClick: function () { RMN.eask = ''; rmnPaint(); } })]))
-    : ask === 'draft' && F.id && F.status === 'approved' ? DS.note('warn', 'حفظها مسودة يوقفها', 'القاعدة تعمل الآن — حفظها مسودة يوقف إرسالها حتى تُعتمد من جديد.', e('div', { class: 'rmn-acts' }, [liveOk(DS.button('نعم، احفظها مسودة', { size: 'sm', tone: 'primary', disabled: RM.busy, onClick: function () { RMN.eask = ''; rmnAct('/admin/api/reminders/simple', draftBody(), function () { const nm = F.name; RM.S = null; RMN.step = 1; return { tone: 'ok', ic: 'check-circle', t: 'حُفظت مسودة', s: '«' + nm + '» — لا تُرسل حتى تُرسلها للاعتماد وتُعتمد.', back: 'العودة إلى الجدولة', to: 'rules' }; }); } })), DS.button('تراجع', { size: 'sm', onClick: function () { RMN.eask = ''; rmnPaint(); } })])) : null;
+    : ask === 'draft' && F.id && F.status === 'approved' ? DS.note('warn', 'حفظها مسودة يوقفها', 'القاعدة تعمل الآن — حفظها مسودة يوقف إرسالها حتى تُعتمد من جديد.', e('div', { class: 'rmn-acts' }, [liveOk(DS.button('نعم، احفظها مسودة', { size: 'sm', tone: 'primary', disabled: RM.busy, onClick: function () { RMN.eask = ''; rmnAct('/admin/api/reminders/simple', draftBody(), function (r) { const nm = F.name; rmnStepSet((r && r.id) || F.id, step); RM.S = null; RMN.step = 1; return { tone: 'ok', ic: 'check-circle', t: 'حُفظت مسودة', s: '«' + nm + '» — لا تُرسل حتى تُرسلها للاعتماد وتُعتمد.', back: 'العودة إلى الجدولة', to: 'rules' }; }); } })), DS.button('تراجع', { size: 'sm', onClick: function () { RMN.eask = ''; rmnPaint(); } })])) : null;
   const saveDraft = liveOk(DS.button('حفظ مسودة', { size: 'sm', disabled: RM.busy || String(F.name || '').trim().length < 3, onClick: function () {
     if (F.id && F.status === 'approved') { RMN.eask = 'draft'; rmnPaint(); return; }
-    rmnAct('/admin/api/reminders/simple', draftBody(), function (r) { const nm = F.name; RM.S = null; RMN.step = 1; void r; return { tone: 'ok', ic: 'check-circle', t: 'حُفظت مسودة', s: '«' + nm + '» — تكملها لاحقًا من «تعديل»، ولا تُرسل قبل اعتمادها.', back: 'العودة إلى الجدولة', to: 'rules' }; }); } }));
+    const st0 = RMN.step || 1; rmnAct('/admin/api/reminders/simple', draftBody(), function (r) { const nm = F.name; rmnStepSet((r && r.id) || F.id, st0); RM.S = null; RMN.step = 1; return { tone: 'ok', ic: 'check-circle', t: 'حُفظت مسودة', s: '«' + nm + '» — تكملها لاحقًا من «تعديل»، ولا تُرسل قبل اعتمادها.', back: 'العودة إلى الجدولة', to: 'rules' }; }); } }));
   return [e('div', { class: 'rmn-ed-h' }, [e('h2', {}, F.id ? 'تعديل «' + (F.name || '') + '»' : 'قاعدة جديدة'), F.status ? rmnPill((RM_ST[F.status] || [''])[0], (RM_ST[F.status] || [])[1]) : null, e('span', { class: 'rmn-grow' }),
     e('div', { class: 'rmn-acts rsc-eacts' }, [saveDraft, canDel ? liveOk(DS.button('حذف', { size: 'sm', onClick: function () { RMN.eask = 'del'; rmnPaint(); } })) : null, DS.button('إلغاء التعديل', { size: 'sm', onClick: function () { RMN.eask = 'cancel'; rmnPaint(); } })])]), hActs, steps,
     e('section', { class: 'rmn-card rsc-main rsc-full' }, body.concat([nav]))];
@@ -36188,7 +36196,7 @@ function rmForm(r, L, kind) {
     /* v1036: الجدول المتقدم لكل فئة، وقالب كل فئة */
     adv: r && r.adv && Array.isArray(r.adv.items) ? JSON.parse(JSON.stringify(r.adv)) : rmnAdvDef(),
     cap: r && r.ch_plan && Number(r.ch_plan.cap) || 0,
-    until: r && r.ch_plan && r.ch_plan.until ? { hour: Number(r.ch_plan.until.hour), minute: Number(r.ch_plan.until.minute || 0) } : null, /* v1051: آخر وقت للإرسال */
+    until: r ? (r.ch_plan && r.ch_plan.until ? { hour: Number(r.ch_plan.until.hour), minute: Number(r.ch_plan.until.minute || 0) } : null) : { hour: 24, minute: 0 }, /* v1051: آخر وقت للإرسال · v1056: الجديدة مفتوحة حتى منتصف الليل */
     lt: r && r.ch_plan && r.ch_plan.lt ? Object.assign({}, RMN_LT_DEF, r.ch_plan.lt) : Object.assign({}, RMN_LT_DEF) };
 }
 function rmRulesView(L) {
