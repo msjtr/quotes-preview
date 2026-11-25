@@ -34581,7 +34581,7 @@ function rmnRules(L) {
 const RMN_WDF = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RMN_MONN = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 function rmnDate(v) { const k = String(v || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return '—'; const r = rmnDay(k); if (r === 'اليوم' || r === 'غدًا') return r; const d = new Date(k + 'T12:00:00Z'); return RMN_WDF[d.getUTCDay()] + ' ' + fmtNum(d.getUTCDate()) + ' ' + RMN_MONN[d.getUTCMonth()]; }
-function rmnRemN(n) { return n === 1 ? 'تذكير واحد' : n === 2 ? 'تذكيران' : fmtNum(n) + (n >= 3 && n <= 10 ? ' تذكيرات' : ' تذكيرًا'); }
+function rmnRemN(n) { return !n ? 'لا تذكيرات' : n === 1 ? 'تذكير واحد' : n === 2 ? 'تذكيران' : fmtNum(n) + (n >= 3 && n <= 10 ? ' تذكيرات' : ' تذكيرًا'); }
 const RMN_SEGN = { regular: 'المنتظمون', late: 'المتأخرون', default: 'المتعثرون' };
 function rmnTimes(n) { n = Number(n) || 0; return n === 1 ? 'مرة واحدة' : n === 2 ? 'مرتان' : fmtNum(n) + (n <= 10 ? ' مرات' : ' مرة'); }
 function rmnSegOfD(d) { return d <= 0 ? 'regular' : d <= 60 ? 'late' : 'default'; }
@@ -34601,11 +34601,12 @@ function rmnAdvSeg(adv, k) { const L = rmnSegItems(adv, k); return L.length ? L.
 function rmnAdvTx(adv, segs) { return segs.filter(function (k) { return rmnSegItems(adv, k).length; }).map(function (k) { return RMN_SEGN[k] + ': ' + rmnAdvSeg(adv, k); }).join(' — ') || '—'; }
 function rmnAdvAny(adv, segs) { return segs.some(function (k) { return rmnSegItems(adv, k).length > 0; }); }
 /* هل تُذكَّر دفعة تأخرها d يوم day؟ — كمنطق rem_plan */
-function rmnAdvHit(adv, segs, d, day) {
+function rmnAdvHit(adv, segs, d, day, start) {
   const sg = rmnSegOfD(d); if (segs.indexOf(sg) < 0) return false;
   return ((adv && adv.items) || []).some(function (it) {
     if (rmnItSeg(it) !== sg) return false;
-    if (it.k === 'before') return d === -Number(it.n);
+    /* stf_346: موعد «قبل» فات قبل بداية القاعدة يُعوَّض يوم بدايتها إن لم تستحق الدفعة بعد */
+    if (it.k === 'before') return d === -Number(it.n) || (!!start && day === start && d < 0 && -Number(it.n) < d);
     if (it.k === 'due') return d === 0;
     if (it.k === 'after') return d === Number(it.n);
     if (it.k === 'date') return day === it.date;
@@ -34642,7 +34643,7 @@ function rmnSegPanel(F, k, today) {
   const list = L.length ? e('ol', { class: 'rsc-its' }, L.map(function (it) {
     const past = it.k === 'date' && it.date < today;
     return e('li', { class: 'rsc-it' + (past ? ' is-past' : '') }, [e('span', { class: 'rsc-it-ic', 'aria-hidden': 'true' }, frag(ui(RMN_ITIC[it.k] || 'bell', 16))),
-      e('span', { class: 'rsc-it-t' }, [e('b', {}, rmnItTx(it)), e('small', {}, past ? 'مضى — لن يُرسل' : { before: 'مرة واحدة', due: 'مرة واحدة', after: 'مرة واحدة', rep: 'متكرر · يتوقف عند السداد أو بعد العدد', date: 'تاريخ محدد · مرة واحدة' }[it.k] || '')]),
+      e('span', { class: 'rsc-it-t' }, [e('b', {}, rmnItTx(it)), e('small', {}, past ? 'مضى — لن يُرسل' : { before: 'مرة واحدة · إن فات يومه قبل بدء القاعدة يُرسل يوم البداية', due: 'مرة واحدة', after: 'مرة واحدة', rep: 'متكرر · يتوقف عند السداد أو بعد العدد', date: 'تاريخ محدد · مرة واحدة' }[it.k] || '')]),
       e('button', { type: 'button', class: 'rsc-it-x', 'aria-label': 'حذف الموعد: ' + rmnItTx(it), onClick: function () { F.adv.items = F.adv.items.filter(function (x) { return x !== it; }); rmnPaint(); } }, frag(ui('x', 14)))]);
   })) : e('p', { class: 'rmn-sm is-bad rsc-its-empty' }, 'لا مواعيد لهذه الفئة بعد — أضف موعدًا من الأسفل.');
   const add = e('div', { class: 'rsc-add' }, [e('b', { class: 'rsc-add-h' }, 'إضافة موعد'),
@@ -34716,7 +34717,7 @@ function rmnCal(F, inc, today, L) {
    تذكير واحد للعميل في الموعد الأول، والموعد الثاني، وتكرار كل وسيلة وحدّها). تقدير للعرض فقط — لا يُرسل شيء. */
 function rmnSimPlan(F, inc, today, N) {
   const segOn = function (k) { return F.segs.indexOf(k) >= 0; };
-  const stepOk = function (d, day) { void segOn; return rmnAdvHit(F.adv, F.segs, d, day); };
+  const stepOk = function (d, day) { void segOn; return rmnAdvHit(F.adv, F.segs, d, day, F.start || today); };
   const H = {}, out = [], d0 = Date.parse(today + 'T12:00:00Z');
   const due = function (pid, slot, i) {
     return F.channels.filter(function (c) {
