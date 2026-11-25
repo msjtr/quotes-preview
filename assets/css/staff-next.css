@@ -5245,3 +5245,25 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 /* v1051: آخر وقت للإرسال */
 .tq-next .rsc-until { display: grid; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--t2-line); }
 .tq-next .rsc-until-n { margin: 0; line-height: 1.7; }
+/* v1057: ملخص القاعدة الموحّد */
+.tq-next .rsm { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tq-next .rsm-s { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--t2-line); border-radius: 12px; background: var(--t2-surface); min-width: 0; }
+.tq-next .rsm-s h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; color: var(--t2-ink); font: 700 14px/1.4 var(--t2-ff-display); }
+.tq-next .rsm-ic { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: var(--t2-brand-wash); color: var(--t2-brand-3); }
+.tq-next .rsm dl { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.tq-next .rsm-r { display: grid; gap: 2px; padding-bottom: 8px; border-bottom: 1px dashed var(--t2-line); }
+.tq-next .rsm-r:last-child { border-bottom: 0; padding-bottom: 0; }
+.tq-next .rsm-r dt { color: var(--t2-muted); font-size: 12px; }
+.tq-next .rsm-r dd { margin: 0; color: var(--t2-ink); font-size: 13.5px; font-weight: 600; line-height: 1.7; }
+.tq-next .rsm-r dd ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 2px; }
+.tq-next .rsm-r.is-warn dd { color: var(--t2-danger); }
+.tq-next .rsm.is-compact .rsm-s { padding: 12px; background: var(--t2-surface-2); }
+.tq-next .rsm-name { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px; }
+.tq-next .rsm-name small { color: var(--t2-muted); }
+.tq-next .rsm-name b { font: 700 18px/1.4 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .rsm-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 14px; }
+.tq-next .rsm-acts > .t2-note { grid-column: 1 / -1; }
+.tq-next .rsm-act { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--t2-line); border-radius: 12px; background: var(--t2-surface-2); }
+.tq-next .rsm-act .t2-btn { width: 100%; justify-content: center; }
+.tq-next .rsm-act small { color: var(--t2-muted); font-size: 12px; line-height: 1.6; }
+@media (max-width: 900px) { .tq-next .rsm { grid-template-columns: 1fr; } }
