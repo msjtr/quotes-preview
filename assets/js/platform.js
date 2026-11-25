@@ -23790,12 +23790,16 @@ function docxCore(H) {
     cs: { org: ORG, title: 'كشف العقد', en: 'CONTRACT STATEMENT', issuer: 'قسم التحصيل',
       tt: { sum: 'ملخص العقد', tbl: 'جدول الدفعات', bal: 'الرصيد', note: 'تنويه' }, show: { state: true, tbl: true, bal: true, note: true },
       note: '', auto: 'صدر هذا الكشف آليًا ويعكس حالة العقد وقت الطلب' },
-    ce: { org: ORG, title: 'تقدير ووفاء', en: 'CERTIFICATE OF APPRECIATION', issuer: 'إدارة منصة تيرا', pill: 'شهادة',
+    ce: { org: ORG, title: 'شهادة', en: 'CERTIFICATE OF APPRECIATION', issuer: 'إدارة منصة تيرا', pill: 'تقدير ووفاء',
       tt: { data: 'بيانات الشهادة', body: 'تقديرًا للوفاء' }, show: { data: true, member: true, since: true, contract: true, tier: true, hon: true },
-      lead: 'تقديرًا للوفاء وتثمينًا للثقة، يسرّ منصة تيرا للخدمات المتكاملة أن تتقدّم بخالص الشكر والعرفان إلى',
+      why: { full: 'بمناسبة إتمام سداد عقده رقم', early: 'بمناسبة السداد المبكر لعقده رقم', product: 'بمناسبة سداد قيمة المنتج وإغلاق عقده رقم' },
+      whyF: { full: 'بمناسبة إتمام سداد عقدها رقم', early: 'بمناسبة السداد المبكر لعقدها رقم', product: 'بمناسبة سداد قيمة المنتج وإغلاق عقدها رقم' },
+      kind: { full: 'إتمام سداد العقد', early: 'سداد مبكر للعقد', product: 'سداد قيمة المنتج' }, style: 'b', alt: false /* v1069: alt=true ← القالب البديل (أ) من «قوالب المستندات»؛ قالبان — b الرسمي (بوسام وخط الرقعة) · a البديل الكلاسيكي — يُختار من «قوالب المستندات» */,
+      sign1: 'مع خالص الشكر والتقدير', sign2: 'إدارة منصة تيرا للخدمات المتكاملة',
+      lead: 'تقديرًا للوفاء وتثمينًا للثقة يسرّ منصة تيرا للخدمات المتكاملة أن تتقدّم بخالص الشكر والعرفان إلى',
       honM: 'السيد', honF: 'السيدة',
-      tailM: 'لما أولانا إياه من ثقة نعتزّ بها، ولتعامله الراقي معنا، فقد كان مثالًا للعميل الذي نفخر بخدمته، وشريكًا نسعد بانتمائه إلى أسرة تيرا. ونعده بأن نبقى عند حسن ظنه دائمًا، متمنّين له دوام التوفيق.',
-      tailF: 'لما أولتنا إياه من ثقة نعتزّ بها، ولتعاملها الراقي معنا، فقد كانت مثالًا للعميل الذي نفخر بخدمته، وشريكًا نسعد بانتمائه إلى أسرة تيرا. ونعدها بأن نبقى عند حسن ظنها دائمًا، متمنّين لها دوام التوفيق.',
+      tailM: 'وذلك لما أولانا إياه من ثقة نعتزّ بها ولتعامله الراقي معنا فقد كان مثالًا للعميل الذي نفخر بخدمته وشريكًا نسعد بانتمائه إلى أسرة تيرا ونعده بأن نبقى عند حسن ظنه دائمًا متمنّين له دوام التوفيق',
+      tailF: 'وذلك لما أولتنا إياه من ثقة نعتزّ بها ولتعاملها الراقي معنا فقد كانت مثالًا للعميل الذي نفخر بخدمته وشريكًا نسعد بانتمائها إلى أسرة تيرا ونعدها بأن نبقى عند حسن ظنها دائمًا متمنّين لها دوام التوفيق',
       cap: 'صدرت آليًا من المنصة — التحقق برقم الشهادة', auto: 'صدرت الشهادة إلكترونيًا — التحقق برقمها من موقع المنصة' },
 /* v867: ملحق تأجيل الدفعة — قالب في «قوالب المستندات» (platform_settings: df)، ولكل طلب نسخته الخاصة إن وُجدت */
 df: { org: ORG, title: 'ملحق تأجيل دفعة', en: 'PAYMENT DEFERRAL ADDENDUM', issuer: 'قسم التحصيل', pill: 'ملحق عقد',
@@ -23935,20 +23939,26 @@ auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقي
   /* ═══ شهادة «تقدير ووفاء» — o: name · addr(m|f) · tier · member_no · since · issued · code · contract ═══ */
   const TIER_T = { plus: 'تيرا بلس', premium: 'تيرا بريميوم', elite: 'تيرا إيليت' };
   function certPage(o, T) {
+    /* v1069: شهادة «شكر ووفاء» — إطار فاخر مزخرف بأركان ذهبية وشعار غار، واسم العميل في لوحة بارزة، والسبب ورقم العقد تحته؛
+       البيانات بلا تكرار (لا الاسم ولا السبب)، والترويسة عنوان واحد بلا شارة */
     T = T || tpl('ce');
-    const f = o.addr === 'f', code = o.code || '';
-    const P = 'margin:0;font-size:14.5px;line-height:2;font-weight:600;color:#0b2552';
+    const f = o.addr === 'f', code = o.code || '', rk = ({ full: 1, early: 1, product: 1 })[o.reason] ? o.reason : 'full';
     const hon = on(T, 'hon') ? (f ? T.honF : T.honM) : '';
-    const nameH = '<div style="text-align:center"><div style="margin:14px auto 16px;display:inline-block;padding:0 6px 8px;font-size:27px;line-height:1.5;font-weight:800;color:#0b2552;border-bottom:3px solid #d8ad4c">' + (hon ? '<span style="display:block;font-size:13px;font-weight:700;color:#8a6a1f;margin-bottom:2px">' + esc(hon) + '</span>' : '') + esc(o.name || 'عميلنا') + '</div></div>';
+    const why = ((f ? T.whyF : T.why) || {})[rk] || '';
     const tier = TIER_T[String(o.tier || '').toLowerCase()] || o.tier || '';
-    const data = on(T, 'data') ? dKV([['اسم العميل', o.name || 'عميلنا', false], on(T, 'member') ? ['رقم العضوية', o.member_no || '', true] : null,
-      on(T, 'since') ? [o.member_no ? 'عضو منذ' : 'عميل منذ', o.since ? dmy(o.since) : '', true] : null, on(T, 'contract') ? ['العقد المُغلق', o.contract || '', true] : null]) : '';
-    const cards = [
-      data ? dCard(T.tt.data, 'user', data) : '',
-      '<section class="d3-card"><div class="d3-ch"><span class="d3-ic">' + d2Icon('info', true) + '</span><b>' + esc(T.tt.body) + '</b></div><div style="padding:20px 30px 24px;text-align:center;color:#0b2552"><p style="' + P + '">' + esc(T.lead) + '</p>' + nameH + '<p style="' + P + '">' + esc(f ? T.tailF : T.tailM) + '</p></div></section>',
-      H.appr(code || 'TERA', T.cap)
-    ];
-    return { org: T.org, issuer: T.issuer, en: T.en, title: T.title, pill: T.pill, no: code, cards: cards,
+    const B = o.style ? o.style !== 'a' : !(T.alt === true || T.style === 'a'); /* v1069: (ب) الرسمي افتراضيًا */
+    const body = '<section class="ce-wrap"><div class="ce-frame">' + CE_CORNERS
+      + '<div class="ce-in">' + (B ? CE_MEDAL : CE_LAUREL)
+      + '<p class="ce-lead">' + esc(T.lead) + '</p>'
+      + '<div class="ce-plate">' + (hon ? '<small>' + esc(hon) + '</small>' : '') + '<b>' + esc(o.name || 'عميلنا') + '</b>' + CE_UL + '</div>'
+      + (why ? '<div class="ce-why">' + esc(why) + (o.contract ? ' <span dir="ltr">' + esc(o.contract) + '</span>' : '') + '</div>' : '')
+      + '<p class="ce-tail">' + esc(f ? T.tailF : T.tailM) + '</p>'
+      + '<div class="ce-sign"><span>' + esc(T.sign1 || '') + '</span><b>' + esc(T.sign2 || T.org || '') + '</b></div>'
+      + '</div></div></section>';
+    const data = on(T, 'data') ? dKV([on(T, 'contract') ? ['العقد', o.contract || '', true] : null, o.done ? ['تاريخ الإتمام', dmy(o.done), true] : null,
+      on(T, 'member') ? ['رقم العضوية', o.member_no || '', true] : null, on(T, 'since') ? [o.member_no ? 'عضو منذ' : 'عميل منذ', o.since ? dmy(o.since) : '', true] : null]) : '';
+    const cards = [body, data ? dCard(T.tt.data, 'user', data) : '', H.appr(code || 'TERA', T.cap)];
+    return { org: T.org, issuer: T.issuer, en: T.en, title: T.title, pill: T.pill, no: code, nobar: true, cls: 'is-ce' + (B ? ' is-ce-b' : ''), cards: cards,
       meta: [['رقم التحقق', code, 'hash'], ['تاريخ الإصدار', dmy(o.issued || new Date().toISOString().slice(0, 10))], tier && on(T, 'tier') ? ['نوع العضوية', tier, 'shield'] : null], auto: T.auto };
   }
 
@@ -24184,6 +24194,56 @@ const DOCXT = {};
 function docxT(k) { if (!DOCXT[k]) DOCXT[k] = DOCX ? DOCX.tpl(k) : {}; return DOCXT[k]; }
 function docxSet(k, v) { if (DOCX) lvRepl(docxT(k), DOCX.tpl(k, v)); }
 /* معاينة صفحة من النواة في عارض المستندات الموحّد */
+/* v1069: نسخة المعاينة من ثوابت الشهادة (مطابقة لـ server/lib/d3doc.js) — تُحقن أنماطها مرة واحدة */
+const CE_G = '#a87a22'; /* ذهبي قالب المستندات المعتمد (#a87a22 · #d1a442) */
+const CE_CORNER = '<svg viewBox="0 0 80 80" aria-hidden="true"><g fill="none" stroke="' + CE_G + '" stroke-linecap="round"><path d="M76 74V18Q76 4 62 4H6" stroke-width="2"/><path d="M68 74V24Q68 12 56 12H6" stroke-width="1"/>'
+  + '<path d="M60 44C60 30 50 20 36 20" stroke-width="1.3"/><path d="M76 34c-9 0-14 5-14 14M46 4c0 9 5 14 14 14" stroke-width="1.1"/></g>'
+  + '<g fill="' + CE_G + '"><path d="M62 18l-6-1 4 5z"/><circle cx="36" cy="20" r="2.2"/><circle cx="60" cy="44" r="2.2"/><path d="M50 30l-8-3 3 8 8 3z"/></g></svg>';
+const CE_CORNERS = ['tr', 'tl', 'br', 'bl'].map(function (k) { return '<i class="ce-c ce-' + k + '">' + CE_CORNER + '</i>'; }).join('');
+const CE_LAUREL = (function () {
+  let lv = ''; for (let i = 0; i < 6; i++) { const a = 195 - i * 19, r = 25, cx = 50 + r * Math.cos(a * Math.PI / 180), cy = 36 + r * Math.sin(a * Math.PI / 180);
+    lv += '<ellipse cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" rx="6" ry="2.6" transform="rotate(' + (a + 75) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"/>';
+    const b = 345 + i * 19, cx2 = 50 + r * Math.cos(b * Math.PI / 180), cy2 = 36 + r * Math.sin(b * Math.PI / 180);
+    lv += '<ellipse cx="' + cx2.toFixed(1) + '" cy="' + cy2.toFixed(1) + '" rx="6" ry="2.6" transform="rotate(' + (b - 75) + ' ' + cx2.toFixed(1) + ' ' + cy2.toFixed(1) + ')"/>'; }
+  return '<div class="ce-emb"><svg viewBox="0 0 100 70" aria-hidden="true"><g fill="' + CE_G + '">' + lv + '</g><circle cx="50" cy="36" r="15" fill="none" stroke="' + CE_G + '" stroke-width="2"/>'
+    + '<path d="M50 26.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5-4.7-4.6 6.5-.9z" fill="' + CE_G + '"/></svg></div>';
+})();
+const CE_UL = '<svg class="ce-ul" viewBox="0 0 300 14" aria-hidden="true"><path d="M10 7h118M172 7h118" stroke="' + CE_G + '" stroke-width="1.6"/><path d="M10 11h118M172 11h118" stroke="' + CE_G + '" stroke-width=".6"/><path d="M150 1l8 6-8 6-8-6z" fill="' + CE_G + '"/><circle cx="136" cy="7" r="2" fill="' + CE_G + '"/><circle cx="164" cy="7" r="2" fill="' + CE_G + '"/></svg>';
+const CE_MEDAL = (function () { let sc = ''; for (let i = 0; i < 24; i++) { const a = i * 15 * Math.PI / 180, x = 60 + 34 * Math.cos(a), y = 46 + 34 * Math.sin(a); sc += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="6.2"/>'; }
+  return '<div class="ce-emb"><svg viewBox="0 0 120 112" aria-hidden="true"><defs><radialGradient id="cem" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#f8e2a0"/><stop offset=".55" stop-color="#d1a442"/><stop offset="1" stop-color="#a87a22"/></radialGradient></defs>'
+  + '<path d="M44 70l-12 40 14-8 8 12 8-40z" fill="#0b2552"/><path d="M76 70l12 40-14-8-8 12-8-40z" fill="#14336a"/>'
+  + '<g fill="url(#cem)">' + sc + '<circle cx="60" cy="46" r="34"/></g><circle cx="60" cy="46" r="27" fill="#0b2552" stroke="#f3d580" stroke-width="2"/><circle cx="60" cy="46" r="22.5" fill="none" stroke="#e7c46b" stroke-width=".8" stroke-dasharray="2.2 2"/>'
+  + '<path d="M60 31l4.4 9 9.9 1.4-7.2 7 1.7 9.9-8.8-4.6-8.8 4.6 1.7-9.9-7.2-7 9.9-1.4z" fill="url(#cem)"/></svg></div>'; })();
+const CE_RUQ = 1; /* خط الرقعة (OFL) مضمَّن في الشهادة (ب) وحدها — لا شبكة وقت التوليد */
+const CE_B_CSS = '@font-face{font-family:"TeraRuqaa";font-weight:700;src:url(/assets/fonts/aref-ruqaa-700.woff2) format("woff2")}'
+  + '.dc3.is-ce-b .ce-plate b{font-family:TeraRuqaa,Cairo,sans-serif!important;font-size:40px!important;line-height:1.35!important;font-weight:700!important}'
+  + '.dc3.is-ce-b .ce-emb svg{width:82px!important;height:77px!important}'
+  + '.dc3.is-ce-b .ce-frame{border:3px double #d1a442!important}'
+  + '.dc3.is-ce-b .ce-wrap{background:linear-gradient(180deg,#fffdf7,#fbf3df)!important;box-shadow:0 10px 22px rgba(11,37,82,.12),inset 0 0 0 4px #fffdf7,inset 0 0 0 5px rgba(209,164,66,.45)!important}'
+  + '.dc3.is-ce-b .ce-in{padding:10px 64px 12px!important}';
+/* v1069: الترويسة والبطاقات للشهادة — بلا ظل داكن خلف الشعار، ومسافة بين الشعار والنص، والعنوان متوازن في الوسط، ومحتوى البطاقات والجدول في المنتصف */
+const CE_HEAD_CSS = '.dc3.is-ce .d3-logo{box-shadow:0 0 0 3px #e7c46b,0 0 0 4px #a9781f!important}.dc3.is-ce .d3-brand{gap:26px!important}'
+  + '.dc3.is-ce .d3-ttl{align-items:center!important;text-align:center!important;min-width:230px;justify-content:center}.dc3.is-ce .d3-ttl small{direction:ltr}'
+  + '.dc3.is-ce .d3-meta .d3-chip{justify-content:center!important;text-align:center!important}.dc3.is-ce .d3-meta .d3-chip>div{text-align:center!important;flex:0 1 auto!important}'
+  + '.dc3.is-ce .d3-kv th,.dc3.is-ce .d3-kv td{text-align:center!important}';
+const CE_DIV = '<div class="ce-div"><svg viewBox="0 0 120 10" aria-hidden="true"><path d="M60 1l5 4-5 4-5-4z" fill="' + CE_G + '"/><circle cx="46" cy="5" r="1.6" fill="' + CE_G + '"/><circle cx="74" cy="5" r="1.6" fill="' + CE_G + '"/></svg></div>';
+const CE_CSS = '.dc3.is-ce .d3-meta{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:12px}.dc3.is-ce .d3-meta .d3-chip{min-width:0;width:auto!important}.dc3.is-ce .d3-meta .d3-chip b{font-size:15px;white-space:nowrap}.dc3.is-ce .axp-b{gap:12px}.dc3.is-ce .d3-wm{display:none!important}'
+  + '.dc3.is-ce .ce-wrap{border-radius:16px;background:#fffdf7;border:2px solid #d1a442;padding:7px;box-shadow:0 10px 22px rgba(11,37,82,.12),0 2px 5px rgba(11,37,82,.08)}'
+  + '.dc3.is-ce .ce-frame{position:relative;border-radius:11px;border:1px solid #e3c98a;background:#fffbf1}'
+  + '.dc3.is-ce .ce-in{position:relative;z-index:1;padding:16px 64px 16px;text-align:center;color:#0b2552;display:flex;flex-direction:column;align-items:center;gap:4px}'
+  + '.dc3.is-ce .ce-c{position:absolute;width:60px;height:60px;z-index:2}.dc3.is-ce .ce-c svg{width:100%;height:100%;display:block}'
+  + '.dc3.is-ce .ce-tr{top:6px;right:6px}.dc3.is-ce .ce-tl{top:6px;left:6px;transform:scaleX(-1)}.dc3.is-ce .ce-br{bottom:6px;right:6px;transform:scaleY(-1)}.dc3.is-ce .ce-bl{bottom:6px;left:6px;transform:scale(-1,-1)}'
+  + '.dc3.is-ce .ce-emb svg{width:92px;height:64px;display:block}'
+  + '.dc3.is-ce .ce-lead{margin:0 0 2px;font-size:15px;line-height:1.9;font-weight:600;color:#24384c;max-width:600px;text-wrap:balance}'
+  + '.dc3.is-ce .ce-plate{margin:2px auto 0;padding:6px 0 0;width:100%;display:flex;flex-direction:column;align-items:center;text-align:center}.dc3.is-ce .ce-plate b{display:block;width:100%;text-align:center}'
+  + '.dc3.is-ce .ce-plate small{font-size:13px;font-weight:700;color:#a87a22}'
+  + '.dc3.is-ce .ce-plate b{font-size:31px;line-height:1.45;font-weight:800;color:#0b2552}'
+  + '.dc3.is-ce .ce-ul{width:300px;height:14px;display:block;margin:2px auto 0}'
+  + '.dc3.is-ce .ce-why{margin-top:8px;font-size:15px;font-weight:700;color:#a87a22}.dc3.is-ce .ce-why span{color:#0b2552;font-weight:800;letter-spacing:.4px}'
+  + '.dc3.is-ce .ce-div svg{width:120px;height:10px;display:block;margin:6px auto 2px}'
+  + '.dc3.is-ce .ce-tail{margin:0;font-size:14px;line-height:2;font-weight:500;color:#24384c;max-width:620px;text-wrap:balance}'
+  + '.dc3.is-ce .ce-sign{margin-top:6px;display:flex;flex-direction:column;gap:0;font-size:13px;color:#a87a22}.dc3.is-ce .ce-sign b{font-size:14.5px;font-weight:700;color:#0b2552}';
+function ceCssOnce() { if (document.getElementById('ce-css')) return; const st = document.createElement('style'); st.id = 'ce-css'; st.textContent = CE_CSS + CE_HEAD_CSS + CE_B_CSS; document.head.appendChild(st); }
 function docxPv(pg) {
   const B = [];
   (pg.cards || []).filter(Boolean).forEach(function (h) {
@@ -24192,7 +24252,8 @@ function docxPv(pg) {
     const tp = document.createElement('template'); tp.innerHTML = h; if (tp.content.firstElementChild) B.push(tp.content.firstElementChild);
   });
   const meta = (pg.meta || []).filter(function (m) { return m && m[1] != null && String(m[1]) !== ''; }).map(function (m) { return [m[0], m[1], DOCX.isLtr(m[1]) ? undefined : false]; });
-  dcPdf({ dsn: 2, cls: 'is-docx', label: pg.title || 'المستند', org: pg.org, issuer: pg.issuer, title: pg.title, kind2: pg.kind2, en: pg.en, pill: pg.pill, slogan0: 'عالمك بلا حدود', meta: meta, blocks: B,
+  if (/is-ce/.test(pg.cls || '')) ceCssOnce();
+  dcPdf({ dsn: 2, cls: 'is-docx' + (pg.cls ? ' ' + pg.cls : ''), nobar: pg.nobar, label: pg.title || 'المستند', org: pg.org, issuer: pg.issuer, title: pg.title, kind2: pg.kind2, en: pg.en, pill: pg.pill, slogan0: 'عالمك بلا حدود', meta: meta, blocks: B,
     auto: pg.auto, slogan: (pg.org || 'منصة تيرا للخدمات المتكاملة') + ' · عالمك بلا حدود', fname: pg.title + ' — معاينة', draft: true });
 }
 /* بيانات المعاينة — نموذجية، لا تُقرأ من حساب عميل */
@@ -24257,6 +24318,7 @@ function esxGCe() {
   return esxGDocx('ce', { name: 'شهادة تقدير ووفاء', tabL: 'الشهادة',
     hdr: ESX_DXH('عنوان الشهادة').concat([{ k: 'pill', l: 'شارة الشهادة', p: 'pill' }]),
     secs: [
+      { id: 'cest', title: 'تصميم الشهادة', kind: 'toggles', items: [{ l: 'القالب البديل (أ) بدل الرسمي (ب)', p: 'alt' }], hint: 'الرسمي (ب) بوسام وخط الرقعة · البديل (أ) كلاسيكي بشعار الغار — يُطبَّق على الشهادات الصادرة بعد الحفظ.' },
       { id: 'ced', title: 'بيانات الشهادة', titleP: 'tt.data', kind: 'toggles', show: 'show.data', items: [{ l: 'رقم العضوية', p: 'show.member' }, { l: 'عضو منذ', p: 'show.since' }, { l: 'العقد المُغلق', p: 'show.contract' }, { l: 'نوع العضوية في الرأس', p: 'show.tier' }] },
       { id: 'ceb', title: 'تقديرًا للوفاء', titleP: 'tt.body', kind: 'text', p: 'lead', hint: 'المقدمة قبل اسم العميل — الاسم يظهر بعدها في سطر مستقل بخط كبير.' },
       { id: 'ceh', title: 'اللقب قبل الاسم', kind: 'fields', fields: [{ l: 'للعميل', p: 'honM', hp: 'show.hon' }, { l: 'للعميلة', p: 'honF' }] },
@@ -32746,7 +32808,7 @@ const MSGC_SEC = { 1: 'السداد والإيصالات', 2: 'التذكير ب
 const MSGC_COL = { 1: '#1F8A5B', 2: '#C99A2E', 3: '#8A1C2B', 4: '#2B2B2B', 5: '#A16207', 6: '#1E5AA8', 7: '#0B6E99', 8: '#6D4BC2', 9: '#7C3AED', 10: '#B8860B', 11: '#2563EB', 12: '#0F766E', 13: '#9333EA', 14: '#0891B2', 15: '#475569', 16: '#0369A1', 17: '#64748B', 18: '#334155', 19: '#4D7C0F' }; /* v674 */
 const MSGC_IMG = ['acct-ready', 'ev-collect-demand', 'ev-elig-received', 'ev-elig-fix', 'ev-elig-back', 'ev-elig-ok', 'ev-elig-less', 'ev-elig-no', 'ev-elig-accepted', 'ev-elig-declined', 'ev-elig-quote', 'ev-elig-purchase', 'ev-final-notice', 'ev-launch-v2', 'ev-legal-start', 'ev-login', 'ev-maint', 'ev-order-approved', 'ev-order-changes', 'ev-order-done', 'ev-order-expired', 'ev-order-new', 'ev-order-rejected', 'ev-order-status', 'ev-pay-deferred', 'ev-pay-due', 'ev-pay-link', 'ev-pay-overdue', 'ev-pay-partial', 'ev-profile', 'ev-quote', 'ev-rate-pay', 'ev-rate-thanks-v2', 'ev-refund-rejected', 'ev-refund-request', 'ev-service-approved', 'ev-service-rejected', 'ev-settle-done', 'ev-settle-invoice', 'ev-store-offer', 'ev-support', 'ev-survey-launch', 'ev-survey-nps', 'ev-survey-service', 'ev-survey-settle', 'ev-survey-support', 'ev-transfer-approved', 'ev-transfer-fix', 'ev-transfer-received', 'ev-transfer-rejected', 'ev-transfer-remind', 'ev-transfer-request', 'pv-approved', 'pv-complete', 'pv-data', 'pv-doc-fix', 'pv-doc-ok', 'pv-film_ready', 'pv-item', 'pv-job-fix', 'pv-launched', 'pv-received', 'pv-registered', 'pv-rejected', 'pv-resubmitted', 'pv-returned', 'pv-review', 'pv-submitted', 'receipt-failed', 'receipt-paid', 'receipt-refund', 'receipt-void', 'upd-approved', 'upd-received', 'upd-rejected', 'ev-req-received', 'ev-req-fix', 'ev-req-offer', 'ev-req-approved', 'ev-req-done', 'ev-req-rejected', 'ev-req-declined', 'ev-req-expired', 'ev-req-cancelled', 'ev-req-preparing', 'ev-req-shipped', 'ev-req-transit', 'ev-req-pickup', 'ev-req-delivered']; /* v627: 66 صورة — لكل رسالة صورتها بالتصميم المعتمد */
 const MSGC_CH = [['app', 'إشعار المنصة'], ['push', 'إشعار الجوال'], ['email', 'البريد'], ['wa', 'واتساب']];
-const MSGC_ATT = { '': 'بلا مرفق', pdf_receipt: 'إيصال PDF — مرفق مع الرسالة نفسها (رأس واتساب ومرفق البريد)', pdf_thanks: 'خطاب الشكر — داخل الإيصال PDF', pdf_cert: 'شهادة «تقدير ووفاء» PDF — مرفقة مع الرسالة نفسها', video_film: 'الفيلم — يرسله البوت ملف فيديو عند الضغط', rating_buttons: 'أزرار التقييم بالوجوه — مع الرسالة نفسها' };
+const MSGC_ATT = { '': 'بلا مرفق', pdf_receipt: 'إيصال PDF — مرفق مع الرسالة نفسها (رأس واتساب ومرفق البريد)', pdf_thanks: 'خطاب الشكر المستقل — موقوف لا يُستخدم (الشكر شريط داخل الإيصال PDF)', pdf_cert: 'شهادة «تقدير ووفاء» PDF — مرفقة مع الرسالة نفسها', video_film: 'الفيلم — يرسله البوت ملف فيديو عند الضغط', rating_buttons: 'أزرار التقييم بالوجوه — مع الرسالة نفسها' };
 function msgcCss() {
   const o = document.getElementById('msgc-css'); if (o && o.getAttribute('data-v') === '623') return; if (o) o.remove();
   const s = document.createElement('style'); s.id = 'msgc-css'; s.setAttribute('data-v', '623');
