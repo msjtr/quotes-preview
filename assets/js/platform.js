@@ -34073,7 +34073,9 @@ function rmLoad(force) {
   if (!force && RM.L && RM.L !== 'loading' && Date.now() - RM.at < 30000) return;
   if (RM.L === null) RM.L = 'loading';
   RM.at = Date.now();
-  clApi('/admin/api/reminders/overview').then(function (j) { RM.L = j; draw(); }).catch(function (err) { if (err && err.message === 'auth') return; RM.L = { fail: (err && err.message) || 'تعذّر التحميل.' }; draw(); });
+  /* v1054: يُقبل آخر طلب فقط — كان ردّ قديم (قبل الحفظ) يصل بعد الجديد فيعيد القاعدة كما كانت */
+  const seq = (RM.lseq = (RM.lseq || 0) + 1);
+  clApi('/admin/api/reminders/overview').then(function (j) { if (seq !== RM.lseq) return; RM.L = j; RM.dirty = 0; draw(); }).catch(function (err) { if (seq !== RM.lseq) return; RM.dirty = 0; if (err && err.message === 'auth') return; RM.L = { fail: (err && err.message) || 'تعذّر التحميل.' }; draw(); });
 }
 function rmHelp() {
   return e('details', { class: 'sc-ex rm-help' }, [e('summary', {}, 'طريقة العمل'), e('ol', {}, [
@@ -34108,7 +34110,7 @@ async function rmnAct(url, body, done) {
   try {
     const r = await clPost(url, body || {});
     if (!r || r.ok !== true) throw new Error((r && r.message) || 'تعذّر التنفيذ.');
-    RM.busy = false; RM.ask = ''; RMN.rej = ''; RMN.rejTx = ''; RMN.done = typeof done === 'function' ? done(r) : done; rmLoad(true); rmLoadC(true); rmnPaint();
+    RM.busy = false; RM.ask = ''; RMN.rej = ''; RMN.rejTx = ''; RMN.done = typeof done === 'function' ? done(r) : done; RM.dirty = Date.now(); rmLoad(true); rmLoadC(true); rmnPaint();
     try { window.scrollTo(0, 0); } catch (err) { void err; }
     return r;
   } catch (err) { RM.busy = false; if (err && err.message === 'auth') return null; RM.err = (err && err.message) || 'تعذّر التنفيذ.'; rmnPaint(); return null; }
@@ -34726,7 +34728,7 @@ function rmnRules(L, kind) {
           DS.button('تراجع', { size: 'sm', onClick: function () { RMN.rej = ''; RMN.rejTx = ''; rmnPaint(); } })])])]
         : [e('div', { class: 'rmn-acts rsc-acts' }, [
           r.status === 'pending' && P.approve ? liveOk(DS.button('اعتماد', { tone: 'primary', size: 'sm', disabled: RM.busy, onClick: go('approve', { tone: 'ok', ic: 'seal-check', t: 'اعتُمدت القاعدة', s: '«' + r.name + '» — تعمل في مواعيدها' + (r.audience === 'test' ? ' على حسابك التجريبي فقط.' : ' للمستلمين: ' + rmAudTx(r) + '.'), back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
-          liveOk(DS.button(r.status === 'pending' ? 'مراجعة وتعديل' : 'تعديل', { size: 'sm', onClick: function () { RM.S = rmForm(r, L); RMN.F0 = JSON.parse(JSON.stringify(RM.S)); RM.S.reason = ''; RMN.step = 1; RMN.t = 'edit'; RM.err = ''; rmnPaint(); } })),
+          liveOk(DS.button(RM.dirty ? 'جارٍ التحديث…' : r.status === 'pending' ? 'مراجعة وتعديل' : 'تعديل', { size: 'sm', disabled: !!RM.dirty, onClick: function () { if (RM.dirty) return; /* v1054: لا يُفتح التعديل على نسخة ما قبل الحفظ */ RM.S = rmForm(r, L); RMN.F0 = JSON.parse(JSON.stringify(RM.S)); RM.S.reason = ''; RMN.step = 1; RMN.t = 'edit'; RM.err = ''; rmnPaint(); } })),
           (r.status === 'draft' || r.status === 'rejected') ? liveOk(DS.button('إرسال للاعتماد', { size: 'sm', disabled: RM.busy, onClick: go('submit', { tone: 'ok', ic: 'paper-plane-tilt', t: 'أُرسلت القاعدة للاعتماد', s: '«' + r.name + '» — لا تُرسل قبل اعتمادها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
           r.status === 'approved' ? liveOk(DS.button('إيقاف مؤقت', { size: 'sm', disabled: RM.busy, onClick: go('pause', { tone: 'warn', ic: 'hourglass-medium', t: 'أُوقفت القاعدة مؤقتًا', s: '«' + r.name + '» لا تُرسل حتى تستأنفها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
           r.status === 'paused' && P.approve ? liveOk(DS.button('استئناف', { tone: 'primary', size: 'sm', disabled: RM.busy, onClick: go('resume', { tone: 'ok', ic: 'check-circle', t: 'استُؤنفت القاعدة', s: '«' + r.name + '» تعمل في مواعيدها.', back: 'العودة إلى الجدولة', to: 'rules' }) })) : null,
