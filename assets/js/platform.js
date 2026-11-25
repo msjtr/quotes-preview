@@ -34955,7 +34955,7 @@ function rmnSegPanel(F, k, today) {
 const RMN_LT_DEF = { split: 15, s1: 1, e1: 3, e2: 5, custom: false };
 function rmnLtCalc(L) {
   const sp = Number(L.split) || 15, s1 = Number(L.s1) || 1, e1 = Number(L.e1) || 3, e2 = Number(L.e2) || 5;
-  const m1 = s1 <= sp - 1 ? Math.min(12, Math.floor((sp - 1 - s1) / e1) + 1) : 0, m2 = Math.min(12, Math.floor((60 - sp) / e2) + 1);
+  const m1 = s1 <= sp - 1 ? Math.min(60, Math.floor((sp - 1 - s1) / e1) + 1) : 0, m2 = Math.min(60, Math.floor((60 - sp) / e2) + 1); /* v1063: المرحلتان تغطيان حتى اليوم 60 كاملًا (كان الحد 12 فيتوقف التذكير قبل 60) */
   const d1 = [], d2 = []; for (let i = 0; i < m1; i++) d1.push(s1 + e1 * i); for (let i = 0; i < m2; i++) d2.push(sp + e2 * i);
   return { sp: sp, s1: s1, e1: e1, e2: e2, m1: m1, m2: m2, d1: d1, d2: d2 };
 }
@@ -35097,10 +35097,8 @@ function rmnCal(F, inc, today, L) {
   const T1 = isLate ? rmnTplOf(F, selIt.x, selIt.p, selIt.d) : null;
   if (isLate) { const def0 = T1.k; if (!A.ckSet || A.ckFor !== A.pid + C.day) { A.ck = def0; A.ckFor = A.pid + C.day; A.ckSet = false; } } else A.ck = '';
   /* v1059: القالب الذي يصل وسببه، وتخصيصه للعميل مباشرة — ومعاينة قالب آخر للعرض فقط */
-  const goOv = function () { if (F.id) rmnOvOpen(F.id, selIt.x.id, 'edit'); }; /* v1061: صفحة التخصيص المستقلة */
   const ckBar = isLate ? e('div', { class: 'rsc-ckbar' }, [
-    e('div', { class: 'rsc-tplwhy' }, [e('span', {}, [e('small', {}, 'يصل ' + (selIt.x.name || '') + ' في هذا اليوم'), e('b', {}, '«' + RMN_TPLN[T1.k][1] + '»'), e('small', {}, 'السبب: ' + T1.why)]),
-      liveOk(DS.button('تخصيص قالب هذا العميل', { size: 'sm', ui: 'pencil-simple', disabled: !F.id, title: F.id ? null : 'احفظ القاعدة أولًا', onClick: goOv }))]),
+    e('div', { class: 'rsc-tplwhy' }, [e('span', {}, [e('small', {}, 'يصل ' + (selIt.x.name || '') + ' في هذا اليوم'), e('b', {}, '«' + RMN_TPLN[T1.k][1] + '»'), e('small', {}, 'السبب: ' + T1.why)])]), /* v1063: لا تخصيص من المعاينة — مكانه الوحيد زر «تخصيص العملاء» في بطاقة القاعدة */
     e('div', { class: 'rsc-ckbar-pv' }, [e('small', {}, 'معاينة قالب آخر (للعرض فقط):'), e('div', { class: 'rlg-seg', role: 'radiogroup', 'aria-label': 'معاينة قالب' }, [['pay_late', 'دفعة متأخرة'], ['collect_demand', 'مطالبة بسداد المتأخرات']].map(function (o) {
       const on = A.ck === o[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.ck = o[0]; A.ckSet = true; A.pv = null; rmnPaint(); } }, o[1]); }))])]) : null;
   return e('div', { class: 'rsc-cal' }, [segBar, e('div', { class: 'rsc-cal-box' }, [head, grid]),
@@ -35421,7 +35419,7 @@ function rmnEdit(L) {
         rmnPill(RMN_SEGT[c.seg][0], RMN_SEGT[c.seg][1]),
         e('span', { class: 'rsc-pr-a' }, [exc ? null : e('button', { type: 'button', class: 'rvi-eye' + (open ? ' is-on' : ''), onClick: function () { RMN.po = open ? '' : key; rmnPaint(); } }, open ? 'إغلاق' : 'الدفعات'),
           /* v1048: تخصيص هذا العميل في القاعدة */
-          exc ? null : e('button', { type: 'button', class: 'rvi-eye' + (rmnOvAny(F.ov[x.id]) ? ' is-on' : ''), 'data-live-ok': '', disabled: F.id ? null : 'disabled', title: F.id ? 'يفتح صفحة «تخصيص العملاء» لهذا العميل' : 'احفظ القاعدة أولًا ثم خصّص', onClick: function () { rmnOvOpen(F.id, x.id, 'edit'); } }, rmnOvAny(F.ov[x.id]) ? 'مخصص ✓' : 'تخصيص'),
+          !exc && rmnOvAny(F.ov[x.id]) ? rmnPill('مخصص', 'info') : null, /* v1063: للعرض فقط — التخصيص من بطاقة القاعدة */
           PK && !isSel ? null : cliEx ? e('button', { type: 'button', class: 'rvi-eye is-on', onClick: function () { F.excluded = F.excluded.filter(function (u) { return u.id !== x.id; }); rmnPaint(); } }, 'إعادة العميل')
             : e('button', { type: 'button', class: 'rvi-eye' + (ctOff(r) ? ' is-on' : ''), onClick: togCt }, ctOff(r) ? 'إعادة العقد' : 'استبعاد العقد')])]),
       open ? e('div', { class: 'rsc-pays' }, [c.seg === 'regular'
