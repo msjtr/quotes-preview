@@ -34040,16 +34040,15 @@ const RM_SEGS = [['regular', 'المنتظمون'], ['late', 'المتأخرون
 const RM_AUD = [['test', 'تجربة على حسابي فقط'], ['all', 'كل العملاء المستحقين'], ['fav', 'المفضلة فقط'], ['list', 'قائمة من دليل الهواتف'], ['picked', 'عملاء محددون']];
 const RM_ST = { draft: ['مسودة', null], pending: ['بانتظار الاعتماد', 'warn'], approved: ['معتمدة · تعمل', 'ok'], rejected: ['مرفوضة', 'danger'], paused: ['موقوفة مؤقتًا', 'info'], ended: ['منتهية', null] };
 const RM_WHY = [['طلب تأجيل قيد المراجعة', 'طلب تأجيل قيد المراجعة'], ['اتفاق سداد مع التحصيل', 'اتفاق سداد مع التحصيل'], ['تعليق العقد', 'تعليق العقد'], ['ظرف خاص', 'ظرف خاص'], ['طلب العميل', 'طلب العميل']];
-/* الوقت بنظام 12 ساعة: الساعة والدقيقة وصباحًا/مساءً */
-function rmTime(h, m) { h = Number(h) || 0; m = Number(m) || 0; return fmtNum(h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + (h < 12 ? 'ص' : 'م'); }
+/* v1064: الوقت بنظام 12 ساعة مع الفترة صريحة — «12 ظهرًا» لا «12 م» (كانت تُقرأ منتصف الليل) */
+function rmPer(h) { h = ((Number(h) || 0) % 24 + 24) % 24; return h === 0 ? 'منتصف الليل' : h < 5 ? 'ليلًا' : h < 12 ? 'صباحًا' : h < 15 ? 'ظهرًا' : h < 18 ? 'عصرًا' : 'مساءً'; }
+function rmTime(h, m) { h = Number(h) || 0; m = Number(m) || 0; return fmtNum(h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + rmPer(h); }
 function rmTimePick(h, m, set) {
   h = Number(h) || 0; m = Number(m) || 0;
-  const h12 = h % 12 || 12, pm = h >= 12, H = []; for (let i = 1; i <= 12; i++) H.push([String(i), fmtNum(i)]);
-  const to24 = function (x, p) { x = Number(x) % 12; return p ? x + 12 : x; };
+  const H = []; for (let i = 0; i < 24; i++) H.push([String(i), fmtNum(i % 12 || 12) + ' ' + rmPer(i)]); /* الساعة مع فترتها في قائمة واحدة */
   return e('div', { class: 'rm-time' }, [
-    DS.editField('الساعة', DS.select({ value: String(h12), options: H, onChange: function (v) { set(to24(v, pm), m); draw(); } })),
-    DS.editField('الدقيقة', DS.select({ value: String(m), options: [['0', '00'], ['15', '15'], ['30', '30'], ['45', '45']], onChange: function (v) { set(h, Number(v)); draw(); } })),
-    DS.editField('الفترة', DS.select({ value: pm ? 'pm' : 'am', options: [['am', 'صباحًا'], ['pm', 'مساءً']], onChange: function (v) { set(to24(h12, v === 'pm'), m); draw(); } }))]);
+    DS.editField('الساعة', DS.select({ value: String(h), options: H, onChange: function (v) { set(Number(v), m); draw(); } })),
+    DS.editField('الدقيقة', DS.select({ value: String(m), options: [['0', '00'], ['15', '15'], ['30', '30'], ['45', '45']], onChange: function (v) { set(h, Number(v)); draw(); } }))]);
 }
 function rmAudTx(r) {
   if (!r) return '—';
@@ -34099,7 +34098,7 @@ function rmnPaint() {
   if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y);
 }
 const RMN = { t: 'cl', seg: 'late', done: null, step: 1, send: false, rej: '', rejTx: '' };
-function rmnT(d) { if (!d || isNaN(d)) return '—'; const h = d.getHours(), m = d.getMinutes(); return fmtNum(h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + (h < 12 ? 'ص' : 'م'); }
+function rmnT(d) { if (!d || isNaN(d)) return '—'; return rmTime(d.getHours(), d.getMinutes()); } /* v1064 */
 function rmnDT(v) { if (!v) return '—'; const d = new Date(v); if (isNaN(d)) return '—'; const t = iso(new Date()), y = iso(new Date(Date.now() - 864e5)), k = iso(d); return (k === t ? 'اليوم' : k === y ? 'أمس' : k) + ' · ' + rmnT(d); }
 function rmnDay(v) { if (!v) return '—'; const d = new Date(String(v).length <= 10 ? v + 'T12:00:00' : v); if (isNaN(d)) return String(v); const t = iso(new Date()), k = iso(d); return k === t ? 'اليوم' : k === iso(new Date(Date.now() + 864e5)) ? 'غدًا' : k; }
 function rmnSar(v) { return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ر.س'; }
@@ -35011,7 +35010,7 @@ function rmnLatePanel(F, today) {
 }
 /* v1051: آخر وقت للإرسال — بعده لا يُرسل اليوم ويؤجَّل لليوم التالي */
 function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; return F.until ? Number(F.until.hour) * 60 + Number(F.until.minute || 0) : wE; } /* v1056: آخر وقت القاعدة يحل محل نهاية النافذة */
-function rmnEndTx(m) { return m >= 24 * 60 ? 'منتصف الليل' : rmTime(Math.floor(m / 60), m % 60); }
+function rmnEndTx(m) { return m >= 24 * 60 ? '12:00 منتصف الليل' : rmTime(Math.floor(m / 60), m % 60); }
 function rmnUntilBox(F, win) {
   /* v1056: مفتوح حتى منتصف الليل متاح ولو بعد نافذة الإرسال العامة — آخر وقت القاعدة يحل محلها */
   const wE = win ? Number(win.end) : 24, from = (F.twice ? F.hour2 * 60 + F.minute2 : F.hour * 60 + F.minute) + 30;
