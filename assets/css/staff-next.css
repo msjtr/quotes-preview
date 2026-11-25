@@ -5094,3 +5094,25 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rsc-cal-h { flex-wrap: wrap; }
 }
 .tq-next .rmn.is-narrow .rsc-cal-2 { grid-template-columns: 1fr; }
+
+/* v1039: شروط التوقف، الوسائل المبسطة، ودفعات العقد في صفه */
+.tq-next .rsc-stops { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tq-next .rsc-stops li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--t2-line); border-radius: 10px; background: var(--t2-surface-2); }
+.tq-next .rsc-stops li > span:nth-child(2) { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.tq-next .rsc-stops b { color: var(--t2-ink); font: 700 13px/1.5 var(--t2-ff-display); }
+.tq-next .rsc-stops small { color: var(--t2-muted); font-size: 12px; }
+.tq-next .rsc-stop-ic { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--t2-ok-wash, var(--t2-brand-wash)); color: var(--t2-ok); }
+.tq-next .rsc-stop-fix { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--t2-surface); border: 1px solid var(--t2-line); color: var(--t2-muted); font-size: 11px; font-style: normal; }
+.tq-next .rsc-endn { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding-bottom: 6px; }
+.tq-next .rsc-chs2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 8px; }
+.tq-next .rsc-ch2 { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--t2-line); border-radius: 12px; background: var(--t2-surface); }
+.tq-next .rsc-ch2.is-on { border-color: var(--t2-brand); background: var(--t2-brand-wash); }
+.tq-next .rsc-ch2-h { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--t2-ink); font: 700 13.5px/1.4 var(--t2-ff-display); }
+.tq-next .rsc-ch2-h input { width: 18px; height: 18px; accent-color: var(--t2-brand); }
+.tq-next .rsc-ch2-ic { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--t2-surface-2); color: var(--t2-brand); }
+.tq-next .rsc-ch2-s { flex-wrap: wrap; }
+.tq-next .rsc-pl2 { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.tq-next .rsc-pl2 li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 8px; background: var(--t2-surface); }
+.tq-next .rsc-pl2 li.is-off { opacity: .55; }
+.tq-next .rsc-pl2 b { color: var(--t2-ink); font: 700 13px/1.5 var(--t2-ff-display); }
+.tq-next .rsc-pl2 small { color: var(--t2-muted); font-size: 12px; text-align: end; }
