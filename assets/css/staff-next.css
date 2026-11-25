@@ -4950,3 +4950,10 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rsc-sim-k-ch { margin-inline-start: 0; }
   .tq-next .rmn-ed-h > .rsc-eacts { width: 100%; }
 }
+/* v1034: فئة كل عقد — شارات متعددة للعميل الذي له عقود في فئات مختلفة */
+.tq-next .rsc-segs { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.tq-next .rsc-segs > small { color: var(--t2-muted); font-size: 11.5px; }
+.tq-next .rsc-ct.is-off { opacity: .6; }
+.tq-next .rsc-ct-h > b { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tq-next .rsc-ct-n { color: var(--t2-muted); font: 500 12px/1.4 var(--t2-ff-body, inherit); }
+.tq-next .rmn-row-t .rsc-segs .rmn-pill { white-space: nowrap; }
