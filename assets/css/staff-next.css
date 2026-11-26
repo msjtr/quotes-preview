@@ -5297,3 +5297,41 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rov .rsc-ov { margin-top: 0; }
 .tq-next .rov .rsc-nr .t2-btn { flex: none; }
 @media (max-width: 640px) { .tq-next .rov-row, .tq-next .rov .rsc-nr { flex-wrap: wrap; } .tq-next .rov-row .t2-btn, .tq-next .rov .rsc-nr .t2-btn { margin-inline-start: auto; } }
+
+/* v1078: التذكير ← العملاء من جديد — بلا هدر مساحة ولا تداخل: شريط أدوات واحد، ملخص الفئة، قائمة بعرض كامل، ودفعات العميل شبكة تملأ عرض البطاقة.
+   لوحة الإرسال تظهر جانبًا ثابتة فقط حين تحدد دفعات. */
+.tq-next .rmn-cl2 { display: flex; flex-direction: column; gap: 12px; }
+.tq-next .rmn-cl2 .rmn-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tq-next .rmn-cl2 .rmn-tools .rmn-grow { display: none; }
+.tq-next .rmn-cl2 .rmn-search { flex: 1 1 260px; min-width: 200px; }
+.tq-next .rmn-cl2 .rmn-sort { min-width: 150px; flex: 0 0 auto; }
+.tq-next .rmn-sum2 { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 8px 14px; background: var(--t2-surface-2, #f6f8fb); border: 1px solid var(--t2-line); border-radius: 12px; font-size: 13px; color: var(--t2-muted); }
+.tq-next .rmn-sum2 b { color: var(--t2-ink); font-weight: 800; }
+.tq-next .rmn-sum2 .rmn-grow { flex: 1; }
+.tq-next .rmn-cl2-b { display: block; }
+.tq-next .rmn-cl2-b.has-side { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.tq-next .rmn-cl2-main { min-width: 0; }
+.tq-next .rmn-cl2-side { position: sticky; top: 12px; max-width: none; flex: none; }
+.tq-next .rmn-cl2 .rmn-list { display: flex; flex-direction: column; gap: 8px; }
+.tq-next .rmn-r2 { padding: 12px 14px; border-radius: 14px; }
+.tq-next .rmn-r2 .rmn-row-t { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; flex-wrap: nowrap; }
+.tq-next .rmn-r2 .rmn-row-t > .rsc-ctn, .tq-next .rmn-r2 .rmn-row-t > .rmn-pill { justify-self: start; white-space: nowrap; }
+.tq-next .rmn-r2 .rmn-row-t { grid-template-columns: auto minmax(0, 1fr) repeat(4, auto); }
+.tq-next .rmn-r2 .rmn-who { flex: none; }
+.tq-next .rmn-r2 .rmn-who b { font-size: 15px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tq-next .rmn-r2 .rmn-amt { min-width: 0; align-items: flex-end; text-align: end; }
+.tq-next .rmn-r2 .rmn-amt b { font-size: 16px; }
+.tq-next .rmn-r2 .rmn-pcs { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; margin-top: 10px; padding-inline-start: 0; }
+.tq-next .rmn-r2 .rmn-pc { min-height: 0; padding: 7px 10px; border-radius: 10px; width: 100%; box-sizing: border-box; }
+.tq-next .rmn-r2 .rmn-pc-b { min-width: 0; } .tq-next .rmn-r2 .rmn-pc-b small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tq-next .rmn-r2 .rmn-more { grid-column: 1 / -1; justify-self: start; }
+.tq-next .rmn-r2 .rsc-xct { margin-top: 8px; padding-inline-start: 0; }
+.tq-next .rmn-r2 .rmn-row-f { margin-top: 10px; padding-top: 8px; padding-inline-start: 0; gap: 14px; }
+@media (max-width: 900px) {
+  .tq-next .rmn-cl2-b.has-side { grid-template-columns: minmax(0, 1fr); }
+  .tq-next .rmn-cl2-side { position: static; }
+  .tq-next .rmn-r2 .rmn-row-t { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .tq-next .rmn-r2 .rmn-row-t > .rsc-ctn, .tq-next .rmn-r2 .rmn-row-t > .rmn-pill { grid-column: 2 / -1; }
+  .tq-next .rmn-r2 .rmn-pcs { grid-template-columns: minmax(0, 1fr); }
+}
+.tq-next .rmn.is-narrow .rmn-cl2-side { display: none; } .tq-next .rmn.is-narrow .rmn-cl2-b.has-side { grid-template-columns: minmax(0, 1fr); }

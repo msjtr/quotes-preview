@@ -34381,7 +34381,15 @@ function rmnClients(L) {
   const can = function (x) { return !paused && !x.excluded; };
   const okAll = rows.filter(function (x) { return can(x) && x.pay && !x.pay.trf; });
   const allOn = okAll.length && okAll.every(function (x) { return (RM.sel[x.id] || {})[x.pay.pid]; });
-  const hint = okAll.length ? e('div', { class: 'rmn-hint' }, [DS.button(allOn ? 'إلغاء التحديد' : 'تحديد الكل (' + fmtNum(okAll.length) + ')', { size: 'sm', onClick: function () { okAll.forEach(function (x) { RM.sel[x.id] = RM.sel[x.id] || {}; RM.sel[x.id][x.pay.pid] = !allOn; }); rmnPaint(); } })]) : null;
+  /* v1078: صفحة العملاء من جديد — شريط أدوات واحد، وملخص الفئة، وقائمة بعرض كامل (لوحة الإرسال تظهر جانبًا فقط حين تحدد دفعات) */
+  const hint = okAll.length ? DS.button(allOn ? 'إلغاء التحديد' : 'تحديد الكل (' + fmtNum(okAll.length) + ')', { size: 'sm', ui: allOn ? 'x-circle' : 'check-square', onClick: function () { okAll.forEach(function (x) { RM.sel[x.id] = RM.sel[x.id] || {}; RM.sel[x.id][x.pay.pid] = !allOn; }); rmnPaint(); } }) : null;
+  const sumP = rows.reduce(function (t, x) { return t + rmnPays(x).filter(function (y) { return seg === 'regular' ? Number(y.late) <= 0 : seg === 'fav' ? true : Number(y.late) > 0; }).length; }, 0);
+  const sumA = rows.reduce(function (t, x) { return t + (seg === 'regular' ? Number((x.pay || {}).left || 0) : Number(x.late_amt || 0)); }, 0);
+  const summ = rows.length ? e('div', { class: 'rmn-sum2' }, [
+    e('span', {}, [e('b', {}, fmtNum(rows.length)), rows.length === 1 ? ' عميل' : ' عملاء']),
+    seg === 'fav' ? null : e('span', {}, [e('b', {}, fmtNum(sumP)), seg === 'regular' ? ' دفعة قادمة' : ' دفعة متأخرة']),
+    seg === 'fav' ? null : e('span', {}, [seg === 'regular' ? 'القادم ' : 'المتأخر ', e('b', { class: 'rmn-ltr' }, rmnSar(sumA))]),
+    e('span', { class: 'rmn-grow' }), hint]) : null;
   const list = rows.length ? e('div', { class: 'rmn-list' }, rows.map(function (x) { return rmnRow(x, can(x)); }))
     : DS.note('info', seg === 'fav' ? 'لا مفضلة بعد' : q ? 'لا نتائج للبحث' : 'لا أحد في هذه القائمة', seg === 'fav' ? 'ضع نجمة على أي عميل ليظهر هنا.' : q ? 'جرّب الاسم أو رقم تيرا أو رقم العقد.' : 'لا عملاء بدفعات تطابق هذه الفئة الآن.');
   const sel = rmnSel();
@@ -34389,7 +34397,8 @@ function rmnClients(L) {
   const bar = sel.length ? e('div', { class: 'rmn-mbar', role: 'region', 'aria-label': 'المحدد للإرسال', style: 'bottom:' + dk + 'px' }, [
     e('span', {}, [e('b', {}, fmtNum(sel.length) + (sel.length === 1 ? ' دفعة' : ' دفعات') + ' لـ' + fmtNum(new Set(sel.map(function (o) { return o.x.id; })).size) + ' عميل'), e('small', {}, rmnSar(sel.reduce(function (s, o) { return s + Number(o.y.left || 0); }, 0)))]),
     DS.button('متابعة', { tone: 'primary', onClick: function () { RMN.send = true; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } })]) : null;
-  return [tools, hint, e('div', { class: 'rmn-split' }, [e('section', { class: 'rmn-main', 'aria-label': 'قائمة العملاء' }, [list]), e('aside', { class: 'rmn-side', 'aria-label': 'الإرسال' }, rmnSendBox(L, sel))]), bar];
+  return [e('div', { class: 'rmn-cl2' }, [tools, summ, e('div', { class: 'rmn-cl2-b' + (sel.length ? ' has-side' : '') }, [e('section', { class: 'rmn-cl2-main', 'aria-label': 'قائمة العملاء' }, [list]),
+    sel.length ? e('aside', { class: 'rmn-side rmn-cl2-side', 'aria-label': 'الإرسال' }, rmnSendBox(L, sel)) : null]), bar])];
 }
 function rmnRow(x, can) {
   const P = rmnPays(x), sel = RM.sel[x.id] || {}, ex = RM.ex[x.id], n = rmSelN(x.id);
@@ -34404,20 +34413,20 @@ function rmnRow(x, can) {
     const on = !!sel[y.pid], lt = Number(y.late) > 0, trf = !!y.trf, ok = can && !trf;
     const kids = [e('span', { class: 'rmn-ck', 'aria-hidden': 'true' }, on ? frag(ui('check', 12)) : null),
       e('span', { class: 'rmn-pc-b' }, [e('b', {}, 'الدفعة ' + fmtNum(y.seq) + ' من ' + fmtNum(y.n) + ' · ' + rmnSar(y.left)),
-        e('small', {}, [multi ? e('bdi', { class: 'rmn-ltr' }, y.contract_no || '') : null, multi ? ' · ' : null, rmnDay(y.due_date) + ' · ', e('span', { class: lt ? 'rmn-late' : 'rmn-ok' }, rmLate(y.late)),
+        e('small', {}, [e('bdi', { class: 'rmn-ltr' }, y.contract_no || ''), ' · ', rmnDay(y.due_date) + ' · ', e('span', { class: lt ? 'rmn-late' : 'rmn-ok' }, rmLate(y.late)),
           trf ? ' · إيصال تحويل قيد المراجعة' : null])])];
     if (!ok) return e('div', { class: 'rmn-pc is-ro' + (trf ? ' is-trf' : '') }, kids);
     return e('button', { type: 'button', class: 'rmn-pc' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () { RM.sel[x.id] = RM.sel[x.id] || {}; RM.sel[x.id][y.pid] = !on; rmnPaint(); } }, kids);
   };
-  return e('article', { class: 'rmn-row' + (n ? ' is-sel' : '') }, [
+  void multi; return e('article', { class: 'rmn-row rmn-r2' + (n ? ' is-sel' : '') }, [
     e('div', { class: 'rmn-row-t' }, [
       e('button', { type: 'button', class: 'rmn-star' + (x.fav ? ' is-on' : ''), 'aria-label': x.fav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة', 'aria-pressed': x.fav ? 'true' : 'false',
         onClick: function () { const on = !x.fav; x.fav = on; rmnPaint(); clPost('/admin/api/reminders/fav', { user_id: x.id, on: on }).then(function (r) { if (!r || r.ok !== true) { x.fav = !on; RM.err = (r && r.message) || 'تعذّر حفظ المفضلة.'; rmnPaint(); } else { try { COMM.ctAt = 0; } catch (err) { void err; } } }).catch(function () { x.fav = !on; rmnPaint(); }); } }, frag(ui('star', 20))),
       e('span', { class: 'rmn-who' }, [e('b', {}, x.name || '—'), e('bdi', { class: 'rmn-ltr' }, x.tera_id || '')]),
       e('span', { class: 'rsc-ctn', title: 'العقود القائمة (غير المغلقة)' }, [frag(ui('file-text', 13)), rmnCtTx(KC.n || CT.length)]),
       x.test ? rmnPill('حسابك التجريبي', 'info') : null, x.excluded ? rmnPill('مستثنى من التذكير', 'warn') : null,
-      CT.length > 1 ? e('span', { class: 'rsc-segs' }, CT.map(function (c) { return rmnPill([e('bdi', { dir: 'ltr' }, c.no), ' · ', c.late > 0 ? 'متأخر ' + rmDays(c.late) : c.next ? rmLate(c.next.late) : 'منتظم'], RMN_SEGT[c.seg][1]); }))
-        : x.pay ? rmnPill(x.seg === 'regular' ? rmLate(x.pay.late) : 'متأخر ' + rmDays(x.late) + (x.n_late > 1 ? ' · ' + fmtNum(x.n_late) + ' دفعات' : ''), tone) : rmnPill('لا دفعات قائمة'),
+      /* v1078: حالة واحدة مختصرة بدل شارة لكل عقد — العقد يظهر على كل دفعة */
+      x.pay ? rmnPill(x.seg === 'regular' ? rmLate(x.pay.late) : 'متأخر ' + rmDays(x.late) + (late.length > 1 ? ' · ' + fmtNum(late.length) + ' دفعات' : ''), tone) : rmnPill('لا دفعات قائمة'),
       x.pay ? e('span', { class: 'rmn-amt' }, [e('small', {}, x.seg === 'regular' ? 'الدفعة القادمة' : 'المتأخر'), e('b', {}, rmnSar(amt))]) : null]),
     P.length ? e('div', { class: 'rmn-pcs', role: 'group', 'aria-label': 'دفعات ' + (x.name || 'العميل') }, shown.map(chip).concat(more > 0 || RM.all[x.id] ? [e('button', { type: 'button', class: 'rmn-more', onClick: function () { RM.all[x.id] = !RM.all[x.id]; rmnPaint(); } }, RM.all[x.id] ? 'المتأخرة والأقرب فقط' : '+ ' + fmtNum(more) + (more === 1 ? ' دفعة قادمة' : ' دفعات قادمة'))] : [])) : null,
     KC.nodue.length || KC.rh.length ? e('div', { class: 'rsc-xct' }, KC.nodue.map(function (c) { return e('span', { class: 'rsc-xc' }, [e('bdi', { dir: 'ltr' }, c.no), ' · لا دفعات قائمة عليه']); })
