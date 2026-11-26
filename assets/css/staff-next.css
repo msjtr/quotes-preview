@@ -5539,3 +5539,8 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-lt-dl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .tq-next .rsc-lt-ns { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .tq-next .rsc-lt-ns i { font-style: normal; min-width: 26px; padding: 2px 6px; text-align: center; border-radius: 8px; background: #fff; border: 1px solid rgba(0,0,0,.08); font-size: 12.5px; font-weight: 700; }
+/* v1113: المراجعة بعمودين، وسداد جزئي */
+@media (min-width: 900px) { .tq-next .rsm:not(.is-compact) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tq-next .rsm:not(.is-compact) .rsm-r { grid-template-columns: 130px 1fr; }
+.tq-next .rsc-pr-ch i.is-part { background: #E8F0FE; color: #1F4E9B; }
+.tq-next .rsc-stl-part { display: block; color: #1F4E9B; font-weight: 700; font-size: 11.5px; margin-top: 2px; }
