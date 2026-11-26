@@ -5429,3 +5429,37 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-trow2 .rsc-pre { padding-top: 10px; border-top: 1px dashed rgba(0,0,0,.12); }
 .tq-next .rsc-trow2 + .rsc-trow2 { margin-top: 0; }
 @media (max-width: 560px) { .tq-next .rsc-trow2-tm .rm-time { max-width: none; } }
+/* ═══ v1102: محرر التذكير — الأساسي والإضافية بألوان، الفرق بين التذكيرات، شريط الأزرار السفلي، والمراجعة ببطاقات مستقلة ═══ */
+.tq-next .rsc-tsec { display: flex; flex-direction: column; gap: 2px; margin: 14px 0 8px; }
+.tq-next .rsc-tsec h4 { margin: 0; font: 800 15px/1.4 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .rsc-tsec small { color: var(--t2-muted); font-size: 12.5px; }
+.tq-next .rsc-trow2 { --c: #1AA89A; --bg: #EEF8F6; border-inline-start: 5px solid var(--c); background: var(--bg); border-color: color-mix(in srgb, var(--c) 35%, transparent); border-inline-start-color: var(--c); }
+.tq-next .rsc-trow2.is-first { --c: #0E7C72; --bg: #E6F5F2; }
+.tq-next .rsc-trow2.c0 { --c: #C98A12; --bg: #FFF8E8; }
+.tq-next .rsc-trow2.c1 { --c: #6B4FBB; --bg: #F4F0FC; }
+.tq-next .rsc-trow2.c2 { --c: #2D6FB7; --bg: #EEF4FC; }
+.tq-next .rsc-trow2.c3 { --c: #C0457A; --bg: #FCEFF5; }
+.tq-next .rsc-trow2.c4 { --c: #3E8E41; --bg: #EFF8EF; }
+.tq-next .rsc-trow2.c5 { --c: #B4532A; --bg: #FCF1EC; }
+.tq-next .rsc-trow2 .rsc-trow-tag { color: color-mix(in srgb, var(--c) 75%, #222); font-weight: 600; }
+.tq-next .rsc-trow2-top { justify-content: flex-start; }
+.tq-next .rsc-trow2-top > .rsc-trow-h { flex: 1; }
+.tq-next .rsc-trow2-n { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: var(--c); color: #fff; font: 800 14px/1 var(--t2-ff-display); }
+.tq-next .rsc-trow2 .rsc-days .rmn-chip.is-on { background: var(--c); border-color: var(--c); color: #fff; }
+.tq-next .rsc-gap { margin: 0; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.7); font-size: 13px; color: var(--t2-ink); }
+.tq-next .rsc-gap.is-warn { background: #FFF6E0; color: #7A5A0E; }
+.tq-next .rsc-gap.is-bad { background: #FDECEA; color: #A8382B; font-weight: 700; }
+.tq-next .rsc-rules { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: #F6F8FB; border: 1px solid var(--t2-line); }
+.tq-next .rsc-rules b { display: block; margin-bottom: 6px; font-size: 14px; }
+.tq-next .rsc-rules ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; font-size: 13px; color: var(--t2-ink-3, #5B6B7C); line-height: 1.7; }
+.tq-next .rsc-nav2 { position: sticky; bottom: 0; z-index: 5; flex-wrap: wrap; align-items: center; background: var(--t2-surface, #fff); padding: 12px 0 4px; }
+/* المراجعة: بطاقات مستقلة بعرض الصفحة، كل بطاقة بلونها، والعنوان والقيمة صفًا */
+.tq-next .rsm:not(.is-compact) { grid-template-columns: 1fr; gap: 12px; }
+.tq-next .rsm-s { --c: #1AA89A; border-inline-start: 4px solid var(--c); }
+.tq-next .rsm-s.is-teal { --c: #1AA89A; } .tq-next .rsm-s.is-blue { --c: #2D6FB7; } .tq-next .rsm-s.is-amber { --c: #C98A12; } .tq-next .rsm-s.is-violet { --c: #6B4FBB; }
+.tq-next .rsm-s .rsm-ic { background: color-mix(in srgb, var(--c) 14%, #fff); color: var(--c); }
+.tq-next .rsm:not(.is-compact) .rsm-s h4 { font-size: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--t2-line); }
+.tq-next .rsm:not(.is-compact) .rsm-r { grid-template-columns: 170px 1fr; gap: 12px; align-items: start; }
+.tq-next .rsm:not(.is-compact) .rsm-r dt { font-size: 13px; font-weight: 700; padding-top: 2px; }
+.tq-next .rsm.is-compact { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+@media (max-width: 560px) { .tq-next .rsm:not(.is-compact) .rsm-r { grid-template-columns: 1fr; gap: 2px; } }
