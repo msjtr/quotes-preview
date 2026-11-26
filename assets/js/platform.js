@@ -35127,7 +35127,7 @@ function rmnLatePanel(F, today) {
     seg('is-1', Math.max(1, c.sp - c.s1), 'المرحلة 1', 'اليوم ' + fmtNum(c.s1) + '–' + fmtNum(c.sp - 1)),
     seg('is-2', Math.max(1, c.to - c.sp + 1), 'المرحلة 2', 'اليوم ' + fmtNum(c.sp) + '–' + fmtNum(c.to)),
     seg('is-3', 14, 'المتعثرون', 'بعد 90')]);
-  const days = function (D) { return e('p', { class: 'rsc-lt-dl' }, D.length ? [e('b', {}, rmnRemN(D.length) + ': '), 'الأيام ' + D.map(fmtNum).join('، ')] : e('span', { class: 'is-bad' }, 'لا تذكيرات — غيّر البداية أو النهاية.')); };
+  const days = function (D) { return e('div', { class: 'rsc-lt-dl' }, D.length ? [e('b', {}, rmnRemN(D.length) + ' في الأيام:'), e('span', { class: 'rsc-lt-ns' }, D.map(function (n) { return e('i', {}, fmtNum(n)); }))] : e('span', { class: 'is-bad' }, 'لا تذكيرات — غيّر البداية أو النهاية.')); }; /* v1111: أرقام في وسوم (كانت تختلط اتجاهاتها) */
   const stage = function (n, title, fields, D) {
     return e('section', { class: 'rsc-lt-c is-' + n }, [e('div', { class: 'rsc-lt-h' }, [e('i', { class: 'rsc-lt-n' }, fmtNum(n)), e('b', {}, title)]), e('div', { class: 'rsc-3col' }, fields), days(D)]);
   };
@@ -35169,7 +35169,7 @@ function rmnStageList(F, inc) {
       e('tbody', {}, R.map(function (r) {
         return e('tr', { class: 'is-' + r.st }, [e('td', {}, e('b', {}, r.x.name || '—')),
           e('td', {}, [e('bdi', { dir: 'ltr' }, r.p.contract_no || ''), ' · ' + fmtNum(r.p.seq) + ' من ' + fmtNum(r.p.n)]),
-          e('td', {}, fmtNum(r.d) + ' يومًا'),
+          e('td', {}, rmDays(r.d)),
           e('td', {}, [e('span', { class: 'rsc-stl-st is-' + r.st }, 'المرحلة ' + fmtNum(r.st)), r.tag ? e('small', { class: 'rsc-stl-tag' }, r.tag) : null]),
           e('td', { title: r.T.why }, RMN_TPLN[r.T.k][1]),
           e('td', { class: r.today ? 'rsc-stl-on' : '' }, r.today ? 'اليوم' : r.nx ? 'بعد ' + rmDays(r.nx - r.d) : '—')]);
@@ -35721,6 +35721,10 @@ function rmnEdit(L) {
     const inL = r.all.filter(function (p) { return Number(p.late) > 0 && (!S || S.indexOf(p.pid) >= 0); }), nLate = inL.length;
     const held = r.all.length && r.all.every(function (p) { return p.hold; }); /* v1051 */
     const sub = held ? 'موقوف مؤقتًا — ' + r.all[0].hold + ' (لا يُذكَّر حتى ينتهي)' : c.seg === 'regular' ? (lead ? 'الدفعة ' + fmtNum(lead.seq) + ' من ' + fmtNum(lead.n) + ' · تستحق ' + rmnDate(lead.due_date) : '') + (c.cst === 'late' ? ' · وعلى العقد دفعة متأخرة تُذكَّر من «المتأخرون»' : '')
+      : c.seg === 'late' && lead && F.segs.indexOf('late') >= 0 ? (function () { /* v1111: سطر المتأخر وسوم واضحة — الدفعة · التأخير · المرحلة · القالب · المبلغ */
+          const ld = Number(lead.late) || 1, stg = ld >= (Number((F.lt || RMN_LT_DEF).split) || 15) ? 2 : 1, T = rmnTplOf(F, x, lead, ld);
+          return e('span', { class: 'rsc-pr-ch' }, [e('i', {}, 'من الدفعة ' + fmtNum(lead.seq) + ' من ' + fmtNum(lead.n)), e('i', {}, rmLate(lead.late)), nLate > 1 ? e('i', {}, fmtNum(nLate) + ' دفعات متأخرة') : null,
+            e('i', { class: 'is-st' + stg }, 'المرحلة ' + fmtNum(stg)), e('i', { class: 'is-tp', title: T.why }, RMN_TPLN[T.k][1]), e('i', {}, rmnSar(inL.reduce(function (t, p) { return t + (Number(p.left) || 0); }, 0))), S && nLate < r.all.length ? e('i', { class: 'is-sc' }, 'دفعة بداية محددة') : null]); })()
       : (nLate === 1 ? 'دفعة متأخرة واحدة' : fmtNum(nLate) + ' دفعات متأخرة') + (lead ? ' · من الدفعة ' + fmtNum(lead.seq) + ' (' + rmLate(lead.late) + ')' : '') + ' · ' + rmnSar(inL.reduce(function (t, p) { return t + (Number(p.left) || 0); }, 0)) + (S && nLate < r.all.length ? ' · بدفعة بداية محددة' : '') + (c.seg === 'late' && lead && F.segs.indexOf('late') >= 0 ? ' · يصله الآن: ' + RMN_TPLN[rmnTplOf(F, x, lead, Number(lead.late) || 0).k][1] : ''); /* v1059 */
     return e('div', { class: 'rsc-pr' + (exc ? ' is-exc' : '') + (PK && isSel ? ' is-sel' : '') + (open ? ' is-open' : '') }, [
       e('div', { class: 'rsc-pr-h' }, [PK ? e('input', { type: 'checkbox', class: 'rsc-ck', 'aria-label': 'تحديد ' + (x.name || ''), checked: isSel ? 'checked' : null, onChange: togSel }) : e('span', { class: 'rvi-ns-av', 'aria-hidden': 'true' }, String(x.name || '؟').trim().charAt(0)),

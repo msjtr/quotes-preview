@@ -5531,3 +5531,11 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-stl-t .rsc-stl-tag { display: block; margin-top: 3px; width: fit-content; }
 .tq-next .rsc-stl-t td.rsc-stl-on { color: #0E7C72; font-weight: 800; }
 @media (max-width: 640px) { .tq-next .rsc-stl-t thead { display: none; } .tq-next .rsc-stl-t tr { display: grid; grid-template-columns: 1fr 1fr; padding: 8px 0; border-bottom: 1px solid var(--t2-line); } .tq-next .rsc-stl-t td { border: 0; padding: 3px 8px; } }
+/* v1111: وسوم سطر المتأخر في «لمن يصل»، وأرقام أيام المرحلة */
+.tq-next .rsc-pr-ch { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; vertical-align: middle; }
+.tq-next .rsc-pr-ch i { font-style: normal; padding: 1px 8px; border-radius: 999px; background: #F1F4F8; color: var(--t2-ink); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tq-next .rsc-pr-ch i.is-st1 { background: #FFF1D6; color: #7A5A0E; } .tq-next .rsc-pr-ch i.is-st2 { background: #FBE3EE; color: #8E2D58; }
+.tq-next .rsc-pr-ch i.is-tp { background: #E6F5F2; color: #0E5E56; } .tq-next .rsc-pr-ch i.is-sc { background: #EEF0FB; color: #3B3F8F; }
+.tq-next .rsc-lt-dl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tq-next .rsc-lt-ns { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.tq-next .rsc-lt-ns i { font-style: normal; min-width: 26px; padding: 2px 6px; text-align: center; border-radius: 8px; background: #fff; border: 1px solid rgba(0,0,0,.08); font-size: 12.5px; font-weight: 700; }
