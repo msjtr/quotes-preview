@@ -34164,7 +34164,7 @@ function rmHelp() {
     e('li', {}, 'القوائم تتصنف تلقائيًا حسب أيام التأخير: المتأخرون (من يوم بعد الاستحقاق) · المتعثرون (أقدم دفعة تجاوزت 90 يومًا بلا أي سداد) · المنتظمون (لا تأخير). النجمة ☆ تضيف العميل إلى «المفضلة» — وهي مفضلة «جهات الاتصال» نفسها — نجمة واحدة في كل أقسام التواصل.'),
     e('li', {}, 'دفعات كل عميل ظاهرة تحت اسمه: اضغط الدفعة لتحديدها (أو أكثر من دفعة)، ثم «إرسال الآن» أو «جدولة» من الشريط أسفل الشاشة. الإرسال اليدوي متاح لأي عميل تختاره.'),
     e('li', {}, 'لا تتكرر الدفعة نفسها في اليوم نفسه، ويمكن إرسال أكثر من دفعة مختلفة للعميل معًا.'),
-    e('li', {}, 'القواعد تعمل تلقائيًا بعد اعتمادها: لكل قاعدة مستلمون وفئات ومواعيد ووقت ووسائل وقالب واستبعاد، وتتوقف فور السداد أو تعليق العقد أو وجود طلب قيد المعالجة.'),
+    e('li', {}, 'القواعد تعمل تلقائيًا بعد اعتمادها: لكل قاعدة مستلمون وفئات ومواعيد ووقت ووسائل وقالب واستبعاد، وتتوقف فور السداد أو تعليق العقد — والطلبات (تأجيل · سداد مبكر · توحيد) لا توقفها.'),
     e('li', {}, 'واتساب بقالب خدمي معتمد من Meta بصورة الدفعة وزر «ادفع الآن»، وبعد السداد يصل العميل طلب تقييم بأزرار النجوم في واتساب والبريد — مرة واحدة لكل عملية.')])]);
 }
 /* ═════ v1010: صفحة «التذكير» في المنصة الجديدة (staff/next/) — تصميم جديد بأربعة أقسام بلا تكرار:
@@ -35281,7 +35281,7 @@ function rmnCal(F, inc, today, L) {
       const on = A.ck === o[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.ck = o[0]; A.ckSet = true; A.pv = null; rmnPaint(); } }, o[1]); }))])]) : null;
   return e('div', { class: 'rsc-cal' }, [segBar, e('div', { class: 'rsc-cal-box' }, [head, grid]),
     e('div', { class: 'rsc-cal-2' }, [dayBox, D.length ? e('div', { class: 'rsc-cal-pv' }, [ckBar, rmnRulePv(F, incF, L, true, true)]) : null]),
-    e('small', { class: 'rmn-sm' }, 'تقدير بحسب الدفعات القائمة اليوم — يتوقف التذكير فعليًا عند السداد أو الاستبعاد أو وجود طلب قيد المعالجة. الرسالة بحالة الدفعة اليوم.')]);
+    e('small', { class: 'rmn-sm' }, 'تقدير بحسب الدفعات القائمة اليوم — يتوقف التذكير فعليًا عند السداد أو الاستبعاد. الرسالة بحالة الدفعة اليوم.')]);
 }
 /* v1033: جدول التذكير المتوقع — محاكاة محلية لما ستُرسله القاعدة خلال الأيام القادمة (نفس منطق المحرك: مواعيد الفئات،
    تذكير واحد للعميل في الموعد الأول، والموعد الثاني، وتكرار كل وسيلة وحدّها). تقدير للعرض فقط — لا يُرسل شيء. */
@@ -35364,7 +35364,7 @@ function rmnSumView(F, o) {
       row('مستبعدون', exU.concat(SC.ex), 'is-warn'), row('دفعة بداية محددة', SC.from), row('تخصيص خاص', ovK.map(function (k) { return (F.ov[k].name || (rmnCliOf(k) || {}).name || 'عميل') + ' — ' + rmnOvTx(F.ov[k]); }))]),
     sec('متى', 'calendar-blank', F.segs.map(function (k) { return row(RMN_SEGN[k], rmnSegSched(F, k)); }).concat([
       row('الفترة', 'من ' + rmnDay(F.start || today) + (F.end ? ' إلى ' + rmnDay(F.end) : ' · بلا تاريخ نهاية')),
-      row('يتوقف', 'فور سداد الدفعة، أو وجود طلب قيد المعالجة أو إيصال تحويل قيد المراجعة' + (F.cap ? '، أو بعد ' + rmnRemN(F.cap) + ' للدفعة' : ''))])),
+      row('يتوقف', 'فور سداد الدفعة، أو رفع إيصال تحويل قيد المراجعة — والطلبات لا توقفه' + (F.cap ? '، أو بعد ' + rmnRemN(F.cap) + ' للدفعة' : ''))])),
     sec('كيف', 'paper-plane-tilt', [row('وقت الإرسال', (F.twice ? fmtNum(2 + (F.more || []).length) + ' مرات يوميًا: ' + [rmTime(F.hour, F.minute), rmTime(F.hour2, F.minute2)].concat((F.more || []).map(function (t) { return rmTime(t.h, t.m); })).join('، ') : 'يوميًا ' + rmTime(F.hour, F.minute)) + ' — حتى ' + rmnEndTx(endM) + '، ومن فاته الوقت ففي اليوم التالي'), (F.dx || []).length ? row('مواعيد إضافية', F.dx.map(function (t) { return rmnDayTx(t.d) + ' ' + rmTime(t.h, t.m); }).join('، ')) : null,
       row('الوسائل', chTx), row('السداد في الرسالة', F.pm === 'bank' ? 'تحويل بنكي مع رابط إرفاق الإيصال' : 'بوابة الدفع — زر «ادفع الآن»')])]);
 }
@@ -35686,7 +35686,7 @@ function rmnEdit(L) {
           DS.editField('وتنتهي في (اختياري)', DS.input({ type: 'date', value: F.end || '', min: F.start || today, onInput: function (v) { F.end = v; rmnPaint(); } }))]),
         e('p', { class: 'rmn-sm' }, ['تعمل من ' + rmnDate(F.start || today) + (F.end ? ' حتى ' + rmnDate(F.end) + '.' : ' بلا تاريخ نهاية — حتى تنهيها أو توقفها.'), F.end ? [' ', e('button', { type: 'button', class: 'rmn-link', onClick: function () { F.end = ''; rmnPaint(); } }, 'بلا تاريخ نهاية')] : null]),
         !perOk ? e('small', { class: 'rmn-sm is-bad' }, 'تاريخ الانتهاء قبل تاريخ البداية.') : null,
-        e('p', { class: 'rmn-sm rsc-stopln' }, [e('b', {}, 'يتوقف التذكير تلقائيًا '), 'لكل دفعة فور سدادها، أو عند رفع إيصال تحويل قيد المراجعة، أو وجود طلب قيد المعالجة (تأجيل · تسوية · توحيد)، أو استبعاد العميل أو العقد.']),
+        e('p', { class: 'rmn-sm rsc-stopln' }, [e('b', {}, 'يتوقف التذكير تلقائيًا '), 'لكل دفعة فور سدادها، أو عند رفع إيصال تحويل قيد المراجعة، أو استبعاد العميل أو العقد. الطلبات (تأجيل · سداد مبكر · توحيد · أهلية) لا توقفه حتى يصدر قرارها.']),
         e('details', { class: 'rsc-more-opt' }, [e('summary', {}, 'حد أعلى لعدد التذكيرات (اختياري)'), e('p', { class: 'rmn-sm' }, 'يوقف التذكير عن الدفعة بعد عدد معيّن من الرسائل حتى لو بقيت مواعيد — مثال: «لا تتجاوز 5» فلا تصل الدفعة أكثر من 5 تذكيرات. اتركه «بلا حد» لتُرسل كل المواعيد أعلاه.'), DS.editField('أقصى عدد تذكيرات للدفعة الواحدة', DS.select({ value: String(F.cap || 0), options: [['0', 'بلا حد — حسب المواعيد أعلاه']].concat([2, 3, 4, 5, 6, 8, 10, 12].map(function (n) { return [String(n), 'لا تتجاوز ' + rmnRemN(n) + ' للدفعة']; })), onChange: function (v) { F.cap = Number(v); rmnPaint(); } }))])], null, 'hourglass-medium:teal')];
   } else if (step === 3) {
     body = [stepHead('bell-ringing:teal', 'الوسائل والسداد', 'عبر أي وسيلة يصل التذكير، وكيف يسدد العميل.'),
@@ -36506,7 +36506,7 @@ function rmRulesView(L) {
   const P = L.perms || {}, rules = rmRules(L);
   const add = e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('قاعدة جديدة', { tone: 'primary', ui: 'plus', onClick: function () { RM.S = rmForm(null, L); RM.tab = 'edit'; RM.msg = ''; RM.err = ''; draw(); } })),
     DS.button('تحديث', { ui: 'arrows-clockwise', size: 'sm', onClick: function () { rmLoad(true); } })]);
-  const note = DS.note('info', 'القواعد تعمل معًا بلا تكرار', 'تذكير واحد لكل عميل في اليوم مهما تعددت القواعد، والأشد تأخرًا أولًا. ويتوقف كل تذكير فور السداد أو الإيقاف أو وجود طلب قيد المعالجة.');
+  const note = DS.note('info', 'القواعد تعمل معًا بلا تكرار', 'تذكير واحد لكل عميل في اليوم مهما تعددت القواعد، والأشد تأخرًا أولًا. ويتوقف كل تذكير فور السداد أو الإيقاف.');
   if (!rules.length) return [rmPanel('القواعد', null, [note, add, DS.note('info', 'لا قواعد بعد', 'أنشئ أول قاعدة ثم اعتمدها.')])];
   const card = function (r) {
     const st = RM_ST[r.status] || [r.status, null], s = r.simple || {};
