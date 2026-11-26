@@ -23972,7 +23972,7 @@ auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقي
       + '<p class="ce-tail">' + esc(nx ? (T.tailN || T.tailM) : f ? T.tailF : T.tailM) + '</p>'
       + '<div class="ce-sign"><span>' + esc(T.sign1 || '') + '</span><b>' + esc(T.sign2 || T.org || '') + '</b></div>'
       + '</div></div></section>';
-    const data = on(T, 'data') ? dKV([on(T, 'contract') ? ['العقد', o.contract || '', true] : null, o.done ? ['تاريخ الإتمام', dmy(o.done), true] : null,
+    const data = on(T, 'data') ? dKV([on(T, 'contract') && !(why && o.contract) ? ['العقد', o.contract || '', true] /* v1082: رقم العقد في جملة المناسبة — لا يُكرَّر في البيانات */ : null, o.done ? ['تاريخ الإتمام', dmy(o.done), true] : null,
       on(T, 'member') ? ['رقم العضوية', o.member_no || '', true] : null, on(T, 'since') ? [o.member_no ? 'عضو منذ' : 'عميل منذ', o.since ? dmy(o.since) : '', true] : null]) : '';
     const cards = [body, data ? dCard(T.tt.data, 'user', data) : '', H.appr(code || 'TERA', T.cap)];
     return { org: T.org, issuer: T.issuer, en: T.en, title: T.title, pill: T.pill, no: code, nobar: true, cls: 'is-ce' + (B ? ' is-ce-b' : ''), cards: cards,
@@ -34142,7 +34142,7 @@ function rmLive(L) { return rmRules(L).some(function (r) { return r.status === '
 function rmReady(L) { return rmRules(L).some(function (r) { return r.status === 'approved'; }); }
 function rmSchedTx(s) {
   const a = [];
-  if (s.before) a.push('قبل الاستحقاق بـ' + rmDays(s.before));
+  if (s.before) a.push('قبل الاستحقاق ' + rmBy(s.before));
   if (s.due) a.push('يوم الاستحقاق');
   if (s.late) a.push('المتأخر كل ' + rmDays(s.late));
   if (s.def) a.push('المتعثر كل ' + rmDays(s.def));
@@ -34539,7 +34539,7 @@ function rmnRuleTx(r) {
   const segs = r.segs || ['regular', 'late', 'default'];
   if (r.adv && Array.isArray(r.adv.items)) return rmnAdvTx(r.adv, segs);
   const s = r.simple || {}, parts = [];
-  if (segs.indexOf('regular') >= 0 && (s.before || s.due)) parts.push('المنتظمون ' + (s.before ? 'قبل الاستحقاق بـ' + rmDays(s.before) + (s.due ? ' ويومه' : '') : 'يوم الاستحقاق'));
+  if (segs.indexOf('regular') >= 0 && (s.before || s.due)) parts.push('المنتظمون ' + (s.before ? 'قبل الاستحقاق ' + rmBy(s.before) + (s.due ? ' ويومه' : '') : 'يوم الاستحقاق'));
   if (segs.indexOf('late') >= 0 && s.late) parts.push('المتأخرون كل ' + rmDays(s.late));
   if (segs.indexOf('default') >= 0 && s.def) parts.push('المتعثرون كل ' + rmDays(s.def));
   return (parts.join(' · ') || 'مواعيد مخصصة') + (s.custom ? ' (وفيها مواعيد قديمة مخصصة)' : '');
@@ -34958,7 +34958,7 @@ function rmnSegOfD(d) { return d <= 0 ? 'regular' : d <= 60 ? 'late' : 'default'
 function rmnItSeg(it) { return it.seg || (it.k === 'before' || it.k === 'due' ? 'regular' : rmnSegOfD(it.k === 'rep' ? it.start : it.n)); }
 function rmnItMax(it) { const m = Number(it.max) || 1; return Number(it.start) <= 60 ? Math.max(1, Math.min(m, Math.floor((60 - Number(it.start)) / Number(it.every)) + 1)) : m; }
 function rmnItTx(it) {
-  if (it.k === 'before') return 'قبل الاستحقاق بـ' + rmDays(it.n);
+  if (it.k === 'before') return 'قبل الاستحقاق ' + rmBy(it.n);
   if (it.k === 'due') return 'يوم الاستحقاق';
   if (it.k === 'after') return 'بعد الاستحقاق بـ' + rmDays(it.n);
   if (it.k === 'date') return 'يوم ' + rmnDate(it.date);
@@ -35212,7 +35212,7 @@ function rmnCal(F, inc, today, L) {
       const on = it.x.id === A.uid && it.p.pid === A.pid, sg = rmnSegOfD(it.d);
       return e('li', {}, e('button', { type: 'button', class: 'rsc-cal-r' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () { A.uid = it.x.id; A.pid = it.p.pid; A.pv = null; A.sim = 0; rmnPaint(); } }, [
         e('span', { class: 'rsc-cal-dot is-' + sg, 'aria-hidden': 'true' }),
-        e('span', { class: 'rsc-nr-t' }, [e('b', {}, it.x.name || '—'), e('small', {}, ['العقد ', e('bdi', { dir: 'ltr' }, it.p.contract_no || ''), ' · الدفعة ' + fmtNum(it.p.seq) + ' من ' + fmtNum(it.p.n) + ' · ', e('span', { class: it.d > 0 ? 'rmn-late' : 'rmn-ok' }, it.d < 0 ? 'قبل الاستحقاق بـ' + rmDays(-it.d) : rmLate(it.d))])]),
+        e('span', { class: 'rsc-nr-t' }, [e('b', {}, it.x.name || '—'), e('small', {}, ['العقد ', e('bdi', { dir: 'ltr' }, it.p.contract_no || ''), ' · الدفعة ' + fmtNum(it.p.seq) + ' من ' + fmtNum(it.p.n) + ' · ', e('span', { class: it.d > 0 ? 'rmn-late' : 'rmn-ok' }, it.d < 0 ? 'قبل الاستحقاق ' + rmBy(-it.d) : rmLate(it.d))])]),
         e('span', { class: 'rsc-cal-t' }, [sg === 'late' ? (function () { const T0 = rmnTplOf(F, it.x, it.p, it.d); return e('i', { class: 'rsc-cal-tp is-' + T0.k, title: T0.why }, RMN_TPLN[T0.k][0]); })() : null, it.a.length ? tA : null, it.b.length ? (it.a.length ? ' و' : '') + tB : null])]));
     }))]) : e('p', { class: 'rmn-sm rsc-empty' }, 'لا تذكير ' + (C.seg === 'all' ? '' : 'لـ«' + RMN_SEGN[C.seg] + '» ') + 'في هذا الشهر — راجع المواعيد أو انتقل لشهر آخر.');
   const incF = inc.filter(function (x) { return D.some(function (it) { return it.x.id === x.id; }); });
@@ -36627,6 +36627,8 @@ function rmCss() {
     + '.rm-pc{grid-template-columns:22px minmax(0,1fr) auto;grid-template-areas:"k b a" "k d s";gap:4px 10px}.rm-st-k{width:100%}.rm-st-k span{flex:1}.rm-sort{flex:1 1 140px}.rm-selbar{bottom:8px}}';
   document.head.appendChild(st);
 }
+/* v1082: «قبل الاستحقاق بيومين/بيوم واحد» لا «بـيومين» */
+function rmBy(n) { const t = rmDays(n); return /^[0-9\u0660-\u0669]/.test(t) ? 'بـ' + t : 'ب' + t; }
 function rmDays(n) { n = Math.abs(Number(n) || 0); return n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? fmtNum(n) + ' أيام' : fmtNum(n) + ' يومًا'; }
 function rmChTx(l) { return (l || []).map(function (k) { const c = RM_CH.filter(function (x) { return x[0] === k; })[0]; return c ? c[1] : k; }).join(' · ') || '—'; }
 function rmD(v) { if (!v) return '—'; const d = new Date(String(v).length <= 10 ? v + 'T12:00:00' : v); return isNaN(d) ? String(v) : iso(d) + ' · ' + hijri(d); }
