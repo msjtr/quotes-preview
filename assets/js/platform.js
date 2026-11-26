@@ -18205,7 +18205,7 @@ function admPfFilePage() {
     const hero = lvHero({ avatar: String(P.name || '؟').slice(0, 1), eye: 'ملف العميل', t: P.name || '—', sub: 'رقم تيرا ' + (P.no || '—') + ' · عميل منذ ' + String(P.at || '').slice(0, 10) + (tqLive() && !MIG2.rows && MIG2.st === 'idle' ? (mig2Load(), '') : '') + (mig2Of(id) ? ' · منقول من النظام السابق' : ''), 
       tiles: [['العقود', fmtNum(C.length), 'contract', late ? 'warn' : 'ok'], ['المتبقي', SR(rem), 'wallet', null], ['المتأخرة', fmtNum(late), 'warning', late ? 'warn' : 'ok'], ['السندات', fmtNum(BD.length), 'seal-check', null],
         ['حالة الحساب', (ADM_USER_ST[P.status] || [P.status || '—'])[0], 'shield-check', P.status === 'active' ? 'ok' : 'warn'], ['توثيق الملف', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn']],
-      acts: [DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LIVE_ADM.at = 0; ADM.trAt = 0; refetch(); } })] });
+      acts: [cfAddrCtl(id), DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LIVE_ADM.at = 0; ADM.trAt = 0; refetch(); } })] });
     /* 1) المعلومات الشخصية والمستندات */
     /* v448: ملف العميل بياناته فقط — التوثيق ونواقصه في «طلبات التوثيق» */
     const pi = secs.map(function (b) { const fs = Bk[b[0]].filter(function (f) { return clVal(f) !== null; });
@@ -18230,6 +18230,19 @@ function admPfFilePage() {
   });
 }
 
+/* v1071 (stf_364): مخاطبة العميل في شهادة «تقدير ووفاء» — السيد · السيدة · غير محدّدة (صيغة محايدة) — من ملف العميل */
+function cfAddrCtl(uid) {
+  const box = e('span', { class: 'stl-addr cf-addr' }, [e('small', {}, 'المخاطبة في الشهادة'), e('small', { class: 'cf-addr-s' }, '…')]);
+  const st = function (t, tone) { const x = box.querySelector('.cf-addr-s'); if (x) { x.textContent = t; x.style.color = tone === 'ok' ? '#1AA89A' : tone === 'bad' ? '#C0392B' : ''; } };
+  admRpc('admin_client_addr_get', { p_user: uid }).then(function (j) {
+    const cur = j && (j.addr === 'm' || j.addr === 'f') ? j.addr : '';
+    const sel = DS.select({ value: cur, options: [['', 'غير محدّدة'], ['m', 'السيد'], ['f', 'السيدة']], onChange: function (v) {
+      st('جارٍ الحفظ…'); admRpc('admin_client_addr_set', { p_user: uid, p_addr: v || null }).then(function () { st(v ? 'حُفظت ✓' : 'أُزيلت ✓ — صيغة محايدة', 'ok'); }).catch(function (err) { st((err && err.message) || 'تعذّر الحفظ', 'bad'); }); } });
+    box.insertBefore(sel, box.lastChild);
+    st(j && j.src === 'settle' ? 'من عرض سداد قيمة المنتج' : cur ? '' : 'صيغة محايدة');
+  }).catch(function () { st('تعذّر التحميل', 'bad'); });
+  return box;
+}
 /* ===== v443: ملف العميل — تجربة السلوك على ملف عميل واحد قبل التعميم (CF_PILOT) =====
    كل شيء في مكان واحد بلا أدراج ولا «اذهب إلى»، وبلا تكرار: إيصال الدفعة في جدول السداد فقط، وإيصال حوالة تيرا في بطاقتها فقط،
    وطلبات العميل في بطاقات الطلبات فقط، وإجراءات العقد داخل عقده. كل بطاقة: ملخص بمؤشرات ثم محتواها ثم إجراءاتها.
@@ -23798,8 +23811,11 @@ function docxCore(H) {
       sign1: 'مع خالص الشكر والتقدير', sign2: 'إدارة منصة تيرا للخدمات المتكاملة',
       lead: 'تقديرًا للوفاء وتثمينًا للثقة يسرّ منصة تيرا للخدمات المتكاملة أن تتقدّم بخالص الشكر والعرفان إلى',
       honM: 'السيد', honF: 'السيدة',
+      /* v1071: المخاطبة غير محدّدة — صيغة محايدة لا تخطئ (بلا لقب، وبضمير الجمع للمخاطَب) */
+      whyN: { full: 'بمناسبة إتمام سداد العقد رقم', early: 'بمناسبة السداد المبكر للعقد رقم', product: 'بمناسبة سداد قيمة المنتج وإغلاق العقد رقم' },
+      tailN: 'وذلك تقديرًا لثقة نعتزّ بها وتعامل راقٍ نفخر به ونسعد بانتمائكم إلى أسرة تيرا ونعدكم بأن نبقى عند حسن ظنكم دائمًا متمنّين لكم دوام التوفيق',
       tailM: 'وذلك لما أولانا إياه من ثقة نعتزّ بها ولتعامله الراقي معنا فقد كان مثالًا للعميل الذي نفخر بخدمته وشريكًا نسعد بانتمائه إلى أسرة تيرا ونعده بأن نبقى عند حسن ظنه دائمًا متمنّين له دوام التوفيق',
-      tailF: 'وذلك لما أولتنا إياه من ثقة نعتزّ بها ولتعاملها الراقي معنا فقد كانت مثالًا للعميل الذي نفخر بخدمته وشريكًا نسعد بانتمائها إلى أسرة تيرا ونعدها بأن نبقى عند حسن ظنها دائمًا متمنّين لها دوام التوفيق',
+      tailF: 'وذلك لما أولتنا إياه من ثقة نعتزّ بها ولتعاملها الراقي معنا فقد كانت مثالًا للعميلة التي نفخر بخدمتها وشريكةً نسعد بانتمائها إلى أسرة تيرا ونعدها بأن نبقى عند حسن ظنها دائمًا متمنّين لها دوام التوفيق',
       cap: 'صدرت آليًا من المنصة — التحقق برقم الشهادة', auto: 'صدرت الشهادة إلكترونيًا — التحقق برقمها من موقع المنصة' },
 /* v867: ملحق تأجيل الدفعة — قالب في «قوالب المستندات» (platform_settings: df)، ولكل طلب نسخته الخاصة إن وُجدت */
 df: { org: ORG, title: 'ملحق تأجيل دفعة', en: 'PAYMENT DEFERRAL ADDENDUM', issuer: 'قسم التحصيل', pill: 'ملحق عقد',
@@ -23942,9 +23958,9 @@ auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقي
     /* v1069: شهادة «شكر ووفاء» — إطار فاخر مزخرف بأركان ذهبية وشعار غار، واسم العميل في لوحة بارزة، والسبب ورقم العقد تحته؛
        البيانات بلا تكرار (لا الاسم ولا السبب)، والترويسة عنوان واحد بلا شارة */
     T = T || tpl('ce');
-    const f = o.addr === 'f', code = o.code || '', rk = ({ full: 1, early: 1, product: 1 })[o.reason] ? o.reason : 'full';
-    const hon = on(T, 'hon') ? (f ? T.honF : T.honM) : '';
-    const why = ((f ? T.whyF : T.why) || {})[rk] || '';
+    const f = o.addr === 'f', nx = o.addr !== 'm' && o.addr !== 'f', code = o.code || '', rk = ({ full: 1, early: 1, product: 1 })[o.reason] ? o.reason : 'full';
+    const hon = on(T, 'hon') && !nx ? (f ? T.honF : T.honM) : '';
+    const why = ((nx ? (T.whyN || T.why) : f ? T.whyF : T.why) || {})[rk] || '';
     const tier = TIER_T[String(o.tier || '').toLowerCase()] || o.tier || '';
     const B = o.style ? o.style !== 'a' : !(T.alt === true || T.style === 'a'); /* v1069: (ب) الرسمي افتراضيًا */
     const body = '<section class="ce-wrap"><div class="ce-frame">' + CE_CORNERS
@@ -23952,7 +23968,7 @@ auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقي
       + '<p class="ce-lead">' + esc(T.lead) + '</p>'
       + '<div class="ce-plate">' + (hon ? '<small>' + esc(hon) + '</small>' : '') + '<b>' + esc(o.name || 'عميلنا') + '</b>' + CE_UL + '</div>'
       + (why ? '<div class="ce-why">' + esc(why) + (o.contract ? ' <span dir="ltr">' + esc(o.contract) + '</span>' : '') + '</div>' : '')
-      + '<p class="ce-tail">' + esc(f ? T.tailF : T.tailM) + '</p>'
+      + '<p class="ce-tail">' + esc(nx ? (T.tailN || T.tailM) : f ? T.tailF : T.tailM) + '</p>'
       + '<div class="ce-sign"><span>' + esc(T.sign1 || '') + '</span><b>' + esc(T.sign2 || T.org || '') + '</b></div>'
       + '</div></div></section>';
     const data = on(T, 'data') ? dKV([on(T, 'contract') ? ['العقد', o.contract || '', true] : null, o.done ? ['تاريخ الإتمام', dmy(o.done), true] : null,
@@ -24324,6 +24340,7 @@ function esxGCe() {
       { id: 'ceh', title: 'اللقب قبل الاسم', kind: 'fields', fields: [{ l: 'للعميل', p: 'honM', hp: 'show.hon' }, { l: 'للعميلة', p: 'honF' }] },
       { id: 'cem', title: 'الخاتمة للعميل', kind: 'text', p: 'tailM' },
       { id: 'cef', title: 'الخاتمة للعميلة', kind: 'text', p: 'tailF' },
+      { id: 'cen', title: 'الخاتمة حين لا تُحدَّد المخاطبة', kind: 'text', p: 'tailN', hint: 'بلا لقب وبصيغة محايدة — تُستخدم إن لم تُحدَّد مخاطبة العميل (السيد أو السيدة) في ملفه.' },
       { id: 'cea', title: 'الاعتماد والتذييل', kind: 'fields', fields: [{ l: 'سطر الاعتماد', p: 'cap' }, { l: 'سطر التذييل', p: 'auto' }] }],
     preview: function (X) { const s = docxSample(); docxPv(DOCX.certPage({ name: s.nm, addr: 'm', tier: 'plus', member_no: 'TM-000123', since: '2025-03-01', issued: s.today, code: 'TC-26-000001', contract: s.ct }, DOCX.tpl('ce', X))); } });
 }
