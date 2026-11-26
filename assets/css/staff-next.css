@@ -5366,3 +5366,12 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-more-opt > summary { cursor: pointer; color: var(--t2-ink-3, #5B6B7C); font-size: 13px; font-weight: 600; }
 .tq-next .rsc-more-opt[open] > summary { margin-bottom: 10px; }
 @media (max-width: 720px) { .tq-next .rsc-trow { grid-template-columns: 1fr; } }
+/* v1087: محرر القاعدة بأربع مراحل — أقسام اختيارية مطوية */
+.tq-next .rsc-adv { margin-top: 14px; border: 1px solid var(--t2-line, #D9E1EA); border-radius: 14px; background: #fff; padding: 12px 16px; }
+.tq-next .rsc-adv > summary { cursor: pointer; font: 700 14px/1.4 var(--t2-ff-display); color: var(--t2-ink); list-style: none; display: flex; align-items: center; gap: 8px; }
+.tq-next .rsc-adv > summary::-webkit-details-marker { display: none; }
+.tq-next .rsc-adv > summary::before { content: "+"; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--t2-surface-2, #F4F7FA); color: #0E8C8C; font-weight: 700; }
+.tq-next .rsc-adv[open] > summary::before { content: "−"; }
+.tq-next .rsc-adv[open] > summary { margin-bottom: 12px; }
+.tq-next .rsc-adv > .rsc-box { margin-top: 12px; }
+.tq-next .rsc-stopln { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--t2-surface-2, #F4F7FA); }
