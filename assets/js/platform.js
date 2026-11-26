@@ -35010,9 +35010,31 @@ function rmnAdvOut(F) { rmnLtSync(F); return { items: ((F.adv && F.adv.items) ||
 const RMN_ADDK = { regular: [['before', 'قبل الاستحقاق'], ['due', 'يوم الاستحقاق'], ['date', 'تاريخ محدد']], late: [['after', 'بعد الاستحقاق'], ['rep', 'متكرر'], ['date', 'تاريخ محدد']], default: [['after', 'بعد الاستحقاق'], ['rep', 'متكرر'], ['date', 'تاريخ محدد']] };
 const RMN_ITIC = { before: 'hourglass-medium', due: 'calendar-check', after: 'clock', rep: 'arrows-clockwise', date: 'calendar-blank' };
 /* لوحة الفئة في مرحلة المواعيد: مواعيدها، وإضافة موعد بطريقته */
+/* v1085 (طلب المشرف): مواعيد المنتظمين اختيار مباشر — أيام قبل الاستحقاق ويومه بنقرة، بلا نموذج «إضافة موعد» ولا تكرار */
+function rmnRegPanel(F, today) {
+  const IT = F.adv.items || (F.adv.items = []);
+  const isB = function (it, n) { return rmnItSeg(it) === 'regular' && it.k === 'before' && Number(it.n) === n; };
+  const hasB = function (n) { return IT.some(function (it) { return isB(it, n); }); };
+  const hasD = IT.some(function (it) { return rmnItSeg(it) === 'regular' && it.k === 'due'; });
+  const togB = function (n) { if (hasB(n)) F.adv.items = IT.filter(function (it) { return !isB(it, n); }); else IT.push({ k: 'before', n: n, seg: 'regular' }); rmnPaint(); };
+  const togD = function () { if (hasD) F.adv.items = IT.filter(function (it) { return !(rmnItSeg(it) === 'regular' && it.k === 'due'); }); else IT.push({ k: 'due', seg: 'regular' }); rmnPaint(); };
+  const chip = function (on, lbl, fn) { return e('button', { type: 'button', role: 'checkbox', 'aria-checked': on ? 'true' : 'false', class: 'rsc-dchip' + (on ? ' is-on' : ''), onClick: fn }, [on ? frag(ui('check', 14)) : null, lbl]); };
+  const days = [7, 6, 5, 4, 3, 2, 1];
+  const daily3 = [3, 2, 1].every(hasB) && hasD;
+  const sumTx = IT.filter(function (it) { return rmnItSeg(it) === 'regular' && it.k === 'before'; }).map(function (it) { return Number(it.n); }).sort(function (a, b) { return b - a; }).map(function (n) { return 'قبل ' + rmDays(n); }).concat(hasD ? ['يوم الاستحقاق'] : []);
+  const dates = IT.filter(function (it) { return rmnItSeg(it) === 'regular' && it.k === 'date'; });
+  return e('div', { class: 'rsc-sp rsc-reg' }, [
+    e('div', { class: 'rsc-reg-q' }, [liveOk(DS.button(daily3 ? 'يوميًا من 3 أيام قبل الاستحقاق حتى يومه ✓' : 'يوميًا من 3 أيام قبل الاستحقاق حتى يومه', { size: 'sm', tone: daily3 ? 'primary' : null, onClick: function () {
+      [3, 2, 1].forEach(function (n) { if (!hasB(n)) IT.push({ k: 'before', n: n, seg: 'regular' }); }); if (!hasD) IT.push({ k: 'due', seg: 'regular' }); rmnPaint(); } }))]),
+    e('div', { class: 'rsc-dchips', role: 'group', 'aria-label': 'أيام التذكير' }, days.map(function (n) { return chip(hasB(n), 'قبل ' + rmDays(n), function () { togB(n); }); }).concat([chip(hasD, 'يوم الاستحقاق', togD)])),
+    e('p', { class: 'rmn-sm' }, sumTx.length ? ['يصل: ', e('b', {}, sumTx.join(' · ')), ' — حتى يسدد العميل. من اليوم التالي للاستحقاق تنتقل الدفعة إلى «المتأخرين» ولا يصله تذكير من هذه الفئة.'] : 'اختر يومًا واحدًا على الأقل.'),
+    dates.length ? e('ul', { class: 'rsc-its' }, dates.map(function (it) { return e('li', { class: 'rsc-it' }, [e('span', { class: 'rsc-it-t' }, [e('b', {}, rmnItTx(it)), e('small', {}, 'تاريخ محدد')]),
+      e('button', { type: 'button', class: 'rsc-it-x', 'data-live-ok': '', 'aria-label': 'حذف: ' + rmnItTx(it), onClick: function () { F.adv.items = IT.filter(function (x) { return x !== it; }); rmnPaint(); } }, frag(ui('x', 14)))]); })) : null]);
+}
 function rmnSegPanel(F, k, today) {
   if (F.segs.indexOf(k) < 0) return e('div', { class: 'rsc-sp is-off' }, [e('p', { class: 'rmn-sm' }, 'هذه الفئة غير مشمولة في القاعدة — فعّلها من المرحلة الأولى.')]);
   if (k === 'late') return rmnLatePanel(F, today);
+  if (k === 'regular') return rmnRegPanel(F, today); /* v1085 */
   const L = rmnSegItems(F.adv, k), all = (F.adv.items || []).filter(function (it) { return F.segs.indexOf(rmnItSeg(it)) >= 0; }).length;
   const AA = (RMN.aa = RMN.aa || {}), A = AA[k] || (AA[k] = { m: RMN_ADDK[k][0][0], n: k === 'regular' ? 3 : k === 'late' ? 3 : 75, start: k === 'default' ? 61 : 1, every: k === 'default' ? 7 : 3, max: 4, date: '' });
   const lo = k === 'late' ? 1 : 61, hi = k === 'late' ? 60 : 90;
@@ -35109,14 +35131,14 @@ function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; retu
 function rmnEndTx(m) { return m >= 24 * 60 ? '12:00 منتصف الليل' : rmTime(Math.floor(m / 60), m % 60); }
 function rmnUntilBox(F, win) {
   /* v1056: مفتوح حتى منتصف الليل متاح ولو بعد نافذة الإرسال العامة — آخر وقت القاعدة يحل محلها */
-  const wE = win ? Number(win.end) : 24, from = rmnLastM(F) + 15;
+  const wE = win ? Number(win.end) : 24, from = Math.max(rmnLastM(F), rmnDxLast(F)) + 15;
   const opts = [['24', 'مفتوح حتى منتصف الليل']];
   for (let h = Math.ceil(from / 60); h < 24; h++) opts.push([String(h), 'حتى ' + rmTime(h, 0)]);
   if (wE < 24) opts.push(['win', 'حتى نهاية نافذة الإرسال العامة (' + rmnEndTx(wE * 60) + ')']);
   const cur = F.until ? String(F.until.hour) : (wE < 24 ? 'win' : '24');
   if (!opts.some(function (o) { return o[0] === cur; })) opts.push([cur, 'حتى ' + rmnEndTx(Number(cur) * 60)]);
   const endM = rmnEndM(F, win);
-  return [DS.editField('آخر وقت للإرسال في اليوم', DS.select({ value: cur, options: opts, onChange: function (v) { F.until = v && v !== 'win' ? { hour: Number(v), minute: 0 } : null; rmnPaint(); } })), /* DS.select يُسقط القيمة الفارغة */
+  return [DS.editField('ينتهي الإرسال اليومي', DS.select({ value: cur, options: opts, onChange: function (v) { F.until = v && v !== 'win' ? { hour: Number(v), minute: 0 } : null; rmnPaint(); } })), /* DS.select يُسقط القيمة الفارغة */
     e('p', { class: 'rmn-sm rsc-until-n' }, ['يُرسل من ', e('b', {}, rmTime(F.hour, F.minute)), ' حتى ', e('b', {}, rmnEndTx(endM)), '. من يدخل القاعدة أثناءها (اعتمادها أو إضافة عميل) يصله في اليوم نفسه، ومن يدخل بعدها يصله في اليوم التالي.'])];
 }
 /* متى يبدأ الإرسال الفعلي بعد الاعتماد — لشاشة التأكيد */
@@ -35134,40 +35156,39 @@ function rmnMoreOk(F) { if (!F.twice) return true; let prev = F.hour2 * 60 + F.m
 /* v1081: مواعيد إضافية في يوم الاستحقاق وحده (مثل 10:00 مساءً) — حتى 10، بوسائل الموعد الأول */
 function rmnDxOk(F) { let prev = F.hour * 60 + F.minute; return (F.dx || []).length <= 10 && (F.dx || []).every(function (t) { const v = t.h * 60 + t.m; const ok = v >= prev + 15; prev = v; return ok; }); }
 function rmnDxLast(F) { const L = F.dx || []; return L.length ? L[L.length - 1].h * 60 + L[L.length - 1].m : -1; }
-function rmnDueBox(F) {
-  F.dx = F.dx || [];
-  const rows = F.dx.map(function (t, i) {
-    return e('div', { class: 'rsc-time' }, [e('b', {}, 'يوم الاستحقاق — تذكير ' + fmtNum(i + 2)), rmTimePick(t.h, t.m, function (h, m) { t.h = h; t.m = m; rmnPaint(); }),
-      liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { F.dx.splice(i, 1); rmnPaint(); } }))]);
-  });
-  const add = F.dx.length < 10 ? liveOk(DS.button('إضافة تذكير في يوم الاستحقاق', { size: 'sm', ui: 'plus', onClick: function () {
-    const last = Math.max(F.hour * 60 + F.minute, rmnDxLast(F)), nx = F.dx.length ? Math.min(23 * 60 + 45, last + 60) : Math.max(last + 15, 22 * 60); F.dx.push({ h: Math.floor(Math.min(nx, 23 * 60 + 45) / 60), m: Math.min(nx, 23 * 60 + 45) % 60 }); rmnPaint(); } })) : e('small', { class: 'rmn-sm' }, 'وصلت إلى 10 مواعيد في يوم الاستحقاق.');
-  return e('div', { class: 'rsc-times rsc-dx' }, [e('b', { class: 'rsc-dx-h' }, 'تذكير إضافي في يوم الاستحقاق')].concat(rows, [e('div', { class: 'rsc-time rsc-more-add' }, [add,
-    e('small', { class: 'rmn-sm' }, F.dx.length ? 'يُرسل للدفعة في يوم استحقاقها فقط، بالوسائل نفسها وبرابط سدادها، ويتوقف فور السداد. لا يتأثر بنافذة الإرسال.' : 'مثال: تذكير ثانٍ الساعة 10:00 مساءً في يوم الاستحقاق — للدفعات المستحقة اليوم فقط.')]),
-    !rmnDxOk(F) ? e('small', { class: 'rmn-sm is-bad' }, 'كل تذكير في يوم الاستحقاق بعد وقت الإرسال الأول (والذي قبله) بربع ساعة على الأقل.') : null,
-    rmnDxOk(F) && F.dx.length && F.until && F.until.hour * 60 + F.until.minute < rmnDxLast(F) + 15 ? e('small', { class: 'rmn-sm is-bad' }, 'آخر وقت للإرسال يكون بعد آخر تذكير في يوم الاستحقاق.') : null]));
-}
-function rmnMoreBox(F, win) {
-  F.more = F.more || [];
-  const rows = F.more.map(function (t, i) {
-    return e('div', { class: 'rsc-time' }, [e('b', {}, 'موعد ' + fmtNum(i + 3)), rmTimePick(t.h, t.m, function (h, m) { t.h = h; t.m = m; }),
-      liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { F.more.splice(i, 1); rmnPaint(); } }))]);
-  });
-  const add = F.more.length < 30 ? liveOk(DS.button('إضافة موعد آخر في اليوم', { size: 'sm', ui: 'plus', onClick: function () {
-    const last = rmnLastM(F), nx = Math.min(23 * 60 + 45, last + 60); F.more.push({ h: Math.floor(nx / 60), m: nx % 60 }); rmnPaint(); } })) : e('small', { class: 'rmn-sm' }, 'وصلت إلى 30 موعدًا في اليوم.');
-  return rows.concat([e('div', { class: 'rsc-time rsc-more-add' }, [add, e('small', { class: 'rmn-sm' }, F.more.length ? fmtNum(F.more.length + 2) + ' مرات في اليوم — الوسائل المختارة للموعد الثاني تُرسل في كل المواعيد بعد الأول.' : 'أضف مواعيد بعد الموعد الثاني (3 أو 10 أو 20 مرة في اليوم…)، وكل موعد بعد الذي قبله بربع ساعة على الأقل.')])]);
-}
 function rmnTimeBox(F, win, bOk, aM, bM) {
+  /* v1085 (طلب المشرف): قائمة واحدة لمواعيد اليوم بلا «مرة/أكثر من مرة» ولا صناديق مكررة —
+     الموعد الأول، ثم «موعد آخر كل يوم» (الثاني والإضافية)، ثم «موعد في يوم الاستحقاق فقط»، ثم «ينتهي الإرسال اليومي» */
+  F.more = F.more || []; F.dx = F.dx || [];
   const PRE = [[9, 0], [10, 0], [12, 0], [16, 0], [19, 0]];
   const pre = function (h0, m0, set) { return e('div', { class: 'rsc-pre' }, PRE.filter(function (t) { return !win || (t[0] >= win.start && t[0] < win.end); }).map(function (t) { const on = h0 === t[0] && m0 === t[1]; return e('button', { type: 'button', class: 'rmn-chip' + (on ? ' is-on' : ''), onClick: function () { set(t[0], t[1]); rmnPaint(); } }, rmTime(t[0], t[1])); })); };
-  return [e('div', { class: 'rlg-seg rsc-twice', role: 'radiogroup', 'aria-label': 'مرات الإرسال في اليوم' }, [[false, 'مرة واحدة في اليوم'], [true, 'أكثر من مرة في اليوم']].map(function (o) {
-      const s2 = F.twice === o[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': s2 ? 'true' : 'false', class: s2 ? 'is-on' : '', onClick: function () { F.twice = o[0]; if (!o[0]) Object.keys(F.chp).forEach(function (c) { F.chp[c].slot = 'a'; }); rmnPaint(); } }, o[1]);
-    })),
-    e('div', { class: 'rsc-times' }, [e('div', { class: 'rsc-time' }, [e('b', {}, F.twice ? 'الموعد الأول' : 'وقت الإرسال'), pre(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; }), rmTimePick(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; })]),
-      F.twice ? e('div', { class: 'rsc-time' }, [e('b', {}, 'الموعد الثاني'), pre(F.hour2, F.minute2, function (h, m) { F.hour2 = h; F.minute2 = m; }), rmTimePick(F.hour2, F.minute2, function (h, m) { F.hour2 = h; F.minute2 = m; })]) : null].concat(F.twice ? rmnMoreBox(F, win) : [])),
-    win && (F.hour < win.start || F.hour >= win.end) ? e('small', { class: 'rmn-sm is-bad' }, 'الوقت الأول خارج نافذة الإرسال — يُرسل عند بداية النافذة.') : null,
-    F.twice && !bOk ? e('small', { class: 'rmn-sm is-bad' }, bM < aM + 15 ? 'الموعد الثاني بعد الأول بربع ساعة على الأقل.' : !rmnMoreOk(F) ? 'كل موعد إضافي بعد الذي قبله بربع ساعة على الأقل.' : F.until && F.until.hour * 60 + F.until.minute < rmnLastM(F) + 15 ? 'آخر وقت للإرسال قبل آخر موعد — غيّره.' : 'الموعد الثاني خارج نافذة الإرسال للعملاء.') : null,
-    rmnDueBox(F),
+  const dueOn = F.segs.indexOf('regular') >= 0 && (F.adv.items || []).some(function (it) { return it.k === 'due'; });
+  const R = [{ l: 'الموعد الأول', t: 'كل يوم', h: F.hour, m: F.minute, set: function (h, m) { F.hour = h; F.minute = m; }, first: true }];
+  if (F.twice) {
+    R.push({ l: 'الموعد ' + fmtNum(2), t: 'كل يوم', h: F.hour2, m: F.minute2, set: function (h, m) { F.hour2 = h; F.minute2 = m; },
+      del: function () { if (F.more.length) { const t = F.more.shift(); F.hour2 = t.h; F.minute2 = t.m; } else { F.twice = false; Object.keys(F.chp).forEach(function (c) { F.chp[c].slot = 'a'; }); } } });
+    F.more.forEach(function (t, i) { R.push({ l: 'الموعد ' + fmtNum(i + 3), t: 'كل يوم', h: t.h, m: t.m, set: function (h, m) { t.h = h; t.m = m; }, del: function () { F.more.splice(i, 1); } }); });
+  }
+  F.dx.forEach(function (t, i) { R.push({ l: 'يوم الاستحقاق', t: 'يوم الاستحقاق فقط', due: true, h: t.h, m: t.m, set: function (h, m) { t.h = h; t.m = m; }, del: function () { F.dx.splice(i, 1); } }); });
+  const rows = R.map(function (x) {
+    return e('div', { class: 'rsc-trow' + (x.due ? ' is-due' : '') }, [
+      e('div', { class: 'rsc-trow-h' }, [e('b', {}, x.l), e('span', { class: 'rsc-trow-tag' }, x.t)]),
+      rmTimePick(x.h, x.m, function (h, m) { x.set(h, m); }),
+      x.first ? pre(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; }) : liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { x.del(); rmnPaint(); } }))]);
+  });
+  const lastD = rmnLastM(F), nxt = function (m) { const v = Math.min(23 * 60 + 45, m + 60); return { h: Math.floor(v / 60), m: v % 60 }; };
+  const addDaily = 1 + (F.twice ? 1 + F.more.length : 0) < 30 ? liveOk(DS.button('موعد آخر كل يوم', { size: 'sm', ui: 'plus', onClick: function () {
+    const t = nxt(lastD); if (!F.twice) { F.twice = true; F.hour2 = t.h; F.minute2 = t.m; } else F.more.push({ h: t.h, m: t.m }); rmnPaint(); } })) : null;
+  const addDue = dueOn && F.dx.length < 10 ? liveOk(DS.button('موعد في يوم الاستحقاق فقط', { size: 'sm', ui: 'plus', onClick: function () {
+    const last = Math.max(F.hour * 60 + F.minute, rmnDxLast(F)), v = F.dx.length ? Math.min(23 * 60 + 45, last + 60) : Math.max(last + 15, 22 * 60), vv = Math.min(v, 23 * 60 + 45);
+    F.dx.push({ h: Math.floor(vv / 60), m: vv % 60 }); rmnPaint(); } })) : null;
+  const dxBad = !rmnDxOk(F) ? 'موعد يوم الاستحقاق بعد الموعد الأول (والذي قبله) بربع ساعة على الأقل.' : F.dx.length && F.until && F.until.hour * 60 + F.until.minute < rmnDxLast(F) + 15 ? 'اجعل «ينتهي الإرسال اليومي» بعد آخر موعد في يوم الاستحقاق.' : '';
+  const bBad = F.twice && !bOk ? (bM < aM + 15 ? 'الموعد 2 بعد الأول بربع ساعة على الأقل.' : !rmnMoreOk(F) ? 'كل موعد بعد الذي قبله بربع ساعة على الأقل.' : F.until && F.until.hour * 60 + F.until.minute < rmnLastM(F) + 15 ? 'اجعل «ينتهي الإرسال اليومي» بعد آخر موعد.' : win && (F.hour2 < win.start || F.hour2 >= win.end) ? 'الموعد 2 خارج نافذة الإرسال.' : '') : '';
+  return [e('div', { class: 'rsc-tlist' }, rows),
+    e('div', { class: 'rmn-acts rsc-tadd' }, [addDaily, addDue]),
+    e('p', { class: 'rmn-sm' }, dueOn ? '«كل يوم» يُرسل في كل يوم تذكير. «يوم الاستحقاق فقط» تذكير إضافي في يوم استحقاق الدفعة وحده (مثل 10:00 مساءً)، ولا يتقيد بنافذة الإرسال.' : '«كل يوم» يُرسل في كل يوم تذكير.'),
+    win && (F.hour < win.start || F.hour >= win.end) ? e('small', { class: 'rmn-sm is-bad' }, 'الموعد الأول خارج نافذة الإرسال — يُرسل عند بداية النافذة.') : null,
+    bBad ? e('small', { class: 'rmn-sm is-bad' }, bBad) : null, dxBad ? e('small', { class: 'rmn-sm is-bad' }, dxBad) : null,
     e('div', { class: 'rsc-until' }, rmnUntilBox(F, win))];
 }
 /* v1038: المعاينة — تقويم التذكيرات حسب الفئة المختارة، ثم يوم، ثم عميل ورسالته كما تصل */
@@ -35627,10 +35648,10 @@ function rmnEdit(L) {
         !perOk ? e('small', { class: 'rmn-sm is-bad' }, 'تاريخ الانتهاء قبل تاريخ البداية.') : null], null, 'calendar-check:teal'),
       box('متى يتوقف التذكير؟', 'لكل دفعة على حدة. هذه الشروط تعمل دائمًا.', [
         e('ul', { class: 'rsc-stops' }, STOPS.map(function (t) { return e('li', {}, [e('span', { class: 'rsc-stop-ic', 'aria-hidden': 'true' }, frag(ui(t[0], 15))), e('span', {}, [e('b', {}, t[1]), e('small', {}, t[2])]), e('i', { class: 'rsc-stop-fix' }, 'دائمًا')]); })),
-        DS.editField('وشرط إضافي (اختياري): أقصى عدد تذكيرات للدفعة الواحدة', DS.select({ value: String(F.cap || 0), options: [['0', 'بلا حد — حسب المواعيد أعلاه']].concat([2, 3, 4, 5, 6, 8, 10, 12].map(function (n) { return [String(n), 'لا تتجاوز ' + rmnRemN(n) + ' للدفعة']; })), onChange: function (v) { F.cap = Number(v); rmnPaint(); } }))], null, 'hourglass-medium:teal')];
+        e('details', { class: 'rsc-more-opt' }, [e('summary', {}, 'خيارات إضافية (اختيارية)'), DS.editField('أقصى عدد تذكيرات للدفعة الواحدة', DS.select({ value: String(F.cap || 0), options: [['0', 'بلا حد — حسب المواعيد أعلاه']].concat([2, 3, 4, 5, 6, 8, 10, 12].map(function (n) { return [String(n), 'لا تتجاوز ' + rmnRemN(n) + ' للدفعة']; })), onChange: function (v) { F.cap = Number(v); rmnPaint(); } }))])], null, 'hourglass-medium:teal')];
   } else if (step === 3) {
     body = [stepHead('bell-ringing:teal', 'الوقت والوسائل', 'متى يُرسل في اليوم، وعبر أي وسيلة.'),
-      box('وقت الإرسال', 'بتوقيت الرياض' + (win ? '، داخل نافذة الإرسال للعملاء (' + rmTime(win.start, 0) + ' – ' + rmTime(win.end, 0) + ')' : '') + '.', rmnTimeBox(F, win, bOk, aM, bM), null, 'clock:teal'),
+      box('مواعيد الإرسال في اليوم', 'بتوقيت الرياض' + (win ? '، داخل نافذة الإرسال للعملاء (' + rmTime(win.start, 0) + ' – ' + rmTime(win.end, 0) + ')' : '') + '.', rmnTimeBox(F, win, bOk, aM, bM), null, 'clock:teal'),
       box('وسائل الإرسال', F.twice ? 'اختر الوسائل، ولكل وسيلة موعدها في اليوم.' : 'يصل كل تذكير عبر كل الوسائل المختارة معًا.', [
         e('div', { class: 'rsc-chs2' }, RM_CH.map(function (c) {
           const o = F.channels.indexOf(c[0]) >= 0, X = F.chp[c[0]] || (F.chp[c[0]] = { slot: 'a', every: 1, max: 0 });
@@ -35676,7 +35697,7 @@ function rmnEdit(L) {
       })())];
   }
   const nav = e('div', { class: 'rmn-nav' }, [step > 1 ? DS.button('السابق', { onClick: function () { RMN.step = step - 1; rmnPaint(); } }) : null, e('span', { class: 'rmn-grow' }),
-    step < L4.length && F.id && F.status === 'approved' ? DS.button('حفظ التعديلات', { onClick: function () { const bad = okS.indexOf(false); RMN.step = bad >= 0 ? bad + 1 : L4.length; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }) : null, /* v1065 */
+    /* v1085: «حفظ التعديلات» في رأس المحرر وحده — لا تكرار أسفله */
     step < L4.length ? DS.button('التالي', { tone: 'primary', onClick: function () { RMN.step = step + 1; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }) : null]);
   /* v1033: حفظ مسودة · حذف · إلغاء التعديل — متاحة في كل المراحل */
   const ask = RMN.eask || '';
