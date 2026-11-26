@@ -18205,7 +18205,7 @@ function admPfFilePage() {
     const hero = lvHero({ avatar: String(P.name || '؟').slice(0, 1), eye: 'ملف العميل', t: P.name || '—', sub: 'رقم تيرا ' + (P.no || '—') + ' · عميل منذ ' + String(P.at || '').slice(0, 10) + (tqLive() && !MIG2.rows && MIG2.st === 'idle' ? (mig2Load(), '') : '') + (mig2Of(id) ? ' · منقول من النظام السابق' : ''), 
       tiles: [['العقود', fmtNum(C.length), 'contract', late ? 'warn' : 'ok'], ['المتبقي', SR(rem), 'wallet', null], ['المتأخرة', fmtNum(late), 'warning', late ? 'warn' : 'ok'], ['السندات', fmtNum(BD.length), 'seal-check', null],
         ['حالة الحساب', (ADM_USER_ST[P.status] || [P.status || '—'])[0], 'shield-check', P.status === 'active' ? 'ok' : 'warn'], ['توثيق الملف', vs[0], 'seal-check', vs[1] === 'ok' ? 'ok' : 'warn']],
-      acts: [cfAddrCtl(id), DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LIVE_ADM.at = 0; ADM.trAt = 0; refetch(); } })] });
+      acts: [DS.button('تحديث', { size: 'sm', ui: 'arrows-clockwise', onClick: function () { LIVE_ADM.at = 0; ADM.trAt = 0; refetch(); } })] });
     /* 1) المعلومات الشخصية والمستندات */
     /* v448: ملف العميل بياناته فقط — التوثيق ونواقصه في «طلبات التوثيق» */
     const pi = secs.map(function (b) { const fs = Bk[b[0]].filter(function (f) { return clVal(f) !== null; });
@@ -18214,6 +18214,7 @@ function admPfFilePage() {
     pi.push(lvSec('المستندات', fmtNum(FU.length), [FU.length ? e('div', { class: 'cu-mgr-docs' }, FU.map(function (f) {
       return cfRow(f.label || f.kind || 'مرفق', [f.name ? ltr(f.name) : null, f.at ? [' · ', bdiD(String(f.at).slice(0, 10))] : null], [liveOk(DS.button('فتح', { size: 'sm', tone: 'primary', ui: 'files', onClick: function () { admRegDoc(P.id || id, f.fid); } }))]); })) : CF_EMPTY('لا مستندات مرفوعة.')], 'cf:' + id + ':pi:docs'));
     if (!secs.length) pi.unshift(CF_EMPTY('لم يُدخل العميل بيانات ملفه بعد.'));
+    pi.unshift(cfRow('المخاطبة في الشهادة', ['السيد أو السيدة في شهادة «تقدير ووفاء» — غير محدّدة ← صيغة محايدة'], [cfAddrCtl(id)])); /* v1072 */
     /* 2) السندات — الفتح يفتح درج السند نفسه (التعديل وملف السند) */
     const bds = BD.length ? e('div', { class: 'cu-mgr-docs' }, BD.map(function (b) { const s = (CU_BD_ST.filter(function (x) { return x[0] === b.st; })[0] || ['', b.st, null]);
       return cfRow('السند ' + b.no, [SR(b.amt), ' · ', bdiD(String(b.date).slice(0, 10))], [DS.badge(s[1], s[2]), liveOk(DS.button('فتح', { size: 'sm', ui: 'seal-check', onClick: function () { cuBdEdit(b.id); } }))]); })) : CF_EMPTY('لا سندات لهذا العميل.');
@@ -18232,12 +18233,12 @@ function admPfFilePage() {
 
 /* v1071 (stf_364): مخاطبة العميل في شهادة «تقدير ووفاء» — السيد · السيدة · غير محدّدة (صيغة محايدة) — من ملف العميل */
 function cfAddrCtl(uid) {
-  const box = e('span', { class: 'stl-addr cf-addr' }, [e('small', {}, 'المخاطبة في الشهادة'), e('small', { class: 'cf-addr-s' }, '…')]);
+  const box = e('span', { class: 'stl-addr cf-addr' }, [e('small', { class: 'cf-addr-s' }, '…')]);
   const st = function (t, tone) { const x = box.querySelector('.cf-addr-s'); if (x) { x.textContent = t; x.style.color = tone === 'ok' ? '#1AA89A' : tone === 'bad' ? '#C0392B' : ''; } };
   admRpc('admin_client_addr_get', { p_user: uid }).then(function (j) {
     const cur = j && (j.addr === 'm' || j.addr === 'f') ? j.addr : '';
-    const sel = DS.select({ value: cur, options: [['', 'غير محدّدة'], ['m', 'السيد'], ['f', 'السيدة']], onChange: function (v) {
-      st('جارٍ الحفظ…'); admRpc('admin_client_addr_set', { p_user: uid, p_addr: v || null }).then(function () { st(v ? 'حُفظت ✓' : 'أُزيلت ✓ — صيغة محايدة', 'ok'); }).catch(function (err) { st((err && err.message) || 'تعذّر الحفظ', 'bad'); }); } });
+    const sel = DS.select({ value: cur || 'n', options: [['n', 'غير محدّدة'], ['m', 'السيد'], ['f', 'السيدة']], onChange: function (v) {
+      v = v === 'm' || v === 'f' ? v : ''; st('جارٍ الحفظ…'); admRpc('admin_client_addr_set', { p_user: uid, p_addr: v || null }).then(function () { st(v ? 'حُفظت ✓' : 'أُزيلت ✓ — صيغة محايدة', 'ok'); }).catch(function (err) { st((err && err.message) || 'تعذّر الحفظ', 'bad'); }); } });
     box.insertBefore(sel, box.lastChild);
     st(j && j.src === 'settle' ? 'من عرض سداد قيمة المنتج' : cur ? '' : 'صيغة محايدة');
   }).catch(function () { st('تعذّر التحميل', 'bad'); });
