@@ -5340,3 +5340,8 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rmn-r2 .rmn-pcs { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
 .tq-next .rmn-cl2 .rmn-search { flex: 1 1 200px; min-width: 180px; }
 .tq-next .rmn-cl2 .rmn-sort { min-width: 140px; }
+/* v1080: مع لوحة الإرسال الاسم كاملًا — الشارات تلتف تحته بدل قصّ الاسم */
+.tq-next .rmn-cl2-b.has-side .rmn-r2 .rmn-row-t { display: flex; flex-wrap: wrap; align-items: center; }
+.tq-next .rmn-cl2-b.has-side .rmn-r2 .rmn-who { flex: 1 1 220px; }
+.tq-next .rmn-cl2-b.has-side .rmn-r2 .rmn-who b { white-space: normal; }
+.tq-next .rmn-cl2-b.has-side .rmn-r2 .rmn-amt { margin-inline-start: auto; }
