@@ -34126,12 +34126,14 @@ const RM_WHY = [['طلب تأجيل قيد المراجعة', 'طلب تأجيل
 /* v1064: الوقت بنظام 12 ساعة مع الفترة صريحة — «12 ظهرًا» لا «12 م» (كانت تُقرأ منتصف الليل) */
 function rmPer(h) { h = ((Number(h) || 0) % 24 + 24) % 24; return h < 12 ? 'صباحًا' : h === 12 ? 'ظهرًا' : 'مساءً'; } /* v1091: صباحًا · ظهرًا · مساءً فقط — بالترتيب (12 صباحًا، 1 صباحًا … 12 ظهرًا، 1 مساءً … 11 مساءً) */
 function rmTime(h, m) { h = Number(h) || 0; m = Number(m) || 0; return fmtNum(h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + rmPer(h); }
+function rmTpRe() { if (document.querySelector('.tq-next .rmn') && typeof rmnPaint === 'function') rmnPaint(); else draw(); }
 function rmTimePick(h, m, set) {
   h = Number(h) || 0; m = Number(m) || 0;
   const H = []; for (let i = 0; i < 24; i++) H.push([String(i), fmtNum(i % 12 || 12) + ' ' + rmPer(i)]); /* الساعة مع فترتها في قائمة واحدة */
   return e('div', { class: 'rm-time' }, [
-    DS.editField('الساعة', DS.select({ value: String(h), options: H, onChange: function (v) { set(Number(v), m); draw(); } })),
-    DS.editField('الدقيقة', DS.select({ value: String(m), options: [['0', '00'], ['15', '15'], ['30', '30'], ['45', '45']], onChange: function (v) { set(h, Number(v)); draw(); } }))]);
+    /* v1096: الساعة والدقيقة من حالة واحدة — كان اختيار الدقيقة ثم الساعة يُرجع الدقيقة القديمة (8:30 تُحفظ 8:00) لأن draw لا يعيد رسم المحرر في /staff/next/ */
+    DS.editField('الساعة', DS.select({ value: String(h), options: H, onChange: function (v) { h = Number(v); set(h, m); rmTpRe(); } })),
+    DS.editField('الدقيقة', DS.select({ value: String(m), options: [['0', '00'], ['15', '15'], ['30', '30'], ['45', '45']], onChange: function (v) { m = Number(v); set(h, m); rmTpRe(); } }))]);
 }
 function rmAudTx(r) {
   if (!r) return '—';
@@ -35220,7 +35222,7 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
   return [e('div', { class: 'rsc-tlist' }, rows),
     e('div', { class: 'rmn-acts rsc-tadd' }, [add]),
     e('p', { class: 'rmn-sm' }, n === 1 ? 'تذكير واحد في اليوم. «إضافة تذكير آخر في اليوم» لإرسال ثانٍ — في كل أيام التذكير أو في يوم واحد تختاره (مثل يوم الاستحقاق 10:00 مساءً).' : 'كل تذكير يُرسل في وقته وفي الأيام المختارة له. تذكير «يوم واحد» لا يتقيد بنافذة الإرسال.'),
-    win && (F.hour < win.start || F.hour >= win.end) ? e('small', { class: 'rmn-sm is-bad' }, 'الوقت الأول خارج نافذة الإرسال — يُرسل عند بداية النافذة.') : null,
+    win && !F.until && (F.hour < win.start || F.hour >= win.end) ? e('small', { class: 'rmn-sm is-bad' }, 'الوقت الأول خارج نافذة الإرسال — يُرسل عند بداية النافذة.') : null, /* v1096: مع «نهاية الإرسال اليومي» لا تقيّد النافذة العامة القاعدة (remJob) */
     bBad ? e('small', { class: 'rmn-sm is-bad' }, bBad) : null, dxBad ? e('small', { class: 'rmn-sm is-bad' }, dxBad) : null,
     e('div', { class: 'rsc-until' }, rmnUntilBox(F, win))];
 }
