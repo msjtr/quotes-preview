@@ -5463,3 +5463,6 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsm:not(.is-compact) .rsm-r dt { font-size: 13px; font-weight: 700; padding-top: 2px; }
 .tq-next .rsm.is-compact { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 @media (max-width: 560px) { .tq-next .rsm:not(.is-compact) .rsm-r { grid-template-columns: 1fr; gap: 2px; } }
+/* v1103: شريط أزرار المحرر لا يقع تحت شارة الإصدار أسفل الصفحة */
+.tq-next .rsc-nav2 { padding-inline-end: 150px; }
+@media (max-width: 720px) { .tq-next .rsc-nav2 { padding-inline-end: 0; padding-bottom: 34px; } }
