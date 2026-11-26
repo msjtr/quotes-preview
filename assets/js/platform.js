@@ -35224,12 +35224,13 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
         return e('button', { type: 'button', class: 'rmn-chip' + (on ? ' is-on' : '') + (bad ? ' is-bad' : ''), title: bad ? 'خارج أيام التذكير — لا يُرسل' : '', onClick: function () { togDay(x, d); } }, d === 0 ? 'يوم الاستحقاق' : d < 0 ? 'قبل بـ' + fmtNum(-d) : 'بعد بـ' + fmtNum(d)); })));
   };
   const rows = R.map(function (x, k) {
-    return e('div', { class: 'rsc-trow' + (x.grp ? ' is-due' : '') }, [
-      e('div', { class: 'rsc-trow-h' }, [e('b', {}, 'التذكير ' + (RMN_ORD[k] || fmtNum(k + 1))),
+    /* v1100: البطاقة صفوفًا — العنوان والحذف، ثم الساعة والدقيقة، ثم الأيام (كانت الأعمدة تتداخل) */
+    return e('div', { class: 'rsc-trow2' + (x.grp ? ' is-due' : '') + (x.first ? ' is-first' : '') }, [
+      e('div', { class: 'rsc-trow2-top' }, [e('div', { class: 'rsc-trow-h' }, [e('b', {}, 'التذكير ' + (RMN_ORD[k] || fmtNum(k + 1))),
         e('span', { class: 'rsc-trow-tag' }, 'يُرسل ' + rmTime(x.h, x.m) + ' — ' + (x.grp ? daysTx(x.days) + ' فقط' : 'في كل أيام التذكير'))]),
-      rmTimePick(x.h, x.m, function (h, m) { setTime(x, h, m); }),
-      x.first ? e('p', { class: 'rmn-sm' }, 'التذكير الأول يُرسل في كل أيام التذكير.') : chips(x),
-      x.first ? pre(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; }) : liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { del(x); } }))]);
+        x.first ? null : liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { del(x); } }))]),
+      e('div', { class: 'rsc-trow2-tm' }, rmTimePick(x.h, x.m, function (h, m) { setTime(x, h, m); })),
+      x.first ? pre(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; }) : chips(x)]);
   });
   const n = R.length;
   const add = n < 30 ? liveOk(DS.button('إضافة تذكير آخر في اليوم', { size: 'sm', ui: 'plus', onClick: function () {

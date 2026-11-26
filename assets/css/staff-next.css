@@ -5417,3 +5417,15 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-dtab > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; cursor: pointer; background: #F3FAF9; font-size: 15px; }
 .tq-next .rsc-dtab > summary small { color: var(--t2-muted); font-weight: 700; }
 .tq-next .rsc-dtab .rsc-dtab-h { background: #fff; }
+/* v1100: بطاقة التذكير صفوفًا — العنوان والحذف · الساعة والدقيقة · الأيام */
+.tq-next .rsc-trow2 { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--t2-surface-2, #F4F7FA); border: 1px solid var(--t2-line, #E3E8EE); }
+.tq-next .rsc-trow2.is-first { background: #EEF8F6; border-color: #BFE3DC; }
+.tq-next .rsc-trow2.is-due { background: #FFF8EA; border-color: #EBD7A6; }
+.tq-next .rsc-trow2.is-due .rsc-trow-tag { color: #8A6512; font-weight: 600; }
+.tq-next .rsc-trow2-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.tq-next .rsc-trow2-top .rsc-trow-h { align-self: auto; min-width: 0; }
+.tq-next .rsc-trow2-tm .rm-time { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 420px; }
+.tq-next .rsc-trow2 .rsc-days { padding-top: 10px; border-top: 1px dashed rgba(0,0,0,.12); }
+.tq-next .rsc-trow2 .rsc-pre { padding-top: 10px; border-top: 1px dashed rgba(0,0,0,.12); }
+.tq-next .rsc-trow2 + .rsc-trow2 { margin-top: 0; }
+@media (max-width: 560px) { .tq-next .rsc-trow2-tm .rm-time { max-width: none; } }
