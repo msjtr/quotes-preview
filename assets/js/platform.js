@@ -35230,10 +35230,15 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
     .sort(function (a, b) { return a.k0 - b.k0 || (a.h * 60 + a.m) - (b.h * 60 + b.m); });
   const endM = rmnEndM(F, win);
   const dayTimes = function (d) { return [F.hour * 60 + F.minute].concat(dl().map(function (t) { return t.h * 60 + t.m; })).concat((F.dx || []).filter(function (t) { return (Number(t.d) || 0) === d; }).map(function (t) { return t.h * 60 + t.m; })).sort(function (a, b) { return a - b; }); };
-  const gapOf = function (x) { const v = x.h * 60 + x.m, ds = x.grp ? x.days : DAYS; let g = null;
-    ds.forEach(function (d) { const T = dayTimes(d).filter(function (t) { return t < v; }); if (T.length) { const z = v - T[T.length - 1]; g = g === null ? z : Math.min(g, z); } }); return g; };
+  /* v1104: الفرق يُحسب لكل يوم على حدة ويُسمّى التذكير الذي قبله ووقته (كان رقمًا واحدًا بلا مرجع فبدا «11 ساعة» غامضًا) */
+  R[0].nm = 'التذكير الأساسي'; XR.forEach(function (x, i) { x.nm = 'التذكير الإضافي ' + (RMN_ORD[i] || fmtNum(i + 1)); });
+  const prevOn = function (d, v) { let best = null; R.forEach(function (y) { const t = y.h * 60 + y.m; const on = y.first || y.all || (y.grp && y.days.indexOf(d) >= 0); if (on && t < v && (!best || t > best.h * 60 + best.m)) best = y; }); return best; };
+  const gapsOf = function (x) { const v = x.h * 60 + x.m, ds = x.grp ? x.days : DAYS, G = []; let mn = null;
+    ds.forEach(function (d) { const p = prevOn(d, v); if (!p) return; const z = v - (p.h * 60 + p.m); mn = mn === null ? z : Math.min(mn, z);
+      const k = p.nm + '|' + z, f = G.filter(function (g) { return g.k === k; })[0]; if (f) f.ds.push(d); else G.push({ k: k, p: p, z: z, ds: [d] }); });
+    return { min: mn, G: G }; };
   const card = function (x, k) {
-    const v = x.h * 60 + x.m, g = x.first ? null : gapOf(x), late = v >= endM;
+    const v = x.h * 60 + x.m, GX = x.first ? null : gapsOf(x), g = GX ? GX.min : null, late = v >= endM;
     const nm = x.first ? 'التذكير الأساسي' : 'التذكير الإضافي ' + (RMN_ORD[k] || fmtNum(k + 1));
     return e('div', { class: 'rsc-trow2 ' + (x.first ? 'is-first' : 'c' + (k % 6)) }, [
       e('div', { class: 'rsc-trow2-top' }, [e('span', { class: 'rsc-trow2-n', 'aria-hidden': 'true' }, x.first ? '★' : fmtNum(k + 1)),
@@ -35241,8 +35246,9 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
           e('span', { class: 'rsc-trow-tag' }, 'يُرسل ' + rmTime(x.h, x.m) + ' — ' + (x.grp ? daysTx(x.days) + ' فقط' : 'في كل أيام التذكير'))]),
         x.first ? null : liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { del(x); } }))]),
       e('div', { class: 'rsc-trow2-tm' }, rmTimePick(x.h, x.m, function (h, m) { setTime(x, h, m); })),
-      g !== null ? e('p', { class: 'rsc-gap' + (g < 240 ? ' is-warn' : '') }, ['بعد التذكير الذي قبله في اليوم نفسه بـ ', e('b', {}, rmnGapTx(g)),
-        g < 240 ? ' — يُفضّل 4 ساعات على الأقل حتى لا تتقارب الرسائل (غير ملزم).' : '.']) : null,
+      g !== null ? e('div', { class: 'rsc-gap' + (g < 240 ? ' is-warn' : '') }, [e('b', {}, 'الفرق عن التذكير الذي قبله في اليوم نفسه:'), e('ul', {}, GX.G.map(function (q) {
+        return e('li', {}, [x.all ? 'كل الأيام' : q.ds.map(rmnDayTx).join('، '), ': بعد «' + q.p.nm + '» (' + rmTime(q.p.h, q.p.m) + ') بـ ', e('b', {}, rmnGapTx(q.z))]); })),
+        g < 240 ? e('small', {}, 'يُفضّل 4 ساعات على الأقل حتى لا تتقارب الرسائل (غير ملزم).') : null]) : null,
       late ? e('p', { class: 'rsc-gap is-bad' }, 'هذا الوقت بعد «نهاية الإرسال اليومي» (' + rmnEndTx(endM) + ') — لن يُرسل. قدّمه أو أخّر نهاية الإرسال.') : null,
       x.first ? pre(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; }) : chips(x)]);
   };

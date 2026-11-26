@@ -5466,3 +5466,7 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 /* v1103: شريط أزرار المحرر لا يقع تحت شارة الإصدار أسفل الصفحة */
 .tq-next .rsc-nav2 { padding-inline-end: 150px; }
 @media (max-width: 720px) { .tq-next .rsc-nav2 { padding-inline-end: 0; padding-bottom: 34px; } }
+/* v1104: الفرق بين التذكيرات لكل يوم باسم التذكير الذي قبله */
+.tq-next .rsc-gap > b { display: block; font-size: 13px; margin-bottom: 4px; }
+.tq-next .rsc-gap ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 2px; }
+.tq-next .rsc-gap small { display: block; margin-top: 4px; }
