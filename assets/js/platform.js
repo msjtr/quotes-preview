@@ -35647,7 +35647,8 @@ function rmnEdit(L) {
     if (!PK) { const tail = body.splice(5).filter(Boolean); if (tail.length) body.push(e('details', { class: 'rsc-adv' }, [e('summary', {}, 'العقود المشمولة، واستبعاد عقد أو عميل (اختياري)')].concat(tail))); }
   } else if (step === 2) {
     const SG = RMN.sg && F.segs.indexOf(RMN.sg) >= 0 ? RMN.sg : (F.segs[0] || 'regular');
-    const sgt = e('div', { class: 'rsc-sgt', role: 'tablist', 'aria-label': 'الفئة' }, RM_SEGS.map(function (x) {
+    /* v1088: تبويب للفئات المشمولة فقط، ولا تبويب حين تكون فئة واحدة (الفئات تُختار في المرحلة الأولى) */
+    const sgt = F.segs.length < 2 ? null : e('div', { class: 'rsc-sgt', role: 'tablist', 'aria-label': 'الفئة' }, RM_SEGS.filter(function (x) { return F.segs.indexOf(x[0]) >= 0; }).map(function (x) {
       const k = x[0], onS = SG === k, inc2 = F.segs.indexOf(k) >= 0;
       return e('button', { type: 'button', role: 'tab', 'aria-selected': onS ? 'true' : 'false', class: 'rsc-sgb is-' + k + (onS ? ' is-on' : '') + (inc2 ? '' : ' is-off'), onClick: function () { RMN.sg = k; rmnPaint(); } }, [
         e('span', { class: 'rsc-sgb-t' }, [e('b', {}, x[1]), e('small', {}, inc2 && k === 'late' ? (function (c) { return 'مرحلتان · حتى ' + rmnRemN(c.d1.length + c.d2.length); })(rmnLtCalc(F.lt || RMN_LT_DEF)) : inc2 ? (function (n) { return n ? (n === 1 ? 'موعد واحد' : n === 2 ? 'موعدان' : fmtNum(n) + ' مواعيد') : 'لا مواعيد بعد'; })(rmnSegItems(F.adv, k).length) : 'غير مشمولة')])]);
@@ -35657,7 +35658,7 @@ function rmnEdit(L) {
       ['clipboard-text', 'عند وجود طلب قيد المعالجة على الدفعة أو العقد', 'مثل التأجيل أو التسوية أو التوحيد.'],
       ['x-circle', 'عند استبعاد العميل أو العقد', 'من المرحلة الأولى أو من «العملاء».']];
     body = [stepHead('calendar-blank:teal', 'متى يصل التذكير؟', 'أيام التذكير لكل فئة، ثم أوقات الإرسال في اليوم، ثم فترة القاعدة.'),
-      box('مواعيد التذكير لكل فئة', 'الأيام تُحسب من تاريخ استحقاق كل دفعة. لتاريخ بعينه لعميل محدد استخدم «تخصيص» في صفه بالمرحلة الأولى.', [sgt, rmnSegPanel(F, SG, today),
+      box(F.segs.length < 2 ? 'أيام التذكير — ' + (RMN_SEGN[F.segs[0]] || '') : 'أيام التذكير لكل فئة', 'تُحسب من تاريخ استحقاق كل دفعة.', [sgt, rmnSegPanel(F, SG, today),
         !anyStep ? e('small', { class: 'rmn-sm is-bad' }, 'أضف موعدًا واحدًا على الأقل في الفئات المختارة.') : null], null, 'list-checks:teal'),
       box('مواعيد الإرسال في اليوم', 'بتوقيت الرياض' + (win ? '، داخل نافذة الإرسال للعملاء (' + rmTime(win.start, 0) + ' – ' + rmTime(win.end, 0) + ')' : '') + '.', rmnTimeBox(F, win, bOk, aM, bM), null, 'clock:teal'),
       box('فترة القاعدة ومتى يتوقف', 'أول يوم وآخر يوم تعمل فيهما القاعدة — لا تغيّر مواعيد الدفعات نفسها.', [
