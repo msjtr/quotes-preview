@@ -34836,8 +34836,8 @@ function rmnFDiff(A, B, L) {
   add('الموعد الثاني في اليوم', A.twice ? rmTime(A.hour2, A.minute2) : 'لا يوجد', B.twice ? rmTime(B.hour2, B.minute2) : 'لا يوجد');
   const mx = function (X) { return X.twice && X.more && X.more.length ? X.more.map(function (t) { return rmTime(t.h, t.m); }).join('، ') : 'لا يوجد'; };
   add('المواعيد الإضافية في اليوم', mx(A), mx(B)); /* v1075 */
-  const dX = function (X) { return X.dx && X.dx.length ? X.dx.map(function (t) { return rmTime(t.h, t.m); }).join('، ') : 'لا يوجد'; };
-  add('تذكير إضافي في يوم الاستحقاق', dX(A), dX(B)); /* v1081 */
+  const dX = function (X) { return X.dx && X.dx.length ? X.dx.map(function (t) { return rmnDayTx(t.d) + ' ' + rmTime(t.h, t.m); }).join('، ') : 'لا يوجد'; };
+  add('مواعيد إضافية في أيام محددة', dX(A), dX(B)); /* v1081 */
   add('الوسائل', rmChTx(A.channels), rmChTx(B.channels));
   add('حد التذكيرات لكل دفعة', A.cap ? rmnRemN(A.cap) : 'بلا حد', B.cap ? rmnRemN(B.cap) : 'بلا حد');
   add('بداية القاعدة', A.start || '—', B.start || '—'); add('نهاية القاعدة', A.end || 'بلا نهاية', B.end || 'بلا نهاية');
@@ -35154,39 +35154,53 @@ function rmnStartTx(F, win, today) {
 function rmnLastM(F) { const L = F.twice ? [F.hour2 * 60 + F.minute2].concat((F.more || []).map(function (t) { return t.h * 60 + t.m; })) : []; return L.length ? L[L.length - 1] : F.hour * 60 + F.minute; }
 function rmnMoreOk(F) { if (!F.twice) return true; let prev = F.hour2 * 60 + F.minute2; return (F.more || []).every(function (t) { const v = t.h * 60 + t.m; const ok = v >= prev + 15; prev = v; return ok; }) && (F.more || []).length <= 30; }
 /* v1081: مواعيد إضافية في يوم الاستحقاق وحده (مثل 10:00 مساءً) — حتى 10، بوسائل الموعد الأول */
-function rmnDxOk(F) { let prev = F.hour * 60 + F.minute; return (F.dx || []).length <= 10 && (F.dx || []).every(function (t) { const v = t.h * 60 + t.m; const ok = v >= prev + 15; prev = v; return ok; }); }
-function rmnDxLast(F) { const L = F.dx || []; return L.length ? L[L.length - 1].h * 60 + L[L.length - 1].m : -1; }
+function rmnDxOk(F) { /* v1086: لكل يوم على حدة — بعد الموعد الأول وبعد الذي قبله في اليوم نفسه بربع ساعة */
+  const L = F.dx || [], g = {}; if (L.length > 10) return false;
+  L.forEach(function (t) { (g[Number(t.d) || 0] = g[Number(t.d) || 0] || []).push(t.h * 60 + t.m); });
+  return Object.keys(g).every(function (k) { let prev = F.hour * 60 + F.minute; return g[k].sort(function (a, b) { return a - b; }).every(function (v) { const ok = v >= prev + 15; prev = v; return ok; }); });
+}
+function rmnDxLast(F) { return (F.dx || []).reduce(function (a, t) { return Math.max(a, t.h * 60 + t.m); }, -1); }
+function rmnDayTx(d) { d = Number(d) || 0; return d === 0 ? 'يوم الاستحقاق' : d < 0 ? 'قبل الاستحقاق ' + rmBy(-d) : 'بعد الاستحقاق ' + rmBy(d); }
+/* أيام التذكير في القاعدة — لاختيار يوم الموعد الإضافي (الأيام من الاستحقاق: سالب قبله، 0 يومه، موجب بعده) */
+function rmnRuleDays(F) {
+  const D = {};
+  (F.adv.items || []).forEach(function (it) { const sg = rmnItSeg(it); if (F.segs.indexOf(sg) < 0) return;
+    if (it.k === 'before') D[-Number(it.n)] = 1; else if (it.k === 'due') D[0] = 1; else if (it.k === 'after') D[Number(it.n)] = 1;
+    else if (it.k === 'rep') { for (let i = 0; i < (Number(it.max) || 1); i++) D[Number(it.start) + i * (Number(it.every) || 1)] = 1; } });
+  if (F.segs.indexOf('late') >= 0) { const c = rmnLtCalc(F.lt || RMN_LT_DEF); c.d1.concat(c.d2).forEach(function (d) { D[d] = 1; }); }
+  return Object.keys(D).map(Number).sort(function (a, b) { return a - b; });
+}
 function rmnTimeBox(F, win, bOk, aM, bM) {
   /* v1085 (طلب المشرف): قائمة واحدة لمواعيد اليوم بلا «مرة/أكثر من مرة» ولا صناديق مكررة —
      الموعد الأول، ثم «موعد آخر كل يوم» (الثاني والإضافية)، ثم «موعد في يوم الاستحقاق فقط»، ثم «ينتهي الإرسال اليومي» */
   F.more = F.more || []; F.dx = F.dx || [];
   const PRE = [[9, 0], [10, 0], [12, 0], [16, 0], [19, 0]];
   const pre = function (h0, m0, set) { return e('div', { class: 'rsc-pre' }, PRE.filter(function (t) { return !win || (t[0] >= win.start && t[0] < win.end); }).map(function (t) { const on = h0 === t[0] && m0 === t[1]; return e('button', { type: 'button', class: 'rmn-chip' + (on ? ' is-on' : ''), onClick: function () { set(t[0], t[1]); rmnPaint(); } }, rmTime(t[0], t[1])); })); };
-  const dueOn = F.segs.indexOf('regular') >= 0 && (F.adv.items || []).some(function (it) { return it.k === 'due'; });
   const R = [{ l: 'الموعد الأول', t: 'كل يوم', h: F.hour, m: F.minute, set: function (h, m) { F.hour = h; F.minute = m; }, first: true }];
   if (F.twice) {
     R.push({ l: 'الموعد ' + fmtNum(2), t: 'كل يوم', h: F.hour2, m: F.minute2, set: function (h, m) { F.hour2 = h; F.minute2 = m; },
       del: function () { if (F.more.length) { const t = F.more.shift(); F.hour2 = t.h; F.minute2 = t.m; } else { F.twice = false; Object.keys(F.chp).forEach(function (c) { F.chp[c].slot = 'a'; }); } } });
     F.more.forEach(function (t, i) { R.push({ l: 'الموعد ' + fmtNum(i + 3), t: 'كل يوم', h: t.h, m: t.m, set: function (h, m) { t.h = h; t.m = m; }, del: function () { F.more.splice(i, 1); } }); });
   }
-  F.dx.forEach(function (t, i) { R.push({ l: 'يوم الاستحقاق', t: 'يوم الاستحقاق فقط', due: true, h: t.h, m: t.m, set: function (h, m) { t.h = h; t.m = m; }, del: function () { F.dx.splice(i, 1); } }); });
+  const DAYS = rmnRuleDays(F);
+  F.dx.forEach(function (t, i) { if (t.d == null) t.d = 0; R.push({ l: 'موعد إضافي', t: 'في يوم واحد', due: true, dx: t, h: t.h, m: t.m, set: function (h, m) { t.h = h; t.m = m; }, del: function () { F.dx.splice(i, 1); } }); });
   const rows = R.map(function (x) {
     return e('div', { class: 'rsc-trow' + (x.due ? ' is-due' : '') }, [
-      e('div', { class: 'rsc-trow-h' }, [e('b', {}, x.l), e('span', { class: 'rsc-trow-tag' }, x.t)]),
+      e('div', { class: 'rsc-trow-h' }, [e('b', {}, x.l), x.dx ? DS.select({ value: String(Number(x.dx.d) || 0), options: (DAYS.indexOf(Number(x.dx.d) || 0) >= 0 ? DAYS : DAYS.concat([Number(x.dx.d) || 0])).map(function (d) { return [String(d), rmnDayTx(d)]; }), onChange: function (v) { x.dx.d = Number(v); rmnPaint(); } }) : e('span', { class: 'rsc-trow-tag' }, x.t)]),
       rmTimePick(x.h, x.m, function (h, m) { x.set(h, m); }),
       x.first ? pre(F.hour, F.minute, function (h, m) { F.hour = h; F.minute = m; }) : liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { x.del(); rmnPaint(); } }))]);
   });
   const lastD = rmnLastM(F), nxt = function (m) { const v = Math.min(23 * 60 + 45, m + 60); return { h: Math.floor(v / 60), m: v % 60 }; };
   const addDaily = 1 + (F.twice ? 1 + F.more.length : 0) < 30 ? liveOk(DS.button('موعد آخر كل يوم', { size: 'sm', ui: 'plus', onClick: function () {
     const t = nxt(lastD); if (!F.twice) { F.twice = true; F.hour2 = t.h; F.minute2 = t.m; } else F.more.push({ h: t.h, m: t.m }); rmnPaint(); } })) : null;
-  const addDue = dueOn && F.dx.length < 10 ? liveOk(DS.button('موعد في يوم الاستحقاق فقط', { size: 'sm', ui: 'plus', onClick: function () {
-    const last = Math.max(F.hour * 60 + F.minute, rmnDxLast(F)), v = F.dx.length ? Math.min(23 * 60 + 45, last + 60) : Math.max(last + 15, 22 * 60), vv = Math.min(v, 23 * 60 + 45);
-    F.dx.push({ h: Math.floor(vv / 60), m: vv % 60 }); rmnPaint(); } })) : null;
-  const dxBad = !rmnDxOk(F) ? 'موعد يوم الاستحقاق بعد الموعد الأول (والذي قبله) بربع ساعة على الأقل.' : F.dx.length && F.until && F.until.hour * 60 + F.until.minute < rmnDxLast(F) + 15 ? 'اجعل «ينتهي الإرسال اليومي» بعد آخر موعد في يوم الاستحقاق.' : '';
+  const addDue = DAYS.length && F.dx.length < 10 ? liveOk(DS.button('موعد إضافي في يوم محدد', { size: 'sm', ui: 'plus', onClick: function () {
+    const d0 = DAYS.indexOf(0) >= 0 ? 0 : DAYS[DAYS.length - 1], same = F.dx.filter(function (t) { return (Number(t.d) || 0) === d0; }).reduce(function (a, t) { return Math.max(a, t.h * 60 + t.m); }, F.hour * 60 + F.minute);
+    const v = same > F.hour * 60 + F.minute ? same + 60 : Math.max(same + 15, 22 * 60), vv = Math.min(v, 23 * 60 + 45); F.dx.push({ h: Math.floor(vv / 60), m: vv % 60, d: d0 }); rmnPaint(); } })) : null;
+  const dxBad = !rmnDxOk(F) ? 'الموعد الإضافي بعد الموعد الأول (والذي قبله في اليوم نفسه) بربع ساعة على الأقل.' : F.dx.length && F.until && F.until.hour * 60 + F.until.minute < rmnDxLast(F) + 15 ? 'اجعل «ينتهي الإرسال اليومي» بعد آخر موعد إضافي.' : '';
   const bBad = F.twice && !bOk ? (bM < aM + 15 ? 'الموعد 2 بعد الأول بربع ساعة على الأقل.' : !rmnMoreOk(F) ? 'كل موعد بعد الذي قبله بربع ساعة على الأقل.' : F.until && F.until.hour * 60 + F.until.minute < rmnLastM(F) + 15 ? 'اجعل «ينتهي الإرسال اليومي» بعد آخر موعد.' : win && (F.hour2 < win.start || F.hour2 >= win.end) ? 'الموعد 2 خارج نافذة الإرسال.' : '') : '';
   return [e('div', { class: 'rsc-tlist' }, rows),
     e('div', { class: 'rmn-acts rsc-tadd' }, [addDaily, addDue]),
-    e('p', { class: 'rmn-sm' }, dueOn ? '«كل يوم» يُرسل في كل يوم تذكير. «يوم الاستحقاق فقط» تذكير إضافي في يوم استحقاق الدفعة وحده (مثل 10:00 مساءً)، ولا يتقيد بنافذة الإرسال.' : '«كل يوم» يُرسل في كل يوم تذكير.'),
+    e('p', { class: 'rmn-sm' }, '«موعد آخر كل يوم» يُرسل في كل أيام التذكير. «موعد إضافي في يوم محدد» تذكير ثانٍ في يوم تختاره من أيام القاعدة فقط (مثل قبل الاستحقاق بيوم، أو يوم الاستحقاق 10:00 مساءً)، ولا يتقيد بنافذة الإرسال.'),
     win && (F.hour < win.start || F.hour >= win.end) ? e('small', { class: 'rmn-sm is-bad' }, 'الموعد الأول خارج نافذة الإرسال — يُرسل عند بداية النافذة.') : null,
     bBad ? e('small', { class: 'rmn-sm is-bad' }, bBad) : null, dxBad ? e('small', { class: 'rmn-sm is-bad' }, dxBad) : null,
     e('div', { class: 'rsc-until' }, rmnUntilBox(F, win))];
@@ -35333,7 +35347,7 @@ function rmnSumView(F, o) {
     sec('متى', 'calendar-blank', F.segs.map(function (k) { return row(RMN_SEGN[k], rmnSegSched(F, k)); }).concat([
       row('الفترة', 'من ' + rmnDay(F.start || today) + (F.end ? ' إلى ' + rmnDay(F.end) : ' · بلا تاريخ نهاية')),
       row('يتوقف', 'فور سداد الدفعة، أو وجود طلب قيد المعالجة أو إيصال تحويل قيد المراجعة' + (F.cap ? '، أو بعد ' + rmnRemN(F.cap) + ' للدفعة' : ''))])),
-    sec('كيف', 'paper-plane-tilt', [row('وقت الإرسال', (F.twice ? fmtNum(2 + (F.more || []).length) + ' مرات يوميًا: ' + [rmTime(F.hour, F.minute), rmTime(F.hour2, F.minute2)].concat((F.more || []).map(function (t) { return rmTime(t.h, t.m); })).join('، ') : 'يوميًا ' + rmTime(F.hour, F.minute)) + ' — حتى ' + rmnEndTx(endM) + '، ومن فاته الوقت ففي اليوم التالي'), (F.dx || []).length ? row('يوم الاستحقاق', 'تذكير إضافي ' + F.dx.map(function (t) { return rmTime(t.h, t.m); }).join('، ') + ' للدفعات المستحقة اليوم فقط') : null,
+    sec('كيف', 'paper-plane-tilt', [row('وقت الإرسال', (F.twice ? fmtNum(2 + (F.more || []).length) + ' مرات يوميًا: ' + [rmTime(F.hour, F.minute), rmTime(F.hour2, F.minute2)].concat((F.more || []).map(function (t) { return rmTime(t.h, t.m); })).join('، ') : 'يوميًا ' + rmTime(F.hour, F.minute)) + ' — حتى ' + rmnEndTx(endM) + '، ومن فاته الوقت ففي اليوم التالي'), (F.dx || []).length ? row('مواعيد إضافية', F.dx.map(function (t) { return rmnDayTx(t.d) + ' ' + rmTime(t.h, t.m); }).join('، ')) : null,
       row('الوسائل', chTx), row('السداد في الرسالة', F.pm === 'bank' ? 'تحويل بنكي مع رابط إرفاق الإيصال' : 'بوابة الدفع — زر «ادفع الآن»')])]);
 }
 function rmnRuleSum(F, R, inc, audTx, schedTx, today) {
@@ -35684,7 +35698,7 @@ function rmnEdit(L) {
         const CHP = {}; F.channels.forEach(function (c) { const x = F.chp[c] || {}; CHP[c] = { slot: F.twice ? (x.slot || 'a') : 'a', every: 1, max: 0 }; });
         const body2 = { id: F.id || undefined, pay_method: F.pm || 'gateway', name: F.name, segs: F.segs, before: F.before, due: F.due, late: F.late, def: F.def, hour: F.hour, minute: F.minute, channels: F.channels, tpl_id: F.tpl_id || null,
           audience: F.audience, list_id: F.audience === 'list' ? F.list_id || null : null, picked: ['picked', 'fav', 'list'].indexOf(F.audience) >= 0 ? F.picked.map(function (u) { return u.id; }) : [], excluded: F.excluded.map(function (u) { return u.id; }),
-          start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, bx: F.twice && F.more.length ? F.more.map(function (t) { return { hour: t.h, minute: t.m }; }) : undefined, dx: F.dx && F.dx.length ? F.dx.map(function (t) { return { hour: t.h, minute: t.m }; }) : undefined, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined, until: F.until || undefined }, adv: rmnAdvOut(F),
+          start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, bx: F.twice && F.more.length ? F.more.map(function (t) { return { hour: t.h, minute: t.m }; }) : undefined, dx: F.dx && F.dx.length ? F.dx.map(function (t) { return { hour: t.h, minute: t.m, d: Number(t.d) || 0 }; }) : undefined, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined, until: F.until || undefined }, adv: rmnAdvOut(F),
           /* v1061: تخصيص العملاء من تبويبه وحده — المحرر لا يرسل client_ov فيبقى كما هو */
           pay_scope: (function () { const o = {}; Object.keys(F.scope).forEach(function (k) { if (!F.excluded.some(function (u) { return u.id === k; }) && (F.audience !== 'picked' || F.picked.some(function (u) { return u.id === k; }))) o[k] = F.scope[k]; }); return o; })() };
         const fin = function (appr) { return function () { RM.S = null; return { tone: 'ok', ic: appr ? 'seal-check' : 'paper-plane-tilt', t: appr ? 'حُفظت القاعدة واعتُمدت' : 'حُفظت القاعدة وأُرسلت للاعتماد', s: '«' + F.name + '» — المستلمون: ' + audTx + ' · ' + schedTx + ' · ' + (F.twice ? rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : rmTime(F.hour, F.minute)) + ' حتى ' + rmnEndTx(rmnEndM(F, win)) + (appr ? '. ' + rmnStartTx(F, win, today) : ' — لا تُرسل قبل اعتمادها.') + (CHG && CHG.length ? ' · التعديلات: ' + CHG.map(function (c) { return c.f; }).join('، ') + ' — مسجلة في «سجل العمليات».' : ''), back: 'العودة إلى الجدولة', to: 'rules' }; }; };
@@ -35704,7 +35718,7 @@ function rmnEdit(L) {
   const draftBody = function () { const CHP = {}; F.channels.forEach(function (c) { const x = F.chp[c] || {}; CHP[c] = { slot: F.twice ? (x.slot || 'a') : 'a', every: 1, max: 0 }; });
     return { id: F.id || undefined, draft: true, pay_method: F.pm || 'gateway', name: F.name, segs: F.segs, before: F.before, due: F.due, late: F.late, def: F.def, hour: F.hour, minute: F.minute, channels: F.channels, tpl_id: F.tpl_id || null,
       audience: F.audience, list_id: F.audience === 'list' ? F.list_id || null : null, picked: ['picked', 'fav', 'list'].indexOf(F.audience) >= 0 ? F.picked.map(function (u) { return u.id; }) : [], excluded: F.excluded.map(function (u) { return u.id; }),
-      start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, bx: F.twice && F.more.length ? F.more.map(function (t) { return { hour: t.h, minute: t.m }; }) : undefined, dx: F.dx && F.dx.length ? F.dx.map(function (t) { return { hour: t.h, minute: t.m }; }) : undefined, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined, until: F.until || undefined }, adv: rmnAdvOut(F), pay_scope: F.scope, reason: String(F.reason || '').trim() || undefined }; };
+      start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, bx: F.twice && F.more.length ? F.more.map(function (t) { return { hour: t.h, minute: t.m }; }) : undefined, dx: F.dx && F.dx.length ? F.dx.map(function (t) { return { hour: t.h, minute: t.m, d: Number(t.d) || 0 }; }) : undefined, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined, until: F.until || undefined }, adv: rmnAdvOut(F), pay_scope: F.scope, reason: String(F.reason || '').trim() || undefined }; };
   const leave = function () { RM.S = null; RMN.eask = ''; RMN.t = 'rules'; RMN.step = 1; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } };
   const canDel = F.id && (F.status === 'draft' || F.status === 'rejected');
   const hActs = ask === 'cancel' ? DS.note('warn', 'إلغاء التعديل؟', 'تُفقد التغييرات التي لم تُحفظ' + (F.id ? '، وتبقى القاعدة كما كانت.' : '.'), e('div', { class: 'rmn-acts' }, [DS.button('نعم، ألغِ التعديل', { size: 'sm', tone: 'danger', onClick: leave }), DS.button('متابعة التعديل', { size: 'sm', onClick: function () { RMN.eask = ''; rmnPaint(); } })]))
@@ -36455,7 +36469,7 @@ function rmForm(r, L, kind) {
     start: r && r.start_date ? String(r.start_date).slice(0, 10) : '', end: r && r.end_date ? String(r.end_date).slice(0, 10) : '',
     twice: !!(r && r.ch_plan && r.ch_plan.b), hour2: r && r.ch_plan && r.ch_plan.b ? Number(r.ch_plan.b.hour) : 18, minute2: r && r.ch_plan && r.ch_plan.b ? Number(r.ch_plan.b.minute || 0) : 0,
     more: r && r.ch_plan && Array.isArray(r.ch_plan.bx) ? r.ch_plan.bx.map(function (t) { return { h: Number(t.hour), m: Number(t.minute || 0) }; }) : [], /* v1075: مواعيد إضافية في اليوم */
-    dx: r && r.ch_plan && Array.isArray(r.ch_plan.dx) ? r.ch_plan.dx.map(function (t) { return { h: Number(t.hour), m: Number(t.minute || 0) }; }) : [], /* v1081 */
+    dx: r && r.ch_plan && Array.isArray(r.ch_plan.dx) ? r.ch_plan.dx.map(function (t) { return { h: Number(t.hour), m: Number(t.minute || 0), d: Number(t.d) || 0 }; }) : [], /* v1081 */
     chp: (function () { const o = {}; RM_CH.forEach(function (c) { const x = r && r.ch_plan && r.ch_plan.ch && r.ch_plan.ch[c[0]]; o[c[0]] = { slot: x && x.slot === 'b' ? 'b' : 'a', every: x ? Number(x.every) || 1 : 1, max: x ? Number(x.max) || 0 : 0 }; }); return o; })(),
     scope: r && r.pay_scope && typeof r.pay_scope === 'object' ? JSON.parse(JSON.stringify(r.pay_scope)) : {},
     ov: r && r.client_ov && typeof r.client_ov === 'object' ? JSON.parse(JSON.stringify(r.client_ov)) : {}, /* v1048 */
