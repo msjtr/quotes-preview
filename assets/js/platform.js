@@ -35161,7 +35161,7 @@ function rmnUntilBox(F, win) {
 /* متى يبدأ الإرسال الفعلي بعد الاعتماد — لشاشة التأكيد */
 function rmnStartTx(F, win, today) {
   let nowM = 0; try { const t = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', hour12: false }).split(':'); nowM = Number(t[0]) * 60 + Number(t[1]); } catch (err) { const d = new Date(); nowM = d.getHours() * 60 + d.getMinutes(); }
-  const st = F.start || today, aM = F.hour * 60 + F.minute, wS = win ? Number(win.start) * 60 : 0, endM = rmnEndM(F, win);
+  const st = F.start || today, aM = F.hour * 60 + F.minute, wS = win && !F.until ? Number(win.start) * 60 : 0, endM = rmnEndM(F, win); /* v1105: مع «نهاية الإرسال اليومي» لا تقيّد النافذة العامة البداية — 8:30 تبقى 8:30 */
   if (st > today) return 'يبدأ الإرسال يوم ' + rmnDate(st) + ' الساعة ' + rmTime(F.hour, F.minute) + '.';
   if (nowM < Math.max(aM, wS)) return 'يبدأ الإرسال اليوم الساعة ' + rmnEndTx(Math.max(aM, wS)) + '.';
   /* v1097: لا تعويض — كل تذكير في وقته (حتى نصف ساعة بعده)، ومن فاته يلحق التالي */
@@ -35772,7 +35772,8 @@ function rmnEdit(L) {
         e('p', { class: 'rmn-sm' }, ['تعمل من ' + rmnDate(F.start || today) + (F.end ? ' حتى ' + rmnDate(F.end) + '.' : ' بلا تاريخ نهاية — حتى تنهيها أو توقفها.'), F.end ? [' ', e('button', { type: 'button', class: 'rmn-link', onClick: function () { F.end = ''; rmnPaint(); } }, 'بلا تاريخ نهاية')] : null]),
         !perOk ? e('small', { class: 'rmn-sm is-bad' }, 'تاريخ الانتهاء قبل تاريخ البداية.') : null,
         e('p', { class: 'rmn-sm rsc-stopln' }, [e('b', {}, 'يتوقف التذكير تلقائيًا '), 'لكل دفعة فور سدادها، أو عند رفع إيصال تحويل قيد المراجعة، أو استبعاد العميل أو العقد. الطلبات (تأجيل · سداد مبكر · توحيد · أهلية) لا توقفه حتى يصدر قرارها.']),
-        e('details', { class: 'rsc-more-opt' }, [e('summary', {}, 'حد أعلى لعدد التذكيرات (اختياري)'), e('p', { class: 'rmn-sm' }, 'يوقف التذكير عن الدفعة بعد عدد معيّن من الرسائل حتى لو بقيت مواعيد — مثال: «لا تتجاوز 5» فلا تصل الدفعة أكثر من 5 تذكيرات. اتركه «بلا حد» لتُرسل كل المواعيد أعلاه.'), DS.editField('أقصى عدد تذكيرات للدفعة الواحدة', DS.select({ value: String(F.cap || 0), options: [['0', 'بلا حد — حسب المواعيد أعلاه']].concat([2, 3, 4, 5, 6, 8, 10, 12].map(function (n) { return [String(n), 'لا تتجاوز ' + rmnRemN(n) + ' للدفعة']; })), onChange: function (v) { F.cap = Number(v); rmnPaint(); } }))])], null, 'hourglass-medium:teal')];
+        /* v1105: الحد الأعلى للمتأخرين والمتعثرين (أيامهم طويلة) — يُخفى لقاعدة المنتظمين وحدها ما لم يكن محدَّدًا */
+        !(F.segs.some(function (k) { return k !== 'regular'; }) || F.cap) ? null : e('details', { class: 'rsc-more-opt' }, [e('summary', {}, 'حد أعلى لعدد التذكيرات (اختياري)'), e('p', { class: 'rmn-sm' }, 'يوقف التذكير عن الدفعة بعد عدد معيّن من الرسائل حتى لو بقيت مواعيد — مثال: «لا تتجاوز 5» فلا تصل الدفعة أكثر من 5 تذكيرات. اتركه «بلا حد» لتُرسل كل المواعيد أعلاه.'), DS.editField('أقصى عدد تذكيرات للدفعة الواحدة', DS.select({ value: String(F.cap || 0), options: [['0', 'بلا حد — حسب المواعيد أعلاه']].concat([2, 3, 4, 5, 6, 8, 10, 12].map(function (n) { return [String(n), 'لا تتجاوز ' + rmnRemN(n) + ' للدفعة']; })), onChange: function (v) { F.cap = Number(v); rmnPaint(); } }))])], null, 'hourglass-medium:teal')];
   } else if (step === 3) {
     body = [stepHead('bell-ringing:teal', 'الوسائل والسداد', 'عبر أي وسيلة يصل التذكير، وكيف يسدد العميل.'),
       box('وسائل الإرسال', F.twice ? 'اختر الوسائل، ولكل وسيلة موعدها في اليوم.' : 'يصل كل تذكير عبر كل الوسائل المختارة معًا.', [
@@ -35846,7 +35847,7 @@ function rmnEdit(L) {
   const nav = e('div', { class: 'rmn-nav rsc-nav2' }, [
     step > 1 ? DS.button('السابق', { ui: 'caret-right', onClick: function () { RMN.step = step - 1; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }) : null,
     DS.button('إلغاء التعديل', { ui: 'x', onClick: function () { RMN.eask = 'cancel'; rmnPaint(); } }),
-    canDel ? liveOk(DS.button('حذف', { ui: 'trash', onClick: function () { RMN.eask = 'del'; rmnPaint(); } })) : null,
+    canDel ? liveOk(DS.button('حذف القاعدة', { ui: 'trash', title: 'يظهر للمسودة أو المرفوضة فقط — يحذفها نهائيًا', onClick: function () { RMN.eask = 'del'; rmnPaint(); } })) : null,
     e('span', { class: 'rmn-grow' }),
     step >= L4.length ? null : F.id && F.status === 'approved' ? toPub : saveDraft, /* في المرحلة الأخيرة خيارات الحفظ في لوحتها وحدها */
     step < L4.length ? DS.button('التالي', { tone: 'primary', onClick: function () { RMN.step = step + 1; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }) : null]);
