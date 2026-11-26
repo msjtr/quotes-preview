@@ -35205,13 +35205,14 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
   const R = [{ first: true, h: F.hour, m: F.minute, set: function (h, m) { F.hour = h; F.minute = m; } }];
   dl().forEach(function (t, i) { R.push({ all: true, i: i, h: t.h, m: t.m }); });
   /* تذكير الأيام المحددة: الأسطر بالوقت نفسه بطاقة واحدة بأيامها */
-  const G = {}; F.dx.forEach(function (t) { if (t.d == null) t.d = 0; const k = t.h * 60 + t.m; (G[k] = G[k] || { grp: true, h: t.h, m: t.m, items: [] }).items.push(t); });
-  Object.keys(G).map(Number).sort(function (a, b) { return a - b; }).forEach(function (k) { const g = G[k]; g.days = g.items.map(function (t) { return Number(t.d) || 0; }).sort(function (a, b) { return a - b; }); R.push(g); });
+  /* v1107: البطاقة الإضافية بمعرّفها (g) لا بوقتها — كانت بطاقتان بالوقت نفسه تندمجان فتختفي إحداهما */
+  const G = {}, GO = []; F.dx.forEach(function (t) { if (t.d == null) t.d = 0; if (!t.g) t.g = 't' + (t.h * 60 + t.m); const k = t.g; if (!G[k]) { G[k] = { grp: true, gk: k, h: t.h, m: t.m, items: [] }; GO.push(k); } G[k].items.push(t); });
+  GO.sort(function (a, b) { return (G[a].h * 60 + G[a].m) - (G[b].h * 60 + G[b].m); }).forEach(function (k) { const g = G[k]; g.days = g.items.map(function (t) { return Number(t.d) || 0; }).sort(function (a, b) { return a - b; }); R.push(g); });
   const toAll = function (x) { F.dx = F.dx.filter(function (y) { return x.items.indexOf(y) < 0; }); const L = dl(); L.push({ h: x.h, m: x.m }); putDl(L); rmnPaint(); };
   const togDay = function (x, d) {
-    if (x.all) { const L = dl(); const t = L.splice(x.i, 1)[0]; putDl(L); F.dx.push({ h: t.h, m: t.m, d: d }); }
+    if (x.all) { const L = dl(); const t = L.splice(x.i, 1)[0]; putDl(L); F.dx.push({ h: t.h, m: t.m, d: d, g: 'n' + Date.now() }); }
     else if (x.grp) { const it = x.items.filter(function (y) { return (Number(y.d) || 0) === d; })[0];
-      if (it) { if (x.items.length < 2) return; F.dx = F.dx.filter(function (y) { return y !== it; }); } else F.dx.push({ h: x.h, m: x.m, d: d }); }
+      if (it) { if (x.items.length < 2) return; F.dx = F.dx.filter(function (y) { return y !== it; }); } else F.dx.push({ h: x.h, m: x.m, d: d, g: x.gk }); }
     rmnPaint(); };
   const setTime = function (x, h, m) { if (x.first) x.set(h, m); else if (x.all) { const L = dl(); L[x.i] = { h: h, m: m }; putDl(L); } else x.items.forEach(function (y) { y.h = h; y.m = m; }); };
   const del = function (x) { if (x.all) { const L = dl(); L.splice(x.i, 1); putDl(L); } else F.dx = F.dx.filter(function (y) { return x.items.indexOf(y) < 0; }); rmnPaint(); };
@@ -35254,7 +35255,9 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
   };
   const n = R.length;
   const add = n < 30 ? liveOk(DS.button('إضافة تذكير إضافي', { size: 'sm', ui: 'plus', onClick: function () {
-    const last = R.reduce(function (a, x) { return Math.max(a, x.h * 60 + x.m); }, 0), v = Math.min(Math.max(0, endM - 15), 23 * 60 + 45, last + 240), L = dl(), v2 = v - v % 15; L.push({ h: Math.floor(v2 / 60), m: v2 % 60 }); putDl(L); rmnPaint(); } })) : null;
+    const used = R.map(function (x) { return x.h * 60 + x.m; }), last = Math.max.apply(null, used), cap = Math.min(Math.max(0, endM - 15), 23 * 60 + 45);
+    let v2 = Math.min(cap, last + 240); v2 -= v2 % 15; while (used.indexOf(v2) >= 0 && v2 > 15) v2 -= 30; /* v1107: وقت غير مستخدم */
+    const L = dl(); L.push({ h: Math.floor(v2 / 60), m: v2 % 60 }); putDl(L); rmnPaint(); } })) : null;
   const dxBad = !rmnDxOk(F) ? ((F.dx || []).length > 60 ? 'أيام التذكيرات الإضافية 60 على الأكثر.' : 'في اليوم الواحد: كل تذكير بعد الذي قبله بربع ساعة على الأقل.') : '';
   const bBad = F.twice && !bOk ? (bM < aM + 15 ? 'كل وقت بعد الوقت الأساسي بربع ساعة على الأقل.' : !rmnMoreOk(F) ? 'بين كل وقتين ربع ساعة على الأقل.' : win && !F.until && (F.hour2 < win.start || F.hour2 >= win.end) ? 'وقت خارج نافذة الإرسال العامة — حدّد «نهاية الإرسال اليومي» ليُسمح به.' : '') : '';
   return [
