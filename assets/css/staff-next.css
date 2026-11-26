@@ -5335,3 +5335,8 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rmn-r2 .rmn-pcs { grid-template-columns: minmax(0, 1fr); }
 }
 .tq-next .rmn.is-narrow .rmn-cl2-side { display: none; } .tq-next .rmn.is-narrow .rmn-cl2-b.has-side { grid-template-columns: minmax(0, 1fr); }
+/* v1079: نص الدفعة كاملًا (أيام التأخر لا تُقص) · البحث والترتيب في سطر الفئات */
+.tq-next .rmn-r2 .rmn-pc-b small { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.5; }
+.tq-next .rmn-r2 .rmn-pcs { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.tq-next .rmn-cl2 .rmn-search { flex: 1 1 200px; min-width: 180px; }
+.tq-next .rmn-cl2 .rmn-sort { min-width: 140px; }

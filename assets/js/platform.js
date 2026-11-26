@@ -34426,7 +34426,7 @@ function rmnRow(x, can) {
       e('span', { class: 'rsc-ctn', title: 'العقود القائمة (غير المغلقة)' }, [frag(ui('file-text', 13)), rmnCtTx(KC.n || CT.length)]),
       x.test ? rmnPill('حسابك التجريبي', 'info') : null, x.excluded ? rmnPill('مستثنى من التذكير', 'warn') : null,
       /* v1078: حالة واحدة مختصرة بدل شارة لكل عقد — العقد يظهر على كل دفعة */
-      x.pay ? rmnPill(x.seg === 'regular' ? rmLate(x.pay.late) : 'متأخر ' + rmDays(x.late) + (late.length > 1 ? ' · ' + fmtNum(late.length) + ' دفعات' : ''), tone) : rmnPill('لا دفعات قائمة'),
+      x.pay ? rmnPill(x.seg === 'regular' ? rmLate(x.pay.late) : 'متأخر ' + rmDays(x.late) + (late.length > 1 ? ' · ' + fmtNum(late.length) + (late.length <= 10 ? ' دفعات' : ' دفعة') : ''), tone) : rmnPill('لا دفعات قائمة'),
       x.pay ? e('span', { class: 'rmn-amt' }, [e('small', {}, x.seg === 'regular' ? 'الدفعة القادمة' : 'المتأخر'), e('b', {}, rmnSar(amt))]) : null]),
     P.length ? e('div', { class: 'rmn-pcs', role: 'group', 'aria-label': 'دفعات ' + (x.name || 'العميل') }, shown.map(chip).concat(more > 0 || RM.all[x.id] ? [e('button', { type: 'button', class: 'rmn-more', onClick: function () { RM.all[x.id] = !RM.all[x.id]; rmnPaint(); } }, RM.all[x.id] ? 'المتأخرة والأقرب فقط' : '+ ' + fmtNum(more) + (more === 1 ? ' دفعة قادمة' : ' دفعات قادمة'))] : [])) : null,
     KC.nodue.length || KC.rh.length ? e('div', { class: 'rsc-xct' }, KC.nodue.map(function (c) { return e('span', { class: 'rsc-xc' }, [e('bdi', { dir: 'ltr' }, c.no), ' · لا دفعات قائمة عليه']); })
