@@ -5500,3 +5500,34 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-stl-on { color: #0E7C72; font-weight: 700; }
 .tq-next .rsc-stl-nx { color: var(--t2-muted); }
 .tq-next .rsc-stl-tag { padding: 2px 8px; border-radius: 999px; background: #FDECEA; color: #A8382B; font-size: 11.5px; font-weight: 700; }
+/* v1110: المتأخرون — بطاقتان مختصرتان، شريط زمني بأرقامه، وجدول الدفعات المتأخرة المشمولة */
+.tq-next .rsc-lt-top { gap: 10px; }
+.tq-next .rsc-ltb { height: 44px; }
+.tq-next .rsc-ltb-s { display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.2; padding: 0 6px; }
+.tq-next .rsc-ltb-s b { font-size: 12.5px; } .tq-next .rsc-ltb-s small { font-size: 11px; opacity: .9; font-weight: 600; }
+.tq-next .rsc-lt-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.tq-next .rsc-lt-c { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; background: #FFF8E8; border: 1px solid #EBD7A6; border-inline-start: 5px solid #C98A12; }
+.tq-next .rsc-lt-c.is-2 { background: #FCEFF5; border-color: #EBC2D4; border-inline-start-color: #C0457A; }
+.tq-next .rsc-lt-h { display: flex; align-items: center; gap: 8px; }
+.tq-next .rsc-lt-h .rsc-lt-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #C98A12; color: #fff; font-style: normal; font-weight: 800; font-size: 13px; padding: 0; }
+.tq-next .rsc-lt-c.is-2 .rsc-lt-n { background: #C0457A; }
+.tq-next .rsc-lt-h b { font-size: 15px; }
+.tq-next .rsc-lt-c .rsc-3col { margin: 0; }
+.tq-next .rsc-lt-ro { display: flex; align-items: center; background: rgba(255,255,255,.6); color: var(--t2-ink); font-weight: 700; cursor: default; }
+.tq-next .rsc-lt-dl { margin: 0; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.75); font-size: 13px; line-height: 1.8; color: var(--t2-ink); }
+.tq-next .rsc-lt-dl .is-bad { color: #A8382B; font-weight: 700; }
+.tq-next .rsc-lt-note { margin-top: 10px; }
+.tq-next .rsc-lt-days, .tq-next .rsc-lt-notes { display: none; }
+.tq-next .rsc-stl-hd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.tq-next .rsc-stl-hd b { font-size: 15px; margin-inline-end: auto; }
+.tq-next .rsc-stl-k { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #FFF1D6; color: #7A5A0E; }
+.tq-next .rsc-stl-k.is-2 { background: #FBE3EE; color: #8E2D58; }
+.tq-next .rsc-stl-t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tq-next .rsc-stl-t th { text-align: start; padding: 8px 10px; font-size: 12px; color: var(--t2-muted); border-bottom: 1px solid var(--t2-line); white-space: nowrap; }
+.tq-next .rsc-stl-t td { padding: 9px 10px; border-bottom: 1px solid var(--t2-line); vertical-align: middle; }
+.tq-next .rsc-stl-t tr.is-1 td:first-child { box-shadow: inset -4px 0 0 #C98A12; } .tq-next .rsc-stl-t tr.is-2 td:first-child { box-shadow: inset -4px 0 0 #C0457A; }
+.tq-next .rsc-stl-st { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #FFF1D6; color: #7A5A0E; }
+.tq-next .rsc-stl-st.is-2 { background: #FBE3EE; color: #8E2D58; }
+.tq-next .rsc-stl-t .rsc-stl-tag { display: block; margin-top: 3px; width: fit-content; }
+.tq-next .rsc-stl-t td.rsc-stl-on { color: #0E7C72; font-weight: 800; }
+@media (max-width: 640px) { .tq-next .rsc-stl-t thead { display: none; } .tq-next .rsc-stl-t tr { display: grid; grid-template-columns: 1fr 1fr; padding: 8px 0; border-bottom: 1px solid var(--t2-line); } .tq-next .rsc-stl-t td { border: 0; padding: 3px 8px; } }

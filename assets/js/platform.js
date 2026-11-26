@@ -35114,72 +35114,66 @@ function rmnTplOf(F, x, p, d) {
 }
 function rmnLtKey(F, d) { return F.lt && F.segs.indexOf('late') >= 0 && d >= (Number(F.lt.split) || 15) ? 'collect_demand' : 'pay_late'; }
 function rmnLatePanel(F, today) {
-  /* v1109 (طلب المشرف): المرحلتان بوضوح — لكل مرحلة «من اليوم · حتى اليوم · التكرار» تحددها مباشرة (بلا تبديل افتراضي/مخصص)،
-     ونهاية الأولى تحدد بداية الثانية تلقائيًا، وشريط زمني 1–90، وأيام كل مرحلة بتواريخ مثال */
-  rmnLtSync(F);
+  /* v1110 (طلب المشرف): بطاقتان مختصرتان — الحقول ثم سطر واحد بالأيام، وشريط زمني بأرقامه، بلا شروح زائدة */
+  void today; rmnLtSync(F);
   const L = F.lt, c = rmnLtCalc(L);
   const set = function (fn) { return function (v) { fn(Number(v)); L.custom = true; if (Number(L.to) < Number(L.split)) L.to = 90; rmnLtSync(F); rmnPaint(); }; };
   const sel = function (lbl, val, opts, fn) { return DS.editField(lbl, DS.select({ value: String(val), options: opts, onChange: set(fn) })); };
   const ev = function (n) { return n === 1 ? 'يوميًا' : 'كل ' + rmDays(n); };
   const rng = function (a, b) { const o = []; for (let i = a; i <= b; i++) o.push(i); return o; };
-  const add = function (n) { return iso(new Date(Date.parse(today + 'T12:00:00Z') + n * 864e5)); };
-  const chips = function (L2) { return e('div', { class: 'rsc-lt-days' }, L2.map(function (d) { return e('span', { class: 'rsc-lt-d' }, [e('b', {}, 'اليوم ' + fmtNum(d)), e('small', {}, rmnDate(add(d)))]); })); };
   const isDef = c.sp === RMN_LT_DEF.split && c.s1 === RMN_LT_DEF.s1 && c.e1 === RMN_LT_DEF.e1 && c.e2 === RMN_LT_DEF.e2 && c.to === 90;
+  const seg = function (cls, flex, t, sub) { return e('span', { class: 'rsc-ltb-s ' + cls, style: 'flex:' + flex }, [e('b', {}, t), sub ? e('small', {}, sub) : null]); };
   const bar = e('div', { class: 'rsc-ltb', 'aria-hidden': 'true' }, [
-    c.s1 > 1 ? e('span', { class: 'rsc-ltb-s is-0', style: 'flex:' + (c.s1 - 1) }, '') : null,
-    e('span', { class: 'rsc-ltb-s is-1', style: 'flex:' + Math.max(1, c.sp - c.s1) }, 'المرحلة 1'),
-    e('span', { class: 'rsc-ltb-s is-2', style: 'flex:' + Math.max(1, c.to - c.sp + 1) }, 'المرحلة 2'),
-    c.to < 90 ? e('span', { class: 'rsc-ltb-s is-0', style: 'flex:' + (90 - c.to) }, '') : null,
-    e('span', { class: 'rsc-ltb-s is-3', style: 'flex:12' }, 'المتعثرون')]);
-  const stage = function (n, title, tpl, from, to, every, days, fields, note) {
-    return e('section', { class: 'rsc-lt-c is-' + n }, [
-      e('div', { class: 'rsc-lt-h' }, [e('i', { class: 'rsc-lt-n' }, 'المرحلة ' + fmtNum(n)), e('b', {}, title), e('small', {}, 'القالب: «' + tpl + '»')]),
-      e('div', { class: 'rsc-3col' }, fields),
-      note ? e('p', { class: 'rmn-sm' }, note) : null,
-      e('p', { class: 'rsc-lt-p' }, [e('b', {}, 'من اليوم ' + fmtNum(from) + ' حتى اليوم ' + fmtNum(to)), ' من التأخير · ' + ev(every) + ' · ', e('b', {}, rmnRemN(days.length))]),
-      days.length ? chips(days) : e('p', { class: 'rmn-sm is-bad' }, 'لا تذكيرات في هذه المرحلة — غيّر البداية أو النهاية.')]);
+    seg('is-1', Math.max(1, c.sp - c.s1), 'المرحلة 1', 'اليوم ' + fmtNum(c.s1) + '–' + fmtNum(c.sp - 1)),
+    seg('is-2', Math.max(1, c.to - c.sp + 1), 'المرحلة 2', 'اليوم ' + fmtNum(c.sp) + '–' + fmtNum(c.to)),
+    seg('is-3', 14, 'المتعثرون', 'بعد 90')]);
+  const days = function (D) { return e('p', { class: 'rsc-lt-dl' }, D.length ? [e('b', {}, rmnRemN(D.length) + ': '), 'الأيام ' + D.map(fmtNum).join('، ')] : e('span', { class: 'is-bad' }, 'لا تذكيرات — غيّر البداية أو النهاية.')); };
+  const stage = function (n, title, fields, D) {
+    return e('section', { class: 'rsc-lt-c is-' + n }, [e('div', { class: 'rsc-lt-h' }, [e('i', { class: 'rsc-lt-n' }, fmtNum(n)), e('b', {}, title)]), e('div', { class: 'rsc-3col' }, fields), days(D)]);
   };
   return e('div', { class: 'rsc-sp rsc-lt' }, [
-    e('div', { class: 'rsc-lt-top' }, [e('b', {}, 'التذكير بعد الاستحقاق على مرحلتين'), e('small', { class: 'rmn-sm' }, 'التواريخ مثال لدفعة استحقت اليوم.'),
-      isDef ? e('span', { class: 'rsc-lt-def' }, 'الإعدادات الافتراضية') : liveOk(DS.button('استعادة الافتراضي', { size: 'sm', onClick: function () { F.lt = Object.assign({}, RMN_LT_DEF); rmnLtSync(F); rmnPaint(); } }))]),
+    e('div', { class: 'rsc-lt-top' }, [e('b', {}, 'مرحلتا التذكير بعد الاستحقاق'), e('span', { class: 'rmn-grow' }),
+      isDef ? e('span', { class: 'rsc-lt-def' }, 'الافتراضي') : liveOk(DS.button('استعادة الافتراضي', { size: 'sm', onClick: function () { F.lt = Object.assign({}, RMN_LT_DEF); rmnLtSync(F); rmnPaint(); } }))]),
     bar,
     e('div', { class: 'rsc-lt-g' }, [
-      stage(1, 'دفعة متأخرة', 'دفعة متأخرة', c.s1, c.sp - 1, c.e1, c.d1, [
+      stage(1, 'دفعة متأخرة', [
         sel('من اليوم', c.s1, rng(1, Math.min(10, c.sp - 1)).map(function (n) { return [String(n), 'اليوم ' + fmtNum(n)]; }), function (v) { L.s1 = v; }),
         sel('حتى اليوم', c.sp - 1, rng(Math.max(c.s1, 5), 59).map(function (n) { return [String(n), 'اليوم ' + fmtNum(n)]; }), function (v) { L.split = v + 1; }),
-        sel('التكرار', c.e1, [1, 2, 3, 4, 5, 7].map(function (n) { return [String(n), ev(n)]; }), function (v) { L.e1 = v; })]),
-      stage(2, 'مطالبة بسداد المتأخرات', 'مطالبة بسداد المتأخرات', c.sp, c.to, c.e2, c.d2, [
-        e('div', { class: 't2-field rsc-lt-ro' }, [e('span', { class: 't2-field-k' }, 'من اليوم'), e('b', {}, 'اليوم ' + fmtNum(c.sp)), e('small', {}, 'تلقائيًا بعد نهاية المرحلة 1')]),
-        sel('حتى اليوم', c.to, rng(c.sp, 90).filter(function (n) { return n === c.sp || n % 5 === 0 || n === 90; }).map(function (n) { return [String(n), 'اليوم ' + fmtNum(n) + (n === 90 ? ' (قبل التعثر)' : '')]; }), function (v) { L.to = v; }),
-        sel('التكرار', c.e2, [1, 2, 3, 5, 7, 10, 14].map(function (n) { return [String(n), ev(n)]; }), function (v) { L.e2 = v; })],
-        c.to < 90 ? 'بعد اليوم ' + fmtNum(c.to) + ' لا تذكير حتى ينتقل العقد إلى «المتعثرون» بعد اليوم 90.' : null)]),
-    e('ul', { class: 'rsc-lt-notes' }, [
-      e('li', {}, 'المجموع ' + rmnRemN(c.d1.length + c.d2.length) + ' حتى اليوم ' + fmtNum(c.to) + ' إن لم يُسدِّد — ويتوقف فور السداد.'),
-      e('li', {}, 'إن كان في العقد دفعتان متأخرتان أو أكثر تُرسل «مطالبة بسداد المتأخرات» من المرحلة الأولى، برسالة واحدة للعقد.'),
-      e('li', {}, 'بعد اليوم 90 بلا أي سداد ينتقل العقد كله إلى «المتعثرون»؛ ومن سدّد شيئًا خلال 90 يومًا يبقى هنا.')])]);
+        sel('التكرار', c.e1, [1, 2, 3, 4, 5, 7].map(function (n) { return [String(n), ev(n)]; }), function (v) { L.e1 = v; })], c.d1),
+      stage(2, 'مطالبة بسداد المتأخرات', [
+        DS.editField('من اليوم', e('div', { class: 't2-input rsc-lt-ro' }, 'اليوم ' + fmtNum(c.sp))),
+        sel('حتى اليوم', c.to, rng(c.sp, 90).filter(function (n) { return n === c.sp || n % 5 === 0; }).map(function (n) { return [String(n), 'اليوم ' + fmtNum(n)]; }), function (v) { L.to = v; }),
+        sel('التكرار', c.e2, [1, 2, 3, 5, 7, 10, 14].map(function (n) { return [String(n), ev(n)]; }), function (v) { L.e2 = v; })], c.d2)]),
+    e('p', { class: 'rmn-sm rsc-lt-note' }, 'العقد الذي فيه دفعتان متأخرتان أو أكثر تصله «مطالبة» من المرحلة 1 برسالة واحدة. يتوقف التذكير فور السداد، وبعد اليوم 90 بلا سداد ينتقل العقد إلى «المتعثرون».')]);
 }
-/* v1109 (طلب المشرف): المشمولون الآن حسب المرحلة — كل عقد بقالبه، وموعد تذكيره التالي، ومن بقي له يوم على المرحلة التالية */
+/* v1110 (طلب المشرف): المشمولون حسب المرحلة — جدول واحد، سطر لكل دفعة متأخرة مشمولة (يحترم «دفعة البداية» والاستبعاد كالمحرك rem_plan)،
+   بمرحلتها حسب أيام تأخيرها، وقالبها، وتذكيرها التالي، ومن بقي له يوم على الانتقال */
 function rmnStageList(F, inc) {
   if (F.segs.indexOf('late') < 0 || !Array.isArray(inc)) return null;
-  const c = rmnLtCalc(F.lt || RMN_LT_DEF), days = c.d1.concat(c.d2), R1 = [], R2 = [];
+  const c = rmnLtCalc(F.lt || RMN_LT_DEF), days = c.d1.concat(c.d2), R = [];
   inc.forEach(function (x) {
-    const P = (x.pays && x.pays.length ? x.pays : x.pay ? [x.pay] : []).filter(function (p) { return Number(p.late || 0) > 0 && Number(p.late) <= 90; });
-    const byC = {}; P.forEach(function (p) { const k = p.contract_no || p.pid; if (!byC[k] || Number(p.late) > Number(byC[k].late)) byC[k] = p; });
-    Object.keys(byC).forEach(function (k) {
-      const p = byC[k], d = Number(p.late), T = rmnTplOf(F, x, p, d), nx = days.filter(function (v) { return v >= d; })[0];
-      const tag = d === c.sp - 1 ? 'ينتقل للمرحلة 2 غدًا' : d >= 89 ? 'ينتقل للمتعثرين قريبًا' : d === c.to && c.to < 90 ? 'آخر تذكير في المرحلة 2' : '';
-      (d >= c.sp ? R2 : R1).push({ x: x, p: p, d: d, T: T, today: days.indexOf(d) >= 0, nx: nx, tag: tag });
+    if ((F.excluded || []).some(function (u) { return u.id === x.id; })) return;
+    const S = Array.isArray(F.scope && F.scope[x.id]) ? F.scope[x.id] : null;
+    (x.pays && x.pays.length ? x.pays : x.pay ? [x.pay] : []).forEach(function (p) {
+      const d = Number(p.late || 0); if (d <= 0 || d > 90 || (S && S.indexOf(p.pid) < 0)) return;
+      const T = rmnTplOf(F, x, p, d), nx = days.filter(function (v) { return v >= d; })[0];
+      R.push({ x: x, p: p, d: d, st: d >= c.sp ? 2 : 1, T: T, today: days.indexOf(d) >= 0, nx: nx,
+        tag: d === c.sp - 1 ? 'تنتقل للمرحلة 2 غدًا' : d >= 89 ? 'تنتقل للمتعثرين قريبًا' : '' });
     });
   });
-  const row = function (r) {
-    return e('li', { class: 'rsc-stl-r' }, [e('span', { class: 'rsc-nr-t' }, [e('b', {}, r.x.name || '—'), e('small', {}, ['العقد ', e('bdi', { dir: 'ltr' }, r.p.contract_no || ''), ' · ' + rmLate(r.d)])]),
-      e('i', { class: 'rsc-cal-tp is-' + r.T.k, title: r.T.why }, RMN_TPLN[r.T.k][0]),
-      e('small', { class: r.today ? 'rsc-stl-on' : 'rsc-stl-nx' }, r.today ? 'تذكير اليوم' : r.nx ? 'التالي بعد ' + rmDays(r.nx - r.d) : 'لا تذكير متبقٍ'),
-      r.tag ? e('span', { class: 'rsc-stl-tag' }, r.tag) : null]);
-  };
-  const col = function (n, t, L2) { L2.sort(function (a, b) { return b.d - a.d; }); return e('section', { class: 'rsc-stl-c is-' + n }, [e('h4', {}, ['المرحلة ' + fmtNum(n) + ' — ' + t, e('small', {}, ' (' + fmtNum(L2.length) + ')')]), L2.length ? e('ul', {}, L2.map(row)) : e('p', { class: 'rmn-sm' }, 'لا أحد الآن.')]); };
-  return e('div', { class: 'rsc-stl' }, [e('b', { class: 'rsc-stl-h' }, 'المشمولون الآن حسب المرحلة'), e('small', { class: 'rmn-sm' }, 'من العملاء المشمولين بالقاعدة اليوم — كل عقد بقالبه وموعده التالي.'),
-    e('div', { class: 'rsc-stl-g' }, [col(1, 'دفعة متأخرة', R1), col(2, 'مطالبة بسداد المتأخرات', R2)])]);
+  R.sort(function (a, b) { return b.d - a.d; });
+  const n1 = R.filter(function (r) { return r.st === 1; }).length, n2 = R.length - n1;
+  return e('div', { class: 'rsc-stl' }, [
+    e('div', { class: 'rsc-stl-hd' }, [e('b', {}, 'الدفعات المتأخرة المشمولة الآن'), e('span', { class: 'rsc-stl-k is-1' }, 'المرحلة 1: ' + fmtNum(n1)), e('span', { class: 'rsc-stl-k is-2' }, 'المرحلة 2: ' + fmtNum(n2))]),
+    R.length ? e('table', { class: 'rsc-stl-t' }, [e('thead', {}, e('tr', {}, ['العميل', 'العقد · الدفعة', 'التأخير', 'المرحلة', 'القالب', 'التذكير'].map(function (h) { return e('th', {}, h); }))),
+      e('tbody', {}, R.map(function (r) {
+        return e('tr', { class: 'is-' + r.st }, [e('td', {}, e('b', {}, r.x.name || '—')),
+          e('td', {}, [e('bdi', { dir: 'ltr' }, r.p.contract_no || ''), ' · ' + fmtNum(r.p.seq) + ' من ' + fmtNum(r.p.n)]),
+          e('td', {}, fmtNum(r.d) + ' يومًا'),
+          e('td', {}, [e('span', { class: 'rsc-stl-st is-' + r.st }, 'المرحلة ' + fmtNum(r.st)), r.tag ? e('small', { class: 'rsc-stl-tag' }, r.tag) : null]),
+          e('td', { title: r.T.why }, RMN_TPLN[r.T.k][1]),
+          e('td', { class: r.today ? 'rsc-stl-on' : '' }, r.today ? 'اليوم' : r.nx ? 'بعد ' + rmDays(r.nx - r.d) : '—')]);
+      }))]) : e('p', { class: 'rmn-sm' }, 'لا دفعات متأخرة مشمولة الآن.')]);
 }
 /* v1051: آخر وقت للإرسال — بعده لا يُرسل اليوم ويؤجَّل لليوم التالي */
 function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; return F.until ? Number(F.until.hour) * 60 + Number(F.until.minute || 0) : wE; } /* v1056: آخر وقت القاعدة يحل محل نهاية النافذة */
@@ -35313,7 +35307,7 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
       e('li', {}, 'أقل فرق بين تذكيرين في اليوم نفسه ربع ساعة، ويُفضّل 4 ساعات (يظهر الفرق محسوبًا في كل بطاقة).'),
       e('li', {}, 'آخر وقت ممكن هو «نهاية الإرسال اليومي» (' + rmnEndTx(endM) + ').'),
       e('li', {}, 'كل تذكير يُرسل في وقته؛ من فاته الوقت لا يُعوَّض ويلحق التذكير التالي، ويتوقف كله فور السداد.')])]),
-    rmnDayTable(F)];
+    F.segs.length === 1 && F.segs[0] === 'regular' ? rmnDayTable(F) : null]; /* v1110 */
 }
 function rmnTimesOn(F, d) { return [F.hour * 60 + F.minute].concat(F.twice ? [F.hour2 * 60 + F.minute2].concat((F.more || []).map(function (t) { return t.h * 60 + t.m; })) : []).concat((F.dx || []).filter(function (t) { return (Number(t.d) || 0) === d; }).map(function (t) { return t.h * 60 + t.m; })).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }); } /* v1106 */
 function rmnGapTx(m) { const h = Math.floor(m / 60), n = m % 60; const ht = !h ? '' : h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : h <= 10 ? fmtNum(h) + ' ساعات' : fmtNum(h) + ' ساعة'; const mt = !n ? '' : fmtNum(n) + ' دقيقة'; return ht && mt ? ht + ' و' + mt : ht || mt || '0 دقيقة'; } /* v1102 */
@@ -35502,7 +35496,7 @@ function rmnSumView(F, o) {
 }
 function rmnRuleSum(F, R, inc, audTx, schedTx, today) {
   void schedTx; const win = RM.L && RM.L.window && RM.L.window.on !== false ? RM.L.window : null;
-  return [rmnSumView(F, { aud: audTx, n: R && R !== 'loading' ? rmnIncN(inc, F.segs, F.scope) : null, win: win, today: today }), R && R !== 'loading' ? rmnStageList(F, inc) : null, rmnDayTable(F)]; /* v1109 */ /* v1099: الجدول اليومي في المراجعة أيضًا */
+  return [rmnSumView(F, { aud: audTx, n: R && R !== 'loading' ? rmnIncN(inc, F.segs, F.scope) : null, win: win, today: today }), R && R !== 'loading' ? rmnStageList(F, inc) : null, F.segs.length === 1 && F.segs[0] === 'regular' ? rmnDayTable(F) : null]; /* v1110 */ /* v1099: الجدول اليومي في المراجعة أيضًا */
 }
 /* ═══════════ v1048 (stf_355): قاعدة «الإجراءات القانونية» المستقلة ═══════════
    الترشيح آليًا بعد N يومًا من تأخر أقدم دفعة ← اعتمادك ← الإنذار النهائي (final_notice) ← مهلة W يومًا ← اعتمادك ← بدء الإجراءات (legal_start).
