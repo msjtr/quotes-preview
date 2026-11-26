@@ -34320,11 +34320,13 @@ function rmnPage() {
   const L = RM.L;
   if (L === null || L === 'loading') return [e('div', { class: 'rmn' }, [rmnHead(null), clWait('التذكير')])];
   if (L.fail) return [e('div', { class: 'rmn' }, [rmnHead(null), clFail('التذكير', L.fail, function () { RM.L = null; rmLoad(true); rmnPaint(); })])];
-  if (RMN.done) return [e('div', { class: 'rmn' }, [rmnHead(L), rmnDone(RMN.done)])];
+  if (RMN.done) return [e('div', { class: 'rmn' }, [rmnDone(RMN.done)])]; /* v1077: شاشة التأكيد بلا شريط الحالة */
   const flash = RM.err ? DS.note('warn', 'تعذّر التنفيذ', RM.err) : null;
   if (RMN.t === 'queue') RMN.t = 'rules';
   const body = RMN.t === 'rules' ? rmnSched(L) : RMN.t === 'ov' ? rmnOvTab(L) : RMN.t === 'edit' ? rmnEdit(L) : RMN.t === 'log' ? rmnLog(L) : RMN.t === 'rate' ? [e('div', { class: 'rlg-root rvi' }, rmnRate(L))] : RMN.t === 'legal' ? rmnLegal(L) : rmnClients(L);
-  return [e('div', { class: 'rmn' + (rmnNarrow() ? ' is-narrow' : '') }, [rmnHead(L), rmnTabs(L), flash].concat(body))];
+  /* v1077: شريط «التذكير التلقائي يعمل» في «الجدولة» وحدها — لا يتكرر في كل صفحة؛ ويظهر في كل الصفحات فقط إن كان الإرسال موقوفًا أو متوقفًا (تنبيه) */
+  const S0 = (L && L.settings) || {}, hd = RMN.t === 'rules' || RMN.t === 'queue' || S0.rem_pause_all || !S0.rem_engine;
+  return [e('div', { class: 'rmn' + (rmnNarrow() ? ' is-narrow' : '') }, [hd ? rmnHead(L) : null, rmnTabs(L), flash].concat(body))];
 }
 /* شاشة التأكيد بعد كل إجراء */
 function rmnDone(D) {
