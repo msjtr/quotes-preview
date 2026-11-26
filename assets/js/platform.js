@@ -35154,7 +35154,7 @@ function rmnUntilBox(F, win) {
       rmTimePick(h, m, function (hh, mm) { F.until = { hour: hh, minute: mm }; }),
       F.until ? liveOk(DS.button('الافتراضي', { size: 'sm', onClick: function () { F.until = null; rmnPaint(); } })) : e('span', {})]),
     bad ? e('small', { class: 'rmn-sm is-bad' }, 'نهاية الإرسال بعد الوقت الأول بنصف ساعة على الأقل.') : null,
-    e('p', { class: 'rmn-sm rsc-until-n' }, ['من يُضاف للقاعدة أو تُعتمد بعد ', e('b', {}, rmTime(F.hour, F.minute)), ' يصله التذكير حتى ', e('b', {}, rmTime(h, m)), '، وبعدها في اليوم التالي. الأوقات الأخرى تُرسل في مواعيدها.'])];
+    e('p', { class: 'rmn-sm rsc-until-n' }, ['كل تذكير يُرسل في وقته، ولا يُرسل شيء بعد ', e('b', {}, rmTime(h, m)), '. من فاته وقت تذكير (اعتُمدت القاعدة أو أُضيف بعده) لا يُعوَّض — يلحق التذكير التالي.'])]; /* v1097 */
 }
 /* متى يبدأ الإرسال الفعلي بعد الاعتماد — لشاشة التأكيد */
 function rmnStartTx(F, win, today) {
@@ -35162,8 +35162,12 @@ function rmnStartTx(F, win, today) {
   const st = F.start || today, aM = F.hour * 60 + F.minute, wS = win ? Number(win.start) * 60 : 0, endM = rmnEndM(F, win);
   if (st > today) return 'يبدأ الإرسال يوم ' + rmnDate(st) + ' الساعة ' + rmTime(F.hour, F.minute) + '.';
   if (nowM < Math.max(aM, wS)) return 'يبدأ الإرسال اليوم الساعة ' + rmnEndTx(Math.max(aM, wS)) + '.';
-  if (nowM < endM) return 'يبدأ الإرسال الآن — خلال دقائق لمن يستحق تذكيرًا اليوم.';
-  return 'فات آخر وقت للإرسال اليوم (' + rmnEndTx(endM) + ') — يبدأ غدًا الساعة ' + rmTime(F.hour, F.minute) + '.';
+  /* v1097: لا تعويض — كل تذكير في وقته (حتى نصف ساعة بعده)، ومن فاته يلحق التالي */
+  if (nowM <= Math.max(aM, wS) + 30 && nowM < endM) return 'يبدأ الإرسال الآن — خلال دقائق لمن يستحق تذكير ' + rmTime(F.hour, F.minute) + ' اليوم.';
+  const nx = (F.twice ? [F.hour2 * 60 + F.minute2].concat((F.more || []).map(function (t) { return t.h * 60 + t.m; })) : []).concat((F.dx || []).map(function (t) { return t.h * 60 + t.m; }))
+    .filter(function (v) { return v + 30 >= nowM && v < endM; }).sort(function (a, b) { return a - b; })[0];
+  if (nx != null) return 'فات تذكير ' + rmTime(F.hour, F.minute) + ' اليوم فلا يُعوَّض — يبدأ مع التذكير التالي الساعة ' + rmnEndTx(nx) + ' لمن يستحقه، ثم غدًا الساعة ' + rmTime(F.hour, F.minute) + '.';
+  return 'فاتت أوقات التذكير اليوم فلا تُعوَّض — يبدأ غدًا الساعة ' + rmTime(F.hour, F.minute) + '.';
 }
 /* v1075: المواعيد الإضافية في اليوم — قائمة مفتوحة (حتى 30) بعد الموعد الثاني، بوسائل الموعد الثاني نفسها */
 function rmnLastM(F) { const L = F.twice ? [F.hour2 * 60 + F.minute2].concat((F.more || []).map(function (t) { return t.h * 60 + t.m; })) : []; return L.length ? L[L.length - 1] : F.hour * 60 + F.minute; }
