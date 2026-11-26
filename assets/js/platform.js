@@ -34339,6 +34339,8 @@ function rmnDone(D) {
   return e('section', { class: 'rmn-done is-' + (D.tone || 'ok'), role: 'status', 'aria-live': 'polite' }, [
     rmnTile(D.ic || 'check-circle', D.tone || 'ok'),
     e('h2', {}, D.t), D.s ? e('p', {}, D.s) : null,
+    Array.isArray(D.facts) && D.facts.length ? e('dl', { class: 'rmn-done-f' }, D.facts.map(function (f) { /* v1098: تفاصيل الحفظ صفوفًا منظمة بدل سطر متصل */
+      return e('div', { class: 'rmn-done-fr' + (f[2] ? ' is-' + f[2] : '') }, [e('dt', {}, f[0]), e('dd', {}, Array.isArray(f[1]) ? e('ul', {}, f[1].map(function (x) { return e('li', {}, x); })) : f[1])]); })) : null,
     rows && rows.length ? e('ul', { class: 'rmn-done-l' }, rows.map(function (o) {
       return e('li', { class: o.ok ? '' : 'is-bad' }, [e('span', {}, [e('b', {}, (o.name || '—') + (o.seq ? ' · الدفعة ' + fmtNum(o.seq) : '')),
         e('small', {}, o.ok ? (o.note || rmChTx(Object.keys(o.out || {}).filter(function (k) { return o.out[k] && o.out[k].ok; }))) : (o.why || 'لم يُرسل'))]), rmnPill(o.ok ? 'وصل' : 'لم يُرسل', o.ok ? 'ok' : 'danger')]);
@@ -35732,7 +35734,15 @@ function rmnEdit(L) {
           start_date: F.start || today, end_date: F.end || null, ch_plan: { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, bx: F.twice && F.more.length ? F.more.map(function (t) { return { hour: t.h, minute: t.m }; }) : undefined, dx: F.dx && F.dx.length ? F.dx.map(function (t) { return { hour: t.h, minute: t.m, d: Number(t.d) || 0 }; }) : undefined, ch: CHP, cap: F.cap || 0, lt: F.segs.indexOf('late') >= 0 ? F.lt : undefined, until: F.until || undefined }, adv: rmnAdvOut(F),
           /* v1061: تخصيص العملاء من تبويبه وحده — المحرر لا يرسل client_ov فيبقى كما هو */
           pay_scope: (function () { const o = {}; Object.keys(F.scope).forEach(function (k) { if (!F.excluded.some(function (u) { return u.id === k; }) && (F.audience !== 'picked' || F.picked.some(function (u) { return u.id === k; }))) o[k] = F.scope[k]; }); return o; })() };
-        const fin = function (appr) { return function () { RM.S = null; return { tone: 'ok', ic: appr ? 'seal-check' : 'paper-plane-tilt', t: appr ? 'حُفظت القاعدة واعتُمدت' : 'حُفظت القاعدة وأُرسلت للاعتماد', s: '«' + F.name + '» — المستلمون: ' + audTx + ' · ' + schedTx + ' · ' + (F.twice ? rmTime(F.hour, F.minute) + ' و' + rmTime(F.hour2, F.minute2) : rmTime(F.hour, F.minute)) + ' حتى ' + rmnEndTx(rmnEndM(F, win)) + (appr ? '. ' + rmnStartTx(F, win, today) : ' — لا تُرسل قبل اعتمادها.') + (CHG && CHG.length ? ' · التعديلات: ' + CHG.map(function (c) { return c.f; }).join('، ') + ' — مسجلة في «سجل العمليات».' : ''), back: 'العودة إلى الجدولة', to: 'rules' }; }; };
+        const fin = function (appr) { return function () { RM.S = null;
+          /* v1098: شاشة التأكيد صفوفًا — المستلمون، الأيام، كل تذكير بوقته ويومه، النهاية، الحالة، التعديلات */
+          const TL = [rmTime(F.hour, F.minute) + ' — في كل أيام التذكير'].concat((F.twice ? [{ h: F.hour2, m: F.minute2 }].concat(F.more || []) : []).map(function (t) { return rmTime(t.h, t.m) + ' — في كل أيام التذكير'; }))
+            .concat((F.dx || []).slice().sort(function (a, b) { return (Number(a.d) || 0) - (Number(b.d) || 0) || (a.h * 60 + a.m) - (b.h * 60 + b.m); }).map(function (t) { return rmTime(t.h, t.m) + ' — ' + rmnDayTx(t.d) + ' فقط'; }))
+            .map(function (x, i) { return 'التذكير ' + (RMN_ORD[i] || fmtNum(i + 1)) + ': ' + x; });
+          const facts = [['القاعدة', F.name], ['المستلمون', audTx], ['أيام التذكير', schedTx], ['أوقات الإرسال (' + fmtNum(TL.length) + ')', TL], ['نهاية الإرسال اليومي', rmnEndTx(rmnEndM(F, win))],
+            ['الحالة', appr ? rmnStartTx(F, win, today) : 'بانتظار الاعتماد — لا يُرسل شيء قبل اعتمادها.', appr ? 'ok' : 'warn']];
+          if (CHG && CHG.length) facts.push(['التعديلات (مسجلة في «سجل العمليات»)', CHG.map(function (c) { return c.f + (c.to ? ': ' + c.to : ''); })]);
+          return { tone: 'ok', ic: appr ? 'seal-check' : 'paper-plane-tilt', t: appr ? 'حُفظت القاعدة واعتُمدت' : 'حُفظت القاعدة وأُرسلت للاعتماد', facts: facts, back: 'العودة إلى الجدولة', to: 'rules' }; }; };
         body2.reason = String(F.reason || '').trim() || undefined;
         const draftBtn = liveOk(DS.button('حفظ مسودة', { disabled: RM.busy || String(F.name || '').trim().length < 3 || (F.id && F.status === 'approved'), onClick: function () { rmnAct('/admin/api/reminders/simple', draftBody(), function (r) { const nm = F.name; rmnStepSet((r && r.id) || F.id, step); RM.S = null; RMN.step = 1; return { tone: 'ok', ic: 'check-circle', t: 'حُفظت مسودة', s: '«' + nm + '» — لا تعمل قبل اعتمادها، وتكملها من «تعديل».', back: 'العودة إلى الجدولة', to: 'rules' }; }); } }));
         const opt = function (btn, t) { return e('div', { class: 'rsm-act' }, [btn, e('small', {}, t)]); };

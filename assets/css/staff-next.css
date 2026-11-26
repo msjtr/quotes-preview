@@ -5388,3 +5388,12 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-dcard.is-due b { color: #8A5A12; }
 .tq-next .rsc-trow.is-end { margin-top: 4px; background: #F4F1FB; border-color: #D9D0EF; }
 .tq-next .rsc-trow-tag { line-height: 1.5; }
+/* v1098: شاشة تأكيد حفظ القاعدة — صفوف منظمة */
+.tq-next .rmn-done-f { width: 100%; margin: 10px 0 0; display: flex; flex-direction: column; gap: 8px; text-align: start; }
+.tq-next .rmn-done-fr { display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: start; padding: 12px 14px; border: 1px solid var(--t2-line); border-radius: 14px; background: var(--t2-surface, #fff); }
+.tq-next .rmn-done-fr dt { margin: 0; font-weight: 700; color: var(--t2-muted); font-size: 13.5px; line-height: 1.7; }
+.tq-next .rmn-done-fr dd { margin: 0; color: var(--t2-ink); font-size: 14.5px; line-height: 1.8; font-weight: 600; }
+.tq-next .rmn-done-fr dd ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.tq-next .rmn-done-fr dd li { padding-inline-start: 14px; position: relative; } .tq-next .rmn-done-fr dd li::before { content: ''; position: absolute; inset-inline-start: 0; top: .75em; width: 6px; height: 6px; border-radius: 50%; background: #1AA89A; }
+.tq-next .rmn-done-fr.is-warn { background: #FFF8E6; border-color: #F1D79A; } .tq-next .rmn-done-fr.is-ok { background: #E8F7F5; border-color: #A9DDD5; }
+@media (max-width: 560px) { .tq-next .rmn-done-fr { grid-template-columns: 1fr; gap: 4px; } }
