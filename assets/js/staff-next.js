@@ -26,7 +26,7 @@
     ]],
     ['الطلبات والعقود', [
       ['cu-crq-defer', 'طلبات تأجيل دفعة', ['cu']], ['cu-crq-merge', 'طلبات توحيد العقود', ['cu']], /* v946 */
-['cu-elig', 'طلبات التحقق من الأهلية', ['cu']], /* v916: صفحة مستقلة بأيقونتها */ /* v862: مفتاح cu- ليظهر رأس الصفحة ومسارها — v861: منظومة طلبات العقود الموحّدة — صفحة مستقلة (crq-staff.js) */
+['cu-elig', 'طلبات التحقق من الأهلية', ['cu']], ['cu-elig2', 'طلبات الأهلية — الصفحة الجديدة', ['cu']], /* v1152: الصفحة الجديدة (elig-staff.js) بجانب الحالية حتى يكتمل النقل */ /* v916: صفحة مستقلة بأيقونتها */ /* v862: مفتاح cu- ليظهر رأس الصفحة ومسارها — v861: منظومة طلبات العقود الموحّدة — صفحة مستقلة (crq-staff.js) */
 ['cu-svc', 'طلبات الخدمات', ['cu']],
       ['cu-inbox', 'طلبات المتجر', ['cu']],
       ['cu-docs-pq', 'عروض الشركاء', ['cu']],
@@ -99,7 +99,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
   /* v703: بلاطة ثلاثية الأبعاد لكل بند — رمز من مكتبة رموز المنصة (window.__PGL) بوصفة البلاطة نفسها */
   var GLY = {
     'cu-list': 'identification-card', 'cu-new': 'user', 'cu-pf-ver': 'seal-check', 'cu-pf-launch': 'rocket-launch', 'cu-pf-req': 'note-pencil', 'cu-mem': 'crown-simple', 'cu-secc': 'shield-check', 'cpg': 'user-circle', 'cu-inbox': 'tray',
-    'cu-svc': 'clipboard-text', 'cu-crq-defer': 'clock', 'cu-crq-merge': 'stack', 'cu-elig': 'identification-badge', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront', 'cu-docs-tl': 'envelope-simple',
+    'cu-svc': 'clipboard-text', 'cu-crq-defer': 'clock', 'cu-crq-merge': 'stack', 'cu-elig': 'identification-badge', 'cu-elig2': 'identification-badge', 'cu-docs-pq': 'file-text', 'cu-docs-pc': 'handshake', 'cu-docs-sq': 'storefront', 'cu-docs-tl': 'envelope-simple',
     'fin-due': 'calendar-check', 'cu-trin': 'bank', 'cu-opin': 'arrow-counter-clockwise', 'cu-paylinks': 'link-simple',
     'fin-pay': 'receipt', 'comm-send': 'paper-plane-tilt', 'comm-rem': 'bell-ringing', 'comm-dir': 'users-three', 'cs-tickets': 'ticket', 'cx': 'star'
   };
@@ -122,7 +122,7 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
   };
   var COLK = {
     'adm-home': 'teal', 'cu-list': 'blue', 'cu-new': 'blue', 'cu-pf-ver': 'blue', 'cu-pf-launch': 'blue', 'cu-pf-req': 'blue', 'cu-mem': 'blue', 'cu-secc': 'teal', 'cpg': 'teal', 'cu-inbox': 'violet',
-    'cu-svc': 'violet', 'cu-crq-defer': 'violet', 'cu-crq-merge': 'teal', 'cu-elig': 'teal', 'cu-docs-pq': 'violet', 'cu-docs-pc': 'teal', 'cu-docs-sq': 'violet',
+    'cu-svc': 'violet', 'cu-crq-defer': 'violet', 'cu-crq-merge': 'teal', 'cu-elig': 'teal', 'cu-elig2': 'violet', 'cu-docs-pq': 'violet', 'cu-docs-pc': 'teal', 'cu-docs-sq': 'violet',
     'fin-due': 'saffron', 'fin-pay': 'saffron', 'cu-paylinks': 'saffron', 'fin-req': 'saffron', 'cu-admx-rp': 'blue',
     'comm-send': 'red', 'cs-tickets': 'red', 'cx': 'red', 'team-hub': 'teal', 'sys': 'slate', 'fin-fee': 'slate', 'pay-center': 'slate'
   };

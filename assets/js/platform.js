@@ -30700,6 +30700,14 @@ return [e('div', { class: 'eg9' }, eg9List(paint))];
 if (window.__teraApp) {
 window.__teraApp.page = function (k, t, ic, run, up) { try { ICON[k] = ic; lp(k, t, up || null, k, run); /* v862: الأصل للمسار ورأس الصفحة */ LIVE_PAGES.admin[k] = run; return true; } catch (err) { return false; } };
 window.__teraApp.token = function () { return liveToken(); };
+/* v1152: جسر صفحة «طلبات الأهلية — الصفحة الجديدة» (assets/js/elig-staff.js): نداء الدوال وقائمة الطلبات والمرفقات فقط — بلا منطق هنا */
+window.__teraApp.rpc = function (fn, args) { return eg9Rpc(fn, args); };
+window.__teraApp.srs = async function (force) { if (force || !LV_SR.ok) { try { await lvSrLoad(); } catch (err) { void err; } } return LV_SR.all || []; };
+window.__teraApp.post = function (p, b) { return clPost(p, b); };
+window.__teraApp.doc = function (d) { return egDocOpen(d); };
+window.__teraApp.who = function (uid) { try { return typeof srName === 'function' ? srName(uid) : ''; } catch (err) { return ''; } };
+window.__teraApp.staff = function (uid) { try { return srAsName(uid); } catch (err) { return ''; } };
+window.__teraApp.oldElig = function (id, tab) { try { const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (x && tab) eg10V(x).tab = tab; } catch (err) { void err; } eg9Go(id); go('other', 'cu-elig'); };
 /* v867: جسر «قوالب المستندات» لصفحة طلبات العقود (crq-staff.js): مواصفة «ملحق تأجيل الدفعة» ونواته، وفتح القالب العام */
 window.__teraApp.docx = { spec: function () { return esxGDf(); }, tpl: function (X) { return DOCX ? DOCX.tpl('df', X || {}) : {}; },
 lib: function () { return SRD_LIB; },
