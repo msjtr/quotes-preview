@@ -10121,3 +10121,10 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg12 .q2-d{border:1px dashed var(--t2-line-2,#D5DCE8);border-radius:14px;padding:14px}
 @container (max-width:980px){.eg13-qg{grid-template-columns:minmax(0,1fr)}.eg13-qs{position:static}}
 @container (max-width:620px){.eg12-g2,.eg12-g3,.eg12-g4{grid-template-columns:minmax(0,1fr)}}
+/* v1209: قائمة «إضافة بند» · قاعدة البند تحت اسمه · جدول السداد في نموذج العرض */
+.eg12-addsel{max-width:340px;font-weight:700;color:var(--t2-brand,#0E7C70)}
+.eg12-rule{display:block;color:var(--t2-muted);font-size:12px;font-weight:500;margin-top:2px}
+.eg12-plan{display:flex;flex-direction:column;gap:10px}
+.eg12-plan-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--t2-brand-wash,#E6F5F2)}
+.eg12-plan-h span{color:var(--t2-muted);font-size:13px;font-weight:700}.eg12-plan-h b{font-size:20px;color:var(--t2-ink)}.eg12-plan-h small{color:var(--t2-muted);font-size:12.5px}
+.eg12-plan .eg12-tw{max-height:320px;overflow:auto}
