@@ -35011,7 +35011,7 @@ function rmnAdvKey(adv, segs, d, day, pid, FIRED, sd) {
     }
     if (it.k === 'rep') {
       const s0 = Number(it.start), ev = Number(it.every), mx = rmnItMax(it);
-      if (d >= s0 && Math.floor((d - s0) / ev) < mx && ((d - s0) % ev === 0 || !sent('r' + s0))) return 'r' + s0;
+      if (d >= s0 && Math.floor((d - s0) / ev) < mx && (d - s0) % ev === 0) return 'r' + s0; /* v1114: كالمحرك (rem_plan) — في أيام التكرار وحدها، بلا إرسال تعويضي أول يوم (كانت المعاينة تضع الكل اليوم) */
     }
   }
   return '';
