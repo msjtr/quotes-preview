@@ -35134,6 +35134,17 @@ function rmnDxLines(F) {
 }
 /* v1115 (طلب المشرف): مرحلة يحددها المشرف لعميل بعينه (الافتراضي حسب أيام التأخير) — تغيّر رسالته، والأيام تبقى حسب التأخير */
 function rmnStOv(F, uid) { const v = F.lt && F.lt.ovs ? Number(F.lt.ovs[uid]) : 0; return v === 1 || v === 2 ? v : 0; }
+/* v1121 (قرار المشرف 27/11): المرحلة اليدوية تغيّر سلوك العميل كاملًا — رسالته وأيامه وتذكيرات المرحلة الإضافية (كالمحرك rem_cov_eff) */
+function rmnOvStep(F, n) { const c = rmnLtCalc(F.lt || RMN_LT_DEF), off = n === 1 ? c.s1 : ((c.sp - 1) % c.e2) + 1, ev = n === 1 ? c.e1 : c.e2; return { off: off, every: ev, max: Math.floor((c.to - off) / ev) + 1 }; }
+function rmnOvDays(F, uid) { const n = rmnStOv(F, uid); if (!n || F.segs.indexOf('late') < 0) return null; const q = rmnOvStep(F, n), L = []; for (let i = 0; i < q.max; i++) L.push(q.off + i * q.every); return L; }
+function rmnTimesFor(F, uid, d) {
+  const n = rmnStOv(F, uid); if (!n || d <= 0 || F.segs.indexOf('late') < 0) return rmnTimesOn(F, d);
+  const L = [F.hour * 60 + F.minute].concat(F.twice ? [F.hour2 * 60 + F.minute2].concat((F.more || []).map(function (t) { return t.h * 60 + t.m; })) : []);
+  (F.dx || []).forEach(function (t) { const s0 = Number(t.s) || 0, v = t.h * 60 + t.m;
+    if (!s0) { if ((Number(t.d) || 0) === d) L.push(v); return; }
+    if ((s0 > 2 ? s0 - 2 : s0) !== n) return; if (s0 > 2 ? (Number(t.d) || 0) === d : true) L.push(v); });
+  return L.filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; });
+}
 function rmnStOf(F, uid, d) { return rmnStOv(F, uid) || (d >= (Number((F.lt || RMN_LT_DEF).split) || 15) ? 2 : 1); }
 function rmnLtKey(F, d) { return F.lt && F.segs.indexOf('late') >= 0 && d >= (Number(F.lt.split) || 15) ? 'collect_demand' : 'pay_late'; }
 function rmnLatePanel(F, today) {
@@ -35179,8 +35190,8 @@ function rmnStageList(F, inc, edit) {
     const S = Array.isArray(F.scope && F.scope[x.id]) ? F.scope[x.id] : null;
     (x.pays && x.pays.length ? x.pays : x.pay ? [x.pay] : []).forEach(function (p) {
       const d = Number(p.late || 0); if (d <= 0 || d > 90 || (S && S.indexOf(p.pid) < 0)) return;
-      const T = rmnTplOf(F, x, p, d), nx = days.filter(function (v) { return v >= d; })[0];
-      R.push({ x: x, p: p, d: d, st: rmnStOf(F, x.id, d), auto: d >= c.sp ? 2 : 1, T: T, today: days.indexOf(d) >= 0, nx: nx,
+      const DD = rmnOvDays(F, x.id) || days, T = rmnTplOf(F, x, p, d), nx = DD.filter(function (v) { return v >= d; })[0]; /* v1121: أيام مرحلته اليدوية */
+      R.push({ x: x, p: p, d: d, st: rmnStOf(F, x.id, d), auto: d >= c.sp ? 2 : 1, T: T, today: DD.indexOf(d) >= 0, nx: nx,
         tag: d === c.sp - 1 ? 'تنتقل للمرحلة 2 غدًا' : d >= 89 ? 'تنتقل للمتعثرين قريبًا' : '' });
     });
   });
@@ -35190,7 +35201,7 @@ function rmnStageList(F, inc, edit) {
   const setSt = function (r, n) { const O = Object.assign({}, (F.lt && F.lt.ovs) || {}); if (n === r.auto) delete O[r.x.id]; else O[r.x.id] = n; F.lt = Object.assign({}, F.lt || RMN_LT_DEF); if (Object.keys(O).length) F.lt.ovs = O; else delete F.lt.ovs; rmnPaint(); };
   return e('div', { class: 'rsc-stl' }, [
     e('div', { class: 'rsc-stl-hd' }, [e('b', {}, 'الدفعات المتأخرة المشمولة الآن'), e('span', { class: 'rsc-stl-k is-1' }, 'المرحلة 1: ' + fmtNum(n1)), e('span', { class: 'rsc-stl-k is-2' }, 'المرحلة 2: ' + fmtNum(n2))]),
-    edit && R.length ? e('p', { class: 'rmn-sm rsc-stl-n' }, 'المرحلة المقترحة حسب أيام التأخير — اضغط الأخرى لتغييرها. تتغير الرسالة، وتبقى أيام التذكير حسب التأخير.') : null,
+    edit && R.length ? e('p', { class: 'rmn-sm rsc-stl-n' }, 'المرحلة المقترحة حسب أيام التأخير — اضغط الأخرى لتغييرها، فيتبع العميل المرحلة كاملة: رسالتها وأيامها وتذكيراتها الإضافية.') : null,
     R.length ? e('ul', { class: 'rsc-stc' }, R.map(function (r) {
       const ov = rmnStOv(F, r.x.id);
       return e('li', { class: 'rsc-stc-i is-' + r.st }, [
@@ -35429,10 +35440,10 @@ function rmnCal(F, inc, today, L) {
   const dayBox = C.day ? e('section', { class: 'rsc-cal-day' }, [e('div', { class: 'rsc-cal-dh' }, [e('b', {}, rmnDate(C.day)), e('small', {}, rmnRemN(D.length))]),
     e('ol', { class: 'rsc-cal-l' }, D.map(function (it) {
       const on = it.x.id === A.uid && it.p.pid === A.pid, sg = rmnSegOfD(it.d);
-      return e('li', {}, e('button', { type: 'button', class: 'rsc-cal-r' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () { A.uid = it.x.id; A.pid = it.p.pid; A.slot = C.day + '|' + rmnTimesOn(F, it.d)[0]; A.pv = null; A.sim = 0; RMN.pvt = 'msg'; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }, [
+      return e('li', {}, e('button', { type: 'button', class: 'rsc-cal-r' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () { A.uid = it.x.id; A.pid = it.p.pid; A.slot = C.day + '|' + rmnTimesFor(F, it.x.id, it.d)[0]; A.pv = null; A.sim = 0; RMN.pvt = 'msg'; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }, [
         e('span', { class: 'rsc-cal-dot is-' + sg, 'aria-hidden': 'true' }),
         e('span', { class: 'rsc-nr-t' }, [e('b', {}, it.x.name || '—'), e('small', {}, ['العقد ', e('bdi', { dir: 'ltr' }, it.p.contract_no || ''), ' · الدفعة ' + fmtNum(it.p.seq) + ' من ' + fmtNum(it.p.n) + ' · ', e('span', { class: it.d > 0 ? 'rmn-late' : 'rmn-ok' }, it.d < 0 ? 'قبل الاستحقاق ' + rmBy(-it.d) : rmLate(it.d)), Number(it.p.paid) > 0 ? ' · سداد جزئي، المتبقي ' + rmnSar(it.p.left) : ''])]),
-        e('span', { class: 'rsc-cal-t' }, [sg === 'late' ? (function () { const T0 = rmnTplOf(F, it.x, it.p, it.d); return e('i', { class: 'rsc-cal-tp is-' + T0.k, title: T0.why }, RMN_TPLN[T0.k][0]); })() : null, rmnTimesOn(F, it.d).map(rmnEndTx).join(' · ')]),
+        e('span', { class: 'rsc-cal-t' }, [sg === 'late' ? (function () { const T0 = rmnTplOf(F, it.x, it.p, it.d); return e('i', { class: 'rsc-cal-tp is-' + T0.k, title: T0.why }, RMN_TPLN[T0.k][0]); })() : null, rmnTimesFor(F, it.x.id, it.d).map(rmnEndTx).join(' · ')]),
         e('span', { class: 'rsc-cal-go' }, 'الرسالة ‹')])); /* v1106 · v1119: الضغط يفتح «الرسائل» على هذا العميل وهذا اليوم */
     }))]) : e('p', { class: 'rmn-sm rsc-empty' }, 'لا تذكير ' + (C.seg === 'all' ? '' : 'لـ«' + RMN_SEGN[C.seg] + '» ') + 'في هذا الشهر — راجع المواعيد أو انتقل لشهر آخر.');
   /* v1119 (طلب المشرف): التقويم وحده — والرسائل في تبويبها */
@@ -35452,7 +35463,7 @@ function rmnMsgView(F, inc, today, L) {
   const x = inc.filter(function (y) { return y.id === A.uid; })[0], pays = paysOf(x);
   if (!pays.some(function (p) { return p.pid === A.pid; })) { const f = pays.slice().sort(function (a, b) { return (b.late || 0) - (a.late || 0); })[0]; A.pid = f ? f.pid : ''; A.slot = ''; A.pv = null; }
   const p = pays.filter(function (q) { return q.pid === A.pid; })[0];
-  const SL = []; plan.forEach(function (g) { g.items.forEach(function (it) { if (it.p.pid !== A.pid) return; rmnTimesOn(F, it.d).forEach(function (tm) { SL.push({ k: g.day + '|' + tm, day: g.day, d: it.d, tm: tm }); }); }); });
+  const SL = []; plan.forEach(function (g) { g.items.forEach(function (it) { if (it.p.pid !== A.pid) return; rmnTimesFor(F, it.x.id, it.d).forEach(function (tm) { SL.push({ k: g.day + '|' + tm, day: g.day, d: it.d, tm: tm }); }); }); });
   if (SL.length && !SL.some(function (z) { return z.k === A.slot; })) A.slot = SL[0].k;
   const cur = SL.filter(function (z) { return z.k === A.slot; })[0] || null, d = cur ? cur.d : Number((p && p.late) || 0);
   const T = p && d > 0 && F.segs.indexOf('late') >= 0 ? rmnTplOf(F, x, p, d) : null;
@@ -35495,7 +35506,8 @@ function rmnSimPlan(F, inc, today, N) {
     inc.forEach(function (x) {
       /* v1048: تخصيص العميل — موقوف · من تاريخ · حتى تاريخ · مواعيد ووسائل خاصة */
       const O = F.ov && F.ov[x.id]; if (O && (O.off || (O.start && day < O.start) || (O.until && day > O.until))) return;
-      const ADV = O && O.adv && O.adv.items && O.adv.items.length ? O.adv : null, OCH = O && O.channels && O.channels.length ? O.channels : null;
+      const ovN = rmnStOv(F, x.id), ovQ = ovN && F.segs.indexOf('late') >= 0 ? rmnOvStep(F, ovN) : null; /* v1121 */
+      const ADV = O && O.adv && O.adv.items && O.adv.items.length ? O.adv : ovQ ? { items: [{ k: 'rep', start: ovQ.off, every: ovQ.every, max: ovQ.max, seg: 'late', stage: ovN }] } : null, OCH = O && O.channels && O.channels.length ? O.channels : null;
       const S = Array.isArray(F.scope[x.id]) ? F.scope[x.id] : null;
       /* v1043 (stf_347): كل دفعة بحالتها، وتذكير واحد للعقد في اليوم لكل نوع (متأخر/قادم) — الأشد تأخرًا */
       const byC = {};
