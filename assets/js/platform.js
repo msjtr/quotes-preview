@@ -34738,7 +34738,9 @@ function rmnNames(st, list, opt) {
   const SRT = { late_d: function (a, b) { return (b.late || 0) - (a.late || 0); }, late_a: function (a, b) { return (a.late || 0) - (b.late || 0); }, due_a: function (a, b) { return due(a) < due(b) ? -1 : due(a) > due(b) ? 1 : 0; },
     amt_d: function (a, b) { return amt(b) - amt(a); }, amt_a: function (a, b) { return amt(a) - amt(b); }, name_a: function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'ar'); }, name_d: function (a, b) { return String(b.name || '').localeCompare(String(a.name || ''), 'ar'); } };
   const base = list.filter(function (x) { return !F2 || fk === 'all' || F2.fn(x, fk); });
-  const rows = base.filter(function (x) { return (seg === 'all' || rmnSegsOf(x).indexOf(seg) >= 0) && (!q || norm(x.name + ' ' + (x.tera_id || '')).indexOf(q) >= 0); }).sort(SRT[srt] || SRT.late_d);
+  const rows0 = base.filter(function (x) { return (seg === 'all' || rmnSegsOf(x).indexOf(seg) >= 0) && (!q || norm(x.name + ' ' + (x.tera_id || '')).indexOf(q) >= 0); }).sort(SRT[srt] || SRT.late_d);
+  /* v1124 (طلب المشرف): صفوف العقود — عقود العميل الواحد متتالية (كانت تتفرق بالترتيب فيبدو أن لهدى عقدين وهي ثلاثة) */
+  const rows = opt.row ? (function () { const G = {}, O = []; rows0.forEach(function (x) { const k = x.id || x.name; if (!G[k]) { G[k] = []; O.push(k); } G[k].push(x); }); return [].concat.apply([], O.map(function (k) { return G[k]; })); })() : rows0;
   const cnt = function (k) { return base.filter(function (x) { return k === 'all' || rmnSegsOf(x).indexOf(k) >= 0; }).length; };
   const LBL = opt.label || 'بحث في الأسماء';
   const box = rvNameSearch({ st: st, value: st.q, names: rvNames(list.map(function (x) { return { user_id: x.id, name: x.name, tera_id: x.tera_id }; })), label: LBL, ph: 'اسم العميل — اكتب أو اختر من القائمة',
