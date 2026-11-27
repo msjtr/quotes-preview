@@ -18558,30 +18558,34 @@ function dcEqDoc(kind, Q, draft, X) {
   if (on(pre + '_c_data') && dk.length) B.push(d3Card(lb(pre + '_c_data', kind === 'contract' ? 'بيانات العقد' : kind === 'quote' ? 'بيانات العرض والعميل' : 'بيانات العميل'), 'user', [d3KV(dk)]));
   /* ٢ المنتج */
   if (kind !== 'contract' && on(pre + '_c_prod')) {
-    const PP = egProdParts(Q.product_type), pk = on(pre + '_p_name') ? [[lb(pre + '_p_name', 'المنتج'), PP.n || '—']].concat(PP.q ? [['الكمية', fmtNum(PP.q)], ['سعر الوحدة', qMoney(PP.u)]] : []) : []; /* v836: كل عناصر المستند تُخفى */
-    if (kind === 'quote' && sh.value !== false && on('q_p_val')) pk.push([lb('q_p_val', 'قيمة المنتج'), qMoney(c.value) + (c.value_vat === false ? ' · غير خاضعة للضريبة' : '')]);
+    const PP = egProdParts(Q.product_type), pk = on(pre + '_p_name') ? [[lb(pre + '_p_name', 'اسم المنتج'), PP.n || '—']] : []; /* v1211: الاسم وحده — الكمية والمبلغ والضريبة في جدول البنود */ /* v836: كل عناصر المستند تُخفى */
+    if (kind === 'quote' && sh.value !== false && on('q_p_val')) pk.push([lb('q_p_val', 'قيمة المنتج'), qMoney(c.value)]);
     if (kind === 'quote' && c.alt && c.alt_show !== false && sh.alt !== false && on('q_p_alt')) pk.push([lb('q_p_alt', 'المنتج البديل عند عدم التوفر'), c.alt]);
     if (kind === 'quote' && c.agent_show && c.agent && c.agent.name && sh.agent !== false && on('q_p_agent')) pk.push([lb('q_p_agent', 'الوكيل'), c.agent.name + (c.agent.phone ? ' · ' + c.agent.phone : '')]);
     if (kind === 'purchase' && X.recv && on('p_p_recv')) pk.push([lb('p_p_recv', 'طريقة الاستلام'), X.recv]);
     B.push(d3Card(lb(pre + '_c_prod', kind === 'purchase' ? 'المنتج والاستلام' : 'المنتج'), 'box', [d3KV(pk)]));
   }
-  /* ٣ البنود والضريبة والإجمالي */
+  /* ٣ البنود والضريبة والإجمالي — v1211: جدول واحد مرتب (البند · العدد · المبلغ · الضريبة) ثم المجموع والضريبة والإجمالي؛ الفاتورة للمنتج وحده كما في الرابط */
   if (on(pre + '_c_items')) {
-    const items = (kind === 'contract' || sh.items !== false) ? (c.items || []).filter(function (y) { return on('i_' + y.id); }) : [];
-    const rows = (kind === 'contract' || sh.value !== false ? [['قيمة المنتج', qMoney(c.value)]] : []).concat(items.map(function (y) { return [lb('i_' + y.id, y.t), qMoney(y.amt)]; }));
-    const tots = [(kind === 'contract' || sh.vat !== false) && on(pre + '_t_vat') && Number(c.vat) > 0 ? [lb(pre + '_t_vat', 'ضريبة القيمة المضافة') + ' (' + fmtNum(Math.round((Number(c.vat_rate) || eqRate()) * 100)) + '٪)', qMoney(c.vat)] : null,
-      on(pre + '_t_total') ? [lb(pre + '_t_total', kind === 'contract' ? 'قيمة العقد شامل الضريبة' : 'الإجمالي شامل الضريبة'), qMoney(c.total), 'gt'] : null];
-    B.push(d3Card(lb(pre + '_c_items', kind === 'contract' ? 'مكوّنات قيمة العقد' : kind === 'purchase' ? 'التكاليف' : 'البنود والرسوم'), 'receipt', [
-      rows.length ? e('table', { class: 'd3-dt' }, [e('thead', {}, e('tr', {}, [e('th', {}, 'البند'), e('th', {}, 'المبلغ')])), e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('th', {}, r[0]), e('td', {}, r[1])]); }))]) : null,
+    const rt = Number(c.vat_rate) || eqRate(), PPi = egProdParts(Q.product_type), val = Number(c.value) || 0, pvat = c.value_vat === false ? 0 : qr2(val * rt);
+    const items = kind === 'purchase' ? [] : (kind === 'contract' || sh.items !== false) ? (c.items || []).filter(function (y) { return Number(y.amt) > 0 && on('i_' + y.id); }) : [];
+    const vt = function (v) { return v > 0 ? qMoney(v) : 'غير خاضع'; };
+    const rows = (kind === 'contract' || kind === 'purchase' || sh.value !== false ? [[PPi.n || 'المنتج', fmtNum(PPi.q || 1), qMoney(val), vt(pvat)]] : [])
+      .concat(items.map(function (y) { const a = Number(y.amt) || 0; return [lb('i_' + y.id, y.t), '1', qMoney(a), vt(y.vat === false ? 0 : qr2(a * rt))]; }));
+    const sub = kind === 'purchase' ? val : qr2(val + items.reduce(function (a, y) { return a + (Number(y.amt) || 0); }, 0)), vat = kind === 'purchase' ? pvat : Number(c.vat) || 0, tot = kind === 'purchase' ? qr2(val + pvat) : Number(c.total) || 0;
+    const tots = [rows.length > 1 ? ['المجموع قبل الضريبة', qMoney(sub)] : null, (kind === 'contract' || sh.vat !== false) && on(pre + '_t_vat') && vat > 0 ? [lb(pre + '_t_vat', 'ضريبة القيمة المضافة') + ' (' + fmtNum(Math.round(rt * 100)) + '٪)', qMoney(vat)] : null,
+      on(pre + '_t_total') ? [lb(pre + '_t_total', kind === 'contract' ? 'قيمة العقد شامل الضريبة' : kind === 'purchase' ? 'إجمالي الفاتورة شامل الضريبة' : 'الإجمالي شامل الضريبة'), qMoney(tot), 'gt'] : null];
+    B.push(d3Card(lb(pre + '_c_items', kind === 'contract' ? 'مكوّنات قيمة العقد' : kind === 'purchase' ? 'المنتج والضريبة' : 'البنود والرسوم'), 'receipt', [
+      rows.length ? e('table', { class: 'd3-dt d3-it' }, [e('thead', {}, e('tr', {}, ['البند', 'العدد', 'المبلغ', 'الضريبة'].map(function (h) { return e('th', {}, h); }))), e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('th', {}, r[0]), e('td', {}, r[1]), e('td', {}, r[2]), e('td', {}, r[3])]); }))]) : null,
       d3KV([], tots)]));
   }
   /* ٤ خطة الدفع */
   if (P.length && on(pre + '_c_plan')) {
-    const pk = kind === 'quote' ? [sh.plan_start !== false && on('q_s_start') ? [lb('q_s_start', 'أول دفعة'), qDmy(P[0].due), true] : null, sh.plan_end !== false && on('q_s_end') ? [lb('q_s_end', 'آخر دفعة'), qDmy(P[P.length - 1].due), true] : null,
-      sh.plan_n !== false && on('q_s_n') ? [lb('q_s_n', 'عدد الدفعات'), qTerm(P.length)] : null, sh.plan_amt !== false && on('q_s_amt') ? [lb('q_s_amt', 'قيمة الدفعة'), qMoney(P[0].amount)] : null].filter(Boolean) : [];
+    const pk = kind === 'quote' ? [sh.plan_n !== false && on('q_s_n') ? [lb('q_s_n', 'عدد الدفعات'), qTerm(P.length)] : null, sh.plan_amt !== false && on('q_s_amt') ? [lb('q_s_amt', 'قيمة الدفعة'), qMoney(P[0].amount)] : null,
+      sh.plan_start !== false && on('q_s_start') ? [lb('q_s_start', 'أول دفعة'), qDmy(P[0].due), true] : null, sh.plan_end !== false && on('q_s_end') ? [lb('q_s_end', 'آخر دفعة'), qDmy(P[P.length - 1].due), true] : null].filter(Boolean) : []; /* v1211: بترتيب القراءة */
     const tbl = kind === 'contract' ? on('c_s_tbl') : (kind === 'quote' ? sh.plan_tbl !== false && on('q_s_tbl') : on('p_s_tbl'));
     if (pk.length || tbl) B.push(d3Card(lb(pre + '_c_plan', kind === 'contract' ? 'جدول الدفعات' : 'خطة الدفع'), 'cal', [pk.length ? d3KV(pk) : null,
-      tbl ? d3Plan6(P.map(function (p) { return [p.no, qDmy(p.due), qMoney(p.amount)]; })) : null]));
+      tbl ? e('table', { class: 'd3-dt d3-pl' }, [e('thead', {}, e('tr', {}, ['الدفعة', 'موعد الدفع', 'قيمة الدفعة'].map(function (h) { return e('th', {}, h); }))), e('tbody', {}, P.map(function (p, i) { return e('tr', {}, [e('th', {}, fmtNum(p.no || i + 1)), e('td', {}, qDmy(p.due)), e('td', {}, qMoney(p.amount))]); }))]) : null])); /* v1211: جدول واحد متسلسل (كان عمودين متجاورين) */
   }
   /* ٥ الشروط والأقسام المضافة والتنويه */
   const terms = String(D.texts.terms || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return t && t.charAt(0) !== '⊘'; }); /* v834: البند المخفي (أوله ⊘) لا يظهر في المستند */
