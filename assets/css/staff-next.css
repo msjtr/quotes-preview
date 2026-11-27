@@ -5614,3 +5614,30 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-cdet > summary { cursor: pointer; padding: 10px 0; font-weight: 700; color: var(--t2-brand-3, #0B5F66); list-style: none; }
 .tq-next .rsc-cdet[open] { padding-bottom: 12px; }
 .tq-next .rsc-mv-info .is-part { color: #1F4E9B; } /* v1120 */
+
+/* v1147: «مهلة السداد» (التواصل ← التذكير) */
+.tq-next .rgr-hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.tq-next .rgr-hd h3 { margin: 0 0 2px; font-size: 17px; }
+.tq-next .rgr-tw { overflow-x: auto; border: 1px solid var(--t2-line); border-radius: 12px; }
+.tq-next .rgr-t { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tq-next .rgr-t th { text-align: start; font-weight: 700; color: var(--t2-mute, #5B6B86); background: var(--t2-soft, #F6F8FB); padding: 10px 12px; white-space: nowrap; }
+.tq-next .rgr-t td { padding: 10px 12px; border-top: 1px solid var(--t2-line); vertical-align: middle; }
+.tq-next .rgr-t td small { display: block; color: var(--t2-mute, #5B6B86); font-size: 12px; }
+.tq-next .rgr-cfg { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.tq-next .rgr-sig { max-width: 260px; max-height: 120px; background: #fff; border: 1px solid var(--t2-line); border-radius: 10px; }
+.tq-next .rgr-log { margin: 0; padding: 0 18px 0 0; display: grid; gap: 6px; }
+.tq-next .rgr-log small { display: block; color: var(--t2-mute, #5B6B86); }
+.tq-next .rgr-q { max-width: 420px; margin-bottom: 8px; }
+.tq-next .rgr-hit { width: 100%; text-align: start; background: none; border: 0; cursor: pointer; font: inherit; color: inherit; }
+.tq-next .rgr-pays, .tq-next .rgr-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.tq-next .rgr-days { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); margin-top: 8px; }
+.tq-next .rgr-pay, .tq-next .rgr-chip { border: 1.5px solid var(--t2-line); background: #fff; border-radius: 12px; padding: 10px; text-align: start; font: inherit; color: inherit; cursor: pointer; display: grid; gap: 2px; }
+.tq-next .rgr-chip { display: inline-grid; text-align: center; padding: 8px 12px; }
+.tq-next .rgr-pay small, .tq-next .rgr-chip small { color: var(--t2-mute, #5B6B86); font-size: 12px; }
+.tq-next .rgr-pay small.is-late { color: #B42318; }
+.tq-next .rgr-pay.is-on, .tq-next .rgr-chip.is-on { border-color: #0E7C70; background: #E6F5F2; box-shadow: 0 0 0 1px #0E7C70 inset; }
+.tq-next .rgr-pay.is-off { opacity: .5; cursor: not-allowed; }
+.tq-next .rgr-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.tq-next .rgr-row > small { min-width: 80px; color: var(--t2-mute, #5B6B86); }
+.tq-next .rgr-note { display: grid; gap: 4px; max-width: 420px; margin-top: 10px; }
+.tq-next .rgr-url { word-break: break-all; }
