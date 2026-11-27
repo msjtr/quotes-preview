@@ -19286,6 +19286,7 @@ function egMsgPane(x, c, kind, live, Q, paint) {
   const V = egMsgVars(x, kind, live, Q), fill = egMsgFill(V);
   const W = c.msg || (c.msg = {}), ck = key + ':' + x.id + ':' + (Q ? Q.id + ':' + (Q.total || '') : '');
   const kids = [e('div', { class: 'eg-hd' }, [e('b', {}, 'الرسالة كما تصل العميل'), DS.badge('قالب Meta المعتمد — لا يُعدَّل', 'ok')])];
+  if (kind === 'result') kids.push(e('div', { class: 'eg12-info' }, [frag(ui('info', 17)), e('span', {}, 'رسالة واحدة تحمل الرابط الواحد — يمرّ العميل فيه بالأهلية ثم العرض ثم الفاتورة ثم العقد، ولا تُرسل رسالة لكل خطوة.')])); /* v1221 */
   if (MSGC.at === -1 && !MSGC.rows) kids.push(CF_EMPTY('جارٍ قراءة «قوالب الرسائل»…'));
   else if (!row && kind === 'contract') kids.push(egCtMsg(x, Q));
   else if (!row) kids.push(DS.note('info', 'لا قالب لهذه الرسالة في «قوالب الرسائل»', 'أضف القالب من «قوالب الرسائل».'));
@@ -29937,6 +29938,7 @@ const QJ = eg12QJ(x, paint), hasQ = !!QJ.live;
 if (!V.step || (V.step !== 'elig' && !hasQ)) V.step = hasQ && C.k >= 2 ? 'quote' : 'elig';
 const st = EG12_STEPS.filter(function (z) { return z[0] === V.step; })[0], kind = st[3];
 if (!kind && V.part === 'doc') V.part = 'page';
+if (kind && V.part === 'msg') V.part = 'page'; /* v1221: رسالة واحدة تحمل الرابط (خطوة الأهلية) — العرض والفاتورة والعقد داخل الرابط بلا رسائل (sr_notify_elig: ONE_LINK) */
 const Q = QJ.J ? QJ.J.q : null, draft = Q ? ['sent', 'accepted'].indexOf(Q.status) < 0 : true;
 let recv = ''; try { recv = kind === 'quote' ? '' : egRecvInfo(x).now; } catch (err) { void err; }
 const c = eg12C(x, paint);
@@ -29951,7 +29953,7 @@ if (V.part === 'doc') { let spec = null; if (Q) { try { spec = dcEqDoc(kind, Q, 
 else if (V.part === 'msg') pv = kind ? null : eg12Msg(x);
 else pv = eg12PvFrame(x, V.step, V.wide);
 const ctl = e('div', { class: 'eg13-ctl' }, [eg12StepSel(C, function (z) { return z[0] === 'elig' || hasQ; }),
-e('div', { class: 'eg13-kinds' }, [eg12Seg(V.part, [['page', 'صفحة الرابط'], ['doc', 'المستند PDF', !kind], ['msg', 'الرسالة']], function (v) { V.part = v; paint(); })])]);
+e('div', { class: 'eg13-kinds' }, [eg12Seg(V.part, [['page', 'صفحة الرابط'], ['doc', 'المستند PDF', !kind], ['msg', 'الرسالة', !!kind]], function (v) { V.part = v; paint(); })])]);
 if (!pv) return [ctl, e('div', { class: 'eg12-tpl eg13-ed1' }, [ed])];
 const ph = e('div', { class: 'eg13-pvh' }, [e('b', {}, V.part === 'doc' ? 'المستند كما يصدر' + (draft ? ' — مسودة' : '') : V.part === 'msg' ? 'الرسالة كما تصل' : 'المعاينة'),
 V.part === 'page' ? eg12Seg(V.wide ? 'w' : 'm', [['m', 'جوال'], ['w', 'شاشة']], function (v) { V.wide = v === 'w'; paint(); }) : null,
