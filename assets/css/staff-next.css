@@ -5550,3 +5550,21 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-stl-t td .t2-select, .tq-next .rsc-stl-t td select { min-width: 150px; padding-block: 6px; font-size: 13px; }
 .tq-next .rsc-stl-tag.is-ov { color: #8A5A00; font-weight: 700; }
 .tq-next .rsc-dtab td .rsc-stl-st { margin-inline-start: 6px; }
+/* v1116: المعاينة بتبويبات، جدول المراحل بأعمدة ثابتة، أزرار المرحلة، أوقات التذكير في المعاينة */
+.tq-next .rsc-pvt { display: flex; gap: 6px; padding: 4px; margin: 4px 0 12px; background: var(--t2-surface-2, #EEF2F7); border: 1px solid var(--t2-line); border-radius: 14px; overflow-x: auto; }
+.tq-next .rsc-pvt button { flex: 1 0 auto; min-height: 42px; padding: 0 16px; border: 0; border-radius: 10px; background: none; color: var(--t2-ink-2); font: 700 14px/1 var(--t2-ff-display); cursor: pointer; white-space: nowrap; }
+.tq-next .rsc-pvt button.is-on { background: var(--t2-surface, #fff); color: var(--t2-brand-3, #0B5F66); box-shadow: 0 1px 4px rgba(15, 30, 60, .14); }
+.tq-next .rsc-pvb { padding: 14px; }
+.tq-next .rsc-pvb > .rsc-dtab { margin-top: 0; }
+.tq-next .rsc-stl-w { overflow-x: auto; }
+.tq-next .rsc-stl-t { table-layout: fixed; min-width: 760px; }
+.tq-next .rsc-stl-t td { overflow-wrap: anywhere; }
+.tq-next .rsc-stsg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--t2-surface-2, #EEF2F7); border: 1px solid var(--t2-line); }
+.tq-next .rsc-stsg button { display: grid; gap: 2px; justify-items: center; min-width: 74px; padding: 6px 8px; border: 0; border-radius: 9px; background: none; color: var(--t2-ink-2); cursor: pointer; font: inherit; }
+.tq-next .rsc-stsg button b { font-size: 12.5px; } .tq-next .rsc-stsg button small { font-size: 10.5px; color: var(--t2-muted); }
+.tq-next .rsc-stsg button.is-on.is-1 { background: #FFF3D6; color: #8A5A00; box-shadow: 0 1px 3px rgba(15, 30, 60, .12); }
+.tq-next .rsc-stsg button.is-on.is-2 { background: #FDE5EC; color: #9B1D44; box-shadow: 0 1px 3px rgba(15, 30, 60, .12); }
+.tq-next .rsc-stl-tag { display: block; margin-top: 4px; }
+.tq-next .rsc-tmbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.tq-next .rsc-tmbar > small { color: var(--t2-muted); font-weight: 700; }
+.tq-next .rsc-days-h { color: var(--t2-muted); font-size: 12px; margin-inline-start: 6px; }

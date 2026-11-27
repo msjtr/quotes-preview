@@ -34787,7 +34787,7 @@ function rmnRulePv(F, inc, L, noHead, noPick) {
   const CHI = { whatsapp: 'chat-circle-dots', email: 'envelope-simple', push: 'device-mobile', inbox: 'tray' };
   const chs = F.channels.length ? F.channels : ['whatsapp'];
   if (chs.indexOf(A.ch) < 0) { A.ch = chs[0]; A.sim = 0; }
-  const X = F.chp[A.ch] || { slot: 'a' }, at = F.twice && X.slot === 'b' ? rmTime(F.hour2, F.minute2) : rmTime(F.hour, F.minute);
+  const X = F.chp[A.ch] || { slot: 'a' }, at = noPick && A.at ? A.at : F.twice && X.slot === 'b' ? rmTime(F.hour2, F.minute2) : rmTime(F.hour, F.minute); /* v1116: وقت التذكير المختار في التقويم */
   const pick = e('div', { class: 'rsc-pv-pick' }, [
     e('label', { class: 'rlg-f' }, [e('small', {}, 'العميل'), DS.select({ value: A.uid, title: 'اختر العميل للمعاينة', options: inc.map(function (x) { return [x.id, x.name || '—', null, { sub: (x.tera_id || '') + (x.pay ? ' · ' + rmLate(x.pay.late) : '') }]; }), onChange: function (v) { A.uid = v; A.pid = ''; A.pv = null; rmnPaint(); } })]),
     e('label', { class: 'rlg-f' }, [e('small', {}, 'الدفعة'), DS.select({ value: A.pid, options: pays.map(function (p) { return [p.pid, 'الدفعة ' + fmtNum(p.seq) + ' من ' + fmtNum(p.n) + ' · ' + rmLate(p.late)]; }), onChange: function (v) { A.pid = v; A.pv = null; rmnPaint(); } })])]);
@@ -35120,6 +35120,16 @@ function rmnTplOf(F, x, p, d) {
   if (n >= 2) return { k: 'collect_demand', why: 'في العقد ' + fmtNum(n) + ' دفعات متأخرة — تصل مطالبة واحدة بها كلها' };
   return { k: 'pay_late', why: 'المرحلة 1 — حتى اليوم ' + fmtNum(sp - 1) + ' من التأخير (الدفعة ' + rmLate(d) + ')' };
 }
+/* v1116 (طلب المشرف): سطر مختصر لكل تذكير إضافي — بالمرحلة وأيامها بدل سرد «بعد الاستحقاق بـ…» لكل يوم */
+function rmnDxLines(F) {
+  const G = {}, O = []; (F.dx || []).forEach(function (t) { const k = t.g || ('t' + (t.h * 60 + t.m)); if (!G[k]) { G[k] = { h: t.h, m: t.m, s: t.s || 0, d: [] }; O.push(k); } G[k].d.push(Number(t.d) || 0); });
+  const nums = function (L) { return L.length > 10 ? L.slice(0, 8).map(fmtNum).join('، ') + ' … ' + fmtNum(L[L.length - 1]) : L.map(fmtNum).join('، '); };
+  return O.map(function (k) { return G[k]; }).sort(function (a, b) { return Math.min.apply(null, a.d) - Math.min.apply(null, b.d) || (a.h * 60 + a.m) - (b.h * 60 + b.m); }).map(function (g) {
+    const L = g.d.sort(function (a, b) { return a - b; }), sN = g.s > 2 ? g.s - 2 : g.s;
+    const tx = sN ? 'المرحلة ' + fmtNum(sN) + (g.s > 2 ? ': ' + rmnLgN(L.length) + ' (اليوم ' + nums(L) + ')' : ' كلها (' + rmnRemN(L.length) + ')')
+      : L.every(function (d) { return d > 0; }) && L.length > 3 ? rmnLgN(L.length) + ' بعد الاستحقاق (اليوم ' + nums(L) + ')' : L.map(rmnDayTx).join('، ');
+    return rmTime(g.h, g.m) + ' — ' + tx; });
+}
 /* v1115 (طلب المشرف): مرحلة يحددها المشرف لعميل بعينه (الافتراضي حسب أيام التأخير) — تغيّر رسالته، والأيام تبقى حسب التأخير */
 function rmnStOv(F, uid) { const v = F.lt && F.lt.ovs ? Number(F.lt.ovs[uid]) : 0; return v === 1 || v === 2 ? v : 0; }
 function rmnStOf(F, uid, d) { return rmnStOv(F, uid) || (d >= (Number((F.lt || RMN_LT_DEF).split) || 15) ? 2 : 1); }
@@ -35176,18 +35186,20 @@ function rmnStageList(F, inc, edit) {
   const n1 = R.filter(function (r) { return r.st === 1; }).length, n2 = R.length - n1;
   return e('div', { class: 'rsc-stl' }, [
     e('div', { class: 'rsc-stl-hd' }, [e('b', {}, 'الدفعات المتأخرة المشمولة الآن'), e('span', { class: 'rsc-stl-k is-1' }, 'المرحلة 1: ' + fmtNum(n1)), e('span', { class: 'rsc-stl-k is-2' }, 'المرحلة 2: ' + fmtNum(n2))]),
-    R.length ? e('table', { class: 'rsc-stl-t' }, [e('thead', {}, e('tr', {}, ['العميل', 'العقد · الدفعة', 'التأخير', 'المرحلة', 'القالب', 'التذكير'].map(function (h) { return e('th', {}, h); }))),
+    R.length ? e('div', { class: 'rsc-stl-w' }, e('table', { class: 'rsc-stl-t' + (edit ? ' is-ed' : '') }, [e('colgroup', {}, [26, 18, 14, edit ? 22 : 12, 12, 8].map(function (w) { return e('col', { style: 'width:' + w + '%' }); })), e('thead', {}, e('tr', {}, ['العميل', 'العقد · الدفعة', 'التأخير', 'المرحلة', 'القالب', 'التذكير'].map(function (h) { return e('th', {}, h); }))),
       e('tbody', {}, R.map(function (r) {
         return e('tr', { class: 'is-' + r.st }, [e('td', {}, e('b', {}, r.x.name || '—')),
           e('td', {}, [e('bdi', { dir: 'ltr' }, r.p.contract_no || ''), ' · ' + fmtNum(r.p.seq) + ' من ' + fmtNum(r.p.n)]),
           e('td', {}, [rmDays(r.d), Number(r.p.paid) > 0 ? e('small', { class: 'rsc-stl-part' }, 'سداد جزئي · متبقٍ ' + rmnSar(r.p.left)) : null]),
-          e('td', {}, edit ? [DS.select({ value: String(rmnStOv(F, r.x.id)), options: [['0', 'المرحلة ' + fmtNum(r.auto) + ' (المقترح)'], ['1', 'المرحلة 1'], ['2', 'المرحلة 2']].filter(function (o, i) { return !i || Number(o[0]) !== r.auto; }),
-              onChange: function (v) { const O = Object.assign({}, (F.lt && F.lt.ovs) || {}); if (Number(v)) O[r.x.id] = Number(v); else delete O[r.x.id]; F.lt = Object.assign({}, F.lt || RMN_LT_DEF); if (Object.keys(O).length) F.lt.ovs = O; else delete F.lt.ovs; rmnPaint(); } }),
+          e('td', {}, edit ? [e('div', { class: 'rsc-stsg', role: 'radiogroup', 'aria-label': 'مرحلة ' + (r.x.name || '') }, [1, 2].map(function (n) { const on = r.st === n;
+                return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: 'is-' + n + (on ? ' is-on' : ''), title: n === r.auto ? 'المقترح حسب أيام التأخير' : 'تحديد يدوي',
+                  onClick: function () { const O = Object.assign({}, (F.lt && F.lt.ovs) || {}); if (n === r.auto) delete O[r.x.id]; else O[r.x.id] = n; F.lt = Object.assign({}, F.lt || RMN_LT_DEF); if (Object.keys(O).length) F.lt.ovs = O; else delete F.lt.ovs; rmnPaint(); } },
+                  [e('b', {}, 'المرحلة ' + fmtNum(n)), e('small', {}, n === r.auto ? 'المقترح' : 'يدوي')]); })),
               rmnStOv(F, r.x.id) ? e('small', { class: 'rsc-stl-tag is-ov' }, 'محددة يدويًا') : r.tag ? e('small', { class: 'rsc-stl-tag' }, r.tag) : null]
             : [e('span', { class: 'rsc-stl-st is-' + r.st }, 'المرحلة ' + fmtNum(r.st)), rmnStOv(F, r.x.id) ? e('small', { class: 'rsc-stl-tag is-ov' }, 'محددة يدويًا') : r.tag ? e('small', { class: 'rsc-stl-tag' }, r.tag) : null]), /* v1115 */
           e('td', { title: r.T.why }, RMN_TPLN[r.T.k][1]),
           e('td', { class: r.today ? 'rsc-stl-on' : '' }, r.today ? 'اليوم' : r.nx ? 'بعد ' + rmDays(r.nx - r.d) : '—')]);
-      }))]) : e('p', { class: 'rmn-sm' }, 'لا دفعات متأخرة مشمولة الآن.')]);
+      }))])) : e('p', { class: 'rmn-sm' }, 'لا دفعات متأخرة مشمولة الآن.')]);
 }
 /* v1051: آخر وقت للإرسال — بعده لا يُرسل اليوم ويؤجَّل لليوم التالي */
 function rmnEndM(F, win) { const wE = win ? Number(win.end) * 60 : 24 * 60; return F.until ? Number(F.until.hour) * 60 + Number(F.until.minute || 0) : wE; } /* v1056: آخر وقت القاعدة يحل محل نهاية النافذة */
@@ -35274,14 +35286,15 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
     const setDays = function (L) { L = L.filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }); if (!L.length) return;
       const full = L.length === SD.length && SD.every(function (d) { return L.indexOf(d) >= 0; });
       F.dx = F.dx.filter(function (y) { return x.items.indexOf(y) < 0; }); L.forEach(function (d) { F.dx.push({ h: x.h, m: x.m, d: d, s: full ? sN : sN + 2, g: x.gk }); }); rmnPaint(); };
-    const togD = function (d) { const L = x.days.slice(), i = L.indexOf(d); if (i >= 0) { if (L.length < 2) return; L.splice(i, 1); } else L.push(d); setDays(L); };
+    const togD = function (d) { if (s0 === sN) { setDays([d]); return; } /* v1116: من «كل أيامها» اختيار يوم = هذا اليوم وحده، ثم تضيف ما تشاء */
+      const L = x.days.slice(), i = L.indexOf(d); if (i >= 0) { if (L.length < 2) return; L.splice(i, 1); } else L.push(d); setDays(L); };
     const extra = sN ? x.days.filter(function (d) { return SD.indexOf(d) < 0; }) : [];
     return e('div', { class: 'rsc-days-w' }, [e('div', { class: 'rsc-days' }, [e('small', {}, 'يُرسل في:'),
       e('button', { type: 'button', class: 'rmn-chip' + (x.all ? ' is-on' : ''), onClick: function () { if (x.grp) toAll(x); } }, 'المرحلتين'),
       e('button', { type: 'button', class: 'rmn-chip' + (sN === 1 ? ' is-on' : ''), onClick: function () { if (sN !== 1) toStage(x, 1); } }, 'المرحلة 1 · ' + rmnRemN(LC.d1.length)),
       e('button', { type: 'button', class: 'rmn-chip' + (sN === 2 ? ' is-on' : ''), onClick: function () { if (sN !== 2) toStage(x, 2); } }, 'المرحلة 2 · ' + rmnRemN(LC.d2.length))]),
       sN ? e('div', { class: 'rsc-days is-st' }, [e('small', {}, 'أيام المرحلة ' + fmtNum(sN) + ':'),
-        e('button', { type: 'button', class: 'rmn-chip' + (s0 === sN ? ' is-on' : ''), onClick: function () { if (s0 !== sN) setDays(SD.slice()); } }, 'كل أيامها')]
+        e('button', { type: 'button', class: 'rmn-chip' + (s0 === sN ? ' is-on' : ''), onClick: function () { if (s0 !== sN) setDays(SD.slice()); } }, 'كل أيامها'), s0 === sN ? e('small', { class: 'rsc-days-h' }, 'أو اختر أيامًا بعينها:') : null]
         .concat(SD.concat(extra).sort(function (a, b) { return a - b; }).map(function (d) { const on = x.days.indexOf(d) >= 0, bad = SD.indexOf(d) < 0;
           return e('button', { type: 'button', class: 'rmn-chip' + (on && s0 !== sN ? ' is-on' : '') + (bad ? ' is-bad' : ''), title: bad ? 'خارج أيام المرحلة — لا يُرسل' : '', onClick: function () { togD(d); } }, 'اليوم ' + fmtNum(d)); }))) : null]);
   } : function (x) {
@@ -35422,14 +35435,21 @@ function rmnCal(F, inc, today, L) {
   const selIt = D.filter(function (it) { return it.x.id === A.uid && it.p.pid === A.pid; })[0];
   const isLate = selIt && rmnSegOfD(selIt.d) === 'late';
   const T1 = isLate ? rmnTplOf(F, selIt.x, selIt.p, selIt.d) : null;
-  if (isLate) { const def0 = T1.k; if (!A.ckSet || A.ckFor !== A.pid + C.day) { A.ck = def0; A.ckFor = A.pid + C.day; A.ckSet = false; } } else A.ck = '';
+  if (isLate) { const def0 = T1.k; if (!A.ckSet || A.ckFor !== A.pid + C.day + def0) { A.ck = def0; A.ckFor = A.pid + C.day + def0; A.ckSet = false; } } else A.ck = ''; /* v1116: تغيير المرحلة يحدّث المعاينة */
+  /* v1116 (طلب المشرف): أوقات ذاك اليوم — تختار التذكير فتظهر الرسالة بوقته */
+  const TMS = selIt ? rmnTimesOn(F, selIt.d) : [];
+  if (TMS.length && TMS.indexOf(A.tm) < 0) A.tm = TMS[0];
+  A.at = TMS.length ? rmnEndTx(A.tm) : '';
+  const base0 = F.hour * 60 + F.minute;
+  const tmBar = TMS.length > 1 ? e('div', { class: 'rsc-tmbar' }, [e('small', {}, 'التذكير:'), e('div', { class: 'rlg-seg', role: 'radiogroup', 'aria-label': 'وقت التذكير' }, TMS.map(function (v) {
+    const on = A.tm === v; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.tm = v; rmnPaint(); } }, (v === base0 ? 'الأساسي ' : 'الإضافي ') + rmnEndTx(v)); }))]) : null;
   /* v1059: القالب الذي يصل وسببه، وتخصيصه للعميل مباشرة — ومعاينة قالب آخر للعرض فقط */
   const ckBar = isLate ? e('div', { class: 'rsc-ckbar' }, [
     e('div', { class: 'rsc-tplwhy' }, [e('span', {}, [e('small', {}, 'يصل ' + (selIt.x.name || '') + ' في هذا اليوم'), e('b', {}, '«' + RMN_TPLN[T1.k][1] + '»'), e('small', {}, 'السبب: ' + T1.why)])]), /* v1063: لا تخصيص من المعاينة — مكانه الوحيد زر «تخصيص العملاء» في بطاقة القاعدة */
     e('div', { class: 'rsc-ckbar-pv' }, [e('small', {}, 'معاينة قالب آخر (للعرض فقط):'), e('div', { class: 'rlg-seg', role: 'radiogroup', 'aria-label': 'معاينة قالب' }, [['pay_late', 'دفعة متأخرة'], ['collect_demand', 'مطالبة بسداد المتأخرات']].map(function (o) {
       const on = A.ck === o[0]; return e('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { A.ck = o[0]; A.ckSet = true; A.pv = null; rmnPaint(); } }, o[1]); }))])]) : null;
   return e('div', { class: 'rsc-cal' }, [segBar, e('div', { class: 'rsc-cal-box' }, [head, grid]),
-    e('div', { class: 'rsc-cal-2' }, [dayBox, D.length ? e('div', { class: 'rsc-cal-pv' }, [ckBar, rmnRulePv(F, incF, L, true, true)]) : null]),
+    e('div', { class: 'rsc-cal-2' }, [dayBox, D.length ? e('div', { class: 'rsc-cal-pv' }, [tmBar, ckBar, rmnRulePv(F, incF, L, true, true)]) : null]),
     e('small', { class: 'rmn-sm' }, 'تقدير بحسب الدفعات القائمة اليوم — يتوقف التذكير فعليًا عند السداد أو الاستبعاد. الرسالة بحالة الدفعة اليوم.')]);
 }
 /* v1033: جدول التذكير المتوقع — محاكاة محلية لما ستُرسله القاعدة خلال الأيام القادمة (نفس منطق المحرك: مواعيد الفئات،
@@ -35523,8 +35543,7 @@ function rmnSumView(F, o) {
     /* v1102: الأوقات بطاقة مستقلة — الأساسي ثم كل إضافي بأيامه، ونهاية الإرسال */
     sec('أوقات الإرسال', 'clock', [row('التذكير الأساسي', rmTime(F.hour, F.minute) + ' — كل أيام التذكير'),
       row('التذكيرات الإضافية', (F.twice ? [{ h: F.hour2, m: F.minute2 }].concat(F.more || []) : []).map(function (t) { return rmTime(t.h, t.m) + ' — كل أيام التذكير'; })
-        .concat((function () { const G = {}; (F.dx || []).forEach(function (t) { const k = t.h * 60 + t.m; (G[k] = G[k] || []).push(Number(t.d) || 0); });
-          return Object.keys(G).map(Number).sort(function (a, b) { return Math.min.apply(null, G[a]) - Math.min.apply(null, G[b]) || a - b; }).map(function (k) { return rmTime(Math.floor(k / 60), k % 60) + ' — ' + G[k].sort(function (a, b) { return a - b; }).map(rmnDayTx).join('، '); }); })())), /* v1108: بترتيب المحرر — اليوم ثم الوقت */
+        .concat(rmnDxLines(F))), /* v1108 · v1116: سطر مختصر لكل تذكير إضافي */
       row('نهاية الإرسال اليومي', rmnEndTx(endM) + ' — من فاته وقت التذكير لا يُعوَّض')], 'amber'),
     sec('الوسائل والسداد', 'paper-plane-tilt', [row('الوسائل', chTx), row('السداد في الرسالة', F.pm === 'bank' ? 'تحويل بنكي مع رابط إرفاق الإيصال' : 'بوابة الدفع — زر «ادفع الآن»')], 'violet')]);
 }
@@ -35866,11 +35885,15 @@ function rmnEdit(L) {
       }))], null, 'credit-card:teal')];
   } else if (step === 4) {
     /* v1115 (طلب المشرف): المعاينة مرحلة مستقلة — المشمولون بمراحلهم (تغيّر مرحلة أي عميل، والمقترح هو الافتراضي)، ثم الجدول يومًا بيوم، ثم التقويم ورسالة كل عميل */
-    const ok = R && R !== 'loading';
-    body = [stepHead('calendar-check:teal', 'المعاينة', 'تأكد من المراحل والأيام والرسائل قبل الحفظ.'),
-      ok && F.segs.indexOf('late') >= 0 ? e('section', { class: 'rsc-box' }, [rmnStageList(F, inc, true)]) : null,
-      e('section', { class: 'rsc-box' }, [rmnDayTable(F, true)]),
-      box('تقويم التذكيرات ورسالة كل عميل', 'اختر يومًا ثم عميلًا لترى رسالته كما تصل.', [ok ? rmnCal(F, inc, today, L) : e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')], 'rsc-pv', 'calendar-blank:teal')];
+    /* v1116 (طلب المشرف): تبويبات بدل صفحة طويلة — التقويم والرسائل · المراحل · الجدول يومًا بيوم */
+    const ok = R && R !== 'loading', hasL = F.segs.indexOf('late') >= 0;
+    const TB = [['cal', 'التقويم والرسائل']].concat(hasL ? [['st', 'المراحل والمشمولون']] : []).concat([['days', 'الجدول يومًا بيوم']]);
+    if (!TB.some(function (t) { return t[0] === RMN.pvt; })) RMN.pvt = 'cal';
+    body = [stepHead('calendar-check:teal', 'المعاينة', 'تأكد من الأيام والأوقات والرسائل قبل الحفظ.'),
+      e('div', { class: 'rsc-pvt', role: 'tablist', 'aria-label': 'المعاينة' }, TB.map(function (t) { const on = RMN.pvt === t[0];
+        return e('button', { type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false', class: on ? 'is-on' : '', onClick: function () { RMN.pvt = t[0]; rmnPaint(); } }, t[1]); })),
+      e('section', { class: 'rsc-box rsc-pvb' }, !ok ? [e('div', { class: 'rlg-wait' }, 'جارٍ التحميل…')]
+        : RMN.pvt === 'st' ? [rmnStageList(F, inc, true)] : RMN.pvt === 'days' ? [rmnDayTable(F, true)] : [rmnCal(F, inc, today, L)])];
   } else {
     const plan = rmnChPlan(F.channels, { b: F.twice ? { hour: F.hour2, minute: F.minute2 } : null, bx: F.twice ? F.more.map(function (t) { return { hour: t.h, minute: t.m }; }) : [], ch: F.chp }, F.hour, F.minute);
     const scopeN = Object.keys(F.scope).length;
@@ -35894,8 +35917,7 @@ function rmnEdit(L) {
         const fin = function (appr) { return function () { RM.S = null;
           /* v1098: شاشة التأكيد صفوفًا — المستلمون، الأيام، كل تذكير بوقته ويومه، النهاية، الحالة، التعديلات */
           const TL = [rmTime(F.hour, F.minute) + ' — في كل أيام التذكير'].concat((F.twice ? [{ h: F.hour2, m: F.minute2 }].concat(F.more || []) : []).map(function (t) { return rmTime(t.h, t.m) + ' — في كل أيام التذكير'; }))
-            .concat((function () { const G = {}; (F.dx || []).forEach(function (t) { const k = t.h * 60 + t.m; (G[k] = G[k] || []).push(Number(t.d) || 0); }); /* v1099: التذكير الإضافي بأيامه في سطر واحد */
-              return Object.keys(G).map(Number).sort(function (a, b) { return Math.min.apply(null, G[a]) - Math.min.apply(null, G[b]) || a - b; }).map(function (k) { return rmTime(Math.floor(k / 60), k % 60) + ' — ' + G[k].sort(function (a, b) { return a - b; }).map(rmnDayTx).join('، ') + ' فقط'; }); })())
+            .concat(rmnDxLines(F)) /* v1116 */
             .map(function (x, i) { return (i ? 'التذكير الإضافي ' + (RMN_ORD[i - 1] || fmtNum(i)) : 'التذكير الأساسي') + ': ' + x; }); /* v1108: الأسماء كما في المحرر */
           const facts = [['القاعدة', F.name], ['المستلمون', audTx], ['أيام التذكير', schedTx], ['أوقات الإرسال (' + fmtNum(TL.length) + ')', TL], ['نهاية الإرسال اليومي', rmnEndTx(rmnEndM(F, win))],
             ['الحالة', appr ? rmnStartTx(F, win, today) : 'بانتظار الاعتماد — لا يُرسل شيء قبل اعتمادها.', appr ? 'ok' : 'warn']];
