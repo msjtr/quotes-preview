@@ -155,16 +155,22 @@
       P ? [v.fee_name || 'رسوم الخدمة', money(v.fee_total) + ' ريال' + (Number(v.vat) > 0 ? ' شاملة الضريبة' : '')] : null, P ? ['طريقة إضافتها', S.fm === 'same' ? 'على هذه الدفعة' : 'موزعة على باقي الدفعات'] : null]);
     var cb = el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; if (S.errAt === 'ack') { S.err = ''; S.errAt = ''; lab.className = 'cq-ack'; var f = lab.nextSibling; if (f && f.className === 'cq-ferr') f.remove(); } } });
     var lab = el('label', { class: 'cq-ack' + (S.errAt === 'ack' ? ' is-err' : '') }, [cb, el('span', { text: v.ack })]);
-    var pad = el('div', {}, [el('canvas', { class: 'cq-pad' + (S.errAt === 'pad' ? ' is-err' : ''), id: 'gr-pad', 'aria-label': 'مكان التوقيع' }),
+    /* v1191: التوقيع = الاسم الكامل + رسم التوقيع (الاثنان مطلوبان) — الاسم أولًا ويظهر تحت خط التوقيع */
+    var cap = el('div', { class: 'gr-sgn-nm' + (S.sName.trim() ? '' : ' is-empty'), id: 'gr-sgn-nm', text: S.sName.trim() || 'سيظهر اسمك هنا' });
+    var pad = el('div', {}, [el('div', { class: 'gr-sgn' }, [el('canvas', { class: 'cq-pad' + (S.errAt === 'pad' ? ' is-err' : ''), id: 'gr-pad', 'aria-label': 'مكان التوقيع' }), cap]),
       el('button', { type: 'button', class: 'lnk', onclick: function () { S.sImg = ''; setupPad(true); } }, ['مسح التوقيع'])]);
-    var nm = el('input', { type: 'text', value: S.sName, placeholder: 'اكتب اسمك الكامل', 'aria-label': 'اسمك الكامل', class: S.errAt === 'name' ? 'is-err' : null,
-      style: 'width:100%;font:inherit;min-height:48px;border:1px solid ' + (S.errAt === 'name' ? 'var(--red)' : '#D5DBE8') + ';border-radius:12px;padding:8px 12px', oninput: function (e) { S.sName = e.target.value; } });
+    var nm = el('input', { type: 'text', id: 'gr-name', value: S.sName, placeholder: 'مثال: محمد صالح الشمري', autocomplete: 'name', enterkeyhint: 'done', class: S.errAt === 'name' ? 'is-err' : null,
+      style: 'width:100%;font:inherit;min-height:48px;border:1px solid ' + (S.errAt === 'name' ? 'var(--red)' : '#D5DBE8') + ';border-radius:12px;padding:8px 12px',
+      oninput: function (e) { S.sName = e.target.value; var t = S.sName.trim(); cap.textContent = t || 'سيظهر اسمك هنا'; cap.className = 'gr-sgn-nm' + (t ? '' : ' is-empty'); },
+      onkeydown: function (e) { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } } });
     var go = el('button', { type: 'button', class: 'pri', disabled: S.busy, onclick: submit }, [S.busy ? 'جارٍ الاعتماد…' : 'اعتماد المهلة']);
     var back = el('button', { type: 'button', disabled: S.busy, onclick: function () { S.step = 1; S.err = ''; S.errAt = ''; form(); } }, ['رجوع لتغيير الموعد']);
     paint([steps(2), free(),
       box('ملخص طلبك', 'doc', [sum, dd.w ? el('p', { class: 'gr-note', text: 'يوم ' + dd.w + ' · مهلة ' + dayTxt(v.days.indexOf(dd) + 1) }) : null, P ? planT(P) : null], 'nv'),
       box('الإقرار', 'shield', [lab, ferr('ack')], 'nv'),
-      box('التوقيع', 'pen', [el('p', { class: 'gr-note', style: 'margin:0 0 8px', text: 'وقّع داخل المربع، ثم اكتب اسمك تحته.' }), pad, ferr('pad'), el('div', { style: 'margin-top:10px' }, [nm, ferr('name')])], 'gd'),
+      box('التوقيع', 'pen', [el('p', { class: 'gr-note', style: 'margin:0 0 12px', text: 'التوقيع خطوتان، وكلتاهما مطلوبة: اكتب اسمك الكامل، ثم ارسم توقيعك بإصبعك.' }),
+        el('label', { class: 'gr-sgn-l', for: 'gr-name' }, [el('b', { text: '١' }), 'اسمك الكامل']), nm, ferr('name'),
+        el('label', { class: 'gr-sgn-l', for: 'gr-pad', style: 'margin-top:14px' }, [el('b', { text: '٢' }), 'ارسم توقيعك داخل المربع']), pad, ferr('pad')], 'gd'),
       card([S.errAt === 'srv' ? el('p', { class: 'cq-err', role: 'alert', text: S.err }) : null, el('div', { class: 'cq-btns' }, [go, back])])]);
     setupPad(false);
     var f = app.querySelector('.cq-ferr, .cq-err'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center' });
@@ -184,8 +190,8 @@
   async function submit() {
     if (S.busy) return;
     if (!S.ack) { S.err = 'وافق على الإقرار قبل الاعتماد.'; S.errAt = 'ack'; form(); return; }
-    if (!S.sImg) { S.err = 'وقّع داخل المربع.'; S.errAt = 'pad'; form(); return; }
-    if (S.sName.trim().length < 3) { S.err = 'اكتب اسمك الكامل تحت التوقيع.'; S.errAt = 'name'; form(); return; }
+    if (!/\S{2,}\s+\S{2,}/.test(S.sName.trim())) { S.err = 'اكتب اسمك الكامل (الاسم الأول واسم العائلة على الأقل).'; S.errAt = 'name'; form(); return; }
+    if (!S.sImg) { S.err = 'ارسم توقيعك داخل المربع.'; S.errAt = 'pad'; form(); return; }
     S.busy = true; S.err = ''; S.errAt = ''; form();
     try {
       var j = await api('sign', { grant: S.grant, until: S.day, kind: 'draw', name: S.sName.trim(), img: S.sImg, ack: true, factor: S.ch, fee_mode: feeTot() > 0 ? S.fm : null });
