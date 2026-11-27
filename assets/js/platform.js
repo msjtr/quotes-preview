@@ -35326,7 +35326,7 @@ function rmnTimeBox(F, win, bOk, aM, bM) {
     return e('div', { class: 'rsc-trow2 ' + (x.first ? 'is-first' : 'c' + (k % 6)) }, [
       e('div', { class: 'rsc-trow2-top' }, [e('span', { class: 'rsc-trow2-n', 'aria-hidden': 'true' }, x.first ? '★' : fmtNum(k + 1)),
         e('div', { class: 'rsc-trow-h' }, [e('b', {}, nm + (x.first ? ' (إجباري)' : '')),
-          e('span', { class: 'rsc-trow-tag' }, 'يُرسل ' + rmTime(x.h, x.m) + ' — ' + (x.grp && x.items[0].s ? (x.items[0].s > 2 ? 'في ' + rmnLgN(x.days.length) + ' من المرحلة ' + fmtNum(x.items[0].s - 2) + ' (اليوم ' + x.days.map(fmtNum).join('، ') + ')' : 'في أيام المرحلة ' + fmtNum(x.items[0].s) + ' كلها') : x.grp ? daysTx(x.days) + ' فقط' : 'في كل أيام التذكير'))]),
+          e('span', { class: 'rsc-trow-tag' }, 'يُرسل ' + rmTime(x.h, x.m) + ' — ' + (x.grp && x.items[0].s ? (x.items[0].s > 2 ? 'في ' + (x.days.length === 2 ? 'يومين' : rmnLgN(x.days.length)) + ' من المرحلة ' + fmtNum(x.items[0].s - 2) + ' (اليوم ' + x.days.map(fmtNum).join('، ') + ')' : 'في أيام المرحلة ' + fmtNum(x.items[0].s) + ' كلها') : x.grp ? daysTx(x.days) + ' فقط' : 'في كل أيام التذكير'))]),
         x.first ? null : liveOk(DS.button('حذف', { size: 'sm', ui: 'trash', onClick: function () { del(x); } }))]),
       e('div', { class: 'rsc-trow2-tm' }, rmTimePick(x.h, x.m, function (h, m) { setTime(x, h, m); })),
       g !== null ? e('div', { class: 'rsc-gap' + (g < 240 ? ' is-warn' : '') }, [e('b', {}, 'الفرق عن التذكير الذي قبله في اليوم نفسه:'), e('ul', {}, GX.G.map(function (q) {
