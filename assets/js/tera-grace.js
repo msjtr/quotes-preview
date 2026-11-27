@@ -205,8 +205,7 @@
           el('p', { class: 'cq-muted', text: 'موعد السداد الجديد بناءً على طلبك: ' + day(j.until) + '.' }),
           el('span', { class: 'cq-no', text: 'رقم المرجع ' + (j.ref_no || '') }),
           Number(j.fee_total) > 0 ? el('p', { class: 'cq-muted', text: 'أُضيفت ' + (j.fee_name || 'رسوم الخدمة') + ' ' + money(j.fee_total) + ' ريال ' + (j.fee_mode === 'same' ? 'على هذه الدفعة.' : 'موزعة على باقي دفعاتك.') }) : null,
-          el('p', { class: 'cq-muted', text: j.fresh ? 'وصلتك رسالة التأكيد، ونذكّرك قبل الموعد. يمكنك السداد في أي وقت قبله.' : 'نذكّرك قبل الموعد. يمكنك السداد في أي وقت قبله.' }),
-          el('div', { class: 'cq-btns is-one' }, [payBtn(j.pay)])], 'cq-done');
+          el('p', { class: 'cq-muted', text: j.fresh ? 'وصلتك رسالة التأكيد، ونذكّرك قبل الموعد برابط السداد.' : 'نذكّرك قبل الموعد برابط السداد.' })], 'cq-done'); /* v1187: لا «ادفع الآن» بعد اعتماد المهلة — يلخبط العميل (قرار المشرف) */
     var sv = j.survey, rc = null;
     if (sv && sv.status === 'answered') rc = thanks();
     else if (sv && Array.isArray(sv.q) && sv.q.length && !broken) rc = rateBox(sv.q);
