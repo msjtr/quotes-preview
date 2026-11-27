@@ -18620,7 +18620,7 @@ function eqReadyMerge(D) {
   D.rdMerged = true;
   EQ_RD.items.forEach(function (r) {
     const l = D.lines.filter(function (y) { return y.id === r.k; })[0];
-    if (l) { l.cfg = true; l.kind = r.kind; l.pv = Number(r.value) || 0; l.st = Number(r.step) || 0; if (l.def === undefined || l.def === null) l.def = eqReadyAmt(r, D.value); return; }
+    if (l) { l.cfg = true; l.kind = r.kind; l.pv = Number(r.value) || 0; l.st = Number(r.step) || 0; if (r.kind === 'pct' || r.kind === 'step') l.def = eqReadyAmt(r, D.value); /* v1217: المحسوب من القاعدة الحالية */ if (l.def === undefined || l.def === null) l.def = eqReadyAmt(r, D.value); return; }
     if (D.pickOnly) return; /* v1209: عرض الأهلية — البنود يختارها الموظف من «إضافة بند»، لا تُعرض جاهزة */
     const a = D.fromQ ? 0 : eqReadyAmt(r, D.value); /* عرض محفوظ: البند الجاهز الغائب كان محذوفًا — يظهر بصفر */
     D.lines.push({ id: r.k, t: r.name, amt: a > 0 ? String(a) : '', def: a, vat: r.taxable !== false, cfg: true, kind: r.kind, pv: Number(r.value) || 0, man: false });
@@ -30418,7 +30418,8 @@ const amt = pick ? e('div', { class: 'eg11-in is-ro', dir: 'ltr' }, Number(l.amt
 const ck = Z2.on ? (function () { const c = e('input', { type: 'checkbox', 'aria-label': 'يُوزَّع على ' + (l.t || 'البند') }); c.checked = pick; c.disabled = !eqD2Ok(l); c.addEventListener('change', function () { Z2.pick[l.id] = c.checked; paint(); }); return e('td', { class: 'eg12-ck' }, c); })() : null;
 const sw = e('button', { type: 'button', role: 'switch', class: 'eg12-sw' + (hid ? '' : ' is-on'), 'aria-checked': hid ? 'false' : 'true', 'aria-label': 'يظهر للعميل: ' + (l.t || 'البند'), 'data-live-ok': '', onClick: function () { const k2 = D.hide.indexOf(l.id); if (k2 < 0) D.hide.push(l.id); else D.hide.splice(k2, 1); paint(); } }, [e('i', { 'aria-hidden': 'true' }), hid ? 'مخفي' : 'ظاهر']);
 const rule = l.cfg && l.kind === 'step' && l.st ? 'كل ' + fmtNum(l.st) + ' ر.س = ' + fmtNum(l.pv) + ' ر.س' : l.cfg && l.kind === 'pct' ? fmtNum(l.pv) + '٪ من قيمة المنتج' : '';
-return e('tr', { class: pick ? 'is-d2' : '' }, [ck, e('td', {}, l.cfg ? [e('b', {}, l.t), rule ? e('small', { class: 'eg12-rule' }, rule + (l.man && Number(l.amt) !== Number(l.def) && Number(l.def) > 0 ? ' · المحسوب ' + fmtNum(l.def) : '')) : null] : eg11In(l.t, function (v) { l.t = v; }, { ph: 'اسم البند', max: '80', label: 'اسم البند' })), e('td', {}, amt),
+const calc = (l.kind === 'step' || l.kind === 'pct') ? eqReadyAmt({ kind: l.kind, value: l.pv, step: l.st }, D.value) : 0, diff = calc > 0 && Math.abs((Number(l.amt) || 0) - calc) > 0.004;
+return e('tr', { class: pick ? 'is-d2' : '' }, [ck, e('td', {}, l.cfg ? [e('b', {}, l.t), rule ? e('small', { class: 'eg12-rule' }, [rule + ' · المحسوب ' + fmtNum(calc), diff ? e('button', { type: 'button', class: 'eg9-lnk', 'data-live-ok': '', onClick: function () { l.amt = String(calc); l.man = false; paint(); } }, ' — تطبيق') : null]) : null] : eg11In(l.t, function (v) { l.t = v; }, { ph: 'اسم البند', max: '80', label: 'اسم البند' })), e('td', {}, amt),
 e('td', {}, eg11Sel(l.vat ? 'yes' : 'no', [['yes', 'خاضع للضريبة'], ['no', 'غير خاضع']], function (v) { l.vat = v === 'yes'; paint(); }, { label: 'الضريبة' })),
 e('td', {}, sw),
 e('td', {}, l.cfg ? (Number(l.amt) > 0 ? e('button', { type: 'button', class: 'eg9-lnk', 'data-live-ok': '', title: 'تصفير المبلغ', onClick: function () { l.amt = ''; paint(); } }, 'تصفير') : null) : e('button', { type: 'button', class: 'eg12-del', 'data-live-ok': '', 'aria-label': 'حذف البند', title: 'حذف البند', onClick: function () { D.lines.splice(i, 1); paint(); } }, frag(ui('trash', 16))))]);
