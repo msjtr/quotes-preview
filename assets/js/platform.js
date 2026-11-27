@@ -35135,6 +35135,12 @@ function rmnDxLines(F) {
 /* v1115 (طلب المشرف): مرحلة يحددها المشرف لعميل بعينه (الافتراضي حسب أيام التأخير) — تغيّر رسالته، والأيام تبقى حسب التأخير */
 function rmnStOv(F, uid) { const v = F.lt && F.lt.ovs ? Number(F.lt.ovs[uid]) : 0; return v === 1 || v === 2 ? v : 0; }
 /* v1121 (قرار المشرف 27/11): المرحلة اليدوية تغيّر سلوك العميل كاملًا — رسالته وأيامه وتذكيرات المرحلة الإضافية (كالمحرك rem_cov_eff) */
+function rmnTodayR() { return (RM.L && RM.L.today) || iso(new Date()); }
+/* v1122 (قرار المشرف 27/11): المرحلة اليدوية تبدأ من يوم التحديد — lt.ovd {uid: تاريخ}؛ ما حُدد قبلها بلا تاريخ يأخذ يوم فتح التعديل (يُحفظ مع الحفظ) */
+function rmnLtIn(lt) { if (lt.ovs) { const D = Object.assign({}, lt.ovd || {}); Object.keys(lt.ovs).forEach(function (u) { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(D[u] || ''))) D[u] = rmnTodayR(); }); lt.ovs = Object.assign({}, lt.ovs); lt.ovd = D; } return lt; }
+function rmnOvFrom(F, uid) { const v = F.lt && F.lt.ovd ? String(F.lt.ovd[uid] || '') : ''; return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''; }
+/* أيام التذكير بالتاريخ لمن ثُبّت يوم تحديده: من يوم التحديد كل e يومًا */
+function rmnOvDates(F, uid, upTo) { const n = rmnStOv(F, uid), a = rmnOvFrom(F, uid); if (!n || !a || F.segs.indexOf('late') < 0) return null; const e = n === 1 ? rmnLtCalc(F.lt).e1 : rmnLtCalc(F.lt).e2, L = [], t0 = Date.parse(a + 'T12:00:00Z'); for (let i = 0; i < 400; i++) { const d = iso(new Date(t0 + i * e * 864e5)); if (d > upTo) break; L.push(d); } return L; }
 function rmnOvStep(F, n) { const c = rmnLtCalc(F.lt || RMN_LT_DEF), off = n === 1 ? c.s1 : ((c.sp - 1) % c.e2) + 1, ev = n === 1 ? c.e1 : c.e2; return { off: off, every: ev, max: Math.floor((c.to - off) / ev) + 1 }; }
 function rmnOvDays(F, uid) { const n = rmnStOv(F, uid); if (!n || F.segs.indexOf('late') < 0) return null; const q = rmnOvStep(F, n), L = []; for (let i = 0; i < q.max; i++) L.push(q.off + i * q.every); return L; }
 function rmnTimesFor(F, uid, d) {
@@ -35190,7 +35196,8 @@ function rmnStageList(F, inc, edit) {
     const S = Array.isArray(F.scope && F.scope[x.id]) ? F.scope[x.id] : null;
     (x.pays && x.pays.length ? x.pays : x.pay ? [x.pay] : []).forEach(function (p) {
       const d = Number(p.late || 0); if (d <= 0 || d > 90 || (S && S.indexOf(p.pid) < 0)) return;
-      const DD = rmnOvDays(F, x.id) || days, T = rmnTplOf(F, x, p, d), nx = DD.filter(function (v) { return v >= d; })[0]; /* v1121: أيام مرحلته اليدوية */
+      const td0 = rmnTodayR(), DT = rmnOvDates(F, x.id, iso(new Date(Date.parse(td0 + 'T12:00:00Z') + 90 * 864e5))), DD = DT ? DT.filter(function (z) { return z >= td0; }).map(function (z) { return d + Math.round((Date.parse(z + 'T12:00:00Z') - Date.parse(td0 + 'T12:00:00Z')) / 864e5); }) : rmnOvDays(F, x.id) || days; /* v1121 · v1122: من يوم التحديد */
+      const T = rmnTplOf(F, x, p, d), nx = DD.filter(function (v) { return v >= d; })[0];
       R.push({ x: x, p: p, d: d, st: rmnStOf(F, x.id, d), auto: d >= c.sp ? 2 : 1, T: T, today: DD.indexOf(d) >= 0, nx: nx,
         tag: d === c.sp - 1 ? 'تنتقل للمرحلة 2 غدًا' : d >= 89 ? 'تنتقل للمتعثرين قريبًا' : '' });
     });
@@ -35198,10 +35205,11 @@ function rmnStageList(F, inc, edit) {
   R.sort(function (a, b) { return b.d - a.d; });
   const n1 = R.filter(function (r) { return r.st === 1; }).length, n2 = R.length - n1;
   /* v1117 (طلب المشرف): بطاقة لكل دفعة بدل جدول (لا يتغير العرض ولا يحتاج تمريرًا جانبيًا) — المرحلة بزرّين والمقترح هو الافتراضي */
-  const setSt = function (r, n) { const O = Object.assign({}, (F.lt && F.lt.ovs) || {}); if (n === r.auto) delete O[r.x.id]; else O[r.x.id] = n; F.lt = Object.assign({}, F.lt || RMN_LT_DEF); if (Object.keys(O).length) F.lt.ovs = O; else delete F.lt.ovs; rmnPaint(); };
+  const setSt = function (r, n) { const O = Object.assign({}, (F.lt && F.lt.ovs) || {}), D = Object.assign({}, (F.lt && F.lt.ovd) || {}); if (n === r.auto) { delete O[r.x.id]; delete D[r.x.id]; } else { O[r.x.id] = n; D[r.x.id] = rmnTodayR(); } /* v1122: يبدأ إيقاعه من اليوم */
+    F.lt = Object.assign({}, F.lt || RMN_LT_DEF); if (Object.keys(O).length) { F.lt.ovs = O; F.lt.ovd = D; } else { delete F.lt.ovs; delete F.lt.ovd; } rmnPaint(); };
   return e('div', { class: 'rsc-stl' }, [
     e('div', { class: 'rsc-stl-hd' }, [e('b', {}, 'الدفعات المتأخرة المشمولة الآن'), e('span', { class: 'rsc-stl-k is-1' }, 'المرحلة 1: ' + fmtNum(n1)), e('span', { class: 'rsc-stl-k is-2' }, 'المرحلة 2: ' + fmtNum(n2))]),
-    edit && R.length ? e('p', { class: 'rmn-sm rsc-stl-n' }, 'المرحلة المقترحة حسب أيام التأخير — اضغط الأخرى لتغييرها، فيتبع العميل المرحلة كاملة: رسالتها وأيامها وتذكيراتها الإضافية.') : null,
+    edit && R.length ? e('p', { class: 'rmn-sm rsc-stl-n' }, 'المرحلة المقترحة حسب أيام التأخير — اضغط الأخرى لتغييرها، فيتبع العميل المرحلة كاملة: رسالتها وتذكيراتها، ويبدأ تذكيره من يوم التغيير ثم على إيقاع المرحلة.') : null,
     R.length ? e('ul', { class: 'rsc-stc' }, R.map(function (r) {
       const ov = rmnStOv(F, r.x.id);
       return e('li', { class: 'rsc-stc-i is-' + r.st }, [
@@ -35507,7 +35515,8 @@ function rmnSimPlan(F, inc, today, N) {
       /* v1048: تخصيص العميل — موقوف · من تاريخ · حتى تاريخ · مواعيد ووسائل خاصة */
       const O = F.ov && F.ov[x.id]; if (O && (O.off || (O.start && day < O.start) || (O.until && day > O.until))) return;
       const ovN = rmnStOv(F, x.id), ovQ = ovN && F.segs.indexOf('late') >= 0 ? rmnOvStep(F, ovN) : null; /* v1121 */
-      const ADV = O && O.adv && O.adv.items && O.adv.items.length ? O.adv : ovQ ? { items: [{ k: 'rep', start: ovQ.off, every: ovQ.every, max: ovQ.max, seg: 'late', stage: ovN }] } : null, OCH = O && O.channels && O.channels.length ? O.channels : null;
+      const ovDT = ovQ ? rmnOvDates(F, x.id, iso(new Date(d0 + (N + 1) * 864e5))) : null; /* v1122 */
+      const ADV = O && O.adv && O.adv.items && O.adv.items.length ? O.adv : ovDT ? { items: ovDT.map(function (z) { return { k: 'date', date: z, seg: 'late' }; }) } : ovQ ? { items: [{ k: 'rep', start: ovQ.off, every: ovQ.every, max: ovQ.max, seg: 'late', stage: ovN }] } : null, OCH = O && O.channels && O.channels.length ? O.channels : null;
       const S = Array.isArray(F.scope[x.id]) ? F.scope[x.id] : null;
       /* v1043 (stf_347): كل دفعة بحالتها، وتذكير واحد للعقد في اليوم لكل نوع (متأخر/قادم) — الأشد تأخرًا */
       const byC = {};
@@ -36743,7 +36752,7 @@ function rmForm(r, L, kind) {
     adv: r && r.adv && Array.isArray(r.adv.items) ? JSON.parse(JSON.stringify(r.adv)) : rmnAdvDef(),
     cap: r && r.ch_plan && Number(r.ch_plan.cap) || 0,
     until: r ? (r.ch_plan && r.ch_plan.until ? { hour: Number(r.ch_plan.until.hour), minute: Number(r.ch_plan.until.minute || 0) } : null) : { hour: 24, minute: 0 }, /* v1051: آخر وقت للإرسال · v1056: الجديدة مفتوحة حتى منتصف الليل */
-    lt: r && r.ch_plan && r.ch_plan.lt ? Object.assign({}, RMN_LT_DEF, r.ch_plan.lt) : Object.assign({}, RMN_LT_DEF) };
+    lt: r && r.ch_plan && r.ch_plan.lt ? rmnLtIn(Object.assign({}, RMN_LT_DEF, r.ch_plan.lt)) : Object.assign({}, RMN_LT_DEF) };
 }
 function rmRulesView(L) {
   const P = L.perms || {}, rules = rmRules(L);
