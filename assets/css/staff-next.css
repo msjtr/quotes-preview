@@ -5642,3 +5642,26 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rgr-note { display: grid; gap: 4px; max-width: 420px; margin-top: 10px; }
 .tq-next .rgr-url { word-break: break-all; }
 .tq-next .rgr-hx { display: inline-flex; gap: 6px; align-items: center; } .tq-next .rgr-hx input { width: 90px; } /* v1163 */
+/* v1167: «المؤجلون ومهلة السداد» — مؤشرات وبطاقات بتنبيه العدّ التنازلي */
+.tq-next .rgr-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+.tq-next .rgr-kpi { border: 1px solid var(--t2-line); border-radius: 14px; padding: 12px 14px; background: #fff; display: grid; gap: 2px; border-inline-start: 4px solid var(--t2-line); }
+.tq-next .rgr-kpi b { font-size: 24px; line-height: 1.1; } .tq-next .rgr-kpi span { font-weight: 700; } .tq-next .rgr-kpi small { color: var(--t2-mute, #5B6B86); font-size: 12px; }
+.tq-next .rgr-kpi.is-navy { border-inline-start-color: #0B2552; } .tq-next .rgr-kpi.is-warn { border-inline-start-color: #C9962E; background: #FFFBF1; }
+.tq-next .rgr-kpi.is-info { border-inline-start-color: #2E6FD8; } .tq-next .rgr-kpi.is-danger { border-inline-start-color: #B42318; }
+.tq-next .rgr-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.tq-next .rgr-search { min-width: 260px; flex: 1; max-width: 420px; }
+.tq-next .rgr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.tq-next .rgr-card { border: 1px solid var(--t2-line); border-radius: 16px; background: #fff; padding: 14px; display: grid; gap: 10px; box-shadow: 0 1px 2px rgba(11, 37, 82, .05); }
+.tq-next .rgr-ch { display: flex; align-items: center; gap: 10px; } .tq-next .rgr-cn { flex: 1; min-width: 0; display: grid; } .tq-next .rgr-cn b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tq-next .rgr-cn small { color: var(--t2-mute, #5B6B86); font-size: 12px; }
+.tq-next .rgr-src { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12.5px; padding: 6px 10px; border-radius: 10px; background: #F3F6FB; }
+.tq-next .rgr-src b { padding: 1px 8px; border-radius: 999px; font-size: 12px; } .tq-next .rgr-src.is-grace b { background: #E6F5F2; color: #0A615A; } .tq-next .rgr-src.is-fee b { background: #EEE9FB; color: #5B3FA0; }
+.tq-next .rgr-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 0; } .tq-next .rgr-kv div { display: grid; } .tq-next .rgr-kv dt { color: var(--t2-mute, #5B6B86); font-size: 12px; } .tq-next .rgr-kv dd { margin: 0; font-weight: 700; }
+.tq-next .rgr-alert { border-radius: 10px; padding: 8px 10px; font-weight: 700; font-size: 13px; background: #F3F6FB; color: #33415C; }
+.tq-next .rgr-alert.is-info { background: #EEF4FF; color: #1F4FA8; } .tq-next .rgr-alert.is-ok { background: #E6F5F2; color: #0A615A; }
+.tq-next .rgr-alert.is-warn { background: #FFF4DC; color: #8A5A00; } .tq-next .rgr-alert.is-danger { background: #FDECEA; color: #B42318; }
+.tq-next .rgr-cf { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--t2-line); padding-top: 8px; } .tq-next .rgr-cf small { color: var(--t2-mute, #5B6B86); }
+.tq-next .rgr-cfgbox { margin-top: 16px; border: 1px solid var(--t2-line); border-radius: 14px; padding: 10px 14px; background: #fff; } .tq-next .rgr-cfgbox summary { cursor: pointer; font-weight: 700; }
+.tq-next .rgr-vh { display: flex; align-items: center; gap: 10px; margin: 10px 0 12px; } .tq-next .rgr-vh > div { flex: 1; display: grid; } .tq-next .rgr-vh small { color: var(--t2-mute, #5B6B86); }
+.tq-next .rgr-sec { border: 1px solid var(--t2-line); border-radius: 14px; padding: 12px 14px; background: #fff; margin-bottom: 12px; } .tq-next .rgr-sec h4 { margin: 0 0 8px; font-size: 15px; }
+@media (max-width: 760px) { .tq-next .rgr-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
