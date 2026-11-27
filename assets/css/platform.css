@@ -10128,3 +10128,4 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg12-plan-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--t2-brand-wash,#E6F5F2)}
 .eg12-plan-h span{color:var(--t2-muted);font-size:13px;font-weight:700}.eg12-plan-h b{font-size:20px;color:var(--t2-ink)}.eg12-plan-h small{color:var(--t2-muted);font-size:12.5px}
 .eg12-plan .eg12-tw{max-height:320px;overflow:auto}
+.eg12-docf .eg12-pv-p{border:1px solid var(--t2-line);border-radius:14px;padding:14px;background:var(--t2-surface-2,#F5F8FA);overflow:auto;max-height:80vh} /* v1210 */

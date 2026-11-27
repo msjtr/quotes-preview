@@ -18534,6 +18534,12 @@ function eqDocAll(d, kind, items, onCh, mark) {
 /* v687: PDF بهوية «فاتورة سداد قيمة المنتج» نفسها (التصميم 2: بطاقات d3) — من calc العرض (نسخة العميل) وإعداد المستند doc[kind] وخيارات الإظهار show */
 /* v836: نص من عدة أسطر يصير قائمة بنود، والبند المخفي (أوله ⊘) لا يظهر */
 function dcEqTxt(v) { const L = String(v || '').split('\n').map(function (t) { return t.trim(); }).filter(function (t) { return t && t.charAt(0) !== '⊘'; }); return L.length > 1 ? d3List(L, 0, false) : e('p', { class: 'd3-p' }, L[0] || ''); }
+/* v1210: نوع المنتج · الكمية · سعر الوحدة حقولًا منفصلة في العرض والمستندات (تُقرأ من اسم المنتج «… (الكمية 350 × 20 ر.س)») */
+function egProdParts(t) {
+const m = /^(.*?)\s*(?:—\s*الكمية\s+([\d,٬]+)\s*×\s*([\d.,٬]+)\s*ر\.س(?:\s*للوحدة)?|\(الكمية\s+([\d,٬]+)\s*×\s*([\d.,٬]+)\s*ر\.س\))\s*$/.exec(String(t || ''));
+if (!m) return { n: String(t || ''), q: 0, u: 0 };
+return { n: m[1].trim(), q: Number(String(m[2] || m[4]).replace(/[,٬]/g, '')) || 0, u: Number(String(m[3] || m[5]).replace(/[,٬]/g, '')) || 0 };
+}
 function dcEqDoc(kind, Q, draft, X) {
   X = X || {};
   const c = Q.calc || {}, sh = kind === 'contract' || (c.doc && c.doc[kind] && c.doc[kind].labels && c.doc[kind].labels.zz_shm) ? {} : (c.show || {}), TT = (draft || X.tpl || kind !== 'quote') ? Object.assign(eqTpl(kind), X.tpl || {}) : null, SH = X.shared || eqShared(), D = stlDocNorm(JSON.parse(JSON.stringify((c.doc && c.doc[kind]) || (TT ? TT.doc : {}))));
@@ -18545,14 +18551,14 @@ function dcEqDoc(kind, Q, draft, X) {
   const valid = kind === 'quote' && Q.valid_until && sh.valid !== false && on('q_h_valid') ? qDmy(String(Q.valid_until).slice(0, 10)) : '';
   /* ١ البيانات */
   const data = kind === 'contract'
-    ? [row('c_d_client', 'اسم العميل', Q.customer_name || ''), row('c_d_prod', 'المنتج', Q.product_type || ''), row('c_d_total', 'قيمة العقد', qMoney(c.total)), row('c_d_n', 'عدد الدفعات', P.length ? qTerm(P.length) : ''),
+    ? [row('c_d_client', 'اسم العميل', Q.customer_name || ''), row('c_d_prod', 'المنتج', egProdParts(Q.product_type).n || ''), egProdParts(Q.product_type).q ? row('c_d_qty', 'الكمية', fmtNum(egProdParts(Q.product_type).q)) : null, egProdParts(Q.product_type).q ? row('c_d_unit', 'سعر الوحدة', qMoney(egProdParts(Q.product_type).u)) : null, row('c_d_total', 'قيمة العقد', qMoney(c.total)), row('c_d_n', 'عدد الدفعات', P.length ? qTerm(P.length) : ''),
       row('c_d_first', 'أول دفعة', P.length ? qDmy(P[0].due) : '', true), row('c_d_last', 'آخر دفعة', P.length ? qDmy(P[P.length - 1].due) : '', true)]
     : [row(pre + '_f_client', 'اسم العميل', Q.customer_name || ''), row(pre + '_f_req', 'رقم الطلب', Q.req_no || X.req || '', true)];
   const dk = data.filter(Boolean).concat(adds);
   if (on(pre + '_c_data') && dk.length) B.push(d3Card(lb(pre + '_c_data', kind === 'contract' ? 'بيانات العقد' : kind === 'quote' ? 'بيانات العرض والعميل' : 'بيانات العميل'), 'user', [d3KV(dk)]));
   /* ٢ المنتج */
   if (kind !== 'contract' && on(pre + '_c_prod')) {
-    const pk = on(pre + '_p_name') ? [[lb(pre + '_p_name', 'المنتج'), Q.product_type || '—']] : []; /* v836: كل عناصر المستند تُخفى */
+    const PP = egProdParts(Q.product_type), pk = on(pre + '_p_name') ? [[lb(pre + '_p_name', 'المنتج'), PP.n || '—']].concat(PP.q ? [['الكمية', fmtNum(PP.q)], ['سعر الوحدة', qMoney(PP.u)]] : []) : []; /* v836: كل عناصر المستند تُخفى */
     if (kind === 'quote' && sh.value !== false && on('q_p_val')) pk.push([lb('q_p_val', 'قيمة المنتج'), qMoney(c.value) + (c.value_vat === false ? ' · غير خاضعة للضريبة' : '')]);
     if (kind === 'quote' && c.alt && c.alt_show !== false && sh.alt !== false && on('q_p_alt')) pk.push([lb('q_p_alt', 'المنتج البديل عند عدم التوفر'), c.alt]);
     if (kind === 'quote' && c.agent_show && c.agent && c.agent.name && sh.agent !== false && on('q_p_agent')) pk.push([lb('q_p_agent', 'الوكيل'), c.agent.name + (c.agent.phone ? ' · ' + c.agent.phone : '')]);
@@ -29730,7 +29736,7 @@ return '';
 function eg12Head(C) {
 const x = C.x, B = C.B, k = C.k, dead = C.dead, nm = eg9Name(x), st = eg10Lbl(x, B, k, dead), me = srAsMe();
 const chips = [];
-if (B && B.prod) chips.push(e('span', { class: 'eg12-chip' }, [eg12Ic('storefront', 16), 'المنتج: ', e('b', {}, B.prod)]));
+if (B && B.prod) { const PPh = egProdParts(B.prod); chips.push(e('span', { class: 'eg12-chip' }, [eg12Ic('storefront', 16), 'المنتج: ', e('b', {}, PPh.n)])); if (PPh.q) chips.push(e('span', { class: 'eg12-chip' }, ['الكمية: ', e('b', {}, fmtNum(PPh.q) + ' × ' + qr2(PPh.u).toFixed(2))])); }
 eg10Kp(x, B).forEach(function (p) { if (p[0] === '—') return; chips.push(e('span', { class: 'eg12-chip' }, [p[1] + ': ', e('b', {}, /[؀-ۿ]/.test(String(p[0])) ? p[0] : e('bdi', { dir: 'ltr' }, p[0]))])); });
 const asg = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : (srAsOpen(x) ? 'غير مسنَد' : '—');
 chips.push(e('div', { class: 'eg12-popw eg13-asw' }, [srAsOpen(x) ? e('button', { type: 'button', class: 'eg12-chip eg13-asg eg12-pop-t', 'aria-haspopup': 'listbox', 'aria-expanded': C.V.asg ? 'true' : 'false', 'data-live-ok': '', onClick: function () { C.V.asg = !C.V.asg; C.V.menu = false; EG12.open = C.V.asg ? { V: C.V, paint: C.paint } : null; C.paint(); } }, ['مسند إلى: ', e('b', {}, asg), eg12Ic('caret-down', 14)])
@@ -30456,7 +30462,8 @@ void fees;
 const kids = [R && Q.status === 'draft' ? e('div', { class: 'eg10-warn' }, 'أُعيد للتعديل: ' + (R.note || '')) : null,
 Q.approved_by_name ? e('small', { class: 'eg9-hint' }, 'اعتمده ' + Q.approved_by_name) : null];
 const planK = [], itemK = [];
-itemK.push(eg11Fld('المنتج', e('div', { class: 'eg11-in is-ro' }, (Q.product_type || '—') + (c.value_vat === false ? ' · قيمة المنتج بلا ضريبة' : ''))),
+const PPv = egProdParts(Q.product_type);
+itemK.push(e('div', { class: 'eg12-g4' }, [eg11Fld('نوع المنتج', e('div', { class: 'eg11-in is-ro' }, (PPv.n || '—') + (c.value_vat === false ? ' · بلا ضريبة' : ''))), PPv.q ? eg11Fld('الكمية', e('div', { class: 'eg11-in is-ro', dir: 'ltr' }, fmtNum(PPv.q))) : null, PPv.q ? eg11Fld('سعر الوحدة', e('div', { class: 'eg11-in is-ro', dir: 'ltr' }, qr2(PPv.u).toFixed(2))) : null, eg11Fld('قيمة المنتج', e('div', { class: 'eg11-in is-ro', dir: 'ltr' }, qr2(Number(c.value) || 0).toFixed(2)))]),
 items.length ? e('div', { class: 'eg12-tw' }, e('table', { class: 'eg11-tbl' }, [e('thead', {}, e('tr', {}, ['البند', 'المبلغ (ر.س)', 'الضريبة', 'للعميل'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, items.map(function (y) { const hid = (c.hide || []).indexOf(y.id) >= 0; return e('tr', {}, [e('td', {}, y.t), e('td', {}, e('bdi', { dir: 'ltr' }, eg10N(y.amt, 2))), e('td', {}, y.vat === false ? 'غير خاضع' : e('bdi', { dir: 'ltr' }, eg10N(qr2((Number(y.amt) || 0) * eqRate()), 2))), e('td', {}, e('span', { class: 'eg9-pill is-' + (hid ? 'off' : 'ok') }, hid ? 'مخفي' : 'ظاهر'))]); }))])) : null);
 const pg = eg11QtPage(Q);
 planK.push(e('div', { class: 'eg12-g2' }, [eg11Fld('خطة الدفع', e('div', { class: 'eg11-in is-ro' }, P.length ? (P.length > 1 ? fmtNum(P.length) + ' دفعات شهرية' : 'دفعة واحدة') + ' · أول دفعة ' + (P[0].due || '') : '—')), eg11Fld('خصم بطاقة العضوية في الرابط', e('div', { class: 'eg11-in is-ro' }, eg11PtsOff(pg) ? 'غير متاح' : 'متاح' + (pg.q_pts_max ? ' · الحد الأعلى ' + fmtNum(pg.q_pts_max) + ' نقطة' : ' · الحد الأعلى: رصيد العميل كاملًا')))]),
@@ -30494,8 +30501,16 @@ const Q = eg11QFull(x, B, paint), c = (Q && Q.calc) || {}, ch = (B && B.ch && B.
 if (!Q) return eg12Wait('تُبنى الفاتورة من عرض السعر بعد إعداده.');
 const val = Number(c.value) || 0, pv = c.value_vat === false ? 0 : qr2(val * rate);
 const L = [['من عرض السعر', Q.quotation_number || '—'], ['قرار العميل', ch && ch.d ? (ch.d === 'accept' ? 'اعتمدها · ' + eg10Dt(ch.at) : 'اعتذر · ' + eg10Dt(ch.at)) : 'لم تصله بعد'], ['ضريبة المنتج', c.value_vat === false ? 'بلا ضريبة' : fmtNum(Math.round(rate * 100)) + '٪']];
-return e('div', { class: 'eg13-qg' }, [e('div', { class: 'eg13-qm' }, [e('section', { class: 'eg13-blk' }, [e('h4', {}, [frag(ui('file-text', 17)), e('span', {}, 'فاتورة المنتج')]), eg13Dl(L, '')])]),
-e('aside', { class: 'eg13-qs' }, [eg13Calc({ value: val, fees: 0, vat: pv, total: val + pv, vat_rate: rate }, d, { inv: true })])]);
+return e('div', { class: 'eg13-stack' }, [e('div', { class: 'eg13-qg' }, [e('div', { class: 'eg13-qm' }, [e('section', { class: 'eg13-blk' }, [e('h4', {}, [frag(ui('file-text', 17)), e('span', {}, 'فاتورة المنتج')]), eg13Dl(L, '')])]),
+e('aside', { class: 'eg13-qs' }, [eg13Calc({ value: val, fees: 0, vat: pv, total: val + pv, vat_rate: rate }, d, { inv: true })])]), eg12DocFull(x, Q, 'purchase', 'المستند كاملًا — كما يصل العميل')]); /* v1210 */
+}
+/* v1210: المستند كاملًا داخل التبويب (الفاتورة · العقد) — نفس مستند «القوالب والمعاينة» وزر PDF */
+function eg12DocFull(x, Q, kind, title) {
+let spec = null, recv = ''; try { recv = egRecvInfo(x).now; } catch (err) { void err; }
+const draft = ['sent', 'accepted'].indexOf(Q.status) < 0;
+try { spec = dcEqDoc(kind, Q, draft, { recv: recv }); } catch (err) { void err; }
+return e('section', { class: 'eg13-blk eg12-docf' }, [e('div', { class: 'eg13-qhd' }, [e('h4', {}, [frag(ui(kind === 'contract' ? 'handshake' : 'file-text', 17)), e('span', {}, title)]), spec ? eg9Btn('فتح PDF', { ic: 'file-pdf', on: function () { try { dcPdf(spec); } catch (err) { eg11Fail(err); } } }) : null]),
+spec ? e('div', { class: 'eg12-pv-p srd' }, [srdPaper(spec)]) : eg12Wait('تعذّر بناء المستند.')]);
 }
 /* قائمة قيم مرتبة — مشتركة بين التبويبات */
 function eg13Dl(L, cls) { return e('dl', { class: 'eg13-dl' + (cls ? ' ' + cls : '') }, L.filter(Boolean).map(function (r) { return e('div', { class: r[2] ? 'is-hi' : '' }, [e('dt', {}, r[0]), e('dd', {}, typeof r[1] === 'string' && !/[؀-ۿ]/.test(r[1]) ? e('bdi', { dir: 'ltr' }, r[1]) : r[1])]); })); }
@@ -30509,6 +30524,7 @@ void M; void sg;
 const kids = [];
 if (P.length === 1) kids.push(e('section', { class: 'eg13-blk' }, [e('h4', {}, [frag(ui('calendar-blank', 17)), e('span', {}, 'الدفعة')]), eg13Dl([['الاستحقاق', P[0].due || '—'], ['المبلغ', eg10N(P[0].amount, 2)]], '')]));
 if (P.length > 1) kids.push(e('section', { class: 'eg13-blk' }, [e('h4', {}, [frag(ui('calendar-blank', 17)), e('span', {}, 'جدول الدفعات')]), e('div', { class: 'eg12-tw' }, e('table', { class: 'eg11-tbl' }, [e('thead', {}, e('tr', {}, ['الدفعة', 'الاستحقاق', 'المبلغ'].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, P.map(function (p, i) { return e('tr', {}, [e('td', {}, fmtNum(i + 1)), e('td', {}, e('bdi', { dir: 'ltr' }, p.due || '—')), e('td', {}, e('bdi', { dir: 'ltr' }, eg10N(p.amount, 2)))]); }))]))]));
+if (Q) kids.push(eg12DocFull(x, Q, 'contract', q && q.cid ? 'عقد بيع المنتج كاملًا' : 'عقد بيع المنتج كاملًا — يصدر رقمه عند توقيع العميل')); /* v1210 */
 if (full && q && q.cid) { try { const f = cfFinal({ rid: q.cid, no: q.ct }, { r: { id: q.cid, user_id: x.user_id } }); if (f) kids.push(e('section', { class: 'eg13-blk eg13-fin' }, [f])); } catch (err) { void err; } }
 return e('div', { class: 'eg13-stack' }, kids);
 }
