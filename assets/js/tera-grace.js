@@ -37,7 +37,8 @@
   function feeTot() { var t = (S.v && S.v.fee_total) || (S.info && S.info.fee_total); return Number(t) || 0; }
   function free() {
     var t = feeTot();
-    if (t > 0) return el('div', { class: 'gr-free is-fee', role: 'note' }, [icon('doc'), el('span', {}, [el('b', { text: 'رسوم المهلة ' + money(t) + ' ريال' }), ' — شاملة ضريبة القيمة المضافة، وتختار طريقة إضافتها.'])]);
+    var nm = (S.v && S.v.fee_name) || (S.info && S.info.fee_name) || 'رسوم الخدمة', vt = S.v ? Number(S.v.vat) > 0 : !!(S.info && S.info.fee_vat);
+    if (t > 0) return el('div', { class: 'gr-free is-fee', role: 'note' }, [icon('doc'), el('span', {}, [el('b', { text: nm + ' ' + money(t) + ' ريال' }), (vt ? ' شاملة ضريبة القيمة المضافة' : '') + ' — وتختار طريقة إضافتها.'])]);
     return el('div', { class: 'gr-free', role: 'note' }, [icon('check'), el('span', {}, [el('b', { text: 'خدمة مجانية لعملائنا' }), ' — لا تُحتسب أي رسوم على المهلة.'])]);
   }
   function kvT(rows) { return el('table', { class: 'cq-kv' }, [el('tbody', {}, rows.filter(Boolean).map(function (r) { return el('tr', {}, [el('th', { text: r[0] }), el('td', {}, [el('bdi', { text: r[1] })])]); }))]); }
@@ -52,8 +53,9 @@
       return el('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', disabled: dis, onclick: function () { S.fm = o[0]; S.err = ''; S.errAt = ''; form(); } }, [el('b', { text: o[1] }), el('small', { text: o[2] })]);
     }));
     var P = S.fm === 'same' ? v.plan_same : S.fm === 'spread' ? v.plan_spread : null;
-    return box('رسوم المهلة وطريقة إضافتها', 'doc', [kvT([['رسوم المهلة', money(v.fee) + ' ريال'], ['ضريبة القيمة المضافة 15%', money(v.vat) + ' ريال'], ['الإجمالي', money(v.fee_total) + ' ريال']]),
-      el('p', { class: 'gr-note', style: 'margin:12px 0 8px', text: 'كيف تريد إضافة الرسوم؟' }), ch, ferr('fee'), P ? el('p', { class: 'gr-note', style: 'margin:12px 0 6px', text: 'دفعاتك قبل وبعد إضافة الرسوم:' }) : null, P ? planT(P) : null], 'gd');
+    var nm = v.fee_name || 'رسوم الخدمة', vt = Number(v.vat) > 0;
+    return box(nm + ' وطريقة إضافتها', 'doc', [kvT(vt ? [[nm, money(v.fee) + ' ريال'], ['ضريبة القيمة المضافة 15%', money(v.vat) + ' ريال'], ['الإجمالي', money(v.fee_total) + ' ريال']] : [[nm, money(v.fee_total) + ' ريال']]),
+      el('p', { class: 'gr-note', style: 'margin:12px 0 8px', text: 'كيف تريد إضافة ' + nm + '؟' }), ch, ferr('fee'), P ? el('p', { class: 'gr-note', style: 'margin:12px 0 6px', text: 'دفعاتك قبل وبعد إضافة الرسوم:' }) : null, P ? planT(P) : null], 'gd');
   }
   function acctBox(v) {
     var a = v.acct; if (!a) return null;
@@ -150,7 +152,7 @@
     var v = S.v, dd = (v.days.filter(function (d) { return d.d === S.day; })[0] || {});
     var P = feeTot() > 0 ? (S.fm === 'same' ? v.plan_same : v.plan_spread) : null;
     var sum = kvT([['الدفعة', 'الدفعة ' + v.seq + (v.n ? ' من ' + v.n : '') + ' · ' + v.contract_no], ['قيمة الدفعة', money(v.left) + ' ريال'], ['الاستحقاق الأصلي', v.due_t], ['موعد السداد الجديد', day(S.day)],
-      P ? ['رسوم المهلة', money(v.fee_total) + ' ريال شاملة الضريبة'] : null, P ? ['طريقة إضافتها', S.fm === 'same' ? 'على هذه الدفعة' : 'موزعة على باقي الدفعات'] : null]);
+      P ? [v.fee_name || 'رسوم الخدمة', money(v.fee_total) + ' ريال' + (Number(v.vat) > 0 ? ' شاملة الضريبة' : '')] : null, P ? ['طريقة إضافتها', S.fm === 'same' ? 'على هذه الدفعة' : 'موزعة على باقي الدفعات'] : null]);
     var cb = el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; if (S.errAt === 'ack') { S.err = ''; S.errAt = ''; lab.className = 'cq-ack'; var f = lab.nextSibling; if (f && f.className === 'cq-ferr') f.remove(); } } });
     var lab = el('label', { class: 'cq-ack' + (S.errAt === 'ack' ? ' is-err' : '') }, [cb, el('span', { text: v.ack })]);
     var pad = el('div', {}, [el('canvas', { class: 'cq-pad' + (S.errAt === 'pad' ? ' is-err' : ''), id: 'gr-pad', 'aria-label': 'مكان التوقيع' }),
@@ -189,7 +191,7 @@
       var j = await api('sign', { grant: S.grant, until: S.day, kind: 'draw', name: S.sName.trim(), img: S.sImg, ack: true, factor: S.ch, fee_mode: feeTot() > 0 ? S.fm : null });
       S.busy = false;
       if (!j.ok) { S.err = msgOf(j, 'تعذّر اعتماد المهلة.'); S.errAt = j.error === 'bad_date' ? 'day' : j.error === 'bad_fee_mode' ? 'fee' : j.error === 'bad_ack' ? 'ack' : j.error === 'bad_sign' ? 'pad' : j.error === 'bad_name' ? 'name' : 'srv'; if (S.errAt === 'day' || S.errAt === 'fee') S.step = 1; form(); return; }
-      donePage({ until: j.until, ref_no: j.ref_no, pay: j.pay, survey: j.survey, status: 'active', fresh: true, fee_total: j.fee_total, fee_mode: j.fee_mode });
+      donePage({ until: j.until, ref_no: j.ref_no, pay: j.pay, survey: j.survey, status: 'active', fresh: true, fee_total: j.fee_total, fee_mode: j.fee_mode, fee_name: S.v && S.v.fee_name });
     } catch (e) { S.busy = false; }
   }
 
@@ -202,7 +204,7 @@
       : card([icon('check', true), el('h1', { class: 'cq-h1', text: 'تم اعتماد مهلة السداد' }),
           el('p', { class: 'cq-muted', text: 'موعد السداد الجديد بناءً على طلبك: ' + day(j.until) + '.' }),
           el('span', { class: 'cq-no', text: 'رقم المرجع ' + (j.ref_no || '') }),
-          Number(j.fee_total) > 0 ? el('p', { class: 'cq-muted', text: 'أُضيفت رسوم المهلة ' + money(j.fee_total) + ' ريال ' + (j.fee_mode === 'same' ? 'على هذه الدفعة.' : 'موزعة على باقي دفعاتك.') }) : null,
+          Number(j.fee_total) > 0 ? el('p', { class: 'cq-muted', text: 'أُضيفت ' + (j.fee_name || 'رسوم الخدمة') + ' ' + money(j.fee_total) + ' ريال ' + (j.fee_mode === 'same' ? 'على هذه الدفعة.' : 'موزعة على باقي دفعاتك.') }) : null,
           el('p', { class: 'cq-muted', text: j.fresh ? 'وصلتك رسالة التأكيد، ونذكّرك قبل الموعد. يمكنك السداد في أي وقت قبله.' : 'نذكّرك قبل الموعد. يمكنك السداد في أي وقت قبله.' }),
           el('div', { class: 'cq-btns is-one' }, [payBtn(j.pay)])], 'cq-done');
     var sv = j.survey, rc = null;
