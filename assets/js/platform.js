@@ -19240,7 +19240,7 @@ function egMsgVars(x, kind, live, Q) {
   const fl = Array.isArray(x.fields) ? x.fields : [];
   const fv = function (lbl) { const r = fl.filter(function (f) { return Array.isArray(f) && f[0] === lbl; })[0]; return r && r[1] != null ? String(r[1]) : ''; };
   const dg = (fv('مدة السداد').replace(/[٠-٩]/g, function (d) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)); }).match(/[0-9]{1,3}/) || [])[0];
-  const nreq = dg ? parseInt(dg, 10) : null, nR = parseInt(R.n, 10), n = isFinite(nR) ? nR : nreq;
+  const nreq = dg ? parseInt(dg, 10) : null, nR = parseInt(R.n, 10), nQ = Q && Q.calc && Array.isArray(Q.calc.plan) && Q.calc.plan.length ? Q.calc.plan.length : null, n = nQ || (isFinite(nR) ? nR : nreq); /* v1214: عدد الدفعات من العرض نفسه (كان من القرار: 5 والعرض 6) */
   const prod = (Q && String(Q.product_type || '').trim()) || (M.client_product && M.client_product.name) || R.prod || '—';
   const amt = Q ? num(Q.total) : live ? num(live.total) : null;
   const fix = ((M.fix || {}).items || []).map(function (i) { return i && i.label; }).filter(Boolean).join('، ');
