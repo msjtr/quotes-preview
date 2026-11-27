@@ -29695,7 +29695,7 @@ let sec = null;
 try { sec = eg12Sec(tab, ctx); } catch (err) { try { console.warn('[eg12-sec]', err && err.message); } catch (y) { void y; } sec = e('section', { class: 'eg12-sec' }, [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')]); }
 if (V.menu || V.asg) eg12Fit();
 eg12Zoom();
-const backBar = e('div', { class: 'eg10-backbar' }, [eg9Btn('كل الطلبات', { ic: 'caret-right', cls: 'eg10-back', on: function () { eg9Go(''); paint(); } })]);
+const backBar = e('div', { class: 'eg10-backbar' }, [eg9Btn(window.__lvKey === 'cu-elig-x' ? 'العودة للطلب' : 'كل الطلبات', { ic: 'caret-right', cls: 'eg10-back', on: function () { if (window.__lvKey === 'cu-elig-x') { go('other', 'cu-elig'); return; } eg9Go(''); paint(); } })]); /* v1183: من شاشة المرحلة يعود إلى الطلب في الصفحة نفسها */
 return [e('div', { class: 'eg9 eg10 eg12 eg13', 'data-sr': x.id }, [backBar, eg12Head(ctx), extra.length ? e('div', { class: 'eg9-extra' }, extra) : null, sec])];
 }
 /* فتح ملف العميل الكامل */
@@ -30686,6 +30686,7 @@ e('small', { class: 'eg9-hint' }, 'تظهر في «طلب استكمال من ا
 /* ── الصفحة ── */
 function lvEligPage() {
 if (ADM.egOpen === undefined) ADM.egOpen = eg9SS('open');
+if (window.__lvKey === 'cu-elig-x' && !ADM.egOpen) { setTimeout(function () { go('other', 'cu-elig'); }, 0); return [clWait('طلبات التحقق من الأهلية')]; } /* v1183: شاشات المراحل بلا قائمة — «كل الطلبات» يعود إلى الصفحة نفسها */
 if (!EG9.init) { EG9.init = true; EG9.f = eg9SS('f') || 'open'; EG9.who = eg9SS('who') || 'all'; EG9.set = eg9SS('set') === '1'; }
 return admMount('elig9', 'طلبات التحقق من الأهلية', async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else await lvSrLoad(); return { at: Date.now() }; }, function (D, st, paint) {
 try {
