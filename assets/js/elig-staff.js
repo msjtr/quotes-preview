@@ -106,13 +106,15 @@ function listView() {
   return [el('div', { class: 'eln-lhead' }, [null]),
     el('section', { class: 'eln-card' }, [tools, body])];
 }
-A().eligOpen = function (id) { if (!id) return; ST.id = id; ss('id', id); ST.tab = 'req'; ss('tab', 'req'); };
+var OLD2NEW = { req: ['req'], dec: ['dec'], qt: ['qt'], inv: ['inv'], ct: ['ct'], lnk: ['lnk', 'send'], tpl: ['lnk', 'tpl'], adm: ['adm'], log: ['log', 'chat'] };
+function goTab(t, sub) { var m = OLD2NEW[t] || [t]; ST.tab = m[0]; ss('tab', m[0]); if (m[1] || sub) ST.sub[m[0]] = m[1] || sub; window.scrollTo(0, 0); draw(); }
+A().eligOpen = function (id, tab) { if (!id) return; ST.id = id; ss('id', id); var m = OLD2NEW[tab || 'req'] || ['req']; ST.tab = m[0]; ss('tab', m[0]); if (m[1]) ST.sub[m[0]] = m[1]; };
 function openReq(id) { ST.id = id; ss('id', id); ST.tab = 'req'; ss('tab', 'req'); window.scrollTo(0, 0); draw(); }
 
 /* ══════════ صفحة الطلب ══════════ */
 var TABS = [['req', 'الطلب'], ['ask', 'المطلوب من العميل'], ['dec', 'قرار الأهلية'], ['qt', 'عرض سعر المنتج'], ['inv', 'فاتورة المنتج'], ['ct', 'عقد بيع المنتج'], ['lnk', 'الروابط والموافقات'], ['adm', 'الإدارة والتنفيذ'], ['log', 'المراسلات والسجل']];
 var SUBS = { req: [['data', 'بيانات الطلب'], ['docs', 'المستندات']], ask: [['now', 'الطلب الحالي'], ['got', 'ما رفعه العميل'], ['hist', 'الطلبات السابقة'], ['why', 'أسباب السحب']],
-  lnk: [['path', 'مسار الرحلة'], ['links', 'الروابط'], ['sends', 'الرسائل المرسلة']], log: [['chat', 'المحادثة'], ['notes', 'ملاحظات داخلية'], ['log', 'السجل']] };
+  lnk: [['send', 'إرسال الرابط'], ['path', 'مسار الرحلة'], ['links', 'الروابط'], ['sends', 'الرسائل المرسلة'], ['tpl', 'القوالب والمعاينة']], log: [['chat', 'المحادثة'], ['notes', 'ملاحظات داخلية'], ['log', 'السجل']] };
 function reach(x, k) {
   var rp = (x.meta && x.meta.report) || {}, ok = x.status === 'approved' && (rp.rec === 'eligible' || rp.rec === 'eligible_less');
   if (k === 'qt') return ok; if (k === 'inv') return ok && !!(x.meta && (x.meta.purchase || x.meta.accept)); if (k === 'ct') return ok && !!(x.meta && x.meta.purchase && x.meta.purchase.decision === 'accept');
@@ -341,6 +343,7 @@ function pathMini(x) {
   return el('ol', { class: 'eln-path', 'aria-label': 'آخر خطوات الرحلة' }, E.map(function (e) { return el('li', { class: 'is-' + e.tone }, [e.t, el('small', { text: ' · ' + when(e.at) })]); }));
 }
 function tabLnk(x) {
+  if (subOf('lnk') === 'send' || subOf('lnk') === 'tpl') return [card('', stage(x, subOf('lnk') === 'send' ? 'lnk' : 'tpl'))]; /* v1184 */
   var J = journey(x); if (J.st === 'load') return [card('', [wait()])]; if (J.st === 'err' || !J.v || J.v.ok === false) return [card('', [el('p', { class: 'eln-err', text: 'تعذّر قراءة الرحلة.' })])];
   var v = J.v, s = subOf('lnk');
   if (s === 'links') { var L = (v.links || []).filter(function (l) { return !l.preview; }); return [card('الروابط', L.length ? [el('div', { class: 'eln-tblw' }, [el('table', { class: 'eln-tbl' }, [el('thead', {}, [el('tr', {}, ['الرابط', 'أُنشئ', 'فتحه العميل', 'التحقق', 'الحالة'].map(function (h) { return el('th', { text: h }); }))]),
@@ -368,19 +371,9 @@ function tabLog(x) {
     tb, el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn is-pri', disabled: !!ST.busy || !isOpen(x), onclick: function () { var b = String(C[x.id] || '').trim(); if (b.length < 2) { note('تنبيه', ['اكتب الرسالة.'], 'bad'); return; } act('msg', function () { return A().rpc('admin_sr_msg_send', { p_sr: x.id, p_body: b, p_ask: null }); }, 'أُرسلت الرسالة', ['وصلت العميلَ في حسابه وبإشعار.']).then(function (r) { if (r) C[x.id] = ''; }); } }, ['إرسال للعميل'])])])];
 }
 
-/* ── مراحل المستندات: حالتها هنا، وإدارتها من الصفحة الحالية حتى نقلها ── */
-var OLD = { dec: 'dec', qt: 'qt', inv: 'inv', ct: 'ct', adm: 'adm' };
-function tabStage(x, k) {
-  var rp = (x.meta && x.meta.report) || {}, J = journey(x), v = J.st === 'ok' && J.v ? J.v : {}, rows = [];
-  if (k === 'dec') rows = rp.rec ? [['النتيجة', ({ eligible: 'مؤهَّل', eligible_less: 'مؤهَّل بمبلغ أقل', not_eligible: 'غير مؤهَّل حاليًا' })[rp.rec] || rp.rec], ['المبلغ المؤهَّل', rp.elig_amt ? money(rp.elig_amt) + ' ريال' : '—'], ['الدفعات', rp.n || '—'], ['المنتج', rp.prod || '—'], ['أُرسلت للعميل', x.meta && x.meta.released ? when(x.meta.released.at) : x.meta && x.meta.held ? 'محجوزة — لم تُرسل' : '—']] : [['النتيجة', 'لم تصدر بعد']];
-  else if (k === 'qt' || k === 'inv') { var Q = (v.quotes || []).slice(-1)[0]; rows = Q ? [['رقم العرض', Q.no], ['الحالة', Q.status], ['الإجمالي', money(Q.total) + ' ريال'], ['اعتمده', Q.approved_by || '—'], ['أُرسل', Q.sent_at ? when(Q.sent_at) : '—'], ['قرار العميل', Q.decided_at ? when(Q.decided_at) : '—']] : [['عرض السعر', 'لم يُعدّ بعد']]; if (k === 'inv') rows.push(['فاتورة المنتج', v.purchase ? (v.purchase.decision === 'accept' ? 'اعتمدها العميل ' + when(v.purchase.at) : 'اعتذر ' + when(v.purchase.at)) : 'لم تُعتمد بعد']); }
-  else if (k === 'ct') rows = v.contract ? [['رقم العقد', v.contract.no], ['التوقيع', v.contract.signed_at ? when(v.contract.signed_at) : 'لم يُوقّع بعد']] : [['العقد', 'لم يصدر بعد']];
-  else rows = [['التنفيذ', x.executed_at ? 'اكتمل ' + when(x.executed_at) : 'لم يكتمل']];
-  var T = TABS.filter(function (t) { return t[0] === k; })[0][1];
-  return [card(T, [el('dl', { class: 'eln-facts' }, rows.map(function (r) { return el('div', {}, [el('dt', { text: r[0] }), el('dd', {}, [String(r[1])])]); })),
-    el('div', { class: 'eln-banner is-info' }, [el('b', { text: 'تُدار هذه المرحلة الآن من الصفحة الحالية' }), el('span', { text: 'تُنقل إلى هذه الصفحة في المرحلة التالية من إعادة التصميم.' })]),
-    el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn is-pri', onclick: function () { A().oldElig(x.id, OLD[k]); } }, ['إدارة «' + T + '»'])])])];
-}
+/* ── v1184: مراحل المستندات (القرار · العرض · الفاتورة · العقد · الإدارة) داخل تبويبها — منطقها من platform.js (eg11/eg12/eg13) ── */
+function stage(x, k) { var f = A().eligStage; return f ? f(x.id, k, draw, goTab) : [el('p', { class: 'eln-err', text: 'تعذّر عرض هذا القسم — أعد تحميل الصفحة.' })]; }
+function tabStage(x, k) { return [card('', stage(x, k))]; }
 
 /* ══════════ الرسم ══════════ */
 function draw() {
