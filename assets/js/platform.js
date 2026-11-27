@@ -11364,7 +11364,7 @@ function dcPaySched(c, no) {
   const rows = P.map(function (p) { const k = payKind(p);
     return e('div', { class: 'tm-r pay-r', 'data-pt': k[0] }, [e('span', { class: 'tm-no' }, 'الدفعة ' + fmtNum(p.i)),
       e('span', { class: 'tm-sub' }, lvBidi('الاستحقاق ' + iso(p.due) + (p.at && !p.deferTo ? ' · سُدّدت ' + iso(p.at) : '') + (p.deferTo ? (p.method === 'توحيد' ? ' · نُقلت إلى العقد الموحّد ' : ' · أُجّلت إلى ') + p.deferTo : '') + (p.method && !p.deferTo ? ' · ' + p.method : ''))),
-      e('span', { class: 'tm-amt' }, sar(p.deferTo ? p.amount : settled(p) ? (p.paid || p.amount) : dueAmt(p))), DS.badge(k[1], k[3] === 'part' ? 'warn' : k[3] || null)]); });
+      e('span', { class: 'tm-amt' }, sar(p.deferTo ? p.amount : settled(p) ? (p.paid || p.amount) : dueAmt(p))), DS.badge(k[1], k[3] === 'part' ? 'warn' : k[3] || null), p.pid ? grNc(p.pid) : null]); });
   return cuSec('جدول الدفعات', 'calendar-blank', [payLegend(P), e('div', { class: 'tm-rows pay-rows' }, rows)]);
 }
 function dcPcOpen(cid, no) {
@@ -34210,6 +34210,18 @@ async function rmnAct(url, body, done) {
   } catch (err) { RM.busy = false; if (err && err.message === 'auth') return null; RM.err = (err && err.message) || 'تعذّر التنفيذ.'; rmnPaint(); return null; }
 }
 function rmnTile(ic, tone) { return e('span', { class: 'rmn-tile' + (tone ? ' is-' + tone : ''), 'aria-hidden': 'true' }, frag(ui(ic, 26))); }
+/* v1175: «طلب مهلة ولم يلتزم» — على الدفعة نفسها فقط، ويبقى بعد السداد (خريطة كل العملاء، تتجدد كل 5 دقائق) */
+const GRB = { map: null, at: 0, busy: false };
+function grBroken(pid) {
+  if (!TQN) return null;
+  if (!GRB.busy && (!GRB.map || Date.now() - GRB.at > 300000)) {
+    GRB.busy = true;
+    clApi('/admin/api/reminders/grace/broken').then(function (j) { GRB.map = (j && j.ok && j.map) || {}; GRB.at = Date.now(); GRB.busy = false; if (Object.keys(GRB.map).length) draw(); })
+      .catch(function () { GRB.busy = false; GRB.map = GRB.map || {}; GRB.at = Date.now(); });
+  }
+  return GRB.map && pid ? GRB.map[pid] || null : null;
+}
+function grNc(pid) { const b = grBroken(pid); return b ? e('span', { class: 'rgr-nc', title: 'مهلة ' + b.ref_no + ' حتى ' + b.until + (b.status === 'paid_late' ? ' — سُدّدت بعد الموعد' : '') }, 'طلب مهلة ولم يلتزم') : null; }
 function rmnPill(t, tone) { return e('span', { class: 'rmn-pill' + (tone ? ' is-' + tone : '') }, t); }
 function rmnTabs(L) {
   /* v1171: التبويبات ببلاطات القائمة الجانبية ثلاثية الأبعاد نفسها — لون لكل قسم، والعدد على البلاطة */
@@ -34340,8 +34352,8 @@ function rmnOvTab(L) {
    العميل يطلبها من صفحة سداد دفعته (رابط التذكير)، أو يرسل له الموظف رابطها، أو يسجّلها الموظف مباشرة.
    التذكير يُعاد على موعد المهلة حتى نهايتها، ثم على الاستحقاق الأصلي (لا يتغيّر تاريخ العقد). */
 const RGR_ST = { active: ['سارية', 'ok'], open: ['بانتظار العميل', 'info'], expired: ['انتهت صلاحية الرابط', 'warn'], kept: ['سدّد في المهلة', 'ok'], paid_late: ['سدّد بعد المهلة', 'warn'], broken: ['لم يُلتزم بها', 'danger'], cancelled: ['ملغاة', ''] };
-const RGR_SRC = { client: 'طلبها العميل من صفحة السداد', staff_link: 'رابط من الموظف', staff_direct: 'سجّلها الموظف مباشرة' };
-const RGR_EV = { rated: 'قيّم العميل الخدمة من الرابط', requested: 'طلب العميل المهلة', signed: 'وقّع العميل واعتمد المهلة', link: 'أنشأ الموظف رابط المهلة', direct: 'سجّل الموظف المهلة مباشرة', replaced: 'استُبدل الرابط برابط أحدث', cancelled: 'أُلغيت المهلة' };
+const RGR_SRC = { client: 'طلبها العميل من صفحة السداد', staff_link: 'رابط من الموظف', staff_direct: 'سجّلها الموظف مباشرة', crq_defer: 'تأجيل منفّذ بطلب العميل' };
+const RGR_EV = { crq_defer: 'نُقل التأجيل المنفّذ إلى المؤجلين', rated: 'قيّم العميل الخدمة من الرابط', requested: 'طلب العميل المهلة', signed: 'وقّع العميل واعتمد المهلة', link: 'أنشأ الموظف رابط المهلة', direct: 'سجّل الموظف المهلة مباشرة', replaced: 'استُبدل الرابط برابط أحدث', cancelled: 'أُلغيت المهلة' };
 function rgrHrs(h) { h = Number(h) || 0; return h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : h <= 10 ? fmtNum(h) + ' ساعات' : fmtNum(h) + ' ساعة'; }
 function rgrDays(n) { n = Number(n) || 0; return n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? fmtNum(n) + ' أيام' : fmtNum(n) + ' يومًا'; }
 function rgrAdd(d, n) { const x = new Date(String(d).slice(0, 10) + 'T12:00:00'); x.setDate(x.getDate() + n); return iso(x); }
@@ -34357,7 +34369,11 @@ function rgrAct(url, body, done) { return rmnAct(url, body, function (r) { RMN.g
 function rgrItems(G) {
   const today = G.L.today || iso(new Date());
   const A = (G.L.rows || []).map(function (r) { return { k: 'grace', id: r.id, r: r, name: r.name, tera: r.tera_id, contract: r.contract_no, seq: r.seq, n: r.n, amt: r.amount, orig: r.orig_due, due: r.until, status: r.status,
-    src: 'مهلة مجانية', how: RGR_SRC[r.source] + (r.source !== 'client' && r.by_name ? ' (' + r.by_name + ')' : ''), ref: r.ref_no, at: r.signed_at || r.created_at, exp: r.link_expires, paid: r.paid_date }; });
+    /* v1175: المهلة مجانية أو برسوم — وسعد (crq_defer) تأجيل منفّذ نُقل للمؤجلين بقرار المشرف */
+    fee: r.fee != null ? Math.round((Number(r.fee) + Number(r.vat || 0)) * 100) / 100 : 0, fm: r.fee_mode, plan: r.fee_plan,
+    src: r.source === 'crq_defer' ? 'تأجيل برسوم' : r.fee != null ? 'مهلة برسوم' : 'مهلة مجانية',
+    how: (r.source === 'crq_defer' ? RGR_SRC.crq_defer + ' ' + (r.ref_crq || '') : RGR_SRC[r.source] + (r.source !== 'client' && r.by_name ? ' (' + r.by_name + ')' : '')) + (r.fee != null ? ' · الرسوم ' + rmnSar(Number(r.fee) + Number(r.vat || 0)) + (r.fee_mode ? (r.fee_mode === 'same' ? ' على الدفعة' : ' موزعة') : '') : ''),
+    ref: r.ref_no, at: r.signed_at || r.created_at, exp: r.link_expires, paid: r.paid_date, kf: r.source === 'crq_defer' || r.fee != null }; });
   const B = (G.L.deferred || []).map(function (d) { return { k: 'fee', id: 'f' + d.payment_id, d: d, name: d.name, tera: d.tera_id, contract: d.contract_no, seq: d.seq, n: d.n, amt: d.left_amt, orig: null, due: d.due, status: d.status,
     src: 'تأجيل برسوم', how: 'طلب تأجيل منفّذ ' + d.req_no + (d.origin === 'client' ? ' (طلبه العميل)' : ' (من الفريق)'), ref: d.req_no, at: d.done_at, paid: d.paid_date }; });
   return { today: today, all: A.concat(B) };
@@ -34386,11 +34402,11 @@ function rmnGrace(L) {
   const live = function (x) { return x.status === 'active'; };
   const soon = all.filter(function (x) { if (!live(x)) return false; const d = Math.round((new Date(String(x.due).slice(0, 10) + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5); return d >= 0 && d <= 2; }).length;
   const kpis = rmxKpis([
-    { t: 'في المؤجلين الآن', n: all.filter(live).length, s: 'مهلة مجانية وتأجيل برسوم', ic: 'hourglass-medium', c: 'saffron' },
+    { t: 'في المؤجلين الآن', n: all.filter(live).length, s: 'مجانية وبرسوم', ic: 'hourglass-medium', c: 'saffron' },
     { t: 'يستحق خلال يومين', n: soon, s: 'تنبيه قبل الموعد', ic: 'timer', c: 'red', tone: soon ? 'warn' : '' },
     { t: 'بانتظار العميل', n: all.filter(function (x) { return x.status === 'open'; }).length, s: 'روابط لم تكتمل', ic: 'paper-plane-tilt', c: 'blue', on: G.f === 'open', go: function () { G.f = G.f === 'open' ? 'all' : 'open'; rmnPaint(); } },
     { t: 'لم يلتزم', n: all.filter(function (x) { return x.status === 'broken' || x.status === 'paid_late'; }).length, s: 'بعد انتهاء الموعد', ic: 'warning', c: 'red', tone: 'danger', on: G.f === 'broken', go: function () { G.f = G.f === 'broken' ? 'all' : 'broken'; rmnPaint(); } }]);
-  const F = [['all', 'الكل', function () { return true; }], ['grace', 'مهلة مجانية', function (x) { return x.k === 'grace' && x.status === 'active'; }], ['fee', 'تأجيل برسوم', function (x) { return x.k === 'fee' && x.status === 'active'; }],
+  const F = [['all', 'الكل', function () { return true; }], ['grace', 'مجانية', function (x) { return !x.kf && x.status === 'active'; }], ['fee', 'برسوم', function (x) { return (x.kf || x.k === 'fee') && x.status === 'active'; }],
     ['open', 'بانتظار العميل', function (x) { return x.status === 'open' || x.status === 'expired'; }], ['broken', 'لم يلتزم', function (x) { return x.status === 'broken' || x.status === 'paid_late'; }],
     ['kept', 'سُدّدت', function (x) { return x.status === 'kept'; }], ['cancelled', 'ملغاة', function (x) { return x.status === 'cancelled'; }]];
   const segs = e('div', { class: 'rmn-segs', role: 'group', 'aria-label': 'التصنيف' }, F.map(function (f) {
@@ -34406,7 +34422,7 @@ function rmnGrace(L) {
     const s = RGR_ST[x.status] || [x.status, ''], lf = rgrLeft(x, today);
     return e('article', { class: 'rgr-card is-' + x.k }, [
       e('header', { class: 'rgr-ch' }, [e('span', { class: 'rvi-ns-av', 'aria-hidden': 'true' }, String(x.name || '؟').trim().charAt(0)), e('span', { class: 'rgr-cn' }, [e('b', {}, x.name || '—'), x.tera ? e('small', {}, ltr(x.tera)) : null]), rmnPill(s[0], s[1])]),
-      e('div', { class: 'rgr-src is-' + x.k }, [e('b', {}, x.src), e('span', {}, x.how)]),
+      e('div', { class: 'rgr-src is-' + (x.kf ? 'fee' : x.k) }, [e('b', {}, x.src), e('span', {}, x.how)]),
       e('dl', { class: 'rgr-kv' }, [
         e('div', {}, [e('dt', {}, 'العقد'), e('dd', {}, ltr(x.contract || '—'))]), e('div', {}, [e('dt', {}, 'الدفعة'), e('dd', {}, fmtNum(x.seq) + (x.n ? ' من ' + fmtNum(x.n) : ''))]),
         e('div', {}, [e('dt', {}, 'قيمة الدفعة'), e('dd', {}, x.amt != null ? rmnSar(x.amt) : '—')]),
@@ -34416,7 +34432,7 @@ function rmnGrace(L) {
       e('footer', { class: 'rgr-cf' }, [e('small', {}, ['المرجع ', ltr(x.ref || '—')]), DS.button('التفاصيل', { size: 'sm', onClick: function () { G.v = x.id; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } })])]);
   })) : e('p', { class: 'rmn-sm rsc-empty' }, G.f === 'all' && !q ? 'لا مؤجلين الآن.' : 'لا نتائج بهذا التصنيف.');
   const C = G.L.cfg || {};
-  const add = liveOk(DS.button('مهلة جديدة', { tone: 'primary', ui: 'plus', onClick: function () { G.n = { q: '', f: 'all', uid: '', pid: '', max: Number(C.staff_days) || 7, mode: 'link', until: '', note: '', step: 1, hrs: Number(C.link_hours) || 3, hx: '' }; rmnPaint(); } }));
+  const add = liveOk(DS.button('مهلة جديدة', { tone: 'primary', ui: 'plus', onClick: function () { G.n = { q: '', f: 'all', uid: '', pid: '', max: Number(C.staff_days) || 7, mode: 'link', until: '', note: '', step: 1, hrs: Number(C.link_hours) || 3, hx: '', kind: 'free', fee: '', pv: null, pvk: '' }; rmnPaint(); } }));
   return [e('div', { class: 'rov rgr' }, [kpis, e('div', { class: 'rgr-bar rmx-bar' }, [e('div', { class: 'rgr-search' }, [qi]), add]), segs, cards])];
 }
 function rgrView(G, x, today) {
@@ -34437,8 +34453,11 @@ function rgrView(G, x, today) {
   const sig = r.sign_kind === 'draw' && r.has_img ? e('img', { class: 'rgr-sig', alt: 'توقيع العميل', src: '/admin/api/reminders/grace/' + encodeURIComponent(r.id) + '/sig' }) : null;
   return [e('div', { class: 'rov rgr' }, [
     e('button', { type: 'button', class: 'rmn-link rov-back', onClick: back }, '‹ رجوع إلى المؤجلين'), head, pay,
-    sec('المصدر', '', [e('dl', { class: 'rmn-done-f' }, [row('النوع', 'مهلة مجانية — بلا رسوم، ومرة واحدة لكل دفعة'), row('كيف بدأت', RGR_SRC[r.source] || r.source), row('أنشأها', r.by_name || (r.source === 'client' ? 'العميل نفسه' : '—')),
+    sec('المصدر', '', [e('dl', { class: 'rmn-done-f' }, [row('النوع', r.source === 'crq_defer' ? 'تأجيل برسوم — طلب منفّذ (' + (r.ref_crq || '') + ') نُقل إلى المؤجلين حتى موعده' : r.fee != null ? 'مهلة برسوم — مرة واحدة لكل دفعة' : 'مهلة مجانية — بلا رسوم، ومرة واحدة لكل دفعة'), row('كيف بدأت', RGR_SRC[r.source] || r.source), row('أنشأها', r.by_name || (r.source === 'client' ? 'العميل نفسه' : '—')),
       row('الحد المسموح', rgrDays(r.max_days)), r.link_expires ? row('صلاحية الرابط', 'حتى ' + rmnDT(r.link_expires)) : null, row('تاريخ الإنشاء', rmnDT(r.created_at)), r.note ? row('ملاحظة الموظف', r.note) : null])]),
+    r.fee != null ? sec('الرسوم', '', [e('dl', { class: 'rmn-done-f' }, [row('رسوم المهلة', rmnSar(r.fee)), row('ضريبة القيمة المضافة 15%', rmnSar(r.vat)), row('الإجمالي', rmnSar(Number(r.fee) + Number(r.vat || 0))),
+      row('طريقة الإضافة', r.fee_mode === 'same' ? 'على الدفعة نفسها (اختيار العميل)' : r.fee_mode === 'spread' ? 'موزعة على باقي الدفعات (اختيار العميل)' : 'يختارها العميل عند التوقيع')]),
+      Array.isArray(r.fee_plan) && r.fee_plan.length ? rgrPlanT(r.fee_plan) : null]) : null,
     sec('التوثيق', '', [e('dl', { class: 'rmn-done-f' }, [row('التوقيع والاعتماد', r.signed_at ? rmnDT(r.signed_at) : 'لم يوقّع بعد'),
       row('طريقة التوقيع', r.sign_kind === 'draw' ? 'رسم التوقيع' + (r.sign_name ? ' والاسم: ' + r.sign_name : '') : r.sign_kind === 'name' ? 'كتابة الاسم: ' + (r.sign_name || '') : r.sign_kind === 'staff' ? 'سجّلها الموظف (بلا توقيع العميل)' : null),
       sig ? row('صورة التوقيع', sig) : null, r.sign_ip ? row('عنوان الاتصال', ltr(r.sign_ip)) : null, r.sign_ua ? row('الجهاز والمتصفح', e('small', { dir: 'ltr' }, r.sign_ua)) : null,
@@ -34448,6 +34467,36 @@ function rgrView(G, x, today) {
       if (RM.ask !== 'gcx' + r.id) { RM.ask = 'gcx' + r.id; rmnPaint(); return; }
       rgrAct('/admin/api/reminders/grace/' + encodeURIComponent(r.id) + '/cancel', {}, function () { return { tone: 'ok', ic: 'check-circle', t: 'أُلغيت المهلة ' + r.ref_no, s: 'عاد تذكير الدفعة على استحقاقها الأصلي (' + rgrDate(r.orig_due) + ').', to: 'grace' }; });
     } })), RM.ask === 'gcx' + r.id ? DS.button('تراجع', { size: 'sm', onClick: function () { RM.ask = ''; rmnPaint(); } }) : null]) : null])];
+}
+/* v1175: المهلة برسوم — حاسبة الموظف (ملخص الحساب وخطتا الرسوم كما سيراها العميل) */
+function rgrM(x) { return (Math.round((Number(x) || 0) * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function rgrFee(N) { const f = Math.round(Number(String(N.fee || '').replace(/[^\d.]/g, '')) * 100) / 100; return isFinite(f) && f > 0 && f <= 100000 ? f : 0; }
+function rgrPv(N) {
+  const f = rgrFee(N), k = N.pid + ':' + f;
+  if (!f || !N.pid || N.pvk === k) return;
+  N.pvk = k; N.pv = 'loading';
+  clPost('/admin/api/reminders/grace/preview', { pid: N.pid, fee: f }).then(function (j) { if (N.pvk !== k) return; N.pv = j && j.ok ? j : { fail: (j && j.message) || 'تعذّر الحساب.' }; rmnPaint(); })
+    .catch(function () { if (N.pvk === k) { N.pv = { fail: 'تعذّر الحساب.' }; rmnPaint(); } });
+}
+function rgrPlanT(P) {
+  return e('div', { class: 'rgr-pt-w' }, [e('table', { class: 'rgr-pt' }, [e('thead', {}, [e('tr', {}, ['الدفعة', 'الموعد', 'قبل', 'الإضافة', 'بعد'].map(function (h) { return e('th', {}, h); }))]),
+    e('tbody', {}, (P || []).map(function (x) { return e('tr', { class: x.self ? 'is-self' : null }, [e('td', {}, fmtNum(x.seq)), e('td', {}, rgrDate(x.due)), e('td', {}, rgrM(x.before)), e('td', { class: 'is-add' }, '+' + rgrM(x.add)), e('td', {}, e('b', {}, rgrM(x.after)))]); }))])]);
+}
+function rgrCalc(N) {
+  const f = rgrFee(N); if (!f) return e('p', { class: 'rmn-sm' }, 'اكتب رسوم المهلة لتظهر الحاسبة.');
+  rgrPv(N); const v = N.pv;
+  if (!v || v === 'loading') return e('p', { class: 'rmn-sm' }, 'جارٍ الحساب…');
+  if (v.fail) return DS.note('warn', v.fail);
+  const a = v.acct || {}, kv = function (k, x) { return e('div', { class: 'rmn-done-fr' }, [e('dt', {}, k), e('dd', {}, x)]); };
+  return e('div', { class: 'rgr-calc' }, [
+    e('div', { class: 'rgr-calc-h' }, 'ملخص حساب العميل'),
+    e('dl', { class: 'rmn-done-f' }, [kv('العقد', ltr(v.contract_no || '—')), a.total != null ? kv('إجمالي العقد', rmnSar(a.total)) : null, kv('المدفوع', rmnSar(a.paid)), kv('المتبقي', rmnSar(a.left)),
+      kv('الدفعات', 'سُدد ' + fmtNum(a.paid_n || 0) + ' من ' + fmtNum(a.count || 0) + (Number(a.late_n) > 0 ? ' · متأخرة ' + fmtNum(a.late_n) : ''))]),
+    e('div', { class: 'rgr-calc-h' }, 'الرسوم'),
+    e('dl', { class: 'rmn-done-f' }, [kv('رسوم المهلة', rmnSar(v.fee)), kv('ضريبة القيمة المضافة 15%', rmnSar(v.vat)), kv('الإجمالي', e('b', {}, rmnSar(v.total)))]),
+    e('div', { class: 'rgr-calc-h' }, 'ما يختاره العميل في الرابط'),
+    e('div', { class: 'rgr-calc-o' }, [e('b', {}, 'على هذه الدفعة'), rgrPlanT(v.plan_same)]),
+    v.plan_spread ? e('div', { class: 'rgr-calc-o' }, [e('b', {}, 'توزيعها على باقي الدفعات (' + fmtNum(v.plan_spread.length) + ')'), rgrPlanT(v.plan_spread)]) : e('p', { class: 'rmn-sm' }, 'لا توجد دفعات متبقية أخرى — تُضاف الرسوم على هذه الدفعة فقط.')]);
 }
 function rgrNew(L, G) {
   const N = G.n, today = (L && L.today) || iso(new Date());
@@ -34460,10 +34509,10 @@ function rgrNew(L, G) {
   if (N.step === 2 && y) { /* المراجعة قبل التنفيذ */
     const row = function (k, v) { return e('div', { class: 'rmn-done-fr' }, [e('dt', {}, k), e('dd', {}, v)]); };
     const go = function () {
-      rgrAct('/admin/api/reminders/grace', { pid: y.pid, max: N.max, hours: N.hrs, mode: N.mode, until: N.mode === 'direct' ? N.until : undefined, note: N.note }, function (r) {
+      rgrAct('/admin/api/reminders/grace', { pid: y.pid, max: N.max, hours: N.hrs, mode: N.mode, until: N.mode === 'direct' ? N.until : undefined, note: N.note, fee: N.kind === 'fee' ? rgrFee(N) : undefined }, function (r) {
         const sent = r && r.sent && r.sent.out ? Object.keys(r.sent.out).filter(function (k) { return r.sent.out[k] && r.sent.out[k].ok; }) : [];
         return { tone: 'ok', ic: 'check-circle', t: N.mode === 'link' ? 'أُرسل رابط المهلة إلى ' + (x.name || 'العميل') : 'سُجّلت المهلة حتى ' + rgrDate(N.until),
-          facts: [['رقم المهلة', r.ref_no], r.link_expires ? ['الرابط صالح حتى', rmnDT(r.link_expires)] : null, ['الدفعة', ltr(y.contract_no) ], ['الرسالة', sent.length ? 'وصلت: ' + rmChTx(sent) : 'لم تصل — راجع السجل', sent.length ? '' : 'bad']].filter(Boolean).concat(N.mode === 'link' ? [['الرابط', e('small', { dir: 'ltr', class: 'rgr-url' }, r.link || '')]] : []),
+          facts: [['رقم المهلة', r.ref_no], ['النوع', N.kind === 'fee' && N.pv && N.pv.ok ? 'برسوم ' + rmnSar(N.pv.total) + ' شاملة الضريبة' : 'مجانية'], r.link_expires ? ['الرابط صالح حتى', rmnDT(r.link_expires)] : null, ['الدفعة', ltr(y.contract_no) ], ['الرسالة', sent.length ? 'وصلت: ' + rmChTx(sent) : 'لم تصل — راجع السجل', sent.length ? '' : 'bad']].filter(Boolean).concat(N.mode === 'link' ? [['الرابط', e('small', { dir: 'ltr', class: 'rgr-url' }, r.link || '')]] : []),
           s: N.mode === 'link' ? 'يختار العميل موعده خلال ' + rgrDays(N.max) + ' ويوقّع، ثم يُعاد تذكيره تلقائيًا.' : 'أُعيد تذكير الدفعة على موعد المهلة، ووصلت العميل رسالة التأكيد.', to: 'grace' };
       });
     };
@@ -34471,6 +34520,7 @@ function rgrNew(L, G) {
       e('button', { type: 'button', class: 'rmn-link rov-back', onClick: function () { N.step = 1; rmnPaint(); } }, '‹ رجوع للتعديل'),
       sec('راجع قبل التنفيذ', null, [e('dl', { class: 'rmn-done-f' }, [row('العميل', x.name || '—'), row('العقد', ltr(y.contract_no)), row('الدفعة', 'الدفعة ' + fmtNum(y.seq) + (y.n ? ' من ' + fmtNum(y.n) : '')),
         row('المبلغ', rmnSar(y.left)), row('الاستحقاق الأصلي', rgrDate(y.due_date) + (Number(y.late) > 0 ? ' · متأخرة ' + rgrDays(y.late) : '')),
+        row('نوع المهلة', N.kind === 'fee' && N.pv && N.pv.ok ? 'برسوم: ' + rmnSar(N.pv.fee) + ' + ضريبة ' + rmnSar(N.pv.vat) + ' = ' + rmnSar(N.pv.total) + ' — العميل يختار إضافتها على الدفعة أو توزيعها' : 'مجانية (خدمة مجانية لعملائنا)'),
         row('الطريقة', N.mode === 'link' ? 'إرسال رابط للعميل يختار فيه الموعد ويوقّع' : 'تسجيل مباشر بلا توقيع العميل'),
         N.mode === 'link' ? row('الحد المسموح', 'حتى ' + rgrDays(N.max) + ' (حتى ' + rgrDate(rgrAdd(base, N.max)) + ')') : row('المهلة حتى', rgrDate(N.until)),
         N.mode === 'link' ? row('صلاحية الرابط', rgrHrs(N.hrs) + ' من وقت الإرسال') : null,
@@ -34490,19 +34540,22 @@ function rgrNew(L, G) {
     .sort(function (a, b) { return (Number(b.p.late) || 0) - (Number(a.p.late) || 0); });
   const chip = function (on, label, f) { return e('button', { type: 'button', class: 'rgr-chip' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: f }, label); };
   const opts = function () { return e('div', { class: 'rgr-opts' }, [
+    e('div', { class: 'rgr-row' }, [e('small', {}, 'نوع المهلة')].concat([chip(N.kind !== 'fee', 'مجانية', function () { N.kind = 'free'; rmnPaint(); }), chip(N.kind === 'fee', 'برسوم', function () { N.kind = 'fee'; N.mode = 'link'; rmnPaint(); })])),
+    N.kind === 'fee' ? e('label', { class: 'rgr-note rgr-fee' }, [e('small', {}, 'رسوم المهلة (ريال، قبل الضريبة)'), DS.input({ value: N.fee, numeric: true, placeholder: 'مثال: 100', onInput: function (v) { N.fee = v; clearTimeout(RMN.gft); RMN.gft = setTimeout(rmnPaint, 500); } })]) : null,
+    N.kind === 'fee' ? rgrCalc(N) : null,
     e('div', { class: 'rgr-row' }, [e('small', {}, 'أقصى مهلة')].concat([7, 10, 15].map(function (d) { return chip(N.max === d, rgrDays(d), function () { N.max = d; if (N.until && N.until > rgrAdd(base, d)) N.until = ''; rmnPaint(); }); }))),
-    e('div', { class: 'rgr-row' }, [e('small', {}, 'الطريقة')].concat([chip(N.mode === 'link', 'رابط للعميل يختار ويوقّع', function () { N.mode = 'link'; rmnPaint(); }), chip(N.mode === 'direct', 'تسجيل مباشر بطلب هاتفي', function () { N.mode = 'direct'; rmnPaint(); })])),
+    e('div', { class: 'rgr-row' }, [e('small', {}, 'الطريقة')].concat([chip(N.mode === 'link', 'رابط للعميل يختار ويوقّع', function () { N.mode = 'link'; rmnPaint(); }), N.kind === 'fee' ? null : chip(N.mode === 'direct', 'تسجيل مباشر بطلب هاتفي', function () { N.mode = 'direct'; rmnPaint(); })])),
     N.mode === 'link' ? e('div', { class: 'rgr-row' }, [e('small', {}, 'صلاحية الرابط')].concat(RMX_HRS.map(function (h) { return chip(!N.hx && N.hrs === h[0], h[1], function () { N.hrs = h[0]; N.hx = ''; rmnPaint(); }); }))
       .concat([chip(!!N.hx, 'مدة أخرى', function () { N.hx = N.hx || String(N.hrs); rmnPaint(); }), N.hx ? e('label', { class: 'rgr-hx' }, [DS.input({ value: N.hx, numeric: true, placeholder: 'عدد الساعات', onInput: function (v) { N.hx = v; const n = Math.floor(Number(v)); if (n >= 1 && n <= 720) N.hrs = n; } }), e('small', {}, 'ساعة (1 إلى 720)')]) : null])) : null,
     N.mode === 'direct' ? e('div', { class: 'rgr-days' }, Array.from({ length: N.max }, function (_v, k) { const d = rgrAdd(base, k + 1); return chip(N.until === d, [e('b', {}, rgrDate(d).replace(/ \d{4}$/, '')), e('small', {}, 'مهلة ' + rgrDays(k + 1))], function () { N.until = d; rmnPaint(); }); })) : null,
     e('label', { class: 'rgr-note' }, [e('small', {}, 'ملاحظة (اختياري، لا تظهر للعميل)'), DS.input({ value: N.note, placeholder: 'مثال: طلب العميل بالهاتف', onInput: function (v) { N.note = v; } })])]); };
-  const ready = !!(y && !used[y.pid] && !open[y.pid] && (N.mode === 'link' ? (N.hrs >= 1 && N.hrs <= 720) : N.until));
+  const ready = !!(y && !used[y.pid] && !open[y.pid] && (N.mode === 'link' ? (N.hrs >= 1 && N.hrs <= 720) : N.until) && (N.kind !== 'fee' || (rgrFee(N) && N.pv && N.pv.ok)));
   const list = L0.length ? e('div', { class: 'rgr-cands' }, L0.slice(0, 60).map(function (o) {
     const p = o.p, u = used[p.pid] || open[p.pid], on = N.pid === p.pid;
     const head = e('button', { type: 'button', class: 'rgr-cand' + (on ? ' is-on' : '') + (u ? ' is-off' : ''), disabled: !!u, 'aria-expanded': on ? 'true' : 'false',
       onClick: function () { if (on) { N.pid = ''; N.uid = ''; } else { N.uid = o.c.id; N.pid = p.pid; N.until = ''; } rmnPaint(); } }, [
       e('span', { class: 'rvi-ns-av', 'aria-hidden': 'true' }, String(o.c.name || '؟').trim().charAt(0)),
-      e('span', { class: 'rgr-cand-t' }, [e('b', {}, o.c.name || '—'), e('small', {}, ['العقد ', ltr(p.contract_no || '—'), ' · الدفعة ', fmtNum(p.seq), p.n ? ' من ' + fmtNum(p.n) : '', ' · ', rmnSar(p.left)])]),
+      e('span', { class: 'rgr-cand-t' }, [e('b', {}, o.c.name || '—'), e('small', {}, ['العقد ', ltr(p.contract_no || '—'), ' · الدفعة ', fmtNum(p.seq), p.n ? ' من ' + fmtNum(p.n) : '', ' · ', rmnSar(p.left)]), grNc(p.pid)]),
       u ? rmnPill(used[p.pid] ? 'عليها مهلة سارية' : 'رابط بانتظار العميل', 'info') : rmnPill(o.df ? 'متعثرة ' + rgrDays(p.late) : 'متأخرة ' + rgrDays(p.late), o.df ? 'danger' : 'warn')]);
     return on ? e('div', { class: 'rgr-cand-w is-on' }, [head, opts(), e('div', { class: 'rmn-acts' }, [DS.button('مراجعة', { tone: 'primary', disabled: !ready, onClick: function () { N.step = 2; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }), DS.button('إلغاء الاختيار', { onClick: function () { N.pid = ''; N.uid = ''; rmnPaint(); } })])]) : head;
   })) : e('p', { class: 'rmn-sm rsc-empty' }, C0.length ? 'لا نتائج للبحث.' : 'لا دفعات متأخرة أو متعثرة الآن.');
@@ -34657,7 +34710,7 @@ function rmnRow(x, can) {
     const kids = [e('span', { class: 'rmn-ck', 'aria-hidden': 'true' }, on ? frag(ui('check', 12)) : null),
       e('span', { class: 'rmn-pc-b' }, [e('b', {}, 'الدفعة ' + fmtNum(y.seq) + ' من ' + fmtNum(y.n) + ' · ' + rmnSar(y.left)),
         e('small', {}, [e('bdi', { class: 'rmn-ltr' }, y.contract_no || ''), ' · ', rmnDay(y.due_date) + ' · ', e('span', { class: lt ? 'rmn-late' : 'rmn-ok' }, rmLate(y.late)),
-          trf ? ' · إيصال تحويل قيد المراجعة' : null])])];
+          trf ? ' · إيصال تحويل قيد المراجعة' : null]), grNc(y.pid)])];
     if (!ok) return e('div', { class: 'rmn-pc is-ro' + (trf ? ' is-trf' : '') }, kids);
     return e('button', { type: 'button', class: 'rmn-pc' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () { RM.sel[x.id] = RM.sel[x.id] || {}; RM.sel[x.id][y.pid] = !on; rmnPaint(); } }, kids);
   };

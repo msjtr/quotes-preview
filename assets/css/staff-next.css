@@ -5773,3 +5773,18 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next .rmx-sr > .rmx-chips { padding-inline-start: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .tq-next .rmx-3d svg { transition: none; } }
+
+/* v1175: المهلة برسوم — حاسبة الموظف وجدول قبل/بعد · شارة «طلب مهلة ولم يلتزم» */
+.tq-next .rgr-calc { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--t2-line); border-radius: 14px; background: var(--t2-surface); }
+.tq-next .rgr-calc-h { font: 800 13px/1.4 var(--t2-ff-display); color: var(--t2-brand); margin-top: 4px; }
+.tq-next .rgr-calc-o { display: flex; flex-direction: column; gap: 6px; }
+.tq-next .rgr-calc-o > b { font: 700 14px/1.4 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .rgr-pt-w { overflow-x: auto; }
+.tq-next .rgr-pt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tq-next .rgr-pt th, .tq-next .rgr-pt td { padding: 7px 6px; border-bottom: 1px solid var(--t2-line); text-align: center; white-space: nowrap; }
+.tq-next .rgr-pt th { color: var(--t2-muted); font-weight: 600; }
+.tq-next .rgr-pt td.is-add { color: var(--t2-ok, #13804F); font-weight: 700; }
+.tq-next .rgr-pt tr.is-self td { background: var(--t2-brand-wash, rgba(6, 112, 122, .06)); }
+.tq-next .rgr-fee input { max-width: 220px; }
+.tq-next .rgr-src.is-fee { background: var(--t2-surface-2, #EEF2F7); }
+.tq-next .rgr-nc { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--t2-danger-wash, #FDECEA); color: var(--t2-danger, #B93A2A); font: 700 12px/1.6 var(--t2-ff-display); white-space: nowrap; }
