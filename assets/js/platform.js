@@ -30703,7 +30703,7 @@ window.__teraApp.token = function () { return liveToken(); };
 /* v867: جسر «قوالب المستندات» لصفحة طلبات العقود (crq-staff.js): مواصفة «ملحق تأجيل الدفعة» ونواته، وفتح القالب العام */
 window.__teraApp.docx = { spec: function () { return esxGDf(); }, tpl: function (X) { return DOCX ? DOCX.tpl('df', X || {}) : {}; },
 lib: function () { return SRD_LIB; },
-msg: { list: function () { return admRpc('admin_msg_list', {}); }, preview: function (key, row, name) { return clPost('/admin/api/msg/preview', { key: key, name: name || '', row: row }); }, test: function (key, row, ch) { return clPost('/admin/api/msg/test', { key: key, row: row, ch: ch }); } },
+msg: { list: function () { return admRpc('admin_msg_list', {}); }, preview: function (key, row, name, ref) { return clPost('/admin/api/msg/preview', { key: key, name: name || '', ref: ref || '', row: row }); }, test: function (key, row, ch) { return clPost('/admin/api/msg/test', { key: key, row: row, ch: ch }); } },
 open: function () { ADM.esxStart = 'df'; go('sys-es'); setTimeout(function () { try { if (ADM.esxEl && ADM.esxEl.__esxGo) ADM.esxEl.__esxGo('df'); } catch (x) { void x; } }, 450); } };
 (window.__crqQ || []).forEach(function (f) { try { f(); } catch (err) { void err; } }); window.__crqQ = null;
 }
