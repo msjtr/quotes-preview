@@ -18576,8 +18576,8 @@ function dcEqDoc(kind, Q, draft, X) {
     const tots = [rows.length > 1 ? ['المجموع قبل الضريبة', qMoney(sub)] : null, (kind === 'contract' || sh.vat !== false) && on(pre + '_t_vat') && vat > 0 ? [lb(pre + '_t_vat', 'ضريبة القيمة المضافة') + ' (' + fmtNum(Math.round(rt * 100)) + '٪)', qMoney(vat)] : null,
       on(pre + '_t_total') ? [lb(pre + '_t_total', kind === 'contract' ? 'قيمة العقد شامل الضريبة' : kind === 'purchase' ? 'إجمالي الفاتورة شامل الضريبة' : 'الإجمالي شامل الضريبة'), qMoney(tot), 'gt'] : null];
     B.push(d3Card(lb(pre + '_c_items', kind === 'contract' ? 'مكوّنات قيمة العقد' : kind === 'purchase' ? 'المنتج والضريبة' : 'البنود والرسوم'), 'receipt', [
-      rows.length ? e('table', { class: 'd3-dt d3-it' }, [e('thead', {}, e('tr', {}, ['البند', 'العدد', 'المبلغ', 'الضريبة'].map(function (h) { return e('th', {}, h); }))), e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('th', {}, r[0]), e('td', {}, r[1]), e('td', {}, r[2]), e('td', {}, r[3])]); }))]) : null,
-      d3KV([], tots)]));
+      rows.length ? e('table', { class: 'd3-dt d3-it' }, [e('thead', {}, e('tr', {}, ['البند', 'العدد', 'المبلغ', 'الضريبة'].map(function (h) { return e('th', {}, h); }))), e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('th', {}, r[0]), e('td', {}, r[1]), e('td', {}, r[2]), e('td', {}, r[3])]); })),
+        e('tfoot', {}, tots.filter(Boolean).map(function (t) { return e('tr', { class: t[2] === 'gt' ? 'is-gt' : '' }, [e('th', { colspan: '3' }, t[0]), e('td', {}, t[1])]); }))]) : d3KV([], tots)])); /* v1212: الإجماليات صفوف في الجدول نفسه — خط عمود واحد */
   }
   /* ٤ خطة الدفع */
   if (P.length && on(pre + '_c_plan')) {

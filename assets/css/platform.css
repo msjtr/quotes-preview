@@ -10132,3 +10132,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 /* v1211: جدول البنود (البند · العدد · المبلغ · الضريبة) وجدول الدفعات المتسلسل في المستندات */
 .d3-dt.d3-it tbody th{width:40%}.d3-dt.d3-it td:nth-child(2),.d3-dt.d3-it thead th:nth-child(2){width:12%;text-align:center}
 .d3-dt.d3-pl tbody th{width:18%;text-align:center}.d3-dt.d3-pl thead th:first-child{text-align:center}
+.d3-dt.d3-it tfoot th{text-align:start;color:#0f1d4a;font-weight:700;background:#f6f8fc}.d3-dt.d3-it tfoot td{font-weight:700}
+.d3-dt.d3-it tfoot tr.is-gt th,.d3-dt.d3-it tfoot tr.is-gt td{background:#0f1d4a;color:#fff;font-size:13px}
