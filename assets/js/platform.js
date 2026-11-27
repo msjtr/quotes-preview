@@ -21716,7 +21716,7 @@ const SR_F = [['open', 'بانتظار قرار', 'tray'], ['exec', 'بانتظ�
 const srFit = (x, f) => f === 'all' ? true : f === 'mine' ? srAsMine(x) /* v684 */ : f === 'open' ? srOpenSt(x) : f === 'exec' ? (srWaitExec(x) || (x.kind === 'elig' && x.status === 'approved' && !x.executed_at)) /* v689: الأهلية المؤهَّلة قيد العمل (عرض · فاتورة · عقد) */ : f === 'done' ? (x.status === 'approved' && !!x.executed_at) : (x.status === 'rejected' || x.status === 'cancelled');
 /* v709: في staff/next/ — الطلب المالي يُفتح في «الطلبات المالية» وغيره في «طلبات الخدمات» */
 function tqnSrPage(id, pg) {
-  if (TQN && LP['cu-elig'] && (pg === 'cu-elig' || (id && (LV_SR.all || []).some(function (y) { return y && y.id === id && y.kind === 'elig'; })))) { if (id) eg9Go(id); return 'cu-elig'; } /* v916: طلب الأهلية يُفتح في صفحته */
+  if (TQN && LP['cu-elig'] && (pg === 'cu-elig' || (id && (LV_SR.all || []).some(function (y) { return y && y.id === id && y.kind === 'elig'; })))) { if (id) { eg9Go(id); try { if (window.__teraApp.eligOpen) window.__teraApp.eligOpen(id); } catch (err) { void err; } } return 'cu-elig'; } /* v916: طلب الأهلية يُفتح في صفحته */
 if (!TQN || !LP['fin-req'] || true) return 'cu-svc'; /* v860: كل الطلبات تُفتح في «طلبات الخدمات» */
   if (pg) return pg;
   const x = id ? (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0] : null;
@@ -21748,7 +21748,7 @@ function lvSvcPage() {
   return admMount('svc', tqnSvFin() ? 'الطلبات المالية' : 'طلبات الخدمات', async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else if (!LV_SR.ok) await lvSrLoad(); return { at: Date.now() }; }, function (D, st, paint) {
     const RF = function () { paint(); }; RF.paint = paint;
     const A = (LV_SR.all || []).filter(function (x) { return !(x.status === 'cancelled' && x.internal) && !(TQN && !ADM.tqnTest && /^SR-TEST/i.test(String(x.req_no || ''))) && tqnSvK(x); }) /* v705 · v707 */, cq = ADM.svC || '';
-    if (ADM.svOpen) { const xo = (TQN ? (LV_SR.all || []).filter(function (y) { return y && !(y.status === 'cancelled' && y.internal); }) : A).filter(function (y) { return y.id === ADM.svOpen; })[0]; /* v705: طلب الاختبار يُفتح برابطه وإن كان مخفيًا من القائمة */ if (xo) { if (TQN && xo.kind === 'elig' && LP['cu-elig']) { ADM.svOpen = ''; eg9Go(xo.id); setTimeout(function () { go('other', 'cu-elig'); }, 0); return [clWait('طلبات التحقق من الأهلية')]; } /* v916 */ return srFullPage(xo, RF); } ADM.svOpen = ''; } /* v662 */
+    if (ADM.svOpen) { const xo = (TQN ? (LV_SR.all || []).filter(function (y) { return y && !(y.status === 'cancelled' && y.internal); }) : A).filter(function (y) { return y.id === ADM.svOpen; })[0]; /* v705: طلب الاختبار يُفتح برابطه وإن كان مخفيًا من القائمة */ if (xo) { if (TQN && xo.kind === 'elig' && LP['cu-elig']) { ADM.svOpen = ''; eg9Go(xo.id); try { if (window.__teraApp.eligOpen) window.__teraApp.eligOpen(xo.id); } catch (err) { void err; } setTimeout(function () { go('other', 'cu-elig'); }, 0); return [clWait('طلبات التحقق من الأهلية')]; } /* v916 */ return srFullPage(xo, RF); } ADM.svOpen = ''; } /* v662 */
     const f = ADM.svF || 'all' /* v689: الافتراضي «الكل» — كان يختار «بانتظار قرار» تلقائيًا فيخفي بقية الطلبات */, R = A.filter(function (x) { return srFit(x, f) && (!cq || x.user_id === cq); });
     const kp = SR_F.map(function (k) { const n = A.filter(function (x) { return srFit(x, k[0]) && (!cq || x.user_id === cq); }).length, on = f === k[0];
       return e('button', { type: 'button', class: 'cu-kpi is-pick' + (on ? ' is-on' : '') + (k[0] === 'open' && n ? ' is-warn' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { ADM.svF = k[0]; paint(); } },
@@ -30700,14 +30700,14 @@ return [e('div', { class: 'eg9' }, eg9List(paint))];
 if (window.__teraApp) {
 window.__teraApp.page = function (k, t, ic, run, up) { try { ICON[k] = ic; lp(k, t, up || null, k, run); /* v862: الأصل للمسار ورأس الصفحة */ LIVE_PAGES.admin[k] = run; return true; } catch (err) { return false; } };
 window.__teraApp.token = function () { return liveToken(); };
-/* v1152: جسر صفحة «طلبات الأهلية — الصفحة الجديدة» (assets/js/elig-staff.js): نداء الدوال وقائمة الطلبات والمرفقات فقط — بلا منطق هنا */
+/* v1152→v1179: جسر تصميم صفحة «طلبات التحقق من الأهلية» (assets/js/elig-staff.js): نداء الدوال وقائمة الطلبات والمرفقات فقط — بلا منطق هنا */
 window.__teraApp.rpc = function (fn, args) { return eg9Rpc(fn, args); };
 window.__teraApp.srs = async function (force) { if (force || !LV_SR.ok) { try { await lvSrLoad(); } catch (err) { void err; } } return LV_SR.all || []; };
 window.__teraApp.post = function (p, b) { return clPost(p, b); };
 window.__teraApp.doc = function (d) { return egDocOpen(d); };
 window.__teraApp.who = function (uid) { try { return typeof srName === 'function' ? srName(uid) : ''; } catch (err) { return ''; } };
 window.__teraApp.staff = function (uid) { try { return srAsName(uid); } catch (err) { return ''; } };
-window.__teraApp.oldElig = function (id, tab) { try { const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (x && tab) eg10V(x).tab = tab; } catch (err) { void err; } eg9Go(id); go('other', 'cu-elig'); };
+window.__teraApp.oldElig = function (id, tab) { try { const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (x && tab) eg10V(x).tab = tab; } catch (err) { void err; } eg9Go(id); go('other', LP['cu-elig-x'] ? 'cu-elig-x' : 'cu-elig'); };
 /* v867: جسر «قوالب المستندات» لصفحة طلبات العقود (crq-staff.js): مواصفة «ملحق تأجيل الدفعة» ونواته، وفتح القالب العام */
 window.__teraApp.docx = { spec: function () { return esxGDf(); }, tpl: function (X) { return DOCX ? DOCX.tpl('df', X || {}) : {}; },
 lib: function () { return SRD_LIB; },
@@ -32123,7 +32123,7 @@ if (LIVE.on) {
   lp('sys-loy-appr', 'اعتماد النقاط', 'sys', 'check-circle', lvLoyApprPage);
   lp('cu-mem', 'العضويات والنقاط', 'cu', 'cu-mem', lvMemPage);
   lp('cu-svc', 'طلبات الخدمات', 'cu', 'services', lvSvcPage);
-if (TQN) { try { ICON['cu-elig'] = ['identification-badge', 'teal']; } catch (err) { void err; } delete LIVE_HOLD.admin['cu-elig']; lp('cu-elig', 'طلبات التحقق من الأهلية', 'cu', 'cu-elig', lvEligPage); LIVE_PAGES.admin['cu-elig'] = lvEligPage; } /* v916: صفحة مستقلة لطلبات الأهلية */
+if (TQN) { try { ICON['cu-elig'] = ['identification-badge', 'teal']; } catch (err) { void err; } delete LIVE_HOLD.admin['cu-elig']; lp('cu-elig', 'طلبات التحقق من الأهلية', 'cu', 'cu-elig', lvEligPage); LIVE_PAGES.admin['cu-elig'] = lvEligPage; lp('cu-elig-x', 'طلبات التحقق من الأهلية', 'cu', 'cu-elig', lvEligPage); LIVE_PAGES.admin['cu-elig-x'] = lvEligPage; } /* v1179: «طلبات التحقق من الأهلية» صارت تصميم elig-staff.js (يستبدل cu-elig عند تحميله)، وشاشات المراحل السابقة (القرار · العرض · الفاتورة · العقد · الإدارة) تحت cu-elig-x بلا رابط في القائمة حتى يكتمل بناؤها */ /* v916: صفحة مستقلة لطلبات الأهلية */
 } else { ['__lvLoySave', '__lvLoyDecide', '__lvLoyAdj', '__lvLoyPull', '__lvLoyLink'].forEach(function (k) { try { delete window[k]; } catch (err) { void err; } }); }
 /* ---------- v298: أمان حسابات العملاء — تصفير الرقم الإضافي · تعطيل تطبيق المصادقة · تعطيل التحقق بالبريد · رموز واتساب · الأجهزة ----------
    المصادر: admin_accounts_list · admin_set_2fa · /admin/api/security/:uid/(totp|reccode) · whatsapp_pin_admin_list/action · /admin/api/devices

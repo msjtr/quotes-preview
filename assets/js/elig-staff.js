@@ -1,4 +1,4 @@
-/* v1152: «طلبات الأهلية — الصفحة الجديدة» — بناء جديد مستقل (لا طبقة فوق eg9–eg13):
+/* v1179: تصميم صفحة «طلبات التحقق من الأهلية» (cu-elig) نفسها — يستبدل عرض platform.js عند تحميله، ولا صفحة ثانية (بدأ v1152 صفحةً مستقلة cu-elig2 ثم دُمج بقرار المشرف):
  * رأس واحد للحقائق ومسار الرحلة · تسعة تبويبات لكلٍّ مهمة واحدة · وكل شاشة ثانية داخل التبويب تبويب فرعي.
  * المنصة تعطي المكان والجلسة ونداء الدوال (window.__teraApp)، والقاعدة تفرض كل قاعدة.
  * التبويبات: الطلب · المطلوب من العميل · قرار الأهلية · عرض السعر · الفاتورة · العقد · الروابط والموافقات · الإدارة والتنفيذ · المراسلات والسجل.
@@ -7,7 +7,7 @@
 (function () {
 'use strict';
 if (!/^\/staff\/next(\/|$)/.test(location.pathname)) return;
-var KEY = 'cu-elig2', TITLE = 'طلبات الأهلية — الصفحة الجديدة';
+var KEY = 'cu-elig', TITLE = 'طلبات التحقق من الأهلية'; /* v1179: تصميم الصفحة نفسها — لا صفحة جديدة */
 function A() { return window.__teraApp || {}; }
 
 /* ── أدوات ── */
@@ -103,9 +103,10 @@ function listView() {
         el('td', {}, [el('b', { text: nameOf(x) })]), el('td', {}, [ltr(x.req_no)]), el('td', {}, [pill(s[0], s[1])]),
         el('td', { text: f && f.open ? (f.items || []).length + ' بند عند العميل' : f && f.draft ? 'مسودة بعد السحب' : f && f.reclaimed_at ? 'سُحب من العميل' : f && f.done_at ? 'أكمل العميل' : '—' }), el('td', { text: when(x.updated_at || x.created_at) })]); }))])])
     : el('div', { class: 'eln-empty' }, [el('b', { text: 'لا طلبات هنا' }), el('span', { class: 'eln-mute', text: 'غيّر التصفية أو البحث.' })]);
-  return [el('div', { class: 'eln-lhead' }, [el('p', { class: 'eln-mute', text: 'الصفحة الجديدة لطلبات الأهلية — تبويب لكل مهمة. الصفحة الحالية تبقى تعمل حتى يكتمل النقل.' })]),
+  return [el('div', { class: 'eln-lhead' }, [null]),
     el('section', { class: 'eln-card' }, [tools, body])];
 }
+A().eligOpen = function (id) { if (!id) return; ST.id = id; ss('id', id); ST.tab = 'req'; ss('tab', 'req'); };
 function openReq(id) { ST.id = id; ss('id', id); ST.tab = 'req'; ss('tab', 'req'); window.scrollTo(0, 0); draw(); }
 
 /* ══════════ صفحة الطلب ══════════ */
@@ -378,7 +379,7 @@ function tabStage(x, k) {
   var T = TABS.filter(function (t) { return t[0] === k; })[0][1];
   return [card(T, [el('dl', { class: 'eln-facts' }, rows.map(function (r) { return el('div', {}, [el('dt', { text: r[0] }), el('dd', {}, [String(r[1])])]); })),
     el('div', { class: 'eln-banner is-info' }, [el('b', { text: 'تُدار هذه المرحلة الآن من الصفحة الحالية' }), el('span', { text: 'تُنقل إلى هذه الصفحة في المرحلة التالية من إعادة التصميم.' })]),
-    el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn is-pri', onclick: function () { A().oldElig(x.id, OLD[k]); } }, ['فتح «' + T + '» في الصفحة الحالية'])])])];
+    el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn is-pri', onclick: function () { A().oldElig(x.id, OLD[k]); } }, ['إدارة «' + T + '»'])])])];
 }
 
 /* ══════════ الرسم ══════════ */

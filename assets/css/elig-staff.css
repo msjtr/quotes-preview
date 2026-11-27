@@ -1,4 +1,4 @@
-/* v1152: «طلبات الأهلية — الصفحة الجديدة» (elig-staff.js) — نظام واحد eln-* بهوية تيرا: فاتح/ليلي، جوال/شاشة */
+/* v1179: تصميم صفحة «طلبات التحقق من الأهلية» (elig-staff.js) — نظام واحد eln-* بهوية تيرا: فاتح/ليلي، جوال/شاشة */
 .eln{--n:#0B2552;--t:#0E7C70;--t2:#E6F5F2;--ink:#0F2236;--mute:#4A5D72;--line:#DCE3E9;--bg:#F2F5F8;--card:#fff;--soft:#F5F8FA;--ok:#1C7548;--ok2:#E3F3EF;--warn:#7A4A00;--warn2:#FDF1DD;--bad:#A3261B;--bad2:#FBE9E7;--off:#6B7B8C;--off2:#EEF2F5;
   color:var(--ink);display:flex;flex-direction:column;gap:14px;font-variant-numeric:tabular-nums;min-width:0}
 html[data-theme="dark"] .eln,.is-dark .eln{--n:#CFE0FF;--t:#4FC2B4;--t2:#123A36;--ink:#E6EDF5;--mute:#A7B4C2;--line:#2A3646;--card:#152030;--soft:#1B2838;--ok:#61CD92;--ok2:#163223;--warn:#EFB45A;--warn2:#372913;--bad:#F08A80;--bad2:#3A1B19;--off:#93A1AF;--off2:#223042}
