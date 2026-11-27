@@ -113,7 +113,7 @@ function openReq(id) { ST.id = id; ss('id', id); ST.tab = 'req'; ss('tab', 'req'
 
 /* ══════════ صفحة الطلب ══════════ */
 var TABS = [['req', 'الطلب'], ['ask', 'المطلوب من العميل'], ['dec', 'قرار الأهلية'], ['qt', 'عرض سعر المنتج'], ['inv', 'فاتورة المنتج'], ['ct', 'عقد بيع المنتج'], ['lnk', 'الروابط والموافقات'], ['adm', 'الإدارة والتنفيذ'], ['log', 'المراسلات والسجل']];
-var SUBS = { req: [['data', 'بيانات الطلب'], ['docs', 'المستندات']], ask: [['now', 'الطلب الحالي'], ['got', 'ما رفعه العميل'], ['hist', 'الطلبات السابقة'], ['why', 'أسباب السحب']],
+var SUBS = { req: [['data', 'بيانات الطلب'], ['docs', 'المستندات']], ask: [['now', 'الطلب الحالي'], ['hist', 'الطلبات السابقة'], ['why', 'أسباب السحب']],
   lnk: [['send', 'إرسال الرابط'], ['path', 'مسار الرحلة'], ['links', 'الروابط'], ['sends', 'الرسائل المرسلة'], ['tpl', 'القوالب والمعاينة']], log: [['chat', 'المحادثة'], ['notes', 'ملاحظات داخلية'], ['log', 'السجل']] };
 function reach(x, k) {
   var rp = (x.meta && x.meta.report) || {}, ok = x.status === 'approved' && (rp.rec === 'eligible' || rp.rec === 'eligible_less');
@@ -173,10 +173,11 @@ function tabDocs(x) {
   var J = job(x); if (J.st === 'load') return [card('المستندات', [wait()])];
   if (J.st === 'err') return [card('المستندات', [el('p', { class: 'eln-mute', text: /not_client/.test(J.err || '') ? 'هذا الحساب ليس حساب عميل — لا مرفقات وظيفة.' : 'تعذّر قراءة المستندات.' })])];
   var v = J.v || {}, rules = v.rules || [], docs = v.docs || [], open = isOpen(x);
-  if (!rules.length && !docs.length) return [card('المستندات', [el('p', { class: 'eln-mute', text: 'لا مستندات وظيفة في ملف العميل' + (v.work_type ? '' : ' — لم تُحدَّد حالته الوظيفية') + '.' })])];
-  var types = rules.map(function (r) { return r.doc_type; }); docs.forEach(function (d) { if (types.indexOf(d.doc_type) < 0) types.push(d.doc_type); });
+  if (!rules.some(function (r) { return r.requirement === 'required'; }) && !docs.length) return [card('المستندات', [el('p', { class: 'eln-mute', text: 'لا مستندات وظيفة في ملف العميل' + (v.work_type ? '' : ' — لم تُحدَّد حالته الوظيفية') + '.' })])];
+  /* v1193: تظهر المستندات المطلوبة في الطلب وما رفعه العميل فقط — «عند الطلب» يُطلب من «المطلوب من العميل» */
+  var types = rules.filter(function (r) { return r.requirement === 'required'; }).map(function (r) { return r.doc_type; }); docs.forEach(function (d) { if (types.indexOf(d.doc_type) < 0) types.push(d.doc_type); });
   var R2 = ST.rej || (ST.rej = {});
-  return [card('المستندات', types.map(function (t) {
+  return [card('المستندات', [el('div', { class: 'eln-rows' }, types.map(function (t) {
     var r = rules.filter(function (y) { return y.doc_type === t; })[0] || {}, d = docs.filter(function (y) { return y.doc_type === t; })[0], st = d ? (DST[d.status] || [d.status, 'info']) : ['لم يُرفع', 'bad'];
     var lbl = r.label || (d && d.label) || t, acts = [];
     if (d && d.path) acts.push(el('button', { class: 'eln-btn is-sm', onclick: function () { A().doc(Object.assign({ label: lbl }, d)); } }, ['عرض']));
@@ -186,7 +187,7 @@ function tabDocs(x) {
     if (!d || R2[d.id] === undefined) return row;
     var ta = el('input', { class: 'eln-in', type: 'text', maxlength: '300', placeholder: 'سبب الرفض — يصل العميل', value: R2[d.id], oninput: function (e) { R2[d.id] = e.target.value; } });
     return el('div', { class: 'eln-rowx' }, [row, el('div', { class: 'eln-inl' }, [ta, el('button', { class: 'eln-btn is-bad', disabled: !!ST.busy, onclick: function () { var why = String(R2[d.id] || '').trim(); if (why.length < 3) { note('تنبيه', ['اكتب سبب الرفض.'], 'bad'); return; } act('doc' + d.id, function () { return A().post('/admin/api/cjob/doc/' + encodeURIComponent(d.id) + '/decide', { verdict: 'rejected', reason: why }); }, 'تم رفض المستند', ['«' + lbl + '» مرفوض — وصل العميلَ السبب.']).then(function () { delete R2[d.id]; }); } }, ['تأكيد الرفض'])])]);
-  }))];
+  }))])];
 }
 
 /* ── 2) المطلوب من العميل ── */
@@ -214,18 +215,18 @@ function linkInfo(x) {
 }
 function tabAsk(x) {
   var s = subOf('ask');
-  if (s === 'got') return askGot(x); if (s === 'hist') return askHist(x); if (s === 'why') return askWhy();
+  if (s === 'hist') return askHist(x); if (s === 'why') return askWhy();
   var f = fx(x), J = job(x), docs = J.st === 'ok' && J.v ? J.v.docs : [];
   if (f && f.open) {
     journey(x);
     return [card('', [el('div', { class: 'eln-ttl' }, [el('div', {}, [el('h2', { class: 'eln-h2', text: 'طلب الاستكمال عند العميل' }), el('p', { class: 'eln-mute', text: 'أُرسل ' + when(f.at) + ' برابط مباشر — يكمله العميل من الرابط أو من حسابه.' })]), pill('بانتظار العميل', 'warn')]),
-      itemsList(f.items, f, docs, true), f.note ? el('div', { class: 'eln-quote' }, [el('small', { text: 'رسالة الفريق' }), el('p', { text: f.note })]) : null, linkInfo(x),
+      itemsList(f.items, f, docs, true), f.note ? el('div', { class: 'eln-quote' }, [el('small', { text: 'رسالة الفريق' }), el('p', { text: f.note })]) : null, gotBlock(x, f, J), linkInfo(x),
       el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn is-pri', disabled: !!ST.busy, onclick: function () { ask({ title: 'إعادة إرسال رابط الاستكمال؟', text: 'يصل العميلَ الرابط نفسه برسالة «طلبك يحتاج استكمالًا» (واتساب والبريد والإشعار)، ويُغلق الرابط السابق.', ok: 'إعادة الإرسال', go: function () { act('ntf', function () { return A().rpc('admin_sr_notify', { p_id: x.id }); }, 'أُعيد إرسال الرابط', ['وصل العميلَ رابط الاستكمال من جديد على واتساب والبريد والإشعار.']); } }); } }, ['إعادة إرسال الرابط']),
         el('button', { class: 'eln-btn is-bad', disabled: !!ST.busy, onclick: function () { reclaimDlg(x); } }, ['سحب الطلب من العميل'])])])];
   }
   if (f && f.done_at && !f.open && !f.draft && !ST.ed[x.id]) {
     return [card('', [el('div', { class: 'eln-ttl' }, [el('div', {}, [el('h2', { class: 'eln-h2', text: 'أكمل العميل المطلوب وأعاد الطلب' }), el('p', { class: 'eln-mute', text: 'أعاده ' + when(f.done_at) + ' — انتهى رابط الاستكمال.' })]), pill('مكتمل', 'ok')]),
-      itemsList(f.items, f, docs, true), f.client_note ? el('div', { class: 'eln-quote' }, [el('small', { text: 'ملاحظة العميل مع الإرسال' }), el('p', { text: f.client_note })]) : null, el('p', { class: 'eln-mute', text: 'المرفقات في تبويب «ما رفعه العميل»، ثم القرار في «قرار الأهلية».' }),
+      itemsList(f.items, f, docs, true), f.client_note ? el('div', { class: 'eln-quote' }, [el('small', { text: 'ملاحظة العميل مع الإرسال' }), el('p', { text: f.client_note })]) : null, gotBlock(x, f, J), el('p', { class: 'eln-mute', text: 'القرار بعدها في «قرار الأهلية».' }),
       isOpen(x) ? el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn', onclick: function () { ST.ed[x.id] = { items: [], note: '' }; draw(); } }, ['طلب استكمال جديد'])]) : null])];
   }
   return editor(x, f);
@@ -286,25 +287,26 @@ function reclaimDlg(x) {
   } };
   ask(M);
 }
-function askGot(x) {
-  var f = fx(x), J = job(x); if (!f) return [card('ما رفعه العميل', [el('p', { class: 'eln-mute', text: 'لا طلب استكمال على هذا الطلب.' })])];
-  if (J.st === 'load') return [card('ما رفعه العميل', [wait()])];
-  var at = f.at ? new Date(f.at).getTime() : 0, docs = (J.st === 'ok' && J.v ? J.v.docs : []).filter(function (d) { return new Date(d.uploaded_at).getTime() > at; });
-  var fields = (f.items || []).filter(function (i) { return i.type === 'field' && i.changed_at; });
-  var kids = [];
-  docs.forEach(function (d) { kids.push(el('div', { class: 'eln-row' }, [el('span', { class: 'eln-dot is-ok', 'aria-hidden': 'true' }), el('div', { class: 'eln-row-b' }, [el('b', { text: d.label || d.doc_type }), el('small', { class: 'eln-mute', text: (d.name || '') + ' · ' + when(d.uploaded_at) })]), el('button', { class: 'eln-btn is-sm', onclick: function () { A().doc(d); } }, ['عرض'])])); });
-  fields.forEach(function (i) { kids.push(el('div', { class: 'eln-row' }, [el('span', { class: 'eln-dot is-ok', 'aria-hidden': 'true' }), el('div', { class: 'eln-row-b' }, [el('b', { text: i.label }), el('small', { class: 'eln-mute', text: i.confirmed ? 'أكّده كما هو: ' + (i.val || '') : (i.prev || '—') + ' ← ' + (i.val || '') })])])); });
-  return [card('ما رفعه العميل منذ ' + when(f.at), kids.length ? kids : [el('p', { class: 'eln-mute', text: 'لم يرفع العميل شيئًا بعد.' })])];
+/* v1193: ما رفعه العميل يظهر داخل بطاقة الطلب نفسه (لا تبويب مستقل) — ولا يظهر إن لم يرفع شيئًا */
+function gotBlock(x, f, J) {
+  if (!f || !J || J.st !== 'ok' || !J.v) return null;
+  var at = f.at ? new Date(f.at).getTime() : 0, docs = (J.v.docs || []).filter(function (d) { return new Date(d.uploaded_at).getTime() > at; });
+  if (!docs.length) return null;
+  return el('div', { class: 'eln-got' }, [el('b', { text: 'ما رفعه العميل لهذا الطلب' }), el('div', { class: 'eln-rows' }, docs.map(function (d) { return el('div', { class: 'eln-row' }, [el('span', { class: 'eln-dot is-ok', 'aria-hidden': 'true' }), el('div', { class: 'eln-row-b' }, [el('b', { text: d.label || d.doc_type }), el('small', { class: 'eln-mute', text: (d.name || '') + ' · ' + when(d.uploaded_at) })]), el('button', { class: 'eln-btn is-sm', onclick: function () { A().doc(d); } }, ['عرض'])]); }))]);
 }
+function cleanItems(items) { return (items || []).map(function (it) { var o = { type: it.type, label: it.label, note: it.note || '' }; if (it.doc_type) o.doc_type = it.doc_type; if (it.max_mb) o.max_mb = it.max_mb; return o; }); }
 function askHist(x) {
   var H = ((x.meta && x.meta.fix_hist) || []).slice(), f = fx(x);
   if (f && !f.draft && !H.some(function (h) { return h.at === f.at; })) H.push(f);
   if (!H.length) return [card('الطلبات السابقة', [el('p', { class: 'eln-mute', text: 'لا طلبات استكمال سابقة.' })])];
   return [card('الطلبات السابقة', H.reverse().map(function (h, i) {
-    var st = h.open ? ['عند العميل', 'warn'] : h.reclaimed_at ? ['مسحوب — الرابط مغلق', 'off'] : h.done_at ? ['أكمله العميل', 'ok'] : ['مغلق', 'off'];
+    var st = h.open ? ['عند العميل', 'warn'] : h.reclaimed_at ? ['سحبه الفريق', 'warn'] : h.done_at ? ['أكمله العميل', 'ok'] : ['مغلق', 'off'];
+    var canEd = !h.open && isOpen(x) && !(f && f.open) && (h.items || []).length;
     return el('div', { class: 'eln-hist' }, [el('div', { class: 'eln-ttl' }, [el('b', { text: 'طلب ' + (H.length - i) + ' · ' + (h.items || []).length + ' بند' }), pill(st[0], st[1])]),
-      el('small', { class: 'eln-mute', text: 'أُرسل ' + when(h.at) + (h.done_at ? ' · أعاده العميل ' + when(h.done_at) : '') + (h.reclaimed_at ? ' · سُحب ' + when(h.reclaimed_at) + ' — ' + (h.reclaim_note || '') + (h.notified ? ' · أُبلغ العميل' : ' · بلا إبلاغ') : '') }),
-      itemsList(h.items, h, null, false)]);
+      el('small', { class: 'eln-mute', text: 'أُرسل ' + when(h.at) + (h.done_at ? ' · أعاده العميل ' + when(h.done_at) : '') + (h.reclaimed_at ? ' · سُحب ' + when(h.reclaimed_at) + (h.notified ? ' · أُبلغ العميل' : ' · بلا إبلاغ') : '') }),
+      h.reclaimed_at ? el('div', { class: 'eln-banner is-warn' }, [el('b', { text: 'سبب السحب' }), el('span', { text: h.reclaim_note || '—' })]) : null,
+      itemsList(h.items, h, null, false),
+      canEd ? el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn', onclick: function () { ST.ed[x.id] = { items: cleanItems(h.items), note: h.note || '' }; ST.sub.ask = 'now'; window.scrollTo(0, 0); draw(); } }, ['تعديل وإعادة الإرسال'])]) : null]);
   }))];
 }
 function askWhy() {
@@ -314,7 +316,7 @@ function askWhy() {
   var save = function (rows, msg) { act('why', function () { return A().rpc('admin_elig_replies_save', { p_rows: rows }); }, 'حُفظت أسباب السحب', [msg]).then(function () { delete ST.D._; W.t = ''; W.b = ''; }); };
   var free = function () { for (var n = 61; n < 100; n++) { var k = '8.' + n; if (!all.some(function (r) { return r.k === k; })) return k; } return ''; };
   return [card('أسباب السحب', [el('p', { class: 'eln-mute', text: 'تظهر في نافذة «سحب الطلب من العميل»، ونصها يصل العميل بعد «السبب:». ' + (sup ? '' : 'التعديل للمشرف العام.') }),
-    el('div', {}, rs.map(function (r) { return el('div', { class: 'eln-row' }, [el('span', { class: 'eln-dot is-' + (r.active ? 'ok' : 'off'), 'aria-hidden': 'true' }), el('div', { class: 'eln-row-b' }, [el('b', { text: r.title }), el('small', { class: 'eln-mute', text: r.body })]),
+    el('div', { class: 'eln-rows' }, rs.map(function (r) { return el('div', { class: 'eln-row' }, [el('span', { class: 'eln-dot is-' + (r.active ? 'ok' : 'off'), 'aria-hidden': 'true' }), el('div', { class: 'eln-row-b' }, [el('b', { text: r.title }), el('small', { class: 'eln-mute', text: r.body })]),
       sup ? el('button', { class: 'eln-btn is-sm', onclick: function () { save([Object.assign({}, r, { active: !r.active })], r.active ? 'أُوقف «' + r.title + '».' : 'فُعّل «' + r.title + '».'); } }, [r.active ? 'إيقاف' : 'تفعيل']) : null]); })),
     sup ? el('div', { class: 'eln-add' }, [el('b', { text: 'سبب جديد' }), el('div', { class: 'eln-add-g' }, [el('input', { class: 'eln-in', type: 'text', maxlength: '80', placeholder: 'العنوان (يراه الموظف)', value: W.t, oninput: function (e) { W.t = e.target.value; } }),
       el('input', { class: 'eln-in', type: 'text', maxlength: '300', placeholder: 'النص الذي يصل العميل', value: W.b, oninput: function (e) { W.b = e.target.value; } }),

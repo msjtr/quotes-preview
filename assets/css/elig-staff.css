@@ -100,3 +100,9 @@ textarea.eln-in{resize:vertical;line-height:1.7}.eln-in.is-s{width:auto;min-heig
 
 /* v1164: ردّ العميل على البند */
 .eln-reply{margin:4px 0 0;padding:6px 10px;border-radius:8px;background:#E8F4F1;color:#0A615A;font-size:.9em;white-space:pre-line}
+
+/* v1193: قوائم الصفوف بمسافة بينها (كانت حدودها متلاصقة) · ما رفعه العميل داخل بطاقة الطلب */
+.eln-rows{display:flex;flex-direction:column;gap:8px}
+.eln-got{display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--line);padding-top:12px}
+.eln-got>b{font-size:14px;color:var(--n)}
+.eln-hist .eln-banner{margin:2px 0}

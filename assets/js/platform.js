@@ -30265,12 +30265,14 @@ egpLoad(); if (W.rec === 'eligible_less' && EGLR.rows === null) egLessLoad(paint
 const rows = EGP.rows || [], secs = []; rows.forEach(function (r) { if (secs.indexOf(r.section) < 0) secs.push(r.section); });
 const prods = rows.filter(function (r) { return r.section === W.sec; }).map(function (r) { return [r.name, r.name]; });
 const req = egReq(x), I = egRecvInfo(x), rv = EGJ_RECV.map(function (o) { return o[0] === '__client' ? ['__client', 'كما اختار العميل' + (I.client ? ' — ' + I.client : '')] : o; });
-const recs = (resEd ? ['eligible', 'eligible_less'] : Object.keys(EG_REC)).map(function (k2) { const m = EG12_REC[k2] || ['', 'check-circle']; return [k2, EG_REC[k2], m[0], m[1]]; });
+if (W.rec === 'need_docs') W.rec = ''; /* v1193: «يحتاج مستندات إضافية» أُزيل من القرار — طلب المستندات من تبويب «المطلوب من العميل» (قرار المشرف: لا تكرار) */
+const recs = (resEd ? ['eligible', 'eligible_less'] : Object.keys(EG_REC).filter(function (k2) { return k2 !== 'need_docs'; })).map(function (k2) { const m = EG12_REC[k2] || ['', 'check-circle']; return [k2, EG_REC[k2], m[0], m[1]]; });
 const LR = EGLR.rows || [], inL = LR.some(function (r) { return r.t === W.lr; }), lrSel = W.lrO ? '__other' : (W.lr && !inL ? (EGLR.rows ? '__other' : '') : (W.lr || ''));
 const kids = [
 resEd ? e('div', { class: 'eg12-info' }, [frag(ui('info', 17)), e('span', {}, 'صدر القرار' + (x.decided_at ? ' ' + eg10Dt(x.decided_at) : '') + ' — التعديل متاح حتى يصل الرابط للعميل، وكل تعديل يُسجَّل.')]) : null,
 wait ? e('div', { class: 'eg10-warn' }, 'الطلب عند العميل لاستكمال المطلوب — القرار بعد عودته.') : null,
 e('h4', { class: 'eg11-h' }, 'نتيجة الأهلية'),
+!resEd ? e('small', { class: 'eg9-hint' }, 'تحتاج مستندًا أو تصحيحًا من العميل قبل القرار؟ اطلبه من تبويب «المطلوب من العميل».') : null,
 eg12Pick(W.rec, recs, function (v) { W.rec = v; if (v === 'eligible' && !W.amt && req) W.amt = String(req); W.err = ''; paint(); }),
 okRec ? e('div', { class: 'eg12-g2' }, [eg11Fld('المبلغ المطلوب', e('div', { class: 'eg11-in is-ro', dir: 'ltr' }, eg10N(req)), 'من العميل'),
 eg11Fld('المبلغ المؤهَّل' + (W.rec === 'eligible_less' ? ' (أقل من ' + fmtNum(req) + ')' : ''), eg11In(W.amt, function (v) { W.amt = v; }, { num: true, ph: 'بالريال', change: function () { paint(); } })),
