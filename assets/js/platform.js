@@ -18542,7 +18542,7 @@ return { n: m[1].trim(), q: Number(String(m[2] || m[4]).replace(/[,٬]/g, '')) |
 }
 function dcEqDoc(kind, Q, draft, X) {
   X = X || {};
-  const c = Q.calc || {}, sh = kind === 'contract' || (c.doc && c.doc[kind] && c.doc[kind].labels && c.doc[kind].labels.zz_shm) ? {} : (c.show || {}), TT = (draft || X.tpl || kind !== 'quote') ? Object.assign(eqTpl(kind), X.tpl || {}) : null, SH = X.shared || eqShared(), D = stlDocNorm(JSON.parse(JSON.stringify((c.doc && c.doc[kind]) || (TT ? TT.doc : {}))));
+  const c = Q.calc || {}, sh = kind === 'contract' || (c.doc && c.doc[kind] && c.doc[kind].labels && c.doc[kind].labels.zz_shm) ? {} : (c.show || {}), TT = (draft || X.tpl || kind !== 'quote') ? Object.assign(eqTpl(kind), X.tpl || {}) : null, SH = X.shared || eqShared(), cd0 = c.doc && c.doc[kind], D = stlDocNorm(JSON.parse(JSON.stringify(cd0 && (cd0.hide || cd0.labels || cd0.texts || cd0.adds) ? cd0 : (TT ? TT.doc : eqTplDoc(kind))))); /* v1219: مستند فيه إعداد الصفحة وحده (page) لا يُسقط نصوص القالب — نفس قاعدة الرابط (elj.js dcfg) */
   const pre = kind === 'quote' ? 'q' : kind === 'purchase' ? 'p' : 'c', name = EQ_DOC_NAME[kind] || 'المستند';
   const on = function (k) { return D.hide.indexOf(k) < 0; }, lb = function (k, def) { return D.labels[k] || def; };
   const row = function (k, t, v, ltr) { return v !== null && v !== undefined && v !== '' && on(k) ? [lb(k, t), v, ltr] : null; };
