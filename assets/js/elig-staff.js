@@ -244,8 +244,8 @@ function lnkView(x, s) {
   }
   if (s === 'sends') {
     var S = (v.sends || []).slice().reverse();
-    return [blk('الرسائل المرسلة', 'envelope-simple', [S.length ? el('div', { class: 'ela-rows' }, S.map(function (m) { return el('div', { class: 'ela-row' }, [el('div', { class: 'ela-b' }, [el('b', { text: (KEY_L[m.key] || m.key) + (m.kind === 'preview' ? ' (معاينة' + (m.by ? ' — ' + m.by : '') + ')' : m.kind === 'held' ? ' (محجوزة)' : '') }),
-      el('small', { text: when(m.at) + ' · واتساب: ' + (WA_L[m.wa_status] || m.wa_status || (m.info && m.info.wa) || '—') + ' · البريد: ' + (m.mail_status === 'sent' ? 'أُرسل' : m.mail_status || '—') })])]); })) : hint('لم تُرسل رسائل بعد.')])];
+    return [blk('الرسائل المرسلة', 'envelope-simple', [S.length ? el('div', { class: 'ela-rows' }, S.map(function (m) { return el('div', { class: 'ela-row' }, [el('div', { class: 'ela-b' }, [el('b', { text: (KEY_L[m.key] || m.key) + (m.kind === 'preview' ? ' (معاينة' + (m.by ? ' — ' + m.by : '') + ')' : m.kind === 'held' ? ' (محجوزة)' : m.kind === 'release' ? ' — ضغط الموظف «إرسال الرابط»' : '') }),
+      el('small', { text: when(m.at) + (m.kind === 'release' || m.kind === 'held' ? ' · إجراء داخلي — ليست رسالة للعميل' : ' · واتساب: ' + (WA_L[m.wa_status] || m.wa_status || (m.info && m.info.wa) || '—') + ' · البريد: ' + (m.mail_status === 'sent' ? 'أُرسل' : m.mail_status || '—')) })])]); })) : hint('لم تُرسل رسائل بعد.')])];
   }
   var E = events(x, v);
   return [blk('مسار رحلة العميل', 'path', [el('ol', { class: 'eg12-tl ela-tl' }, E.map(function (e) { return el('li', { class: 'is-d is-' + e.tone }, [el('b', { text: e.t }), el('small', { text: when(e.at) + (e.sub ? ' · ' + e.sub : '') })]); }))])];
