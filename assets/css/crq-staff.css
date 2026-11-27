@@ -1565,3 +1565,8 @@ background: var(--k-navy); color: #fff; box-shadow: 0 12px 30px -12px rgba(11, 3
 /* v1143: حدّ سبب عدم الاعتماد وتلميحه */
 .crq .cr-ask-h { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; font-size: 12px; color: var(--k-mut); }
 .crq .cr-ask-n { flex: none; direction: ltr; font-weight: 700; }
+
+/* v1148: «الطلب» في التوحيد — صف لكل عقد طلبه العميل (الرقم كاملًا في سطر واحد) */
+.crq .q-pay.q-mgr { grid-template-columns: minmax(118px, auto) minmax(0, 1fr) minmax(0, 1fr) auto; }
+.crq .q-pay.q-mgr .q-pay-n b { font-size: 14px; white-space: nowrap; }
+@container crq (max-width: 560px) { .crq .q-pay.q-mgr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .crq .q-pay.q-mgr > .q-pay-a, .crq .q-pay.q-mgr > .q-pill { grid-column: auto; } }

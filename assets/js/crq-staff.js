@@ -1443,7 +1443,7 @@ var pvw = subOf('page', 'page'); /* v1127: الصفحة وإعدادات الر�
 return [mkBar(), subNav('page', [['page', 'صفحة العميل ومعاينتها', 'phone'], ['link', 'مدة الرابط وسجله', 'link', links.length]], pvw)].concat(pvw === 'link' ? [lk] : S);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1147'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1148'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
@@ -1629,33 +1629,31 @@ if (k === 'prod') { var p = prodOf(x); return !p.on ? '' : Number(p.value) > 0 &
 return undefined;
 }
 
-/* ── 1) الطلب: ملخص فقط — طلب العميل كما قدّمه (لا يتغيّر) · قرار الفريق حتى الآن · بيانات الطلب ── */
-function tile(k, v, sub, go) {
-var kids = [el('small', { text: k }), el('b', {}, [v || '—']), sub ? el('span', { class: 'cr-mgs-s', text: sub }) : null, go ? el('i', { class: 'cr-mgs-go' }, [icon('lt')]) : null];
-return go ? el('button', { type: 'button', class: 'cr-mgs-t is-go', 'data-live-ok': '', 'aria-label': k + ' — فتح التبويب', onclick: function () { goTab(go); } }, kids) : el('div', { class: 'cr-mgs-t' }, kids);
-}
+/* ── 1) الطلب — v1148: ما أرسله العميل وحده، للقراءة (كـ«الطلب» في التأجيل): العميل وبيانات الطلب · العقود التي طلب توحيدها
+ * بمتبقيها · المنتج الذي طلبه · مدة الخطة · ملاحظته. قرار الفريق في تبويباته (توحيد العقود · طلب المنتج · الحسبة) لا يُكرَّر هنا،
+ * ويظهر بجانب طلب العميل سطر صغير إن غيّره الفريق. ── */
 function tabReq(x) {
-var P = x.proposal || {}, pp = P.product || {}, rq = Array.isArray(P.contracts) ? P.contracts : [], r = rs(x), p = prodOf(x), S0 = x.sel || [], cli = x.origin === 'client';
-var nos = function (L) { return el('span', { class: 'cr-mgs-nos' }, L.map(function (n, i) { return el('span', {}, [i ? ' + ' : '', ltr(n)]); })); };
-var cn = String(x.client_note || '').trim();
-var reqCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: cli ? 'طلب العميل كما قدّمه' : 'الطلب كما أنشأه الفريق' }), el('small', { class: 'cr-hint', text: 'لا يتغيّر بقرار الفريق' })]),
-el('div', { class: 'cr-mgs' }, [
-tile('العقود المطلوب توحيدها', rq.length ? nos(rq) : '—', rq.length ? cnW(rq.length) : ''),
-tile('المنتج المطلوب', pp.on ? (pp.type || 'منتج إضافي') : 'لا', pp.on ? [money(pp.value) + ' ر.س', pp.recv ? 'الاستلام: ' + rcvName(pp.recv) : ''].filter(Boolean).join(' · ') : (cli ? 'لم يطلب منتجًا في طلبه' : 'توحيد فقط')),
-tile('مدة خطة الدفع المقترحة', P.team ? 'يحددها الفريق' : P.months ? (P.unit && P.unit !== 'month' && UW[P.unit] ? pW(P.months) + ' ' + UW[P.unit] : mW(P.months)) : '—', '')]),
-cn ? el('p', { class: 'cr-mgs-n' }, [el('b', { text: (cli ? 'ملاحظة العميل' : 'ملاحظة') + ': ' }), cn]) : null]);
-var added = S0.filter(function (n) { return cli && rq.length && rq.indexOf(n) < 0; });
-var pl = r && r.plan || {};
-var decCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'قرار الفريق حتى الآن' }), el('small', { class: 'cr-hint', text: 'التفاصيل في تبويباتها' })]),
-el('div', { class: 'cr-mgs' }, [
-tile('توحيد العقود', S0.length ? cnW(S0.length) : 'لم تُحدَّد العقود', added.length ? 'أضاف الفريق ' + added.join('، ') : r ? 'المتبقي ' + money(r.remain) + ' ر.س' : '', 'mgc'),
-tile('طلب المنتج', p.on ? (String(p.type || '').trim() || 'لم يُختر المنتج') + (Number(p.value) > 0 ? ' · ' + money(p.value) : '') : 'توحيد فقط', p.on ? (p.recv ? 'الاستلام: ' + rcvName(p.recv) : 'لم تُحدَّد وسيلة الاستلام') : '', 'prod'),
-tile('قيمة العقد الموحّد', r ? el('span', {}, [ltr(money(r.total)), ' ر.س']) : '—', r ? pW(pl.count) + ' · قيمة الدفعة ' + money(pl.per) : errT(x), 'calc')])]);
-var mt = function (ic, k, v, cls) { return el('div', { class: 'cr-mt' + (cls ? ' ' + cls : '') }, [el('span', { class: 'cr-pf-ic' }, [icon(ic)]), el('div', {}, [el('small', { text: k }), el('b', {}, [v || '—'])])]); };
-var meta = el('section', { class: 'cr-card' }, [el('h2', { text: 'بيانات الطلب' }),
-el('div', { class: 'cr-mts' }, [mt(cli ? 'user' : 'team', 'مصدر الطلب', cli ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق'), mt('clock', 'تاريخ الطلب', at(x.created_at)),
-mt('sign', 'أعدّه', x.prepared_t || 'لم يُعدّ بعد', x.prepared_t ? '' : 'is-mut'), mt('ok', 'اعتمده', x.approved_t ? el('span', {}, [x.approved_t, el('small', { text: ' · ' + at(x.approved_at) })]) : 'لم يُعتمد بعد', x.approved_t ? '' : 'is-mut')])]);
-return [reqCard, decCard, meta];
+var P = x.proposal || {}, pp = P.product || {}, rq = Array.isArray(P.contracts) ? P.contracts : [], p = prodOf(x), S0 = x.sel || [], cli = x.origin === 'client', u = x.user || {};
+var all = x.contracts || [], byNo = function (n) { return all.filter(function (c) { return c.no === n; })[0]; };
+var sar = function (v) { return el('span', {}, [ltr(money(v)), el('small', { text: ' ر.س' })]); };
+var party = el('section', { class: 'q-card' }, [el('div', { class: 'q-card-h' }, [el('h2', { text: 'العميل والطلب' })]),
+el('div', { class: 'q-2c' }, [
+el('div', {}, [el('h3', { class: 'q-sh' }, [icon('user'), 'العميل']), kvq([['الاسم', u.name || x.client], ['الجوال', u.phone ? ltr(u.phone) : ''], ['البريد', u.email ? ltr(u.email) : ''], ['رقم العميل', u.tera_id ? ltr(u.tera_id) : '']])]),
+el('div', {}, [el('h3', { class: 'q-sh' }, [icon('file'), 'بيانات الطلب']), kvq([['المصدر', cli ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق'], ['التاريخ', at(x.created_at)], ['أعدّه', x.prepared_t || 'لم يُعدّ بعد'], ['اعتمده', x.approved_t ? x.approved_t + ' · ' + at(x.approved_at) : 'لم يُعتمد بعد']])])])]);
+var rqT = rq.length ? rq : S0, added = S0.filter(function (n) { return rq.length && rq.indexOf(n) < 0; }), removed = rq.filter(function (n) { return S0.indexOf(n) < 0; });
+var ch = added.length || removed.length ? el('span', { class: 'q-pill is-warn', text: 'عدّلها الفريق' + (added.length ? ' — أضاف ' + added.join('، ') : '') + (removed.length ? ' — حذف ' + removed.join('، ') : '') }) : null;
+var cts = rqT.length ? el('div', { class: 'q-pays' }, rqT.map(function (n) { var c = byNo(n) || {}, late = Number(c.late_n) || 0;
+return el('div', { class: 'q-pay q-mgr' }, [el('span', { class: 'q-pay-n' }, [el('small', { text: 'العقد' }), el('b', {}, [ltr(n)])]), el('div', { class: 'q-pay-d' }, [el('small', { text: c.product || 'عقد' }), el('b', { text: c.open_n != null ? pW(c.open_n) + ' متبقية' : '—' })]), el('div', { class: 'q-pay-a' }, [el('small', { text: 'المتبقي' }), el('b', {}, [c.remain != null ? sar(c.remain) : '—'])]), late ? el('span', { class: 'q-pill is-bad', text: late === 1 ? 'دفعة متأخرة' : late === 2 ? 'دفعتان متأخرتان' : late + ' دفعات متأخرة' }) : c.next_due ? el('span', { class: 'q-pill is-info', text: 'التالية ' + day(c.next_due) }) : null]); }))
+: el('p', { class: 'q-empty', text: 'لم تُحدَّد عقود.' });
+var pch = pp.on && p.on && ((p.type || '') !== (pp.type || '') || Number(p.value) !== Number(pp.value) || (p.recv || '') !== (pp.recv || '')) ? el('span', { class: 'q-pill is-warn', text: 'عدّله الفريق' }) : pp.on && !p.on ? el('span', { class: 'q-pill is-warn', text: 'ألغاه الفريق' }) : !pp.on && p.on ? el('span', { class: 'q-pill is-warn', text: 'أضافه الفريق' }) : null;
+var asks = el('section', { class: 'q-card' }, [el('div', { class: 'q-card-h' }, [el('h2', { text: cli ? 'ما طلبه العميل' : 'الطلب كما أنشأه الفريق' }), el('small', { text: (cli ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق') + ' · ' + at(x.created_at) })]),
+el('div', { class: 'q-card-sh' }, [el('b', { text: 'العقود المطلوب توحيدها' + (rqT.length ? ' — ' + cnW(rqT.length) : '') }), ch]), cts,
+el('div', { class: 'q-card-sh' }, [el('b', { text: 'المنتج' }), pch]),
+kvq(pp.on ? [['المنتج المطلوب', pp.type || 'منتج إضافي'], ['قيمته', Number(pp.value) > 0 ? sar(pp.value) : ''], ['الاستلام', pp.recv ? rcvName(pp.recv) : ''], pp.det ? ['تفاصيل', pp.det] : null] : [['المنتج المطلوب', cli ? 'لم يطلب منتجًا — توحيد فقط' : 'توحيد فقط']]),
+el('div', { class: 'q-card-sh' }, [el('b', { text: 'خطة الدفع' })]),
+kvq([['المدة المقترحة', P.team ? 'يحددها الفريق' : P.months ? (P.unit && P.unit !== 'month' && UW[P.unit] ? pW(P.months) + ' ' + UW[P.unit] : mW(P.months)) : '—']]),
+String(x.client_note || '').trim() ? el('blockquote', { class: 'q-quote' }, [el('small', { text: cli ? 'ملاحظة العميل' : 'ملاحظة' }), el('p', { text: String(x.client_note).trim() })]) : null]);
+return [party, asks];
 }
 
 /* ── 2) توحيد العقود: العقود فقط — يضيف الفريق عقدًا أو يحذفه، والمتأخر بالأحمر ── */
@@ -1671,7 +1669,7 @@ el('span', { class: 'cr-py-d' }, [el('b', {}, [ltr(c.no)]), el('small', { text: 
 el('span', { class: 'cr-py-a' }, [ltr(money(c.remain)), el('small', { text: ' ر.س' })]),
 c.busy && !on ? el('span', { class: 'cr-py-s is-warn', text: 'في طلب قائم ' + c.busy }) : byTeam ? el('span', { class: 'cr-py-s is-sel', text: 'أضافه الفريق' }) : lateTag(Number(c.late_n) || 0)]);
 });
-return [el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'العقود المطلوب توحيدها' }), el('small', { class: 'cr-hint', text: 'عقدان أو أكثر، أو عقد واحد مع منتج' })]),
+return [el('section', { class: 'q-card' }, [el('div', { class: 'q-card-h' }, [el('h2', { text: 'العقود المطلوب توحيدها' }), el('small', { class: 'cr-hint', text: 'عقدان أو أكثر، أو عقد واحد مع منتج' })]),
 rq.length && x.origin === 'client' ? el('p', { class: 'cr-hint', text: 'طلب العميل: ' + rq.join(' + ') + (ed ? ' — يضيف الفريق عقدًا أو يحذفه من هنا.' : '') }) : null,
 el('div', { class: 'cr-pys', role: 'group', 'aria-label': 'عقود العميل' }, rows.length ? rows : [el('p', { class: 'cr-hint', text: 'لا عقود قائمة بدفعات متبقية.' })]),
 el('div', { class: 'cr-mg-bar' }, [el('span', {}, [el('b', { text: cnW(S0.length) }), ' محددة']), r ? el('span', {}, ['المتبقي عليها ', ltr(money(r.remain)), ' ر.س', Number(r.late) > 0 ? el('em', { text: ' · منه متأخر ' + money(r.late) }) : null]) : el('span', { class: 'cr-mg-err', text: errT(x) })])])];
@@ -1682,7 +1680,7 @@ function tabProd(x) {
 var ed = editable(x), p = prodOf(x), pp = (x.proposal || {}).product || {}, R0 = Number(x.vat_rate) || 15;
 if (!PRD.rows) loadProds();
 var set = function (o, redraw) { setP(x, o, redraw); };
-var head = el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'المنتج' }), el('small', { class: 'cr-hint', text: pp.on ? 'طلب العميل: ' + (pp.type || 'منتج إضافي') + ' بقيمة ' + money(pp.value) + ' ر.س' : x.origin === 'client' ? 'لم يطلب العميل منتجًا في طلبه' : 'من قائمة المنتجات أو «أخرى»' })]);
+var head = el('div', { class: 'q-card-h' }, [el('h2', { text: 'المنتج' }), el('small', { class: 'cr-hint', text: pp.on ? 'طلب العميل: ' + (pp.type || 'منتج إضافي') + ' بقيمة ' + money(pp.value) + ' ر.س' : x.origin === 'client' ? 'لم يطلب العميل منتجًا في طلبه' : 'من قائمة المنتجات أو «أخرى»' })]);
 var parts = [head, seg([['0', 'توحيد فقط'], ['1', 'توحيد مع منتج']], p.on ? '1' : '0', function (v) { set({ on: v === '1' }, true); }, !ed)];
 if (p.on) {
 var curK = p.pk || (String(p.type || '').trim() ? '__other' : '');
@@ -1698,11 +1696,11 @@ el('label', { class: 'cr-fld' + (v > 0 ? '' : ' is-miss') }, [el('span', { text:
 el('div', { class: 'cr-fld' }, [el('span', { text: 'ضريبة المنتج' }), seg([['1', R0 + '٪'], ['0', 'غير خاضع']], p.vat === false ? '0' : '1', function (q) { set({ vat: q === '1' }, true); }, !ed)]),
 el('label', { class: 'cr-fld is-wide' }, [el('span', { text: 'تفاصيل المنتج — تظهر في فاتورة المنتج والعقد' }), el('textarea', { rows: '2', maxlength: '300', disabled: !ed, placeholder: 'مثال: 4 بطاقات فئة 100 ريال', oninput: function (e) { set({ det: e.target.value }); } }, [p.det || ''])])]));
 }
-var cards = [el('section', { class: 'cr-card' }, parts)];
+var cards = [el('section', { class: 'q-card' }, parts)];
 if (p.on) {
 var cur = p.recv || '';
 var hint = pp.recv ? 'اختار العميل: ' + rcvName(pp.recv) + (cur && cur !== pp.recv ? ' — وغيّرها الفريق إلى «' + rcvName(cur) + '»' : ' — للفريق تغييرها') : 'لم يحدّد العميل وسيلة الاستلام — يحدّدها الفريق.';
-cards.push(el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'وسيلة الاستلام' }), el('small', { class: 'cr-hint', text: hint })]),
+cards.push(el('section', { class: 'q-card' }, [el('div', { class: 'q-card-h' }, [el('h2', { text: 'وسيلة الاستلام' }), el('small', { class: 'cr-hint', text: hint })]),
 el('div', { class: 'cr-rcv' + (cur ? '' : ' is-miss'), role: 'radiogroup', 'aria-label': 'وسيلة الاستلام' }, RCV.map(function (o) {
 return el('label', { class: 'cr-rcv-i' + (cur === o[0] ? ' is-on' : '') + (ed ? '' : ' is-ro') }, [el('input', { type: 'radio', name: 'cr-rcv', value: o[0], checked: cur === o[0], disabled: !ed, onchange: function () { set({ recv: o[0] }, true); } }), el('b', { text: o[1] }), el('small', { text: o[2] }), pp.recv === o[0] ? el('em', { text: 'اختيار العميل' }) : null]);
 })),
@@ -1807,7 +1805,7 @@ if (o[0] === 'manual') { pl.mode = 'manual'; pl.amounts = {}; (r && r.rows || []
 else { pl.mode = 'equal'; pl.fdist = o[0]; if (o[0] === 'pick' && !(Array.isArray(pl.fpick) && pl.fpick.length)) pl.fpick = [1]; }
 upd(true); } }), el('span', {}, [el('b', { text: o[1] }), el('small', { text: o[2] })])]); }));
 var rp = r && r.plan || {};
-var planCard = el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'خطة الدفع' }), P.months || P.team ? el('small', { class: 'cr-hint', text: 'مقترح العميل: ' + (P.team ? 'يحددها الفريق' : pW(P.months) + ' ' + (UW[P.unit || 'month'] || '')) }) : null]),
+var planCard = el('section', { class: 'q-card' }, [el('div', { class: 'q-card-h' }, [el('h2', { text: 'خطة الدفع' }), P.months || P.team ? el('small', { class: 'cr-hint', text: 'مقترح العميل: ' + (P.team ? 'يحددها الفريق' : pW(P.months) + ' ' + (UW[P.unit || 'month'] || '')) }) : null]),
 el('div', { class: 'cr-fld' }, [el('span', { text: 'الدورية' }), units]),
 el('div', { class: 'cr-mg-pl' }, [
 el('label', { class: 'cr-fld' }, [el('span', { text: 'عدد الدفعات' }), el('input', { type: 'number', min: '1', max: '120', value: cnt, disabled: !ed, oninput: function (e) { pl.count = e.target.value.replace(/\D/g, ''); if (pl.mode === 'manual') pl.amounts = {}; if (Array.isArray(pl.fpick)) pl.fpick = pl.fpick.filter(function (q) { return q <= (Number(pl.count) || 0); }); upd(); } })]),
@@ -1816,7 +1814,7 @@ el('div', { class: 'cr-fld' }, [el('span', { text: 'توزيع البنود عل
 el('p', { id: 'cr-mg-res', class: 'cr-mgres' }, resLine(x)),
 el('div', { id: 'cr-mg-plan', class: 'cr-tw' }, [planTbl(x)])]);
 return [el('div', { id: 'cr-sum', class: 'cr-mgsum-w' }, [el('div', { class: 'cr-sidein' }, [summary(x)])]),
-el('section', { class: 'cr-card' }, [el('div', { class: 'cr-mgs-h' }, [el('h2', { text: 'مكوّنات قيمة العقد الموحّد' })]), el('div', { class: 'cr-tw' }, [tbl]), add]), planCard,
+el('section', { class: 'q-card' }, [el('div', { class: 'q-card-h' }, [el('h2', { text: 'مكوّنات قيمة العقد الموحّد' })]), el('div', { class: 'cr-tw' }, [tbl]), add]), planCard,
 note('info', 'تغطية الضمانات في تبويب «الضمانات»، ومنه يُطلب الضمان من العميل؛ وأي مستند آخر من «المراسلات».', [el('div', {}, [btn('فتح «الضمانات»', { cls: 'is-sm', ic: 'sign', on: function () { goTab('guar'); } })])])];
 }
 /* الملخص المالي أعلى الحسبة: قيمة العقد الموحّد وخطتها، ثم مكوّناتها الثلاثة، ثم المواعيد ووسيلة الاستلام */
