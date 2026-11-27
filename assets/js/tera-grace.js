@@ -23,6 +23,7 @@
   function box(title, n, kids, c) { return el('section', { class: 'cq-card cq-box' }, [el('div', { class: 'cq-bh' }, [tile(n, c), el('b', { text: title })]), el('div', { class: 'cq-bb' }, kids)]); }
   function money(x) { var n = Math.round((Number(x) || 0) * 100) / 100; return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function day(d) { if (!d) return '—'; try { return new Date(String(d).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return String(d); } }
+  function when(t) { try { return new Date(t).toLocaleString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }); } catch (e) { return String(t); } }
   function dayTxt(n) { n = Number(n) || 0; return n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? n + ' أيام' : n + ' يومًا'; }
   var STEPS = ['التحقق', 'الدفعة والموعد', 'الإقرار والتوقيع', 'الاعتماد'];
   function steps(at) {
@@ -50,6 +51,7 @@
     if (!j || !j.ok) { done(false, 'تعذّر فتح الرابط', msgOf(j)); return; }
     S.info = j;
     if (j.state === 'done') return donePage(j);
+    if (j.state === 'link_expired') return done(false, 'انتهت صلاحية الرابط', 'اطلب رابطًا جديدًا من فريق تيرا، أو ادفع الدفعة الآن.', payBtn(j.pay));
     if (j.state === 'paid') return done(true, 'تم سداد هذه الدفعة', 'لا حاجة لأي إجراء. شكرًا لك.');
     if (j.state === 'off') return done(false, 'الخدمة غير متاحة الآن', 'تواصل مع فريق تيرا من حسابك إن احتجت مهلة.', payBtn(j.pay));
     if (j.state === 'early') return done(false, 'موعد دفعتك لم يقترب بعد', 'تتاح المهلة قبل الاستحقاق بـ' + dayTxt(j.window) + '. موعد دفعتك ' + day(j.due) + '.', payBtn(j.pay));
@@ -62,7 +64,8 @@
     var I = S.info || {};
     var head = [el('div', { class: 'cq-vh' }, [tile('shield', 'nv'), el('h1', { class: 'cq-h1', text: 'طلب مهلة سداد' })]),
       el('span', { class: 'cq-no', text: 'الدفعة ' + I.seq + (I.n ? ' من ' + I.n : '') + ' · ' + (I.contract_no || '') }),
-      el('p', { class: 'cq-muted', text: (I.name ? 'أهلًا ' + I.name + '، ' : '') + 'للحفاظ على خصوصيتك نرسل رمز تحقق إلى وسيلتك المسجلة قبل عرض دفعتك.' })];
+      el('p', { class: 'cq-muted', text: (I.name ? 'أهلًا ' + I.name + '، ' : '') + 'للحفاظ على خصوصيتك نرسل رمز تحقق إلى وسيلتك المسجلة قبل عرض دفعتك.' }),
+      I.link_expires ? el('p', { class: 'gr-note', text: 'الرابط صالح حتى ' + when(I.link_expires) }) : null];
     if (!S.sent) {
       var F = I.factors || [];
       var ch = el('div', { class: 'cq-ch' }, F.map(function (f) {

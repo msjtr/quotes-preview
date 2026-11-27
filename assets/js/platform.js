@@ -34333,9 +34333,10 @@ function rmnOvTab(L) {
 /* ═════ v1147: «مهلة السداد» — مهلة مجانية قصيرة لدفعة واحدة (stf_395 · grace.js) ═════
    العميل يطلبها من صفحة سداد دفعته (رابط التذكير)، أو يرسل له الموظف رابطها، أو يسجّلها الموظف مباشرة.
    التذكير يُعاد على موعد المهلة حتى نهايتها، ثم على الاستحقاق الأصلي (لا يتغيّر تاريخ العقد). */
-const RGR_ST = { active: ['سارية', 'ok'], open: ['بانتظار العميل', 'info'], kept: ['سدّد في المهلة', 'ok'], paid_late: ['سدّد بعد المهلة', 'warn'], broken: ['لم يُلتزم بها', 'danger'], cancelled: ['ملغاة', ''] };
+const RGR_ST = { active: ['سارية', 'ok'], open: ['بانتظار العميل', 'info'], expired: ['انتهت صلاحية الرابط', 'warn'], kept: ['سدّد في المهلة', 'ok'], paid_late: ['سدّد بعد المهلة', 'warn'], broken: ['لم يُلتزم بها', 'danger'], cancelled: ['ملغاة', ''] };
 const RGR_SRC = { client: 'طلبها العميل من صفحة السداد', staff_link: 'رابط من الموظف', staff_direct: 'سجّلها الموظف مباشرة' };
 const RGR_EV = { requested: 'طلب العميل المهلة', signed: 'وقّع العميل واعتمد المهلة', link: 'أنشأ الموظف رابط المهلة', direct: 'سجّل الموظف المهلة مباشرة', replaced: 'استُبدل الرابط برابط أحدث', cancelled: 'أُلغيت المهلة' };
+function rgrHrs(h) { h = Number(h) || 0; return h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : h <= 10 ? fmtNum(h) + ' ساعات' : fmtNum(h) + ' ساعة'; }
 function rgrDays(n) { n = Number(n) || 0; return n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? fmtNum(n) + ' أيام' : fmtNum(n) + ' يومًا'; }
 function rgrAdd(d, n) { const x = new Date(String(d).slice(0, 10) + 'T12:00:00'); x.setDate(x.getDate() + n); return iso(x); }
 function rgrDate(d) { if (!d) return '—'; const x = new Date(String(d).slice(0, 10) + 'T12:00:00'); return isNaN(x) ? String(d) : x.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }); }
@@ -34384,7 +34385,7 @@ function rmnGrace(L) {
       onClick: function () { rgrAct('/admin/api/reminders/grace/cfg', { on: !C.client_on, days: C.client_days || 7, window: C.window_days == null ? 7 : C.window_days }, function () { return { tone: 'ok', ic: 'check-circle', t: C.client_on ? 'أُوقف طلب العميل' : 'فُعّل طلب العميل', s: C.client_on ? 'لا يستطيع العميل طلب مهلة من صفحة السداد، ويبقى إنشاؤها من هنا.' : 'يستطيع العميل طلب المهلة من صفحة سداد دفعته.', to: 'grace' }; }); } }))])) : null]);
   return [e('div', { class: 'rov rgr' }, [
     e('div', { class: 'rgr-hd' }, [e('div', {}, [e('h3', {}, 'مهلة السداد'), e('small', { class: 'rmn-sm' }, 'مهلة مجانية قصيرة لدفعة واحدة — تاريخ الاستحقاق في العقد لا يتغيّر، والتذكير يُعاد على موعد المهلة.')]),
-      liveOk(DS.button('مهلة جديدة', { tone: 'primary', ui: 'plus', onClick: function () { G.n = { q: '', uid: '', pid: '', max: 7, mode: 'link', until: '', note: '', step: 1 }; rmnPaint(); } }))]),
+      liveOk(DS.button('مهلة جديدة', { tone: 'primary', ui: 'plus', onClick: function () { G.n = { q: '', uid: '', pid: '', max: 7, mode: 'link', until: '', note: '', step: 1, hrs: 3, hx: '' }; rmnPaint(); } }))]),
     segs, tbl, cfg])];
 }
 function rgrView(G, r) {
@@ -34400,7 +34401,7 @@ function rgrView(G, r) {
       row('العميل', [r.name || '—', r.tera_id ? [' · ', ltr(r.tera_id)] : null]), row('العقد', ltr(r.contract_no || '—')), row('الدفعة', 'الدفعة ' + fmtNum(r.seq) + (r.n ? ' من ' + fmtNum(r.n) : '')),
       row('المبلغ وقت الطلب', r.amount != null ? rmnSar(r.amount) : '—'), row('الاستحقاق الأصلي', rgrDate(r.orig_due) + ' (لا يتغيّر)'),
       row('المهلة حتى', r.until ? rgrDate(r.until) : 'لم يحدد العميل بعد — الحد ' + rgrDays(r.max_days), r.status === 'broken' ? 'bad' : ''),
-      row('الحد المسموح', rgrDays(r.max_days)), r.paid_date ? row('تاريخ السداد', rgrDate(r.paid_date)) : null])]),
+      row('الحد المسموح', rgrDays(r.max_days)), r.link_expires ? row('صلاحية الرابط', 'حتى ' + rmnDT(r.link_expires)) : null, r.paid_date ? row('تاريخ السداد', rgrDate(r.paid_date)) : null])]),
     e('section', { class: 'rov-sec' }, [e('div', { class: 'rov-sec-h' }, [e('h3', {}, 'التوثيق')]), e('dl', { class: 'rmn-done-f' }, [
       row('المصدر', RGR_SRC[r.source] || r.source), row('أنشأها', r.by_name || (r.source === 'client' ? 'العميل نفسه' : '—')), row('تاريخ الإنشاء', rmnDT(r.created_at)),
       row('التوقيع والاعتماد', r.signed_at ? rmnDT(r.signed_at) : 'لم يوقّع بعد'),
@@ -34427,10 +34428,10 @@ function rgrNew(L, G) {
   if (N.step === 2 && y) { /* المراجعة قبل التنفيذ */
     const row = function (k, v) { return e('div', { class: 'rmn-done-fr' }, [e('dt', {}, k), e('dd', {}, v)]); };
     const go = function () {
-      rgrAct('/admin/api/reminders/grace', { pid: y.pid, max: N.max, mode: N.mode, until: N.mode === 'direct' ? N.until : undefined, note: N.note }, function (r) {
+      rgrAct('/admin/api/reminders/grace', { pid: y.pid, max: N.max, hours: N.hrs, mode: N.mode, until: N.mode === 'direct' ? N.until : undefined, note: N.note }, function (r) {
         const sent = r && r.sent && r.sent.out ? Object.keys(r.sent.out).filter(function (k) { return r.sent.out[k] && r.sent.out[k].ok; }) : [];
         return { tone: 'ok', ic: 'check-circle', t: N.mode === 'link' ? 'أُرسل رابط المهلة إلى ' + (x.name || 'العميل') : 'سُجّلت المهلة حتى ' + rgrDate(N.until),
-          facts: [['رقم المهلة', r.ref_no], ['الدفعة', ltr(y.contract_no) ], ['الرسالة', sent.length ? 'وصلت: ' + rmChTx(sent) : 'لم تصل — راجع السجل', sent.length ? '' : 'bad']].concat(N.mode === 'link' ? [['الرابط', e('small', { dir: 'ltr', class: 'rgr-url' }, r.link || '')]] : []),
+          facts: [['رقم المهلة', r.ref_no], r.link_expires ? ['الرابط صالح حتى', rmnDT(r.link_expires)] : null, ['الدفعة', ltr(y.contract_no) ], ['الرسالة', sent.length ? 'وصلت: ' + rmChTx(sent) : 'لم تصل — راجع السجل', sent.length ? '' : 'bad']].filter(Boolean).concat(N.mode === 'link' ? [['الرابط', e('small', { dir: 'ltr', class: 'rgr-url' }, r.link || '')]] : []),
           s: N.mode === 'link' ? 'يختار العميل موعده خلال ' + rgrDays(N.max) + ' ويوقّع، ثم يُعاد تذكيره تلقائيًا.' : 'أُعيد تذكير الدفعة على موعد المهلة، ووصلت العميل رسالة التأكيد.', to: 'grace' };
       });
     };
@@ -34440,6 +34441,7 @@ function rgrNew(L, G) {
         row('المبلغ', rmnSar(y.left)), row('الاستحقاق الأصلي', rgrDate(y.due_date) + (Number(y.late) > 0 ? ' · متأخرة ' + rgrDays(y.late) : '')),
         row('الطريقة', N.mode === 'link' ? 'إرسال رابط للعميل يختار فيه الموعد ويوقّع' : 'تسجيل مباشر بلا توقيع العميل'),
         N.mode === 'link' ? row('الحد المسموح', 'حتى ' + rgrDays(N.max) + ' (حتى ' + rgrDate(rgrAdd(base, N.max)) + ')') : row('المهلة حتى', rgrDate(N.until)),
+        N.mode === 'link' ? row('صلاحية الرابط', rgrHrs(N.hrs) + ' من وقت الإرسال') : null,
         row('الرسالة للعميل', N.mode === 'link' ? '«مهلة سداد لدفعتك» بزر «حدد الموعد» — واتساب والبريد والإشعارات' : '«تم تسجيل مهلة السداد» بزر «ادفع الآن» — واتساب والبريد والإشعارات'),
         N.note ? row('ملاحظة', N.note) : null])]),
       e('div', { class: 'rmn-acts' }, [liveOk(DS.button(N.mode === 'link' ? 'تأكيد وإرسال الرابط' : 'تأكيد وتسجيل المهلة', { tone: 'primary', disabled: RM.busy, onClick: go })), DS.button('إلغاء', { onClick: back })])])];
@@ -34466,9 +34468,11 @@ function rgrNew(L, G) {
   const opts = y ? [
     e('div', { class: 'rgr-row' }, [e('small', {}, 'أقصى مهلة')].concat([7, 10, 15].map(function (d) { return chip(N.max === d, rgrDays(d) + (d === 7 ? ' (الافتراضي)' : ''), function () { N.max = d; if (N.until && N.until > rgrAdd(base, d)) N.until = ''; rmnPaint(); }); }))),
     e('div', { class: 'rgr-row' }, [e('small', {}, 'الطريقة')].concat([chip(N.mode === 'link', 'إرسال رابط للعميل (يختار ويوقّع)', function () { N.mode = 'link'; rmnPaint(); }), chip(N.mode === 'direct', 'تسجيل مباشر (بطلب هاتفي)', function () { N.mode = 'direct'; rmnPaint(); })])),
+    N.mode === 'link' ? e('div', { class: 'rgr-row' }, [e('small', {}, 'صلاحية الرابط')].concat([[3, '3 ساعات (الافتراضي)'], [24, '24 ساعة'], [48, '48 ساعة']].map(function (h) { return chip(!N.hx && N.hrs === h[0], h[1], function () { N.hrs = h[0]; N.hx = ''; rmnPaint(); }); }))
+      .concat([chip(!!N.hx, 'مدة أخرى', function () { N.hx = N.hx || String(N.hrs); rmnPaint(); }), N.hx ? e('label', { class: 'rgr-hx' }, [DS.input({ value: N.hx, numeric: true, placeholder: 'عدد الساعات', onInput: function (v) { N.hx = v; const n = Math.floor(Number(v)); if (n >= 1 && n <= 720) N.hrs = n; } }), e('small', {}, 'ساعة (1 إلى 720)')]) : null])) : null,
     N.mode === 'direct' ? e('div', { class: 'rgr-days' }, Array.from({ length: N.max }, function (_v, i) { const d = rgrAdd(base, i + 1); return chip(N.until === d, [e('b', {}, rgrDate(d).replace(/ \d{4}$/, '')), e('small', {}, 'مهلة ' + rgrDays(i + 1))], function () { N.until = d; rmnPaint(); }); })) : null,
     e('label', { class: 'rgr-note' }, [e('small', {}, 'ملاحظة (اختياري، لا تظهر للعميل)'), DS.input({ value: N.note, placeholder: 'مثال: طلب العميل بالهاتف', onInput: function (v) { N.note = v; } })])] : null;
-  const ready = !!(y && !used[y.pid] && (N.mode === 'link' || N.until));
+  const ready = !!(y && !used[y.pid] && (N.mode === 'link' ? (N.hrs >= 1 && N.hrs <= 720) : N.until));
   return [e('div', { class: 'rov rgr' }, [
     e('button', { type: 'button', class: 'rmn-link rov-back', onClick: back }, '‹ رجوع إلى مهلة السداد'),
     sec('1. العميل', null, [who]), x ? sec('2. الدفعة', 'اختر دفعة واحدة — مهلة واحدة لكل دفعة.', [payPick]) : null, y ? sec('3. المدة والطريقة', null, opts) : null,

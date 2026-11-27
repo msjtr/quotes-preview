@@ -5641,3 +5641,4 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rgr-row > small { min-width: 80px; color: var(--t2-mute, #5B6B86); }
 .tq-next .rgr-note { display: grid; gap: 4px; max-width: 420px; margin-top: 10px; }
 .tq-next .rgr-url { word-break: break-all; }
+.tq-next .rgr-hx { display: inline-flex; gap: 6px; align-items: center; } .tq-next .rgr-hx input { width: 90px; } /* v1163 */
