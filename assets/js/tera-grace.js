@@ -5,7 +5,7 @@
   var app = document.getElementById('app');
   var TOK = (location.pathname.match(/\/api\/grace\/p\/([^/?#]+)/) || [])[1] || '';
   var GK = 'gr.g.' + TOK.slice(0, 16);
-  var S = { info: null, v: null, grant: '', ch: '', sent: false, busy: false, err: '', day: '', sm: 'draw', sName: '', sImg: '', ack: false };
+  var S = { info: null, v: null, grant: '', ch: '', sent: false, busy: false, err: '', errAt: '', day: '', step: 1, sName: '', sImg: '', ack: false };
   try { S.grant = sessionStorage.getItem(GK) || ''; S.ch = sessionStorage.getItem(GK + '.c') || ''; } catch (e) { void e; }
   var NS = 'http://www.w3.org/2000/svg';
   var IC = { check: 'M5 12.5l4.5 4.5L19 7.5', shield: 'M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3zM9 12l2 2 4-4', chat: 'M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z',
@@ -24,7 +24,7 @@
   function money(x) { var n = Math.round((Number(x) || 0) * 100) / 100; return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function day(d) { if (!d) return '—'; try { return new Date(String(d).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return String(d); } }
   function dayTxt(n) { n = Number(n) || 0; return n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? n + ' أيام' : n + ' يومًا'; }
-  var STEPS = ['التحقق', 'الموعد الجديد', 'التوقيع والاعتماد'];
+  var STEPS = ['التحقق', 'الدفعة والموعد', 'الإقرار والتوقيع', 'الاعتماد'];
   function steps(at) {
     var out = [];
     STEPS.forEach(function (l, i) { if (i) out.push(el('span', { class: 'cq-sep' + (i <= at ? ' is-dn' : '') })); out.push(el('div', { class: 'cq-st' + (i < at ? ' is-dn' : i === at ? ' is-on' : ''), 'aria-current': i === at ? 'step' : null }, [el('i', { text: i < at ? '✓' : String(i + 1) }), el('b', { text: l })])); });
@@ -32,6 +32,8 @@
   }
   function paint(nodes, center) { app.innerHTML = ''; app.className = 'cq-main' + (center ? ' is-center' : ''); nodes.forEach(function (n) { if (n) app.appendChild(n); }); window.scrollTo(0, 0); }
   function done(ok, title, text, btn) { paint([card([icon(ok ? 'check' : 'alert', true), el('h1', { class: 'cq-h1', text: title }), el('p', { class: 'cq-muted', text: text }), btn ? el('div', { class: 'cq-btns is-one' }, [btn]) : null], 'cq-done' + (ok ? '' : ' is-off'))], true); }
+  function free() { return el('div', { class: 'gr-free', role: 'note' }, [icon('check'), el('span', {}, [el('b', { text: 'خدمة مجانية لعملائنا' }), ' — لا تُحتسب أي رسوم على المهلة.'])]); }
+  function ferr(k) { return S.errAt === k && S.err ? el('p', { class: 'cq-ferr', role: 'alert', text: S.err }) : null; }
   function payBtn(href) { return href ? el('a', { class: 'pri', href: href, style: 'display:flex;align-items:center;justify-content:center;text-decoration:none' }, ['ادفع الآن']) : null; }
   function msgOf(j, d) { return (j && (j.message || (j.errors && j.errors[0]))) || d || 'تعذّر تنفيذ الطلب.'; }
   async function api(path, body) {
@@ -66,7 +68,7 @@
       var ch = el('div', { class: 'cq-ch' }, F.map(function (f) {
         return el('button', { type: 'button', disabled: S.busy, onclick: function () { send(f); } }, [icon(f === 'whatsapp' ? 'chat' : 'mail'), (f === 'whatsapp' ? 'أرسل الرمز إلى واتساب ' : 'أرسل الرمز إلى البريد ') + ((I.masked || {})[f] || '')]);
       }));
-      paint([steps(0), card(head.concat([F.length ? ch : el('p', { class: 'cq-err', text: 'لا توجد وسيلة تحقق مرتبطة بحسابك. تواصل مع فريق تيرا.' }), S.err ? el('p', { class: 'cq-err', text: S.err }) : null]))]);
+      paint([steps(0), free(), card(head.concat([F.length ? ch : el('p', { class: 'cq-err', text: 'لا توجد وسيلة تحقق مرتبطة بحسابك. تواصل مع فريق تيرا.' }), S.err ? el('p', { class: 'cq-err', text: S.err }) : null]))]);
       return;
     }
     var inp = el('input', { class: 'cq-code', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '6', 'aria-label': 'رمز التحقق' });
@@ -99,26 +101,39 @@
   }
   function form() {
     var v = S.v;
+    if (S.step === 2) return signStep();
     var kv = el('table', { class: 'cq-kv' }, [el('tbody', {}, [
       ['العقد', v.contract_no], ['الدفعة', 'الدفعة ' + v.seq + (v.n ? ' من ' + v.n : '')], ['قيمة الدفعة', money(v.left) + ' ريال'], ['تاريخ الاستحقاق', v.due_t]
     ].concat(Number(v.late) > 0 ? [['الحالة', 'متأخرة ' + dayTxt(v.late)]] : []).map(function (r) { return el('tr', {}, [el('th', { text: r[0] }), el('td', {}, [el('bdi', { text: r[1] })])]); }))]);
-    var days = el('div', { class: 'gr-days', role: 'group', 'aria-label': 'المواعيد المتاحة' }, v.days.map(function (d, i) {
-      return el('button', { type: 'button', class: S.day === d.d ? 'is-on' : '', 'aria-pressed': S.day === d.d ? 'true' : 'false', onclick: function () { S.day = d.d; S.err = ''; form(); } },
+    var days = el('div', { class: 'gr-days' + (S.errAt === 'day' ? ' is-err' : ''), role: 'group', 'aria-label': 'المواعيد المتاحة' }, v.days.map(function (d, i) {
+      return el('button', { type: 'button', class: S.day === d.d ? 'is-on' : '', 'aria-pressed': S.day === d.d ? 'true' : 'false', onclick: function () { S.day = d.d; S.err = ''; S.errAt = ''; form(); } },
         [el('small', { text: d.w }), el('b', { text: d.t }), el('small', { text: 'مهلة ' + dayTxt(i + 1) })]);
     }));
-    var seg = el('div', { class: 'cq-seg is-2', role: 'group', 'aria-label': 'طريقة التوقيع' }, [['draw', 'ارسم توقيعك'], ['name', 'اكتب اسمك']].map(function (m) {
-      return el('button', { type: 'button', class: S.sm === m[0] ? 'is-on' : '', onclick: function () { S.sm = m[0]; S.sImg = ''; form(); } }, [m[1]]);
-    }));
-    var pad = S.sm === 'draw' ? el('div', {}, [el('canvas', { class: 'cq-pad', id: 'gr-pad' }), el('button', { type: 'button', class: 'lnk', onclick: function () { S.sImg = ''; setupPad(true); } }, ['مسح التوقيع'])])
-      : el('input', { type: 'text', value: S.sName, placeholder: 'اسمك الكامل', 'aria-label': 'اسمك الكامل', style: 'width:100%;font:inherit;min-height:48px;border:1px solid #D5DBE8;border-radius:12px;padding:8px 12px', oninput: function (e) { S.sName = e.target.value; } });
-    var cb = el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; } });
-    var go = el('button', { type: 'button', class: 'pri', disabled: S.busy, onclick: submit }, [S.busy ? 'جارٍ الاعتماد…' : 'اعتماد المهلة']);
-    paint([steps(1),
+    var next = el('button', { type: 'button', class: 'pri', onclick: function () { if (!S.day) { S.err = 'اختر موعد السداد الجديد من المواعيد أعلاه.'; S.errAt = 'day'; form(); return; } S.err = ''; S.errAt = ''; S.step = 2; form(); } }, ['التالي: الإقرار والتوقيع']);
+    paint([steps(1), free(),
       box('دفعتك', 'doc', [kv], 'nv'),
-      box('اختر موعد السداد الجديد', 'clock', [days, el('p', { class: 'gr-note', text: 'بناءً على طلبك: مهلة حتى ' + dayTxt(v.max_days) + '، بلا رسوم، ومرة واحدة لهذه الدفعة. تاريخ الاستحقاق في العقد لا يتغيّر.' })], 'gd'),
-      box('الإقرار والتوقيع', 'pen', [el('label', { class: 'cq-ack' }, [cb, el('span', { text: v.ack })]), el('div', { style: 'margin-top:12px' }, [seg, pad])], 'nv'),
-      card([S.err ? el('p', { class: 'cq-err', role: 'alert', text: S.err }) : null, el('div', { class: 'cq-btns is-one' }, [go])])]);
-    if (S.sm === 'draw') setupPad(false);
+      box('اختر موعد السداد الجديد', 'clock', [days, ferr('day'), el('p', { class: 'gr-note', text: 'بناءً على طلبك: مهلة حتى ' + dayTxt(v.max_days) + '، ومرة واحدة لهذه الدفعة. تاريخ الاستحقاق في العقد لا يتغيّر.' })], 'gd'),
+      card([el('div', { class: 'cq-btns is-one' }, [next])])]);
+  }
+  function signStep() {
+    var v = S.v, dd = (v.days.filter(function (d) { return d.d === S.day; })[0] || {});
+    var sum = el('table', { class: 'cq-kv' }, [el('tbody', {}, [['الدفعة', 'الدفعة ' + v.seq + (v.n ? ' من ' + v.n : '') + ' · ' + v.contract_no], ['قيمة الدفعة', money(v.left) + ' ريال'], ['الاستحقاق الأصلي', v.due_t], ['موعد السداد الجديد', day(S.day)]]
+      .map(function (r) { return el('tr', {}, [el('th', { text: r[0] }), el('td', {}, [el('bdi', { text: r[1] })])]); }))]);
+    var cb = el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; if (S.errAt === 'ack') { S.err = ''; S.errAt = ''; lab.className = 'cq-ack'; var f = lab.nextSibling; if (f && f.className === 'cq-ferr') f.remove(); } } });
+    var lab = el('label', { class: 'cq-ack' + (S.errAt === 'ack' ? ' is-err' : '') }, [cb, el('span', { text: v.ack })]);
+    var pad = el('div', {}, [el('canvas', { class: 'cq-pad' + (S.errAt === 'pad' ? ' is-err' : ''), id: 'gr-pad', 'aria-label': 'مكان التوقيع' }),
+      el('button', { type: 'button', class: 'lnk', onclick: function () { S.sImg = ''; setupPad(true); } }, ['مسح التوقيع'])]);
+    var nm = el('input', { type: 'text', value: S.sName, placeholder: 'اكتب اسمك الكامل', 'aria-label': 'اسمك الكامل', class: S.errAt === 'name' ? 'is-err' : null,
+      style: 'width:100%;font:inherit;min-height:48px;border:1px solid ' + (S.errAt === 'name' ? 'var(--red)' : '#D5DBE8') + ';border-radius:12px;padding:8px 12px', oninput: function (e) { S.sName = e.target.value; } });
+    var go = el('button', { type: 'button', class: 'pri', disabled: S.busy, onclick: submit }, [S.busy ? 'جارٍ الاعتماد…' : 'اعتماد المهلة']);
+    var back = el('button', { type: 'button', disabled: S.busy, onclick: function () { S.step = 1; S.err = ''; S.errAt = ''; form(); } }, ['رجوع لتغيير الموعد']);
+    paint([steps(2), free(),
+      box('ملخص طلبك', 'doc', [sum, dd.w ? el('p', { class: 'gr-note', text: 'يوم ' + dd.w + ' · مهلة ' + dayTxt(v.days.indexOf(dd) + 1) }) : null], 'nv'),
+      box('الإقرار', 'shield', [lab, ferr('ack')], 'nv'),
+      box('التوقيع', 'pen', [el('p', { class: 'gr-note', style: 'margin:0 0 8px', text: 'وقّع داخل المربع، ثم اكتب اسمك تحته.' }), pad, ferr('pad'), el('div', { style: 'margin-top:10px' }, [nm, ferr('name')])], 'gd'),
+      card([S.errAt === 'srv' ? el('p', { class: 'cq-err', role: 'alert', text: S.err }) : null, el('div', { class: 'cq-btns' }, [go, back])])]);
+    setupPad(false);
+    var f = app.querySelector('.cq-ferr, .cq-err'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center' });
   }
   function setupPad(clear) {
     var c = document.getElementById('gr-pad'); if (!c) return;
@@ -134,15 +149,14 @@
   }
   async function submit() {
     if (S.busy) return;
-    if (!S.day) { S.err = 'اختر موعد السداد الجديد.'; form(); return; }
-    if (!S.ack) { S.err = 'وافق على الإقرار أولًا.'; form(); return; }
-    if (S.sm === 'draw' && !S.sImg) { S.err = 'وقّع في المكان المخصص.'; form(); return; }
-    if (S.sm === 'name' && S.sName.trim().length < 3) { S.err = 'اكتب اسمك الكامل.'; form(); return; }
-    S.busy = true; S.err = ''; form();
+    if (!S.ack) { S.err = 'وافق على الإقرار قبل الاعتماد.'; S.errAt = 'ack'; form(); return; }
+    if (!S.sImg) { S.err = 'وقّع داخل المربع.'; S.errAt = 'pad'; form(); return; }
+    if (S.sName.trim().length < 3) { S.err = 'اكتب اسمك الكامل تحت التوقيع.'; S.errAt = 'name'; form(); return; }
+    S.busy = true; S.err = ''; S.errAt = ''; form();
     try {
-      var j = await api('sign', { grant: S.grant, until: S.day, kind: S.sm, name: S.sName.trim(), img: S.sm === 'draw' ? S.sImg : '', ack: true, factor: S.ch });
+      var j = await api('sign', { grant: S.grant, until: S.day, kind: 'draw', name: S.sName.trim(), img: S.sImg, ack: true, factor: S.ch });
       S.busy = false;
-      if (!j.ok) { S.err = msgOf(j, 'تعذّر اعتماد المهلة.'); form(); return; }
+      if (!j.ok) { S.err = msgOf(j, 'تعذّر اعتماد المهلة.'); S.errAt = j.error === 'bad_date' ? 'day' : j.error === 'bad_ack' ? 'ack' : j.error === 'bad_sign' ? 'pad' : j.error === 'bad_name' ? 'name' : 'srv'; if (S.errAt === 'day') S.step = 1; form(); return; }
       donePage({ until: j.until, ref_no: j.ref_no, pay: j.pay, survey: j.survey, status: 'active', fresh: true });
     } catch (e) { S.busy = false; }
   }
