@@ -5544,3 +5544,9 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsm:not(.is-compact) .rsm-r { grid-template-columns: 130px 1fr; }
 .tq-next .rsc-pr-ch i.is-part { background: #E8F0FE; color: #1F4E9B; }
 .tq-next .rsc-stl-part { display: block; color: #1F4E9B; font-weight: 700; font-size: 11.5px; margin-top: 2px; }
+/* v1115: أيام المرحلة للتذكير الإضافي، وتغيير مرحلة العميل في المعاينة */
+.tq-next .rsc-days-w { display: grid; gap: 8px; }
+.tq-next .rsc-days.is-st { padding: 8px 10px; border-radius: 12px; background: #F3FAF9; border: 1px dashed var(--t2-line); }
+.tq-next .rsc-stl-t td .t2-select, .tq-next .rsc-stl-t td select { min-width: 150px; padding-block: 6px; font-size: 13px; }
+.tq-next .rsc-stl-tag.is-ov { color: #8A5A00; font-weight: 700; }
+.tq-next .rsc-dtab td .rsc-stl-st { margin-inline-start: 6px; }
