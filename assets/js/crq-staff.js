@@ -1303,17 +1303,21 @@ var LP_DOC = [['summary', 'ملخص الطلب'], ['decision', 'قرار الف�
 new MutationObserver(function () { document.querySelectorAll('.cr-dm iframe').forEach(function (f) { if (f.__fit) return; f.__fit = 1; f.addEventListener('load', function () { fit(f); setTimeout(function () { fit(f); }, 500); }); fit(f); }); }).observe(document.documentElement, { childList: true, subtree: true }); })();
 var LP_MG = [['parties', 'أطراف العقد'], ['summary', 'موضوع العقد'], ['decision', 'طلبك وقرار الفريق'], ['defer', 'تفاصيل قيمة العقد الموحّد'], ['fees', 'خطة الدفع'], ['contract', 'قبل التوحيد وبعده'], ['sched', 'جدول الدفعات'], ['terms', 'الشروط والأحكام'], ['adds', 'الأقسام المضافة'], ['ids', 'بيانات المنشأة'], ['note', 'التنويه']];
 /* صفوف خطوة واحدة: نص · نص طويل · لون · مفتاح · رقم، ومفتاح الإظهار بجانب العنصر */
+/* v1129: حقول شاشة الرابط مجمّعة — النصوص · الأزرار · الإظهار · الألوان — كل حقل تسميته فوقه ومفتاح إظهاره بجانب التسمية */
 function lpRows(L, T, s, ro, onCh) {
-return s.f.map(function (f) {
+var fld = function (f) {
 var p = f[0], lab = f[1], kd = f[2], hp = f[3], v = L.get(T, p), ctl;
 if (kd === 'c') ctl = el('span', { class: 'cr-col' }, [el('input', { type: 'color', value: v, disabled: ro, 'aria-label': lab, oninput: function (e) { L.set(T, p, e.target.value); e.target.nextSibling.value = e.target.value; onCh(false); } }), el('input', { type: 'text', value: v, maxlength: '7', dir: 'ltr', disabled: ro, 'aria-label': lab + ' (رمز)', onchange: function (e) { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) { L.set(T, p, e.target.value); onCh(true); } } })]);
-else if (kd === 'b') { var on = v !== false; ctl = el('button', { type: 'button', class: 'cr-sw' + (on ? ' is-on' : ''), role: 'switch', 'aria-checked': on ? 'true' : 'false', disabled: ro, 'aria-label': lab, 'data-live-ok': '', onclick: function () { L.set(T, p, !on); onCh(true); } }, [el('i', {})]); }
+else if (kd === 'b') { var on = v !== false; return el('label', { class: 'q-tg' + (on ? ' is-on' : '') }, [el('span', { text: lab }), el('button', { type: 'button', class: 'cr-sw' + (on ? ' is-on' : ''), role: 'switch', 'aria-checked': on ? 'true' : 'false', disabled: ro, 'aria-label': lab, 'data-live-ok': '', onclick: function () { L.set(T, p, !on); onCh(true); } }, [el('i', {})])]); }
 else if (kd === 'n') ctl = el('input', { type: 'number', min: '0', max: '28', value: v, disabled: ro, 'aria-label': lab, oninput: function (e) { L.set(T, p, String(e.target.value)); onCh(false); } });
-else ctl = el(kd === 'a' ? 'textarea' : 'input', { type: kd === 'a' ? null : 'text', rows: kd === 'a' ? '2' : null, value: v, disabled: ro, 'aria-label': lab, oninput: function (e) { L.set(T, p, e.target.value); onCh(false); } });
+else ctl = el(kd === 'a' ? 'textarea' : 'input', { type: kd === 'a' ? null : 'text', rows: kd === 'a' ? '3' : null, value: v, disabled: ro, 'aria-label': lab, oninput: function (e) { L.set(T, p, e.target.value); onCh(false); } });
 var hon = hp ? L.get(T, hp) !== false : true;
-var eye = hp ? el('button', { type: 'button', class: 'cr-sw' + (hon ? ' is-on' : ''), role: 'switch', 'aria-checked': hon ? 'true' : 'false', title: hon ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', disabled: ro, 'aria-label': (hon ? 'إخفاء ' : 'إظهار ') + lab, 'data-live-ok': '', onclick: function () { L.set(T, hp, !hon); onCh(true); } }, [el('i', {})]) : el('span', {});
-return el('div', { class: 'cr-ed-row' + (kd === 'c' ? ' is-c' : '') + (hon ? '' : ' is-off') }, [el('label', { text: lab }), ctl, eye]);
-});
+var eye = hp ? el('button', { type: 'button', class: 'cr-sw' + (hon ? ' is-on' : ''), role: 'switch', 'aria-checked': hon ? 'true' : 'false', title: hon ? 'ظاهر — اضغط للإخفاء' : 'مخفي — اضغط للإظهار', disabled: ro, 'aria-label': (hon ? 'إخفاء ' : 'إظهار ') + lab, 'data-live-ok': '', onclick: function () { L.set(T, hp, !hon); onCh(true); } }, [el('i', {})]) : null;
+return el('div', { class: 'q-f' + (kd === 'a' ? ' is-wide' : '') + (hon ? '' : ' is-off') }, [el('div', { class: 'q-f-l' }, [el('label', { text: lab }), eye ? el('span', { class: 'q-f-sw' }, [el('small', { text: hon ? 'ظاهر' : 'مخفي' }), eye]) : null]), ctl]);
+};
+var G = [['نصوص الشاشة', []], ['الأزرار', []], ['ما يظهر للعميل', []], ['الألوان', []]];
+s.f.forEach(function (f) { var k = f[2] === 'c' ? 3 : f[2] === 'b' ? 2 : /^زر /.test(f[1]) ? 1 : 0; G[k][1].push(fld(f)); });
+return G.filter(function (g) { return g[1].length; }).map(function (g) { return el('div', { class: 'q-fg' }, [el('h4', { text: g[0] }), el('div', { class: 'q-fg-b' + (g[0] === 'ما يظهر للعميل' ? ' is-tg' : '') }, g[1])]); });
 }
 /* الاستوديو: شريط الرحلة + إعدادات الخطوة + المعاينة التفاعلية — مشترك بين الطلب والقالب العام
 * o: { T, ro, views() → Promise({consent, sign}), onT(), doc: function (V) → عقدة بطاقة المحتوى, msg: function () (الانتقال للرسائل) } */
@@ -1405,7 +1409,7 @@ var pvw = subOf('page', 'page'); /* v1127: الصفحة وإعدادات الر�
 return [mkBar(), subNav('page', [['page', 'صفحة العميل ومعاينتها', 'phone'], ['link', 'مدة الرابط وسجله', 'link', links.length]], pvw)].concat(pvw === 'link' ? [lk] : S);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1128'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1131'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
