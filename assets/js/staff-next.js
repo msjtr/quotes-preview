@@ -734,11 +734,21 @@ function geoQ() {
         if (ST.__am) L.push({ t: ST.__am === 1 ? 'الإجراءات' : ST.__am });
       }
     }
+    /* v1197: شاشة فرعية داخل الصفحة (التذكير › المؤجلون › مهلة جديدة …) — تحددها الصفحة نفسها (window.__tqnSub) مع زر «رجوع إلى …» */
+    if (!detail) {
+      var SUB = null; try { SUB = typeof window.__tqnSub === 'function' ? window.__tqnSub() : null; } catch (e) { SUB = null; }
+      if (SUB && SUB.length) {
+        L[L.length - 1].go = SUB[0][1];
+        SUB.forEach(function (x) { L.push({ t: x[0], go: x[1] || null }); });
+        var pv = SUB.length > 1 ? SUB[SUB.length - 2] : [item, SUB[0][1]];
+        if (pv[1]) L.bk2 = { t: 'رجوع إلى ' + pv[0], go: pv[1] };
+      }
+    }
     return crumbsDraw(src, back, mine, L);
   }
   function backFile(F) { ST.from = null; try { window.TQN_CF.go('cu-pf-file', { pfc: F.pfc }); } catch (e) { void e; } }
   function crumbsDraw(src, back, mine, L) {
-    var sig = L.map(function (x) { return x.t + (x.go ? '*' : ''); }).join('›') + (L.back ? '#b' : '');
+    var sig = L.map(function (x) { return x.t + (x.go ? '*' : ''); }).join('›') + (L.back ? '#b' : '') + (L.bk2 ? '#k' + L.bk2.t : '');
     cls(src, 'tqn-cr-src', true); cls(back, 'tqn-hide', true);
     if (mine && mine.parentNode === src.parentNode && mine.__sig === sig) { mine.__L = L; return; }
     if (mine && mine.parentNode) mine.parentNode.removeChild(mine);
@@ -754,6 +764,7 @@ function geoQ() {
       li.appendChild(el); ol.appendChild(li);
     });
     mine.appendChild(ol);
+    if (L.bk2 && !L.back) { var b2 = mk('button', 'tqn-cr-bk'); b2.type = 'button'; b2.setAttribute('data-live-ok', ''); b2.appendChild(mk('span', '', L.bk2.t)); b2.addEventListener('click', function () { var k = mine.__L && mine.__L.bk2; if (k && k.go) k.go(); }); mine.appendChild(b2); cls(mine, 'has-bk', true); }
     if (L.back) { var F = L.back, bb = mk('button', 'tqn-cr-bk'); bb.type = 'button'; bb.setAttribute('data-live-ok', ''); bb.appendChild(mk('span', '', 'العودة إلى ملف العميل')); bb.addEventListener('click', function () { backFile(F); }); mine.appendChild(bb); cls(mine, 'has-bk', true); }
     src.parentNode.insertBefore(mine, src.nextSibling); src.__tqnCr = mine;
   }

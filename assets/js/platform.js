@@ -34630,7 +34630,7 @@ function rmnSet(L) {
   }
   return [e('div', { class: 'rmx-set' }, [gen, e('section', { class: 'rmx-card' }, [rmxHd('الإعدادات الافتراضية', 'القيم التي تبدأ بها كل مهلة جديدة'), dfl])])];
 }
-/* v1195: مسار الشاشات الفرعية في أعلى الصفحة (شريط المسار وزر «رجوع إلى …») بدل رابط تحت البلاطات — المؤجلون والتخصيص */
+/* v1197: مسار الشاشات الفرعية في أعلى الصفحة (شريط المسار وزر «رجوع إلى …») بدل رابط تحت البلاطات — المؤجلون والتخصيص */
 function rmnSub() {
   if (RMN.done) return null;
   const top = function () { try { window.scrollTo(0, 0); } catch (err) { void err; } };
@@ -34651,25 +34651,10 @@ function rmnSub() {
   }
   return null;
 }
-function rmnCrumbSync() {
-  const ol = document.getElementById('pv-crumb'), bk = document.getElementById('pv-back');
-  if (!ol || !document.querySelector('.tq-next .rmn') || !Array.isArray(LASTPATH) || !LASTPATH.length) return;
-  const bt = bk ? ((bk.querySelector('span') || {}).textContent || '') : '';
-  if (bk && (!bk.dataset.rmn || bk.dataset.rmn !== bt)) { RMN.bk0 = { h: bk.hidden, t: bt, f: bk.onclick }; delete bk.dataset.rmn; } /* رُسمت الصفحة من جديد: زر الرجوع الأصلي */
-  const X = rmnSub(), base = LASTPATH.slice();
-  if (!X) {
-    crumbs(base);
-    if (bk && bk.dataset.rmn && RMN.bk0) { bk.hidden = RMN.bk0.h; const sp = bk.querySelector('span'); if (sp) sp.textContent = RMN.bk0.t; bk.onclick = RMN.bk0.f; delete bk.dataset.rmn; }
-    return;
-  }
-  const last = base[base.length - 1], root = X[0][1];
-  base[base.length - 1] = [last[0], root, base.length === 1 ? last[2] : null];
-  crumbs(base.concat(X));
-  if (bk) { const pv = X.length > 1 ? X[X.length - 2] : [last[0], root]; bk.hidden = false; const sp = bk.querySelector('span'); if (sp) sp.textContent = 'رجوع إلى ' + pv[0]; bk.onclick = function () { pv[1](); }; bk.dataset.rmn = sp ? sp.textContent : '1'; }
-  requestAnimationFrame(function () { const cn = document.querySelector('#pv-crumb'); if (cn) cn.scrollLeft = -cn.scrollWidth; });
-}
+/* المسار في staff/next يبنيه staff-next.js (crumbs) — يقرأ الشاشة الفرعية الحالية من هنا */
+try { window.__tqnSub = rmnSub; } catch (err) { void err; }
 function rmnPage() {
-  rmCss(); rmLoad(false); rmLoadC(false); rmnWatch(); setTimeout(rmnCrumbSync, 0);
+  rmCss(); rmLoad(false); rmLoadC(false); rmnWatch();
   const L = RM.L;
   if (L === null || L === 'loading') return [e('div', { class: 'rmn rmx' }, [rmxTop(null), clWait('التذكير')])];
   if (L.fail) return [e('div', { class: 'rmn rmx' }, [rmxTop(null), clFail('التذكير', L.fail, function () { RM.L = null; rmLoad(true); rmnPaint(); })])];
