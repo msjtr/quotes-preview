@@ -30338,8 +30338,20 @@ const m = EG_QTY_RE.exec(String(D.type || ''));
 D.qn = m ? m[1].trim() : String(D.type || ''); D.qty = m ? String(m[2]).replace(/[,٬]/g, '') : ''; D.unit = m ? String(m[3]).replace(/[,٬]/g, '') : '';
 return D;
 }
-function eg11QtyType(D) { const q = Number(D.qty) || 0, u = Number(D.unit) || 0, n = String(D.qn || '').trim(); D.type = q > 1 && u > 0 ? n + ' — الكمية ' + fmtNum(q) + ' × ' + qr2(u).toFixed(2) + ' ر.س للوحدة' : n; }
-function eg11QtyCalc(D) { const q = Number(D.qty) || 0, u = Number(D.unit) || 0; if (q > 0 && u > 0) { D.value = String(qr2(q * u)); eqValueCh(D); } eg11QtyType(D); }
+function eg11QtyType(D) { const q = Number(D.qty) || 0, u = Number(D.unit) || 0, n = String(D.qn || '').trim(); D.type = q > 1 && u > 0 && Math.abs(qr2(q * u) - qr2(Number(D.value) || 0)) < 0.01 ? n + ' — الكمية ' + fmtNum(q) + ' × ' + qr2(u).toFixed(2) + ' ر.س للوحدة' : n; }
+/* v1208: قيمة المنتج هي الأساس (من قرار الأهلية) — سعر الوحدة يحسب الكمية مباشرة (7000 ÷ 40 = 175)، والكمية تحسب سعر الوحدة؛ وإن لم تنقسم القيمة تظهر أقرب قيمة لاعتمادها */
+function eg11QtyCalc(D, src) {
+const V = Number(D.value) || 0; let q = Number(D.qty) || 0, u = Number(D.unit) || 0; D.qfix = null;
+if (src === 'unit' || src === 'value') {
+if (V > 0 && u > 0) { const r = V / u; q = Math.floor(r + 1e-9); D.qty = q > 0 ? String(q) : ''; if (Math.abs(r - q) > 1e-6) D.qfix = { q: q, v: qr2(q * u), q2: q + 1, v2: qr2((q + 1) * u) }; }
+else if (src === 'value' && V > 0 && q > 0) D.unit = String(qr2(V / q));
+} else if (src === 'qty') {
+if (V > 0 && q > 0) D.unit = String(qr2(V / q));
+else if (q > 0 && u > 0) { D.value = String(qr2(q * u)); eqValueCh(D); }
+}
+eg11QtyType(D);
+}
+function eg11QtyOk(D) { const q = Number(D.qty) || 0, u = Number(D.unit) || 0; return !(q > 1) || (u > 0 && Math.abs(qr2(q * u) - qr2(Number(D.value) || 0)) < 0.01); }
 function eg11QtForm(x, Q, can, T, paint, part) {
 const key = 'eq11:' + (Q ? Q.id : x.id), D = CUD[key] || (CUD[key] = Q ? eqSeed(Q) : eqSeedNew(x));
 const rr = function () { paint(); };
@@ -30352,7 +30364,7 @@ const save = async function (submit) {
 if (!C) { D.err = 'أدخل قيمة المنتج.'; paint(); return; }
 eg11QtyType(D);
 if (String(D.qn || '').trim().length < 2) { D.err = 'اكتب اسم المنتج.'; paint(); return; }
-if (Number(D.qty) > 1 && !(Number(D.unit) > 0)) { D.err = 'اكتب سعر الوحدة، أو اترك الكمية فارغة.'; paint(); return; }
+if (!eg11QtyOk(D)) { D.err = 'الكمية × سعر الوحدة لا تساوي قيمة المنتج — صحّح أحدها أو اترك الكمية فارغة.'; paint(); return; }
 if (EG9.busy) return; EG9.busy = 'qt'; D.err = ''; paint();
 try {
 const note = String(D.note || '').trim().slice(0, 300) || undefined, pl = eqPayload(D); delete pl.dist;
@@ -30383,11 +30395,14 @@ const kids = [R ? e('div', { class: 'eg10-warn' }, 'أُعيد للتعديل' +
 const planK = [], itemK = [];
 const qv = Number(D.qty) || 0, uv = Number(D.unit) || 0;
 itemK.push(eg11Fld('المنتج', eg11In(D.qn, function (v) { D.qn = v; eg11QtyType(D); }, { max: '160', ph: 'اسم المنتج كما يظهر للعميل' })),
-e('div', { class: 'eg12-g4' }, [eg11Fld('الكمية', eg11In(D.qty, function (v) { D.qty = String(v).replace(/[^0-9]/g, ''); }, { num: true, ph: '1', label: 'الكمية', change: function () { eg11QtyCalc(D); paint(); } })),
-eg11Fld('سعر الوحدة', eg11In(D.unit, function (v) { D.unit = v; }, { num: true, ph: '0.00', label: 'سعر الوحدة', change: function () { eg11QtyCalc(D); paint(); } })),
-eg11Fld('قيمة المنتج', eg11In(D.value, function (v) { D.value = v; }, { num: true, ph: '0.00', change: function () { eqValueCh(D); if (Number(D.qty) > 0 && Number(D.value) > 0) D.unit = String(qr2(Number(D.value) / Number(D.qty))); eg11QtyType(D); paint(); } })),
+e('div', { class: 'eg12-g4' }, [eg11Fld('الكمية', eg11In(D.qty, function (v) { D.qty = String(v).replace(/[^0-9]/g, ''); }, { num: true, ph: '1', label: 'الكمية', change: function () { eg11QtyCalc(D, 'qty'); paint(); } })),
+eg11Fld('سعر الوحدة', eg11In(D.unit, function (v) { D.unit = v; }, { num: true, ph: '0.00', label: 'سعر الوحدة', change: function () { eg11QtyCalc(D, 'unit'); paint(); } })),
+eg11Fld('قيمة المنتج', eg11In(D.value, function (v) { D.value = v; }, { num: true, ph: '0.00', change: function () { eqValueCh(D); eg11QtyCalc(D, 'value'); paint(); } })),
 eg11Fld('ضريبة المنتج', eg11Sel(D.pvat !== false ? 'yes' : 'no', [['yes', 'ضريبة ' + fmtNum(Math.round(eqRate() * 100)) + '٪'], ['no', 'بلا ضريبة']], function (v) { D.pvat = v === 'yes'; paint(); }, { label: 'ضريبة المنتج' }))]),
-e('small', { class: 'eg9-hint' }, qv > 1 && uv > 0 ? ['المبالغ قبل الضريبة · يظهر للعميل: ', e('b', {}, D.type)] : 'المبالغ قبل الضريبة · الكمية وسعر الوحدة اختياريان — بهما تُحسب قيمة المنتج وتظهر للعميل.'),
+D.qfix ? e('div', { class: 'eg10-warn' }, ['قيمة المنتج ' + fmtNum(Number(D.value) || 0) + ' لا تنقسم على سعر الوحدة ' + qr2(uv).toFixed(2) + ' — اختر: ',
+  eg9Btn(fmtNum(D.qfix.q) + ' وحدة = ' + fmtNum(D.qfix.v), { on: function () { D.value = String(D.qfix.v); D.qty = String(D.qfix.q); eqValueCh(D); D.qfix = null; eg11QtyType(D); paint(); } }), ' ',
+  eg9Btn(fmtNum(D.qfix.q2) + ' وحدة = ' + fmtNum(D.qfix.v2), { on: function () { D.value = String(D.qfix.v2); D.qty = String(D.qfix.q2); eqValueCh(D); D.qfix = null; eg11QtyType(D); paint(); } })]) : null,
+e('small', { class: 'eg9-hint' }, qv > 1 && uv > 0 && eg11QtyOk(D) ? ['المبالغ قبل الضريبة · يظهر للعميل: ', e('b', {}, D.type)] : 'المبالغ قبل الضريبة · اكتب سعر الوحدة فتُحسب الكمية من قيمة المنتج مباشرة (أو الكمية فيُحسب السعر).'),
 e('div', { class: 'eg13-qhd' }, [e('h4', { class: 'eg11-h' }, 'بنود العرض'), eg11Seg(Z2.on ? 'd2' : 'man', [['man', 'إدخال يدوي'], ['d2', 'إضافة مبلغ وتوزيعه']], function (v) { Z2.on = v === 'd2'; paint(); })]),
 Z2.on ? eqD2Box(x, D, C, paint) : null, e('small', { class: 'eg9-hint' }, 'البند المخفي لا يظهر منفردًا للعميل — يُجمع في سطر واحد' + (D.svcLabel ? ' باسم «' + D.svcLabel + '»' : '') + '.'),
 e('div', { class: 'eg12-tw' }, e('table', { class: 'eg11-tbl eg12-it' }, [e('thead', {}, e('tr', {}, (Z2.on ? ['يُوزَّع'] : []).concat(['البند', 'المبلغ (ر.س)', 'الضريبة', 'يظهر للعميل', '']).map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, D.lines.map(lineRow)),
