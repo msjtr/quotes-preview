@@ -1,74 +1,196 @@
-/* tera-grace.js (v1147) — صفحة «مهلة السداد»: اختيار الموعد · التوقيع (رسم أو اسم) · الإقرار · الاعتماد */
+/* tera-grace.js (v1157) — رابط «مهلة السداد» بهوية رابط طلبات العقود (crq.css):
+   التحقق برمز ← اختيار الموعد ← التوقيع والإقرار ← الاعتماد ← تقييم الخدمة داخل الرابط (وإن لم يقيّم تصله الدعوة بعد 24 ساعة) */
 (function () {
-  "use strict";
-  var $ = function (id) { return document.getElementById(id); };
-  var tok = $("gr-tok") && $("gr-tok").value, go = $("gr-go"), msg = $("gr-msg");
-  if (!tok || !go) return;
-  var S = { day: "", kind: "draw", drawn: false, busy: false };
-
-  /* المواعيد */
-  var days = document.querySelectorAll(".gr-day");
-  Array.prototype.forEach.call(days, function (b) {
-    b.addEventListener("click", function () {
-      S.day = b.getAttribute("data-day");
-      Array.prototype.forEach.call(days, function (x) { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
-      check();
-    });
-  });
-
-  /* التوقيع */
-  var tabs = document.querySelectorAll(".gr-tab");
-  Array.prototype.forEach.call(tabs, function (t) {
-    t.addEventListener("click", function () {
-      S.kind = t.getAttribute("data-k");
-      Array.prototype.forEach.call(tabs, function (x) { x.classList.toggle("on", x === t); });
-      $("gr-k-draw").hidden = S.kind !== "draw"; $("gr-k-name").hidden = S.kind !== "name";
-      if (S.kind === "draw") size();
-      check();
-    });
-  });
-  var cv = $("gr-cv"), cx = cv.getContext("2d"), down = false, last = null;
-  function size() {
-    var r = cv.getBoundingClientRect(), k = window.devicePixelRatio || 1;
-    if (!r.width) return;
-    cv.width = Math.round(r.width * k); cv.height = Math.round(r.height * k);
-    cx.setTransform(k, 0, 0, k, 0, 0); cx.lineWidth = 2.6; cx.lineCap = "round"; cx.lineJoin = "round"; cx.strokeStyle = "#07173A";
-    S.drawn = false; check();
+  'use strict';
+  var app = document.getElementById('app');
+  var TOK = (location.pathname.match(/\/api\/grace\/p\/([^/?#]+)/) || [])[1] || '';
+  var GK = 'gr.g.' + TOK.slice(0, 16);
+  var S = { info: null, v: null, grant: '', ch: '', sent: false, busy: false, err: '', day: '', sm: 'draw', sName: '', sImg: '', ack: false };
+  try { S.grant = sessionStorage.getItem(GK) || ''; S.ch = sessionStorage.getItem(GK + '.c') || ''; } catch (e) { void e; }
+  var NS = 'http://www.w3.org/2000/svg';
+  var IC = { check: 'M5 12.5l4.5 4.5L19 7.5', shield: 'M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3zM9 12l2 2 4-4', chat: 'M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z',
+    mail: 'M3 6h18v12H3zM3 7l9 6 9-6', alert: 'M12 7.5v6M12 16.6v.01M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', clock: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
+    doc: 'M14 3H6v18h12V7l-4-4zM14 3v4h4M9 13h6M9 17h6', pen: 'M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3', star: 'M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8-4.2-4.1 5.9-.9z' };
+  function icon(n, big) { var s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('class', 'cq-ic' + (big ? ' is-big' : '')); var p = document.createElementNS(NS, 'path'); p.setAttribute('d', IC[n]); s.appendChild(p); return s; }
+  function el(tag, a, kids) {
+    var n = document.createElement(tag);
+    Object.keys(a || {}).forEach(function (k) { var v = a[k]; if (v == null || v === false) return; if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v); else if (k === 'value') n.value = v; else if (k === 'checked') n.checked = !!v; else n.setAttribute(k, v === true ? '' : v); });
+    (kids || []).forEach(function (c) { if (c == null || c === false) return; n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return n;
   }
-  function pt(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-  cv.addEventListener("pointerdown", function (e) { down = true; last = pt(e); try { cv.setPointerCapture(e.pointerId); } catch (_e) { /* */ } e.preventDefault(); });
-  cv.addEventListener("pointermove", function (e) {
-    if (!down) return; var p = pt(e);
-    cx.beginPath(); cx.moveTo(last.x, last.y); cx.lineTo(p.x, p.y); cx.stroke(); last = p;
-    if (!S.drawn) { S.drawn = true; check(); }
-    e.preventDefault();
-  });
-  ["pointerup", "pointercancel", "pointerleave"].forEach(function (n) { cv.addEventListener(n, function () { down = false; }); });
-  $("gr-clr").addEventListener("click", function () { cx.clearRect(0, 0, cv.width, cv.height); S.drawn = false; check(); });
-  window.addEventListener("resize", function () { if (!S.drawn) size(); });
-  size();
+  function tile(n, c) { return el('span', { class: 'cq-tile' + (c ? ' is-' + c : '') }, [icon(n)]); }
+  function card(kids, cls) { return el('section', { class: 'cq-card' + (cls ? ' ' + cls : '') }, kids); }
+  function box(title, n, kids, c) { return el('section', { class: 'cq-card cq-box' }, [el('div', { class: 'cq-bh' }, [tile(n, c), el('b', { text: title })]), el('div', { class: 'cq-bb' }, kids)]); }
+  function money(x) { var n = Math.round((Number(x) || 0) * 100) / 100; return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function day(d) { if (!d) return '—'; try { return new Date(String(d).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return String(d); } }
+  function dayTxt(n) { n = Number(n) || 0; return n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? n + ' أيام' : n + ' يومًا'; }
+  var STEPS = ['التحقق', 'الموعد الجديد', 'التوقيع والاعتماد'];
+  function steps(at) {
+    var out = [];
+    STEPS.forEach(function (l, i) { if (i) out.push(el('span', { class: 'cq-sep' + (i <= at ? ' is-dn' : '') })); out.push(el('div', { class: 'cq-st' + (i < at ? ' is-dn' : i === at ? ' is-on' : ''), 'aria-current': i === at ? 'step' : null }, [el('i', { text: i < at ? '✓' : String(i + 1) }), el('b', { text: l })])); });
+    return el('div', { class: 'cq-steps', role: 'list', 'aria-label': 'المراحل' }, out);
+  }
+  function paint(nodes, center) { app.innerHTML = ''; app.className = 'cq-main' + (center ? ' is-center' : ''); nodes.forEach(function (n) { if (n) app.appendChild(n); }); window.scrollTo(0, 0); }
+  function done(ok, title, text, btn) { paint([card([icon(ok ? 'check' : 'alert', true), el('h1', { class: 'cq-h1', text: title }), el('p', { class: 'cq-muted', text: text }), btn ? el('div', { class: 'cq-btns is-one' }, [btn]) : null], 'cq-done' + (ok ? '' : ' is-off'))], true); }
+  function payBtn(href) { return href ? el('a', { class: 'pri', href: href, style: 'display:flex;align-items:center;justify-content:center;text-decoration:none' }, ['ادفع الآن']) : null; }
+  function msgOf(j, d) { return (j && (j.message || (j.errors && j.errors[0]))) || d || 'تعذّر تنفيذ الطلب.'; }
+  async function api(path, body) {
+    var r = await fetch('/api/grace/p/' + TOK + '/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body || {}), cache: 'no-store' });
+    var j = null; try { j = await r.json(); } catch (e) { j = null; }
+    if (r.status === 410 && j) { done(false, 'الرابط غير متاح', j.message || ''); throw new Error('gone'); }
+    if (r.status === 401) { S.grant = ''; try { sessionStorage.removeItem(GK); } catch (e) { void e; } verifyPage(); throw new Error('verify'); }
+    return j || { ok: false, message: 'تعذّر الاتصال الآن. حاول مرة أخرى.' };
+  }
 
-  var nm = $("gr-name"), ack = $("gr-ack");
-  nm.addEventListener("input", check); ack.addEventListener("change", check);
-  function signed() { return S.kind === "draw" ? S.drawn : nm.value.trim().length >= 3; }
-  function check() { go.disabled = S.busy || !S.day || !signed() || !ack.checked; }
+  /* ── البداية ── */
+  async function start() {
+    var j; try { j = await api('info'); } catch (e) { return; }
+    if (!j || !j.ok) { done(false, 'تعذّر فتح الرابط', msgOf(j)); return; }
+    S.info = j;
+    if (j.state === 'done') return donePage(j);
+    if (j.state === 'paid') return done(true, 'تم سداد هذه الدفعة', 'لا حاجة لأي إجراء. شكرًا لك.');
+    if (j.state === 'off') return done(false, 'الخدمة غير متاحة الآن', 'تواصل مع فريق تيرا من حسابك إن احتجت مهلة.', payBtn(j.pay));
+    if (j.state === 'early') return done(false, 'موعد دفعتك لم يقترب بعد', 'تتاح المهلة قبل الاستحقاق بـ' + dayTxt(j.window) + '. موعد دفعتك ' + day(j.due) + '.', payBtn(j.pay));
+    if (S.grant) return load();
+    verifyPage();
+  }
 
-  go.addEventListener("click", function () {
-    if (go.disabled) return;
-    S.busy = true; check(); msg.textContent = "جارٍ اعتماد المهلة…"; msg.style.color = "#33415C";
-    var body = { until: S.day, kind: S.kind, name: nm.value.trim(), img: S.kind === "draw" ? cv.toDataURL("image/png") : "", ack: true };
-    fetch(location.pathname, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) })
-      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
-      .then(function (j) {
-        S.busy = false;
-        if (!j || j.ok !== true) { msg.style.color = ""; msg.textContent = (j && j.message) || "تعذّر اعتماد المهلة — حاول مرة أخرى."; check(); return; }
-        Array.prototype.forEach.call(document.querySelectorAll(".gr-wrap > .gr-card"), function (c) { if (c.id !== "gr-done" && !c.querySelector(".gr-kv")) c.hidden = true; });
-        go.hidden = true; msg.textContent = "";
-        $("gr-done-t").textContent = "تم تسجيل مهلتك حتى " + (j.until_txt || j.until);
-        $("gr-done-p").textContent = "رقم المهلة " + (j.ref_no || "") + ". وصلتك رسالة تأكيد، ونذكّرك قبل الموعد. يمكنك السداد في أي وقت قبله.";
-        $("gr-done").hidden = false;
-        try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (_e) { window.scrollTo(0, 0); }
-      })
-      .catch(function () { S.busy = false; msg.style.color = ""; msg.textContent = "تعذّر الاتصال — تحقق من الإنترنت وحاول مرة أخرى."; check(); });
-  });
+  /* ── 1) التحقق برمز ── */
+  function verifyPage() {
+    var I = S.info || {};
+    var head = [el('div', { class: 'cq-vh' }, [tile('shield', 'nv'), el('h1', { class: 'cq-h1', text: 'طلب مهلة سداد' })]),
+      el('span', { class: 'cq-no', text: 'الدفعة ' + I.seq + (I.n ? ' من ' + I.n : '') + ' · ' + (I.contract_no || '') }),
+      el('p', { class: 'cq-muted', text: (I.name ? 'أهلًا ' + I.name + '، ' : '') + 'للحفاظ على خصوصيتك نرسل رمز تحقق إلى وسيلتك المسجلة قبل عرض دفعتك.' })];
+    if (!S.sent) {
+      var F = I.factors || [];
+      var ch = el('div', { class: 'cq-ch' }, F.map(function (f) {
+        return el('button', { type: 'button', disabled: S.busy, onclick: function () { send(f); } }, [icon(f === 'whatsapp' ? 'chat' : 'mail'), (f === 'whatsapp' ? 'أرسل الرمز إلى واتساب ' : 'أرسل الرمز إلى البريد ') + ((I.masked || {})[f] || '')]);
+      }));
+      paint([steps(0), card(head.concat([F.length ? ch : el('p', { class: 'cq-err', text: 'لا توجد وسيلة تحقق مرتبطة بحسابك. تواصل مع فريق تيرا.' }), S.err ? el('p', { class: 'cq-err', text: S.err }) : null]))]);
+      return;
+    }
+    var inp = el('input', { class: 'cq-code', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '6', 'aria-label': 'رمز التحقق' });
+    paint([steps(0), card(head.concat([el('p', { text: 'أدخل الرمز المرسل إلى ' + (((I.masked || {})[S.ch]) || '') }), inp, S.err ? el('p', { class: 'cq-err', text: S.err }) : null,
+      el('div', { class: 'cq-btns' }, [el('button', { type: 'button', class: 'pri', disabled: S.busy, onclick: function () { verify(inp.value); } }, ['تحقق']),
+        el('button', { type: 'button', onclick: function () { S.sent = false; S.err = ''; verifyPage(); } }, ['وسيلة أخرى'])])]))]);
+    inp.focus();
+  }
+  async function send(ch) {
+    if (S.busy) return; S.busy = true; S.err = ''; S.ch = ch; verifyPage();
+    try { var j = await api('send', { channel: ch }); S.busy = false; if (j.ok || j.code === 'RESEND_TOO_SOON') { S.sent = true; if (!j.ok) S.err = msgOf(j); } else S.err = msgOf(j, 'تعذّر إرسال الرمز.'); verifyPage(); } catch (e) { S.busy = false; }
+  }
+  async function verify(code) {
+    if (S.busy) return;
+    if (!/^\d{6}$/.test(String(code || '').trim())) { S.err = 'أدخل الرمز المكوّن من 6 أرقام.'; verifyPage(); return; }
+    S.busy = true; S.err = '';
+    try {
+      var j = await api('verify', { channel: S.ch, code: String(code).trim() }); S.busy = false;
+      if (!j.ok) { S.err = msgOf(j, 'الرمز غير صحيح.'); verifyPage(); return; }
+      S.grant = j.grant; try { sessionStorage.setItem(GK, j.grant); sessionStorage.setItem(GK + '.c', S.ch); } catch (e) { void e; }
+      load();
+    } catch (e) { S.busy = false; }
+  }
+
+  /* ── 2) الموعد والتوقيع ── */
+  async function load() {
+    var j; try { j = await api('view', { grant: S.grant }); } catch (e) { return; }
+    if (!j.ok) { done(false, 'تعذّر عرض الدفعة', msgOf(j)); return; }
+    S.v = j.view; form();
+  }
+  function form() {
+    var v = S.v;
+    var kv = el('table', { class: 'cq-kv' }, [el('tbody', {}, [
+      ['العقد', v.contract_no], ['الدفعة', 'الدفعة ' + v.seq + (v.n ? ' من ' + v.n : '')], ['قيمة الدفعة', money(v.left) + ' ريال'], ['تاريخ الاستحقاق', v.due_t]
+    ].concat(Number(v.late) > 0 ? [['الحالة', 'متأخرة ' + dayTxt(v.late)]] : []).map(function (r) { return el('tr', {}, [el('th', { text: r[0] }), el('td', {}, [el('bdi', { text: r[1] })])]); }))]);
+    var days = el('div', { class: 'gr-days', role: 'group', 'aria-label': 'المواعيد المتاحة' }, v.days.map(function (d, i) {
+      return el('button', { type: 'button', class: S.day === d.d ? 'is-on' : '', 'aria-pressed': S.day === d.d ? 'true' : 'false', onclick: function () { S.day = d.d; S.err = ''; form(); } },
+        [el('small', { text: d.w }), el('b', { text: d.t }), el('small', { text: 'مهلة ' + dayTxt(i + 1) })]);
+    }));
+    var seg = el('div', { class: 'cq-seg is-2', role: 'group', 'aria-label': 'طريقة التوقيع' }, [['draw', 'ارسم توقيعك'], ['name', 'اكتب اسمك']].map(function (m) {
+      return el('button', { type: 'button', class: S.sm === m[0] ? 'is-on' : '', onclick: function () { S.sm = m[0]; S.sImg = ''; form(); } }, [m[1]]);
+    }));
+    var pad = S.sm === 'draw' ? el('div', {}, [el('canvas', { class: 'cq-pad', id: 'gr-pad' }), el('button', { type: 'button', class: 'lnk', onclick: function () { S.sImg = ''; setupPad(true); } }, ['مسح التوقيع'])])
+      : el('input', { type: 'text', value: S.sName, placeholder: 'اسمك الكامل', 'aria-label': 'اسمك الكامل', style: 'width:100%;font:inherit;min-height:48px;border:1px solid #D5DBE8;border-radius:12px;padding:8px 12px', oninput: function (e) { S.sName = e.target.value; } });
+    var cb = el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; } });
+    var go = el('button', { type: 'button', class: 'pri', disabled: S.busy, onclick: submit }, [S.busy ? 'جارٍ الاعتماد…' : 'اعتماد المهلة']);
+    paint([steps(1),
+      box('دفعتك', 'doc', [kv], 'nv'),
+      box('اختر موعد السداد الجديد', 'clock', [days, el('p', { class: 'gr-note', text: 'بناءً على طلبك: مهلة حتى ' + dayTxt(v.max_days) + '، بلا رسوم، ومرة واحدة لهذه الدفعة. تاريخ الاستحقاق في العقد لا يتغيّر.' })], 'gd'),
+      box('الإقرار والتوقيع', 'pen', [el('label', { class: 'cq-ack' }, [cb, el('span', { text: v.ack })]), el('div', { style: 'margin-top:12px' }, [seg, pad])], 'nv'),
+      card([S.err ? el('p', { class: 'cq-err', role: 'alert', text: S.err }) : null, el('div', { class: 'cq-btns is-one' }, [go])])]);
+    if (S.sm === 'draw') setupPad(false);
+  }
+  function setupPad(clear) {
+    var c = document.getElementById('gr-pad'); if (!c) return;
+    var r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; c.width = r.width * dpr; c.height = r.height * dpr;
+    var x = c.getContext('2d'); x.scale(dpr, dpr); x.lineWidth = 2.4; x.lineCap = 'round'; x.strokeStyle = '#0B2552';
+    if (S.sImg && !clear) { var im = new Image(); im.onload = function () { x.drawImage(im, 0, 0, r.width, r.height); }; im.src = S.sImg; }
+    var on = false, any = !!S.sImg && !clear;
+    function pt(e) { var b = c.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; }
+    c.onpointerdown = function (e) { on = true; try { c.setPointerCapture(e.pointerId); } catch (er) { void er; } var p = pt(e); x.beginPath(); x.moveTo(p[0], p[1]); e.preventDefault(); };
+    c.onpointermove = function (e) { if (!on) return; var p = pt(e); x.lineTo(p[0], p[1]); x.stroke(); any = true; e.preventDefault(); };
+    c.onpointerup = c.onpointercancel = function () { on = false; if (any) S.sImg = c.toDataURL('image/png'); };
+    c.style.touchAction = 'none';
+  }
+  async function submit() {
+    if (S.busy) return;
+    if (!S.day) { S.err = 'اختر موعد السداد الجديد.'; form(); return; }
+    if (!S.ack) { S.err = 'وافق على الإقرار أولًا.'; form(); return; }
+    if (S.sm === 'draw' && !S.sImg) { S.err = 'وقّع في المكان المخصص.'; form(); return; }
+    if (S.sm === 'name' && S.sName.trim().length < 3) { S.err = 'اكتب اسمك الكامل.'; form(); return; }
+    S.busy = true; S.err = ''; form();
+    try {
+      var j = await api('sign', { grant: S.grant, until: S.day, kind: S.sm, name: S.sName.trim(), img: S.sm === 'draw' ? S.sImg : '', ack: true, factor: S.ch });
+      S.busy = false;
+      if (!j.ok) { S.err = msgOf(j, 'تعذّر اعتماد المهلة.'); form(); return; }
+      donePage({ until: j.until, ref_no: j.ref_no, pay: j.pay, survey: j.survey, status: 'active', fresh: true });
+    } catch (e) { S.busy = false; }
+  }
+
+  /* ── 3) الاعتماد والتقييم ── */
+  function donePage(j) {
+    var st = j.status, broken = st === 'broken';
+    var en = document.getElementById('cq-en'); if (en) en.textContent = broken ? 'GRACE ENDED' : 'GRACE APPROVED';
+    var main = broken
+      ? card([icon('alert', true), el('h1', { class: 'cq-h1', text: 'انتهت مهلة هذه الدفعة' }), el('p', { class: 'cq-muted', text: 'انتهت مهلتك يوم ' + day(j.until) + ' ولم تُسدَّد الدفعة. ادفعها الآن.' }), el('div', { class: 'cq-btns is-one' }, [payBtn(j.pay)])], 'cq-done is-off')
+      : card([icon('check', true), el('h1', { class: 'cq-h1', text: 'تم اعتماد مهلة السداد' }),
+          el('p', { class: 'cq-muted', text: 'موعد السداد الجديد بناءً على طلبك: ' + day(j.until) + '.' }),
+          el('span', { class: 'cq-no', text: 'رقم المرجع ' + (j.ref_no || '') }),
+          el('p', { class: 'cq-muted', text: j.fresh ? 'وصلتك رسالة التأكيد، ونذكّرك قبل الموعد. يمكنك السداد في أي وقت قبله.' : 'نذكّرك قبل الموعد. يمكنك السداد في أي وقت قبله.' }),
+          el('div', { class: 'cq-btns is-one' }, [payBtn(j.pay)])], 'cq-done');
+    var sv = j.survey, rc = null;
+    if (sv && sv.status === 'answered') rc = thanks();
+    else if (sv && Array.isArray(sv.q) && sv.q.length && !broken) rc = rateBox(sv.q);
+    paint([broken ? null : steps(3), main, rc], true);
+  }
+  function thanks() { return card([icon('star', true), el('h2', { class: 'cq-h2', text: 'شكرًا لتقييمك' }), el('p', { class: 'cq-muted', text: 'رأيك يساعدنا على تحسين خدماتنا.' })], 'cq-done'); }
+  function rateBox(Q) {
+    var A = {}, L5 = ['ضعيف', 'مقبول', 'جيد', 'جيد جدًا', 'ممتاز'], err = el('p', { class: 'cq-err', hidden: true }), sent = false;
+    var qs = Q.map(function (q, qi) {
+      var opts = q.type === 'nps10' ? Array.apply(null, Array(11)).map(function (_, i) { return [String(i), '']; }) : q.type === 'yesno' ? [['yes', 'نعم'], ['no', 'لا']] : q.type === 'scale5' ? L5.map(function (l, i) { return [String(i + 1), l]; }) : null;
+      var body;
+      if (opts) {
+        var bs = opts.map(function (o) { return el('button', { type: 'button', 'aria-pressed': 'false', onclick: function () { A[q.k] = o[0]; bs.forEach(function (b, bi) { var on = opts[bi][0] === o[0]; b.className = on ? 'is-on' : ''; b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); err.hidden = true; } }, [el('b', { text: q.type === 'yesno' ? o[1] : o[0] }), q.type === 'scale5' ? o[1] : null]); });
+        body = el('div', { class: 'cq-sc' + (q.type === 'nps10' ? ' is-11' : q.type === 'yesno' ? ' is-2' : ''), role: 'group', 'aria-label': q.t }, bs);
+      } else body = el('textarea', { 'aria-label': q.t, oninput: function (e) { A[q.k] = e.target.value; } });
+      return el('div', { class: 'cq-q' }, [el('p', {}, [el('i', { text: String(qi + 1) }), q.t]), body]);
+    });
+    var cm = el('textarea', { placeholder: 'ملاحظاتك (اختياري)', 'aria-label': 'ملاحظاتك' });
+    var btn = el('button', { type: 'button', class: 'pri', onclick: async function () {
+      if (sent) return;
+      var miss = Q.filter(function (q) { return q.type !== 'text' && !A[q.k]; });
+      if (miss.length) { err.textContent = 'أجب عن كل الأسئلة.'; err.hidden = false; return; }
+      sent = true; btn.disabled = true; btn.textContent = 'جارٍ الإرسال…';
+      try {
+        var j = await api('survey', { answers: A, comment: cm.value });
+        if (!j || !j.ok) { sent = false; btn.disabled = false; btn.textContent = 'إرسال التقييم'; err.textContent = msgOf(j, 'تعذّر حفظ التقييم.'); err.hidden = false; return; }
+        wrap.replaceWith(thanks());
+      } catch (e) { sent = false; btn.disabled = false; btn.textContent = 'إرسال التقييم'; }
+    } }, ['إرسال التقييم']);
+    var wrap = el('section', { class: 'cq-card cq-rate cq-sv' }, [el('div', { class: 'cq-rate-h' }, [tile('star', 'gd'), el('div', {}, [el('b', { text: 'قيّم تجربتك مع خدمة مهلة السداد' }), el('p', { class: 'cq-muted', text: 'أسئلة سريعة، والملاحظات اختيارية.' })])]),
+      el('div', {}, qs), cm, err, btn, el('p', { class: 'cq-sv-hint', text: 'إن لم تُكمل التقييم الآن تصلك الاستمارة نفسها بعد 24 ساعة.' })]);
+    return wrap;
+  }
+
+  start();
 })();
