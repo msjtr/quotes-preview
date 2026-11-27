@@ -30229,10 +30229,11 @@ return '';
 async function eg11RepSave(x, W, paint, show, decide) {
 const err = eg11RepOk(x, W, decide); if (err) { W.err = err; paint(); return; }
 const resEd = egResEd(x), act = decide && !resEd && W.rec !== 'need_docs';
-if (act && !tqConfirm('اعتماد القرار «' + (EG_REC[W.rec] || W.rec) + '» للطلب ' + x.req_no + '؟')) return;
+if (act && !tqConfirm('اعتماد القرار «' + (EG_REC[W.rec] || W.rec) + '» للطلب ' + x.req_no + '؟' + (eg9Fix(x) ? '\n\nطلب الاستكمال المفتوح عند العميل يُغلق ويُحفظ في «الطلبات السابقة» (بلا رسالة منفصلة — تصله النتيجة).' : ''))) return;
 if (EG9.busy) return; EG9.busy = 'rep'; W.err = ''; paint();
 try {
 await eg9Rpc(resEd ? 'admin_elig_result_edit' : 'admin_elig_report', { p_sr: x.id, p_rec: W.rec, p_note: String(W.note || '').trim(), p_nums: egRepNums(x, W, egNums(x)) });
+if (act && eg9Fix(x)) await eg9Rpc('admin_elig_reclaim2', { p_sr: x.id, p_reason: 'صدر قرار الأهلية بالمستندات المقدَّمة حاليًا.', p_notify: false }).then(function () { return eg9Rpc('admin_elig_fix_discard', { p_sr: x.id }); }); /* v1200: القرار لا ينتظر الاستكمال — المفتوح يُغلق ويُحفظ في السجل */
 if (act) await eg9Rpc('admin_sr_decide', { p_id: x.id, p_act: W.rec === 'not_eligible' ? 'reject' : 'approve', p_note: W.rec === 'not_eligible' ? String(W.why).trim() : null });
 EG11.rep[x.id] = null;
 await eg11After(x, act ? 'اعتُمد القرار' : resEd ? 'عُدّلت النتيجة' : 'حُفظت المسودة', act ? ['النتيجة: ' + (EG_REC[W.rec] || W.rec) + (W.rec === 'not_eligible' ? ' — وصل العميلَ السبب وأُغلق الطلب.' : ' — التالي: عرض سعر منتج.')] : ['حُفظ القرار دون اعتماد — اعتمده متى اكتمل.']);
@@ -30278,7 +30279,7 @@ const recs = (resEd ? ['eligible', 'eligible_less'] : Object.keys(EG_REC).filter
 const LR = EGLR.rows || [], inL = LR.some(function (r) { return r.t === W.lr; }), lrSel = W.lrO ? '__other' : (W.lr && !inL ? (EGLR.rows ? '__other' : '') : (W.lr || ''));
 const kids = [
 resEd ? e('div', { class: 'eg12-info' }, [frag(ui('info', 17)), e('span', {}, 'صدر القرار' + (x.decided_at ? ' ' + eg10Dt(x.decided_at) : '') + ' — التعديل متاح حتى يصل الرابط للعميل، وكل تعديل يُسجَّل.')]) : null,
-wait ? e('div', { class: 'eg12-info' }, [frag(ui('info', 17)), e('span', {}, 'طلب استكمال مفتوح عند العميل — القرار وبقية المراحل تكمل عادي؛ إن لم يعد لازمًا اسحبه من «المطلوب من العميل».')]) : null, /* v1194: القرار لا يرتبط بطلب الاستكمال */
+wait ? e('div', { class: 'eg12-info' }, [frag(ui('info', 17)), e('span', {}, 'طلب استكمال مفتوح عند العميل — يمكنك اعتماد القرار الآن، ويُغلق طلب الاستكمال تلقائيًا ويُحفظ في «الطلبات السابقة».')]) : null, /* v1194: القرار لا يرتبط بطلب الاستكمال */
 e('h4', { class: 'eg11-h' }, 'نتيجة الأهلية'),
 !resEd ? e('small', { class: 'eg9-hint' }, 'تحتاج مستندًا أو تصحيحًا من العميل قبل القرار؟ اطلبه من تبويب «المطلوب من العميل».') : null,
 eg12Pick(W.rec, recs, function (v) { W.rec = v; if (v === 'eligible' && !W.amt && req) W.amt = String(req); W.err = ''; paint(); }),

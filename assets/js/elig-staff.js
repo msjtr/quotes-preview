@@ -101,7 +101,7 @@ function gotBlock(x, f, J) {
   if (!f || !J || J.st !== 'ok' || !J.v) return null;
   var at = f.at ? new Date(f.at).getTime() : 0, docs = (J.v.docs || []).filter(function (d) { return new Date(d.uploaded_at).getTime() > at; });
   if (!docs.length) return null;
-  return el('div', { class: 'ela-got' }, [el('b', { text: 'ما رفعه العميل لهذا الطلب' }), el('div', { class: 'ela-rows' }, docs.map(function (d) { return el('div', { class: 'ela-row' }, [el('div', { class: 'ela-b' }, [el('b', { text: d.label || d.doc_type }), el('small', { text: (d.name || '') + ' · ' + when(d.uploaded_at) })]), btn('عرض', { ic: 'eye', on: function () { A().doc(d); } })]); }))]);
+  return el('div', { class: 'ela-got' }, [el('b', { text: 'ما رفعه العميل لهذا الطلب' }), el('div', { class: 'ela-rows' }, docs.map(function (d) { return el('div', { class: 'ela-row' }, [el('div', { class: 'ela-b' }, [el('b', { text: d.label || d.doc_type }), el('small', { text: (d.name || '') + ' · ' + when(d.uploaded_at) })]), btn('عرض', { on: function () { A().doc(d); } })]); }))]);
 }
 function linkInfo(x) {
   var J = journey(x); if (J.st !== 'ok' || !J.v) return null;
