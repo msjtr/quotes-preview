@@ -5788,3 +5788,17 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rgr-fee input { max-width: 220px; }
 .tq-next .rgr-src.is-fee { background: var(--t2-surface-2, #EEF2F7); }
 .tq-next .rgr-nc { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--t2-danger-wash, #FDECEA); color: var(--t2-danger, #B93A2A); font: 700 12px/1.6 var(--t2-ff-display); white-space: nowrap; }
+
+/* v1203: المؤجلون — الشاشات الداخلية: عناوين الخيارات بمحاذاة واحدة، والحاسبة والتفاصيل مضغوطة بعمودين على الشاشات الواسعة */
+.tq-next .rgr-row > small { min-width: 150px; }
+.tq-next .rgr-note { display: grid; grid-template-columns: 150px minmax(0, 420px); align-items: center; gap: 8px; max-width: none; margin-top: 0; }
+.tq-next .rgr-note > small { color: var(--t2-mute, #5B6B86); }
+.tq-next .rgr-fee input { max-width: none; }
+@media (max-width: 640px) { .tq-next .rgr-note { grid-template-columns: 1fr; } .tq-next .rgr-row > small { min-width: 100%; } }
+.tq-next .rgr .rmn-done-f { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 8px; }
+.tq-next .rgr .rmn-done-fr { grid-template-columns: 130px 1fr; padding: 9px 12px; border-radius: 12px; }
+.tq-next .rgr .rmn-done-fr.is-wide { grid-column: 1 / -1; }
+.tq-next .rgr-calc .rmn-done-fr { grid-template-columns: auto 1fr; }
+.tq-next .rgr-pt-more td { text-align: center; padding: 6px; }
+.tq-next .rgr-pt-mb { border: 1px dashed var(--t2-line); background: var(--t2-surface); color: var(--t2-brand); font: 700 13px/1.4 var(--t2-ff-display); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.tq-next .rgr-sig { max-width: 260px; max-height: 120px; border: 1px solid var(--t2-line); border-radius: 10px; background: #fff; padding: 4px; }
