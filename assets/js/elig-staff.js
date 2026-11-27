@@ -101,7 +101,7 @@ function listView() {
     el('tbody', {}, rows.map(function (x) { var s = stOf(x), f = fx(x);
       return el('tr', { tabindex: '0', onclick: function () { openReq(x.id); }, onkeydown: function (e) { if (e.key === 'Enter') openReq(x.id); } }, [
         el('td', {}, [el('b', { text: nameOf(x) })]), el('td', {}, [ltr(x.req_no)]), el('td', {}, [pill(s[0], s[1])]),
-        el('td', { text: f && f.open ? (f.items || []).length + ' بند عند العميل' : f && f.draft ? 'مسودة بعد السحب' : f && f.done_at ? 'أكمل العميل' : '—' }), el('td', { text: when(x.updated_at || x.created_at) })]); }))])])
+        el('td', { text: f && f.open ? (f.items || []).length + ' بند عند العميل' : f && f.draft ? 'مسودة بعد السحب' : f && f.reclaimed_at ? 'سُحب من العميل' : f && f.done_at ? 'أكمل العميل' : '—' }), el('td', { text: when(x.updated_at || x.created_at) })]); }))])])
     : el('div', { class: 'eln-empty' }, [el('b', { text: 'لا طلبات هنا' }), el('span', { class: 'eln-mute', text: 'غيّر التصفية أو البحث.' })]);
   return [el('div', { class: 'eln-lhead' }, [el('p', { class: 'eln-mute', text: 'الصفحة الجديدة لطلبات الأهلية — تبويب لكل مهمة. الصفحة الحالية تبقى تعمل حتى يكتمل النقل.' })]),
     el('section', { class: 'eln-card' }, [tools, body])];
@@ -199,7 +199,7 @@ function itemsList(items, f, docs, withState) {
   return el('ol', { class: 'eln-items' }, (items || []).map(function (it, i) {
     var dn = withState ? itemDone(it, f, docs) : null;
     return el('li', { class: dn ? 'is-done' : '' }, [el('span', { class: 'eln-items-n', text: dn ? '✓' : String(i + 1) }), el('div', {}, [el('b', { text: it.label }), el('small', { class: 'eln-mute', text: TY[it.type] + (it.type === 'doc' && it.max_mb ? ' · حتى ' + it.max_mb + ' م.ب' : '') + (it.note ? ' · ' + it.note : '') + (it.changed_at ? ' · ' + (it.confirmed ? 'أكّده العميل: ' + (it.val || '') : 'صحّحه العميل: ' + (it.prev || '—') + ' ← ' + (it.val || '')) : '') })]),
-      withState ? pill(dn ? 'تم' : 'لم يكتمل', dn ? 'ok' : 'warn') : null]);
+      withState ? (it.type === 'note' ? pill('للعلم', 'off') : pill(dn ? 'تم' : 'لم يكتمل', dn ? 'ok' : 'warn')) : null]);
   }));
 }
 function linkInfo(x) {
@@ -207,7 +207,7 @@ function linkInfo(x) {
   var L = (J.v.links || []).filter(function (l) { return l.purpose === 'journey' && !l.preview; }).slice(-1)[0]; if (!L) return el('p', { class: 'eln-mute', text: 'لم يُرسل رابط مباشر لهذا الطلب بعد.' });
   var S = (J.v.sends || []).filter(function (s) { return s.key === 'elig_fix' && s.kind === 'send'; }).slice(-1)[0];
   return el('dl', { class: 'eln-facts is-sm' }, [['الرابط', L.decision === 'replaced' ? 'مُغلق' : new Date(L.expires_at) < new Date() ? 'منتهي' : 'صالح حتى ' + when(L.expires_at)], ['فتحه العميل', L.opened_at ? when(L.opened_at) + (L.factor ? ' · تحقق ب' + (L.factor === 'whatsapp' ? 'واتساب' : 'البريد') : '') : 'لم يفتحه بعد'],
-    ['واتساب', S ? (WA_L[S.wa_status] || S.wa_status || '—') : '—'], ['البريد', S ? (S.mail_status === 'sent' ? 'أُرسل' : S.mail_status || '—') : '—']].map(function (f) { return el('div', {}, [el('dt', { text: f[0] }), el('dd', { text: f[1] })]); }));
+    ['واتساب', S ? (WA_L[S.wa_status] || S.wa_status || '—') : '—'], ['البريد', S ? (WA_L[S.mail_status] || S.mail_status || '—') : '—']].map(function (f) { return el('div', {}, [el('dt', { text: f[0] }), el('dd', { text: f[1] })]); }));
 }
 function tabAsk(x) {
   var s = subOf('ask');
@@ -231,7 +231,7 @@ function editor(x, f) {
   var draft = f && f.draft, E = ST.ed[x.id] || (ST.ed[x.id] = { items: draft ? JSON.parse(JSON.stringify(f.items || [])) : [], note: draft ? (f.note || '') : '' });
   if (!isOpen(x)) return [card('المطلوب من العميل', [el('p', { class: 'eln-mute', text: 'الطلب مغلق — لا استكمال.' })])];
   var J = job(x), rules = J.st === 'ok' && J.v ? (J.v.rules || []) : [];
-  var N = E.n || (E.n = { type: 'doc', doc: '', field: '', label: '', note: '', mb: '10' });
+  var N = E.n || (E.n = { type: J.st === 'ok' && !rules.length ? 'field' : 'doc', doc: '', field: '', label: '', note: '', mb: '10' });
   var fields = (x.fields || []).map(function (y) { return String(y[0] || ''); }).filter(function (l) { return l && !/^(الاسم|الجوال|البريد الإلكتروني|ملاحظة)$/.test(l); });
   var typeSel = el('select', { class: 'eln-in', 'aria-label': 'نوع البند', onchange: function (e) { N.type = e.target.value; draw(); } }, [['doc', 'مرفق'], ['field', 'تصحيح حقل'], ['note', 'ملاحظة']].map(function (o) { return el('option', { value: o[0], selected: N.type === o[0] ? true : null, text: o[1] }); }));
   var what;
@@ -270,7 +270,7 @@ function reclaimDlg(x) {
     var r = rs.filter(function (y) { return y.k === W.k; })[0];
     var oth = el('textarea', { class: 'eln-in', rows: '2', maxlength: '300', placeholder: 'اكتب السبب', oninput: function (e) { W.other = e.target.value; } }); oth.value = W.other;
     var opt = function (v, t, d) { return el('label', { class: 'eln-opt' + (W.notify === v ? ' is-on' : '') }, [el('input', { type: 'radio', name: 'eln-ntf', checked: W.notify === v, onchange: function () { W.notify = v; draw(); } }), el('div', {}, [el('b', { text: t }), el('small', { class: 'eln-mute', text: d })])]); };
-    return el('div', { class: 'eln-dlg-b' }, [el('label', { class: 'eln-fld' }, [el('span', { text: 'سبب السحب' }), sel]), W.k === '__o' ? oth : r ? el('div', { class: 'eln-quote' }, [el('small', { text: 'يصل العميل' }), el('p', { text: 'السبب: ' + r.body })]) : null,
+    return el('div', { class: 'eln-dlg-b' }, [el('label', { class: 'eln-fld' }, [el('span', { text: 'سبب السحب' }), sel]), W.k === '__o' ? oth : r ? el('div', { class: 'eln-quote' }, [el('small', { text: 'يصل العميل' }), el('p', { text: 'سبب الإلغاء: ' + r.body })]) : null,
       opt(true, 'إبلاغ العميل', 'يصله «أعدنا طلبك للمراجعة» مع السبب على واتساب والبريد والإشعار.'), opt(false, 'سحب بدون إبلاغ', 'لا يصل العميلَ شيء.'),
       el('p', { class: 'eln-mute', text: 'يُغلق رابط الاستكمال فورًا، وتعود البنود إليك مسودة تعدّلها أو تحذفها.' })]);
   }, go: function () {

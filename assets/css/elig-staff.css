@@ -94,3 +94,6 @@ textarea.eln-in{resize:vertical;line-height:1.7}.eln-in.is-s{width:auto;min-heig
 .eln-note-i{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:28px;font-weight:800;color:#fff;background:var(--t)}
 .eln-note.is-bad .eln-note-i{background:var(--bad)}
 @media (max-width:46rem){.eln-card{padding:14px}.eln-head-n h1{font-size:18px}.eln-acts .eln-btn{flex:1 1 auto}}
+
+/* v1154: التبويبات التسعة تلتف على الشاشات العريضة، وتمرَّر أفقيًا على الجوال */
+@media (min-width:900px){.eln-tabs{flex-wrap:wrap;overflow-x:visible}}
