@@ -97,3 +97,6 @@ textarea.eln-in{resize:vertical;line-height:1.7}.eln-in.is-s{width:auto;min-heig
 
 /* v1154: التبويبات التسعة تلتف على الشاشات العريضة، وتمرَّر أفقيًا على الجوال */
 @media (min-width:900px){.eln-tabs{flex-wrap:wrap;overflow-x:visible}}
+
+/* v1164: ردّ العميل على البند */
+.eln-reply{margin:4px 0 0;padding:6px 10px;border-radius:8px;background:#E8F4F1;color:#0A615A;font-size:.9em;white-space:pre-line}

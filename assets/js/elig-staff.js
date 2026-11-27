@@ -198,7 +198,7 @@ var TY = { doc: 'مرفق', field: 'تصحيح حقل', note: 'ملاحظة' };
 function itemsList(items, f, docs, withState) {
   return el('ol', { class: 'eln-items' }, (items || []).map(function (it, i) {
     var dn = withState ? itemDone(it, f, docs) : null;
-    return el('li', { class: dn ? 'is-done' : '' }, [el('span', { class: 'eln-items-n', text: dn ? '✓' : String(i + 1) }), el('div', {}, [el('b', { text: it.label }), el('small', { class: 'eln-mute', text: TY[it.type] + (it.type === 'doc' && it.max_mb ? ' · حتى ' + it.max_mb + ' م.ب' : '') + (it.note ? ' · ' + it.note : '') + (it.changed_at ? ' · ' + (it.confirmed ? 'أكّده العميل: ' + (it.val || '') : 'صحّحه العميل: ' + (it.prev || '—') + ' ← ' + (it.val || '')) : '') })]),
+    return el('li', { class: dn ? 'is-done' : '' }, [el('span', { class: 'eln-items-n', text: dn ? '✓' : String(i + 1) }), el('div', {}, [el('b', { text: it.label }), el('small', { class: 'eln-mute', text: TY[it.type] + (it.type === 'doc' && it.max_mb ? ' · حتى ' + it.max_mb + ' م.ب' : '') + (it.note ? ' · ' + it.note : '') + (it.changed_at ? ' · ' + (it.confirmed ? 'أكّده العميل: ' + (it.val || '') : 'صحّحه العميل: ' + (it.prev || '—') + ' ← ' + (it.val || '')) : '') }), it.reply ? el('p', { class: 'eln-reply', text: 'ردّ العميل: ' + it.reply }) : null]),
       withState ? (it.type === 'note' ? pill('للعلم', 'off') : pill(dn ? 'تم' : 'لم يكتمل', dn ? 'ok' : 'warn')) : null]);
   }));
 }
@@ -222,7 +222,7 @@ function tabAsk(x) {
   }
   if (f && f.done_at && !f.open && !f.draft && !ST.ed[x.id]) {
     return [card('', [el('div', { class: 'eln-ttl' }, [el('div', {}, [el('h2', { class: 'eln-h2', text: 'أكمل العميل المطلوب وأعاد الطلب' }), el('p', { class: 'eln-mute', text: 'أعاده ' + when(f.done_at) + ' — انتهى رابط الاستكمال.' })]), pill('مكتمل', 'ok')]),
-      itemsList(f.items, f, docs, true), el('p', { class: 'eln-mute', text: 'المرفقات في تبويب «ما رفعه العميل»، ثم القرار في «قرار الأهلية».' }),
+      itemsList(f.items, f, docs, true), f.client_note ? el('div', { class: 'eln-quote' }, [el('small', { text: 'ملاحظة العميل مع الإرسال' }), el('p', { text: f.client_note })]) : null, el('p', { class: 'eln-mute', text: 'المرفقات في تبويب «ما رفعه العميل»، ثم القرار في «قرار الأهلية».' }),
       isOpen(x) ? el('div', { class: 'eln-acts' }, [el('button', { class: 'eln-btn', onclick: function () { ST.ed[x.id] = { items: [], note: '' }; draw(); } }, ['طلب استكمال جديد'])]) : null])];
   }
   return editor(x, f);
