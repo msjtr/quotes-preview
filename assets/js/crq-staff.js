@@ -313,7 +313,7 @@ if (sup && x.state === 'decision' && x.need_approval) L.push(['إعادة للم
 /* v882: الإسناد سطر في اللوحة (asgEl) */
 /* v882: إرسال الملحق هو الإجراء الرئيسي بعد التنفيذ */
 /* v882: تنزيل PDF في تبويب «المستند» وحده */
-if (sup && x.state !== 'done' && x.state !== 'closed' && (!x.signed_at || x.exec_error)) L.push(['عدم الاعتماد وإغلاق الطلب', 'ban', function () { askNote('عدم اعتماد الطلب', 'يُغلق الطلب ويصل العميل السبب، ويبقى عقده كما هو.', 'السبب الذي يصل العميل', true, function (n) { act('reject', { note: n }, 'أُغلق الطلب.'); }); }, 'is-bad']);
+if (sup && x.state !== 'done' && x.state !== 'closed' && (!x.signed_at || x.exec_error)) L.push(['عدم الاعتماد وإغلاق الطلب', 'ban', function () { askNote('عدم اعتماد الطلب', 'يُغلق الطلب ويصل العميل السبب، ويبقى عقده كما هو.', 'السبب الذي يصل العميل', true, function (n) { act('reject', { note: n }, 'أُغلق الطلب.'); }, 280, 'اكتب السبب وحده — التحية والتوقيع في رسالة الاعتذار نفسها، وتصل العميل على واتساب والبريد وحسابه.'); }, 'is-bad']);
 return L;
 }
 /* v1125: نتيجة الرسالة لكل وسيلة من الخادم — لا يُكتب «أُبلغ العميل» إلا إن وصلت فعلًا، وسبب ما لم يصل ظاهر (ومسجّل في «السجل») */
@@ -344,15 +344,16 @@ catch (e) { toast(false, e.message); }
 ST.busy = false; draw();
 }
 function ask(title, text, okT, fn) { ST.ask = { title: title, text: text, ok: okT, fn: fn }; draw(); var n = R.querySelector('.cr-ask'); if (n) n.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-function askNote(title, text, ph, need, fn) { ST.ask = { title: title, text: text, ok: 'تأكيد', ph: ph, need: need, note: '', fn: fn }; draw(); var n = R.querySelector('.cr-ask textarea'); if (n) { n.scrollIntoView({ block: 'center', behavior: 'smooth' }); n.focus(); } }
+function askNote(title, text, ph, need, fn, max, hint) { ST.ask = { title: title, text: text, ok: 'تأكيد', ph: ph, need: need, note: '', fn: fn, max: max || 0, hint: hint || '' }; draw(); var n = R.querySelector('.cr-ask textarea'); if (n) { n.scrollIntoView({ block: 'center', behavior: 'smooth' }); n.focus(); } }
 function askView(x) {
 var A = ST.ask; if (!A) return null;
 if (A.kind === 'assign') {
 return el('div', { class: 'cr-ask' }, [el('b', { text: 'إسناد الطلب' }), el('p', { text: 'يظهر الطلب للموظف في «المسند إليّ».' }), el('select', { 'aria-label': 'الموظف', onchange: function (e) { A.to = e.target.value; } }, [el('option', { value: '', text: '— بلا إسناد —' })].concat((x.staff || []).map(function (s) { return el('option', { value: s.id, selected: A.to === s.id, text: s.name }); }))),
 el('div', { class: 'cr-acts' }, [btn('حفظ الإسناد', { cls: 'is-pri', on: function () { act('assign', { to: A.to || null }, 'حُفظ الإسناد.'); } }), btn('إلغاء', { on: function () { ST.ask = null; draw(); } })])]);
 }
-var ta = A.ph ? el('textarea', { placeholder: A.ph, rows: '3', oninput: function (e) { A.note = e.target.value; } }) : null;
-return el('div', { class: 'cr-ask', role: 'dialog', 'aria-label': A.title }, [el('b', { text: A.title }), el('p', { text: A.text }), ta,
+var cnt = A.max ? el('small', { class: 'cr-ask-n', text: (A.note || '').length + ' / ' + A.max }) : null; /* v1143: السبب يصل كما هو في واتساب والبريد — حدّ واضح حتى لا يُقص في واتساب */
+var ta = A.ph ? el('textarea', { placeholder: A.ph, rows: '3', maxlength: A.max ? String(A.max) : null, oninput: function (e) { A.note = e.target.value; if (cnt) cnt.textContent = e.target.value.length + ' / ' + A.max; } }) : null;
+return el('div', { class: 'cr-ask', role: 'dialog', 'aria-label': A.title }, [el('b', { text: A.title }), el('p', { text: A.text }), ta, A.hint || cnt ? el('div', { class: 'cr-ask-h' }, [A.hint ? el('small', { text: A.hint }) : null, cnt]) : null,
 el('div', { class: 'cr-acts' }, [btn(A.ok, { cls: 'is-pri', on: function () { if (A.need && String(A.note || '').trim().length < 3) { ta.classList.add('is-err'); ta.focus(); return; } A.fn(String(A.note || '').trim()); } }), btn('رجوع', { on: function () { ST.ask = null; draw(); } })])]);
 }
 function detailView() {
@@ -1442,7 +1443,7 @@ var pvw = subOf('page', 'page'); /* v1127: الصفحة وإعدادات الر�
 return [mkBar(), subNav('page', [['page', 'صفحة العميل ومعاينتها', 'phone'], ['link', 'مدة الرابط وسجله', 'link', links.length]], pvw)].concat(pvw === 'link' ? [lk] : S);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1142'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1143'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {

@@ -1561,3 +1561,7 @@ background: var(--k-navy); color: #fff; box-shadow: 0 12px 30px -12px rgba(11, 3
   .crq .q-cj-s > li::before { top: 28px; inset-inline-start: 13px; width: 2px; height: calc(100% - 18px); }
   .crq .q-cj-at { margin: 0; }
 }
+
+/* v1143: حدّ سبب عدم الاعتماد وتلميحه */
+.crq .cr-ask-h { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; font-size: 12px; color: var(--k-mut); }
+.crq .cr-ask-n { flex: none; direction: ltr; font-weight: 700; }
