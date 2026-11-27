@@ -35431,7 +35431,7 @@ function rmnCal(F, inc, today, L) {
       const on = it.x.id === A.uid && it.p.pid === A.pid, sg = rmnSegOfD(it.d);
       return e('li', {}, e('button', { type: 'button', class: 'rsc-cal-r' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', onClick: function () { A.uid = it.x.id; A.pid = it.p.pid; A.slot = C.day + '|' + rmnTimesOn(F, it.d)[0]; A.pv = null; A.sim = 0; RMN.pvt = 'msg'; rmnPaint(); try { window.scrollTo(0, 0); } catch (err) { void err; } } }, [
         e('span', { class: 'rsc-cal-dot is-' + sg, 'aria-hidden': 'true' }),
-        e('span', { class: 'rsc-nr-t' }, [e('b', {}, it.x.name || '—'), e('small', {}, ['العقد ', e('bdi', { dir: 'ltr' }, it.p.contract_no || ''), ' · الدفعة ' + fmtNum(it.p.seq) + ' من ' + fmtNum(it.p.n) + ' · ', e('span', { class: it.d > 0 ? 'rmn-late' : 'rmn-ok' }, it.d < 0 ? 'قبل الاستحقاق ' + rmBy(-it.d) : rmLate(it.d))])]),
+        e('span', { class: 'rsc-nr-t' }, [e('b', {}, it.x.name || '—'), e('small', {}, ['العقد ', e('bdi', { dir: 'ltr' }, it.p.contract_no || ''), ' · الدفعة ' + fmtNum(it.p.seq) + ' من ' + fmtNum(it.p.n) + ' · ', e('span', { class: it.d > 0 ? 'rmn-late' : 'rmn-ok' }, it.d < 0 ? 'قبل الاستحقاق ' + rmBy(-it.d) : rmLate(it.d)), Number(it.p.paid) > 0 ? ' · سداد جزئي، المتبقي ' + rmnSar(it.p.left) : ''])]),
         e('span', { class: 'rsc-cal-t' }, [sg === 'late' ? (function () { const T0 = rmnTplOf(F, it.x, it.p, it.d); return e('i', { class: 'rsc-cal-tp is-' + T0.k, title: T0.why }, RMN_TPLN[T0.k][0]); })() : null, rmnTimesOn(F, it.d).map(rmnEndTx).join(' · ')]),
         e('span', { class: 'rsc-cal-go' }, 'الرسالة ‹')])); /* v1106 · v1119: الضغط يفتح «الرسائل» على هذا العميل وهذا اليوم */
     }))]) : e('p', { class: 'rmn-sm rsc-empty' }, 'لا تذكير ' + (C.seg === 'all' ? '' : 'لـ«' + RMN_SEGN[C.seg] + '» ') + 'في هذا الشهر — راجع المواعيد أو انتقل لشهر آخر.');
@@ -35444,9 +35444,12 @@ function rmnMsgView(F, inc, today, L) {
   const A = RMN.rp || (RMN.rp = { uid: '', pid: '', pv: null, ch: '', sim: 0 });
   if (!inc.length) return e('p', { class: 'rmn-sm rsc-empty' }, 'لا أحد مشمول الآن — اختر المستلمين في «لمن يصل».');
   const plan = rmnSimPlan(F, inc, today, 120), base0 = F.hour * 60 + F.minute;
+  /* v1120 (طلب المشرف): الدفعات المعنية بالقاعدة فقط — في «المتأخرون» المتأخرة وحدها، لا القادمة التي لم تستحق */
+  const payOk = function (q) { const lt = Number(q.late) > 0; return (lt && (F.segs.indexOf('late') >= 0 || (q.cdf && F.segs.indexOf('default') >= 0))) || (!lt && F.segs.indexOf('regular') >= 0); };
+  const paysOf = function (y) { const S0 = Array.isArray(F.scope[y.id]) ? F.scope[y.id] : null; return (y.pays && y.pays.length ? y.pays : y.pay ? [y.pay] : []).filter(function (q) { return (!S0 || S0.indexOf(q.pid) >= 0) && payOk(q); }); };
+  inc = inc.filter(function (y) { return paysOf(y).length; }); if (!inc.length) return e('p', { class: 'rmn-sm rsc-empty' }, 'لا دفعات معنية بهذه القاعدة الآن.');
   if (!inc.some(function (x) { return x.id === A.uid; })) { const f = plan.filter(function (g) { return g.items.length; })[0]; A.uid = f ? f.items[0].x.id : inc[0].id; A.pid = f ? f.items[0].p.pid : ''; A.slot = ''; A.pv = null; }
-  const x = inc.filter(function (y) { return y.id === A.uid; })[0], S = Array.isArray(F.scope[x.id]) ? F.scope[x.id] : null;
-  const pays = (x.pays && x.pays.length ? x.pays : x.pay ? [x.pay] : []).filter(function (p) { return !S || S.indexOf(p.pid) >= 0; });
+  const x = inc.filter(function (y) { return y.id === A.uid; })[0], pays = paysOf(x);
   if (!pays.some(function (p) { return p.pid === A.pid; })) { const f = pays.slice().sort(function (a, b) { return (b.late || 0) - (a.late || 0); })[0]; A.pid = f ? f.pid : ''; A.slot = ''; A.pv = null; }
   const p = pays.filter(function (q) { return q.pid === A.pid; })[0];
   const SL = []; plan.forEach(function (g) { g.items.forEach(function (it) { if (it.p.pid !== A.pid) return; rmnTimesOn(F, it.d).forEach(function (tm) { SL.push({ k: g.day + '|' + tm, day: g.day, d: it.d, tm: tm }); }); }); });
@@ -35457,13 +35460,14 @@ function rmnMsgView(F, inc, today, L) {
   const fld = function (lbl, sel) { return e('label', { class: 'rsc-mv-f' }, [e('small', {}, lbl), sel]); };
   const pick = e('div', { class: 'rsc-mv-pick' }, [
     fld('العميل', DS.select({ value: A.uid, options: inc.map(function (y) { return [y.id, y.name || '—']; }), onChange: function (v) { A.uid = v; A.pid = ''; A.slot = ''; A.pv = null; A.sim = 0; rmnPaint(); } })),
-    fld('الدفعة', DS.select({ value: A.pid, options: pays.map(function (q) { return [q.pid, 'الدفعة ' + fmtNum(q.seq) + ' من ' + fmtNum(q.n) + ' · ' + (Number(q.late) > 0 ? rmLate(q.late) : 'تستحق ' + rmnDate(q.due_date))]; }), onChange: function (v) { A.pid = v; A.slot = ''; A.pv = null; A.sim = 0; rmnPaint(); } })),
+    fld('الدفعة', DS.select({ value: A.pid, options: pays.map(function (q) { return [q.pid, 'الدفعة ' + fmtNum(q.seq) + ' من ' + fmtNum(q.n) + ' · ' + (Number(q.late) > 0 ? rmLate(q.late) : 'تستحق ' + rmnDate(q.due_date)) + (Number(q.paid) > 0 ? ' · سداد جزئي' : '')]; }), onChange: function (v) { A.pid = v; A.slot = ''; A.pv = null; A.sim = 0; rmnPaint(); } })),
     fld('الموعد', SL.length ? DS.select({ value: A.slot, options: SL.slice(0, 80).map(function (z) { const w = new Date(z.day + 'T12:00:00Z'); return [z.k, RMN_WDF[w.getUTCDay()] + ' ' + fmtNum(w.getUTCDate()) + ' ' + RMN_MONN[w.getUTCMonth()] + ' · ' + rmnEndTx(z.tm) + (z.tm === base0 ? ' · الأساسي' : ' · إضافي')]; }), onChange: function (v) { A.slot = v; A.sim = 0; rmnPaint(); } })
       : e('div', { class: 't2-input rsc-lt-ro' }, 'لا موعد خلال 120 يومًا'))]);
   const st = T ? rmnStOf(F, x.id, d) : 0;
   const info = e('div', { class: 'rsc-mv-info' }, [
     cur ? e('span', {}, ['يصل ', e('b', {}, rmnDate(cur.day) + ' · ' + rmnEndTx(cur.tm))]) : e('span', { class: 'is-warn' }, 'لا تذكير قادم لهذه الدفعة حسب أيام القاعدة — المعاينة بحالتها اليوم.'),
     p ? e('span', {}, [d > 0 ? 'متأخرة يومها ' : 'قبل الاستحقاق ', e('b', {}, d > 0 ? rmDays(d) : rmBy(-d))]) : null,
+    p ? (Number(p.paid) > 0 ? e('span', { class: 'is-part' }, ['سداد جزئي — دفع ', e('b', {}, rmnSar(p.paid)), ' والمتبقي ', e('b', {}, rmnSar(p.left)), ' (الرسالة بالمتبقي)']) : e('span', {}, ['المبلغ ', e('b', {}, rmnSar(p.left))])) : null, /* v1120 */
     st ? e('span', { class: 'rsc-stl-st is-' + st }, 'المرحلة ' + fmtNum(st) + (rmnStOv(F, x.id) ? ' (يدوي)' : '')) : null,
     T ? e('span', { title: T.why }, ['القالب ', e('b', {}, '«' + RMN_TPLN[T.k][1] + '»')]) : null]);
   return e('div', { class: 'rsc-mv' }, [pick, info, rmnRulePv(F, [x], L, true, true)]);

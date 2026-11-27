@@ -5613,3 +5613,4 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-cdet { border: 1px dashed var(--t2-line); border-radius: 12px; padding: 0 12px; }
 .tq-next .rsc-cdet > summary { cursor: pointer; padding: 10px 0; font-weight: 700; color: var(--t2-brand-3, #0B5F66); list-style: none; }
 .tq-next .rsc-cdet[open] { padding-bottom: 12px; }
+.tq-next .rsc-mv-info .is-part { color: #1F4E9B; } /* v1120 */
