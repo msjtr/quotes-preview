@@ -34558,7 +34558,7 @@ function rgrNew(L, G) {
         N.mode === 'link' ? row('صلاحية الرابط', rgrHrs(N.hrs) + ' من وقت الإرسال') : null,
         row('الرسالة للعميل', N.mode === 'link' ? '«مهلة سداد لدفعتك» بزر «حدد الموعد» — واتساب والبريد والإشعارات' : '«تم تسجيل مهلة السداد» بزر «ادفع الآن» — واتساب والبريد والإشعارات'),
         N.note ? row('ملاحظة', N.note) : null])]),
-      e('div', { class: 'rmn-acts' }, [liveOk(DS.button(N.mode === 'link' ? 'تأكيد وإرسال الرابط' : 'تأكيد وتسجيل المهلة', { tone: 'primary', disabled: RM.busy, onClick: go })), DS.button('رجوع للتعديل', { onClick: function () { N.step = 1; rmnPaint(); } }), DS.button('إلغاء', { onClick: back })])])];
+      e('div', { class: 'rmn-acts' }, [liveOk(DS.button(N.mode === 'link' ? 'تأكيد وإرسال الرابط' : 'تأكيد وتسجيل المهلة', { tone: 'primary', disabled: RM.busy, onClick: go })), DS.button('تعديل الإعدادات', { ui: 'pencil-simple', onClick: function () { N.step = 1; rmnPaint(); } }), DS.button('إلغاء', { onClick: back })])])];
   }
   /* v1171 · v1195: قائمة مساعدة بالاسم ورقم العقد — المنتظمة (أقرب دفعة قادمة في كل عقد) والمتأخرة والمتعثرة، وإعدادات الدفعة المختارة تحتها مباشرة */
   const q = String(N.q || '').trim().toLowerCase(), C0 = [];
