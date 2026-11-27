@@ -398,7 +398,7 @@ function msgBox(o) {
     var A = M.asks || [], open = A.filter(function (a) { return a.state === 'open'; }), dn = A.filter(function (a) { return a.state === 'done'; });
     var files = (M.rows || []).filter(function (m) { return m.file; });
     var pct = A.length ? Math.round(dn.length / A.length * 100) : 0;
-    var kids = [el('h4', { text: 'المطلوب من العميل' })];
+    var kids = [el('h4', { text: 'المطلوب من العميل' })], k0 = kids; /* v1127 */
     if (staff) kids.push(el('button', { type: 'button', class: 'cc-btn is-sm cx-wide cx-askbtn' + (M.askOpen ? ' is-on' : ''), 'aria-expanded': M.askOpen ? 'true' : 'false', 'data-live-ok': '', onclick: function () { M.askOpen = !M.askOpen; paint(); if (M.askOpen) { var w = root.querySelector('.cx-askw'); if (w) w.scrollIntoView({ block: 'start', behavior: 'smooth' }); } } }, [icon('clip'), M.askOpen ? 'إخفاء نموذج الطلب' : 'طلب استكمال من العميل'])); /* v940: مكان واحد للطلب من العميل */
     if (!A.length) kids.push(el('p', { class: 'cx-hint', text: staff ? 'لا مطلوبات بعد.' : 'لا مطلوبات.' }));
     else {
@@ -408,9 +408,11 @@ function msgBox(o) {
         a.state === 'open' ? el('button', { type: 'button', class: 'cx-x', title: 'إلغاء هذا المطلوب', 'aria-label': 'إلغاء ' + a.title, 'data-live-ok': '', onclick: function () { cancelAsk(a); } }, [icon('x')]) : null]); })));
       if (open.length) kids.push(el('button', { type: 'button', class: 'cc-btn is-sm cx-wide', disabled: M.busy, 'data-live-ok': '', onclick: remind }, [icon('bell'), 'تذكير العميل بالمطلوب']));
     }
-    kids.push(el('h4', { text: 'كل المرفقات' + (files.length ? ' (' + files.length + ')' : '') }));
-    kids.push(files.length ? el('div', { class: 'cx-files' }, files.slice().reverse().map(function (m) { return fileChip(m, view, m.who === 'staff' ? 'من الفريق' : 'من العميل'); })) : el('p', { class: 'cx-hint', text: 'لا مرفقات بعد.' }));
-    return el('aside', { class: 'cc-card cx-side' }, kids);
+    var fk = [el('h4', { text: 'كل المرفقات' + (files.length ? ' (' + files.length + ')' : '') }), files.length ? el('div', { class: 'cx-files' }, files.slice().reverse().map(function (m) { return fileChip(m, view, m.who === 'staff' ? 'من الفريق' : 'من العميل'); })) : el('p', { class: 'cx-hint', text: 'لا مرفقات بعد.' })];
+    /* v1127: o.view يعرض مهمة واحدة — «المطلوب من العميل» أو «المرفقات» — في صفحة الموظف المقسّمة */
+    if (o.view === 'asks') return el('section', { class: 'cc-card cx-side is-one' }, k0);
+    if (o.view === 'files') return el('section', { class: 'cc-card cx-side is-one' }, fk);
+    return el('aside', { class: 'cc-card cx-side' }, kids.concat(fk));
   }
   async function remind() { try { M.busy = true; paint(); var j = await api('POST', base + '/remind', {}); M.busy = false; if (o.toast) o.toast(msgFail(j.msg) ? 'warn' : true, 'أُرسل تذكير للعميل بالمطلوب: ' + j.list + '.' + msgFail(j.msg)); load(); } catch (e) { M.busy = false; M.err = e.message; paint(); if (o.toast) o.toast(false, e.message); } }
   async function cancelAsk(a) {
@@ -425,8 +427,8 @@ var n = RW.length, nf = RW.filter(function (m) { return m.file; }).length;
     var list = n ? el('ol', { class: 'cx-thread' }, RW.map(bubble)) : el('p', { class: 'cx-hint cx-empty', text: staff ? 'لا رسائل بعد — راسل العميل، أو اكتب ملاحظة داخلية للفريق.' : 'لا رسائل بعد — راسل فريق تيرا عن طلبك من هنا.' });
     var main = el('section', { class: 'cc-card cx-main' }, [el('div', { class: 'cx-h' }, [el('span', { class: 'cx-ic' }, [icon('mail')]), el('h3', { text: staff ? 'المراسلات' : 'المراسلة مع فريق تيرا' }), n ? el('span', { class: 'cc-badge is-info', text: n + (n === 1 ? ' رسالة' : ' رسائل') + (nf ? ' · ' + nf + ' مرفقات' : '') }) : null]), list,
       x.state === 'closed' && !staff ? el('p', { class: 'cx-hint', text: 'أُغلق الطلب — المراسلة للاطلاع.' }) : composer()]);
-    if (staff && M.askOpen) { var ap = M.askPre; root.appendChild(el('div', { class: 'cx-askw' }, [askPanel({ x: x, api: api, lists: M.lists, gap: M.askGap || 0, preset: ap ? ap.items : null, reset: !!(ap && ap.reset), toast: o.toast, onClose: function () { M.askOpen = false; paint(); }, onSent: function (j) { M.askOpen = false; M.askPre = null; paint(); load(); if (o.ask && o.ask.onSent) o.ask.onSent(j); } })])); if (ap) ap.reset = false; } /* v940 */
-    root.appendChild(staff ? el('div', { class: 'cx-grid' }, [main, side()]) : main);
+    if (staff && M.askOpen && (!o.view || o.view === 'asks')) { var ap = M.askPre; root.appendChild(el('div', { class: 'cx-askw' }, [askPanel({ x: x, api: api, lists: M.lists, gap: M.askGap || 0, preset: ap ? ap.items : null, reset: !!(ap && ap.reset), toast: o.toast, onClose: function () { M.askOpen = false; paint(); }, onSent: function (j) { M.askOpen = false; M.askPre = null; paint(); load(); if (o.ask && o.ask.onSent) o.ask.onSent(j); } })])); if (ap) ap.reset = false; } /* v940 */
+    root.appendChild(!staff ? main : o.view === 'chat' ? main : o.view === 'asks' || o.view === 'files' ? side() : el('div', { class: 'cx-grid' }, [main, side()])); /* v1127 */
     var th = root.querySelector('.cx-thread'); if (th) th.scrollTop = th.scrollHeight;
   }
   paint(); if (!M.rows || !o.cached) load();
