@@ -18570,14 +18570,14 @@ function dcEqDoc(kind, Q, draft, X) {
     const rt = Number(c.vat_rate) || eqRate(), PPi = egProdParts(Q.product_type), val = Number(c.value) || 0, pvat = c.value_vat === false ? 0 : qr2(val * rt);
     const items = kind === 'purchase' ? [] : (kind === 'contract' || sh.items !== false) ? (c.items || []).filter(function (y) { return Number(y.amt) > 0 && on('i_' + y.id); }) : [];
     const vt = function (v) { return v > 0 ? qMoney(v) : 'غير خاضع'; };
-    const rows = (kind === 'contract' || kind === 'purchase' || sh.value !== false ? [[PPi.n || 'المنتج', fmtNum(PPi.q || 1), qMoney(val), vt(pvat)]] : [])
-      .concat(items.map(function (y) { const a = Number(y.amt) || 0; return [lb('i_' + y.id, y.t), '1', qMoney(a), vt(y.vat === false ? 0 : qr2(a * rt))]; }));
+    const rows = (kind === 'contract' || kind === 'purchase' || sh.value !== false ? [[PPi.n || 'المنتج', fmtNum(PPi.q || 1), qMoney(PPi.q ? PPi.u : val), qMoney(val), vt(pvat)]] : [])
+      .concat(items.map(function (y) { const a = Number(y.amt) || 0; return [lb('i_' + y.id, y.t), '1', qMoney(a), qMoney(a), vt(y.vat === false ? 0 : qr2(a * rt))]; })); /* v1213: + سعر الوحدة */
     const sub = kind === 'purchase' ? val : qr2(val + items.reduce(function (a, y) { return a + (Number(y.amt) || 0); }, 0)), vat = kind === 'purchase' ? pvat : Number(c.vat) || 0, tot = kind === 'purchase' ? qr2(val + pvat) : Number(c.total) || 0;
     const tots = [rows.length > 1 ? ['المجموع قبل الضريبة', qMoney(sub)] : null, (kind === 'contract' || sh.vat !== false) && on(pre + '_t_vat') && vat > 0 ? [lb(pre + '_t_vat', 'ضريبة القيمة المضافة') + ' (' + fmtNum(Math.round(rt * 100)) + '٪)', qMoney(vat)] : null,
       on(pre + '_t_total') ? [lb(pre + '_t_total', kind === 'contract' ? 'قيمة العقد شامل الضريبة' : kind === 'purchase' ? 'إجمالي الفاتورة شامل الضريبة' : 'الإجمالي شامل الضريبة'), qMoney(tot), 'gt'] : null];
     B.push(d3Card(lb(pre + '_c_items', kind === 'contract' ? 'مكوّنات قيمة العقد' : kind === 'purchase' ? 'المنتج والضريبة' : 'البنود والرسوم'), 'receipt', [
-      rows.length ? e('table', { class: 'd3-dt d3-it' }, [e('thead', {}, e('tr', {}, ['البند', 'العدد', 'المبلغ', 'الضريبة'].map(function (h) { return e('th', {}, h); }))), e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('th', {}, r[0]), e('td', {}, r[1]), e('td', {}, r[2]), e('td', {}, r[3])]); })),
-        e('tfoot', {}, tots.filter(Boolean).map(function (t) { return e('tr', { class: t[2] === 'gt' ? 'is-gt' : '' }, [e('th', { colspan: '3' }, t[0]), e('td', {}, t[1])]); }))]) : d3KV([], tots)])); /* v1212: الإجماليات صفوف في الجدول نفسه — خط عمود واحد */
+      rows.length ? e('table', { class: 'd3-dt d3-it' }, [e('thead', {}, e('tr', {}, ['البند', 'العدد', 'سعر الوحدة', 'المبلغ', 'الضريبة'].map(function (h) { return e('th', {}, h); }))), e('tbody', {}, rows.map(function (r) { return e('tr', {}, [e('th', {}, r[0]), e('td', {}, r[1]), e('td', {}, r[2]), e('td', {}, r[3]), e('td', {}, r[4])]); })),
+        e('tfoot', {}, tots.filter(Boolean).map(function (t) { return e('tr', { class: t[2] === 'gt' ? 'is-gt' : '' }, [e('th', { colspan: '4' }, t[0]), e('td', {}, t[1])]); }))]) : d3KV([], tots)])); /* v1212: الإجماليات صفوف في الجدول نفسه — خط عمود واحد */
   }
   /* ٤ خطة الدفع */
   if (P.length && on(pre + '_c_plan')) {
@@ -29729,8 +29729,8 @@ if (t === 'req') return C.reach > 0 || x.status !== 'submitted' ? 'ok' : 'w';
 if (t === 'dec') return x.status === 'approved' || x.status === 'rejected' ? 'ok' : k === 1 ? 'w' : x.status === 'submitted' ? 'off' : '';
 if (t === 'qt') return qok ? 'ok' : k === 2 ? 'w' : x.status !== 'approved' ? 'off' : '';
 if (t === 'lnk') return k >= 5 ? 'ok' : (k === 3 || k === 4) && !C.dead ? 'w' : !qok ? 'off' : '';
-if (t === 'inv') return ch.purchase && ch.purchase.d === 'accept' ? 'ok' : k === 4 && cs === 2 && !C.dead ? 'w' : !q ? 'off' : '';
-if (t === 'ct') return B && B.sign ? 'ok' : k === 4 && cs === 3 && !C.dead ? 'w' : !q ? 'off' : '';
+if (t === 'inv') return qok || (ch.purchase && ch.purchase.d === 'accept') ? 'ok' : !q ? 'off' : ''; /* v1213: تصدر الفاتورة مع اعتماد العرض — صح، وقرار العميل تحتها */
+if (t === 'ct') return qok || (B && B.sign) ? 'ok' : !q ? 'off' : ''; /* v1213: يصدر العقد من العرض المعتمد — صح، والتوقيع تحته */
 if (t === 'ask') { const f = (x.meta || {}).fix; return f && (f.open || f.draft) ? 'w' : f && f.done_at ? 'ok' : ''; }
 if (t === 'tpl' || t === 'log') return '';
 if (t === 'adm') return k >= 7 ? 'ok' : (k === 5 || k === 6) && !C.dead ? 'w' : 'off';
@@ -29750,8 +29750,8 @@ const note = function (t) {
 if (t === 'req') return x.status === 'submitted' ? 'جديد' : 'استُلم';
 if (t === 'dec') return B && EG10_REC[B.rec] ? EG10_REC[B.rec] : x.status === 'approved' ? 'مؤهَّل' : x.status === 'rejected' ? 'غير مؤهَّل' : 'لم يصدر';
 if (t === 'qt') return q ? ({ approved: 'معتمد', sent: 'معتمد', accepted: 'قبله العميل', declined: 'اعتذر', pending_approval: 'بانتظار الاعتماد' })[q.st] || 'قيد الإعداد' : '—';
-if (t === 'inv') { const c = ch.purchase; return c && c.d ? (c.d === 'accept' ? 'اعتمدها' : 'اعتذر') : '—'; }
-if (t === 'ct') { const c = ch.contract; return B && B.sign ? 'وقّعه' : c && c.d === 'decline' ? 'اعتذر' : '—'; }
+if (t === 'inv') { const c = ch.purchase; return c && c.d ? (c.d === 'accept' ? 'اعتمدها العميل' : 'اعتذر') : q ? 'صدرت' : '—'; }
+if (t === 'ct') { const c = ch.contract; return B && B.sign ? 'وقّعه العميل' : c && c.d === 'decline' ? 'اعتذر' : q ? 'صدر' : '—'; }
 if (t === 'lnk') return B && B.dec ? 'اعتذر' : B && B.link ? (cs ? fmtNum(cs) + ' من 4' : 'أُرسل') : 'لم يُرسل';
 if (t === 'adm') return k >= 7 ? 'مكتمل' : k === 6 ? (a && a.st === 'pending' ? 'النقاط' : 'نُفّذ') : '—';
 return '';

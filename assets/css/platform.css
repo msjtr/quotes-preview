@@ -10130,7 +10130,7 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg12-plan .eg12-tw{max-height:320px;overflow:auto}
 .eg12-docf .eg12-pv-p{border:1px solid var(--t2-line);border-radius:14px;padding:14px;background:var(--t2-surface-2,#F5F8FA);overflow:auto;max-height:80vh} /* v1210 */
 /* v1211: جدول البنود (البند · العدد · المبلغ · الضريبة) وجدول الدفعات المتسلسل في المستندات */
-.d3-dt.d3-it tbody th{width:40%}.d3-dt.d3-it td:nth-child(2),.d3-dt.d3-it thead th:nth-child(2){width:12%;text-align:center}
+.d3-dt.d3-it tbody th{width:34%}.d3-dt.d3-it td:nth-child(2),.d3-dt.d3-it thead th:nth-child(2){width:9%;text-align:center}
 .d3-dt.d3-pl tbody th{width:18%;text-align:center}.d3-dt.d3-pl thead th:first-child{text-align:center}
 .d3-dt.d3-it tfoot th{text-align:start;color:#0f1d4a;font-weight:700;background:#f6f8fc}.d3-dt.d3-it tfoot td{font-weight:700}
 .d3-dt.d3-it tfoot tr.is-gt th,.d3-dt.d3-it tfoot tr.is-gt td{background:#0f1d4a;color:#fff;font-size:13px}
