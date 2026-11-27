@@ -263,9 +263,12 @@ function editor(x, f) {
         : ST.ed[x.id] && (f && f.done_at) ? el('button', { class: 'eln-btn', onclick: function () { ST.ed[x.id] = null; draw(); } }, ['إلغاء']) : null])])];
 }
 function reclaimDlg(x) {
-  var R3 = replies(), rs = R3.st === 'ok' && R3.v ? (R3.v.rows || []).filter(function (r) { return r.cat === 'reclaim' && r.active; }) : [];
-  var W = { k: rs[0] ? rs[0].k : '__o', other: '', notify: true };
+  /* v1172: الأسباب تُقرأ عند كل رسم — كانت تُقرأ مرة عند فتح النافذة، فإن لم تكن حُمّلت بعد ظهرت «أخرى…» وحدها */
+  var W = { k: '', other: '', notify: true }, rs = [];
   var M = { title: 'سحب الطلب من العميل', wide: true, ok: 'تأكيد السحب', tone: 'bad', body: function () {
+    var R3 = replies(); rs = R3.st === 'ok' && R3.v ? (R3.v.rows || []).filter(function (r) { return r.cat === 'reclaim' && r.active; }) : [];
+    if (!W.k && rs[0]) W.k = rs[0].k; if (!W.k && R3.st && R3.st !== 'load') W.k = '__o';
+    if (R3.st === 'load' || !R3.st) return el('p', { class: 'eln-mute', text: 'جارٍ تحميل أسباب السحب…' });
     var sel = el('select', { class: 'eln-in', 'aria-label': 'سبب السحب', onchange: function (e) { W.k = e.target.value; draw(); } }, rs.map(function (r) { return el('option', { value: r.k, selected: W.k === r.k ? true : null, text: r.title }); }).concat([el('option', { value: '__o', selected: W.k === '__o' ? true : null, text: 'أخرى…' })]));
     var r = rs.filter(function (y) { return y.k === W.k; })[0];
     var oth = el('textarea', { class: 'eln-in', rows: '2', maxlength: '300', placeholder: 'اكتب السبب', oninput: function (e) { W.other = e.target.value; } }); oth.value = W.other;
