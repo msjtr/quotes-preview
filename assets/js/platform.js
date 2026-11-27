@@ -34458,7 +34458,7 @@ function rgrNew(L, G) {
   const opts = y ? [
     e('div', { class: 'rgr-row' }, [e('small', {}, 'أقصى مهلة')].concat([7, 10, 15].map(function (d) { return chip(N.max === d, rgrDays(d) + (d === 7 ? ' (الافتراضي)' : ''), function () { N.max = d; if (N.until && N.until > rgrAdd(base, d)) N.until = ''; rmnPaint(); }); }))),
     e('div', { class: 'rgr-row' }, [e('small', {}, 'الطريقة')].concat([chip(N.mode === 'link', 'إرسال رابط للعميل (يختار ويوقّع)', function () { N.mode = 'link'; rmnPaint(); }), chip(N.mode === 'direct', 'تسجيل مباشر (بطلب هاتفي)', function () { N.mode = 'direct'; rmnPaint(); })])),
-    N.mode === 'direct' ? e('div', { class: 'rgr-days' }, Array.from({ length: N.max }, function (_v, i) { const d = rgrAdd(base, i + 1); return chip(N.until === d, [e('b', {}, rgrDate(d).replace(/ \d{4}$/, '')), e('small', {}, 'بعد ' + rgrDays(Math.round((new Date(d + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5)))], function () { N.until = d; rmnPaint(); }); })) : null,
+    N.mode === 'direct' ? e('div', { class: 'rgr-days' }, Array.from({ length: N.max }, function (_v, i) { const d = rgrAdd(base, i + 1); return chip(N.until === d, [e('b', {}, rgrDate(d).replace(/ \d{4}$/, '')), e('small', {}, 'مهلة ' + rgrDays(i + 1))], function () { N.until = d; rmnPaint(); }); })) : null,
     e('label', { class: 'rgr-note' }, [e('small', {}, 'ملاحظة (اختياري، لا تظهر للعميل)'), DS.input({ value: N.note, placeholder: 'مثال: طلب العميل بالهاتف', onInput: function (v) { N.note = v; } })])] : null;
   const ready = !!(y && !used[y.pid] && (N.mode === 'link' || N.until));
   return [e('div', { class: 'rov rgr' }, [
