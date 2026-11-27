@@ -29664,7 +29664,10 @@ const EG12_VW = { fix: ['ask', 'now'], msg: ['log', ''], ct: ['ct', ''], inv: ['
 const EG12_OLD = { docs: ['req', ''], fix: ['ask', 'now'], rep: ['dec', ''], res: ['dec', ''], qt: ['qt', ''], apv: ['qt', ''], inv: ['inv', ''], ct: ['ct', ''], pv: ['lnk', 'tpl'], snd: ['lnk', 'send'], adm: ['adm', ''], log: ['log', ''], data: ['req', ''] };
 /* الخطوات الأربع للرابط: المفتاح · الاسم · الأيقونة · نوع المستند (لا PDF لخطوة الأهلية) */
 const EG12_STEPS = [['elig', 'أهلية شراء منتج', 'seal-check', ''], ['quote', 'عرض سعر منتج', 'receipt', 'quote'], ['purchase', 'فاتورة المنتج', 'file-text', 'purchase'], ['contract', 'عقد بيع منتج', 'handshake', 'contract']];
-function eg10V(x) { const M = EG9.v12 || (EG9.v12 = {}); return M[x.id] || (M[x.id] = { tab: '', sub: {}, menu: false, asg: false, fix: false, step: '', part: 'page', wide: false }); }
+function eg10V(x) { const M = EG9.v12 || (EG9.v12 = {}); return M[x.id] || (M[x.id] = Object.assign({ tab: '', sub: {}, menu: false, asg: false, fix: false, step: '', part: 'page', wide: false }, eg12VLoad(x.id))); }
+/* v1223: التبويب المفتوح لكل طلب يبقى بعد تحديث الصفحة (لا يرجع لعرض السعر قبل اكتمال تحميل الحالة) */
+function eg12VLoad(id) { try { const o = JSON.parse(sessionStorage.getItem('tera-eg12v:' + id) || 'null'); return o && typeof o.tab === 'string' ? { tab: o.tab, sub: o.sub && typeof o.sub === 'object' ? o.sub : {} } : {}; } catch (err) { return {}; } }
+function eg12VSave(id, V) { try { if (V && V.tab) sessionStorage.setItem('tera-eg12v:' + id, JSON.stringify({ tab: V.tab, sub: V.sub || {} })); } catch (err) { void err; } }
 function eg12Bind() {
 if (EG12.bound) return; EG12.bound = true;
 const shut = function () { const P = EG12.open; if (!P) return; EG12.open = null; P.V.menu = false; P.V.asg = false; P.paint(); };
@@ -29691,7 +29694,7 @@ const go = function (tab, sub) { V.tab = tab; if (sub) V.sub[tab] = sub; V.menu 
 const show = function (stg, view) { if (view === 'fix') V.fix = true; if (view === 'cl') { eg12Cl(x); return; } if (view && EG12_VW[view]) return go(EG12_VW[view][0], EG12_VW[view][1]); const s = typeof stg === 'number' ? stg : Math.max(0, k); const t = EG12_STG[Math.min(7, Math.max(0, s))]; go(t[0], t[1]); };
 if (V.tab === 'tpl') { V.tab = 'lnk'; V.sub.lnk = 'tpl'; } /* v1194 */
 const defTab = EG12_STG[Math.min(7, Math.max(0, dead ? Math.min(reach, 2) : k))];
-const tab = V.tab && EG12_T.some(function (t) { return t[0] === V.tab; }) ? V.tab : defTab[0];
+const tab = V.tab && EG12_T.some(function (t) { return t[0] === V.tab; }) ? V.tab : defTab[0]; eg12VSave(x.id, V);
 const ctx = { x: x, B: B, k: k, dead: dead, reach: reach, open: open, RF: RF, NX: NX, paint: paint, show: show, go: go, V: V, tab: tab };
 /* الإلغاء — بطاقة تأكيد عند الطلب */
 const extra = [];
