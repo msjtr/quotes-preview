@@ -10112,11 +10112,12 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .dc3.dc3 .d3-exp.d3-cfs-cls b{font-size:12px;color:#0b2552;margin-bottom:2px;display:block}
 /* v1206: عرض سعر المنتج — الكمية وسعر الوحدة، و«إضافة مبلغ وتوزيعه» على البنود، والأعمدة تنطوي حسب عرض المحتوى (لا الشاشة) */
 .eg12-bd{container-type:inline-size}
-.eg12-g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 16px}
+.eg12-g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px 16px}
+.eg12 .q2-d .q2-res .q2-ln,.eg12 .q2-d .q2-res .q2-tot{display:none}.eg12 .q2-d .q2-res{border:0;padding:0;background:none}
 .eg13-qhd{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .eg12-it td.eg12-ck,.eg12-it th:first-child:empty{width:56px;text-align:center}
 .eg12-it td.eg12-ck input{width:18px;height:18px;accent-color:var(--t2-brand,#0E7C70)}
 .eg12-it tr.is-d2 td{background:var(--t2-brand-wash,#E6F5F2)}
 .eg12 .q2-d{border:1px dashed var(--t2-line-2,#D5DCE8);border-radius:14px;padding:14px}
-@container (max-width:980px){.eg13-qg{grid-template-columns:minmax(0,1fr)}.eg13-qs{position:static}.eg12-g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:980px){.eg13-qg{grid-template-columns:minmax(0,1fr)}.eg13-qs{position:static}}
 @container (max-width:620px){.eg12-g2,.eg12-g3,.eg12-g4{grid-template-columns:minmax(0,1fr)}}

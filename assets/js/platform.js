@@ -30383,11 +30383,11 @@ const kids = [R ? e('div', { class: 'eg10-warn' }, 'أُعيد للتعديل' +
 const planK = [], itemK = [];
 const qv = Number(D.qty) || 0, uv = Number(D.unit) || 0;
 itemK.push(eg11Fld('المنتج', eg11In(D.qn, function (v) { D.qn = v; eg11QtyType(D); }, { max: '160', ph: 'اسم المنتج كما يظهر للعميل' })),
-e('div', { class: 'eg12-g4' }, [eg11Fld('الكمية', eg11In(D.qty, function (v) { D.qty = String(v).replace(/[^0-9]/g, ''); }, { num: true, ph: '1', label: 'الكمية', change: function () { eg11QtyCalc(D); paint(); } }), 'اختياري'),
-eg11Fld('سعر الوحدة', eg11In(D.unit, function (v) { D.unit = v; }, { num: true, ph: '0.00', label: 'سعر الوحدة', change: function () { eg11QtyCalc(D); paint(); } }), 'قبل الضريبة'),
-eg11Fld('قيمة المنتج', eg11In(D.value, function (v) { D.value = v; }, { num: true, ph: '0.00', change: function () { eqValueCh(D); if (Number(D.qty) > 0 && Number(D.value) > 0) D.unit = String(qr2(Number(D.value) / Number(D.qty))); eg11QtyType(D); paint(); } }), qv > 1 && uv > 0 ? fmtNum(qv) + ' × ' + qr2(uv).toFixed(2) : 'قبل الضريبة'),
+e('div', { class: 'eg12-g4' }, [eg11Fld('الكمية', eg11In(D.qty, function (v) { D.qty = String(v).replace(/[^0-9]/g, ''); }, { num: true, ph: '1', label: 'الكمية', change: function () { eg11QtyCalc(D); paint(); } })),
+eg11Fld('سعر الوحدة', eg11In(D.unit, function (v) { D.unit = v; }, { num: true, ph: '0.00', label: 'سعر الوحدة', change: function () { eg11QtyCalc(D); paint(); } })),
+eg11Fld('قيمة المنتج', eg11In(D.value, function (v) { D.value = v; }, { num: true, ph: '0.00', change: function () { eqValueCh(D); if (Number(D.qty) > 0 && Number(D.value) > 0) D.unit = String(qr2(Number(D.value) / Number(D.qty))); eg11QtyType(D); paint(); } })),
 eg11Fld('ضريبة المنتج', eg11Sel(D.pvat !== false ? 'yes' : 'no', [['yes', 'ضريبة ' + fmtNum(Math.round(eqRate() * 100)) + '٪'], ['no', 'بلا ضريبة']], function (v) { D.pvat = v === 'yes'; paint(); }, { label: 'ضريبة المنتج' }))]),
-qv > 1 && uv > 0 ? e('small', { class: 'eg9-hint' }, ['يظهر للعميل: ', e('b', {}, D.type)]) : null,
+e('small', { class: 'eg9-hint' }, qv > 1 && uv > 0 ? ['المبالغ قبل الضريبة · يظهر للعميل: ', e('b', {}, D.type)] : 'المبالغ قبل الضريبة · الكمية وسعر الوحدة اختياريان — بهما تُحسب قيمة المنتج وتظهر للعميل.'),
 e('div', { class: 'eg13-qhd' }, [e('h4', { class: 'eg11-h' }, 'بنود العرض'), eg11Seg(Z2.on ? 'd2' : 'man', [['man', 'إدخال يدوي'], ['d2', 'إضافة مبلغ وتوزيعه']], function (v) { Z2.on = v === 'd2'; paint(); })]),
 Z2.on ? eqD2Box(x, D, C, paint) : null, e('small', { class: 'eg9-hint' }, 'البند المخفي لا يظهر منفردًا للعميل — يُجمع في سطر واحد' + (D.svcLabel ? ' باسم «' + D.svcLabel + '»' : '') + '.'),
 e('div', { class: 'eg12-tw' }, e('table', { class: 'eg11-tbl eg12-it' }, [e('thead', {}, e('tr', {}, (Z2.on ? ['يُوزَّع'] : []).concat(['البند', 'المبلغ (ر.س)', 'الضريبة', 'يظهر للعميل', '']).map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, D.lines.map(lineRow)),
