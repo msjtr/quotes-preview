@@ -21251,8 +21251,8 @@ function eligFixBox(x, c, paint) {
   else if (fx && fx.done_at) out.push(DS.note('ok', 'أكمل العميل المطلوب وأعاد الطلب ' + iso(new Date(fx.done_at)), 'راجع المرفقات في «المستندات» ثم سجّل التوصية وأصدر النتيجة.'), list(fx.items));
   if (fx && !fx.open && fx.reclaimed_at) out.push(DS.note('info', 'سحب الفريق الطلب من العميل ' + iso(new Date(fx.reclaimed_at)), 'يمكنك إعادته للاستكمال من جديد أو تسجيل التوصية وإصدار النتيجة.'));
   if (fx && fx.open && open) out.push(e('div', { class: 't2-pb-actions' }, [liveOk(DS.button('سحب الطلب من العميل', { size: 'sm', tone: 'danger', ui: 'arrow-u-up-left', onClick: async function () {
-    if (window.__egRc !== x.id || Date.now() - (window.__egRcAt || 0) > 10000) { window.__egRc = x.id; window.__egRcAt = Date.now(); snack('للتأكيد اضغط «سحب الطلب من العميل» مرة ثانية خلال 10 ثوانٍ — يعود الطلب للفريق ولا يصل العميلَ إشعار.'); return; } window.__egRc = ''; /* v669 */
-    try { const r = await admRpc('admin_elig_reclaim', { p_sr: x.id, p_note: '' }); if (r && r.ok === false) throw new Error(r.message || r.error || 'تعذّر السحب.'); snack('سُحب الطلب من العميل — عاد للفريق.'); c.fix = null; c.reload(); try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } }
+    if (!tqConfirm('سحب الطلب ' + (x.req_no || '') + ' من العميل؟ يعود الطلب للفريق، ويُغلق رابط الاستكمال، ولا يصل العميلَ إشعار.')) return; /* v1140: كان التأكيد بضغطتين عبر رسالة تظهر «✓ تم» في صفحة الأهلية فيُظن أن السحب نُفّذ */
+    try { const r = await admRpc('admin_elig_reclaim', { p_sr: x.id, p_note: '' }); if (r && r.ok === false) throw new Error(r.message || r.error || 'تعذّر السحب.'); try { await lvSrLoad(); } catch (er) { void er; } snack('سُحب الطلب من العميل — عاد للفريق.'); c.fix = null; c.reload(); try { if (typeof liveRefresh === 'function') liveRefresh(); } catch (er) { void er; } }
     catch (err) { snack(egErr(err)); }
   } }))])); /* v668: صلاحية customers.elig_reclaim */
   if (!open) { out.push(e('small', { class: 'cu-dr-hint' }, 'الطلب مغلق أو ملغى — لا إعادة.')); return e('div', { class: 'sr-stl' }, out); }
@@ -29560,6 +29560,7 @@ snack = function (m, a, s) {
 try {
 if (!a && typeof m === 'string' && S.tab === 'other' && S.other === 'cu-elig' && !/^جارٍ/.test(m)) {
 const bad = /^(تعذّر|تعذر|اكتب|اختر|أدخل|حدّد|حدد|لا |الملف|نوع الملف|حجم|انتهت|أكمل|أعد|يجب|غير )/.test(m);
+if (/^للتأكيد/.test(m)) { eg9Note('تأكيد مطلوب — لم يُنفَّذ بعد', [m], 'info'); return; } /* v1140 */
 eg9Note(bad ? 'تنبيه' : 'تم', [m], bad ? 'warn' : 'ok'); return;
 }
 } catch (err) { void err; }
@@ -29786,7 +29787,7 @@ return e('div', { class: 'eg12-pop is-asg' }, kids);
 function eg12Menu(C) {
 const x = C.x, V = C.V, open = C.open;
 /* v936: بلا تكرار — «القوالب والمعاينة» و«المراسلات والسجل» و«ملف العميل» ظاهرة في الرأس؛ هنا الإجراءات وحدها */
-const it = [open ? ['fix', 'طلب مرفق من العميل', 'clipboard-text'] : null,
+const it = [/* v1140: «طلب استكمال من العميل» مدخله الوحيد في تبويب «الطلب» */
 ['approved', 'rejected', 'in_review'].indexOf(x.status) >= 0 && !x.executed_at ? ['ntf', 'إرسال إشعار بالحالة للعميل', 'bell'] : null, open ? ['-'] : null, open ? ['cx', 'إلغاء الطلب وإغلاقه', 'x-circle'] : null].filter(Boolean);
 const act = function (k) {
 V.menu = false; EG12.open = null;
@@ -29970,7 +29971,9 @@ EG12.pvf = { f: f, K: K, ready: false };
 if (!EG12.pvBound) { EG12.pvBound = true; window.addEventListener('message', function (ev) { const P = EG12.pvf; if (!P || ev.origin !== location.origin || !ev.data || ev.data.type !== 'crq-preview-ready') return; if (P.f.contentWindow !== ev.source) return; P.ready = true; eg12PvPush(); }); }
 return f;
 }
-function eg12PvPush() { const P = EG12.pvf; if (!P || !P.ready || !P.f.isConnected) return; const S = (EG12.pvd || {})[P.K]; if (!S || !S.d || S.d.ok === false) return; try { P.f.contentWindow.postMessage({ type: 'crq-preview', elj: S.d }, location.origin); } catch (err) { void err; } }
+function eg12PvPush() { const P = EG12.pvf; if (!P || !P.ready || !P.f.isConnected) return; const S = (EG12.pvd || {})[P.K]; if (!S || !S.d || S.d.ok === false) return;
+let d = S.d; try { const id = String(P.K).split(':')[0], ep = EG12.ep && EG12.ep[id]; if (ep && ep.dirty && /:elig$/.test(P.K)) d = Object.assign({}, S.d, { ep: Object.assign({}, S.d.ep || {}, ep.v) }); } catch (err) { void err; } /* v1140: المعاينة بما لم يُحفظ بعد */
+try { P.f.contentWindow.postMessage({ type: 'crq-preview', elj: d }, location.origin); } catch (err) { void err; } }
 /* «الرابط وموافقات العميل»: خط زمني واحد — الإرسال ثم فتح الرابط ثم كل خطوة بقرار العميل */
 function eg12Lnk(C) {
 const x = C.x, B = C.B, k = C.k, paint = C.paint, L = B && B.link, ch = (B && B.ch) || {}, n = eg10Cs(B), q = B && B.q, qok = q && ['approved', 'sent', 'accepted'].indexOf(q.st) >= 0;
@@ -30165,7 +30168,6 @@ const acts = [];
 if (d && d.path) acts.push(eg9Btn('عرض', { on: function () { egDocOpen(Object.assign({ label: lbl }, d)); } }));
 if (d && d.status !== 'accepted' && !done) acts.push(eg9Btn(W.busy === d.id ? 'جارٍ…' : 'قبول', { cls: 'is-pri', ic: 'check-circle', disabled: !!W.busy, on: function () { decide(Object.assign({ label: lbl }, d), 'accepted'); } }));
 if (d && d.status !== 'rejected' && !done) acts.push(eg9Btn('رفض بسبب', { disabled: !!W.busy, on: function () { W.rej = W.rej === d.id ? '' : d.id; W.why = ''; paint(); } }));
-if ((!d || d.status === 'rejected') && !done) acts.push(eg9Btn('طلب من العميل', { ic: 'clipboard-text', on: function () { show(null, 'fix'); } }));
 const row = e('div', { class: 'eg11-chk' + (d && d.status === 'accepted' ? ' is-d' : !d || d.status === 'rejected' ? ' is-x' : '') }, [e('i', { 'aria-hidden': 'true' }), e('div', {}, [e('b', {}, lbl), e('small', {}, [e('span', { class: 'eg9-pill is-' + st[1] }, st[0]), d && d.uploaded_at ? ' · ' + iso(new Date(d.uploaded_at)) : '', d && d.reject_reason ? ' · السبب: ' + d.reject_reason : ak && ak.note ? ' · المطلوب: ' + ak.note : ''])]), e('div', { class: 'eg11-chk-a' }, acts)]);
 if (!(d && W.rej === d.id)) return row;
 return e('div', {}, [row, e('div', { class: 'eg11-inl' }, [eg11Fld('سبب الرفض', eg11Ta(W.why, function (v) { W.why = v; }, { ph: 'يصل العميل في حسابه وعلى واتساب', max: '300' }), 'يصل العميل'),
@@ -30288,7 +30290,7 @@ eg11Fld('رأي الفريق', eg11Ta(W.note, function (v) { W.note = v; }, { ph
 eg11Err(W.err),
 eg12Foot(eg11Acts([eg11Main(EG9.busy === 'rep' ? 'جارٍ…' : resEd ? 'حفظ النتيجة المعدّلة' : W.rec === 'need_docs' ? 'حفظ وطلب المستندات' : 'اعتماد القرار', { disabled: !!EG9.busy || wait, on: function () { eg11RepSave(x, W, paint, show, true); } }),
 resEd ? eg9Btn('إلغاء التعديل', { on: function () { EG11.rep[x.id] = null; paint(); } }) : eg9Btn('حفظ مسودة', { ic: 'download-simple', disabled: !!EG9.busy, on: function () { eg11RepSave(x, W, paint, show, false); } }),
-!resEd && !wait ? eg9Btn('طلب استكمال من العميل', { ic: 'clipboard-text', on: function () { show(null, 'fix'); } }) : null]), resEd ? 'تُحدَّث صفحة النتيجة ورسالتها تلقائيًا.' : 'بعد الاعتماد: «مؤهَّل» ينقلك لعرض السعر · «غير مؤهَّل» يُغلق الطلب ويصل السبب.')];
+null]), resEd ? 'تُحدَّث صفحة النتيجة ورسالتها تلقائيًا.' : 'بعد الاعتماد: «مؤهَّل» ينقلك لعرض السعر · «غير مؤهَّل» يُغلق الطلب ويصل السبب.')];
 return eg9Card('قرار الأهلية', 'seal-check', kids.filter(Boolean));
 }
 
