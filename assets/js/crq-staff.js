@@ -53,7 +53,7 @@ function icon(n) { var s = document.createElementNS(NS, 'svg'); s.setAttribute('
 function el(tag, a, kids) {
 var n = document.createElement(tag);
 Object.keys(a || {}).forEach(function (k) { var v = a[k]; if (v == null || v === false) return; if (k === 'class') n.className = v; else if (k === 'text') n.textContent = W(v); else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v); else if (k === 'value') n.value = v; else if (k === 'checked') n.checked = !!v; else if (k === 'selected') n.selected = !!v; else n.setAttribute(k, v === true ? '' : k === 'title' || k === 'aria-label' ? W(v) : v); });
-(kids || []).forEach(function (c) { if (c == null || c === false) return; n.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(W(String(c))) : c); });
+(kids || []).forEach(function add(c) { if (c == null || c === false) return; if (Array.isArray(c)) { c.forEach(add); return; } /* v1142 */ n.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(W(String(c))) : c); });
 return n;
 }
 function btn(label, o) { o = o || {}; var b = el('button', { type: 'button', class: 'cr-btn' + (o.cls ? ' ' + o.cls : ''), disabled: o.disabled, title: o.title, 'data-live-ok': '', onclick: o.on }, [o.ic ? icon(o.ic) : null, label]); return b; }
@@ -387,9 +387,45 @@ el('div', { class: 'cr-hd-acts' }, more.map(function (m) { return el('button', {
 steps ? el('div', { class: 'cr-hd-path' }, [steps]) : null,
 /* v1127: «المطلوب الآن» سطر مستقل تحت المسار بلون صاحب الدور — ماذا يفعل الموظف الآن */
 (function () { var t = turnOf(x), ic = t[0] === 'cli' ? 'wait' : t[0] === 'boss' ? 'sign' : t[0] === 'bad' ? 'alert' : t[0] === 'ok' ? 'ok' : t[0] === 'off' ? 'x' : 'user';
-return el('div', { class: 'q-now is-' + t[0], role: 'status' }, [el('span', { class: 'q-now-ic' }, [icon(ic)]), el('div', { class: 'q-now-t' }, [el('b', { text: t[0] === 'me' ? 'المطلوب منك الآن' : t[0] === 'cli' ? 'بانتظار العميل' : t[0] === 'boss' ? 'بانتظار المشرف العام' : t[0] === 'bad' ? 'يحتاج تدخلك' : t[0] === 'ok' ? 'اكتمل الطلب' : 'أُغلق الطلب' }), el('span', { text: nowT })]),
+return [el('div', { class: 'q-now is-' + t[0], role: 'status' }, [el('span', { class: 'q-now-ic' }, [icon(ic)]), el('div', { class: 'q-now-t' }, [el('b', { text: t[0] === 'me' ? 'المطلوب منك الآن' : t[0] === 'cli' ? 'بانتظار العميل' : t[0] === 'boss' ? 'بانتظار المشرف العام' : t[0] === 'bad' ? 'يحتاج تدخلك' : t[0] === 'ok' ? 'اكتمل الطلب' : 'أُغلق الطلب' }), el('span', { text: nowT })]),
 c.wait ? el('div', { class: 'q-now-a' }, [btn('فتح المطلوب من العميل', { ic: 'list', cls: 'is-sm', on: function () { ST.tab = 'chat'; ST.sub = ST.sub || {}; ST.sub.chat = 'asks'; keep(); draw(); } })]) /* v1128: التذكير في «المطلوب من العميل» وحده */
-: x.back && (x.state === 'received' || x.state === 'decision') ? el('div', { class: 'q-now-a' }, [btn('فتح ما أرسله العميل', { ic: 'inbox', cls: 'is-sm', on: function () { ST.tab = 'chat'; ST.sub = ST.sub || {}; ST.sub.chat = 'asks'; keep(); draw(); } })]) : null]); })()]);
+: x.back && (x.state === 'received' || x.state === 'decision') ? el('div', { class: 'q-now-a' }, [btn('فتح ما أرسله العميل', { ic: 'inbox', cls: 'is-sm', on: function () { ST.tab = 'chat'; ST.sub = ST.sub || {}; ST.sub.chat = 'asks'; keep(); draw(); } })]) : null]), t[0] === 'cli' ? cliTrack(x) : null]; })()]);
+}
+/* v1142: «مسار العميل» — يظهر مع «بانتظار العميل» وحده: ماذا فعل العميل وأين وقف، بخطوات بأوقاتها
+ * العرض: أُرسل ← وصلته الرسالة (حالة واتساب الحقيقية: أُرسلت · وصلت · قرأها) ← فتح الرابط ← وافق ← وقّع
+ * الاستكمال: طُلب منه ← وصلته الرسالة ← رفع المطلوب — مع صلاحية الرابط أو المهلة. المصدر: السجل وتواريخ الطلب وسجل واتساب (wa_trace). */
+function cliTrack(x) {
+var L = x.log || [], T = x.wa_trace || [], c = x.chat || {};
+var logAt = function (re, after) { var g = L.filter(function (z) { return re.test(String(z.action || '')) && (!after || Date.parse(z.at) >= Date.parse(after) - 60000); }); return g.length ? g[g.length - 1].at : null; };
+var logOf = function (re) { var g = L.filter(function (z) { return re.test(String(z.action || '')); }); return g.length ? g[g.length - 1] : null; };
+var waOf = function (re, after) { var g = T.filter(function (m) { return re.test(m.tpl || '') && (!after || Date.parse(m.at) >= Date.parse(after) - 120000); }); return g.length ? g[g.length - 1] : null; };
+var waStep = function (m, mailLog) { var ml = mailLog && /البريد ✓/.test(mailLog.action) ? ' · البريد ✓' : mailLog && /البريد ✗/.test(mailLog.action) ? ' · البريد ✗' : '';
+if (!m) return { t: 'وصلته الرسالة', done: null, sub: mailLog ? (ml ? ml.slice(3) : '') || 'لا سجل لواتساب' : 'لا سجل لواتساب' };
+var st = m.st; return st === 'read' ? { t: 'قرأ الرسالة', done: true, at: m.sat || m.at, sub: 'على واتساب' + ml } : st === 'delivered' ? { t: 'وصلت الرسالة', done: true, at: m.sat || m.at, sub: 'وصلت جواله ولم يقرأها' + ml } : st === 'failed' ? { t: 'لم تصل واتساب', done: false, bad: true, at: m.at, sub: (m.err || 'رفضتها Meta') + ml } : { t: 'وصلته الرسالة', done: false, at: m.at, sub: 'أُرسلت ولم تصل جواله بعد' + ml }; };
+var S = [], foot = null, cur = -1;
+if (x.state === 'consent' || x.state === 'sign') {
+var sent = x.sent_at || x.approved_at, w = waOf(/req_offer|tera_update/, sent), wm = logOf(/^رسالة «رابط العرض»/);
+var open = logAt(/فتح العميل رابط الموافقة/, sent) || (x.link && x.link.step === 'consent' ? x.link.opened_at : null);
+var ok = x.consented_at || logAt(/وافق العميل على العرض/, sent), sOpen = logAt(/فتح العميل رابط التوقيع|عاد العميل من رابط الموافقة/, sent) || (x.link && x.link.step === 'sign' ? x.link.opened_at : null);
+S = [{ t: 'أُرسل العرض', done: true, at: sent }, waStep(w, wm), { t: 'فتح رابط العرض', done: !!open, at: open }, { t: 'وافق على العرض', done: !!ok, at: ok }, { t: 'وقّع الملحق', done: !!x.signed_at, at: x.signed_at, sub: !x.signed_at && sOpen ? 'فتح رابط التوقيع ' + at(sOpen) : '' }];
+var lk = logAt(/أُقفل الرابط/, sent);
+if (x.link && x.link.expires_at) { var left = (Date.parse(x.link.expires_at) - Date.now()) / 36e5; foot = left > 0 ? ['', 'الرابط صالح حتى ' + at(x.link.expires_at) + ' — يبقى ' + (left < 1 ? 'أقل من ساعة' : Math.round(left) + ' ساعة')] : ['bad', 'انتهت صلاحية الرابط ' + at(x.link.expires_at)]; }
+if (lk) foot = ['bad', 'أُقفل الرابط لتجاوز محاولات رمز التحقق ' + at(lk) + ' — أعد إرسال الرابط'];
+} else if (c.wait) {
+var n = (Number(c.done) || 0) + (Number(c.open) || 0), wf = waOf(/req_fix|tera_update/), up = logAt(/أرفق العميل/), fm = logOf(/^رسالة «مطلوب منك»/);
+S = [{ t: 'طُلب منه', done: true, at: wf ? wf.at : null, sub: n ? n + (n === 1 ? ' مطلوب' : n === 2 ? ' مطلوبان' : ' مطلوبات') : '' }, waStep(wf, fm), { t: 'رفع المطلوب', done: !Number(c.open), at: up, sub: n ? 'وصل ' + (Number(c.done) || 0) + ' من ' + n : '' }];
+if (c.due) { var lf = (Date.parse(c.due) - Date.now()) / 36e5; foot = lf > 0 ? ['', 'المهلة حتى ' + at(c.due) + ' — يبقى ' + (lf < 1 ? 'أقل من ساعة' : Math.round(lf) + ' ساعة')] : ['bad', 'انتهت المهلة ' + at(c.due)]; }
+} else return null;
+for (var i = S.length - 1; i >= 0; i--) if (S[i].done) { for (var j = 0; j < i; j++) if (!S[j].done && !S[j].bad) { S[j].done = true; S[j].t = S[j].t === 'وصلته الرسالة' ? 'وصلته الرسالة' : S[j].t; S[j].sub = ''; } break; } /* خطوة لاحقة تمت ⇒ ما قبلها تمّ وإن غاب سجله أو تأخر تحديث حالته */
+for (var k = 0; k < S.length; k++) if (!S[k].done) { cur = k; break; }
+var lastAt = null, lastT = ''; S.forEach(function (z) { if (z.done && z.at && (!lastAt || Date.parse(z.at) >= Date.parse(lastAt))) { lastAt = z.at; lastT = z.t; } });
+var since = lastAt ? String(rel(lastAt)) : '';
+if (foot && !foot[0]) foot = null; /* صلاحية الرابط والمهلة في سطر «بانتظار العميل» فوقه — لا تكرار؛ يبقى هنا التنبيه وحده (انتهى · أُقفل) */
+return el('section', { class: 'q-cj', 'aria-label': 'مسار العميل' }, [
+el('div', { class: 'q-cj-h' }, [icon('user'), el('b', { text: 'مسار العميل' }), lastT ? el('span', { class: 'q-cj-at' + (cur >= 0 && S[cur].bad ? ' is-bad' : '') }, ['آخر ما تمّ: ', el('b', { text: lastT }), since ? ' · ' + since : '']) : null]),
+el('ol', { class: 'q-cj-s' }, S.map(function (z, i) { var st = z.bad ? 'is-bad' : z.done ? 'is-done' : i === cur ? 'is-cur' : '';
+return el('li', { class: st, 'aria-current': i === cur ? 'step' : null }, [el('i', { 'aria-hidden': 'true' }, [z.bad ? '!' : z.done ? '✓' : String(i + 1)]), el('div', {}, [el('b', { text: z.t }), el('small', { text: z.at && (z.done || z.bad) ? at(z.at) : i === cur ? 'بانتظاره' : '—' }), z.sub ? el('small', { class: 'q-cj-sub', text: z.sub }) : null])]); })),
+foot ? el('p', { class: 'q-cj-f' + (foot[0] ? ' is-' + foot[0] : '') }, [icon(foot[0] ? 'alert' : 'clock'), foot[1]]) : null]);
 }
 /* «الخطوة التالية»: أين الطلب الآن، وما المطلوب، وزر واحد لتنفيذه، وبقية الإجراءات ظاهرة تحته */
 var STEPS = ['الطلب', 'قرار الفريق', 'موافقة العميل', 'توقيع الملحق', 'التنفيذ'];
@@ -1406,7 +1442,7 @@ var pvw = subOf('page', 'page'); /* v1127: الصفحة وإعدادات الر�
 return [mkBar(), subNav('page', [['page', 'صفحة العميل ومعاينتها', 'phone'], ['link', 'مدة الرابط وسجله', 'link', links.length]], pvw)].concat(pvw === 'link' ? [lk] : S);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1141'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1142'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
