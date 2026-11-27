@@ -158,7 +158,7 @@ var body = !ST.rows ? el('div', { class: 'cr-load', text: 'جارٍ التحمي
 : el('div', {}, [head].concat(L.map(function (r) {
 var sub = r.back ? el('small', { class: 'cr-sub is-back', text: '● أكمل العميل المطلوب — بانتظار مراجعتك' }) : r.wait ? el('small', { class: 'cr-sub is-warn', text: 'بانتظار استكمال العميل' }) : r.need_approval ? el('small', { class: 'cr-sub is-warn', text: 'بانتظار اعتماد المشرف العام' }) : r.exec_error ? el('small', { class: 'cr-sub is-bad', text: 'تعذّر التنفيذ' }) : r.assigned_t ? el('small', { class: 'cr-sub', text: 'مسند إلى ' + r.assigned_t }) : null;
 return el('div', { class: 'cr-lr' + (r.back ? ' is-back' : ''), role: 'button', tabindex: '0', 'aria-label': 'فتح طلب ' + (r.client || '') + ' ' + (r.no || ''), 'data-live-ok': '', onclick: function () { open(r.id); }, onkeydown: function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(r.id); } } }, [
-el('div', { class: 'cr-who' }, [el('span', { class: 'cr-av', 'aria-hidden': 'true', text: initial(r.client) }), el('div', { style: 'min-width:0' }, [el('b', { text: r.client || '—' }), el('small', {}, [ltr(r.no), r.contract_no ? el('span', { class: 'cr-dotsep' }, [' · ', ltr(r.contract_no)]) : null])])]),
+el('div', { class: 'cr-who' }, [el('span', { class: 'cr-av', 'aria-hidden': 'true', text: initial(r.client) }), el('div', { style: 'min-width:0' }, [el('b', { text: r.client || '—' }), el('small', {}, [r.contract_no ? el('span', { class: 'cr-who-k' }, ['العقد ', ltr(r.contract_no)]) : null, el('span', { class: 'cr-who-k' }, ['الطلب ', ltr(r.no)])]) /* v1126: كل رقم بتسميته — لا يتداخل الاتجاهان */])]),
 el('div', { class: 'cr-lr-st' }, [badge(r), sub]),
 el('span', { class: 'cr-lr-at', title: at(r.updated_at) }, [icon('clock'), rel(r.updated_at)]),
 el('span', { class: 'cr-lr-go', 'aria-hidden': 'true' }, [icon('lt')])]);
@@ -257,7 +257,7 @@ ST.busy = true; draw(); try { await api('POST', '/admin/api/crq-settings', { con
 }
 
 /* ═════════ صفحة الطلب ═════════ */
-var TABS = [['req', 'الطلب', 'user'], ['calc', 'البنود والحسبة', 'calc'], ['guar', 'الضمانات', 'sign'], ['doc', 'المستند', 'file'], ['page', 'صفحة العميل', 'phone'], ['chat', 'المراسلات', 'inbox'], ['log', 'السجل', 'clock']];
+var TABS = [['req', 'الطلب', 'user'], ['calc', 'القرار والحسبة', 'calc'], ['guar', 'الضمانات', 'sign'], ['doc', 'المستند', 'file'], ['page', 'صفحة العميل', 'phone'], ['chat', 'المراسلات', 'inbox'], ['log', 'السجل', 'clock']];
 /* v913: عدّاد على التبويب — ردود العميل ومرفقاته، والمطلوب المفتوح */
 function tabCnt(x, k) { var c = x.chat || {}, n = k === 'chat' ? (Number(c.client_n) || 0) + (Number(c.open) || 0) : 0; /* v940: المطلوب من العميل في «المراسلات والمرفقات» */ return n ? el('em', { class: 'cr-tcnt', text: String(n) }) : null; }
 function tabState(x, k) {
@@ -274,9 +274,9 @@ if (legacy(x)) return null;
 var sup = x.me && x.me.super, ok = x.result && x.result.ok;
 if (x.state === 'received' || x.state === 'decision') {
 var np = KIND === 'defer' && cliWant(x).has && !(x.calc && x.calc.pick); /* v1125: لا اعتماد قبل حسم تاريخ العميل */ if (np) ok = false;
-if (sup) return btn('اعتماد وإرسال رابط الموافقة', { ic: 'send', cls: 'is-pri is-wide', disabled: !ok || ST.busy || ST.save.st === 'saving', title: np ? 'احسم تاريخ العميل أولًا في «البنود والحسبة»' : ok ? '' : 'أكمل الحسبة أولًا', on: function () { ask('اعتماد العرض وإرسال رابط الموافقة', 'يصل العميل رابط الموافقة على واتساب والبريد بمدة صلاحية ' + (x.valid_hours || (x.settings || {}).consent_hours || 48) + ' ساعة. بانتهائها يُغلق الطلب.', 'اعتماد وإرسال', function () { act('approve', { stamp: ST.x.updated_at }); }); } });
+if (sup) return btn('اعتماد وإرسال رابط الموافقة', { ic: 'send', cls: 'is-pri is-wide', disabled: !ok || ST.busy || ST.save.st === 'saving', title: np ? 'اختر الموعد الجديد أولًا في «القرار والحسبة»' : ok ? '' : 'أكمل الحسبة أولًا', on: function () { ask('اعتماد العرض وإرسال رابط الموافقة', 'يصل العميل رابط الموافقة على واتساب والبريد بمدة صلاحية ' + (x.valid_hours || (x.settings || {}).consent_hours || 48) + ' ساعة. بانتهائها يُغلق الطلب.', 'اعتماد وإرسال', function () { act('approve', { stamp: ST.x.updated_at }); }); } });
 if (x.need_approval) return btn('بانتظار اعتماد المشرف العام', { ic: 'clock', cls: 'is-wide', disabled: true });
-return btn('رفع للمشرف العام للاعتماد', { ic: 'send', cls: 'is-pri is-wide', disabled: !ok || ST.busy || ST.save.st === 'saving', title: np ? 'احسم تاريخ العميل أولًا في «البنود والحسبة»' : '', on: function () { act('submit', null, 'رُفع العرض للاعتماد.'); } });
+return btn('رفع للمشرف العام للاعتماد', { ic: 'send', cls: 'is-pri is-wide', disabled: !ok || ST.busy || ST.save.st === 'saving', title: np ? 'اختر الموعد الجديد أولًا في «القرار والحسبة»' : '', on: function () { act('submit', null, 'رُفع العرض للاعتماد.'); } });
 }
 if ((x.state === 'consent' || x.state === 'sign') && !x.signed_at) return btn('إعادة إرسال الرابط', { ic: 'send', cls: 'is-pri is-wide', disabled: ST.busy, on: function () { ask('إعادة إرسال الرابط', 'يُلغى الرابط الحالي ويصل العميل رابط جديد بمدة جديدة.', 'إعادة الإرسال', function () { act('resend', null, 'أُرسل رابط جديد للعميل.'); }); } });
 if (x.state === 'sign' && x.signed_at && sup) return btn(x.exec_error === 'await_admin' ? 'تنفيذ التوحيد وإغلاق العقود' : 'إعادة محاولة التنفيذ', { ic: 'check', cls: 'is-pri is-wide', disabled: ST.busy, on: function () { var aw = x.exec_error === 'await_admin'; ask(aw ? 'تنفيذ التوحيد وإغلاق العقود' : 'إعادة محاولة التنفيذ', aw ? 'وقّع العميل عقد التوحيد مع منتج. بالتنفيذ يُنشأ العقد الموحّد وتُغلق العقود السابقة — لا يمكن التراجع.' : 'سيُعاد تنفيذ الطلب على العقد.', aw ? 'تنفيذ وإغلاق العقود' : 'إعادة التنفيذ', function () { act('exec', null, 'نُفّذ الطلب وعُدّل العقد.'); }); } });
@@ -344,28 +344,28 @@ if (x.need_approval) notes.push(note('warn', x.me && x.me.super ? 'رُفع ال
 if (x.exec_error) notes.push(note(x.exec_error === 'await_admin' ? 'warn' : 'bad', x.state === 'decision' ? 'تغيّر العقد بعد العرض فلم يُنفَّذ — راجع الحسبة وأعد الاعتماد ليصل العميل عرض محدّث.' : (x.exec_error === 'await_admin' ? 'وقّع العميل عقد التوحيد — التنفيذ وإغلاق العقود السابقة بيد المشرف العام، والعميل يرى «بانتظار تنفيذ الإدارة».' : 'وقّع العميل وتعذّر التنفيذ الآلي — لم يتغير العقد.'), [x.exec_error === 'await_admin' ? null : el('span', { text: x.exec_error })]));
 if (!editable(x) && (x.state === 'consent' || x.state === 'sign')) notes.push(note('info', 'الحسبة والمستند للقراءة فقط بعد إرسال الرابط — للتعديل: «سحب العرض وتعديله» من «الخطوة التالية».'));
 var body = KIND === 'merge' && MG.TABK.indexOf(ST.tab) >= 0 ? MG.tab(x, ST.tab) : ST.tab === 'req' ? tabReq(x) : ST.tab === 'calc' ? tabCalc(x) : ST.tab === 'guar' ? tabGuar(x) : ST.tab === 'chat' || ST.tab === 'msg' ? [].concat(tabChat(x), [el('h2', { class: 'cr-msgsep', text: 'رسائل العميل الجاهزة' })], tabMsg(x)) : ST.tab === 'doc' ? tabDoc(x) : ST.tab === 'page' ? tabPage(x) : ST.tab === 'msg' ? tabMsg(x) : tabLog(x);
-return [el('div', { class: 'cr-r1' }, [heroEl(x), nextEl(x)]), askView(x)].concat(notes, [tabsEl(x), el('div', { class: 'cr-body', role: 'tabpanel' }, [].concat(body))]);
+return [headEl(x), askView(x)].concat(notes, [tabsEl(x), el('div', { class: 'cr-body', role: 'tabpanel' }, [].concat(body))]); /* v1126: رأس واحد مضغوط بدل بطاقتي الهوية و«الخطوة التالية» */
 }
-/* بطاقة الحقائق — كبطاقة ملف العميل: شريط متدرّج بأيقونة الطلب، الرقم والحالة، ثم الحقائق الأساسية */
-/* v882: البطاقة العلوية — هوية الطلب فقط: العميل والطلب والعقد وآخر تحديث (التفاصيل داخل التبويبات، والحالة في المراحل) */
-function heroEl(x) {
-return el('section', { class: 'cr-hero cr-hero2' }, [
-el('span', { class: 'cr-av cr-hero2-av', 'aria-hidden': 'true', text: initial(x.client) }),
-el('div', { class: 'cr-hero2-t' }, [el('small', {}, [(x.kind_t || 'طلب تأجيل دفعة') + ' · ', ltr(x.no)]), el('h2', { text: x.client || '—' }), el('div', { class: 'cr-hero2-m' }, [x.contract_no ? el('span', { class: 'cr-chip' }, [KIND === 'merge' ? 'العقود ' : 'العقد ', ltr(x.contract_no)]) : null, x.assigned_t ? el('span', { class: 'cr-chip' }, ['مسند إلى: ', x.assigned_t]) : null, x.chat && x.chat.wait && ['done', 'closed'].indexOf(x.state) < 0 ? el('span', { class: 'cr-chip is-warn', text: 'بانتظار العميل · استكمال' }) : null])]),
-el('span', { class: 'cr-hero2-up', title: at(x.updated_at) }, [icon('clock'), 'آخر تحديث: ', rel(x.updated_at)]),
-el('button', { type: 'button', class: 'cr-allb', 'data-live-ok': '', onclick: back }, [icon('back'), 'كل الطلبات']), pathEl(x)]);
-}
-/* v913: مسار الطلب تحت اسم العميل — المراحل بتواريخها، وسطر «الآن» */
-function pathEl(x) {
-if (legacy(x)) return null;
-var closed = x.state === 'closed', cur = closed ? closedAt(x) : stepAt(x), bad = closed || (!!x.exec_error && x.exec_error !== 'await_admin'), c = x.chat || {};
-var whenOf = [x.created_at, x.approved_at || x.sent_at, x.consented_at, x.signed_at, x.executed_at];
-var ol = el('ol', { class: 'cr-path-l', 'aria-label': 'مسار الطلب' }, STEPS.map(function (t, i) {
-var done = i < cur, now = i === cur;
-return el('li', { class: (done ? 'is-done' : '') + (now ? (bad ? ' is-bad' : ' is-cur') : ''), 'aria-current': now ? 'step' : null }, [el('i', { text: done ? '✓' : now && bad ? '!' : String(i + 1) }), el('b', { text: t }),
-el('small', { text: done && whenOf[i] ? day(whenOf[i]) : now ? (c.wait && i <= 1 ? 'بانتظار استكمال العميل' : 'الآن') : '' })]); }));
-var nowT = c.wait ? 'طُلب من العميل استكمال — وصل ' + (Number(c.done) || 0) + ' من ' + ((Number(c.done) || 0) + (Number(c.open) || 0)) + (c.due ? ' · المهلة حتى ' + at(c.due) : '') : nextText(x);
-return el('div', { class: 'cr-path' }, [ol, el('p', { class: 'cr-path-now' }, [el('i', { class: 'cr-path-dot' + (bad ? ' is-bad' : c.wait ? ' is-wait' : '') }), el('b', { text: 'الآن: ' }), nowT])]);
+/* ═════════ v1126: رأس الطلب — سطر واحد للهوية والإجراء، ومسار مضغوط تحته
+* العودة ورقم الطلب وآخر تحديث والحفظ · العميل (سطر واحد لا ينكسر) والعقد والدفعات والإسناد كرقائق · الإجراء الرئيسي وبقية الإجراءات بجانبه
+* المراحل خط واحد، و«الآن» سطر واحد — بلا بطاقة «الخطوة التالية» المنفصلة ولا تكرار للحالة ═════════ */
+function payT(x) { if (KIND !== 'defer') return ''; var T = tgPays(x).map(function (p) { return p.seq; }); return T.length ? (T.length === 1 ? 'الدفعة ' : 'الدفعات ') + T.join('، ') : ''; }
+function headEl(x) {
+var closed = x.state === 'closed', cur = closed ? closedAt(x) : stepAt(x), bad = closed || (!!x.exec_error && x.exec_error !== 'await_admin'), c = x.chat || {}, sup = x.me && x.me.super;
+var whenOf = [x.created_at, x.approved_at || x.sent_at, x.consented_at, x.signed_at, x.executed_at], more = moreItems(x), pt = payT(x);
+var asgB = sup && !legacy(x) && x.state !== 'done' && x.state !== 'closed' ? el('button', { type: 'button', class: 'cr-hd-chip is-btn', 'data-live-ok': '', disabled: ST.busy, title: 'تغيير الإسناد', onclick: function () { ST.ask = { kind: 'assign', to: x.assigned_to || '' }; draw(); } }, [icon('team'), x.assigned_t ? x.assigned_t : 'غير مسند']) : x.assigned_t ? el('span', { class: 'cr-hd-chip' }, [icon('team'), x.assigned_t]) : null;
+var steps = legacy(x) ? null : el('ol', { class: 'cr-hd-steps', 'aria-label': 'مسار الطلب' }, STEPS.map(function (t, i) { var done = i < cur, now = i === cur;
+return el('li', { class: (done ? 'is-done' : '') + (now ? (bad ? ' is-bad' : ' is-cur') : ''), 'aria-current': now ? 'step' : null, title: done && whenOf[i] ? day(whenOf[i]) : '' }, [el('i', { text: done ? '✓' : now && bad ? '!' : String(i + 1) }), el('span', { text: t })]); }));
+var nowT = c.wait && ['done', 'closed'].indexOf(x.state) < 0 ? 'بانتظار العميل: وصل ' + (Number(c.done) || 0) + ' من ' + ((Number(c.done) || 0) + (Number(c.open) || 0)) + (c.due ? ' · المهلة حتى ' + at(c.due) : '') : nextText(x);
+return el('section', { class: 'cr-hd' }, [
+el('div', { class: 'cr-hd-top' }, [el('button', { type: 'button', class: 'cr-hd-back', 'data-live-ok': '', onclick: back }, [icon('back'), 'كل الطلبات']), el('span', { class: 'cr-hd-no' }, [(x.kind_t || TITLE) + ' · ', ltr(x.no)]), el('span', { class: 'cr-hd-sp' }), saveInd(), el('span', { class: 'cr-hd-up', title: at(x.updated_at) }, [icon('clock'), rel(x.updated_at)])]),
+el('div', { class: 'cr-hd-main' }, [
+el('span', { class: 'cr-av cr-hd-av', 'aria-hidden': 'true', text: initial(x.client) }),
+el('div', { class: 'cr-hd-id' }, [el('h1', { class: 'cr-hd-name', title: x.client || '', text: x.client || '—' }),
+el('div', { class: 'cr-hd-meta' }, [x.contract_no ? el('span', { class: 'cr-hd-chip' }, [icon('file'), KIND === 'merge' ? 'العقود ' : 'العقد ', ltr(x.contract_no)]) : null, pt ? el('span', { class: 'cr-hd-chip is-t' }, [icon('cal'), pt]) : null, asgB, x.badge_t || x.state_t ? el('span', { class: 'cr-badge is-' + (bad ? 'bad' : x.tone || 'info'), text: x.state_t || x.badge_t }) : null])]),
+el('div', { class: 'cr-hd-acts' }, more.map(function (m) { return el('button', { type: 'button', class: 'cr-hd-mb ' + (m[3] || ''), disabled: ST.busy, 'data-live-ok': '', onclick: m[2] }, [icon(m[1]), m[0]]); }).concat([primary(x)]))]),
+steps ? el('div', { class: 'cr-hd-path' }, [steps, el('p', { class: 'cr-hd-now' + (bad ? ' is-bad' : c.wait ? ' is-wait' : '') }, [el('b', { text: 'الآن' }), el('span', { text: nowT })]), c.wait ? el('div', { class: 'cr-hd-wait' }, [btn('مراجعة ما وصل', { ic: 'inbox', cls: 'is-sm', on: function () { ST.tab = 'chat'; keep(); draw(); } }), btn('تذكير العميل', { ic: 'send', cls: 'is-sm', disabled: ST.busy, on: remindAll })]) : null,
+x.back && (x.state === 'received' || x.state === 'decision') ? el('div', { class: 'cr-hd-wait' }, [btn('أكمل العميل المطلوب — فتح المراسلات', { ic: 'check', cls: 'is-sm', on: function () { ST.tab = 'chat'; keep(); draw(); } })]) : null]) : el('p', { class: 'cr-hd-now' }, [el('span', { text: nextText(x) })])]);
 }
 /* «الخطوة التالية»: أين الطلب الآن، وما المطلوب، وزر واحد لتنفيذه، وبقية الإجراءات ظاهرة تحته */
 var STEPS = ['الطلب', 'قرار الفريق', 'موافقة العميل', 'توقيع الملحق', 'التنفيذ'];
@@ -377,8 +377,8 @@ if (legacy(x)) return 'نُفّذ الطلب' + (x.executed_at ? ' في ' + at(x
 var sup = x.me && x.me.super, ok = x.result && x.result.ok, exp = x.link ? at(x.link.expires_at) : '';
 if ((x.state === 'received' || x.state === 'decision') && x.chat && x.chat.wait) return 'بانتظار العميل: طُلب منه استكمال ' + (Number(x.chat.open) === 1 ? 'مطلوب واحد' : (x.chat.open || 0) + ' مطلوبات') + (x.chat.due ? ' حتى ' + at(x.chat.due) : '') + '. يصلك إشعار عند كل مرفق، ثم تكمل الحسبة والاعتماد.';
 if (x.state === 'received' || x.state === 'decision') {
-if (!ok) return 'أكمل «البنود والحسبة»: البنود من القائمة الجاهزة والتوزيع والموعد الجديد — يظهر الملخص المالي جانبها أثناء الإدخال.';
-if (KIND === 'defer' && cliWant(x).has && !(x.calc && x.calc.pick)) return 'احسم تاريخ العميل في «البنود والحسبة»: اعتمد تاريخه أو عدّله أو اعتمد حسبة الفريق — ثم يُفتح الاعتماد.'; /* v1125 */
+if (!ok) return 'أكمل «القرار والحسبة»: الموعد الجديد والرسوم — الملخص المالي بجانبها.';
+if (KIND === 'defer' && cliWant(x).has && !(x.calc && x.calc.pick)) return 'اختر الموعد الجديد في «القرار والحسبة»: تاريخ العميل أو حسبة الفريق أو تاريخ آخر — ثم يُفتح الاعتماد.'; /* v1126 */
 if (x.need_approval) return sup ? 'راجع «المستند» و«صفحة العميل» ثم اعتمد ليصل العميل رابط الموافقة.' : 'رُفع العرض للمشرف العام — لا يصل العميل قبل اعتماده.';
 return sup ? 'الحسبة مكتملة. راجع «المستند» و«صفحة العميل» ثم اعتمد ليصل العميل رابط الموافقة.' : 'الحسبة مكتملة. ارفع العرض للمشرف العام ليعتمده ويُرسَل للعميل.';
 }
@@ -388,30 +388,10 @@ if (x.state === 'done') return 'نُفّذ الطلب وعُدّل العقد' +
 if (x.state === 'closed') return 'أُغلق الطلب: ' + (x.close_t || '') + (x.close_note ? ' — ' + x.close_note : '') + '. العقد كما هو.';
 return '';
 }
-function nextEl(x) {
-var closed = x.state === 'closed', cur = closed ? closedAt(x) : stepAt(x), bad = closed || (!!x.exec_error && x.exec_error !== 'await_admin');
-var steps = el('ol', { class: 'cr-steps', 'aria-label': 'مراحل الطلب' }, STEPS.map(function (t, i) {
-var done = i < cur, now = i === cur;
-return el('li', { class: 'cr-step' + (done ? ' is-done' : '') + (now ? (bad ? ' is-bad' : ' is-cur') : ''), 'aria-current': now ? 'step' : null }, [el('i', { text: done ? '✓' : now && bad ? '!' : String(i + 1) }), t]);
-}));
-var more = moreItems(x);
-return el('aside', { class: 'cr-next', 'aria-label': 'الخطوة التالية' }, [
-el('div', { class: 'cr-next-h' }, [el('b', { text: closed ? 'أُغلق الطلب' : x.state === 'done' ? 'اكتمل الطلب' : 'الخطوة التالية' }), saveInd()]),
-(x.back && (x.state === 'received' || x.state === 'decision')) ? el('div', { class: 'cr-next-back', role: 'status' }, [icon('check'), el('span', { text: 'أكمل العميل المطلوب وأرسله — راجع ما أرسله في «المراسلات» قبل القرار.' }), el('button', { type: 'button', class: 'cr-btn is-sm', 'data-live-ok': '', onclick: function () { ST.tab = 'msg'; draw(); } }, ['فتح المراسلات'])]) : null, el('p', { text: nextText(x) }), waitActs(x), primary(x), asgEl(x),
-more.length ? el('div', { class: 'cr-more' }, more.map(function (m) { return el('button', { type: 'button', class: m[3] || '', disabled: ST.busy, 'data-live-ok': '', onclick: m[2] }, [icon(m[1]), m[0]]); })) : null]);
-}
-/* v913: الطلب بانتظار استكمال العميل — مراجعة ما وصل، وتذكيره */
-function waitActs(x) {
-if (!(x.chat && x.chat.wait)) return null;
-return el('div', { class: 'cr-wait' }, [btn('مراجعة ما وصل من العميل', { ic: 'inbox', cls: 'is-pri is-wide', on: function () { ST.tab = 'chat'; keep(); draw(); } }), btn('تذكير العميل بالمطلوب', { ic: 'send', cls: 'is-wide', disabled: ST.busy, on: remindAll })]);
-}
 async function remindAll() {
 try { ST.busy = true; draw(); var j = await api('POST', '/admin/api/crq/' + ST.x.id + '/remind', {}); ST.busy = false; var mf = msgFail(j.msg); toast(mf ? 'warn' : true, 'سُجّل التذكير بالمطلوب: ' + j.list + '.' + (mf ? ' — ' + mf : ' وصل العميل.')); reload(); }
 catch (e) { ST.busy = false; draw(); toast(false, e.message); }
 }
-/* v882: الإسناد سطر واحد في اللوحة — يراه الجميع، والتغيير للمشرف العام */
-function asgEl(x) { if (legacy(x) || x.state === 'done' || x.state === 'closed') return null; var sup = x.me && x.me.super;
-return el('div', { class: 'cr-asg' }, [el('span', {}, ['مسند إلى: ', el('b', { text: x.assigned_t || 'غير مسند' })]), sup ? el('button', { type: 'button', 'data-live-ok': '', disabled: ST.busy, onclick: function () { ST.ask = { kind: 'assign', to: x.assigned_to || '' }; draw(); } }, [x.assigned_t ? 'تغيير الإسناد' : 'إسناد لموظف']) : null]); }
 function tabsEl(x) {
 return el('nav', { class: 'cr-tabs', role: 'tablist', 'aria-label': 'أقسام الطلب' }, (KIND === 'merge' ? MG.TABS : TABS).filter(function (t) { return !legacy(x) || t[0] === 'req' || t[0] === 'log'; }).map(function (t) {
 var s = tabState(x, t[0]);
@@ -445,7 +425,7 @@ paintSave();
 return CHAIN;
 }
 function paintSave() { R.querySelectorAll('.cr-save').forEach(function (n) { n.replaceWith(saveInd()); }); }
-function paintHead() { var h = R.querySelector('.cr-r1'), t = R.querySelector('.cr-tabs'); if (h) h.replaceWith(el('div', { class: 'cr-r1' }, [heroEl(ST.x), nextEl(ST.x)])); if (t) t.replaceWith(tabsEl(ST.x)); }
+function paintHead() { var h = R.querySelector('.cr-hd'), t = R.querySelector('.cr-tabs'); if (h && !h.contains(document.activeElement)) h.replaceWith(headEl(ST.x)); if (t) t.replaceWith(tabsEl(ST.x)); } /* v1126 */
 
 /* ── 1) الطلب — v879: بطاقتا العميل والعقد، الدفعات صفوفًا واضحة بحالتها، وبيانات الطلب بطاقات صغيرة ── */
 function tabReq(x) {
@@ -492,13 +472,10 @@ el('span', { class: 'cr-py-d' }, [el('b', { text: 'الدفعة ' + p.seq }), el
 el('span', { class: 'cr-py-a' }, [ltr(money(p.amount)), el('small', { text: ' ر.س' })]),
 el('span', { class: 'cr-py-s ' + (on ? 'is-sel' : s3[1]), text: on ? 'مطلوب تأجيلها' : s3[0] })]);
 }) : [];
-var tog = selP.length && P.length > selP.length ? el('button', { type: 'button', class: 'cr-rp-all' + (showAll ? ' is-open' : ''), 'aria-expanded': showAll ? 'true' : 'false', 'data-live-ok': '', onclick: function () { ST.reqAll = showAll ? null : x.id; draw(); } },
-[icon('list'), el('span', { text: showAll ? 'إخفاء جدول الدفعات' : (ed ? 'عرض جدول الدفعات كاملًا لتغيير الدفعة' : 'عرض جدول الدفعات كاملًا') }), el('em', { text: P.length + ' دفعات' }), icon('chev')]) : null;
 var payCard = el('section', { class: 'cr-card' }, [
-el('h2', { text: selP.length > 1 ? 'الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها' }),
+el('div', { class: 'cr-card-h' }, [el('h2', { text: selP.length > 1 ? 'الدفعات المطلوب تأجيلها' : 'الدفعة المطلوب تأجيلها' }), selP.length && P.length > selP.length ? el('button', { type: 'button', class: 'cr-link', 'data-live-ok': '', 'aria-pressed': showAll ? 'true' : 'false', onclick: function () { ST.reqAll = showAll ? null : x.id; draw(); } }, [showAll ? 'المطلوبة فقط' : (ed ? 'تغيير الدفعة' : 'كل الدفعات') + ' (' + P.length + ')']) : null]), /* v1126: رابط في رأس البطاقة بدل شريط يُفتح ويُغلق */
 monthsEl(x, ed, P, sel),
 selP.length ? rps : el('div', { class: 'cr-py-sum is-empty' }, [icon('alert'), el('span', { text: ed ? 'لم تُحدَّد دفعة — اخترها من جدول الدفعات أدناه.' : 'لم تُحدَّد دفعة.' })]),
-tog,
 showAll ? el('div', { class: 'cr-pyw' }, [el('div', { class: 'cr-pyw-h' }, [el('b', { text: 'جدول الدفعات' }), ed ? el('small', { text: 'حدّد الدفعة المطلوب تأجيلها — الدفعات المسدَّدة لا تُختار.' }) : null]),
 el('div', { class: 'cr-pys', role: 'group', 'aria-label': 'دفعات العقد' }, pays.length ? pays : [el('p', { class: 'cr-hint', text: 'لا دفعات.' })])]) : null,
 /* v879: ملخص الدفعات المطلوبة — ثلاثة أعمدة: العدد · قيمة الدفعة · الإجمالي المؤجَّل (بلا تكرار للتواريخ) */
@@ -513,7 +490,7 @@ var meta = el('section', { class: 'cr-card' }, [el('h2', { text: 'بيانات �
 el('div', { class: 'cr-mts' }, [mt(x.origin === 'client' ? 'user' : 'team', 'مصدر الطلب', x.origin === 'client' ? 'قدّمه العميل من حسابه' : 'أنشأه الفريق'), mt('clock', 'تاريخ الطلب', at(x.created_at)),
 mt('sign', 'أعدّه', x.prepared_t || 'لم يُعدّ بعد', x.prepared_t ? '' : 'is-mut'), mt('ok', 'اعتمده', x.approved_t ? el('span', {}, [x.approved_t, el('small', { text: ' · ' + at(x.approved_at) })]) : 'لم يُعتمد بعد', x.approved_t ? '' : 'is-mut')]),
 (function () { var cn = String(x.client_note || '').trim(), pr = KIND === 'defer' ? '' /* v1125: اقتراح العميل في بطاقة «طلب العميل وقرار الفريق» — بلا تكرار */ : x.proposal && window.CRQC && window.CRQC.propText ? window.CRQC.propText(x.proposal) : ''; return el('div', { class: 'cr-cn' + (cn || pr ? '' : ' is-empty') }, [el('small', {}, [icon('note'), 'ملاحظة العميل']), el('p', { text: cn || 'لم يكتب العميل ملاحظة.' }), pr ? el('small', {}, [icon('cal'), 'اقتراح العميل']) : null, pr ? el('p', { text: pr }) : null]); })() /* v909 */]);
-return [el('div', { class: 'cr-cols cr-rq' }, [who, con]), KIND === 'defer' ? askCmp(x, x.calc && typeof x.calc === 'object' ? x.calc : {}, false, function () {}) : null, payCard, meta]; /* v1125 */
+return [el('div', { class: 'cr-cols cr-rq' }, [who, con]), KIND === 'defer' ? cliReq(x) : null, payCard, meta]; /* v1126 */
 }
 /* v898: مدة التأجيل — يزيدها الموظف أو ينقصها بالأشهر: تبدأ من أول دفعة طلبها العميل وتشمل ما بعدها، والحسبة كما هي.
 * طلب العميل الأصلي يُحفظ مرة واحدة في calc.client_pids، وكل تغيير في العدد يُسجَّل في سجل الطلب (stf_279). */
@@ -679,34 +656,53 @@ c.pick = { by: by, date: d0, at: new Date().toISOString() }; ST.pickEd = false;
 upd(); draw();
 }
 function dateBad(x, d) { var f = tgPays(x)[0]; if (!d) return 'لا يوجد تاريخ.'; if (d <= todayIso()) return 'التاريخ يجب أن يكون بعد اليوم.'; if (f && f.due && d <= String(f.due).slice(0, 10)) return 'التاريخ يجب أن يكون بعد استحقاق الدفعة (' + day(f.due) + ').'; return ''; }
-function askCmp(x, c, ed, upd) {
-var W = cliWant(x), tm = teamDue(x), pick = c && c.pick && typeof c.pick === 'object' ? c.pick : null;
-var td = tm ? String(tm[0].due_after).slice(0, 10) : '', cd = W.date;
-var diff = td && cd ? isoDiff(td, cd) : null;
-var cell = function (ic, k, v, sub, cls) { return el('div', { class: 'cr-ac-c' + (cls ? ' ' + cls : '') }, [el('span', { class: 'cr-pf-ic' }, [icon(ic)]), el('div', {}, [el('small', { text: k }), el('b', {}, [v]), sub ? el('em', { text: sub }) : null])]); };
-var cmp = diff === null ? null : diff === 0 ? ['is-ok', 'حسبة الفريق مطابقة لطلب العميل'] : [diff > 0 ? 'is-warn' : 'is-info', 'حسبة الفريق ' + (diff > 0 ? 'بعد' : 'قبل') + ' تاريخ العميل بـ' + dWord(diff)];
-var pickT = pick ? (pick.by === 'client' ? 'اعتُمد تاريخ العميل' : pick.by === 'edit' ? 'عدّل الفريق التاريخ' : 'اعتُمدت حسبة الفريق') + ' · ' + day(pick.date) : '';
-var bad = cd ? dateBad(x, cd) : '';
-var acts = null;
-if (ed && W.T.length) {
-var dIn = el('input', { type: 'date', dir: 'ltr', value: (ST.pickD && ST.pickD[x.id]) || td || cd || '', min: todayIso(), 'aria-label': 'التاريخ الجديد', oninput: function (e) { ST.pickD = ST.pickD || {}; ST.pickD[x.id] = e.target.value; var b2 = dateBad(x, e.target.value), er = e.target.parentNode.querySelector('.cr-ac-er'); if (er) { er.textContent = b2; er.hidden = !b2; } } });
-acts = el('div', { class: 'cr-ac-acts' }, [
-el('div', { class: 'cr-ac-bt' }, [
-btn('اعتماد تاريخ العميل', { ic: 'check', cls: 'is-sm' + (pick && pick.by === 'client' ? ' is-pri' : ''), disabled: !cd || !!bad, title: bad || '', on: function () { applyDate(x, c, cd, 'client', upd); } }),
-btn('تعديل التاريخ', { ic: 'cal', cls: 'is-sm' + (ST.pickEd === x.id || (pick && pick.by === 'edit') ? ' is-pri' : ''), on: function () { ST.pickEd = ST.pickEd === x.id ? false : x.id; draw(); } }),
-btn('اعتماد حسبة الفريق', { ic: 'calc', cls: 'is-sm' + (pick && pick.by === 'team' ? ' is-pri' : ''), disabled: !td, title: td ? '' : 'أكمل الحسبة أولًا', on: function () { c.pick = { by: 'team', date: td, at: new Date().toISOString() }; ST.pickEd = false; upd(); draw(); } })]),
-ST.pickEd === x.id ? el('div', { class: 'cr-ac-ed' }, [el('label', { text: W.T.length > 1 ? 'تاريخ الدفعة ' + W.T[0].seq + ' (والتالية شهرًا بعد شهر)' : 'التاريخ الجديد للدفعة ' + W.T[0].seq }), dIn, btn('تطبيق', { cls: 'is-sm is-pri', on: function () { var v = dIn.value, b2 = dateBad(x, v); if (b2) { toast(false, b2); return; } applyDate(x, c, v, 'edit', upd); } }), el('small', { class: 'cr-ac-er', role: 'alert', hidden: true })]) : null]);
+/* ═════════ v1126: «الموعد الجديد» — قرار واحد بدل بطاقة المقارنة وخيارات الجدولة والتواريخ اليدوية في الجدول
+* الخيارات قائمة واحدة: تاريخ العميل · إلى نهاية الجدول · ترحيل ما بعده · إعادة جدولة كاملة · تاريخ آخر
+* الاختيار يحفظ الموعد (sched) والقرار (calc.pick) معًا، والنتيجة ومقارنتها بطلب العميل سطر واحد تحت القائمة ═════════ */
+function dueSel(x, c) { var pick = c && c.pick && typeof c.pick === 'object' ? c.pick : null, m = (c.sched || {}).mode || 'end';
+if (ST.pickEd === x.id) return 'other';
+if (pick) return pick.by === 'client' ? 'cli' : pick.by === 'edit' || m === 'manual' ? 'other' : m;
+return cliWant(x).has ? '' : m === 'manual' ? 'other' : m; }
+function dueCard(x, c, ed, upd) {
+var W = cliWant(x), tm = teamDue(x), sel = dueSel(x, c), cd = W.date, bad = cd ? dateBad(x, cd) : 'لم يحدد العميل تاريخًا.', T = W.T, f0 = T[0];
+var td = tm ? String(tm[0].due_after).slice(0, 10) : '';
+var choose = function (v) { if (!ed) return;
+if (v === 'cli') { applyDate(x, c, cd, 'client', upd); return; }
+if (v === 'other') { ST.pickEd = x.id; draw(); var i = R.querySelector('#cr-due-d'); if (i) i.focus(); return; }
+ST.pickEd = false; c.sched = c.sched || {}; c.sched.mode = v; if (v === 'resched') rsInit(x, c); c.pick = { by: 'team', date: '', at: new Date().toISOString() }; upd(); draw(); };
+var dIn = el('input', { type: 'date', id: 'cr-due-d', dir: 'ltr', value: (c.pick && c.pick.by === 'edit' && c.pick.date) || (ST.pickD && ST.pickD[x.id]) || '', min: todayIso(), disabled: !ed, 'aria-label': 'التاريخ الجديد',
+onchange: function (e) { var v = e.target.value, b2 = dateBad(x, v), er = R.querySelector('#cr-due-er'); if (er) { er.textContent = b2; er.hidden = !b2; } if (!b2) applyDate(x, c, v, 'edit', upd); } });
+var O = [
+['cli', 'تاريخ العميل', cd ? (W.exact ? 'التاريخ الذي حدده' : 'استحقاق الدفعة + ' + (W.months === 1 ? 'شهر' : W.months === 2 ? 'شهران' : W.months + ' أشهر')) : 'لم يحدد العميل تاريخًا', cd ? day(cd) : '', !cd || !!bad],
+['end', 'إلى نهاية الجدول', 'بعد آخر دفعة في الجدول', '', false],
+['shift', 'ترحيل ما بعده', 'تتأخر المواعيد التالية شهرًا لكل دفعة مؤجَّلة', '', false],
+['resched', 'إعادة جدولة كاملة', 'توزيع المتبقي على عدد دفعات جديد', '', false],
+['other', 'تاريخ آخر', T.length > 1 ? 'تحدده أنت — والدفعات التالية شهرًا بعد شهر' : 'تحدده أنت', '', false]];
+var list = el('div', { class: 'cr-du-l', role: 'radiogroup', 'aria-label': 'الموعد الجديد' }, O.map(function (o) {
+var on = sel === o[0], dis = !ed || o[4];
+return el('label', { class: 'cr-du-o' + (on ? ' is-on' : '') + (dis ? ' is-dis' : '') + (o[0] === 'cli' ? ' is-cli' : ''), title: o[0] === 'cli' && cd && bad ? bad : '' }, [
+el('input', { type: 'radio', name: 'crq-due-' + x.id, value: o[0], checked: on, disabled: dis, onchange: function () { choose(o[0]); } }),
+el('span', { class: 'cr-du-t' }, [el('b', { text: o[1] }), el('small', { text: o[0] === 'cli' && cd && bad && ed ? 'لا يُعتمد كما هو: ' + bad : o[2] })]),
+on && o[0] === 'other' ? el('span', { class: 'cr-du-v' }, [dIn]) : on && td && o[0] !== 'cli' ? el('span', { class: 'cr-du-v is-r', text: day(td) }) : o[3] ? el('span', { class: 'cr-du-v' + (on ? ' is-r' : ''), text: o[3] }) : null]); }));
+var diff = td && cd && sel ? isoDiff(td, cd) : null;
+var res = !sel ? el('p', { class: 'cr-du-r is-wait' }, [icon('alert'), el('span', { text: 'اختر الموعد الجديد — ' + (cd ? 'العميل طلب ' + day(cd) + '.' : 'لم يحدد العميل تاريخًا.') })])
+: sel === 'resched' ? el('p', { class: 'cr-du-r' }, [icon('cal'), el('span', {}, ['إعادة جدولة على ', el('b', { text: String(Math.max(1, Number(c.sched.count) || 1)) }), ' دفعات — أولها ', el('b', { text: day(c.sched.start) })])])
+: !tm ? el('p', { class: 'cr-du-r' }, [icon('clock'), el('span', { text: 'جارٍ الحساب…' })])
+: el('p', { class: 'cr-du-r ' + (diff === null ? '' : diff === 0 ? 'is-ok' : 'is-warn') }, [icon(diff === 0 ? 'check' : 'cal'), el('span', {}, [(tm.length > 1 ? 'الدفعات ' + tm.map(function (z) { return z.seq; }).join('، ') + ' — أولها ' : 'الدفعة ' + tm[0].seq + ' ') + 'من ' + day(tm[0].due_before) + ' إلى ', el('b', { text: day(td) }), diff === null ? '' : diff === 0 ? ' · مطابق لطلب العميل' : ' · ' + (diff > 0 ? 'بعد' : 'قبل') + ' طلب العميل بـ' + dWord(diff)])]);
+return el('section', { class: 'cr-card cr-du', id: 'cr-due' }, [
+el('div', { class: 'cr-du-h' }, [el('h2', { text: 'الموعد الجديد' }), f0 ? el('span', { class: 'cr-du-cur' }, ['الاستحقاق الحالي ', el('b', { text: day(f0.due) }), W.method_t ? ' · اقتراح العميل للسداد: ' + W.method_t : '']) : null]),
+list, el('small', { class: 'cr-du-er', id: 'cr-due-er', role: 'alert', hidden: true }), sel === 'resched' ? rsCtl(x, c, ed, upd) : null, res]);
 }
-return el('section', { class: 'cr-card cr-ac', id: 'cr-askcmp' }, [
-el('div', { class: 'cr-ac-h' }, [el('h2', { text: 'طلب العميل وقرار الفريق' }), pickT ? el('span', { class: 'cr-badge is-ok', text: pickT }) : el('span', { class: 'cr-badge is-warn', text: 'لم يُتخذ القرار بعد' })]),
-el('div', { class: 'cr-ac-g' }, [
-cell('user', 'طلب العميل', cd ? day(cd) : (W.has ? '—' : 'لم يحدد تاريخًا'), W.exact ? 'تاريخ حدده العميل' : W.months ? 'استحقاق الدفعة + ' + (W.months === 1 ? 'شهر' : W.months === 2 ? 'شهران' : W.months + ' أشهر') : (W.method_t ? 'السداد: ' + W.method_t : ''), 'is-cli'),
-cell('calc', 'حسبة الفريق', td ? day(td) : 'لم تكتمل', tm && tm.length > 1 ? tm.length + ' دفعات — هذا موعد أولها' : (c && c.sched && c.sched.mode === 'manual' ? 'موعد يدوي' : c && c.sched && c.sched.mode === 'shift' ? 'ترحيل ما بعده' : c && c.sched && c.sched.mode === 'resched' ? 'إعادة جدولة' : 'إلى نهاية الجدول'), 'is-team'),
-cell('cal', 'الاستحقاق الحالي', W.first && W.first.due ? day(W.first.due) : '—', W.first ? 'الدفعة ' + W.first.seq : '')]),
-cmp ? el('div', { class: 'cr-ac-cmp ' + cmp[0] }, [icon(cmp[0] === 'is-ok' ? 'check' : 'alert'), el('span', { text: cmp[1] })]) : null,
-W.method_t && cd ? el('p', { class: 'cr-hint', text: 'طريقة السداد التي اقترحها العميل: ' + W.method_t + '.' }) : null,
-bad && ed ? el('p', { class: 'cr-hint is-bad', text: 'تاريخ العميل لا يُعتمد كما هو: ' + bad + ' — عدّله أو اعتمد حسبة الفريق.' }) : null,
-acts, !ed && !pick && (x.state === 'received' || x.state === 'decision') ? el('p', { class: 'cr-hint', text: 'القرار من تبويب «البنود والحسبة».' }) : null]);
+/* «الطلب»: ما طلبه العميل وما اختاره الفريق — للقراءة، والقرار في «القرار والحسبة» */
+function cliReq(x) {
+var W = cliWant(x), c = x.calc && typeof x.calc === 'object' ? x.calc : {}, tm = teamDue(x), pick = c.pick;
+if (!W.has) return null;
+var picked = pick ? (pick.by === 'client' ? 'تاريخ العميل' : pick.by === 'edit' ? 'تاريخ آخر' : 'حسبة الفريق') + (tm ? ' — ' + day(tm[0].due_after) : '') : 'لم يُختر بعد';
+return el('section', { class: 'cr-card cr-cq' }, [el('h2', { text: 'ما طلبه العميل' }), el('div', { class: 'cr-cq-g' }, [
+el('div', {}, [el('small', { text: 'التاريخ الذي طلبه' }), el('b', { text: W.date ? day(W.date) : 'لم يحدد' })]),
+el('div', {}, [el('small', { text: 'طريقة السداد' }), el('b', { text: W.method_t || '—' })]),
+el('div', { class: pick ? 'is-ok' : 'is-wait' }, [el('small', { text: 'قرار الفريق' }), el('b', { text: picked })])]),
+editable(x) ? el('button', { type: 'button', class: 'cr-link', 'data-live-ok': '', onclick: function () { ST.tab = 'calc'; keep(); draw(); toTop(); } }, ['القرار في «القرار والحسبة»', icon('lt')]) : null]);
 }
 function tabCalc(x) {
 var ed = editable(x), c = calcOf(x), R0 = rate(x);
@@ -753,17 +749,12 @@ else return;
 upd(); draw(); var ins = R.querySelectorAll('.cr-li-list .cr-li'); var last = ins[ins.length - 1]; if (last) { var i2 = last.querySelector('input.cr-num'); if (i2) i2.focus(); } } });
 } }); return b; })(), el('small', { class: 'cr-hint', text: 'القائمتان تُداران من «الإعدادات ← الرسوم والضرائب والعمولات».' })]) : null;
 var svc = c.hide.length ? field('اسم السطر الذي يراه العميل للبنود المدمجة', el('input', { type: 'text', value: c.svc_label || '', placeholder: 'الرسوم الإدارية والخدمة', maxlength: '60', disabled: !ed, oninput: function (e) { c.svc_label = e.target.value; upd(); } })) : null;
-/* التوزيع والجدولة: خيارات واضحة بوصف قصير بدل القوائم المنسدلة */
-var choose = function (name, cur, L, on) { return el('div', { class: 'cr-opts', role: 'radiogroup' }, L.map(function (o) { return el('label', { class: 'cr-opt' + (cur === o[0] ? ' is-on' : '') + (ed ? '' : ' is-ro') }, [el('input', { type: 'radio', name: name, value: o[0], checked: cur === o[0], disabled: !ed, onchange: function () { on(o[0]); } }), el('span', {}, [el('b', { text: o[1] }), el('small', { text: o[2] })])]); })); };
-var setup = el('div', { class: 'cr-ds' }, [
-el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'توزيع الرسوم على الدفعات المتبقية' }), choose('crq-dist', c.dist.mode, [['equal', 'بالتساوي', 'تُقسم الرسوم بالتساوي على كل الدفعات المتبقية.'], ['ratio', 'بنسبة كل دفعة', 'تأخذ كل دفعة نصيبًا بقدر قيمتها.'], ['manual', 'يدويًا', 'تحدّد إضافة كل موعد في الجدول أدناه.']], function (v) { c.dist.mode = v; upd(); draw(); })]),
-el('div', { class: 'cr-ds-g' }, [el('h3', { text: 'الموعد الجديد للدفعة المؤجَّلة' }), choose('crq-sched', c.sched.mode, [['end', 'إلى نهاية الجدول', 'ينتقل بعد آخر موعد في الجدول.'], ['shift', 'ترحيل ما بعده', 'تتأخر المواعيد منه شهرًا لكل دفعة مؤجَّلة.'], ['manual', 'يدويًا', 'تحدّد التاريخ الجديد في الجدول أدناه.'], ['resched', 'إعادة جدولة كاملة', 'يُوزَّع المتبقي على عدد دفعات جديد تحدده.']], function (v) { c.sched.mode = v; if (v === 'resched') rsInit(x, c); upd(); draw(); })]), c.sched.mode === 'resched' ? rsCtl(x, c, ed, upd) : null]);
-var main = el('div', { class: 'cr-main' }, [askCmp(x, c, ed, upd), el('section', { class: 'cr-card' }, [el('h2', { text: 'البنود والرسوم' }), tbl, add, svc]),
-el('section', { class: 'cr-card' }, [el('h2', { text: 'التوزيع والجدولة' }), setup]),
-el('section', { class: 'cr-card' }, [el('h2', { text: 'الجدول قبل وبعد' }), el('div', { id: 'cr-sched', class: 'cr-tw' }, [schedTable(x, c, ed, upd)])])]);
+var distB = c.lines.length ? el('div', { class: 'cr-fe-dist' }, [el('span', { text: 'توزيع الرسوم على الدفعات' }), sw([['equal', 'بالتساوي', 'تُقسم بالتساوي على الدفعات المتبقية'], ['ratio', 'بنسبة كل دفعة', 'كل دفعة بقدر قيمتها'], ['manual', 'يدويًا', 'تحدد إضافة كل دفعة في الجدول']], c.dist.mode, function (v) { c.dist.mode = v; upd(); draw(); }, 'توزيع الرسوم')]) : null;
+var allP = ST.allPay === x.id;
+var main = el('div', { class: 'cr-main' }, [dueCard(x, c, ed, upd), el('section', { class: 'cr-card cr-fe' }, [el('div', { class: 'cr-card-h' }, [el('h2', { text: 'الرسوم' }), el('small', { text: 'تُضاف على العقد وتوزّع على الدفعات' })]), tbl, add, svc, distB]),
+el('section', { class: 'cr-card' }, [el('div', { class: 'cr-card-h' }, [el('h2', { text: 'الجدول قبل وبعد' }), el('button', { type: 'button', class: 'cr-link', 'data-live-ok': '', 'aria-pressed': allP ? 'true' : 'false', onclick: function () { ST.allPay = allP ? null : x.id; var w = R.querySelector('#cr-sched'); if (w) { w.innerHTML = ''; w.appendChild(schedTable(x, c, ed, upd)); } this.textContent = ST.allPay ? 'المتغيّر فقط' : 'كل الدفعات'; } }, [allP ? 'المتغيّر فقط' : 'كل الدفعات'])]), el('div', { id: 'cr-sched', class: 'cr-tw' }, [schedTable(x, c, ed, upd)])])]); /* v1126 */
 /* v878: الترتيب حتى الإجراء — البنود ← التوزيع ← الجدول ← الملخص ← الضمانات والإجراء */
-return [el('div', { class: 'cr-split' }, [main, el('aside', { class: 'cr-side', id: 'cr-sum' }, [sidePanel(x)])]),
-note('info', 'تغطية الضمانات في تبويب «الضمانات»، وطلب أي مستند أو ضمان من العميل في «المراسلات والمرفقات».', [el('div', {}, [btn('فتح «الضمانات»', { cls: 'is-sm', ic: 'sign', on: function () { ST.tab = 'guar'; keep(); draw(); toTop(); } })])])];
+return [el('div', { class: 'cr-split' }, [main, el('aside', { class: 'cr-side', id: 'cr-sum' }, [sidePanel(x)])])]; /* v1126: الضمانات تبويبها — بلا تنبيه مكرر */
 }
 /* v913: تبويب «الضمانات» — تغطية الضمانات وبجانبها «طلب استكمال من العميل» */
 /* ═════════ v953: «طلب ضمان من العميل» في تبويب «الضمانات» — ظاهر دائمًا
@@ -1079,7 +1070,8 @@ el('p', { class: 'cr-sum-m' }, [icon('calc'), nRows + ' ' + (nRows === 1 ? 'دف
 }
 function schedTable(x, c, ed, upd) {
 var r = x.result || {}, rs0 = c.sched.mode === 'resched', rows = r.ok && (!rs0 || r.sched === 'resched') ? r.rows : rs0 ? rsRows(x, c) : (x.payments || []).map(function (p) { return { pid: p.pid, seq: p.seq, open: p.open, target: (x.payment_ids || []).indexOf(p.pid) >= 0, due_before: p.due, due_after: p.due, amt_before: p.amount, add: 0, amt_after: p.amount }; }); /* v901: في إعادة الجدولة قبل اكتمال الحسبة (مثل التوزيع اليدوي) تظهر الدفعات الجديدة بعددها لتُدخل رسومها */
-var md = c.sched.mode === 'manual', ma = c.dist.mode === 'manual', rs = c.sched.mode === 'resched';
+var md = false /* v1126: التاريخ اليدوي من «الموعد الجديد» وحده — لا حقول تواريخ مكررة في الجدول */, ma = c.dist.mode === 'manual', rs = c.sched.mode === 'resched';
+if (ST.allPay !== x.id && !rs && !ma) { var ch = rows.filter(function (z) { return z.target || z.added || z.merged || String(z.due_after) !== String(z.due_before) || Number(z.add) > 0; }); if (ch.length) rows = ch; } /* v1126: المتغيّر فقط افتراضيًا */
 return el('table', { class: 'cr-tbl is-sched' }, [el('thead', {}, [el('tr', {}, ['الدفعة', 'الموعد الحالي', 'الموعد الجديد', 'القيمة', 'الإضافة', 'القيمة الجديدة'].map(function (h) { return el('th', { text: h }); }))]),
 el('tbody', {}, rows.map(function (z) {
 var due = md && z.open && ed ? el('input', { type: 'date', value: c.sched.dates[z.pid] || (z.target ? '' : String(z.due_after).slice(0, 10)), 'aria-label': 'الموعد الجديد للدفعة ' + z.seq, onchange: function (e) { if (e.target.value) c.sched.dates[z.pid] = e.target.value; else delete c.sched.dates[z.pid]; upd(); } }) : el('span', { class: z.due_after !== z.due_before ? 'is-ch' : '', text: day(z.due_after) });
@@ -1093,7 +1085,7 @@ el('td', { 'data-l': 'الإضافة', class: 'c-add' }, [add]), el('td', { 'dat
 /* بعد الحفظ: تُحدَّث اللوحة الجانبية والخلايا المحسوبة فقط — لا يُعاد رسم الحقول فلا يضيع موضع الكتابة */
 function paintCalcOut() {
 if (KIND === 'merge') { if (ST.tab === 'calc') { paintSide(ST.x); loadGuar(ST.x); MG.repaint(ST.x); } if (ST.tab === 'doc') docPv(ST.x); return; } /* v946 */
-if (ST.tab === 'calc') { paintSide(ST.x); loadGuar(ST.x); var ak = R.querySelector('#cr-askcmp'); if (ak && ST.cc && !ak.contains(document.activeElement)) ak.replaceWith(askCmp(ST.x, ST.cc, editable(ST.x), ST.cu)); } /* v1125 */
+if (ST.tab === 'calc') { paintSide(ST.x); loadGuar(ST.x); var ak = R.querySelector('#cr-due'); if (ak && ST.cc && !ak.contains(document.activeElement)) ak.replaceWith(dueCard(ST.x, ST.cc, editable(ST.x), ST.cu)); } /* v1126 */
 if (ST.tab === 'doc') docPv(ST.x);
 var r = ST.x.result || {}; if (!r.ok) return;
 /* v899: إعادة الجدولة يتغيّر فيها عدد الصفوف — يُعاد رسم الجدول ما لم يكن الموظف يكتب فيه */
@@ -1430,7 +1422,7 @@ var S = lpStudio({ T: T, ro: !ed, views: function () { return lpViews(x); }, onT
 return [mkBar()].concat(S, [lk]);
 }
 /* v890: رقم الإصدار نفسه — فلا تُحمَّل نسخة قديمة من القالب محفوظة في الشبكة */
-function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1125'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
+function loadLp() { if ((window.CRQLP && window.CRQLP.J) || document.getElementById('crq-lp-js')) return; var sc = document.createElement('script'); sc.id = 'crq-lp-js'; sc.src = '/crq/lp.js?v=1126'; sc.onload = function () { draw(); }; document.head.appendChild(sc); }
 
 /* ── القالب العام لصفحة العميل («صفحات الرابط» في الإعدادات) — الاستوديو نفسه بمعاينة نموذجية ── */
 function sampleView(step) {
