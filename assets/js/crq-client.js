@@ -47,6 +47,8 @@ var L = (c && c.payments || []).filter(function (p) { return diffDays(p.due, tod
 return { n: L.length, sum: L.reduce(function (a, p) { return a + (Number(p.part ? p.left : p.amount) || 0); }, 0) };
 }
 function seqList(L) { var s = L.map(function (p) { return String(p.seq); }); return s.length <= 1 ? s.join('') : s.slice(0, -1).join(' و') + ' و' + s[s.length - 1]; }
+/* v1125: سطر نتيجة الرسالة لكل وسيلة (من الخادم) — فارغ إن وصلت عبر واتساب والبريد */
+function msgFail(m) { if (!m) return ''; var T = { whatsapp: 'واتساب', email: 'البريد' }, ch = m.ch || {}; if (!m.ok) return ' — لم تصل الرسالة للعميل' + (m.why ? ': ' + m.why : '.'); var bad = Object.keys(T).filter(function (k) { return ch[k] && !ch[k].ok; }); return bad.length ? ' — لم تصل عبر ' + bad.map(function (k) { return T[k]; }).join(' و') + (ch.whatsapp && !ch.whatsapp.ok && ch.whatsapp.why ? ' (' + ch.whatsapp.why + ')' : '') + '، والتفاصيل في «السجل».' : ''; }
 function propText(pr) {
 if (!pr) return '';
 var a = [];
@@ -383,7 +385,7 @@ function msgBox(o) {
         if (body.length < 2 && !file) throw new Error('اكتب الرسالة.');
         var j = await api('POST', base + '/msgs', { body: body, internal: M.mode === 'note', tpl: M.tpl, file: file });
         M.rows = j.rows; M.sum = j.sum; M.file = null;
-        done(M.mode === 'note' ? 'حُفظت الملاحظة الداخلية — يراها الفريق وحده.' : 'أُرسلت الرسالة للعميل — تصله في حسابه وواتساب والإشعارات.');
+        done(M.mode === 'note' ? 'حُفظت الملاحظة الداخلية — يراها الفريق وحده.' : 'أُرسلت الرسالة للعميل' + (msgFail(j.msg) || ' — وصلته في حسابه وواتساب والإشعارات.'), M.mode !== 'note' && !!msgFail(j.msg));
       } else {
         if (body.length < 2) throw new Error('اكتب رسالتك.');
         var k = await api('POST', base + '/msgs', { body: body }); M.rows = k.rows; M.asks = k.asks || M.asks; M.sum = k.sum;
@@ -391,7 +393,7 @@ function msgBox(o) {
       }
     } catch (e) { M.busy = false; M.err = e.message; paint(); }
   }
-  function done(msg) { M.busy = false; M.txt = ''; M.tpl = ''; M.err = ''; if (o.onSum) o.onSum(M.sum); if (o.toast) o.toast(true, msg); paint(); }
+  function done(msg, bad) { M.busy = false; M.txt = ''; M.tpl = ''; M.err = ''; if (o.onSum) o.onSum(M.sum); if (o.toast) o.toast(bad ? 'warn' : true, msg); paint(); }
   function side() {
     var A = M.asks || [], open = A.filter(function (a) { return a.state === 'open'; }), dn = A.filter(function (a) { return a.state === 'done'; });
     var files = (M.rows || []).filter(function (m) { return m.file; });
@@ -410,7 +412,7 @@ function msgBox(o) {
     kids.push(files.length ? el('div', { class: 'cx-files' }, files.slice().reverse().map(function (m) { return fileChip(m, view, m.who === 'staff' ? 'من الفريق' : 'من العميل'); })) : el('p', { class: 'cx-hint', text: 'لا مرفقات بعد.' }));
     return el('aside', { class: 'cc-card cx-side' }, kids);
   }
-  async function remind() { try { M.busy = true; paint(); var j = await api('POST', base + '/remind', {}); M.busy = false; if (o.toast) o.toast(true, 'أُرسل تذكير للعميل بالمطلوب: ' + j.list + '.'); load(); } catch (e) { M.busy = false; M.err = e.message; paint(); if (o.toast) o.toast(false, e.message); } }
+  async function remind() { try { M.busy = true; paint(); var j = await api('POST', base + '/remind', {}); M.busy = false; if (o.toast) o.toast(msgFail(j.msg) ? 'warn' : true, 'أُرسل تذكير للعميل بالمطلوب: ' + j.list + '.' + msgFail(j.msg)); load(); } catch (e) { M.busy = false; M.err = e.message; paint(); if (o.toast) o.toast(false, e.message); } }
   async function cancelAsk(a) {
     if (!window.confirm('إلغاء المطلوب «' + a.title + '»؟ يختفي من صفحة العميل.')) return;
     try { var j = await api('POST', '/admin/api/crq-ask/' + a.id + '/cancel', {}); M.asks = j.asks; M.sum = j.sum; if (o.onSum) o.onSum(M.sum); if (o.toast) o.toast(true, 'أُلغي المطلوب: ' + a.title + '.'); load(); } catch (e) { if (o.toast) o.toast(false, e.message); }
@@ -493,7 +495,7 @@ function askPanel(o) {
       var j = await api('POST', '/admin/api/crq/' + id + '/ask', { items: S.items.map(function (i) { return { kind: i.kind, title: i.title, detail: i.detail, val: i.val, types: i.types, mb: i.mb }; }), body: S.body, tpl: S.tpl, hours: S.hours });
       if (MB[id]) { MB[id].rows = j.rows; MB[id].asks = j.asks; MB[id].sum = j.sum; }
       delete AK[id];
-      if (o.toast) o.toast(true, 'أُرسل طلب الاستكمال للعميل: ' + j.list + ' — المهلة حتى ' + stamp(j.due) + '.' + (j.msg && j.msg.ok === false ? ' (لم تصل رسالة واتساب — تصله في حسابه)' : ''));
+      if (o.toast) o.toast(msgFail(j.msg) ? 'warn' : true, 'أُرسل طلب الاستكمال للعميل: ' + j.list + ' — المهلة حتى ' + stamp(j.due) + '.' + msgFail(j.msg));
       if (o.onSent) o.onSent(j);
     } catch (e) { S.busy = false; S.err = e.message; paint(); if (o.toast) o.toast(false, e.message); }
   }

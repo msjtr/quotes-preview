@@ -23843,7 +23843,7 @@ auto: 'صدر هذا الملحق إلكترونيًا ويُعتمد بتوقي
   /* المحفوظ فوق الافتراضي: النص الفارغ يعود للافتراضي (ما عدا الحقول الفارغة أصلًا)، والقوائم تُستبدل كاملة */
   const merge = function (d, v) {
     if (Array.isArray(d)) return Array.isArray(v) ? v.map(function (x) { return x && typeof x === 'object' ? x : String(x == null ? '' : x).trim(); }).filter(Boolean) : d.slice(); /* v870: الأقسام المضافة كائنات */
-    if (d && typeof d === 'object') { const o = {}, w = v && typeof v === 'object' && !Array.isArray(v) ? v : {}; Object.keys(d).forEach(function (k) { o[k] = merge(d[k], w[k]); }); return o; }
+    if (d && typeof d === 'object') { const o = {}, w = v && typeof v === 'object' && !Array.isArray(v) ? v : {}; Object.keys(d).forEach(function (k) { o[k] = merge(d[k], w[k]); }); /* v1125: المفتاح المحفوظ غير الموجود في الافتراضي يبقى (إخفاء «قرار الفريق» وحقول الترويسة وصفوف الأقسام كان يُحذف عند كل دمج فيعود ظاهرًا) */ Object.keys(w).forEach(function (k) { if (Object.prototype.hasOwnProperty.call(o, k) || w[k] === undefined || w[k] === null || typeof w[k] === 'function') return; o[k] = typeof w[k] === 'object' ? JSON.parse(JSON.stringify(w[k])) : w[k]; }); return o; }
     if (typeof d === 'boolean') return typeof v === 'boolean' ? v : d;
     if (typeof d === 'string') return typeof v === 'string' && (v.trim() || d === '') ? v.trim() : d;
     return v === undefined ? d : v;
