@@ -5568,3 +5568,22 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rsc-tmbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .tq-next .rsc-tmbar > small { color: var(--t2-muted); font-weight: 700; }
 .tq-next .rsc-days-h { color: var(--t2-muted); font-size: 12px; margin-inline-start: 6px; }
+/* v1117: بطاقات المراحل، شريط تنقل بسطر واحد، تقويم أصغر */
+.tq-next .rsc-stl-n { margin: 6px 0 10px; }
+.tq-next .rsc-stc { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tq-next .rsc-stc-i { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--t2-line); border-inline-start: 4px solid #E3A008; border-radius: 14px; background: var(--t2-surface, #fff); }
+.tq-next .rsc-stc-i.is-2 { border-inline-start-color: #C2185B; }
+.tq-next .rsc-stc-a { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.tq-next .rsc-stc-a > b { font-size: 15px; } .tq-next .rsc-stc-a > small { color: var(--t2-muted); font-size: 12.5px; }
+.tq-next .rsc-stc-t { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.tq-next .rsc-stc-t i { font-style: normal; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--t2-surface-2, #EEF2F7); color: var(--t2-ink-2); }
+.tq-next .rsc-stc-t i.is-late { background: #FDECEA; color: #A8382B; }
+.tq-next .rsc-stc-t i.is-part { background: #E8F0FE; color: #1F4E9B; }
+.tq-next .rsc-stc-t i.is-tp { background: #E6F4F1; color: #0B5F66; }
+.tq-next .rsc-stc-t i.is-now { background: #0B5F66; color: #fff; }
+.tq-next .rsc-stc-t i.is-ov { background: #FFF3D6; color: #8A5A00; }
+.tq-next .rsc-stc-i .rsc-stsg { flex: none; }
+@media (max-width: 560px) { .tq-next .rsc-stc-i { flex-direction: column; align-items: stretch; } .tq-next .rsc-stc-i .rsc-stsg { align-self: flex-start; } }
+.tq-next .rsc-nav2 { flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-inline-end: 0; padding-bottom: 30px; }
+.tq-next .rsc-nav2 button { white-space: nowrap; flex: none; }
+.tq-next .rsc-cal-c { min-height: 46px; padding: 4px 6px; }
