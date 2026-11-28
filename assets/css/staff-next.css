@@ -5821,3 +5821,5 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
   .tq-next #pv-host .t2.t2-app > .t2-head .t2-hcmd { width: 34px; min-width: 34px; padding: 0 !important; justify-content: center; }
   .tq-next #pv-host .t2.t2-app > .t2-head .t2-hbtn { width: 32px; min-width: 32px; height: 32px; }
 }
+/* v1267: وميض القسم عند فتحه من المسار */
+.tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-g.tqn-g-flash > .tqn-gh { box-shadow: inset 0 0 0 2px #3FD0D3; border-radius: 10px; transition: box-shadow .3s; }

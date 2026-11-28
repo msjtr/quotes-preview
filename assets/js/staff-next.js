@@ -221,6 +221,7 @@ RECV.forEach(function (r) { COVER['fin-rec-' + r[0]] = true; });
         if (gh) {
           var c = gh.parentNode.classList.toggle('is-closed');
           gh.setAttribute('aria-expanded', c ? 'false' : 'true');
+          if (!c) grpOnly(gh.parentNode); /* v1267: فتح قسم يطوي البقية (أكورديون) */
           return;
         }
         var b = ev.target.closest('[data-next-nav]');
@@ -560,20 +561,33 @@ function geoQ() {
       var m = (window.__tqLogo && window.__tqLogo.m) || '';
       if (m) { var im = document.createElement('img'); im.className = 'tqn-brand-mark'; im.alt = 'تيرا'; im.src = m; br.insertBefore(im, br.firstChild); }
     }
-    if (t.__tqnGrp !== 1) {
-      t.__tqnGrp = 1;
-      var CLs = closedList();
-      t.querySelectorAll('.tqn-nav > .tqn-g').forEach(function (g) {
-        var n = ghName(g); if (!n) return;
-        var c = CLs.indexOf(n) >= 0;
-        if (c !== g.classList.contains('is-closed')) g.classList.toggle('is-closed', c);
-        var h = g.querySelector(':scope > .tqn-gh'); if (h) h.setAttribute('aria-expanded', String(!c));
-      });
-    }
+    /* v1267: القائمة الجانبية أكورديون — يُفتح قسم الصفحة الحالية وتُطوى البقية عند كل انتقال؛ وفتح قسم يدويًا يطوي غيره */
+    var onI = t.querySelector('.tqn-nav .tqn-i.is-on'), onG = onI ? onI.closest('.tqn-nav > .tqn-g') : null, onK = onG ? (ghName(onG) || '#home') : '#none';
+    if (t.__tqnAcc !== onK) { t.__tqnAcc = onK; grpOnly(onG && ghName(onG) ? onG : null); }
     t.querySelectorAll('.tqn-nav .t2-side-i').forEach(function (i) {
       if (!i.title) { var s = i.querySelector('.t2-side-l'); if (s) i.title = s.textContent.trim(); }
     });
   }
+  function grpOnly(keep) {
+    var t = T2(); if (!t) return;
+    t.querySelectorAll('.tqn-nav > .tqn-g').forEach(function (g) {
+      if (!ghName(g)) return;
+      var c = g !== keep;
+      if (c !== g.classList.contains('is-closed')) g.classList.toggle('is-closed', c);
+      var h = g.querySelector(':scope > .tqn-gh'); if (h) h.setAttribute('aria-expanded', String(!c));
+    });
+  }
+  /* v1267: «الطلبات والعقود» في المسار — يفتح قسمه في القائمة (ويفتح «الأقسام» على الجوال) */
+  function grpGo(name) {
+    var t = T2(); if (!t) return;
+    var g = [].filter.call(t.querySelectorAll('.tqn-nav > .tqn-g'), function (x) { return ghName(x) === name; })[0]; if (!g) return;
+    grpOnly(g);
+    if (t.classList.contains('is-side-min')) { var sb = t.querySelector('.t2-side-t'); if (sb) sb.click(); }
+    if (!g.offsetParent) { var mb = [].filter.call(document.querySelectorAll('button, a'), function (x) { return /^الأقسام$/.test((x.textContent || '').trim()); })[0]; if (mb) mb.click(); return; }
+    try { g.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { void e; }
+    var f = g.querySelector('.tqn-i'); if (f) { g.classList.add('tqn-g-flash'); setTimeout(function () { g.classList.remove('tqn-g-flash'); }, 1400); try { f.focus({ preventScroll: true }); } catch (e) { void e; } }
+  }
+  window.__tqnGrpGo = grpGo;
   function soon() { if (busy) return; busy = true; (window.requestAnimationFrame || setTimeout)(apply); }
   document.addEventListener('click', function (ev) {
     var gh = ev.target && ev.target.closest && ev.target.closest('#pv-host .tqn-nav .tqn-gh');
@@ -722,7 +736,7 @@ function geoQ() {
     if (ST.fromNc && document.querySelector('#pv-root .tqn-cf')) { ncB = [].filter.call(document.querySelectorAll('.tqn-nav .tqn-i'), function (x) { return /^العملاء الجدد$/.test(x.getAttribute('title') || txt(x)); })[0] || null; if (ncB) item = 'العملاء الجدد'; }
     var g = on.closest('.tqn-g'), gl = g ? txt(g.querySelector('.tqn-gh')) : '';
     L.push({ t: 'الرئيسية', home: 1, go: function () { if (srcBtns[0]) srcBtns[0].click(); else if (homeBtn) homeBtn.click(); } });
-    if (gl && gl !== item) L.push({ t: gl, grp: 1 });
+    if (gl && gl !== item) L.push({ t: gl, grp: 1, go: function () { if (window.__tqnGrpGo) window.__tqnGrpGo(gl); } });
     var pt = txt(document.getElementById('pv-title')) || srcLast, deep = src.querySelectorAll('.t2-crumb-li').length >= 3;
     var detail = deep && pt && pt !== item && pt !== 'الرئيسية' && pt !== gl ? pt : '';
     var bk = ncB || srcBtns.filter(function (x) { return txt(x) === item; })[0];
