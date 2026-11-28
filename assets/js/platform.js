@@ -29621,12 +29621,15 @@ const el2 = B && B.elig != null && B.rec !== 'not_eligible' ? B.elig : null, les
 const SC = ['saffron', 'saffron', 'saffron', 'saffron', 'blue', 'violet', 'teal', 'green'];
 const segs = e('span', { class: 'egl-prog' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'img', 'aria-label': dead ? 'متوقف' : done ? 'مكتمل' : 'المرحلة ' + (k + 1) + ' من 8' }, SC.map(function (c, i) { return e('i', { class: 'is-' + c + (done || i < k ? ' is-ok' : i === k && !dead ? ' is-now' : dead && i === k ? ' is-stop' : '') }); }));
 const ini = String(nm || '؟').trim().charAt(0) || '؟';
-return e('article', { class: 'egl-row is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
+const an = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : 'غير مسنَد';
+/* v1241: سطر علوي (الاسم · رقم الطلب · المسؤول · منذ) وسطر سفلي (المبلغ · الحالة · المسار · التالي) — قالب واحد لكل الطلبات */
+return e('article', { class: 'egl-row egl-row2 is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
 e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
-e('div', { class: 'egl-who' }, [e('b', {}, nm), e('small', {}, e('bdi', { dir: 'ltr' }, x.req_no || '—'))]),
-e('div', { class: 'egl-amt' + (less ? ' is-less' : '') }, [e('small', {}, el2 != null ? 'المؤهَّل' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2 != null ? el2 : req)))]),
-e('div', { class: 'egl-st' }, [e('span', { class: 'egl-pill is-' + tone, title: L[0] }, L[0]), e('div', { class: 'egl-st-r' }, [segs, e('small', { class: 'egl-nx', title: nx || '' }, done ? 'مكتمل' : dead ? 'مغلق' : nx ? 'التالي: ' + nx : '—')])]), /* v1240: سطران ثابتان */
-(function () { const an = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : un ? 'غير مسنَد' : 'غير مسنَد'; return e('div', { class: 'egl-meta' }, [e('span', { class: 'egl-as' + (!x.assigned_to ? ' is-un' : ''), title: an }, [frag(ui('users', 13)), e('span', {}, an)]), e('small', {}, [frag(ui('clock', 13)), e('span', {}, eg10Ago(eg10Upd(x, B)))])]); })(),
+e('div', { class: 'egl-body' }, [
+e('div', { class: 'egl-l1' }, [e('b', { class: 'egl-nm' }, nm), e('span', { class: 'egl-tag' }, e('bdi', { dir: 'ltr' }, x.req_no || '—')),
+e('span', { class: 'egl-tag' + (!x.assigned_to ? ' is-un' : '') }, [frag(ui('users', 13)), an]), e('span', { class: 'egl-tag is-mut' }, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])]),
+e('div', { class: 'egl-l2' }, [e('span', { class: 'egl-amt2' + (less ? ' is-less' : '') }, [e('small', {}, el2 != null ? 'المؤهَّل' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2 != null ? el2 : req)))]),
+e('span', { class: 'egl-pill is-' + tone, title: L[0] }, L[0]), segs, e('small', { class: 'egl-nx', title: nx || '' }, done ? 'مكتمل' : dead ? 'مغلق' : nx ? 'التالي: ' + nx : '—')])]),
 e('div', { class: 'egl-go' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })])]);
 };
 const tbl = e('div', { class: 'egl-list' }, R.length ? R.map(row)

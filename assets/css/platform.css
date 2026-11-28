@@ -10240,3 +10240,21 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-go .eg9-btn{width:100%;justify-content:center}
 @media (max-width:1100px){.egl-row{grid-template-columns:36px minmax(0,1fr) 112px;grid-template-areas:"av who go" "av amt go" "av st go" "av meta go"}.egl-meta{flex-direction:row;gap:12px}}
 @media (max-width:620px){.egl-row{grid-template-columns:36px minmax(0,1fr);grid-template-areas:"av who" "av amt" "av st" "av meta" "go go"}}
+/* v1241: صف بسطرين — علوي للهوية وسفلي للإجراء */
+.egl-row.egl-row2{grid-template-columns:40px minmax(0,1fr) 112px;grid-template-areas:none;gap:14px;min-height:68px;padding:10px 14px 10px 12px}
+.egl-row2 .egl-av{width:40px;height:40px;align-self:center}
+.egl-body{display:flex;flex-direction:column;gap:7px;min-width:0}
+.egl-l1,.egl-l2{display:flex;align-items:center;gap:8px 10px;min-width:0;flex-wrap:nowrap}
+.egl-nm{font-size:14.5px;color:var(--egl-ink);white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.egl-tag{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-size:11.5px;color:var(--egl-ink);background:#F1F4F8;border-radius:8px;padding:2px 8px;white-space:nowrap}
+.egl-tag.is-un{color:#B86F0A;background:#FFF6E6}
+.egl-tag.is-mut{color:var(--egl-mut)}
+.egl-amt2{display:inline-flex;align-items:baseline;gap:5px;flex:0 0 auto;min-width:96px}
+.egl-amt2 small{font-size:11px;color:var(--egl-mut)}
+.egl-amt2 b{font-size:14.5px;color:var(--egl-ink)}
+.egl-amt2.is-less b{color:#B86F0A}
+.egl-l2 .egl-pill{flex:0 0 auto}
+.egl-l2 .egl-prog{flex:0 0 auto}
+.egl-l2 .egl-nx{flex:1 1 auto;min-width:0}
+.egl-row2 .egl-go{align-self:center}
+@media (max-width:760px){.egl-row.egl-row2{grid-template-columns:40px minmax(0,1fr)}.egl-row2 .egl-go{grid-column:1 / -1}.egl-l1,.egl-l2{flex-wrap:wrap}}
