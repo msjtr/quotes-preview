@@ -29622,23 +29622,26 @@ const SC = ['saffron', 'saffron', 'saffron', 'saffron', 'blue', 'violet', 'teal'
 const segs = e('span', { class: 'egl-prog' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'img', 'aria-label': dead ? 'متوقف' : done ? 'مكتمل' : 'المرحلة ' + (k + 1) + ' من 8' }, SC.map(function (c, i) { return e('i', { class: 'is-' + c + (done || i < k ? ' is-ok' : i === k && !dead ? ' is-now' : dead && i === k ? ' is-stop' : '') }); }));
 const ini = String(nm || '؟').trim().charAt(0) || '؟';
 const an = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : 'غير مسنَد';
-/* v1241: سطر علوي (الاسم · رقم الطلب · المسؤول · منذ) وسطر سفلي (المبلغ · الحالة · المسار · التالي) — قالب واحد لكل الطلبات */
-return e('article', { class: 'egl-row egl-row2 is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
+/* v1243: بطاقة بأربعة أسطر ثابتة — الهوية · المبالغ · المسار بعرض البطاقة (مرحلة بلونها وأيقونتها) · أين الطلب الآن */
+const ST8 = [['المراجعة', 'tray', '#F0A12B'], ['القرار', 'seal-check', '#E8743B'], ['العرض', 'receipt', '#D94F8A'], ['الإرسال', 'paper-plane-tilt', '#7559F0'], ['موافقات العميل', 'handshake', '#3B74E8'], ['الإدارة', 'briefcase', '#0FA3A8'], ['التنفيذ', 'crown-simple', '#13A06F'], ['الإغلاق', 'check-circle', '#22A86B']];
+const at = done ? 7 : Math.max(0, Math.min(7, k)), rej = dead && (x.status === 'rejected' || (B && B.rec === 'not_eligible'));
+const trk = e('div', { class: 'egl-trk8' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'list', 'aria-label': 'مسار الطلب' }, ST8.map(function (z, i) {
+const st = done || i < at ? 'is-ok' : i === at ? (dead ? 'is-stop' : 'is-now') : 'is-todo';
+return e('div', { class: 'egl-stp ' + st, role: 'listitem', style: '--sc:' + z[2], title: (EG10_ST[i] || z[0]) + ' — ' + (st === 'is-ok' ? 'تمت' : st === 'is-now' ? 'الطلب هنا الآن' : st === 'is-stop' ? 'توقف هنا' : 'متبقية') }, [
+e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [frag(ui(st === 'is-stop' ? 'x-circle' : i === at && !done ? 'map-pin' : z[1], 14))]), e('span', { class: 'egl-stp-n' }, z[0])]),
+e('span', { class: 'egl-stp-bar' })]);
+}));
+const cap = done ? 'اكتملت المراحل الثماني — ' + L[0] : dead ? L[0] + ' — توقف عند «' + ST8[at][0] + '»' : 'تمت ' + fmtNum(at) + ' · متبقي ' + fmtNum(8 - at) + (nx ? ' · التالي: ' + nx : '');
+return e('article', { class: 'egl-row egl-row4 is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
 e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
 e('div', { class: 'egl-body' }, [
 e('div', { class: 'egl-l1' }, [e('b', { class: 'egl-nm' }, nm), e('span', { class: 'egl-tag' }, e('bdi', { dir: 'ltr' }, x.req_no || '—')),
-e('span', { class: 'egl-tag' + (!x.assigned_to ? ' is-un' : '') }, [frag(ui('users', 13)), an]), e('span', { class: 'egl-tag is-mut' }, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])]),
-e('div', { class: 'egl-l2' }, [e('span', { class: 'egl-amt2' + (less ? ' is-less' : '') }, [e('small', {}, el2 != null ? 'المؤهَّل' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2 != null ? el2 : req)))]),
-(function () { /* v1242: حالة واحدة — مسار بألوان مراحله وعلامة موقع فوق المرحلة الحالية، وتحته ما تم وما بقي */
-const SCc = ['saffron', 'saffron', 'saffron', 'saffron', 'blue', 'violet', 'teal', 'green'], at = done ? 7 : Math.max(0, Math.min(7, k)), left = done ? 0 : Math.max(0, 7 - at);
-const names = (typeof EG10_ST !== 'undefined' && EG10_ST) || [];
-const tr = e('span', { class: 'egl-trk' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'img', 'aria-label': done ? 'مكتمل' : dead ? 'مغلق عند ' + (names[at] || '') : 'المرحلة ' + (at + 1) + ' من 8 — ' + (names[at] || '') }, SCc.map(function (c, i) {
-const st = done || i < at ? 'is-ok' : i === at ? (dead ? 'is-stop' : 'is-now') : '';
-return e('i', { class: 'is-' + c + ' ' + st, title: (names[i] || ('المرحلة ' + (i + 1))) + ' — ' + (done || i < at ? 'تمت' : i === at ? (dead ? 'توقف هنا' : 'الآن') : 'متبقية') }, i === at ? e('b', { class: 'egl-pin', 'aria-hidden': 'true' }, [frag(ui(done ? 'check-circle' : dead ? 'x-circle' : 'map-pin', 16))]) : null);
-}));
-return e('span', { class: 'egl-jr is-' + tone }, [tr, e('span', { class: 'egl-jr-t' }, [e('b', { title: L[0] }, L[0]), e('small', { title: nx || '' }, done ? 'اكتملت المراحل الثماني' : dead ? 'أُغلق الطلب' : 'تمت ' + fmtNum(at) + ' · متبقي ' + fmtNum(left + 1) + (nx ? ' · التالي: ' + nx : ''))])]);
-})()])]),
-e('div', { class: 'egl-go' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })])]);
+e('span', { class: 'egl-tag' + (!x.assigned_to ? ' is-un' : '') }, [frag(ui('users', 13)), an]), e('span', { class: 'egl-tag is-mut' }, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))]),
+e('span', { class: 'egl-sp' }), eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })]),
+e('div', { class: 'egl-l2' }, [e('span', { class: 'egl-mny' }, [e('small', {}, 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(req)))]),
+rej ? e('span', { class: 'egl-mny is-rej' }, [e('b', {}, 'مرفوض')]) : el2 != null ? e('span', { class: 'egl-mny is-ok' + (less ? ' is-less' : '') }, [e('small', {}, 'المؤهَّل'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2)))]) : e('span', { class: 'egl-mny is-wait' }, [e('small', {}, 'المؤهَّل'), e('b', {}, 'بانتظار القرار')])]),
+trk,
+e('div', { class: 'egl-cap is-' + tone }, [e('b', {}, L[0]), e('span', {}, cap)])])]);
 };
 const tbl = e('div', { class: 'egl-list' }, R.length ? R.map(row)
 : [e('div', { class: 'egl-empty' }, [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile('check-circle', 'green')]), e('b', {}, F[0] === 'our' ? 'لا طلبات بانتظار قراركم' : 'لا طلبات هنا'), e('small', {}, F[0] === 'our' ? 'كل الطلبات الجديدة تمت معالجتها.' : 'غيّر الحالة أو المسؤول لرؤية غيرها.')])]);
