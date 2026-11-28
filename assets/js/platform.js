@@ -29613,26 +29613,26 @@ const tck = e('input', { type: 'checkbox', onChange: function (ev) { ADM.tqnTest
 const q = e('input', { class: 'egl-q-in', type: 'search', placeholder: 'ابحث بالاسم أو رقم الطلب', 'aria-label': 'بحث في طلبات الأهلية', value: EG9.q || '', onInput: function (ev) { EG9.q = ev.target.value; eg9Filter(tbl, EG9.q); } });
 const tools = e('div', { class: 'egl-tools' }, [e('label', { class: 'egl-q' }, [frag(ui('magnifying-glass', 18)), q]), e('div', { class: 'egl-tools-r' }, [who, e('label', { class: 'egl-tst' }, [tck, 'طلبات الاختبار'])])]);
 const TONE = function (k, dead) { return dead ? 'red' : k >= 7 ? 'green' : k === 6 ? 'teal' : k === 5 ? 'violet' : k === 4 ? 'blue' : 'saffron'; };
-const row = function (x) {
+const row = function (x) { /* v1239: صف مختصر — المبلغ رقم واحد، والمسار بألوان مراحله، والزر للدخول فقط */
 const B = BD[x.id], k = eg10K(x, B), dead = eg10Dead(x, B), nm = eg9Name(x), un = srAsOpen(x) && !x.assigned_to;
 const done = !dead && k >= 7, open = function () { eg9Go(x.id); paint(); }, L = eg10Lbl(x, B, k, dead), tone = TONE(k, dead), nx = eg10Next(x, B, k, dead);
 const req = B && B.req != null ? B.req : (function () { try { return egReq(x); } catch (err) { return null; } })();
-const el2 = B && B.elig != null && B.rec !== 'not_eligible' ? B.elig : null;
-const prod = (function () { const p = B && B.prod; if (!p) return ''; try { return egProdParts(p).n || p; } catch (err) { return p; } })();
-const segs = e('span', { class: 'egl-prog', 'aria-label': dead ? 'متوقف' : 'المرحلة ' + Math.min(8, k + 1) + ' من 8' }, [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return e('i', { class: i < k || done ? 'is-ok' : i === k && !dead ? 'is-now' : '' }); }));
+const el2 = B && B.elig != null && B.rec !== 'not_eligible' ? B.elig : null, less = el2 != null && req != null && Number(el2) < Number(req);
+const SC = ['saffron', 'saffron', 'saffron', 'saffron', 'blue', 'violet', 'teal', 'green'];
+const segs = e('span', { class: 'egl-prog' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'img', 'aria-label': dead ? 'متوقف' : done ? 'مكتمل' : 'المرحلة ' + (k + 1) + ' من 8' }, SC.map(function (c, i) { return e('i', { class: 'is-' + c + (done || i < k ? ' is-ok' : i === k && !dead ? ' is-now' : dead && i === k ? ' is-stop' : '') }); }));
 const ini = String(nm || '؟').trim().charAt(0) || '؟';
-return e('article', { class: 'egl-row is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm, prod].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
+return e('article', { class: 'egl-row is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
 e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
-e('div', { class: 'egl-who' }, [e('b', {}, nm), e('small', {}, [e('bdi', { dir: 'ltr' }, x.req_no || '—'), prod ? ' · ' + prod : ''])]),
-e('div', { class: 'egl-amt' }, [e('small', {}, el2 != null ? 'المؤهَّل / المطلوب' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, el2 != null ? eg10N(el2) + ' / ' + eg10N(req) : eg10N(req)))]),
-e('div', { class: 'egl-st' }, [e('span', { class: 'egl-pill is-' + tone }, L[0]), segs]),
-e('div', { class: 'egl-meta' }, [e('span', { class: 'egl-as' + (un ? ' is-un' : '') }, [frag(ui('users', 14)), x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : un ? 'غير مسنَد' : '—']), e('small', {}, [frag(ui('clock', 14)), eg10Ago(eg10Upd(x, B))])]),
-e('div', { class: 'egl-go' }, [eg9Btn(done || dead ? 'عرض الطلب' : nx || 'فتح', { cls: done || dead ? '' : 'is-pri', on: open })])]);
+e('div', { class: 'egl-who' }, [e('b', {}, nm), e('small', {}, e('bdi', { dir: 'ltr' }, x.req_no || '—'))]),
+e('div', { class: 'egl-amt' + (less ? ' is-less' : '') }, [e('small', {}, el2 != null ? 'المؤهَّل' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2 != null ? el2 : req)))]),
+e('div', { class: 'egl-st' }, [e('div', { class: 'egl-st-r' }, [e('span', { class: 'egl-pill is-' + tone }, L[0]), segs]), !done && !dead && nx ? e('small', { class: 'egl-nx' }, 'التالي: ' + nx) : null]),
+e('div', { class: 'egl-meta' }, [e('span', { class: 'egl-as' + (un ? ' is-un' : '') }, [frag(ui('users', 13)), x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : un ? 'غير مسنَد' : '—']), e('small', {}, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])]),
+e('div', { class: 'egl-go' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })])]);
 };
 const tbl = e('div', { class: 'egl-list' }, R.length ? R.map(row)
 : [e('div', { class: 'egl-empty' }, [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile('check-circle', 'green')]), e('b', {}, F[0] === 'our' ? 'لا طلبات بانتظار قراركم' : 'لا طلبات هنا'), e('small', {}, F[0] === 'our' ? 'كل الطلبات الجديدة تمت معالجتها.' : 'غيّر الحالة أو المسؤول لرؤية غيرها.')])]);
 const head = e('div', { class: 'egl-head' }, [e('div', { class: 'egl-head-t' }, [e('span', { class: 'egl-kpi-ic is-lg', 'aria-hidden': 'true' }, [tile('identification-badge', 'teal')]), e('div', {}, [e('b', {}, 'طلبات أهلية شراء منتج'), e('small', {}, 'كل طلب من الاستلام حتى الإغلاق في مكان واحد — والزر يفتحه على خطوته الحالية.')])]),
-e('div', { class: 'egl-head-a' }, [eg9Btn('الإعدادات', { ic: 'gear-six', on: function () { EG9.set = true; eg9SS('set', '1'); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } }), eg9Btn('طلب لعميل', { cls: 'is-pri', ic: 'plus', on: eg9New })])]);
+e('div', { class: 'egl-head-a' }, [eg9Btn('الإعدادات', { ic: 'gear-six', on: function () { EG9.set = true; eg9SS('set', '1'); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } }), eg9Btn('إنشاء طلب جديد', { cls: 'is-pri', ic: 'plus', on: eg9New })])]);
 const out = [e('div', { class: 'eg9 eg10 egl' }, [head, kpis, e('section', { class: 'egl-card' }, [tools, tbl])])];
 if (EG9.q) setTimeout(function () { eg9Filter(tbl, EG9.q); }, 0);
 return out;
