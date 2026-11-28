@@ -29474,7 +29474,7 @@ return (h && h.d) || null;
 function eg9BdRun() {
 const ids = Object.keys(EG9B.q).slice(0, 200); ids.forEach(function (id) { delete EG9B.q[id]; });
 if (!ids.length) { EG9B.busy = false; return; }
-eg9Rpc('admin_elig_board', { p_ids: ids }).then(function (j) { if (!j || j.ok === false) throw new Error('board'); /* v1253: رفض مؤقت (قبل جاهزية الدور) يُعاد ولا يُخزَّن «لا بيانات» 60 ث */ const R = (j && j.rows) || {}, now = Date.now(); ids.forEach(function (id) { EG9B.m[id] = { at: now, d: R[id] || null }; }); const op = ADM.egOpen, pp = op && EG9B.pp && EG9B.pp[op]; if (pp && ids.indexOf(op) >= 0 && R[op]) setTimeout(function () { if (ADM.egOpen === op) { try { pp(); } catch (err) { void err; } } }, 0); /* v1254: وصلت حالة الطلب المفتوح — تُعاد رسم صفحته نفسها */ })
+eg9Rpc('admin_elig_board', { p_ids: ids }).then(function (j) { if (!j || j.ok === false) throw new Error('board'); /* v1253: رفض مؤقت (قبل جاهزية الدور) يُعاد ولا يُخزَّن «لا بيانات» 60 ث */ const R = (j && j.rows) || {}, now = Date.now(); ids.forEach(function (id) { EG9B.m[id] = { at: now, d: R[id] || null }; }); const op = ADM.egOpen, pp = op && EG9B.pp && EG9B.pp[op]; if (pp && ids.indexOf(op) >= 0 && R[op]) setTimeout(function () { if (ADM.egOpen === op) pp.slice().forEach(function (f) { try { f(); } catch (err) { void err; } }); }, 0); /* v1255: كل دوال رسم الصفحة (قد تُركَّب الصفحة مرتين عند التحميل؛ رسم الصندوق المنفصل لا أثر له) */ /* v1254: وصلت حالة الطلب المفتوح — تُعاد رسم صفحته نفسها */ })
 .catch(function () { const now = Date.now() - 58000, fs = EG9B.rf.slice(); ids.forEach(function (id) { if (EG9B.m[id]) EG9B.m[id].at = now; else EG9B.m[id] = { at: now, d: null }; }); setTimeout(function () { try { if (EG9B.last) EG9B.last(); } catch (err) { void err; } }, 2500); }) /* v1252: إعادة المحاولة بعد ثانيتين ونصف (كانت 11 ث فتبقى الصفحة على حالة تقديرية) */ /* v925: إعادة المحاولة بعد ثوانٍ عند تعذّر الاتصال */
 .then(function () { if (Object.keys(EG9B.q).length) { setTimeout(eg9BdRun, 60); return; } EG9B.busy = false; EG9B.rf.splice(0); try { if (EG9B.last) EG9B.last(); } catch (err) { void err; } });
 }
@@ -29482,7 +29482,7 @@ function eg9BdDrop(id) { delete EG9B.m[id]; }
 /* v1252: صفحة الطلب لا تبقى على حالة تقديرية — ما دامت حالة اللوحة لم تصل: إعادة الطلب والرسم كل 3 ث (حتى 8 مرات) ما دامت الصفحة نفسها ظاهرة */
 function eg9BdWait(x, paint) {
 const W = EG9B.w || (EG9B.w = {}), n = W[x.id] || 0; if (n >= 20 || W['t' + x.id]) return; W[x.id] = n + 1; W['t' + x.id] = 1;
-setTimeout(function () { delete W['t' + x.id]; if (ADM.egOpen !== x.id) return; /* v1253: ما دامت صفحة هذا الطلب مفتوحة (لا آخر دالة رسم) */ const h = EG9B.m[x.id]; if (h && h.d) { delete W[x.id]; } else if (h && !EG9B.q[x.id]) h.at = 0; try { paint(); } catch (err) { void err; } }, 3000);
+setTimeout(function () { delete W['t' + x.id]; if (ADM.egOpen !== x.id) return; /* v1253: ما دامت صفحة هذا الطلب مفتوحة (لا آخر دالة رسم) */ const h = EG9B.m[x.id]; if (h && h.d) { delete W[x.id]; } else if (h && !EG9B.q[x.id]) h.at = 0; ((EG9B.pp && EG9B.pp[x.id]) || [paint]).slice().forEach(function (f) { try { f(); } catch (err) { void err; } }); }, 3000);
 }
 const EG10_ST = ['مراجعة الطلب', 'قرار الأهلية', 'عرض سعر منتج', 'الإرسال للعميل', 'موافقات العميل', 'إجراءات الإدارة', 'التنفيذ والنقاط', 'الإغلاق'];
 const EG10_CS = [['elig', 'أهلية شراء منتج', 'وافق'], ['quote', 'عرض سعر منتج', 'قبله'], ['purchase', 'فاتورة المنتج', 'اعتمدها'], ['contract', 'عقد بيع منتج', 'وقّعه']];
@@ -29731,7 +29731,7 @@ function eg9Page(x, paint) {
 eg12Bind();
 try { const hh = document.querySelector('.t2-head'); if (hh && hh.offsetHeight) document.documentElement.style.setProperty('--eg12-top', hh.offsetHeight + 'px'); } catch (err) { void err; }
 const RF = function () { paint(); }; RF.paint = paint;
-const V = eg10V(x), B = eg9Bd(x, paint), k = eg10K(x, B), dead = eg10Dead(x, B), reach = eg10Reach(x, B, k), open = eg9IsOpen(x), busy = !!EG9.busy; (EG9B.pp || (EG9B.pp = {}))[x.id] = paint; if (!B) eg9BdWait(x, paint);
+const V = eg10V(x), B = eg9Bd(x, paint), k = eg10K(x, B), dead = eg10Dead(x, B), reach = eg10Reach(x, B, k), open = eg9IsOpen(x), busy = !!EG9.busy; (function (P) { const L = P[x.id] || (P[x.id] = []); if (L.indexOf(paint) < 0) { L.push(paint); if (L.length > 4) L.shift(); } })(EG9B.pp || (EG9B.pp = {})); if (!B) eg9BdWait(x, paint);
 eg12Pre(x, B, paint);
 const NX = { n: null };
 /* زر داخل محرّر قديم طلب قسمًا آخر — ننقله لتبويبه */
