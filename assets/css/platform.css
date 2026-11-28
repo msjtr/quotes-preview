@@ -10319,3 +10319,42 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-stp.is-now .egl-stp-ic{animation:none}
 @media (prefers-reduced-motion:no-preference){.egl-stp-pin{animation:eglBob2 1.8s ease-in-out infinite}}
 .egl-stp-h{gap:6px;padding-top:6px}
+/* v1248: علامة الموقع فوق المرحلة الحالية بلا تداخل · حالة داخل المرحلة · الاسم كاملًا · تاريخ التقديم · توزيع ثابت للجوال */
+.egl-row.egl-row4{grid-template-columns:42px minmax(0,1fr) auto}
+.egl-go4{align-self:start;padding-top:1px}
+.egl-go4 .eg9-btn{white-space:nowrap}
+.egl-row4 .egl-l1{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-width:0}
+.egl-row4 .egl-nm{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;flex:0 1 auto;min-width:0;line-height:1.5}
+.egl-tags{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.egl-tag.is-dt{color:#3B4A63;background:#EEF3FF}
+.egl-trk8{padding-top:30px}
+.egl-stp{position:relative}
+.egl-stp-h{padding-top:0}
+.egl-stp-pin{position:absolute;top:auto;bottom:calc(100% + 1px);left:50%;inset-inline-end:auto;width:24px;height:30px;transform:translateX(-50%);display:block;background:none;border-radius:0;box-shadow:none;color:var(--sc);filter:drop-shadow(0 3px 3px rgba(15,29,74,.28));line-height:0;z-index:1}
+.egl-stp-pin svg{width:24px;height:30px;display:block}
+@keyframes eglPinB{50%{transform:translate(-50%,-3px)}}
+@media (prefers-reduced-motion:no-preference){.egl-stp-pin{animation:eglPinB 1.8s ease-in-out infinite}}
+.egl-stp-st{display:inline-block;align-self:flex-start;max-width:100%;font-size:11px;font-weight:700;line-height:1.45;color:var(--sc);background:color-mix(in srgb,var(--sc) 12%,#fff);border:1px solid color-mix(in srgb,var(--sc) 30%,#fff);border-radius:7px;padding:1px 7px;white-space:normal;overflow-wrap:anywhere}
+.egl-stp.is-stop .egl-stp-st{--sc:#C2412F}
+.egl-trk8.is-done .egl-stp-st{--sc:#13804F}
+.egl-cap{white-space:normal;flex-wrap:wrap;gap:4px 10px}
+.egl-cap span{overflow:visible;text-overflow:clip}
+@media (max-width:900px){.egl-trk8{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:34px;column-gap:8px}}
+@media (max-width:640px){
+.egl-row.egl-row4{grid-template-columns:34px minmax(0,1fr);gap:10px 10px;padding:12px}
+.egl-row4 .egl-av{width:34px;height:34px;font-size:14px}
+.egl-go4{grid-column:1 / -1;padding:0}
+.egl-go4 .eg9-btn{width:100%;justify-content:center}
+.egl-row4 .egl-l2{flex-wrap:wrap}
+.egl-stp{align-items:center;text-align:center}
+.egl-stp-h{flex-direction:column;gap:4px;width:100%}
+.egl-stp-n{white-space:normal;overflow:visible;text-overflow:clip;font-size:11px;line-height:1.3;min-height:2.6em;display:flex;align-items:flex-start;justify-content:center}
+.egl-stp-bar{width:100%}
+.egl-stp-st{align-self:center;text-align:center;font-size:10.5px;padding:1px 5px}
+}
+@media (max-width:400px){
+.egl-row.egl-row4{grid-template-columns:minmax(0,1fr);padding:12px 10px}
+.egl-row4 .egl-av{display:none}
+.egl-trk8{column-gap:6px}
+.egl-tag{font-size:11px;padding:2px 6px}
+}
