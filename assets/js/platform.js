@@ -29900,37 +29900,33 @@ sub = (late ? 'متأخر منذ ' + egAsgMin(left) : 'متبقٍّ ' + egAsgMin
 if (T.text && T.key !== 'custom') sub += ' · التفاصيل: ' + T.text;
 return { S: S, title: title, sub: sub, tone: tone, T: T, late: late };
 }
-const S = mk([['طلب الإسناد', 'paper-plane-tilt'], ['الموافقة', 'seal-check'], ['الإسناد', 'user-circle'], ['الاستلام', 'check-circle']]);
-S[0].c = 'saffron'; S[1].c = 'orange'; S[2].c = 'blue'; S[3].c = 'green';
+/* v1263: مسار واحد دائمًا (الإسناد ← الاستلام ← التنفيذ ← الاعتماد) — طلب الإسناد وموافقته وسحبه حالاتٌ لخطوة «الإسناد» لا خطوات مستقلة */
+const S = mk([['الإسناد', 'user-circle'], ['الاستلام', 'tray'], ['التنفيذ', 'briefcase'], ['الاعتماد', 'seal-check']]);
 const lastAsg = ev.filter(function (v) { return v.k === 'assign' || v.k === 'transfer'; })[0];
-const viaApprove = !!(asg && lastAsg && lastAsg.note === 'بموافقة طلب الإسناد');
 const R = rc ? 'استلمه ' + (rc.by || 'الفريق') : '';
 let title, sub, tone;
 if (pend) {
-S[0].st = 'is-ok'; S[0].t = pend.name || 'موظف'; S[1].st = 'is-now'; S[1].t = 'بانتظار الموافقة';
+S[0].st = 'is-now'; S[0].t = 'طلبه ' + (pend.name || 'موظف') + ' — بانتظار الموافقة';
 title = (pend.name || 'موظف') + ' طلب إسناده إليه'; sub = 'بانتظار الموافقة منذ ' + egAsgDur(pend.at) + ' · ' + eg10Dt(pend.at); tone = 'orange';
 } else if (asg) {
-if (viaApprove) { S[0].st = 'is-ok'; S[0].t = 'طلبه الموظف'; S[1].st = 'is-ok'; S[1].t = 'وُوفق'; }
-else { S[0].st = 'is-skip'; S[0].t = 'لا يلزم'; S[1].st = 'is-skip'; S[1].t = 'إسناد مباشر'; }
-S[2].st = 'is-ok'; S[2].t = A.to_name || 'موظف';
-if (rc) { S[3].st = 'is-ok'; S[3].t = R; } else { S[3].st = 'is-now'; S[3].t = 'لم يُستلم بعد'; }
+S[0].st = 'is-ok'; S[0].t = A.to_name || 'موظف';
+if (rc) { S[1].st = 'is-ok'; S[1].t = R; S[2].st = 'is-now'; S[2].t = 'بلا مهمة محددة'; } else { S[1].st = 'is-now'; S[1].t = 'لم يُستلم بعد'; }
 title = 'مسنَد إلى ' + (A.to_name || 'موظف') + ' — بلا مهمة محددة'; tone = rc ? 'green' : 'blue';
 sub = (A.by_name ? 'أسنده ' + A.by_name : 'أُسند') + (A.at ? ' · ' + eg10Dt(A.at) : '') + ' · ' + (rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد — منذ ' + egAsgDur(A.at));
 } else if (last && last.k === 'withdraw') {
-S[0].st = 'is-skip'; S[0].t = '—'; S[1].st = 'is-skip'; S[1].t = '—'; S[2].st = 'is-stop'; S[2].t = 'سُحب';
-if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
-title = 'سُحب الإسناد من ' + (last.from || 'موظف'); sub = (last.by ? 'سحبه ' + last.by + ' · ' : '') + eg10Dt(last.at) + ' — بلا مسؤول منذ ' + egAsgDur(last.at); tone = 'red';
+S[0].st = 'is-stop'; S[0].t = 'سُحب من ' + (last.from || 'موظف');
+title = 'سُحب الإسناد من ' + (last.from || 'موظف') + ' — الطلب بلا مسؤول'; sub = (last.by ? 'سحبه ' + last.by + ' · ' : '') + eg10Dt(last.at) + ' · بلا مسؤول منذ ' + egAsgDur(last.at); tone = 'red';
 } else if (last && last.k === 'reject') {
-S[0].st = 'is-ok'; S[0].t = last.to || 'موظف'; S[1].st = 'is-stop'; S[1].t = last.note === 'ألغى طلبه' ? 'أُلغي الطلب' : 'رُفض';
-if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
-title = last.note === 'ألغى طلبه' ? 'أُلغي طلب الإسناد' : 'رُفض طلب إسناد ' + (last.to || 'الموظف'); sub = eg10Dt(last.at) + ' — الطلب غير مسنَد'; tone = 'red';
+S[0].st = 'is-stop'; S[0].t = last.note === 'ألغى طلبه' ? 'أُلغي طلب ' + (last.to || 'الموظف') : 'رُفض طلب ' + (last.to || 'الموظف');
+title = (last.note === 'ألغى طلبه' ? 'أُلغي طلب الإسناد' : 'رُفض طلب إسناد ' + (last.to || 'الموظف')) + ' — الطلب بلا مسؤول'; sub = eg10Dt(last.at) + ' · بلا مسؤول منذ ' + egAsgDur(last.at); tone = 'red';
 } else {
 const since = (last && last.at) || x.created_at;
-S[0].t = 'عند الطلب'; S[1].t = 'عند الطلب'; S[2].st = 'is-now'; S[2].t = 'غير مسنَد';
-if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
+S[0].st = 'is-now'; S[0].t = 'غير مسنَد';
+if (rc) { S[1].st = 'is-ok'; S[1].t = R; }
 title = rc ? 'غير مسنَد — استلمه ' + (rc.by || 'الفريق') + ' دون إسناد' : 'غير مسنَد'; tone = 'saffron';
 sub = 'بلا مسؤول منذ ' + egAsgDur(since) + (rc ? ' · استُلم ' + eg10Dt(rc.at) : ' · بانتظار إسناده أو طلب إسناده');
 }
+void lastAsg;
 return { S: S, title: title, sub: sub, tone: tone, T: T && T.st === 'approved' ? T : null };
 }
 function egAsgDo(x, fn, args, title, line, paint) {
