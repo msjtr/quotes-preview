@@ -10358,3 +10358,6 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-trk8{column-gap:6px}
 .egl-tag{font-size:11px;padding:2px 6px}
 }
+/* v1249: اسم المرحلة كاملًا (يلتف عند الحاجة) وحالة قصيرة */
+.egl-stp-n{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
+.egl-stp-st{white-space:nowrap}

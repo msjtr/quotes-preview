@@ -5802,3 +5802,15 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 .tq-next .rgr-pt-more td { text-align: center; padding: 6px; }
 .tq-next .rgr-pt-mb { border: 1px dashed var(--t2-line); background: var(--t2-surface); color: var(--t2-brand); font: 700 13px/1.4 var(--t2-ff-display); padding: 7px 14px; border-radius: 999px; cursor: pointer; }
 .tq-next .rgr-sig { max-width: 260px; max-height: 120px; border: 1px solid var(--t2-line); border-radius: 10px; background: #fff; padding: 4px; }
+/* v1249: الشريط العلوي على الجوال — كل الأزرار داخل الشاشة (كان عرضه 660px على شاشة 360) */
+@media (max-width: 640px) {
+  .tq-next #pv-host .t2-app > .t2-head { gap: 4px !important; padding-inline: 8px !important; }
+  .tq-next #pv-host .t2-app > .t2-head .t2-hd-r { gap: 4px; min-width: 0; }
+  .tq-next #pv-host .t2-app > .t2-head .t2-hd-logo { height: 32px; width: auto; max-width: 84px; }
+  .tq-next #pv-host .t2-app > .t2-head .t2-hwho { padding: 0 !important; border: 0 !important; background: none !important; height: 38px; gap: 0; }
+  .tq-next #pv-host .t2.t2-app > .t2-head .t2-hwho.t2-hwho > span.t2-hwho-n, .tq-next #pv-host .t2.t2-app > .t2-head .t2-hwho.t2-hwho > span.t2-hwho-r, .tq-next #pv-host .t2.t2-app > .t2-head .t2-hwho.t2-hwho > span.lv-caret { display: none !important; }
+  .tq-next #pv-host .t2-app > .t2-head .tqn-sw { font-size: 0 !important; width: 36px; height: 36px; padding: 0 !important; justify-content: center; position: relative; flex: 0 0 auto; }
+  .tq-next #pv-host .t2-app > .t2-head .tqn-sw::before { content: ""; width: 18px; height: 18px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,181.66l-32,32a8,8,0,0,1-11.32-11.32L188.69,184H48a8,8,0,0,1,0-16H188.69l-18.35-18.34a8,8,0,0,1,11.32-11.32l32,32A8,8,0,0,1,213.66,181.66Zm-139.32-64a8,8,0,0,0,11.32-11.32L67.31,88H208a8,8,0,0,0,0-16H67.31L85.66,53.66A8,8,0,0,0,74.34,42.34l-32,32a8,8,0,0,0,0,11.32Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,181.66l-32,32a8,8,0,0,1-11.32-11.32L188.69,184H48a8,8,0,0,1,0-16H188.69l-18.35-18.34a8,8,0,0,1,11.32-11.32l32,32A8,8,0,0,1,213.66,181.66Zm-139.32-64a8,8,0,0,0,11.32-11.32L67.31,88H208a8,8,0,0,0,0-16H67.31L85.66,53.66A8,8,0,0,0,74.34,42.34l-32,32a8,8,0,0,0,0,11.32Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .tq-next #pv-host .t2-app > .t2-head .t2-hbtn { min-width: 34px; width: 34px; height: 34px; flex: 0 0 auto; }
+  .tq-next #pv-host .t2-app > .t2-head .t2-hcmd { flex: 0 0 auto; min-width: 36px; }
+}

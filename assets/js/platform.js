@@ -29634,9 +29634,9 @@ const at = done ? 7 : dead ? (x.status === 'rejected' ? 1 : B && B.dec ? Math.ma
 : k === 0 ? 0 : k === 1 ? (hasRec && !fix ? 1 : 0) : Math.max(0, Math.min(7, k));
 const REC = { eligible: 'مؤهَّل', partial: 'مؤهَّل جزئيًا', not_eligible: 'غير مؤهَّل' };
 const sub = done ? 'مكتمل' : dead ? (x.status === 'rejected' ? 'غير مؤهَّل' : B && B.dec ? 'اعتذر العميل' : 'ملغى')
-: k === 0 ? 'لم يُستلم' : k === 1 ? (fix ? 'بانتظار استكمال العميل' : hasRec ? (REC[B.rec] || 'قرار') + ' — بانتظار الاعتماد' : 'قيد المراجعة')
-: k === 2 ? (B && B.q && B.q.st === 'pending_approval' ? 'بانتظار اعتماد العرض' : 'يُعدّ العرض') : k === 3 ? 'جاهز للإرسال'
-: k === 4 ? 'بانتظار العميل' : k === 5 ? 'وقّع — إجراءات الإدارة' : k === 6 ? 'النقاط بانتظار الاعتماد' : '';
+: k === 0 ? 'لم يُستلم' : k === 1 ? (fix ? 'بانتظار الاستكمال' : hasRec ? (REC[B.rec] || 'القرار') + ' · للاعتماد' : 'قيد المراجعة')
+: k === 2 ? (B && B.q && B.q.st === 'pending_approval' ? 'للاعتماد' : 'قيد الإعداد') : k === 3 ? 'جاهز للإرسال'
+: k === 4 ? 'بانتظار العميل' : k === 5 ? 'قيد الإجراء' : k === 6 ? 'للاعتماد' : '';
 const trk = e('div', { class: 'egl-trk8' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'list', 'aria-label': 'مسار الطلب' }, ST8.map(function (z, i) {
 const st = done || i < at ? 'is-ok' : i === at ? (dead ? 'is-stop' : 'is-now') : 'is-todo';
 return e('div', { class: 'egl-stp ' + st, role: 'listitem', style: '--sc:' + z[2], title: (EG10_ST[i] || z[0]) + ' — ' + (st === 'is-ok' ? 'تمت' : st === 'is-now' ? 'الطلب هنا الآن' : st === 'is-stop' ? 'توقف هنا' : 'متبقية') }, [
