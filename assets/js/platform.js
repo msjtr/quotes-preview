@@ -29520,10 +29520,32 @@ function eg10Dots(x, B, k, dead) {
 const r = eg10Reach(x, B, k);
 return e('div', { class: 'eg10-dots' + (dead ? ' is-dead' : ''), role: 'img', 'aria-label': dead ? 'متوقف عند ' + EG10_ST[r] : k >= 7 ? 'مكتمل' : 'المرحلة ' + (k + 1) + ' من 8: ' + EG10_ST[k] }, EG10_ST.map(function (s, i) { return e('i', { class: i < r || (k >= 7 && !dead) ? 'is-done' : i === r ? (dead ? 'is-stop' : 'is-now') : '' }); }));
 }
-const EG10_F = [['our', 'بانتظار قرارنا', function (x, B) { const k = eg10K(x, B); return !eg10Dead(x, B) && k >= 0 && k <= 3 && !(k === 1 && eg9Fix(x)); }],
-['cl', 'بانتظار العميل', function (x, B) { const k = eg10K(x, B); return !eg10Dead(x, B) && (k === 4 || (k === 1 && eg9Fix(x))); }],
-['adm', 'إجراءات الإدارة', function (x, B) { return !eg10Dead(x, B) && eg10K(x, B) === 5; }],
-['pts', 'التنفيذ والنقاط', function (x, B) { return !eg10Dead(x, B) && eg10K(x, B) === 6; }],
+/* v1265: الملخص بحسب ما ينتظر إجراءً — استلام · قرار · اعتماد · إرسال · العميل · الإدارة · متأخرة (من مسار الطلب ومهمة الإسناد معًا) */
+function egAsgOf(x) { const h = typeof EGAS !== 'undefined' && EGAS.m[x.id]; return (h && h.d) || null; }
+function eg10Need(x, B) {
+const k = eg10K(x, B), dead = eg10Dead(x, B), A = egAsgOf(x), T = A && A.task, on = egAsgTaskOn(T), fix = eg9Fix(x), rec = !!(B && B.rec), q = B && B.q, me = (EGAS.P && EGAS.P.me) || srAsMe();
+const N = { apr: [] };
+if (!dead && k === 0) N.recv = 'طلب جديد';
+if (on && T.st === 'assigned') N.recv = N.recv || (T.staff === me ? 'بانتظار استلامك' : 'مهمة لم تُستلم');
+if (!dead && ((k === 1 && !fix && !rec) || (k === 2 && !(q && q.st === 'pending_approval')))) N.dec = 1;
+if (!dead && k === 1 && rec && !fix) N.apr.push('قرار الأهلية');
+if (!dead && k === 2 && q && q.st === 'pending_approval') N.apr.push('عرض السعر');
+if (!dead && k === 6) N.apr.push('النقاط');
+if (A && A.pend) N.apr.push('طلب إسناد');
+if (on && T.st === 'done') N.apr.push('تنفيذ مهمة');
+if (!dead && k === 3) N.send = 1;
+if (!dead && (k === 4 || (k === 1 && fix))) N.cl = 1;
+if (!dead && k === 5) N.adm = 1;
+if (on && T.st !== 'done') { const l = egAsgLeft(T.due); if (l !== null && l < 0) N.late = egAsgMin(l); }
+return N;
+}
+const EG10_F = [['recv', 'بانتظار الاستلام', function (x, B) { return !!eg10Need(x, B).recv; }],
+['dec', 'بانتظار قرارنا', function (x, B) { return !!eg10Need(x, B).dec; }],
+['apr', 'بانتظار الاعتماد', function (x, B) { return eg10Need(x, B).apr.length > 0; }],
+['send', 'جاهزة للإرسال', function (x, B) { return !!eg10Need(x, B).send; }],
+['cl', 'بانتظار العميل', function (x, B) { return !!eg10Need(x, B).cl; }],
+['adm', 'إجراءات الإدارة', function (x, B) { return !!eg10Need(x, B).adm; }],
+['late', 'مهام متأخرة', function (x, B) { return !!eg10Need(x, B).late; }],
 ['done', 'مكتملة', function (x, B) { return !eg10Dead(x, B) && eg10K(x, B) >= 7; }],
 ['dead', 'مغلقة / اعتذر', function (x, B) { return eg10Dead(x, B); }],
 ['all', 'الكل', function () { return true; }]];
@@ -29608,13 +29630,21 @@ return '<svg viewBox="0 0 22 28" width="22" height="28" aria-hidden="true"><defs
 + '<circle cx="11" cy="10" r="3.9" fill="' + P[0] + '" opacity=".35" transform="translate(.4 .6)"/><circle cx="11" cy="10" r="3.9" fill="url(#' + id + 'b)"/>'
 + '<path d="M6.2 6.6c1-1.9 2.9-3.1 5-3.3" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".55"/></svg>';
 }
+/* v1265: تنبيه بارز في البطاقة لما ينتظر إجراءً — اعتماد (وما هو) · مهمة متأخرة · بانتظار استلامك */
+function eglAlerts(x, B) {
+const N = eg10Need(x, B), out = [];
+if (N.apr.length) out.push(e('span', { class: 'egl-alert is-orange' }, [frag(ui('seal-check', 13)), 'بانتظار الاعتماد: ' + N.apr.join('، ')]));
+if (N.late) out.push(e('span', { class: 'egl-alert is-red' }, [frag(ui('warning', 13)), 'مهمة متأخرة ' + N.late]));
+if (N.recv === 'بانتظار استلامك') out.push(e('span', { class: 'egl-alert is-blue' }, [frag(ui('tray', 13)), 'بانتظار استلامك']));
+return out.length ? e('span', { class: 'egl-alerts' }, out) : null;
+}
 /* ── القائمة ── */
 function eg9List(paint) {
 /* v922: القائمة الخارجية كما في التصميم المعتمد — الاسم الكامل · المنتج · المؤهَّل/المطلوب · المرحلة بثماني نقاط · الإجراء التالي · المسؤول · آخر تحديث */
 if (ADM.tqnTest === undefined && eg9SS('test') === '1') ADM.tqnTest = true;
 const A = eg9Rows(), me = srAsMe();
 const W = A.filter(function (x) { return EG9.who === 'mine' ? (!!me && x.assigned_to === me) : EG9.who === 'un' ? (srAsOpen(x) && !x.assigned_to) : true; });
-const BD = {}; W.forEach(function (x) { BD[x.id] = eg9Bd(x, paint); });
+const BD = {}; W.forEach(function (x) { BD[x.id] = eg9Bd(x, paint); }); W.forEach(function (x) { egAsgGet(x, paint); }); /* v1265: الملخص يحتاج مهام الإسناد لكل الطلبات */
 let F = EG10_F.filter(function (f) { return f[0] === EG9.f; })[0]; if (!F) { F = EG10_F[0]; EG9.f = F[0]; }
 const SRT = EG9.sort || 'upd', SK = function (x) { return String(SRT === 'upd' ? eg10Upd(x, BD[x.id]) : x.created_at || ''); };
 const R = W.filter(function (x) { return F[2](x, BD[x.id]); }).sort(function (a, b) { return SRT === 'old' ? SK(a).localeCompare(SK(b)) : SK(b).localeCompare(SK(a)); });
@@ -29624,11 +29654,11 @@ const PER = EG9.per === 'all' ? 0 : (Number(EG9.per) || 2), NPG = PER && !QN ? M
 EG9.pg = Math.min(Math.max(0, EG9.pg || 0), NPG - 1);
 const RP = PER && !QN ? RQ.slice(EG9.pg * PER, EG9.pg * PER + PER) : RQ;
 /* v1232: قائمة الطلبات بقوالب حديثة — بطاقات حالات ببلاطات ثلاثية الأبعاد بألوان الشريط الجانبي، وصف لكل طلب بزر إجرائه التالي */
-const KS = { our: ['hourglass-medium', 'saffron', 'بانتظار قرارنا'], cl: ['clock', 'blue', 'بانتظار العميل'], adm: ['briefcase', 'violet', 'إجراءات الإدارة'], pts: ['crown-simple', 'teal', 'التنفيذ والنقاط'], done: ['seal-check', 'green', 'مكتملة'], dead: ['x-circle', 'red', 'مغلقة / اعتذر'], all: ['stack', 'slate', 'كل الطلبات'] };
+const KS = { recv: ['tray', 'saffron', 'بانتظار الاستلام'], dec: ['hourglass-medium', 'orange', 'بانتظار قرارنا'], apr: ['seal-check', 'pink', 'بانتظار الاعتماد'], send: ['paper-plane-tilt', 'violet', 'جاهزة للإرسال'], cl: ['clock', 'blue', 'بانتظار العميل'], adm: ['briefcase', 'teal', 'إجراءات الإدارة'], late: ['warning', 'red', 'مهام متأخرة'], done: ['check-circle', 'green', 'مكتملة'], dead: ['x-circle', 'slate', 'مغلقة / اعتذر'], all: ['stack', 'slate', 'كل الطلبات'] };
 const tile = function (g, c) { const h = typeof window.__tqTile === 'function' ? window.__tqTile(g, c) : ''; return h ? frag(h) : frag(ui(g, 22)); };
 const kpis = e('div', { class: 'egl-kpis', role: 'group', 'aria-label': 'تصفية حسب الحالة' }, EG10_F.map(function (f) {
 const n = W.filter(function (x) { return f[2](x, BD[x.id]); }).length, on = f[0] === F[0], K = KS[f[0]] || ['stack', 'slate', f[1]];
-return e('button', { type: 'button', class: 'egl-kpi is-' + K[1] + (on ? ' is-on' : '') + (f[0] === 'our' && n ? ' is-hot' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { EG9.f = f[0]; EG9.pg = 0; eg9SS('f', f[0]); paint(); } },
+return e('button', { type: 'button', class: 'egl-kpi is-' + K[1] + (on ? ' is-on' : '') + ((f[0] === 'apr' || f[0] === 'late' || f[0] === 'recv') && n ? ' is-hot' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { EG9.f = f[0]; EG9.pg = 0; eg9SS('f', f[0]); paint(); } },
 [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile(K[0], K[1])]), e('span', { class: 'egl-kpi-t' }, [e('b', {}, fmtNum(n)), e('small', {}, K[2])])]);
 }));
 const who = e('div', { class: 'egl-seg', role: 'group', 'aria-label': 'المسؤول' }, [['all', 'الكل'], ['mine', 'المسند إليّ'], ['un', 'غير مسنَد']].map(function (w) {
@@ -29679,7 +29709,7 @@ const cap = done ? 'اكتملت المراحل ' + fmtNum(NS) + ' من ' + fmtN
 return e('article', { class: 'egl-row egl-row4 is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button, select, input, .egl-asg')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter' && !ev.target.closest('.egl-asg')) open(); } }, [
 e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
 e('div', { class: 'egl-body' }, [
-e('div', { class: 'egl-l1' }, [e('b', { class: 'egl-nm' }, nm), e('span', { class: 'egl-tags' }, [e('span', { class: 'egl-tag' }, e('bdi', { dir: 'ltr' }, x.req_no || '—')),
+e('div', { class: 'egl-l1' }, [e('b', { class: 'egl-nm' }, nm), eglAlerts(x, B), e('span', { class: 'egl-tags' }, [e('span', { class: 'egl-tag' }, e('bdi', { dir: 'ltr' }, x.req_no || '—')),
 e('span', { class: 'egl-tag is-dt', title: 'تاريخ تقديم الطلب ' + eg10Dt(x.created_at) }, [frag(ui('calendar-blank', 13)), 'قُدِّم ', e('bdi', { dir: 'ltr' }, eg10Dt(x.created_at) || '—')]),
 e('span', { class: 'egl-tag is-mut', title: 'آخر تحديث ' + eg10Dt(eg10Upd(x, B)) }, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])])]),
 e('div', { class: 'egl-l2' }, [e('span', { class: 'egl-mny' }, [e('small', {}, 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(req)))]),
@@ -29689,7 +29719,7 @@ e('div', { class: 'egl-cap is-' + tone }, [e('b', {}, L[0]), e('span', {}, cap)]
 e('div', { class: 'egl-go4' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })])]);
 };
 const tbl = e('div', { class: 'egl-list' }, RP.length ? RP.map(row)
-: [e('div', { class: 'egl-empty' }, [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile('check-circle', 'green')]), e('b', {}, F[0] === 'our' ? 'لا طلبات بانتظار قراركم' : 'لا طلبات هنا'), e('small', {}, F[0] === 'our' ? 'كل الطلبات الجديدة تمت معالجتها.' : 'غيّر الحالة أو المسؤول لرؤية غيرها.')])]);
+: [e('div', { class: 'egl-empty' }, [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile('check-circle', 'green')]), e('b', {}, F[0] === 'all' ? 'لا طلبات' : 'لا طلبات في «' + F[1] + '»'), e('small', {}, 'لا شيء ينتظر إجراءً هنا الآن.')])]);
 const head = e('div', { class: 'egl-head' }, [e('div', { class: 'egl-head-t' }, [e('span', { class: 'egl-kpi-ic is-lg', 'aria-hidden': 'true' }, [tile('identification-badge', 'teal')]), e('div', {}, [e('b', {}, 'طلبات أهلية شراء منتج'), e('small', {}, 'كل طلب من الاستلام حتى الإغلاق في مكان واحد — والزر يفتحه على خطوته الحالية.')])]),
 e('div', { class: 'egl-head-a' }, [eg9Btn('الإعدادات', { ic: 'gear-six', on: function () { EG9.set = true; eg9SS('set', '1'); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } }), eg9Btn('إنشاء طلب جديد', { cls: 'is-pri', ic: 'plus', on: eg9New })])]);
 const out = [e('div', { class: 'eg9 eg10 egl' }, [head, kpis, e('section', { class: 'egl-card' }, [tools, tbl, pager])])];
@@ -31028,7 +31058,7 @@ e('small', { class: 'eg9-hint' }, 'تظهر في «طلب استكمال من ا
 /* ── الصفحة ── */
 function lvEligPage() {
 if (ADM.egOpen === undefined) ADM.egOpen = eg9SS('open');
-if (!EG9.init) { EG9.init = true; EG9.f = eg9SS('f') || 'open'; EG9.who = eg9SS('who') || 'all'; EG9.set = eg9SS('set') === '1'; EG9.sort = eg9SS('sort') || 'upd'; EG9.per = eg9SS('per') || '2'; EG9.pg = 0; }
+if (!EG9.init) { EG9.init = true; EG9.f = eg9SS('f') || 'all'; EG9.who = eg9SS('who') || 'all'; EG9.set = eg9SS('set') === '1'; EG9.sort = eg9SS('sort') || 'upd'; EG9.per = eg9SS('per') || '2'; EG9.pg = 0; }
 return admMount('elig9', 'طلبات التحقق من الأهلية', async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else await lvSrLoad(); return { at: Date.now() }; }, function (D, st, paint) {
 try {
 if (EG9.set) return [e('div', { class: 'eg9' }, eg9Settings(paint))];

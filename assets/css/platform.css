@@ -10489,3 +10489,16 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-asg-facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;margin:0;font-size:13px}
 .egl-asg-facts dt{color:var(--egl-mut,#66748C);font-weight:600}.egl-asg-facts dd{margin:0;color:var(--egl-ink,#0F1B33);font-weight:700;overflow-wrap:anywhere}
 @media (max-width:640px){.egl-asg-facts{grid-template-columns:1fr;gap:2px}.egl-asg-facts dd{margin-bottom:6px}.egl-asg-ck{white-space:normal}}
+/* v1265: الملخص بعشر خانات (5×2) + تنبيه البطاقة */
+.egl-kpi.is-orange{--c:#F07A2B;--c2:#FFF1E8}.egl-kpi.is-pink{--c:#E0508C;--c2:#FFEFF6}
+.egl-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1180px){.egl-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:900px){.egl-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:620px){.egl-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.egl-kpi.is-hot .egl-kpi-t b{color:var(--c)}
+.egl-alerts{display:inline-flex;flex-wrap:wrap;gap:6px}
+.egl-alert{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.egl-alert.is-orange{background:#F07A2B;color:#fff;box-shadow:0 3px 8px -4px #F07A2B}
+.egl-alert.is-red{background:#EB5A45;color:#fff;box-shadow:0 3px 8px -4px #EB5A45}
+.egl-alert.is-blue{background:#3B74E8;color:#fff}
+@media (max-width:640px){.egl-alert{white-space:normal}}
