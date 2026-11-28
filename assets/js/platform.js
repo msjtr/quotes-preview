@@ -29620,7 +29620,7 @@ const SRT = EG9.sort || 'upd', SK = function (x) { return String(SRT === 'upd' ?
 const R = W.filter(function (x) { return F[2](x, BD[x.id]); }).sort(function (a, b) { return SRT === 'old' ? SK(a).localeCompare(SK(b)) : SK(b).localeCompare(SK(a)); });
 /* v1256: الترتيب (آخر تحديث · الأحدث · الأقدم) والعرض (2 · 5 · 10 · 20 · الكل) بصفحات — البحث يشمل كل الطلبات */
 const QN = norm(EG9.q || ''), RQ = QN ? R.filter(function (x) { return norm([x.req_no, eg9Name(x)].join(' ')).indexOf(QN) >= 0; }) : R;
-const PER = EG9.per === 'all' ? 0 : (Number(EG9.per) || 10), NPG = PER && !QN ? Math.max(1, Math.ceil(RQ.length / PER)) : 1;
+const PER = EG9.per === 'all' ? 0 : (Number(EG9.per) || 2), NPG = PER && !QN ? Math.max(1, Math.ceil(RQ.length / PER)) : 1;
 EG9.pg = Math.min(Math.max(0, EG9.pg || 0), NPG - 1);
 const RP = PER && !QN ? RQ.slice(EG9.pg * PER, EG9.pg * PER + PER) : RQ;
 /* v1232: قائمة الطلبات بقوالب حديثة — بطاقات حالات ببلاطات ثلاثية الأبعاد بألوان الشريط الجانبي، وصف لكل طلب بزر إجرائه التالي */
@@ -29637,11 +29637,13 @@ const tck = e('input', { type: 'checkbox', onChange: function (ev) { ADM.tqnTest
 const q = e('input', { class: 'egl-q-in', type: 'search', placeholder: 'ابحث بالاسم أو رقم الطلب', 'aria-label': 'بحث في طلبات الأهلية', value: EG9.q || '', onInput: function (ev) { EG9.q = ev.target.value; EG9.pg = 0; clearTimeout(EG9.qt); EG9.qt = setTimeout(function () { paint(); const i = document.querySelector('.egl-q-in'); if (i) { i.focus(); try { const L = i.value.length; i.setSelectionRange(L, L); } catch (err) { void err; } } }, 280); } });
 const sortSeg = e('div', { class: 'egl-seg', role: 'group', 'aria-label': 'الترتيب' }, [['upd', 'آخر تحديث'], ['new', 'الأحدث'], ['old', 'الأقدم']].map(function (w) {
 return e('button', { type: 'button', class: w[0] === SRT ? 'is-on' : '', 'aria-pressed': w[0] === SRT ? 'true' : 'false', 'data-live-ok': '', onClick: function () { EG9.sort = w[0]; EG9.pg = 0; eg9SS('sort', w[0]); paint(); } }, w[1]); }));
-const perSel = e('select', { class: 'egl-per', 'aria-label': 'عدد الطلبات في الصفحة', onChange: function (ev) { EG9.per = ev.target.value; EG9.pg = 0; eg9SS('per', ev.target.value); paint(); } }, [['2', 'عرض 2'], ['5', 'عرض 5'], ['10', 'عرض 10'], ['20', 'عرض 20'], ['all', 'عرض الكل']].map(function (o) { const op = e('option', { value: o[0] }, o[1]); if (String(EG9.per || '10') === o[0]) op.selected = true; return op; }));
+const perSel = e('select', { class: 'egl-per', 'aria-label': 'عدد الطلبات في الصفحة', onChange: function (ev) { EG9.per = ev.target.value; EG9.pg = 0; eg9SS('per', ev.target.value); paint(); } }, [['2', 'عرض 2'], ['5', 'عرض 5'], ['10', 'عرض 10'], ['20', 'عرض 20'], ['all', 'عرض الكل']].map(function (o) { const op = e('option', { value: o[0] }, o[1]); if (String(EG9.per || '2') === o[0]) op.selected = true; return op; }));
 const goPg = function (n) { EG9.pg = n; paint(); try { const L = document.querySelector('.egl-card'); if (L) L.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (err) { void err; } };
 const pager = NPG > 1 || (PER && RQ.length > PER) ? e('nav', { class: 'egl-pager', 'aria-label': 'صفحات الطلبات' }, [
 eg9Btn('السابق', { ic: 'caret-right', disabled: EG9.pg <= 0, on: function () { goPg(EG9.pg - 1); } }),
 e('span', { class: 'egl-pg-t' }, ['صفحة ', e('b', {}, fmtNum(EG9.pg + 1)), ' من ', e('b', {}, fmtNum(NPG)), ' · ', fmtNum(EG9.pg * PER + 1), '–', fmtNum(Math.min(RQ.length, EG9.pg * PER + PER)), ' من ', fmtNum(RQ.length)]),
+e('span', { class: 'egl-pg-n', role: 'group', 'aria-label': 'أرقام الصفحات' }, (function () { const L = [], c = EG9.pg; for (let i = 0; i < NPG; i++) { if (i === 0 || i === NPG - 1 || Math.abs(i - c) <= 1) L.push(i); else if (L[L.length - 1] !== -1) L.push(-1); }
+return L.map(function (i) { return i < 0 ? e('span', { class: 'egl-pg-gap', 'aria-hidden': 'true' }, '…') : e('button', { type: 'button', class: 'egl-pg-b' + (i === c ? ' is-on' : ''), 'aria-current': i === c ? 'page' : null, 'aria-label': 'صفحة ' + (i + 1), 'data-live-ok': '', onClick: function () { if (i !== c) goPg(i); } }, fmtNum(i + 1)); }); })()),
 eg9Btn('التالي', { ic: 'caret-left', disabled: EG9.pg >= NPG - 1, on: function () { goPg(EG9.pg + 1); } }),
 eg9Btn('عرض الكل', { on: function () { EG9.per = 'all'; EG9.pg = 0; eg9SS('per', 'all'); paint(); } })]) : null;
 const tools = e('div', { class: 'egl-tools' }, [e('label', { class: 'egl-q' }, [frag(ui('magnifying-glass', 18)), q]), e('div', { class: 'egl-tools-r' }, [who, sortSeg, perSel, e('label', { class: 'egl-tst' }, [tck, 'طلبات الاختبار'])])]);
@@ -29867,25 +29869,39 @@ if (v.k === 'reject') return v.note === 'ألغى طلبه' ? n(v.by) + ' ألغ
 if (v.k === 'receive') return 'استلمه ' + n(v.by);
 return EGA_K[v.k] || v.k;
 }
-/* المسار والنص من بيانات الخادم فقط */
+/* v1258: المسار والنص من بيانات الخادم — لكل خطوة لونها، وللسحب والرفض لون التوقف، والمباشر «لا يلزم» */
+const EGAS_C = ['saffron', 'orange', 'blue', 'green'], EGAS_H = { saffron: '#F0A12B', orange: '#F07A2B', blue: '#3B74E8', green: '#22A86B', red: '#EB5A45', slate: '#7C8899', violet: '#7559F0' };
 function egAsgState(x, A) {
-const ev = (A && A.ev) || [], pend = A && A.pend, rc = A && A.recv, asg = A && A.to;
+const ev = (A && A.ev) || [], pend = A && A.pend, rc = A && A.recv, asg = A && A.to, last = ev[0];
 const lastAsg = ev.filter(function (v) { return v.k === 'assign' || v.k === 'transfer'; })[0];
-const viaApprove = !!(asg && ev.some(function (v) { return v.k === 'approve'; }) && lastAsg && lastAsg.note === 'بموافقة طلب الإسناد');
-const S = [['طلب الإسناد', 'paper-plane-tilt'], ['الموافقة', 'seal-check'], ['الإسناد', 'users-three'], ['الاستلام', 'check-circle']].map(function (z) { return { n: z[0], g: z[1], st: 'is-todo', t: '' }; });
-if (pend) { S[0].st = 'is-ok'; S[0].t = pend.name || 'موظف'; S[1].st = 'is-now'; S[1].t = 'بانتظار الموافقة'; }
-else if (asg) {
-S[0].st = 'is-ok'; S[1].st = 'is-ok'; S[0].t = viaApprove ? 'من الموظف' : 'مباشر'; S[1].t = viaApprove ? 'تمت' : 'مباشر';
+const viaApprove = !!(asg && lastAsg && lastAsg.note === 'بموافقة طلب الإسناد');
+const S = [['طلب الإسناد', 'paper-plane-tilt'], ['الموافقة', 'seal-check'], ['الإسناد', 'users-three'], ['الاستلام', 'check-circle']].map(function (z, i) { return { n: z[0], g: z[1], c: EGAS_C[i], st: 'is-todo', t: '' }; });
+const R = rc ? 'استلمه ' + (rc.by || 'الفريق') : '';
+let title, sub, tone;
+if (pend) {
+S[0].st = 'is-ok'; S[0].t = pend.name || 'موظف'; S[1].st = 'is-now'; S[1].t = 'بانتظار الموافقة';
+title = (pend.name || 'موظف') + ' طلب إسناده إليه'; sub = 'بانتظار الموافقة منذ ' + eg10Dt(pend.at); tone = 'orange';
+} else if (asg) {
+if (viaApprove) { S[0].st = 'is-ok'; S[0].t = 'طلبه الموظف'; S[1].st = 'is-ok'; S[1].t = 'وُوفق'; }
+else { S[0].st = 'is-skip'; S[0].t = 'لا يلزم'; S[1].st = 'is-skip'; S[1].t = 'إسناد مباشر'; }
 S[2].st = 'is-ok'; S[2].t = A.to_name || 'موظف';
-if (rc) { S[3].st = 'is-ok'; S[3].t = rc.by ? 'استلمه ' + rc.by : 'استُلم'; } else { S[3].st = 'is-now'; S[3].t = 'لم يُستلم'; }
+if (rc) { S[3].st = 'is-ok'; S[3].t = R; } else { S[3].st = 'is-now'; S[3].t = 'لم يُستلم بعد'; }
+title = 'مسنَد إلى ' + (A.to_name || 'موظف'); tone = rc ? 'green' : 'blue';
+sub = (A.by_name ? 'أسنده ' + A.by_name : 'أُسند') + (A.at ? ' · ' + eg10Dt(A.at) : '') + ' · ' + (rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد');
+} else if (last && last.k === 'withdraw') {
+S[0].st = 'is-skip'; S[0].t = '—'; S[1].st = 'is-skip'; S[1].t = '—'; S[2].st = 'is-stop'; S[2].t = 'سُحب من ' + (last.from || 'موظف');
+if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
+title = 'سُحب الإسناد من ' + (last.from || 'موظف'); sub = (last.by ? 'سحبه ' + last.by + ' · ' : '') + eg10Dt(last.at) + ' — الطلب الآن غير مسنَد'; tone = 'red';
+} else if (last && last.k === 'reject') {
+S[0].st = 'is-ok'; S[0].t = last.to || 'موظف'; S[1].st = 'is-stop'; S[1].t = last.note === 'ألغى طلبه' ? 'أُلغي الطلب' : 'رُفض';
+if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
+title = last.note === 'ألغى طلبه' ? 'أُلغي طلب الإسناد' : 'رُفض طلب إسناد ' + (last.to || 'الموظف'); sub = eg10Dt(last.at) + ' — الطلب غير مسنَد'; tone = 'red';
 } else {
 S[0].st = 'is-now'; S[0].t = 'غير مسنَد';
-if (rc) { S[3].st = 'is-ok'; S[3].t = rc.by ? 'استلمه ' + rc.by : 'استُلم'; }
+if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
+title = 'غير مسنَد'; sub = rc ? 'استُلم ' + eg10Dt(rc.at) + ' — ' + (rc.by || 'الفريق') + ' دون إسناد' : 'بانتظار إسناده أو طلب إسناده'; tone = 'saffron';
 }
-const title = pend ? 'طلب إسناد: ' + (pend.name || 'موظف') + ' — بانتظار الموافقة' : asg ? 'مسنَد إلى ' + (A.to_name || 'موظف') : 'غير مسنَد';
-const sub = asg ? [rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد', (A.by_name ? 'أسنده ' + A.by_name : '') + (A.at ? ' · ' + eg10Dt(A.at) : '')].filter(Boolean).join(' · ')
-: pend ? 'طُلب ' + eg10Dt(pend.at) : rc ? 'استُلم ' + eg10Dt(rc.at) + (rc.by ? ' — ' + rc.by : '') + ' دون إسناد' : 'لم يُسند لأحد بعد';
-return { S: S, title: title, sub: sub, tone: pend ? 'saffron' : asg ? (rc ? 'green' : 'blue') : 'slate' };
+return { S: S, title: title, sub: sub, tone: tone };
 }
 function egAsgDo(x, fn, args, title, line, paint) {
 if (EGAS.act) return; EGAS.act = fn; paint();
@@ -29895,47 +29911,58 @@ if (!j || j.ok === false) { paint(); eg9Note('لم يُنفَّذ', [(j && j.mes
 await eg11After(x, title, [line]); paint();
 }).catch(function (err) { EGAS.act = ''; paint(); eg9Note('لم يُنفَّذ', [(err && err.message) || 'تعذّر تنفيذ الإجراء.'], 'warn'); });
 }
-function egAsgPop(x, A, paint) {
-const P = EGAS.P || {}, me = P.me || srAsMe(), open = !!(A && A.open), lock = !!(A && A.to && (A.to_sup || A.by_sup)) && !P.sup, kids = [], busy = !!EGAS.act;
-const T = (A && A.to_name) || '';
+/* الإجراءات حسب الصلاحية — تُرسم مخفية وتُفتح بلا إعادة رسم */
+function egAsgActs(x, A, paint) {
+const P = EGAS.P || {}, me = P.me || srAsMe(), open = !!(A && A.open), lock = !!(A && A.to && (A.to_sup || A.by_sup)) && !P.sup, kids = [], busy = !!EGAS.act, T = (A && A.to_name) || '';
 if (open && P.assign && !lock) {
-const SA = srAs(); srAsLoad(false, paint);
+const SA = srAs();
 if (!SA.ok) kids.push(e('div', { class: 'egl-asg-n' }, 'جارٍ تحميل الفريق…'));
 else {
-const rows = SA.rows.filter(function (r) { return r && r.can_act && r.id !== x.user_id; });
-const sel = e('select', { class: 'egl-asg-sel', 'aria-label': 'اختر الموظف' }, [e('option', { value: '' }, A && A.to ? 'تحويل إلى…' : 'إسناد إلى…')].concat(rows.filter(function (r) { return !A || r.id !== A.to; }).map(function (r) { return e('option', { value: r.id }, (r.id === me ? 'أنا — ' : '') + r.name); })));
-kids.push(e('div', { class: 'egl-asg-row' }, [sel, eg9Btn(A && A.to ? 'تحويل' : 'إسناد', { cls: 'is-pri', disabled: busy, on: function () { const id = sel.value; if (!id) return; const r = rows.filter(function (z) { return z.id === id; })[0]; if (!tqConfirm((A && A.to ? 'تحويل' : 'إسناد') + ' الطلب ' + x.req_no + ' إلى ' + r.name + '؟')) return; egAsgDo(x, 'admin_sr_assign', { p_sr: x.id, p_staff: id, p_note: null }, 'أُسند الطلب', 'الطلب ' + x.req_no + ' الآن مسنَد إلى ' + r.name + ' — يصله تنبيه.', paint); } }),
-A && A.to ? eg9Btn('سحب الإسناد', { disabled: busy, on: function () { if (!tqConfirm('سحب إسناد الطلب ' + x.req_no + ' من ' + T + '؟')) return; egAsgDo(x, 'admin_sr_assign', { p_sr: x.id, p_staff: null, p_note: null }, 'سُحب الإسناد', 'الطلب ' + x.req_no + ' الآن غير مسنَد.', paint); } }) : null]));
+const rows = SA.rows.filter(function (r) { return r && r.can_act && r.id !== x.user_id && (!A || r.id !== A.to); });
+const sel = e('select', { class: 'egl-asg-sel', 'aria-label': 'اختر الموظف' }, [e('option', { value: '' }, A && A.to ? 'تحويل إلى…' : 'إسناد إلى…')].concat(rows.map(function (r) { return e('option', { value: r.id }, (r.id === me ? 'أنا — ' : '') + r.name); })));
+kids.push(e('div', { class: 'egl-asg-row' }, [sel, eg9Btn(A && A.to ? 'تحويل' : 'إسناد', { cls: 'is-pri', disabled: busy, on: function () { const id = sel.value; if (!id) { sel.focus(); return; } const r = rows.filter(function (z) { return z.id === id; })[0]; if (!tqConfirm((A && A.to ? 'تحويل' : 'إسناد') + ' الطلب ' + x.req_no + ' إلى ' + r.name + '؟')) return; egAsgDo(x, 'admin_sr_assign', { p_sr: x.id, p_staff: id, p_note: null }, 'أُسند الطلب', 'الطلب ' + x.req_no + ' الآن مسنَد إلى ' + r.name + ' — يصله تنبيه.', paint); } }),
+A && A.to ? eg9Btn('سحب الإسناد', { cls: 'is-warn', disabled: busy, on: function () { if (!tqConfirm('سحب إسناد الطلب ' + x.req_no + ' من ' + T + '؟')) return; egAsgDo(x, 'admin_sr_assign', { p_sr: x.id, p_staff: null, p_note: null }, 'سُحب الإسناد', 'الطلب ' + x.req_no + ' الآن غير مسنَد.', paint); } }) : null]));
 }
 } else if (lock && open) kids.push(e('div', { class: 'egl-asg-n' }, 'بإسناد المشرف العام — لا يغيّره ولا يسحبه إلا المشرف العام.'));
 if (A && A.pend && P.approve) kids.push(e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, [(A.pend.name || 'موظف') + ' يطلب إسناده إليه', A.pend.note ? ' — ' + A.pend.note : '']),
 eg9Btn('موافقة', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: true, p_note: null }, 'تمت الموافقة', 'أُسند الطلب ' + x.req_no + ' إلى ' + (A.pend.name || 'الموظف') + ' — يصله تنبيه.', paint); } }),
-eg9Btn('رفض', { disabled: busy, on: function () { const why = window.prompt('سبب الرفض (اختياري):', '') ; if (why === null) return; egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: false, p_note: why }, 'رُفض طلب الإسناد', 'يصل ' + (A.pend.name || 'الموظف') + ' تنبيه بالرفض.', paint); } })]));
+eg9Btn('رفض', { cls: 'is-warn', disabled: busy, on: function () { const why = window.prompt('سبب الرفض (اختياري):', ''); if (why === null) return; egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: false, p_note: why }, 'رُفض طلب الإسناد', 'يصل ' + (A.pend.name || 'الموظف') + ' تنبيه بالرفض.', paint); } })]));
 if (A && A.pend && A.pend.staff === me && !P.approve) kids.push(e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, 'طلبك بانتظار الموافقة'), eg9Btn('إلغاء طلبي', { disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: null, p_note: null }, 'أُلغي طلب الإسناد', 'أُلغي طلبك لإسناد ' + x.req_no + '.', paint); } })]));
 if (open && P.act && !P.assign && !(A && A.pend) && !(A && A.to === me) && !lock) kids.push(e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, A && A.to ? 'الطلب مسنَد إلى ' + T : 'الطلب غير مسنَد'),
-eg9Btn('اطلب إسناده لي', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_request', { p_sr: x.id, p_note: null }, 'أُرسل طلب الإسناد', 'طلب إسناد ' + x.req_no + ' إليك بانتظار موافقة صاحب الصلاحية — يصلك تنبيه بالنتيجة.', paint); } })]));
+eg9Btn('اطلب إسناده لي', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_request', { p_sr: x.id, p_note: null }, 'أُرسل طلب الإسناد', 'طلب إسناد ' + x.req_no + ' إليك بانتظار الموافقة — يصلك تنبيه بالنتيجة.', paint); } })]));
 if (!open) kids.push(e('div', { class: 'egl-asg-n' }, 'الطلب مغلق — لا إسناد له.'));
+return kids;
+}
+/* السجل: آخر خطوتين ظاهرتان دائمًا، والباقي بـ«عرض التفاصيل» */
+function egAsgLog(A) {
 const ev = ((A && A.ev) || []).slice();
-const log = ev.map(function (v) { return e('li', {}, [e('b', {}, egAsgEvTx(v)), v.note && v.note !== 'بموافقة طلب الإسناد' && v.note !== 'ألغى طلبه' && v.note !== 'إسناد مع الاستلام' ? e('span', {}, ' — ' + v.note) : null, e('small', {}, e('bdi', { dir: 'ltr' }, eg10Dt(v.at)))]); });
-if (A && A.recv && !ev.some(function (v) { return v.k === 'receive'; })) log.push(e('li', {}, [e('b', {}, 'استلمه ' + (A.recv.by || 'الفريق')), e('small', {}, e('bdi', { dir: 'ltr' }, eg10Dt(A.recv.at)))]));
-kids.push(e('div', { class: 'egl-asg-lt' }, 'سجل الإسناد'), log.length ? e('ol', { class: 'egl-asg-log' }, log) : e('div', { class: 'egl-asg-n' }, 'لا خطوات إسناد بعد.'));
-return e('div', { class: 'egl-asg-pop' }, kids);
+const L = ev.map(function (v) { return { k: v.k, t: egAsgEvTx(v), n: v.note && ['بموافقة طلب الإسناد', 'ألغى طلبه', 'إسناد مع الاستلام'].indexOf(v.note) < 0 ? v.note : '', at: v.at }; });
+if (A && A.recv && !ev.some(function (v) { return v.k === 'receive'; })) { L.push({ k: 'receive', t: 'استلمه ' + (A.recv.by || 'الفريق'), n: '', at: A.recv.at }); L.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); }); }
+return L;
 }
 function egAsgLine(x, paint) {
-const A = egAsgGet(x, paint), on = EGAS.open === x.id;
-if (!A) return e('div', { class: 'egl-asg is-wait' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('users-three', 'slate')]), e('div', { class: 'egl-asg-t' }, [e('b', {}, 'الإسناد'), e('small', {}, 'جارٍ التحميل…')])]);
-const G = egAsgState(x, A), H = { saffron: '#F0A12B', blue: '#3B74E8', green: '#22A86B', slate: '#7C8899', violet: '#7559F0' };
+const A = egAsgGet(x, paint);
+if (!A) return e('div', { class: 'egl-asg is-wait' }, [e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('users-three', 'slate')]), e('span', { class: 'egl-asg-t' }, [e('b', {}, 'الإسناد'), e('small', {}, 'جارٍ التحميل…')])])]);
+const P = EGAS.P || {}; if (P.assign && A.open) { try { srAsLoad(false); } catch (err) { void err; } } /* الفريق جاهز قبل فتح الإجراءات */
+const G = egAsgState(x, A), L = egAsgLog(A), det = !!(EGAS.det && EGAS.det[x.id]), act = EGAS.open === x.id;
 const trk = e('div', { class: 'egl-trk8 egl-trk7 egl-trk4', role: 'list', 'aria-label': 'مسار الإسناد' }, G.S.map(function (s) {
-const cn = s.st === 'is-todo' ? 'slate' : s.st === 'is-now' ? G.tone : 'violet';
-return e('div', { class: 'egl-stp ' + s.st, role: 'listitem', style: '--sc:' + (H[cn] || '#7559F0') }, [
-e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [egT3(s.g, cn)]), e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, s.n), s.st === 'is-now' ? e('b', { class: 'egl-stp-pin', 'aria-label': 'الإسناد هنا' }, [frag(eglPin(cn))]) : null])]),
-e('span', { class: 'egl-stp-bar' }), s.t ? e('span', { class: 'egl-stp-st' + (s.st === 'is-ok' ? ' is-ok' : '') }, s.t) : null]);
+const cn = s.st === 'is-todo' || s.st === 'is-skip' ? 'slate' : s.st === 'is-stop' ? 'red' : s.c;
+return e('div', { class: 'egl-stp ' + s.st, role: 'listitem', style: '--sc:' + EGAS_H[cn] }, [
+e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [egT3(s.st === 'is-stop' ? 'x-circle' : s.g, cn)]), e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, s.n), s.st === 'is-now' || s.st === 'is-stop' ? e('b', { class: 'egl-stp-pin', 'aria-label': 'الإسناد هنا' }, [frag(eglPin(cn))]) : null])]),
+e('span', { class: 'egl-stp-bar' }), s.t ? e('span', { class: 'egl-stp-st' + (s.st === 'is-ok' || s.st === 'is-skip' ? ' is-ok' : '') }, s.t) : null]);
 }));
-return e('div', { class: 'egl-asg is-' + G.tone + (on ? ' is-open' : '') }, [
-e('button', { type: 'button', class: 'egl-asg-hd', 'aria-expanded': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { EGAS.open = on ? '' : x.id; if (!on) egAsgDrop(x.id); paint(); } }, [
-e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('users-three', G.tone === 'slate' ? 'slate' : 'violet')]),
-e('span', { class: 'egl-asg-t' }, [e('b', {}, G.title), e('small', {}, G.sub)]), e('span', { class: 'egl-asg-go' }, [on ? 'إغلاق' : 'الإسناد والسجل', frag(ui(on ? 'caret-up' : 'caret-down', 14))])]),
-trk, on ? egAsgPop(x, A, paint) : null]);
+const logItem = function (v) { return e('li', { class: 'is-' + v.k }, [e('i', { 'aria-hidden': 'true' }), e('b', {}, v.t), v.n ? e('span', {}, ' — ' + v.n) : null, e('small', {}, e('bdi', { dir: 'ltr' }, eg10Dt(v.at)))]); };
+const more = L.length > 2 ? e('ol', { class: 'egl-asg-log is-more', hidden: det ? null : true }, L.slice(2).map(logItem)) : null;
+const tgl = L.length > 2 ? e('button', { type: 'button', class: 'egl-asg-lnk', 'data-live-ok': '', 'aria-expanded': det ? 'true' : 'false', onClick: function (ev) { const on = !(EGAS.det && EGAS.det[x.id]); (EGAS.det || (EGAS.det = {}))[x.id] = on; if (more) more.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'أقل تفاصيل' : 'عرض التفاصيل (' + fmtNum(L.length) + ')'; } }, [frag(ui('list-bullets', 14)), e('span', {}, det ? 'أقل تفاصيل' : 'عرض التفاصيل (' + fmtNum(L.length) + ')')]) : null;
+const acts = egAsgActs(x, A, paint), canAct = acts.some(function (n) { return n && n.classList && n.classList.contains('egl-asg-row'); });
+const box = e('div', { class: 'egl-asg-acts', hidden: act ? null : true }, acts);
+const ab = canAct ? e('button', { type: 'button', class: 'egl-asg-go', 'data-live-ok': '', 'aria-expanded': act ? 'true' : 'false', onClick: function (ev) { const on = EGAS.open !== x.id; EGAS.open = on ? x.id : ''; box.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'إغلاق' : (A.pend && P.approve ? 'موافقة أو رفض' : P.assign ? (A.to ? 'تحويل أو سحب' : 'إسناد') : 'اطلب إسناده لي'); } }, [frag(ui('users-three', 14)), e('span', {}, act ? 'إغلاق' : (A.pend && P.approve ? 'موافقة أو رفض' : P.assign ? (A.to ? 'تحويل أو سحب' : 'إسناد') : 'اطلب إسناده لي'))]) : null;
+return e('div', { class: 'egl-asg is-' + G.tone }, [
+e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('users-three', G.tone === 'red' ? 'red' : G.tone === 'green' ? 'green' : G.tone === 'blue' ? 'blue' : G.tone === 'orange' ? 'orange' : 'saffron')]),
+e('span', { class: 'egl-asg-t' }, [e('b', {}, G.title), e('small', {}, G.sub)]), ab]),
+trk,
+L.length ? e('div', { class: 'egl-asg-lg' }, [e('ol', { class: 'egl-asg-log' }, L.slice(0, 2).map(logItem)), more, tgl]) : e('div', { class: 'egl-asg-n' }, 'لا خطوات إسناد بعد.'),
+box]);
 }
 /* الإسناد: قائمة صغيرة تحت الزر مع بحث — بدل قسم كامل */
 function eg12AsgPop(C) {
@@ -30944,7 +30971,7 @@ e('small', { class: 'eg9-hint' }, 'تظهر في «طلب استكمال من ا
 /* ── الصفحة ── */
 function lvEligPage() {
 if (ADM.egOpen === undefined) ADM.egOpen = eg9SS('open');
-if (!EG9.init) { EG9.init = true; EG9.f = eg9SS('f') || 'open'; EG9.who = eg9SS('who') || 'all'; EG9.set = eg9SS('set') === '1'; EG9.sort = eg9SS('sort') || 'upd'; EG9.per = eg9SS('per') || '10'; EG9.pg = 0; }
+if (!EG9.init) { EG9.init = true; EG9.f = eg9SS('f') || 'open'; EG9.who = eg9SS('who') || 'all'; EG9.set = eg9SS('set') === '1'; EG9.sort = eg9SS('sort') || 'upd'; EG9.per = eg9SS('per') || '2'; EG9.pg = 0; }
 return admMount('elig9', 'طلبات التحقق من الأهلية', async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else await lvSrLoad(); return { at: Date.now() }; }, function (D, st, paint) {
 try {
 if (EG9.set) return [e('div', { class: 'eg9' }, eg9Settings(paint))];
