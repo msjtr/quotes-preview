@@ -5823,3 +5823,19 @@ html .srd .sh.sh :focus-visible{outline:2px solid var(--brand);outline-offset:2p
 }
 /* v1267: وميض القسم عند فتحه من المسار */
 .tq-next #pv-host .t2-app > .t2-side .tqn-nav .tqn-g.tqn-g-flash > .tqn-gh { box-shadow: inset 0 0 0 2px #3FD0D3; border-radius: 10px; transition: box-shadow .3s; }
+
+/* v1250: المؤجلون — عناوين فئات القائمة، أزرار البطاقة، ومعاينة واتساب الحية */
+.tq-next .rgr-gh { display: flex; align-items: center; gap: 8px; margin: 14px 2px 6px; font: 800 14px/1.4 var(--t2-ff-display); color: var(--t2-ink); }
+.tq-next .rgr-gh:first-child { margin-top: 0; }
+.tq-next .rgr-cf-a { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tq-next .rgr-wa { max-width: 380px; border-radius: 18px; overflow: hidden; border: 1px solid var(--t2-line); background: #EFEAE2; }
+.tq-next .rgr-wa-top { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #075E54; color: #fff; }
+.tq-next .rgr-wa-top small { display: block; opacity: .8; font-size: 11px; }
+.tq-next .rgr-wa-av { width: 32px; height: 32px; border-radius: 50%; background: #fff; color: #075E54; display: grid; place-items: center; font-weight: 800; }
+.tq-next .rgr-wa-chat { padding: 14px 12px; }
+.tq-next .rgr-wa-msg { background: #fff; border-radius: 10px 10px 10px 2px; padding: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.12); max-width: 320px; }
+.tq-next .rgr-wa-img { display: block; width: 100%; border-radius: 8px; }
+.tq-next .rgr-wa-txt { white-space: pre-wrap; font: 400 14px/1.55 var(--t2-ff, system-ui); color: #111B21; padding: 6px 8px 0; overflow-wrap: anywhere; }
+.tq-next .rgr-wa-tm { text-align: left; font-size: 11px; color: #667781; padding: 2px 8px 4px; }
+.tq-next .rgr-wa-btn { display: flex; align-items: center; justify-content: center; gap: 6px; border-top: 1px solid #E9EDEF; padding: 9px; color: #00A5F4; font-weight: 600; font-size: 14px; }
+.tq-next .rgr-wa + .rmn-sm { display: block; margin-top: 6px; }
