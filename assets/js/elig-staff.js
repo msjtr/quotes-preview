@@ -37,7 +37,7 @@ function hint(t) { return el('small', { class: 'eg9-hint', text: t }); }
 function warnBox(t) { return el('div', { class: 'eg10-warn', role: 'alert', text: t }); }
 function info(t) { return el('div', { class: 'eg12-info' }, [ic('info', 17), el('span', { text: t })]); }
 function wait(t) { return el('div', { class: 'eg12-empty' }, [el('span', { text: t || 'جارٍ القراءة…' })]); }
-var KEY_L = { elig_new: 'وصلنا طلبك', elig_received: 'بدأنا مراجعة طلبك', elig_fix: 'طلبك يحتاج استكمالًا (برابط مباشر)', elig_back: 'وصلنا استكمالك', elig_ok: 'نتيجة الأهلية: مؤهَّل', elig_less: 'نتيجة الأهلية: مؤهَّل بمبلغ أقل', elig_no: 'نتيجة الأهلية: غير مؤهَّل حاليًا',
+var KEY_L = { req_done: 'تم تنفيذ طلبك (8.06)', elig_new: 'وصلنا طلبك', elig_received: 'بدأنا مراجعة طلبك', elig_fix: 'طلبك يحتاج استكمالًا (برابط مباشر)', elig_back: 'وصلنا استكمالك', elig_ok: 'نتيجة الأهلية: مؤهَّل', elig_less: 'نتيجة الأهلية: مؤهَّل بمبلغ أقل', elig_no: 'نتيجة الأهلية: غير مؤهَّل حاليًا',
   elig_accepted: 'وافق على الأهلية', elig_declined: 'اعتذر عن الأهلية', elig_quote: 'صدر عرض السعر', elig_purchase: 'صدرت فاتورة المنتج', elig_reclaim: 'أعدنا طلبك للمراجعة' };
 var WA_L = { queued: 'في الطابور', sending: 'يُرسل', sent: 'أُرسل', delivered: 'وصل', read: 'قُرئ', failed: 'فشل', cancelled: 'أُلغي' };
 
@@ -245,7 +245,7 @@ function lnkView(x, s) {
   if (s === 'sends') {
     var S = (v.sends || []).slice().reverse();
     return [blk('الرسائل المرسلة', 'envelope-simple', [S.length ? el('div', { class: 'ela-rows' }, S.map(function (m) { return el('div', { class: 'ela-row' }, [el('div', { class: 'ela-b' }, [el('b', { text: (KEY_L[m.key] || m.key) + (m.kind === 'preview' ? ' (معاينة' + (m.by ? ' — ' + m.by : '') + ')' : m.kind === 'held' ? ' (محجوزة)' : m.kind === 'release' ? ' — ضغط الموظف «إرسال الرابط»' : '') }),
-      el('small', { text: when(m.at) + (m.kind === 'release' || m.kind === 'held' ? ' · إجراء داخلي — ليست رسالة للعميل' : ' · واتساب: ' + (WA_L[m.wa_status] || m.wa_status || (m.info && m.info.wa) || '—') + ' · البريد: ' + (m.mail_status === 'sent' ? 'أُرسل' : m.mail_status || '—')) })])]); })) : hint('لم تُرسل رسائل بعد.')])];
+      el('small', { text: when(m.at) + (m.kind === 'release' || m.kind === 'held' ? ' · إجراء داخلي — ليست رسالة للعميل' : ' · واتساب: ' + (WA_L[m.wa_status] || m.wa_status || (m.info && WA_L[m.info.wa]) || (m.info && m.info.wa) || '—') + ' · البريد: ' + ((m.mail_status || (m.info && m.info.mail)) === 'sent' ? 'أُرسل' : m.mail_status || (m.info && m.info.mail) || '—')) })])]); })) : hint('لم تُرسل رسائل بعد.')])];
   }
   var E = events(x, v);
   return [blk('مسار رحلة العميل', 'path', [el('ol', { class: 'eg12-tl ela-tl' }, E.map(function (e) { return el('li', { class: 'is-d is-' + e.tone }, [el('b', { text: e.t }), el('small', { text: when(e.at) + (e.sub ? ' · ' + e.sub : '') })]); }))])];
