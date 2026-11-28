@@ -29881,53 +29881,55 @@ const EGAS_HRS = [2, 4, 8, 24, 48, 72];
 function egAsgLeft(s) { const d = new Date(s); if (!s || isNaN(d)) return null; return Math.round((d - Date.now()) / 60000); }
 function egAsgMin(m) { m = Math.abs(m); if (m < 60) return fmtNum(m) + ' د'; const h = Math.round(m / 60); if (h < 48) return fmtNum(h) + ' ساعة'; return fmtNum(Math.round(h / 24)) + ' يوم'; }
 function egAsgTaskOn(T) { return !!T && ['assigned', 'received', 'done', 'returned'].indexOf(T.st) >= 0; }
+/* v1264: رأس مختصر (المهمة + مؤشر الوقت) والتفاصيل كلها تحت «التفاصيل» — بلا تكرار */
+function egAsgClock(T) {
+const left = egAsgLeft(T.due), tot = Math.max(1, (T.hours || 24) * 60);
+if (T.st === 'approved') return { t: 'نُفّذت واعتُمدت', c: 'green' };
+if (T.st === 'done') return { t: 'نُفّذت — بانتظار الاعتماد', c: 'orange' };
+if (left === null) return null;
+if (left < 0) return { t: 'انتهى الوقت ولم تُنفَّذ — متأخرة ' + egAsgMin(left), c: 'red' };
+return { t: 'متبقٍّ ' + egAsgMin(left), c: left / tot <= .25 ? 'orange' : 'green' };
+}
 function egAsgState(x, A) {
 const ev = (A && A.ev) || [], pend = A && A.pend, rc = A && A.recv, asg = A && A.to, last = ev[0], T = A && A.task;
-const mk = function (L) { return L.map(function (z, i) { return { n: z[0], g: z[1], c: ['blue', 'saffron', 'orange', 'green'][i], st: 'is-todo', t: '' }; }); };
+const mk = function (L) { return L.map(function (z) { return { n: z[0], g: z[1], st: 'is-todo', t: '' }; }); };
+const S = mk([['الإسناد', 'user-circle'], ['الاستلام', 'tray'], ['التنفيذ', 'briefcase'], ['الاعتماد', 'seal-check']]);
+const F = [];
 if (egAsgTaskOn(T) || (T && T.st === 'approved' && !pend)) {
-const S = mk([['الإسناد', 'user-circle'], ['الاستلام', 'tray'], ['التنفيذ', 'briefcase'], ['الاعتماد', 'seal-check']]);
-const left = egAsgLeft(T.due), late = egAsgTaskOn(T) && T.st !== 'done' && left !== null && left < 0;
+const ck = egAsgClock(T), late = !!ck && ck.c === 'red';
 S[0].st = 'is-ok'; S[0].t = T.name || 'موظف';
-if (T.recv) { S[1].st = 'is-ok'; S[1].t = 'استلمها ' + eg10Dt(T.recv).split(' · ')[1]; } else if (egAsgTaskOn(T)) { S[1].st = 'is-now'; S[1].t = 'لم يستلمها'; }
-if (T.st === 'done' || T.st === 'approved') { S[2].st = 'is-ok'; S[2].t = 'نُفّذت'; } else if (T.st === 'returned') { S[2].st = 'is-now'; S[2].t = 'أُعيدت إليه'; } else if (T.st === 'received') { S[2].st = 'is-now'; S[2].t = late ? 'متأخرة' : 'جارٍ التنفيذ'; }
-if (T.st === 'approved') { S[3].st = 'is-ok'; S[3].t = 'اعتُمدت'; } else if (T.st === 'done') { S[3].st = 'is-now'; S[3].t = 'بانتظار الاعتماد'; }
-const head = (T.by ? 'أسندها ' + T.by : 'أُسندت') + ' · ' + eg10Dt(T.at) + ' · مدة ' + fmtNum(T.hours) + ' ساعة';
-let title, sub, tone;
-if (T.st === 'approved') { title = 'نُفّذت واعتُمدت: ' + T.label; sub = 'نفّذها ' + (T.name || 'الموظف') + ' · ' + eg10Dt(T.done) + (T.dec_at ? ' · اعتُمدت ' + eg10Dt(T.dec_at) : ''); tone = 'green'; }
-else if (T.st === 'done') { title = (T.name || 'الموظف') + ' أنهى: ' + T.label; sub = 'أنهاها ' + eg10Dt(T.done) + (T.done_note ? ' — ' + T.done_note : '') + ' · بانتظار الاعتماد'; tone = 'orange'; }
-else { title = 'مسنَد إلى ' + (T.name || 'موظف') + ' — ' + T.label; tone = late ? 'red' : T.st === 'returned' ? 'orange' : 'blue';
-sub = (late ? 'متأخر منذ ' + egAsgMin(left) : 'متبقٍّ ' + egAsgMin(left)) + ' · التسليم ' + eg10Dt(T.due) + ' · ' + head + (T.st === 'returned' && T.dec_note ? ' · سبب الإعادة: ' + T.dec_note : ''); }
-if (T.text && T.key !== 'custom') sub += ' · التفاصيل: ' + T.text;
-return { S: S, title: title, sub: sub, tone: tone, T: T, late: late };
+if (T.recv) { S[1].st = 'is-ok'; S[1].t = 'استُلمت'; } else if (egAsgTaskOn(T)) { S[1].st = 'is-now'; S[1].t = 'لم تُستلم'; }
+if (T.st === 'done' || T.st === 'approved') { S[2].st = 'is-ok'; S[2].t = 'نُفّذت'; } else if (T.st === 'returned') { S[2].st = 'is-now'; S[2].t = 'أُعيدت'; } else if (T.st === 'received') { S[2].st = 'is-now'; S[2].t = late ? 'متأخرة' : 'جارية'; }
+if (T.st === 'approved') { S[3].st = 'is-ok'; S[3].t = 'اعتُمدت'; } else if (T.st === 'done') { S[3].st = 'is-now'; S[3].t = 'بانتظارك'; }
+F.push(['المهمة', T.label + (T.text && T.key !== 'custom' ? ' — ' + T.text : '')], ['المسنَد إليه', T.name || '—'], ['أسندها', (T.by || '—') + ' · ' + eg10Dt(T.at)], ['المدة', fmtNum(T.hours) + ' ساعة'], ['موعد التسليم', eg10Dt(T.due)]);
+if (T.recv) F.push(['استلمها', eg10Dt(T.recv)]);
+if (T.done) F.push(['نُفّذت', eg10Dt(T.done) + (T.done_note ? ' — ' + T.done_note : '')]);
+if (T.dec_at && (T.st === 'approved' || T.st === 'returned')) F.push([T.st === 'approved' ? 'اعتُمدت' : 'أُعيدت', eg10Dt(T.dec_at) + (T.dec_note ? ' — ' + T.dec_note : '')]);
+return { S: S, title: T.label, chip: ck, tone: late ? 'red' : T.st === 'approved' ? 'green' : T.st === 'done' || T.st === 'returned' ? 'orange' : 'blue', F: F };
 }
-/* v1263: مسار واحد دائمًا (الإسناد ← الاستلام ← التنفيذ ← الاعتماد) — طلب الإسناد وموافقته وسحبه حالاتٌ لخطوة «الإسناد» لا خطوات مستقلة */
-const S = mk([['الإسناد', 'user-circle'], ['الاستلام', 'tray'], ['التنفيذ', 'briefcase'], ['الاعتماد', 'seal-check']]);
-const lastAsg = ev.filter(function (v) { return v.k === 'assign' || v.k === 'transfer'; })[0];
-const R = rc ? 'استلمه ' + (rc.by || 'الفريق') : '';
-let title, sub, tone;
+let title, chip, tone;
 if (pend) {
-S[0].st = 'is-now'; S[0].t = 'طلبه ' + (pend.name || 'موظف') + ' — بانتظار الموافقة';
-title = (pend.name || 'موظف') + ' طلب إسناده إليه'; sub = 'بانتظار الموافقة منذ ' + egAsgDur(pend.at) + ' · ' + eg10Dt(pend.at); tone = 'orange';
+S[0].st = 'is-now'; S[0].t = 'بانتظار الموافقة';
+title = 'طلب إسناد من ' + (pend.name || 'موظف'); chip = { t: 'ينتظر موافقتك منذ ' + egAsgDur(pend.at), c: 'orange' }; tone = 'orange';
+F.push(['طلبه', (pend.name || '—') + ' · ' + eg10Dt(pend.at)]); if (pend.note) F.push(['ملاحظته', pend.note]);
 } else if (asg) {
 S[0].st = 'is-ok'; S[0].t = A.to_name || 'موظف';
-if (rc) { S[1].st = 'is-ok'; S[1].t = R; S[2].st = 'is-now'; S[2].t = 'بلا مهمة محددة'; } else { S[1].st = 'is-now'; S[1].t = 'لم يُستلم بعد'; }
-title = 'مسنَد إلى ' + (A.to_name || 'موظف') + ' — بلا مهمة محددة'; tone = rc ? 'green' : 'blue';
-sub = (A.by_name ? 'أسنده ' + A.by_name : 'أُسند') + (A.at ? ' · ' + eg10Dt(A.at) : '') + ' · ' + (rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد — منذ ' + egAsgDur(A.at));
-} else if (last && last.k === 'withdraw') {
-S[0].st = 'is-stop'; S[0].t = 'سُحب من ' + (last.from || 'موظف');
-title = 'سُحب الإسناد من ' + (last.from || 'موظف') + ' — الطلب بلا مسؤول'; sub = (last.by ? 'سحبه ' + last.by + ' · ' : '') + eg10Dt(last.at) + ' · بلا مسؤول منذ ' + egAsgDur(last.at); tone = 'red';
-} else if (last && last.k === 'reject') {
-S[0].st = 'is-stop'; S[0].t = last.note === 'ألغى طلبه' ? 'أُلغي طلب ' + (last.to || 'الموظف') : 'رُفض طلب ' + (last.to || 'الموظف');
-title = (last.note === 'ألغى طلبه' ? 'أُلغي طلب الإسناد' : 'رُفض طلب إسناد ' + (last.to || 'الموظف')) + ' — الطلب بلا مسؤول'; sub = eg10Dt(last.at) + ' · بلا مسؤول منذ ' + egAsgDur(last.at); tone = 'red';
+if (rc) { S[1].st = 'is-ok'; S[1].t = 'استُلم'; S[2].st = 'is-now'; S[2].t = 'بلا مهمة'; } else { S[1].st = 'is-now'; S[1].t = 'لم يُستلم'; }
+title = 'بلا مهمة محددة'; chip = rc ? null : { t: 'لم يُستلم منذ ' + egAsgDur(A.at), c: 'orange' }; tone = rc ? 'green' : 'blue';
+F.push(['المسنَد إليه', A.to_name || '—'], ['أسنده', (A.by_name || '—') + (A.at ? ' · ' + eg10Dt(A.at) : '')]); if (rc) F.push(['استلمه', (rc.by || '—') + ' · ' + eg10Dt(rc.at)]);
+} else if (last && (last.k === 'withdraw' || last.k === 'reject')) {
+const w = last.k === 'withdraw';
+S[0].st = 'is-stop'; S[0].t = w ? 'سُحب' : (last.note === 'ألغى طلبه' ? 'أُلغي الطلب' : 'رُفض الطلب');
+title = w ? 'سُحب الإسناد' : (last.note === 'ألغى طلبه' ? 'أُلغي طلب الإسناد' : 'رُفض طلب الإسناد'); chip = { t: 'بلا مسؤول منذ ' + egAsgDur(last.at), c: 'red' }; tone = 'red';
+F.push([w ? 'سُحب من' : 'الموظف', (w ? last.from : last.to) || '—'], [w ? 'سحبه' : 'بواسطة', (last.by || '—') + ' · ' + eg10Dt(last.at)]);
 } else {
 const since = (last && last.at) || x.created_at;
 S[0].st = 'is-now'; S[0].t = 'غير مسنَد';
-if (rc) { S[1].st = 'is-ok'; S[1].t = R; }
-title = rc ? 'غير مسنَد — استلمه ' + (rc.by || 'الفريق') + ' دون إسناد' : 'غير مسنَد'; tone = 'saffron';
-sub = 'بلا مسؤول منذ ' + egAsgDur(since) + (rc ? ' · استُلم ' + eg10Dt(rc.at) : ' · بانتظار إسناده أو طلب إسناده');
+if (rc) { S[1].st = 'is-ok'; S[1].t = 'استُلم'; }
+title = 'غير مسنَد'; chip = { t: 'بلا مسؤول منذ ' + egAsgDur(since), c: 'saffron' }; tone = 'saffron';
+if (rc) F.push(['استلمه دون إسناد', (rc.by || '—') + ' · ' + eg10Dt(rc.at)]);
 }
-void lastAsg;
-return { S: S, title: title, sub: sub, tone: tone, T: T && T.st === 'approved' ? T : null };
+return { S: S, title: title, chip: chip, tone: tone, F: F };
 }
 function egAsgDo(x, fn, args, title, line, paint) {
 if (EGAS.act) return; EGAS.act = fn; paint();
@@ -29998,26 +30000,26 @@ return L;
 function egAsgLine(x, paint) {
 const A = egAsgGet(x, paint);
 if (!A) return e('div', { class: 'egl-asg is-wait' }, [e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('user-circle', 'slate')]), e('span', { class: 'egl-asg-t' }, [e('b', {}, 'الإسناد'), e('small', {}, 'جارٍ التحميل…')])])]);
-const P = EGAS.P || {}; if (P.assign) { try { srAsLoad(false, paint); } catch (err) { void err; } } /* الفريق جاهز قبل فتح الإجراءات */
+const P = EGAS.P || {}; if (P.assign) { try { srAsLoad(false, paint); } catch (err) { void err; } }
 const G = egAsgState(x, A), L = egAsgLog(A), det = !!(EGAS.det && EGAS.det[x.id]), act = EGAS.open === x.id;
 const trk = e('div', { class: 'egl-trk8 egl-trk7 egl-trk4', role: 'list', 'aria-label': 'مسار الإسناد' }, G.S.map(function (s) {
-const cn = s.st === 'is-todo' || s.st === 'is-skip' ? 'slate' : s.st === 'is-stop' ? 'red' : s.st === 'is-ok' ? 'green' : G.tone === 'red' ? 'red' : G.tone; /* v1260: المكتمل أخضر · الحالي بلون الحالة · المتوقف أحمر */
+const cn = s.st === 'is-todo' || s.st === 'is-skip' ? 'slate' : s.st === 'is-stop' ? 'red' : s.st === 'is-ok' ? 'green' : G.tone;
 return e('div', { class: 'egl-stp ' + s.st, role: 'listitem', style: '--sc:' + EGAS_H[cn] }, [
 e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [egT3(s.st === 'is-stop' ? 'x-circle' : s.g, cn)]), e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, s.n), s.st === 'is-now' || s.st === 'is-stop' ? e('b', { class: 'egl-stp-pin', 'aria-label': 'الإسناد هنا' }, [frag(eglPin(cn))]) : null])]),
-e('span', { class: 'egl-stp-bar' }), s.t ? e('span', { class: 'egl-stp-st' + (s.st === 'is-ok' || s.st === 'is-skip' ? ' is-ok' : '') }, s.t) : null]);
+e('span', { class: 'egl-stp-bar' }), s.t ? e('span', { class: 'egl-stp-st' + (s.st === 'is-ok' ? ' is-ok' : '') }, s.t) : null]);
 }));
 const logItem = function (v) { return e('li', { class: 'is-' + v.k }, [e('i', { 'aria-hidden': 'true' }), e('b', {}, v.t), v.n ? e('span', {}, ' — ' + v.n) : null, e('small', {}, e('bdi', { dir: 'ltr' }, eg10Dt(v.at)))]); };
-const more = L.length > 2 ? e('ol', { class: 'egl-asg-log is-more', hidden: det ? null : true }, L.slice(2).map(logItem)) : null;
-const tgl = L.length > 2 ? e('button', { type: 'button', class: 'egl-asg-lnk', 'data-live-ok': '', 'aria-expanded': det ? 'true' : 'false', onClick: function (ev) { const on = !(EGAS.det && EGAS.det[x.id]); (EGAS.det || (EGAS.det = {}))[x.id] = on; if (more) more.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'أقل تفاصيل' : 'عرض التفاصيل (' + fmtNum(L.length) + ')'; } }, [frag(ui('list-bullets', 14)), e('span', {}, det ? 'أقل تفاصيل' : 'عرض التفاصيل (' + fmtNum(L.length) + ')')]) : null;
-const AC = egAsgActs(x, A, paint), canAct = !!AC.lbl, LB = AC.lbl;
+const dbox = e('div', { class: 'egl-asg-det', hidden: det ? null : true }, [
+G.F.length ? e('dl', { class: 'egl-asg-facts' }, [].concat.apply([], G.F.map(function (f) { return [e('dt', {}, f[0]), e('dd', {}, f[1])]; }))) : null,
+L.length ? e('div', { class: 'egl-asg-lt' }, 'سجل الإسناد') : null, L.length ? e('ol', { class: 'egl-asg-log' }, L.map(logItem)) : e('div', { class: 'egl-asg-n' }, 'لا خطوات إسناد بعد.')]);
+const AC = egAsgActs(x, A, paint), LB = AC.lbl;
 const box = e('div', { class: 'egl-asg-acts', hidden: act ? null : true }, AC.rows);
-const ab = canAct ? eg9Btn(act ? 'إغلاق' : LB, { cls: act ? 'egl-asg-tg' : 'is-pri egl-asg-tg', ic: act ? 'caret-up' : 'users-three', on: function (ev) { const b = ev.currentTarget, on = EGAS.open !== x.id; EGAS.open = on ? x.id : ''; box.hidden = !on; b.setAttribute('aria-expanded', on ? 'true' : 'false'); b.classList.toggle('is-pri', !on); b.lastChild.textContent = on ? 'إغلاق' : LB; } }) : null; /* v1262: زر الإسناد بنفس زر «فتح الطلب» */
+const tgl = e('button', { type: 'button', class: 'egl-asg-lnk', 'data-live-ok': '', 'aria-expanded': det ? 'true' : 'false', onClick: function (ev) { const on = !(EGAS.det && EGAS.det[x.id]); (EGAS.det || (EGAS.det = {}))[x.id] = on; dbox.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'إخفاء التفاصيل' : 'التفاصيل'; } }, [frag(ui('list-bullets', 14)), e('span', {}, det ? 'إخفاء التفاصيل' : 'التفاصيل')]);
+const ab = LB ? eg9Btn(act ? 'إغلاق' : LB, { cls: act ? 'egl-asg-tg' : 'is-pri egl-asg-tg', ic: act ? 'caret-up' : 'users-three', on: function (ev) { const b = ev.currentTarget, on = EGAS.open !== x.id; EGAS.open = on ? x.id : ''; box.hidden = !on; b.setAttribute('aria-expanded', on ? 'true' : 'false'); b.classList.toggle('is-pri', !on); b.lastChild.textContent = on ? 'إغلاق' : LB; } }) : null;
 return e('div', { class: 'egl-asg is-' + G.tone }, [
 e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('user-circle', G.tone)]),
-e('span', { class: 'egl-asg-t' }, [e('b', {}, G.title), e('small', {}, G.sub)]), ab]),
-trk,
-L.length ? e('div', { class: 'egl-asg-lg' }, [e('ol', { class: 'egl-asg-log' }, L.slice(0, 2).map(logItem)), more, tgl]) : e('div', { class: 'egl-asg-n' }, 'لا خطوات إسناد بعد.'),
-box]);
+e('span', { class: 'egl-asg-t' }, [e('b', {}, G.title), G.chip ? e('span', { class: 'egl-asg-ck is-' + G.chip.c }, [frag(ui(G.chip.c === 'red' ? 'warning' : 'clock', 13)), G.chip.t]) : null]), tgl, ab]),
+trk, dbox, box]);
 }
 /* الإسناد: قائمة صغيرة تحت الزر مع بحث — بدل قسم كامل */
 function eg12AsgPop(C) {

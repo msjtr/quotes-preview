@@ -10475,3 +10475,17 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 /* v1262: زر الإسناد بنفس هوية أزرار البطاقة (eg9-btn) */
 .egl-asg-tg{flex:0 0 auto;min-height:2.5rem;padding:.35rem .95rem;font-size:13.5px;white-space:nowrap}
 @media (max-width:640px){.egl-asg-tg{flex:1 1 100%}}
+/* v1264: رأس الإسناد مختصر + مؤشر الوقت + التفاصيل */
+.egl-asg-t{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.egl-asg-t b{font-size:14px}
+.egl-asg-ck{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.egl-asg-ck.is-green{background:#E3F6EC;color:#13804F}.egl-asg-ck.is-orange{background:#FFEBDD;color:#B4561A}.egl-asg-ck.is-saffron{background:#FFF0D6;color:#9A5C06}
+.egl-asg-ck.is-red{background:#EB5A45;color:#fff;box-shadow:0 3px 8px -4px #EB5A45}
+@media (prefers-reduced-motion:no-preference){.egl-asg-ck.is-red{animation:eglBlink 1.6s ease-in-out infinite}}
+@keyframes eglBlink{50%{opacity:.72}}
+.egl-asg-lnk{flex:0 0 auto}
+.egl-asg-det{display:flex;flex-direction:column;gap:8px;border-top:1px dashed #D7DEEA;padding-top:10px}
+.egl-asg-det[hidden]{display:none}
+.egl-asg-facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;margin:0;font-size:13px}
+.egl-asg-facts dt{color:var(--egl-mut,#66748C);font-weight:600}.egl-asg-facts dd{margin:0;color:var(--egl-ink,#0F1B33);font-weight:700;overflow-wrap:anywhere}
+@media (max-width:640px){.egl-asg-facts{grid-template-columns:1fr;gap:2px}.egl-asg-facts dd{margin-bottom:6px}.egl-asg-ck{white-space:normal}}
