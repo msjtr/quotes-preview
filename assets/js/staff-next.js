@@ -221,7 +221,7 @@ RECV.forEach(function (r) { COVER['fin-rec-' + r[0]] = true; });
         if (gh) {
           var c = gh.parentNode.classList.toggle('is-closed');
           gh.setAttribute('aria-expanded', c ? 'false' : 'true');
-          if (!c) grpOnly(gh.parentNode); /* v1267: فتح قسم يطوي البقية (أكورديون) */
+          if (!c && window.__tqnGrpOnly) window.__tqnGrpOnly(gh.parentNode); /* v1267→v1268: فتح قسم يطوي البقية (أكورديون) — الدالة في وحدة أخرى */
           return;
         }
         var b = ev.target.closest('[data-next-nav]');
@@ -587,7 +587,7 @@ function geoQ() {
     try { g.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { void e; }
     var f = g.querySelector('.tqn-i'); if (f) { g.classList.add('tqn-g-flash'); setTimeout(function () { g.classList.remove('tqn-g-flash'); }, 1400); try { f.focus({ preventScroll: true }); } catch (e) { void e; } }
   }
-  window.__tqnGrpGo = grpGo;
+  window.__tqnGrpGo = grpGo; window.__tqnGrpOnly = grpOnly;
   function soon() { if (busy) return; busy = true; (window.requestAnimationFrame || setTimeout)(apply); }
   document.addEventListener('click', function (ev) {
     var gh = ev.target && ev.target.closest && ev.target.closest('#pv-host .tqn-nav .tqn-gh');
