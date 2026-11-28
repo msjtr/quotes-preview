@@ -29655,13 +29655,13 @@ n.classList.add('eg9-ew'); return n;
 /* ── صفحة الطلب (v929–934): مسار المراحل هو التنقّل نفسه (7 مراحل + أداتان) — كل معلومة مرة واحدة، والقوالب والمعاينة في تبويب واحد بالرابط نفسه الذي يصل العميل (هوية رابط تيرا) ── */
 const EG12 = { open: null, bound: false, pf: {} };
 /* المراحل السبع بالترتيب ثم الأداتان — المفتاح · الاسم · الأيقونة */
-/* v1194: الترتيب الجديد بقرار المشرف داخل القوالب الأصلية — «المطلوب من العميل» مرحلة بعد الطلب، و«القوالب والمعاينة» تبويب فرعي في «الروابط والموافقات» */
-const EG12_T = [['req', 'الطلب', 'tray'], ['ask', 'المطلوب من العميل', 'list-checks'], ['dec', 'قرار الأهلية', 'seal-check'], ['qt', 'عرض سعر منتج', 'receipt'], ['inv', 'فاتورة المنتج', 'file-text'], ['ct', 'عقد بيع منتج', 'handshake'],
-['lnk', 'الروابط والموافقات', 'paper-plane-tilt'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
-const EG12_NSTG = 8;
+/* v1231: تبويبات التصميم الأول كما كانت (قرار المشرف 2026-11-28) */
+const EG12_T = [['req', 'الطلب', 'tray'], ['dec', 'قرار الأهلية', 'seal-check'], ['qt', 'عرض سعر منتج', 'receipt'], ['inv', 'فاتورة المنتج', 'file-text'], ['ct', 'عقد بيع منتج', 'handshake'],
+['lnk', 'الرابط والموافقات', 'paper-plane-tilt'], ['adm', 'الإدارة والتنفيذ', 'shield-check'], ['tpl', 'القوالب والمعاينة', 'note-pencil'], ['log', 'المراسلات والسجل', 'chat-circle-dots']];
+const EG12_NSTG = 7;
 const EG12_STG = [['req', ''], ['dec', ''], ['qt', ''], ['lnk', ''], ['lnk', ''], ['adm', ''], ['adm', ''], ['adm', '']];
-const EG12_VW = { fix: ['ask', 'now'], msg: ['log', ''], ct: ['ct', ''], inv: ['inv', ''], req: ['req', ''], log: ['log', ''], pv: ['lnk', 'tpl'], tpl: ['lnk', 'tpl'] };
-const EG12_OLD = { docs: ['req', ''], fix: ['ask', 'now'], rep: ['dec', ''], res: ['dec', ''], qt: ['qt', ''], apv: ['qt', ''], inv: ['inv', ''], ct: ['ct', ''], pv: ['lnk', 'tpl'], snd: ['lnk', 'send'], adm: ['adm', ''], log: ['log', ''], data: ['req', ''] };
+const EG12_VW = { fix: ['req', ''], msg: ['log', ''], ct: ['ct', ''], inv: ['inv', ''], req: ['req', ''], log: ['log', ''], pv: ['tpl', ''], tpl: ['tpl', ''] };
+const EG12_OLD = { docs: ['req', ''], fix: ['req', ''], rep: ['dec', ''], res: ['dec', ''], qt: ['qt', ''], apv: ['qt', ''], inv: ['inv', ''], ct: ['ct', ''], pv: ['tpl', ''], snd: ['lnk', ''], adm: ['adm', ''], log: ['log', ''], data: ['req', ''] };
 /* الخطوات الأربع للرابط: المفتاح · الاسم · الأيقونة · نوع المستند (لا PDF لخطوة الأهلية) */
 const EG12_STEPS = [['elig', 'أهلية شراء منتج', 'seal-check', ''], ['quote', 'عرض سعر منتج', 'receipt', 'quote'], ['purchase', 'فاتورة المنتج', 'file-text', 'purchase'], ['contract', 'عقد بيع منتج', 'handshake', 'contract']];
 function eg10V(x) { const M = EG9.v12 || (EG9.v12 = {}); return M[x.id] || (M[x.id] = Object.assign({ tab: '', sub: {}, menu: false, asg: false, fix: false, step: '', part: 'page', wide: false }, eg12VLoad(x.id))); }
@@ -29692,7 +29692,7 @@ if (c0 && c0.__eg9 && c0.tab && c0.tab !== c0.__eg9 && EG12_OLD[c0.tab]) { V.tab
 const go = function (tab, sub) { V.tab = tab; if (sub) V.sub[tab] = sub; V.menu = false; V.asg = false; EG12.open = null; paint(); setTimeout(function () { const m = document.querySelector('.eg12-sec'); if (m) { const y = m.getBoundingClientRect().top + window.scrollY - 96; if (m.getBoundingClientRect().top < 80 || m.getBoundingClientRect().top > window.innerHeight * .7) window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); } }, 60); };
 /* توافق: أزرار البطاقات تستدعي show(مرحلة, عرض) */
 const show = function (stg, view) { if (view === 'fix') V.fix = true; if (view === 'cl') { eg12Cl(x); return; } if (view && EG12_VW[view]) return go(EG12_VW[view][0], EG12_VW[view][1]); const s = typeof stg === 'number' ? stg : Math.max(0, k); const t = EG12_STG[Math.min(7, Math.max(0, s))]; go(t[0], t[1]); };
-if (V.tab === 'tpl') { V.tab = 'lnk'; V.sub.lnk = 'tpl'; } /* v1194 */
+if (V.tab === 'ask') V.tab = 'req'; /* v1231: لا تبويب «المطلوب من العميل» في التصميم الأول */
 const defTab = EG12_STG[Math.min(7, Math.max(0, dead ? Math.min(reach, 2) : k))];
 const tab = V.tab && EG12_T.some(function (t) { return t[0] === V.tab; }) ? V.tab : defTab[0]; eg12VSave(x.id, V);
 const ctx = { x: x, B: B, k: k, dead: dead, reach: reach, open: open, RF: RF, NX: NX, paint: paint, show: show, go: go, V: V, tab: tab };
@@ -29735,7 +29735,6 @@ if (t === 'qt') return qok ? 'ok' : k === 2 ? 'w' : x.status !== 'approved' ? 'o
 if (t === 'lnk') return k >= 5 ? 'ok' : (k === 3 || k === 4) && !C.dead ? 'w' : !qok ? 'off' : '';
 if (t === 'inv') return qok || (ch.purchase && ch.purchase.d === 'accept') ? 'ok' : !q ? 'off' : ''; /* v1213: تصدر الفاتورة مع اعتماد العرض — صح، وقرار العميل تحتها */
 if (t === 'ct') return qok || (B && B.sign) ? 'ok' : !q ? 'off' : ''; /* v1213: يصدر العقد من العرض المعتمد — صح، والتوقيع تحته */
-if (t === 'ask') { const f = (x.meta || {}).fix; return f && (f.open || f.draft) ? 'w' : f && f.done_at ? 'ok' : ''; }
 if (t === 'tpl' || t === 'log') return '';
 if (t === 'adm') return k >= 7 ? 'ok' : (k === 5 || k === 6) && !C.dead ? 'w' : 'off';
 return '';
@@ -29826,11 +29825,7 @@ return c;
 function eg12Srd(node) { return e('div', { class: 'srd eg12-srd' }, [node]); }
 function eg12Wait(t) { return e('div', { class: 'eg12-empty' }, [eg12Ic('info', 20), e('span', {}, t)]); }
 /* التبويبات الفرعية — فقط حيث يلزم (الطلب · عرض السعر)؛ بقية الأقسام صفحة واحدة */
-function eg12Subs(t, C) {
-if (t === 'ask') { let n = 0; try { n = window.__teraApp.eligAskN ? window.__teraApp.eligAskN(C.x) : 0; } catch (err) { void err; } return [['now', 'الطلب الحالي', 'clipboard-text'], ['hist', 'الطلبات السابقة' + (n ? ' (' + fmtNum(n) + ')' : ''), 'clock-counter-clockwise'], ['why', 'أسباب السحب', 'list-bullets']]; }
-/* v1225: «الرابط والموافقات» بلا تبويبات فرعية — الإرسال والمسار والروابط في شاشة واحدة، والرسائل المرسلة في «المراسلات والسجل» (لا تكرار) */
-return null;
-}
+function eg12Subs(t) { void t; return null; }
 /* بطاقة القسم: الرأس (العنوان والحالة مرة واحدة) + التبويبات الفرعية إن وُجدت + المحتوى */
 function eg12Sec(t, C) {
 const x = C.x, B = C.B, k = C.k, V = C.V, paint = C.paint;
@@ -29844,7 +29839,7 @@ else if (t === 'dec') { const R = (x.meta || {}).report; hsub = x.decided_at ? '
 else if (t === 'qt') { const S = EG11.qs[x.id], lv = S && eg11Live(S.rows), G = lv ? eqGet(lv.id, paint) : null, Q = G && G.j ? G.j.q : null; hsub = Q ? [Q.quotation_number || '', Q.prepared_by_name ? 'أعدّه ' + Q.prepared_by_name : ''].filter(Boolean).join(' · ') : x.status === 'approved' ? 'لم يُعدّ بعد' : 'يُعدّ بعد قرار «مؤهَّل»'; if (Q) { let s2 = null; try { s2 = eqStLabel(Q); } catch (err) { void err; } pill = s2 || [Q.status, 'info']; } }
 else if (t === 'inv') { const c2 = B && B.ch && B.ch.purchase; hsub = 'من عرض السعر المعتمد — المنتج وحده'; pill = c2 && c2.d ? (c2.d === 'accept' ? ['اعتمدها العميل', 'ok'] : ['اعتذر', 'danger']) : ['لم تصل العميل', 'off']; }
 else if (t === 'ct') { hsub = q && q.ct ? 'رقم العقد ' + q.ct : 'يُبنى من العرض المعتمد · يصدر رقمه عند التوقيع'; pill = B && B.sign ? ['وقّعه العميل', 'ok'] : ['لم يوقَّع', 'off']; }
-else if (t === 'ask') { const f = (x.meta || {}).fix; hsub = 'مستند أو تصحيح أو ملاحظة يُطلب من العميل برابط مباشر — لا يوقف القرار ولا بقية المراحل'; pill = f && f.open ? ['عند العميل', 'warn'] : f && f.draft ? ['مسودة', 'warn'] : f && f.done_at ? ['أكمله العميل', 'ok'] : null; }
+else if (t === 'tpl') hsub = 'تعدّل يمينًا وتعاين يسارًا — الرابط نفسه الذي يصل العميل';
 else if (t === 'lnk') { const L = B && B.link; hsub = 'رابط واحد ورمز تحقق واحد' + (L && L.exp ? ' · صالح حتى ' + iso(new Date(L.exp)) : ''); pill = L ? ['أُرسل', 'ok'] : ['لم يُرسل', 'off']; }
 else if (t === 'adm') { hsub = x.executed_at ? 'نُفّذ ' + eg10Dt(x.executed_at) : 'بعد توقيع العميل'; pill = k >= 7 ? ['مكتمل', 'ok'] : k === 6 ? ['النقاط بانتظار الاعتماد', 'warn'] : k === 5 ? ['الخطوة الحالية', 'warn'] : ['لم يحن بعد', 'off']; }
 else hsub = 'المحادثة مع العميل وكل أحداث الطلب';
@@ -29865,9 +29860,8 @@ if (t === 'dec') return [eg11Decision(x, B, paint, show, k === 1)];
 if (t === 'qt') return [eg11Quote(x, B, paint, show, k === 2)];
 if (t === 'inv') return [eg11Inv(x, B, paint)];
 if (t === 'ct') return [eg11Ct(x, B, paint, true)];
-if (t === 'ask') return window.__teraApp.eligAsk ? window.__teraApp.eligAsk(x, s, paint) : [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')];
-if (t === 'lnk' && s === 'tpl') return [e('div', { class: 'eg10-vhead' }, [e('h3', {}, 'القوالب والمعاينة'), eg9Btn('رجوع للرابط', { ic: 'caret-right', on: function () { C.go('lnk', 'send'); } })])].concat(eg13Tpl(C) || []);
-if (t === 'lnk') { let L = []; try { L = window.__teraApp.eligLnk ? (window.__teraApp.eligLnk(x, 'links', paint) || []) : []; } catch (err) { void err; } return [eg12Lnk(C)].concat(L); }
+if (t === 'tpl') return eg13Tpl(C);
+if (t === 'lnk') return [eg12Lnk(C)];
 if (t === 'adm') return eg12Adm(C);
 return [eg12LogTab(C)];
 }
@@ -29917,6 +29911,7 @@ e('div', { class: 'eg13-row2' }, [blk('الدخل والالتزامات', 'coin
 N.ex !== undefined && Number(N.ex) <= 0 ? e('div', { class: 'eg10-warn' }, 'المصروفات الشخصية صفر — اطلب تصحيحها من العميل.') : null,
 e('div', { class: 'eg13-row2' }, [ab ? blk('حساب الاستلام والتحقق', 'bank', e('div', { class: 'eg13-ab' }, [ab])) : null, rest.length ? blk('بيانات أخرى', 'list', dl(fv(rest), 'is-2')) : null].filter(Boolean)),
 eg11Review(x, B, paint, show, k === 0, { bare: true })];
+if (C.V.fix && C.open) out.push(eg12Fix(C));
 return out;
 }
 /* مختار الخطوة — مشترك بين «القوالب والنصوص» و«المعاينة» */
@@ -30013,7 +30008,7 @@ EG9.busy = 'rel'; paint();
 try { const j = await egjRpc('adm_elig_release', { p_sr: x.id }); if (!j || j.ok === false) throw new Error((j && j.message) || 'تعذّر الإرسال.'); try { delete SRSTG.m[x.id]; } catch (er) { void er; } await eg11After(x, 'أُرسل الرابط للعميل', ['وصل العميلَ الرابط على واتساب والبريد وفي حسابه.', 'تتابع موافقاته هنا حيّةً.']); paint(); }
 catch (err) { EG9.busy = ''; paint(); eg11Fail(err); } } }));
 if (L && k === 4) acts.push(eg9Btn(EG9.busy === 'admin_sr_notify' ? 'جارٍ الإرسال…' : 'تذكير العميل', { ic: 'bell', disabled: busy, on: function () { eg9Do('admin_sr_notify', { p_id: x.id }, 'أُرسل التذكير', ['وصل العميلَ إشعار بحالة طلبه ' + x.req_no + ' — داخل المنصة والبريد وواتساب.'], paint, 'إرسال تذكير للعميل بحالة الطلب ' + x.req_no + '؟'); } }));
-acts.push(eg9Btn('المعاينة', { ic: 'device-mobile', on: function () { C.go('lnk', 'tpl'); } }));
+acts.push(eg9Btn('المعاينة', { ic: 'device-mobile', on: function () { C.go('tpl', ''); } }));
 return e('div', { class: 'eg12-lnk' }, [!qok && !L && k <= 3 ? e('div', { class: 'eg10-warn' }, 'اعتمد عرض السعر أولًا ليُرسل الرابط.') : null, tl,
 eg12Foot(eg11Acts(acts), L ? (k === 4 ? 'متابعة حيّة — لا إجراء مطلوب منك الآن.' : '') : 'يصل الرابط العميلَ على واتساب والبريد وفي حسابه، ويدخل برمز تحقق واحد.')]);
 }
@@ -30113,8 +30108,7 @@ const x = C.x, B = C.B, paint = C.paint;
 const m = (eg9TabBody(x, C.RF, 'msg', C.NX, paint) || []).filter(Boolean);
 m.forEach(function (n) { eg12Strip(n, ['المطلوب من العميل', 'كل المرفقات']); });
 const S = EG11.qs[x.id];
-let sn = []; try { sn = window.__teraApp.eligLnk ? (window.__teraApp.eligLnk(x, 'sends', paint) || []) : []; } catch (err) { void err; } /* v1225: الرسائل المرسلة هنا وحدها */
-return e('div', { class: 'eg12-g2 eg12-logg' }, [e('div', { class: 'eg12-col' }, m.concat(sn)), e('div', { class: 'eg12-col' }, [eg10Log(x, B, paint, true), S && S.rows && S.rows.length ? eg9Card('نسخ عرض السعر', 'receipt', [eg12Hist(x, paint)]) : null])]);
+return e('div', { class: 'eg12-g2 eg12-logg' }, [e('div', { class: 'eg12-col' }, m), e('div', { class: 'eg12-col' }, [eg10Log(x, B, paint, true), S && S.rows && S.rows.length ? eg9Card('نسخ عرض السعر', 'receipt', [eg12Hist(x, paint)]) : null])]);
 }
 /* سجل العرض: كل نسخ عرض السعر لهذا الطلب */
 function eg12Hist(x, paint) {
@@ -30840,7 +30834,7 @@ window.__teraApp.eligStage = function (id, t, repaint, onGo) {
     const go = function (tab, sub) { V.tab = tab; if (sub) V.sub[tab] = sub; try { if (onGo) onGo(tab, sub); } catch (err) { void err; } };
     const show = function (stg, view) { if (view === 'fix') V.fix = true; if (view === 'cl') { eg12Cl(x); return; } if (view && EG12_VW[view]) return go(EG12_VW[view][0], EG12_VW[view][1]); const s2 = typeof stg === 'number' ? stg : Math.max(0, k); const tt = EG12_STG[Math.min(7, Math.max(0, s2))]; go(tt[0], tt[1]); };
     const ctx = { x: x, B: B, k: k, dead: dead, reach: reach, open: open, RF: RF, NX: { n: null }, paint: paint, show: show, go: go, V: V, tab: t };
-    const out = [].concat(t === 'tpl' ? eg12Body('lnk', 'tpl', ctx) : eg12Body(t, '', ctx)).filter(Boolean); /* v1226: القوالب داخل تبويب الرابط */
+    const out = [].concat(eg12Body(t, '', ctx)).filter(Boolean);
     eg12Zoom();
     return [e('div', { class: 'eg9 eg10 eg12 eg13 eln-stage', 'data-sr': x.id }, out)];
   } catch (err) { try { console.warn('[eligStage]', t, err && err.message); } catch (y) { void y; } return [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')]; }

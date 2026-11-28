@@ -392,6 +392,8 @@ function run() {
   if (!ST.rows && !ST.loading) { ST.loading = true; A().srs(false).then(function (a) { ST.rows = (a || []).filter(function (x) { return x && x.kind === 'elig'; }); ST.loading = false; draw(); }).catch(function () { ST.loading = false; ST.rows = []; draw(); }); }
   draw(); return R;
 }
-function reg() { if (window.__teraApp && typeof window.__teraApp.page === 'function' && typeof window.__teraApp.rpc === 'function') { window.__teraApp.page(KEY, TITLE, ['identification-badge', 'violet'], run, 'cu'); return true; } return false; }
+/* v1231: التصميم الأول (platform.js eg12) هو صفحة «طلبات التحقق من الأهلية» — هذا الملف لا يسجّل صفحة */
+function reg() { return true; }
+function regOld() { if (window.__teraApp && typeof window.__teraApp.page === 'function' && typeof window.__teraApp.rpc === 'function') { window.__teraApp.page(KEY, TITLE, ['identification-badge', 'violet'], run, 'cu'); return true; } return false; }
 if (!reg()) { var n = 0, t = setInterval(function () { if (reg() || ++n > 60) clearInterval(t); }, 250); }
 })();
