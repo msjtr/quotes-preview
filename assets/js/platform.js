@@ -29713,7 +29713,7 @@ e('div', { class: 'egl-l1' }, [e('b', { class: 'egl-nm' }, nm), eglAlerts(x, B),
 e('span', { class: 'egl-tag is-dt', title: 'تاريخ تقديم الطلب ' + eg10Dt(x.created_at) }, [frag(ui('calendar-blank', 13)), 'قُدِّم ', e('bdi', { dir: 'ltr' }, eg10Dt(x.created_at) || '—')]),
 e('span', { class: 'egl-tag is-mut', title: 'آخر تحديث ' + eg10Dt(eg10Upd(x, B)) }, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])])]),
 e('div', { class: 'egl-l2' }, [e('span', { class: 'egl-mny' }, [e('small', {}, 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(req)))]),
-rej ? e('span', { class: 'egl-mny is-rej' }, [e('b', {}, 'مرفوض')]) : el2 != null ? e('span', { class: 'egl-mny is-ok' + (less ? ' is-less' : '') }, [e('small', {}, 'المؤهَّل'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2)))]) : e('span', { class: 'egl-mny is-wait' }, [e('small', {}, 'المؤهَّل'), e('b', {}, 'بانتظار القرار')])]),
+rej ? e('span', { class: 'egl-mny is-rej' }, [e('b', {}, 'مرفوض')]) : el2 != null ? e('span', { class: 'egl-mny is-ok' + (less ? ' is-less' : '') }, [e('small', {}, 'المؤهَّل'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2)))]) : null]), /* v1266: «المؤهَّل» يظهر بعد صدور القرار فقط — قبله يكفي المسار */
 trk,
 e('div', { class: 'egl-cap is-' + tone }, [e('b', {}, L[0]), e('span', {}, cap)]), egAsgLine(x, paint)]),
 e('div', { class: 'egl-go4' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })])]);
