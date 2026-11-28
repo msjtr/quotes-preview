@@ -29621,6 +29621,9 @@ function eg9Tone(st) { return st && st[1] ? st[1] : ''; }
 const EGL_HEX = { saffron: '#F0A12B', orange: '#F07A2B', pink: '#E0508C', violet: '#7559F0', blue: '#3B74E8', teal: '#0FA3A8', emerald: '#13915C', green: '#22A86B', red: '#EB5A45', slate: '#7C8899' , navy: '#1E3A8A', cyan: '#0EA5C6', crimson: '#D63A4A', brown: '#9A6B3F', graphite: '#3B4A63' , 'k-yellow': '#EAB308', 'k-orange': '#F97316', 'k-purple': '#9333EA', 'k-blue': '#2563EB', 'k-teal': '#0D9488', 'k-brown': '#7C4A1E', 'k-red': '#DC2626', 'k-green': '#16A34A', 'k-grey': '#94A3B8', 'k-char': '#1E293B' };
 const EGL_PC = { saffron: ['#B86F0A', '#FFC861', '#F0A12B'], orange: ['#B4561A', '#FFA66B', '#F07A2B'], pink: ['#A8336A', '#FF8DBE', '#E0508C'], violet: ['#5B3FD1', '#A18BFF', '#7559F0'], blue: ['#2457C5', '#6EA0FF', '#3B74E8'], teal: ['#06707A', '#3FD0D3', '#0FA3A8'], emerald: ['#0B6B45', '#43C98B', '#13915C'], green: ['#13804F', '#5EE0A0', '#22A86B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'] , navy: ['#14245E', '#6F8BDA', '#1E3A8A'], cyan: ['#0A6E85', '#6EDDF2', '#0EA5C6'], crimson: ['#8E1F2C', '#F58A97', '#D63A4A'], brown: ['#6B4523', '#DDB083', '#9A6B3F'], graphite: ['#1F2937', '#95A3B8', '#3B4A63'] , 'k-yellow': ['#A16207', '#FDE047', '#EAB308'], 'k-orange': ['#C2410C', '#FDBA74', '#F97316'], 'k-purple': ['#6B21A8', '#D8B4FE', '#9333EA'], 'k-blue': ['#1D4ED8', '#93C5FD', '#2563EB'], 'k-teal': ['#0F766E', '#5EEAD4', '#0D9488'], 'k-brown': ['#5B3413', '#C9925A', '#7C4A1E'], 'k-red': ['#991B1B', '#FCA5A5', '#DC2626'], 'k-green': ['#15803D', '#86EFAC', '#16A34A'], 'k-grey': ['#64748B', '#CBD5E1', '#94A3B8'], 'k-char': ['#0F172A', '#64748B', '#1E293B'] };
 let EGL_PN = 0;
+/* v1277: توزيع المسار على سطرين متساويين في الجوال — أول سطر ceil(n/2) والثاني الباقي، بأعمدة 2·a·b */
+function eglRows(n) { const a = Math.ceil(n / 2), b = Math.max(1, n - a); return '--egc:' + (2 * a * b) + ';--eg1:' + (2 * b) + ';--eg2:' + (2 * a) + ';--egt:' + (a * b); }
+function eglR2(i, n) { return i >= Math.ceil(n / 2) ? ' is-r2' : ''; }
 function eglPin(c) {
 const P = EGL_PC[c] || EGL_PC.slate, id = 'eglp' + (++EGL_PN), d = 'M11 1.5C6.3 1.5 2.5 5.2 2.5 9.9c0 5.6 6.4 12.4 7.6 13.7.5.5 1.3.5 1.8 0 1.2-1.3 7.6-8.1 7.6-13.7 0-4.7-3.8-8.4-8.5-8.4Z';
 return '<svg viewBox="0 0 22 28" width="22" height="28" aria-hidden="true"><defs><linearGradient id="' + id + 'a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + P[1] + '"/><stop offset=".55" stop-color="' + P[2] + '"/><stop offset="1" stop-color="' + P[0] + '"/></linearGradient><radialGradient id="' + id + 'b" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E6ECF5"/></radialGradient></defs>'
@@ -29705,10 +29708,10 @@ const sts = S7.map(function (t, i) { return done ? 'is-ok' : dead ? (i === stop 
 const pinAt = done ? NS - 1 : dead ? stop : sts.indexOf('is-now');
 const nOk = sts.filter(function (z) { return z === 'is-ok'; }).length;
 const T3 = function (g, c) { const h = typeof window.__tqTile === 'function' ? window.__tqTile(g, c) : ''; return h ? frag(h) : frag(ui(g, 16)); };
-const trk = e('div', { class: 'egl-trk8 egl-trk7' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'list', 'aria-label': 'مراحل الطلب' }, S7.map(function (t, i) {
+const trk = e('div', { class: 'egl-trk8 egl-trk7' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'list', style: eglRows(S7.length), 'aria-label': 'مراحل الطلب' }, S7.map(function (t, i) {
 const st = sts[i], cn = st === 'is-stop' ? 'red' : done ? 'green' : st === 'is-todo' || (dead && st === 'is-ok') ? 'slate' : (COLK[t[0]] || 'teal');
 const nt = st === 'is-todo' ? '' : st === 'is-stop' && x.status === 'cancelled' ? 'ملغى' : eg12Note(t[0], C), nt2 = nt && nt !== '—' ? nt : (st === 'is-now' ? 'الآن' : '');
-return e('div', { class: 'egl-stp ' + st, role: 'listitem', style: '--sc:' + (EGL_HEX[cn] || '#7C8899'), title: t[1] + (nt2 ? ' — ' + nt2 : '') }, [
+return e('div', { class: 'egl-stp ' + st + eglR2(i, S7.length), role: 'listitem', style: '--sc:' + (EGL_HEX[cn] || '#7C8899'), title: t[1] + (nt2 ? ' — ' + nt2 : '') }, [
 e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [T3(st === 'is-stop' ? 'x-circle' : t[2], cn)]),
 e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, t[1]), i === pinAt ? e('b', { class: 'egl-stp-pin', 'aria-label': 'الطلب هنا' }, [frag(eglPin(cn))]) : null])]),
 e('span', { class: 'egl-stp-bar' }), nt2 ? e('span', { class: 'egl-stp-st' + (st === 'is-ok' ? ' is-ok' : '') }, nt2) : null]);
@@ -29863,11 +29866,11 @@ eg10Kp(x, B).forEach(function (p) { if (p[0] === '—') return; chips.push(e('sp
 const asg = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : (srAsOpen(x) ? 'غير مسنَد' : '—');
 const ch = (B && B.ch) || {}, q = B && B.q, cs = eg10Cs(B), a = B && B.acc;
 const note = function (t) { return eg12Note(t, C); }; /* v1251: نص المرحلة من دالة واحدة تشترك فيها بطاقة القائمة */
-const path = e('nav', { class: 'eg13-path' + (dead ? ' is-dead' : ''), 'aria-label': 'مراحل الطلب وأقسامه' }, EG12_T.map(function (t, i) {
+const path = e('nav', { class: 'eg13-path' + (dead ? ' is-dead' : ''), 'aria-label': 'مراحل الطلب وأقسامه', style: eglRows(EG12_NSTG) }, EG12_T.map(function (t, i) {
 const on = t[0] === C.tab;
 if (i >= EG12_NSTG) return [i === EG12_NSTG ? e('span', { class: 'eg13-sep', 'aria-hidden': 'true' }) : null, e('button', { type: 'button', class: 'eg13-tool' + (on ? ' is-on' : ''), 'aria-current': on ? 'page' : null, 'data-live-ok': '', onClick: function () { C.go(t[0], ''); } }, [e('span', { class: 'eg13-tic', 'aria-hidden': 'true' }, eg12Ic(t[2], 18)), e('b', {}, t[1]), e('small', {}, t[0] === 'tpl' ? 'لهذا الطلب' : 'المحادثة والأحداث')])];
 const d = eg12Dot(t[0], C), now = d === 'w', done = d === 'ok';
-return e('button', { type: 'button', class: 'eg13-st' + (done ? ' is-done' : now ? ' is-now' : d === 'off' ? ' is-off' : '') + (on ? ' is-on' : '') + (done && i + 1 < EG12_NSTG ? ' is-lk' : ''), 'aria-current': on ? 'page' : null, 'data-live-ok': '', onClick: function () { C.go(t[0], ''); } },
+return e('button', { type: 'button', class: 'eg13-st' + (done ? ' is-done' : now ? ' is-now' : d === 'off' ? ' is-off' : '') + (on ? ' is-on' : '') + (done && i + 1 < EG12_NSTG ? ' is-lk' : '') + eglR2(i, EG12_NSTG) + (i + 1 === Math.ceil(EG12_NSTG / 2) ? ' is-r1e' : ''), 'aria-current': on ? 'page' : null, 'data-live-ok': '', onClick: function () { C.go(t[0], ''); } },
 [e('i', { 'aria-hidden': 'true' }, done ? eg12Ic('check', 14) : String(i + 1)), e('b', {}, t[1]), e('small', {}, now && !dead ? (function (N) { return N && N !== '—' ? N : 'الآن'; })(note(t[0])) : note(t[0]))]); /* v1257: نص المرحلة الحالية كما في البطاقة */
 }).reduce(function (a2, b2) { return a2.concat(b2); }, []).filter(Boolean));
 const menu = eg12Menu(C);
@@ -30042,9 +30045,9 @@ const A = egAsgGet(x, paint);
 if (!A) return e('div', { class: 'egl-asg is-wait' }, [e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('user-circle', 'slate')]), e('span', { class: 'egl-asg-t' }, [e('b', {}, 'الإسناد'), e('small', {}, 'جارٍ التحميل…')])])]);
 const P = EGAS.P || {}; if (P.assign) { try { srAsLoad(false, paint); } catch (err) { void err; } }
 const G = egAsgState(x, A), L = egAsgLog(A), det = !!(EGAS.det && EGAS.det[x.id]), act = EGAS.open === x.id;
-const trk = e('div', { class: 'egl-trk8 egl-trk7 egl-trk4', role: 'list', 'aria-label': 'مسار الإسناد' }, G.S.map(function (s) {
+const trk = e('div', { class: 'egl-trk8 egl-trk7 egl-trk4', role: 'list', 'aria-label': 'مسار الإسناد', style: eglRows(G.S.length) }, G.S.map(function (s, si) {
 const cn = s.st === 'is-todo' || s.st === 'is-skip' ? 'slate' : s.st === 'is-stop' ? 'red' : s.st === 'is-ok' ? 'green' : G.tone;
-return e('div', { class: 'egl-stp ' + s.st, role: 'listitem', style: '--sc:' + EGAS_H[cn] }, [
+return e('div', { class: 'egl-stp ' + s.st + eglR2(si, G.S.length), role: 'listitem', style: '--sc:' + EGAS_H[cn] }, [
 e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [egT3(s.st === 'is-stop' ? 'x-circle' : s.g, cn)]), e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, s.n), s.st === 'is-now' || s.st === 'is-stop' ? e('b', { class: 'egl-stp-pin', 'aria-label': 'الإسناد هنا' }, [frag(eglPin(cn))]) : null])]),
 e('span', { class: 'egl-stp-bar' }), s.t ? e('span', { class: 'egl-stp-st' + (s.st === 'is-ok' ? ' is-ok' : '') }, s.t) : null]);
 }));

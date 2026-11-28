@@ -10524,3 +10524,26 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-l1v .egl-tag bdi{white-space:nowrap}
 .egl-row4 .egl-l2{flex-wrap:wrap}
 .egl-mny{max-width:100%}
+/* v1277: المسارات في الجوال على سطرين متساويين (أول سطر نصف المراحل مقربًا لأعلى، والثاني الباقي) — بلا تمرير أفقي ولا خانات فارغة */
+@media (max-width:900px){
+.egl-trk8.egl-trk7:not(.egl-trk4){grid-template-columns:repeat(var(--egc,24),minmax(0,1fr));column-gap:8px;row-gap:14px}
+.egl-trk7:not(.egl-trk4)>.egl-stp{grid-column:span var(--eg1,6)}
+.egl-trk7:not(.egl-trk4)>.egl-stp.is-r2{grid-column:span var(--eg2,8)}
+.eg13-path{display:grid;grid-template-columns:repeat(var(--egc,24),minmax(0,1fr));gap:10px 6px;overflow:visible;padding:12px 10px 14px}
+.eg13-path>.eg13-st{grid-column:span var(--eg1,6);flex:none;min-width:0}
+.eg13-path>.eg13-st.is-r2{grid-column:span var(--eg2,8)}
+.eg13-path>.eg13-st.is-r1e:after{display:none}
+.eg13-path>.eg13-sep{display:block;grid-column:1 / -1;width:auto;height:1px;margin:2px 0}
+.eg13-path>.eg13-tool{grid-column:span var(--egt,12);flex:none;min-width:0;flex-direction:row;justify-content:center;flex-wrap:wrap;gap:4px 8px;padding:8px 6px}
+.eg13-st b,.eg13-tool b{overflow-wrap:anywhere}
+.eg13-st small{overflow-wrap:anywhere}
+}
+@media (max-width:640px){
+.egl-trk8.egl-trk7.egl-trk4{grid-template-columns:repeat(var(--egc,8),minmax(0,1fr));column-gap:10px;row-gap:12px}
+.egl-trk4>.egl-stp{grid-column:span var(--eg1,4)}
+.egl-trk4>.egl-stp.is-r2{grid-column:span var(--eg2,4)}
+.eg13-st b{font-size:12px}
+.eg13-st small{font-size:10.5px}
+.eg13-st i{width:30px;height:30px}
+.eg13-st:after{top:25px}
+}
