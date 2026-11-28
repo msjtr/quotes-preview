@@ -29599,40 +29599,45 @@ const W = A.filter(function (x) { return EG9.who === 'mine' ? (!!me && x.assigne
 const BD = {}; W.forEach(function (x) { BD[x.id] = eg9Bd(x, paint); });
 let F = EG10_F.filter(function (f) { return f[0] === EG9.f; })[0]; if (!F) { F = EG10_F[0]; EG9.f = F[0]; }
 const R = W.filter(function (x) { return F[2](x, BD[x.id]); }).sort(function (a, b) { return String(eg10Upd(b, BD[b.id])).localeCompare(String(eg10Upd(a, BD[a.id]))); });
-const chips = e('div', { class: 'eg10-chips', role: 'group', 'aria-label': 'تصفية حسب الحالة' }, EG10_F.map(function (f) {
-const n = W.filter(function (x) { return f[2](x, BD[x.id]); }).length, on = f[0] === F[0];
-return e('button', { type: 'button', class: 'eg10-chip' + (on ? ' is-on' : '') + (f[0] === 'our' && n ? ' is-warn' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { EG9.f = f[0]; eg9SS('f', f[0]); paint(); } }, [f[1], e('b', {}, fmtNum(n))]);
+/* v1232: قائمة الطلبات بقوالب حديثة — بطاقات حالات ببلاطات ثلاثية الأبعاد بألوان الشريط الجانبي، وصف لكل طلب بزر إجرائه التالي */
+const KS = { our: ['hourglass-medium', 'saffron', 'بانتظار قرارنا'], cl: ['clock', 'blue', 'بانتظار العميل'], adm: ['briefcase', 'violet', 'إجراءات الإدارة'], pts: ['crown-simple', 'teal', 'التنفيذ والنقاط'], done: ['seal-check', 'green', 'مكتملة'], dead: ['x-circle', 'red', 'مغلقة / اعتذر'], all: ['stack', 'slate', 'كل الطلبات'] };
+const tile = function (g, c) { const h = typeof window.__tqTile === 'function' ? window.__tqTile(g, c) : ''; return h ? frag(h) : frag(ui(g, 22)); };
+const kpis = e('div', { class: 'egl-kpis', role: 'group', 'aria-label': 'تصفية حسب الحالة' }, EG10_F.map(function (f) {
+const n = W.filter(function (x) { return f[2](x, BD[x.id]); }).length, on = f[0] === F[0], K = KS[f[0]] || ['stack', 'slate', f[1]];
+return e('button', { type: 'button', class: 'egl-kpi is-' + K[1] + (on ? ' is-on' : '') + (f[0] === 'our' && n ? ' is-hot' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { EG9.f = f[0]; eg9SS('f', f[0]); paint(); } },
+[e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile(K[0], K[1])]), e('span', { class: 'egl-kpi-t' }, [e('b', {}, fmtNum(n)), e('small', {}, K[2])])]);
 }));
-const who = e('div', { class: 'eg9-seg', role: 'group', 'aria-label': 'المسؤول' }, [['all', 'الكل'], ['mine', 'المسند إليّ'], ['un', 'غير مسنَد']].map(function (w) {
+const who = e('div', { class: 'egl-seg', role: 'group', 'aria-label': 'المسؤول' }, [['all', 'الكل'], ['mine', 'المسند إليّ'], ['un', 'غير مسنَد']].map(function (w) {
 return e('button', { type: 'button', class: w[0] === EG9.who ? 'is-on' : '', 'aria-pressed': w[0] === EG9.who ? 'true' : 'false', 'data-live-ok': '', onClick: function () { EG9.who = w[0]; eg9SS('who', w[0]); paint(); } }, w[1]); }));
 const tck = e('input', { type: 'checkbox', onChange: function (ev) { ADM.tqnTest = !!ev.target.checked; eg9SS('test', ADM.tqnTest ? '1' : ''); paint(); } }); tck.checked = !!ADM.tqnTest;
-const q = e('input', { class: 'eg9-q', type: 'search', placeholder: 'بحث بالاسم أو رقم الطلب…', 'aria-label': 'بحث في طلبات الأهلية', value: EG9.q || '', onInput: function (ev) { EG9.q = ev.target.value; eg9Filter(tbl, EG9.q); } });
-const tools = e('div', { class: 'eg10-tools' }, [chips, e('div', { class: 'eg10-tools-2' }, [e('span', { class: 'eg10-lbl' }, 'المسؤول:'), who, e('label', { class: 'eg10-tst' }, [tck, ' طلبات الاختبار']), q])]);
+const q = e('input', { class: 'egl-q-in', type: 'search', placeholder: 'ابحث بالاسم أو رقم الطلب', 'aria-label': 'بحث في طلبات الأهلية', value: EG9.q || '', onInput: function (ev) { EG9.q = ev.target.value; eg9Filter(tbl, EG9.q); } });
+const tools = e('div', { class: 'egl-tools' }, [e('label', { class: 'egl-q' }, [frag(ui('magnifying-glass', 18)), q]), e('div', { class: 'egl-tools-r' }, [who, e('label', { class: 'egl-tst' }, [tck, 'طلبات الاختبار'])])]);
+const TONE = function (k, dead) { return dead ? 'red' : k >= 7 ? 'green' : k === 6 ? 'teal' : k === 5 ? 'violet' : k === 4 ? 'blue' : 'saffron'; };
 const row = function (x) {
 const B = BD[x.id], k = eg10K(x, B), dead = eg10Dead(x, B), nm = eg9Name(x), un = srAsOpen(x) && !x.assigned_to;
-const done = !dead && k >= 7, open = function () { eg9Go(x.id); paint(); };
+const done = !dead && k >= 7, open = function () { eg9Go(x.id); paint(); }, L = eg10Lbl(x, B, k, dead), tone = TONE(k, dead), nx = eg10Next(x, B, k, dead);
 const req = B && B.req != null ? B.req : (function () { try { return egReq(x); } catch (err) { return null; } })();
-const amt = B && B.elig != null && B.rec !== 'not_eligible' ? eg10N(B.elig) + ' / ' + eg10N(req) : eg10N(req);
-const prod = (B && B.prod) || '—';
-return e('tr', { 'data-s': norm([x.req_no, nm, prod].join(' ')), class: x.status === 'submitted' ? 'is-new' : '', onClick: function (ev) { if (ev.target.closest('button')) return; open(); } }, [
-e('td', { class: 'eg10-c-cl' }, [e('b', {}, nm), e('small', {}, e('bdi', { dir: 'ltr' }, x.req_no || '—'))]),
-e('td', { class: 'eg10-c-pr', title: prod }, prod.length > 34 ? prod.slice(0, 33) + '…' : prod),
-e('td', { class: 'eg10-c-am' }, e('bdi', { dir: 'ltr' }, amt)),
-e('td', { class: 'eg10-c-st' }, eg10Dots(x, B, k, dead)),
-e('td', { class: 'eg10-c-nx' }, e('b', {}, eg10Next(x, B, k, dead))),
-e('td', { class: 'eg10-c-as' }, x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : un ? e('span', { class: 'eg9-pill is-un' }, 'غير مسنَد') : '—'),
-e('td', { class: 'eg10-c-up' }, eg10Ago(eg10Upd(x, B))),
-e('td', { class: 'eg10-c-go' }, eg9Btn(done || dead ? 'عرض' : 'فتح', { cls: done || dead ? '' : 'is-pri', on: open }))]);
+const el2 = B && B.elig != null && B.rec !== 'not_eligible' ? B.elig : null;
+const prod = (function () { const p = B && B.prod; if (!p) return ''; try { return egProdParts(p).n || p; } catch (err) { return p; } })();
+const segs = e('span', { class: 'egl-prog', 'aria-label': dead ? 'متوقف' : 'المرحلة ' + Math.min(8, k + 1) + ' من 8' }, [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return e('i', { class: i < k || done ? 'is-ok' : i === k && !dead ? 'is-now' : '' }); }));
+const ini = String(nm || '؟').trim().charAt(0) || '؟';
+return e('article', { class: 'egl-row is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm, prod].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
+e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
+e('div', { class: 'egl-who' }, [e('b', {}, nm), e('small', {}, [e('bdi', { dir: 'ltr' }, x.req_no || '—'), prod ? ' · ' + prod : ''])]),
+e('div', { class: 'egl-amt' }, [e('small', {}, el2 != null ? 'المؤهَّل / المطلوب' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, el2 != null ? eg10N(el2) + ' / ' + eg10N(req) : eg10N(req)))]),
+e('div', { class: 'egl-st' }, [e('span', { class: 'egl-pill is-' + tone }, L[0]), segs]),
+e('div', { class: 'egl-meta' }, [e('span', { class: 'egl-as' + (un ? ' is-un' : '') }, [frag(ui('users', 14)), x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : un ? 'غير مسنَد' : '—']), e('small', {}, [frag(ui('clock', 14)), eg10Ago(eg10Upd(x, B))])]),
+e('div', { class: 'egl-go' }, [eg9Btn(done || dead ? 'عرض الطلب' : nx || 'فتح', { cls: done || dead ? '' : 'is-pri', on: open })])]);
 };
-const tbl = e('div', { class: 'eg9-tbl-w' }, R.length ? e('table', { class: 'eg9-tbl eg10-tbl' }, [e('thead', {}, e('tr', {}, ['العميل', 'المنتج', 'المؤهَّل / المطلوب', 'المرحلة', 'الإجراء التالي', 'المسؤول', 'آخر تحديث', ''].map(function (h) { return e('th', { scope: 'col' }, h); }))), e('tbody', {}, R.map(row))])
-: e('div', { class: 'eg9-empty' }, [e('b', {}, 'لا طلبات هنا'), e('small', {}, F[0] === 'our' ? 'لا طلبات بانتظار قراركم الآن.' : 'غيّر الحالة أو المسؤول لرؤية غيرها.')]));
-const head = e('div', { class: 'eg10-lhead' }, [e('div', { class: 'eg10-lhead-t' }, [e('small', {}, 'طلبات أهلية شراء منتج — كل طلب من الاستلام حتى الإغلاق في مكان واحد، وزر واحد يفتحه على خطوته الحالية.')]),
-e('div', { class: 'eg10-lhead-a' }, [eg9Btn('الإعدادات', { ic: 'gear-six', on: function () { EG9.set = true; eg9SS('set', '1'); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } }), eg9Btn('طلب لعميل', { cls: 'is-pri', ic: 'plus', on: eg9New })])]);
-const out = [e('div', { class: 'eg9 eg10' }, [head, e('section', { class: 'eg9-card eg10-lcard' }, [tools, tbl])])];
+const tbl = e('div', { class: 'egl-list' }, R.length ? R.map(row)
+: [e('div', { class: 'egl-empty' }, [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile('check-circle', 'green')]), e('b', {}, F[0] === 'our' ? 'لا طلبات بانتظار قراركم' : 'لا طلبات هنا'), e('small', {}, F[0] === 'our' ? 'كل الطلبات الجديدة تمت معالجتها.' : 'غيّر الحالة أو المسؤول لرؤية غيرها.')])]);
+const head = e('div', { class: 'egl-head' }, [e('div', { class: 'egl-head-t' }, [e('span', { class: 'egl-kpi-ic is-lg', 'aria-hidden': 'true' }, [tile('identification-badge', 'teal')]), e('div', {}, [e('b', {}, 'طلبات أهلية شراء منتج'), e('small', {}, 'كل طلب من الاستلام حتى الإغلاق في مكان واحد — والزر يفتحه على خطوته الحالية.')])]),
+e('div', { class: 'egl-head-a' }, [eg9Btn('الإعدادات', { ic: 'gear-six', on: function () { EG9.set = true; eg9SS('set', '1'); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } }), eg9Btn('طلب لعميل', { cls: 'is-pri', ic: 'plus', on: eg9New })])]);
+const out = [e('div', { class: 'eg9 eg10 egl' }, [head, kpis, e('section', { class: 'egl-card' }, [tools, tbl])])];
 if (EG9.q) setTimeout(function () { eg9Filter(tbl, EG9.q); }, 0);
 return out;
 }
-function eg9Filter(root, q) { q = norm(q || ''); root.querySelectorAll('tr[data-s]').forEach(function (tr) { tr.hidden = !!q && tr.getAttribute('data-s').indexOf(q) < 0; }); }
+function eg9Filter(root, q) { q = norm(q || ''); root.querySelectorAll('[data-s]').forEach(function (tr) { tr.hidden = !!q && tr.getAttribute('data-s').indexOf(q) < 0; }); }
 function eg9Go(id) { ADM.egOpen = id || ''; eg9SS('open', id || ''); if (id) { EG9.set = false; eg9SS('set', ''); } try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } }
 /* «طلب أهلية جديد»: نموذج العميل نفسه — من «صفحة العميل» (دخول موثّق بسبب)، ثم يفتح «التحقق من الأهلية» نيابةً عنه */
 function eg9New() {
