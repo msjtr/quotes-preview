@@ -10547,3 +10547,60 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .eg13-st i{width:30px;height:30px}
 .eg13-st:after{top:25px}
 }
+/* v1278: إنشاء طلب أهلية جديد (سجل العملاء ← سبب الدخول ← نموذج الطلب ← الإرسال) — بقوالب قائمة الطلبات، آمن على كل الشاشات */
+.egn{display:flex;flex-direction:column;gap:14px;min-width:0}
+.egn .egl-head-t>div{min-width:0}
+.egn .egl-head-t small{overflow-wrap:anywhere}
+.egn-steps{padding:16px 14px 12px}
+.egn-trk.egl-trk8.egl-trk7.egl-trk4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 14px}
+.egn-trk .egl-stp-ic,.egn-trk .egl-stp-ic svg.t2-tile{width:28px;height:31px}
+.egn-sh{display:flex;align-items:center;gap:10px;min-width:0}
+.egn-sh>span:first-child,.egn-sh svg.t2-tile{flex:0 0 auto;width:30px;height:33px}
+.egn-sh b{display:block;font-size:15px;color:var(--egl-ink,#0F1B33)}
+.egn-sh small{display:block;font-size:12.5px;color:var(--egl-mut,#66748C);overflow-wrap:anywhere}
+.egn-list{display:flex;flex-direction:column;gap:10px}
+.egn-row{--c:#0FA3A8;display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;background:#fff;border:1px solid var(--egl-b,#E3E8F0);border-radius:16px;padding:12px 14px;min-width:0;transition:border-color .15s ease,box-shadow .15s ease}
+.egn-row:hover{border-color:#BFD9DA;box-shadow:0 6px 16px -12px rgba(15,29,74,.35)}
+.egn-row.is-open{--c:#C98A1B;background:#FFFCF4}
+.egn-row.is-off{--c:#94A3B8;background:#F8FAFC}
+.egn-row.is-sel{--c:#2563EB;background:#F5F8FF;border-color:#CFDDFB}
+.egn-av{grid-column:1;width:44px;height:44px;align-self:start}
+.egn-b{grid-column:2;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.egn-b>.egl-nm{display:block;width:100%;font-size:15px;line-height:1.45;color:var(--egl-ink,#0F1B33);white-space:normal;overflow-wrap:anywhere}
+.egn-b>.egl-alerts,.egn-b>.egl-tags{display:flex;flex-wrap:wrap;gap:6px;width:100%;min-width:0}
+.egn-b .egl-tag,.egn-b .egl-alert,.egn-b .egl-src{max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.45;display:inline-flex;align-items:center;gap:4px}
+.egn-b .egl-tag bdi{white-space:nowrap}
+.egn-go{grid-column:3;display:flex;gap:8px}
+.egn-fld{display:flex;flex-direction:column;gap:10px;min-width:0}
+.egn-fld>b{font-size:13.5px;color:var(--egl-ink,#0F1B33)}
+.egn-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.egn-chip{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 12px;border-radius:12px;border:1px solid #D7DEEA;background:#fff;font-size:13px;font-weight:700;color:#334155;text-align:center;line-height:1.4;cursor:pointer;overflow-wrap:anywhere}
+.egn-chip:hover{border-color:#9FCFD1}
+.egn-chip.is-on{background:#E6F6F6;border-color:#0F6F78;color:#0F6F78;box-shadow:inset 0 0 0 1px #0F6F78}
+.egn-chip:focus-visible{outline:2px solid #3B74E8;outline-offset:2px}
+.egn-ta{box-sizing:border-box;width:100%;min-height:84px;border:1px solid #D7DEEA;border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;line-height:1.6;color:var(--egl-ink,#0F1B33);background:#fff;resize:vertical}
+.egn-ta:focus{outline:none;border-color:#0F6F78;box-shadow:0 0 0 3px #D5EEEE}
+.egn-err{font-size:12.5px;font-weight:700;color:#B93A2A}
+.egn-note{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:12px;background:#F1F6FF;border:1px solid #CFDDFB;color:#1E3A8A;font-size:12.5px;line-height:1.6}
+.egn-note>svg{flex:0 0 auto;margin-top:2px}
+.egn-note.is-warn{background:#FFF8EB;border-color:#F6D9A6;color:#8A5A0B}
+.egn-act{display:flex;gap:10px;flex-wrap:wrap}
+@media (max-width:640px){
+.egn .egl-head{padding:14px}
+.egn .egl-head-a,.egn .egl-head-a .eg9-btn{width:100%;justify-content:center}
+.egn-trk.egl-trk8.egl-trk7.egl-trk4{grid-template-columns:repeat(var(--egc,8),minmax(0,1fr))}
+.egn-row{grid-template-columns:38px minmax(0,1fr);padding:12px}
+.egn-av{width:38px;height:38px;font-size:15px}
+.egn-go{grid-column:1 / -1}
+.egn-go .eg9-btn{flex:1 1 auto;justify-content:center}
+.egn-chips{grid-template-columns:minmax(0,1fr)}
+.egn-act .eg9-btn{flex:1 1 100%;justify-content:center}
+.egn .egl-tools-r,.egn .egl-seg{width:100%}
+.egn .egl-seg button{flex:1 1 0}
+}
+@media (max-width:400px){
+.egn-row{grid-template-columns:minmax(0,1fr)}
+.egn-av{display:none}
+.egn-b,.egn-go{grid-column:1}
+}
+.egn .egl-seg button{padding:7px 8px;line-height:1.35;white-space:normal}

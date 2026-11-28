@@ -757,7 +757,7 @@ function geoQ() {
     if (!detail) {
       var SUB = null; try { SUB = typeof window.__tqnSub === 'function' ? window.__tqnSub() : null; } catch (e) { SUB = null; }
       if (SUB && SUB.length) {
-        L[L.length - 1].go = SUB[0][1];
+        L[L.length - 1].go = SUB.root || SUB[0][1]; /* v1278: الصفحة الأم ترجع إلى قائمتها */
         SUB.forEach(function (x) { L.push({ t: x[0], go: x[1] || null }); });
         var pv = SUB.length > 1 ? SUB[SUB.length - 2] : [item, SUB[0][1]];
         if (pv[1]) L.bk2 = { t: 'رجوع إلى ' + pv[0], go: pv[1] };

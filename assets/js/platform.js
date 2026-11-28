@@ -1714,7 +1714,8 @@ function eligPage() {
   if (S.sent) {
     return [DS.note('ok', 'أُرسل طلبك إلى الشركاء', 'رقم الطلب ' + S.sent + ' — يظهر الآن في «طلبات خدماتي»، وتصلك النتيجة في التنبيهات ومركز المراسلات.' + (LIVE.on ? ' تقديم الطلب لا يعني قبوله.' : ' (معاينة: لم يُرسل شيء فعليًا)')),
       DS.fields([[F.items.length ? 'المنتج' : 'المنتجات', F.items.length ? F.items.map(itemTitle).join('، ') : 'تُضاف بعد قبول الأهلية'], ['القيمة', rs(money())], ['مدة السداد', fmtNum(Number(F.payment_duration_months)) + ' شهرًا'], ['الحالة', DS.badge('بانتظار الاستلام', 'info')]]),
-      DS.actionBar({ buttons: [DS.button('طلب جديد', { onClick: function () { resetForm(); draw(); } }), DS.button('متابعة الطلب في طلبات خدماتي', { tone: 'primary', onClick: function () { FX.rid = S.sent; go('reqs'); } })] })];
+      (typeof CPV !== 'undefined' && CPV.on && CPV.ret === 'cu-elig') ? DS.actionBar({ buttons: [lvOkBtn(true, 'فتح الطلب في طلبات الأهلية', { tone: 'primary', ui: 'caret-left', onClick: function () { eg9SS('openNo', String(S.sent || '')); cpgExit('cu-elig'); } })] }) /* v1278 */
+      : DS.actionBar({ buttons: [DS.button('طلب جديد', { onClick: function () { resetForm(); draw(); } }), DS.button('متابعة الطلب في طلبات خدماتي', { tone: 'primary', onClick: function () { FX.rid = S.sent; go('reqs'); } })] })];
   }
   const kids = [];
   { const gq = egGate(QM); if (gq) return gq; } /* v695: الطلب القائم · المسودة · الشروط · تذكير التحديث */ if (QM) kids.push(lvHero({ cls: 'is-compact is-form', ic: qMode() === 'svc' ? 'note-pencil:saffron' : 'storefront:teal', eye: S.qfrom === 'pr' && catOf(FX.catk) ? SECT[secOf(FX.catk)] : 'خدمة حسب الطلب', t: qMode() === 'svc' ? 'طلب خدمة' : (S.qfrom === 'pr' ? 'طلب عرض سعر' : 'طلب عرض سعر منتج'), sub: qMode() === 'svc' ? 'صِف احتياجك مرة واحدة، ويتواصل معك الفريق على واتساب.' : S.qfrom === 'pr' ? 'اختر الخيارات والكميات، ونؤكد لك السعر والتوفر خلال يوم عمل.' : 'للكميات الكبيرة والطلبات الخاصة — نجهّز لك عرضًا مخصّصًا بالسعر والتوفر.', pill: ['حسابك مسجَّل', 'ok'] }));
@@ -29733,17 +29734,93 @@ e('div', { class: 'egl-go4' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'ف�
 const tbl = e('div', { class: 'egl-list' }, RP.length ? RP.map(row)
 : [e('div', { class: 'egl-empty' }, [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile('check-circle', 'green')]), e('b', {}, F[0] === 'all' ? 'لا طلبات' : 'لا طلبات في «' + F[1] + '»'), e('small', {}, 'لا شيء ينتظر إجراءً هنا الآن.')])]);
 const head = e('div', { class: 'egl-head' }, [e('div', { class: 'egl-head-t' }, [e('span', { class: 'egl-kpi-ic is-lg', 'aria-hidden': 'true' }, [tile('identification-badge', 'teal')]), e('div', {}, [e('b', {}, 'طلبات أهلية شراء منتج'), e('small', {}, 'كل طلب من الاستلام حتى الإغلاق في مكان واحد — والزر يفتحه على خطوته الحالية.')])]),
-e('div', { class: 'egl-head-a' }, [eg9Btn('الإعدادات', { ic: 'gear-six', on: function () { EG9.set = true; eg9SS('set', '1'); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } }), eg9Btn('إنشاء طلب جديد', { cls: 'is-pri', ic: 'plus', on: eg9New })])]);
+e('div', { class: 'egl-head-a' }, [eg9Btn('الإعدادات', { ic: 'gear-six', on: function () { EG9.set = true; eg9SS('set', '1'); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } }), eg9Btn('إنشاء طلب جديد', { cls: 'is-pri', ic: 'plus', on: function () { eg9New(paint); } })])]);
 const out = [e('div', { class: 'eg9 eg10 egl' }, [head, kpis, e('section', { class: 'egl-card' }, [tools, tbl, pager])])];
 return out;
 }
 function eg9Filter(root, q) { q = norm(q || ''); root.querySelectorAll('[data-s]').forEach(function (tr) { tr.hidden = !!q && tr.getAttribute('data-s').indexOf(q) < 0; }); }
-function eg9Go(id) { ADM.egOpen = id || ''; eg9SS('open', id || ''); if (id) { EG9.set = false; eg9SS('set', ''); } try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } }
-/* «طلب أهلية جديد»: نموذج العميل نفسه — من «صفحة العميل» (دخول موثّق بسبب)، ثم يفتح «التحقق من الأهلية» نيابةً عنه */
-function eg9New() {
-window.__egNew = Date.now();
-go('other', LP['cpg-access'] ? 'cpg-access' : 'cpg');
-eg9Note('اختر العميل', ['من القائمة اختر العميل ثم «دخول صفحة العميل» بسبب واضح.', 'يفتح بعدها نموذج «التحقق من الأهلية» نفسه نيابةً عنه، ويظهر الطلب هنا بعد إرساله.'], 'info');
+function eg9Go(id) { ADM.egOpen = id || ''; eg9SS('open', id || ''); if (id) { EG9.nw = null; eg9SS('new', ''); } if (id) { EG9.set = false; eg9SS('set', ''); } try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } }
+function eg9New(paint) { EG9.nw = null; egnSt(); eg9SS('new', '1'); EG9.set = false; eg9SS('set', ''); ADM.egOpen = ''; eg9SS('open', ''); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } try { if (paint) paint(); else draw(); } catch (err) { void err; } }
+/* v1278: «إنشاء طلب أهلية جديد» — صفحة داخل طلبات الأهلية بقوالبها: سجل العملاء ← سبب الدخول (يُوثَّق) ← نموذج الطلب نفسه في صفحة العميل ← الإرسال، ثم يعود الموظف إلى طلبات الأهلية */
+const EGN_WHY = ['إنشاء طلب أهلية نيابةً عن العميل', 'بطلب من العميل هاتفيًا', 'بطلب من العميل في الفرع', 'استكمال طلب تعذّر على العميل تقديمه'];
+function egnSt() { return EG9.nw || (EG9.nw = { q: '', f: 'all', pg: 0, sel: null, why: EGN_WHY[0], tpl: '1', err: '', busy: false, ld: false }); }
+function egnOpenRq(uid) { return (LV_SR.all || []).filter(function (x) { return x && x.kind === 'elig' && x.user_id === uid && eg9IsOpen(x); })[0] || null; }
+function egnClose(paint) { EG9.nw = null; eg9SS('new', ''); paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } }
+function egnSubHook(paint) {
+EGN_P.paint = paint; if (EGN_P.on) return; EGN_P.on = true;
+const prev = window.__tqnSub;
+window.__tqnSub = function () {
+if (eg9SS('new') === '1' && document.querySelector('#pv-root .egn, .egn')) {
+const P = EGN_P.paint, N = EG9.nw || {}, toList = function () { egnClose(P); }, toPick = function () { if (EG9.nw) { EG9.nw.sel = null; EG9.nw.err = ''; } P(); };
+const L = N.sel ? [['إنشاء طلب جديد', toPick], ['سبب الدخول', null]] : [['إنشاء طلب جديد', null]]; L.root = toList; return L; }
+return typeof prev === 'function' ? prev() : null; };
+}
+const EGN_P = { on: false, paint: null };
+function egnPage(paint) {
+egnSubHook(paint);
+const N = egnSt(), tile = function (g, c) { return egT3(g, c, 22); };
+if (!LIVE_DATA.clients && !N.ld) { N.ld = true; liveNames().then(function () { paint(); }); }
+const C = (LIVE_DATA.clients && LIVE_DATA.clients.reg) || [], wait = !LIVE_DATA.clients;
+const step = N.sel ? 1 : 0;
+const S4 = [['اختيار العميل', 'users-three', 'من سجل العملاء'], ['سبب الدخول', 'note-pencil', 'يُوثَّق باسمك'], ['نموذج الطلب', 'clipboard-text', 'في صفحة العميل'], ['الإرسال', 'paper-plane-tilt', 'يظهر في القائمة']];
+const trk = e('div', { class: 'egl-trk8 egl-trk7 egl-trk4 egn-trk', role: 'list', 'aria-label': 'خطوات إنشاء الطلب', style: eglRows(S4.length) }, S4.map(function (s, i) {
+const st = i < step ? 'is-ok' : i === step ? 'is-now' : 'is-todo', cn = st === 'is-ok' ? 'green' : st === 'is-now' ? 'teal' : 'slate';
+return e('div', { class: 'egl-stp ' + st + eglR2(i, S4.length), role: 'listitem', style: '--sc:' + (EGL_HEX[cn] || '#7C8899') }, [
+e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [egT3(s[1], cn)]), e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, s[0]), st === 'is-now' ? e('b', { class: 'egl-stp-pin', 'aria-label': 'أنت هنا' }, [frag(eglPin(cn))]) : null])]),
+e('span', { class: 'egl-stp-bar' }), e('span', { class: 'egl-stp-st' + (st === 'is-ok' ? ' is-ok' : '') }, st === 'is-ok' ? 'تم' : s[2])]); }));
+const head = e('div', { class: 'egl-head' }, [e('div', { class: 'egl-head-t' }, [e('span', { class: 'egl-kpi-ic is-lg', 'aria-hidden': 'true' }, [tile('plus', 'teal')]), e('div', {}, [e('b', {}, 'إنشاء طلب أهلية جديد'), e('small', {}, 'نيابةً عن العميل — اختره من سجل العملاء، واكتب سبب الدخول، ثم يفتح نموذج الطلب نفسه في صفحته.')])]),
+e('div', { class: 'egl-head-a' }, [eg9Btn('رجوع إلى الطلبات', { ic: 'caret-right', on: function () { egnClose(paint); } })])]);
+let body;
+if (!N.sel) {
+const fit = function (c) { return N.f === 'all' || (N.f === 'act' ? c.status === 'active' : N.f === 'open' ? !!egnOpenRq(c.id) : true); };
+const QN = norm(N.q || ''), L = C.filter(function (c) { return fit(c) && (!QN || norm([c.name, c.no, c.phone, c.email].join(' ')).indexOf(QN) >= 0); }).sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); });
+const PER = 6, NPG = Math.max(1, Math.ceil(L.length / PER)); N.pg = Math.min(Math.max(0, N.pg || 0), NPG - 1);
+const RP = L.slice(N.pg * PER, N.pg * PER + PER);
+const qi = e('input', { class: 'egl-q-in egn-q-in', type: 'search', placeholder: 'ابحث بالاسم أو رقم تيرا أو الجوال', 'aria-label': 'بحث في سجل العملاء', value: N.q || '', onInput: function (ev) { N.q = ev.target.value; N.pg = 0; clearTimeout(N.qt); N.qt = setTimeout(function () { paint(); const i = document.querySelector('.egn-q-in'); if (i) { i.focus(); try { const n = i.value.length; i.setSelectionRange(n, n); } catch (err) { void err; } } }, 280); } });
+const seg = e('div', { class: 'egl-seg', role: 'group', 'aria-label': 'تصفية العملاء' }, [['all', 'كل العملاء'], ['act', 'النشطون'], ['open', 'لديهم طلب قائم']].map(function (w) {
+return e('button', { type: 'button', class: w[0] === N.f ? 'is-on' : '', 'aria-pressed': w[0] === N.f ? 'true' : 'false', 'data-live-ok': '', onClick: function () { N.f = w[0]; N.pg = 0; paint(); } }, w[1]); }));
+const goPg = function (n) { N.pg = n; paint(); try { const el = document.querySelector('.egn-card'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (err) { void err; } };
+const row = function (c) {
+const op = egnOpenRq(c.id), off = c.status !== 'active', nm = c.name || '—';
+const tags = [c.no ? e('span', { class: 'egl-tag' }, ['رقم تيرا ', e('bdi', { dir: 'ltr' }, c.no)]) : null, c.phone ? e('span', { class: 'egl-tag' }, [frag(ui('phone', 12)), e('bdi', { dir: 'ltr' }, '+' + String(c.phone).replace(/^\+/, ''))]) : null, c.at ? e('span', { class: 'egl-tag' }, ['عميل منذ ', e('bdi', { dir: 'ltr' }, iso(new Date(c.at)))]) : null].filter(Boolean);
+const al = op ? e('span', { class: 'egl-alerts' }, [e('span', { class: 'egl-alert is-recv' }, [frag(ui('tray', 13)), 'لديه طلب قائم ', e('bdi', { dir: 'ltr' }, op.req_no || '')])]) : off ? e('span', { class: 'egl-alerts' }, [e('span', { class: 'egl-alert is-late' }, [frag(ui('lock-key', 13)), 'حساب موقوف'])]) : null;
+return e('div', { class: 'egn-row' + (op ? ' is-open' : off ? ' is-off' : '') }, [e('span', { class: 'egl-av egn-av', 'aria-hidden': 'true' }, String(nm).trim().charAt(0) || '؟'),
+e('div', { class: 'egn-b' }, [e('b', { class: 'egl-nm' }, nm), al, e('span', { class: 'egl-tags' }, tags)]),
+e('div', { class: 'egn-go' }, [op ? eg9Btn('عرض طلبه القائم', { ic: 'caret-left', on: function () { EG9.nw = null; eg9SS('new', ''); eg9Go(op.id); paint(); } })
+: eg9Btn('اختيار العميل', { cls: 'is-pri', ic: 'check-circle', disabled: off, title: off ? 'الحساب موقوف' : null, on: function () { N.sel = c; N.err = ''; paint(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (err) { void err; } } })])]); };
+const pager = NPG > 1 ? e('nav', { class: 'egl-pager', 'aria-label': 'صفحات العملاء' }, [eg9Btn('السابق', { ic: 'caret-right', disabled: N.pg <= 0, on: function () { goPg(N.pg - 1); } }),
+e('span', { class: 'egl-pg-t' }, ['صفحة ', e('b', {}, fmtNum(N.pg + 1)), ' من ', e('b', {}, fmtNum(NPG)), ' · ', fmtNum(L.length), ' عميل']),
+e('span', { class: 'egl-pg-n', role: 'group', 'aria-label': 'أرقام الصفحات' }, (function () { const P = [], k = N.pg; for (let i = 0; i < NPG; i++) { if (i === 0 || i === NPG - 1 || Math.abs(i - k) <= 1) P.push(i); else if (P[P.length - 1] !== -1) P.push(-1); }
+return P.map(function (i) { return i < 0 ? e('span', { class: 'egl-pg-gap', 'aria-hidden': 'true' }, '…') : e('button', { type: 'button', class: 'egl-pg-b' + (i === k ? ' is-on' : ''), 'aria-current': i === k ? 'page' : null, 'aria-label': 'صفحة ' + (i + 1), 'data-live-ok': '', onClick: function () { if (i !== k) goPg(i); } }, fmtNum(i + 1)); }); })()),
+eg9Btn('التالي', { ic: 'caret-left', disabled: N.pg >= NPG - 1, on: function () { goPg(N.pg + 1); } })]) : null;
+body = e('section', { class: 'egl-card egn-card' }, [e('div', { class: 'egn-sh' }, [egT3('users-three', 'k-blue', 20), e('div', {}, [e('b', {}, 'سجل العملاء'), e('small', {}, wait ? 'جارٍ تحميل العملاء…' : fmtNum(C.length) + ' عميل مسجّل — اختر صاحب الطلب')])]),
+e('div', { class: 'egl-tools' }, [e('label', { class: 'egl-q' }, [frag(ui('magnifying-glass', 18)), qi]), e('div', { class: 'egl-tools-r' }, [seg])]),
+e('div', { class: 'egl-list egn-list' }, wait ? [e('div', { class: 'egl-empty' }, [e('b', {}, 'جارٍ تحميل سجل العملاء…')])] : RP.length ? RP.map(row)
+: [e('div', { class: 'egl-empty' }, [e('span', { class: 'egl-kpi-ic', 'aria-hidden': 'true' }, [tile('magnifying-glass', 'k-grey')]), e('b', {}, 'لا عميل بهذا البحث'), e('small', {}, 'جرّب الاسم أو رقم تيرا أو رقم الجوال.')])]), pager]);
+} else {
+const c = N.sel, nm = c.name || '—', op = egnOpenRq(c.id);
+const sum = e('div', { class: 'egn-row is-sel' }, [e('span', { class: 'egl-av egn-av', 'aria-hidden': 'true' }, String(nm).trim().charAt(0) || '؟'),
+e('div', { class: 'egn-b' }, [e('b', { class: 'egl-nm' }, nm), e('span', { class: 'egl-tags' }, [e('span', { class: 'egl-src is-staff' }, [frag(ui('user-circle', 13)), 'بالنيابة عن العميل — ' + (ME.name || 'أنت')]), c.no ? e('span', { class: 'egl-tag' }, ['رقم تيرا ', e('bdi', { dir: 'ltr' }, c.no)]) : null, c.phone ? e('span', { class: 'egl-tag' }, [frag(ui('phone', 12)), e('bdi', { dir: 'ltr' }, '+' + String(c.phone).replace(/^\+/, ''))]) : null])]),
+e('div', { class: 'egn-go' }, [eg9Btn('تغيير العميل', { ic: 'arrows-clockwise', disabled: N.busy, on: function () { N.sel = null; N.err = ''; paint(); } })])]);
+const chips = e('div', { class: 'egn-chips', role: 'group', 'aria-label': 'أسباب جاهزة' }, EGN_WHY.map(function (t, i) { const on = N.why === t;
+return e('button', { type: 'button', class: 'egn-chip' + (on ? ' is-on' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-live-ok': '', onClick: function () { N.why = t; N.err = ''; paint(); } }, [on ? frag(ui('check', 13)) : null, t]); }));
+const ta = e('textarea', { class: 'egn-ta', rows: '3', 'aria-label': 'سبب الدخول', placeholder: 'اكتب سبب الدخول بوضوح — يظهر في سجل التوثيق', onInput: function (ev) { N.why = ev.target.value; N.err = ''; } }, N.why || '');
+const go1 = async function () {
+if (N.busy) return; const why = String(N.why || '').trim();
+if (why.length < 6) { N.err = 'اكتب سبب الدخول بوضوح (6 أحرف على الأقل).'; paint(); return; }
+N.busy = true; N.err = ''; paint();
+window.__egNew = Date.now(); window.__egRet = 'cu-elig';
+try { await cpgEnter(c, why); EG9.nw = null; eg9SS('new', ''); }
+catch (err) { window.__egNew = 0; window.__egRet = ''; N.busy = false; N.err = (err && err.message) || 'تعذّر فتح صفحة العميل.'; paint(); }
+};
+body = e('section', { class: 'egl-card egn-card' }, [e('div', { class: 'egn-sh' }, [egT3('note-pencil', 'k-orange', 20), e('div', {}, [e('b', {}, 'صاحب الطلب وسبب الدخول'), e('small', {}, 'يفتح بعدها نموذج «التحقق من الأهلية» نفسه في صفحة العميل.')])]),
+sum,
+op ? e('div', { class: 'egn-note is-warn' }, [frag(ui('warning', 16)), e('span', {}, ['لدى العميل طلب أهلية قائم ', e('bdi', { dir: 'ltr' }, op.req_no || ''), ' — لا يُقبل طلب جديد حتى ينتهي.'])]) : null,
+e('div', { class: 'egn-fld' }, [e('b', {}, 'سبب الدخول'), chips, ta, N.err ? e('span', { class: 'egn-err', role: 'alert' }, N.err) : null]),
+e('div', { class: 'egn-note' }, [frag(ui('shield-check', 16)), e('span', {}, 'يُوثَّق الدخول والخروج وكل صفحة وإجراء باسمك ووقته. يُسجَّل الطلب بمصدر «بالنيابة عن العميل».')]),
+e('div', { class: 'egn-act' }, [eg9Btn(N.busy ? 'جارٍ فتح صفحة العميل…' : 'متابعة إلى نموذج الطلب', { cls: 'is-pri', ic: 'clipboard-text', disabled: N.busy || !!op, on: go1 }), eg9Btn('رجوع إلى سجل العملاء', { ic: 'caret-right', disabled: N.busy, on: function () { N.sel = null; N.err = ''; paint(); } })])]);
+}
+return [e('div', { class: 'eg9 eg10 egl egn' }, [head, e('section', { class: 'egl-card egn-steps' }, [trk]), body])];
 }
 
 /* ── مساحة عمل الأهلية بقسم واحد (بلا قائمتها الجانبية) ── */
@@ -31074,7 +31151,9 @@ if (ADM.egOpen === undefined) ADM.egOpen = eg9SS('open');
 if (!EG9.init) { EG9.init = true; EG9.f = eg9SS('f') || 'all'; EG9.who = eg9SS('who') || 'all'; EG9.set = eg9SS('set') === '1'; EG9.sort = eg9SS('sort') || 'upd'; EG9.per = eg9SS('per') || '2'; EG9.src = eg9SS('src') || 'all'; EG9.pg = 0; }
 return admMount('elig9', 'طلبات التحقق من الأهلية', async function () { if (!LIVE_ADM.at) await liveAdmLoad(); else await lvSrLoad(); return { at: Date.now() }; }, function (D, st, paint) {
 try {
+{ const no = eg9SS('openNo'); if (no) { const y = (LV_SR.all || []).filter(function (z) { return z && z.kind === 'elig' && z.req_no === no; })[0]; if (y) { eg9SS('openNo', ''); eg9SS('new', ''); ADM.egOpen = y.id; eg9SS('open', y.id); } } } /* v1278: بعد الإرسال نيابةً عن العميل يفتح الطلب نفسه */
 if (EG9.set) return [e('div', { class: 'eg9' }, eg9Settings(paint))];
+if (eg9SS('new') === '1' && !ADM.egOpen) return egnPage(paint); /* v1278 */
 const id = ADM.egOpen;
 if (id) { const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id && y.kind === 'elig'; })[0]; if (x) return eg9Page(x, paint); if (LV_SR.ok) eg9Go(''); }
 return [e('div', { class: 'eg9' }, eg9List(paint))];
@@ -33027,8 +33106,8 @@ async function cpgEnter(c, why) {
   let prof = null; try { const j = await admClients('/reg/' + encodeURIComponent(c.id)); prof = j && j.profile; } catch (err) { prof = null; }
   try { if (!LIVE_LOY.mem) await lvMemLoad(); } catch (err) { void err; }
   try { CPV.full = (await admRpc('admin_cpv_can', {})) === true; } catch (err) { CPV.full = false; } window.__cpvFull = CPV.full; /* v666: تنفيذ نيابةً عن العميل لمن يملك الصلاحية */
-  CPV.on = true; CPV.name = c.name || ''; CPV.no = c.no || ''; CPV.reason = why; CPV.at = Date.now(); CPV.prof = prof; try { CF.undo = null; CF.undoAt = 0; CF.vsAt = 0; LIVE_DATA.verBad = null; LIVE_DATA.verChkAt = 0; } catch (e9) { void e9; } /* v669 */ CPV.blk = {}; CPV.last = '';
-  try { sessionStorage.setItem('tera-cpv-v1', JSON.stringify({ c: { id: c.id, name: c.name || '', no: c.no || '', status: c.status || '', at: c.at || null }, why: String(why || '').replace(/ — استئناف بعد تحديث الصفحة$/, ''), by: (LIVE.me && LIVE.me.id) || '' /* v666: كان يُقرأ قبل تعيينه فلا يُستأنف بعد التحديث */, t: Date.now() })); } catch (err) { void err; } /* v577: التحديث يُبقيك في صفحة العميل */
+  CPV.ret = window.__egRet || CPV.ret || ''; window.__egRet = ''; CPV.on = true; CPV.name = c.name || ''; CPV.no = c.no || ''; CPV.reason = why; CPV.at = Date.now(); CPV.prof = prof; try { CF.undo = null; CF.undoAt = 0; CF.vsAt = 0; LIVE_DATA.verBad = null; LIVE_DATA.verChkAt = 0; } catch (e9) { void e9; } /* v669 */ CPV.blk = {}; CPV.last = '';
+  try { sessionStorage.setItem('tera-cpv-v1', JSON.stringify({ c: { id: c.id, name: c.name || '', no: c.no || '', status: c.status || '', at: c.at || null }, why: String(why || '').replace(/ — استئناف بعد تحديث الصفحة$/, ''), ret: CPV.ret || '', by: (LIVE.me && LIVE.me.id) || '' /* v666: كان يُقرأ قبل تعيينه فلا يُستأنف بعد التحديث */, t: Date.now() })); } catch (err) { void err; } /* v577: التحديث يُبقيك في صفحة العميل */
   CPV.staff = { me: LIVE.me, allow: LIVE.allow.slice(), name: ME.name, email: ME.email, phone: ME.phone };
   LIVE.me = { id: c.id, full_name: (prof && prof.name) || c.name || '', tera_id: (prof && prof.no) || c.no || '', status: (prof && prof.status) || c.status || 'active', created_at: (prof && prof.at) || c.at || null, email: (prof && prof.email) || '', phone: (prof && prof.phone) || '', user_type: 'client' };
   LIVE.allow = ['client'];
@@ -33047,7 +33126,7 @@ async function cpgExit(to) {
   await Promise.race([cpgLog('exit', cpgPageLabel()[0], 'خروج من صفحة العميل · مدة الزيارة ' + cpgDur(Date.now() - CPV.at)), new Promise(function (res) { setTimeout(res, 3500); })]);
   CPV.on = false;
   roleKeep('admin');
-  S.role = 'admin'; S.tab = 'other'; S.other = to || 'cpg-access';
+  S.role = 'admin'; S.tab = 'other'; S.other = to || CPV.ret || 'cpg-access'; /* v1278: من «إنشاء طلب أهلية جديد» يعود إلى طلبات الأهلية */
   try { saveNav(); } catch (err) { void err; }
   try { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } catch (err) { void err; }
   location.reload();
@@ -33058,7 +33137,7 @@ function cpgResume() {
   try { o = JSON.parse(sessionStorage.getItem('tera-cpv-v1') || 'null'); nv = sessionStorage.getItem('tera-cpv-nav') || ''; if (nt !== 'reload') { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } } catch (err) { o = null; }
   /* للموظف نفسه وخلال ساعتين فقط، ويُسجَّل استئنافًا */
   if (!o || !o.c || !o.c.id || nt !== 'reload' || CPV.on || S.role !== 'admin' || !LIVE.me || o.by !== LIVE.me.id || !(Date.now() - (Number(o.t) || 0) < 36e5)) { try { if (o && nt === 'reload') { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } } catch (err) { void err; } return Promise.resolve(); }
-  return cpgEnter(o.c, String(o.why || '') + ' — استئناف بعد تحديث الصفحة').then(function () { if (nv) { try { sessionStorage.setItem(NAVKEY, nv); loadNav(); draw(); } catch (err) { void err; } } })
+  window.__egRet = o.ret || ''; return cpgEnter(o.c, String(o.why || '') + ' — استئناف بعد تحديث الصفحة').then(function () { if (nv) { try { sessionStorage.setItem(NAVKEY, nv); loadNav(); draw(); } catch (err) { void err; } } })
     .catch(function () { try { sessionStorage.removeItem('tera-cpv-v1'); sessionStorage.removeItem('tera-cpv-nav'); } catch (err) { void err; } });
 }
 window.__cpgResume = cpgResume;
