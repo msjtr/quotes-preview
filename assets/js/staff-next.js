@@ -118,7 +118,8 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
      الوصفة نفسها (ظل · قاعدة داكنة · وجه متدرّج · لمعة · حافة · رمز بظلّه) بتدرّجات معرّفة مرة واحدة في الصفحة */
   var TQC = {
     blue: ['#2457C5', '#6EA0FF', '#3B74E8'], violet: ['#5B3FD1', '#A18BFF', '#7559F0'], teal: ['#06707A', '#3FD0D3', '#0FA3A8'],
-    saffron: ['#B86F0A', '#FFC861', '#F0A12B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'], green: ['#13804F', '#5EE0A0', '#22A86B']
+    saffron: ['#B86F0A', '#FFC861', '#F0A12B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'], green: ['#13804F', '#5EE0A0', '#22A86B'],
+    orange: ['#B4561A', '#FFA66B', '#F07A2B'], pink: ['#A8336A', '#FF8DBE', '#E0508C'], emerald: ['#0B6B45', '#43C98B', '#13915C'] /* v1247: ألوان مراحل مسار الأهلية */
   };
   var COLK = {
     'adm-home': 'teal', 'cu-list': 'blue', 'cu-new': 'blue', 'cu-pf-ver': 'blue', 'cu-pf-launch': 'blue', 'cu-pf-req': 'blue', 'cu-mem': 'blue', 'cu-secc': 'teal', 'cpg': 'teal', 'cu-inbox': 'violet',

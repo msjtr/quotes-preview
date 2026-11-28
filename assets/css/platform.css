@@ -10309,3 +10309,13 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-cap b{color:var(--c);font-size:12.5px;flex:0 0 auto}
 .egl-cap span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:900px){.egl-trk8{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:10px}.egl-row4 .egl-l1{flex-wrap:wrap}}
+/* v1247: أيقونات المسار ثلاثية الأبعاد بطبقات */
+.egl-stp-ic{position:relative;width:30px;height:33px;border-radius:0;background:none!important;box-shadow:none!important}
+.egl-stp-ic svg.t2-tile{width:30px;height:33px}
+.egl-stp.is-todo .egl-stp-ic{opacity:.45;filter:saturate(.4)}
+.egl-trk8.is-dead .egl-stp.is-ok .egl-stp-ic{opacity:.6}
+.egl-stp-pin{position:absolute;top:-12px;inset-inline-end:-8px;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#fff;color:var(--sc);box-shadow:0 2px 6px rgba(15,29,74,.25);line-height:0}
+.egl-stp-pin svg{width:12px;height:12px}
+.egl-stp.is-now .egl-stp-ic{animation:none}
+@media (prefers-reduced-motion:no-preference){.egl-stp-pin{animation:eglBob2 1.8s ease-in-out infinite}}
+.egl-stp-h{gap:6px;padding-top:6px}

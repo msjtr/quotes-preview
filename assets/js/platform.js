@@ -29623,12 +29623,13 @@ const segs = e('span', { class: 'egl-prog' + (done ? ' is-done' : dead ? ' is-de
 const ini = String(nm || '؟').trim().charAt(0) || '؟';
 const an = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : 'غير مسنَد';
 /* v1243: بطاقة بأربعة أسطر ثابتة — الهوية · المبالغ · المسار بعرض البطاقة (مرحلة بلونها وأيقونتها) · أين الطلب الآن */
-const ST8 = [['المراجعة', 'tray', '#F0A12B'], ['القرار', 'seal-check', '#E8743B'], ['العرض', 'receipt', '#D94F8A'], ['الإرسال', 'paper-plane-tilt', '#7559F0'], ['موافقات العميل', 'handshake', '#3B74E8'], ['الإدارة', 'briefcase', '#0FA3A8'], ['التنفيذ', 'crown-simple', '#13A06F'], ['الإغلاق', 'check-circle', '#22A86B']];
+const ST8 = [['المراجعة', 'tray', '#F0A12B', 'saffron'], ['القرار', 'seal-check', '#F07A2B', 'orange'], ['العرض', 'receipt', '#E0508C', 'pink'], ['الإرسال', 'paper-plane-tilt', '#7559F0', 'violet'], ['موافقات العميل', 'handshake', '#3B74E8', 'blue'], ['الإدارة', 'briefcase', '#0FA3A8', 'teal'], ['التنفيذ', 'crown-simple', '#13915C', 'emerald'], ['الإغلاق', 'check-circle', '#22A86B', 'green']];
+const T3 = function (g, c) { const h = typeof window.__tqTile === 'function' ? window.__tqTile(g, c) : ''; return h ? frag(h) : frag(ui(g, 16)); }; /* v1247: أيقونات المسار ثلاثية الأبعاد */
 const at = done ? 7 : Math.max(0, Math.min(7, k)), rej = dead && (x.status === 'rejected' || (B && B.rec === 'not_eligible'));
 const trk = e('div', { class: 'egl-trk8' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'list', 'aria-label': 'مسار الطلب' }, ST8.map(function (z, i) {
 const st = done || i < at ? 'is-ok' : i === at ? (dead ? 'is-stop' : 'is-now') : 'is-todo';
 return e('div', { class: 'egl-stp ' + st, role: 'listitem', style: '--sc:' + z[2], title: (EG10_ST[i] || z[0]) + ' — ' + (st === 'is-ok' ? 'تمت' : st === 'is-now' ? 'الطلب هنا الآن' : st === 'is-stop' ? 'توقف هنا' : 'متبقية') }, [
-e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [frag(ui(st === 'is-stop' ? 'x-circle' : i === at && !done ? 'map-pin' : z[1], 14))]), e('span', { class: 'egl-stp-n' }, z[0])]),
+e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [T3(st === 'is-stop' ? 'x-circle' : z[1], st === 'is-stop' ? 'red' : st === 'is-todo' || (dead && st === 'is-ok') ? 'slate' : done ? 'green' : z[3]), st === 'is-now' ? e('b', { class: 'egl-stp-pin' }, [frag(ui('map-pin', 14))]) : null]), e('span', { class: 'egl-stp-n' }, z[0])]),
 e('span', { class: 'egl-stp-bar' })]);
 }));
 const cap = done ? 'اكتملت المراحل الثماني — ' + L[0] : dead ? L[0] + ' — توقف عند «' + ST8[at][0] + '»' : 'تمت ' + fmtNum(at) + ' · متبقي ' + fmtNum(8 - at) + (nx ? ' · التالي: ' + nx : '');
