@@ -106,3 +106,4 @@ textarea.eln-in{resize:vertical;line-height:1.7}.eln-in.is-s{width:auto;min-heig
 .eln-got{display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--line);padding-top:12px}
 .eln-got>b{font-size:14px;color:var(--n)}
 .eln-hist .eln-banner{margin:2px 0}
+.eln-tab-b.is-ok{background:var(--ok2);color:var(--ok)} /* v1227 */

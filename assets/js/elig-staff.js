@@ -122,12 +122,13 @@ function reach(x, k) {
 }
 function badge(x, k) { var f = fx(x); if (k === 'ask') return f && f.open ? 'عند العميل' : f && f.draft ? 'مسودة' : ''; if (k === 'dec') { var rp = x.meta && x.meta.report; return rp && rp.rec ? ({ eligible: 'مؤهَّل', eligible_less: 'مؤهَّل بمبلغ أقل', not_eligible: 'غير مؤهَّل' })[rp.rec] || '' : ''; } return ''; }
 function head(x) {
-  var s = stOf(x), N = nums(x);
+  var I = A().eligInfo ? A().eligInfo(x.id, draw) : null; /* v1227: الحالة وعلامات المراحل من لوحة الأهلية */
+  var s = I && I.lbl && !fixOpen(x) && !fixDraft(x) ? [I.lbl[0], ({ danger: 'bad', warn: 'warn', ok: 'ok', info: 'info' })[I.lbl[1]] || 'info'] : stOf(x), N = nums(x);
   var facts = [['المطلوب', money(num(fv(x, /^القيمة الإجمالية/))) + ' ريال'], ['مدة السداد', fv(x, /^مدة السداد/) || '—'], ['الصافي الشهري', N.inc ? money(N.net) + ' ريال' : '—'], ['المسند إليه', x.assigned_to ? (A().staff ? A().staff(x.assigned_to) : '') || 'موظف' : 'غير مسنَد'], ['رقم الطلب', ltr(x.req_no)]];
   var tabs = el('nav', { class: 'eln-tabs', 'aria-label': 'تبويبات الطلب' }, TABS.map(function (t, i) {
-    var on = ST.tab === t[0], can = reach(x, t[0]), b = badge(x, t[0]);
+    var on = ST.tab === t[0], can = reach(x, t[0]), b = badge(x, t[0]), d = I && I.dots && I.dots[t[0]]; if (d && !b) b = (d[0] === 'ok' ? '✓ ' : '') + (d[1] || ''); /* v1227 */
     return el('button', { class: 'eln-tab' + (on ? ' is-on' : '') + (can ? '' : ' is-off'), 'aria-current': on ? 'page' : null, disabled: can ? null : true, title: can ? null : 'لم تصل هذه المرحلة بعد',
-      onclick: function () { ST.tab = t[0]; ss('tab', t[0]); draw(); } }, [el('span', { class: 'eln-tab-n', text: String(i + 1) }), el('span', {}, [t[1]]), b ? el('small', { class: 'eln-tab-b', text: b }) : null]);
+      onclick: function () { ST.tab = t[0]; ss('tab', t[0]); draw(); } }, [el('span', { class: 'eln-tab-n', text: String(i + 1) }), el('span', {}, [t[1]]), b ? el('small', { class: 'eln-tab-b' + (d && d[0] === 'ok' && !badge(x, t[0]) ? ' is-ok' : ''), text: b }) : null]);
   }));
   return el('section', { class: 'eln-card eln-head' }, [
     el('div', { class: 'eln-head-t' }, [el('div', { class: 'eln-av', 'aria-hidden': 'true', text: nameOf(x).charAt(0) }), el('div', { class: 'eln-head-n' }, [el('small', { class: 'eln-mute', text: 'أهلية شراء منتج · أُرسل ' + when(x.created_at) }), el('h1', { text: nameOf(x) })]),

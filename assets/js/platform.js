@@ -30811,6 +30811,24 @@ window.__teraApp.eligNote = function (t, lines, tone) { eg9Note(t, lines, tone);
 window.__teraApp.eligAfter = async function (id, title, lines) { try { await lvSrLoad(); } catch (err) { void err; } try { if (id && id !== '_') eg9BdDrop(id); } catch (err) { void err; } EG9.busy = ''; eg9Note(title, lines, 'ok'); };
 window.__teraApp.eligGo = function (id, tab, sub) { try { const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (x) { const V = eg10V(x); V.tab = tab; if (sub) V.sub[tab] = sub; } } catch (err) { void err; } eg9Go(id); go('other', 'cu-elig'); };
 /* v1226: صفحة الأهلية (elig-staff.js) تعرض مراحل المستندات من هنا — كما قبل v1194 */
+/* v1227: حالة الطلب وعلامات التبويبات لصفحة الأهلية من مصدر واحد (لوحة الأهلية) — صح للفاتورة والعقد بعد اعتماد العرض */
+window.__teraApp.eligInfo = function (id, repaint) {
+  try {
+    const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (!x) return null;
+    const B = eg9Bd(x, function () { try { repaint(); } catch (err) { void err; } }); if (!B) return null;
+    const k = eg10K(x, B), dead = eg10Dead(x, B), C = { x: x, B: B, k: k, dead: dead, reach: eg10Reach(x, B, k) }, ch = B.ch || {}, q = B.q;
+    const N = {
+      qt: ch.quote && ch.quote.d === 'accept' ? 'قبله العميل' : q && q.st === 'accepted' ? 'قبله العميل' : q && ['approved', 'sent'].indexOf(q.st) >= 0 ? 'معتمد' : q && q.st === 'pending_approval' ? 'بانتظار الاعتماد' : '',
+      inv: ch.purchase && ch.purchase.d === 'accept' ? 'اعتمدها العميل' : 'صدرت',
+      ct: (B.sign || (ch.contract && ch.contract.d === 'accept')) ? 'وقّعه العميل' : 'صدر',
+      lnk: k >= 5 ? 'اكتمل' : k === 4 ? 'بانتظار العميل' : k === 3 ? 'جاهز للإرسال' : '',
+      adm: k >= 7 ? 'منفّذ' : k === 5 || k === 6 ? 'قيد الإجراء' : ''
+    };
+    const dots = {};
+    ['qt', 'inv', 'ct', 'lnk', 'adm'].forEach(function (t) { const d = eg12Dot(t, C); if (d === 'ok' || d === 'w') dots[t] = [d, N[t] || '']; });
+    return { lbl: eg10Lbl(x, B, k, dead), k: k, dots: dots };
+  } catch (err) { return null; }
+};
 window.__teraApp.eligStage = function (id, t, repaint, onGo) {
   try {
     const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (!x) return [];
