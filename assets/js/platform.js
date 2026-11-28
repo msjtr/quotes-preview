@@ -29871,23 +29871,24 @@ return EGA_K[v.k] || v.k;
 }
 /* v1258: المسار والنص من بيانات الخادم — لكل خطوة لونها، وللسحب والرفض لون التوقف، والمباشر «لا يلزم» */
 const EGAS_C = ['saffron', 'orange', 'blue', 'green'], EGAS_H = { saffron: '#F0A12B', orange: '#F07A2B', blue: '#3B74E8', green: '#22A86B', red: '#EB5A45', slate: '#7C8899', violet: '#7559F0' };
+function egAsgDur(s) { const d = new Date(s); if (!s || isNaN(d)) return '—'; const m = Math.max(0, Math.round((Date.now() - d) / 60000)); if (m < 60) return fmtNum(m) + ' د'; const h = Math.round(m / 60); if (h < 48) return fmtNum(h) + ' ساعة'; return fmtNum(Math.round(h / 24)) + ' يوم'; }
 function egAsgState(x, A) {
 const ev = (A && A.ev) || [], pend = A && A.pend, rc = A && A.recv, asg = A && A.to, last = ev[0];
 const lastAsg = ev.filter(function (v) { return v.k === 'assign' || v.k === 'transfer'; })[0];
 const viaApprove = !!(asg && lastAsg && lastAsg.note === 'بموافقة طلب الإسناد');
-const S = [['طلب الإسناد', 'paper-plane-tilt'], ['الموافقة', 'seal-check'], ['الإسناد', 'users-three'], ['الاستلام', 'check-circle']].map(function (z, i) { return { n: z[0], g: z[1], c: EGAS_C[i], st: 'is-todo', t: '' }; });
+const S = [['طلب الإسناد', 'paper-plane-tilt'], ['الموافقة', 'seal-check'], ['الإسناد', 'user-circle'], ['الاستلام', 'check-circle']].map(function (z, i) { return { n: z[0], g: z[1], c: EGAS_C[i], st: 'is-todo', t: '' }; });
 const R = rc ? 'استلمه ' + (rc.by || 'الفريق') : '';
 let title, sub, tone;
 if (pend) {
 S[0].st = 'is-ok'; S[0].t = pend.name || 'موظف'; S[1].st = 'is-now'; S[1].t = 'بانتظار الموافقة';
-title = (pend.name || 'موظف') + ' طلب إسناده إليه'; sub = 'بانتظار الموافقة منذ ' + eg10Dt(pend.at); tone = 'orange';
+title = (pend.name || 'موظف') + ' طلب إسناده إليه'; sub = 'بانتظار الموافقة منذ ' + egAsgDur(pend.at) + ' · ' + eg10Dt(pend.at); tone = 'orange';
 } else if (asg) {
 if (viaApprove) { S[0].st = 'is-ok'; S[0].t = 'طلبه الموظف'; S[1].st = 'is-ok'; S[1].t = 'وُوفق'; }
 else { S[0].st = 'is-skip'; S[0].t = 'لا يلزم'; S[1].st = 'is-skip'; S[1].t = 'إسناد مباشر'; }
 S[2].st = 'is-ok'; S[2].t = A.to_name || 'موظف';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; } else { S[3].st = 'is-now'; S[3].t = 'لم يُستلم بعد'; }
 title = 'مسنَد إلى ' + (A.to_name || 'موظف'); tone = rc ? 'green' : 'blue';
-sub = (A.by_name ? 'أسنده ' + A.by_name : 'أُسند') + (A.at ? ' · ' + eg10Dt(A.at) : '') + ' · ' + (rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد');
+sub = (A.by_name ? 'أسنده ' + A.by_name : 'أُسند') + (A.at ? ' · ' + eg10Dt(A.at) : '') + ' · ' + (rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد — منذ ' + egAsgDur(A.at));
 } else if (last && last.k === 'withdraw') {
 S[0].st = 'is-skip'; S[0].t = '—'; S[1].st = 'is-skip'; S[1].t = '—'; S[2].st = 'is-stop'; S[2].t = 'سُحب';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
@@ -29896,10 +29897,12 @@ title = 'سُحب الإسناد من ' + (last.from || 'موظف'); sub = (last
 S[0].st = 'is-ok'; S[0].t = last.to || 'موظف'; S[1].st = 'is-stop'; S[1].t = last.note === 'ألغى طلبه' ? 'أُلغي الطلب' : 'رُفض';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
 title = last.note === 'ألغى طلبه' ? 'أُلغي طلب الإسناد' : 'رُفض طلب إسناد ' + (last.to || 'الموظف'); sub = eg10Dt(last.at) + ' — الطلب غير مسنَد'; tone = 'red';
-} else {
-S[0].st = 'is-now'; S[0].t = 'غير مسنَد';
+} else { /* v1260: غير مسنَد — الخطوة الحالية «الإسناد» (مباشرة أو بطلب)، والمدة منذ الإرسال أو آخر سحب */
+const since = (last && last.at) || x.created_at;
+S[0].st = 'is-todo'; S[0].t = 'عند الطلب'; S[1].st = 'is-todo'; S[1].t = 'عند الطلب'; S[2].st = 'is-now'; S[2].t = 'غير مسنَد';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
-title = 'غير مسنَد'; sub = rc ? 'استُلم ' + eg10Dt(rc.at) + ' — ' + (rc.by || 'الفريق') + ' دون إسناد' : 'بانتظار إسناده أو طلب إسناده'; tone = 'saffron';
+title = rc ? 'غير مسنَد — استلمه ' + (rc.by || 'الفريق') + ' دون إسناد' : 'غير مسنَد'; tone = 'saffron';
+sub = 'بلا مسؤول منذ ' + egAsgDur(since) + (rc ? ' · استُلم ' + eg10Dt(rc.at) : ' · بانتظار إسناده أو طلب إسناده');
 }
 return { S: S, title: title, sub: sub, tone: tone };
 }
@@ -29942,11 +29945,11 @@ return L;
 }
 function egAsgLine(x, paint) {
 const A = egAsgGet(x, paint);
-if (!A) return e('div', { class: 'egl-asg is-wait' }, [e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('users-three', 'slate')]), e('span', { class: 'egl-asg-t' }, [e('b', {}, 'الإسناد'), e('small', {}, 'جارٍ التحميل…')])])]);
+if (!A) return e('div', { class: 'egl-asg is-wait' }, [e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('user-circle', 'slate')]), e('span', { class: 'egl-asg-t' }, [e('b', {}, 'الإسناد'), e('small', {}, 'جارٍ التحميل…')])])]);
 const P = EGAS.P || {}; if (P.assign && A.open) { try { srAsLoad(false); } catch (err) { void err; } } /* الفريق جاهز قبل فتح الإجراءات */
 const G = egAsgState(x, A), L = egAsgLog(A), det = !!(EGAS.det && EGAS.det[x.id]), act = EGAS.open === x.id;
 const trk = e('div', { class: 'egl-trk8 egl-trk7 egl-trk4', role: 'list', 'aria-label': 'مسار الإسناد' }, G.S.map(function (s) {
-const cn = s.st === 'is-todo' || s.st === 'is-skip' ? 'slate' : s.st === 'is-stop' ? 'red' : s.c;
+const cn = s.st === 'is-todo' || s.st === 'is-skip' ? 'slate' : s.st === 'is-stop' ? 'red' : s.st === 'is-ok' ? 'green' : G.tone === 'red' ? 'red' : G.tone; /* v1260: المكتمل أخضر · الحالي بلون الحالة · المتوقف أحمر */
 return e('div', { class: 'egl-stp ' + s.st, role: 'listitem', style: '--sc:' + EGAS_H[cn] }, [
 e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [egT3(s.st === 'is-stop' ? 'x-circle' : s.g, cn)]), e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, s.n), s.st === 'is-now' || s.st === 'is-stop' ? e('b', { class: 'egl-stp-pin', 'aria-label': 'الإسناد هنا' }, [frag(eglPin(cn))]) : null])]),
 e('span', { class: 'egl-stp-bar' }), s.t ? e('span', { class: 'egl-stp-st' + (s.st === 'is-ok' || s.st === 'is-skip' ? ' is-ok' : '') }, s.t) : null]);
@@ -29958,7 +29961,7 @@ const acts = egAsgActs(x, A, paint), canAct = acts.some(function (n) { return n 
 const box = e('div', { class: 'egl-asg-acts', hidden: act ? null : true }, acts);
 const ab = canAct ? e('button', { type: 'button', class: 'egl-asg-go', 'data-live-ok': '', 'aria-expanded': act ? 'true' : 'false', onClick: function (ev) { const on = EGAS.open !== x.id; EGAS.open = on ? x.id : ''; box.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'إغلاق' : (A.pend && P.approve ? 'موافقة أو رفض' : P.assign ? (A.to ? 'تحويل أو سحب' : 'إسناد') : 'اطلب إسناده لي'); } }, [frag(ui('users-three', 14)), e('span', {}, act ? 'إغلاق' : (A.pend && P.approve ? 'موافقة أو رفض' : P.assign ? (A.to ? 'تحويل أو سحب' : 'إسناد') : 'اطلب إسناده لي'))]) : null;
 return e('div', { class: 'egl-asg is-' + G.tone }, [
-e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('users-three', G.tone === 'red' ? 'red' : G.tone === 'green' ? 'green' : G.tone === 'blue' ? 'blue' : G.tone === 'orange' ? 'orange' : 'saffron')]),
+e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('user-circle', G.tone)]),
 e('span', { class: 'egl-asg-t' }, [e('b', {}, G.title), e('small', {}, G.sub)]), ab]),
 trk,
 L.length ? e('div', { class: 'egl-asg-lg' }, [e('ol', { class: 'egl-asg-log' }, L.slice(0, 2).map(logItem)), more, tgl]) : e('div', { class: 'egl-asg-n' }, 'لا خطوات إسناد بعد.'),

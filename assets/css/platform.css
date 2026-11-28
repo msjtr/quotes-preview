@@ -10457,3 +10457,10 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-asg-log li{flex-direction:column;align-items:flex-start}
 .egl-asg-log li small{margin-inline-start:0}
 }
+/* v1260: مسار الإسناد — خطوط ظاهرة لكل خطوة (المتبقية رمادية واضحة · «لا يلزم» متقطعة داكنة) */
+.egl-trk4 .egl-stp.is-todo .egl-stp-bar{background:#D3DAE5}
+.egl-trk4 .egl-stp.is-skip .egl-stp-bar{background:repeating-linear-gradient(90deg,#9AA6B8 0 7px,transparent 7px 12px)}
+.egl-trk4 .egl-stp.is-todo .egl-stp-ic{opacity:.75;filter:none}
+.egl-trk4 .egl-stp.is-todo .egl-stp-n,.egl-trk4 .egl-stp.is-todo .egl-stp-st{color:#66748C}
+.egl-trk4 .egl-stp.is-ok .egl-stp-bar{background:#22A86B}
+.egl-trk4 .egl-stp.is-ok .egl-stp-h,.egl-trk4 .egl-stp.is-ok .egl-stp-st{color:#13804F}
