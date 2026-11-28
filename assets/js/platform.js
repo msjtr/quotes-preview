@@ -29465,7 +29465,7 @@ const EG9B = { m: {}, q: {}, busy: false, rf: [] };
 function eg9Bd(x, paint) {
 if (paint) EG9B.last = paint; /* v926: آخر دالة رسم — السابقة قد ترسم في صفحة لم تعد ظاهرة */
 const h = EG9B.m[x.id];
-if ((!h || Date.now() - h.at > 60000) && !EG9B.q[x.id]) {
+if ((!h || Date.now() - h.at > (h.d ? 60000 : 3000)) && !EG9B.q[x.id]) { /* v1253: الجواب الفارغ يُعاد بعد 3 ث */
 EG9B.q[x.id] = 1; if (paint && EG9B.rf.indexOf(paint) < 0) EG9B.rf.push(paint);
 if (!EG9B.busy) { EG9B.busy = true; setTimeout(eg9BdRun, 60); }
 }
@@ -29474,7 +29474,7 @@ return (h && h.d) || null;
 function eg9BdRun() {
 const ids = Object.keys(EG9B.q).slice(0, 200); ids.forEach(function (id) { delete EG9B.q[id]; });
 if (!ids.length) { EG9B.busy = false; return; }
-eg9Rpc('admin_elig_board', { p_ids: ids }).then(function (j) { const R = (j && j.rows) || {}, now = Date.now(); ids.forEach(function (id) { EG9B.m[id] = { at: now, d: R[id] || null }; }); })
+eg9Rpc('admin_elig_board', { p_ids: ids }).then(function (j) { if (!j || j.ok === false) throw new Error('board'); /* v1253: رفض مؤقت (قبل جاهزية الدور) يُعاد ولا يُخزَّن «لا بيانات» 60 ث */ const R = (j && j.rows) || {}, now = Date.now(); ids.forEach(function (id) { EG9B.m[id] = { at: now, d: R[id] || null }; }); })
 .catch(function () { const now = Date.now() - 58000, fs = EG9B.rf.slice(); ids.forEach(function (id) { if (EG9B.m[id]) EG9B.m[id].at = now; else EG9B.m[id] = { at: now, d: null }; }); setTimeout(function () { try { if (EG9B.last) EG9B.last(); } catch (err) { void err; } }, 2500); }) /* v1252: إعادة المحاولة بعد ثانيتين ونصف (كانت 11 ث فتبقى الصفحة على حالة تقديرية) */ /* v925: إعادة المحاولة بعد ثوانٍ عند تعذّر الاتصال */
 .then(function () { if (Object.keys(EG9B.q).length) { setTimeout(eg9BdRun, 60); return; } EG9B.busy = false; EG9B.rf.splice(0); try { if (EG9B.last) EG9B.last(); } catch (err) { void err; } });
 }
@@ -29482,7 +29482,7 @@ function eg9BdDrop(id) { delete EG9B.m[id]; }
 /* v1252: صفحة الطلب لا تبقى على حالة تقديرية — ما دامت حالة اللوحة لم تصل: إعادة الطلب والرسم كل 3 ث (حتى 8 مرات) ما دامت الصفحة نفسها ظاهرة */
 function eg9BdWait(x, paint) {
 const W = EG9B.w || (EG9B.w = {}), n = W[x.id] || 0; if (n >= 8 || W['t' + x.id]) return; W[x.id] = n + 1; W['t' + x.id] = 1;
-setTimeout(function () { delete W['t' + x.id]; if (EG9B.last !== paint) return; const h = EG9B.m[x.id]; if (h && h.d) { delete W[x.id]; } else if (h && !EG9B.q[x.id]) h.at = 0; try { paint(); } catch (err) { void err; } }, 3000);
+setTimeout(function () { delete W['t' + x.id]; if (ADM.egOpen !== x.id) return; /* v1253: ما دامت صفحة هذا الطلب مفتوحة (لا آخر دالة رسم) */ const h = EG9B.m[x.id]; if (h && h.d) { delete W[x.id]; } else if (h && !EG9B.q[x.id]) h.at = 0; try { paint(); } catch (err) { void err; } }, 3000);
 }
 const EG10_ST = ['مراجعة الطلب', 'قرار الأهلية', 'عرض سعر منتج', 'الإرسال للعميل', 'موافقات العميل', 'إجراءات الإدارة', 'التنفيذ والنقاط', 'الإغلاق'];
 const EG10_CS = [['elig', 'أهلية شراء منتج', 'وافق'], ['quote', 'عرض سعر منتج', 'قبله'], ['purchase', 'فاتورة المنتج', 'اعتمدها'], ['contract', 'عقد بيع منتج', 'وقّعه']];
