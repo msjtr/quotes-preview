@@ -10383,3 +10383,35 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-stp-st.is-ok{align-self:center}
 }
 @media (max-width:400px){.egl-row.egl-row4>.egl-body{grid-column:1}}
+/* v1256: سطر الإسناد (حالة · مسار من 4 خطوات · إجراء حسب الصلاحية · سجل) + الترتيب والصفحات */
+.egl-asg{display:flex;flex-direction:column;gap:10px;border:1px solid var(--egl-b,#E3E8F0);border-radius:14px;padding:10px 12px;background:#FAFBFE;min-width:0}
+.egl-asg.is-saffron{background:#FFFBF2;border-color:#F6D9A6}.egl-asg.is-blue{background:#F5F8FF;border-color:#CFDDFB}.egl-asg.is-green{background:#F3FBF7;border-color:#BFE8D3}
+.egl-asg-hd{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer;width:100%}
+.egl-asg-hd:focus-visible{outline:2px solid #3B74E8;outline-offset:3px;border-radius:10px}
+.egl-asg-ic{flex:0 0 auto;width:30px;height:33px;line-height:0}.egl-asg-ic svg{width:30px;height:33px}
+.egl-asg-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto}
+.egl-asg-t b{font-size:13.5px;color:var(--egl-ink,#0F1B33);overflow-wrap:anywhere}
+.egl-asg-t small{font-size:12px;color:var(--egl-mut,#66748C);overflow-wrap:anywhere}
+.egl-asg-go{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#5B3FD1;background:#F1EDFF;border-radius:9px;padding:4px 10px;white-space:nowrap}
+.egl-trk8.egl-trk4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.egl-trk4 .egl-stp-ic,.egl-trk4 .egl-stp-ic svg.t2-tile{width:24px;height:27px}
+.egl-asg-pop{display:flex;flex-direction:column;gap:10px;border-top:1px dashed #D7DEEA;padding-top:10px}
+.egl-asg-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.egl-asg-sel,.egl-per{min-height:38px;border:1px solid #D7DEEA;border-radius:10px;padding:0 10px;font:inherit;font-size:13px;background:#fff;color:var(--egl-ink,#0F1B33);max-width:100%}
+.egl-asg-sel{flex:1 1 200px;min-width:0}
+.egl-asg-q{flex:1 1 180px;font-size:13px;font-weight:700;color:var(--egl-ink,#0F1B33)}
+.egl-asg-n{font-size:12.5px;color:var(--egl-mut,#66748C)}
+.egl-asg-lt{font-size:12px;font-weight:800;color:var(--egl-mut,#66748C)}
+.egl-asg-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.egl-asg-log li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;font-size:12.5px;padding:6px 8px;border-radius:9px;background:#fff;border:1px solid #EEF1F6}
+.egl-asg-log li b{font-weight:700;color:var(--egl-ink,#0F1B33)}.egl-asg-log li span{color:var(--egl-mut,#66748C)}
+.egl-asg-log li small{margin-inline-start:auto;color:var(--egl-mut,#66748C);font-size:11.5px}
+.eg13-asg2{margin-top:12px}
+.egl-pager{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;padding:14px 4px 4px}
+.egl-pg-t{font-size:13px;color:var(--egl-mut,#66748C)}.egl-pg-t b{color:var(--egl-ink,#0F1B33)}
+@media (max-width:640px){
+.egl-asg-hd{flex-wrap:wrap}.egl-asg-go{margin-inline-start:auto}
+.egl-tools-r{flex-wrap:wrap}
+.egl-pager .eg9-btn{flex:1 1 40%}
+.egl-asg-row .eg9-btn{flex:1 1 auto}
+}
