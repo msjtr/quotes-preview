@@ -47,7 +47,7 @@
       el('tbody', {}, P.map(function (x) { return el('tr', { class: x.self ? 'is-self' : null }, [el('td', { text: String(x.seq) }), el('td', { text: x.due_t }), el('td', { text: money(x.before) }), el('td', { class: 'is-add', text: '+' + money(x.add) }), el('td', {}, [el('b', { text: money(x.after) })])]); }))])]);
   }
   function feeBox(v) {
-    var opts = [['same', 'على هذه الدفعة', 'تُضاف الرسوم كاملة على الدفعة ' + v.seq + '.', v.plan_same], ['spread', 'توزيعها على باقي الدفعات', v.plan_spread ? 'تُقسَّم على ' + v.plan_spread.length + (v.plan_spread.length > 2 ? ' دفعات' : ' دفعة') + ' متبقية.' : 'لا توجد دفعات متبقية غير هذه.', v.plan_spread]];
+    var opts = [['same', 'على هذه الدفعة', 'تُضاف الرسوم كاملة على الدفعة ' + v.seq + '.', v.plan_same], ['spread', 'توزيعها على الدفعات القادمة', v.plan_spread ? 'تُقسَّم على ' + v.plan_spread.length + (v.plan_spread.length > 2 ? ' دفعات' : ' دفعة') + ' قادمة.' : 'لا توجد دفعات قادمة غير هذه.', v.plan_spread]];
     var ch = el('div', { class: 'gr-fm' + (S.errAt === 'fee' ? ' is-err' : ''), role: 'radiogroup', 'aria-label': 'طريقة إضافة الرسوم' }, opts.map(function (o) {
       var on = S.fm === o[0], dis = !o[3];
       return el('button', { type: 'button', role: 'radio', 'aria-checked': on ? 'true' : 'false', class: on ? 'is-on' : '', disabled: dis, onclick: function () { S.fm = o[0]; S.err = ''; S.errAt = ''; form(); } }, [el('b', { text: o[1] }), el('small', { text: o[2] })]);
@@ -152,7 +152,7 @@
     var v = S.v, dd = (v.days.filter(function (d) { return d.d === S.day; })[0] || {});
     var P = feeTot() > 0 ? (S.fm === 'same' ? v.plan_same : v.plan_spread) : null;
     var sum = kvT([['الدفعة', 'الدفعة ' + v.seq + (v.n ? ' من ' + v.n : '') + ' · ' + v.contract_no], ['قيمة الدفعة', money(v.left) + ' ريال'], ['الاستحقاق الأصلي', v.due_t], ['موعد السداد الجديد', day(S.day)],
-      P ? [v.fee_name || 'رسوم الخدمة', money(v.fee_total) + ' ريال' + (Number(v.vat) > 0 ? ' شاملة الضريبة' : '')] : null, P ? ['طريقة إضافتها', S.fm === 'same' ? 'على هذه الدفعة' : 'موزعة على باقي الدفعات'] : null]);
+      P ? [v.fee_name || 'رسوم الخدمة', money(v.fee_total) + ' ريال' + (Number(v.vat) > 0 ? ' شاملة الضريبة' : '')] : null, P ? ['طريقة إضافتها', S.fm === 'same' ? 'على هذه الدفعة' : 'موزعة على الدفعات القادمة'] : null]);
     var cb = el('input', { type: 'checkbox', checked: S.ack, onchange: function (e) { S.ack = e.target.checked; if (S.errAt === 'ack') { S.err = ''; S.errAt = ''; lab.className = 'cq-ack'; var f = lab.nextSibling; if (f && f.className === 'cq-ferr') f.remove(); } } });
     var lab = el('label', { class: 'cq-ack' + (S.errAt === 'ack' ? ' is-err' : '') }, [cb, el('span', { text: v.ack })]);
     /* v1191: التوقيع = الاسم الكامل + رسم التوقيع (الاثنان مطلوبان) — الاسم أولًا ويظهر تحت خط التوقيع */

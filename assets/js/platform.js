@@ -30810,6 +30810,23 @@ window.__teraApp.ic = function (n, sz) { return frag(ui(n, sz || 17)); };
 window.__teraApp.eligNote = function (t, lines, tone) { eg9Note(t, lines, tone); };
 window.__teraApp.eligAfter = async function (id, title, lines) { try { await lvSrLoad(); } catch (err) { void err; } try { if (id && id !== '_') eg9BdDrop(id); } catch (err) { void err; } EG9.busy = ''; eg9Note(title, lines, 'ok'); };
 window.__teraApp.eligGo = function (id, tab, sub) { try { const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (x) { const V = eg10V(x); V.tab = tab; if (sub) V.sub[tab] = sub; } } catch (err) { void err; } eg9Go(id); go('other', 'cu-elig'); };
+/* v1226: صفحة الأهلية (elig-staff.js) تعرض مراحل المستندات من هنا — كما قبل v1194 */
+window.__teraApp.eligStage = function (id, t, repaint, onGo) {
+  try {
+    const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (!x) return [];
+    eg12Bind();
+    const paint = function () { try { repaint(); } catch (err) { void err; } };
+    const RF = function () { paint(); }; RF.paint = paint;
+    const V = eg10V(x), B = eg9Bd(x, paint), k = eg10K(x, B), dead = eg10Dead(x, B), reach = eg10Reach(x, B, k), open = eg9IsOpen(x);
+    eg12Pre(x, B, paint);
+    const go = function (tab, sub) { V.tab = tab; if (sub) V.sub[tab] = sub; try { if (onGo) onGo(tab, sub); } catch (err) { void err; } };
+    const show = function (stg, view) { if (view === 'fix') V.fix = true; if (view === 'cl') { eg12Cl(x); return; } if (view && EG12_VW[view]) return go(EG12_VW[view][0], EG12_VW[view][1]); const s2 = typeof stg === 'number' ? stg : Math.max(0, k); const tt = EG12_STG[Math.min(7, Math.max(0, s2))]; go(tt[0], tt[1]); };
+    const ctx = { x: x, B: B, k: k, dead: dead, reach: reach, open: open, RF: RF, NX: { n: null }, paint: paint, show: show, go: go, V: V, tab: t };
+    const out = [].concat(t === 'tpl' ? eg12Body('lnk', 'tpl', ctx) : eg12Body(t, '', ctx)).filter(Boolean); /* v1226: القوالب داخل تبويب الرابط */
+    eg12Zoom();
+    return [e('div', { class: 'eg9 eg10 eg12 eg13 eln-stage', 'data-sr': x.id }, out)];
+  } catch (err) { try { console.warn('[eligStage]', t, err && err.message); } catch (y) { void y; } return [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')]; }
+};
 window.__teraApp.eligOpen = function (id, tab) { if (!id) return; const m = EG12_OLD[tab] || (tab ? [tab, ''] : null); try { const x = (LV_SR.all || []).filter(function (y) { return y && y.id === id; })[0]; if (x && m) { const V = eg10V(x); V.tab = m[0]; if (m[1]) V.sub[m[0]] = m[1]; } } catch (err) { void err; } eg9Go(id); };
 window.__teraApp.eligQtForm = function (id) { (EG11.qt[id] || (EG11.qt[id] = { form: false, act: '', why: '', note: '' })).form = true; }; /* v1206: معاينة نموذج العرض للمراجعة — الحفظ تحكمه القاعدة */
 window.__teraApp.oldElig = function (id, tab) { window.__teraApp.eligOpen(id, tab); go('other', 'cu-elig'); };
@@ -34560,7 +34577,7 @@ function rgrView(G, x, today) {
     sec('المصدر', '', [e('dl', { class: 'rmn-done-f' }, [row('النوع', r.source === 'crq_defer' ? 'تأجيل برسوم — طلب منفّذ (' + (r.ref_crq || '') + ') نُقل إلى المؤجلين حتى موعده' : r.fee != null ? 'مهلة برسوم — مرة واحدة لكل دفعة' : 'مهلة مجانية — بلا رسوم، ومرة واحدة لكل دفعة'), row('كيف بدأت', RGR_SRC[r.source] || r.source), row('أنشأها', r.by_name || (r.source === 'client' ? 'العميل نفسه' : '—')),
       row('الحد المسموح', rgrDays(r.max_days)), r.link_expires ? row('صلاحية الرابط', 'حتى ' + rmnDT(r.link_expires)) : null, row('تاريخ الإنشاء', rmnDT(r.created_at)), r.note ? row('ملاحظة الموظف', r.note) : null])]),
     r.fee != null ? sec('الرسوم', '', [e('dl', { class: 'rmn-done-f' }, [row('الرسوم', rmnSar(r.fee)), row('ضريبة القيمة المضافة 15%', Number(r.vat) > 0 ? rmnSar(r.vat) : 'لا تُضاف'), row('الإجمالي', rmnSar(Number(r.fee) + Number(r.vat || 0))), row('تظهر للعميل', r.fee_label === 'grace' ? 'بند «رسوم المهلة»' : 'مدمجة «رسوم الخدمة»'),
-      row('طريقة الإضافة', r.fee_mode === 'same' ? 'على الدفعة نفسها (اختيار العميل)' : r.fee_mode === 'spread' ? 'موزعة على باقي الدفعات (اختيار العميل)' : 'يختارها العميل عند التوقيع')]),
+      row('طريقة الإضافة', r.fee_mode === 'same' ? 'على الدفعة نفسها (اختيار العميل)' : r.fee_mode === 'spread' ? 'موزعة على الدفعات القادمة (اختيار العميل)' : 'يختارها العميل عند التوقيع')]),
       Array.isArray(r.fee_plan) && r.fee_plan.length ? rgrPlanT(r.fee_plan) : null]) : null,
     sec('التوثيق', '', [e('dl', { class: 'rmn-done-f' }, [row('التوقيع والاعتماد', r.signed_at ? rmnDT(r.signed_at) : 'لم يوقّع بعد'),
       row('طريقة التوقيع', r.sign_kind === 'draw' ? 'رسم التوقيع' + (r.sign_name ? ' والاسم: ' + r.sign_name : '') : r.sign_kind === 'name' ? 'كتابة الاسم: ' + (r.sign_name || '') : r.sign_kind === 'staff' ? 'سجّلها الموظف (بلا توقيع العميل)' : null),
@@ -34618,7 +34635,7 @@ function rgrCalc(N) {
     e('dl', { class: 'rmn-done-f' }, Number(v.vat) > 0 ? [kv(v.fee_name || 'رسوم الخدمة', rmnSar(v.fee)), kv('ضريبة القيمة المضافة 15%', rmnSar(v.vat)), kv('الإجمالي', e('b', {}, rmnSar(v.total)))] : [kv(v.fee_name || 'رسوم الخدمة', e('b', {}, rmnSar(v.total))), kv('الضريبة', 'لا تُضاف')]),
     e('div', { class: 'rgr-calc-h' }, 'ما يختاره العميل في الرابط'),
     e('div', { class: 'rgr-calc-o' }, [e('b', {}, 'على هذه الدفعة'), rgrPlanT(v.plan_same)]),
-    v.plan_spread ? e('div', { class: 'rgr-calc-o' }, [e('b', {}, 'توزيعها على باقي الدفعات (' + fmtNum(v.plan_spread.length) + ')'), rgrPlanT(v.plan_spread)]) : e('p', { class: 'rmn-sm' }, 'لا توجد دفعات متبقية أخرى — تُضاف الرسوم على هذه الدفعة فقط.')]);
+    v.plan_spread ? e('div', { class: 'rgr-calc-o' }, [e('b', {}, 'توزيعها على الدفعات القادمة (' + fmtNum(v.plan_spread.length) + ')'), rgrPlanT(v.plan_spread)]) : e('p', { class: 'rmn-sm' }, 'لا توجد دفعات متبقية أخرى — تُضاف الرسوم على هذه الدفعة فقط.')]);
 }
 function rgrNew(L, G) {
   const N = G.n, today = (L && L.today) || iso(new Date());
