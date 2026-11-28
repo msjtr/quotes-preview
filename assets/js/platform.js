@@ -29828,7 +29828,7 @@ function eg12Wait(t) { return e('div', { class: 'eg12-empty' }, [eg12Ic('info', 
 /* التبويبات الفرعية — فقط حيث يلزم (الطلب · عرض السعر)؛ بقية الأقسام صفحة واحدة */
 function eg12Subs(t, C) {
 if (t === 'ask') { let n = 0; try { n = window.__teraApp.eligAskN ? window.__teraApp.eligAskN(C.x) : 0; } catch (err) { void err; } return [['now', 'الطلب الحالي', 'clipboard-text'], ['hist', 'الطلبات السابقة' + (n ? ' (' + fmtNum(n) + ')' : ''), 'clock-counter-clockwise'], ['why', 'أسباب السحب', 'list-bullets']]; }
-if (t === 'lnk') return [['send', 'إرسال الرابط', 'paper-plane-tilt'], ['path', 'مسار الرحلة', 'path'], ['links', 'الروابط', 'link'], ['sends', 'الرسائل المرسلة', 'envelope-simple'], ['tpl', 'القوالب والمعاينة', 'note-pencil']];
+/* v1225: «الرابط والموافقات» بلا تبويبات فرعية — الإرسال والمسار والروابط في شاشة واحدة، والرسائل المرسلة في «المراسلات والسجل» (لا تكرار) */
 return null;
 }
 /* بطاقة القسم: الرأس (العنوان والحالة مرة واحدة) + التبويبات الفرعية إن وُجدت + المحتوى */
@@ -29866,9 +29866,8 @@ if (t === 'qt') return [eg11Quote(x, B, paint, show, k === 2)];
 if (t === 'inv') return [eg11Inv(x, B, paint)];
 if (t === 'ct') return [eg11Ct(x, B, paint, true)];
 if (t === 'ask') return window.__teraApp.eligAsk ? window.__teraApp.eligAsk(x, s, paint) : [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')];
-if (t === 'lnk' && s === 'tpl') return eg13Tpl(C);
-if (t === 'lnk' && s && s !== 'send') return window.__teraApp.eligLnk ? window.__teraApp.eligLnk(x, s, paint) : [DS.note('warn', 'تعذّر عرض هذا القسم', 'أعد تحميل الصفحة.')];
-if (t === 'lnk') return [eg12Lnk(C)];
+if (t === 'lnk' && s === 'tpl') return [e('div', { class: 'eg10-vhead' }, [e('h3', {}, 'القوالب والمعاينة'), eg9Btn('رجوع للرابط', { ic: 'caret-right', on: function () { C.go('lnk', 'send'); } })])].concat(eg13Tpl(C) || []);
+if (t === 'lnk') { let L = []; try { L = window.__teraApp.eligLnk ? (window.__teraApp.eligLnk(x, 'links', paint) || []) : []; } catch (err) { void err; } return [eg12Lnk(C)].concat(L); }
 if (t === 'adm') return eg12Adm(C);
 return [eg12LogTab(C)];
 }
@@ -30114,7 +30113,8 @@ const x = C.x, B = C.B, paint = C.paint;
 const m = (eg9TabBody(x, C.RF, 'msg', C.NX, paint) || []).filter(Boolean);
 m.forEach(function (n) { eg12Strip(n, ['المطلوب من العميل', 'كل المرفقات']); });
 const S = EG11.qs[x.id];
-return e('div', { class: 'eg12-g2 eg12-logg' }, [e('div', { class: 'eg12-col' }, m), e('div', { class: 'eg12-col' }, [eg10Log(x, B, paint, true), S && S.rows && S.rows.length ? eg9Card('نسخ عرض السعر', 'receipt', [eg12Hist(x, paint)]) : null])]);
+let sn = []; try { sn = window.__teraApp.eligLnk ? (window.__teraApp.eligLnk(x, 'sends', paint) || []) : []; } catch (err) { void err; } /* v1225: الرسائل المرسلة هنا وحدها */
+return e('div', { class: 'eg12-g2 eg12-logg' }, [e('div', { class: 'eg12-col' }, m.concat(sn)), e('div', { class: 'eg12-col' }, [eg10Log(x, B, paint, true), S && S.rows && S.rows.length ? eg9Card('نسخ عرض السعر', 'receipt', [eg12Hist(x, paint)]) : null])]);
 }
 /* سجل العرض: كل نسخ عرض السعر لهذا الطلب */
 function eg12Hist(x, paint) {
