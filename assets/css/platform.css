@@ -10464,3 +10464,11 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-trk4 .egl-stp.is-todo .egl-stp-n,.egl-trk4 .egl-stp.is-todo .egl-stp-st{color:#66748C}
 .egl-trk4 .egl-stp.is-ok .egl-stp-bar{background:#22A86B}
 .egl-trk4 .egl-stp.is-ok .egl-stp-h,.egl-trk4 .egl-stp.is-ok .egl-stp-st{color:#13804F}
+/* v1261: نموذج الإسناد بمهمة ومدة + أنواع السجل الجديدة */
+.egl-asg-form{display:flex;flex-direction:column;gap:8px}
+.egl-asg-row.is-end{justify-content:flex-end}
+.egl-asg-in{min-height:38px;border:1px solid #D7DEEA;border-radius:10px;padding:0 10px;font:inherit;font-size:13px;background:#fff;color:var(--egl-ink,#0F1B33);flex:1 1 220px;min-width:0}
+.egl-asg-in[aria-invalid="true"]{border-color:#EB5A45;box-shadow:0 0 0 3px #FDE3DF}
+.egl-asg-sel.is-sm{flex:0 1 170px}.egl-asg-in.is-sm{flex:0 1 110px}
+.egl-asg-log li.is-task_done i{background:#F07A2B}.egl-asg-log li.is-task_ok i{background:#22A86B}.egl-asg-log li.is-task_back i{background:#EB5A45}
+@media (max-width:640px){.egl-asg-sel.is-sm,.egl-asg-in.is-sm,.egl-asg-in,.egl-asg-sel{flex:1 1 100%}}

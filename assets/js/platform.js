@@ -29867,16 +29867,43 @@ if (v.k === 'claim') return n(v.by) + ' طلب إسناد الطلب إليه';
 if (v.k === 'approve') return 'وافق ' + n(v.by) + ' على إسناده إلى ' + n(v.to);
 if (v.k === 'reject') return v.note === 'ألغى طلبه' ? n(v.by) + ' ألغى طلب الإسناد' : 'رفض ' + n(v.by) + ' طلب ' + n(v.to);
 if (v.k === 'receive') return 'استلمه ' + n(v.by);
+if (v.k === 'task_done') return n(v.by) + ' أنهى المهمة';
+if (v.k === 'task_ok') return 'اعتمد ' + n(v.by) + ' تنفيذ ' + n(v.to);
+if (v.k === 'task_back') return 'أعاد ' + n(v.by) + ' المهمة إلى ' + n(v.to);
 return EGA_K[v.k] || v.k;
 }
 /* v1258: المسار والنص من بيانات الخادم — لكل خطوة لونها، وللسحب والرفض لون التوقف، والمباشر «لا يلزم» */
 const EGAS_C = ['saffron', 'orange', 'blue', 'green'], EGAS_H = { saffron: '#F0A12B', orange: '#F07A2B', blue: '#3B74E8', green: '#22A86B', red: '#EB5A45', slate: '#7C8899', violet: '#7559F0' };
 function egAsgDur(s) { const d = new Date(s); if (!s || isNaN(d)) return '—'; const m = Math.max(0, Math.round((Date.now() - d) / 60000)); if (m < 60) return fmtNum(m) + ' د'; const h = Math.round(m / 60); if (h < 48) return fmtNum(h) + ' ساعة'; return fmtNum(Math.round(h / 24)) + ' يوم'; }
+/* v1261: الإسناد بمهمة ومدة (stf_432) — المهمة النشطة أولًا: الإسناد ← الاستلام ← التنفيذ ← الاعتماد، والمدة المتبقية أو التأخير */
+const EGAS_TASKS = [['handle', 'معالجة الطلب'], ['review', 'مراجعة المستندات'], ['quote', 'إعداد عرض السعر'], ['admin', 'إكمال إجراءات الإدارة'], ['deliver', 'تفعيل السند وتسليم المنتج'], ['follow', 'متابعة العميل'], ['custom', 'مهمة أخرى (اكتبها)']];
+const EGAS_HRS = [2, 4, 8, 24, 48, 72];
+function egAsgLeft(s) { const d = new Date(s); if (!s || isNaN(d)) return null; return Math.round((d - Date.now()) / 60000); }
+function egAsgMin(m) { m = Math.abs(m); if (m < 60) return fmtNum(m) + ' د'; const h = Math.round(m / 60); if (h < 48) return fmtNum(h) + ' ساعة'; return fmtNum(Math.round(h / 24)) + ' يوم'; }
+function egAsgTaskOn(T) { return !!T && ['assigned', 'received', 'done', 'returned'].indexOf(T.st) >= 0; }
 function egAsgState(x, A) {
-const ev = (A && A.ev) || [], pend = A && A.pend, rc = A && A.recv, asg = A && A.to, last = ev[0];
+const ev = (A && A.ev) || [], pend = A && A.pend, rc = A && A.recv, asg = A && A.to, last = ev[0], T = A && A.task;
+const mk = function (L) { return L.map(function (z, i) { return { n: z[0], g: z[1], c: ['blue', 'saffron', 'orange', 'green'][i], st: 'is-todo', t: '' }; }); };
+if (egAsgTaskOn(T) || (T && T.st === 'approved' && !pend)) {
+const S = mk([['الإسناد', 'user-circle'], ['الاستلام', 'tray'], ['التنفيذ', 'briefcase'], ['الاعتماد', 'seal-check']]);
+const left = egAsgLeft(T.due), late = egAsgTaskOn(T) && T.st !== 'done' && left !== null && left < 0;
+S[0].st = 'is-ok'; S[0].t = T.name || 'موظف';
+if (T.recv) { S[1].st = 'is-ok'; S[1].t = 'استلمها ' + eg10Dt(T.recv).split(' · ')[1]; } else if (egAsgTaskOn(T)) { S[1].st = 'is-now'; S[1].t = 'لم يستلمها'; }
+if (T.st === 'done' || T.st === 'approved') { S[2].st = 'is-ok'; S[2].t = 'نُفّذت'; } else if (T.st === 'returned') { S[2].st = 'is-now'; S[2].t = 'أُعيدت إليه'; } else if (T.st === 'received') { S[2].st = 'is-now'; S[2].t = late ? 'متأخرة' : 'جارٍ التنفيذ'; }
+if (T.st === 'approved') { S[3].st = 'is-ok'; S[3].t = 'اعتُمدت'; } else if (T.st === 'done') { S[3].st = 'is-now'; S[3].t = 'بانتظار الاعتماد'; }
+const head = (T.by ? 'أسندها ' + T.by : 'أُسندت') + ' · ' + eg10Dt(T.at) + ' · مدة ' + fmtNum(T.hours) + ' ساعة';
+let title, sub, tone;
+if (T.st === 'approved') { title = 'نُفّذت واعتُمدت: ' + T.label; sub = 'نفّذها ' + (T.name || 'الموظف') + ' · ' + eg10Dt(T.done) + (T.dec_at ? ' · اعتُمدت ' + eg10Dt(T.dec_at) : ''); tone = 'green'; }
+else if (T.st === 'done') { title = (T.name || 'الموظف') + ' أنهى: ' + T.label; sub = 'أنهاها ' + eg10Dt(T.done) + (T.done_note ? ' — ' + T.done_note : '') + ' · بانتظار الاعتماد'; tone = 'orange'; }
+else { title = 'مسنَد إلى ' + (T.name || 'موظف') + ' — ' + T.label; tone = late ? 'red' : T.st === 'returned' ? 'orange' : 'blue';
+sub = (late ? 'متأخر منذ ' + egAsgMin(left) : 'متبقٍّ ' + egAsgMin(left)) + ' · التسليم ' + eg10Dt(T.due) + ' · ' + head + (T.st === 'returned' && T.dec_note ? ' · سبب الإعادة: ' + T.dec_note : ''); }
+if (T.text && T.key !== 'custom') sub += ' · التفاصيل: ' + T.text;
+return { S: S, title: title, sub: sub, tone: tone, T: T, late: late };
+}
+const S = mk([['طلب الإسناد', 'paper-plane-tilt'], ['الموافقة', 'seal-check'], ['الإسناد', 'user-circle'], ['الاستلام', 'check-circle']]);
+S[0].c = 'saffron'; S[1].c = 'orange'; S[2].c = 'blue'; S[3].c = 'green';
 const lastAsg = ev.filter(function (v) { return v.k === 'assign' || v.k === 'transfer'; })[0];
 const viaApprove = !!(asg && lastAsg && lastAsg.note === 'بموافقة طلب الإسناد');
-const S = [['طلب الإسناد', 'paper-plane-tilt'], ['الموافقة', 'seal-check'], ['الإسناد', 'user-circle'], ['الاستلام', 'check-circle']].map(function (z, i) { return { n: z[0], g: z[1], c: EGAS_C[i], st: 'is-todo', t: '' }; });
 const R = rc ? 'استلمه ' + (rc.by || 'الفريق') : '';
 let title, sub, tone;
 if (pend) {
@@ -29887,24 +29914,24 @@ if (viaApprove) { S[0].st = 'is-ok'; S[0].t = 'طلبه الموظف'; S[1].st =
 else { S[0].st = 'is-skip'; S[0].t = 'لا يلزم'; S[1].st = 'is-skip'; S[1].t = 'إسناد مباشر'; }
 S[2].st = 'is-ok'; S[2].t = A.to_name || 'موظف';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; } else { S[3].st = 'is-now'; S[3].t = 'لم يُستلم بعد'; }
-title = 'مسنَد إلى ' + (A.to_name || 'موظف'); tone = rc ? 'green' : 'blue';
+title = 'مسنَد إلى ' + (A.to_name || 'موظف') + ' — بلا مهمة محددة'; tone = rc ? 'green' : 'blue';
 sub = (A.by_name ? 'أسنده ' + A.by_name : 'أُسند') + (A.at ? ' · ' + eg10Dt(A.at) : '') + ' · ' + (rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد — منذ ' + egAsgDur(A.at));
 } else if (last && last.k === 'withdraw') {
 S[0].st = 'is-skip'; S[0].t = '—'; S[1].st = 'is-skip'; S[1].t = '—'; S[2].st = 'is-stop'; S[2].t = 'سُحب';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
-title = 'سُحب الإسناد من ' + (last.from || 'موظف'); sub = (last.by ? 'سحبه ' + last.by + ' · ' : '') + eg10Dt(last.at) + ' — الطلب الآن غير مسنَد'; tone = 'red';
+title = 'سُحب الإسناد من ' + (last.from || 'موظف'); sub = (last.by ? 'سحبه ' + last.by + ' · ' : '') + eg10Dt(last.at) + ' — بلا مسؤول منذ ' + egAsgDur(last.at); tone = 'red';
 } else if (last && last.k === 'reject') {
 S[0].st = 'is-ok'; S[0].t = last.to || 'موظف'; S[1].st = 'is-stop'; S[1].t = last.note === 'ألغى طلبه' ? 'أُلغي الطلب' : 'رُفض';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
 title = last.note === 'ألغى طلبه' ? 'أُلغي طلب الإسناد' : 'رُفض طلب إسناد ' + (last.to || 'الموظف'); sub = eg10Dt(last.at) + ' — الطلب غير مسنَد'; tone = 'red';
-} else { /* v1260: غير مسنَد — الخطوة الحالية «الإسناد» (مباشرة أو بطلب)، والمدة منذ الإرسال أو آخر سحب */
+} else {
 const since = (last && last.at) || x.created_at;
-S[0].st = 'is-todo'; S[0].t = 'عند الطلب'; S[1].st = 'is-todo'; S[1].t = 'عند الطلب'; S[2].st = 'is-now'; S[2].t = 'غير مسنَد';
+S[0].t = 'عند الطلب'; S[1].t = 'عند الطلب'; S[2].st = 'is-now'; S[2].t = 'غير مسنَد';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
 title = rc ? 'غير مسنَد — استلمه ' + (rc.by || 'الفريق') + ' دون إسناد' : 'غير مسنَد'; tone = 'saffron';
 sub = 'بلا مسؤول منذ ' + egAsgDur(since) + (rc ? ' · استُلم ' + eg10Dt(rc.at) : ' · بانتظار إسناده أو طلب إسناده');
 }
-return { S: S, title: title, sub: sub, tone: tone };
+return { S: S, title: title, sub: sub, tone: tone, T: T && T.st === 'approved' ? T : null };
 }
 function egAsgDo(x, fn, args, title, line, paint) {
 if (EGAS.act) return; EGAS.act = fn; paint();
@@ -29914,27 +29941,56 @@ if (!j || j.ok === false) { paint(); eg9Note('لم يُنفَّذ', [(j && j.mes
 await eg11After(x, title, [line]); paint();
 }).catch(function (err) { EGAS.act = ''; paint(); eg9Note('لم يُنفَّذ', [(err && err.message) || 'تعذّر تنفيذ الإجراء.'], 'warn'); });
 }
-/* الإجراءات حسب الصلاحية — تُرسم مخفية وتُفتح بلا إعادة رسم */
+/* الإجراءات حسب الصلاحية — والزر يأخذ اسم أهم إجراء متاح */
 function egAsgActs(x, A, paint) {
-const P = EGAS.P || {}, me = P.me || srAsMe(), open = !!(A && A.open), lock = !!(A && A.to && (A.to_sup || A.by_sup)) && !P.sup, kids = [], busy = !!EGAS.act, T = (A && A.to_name) || '';
-if (open && P.assign && !lock) {
-const SA = srAs();
-if (!SA.ok) kids.push(e('div', { class: 'egl-asg-n' }, 'جارٍ تحميل الفريق…'));
-else {
-const rows = SA.rows.filter(function (r) { return r && r.can_act && r.id !== x.user_id && (!A || r.id !== A.to); });
-const sel = e('select', { class: 'egl-asg-sel', 'aria-label': 'اختر الموظف' }, [e('option', { value: '' }, A && A.to ? 'تحويل إلى…' : 'إسناد إلى…')].concat(rows.map(function (r) { return e('option', { value: r.id }, (r.id === me ? 'أنا — ' : '') + r.name); })));
-kids.push(e('div', { class: 'egl-asg-row' }, [sel, eg9Btn(A && A.to ? 'تحويل' : 'إسناد', { cls: 'is-pri', disabled: busy, on: function () { const id = sel.value; if (!id) { sel.focus(); return; } const r = rows.filter(function (z) { return z.id === id; })[0]; if (!tqConfirm((A && A.to ? 'تحويل' : 'إسناد') + ' الطلب ' + x.req_no + ' إلى ' + r.name + '؟')) return; egAsgDo(x, 'admin_sr_assign', { p_sr: x.id, p_staff: id, p_note: null }, 'أُسند الطلب', 'الطلب ' + x.req_no + ' الآن مسنَد إلى ' + r.name + ' — يصله تنبيه.', paint); } }),
-A && A.to ? eg9Btn('سحب الإسناد', { cls: 'is-warn', disabled: busy, on: function () { if (!tqConfirm('سحب إسناد الطلب ' + x.req_no + ' من ' + T + '؟')) return; egAsgDo(x, 'admin_sr_assign', { p_sr: x.id, p_staff: null, p_note: null }, 'سُحب الإسناد', 'الطلب ' + x.req_no + ' الآن غير مسنَد.', paint); } }) : null]));
+const P = EGAS.P || {}, me = P.me || srAsMe(), T = A && A.task, on = egAsgTaskOn(T), busy = !!EGAS.act, rows = [], acts = [];
+const lock = !P.sup && ((A && A.to && (A.to_sup || A.by_sup)) || (on && T.by_sup));
+const add = function (lbl, kid) { acts.push(lbl); rows.push(kid); };
+/* الموظف صاحب المهمة */
+if (on && T.staff === me) {
+if (T.st === 'assigned') add('استلام المهمة', e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, 'مهمتك: ' + T.label + ' — التسليم ' + eg10Dt(T.due)), eg9Btn('استلمت المهمة', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_task_step', { p_sr: x.id, p_act: 'receive', p_note: null }, 'استلمت المهمة', 'ابدأ «' + T.label + '» — التسليم ' + eg10Dt(T.due) + '.', paint); } })]));
+else if (T.st === 'received' || T.st === 'returned') { const nt = e('input', { class: 'egl-asg-in', type: 'text', maxlength: '500', placeholder: 'ملاحظة التنفيذ (اختياري)', 'aria-label': 'ملاحظة التنفيذ' });
+add('تم التنفيذ', e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, 'مهمتك: ' + T.label), nt, eg9Btn('تم التنفيذ', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_task_step', { p_sr: x.id, p_act: 'done', p_note: nt.value }, 'أُرسل التنفيذ للاعتماد', 'يصل من أسند المهمة تنبيه للاعتماد.', paint); } })])); }
 }
-} else if (lock && open) kids.push(e('div', { class: 'egl-asg-n' }, 'بإسناد المشرف العام — لا يغيّره ولا يسحبه إلا المشرف العام.'));
-if (A && A.pend && P.approve) kids.push(e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, [(A.pend.name || 'موظف') + ' يطلب إسناده إليه', A.pend.note ? ' — ' + A.pend.note : '']),
-eg9Btn('موافقة', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: true, p_note: null }, 'تمت الموافقة', 'أُسند الطلب ' + x.req_no + ' إلى ' + (A.pend.name || 'الموظف') + ' — يصله تنبيه.', paint); } }),
+/* اعتماد التنفيذ أو إعادته */
+if (on && T.st === 'done' && (T.by_me || P.sup || (P.assign && !T.by_sup))) { const nt = e('input', { class: 'egl-asg-in', type: 'text', maxlength: '300', placeholder: 'ملاحظة (اختياري؛ مطلوبة عند الإعادة)', 'aria-label': 'ملاحظة الاعتماد أو الإعادة' });
+add('اعتماد التنفيذ', e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, (T.name || 'الموظف') + ' أنهى «' + T.label + '»' + (T.done_note ? ' — ' + T.done_note : '')), nt,
+eg9Btn('اعتماد', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_task_step', { p_sr: x.id, p_act: 'approve', p_note: nt.value }, 'اعتُمد التنفيذ', 'اعتُمدت مهمة «' + T.label + '» — يصل ' + (T.name || 'الموظف') + ' تنبيه.', paint); } }),
+eg9Btn('إعادة للموظف', { cls: 'is-warn', disabled: busy, on: function () { if (!String(nt.value || '').trim()) { nt.focus(); nt.setAttribute('aria-invalid', 'true'); return; } egAsgDo(x, 'admin_sr_task_step', { p_sr: x.id, p_act: 'return', p_note: nt.value }, 'أُعيدت المهمة', 'أُعيدت «' + T.label + '» إلى ' + (T.name || 'الموظف') + ' بالسبب المكتوب.', paint); } })])); }
+/* موافقة طلب الإسناد */
+if (A && A.pend && P.approve) add('موافقة أو رفض', e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, [(A.pend.name || 'موظف') + ' يطلب إسناده إليه', A.pend.note ? ' — ' + A.pend.note : '']),
+eg9Btn('موافقة', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: true, p_note: null }, 'تمت الموافقة', 'أُسند الطلب ' + x.req_no + ' إلى ' + (A.pend.name || 'الموظف') + ' بمهمة «معالجة الطلب» 24 ساعة — يصله تنبيه.', paint); } }),
 eg9Btn('رفض', { cls: 'is-warn', disabled: busy, on: function () { const why = window.prompt('سبب الرفض (اختياري):', ''); if (why === null) return; egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: false, p_note: why }, 'رُفض طلب الإسناد', 'يصل ' + (A.pend.name || 'الموظف') + ' تنبيه بالرفض.', paint); } })]));
-if (A && A.pend && A.pend.staff === me && !P.approve) kids.push(e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, 'طلبك بانتظار الموافقة'), eg9Btn('إلغاء طلبي', { disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: null, p_note: null }, 'أُلغي طلب الإسناد', 'أُلغي طلبك لإسناد ' + x.req_no + '.', paint); } })]));
-if (open && P.act && !P.assign && !(A && A.pend) && !(A && A.to === me) && !lock) kids.push(e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, A && A.to ? 'الطلب مسنَد إلى ' + T : 'الطلب غير مسنَد'),
+/* الإسناد بمهمة ومدة — لأي طلب حتى المكتمل */
+if (P.assign && !lock) {
+const SA = srAs();
+if (!SA.ok) rows.push(e('div', { class: 'egl-asg-n' }, 'جارٍ تحميل الفريق…'));
+else {
+const cur = on ? T.staff : A && A.to;
+const staff = SA.rows.filter(function (r) { return r && r.can_act && r.id !== x.user_id; });
+const sel = e('select', { class: 'egl-asg-sel', 'aria-label': 'الموظف' }, [e('option', { value: '' }, 'الموظف…')].concat(staff.map(function (r) { return e('option', { value: r.id }, (r.id === me ? 'أنا — ' : '') + r.name + (r.id === cur ? ' (الحالي)' : '')); })));
+const tk = e('select', { class: 'egl-asg-sel', 'aria-label': 'المطلوب من الموظف' }, EGAS_TASKS.map(function (z) { return e('option', { value: z[0] }, z[1]); }));
+const tx = e('input', { class: 'egl-asg-in', type: 'text', maxlength: '300', placeholder: 'تفاصيل المطلوب (اختياري)', 'aria-label': 'تفاصيل المطلوب' });
+const hr = e('select', { class: 'egl-asg-sel is-sm', 'aria-label': 'مدة الإنجاز' }, EGAS_HRS.map(function (h) { const o = e('option', { value: String(h) }, 'خلال ' + fmtNum(h) + ' ساعة'); if (h === 24) o.selected = true; return o; }).concat([e('option', { value: 'x' }, 'مدة أخرى…')]));
+const hx = e('input', { class: 'egl-asg-in is-sm', type: 'number', min: '1', max: '720', placeholder: 'ساعات', 'aria-label': 'عدد الساعات', hidden: true });
+hr.addEventListener('change', function () { hx.hidden = hr.value !== 'x'; if (!hx.hidden) hx.focus(); });
+tk.addEventListener('change', function () { tx.placeholder = tk.value === 'custom' ? 'اكتب المطلوب من الموظف (إلزامي)' : 'تفاصيل المطلوب (اختياري)'; if (tk.value === 'custom') tx.focus(); });
+const go = function () {
+const id = sel.value; if (!id) { sel.focus(); return; } if (tk.value === 'custom' && !String(tx.value || '').trim()) { tx.focus(); tx.setAttribute('aria-invalid', 'true'); return; }
+const h = hr.value === 'x' ? Number(hx.value) : Number(hr.value); if (!h || h < 1 || h > 720) { hx.hidden = false; hx.focus(); return; }
+const r = staff.filter(function (z) { return z.id === id; })[0], lbl = tk.value === 'custom' ? String(tx.value).trim() : tk.options[tk.selectedIndex].textContent;
+if (!tqConfirm((cur ? 'تحويل' : 'إسناد') + ' الطلب ' + x.req_no + ' إلى ' + r.name + '\nالمطلوب: ' + lbl + '\nالمدة: ' + h + ' ساعة؟')) return;
+egAsgDo(x, 'admin_sr_task_assign', { p_sr: x.id, p_staff: id, p_key: tk.value, p_text: tx.value || null, p_hours: h }, 'أُسندت المهمة', r.name + ': ' + lbl + ' — خلال ' + h + ' ساعة. يصله تنبيه.', paint);
+};
+add(cur ? 'تحويل أو سحب' : 'إسناد', e('div', { class: 'egl-asg-form' }, [e('div', { class: 'egl-asg-row' }, [sel, tk]), e('div', { class: 'egl-asg-row' }, [tx, hr, hx]),
+e('div', { class: 'egl-asg-row is-end' }, [cur ? eg9Btn('سحب الإسناد', { cls: 'is-warn', disabled: busy, on: function () { if (!tqConfirm('سحب إسناد الطلب ' + x.req_no + '؟')) return; egAsgDo(x, 'admin_sr_task_assign', { p_sr: x.id, p_staff: null, p_key: null, p_text: null, p_hours: null }, 'سُحب الإسناد', 'الطلب ' + x.req_no + ' الآن بلا مسؤول.', paint); } }) : null,
+eg9Btn(cur ? 'تحويل بالمهمة' : 'إسناد بالمهمة', { cls: 'is-pri', disabled: busy, on: go })])]));
+}
+} else if (lock) rows.push(e('div', { class: 'egl-asg-n' }, 'بإسناد المشرف العام — لا يغيّره ولا يسحبه إلا المشرف العام.'));
+if (A && A.pend && A.pend.staff === me && !P.approve) add('إلغاء طلبي', e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, 'طلبك بانتظار الموافقة'), eg9Btn('إلغاء طلبي', { disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_decide', { p_sr: x.id, p_ok: null, p_note: null }, 'أُلغي طلب الإسناد', 'أُلغي طلبك لإسناد ' + x.req_no + '.', paint); } })]));
+if (A && A.open && P.act && !P.assign && !(A && A.pend) && !(on && T.staff === me) && !(A.to === me) && !lock) add('اطلب إسناده لي', e('div', { class: 'egl-asg-row' }, [e('span', { class: 'egl-asg-q' }, on ? 'الطلب مسنَد إلى ' + T.name : A.to ? 'الطلب مسنَد إلى ' + A.to_name : 'الطلب غير مسنَد'),
 eg9Btn('اطلب إسناده لي', { cls: 'is-pri', disabled: busy, on: function () { egAsgDo(x, 'admin_sr_asg_request', { p_sr: x.id, p_note: null }, 'أُرسل طلب الإسناد', 'طلب إسناد ' + x.req_no + ' إليك بانتظار الموافقة — يصلك تنبيه بالنتيجة.', paint); } })]));
-if (!open) kids.push(e('div', { class: 'egl-asg-n' }, 'الطلب مغلق — لا إسناد له.'));
-return kids;
+return { rows: rows, lbl: acts[0] || '' };
 }
 /* السجل: آخر خطوتين ظاهرتان دائمًا، والباقي بـ«عرض التفاصيل» */
 function egAsgLog(A) {
@@ -29946,7 +30002,7 @@ return L;
 function egAsgLine(x, paint) {
 const A = egAsgGet(x, paint);
 if (!A) return e('div', { class: 'egl-asg is-wait' }, [e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('user-circle', 'slate')]), e('span', { class: 'egl-asg-t' }, [e('b', {}, 'الإسناد'), e('small', {}, 'جارٍ التحميل…')])])]);
-const P = EGAS.P || {}; if (P.assign && A.open) { try { srAsLoad(false); } catch (err) { void err; } } /* الفريق جاهز قبل فتح الإجراءات */
+const P = EGAS.P || {}; if (P.assign) { try { srAsLoad(false, paint); } catch (err) { void err; } } /* الفريق جاهز قبل فتح الإجراءات */
 const G = egAsgState(x, A), L = egAsgLog(A), det = !!(EGAS.det && EGAS.det[x.id]), act = EGAS.open === x.id;
 const trk = e('div', { class: 'egl-trk8 egl-trk7 egl-trk4', role: 'list', 'aria-label': 'مسار الإسناد' }, G.S.map(function (s) {
 const cn = s.st === 'is-todo' || s.st === 'is-skip' ? 'slate' : s.st === 'is-stop' ? 'red' : s.st === 'is-ok' ? 'green' : G.tone === 'red' ? 'red' : G.tone; /* v1260: المكتمل أخضر · الحالي بلون الحالة · المتوقف أحمر */
@@ -29957,9 +30013,9 @@ e('span', { class: 'egl-stp-bar' }), s.t ? e('span', { class: 'egl-stp-st' + (s.
 const logItem = function (v) { return e('li', { class: 'is-' + v.k }, [e('i', { 'aria-hidden': 'true' }), e('b', {}, v.t), v.n ? e('span', {}, ' — ' + v.n) : null, e('small', {}, e('bdi', { dir: 'ltr' }, eg10Dt(v.at)))]); };
 const more = L.length > 2 ? e('ol', { class: 'egl-asg-log is-more', hidden: det ? null : true }, L.slice(2).map(logItem)) : null;
 const tgl = L.length > 2 ? e('button', { type: 'button', class: 'egl-asg-lnk', 'data-live-ok': '', 'aria-expanded': det ? 'true' : 'false', onClick: function (ev) { const on = !(EGAS.det && EGAS.det[x.id]); (EGAS.det || (EGAS.det = {}))[x.id] = on; if (more) more.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'أقل تفاصيل' : 'عرض التفاصيل (' + fmtNum(L.length) + ')'; } }, [frag(ui('list-bullets', 14)), e('span', {}, det ? 'أقل تفاصيل' : 'عرض التفاصيل (' + fmtNum(L.length) + ')')]) : null;
-const acts = egAsgActs(x, A, paint), canAct = acts.some(function (n) { return n && n.classList && n.classList.contains('egl-asg-row'); });
-const box = e('div', { class: 'egl-asg-acts', hidden: act ? null : true }, acts);
-const ab = canAct ? e('button', { type: 'button', class: 'egl-asg-go', 'data-live-ok': '', 'aria-expanded': act ? 'true' : 'false', onClick: function (ev) { const on = EGAS.open !== x.id; EGAS.open = on ? x.id : ''; box.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'إغلاق' : (A.pend && P.approve ? 'موافقة أو رفض' : P.assign ? (A.to ? 'تحويل أو سحب' : 'إسناد') : 'اطلب إسناده لي'); } }, [frag(ui('users-three', 14)), e('span', {}, act ? 'إغلاق' : (A.pend && P.approve ? 'موافقة أو رفض' : P.assign ? (A.to ? 'تحويل أو سحب' : 'إسناد') : 'اطلب إسناده لي'))]) : null;
+const AC = egAsgActs(x, A, paint), canAct = !!AC.lbl, LB = AC.lbl;
+const box = e('div', { class: 'egl-asg-acts', hidden: act ? null : true }, AC.rows);
+const ab = canAct ? e('button', { type: 'button', class: 'egl-asg-go', 'data-live-ok': '', 'aria-expanded': act ? 'true' : 'false', onClick: function (ev) { const on = EGAS.open !== x.id; EGAS.open = on ? x.id : ''; box.hidden = !on; ev.currentTarget.setAttribute('aria-expanded', on ? 'true' : 'false'); ev.currentTarget.lastChild.textContent = on ? 'إغلاق' : LB; } }, [frag(ui('users-three', 14)), e('span', {}, act ? 'إغلاق' : LB)]) : null;
 return e('div', { class: 'egl-asg is-' + G.tone }, [
 e('div', { class: 'egl-asg-hd' }, [e('span', { class: 'egl-asg-ic', 'aria-hidden': 'true' }, [egT3('user-circle', G.tone)]),
 e('span', { class: 'egl-asg-t' }, [e('b', {}, G.title), e('small', {}, G.sub)]), ab]),
