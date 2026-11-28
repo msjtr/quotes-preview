@@ -29618,8 +29618,8 @@ return e('div', { class: 'eg9-bar' + (dead ? ' is-dead' : ''), role: 'img', 'ari
 function eg9Tone(st) { return st && st[1] ? st[1] : ''; }
 
 /* v1251: علامة الموقع ثلاثية الأبعاد بطبقات (لون المرحلة) — تجاور اسم المرحلة على سطر الكتابة */
-const EGL_HEX = { saffron: '#F0A12B', orange: '#F07A2B', pink: '#E0508C', violet: '#7559F0', blue: '#3B74E8', teal: '#0FA3A8', emerald: '#13915C', green: '#22A86B', red: '#EB5A45', slate: '#7C8899' , navy: '#1E3A8A', cyan: '#0EA5C6', crimson: '#D63A4A', brown: '#9A6B3F', graphite: '#3B4A63' };
-const EGL_PC = { saffron: ['#B86F0A', '#FFC861', '#F0A12B'], orange: ['#B4561A', '#FFA66B', '#F07A2B'], pink: ['#A8336A', '#FF8DBE', '#E0508C'], violet: ['#5B3FD1', '#A18BFF', '#7559F0'], blue: ['#2457C5', '#6EA0FF', '#3B74E8'], teal: ['#06707A', '#3FD0D3', '#0FA3A8'], emerald: ['#0B6B45', '#43C98B', '#13915C'], green: ['#13804F', '#5EE0A0', '#22A86B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'] , navy: ['#14245E', '#6F8BDA', '#1E3A8A'], cyan: ['#0A6E85', '#6EDDF2', '#0EA5C6'], crimson: ['#8E1F2C', '#F58A97', '#D63A4A'], brown: ['#6B4523', '#DDB083', '#9A6B3F'], graphite: ['#1F2937', '#95A3B8', '#3B4A63'] };
+const EGL_HEX = { saffron: '#F0A12B', orange: '#F07A2B', pink: '#E0508C', violet: '#7559F0', blue: '#3B74E8', teal: '#0FA3A8', emerald: '#13915C', green: '#22A86B', red: '#EB5A45', slate: '#7C8899' , navy: '#1E3A8A', cyan: '#0EA5C6', crimson: '#D63A4A', brown: '#9A6B3F', graphite: '#3B4A63' , 'k-yellow': '#EAB308', 'k-orange': '#F97316', 'k-purple': '#9333EA', 'k-blue': '#2563EB', 'k-teal': '#0D9488', 'k-brown': '#7C4A1E', 'k-red': '#DC2626', 'k-green': '#16A34A', 'k-grey': '#94A3B8', 'k-char': '#1E293B' };
+const EGL_PC = { saffron: ['#B86F0A', '#FFC861', '#F0A12B'], orange: ['#B4561A', '#FFA66B', '#F07A2B'], pink: ['#A8336A', '#FF8DBE', '#E0508C'], violet: ['#5B3FD1', '#A18BFF', '#7559F0'], blue: ['#2457C5', '#6EA0FF', '#3B74E8'], teal: ['#06707A', '#3FD0D3', '#0FA3A8'], emerald: ['#0B6B45', '#43C98B', '#13915C'], green: ['#13804F', '#5EE0A0', '#22A86B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'] , navy: ['#14245E', '#6F8BDA', '#1E3A8A'], cyan: ['#0A6E85', '#6EDDF2', '#0EA5C6'], crimson: ['#8E1F2C', '#F58A97', '#D63A4A'], brown: ['#6B4523', '#DDB083', '#9A6B3F'], graphite: ['#1F2937', '#95A3B8', '#3B4A63'] , 'k-yellow': ['#A16207', '#FDE047', '#EAB308'], 'k-orange': ['#C2410C', '#FDBA74', '#F97316'], 'k-purple': ['#6B21A8', '#D8B4FE', '#9333EA'], 'k-blue': ['#1D4ED8', '#93C5FD', '#2563EB'], 'k-teal': ['#0F766E', '#5EEAD4', '#0D9488'], 'k-brown': ['#5B3413', '#C9925A', '#7C4A1E'], 'k-red': ['#991B1B', '#FCA5A5', '#DC2626'], 'k-green': ['#15803D', '#86EFAC', '#16A34A'], 'k-grey': ['#64748B', '#CBD5E1', '#94A3B8'], 'k-char': ['#0F172A', '#64748B', '#1E293B'] };
 let EGL_PN = 0;
 function eglPin(c) {
 const P = EGL_PC[c] || EGL_PC.slate, id = 'eglp' + (++EGL_PN), d = 'M11 1.5C6.3 1.5 2.5 5.2 2.5 9.9c0 5.6 6.4 12.4 7.6 13.7.5.5 1.3.5 1.8 0 1.2-1.3 7.6-8.1 7.6-13.7 0-4.7-3.8-8.4-8.5-8.4Z';
@@ -29633,9 +29633,9 @@ return '<svg viewBox="0 0 22 28" width="22" height="28" aria-hidden="true"><defs
 /* v1265: تنبيه بارز في البطاقة لما ينتظر إجراءً — اعتماد (وما هو) · مهمة متأخرة · بانتظار استلامك */
 function eglAlerts(x, B) {
 const N = eg10Need(x, B), out = [];
-if (N.apr.length) out.push(e('span', { class: 'egl-alert is-orange' }, [frag(ui('seal-check', 13)), 'بانتظار الاعتماد: ' + N.apr.join('، ')]));
-if (N.late) out.push(e('span', { class: 'egl-alert is-red' }, [frag(ui('warning', 13)), 'مهمة متأخرة ' + N.late]));
-if (N.recv === 'بانتظار استلامك') out.push(e('span', { class: 'egl-alert is-blue' }, [frag(ui('tray', 13)), 'بانتظار استلامك']));
+if (N.apr.length) out.push(e('span', { class: 'egl-alert is-apr' }, [frag(ui('seal-check', 13)), 'بانتظار الاعتماد: ' + N.apr.join('، ')]));
+if (N.late) out.push(e('span', { class: 'egl-alert is-late' }, [frag(ui('alarm', 13)), 'مهمة متأخرة ' + N.late]));
+if (N.recv === 'بانتظار استلامك') out.push(e('span', { class: 'egl-alert is-recv' }, [frag(ui('tray', 13)), 'بانتظار استلامك']));
 return out.length ? e('span', { class: 'egl-alerts' }, out) : null;
 }
 /* ── القائمة ── */
@@ -29654,7 +29654,7 @@ const PER = EG9.per === 'all' ? 0 : (Number(EG9.per) || 2), NPG = PER && !QN ? M
 EG9.pg = Math.min(Math.max(0, EG9.pg || 0), NPG - 1);
 const RP = PER && !QN ? RQ.slice(EG9.pg * PER, EG9.pg * PER + PER) : RQ;
 /* v1232: قائمة الطلبات بقوالب حديثة — بطاقات حالات ببلاطات ثلاثية الأبعاد بألوان الشريط الجانبي، وصف لكل طلب بزر إجرائه التالي */
-const KS = { recv: ['tray', 'saffron', 'بانتظار الاستلام'], dec: ['hourglass-medium', 'orange', 'بانتظار قرارنا'], apr: ['seal-check', 'navy', 'بانتظار الاعتماد'], send: ['paper-plane-tilt', 'violet', 'جاهزة للإرسال'], cl: ['user-circle', 'cyan', 'بانتظار العميل'], adm: ['briefcase', 'brown', 'إجراءات الإدارة'], late: ['warning', 'red', 'مهام متأخرة'], done: ['check-circle', 'green', 'مكتملة'], dead: ['x-circle', 'slate', 'مغلقة / اعتذر'], all: ['stack', 'graphite', 'كل الطلبات'] };
+const KS = { recv: ['tray', 'k-yellow', 'بانتظار الاستلام'], dec: ['list-checks', 'k-orange', 'بانتظار قرارنا'], apr: ['seal-check', 'k-purple', 'بانتظار الاعتماد'], send: ['paper-plane-tilt', 'k-blue', 'جاهزة للإرسال'], cl: ['hourglass-medium', 'k-teal', 'بانتظار العميل'], adm: ['buildings', 'k-brown', 'إجراءات الإدارة'], late: ['alarm', 'k-red', 'مهام متأخرة'], done: ['check-circle', 'k-green', 'مكتملة'], dead: ['x-circle', 'k-grey', 'مغلقة / اعتذر'], all: ['stack', 'k-char', 'كل الطلبات'] }; /* v1271: لون وأيقونة بمعنى كل خانة — والتنبيه في البطاقة بلون خانته */
 const tile = function (g, c) { const h = typeof window.__tqTile === 'function' ? window.__tqTile(g, c) : ''; return h ? frag(h) : frag(ui(g, 22)); };
 const kpis = e('div', { class: 'egl-kpis', role: 'group', 'aria-label': 'تصفية حسب الحالة' }, EG10_F.map(function (f) {
 const n = W.filter(function (x) { return f[2](x, BD[x.id]); }).length, on = f[0] === F[0], K = KS[f[0]] || ['stack', 'slate', f[1]];
@@ -29689,7 +29689,7 @@ const an = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigne
 const rej = dead && (x.status === 'rejected' || (B && B.rec === 'not_eligible'));
 /* v1251: مسار البطاقة هو مسار صفحة الطلب نفسه — المراحل السبع وحالاتها من eg12Dot/eg12Note */
 const C = { x: x, B: B, k: k, dead: dead, reach: eg10Reach(x, B, k) }, S7 = EG12_T.slice(0, EG12_NSTG);
-const COLK = { req: 'saffron', dec: 'orange', qt: 'crimson', inv: 'violet', ct: 'navy', lnk: 'cyan', adm: 'emerald' }, NS = S7.length; /* v1252: اللون بمفتاح المرحلة — أي إضافة أو حذف في مراحل الصفحة يظهر في البطاقة */
+const COLK = { req: 'k-yellow', dec: 'k-orange', qt: 'k-brown', inv: 'k-purple', ct: 'k-blue', lnk: 'k-teal', adm: 'k-green' }, NS = S7.length; /* v1252: اللون بمفتاح المرحلة — أي إضافة أو حذف في مراحل الصفحة يظهر في البطاقة */
 const dots = S7.map(function (t) { return eg12Dot(t[0], C); });
 let stop = -1; if (dead) { stop = x.status === 'rejected' ? 1 : B && B.dec ? 5 : dots.findIndex(function (d) { return d !== 'ok'; }); if (stop < 0) stop = NS - 1; }
 const sts = S7.map(function (t, i) { return done ? 'is-ok' : dead ? (i === stop ? 'is-stop' : i < stop && dots[i] === 'ok' ? 'is-ok' : 'is-todo') : dots[i] === 'ok' ? 'is-ok' : dots[i] === 'w' ? 'is-now' : 'is-todo'; });

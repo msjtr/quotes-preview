@@ -120,7 +120,10 @@ var RECV = [['gw', 'عبر بوابة الدفع'], ['tr', 'تحويل بنكي'
     blue: ['#2457C5', '#6EA0FF', '#3B74E8'], violet: ['#5B3FD1', '#A18BFF', '#7559F0'], teal: ['#06707A', '#3FD0D3', '#0FA3A8'],
     saffron: ['#B86F0A', '#FFC861', '#F0A12B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'], green: ['#13804F', '#5EE0A0', '#22A86B'],
     orange: ['#B4561A', '#FFA66B', '#F07A2B'], pink: ['#A8336A', '#FF8DBE', '#E0508C'], emerald: ['#0B6B45', '#43C98B', '#13915C'] /* v1247: ألوان مراحل مسار الأهلية */,
-    navy: ['#14245E', '#6F8BDA', '#1E3A8A'], cyan: ['#0A6E85', '#6EDDF2', '#0EA5C6'], crimson: ['#8E1F2C', '#F58A97', '#D63A4A'], brown: ['#6B4523', '#DDB083', '#9A6B3F'], graphite: ['#1F2937', '#95A3B8', '#3B4A63'] /* v1270: ألوان مميزة للملخص والمسار */
+    navy: ['#14245E', '#6F8BDA', '#1E3A8A'], cyan: ['#0A6E85', '#6EDDF2', '#0EA5C6'], crimson: ['#8E1F2C', '#F58A97', '#D63A4A'], brown: ['#6B4523', '#DDB083', '#9A6B3F'], graphite: ['#1F2937', '#95A3B8', '#3B4A63'] /* v1270: ألوان مميزة للملخص والمسار */,
+    'k-yellow': ['#A16207', '#FDE047', '#EAB308'], 'k-orange': ['#C2410C', '#FDBA74', '#F97316'], 'k-purple': ['#6B21A8', '#D8B4FE', '#9333EA'], 'k-blue': ['#1D4ED8', '#93C5FD', '#2563EB'],
+    'k-teal': ['#0F766E', '#5EEAD4', '#0D9488'], 'k-brown': ['#5B3413', '#C9925A', '#7C4A1E'], 'k-red': ['#991B1B', '#FCA5A5', '#DC2626'], 'k-green': ['#15803D', '#86EFAC', '#16A34A'],
+    'k-grey': ['#64748B', '#CBD5E1', '#94A3B8'], 'k-char': ['#0F172A', '#64748B', '#1E293B'] /* v1271: لوحة موحّدة متباعدة (ΔE2000 ≥ 18) للملخص والمسار والتنبيهات */
   };
   var COLK = {
     'adm-home': 'teal', 'cu-list': 'blue', 'cu-new': 'blue', 'cu-pf-ver': 'blue', 'cu-pf-launch': 'blue', 'cu-pf-req': 'blue', 'cu-mem': 'blue', 'cu-secc': 'teal', 'cpg': 'teal', 'cu-inbox': 'violet',

@@ -10504,3 +10504,10 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 @media (max-width:640px){.egl-alert{white-space:normal}}
 /* v1270: ألوان مميزة للملخص (كحلي · سماوي · بني · فحمي) */
 .egl-kpi.is-navy{--c:#1E3A8A;--c2:#EEF2FB}.egl-kpi.is-cyan{--c:#0E8FAD;--c2:#E7F7FB}.egl-kpi.is-brown{--c:#9A6B3F;--c2:#F7F0E8}.egl-kpi.is-graphite{--c:#3B4A63;--c2:#EEF1F5}.egl-kpi.is-crimson{--c:#D63A4A;--c2:#FDEEF0}
+/* v1271: لوحة موحّدة متباعدة — الملخص والتنبيه بنفس لون الخانة */
+.egl-kpi.is-k-yellow{--c:#A16207;--c2:#FEF9E7}.egl-kpi.is-k-orange{--c:#EA580C;--c2:#FFF3EA}.egl-kpi.is-k-purple{--c:#9333EA;--c2:#F5EEFE}.egl-kpi.is-k-blue{--c:#2563EB;--c2:#EEF3FE}
+.egl-kpi.is-k-teal{--c:#0D9488;--c2:#E8F7F5}.egl-kpi.is-k-brown{--c:#7C4A1E;--c2:#F6EFE8}.egl-kpi.is-k-red{--c:#DC2626;--c2:#FDEEEE}.egl-kpi.is-k-green{--c:#16A34A;--c2:#EAF8EF}
+.egl-kpi.is-k-grey{--c:#64748B;--c2:#F1F4F8}.egl-kpi.is-k-char{--c:#1E293B;--c2:#EEF1F5}
+.egl-alert.is-apr{background:#9333EA;color:#fff;box-shadow:0 3px 8px -4px #9333EA}
+.egl-alert.is-late{background:#DC2626;color:#fff;box-shadow:0 3px 8px -4px #DC2626}
+.egl-alert.is-recv{background:#EAB308;color:#3B2A02}
