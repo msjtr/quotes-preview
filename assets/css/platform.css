@@ -10502,3 +10502,5 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-alert.is-red{background:#EB5A45;color:#fff;box-shadow:0 3px 8px -4px #EB5A45}
 .egl-alert.is-blue{background:#3B74E8;color:#fff}
 @media (max-width:640px){.egl-alert{white-space:normal}}
+/* v1270: ألوان مميزة للملخص (كحلي · سماوي · بني · فحمي) */
+.egl-kpi.is-navy{--c:#1E3A8A;--c2:#EEF2FB}.egl-kpi.is-cyan{--c:#0E8FAD;--c2:#E7F7FB}.egl-kpi.is-brown{--c:#9A6B3F;--c2:#F7F0E8}.egl-kpi.is-graphite{--c:#3B4A63;--c2:#EEF1F5}.egl-kpi.is-crimson{--c:#D63A4A;--c2:#FDEEF0}
