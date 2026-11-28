@@ -29826,7 +29826,7 @@ const on = t[0] === C.tab;
 if (i >= EG12_NSTG) return [i === EG12_NSTG ? e('span', { class: 'eg13-sep', 'aria-hidden': 'true' }) : null, e('button', { type: 'button', class: 'eg13-tool' + (on ? ' is-on' : ''), 'aria-current': on ? 'page' : null, 'data-live-ok': '', onClick: function () { C.go(t[0], ''); } }, [e('span', { class: 'eg13-tic', 'aria-hidden': 'true' }, eg12Ic(t[2], 18)), e('b', {}, t[1]), e('small', {}, t[0] === 'tpl' ? 'لهذا الطلب' : 'المحادثة والأحداث')])];
 const d = eg12Dot(t[0], C), now = d === 'w', done = d === 'ok';
 return e('button', { type: 'button', class: 'eg13-st' + (done ? ' is-done' : now ? ' is-now' : d === 'off' ? ' is-off' : '') + (on ? ' is-on' : '') + (done && i + 1 < EG12_NSTG ? ' is-lk' : ''), 'aria-current': on ? 'page' : null, 'data-live-ok': '', onClick: function () { C.go(t[0], ''); } },
-[e('i', { 'aria-hidden': 'true' }, done ? eg12Ic('check', 14) : String(i + 1)), e('b', {}, t[1]), e('small', {}, now && !dead ? 'الآن' : note(t[0]))]);
+[e('i', { 'aria-hidden': 'true' }, done ? eg12Ic('check', 14) : String(i + 1)), e('b', {}, t[1]), e('small', {}, now && !dead ? (function (N) { return N && N !== '—' ? N : 'الآن'; })(note(t[0])) : note(t[0]))]); /* v1257: نص المرحلة الحالية كما في البطاقة */
 }).reduce(function (a2, b2) { return a2.concat(b2); }, []).filter(Boolean));
 const menu = eg12Menu(C);
 return e('section', { class: 'eg12-hd eg13-hd' }, [
