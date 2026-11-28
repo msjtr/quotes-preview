@@ -29629,7 +29629,15 @@ e('div', { class: 'egl-body' }, [
 e('div', { class: 'egl-l1' }, [e('b', { class: 'egl-nm' }, nm), e('span', { class: 'egl-tag' }, e('bdi', { dir: 'ltr' }, x.req_no || '—')),
 e('span', { class: 'egl-tag' + (!x.assigned_to ? ' is-un' : '') }, [frag(ui('users', 13)), an]), e('span', { class: 'egl-tag is-mut' }, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])]),
 e('div', { class: 'egl-l2' }, [e('span', { class: 'egl-amt2' + (less ? ' is-less' : '') }, [e('small', {}, el2 != null ? 'المؤهَّل' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2 != null ? el2 : req)))]),
-e('span', { class: 'egl-pill is-' + tone, title: L[0] }, L[0]), segs, e('small', { class: 'egl-nx', title: nx || '' }, done ? 'مكتمل' : dead ? 'مغلق' : nx ? 'التالي: ' + nx : '—')])]),
+(function () { /* v1242: حالة واحدة — مسار بألوان مراحله وعلامة موقع فوق المرحلة الحالية، وتحته ما تم وما بقي */
+const SCc = ['saffron', 'saffron', 'saffron', 'saffron', 'blue', 'violet', 'teal', 'green'], at = done ? 7 : Math.max(0, Math.min(7, k)), left = done ? 0 : Math.max(0, 7 - at);
+const names = (typeof EG10_ST !== 'undefined' && EG10_ST) || [];
+const tr = e('span', { class: 'egl-trk' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'img', 'aria-label': done ? 'مكتمل' : dead ? 'مغلق عند ' + (names[at] || '') : 'المرحلة ' + (at + 1) + ' من 8 — ' + (names[at] || '') }, SCc.map(function (c, i) {
+const st = done || i < at ? 'is-ok' : i === at ? (dead ? 'is-stop' : 'is-now') : '';
+return e('i', { class: 'is-' + c + ' ' + st, title: (names[i] || ('المرحلة ' + (i + 1))) + ' — ' + (done || i < at ? 'تمت' : i === at ? (dead ? 'توقف هنا' : 'الآن') : 'متبقية') }, i === at ? e('b', { class: 'egl-pin', 'aria-hidden': 'true' }, [frag(ui(done ? 'check-circle' : dead ? 'x-circle' : 'map-pin', 16))]) : null);
+}));
+return e('span', { class: 'egl-jr is-' + tone }, [tr, e('span', { class: 'egl-jr-t' }, [e('b', { title: L[0] }, L[0]), e('small', { title: nx || '' }, done ? 'اكتملت المراحل الثماني' : dead ? 'أُغلق الطلب' : 'تمت ' + fmtNum(at) + ' · متبقي ' + fmtNum(left + 1) + (nx ? ' · التالي: ' + nx : ''))])]);
+})()])]),
 e('div', { class: 'egl-go' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })])]);
 };
 const tbl = e('div', { class: 'egl-list' }, R.length ? R.map(row)

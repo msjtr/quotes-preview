@@ -10258,3 +10258,21 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-l2 .egl-nx{flex:1 1 auto;min-width:0}
 .egl-row2 .egl-go{align-self:center}
 @media (max-width:760px){.egl-row.egl-row2{grid-template-columns:40px minmax(0,1fr)}.egl-row2 .egl-go{grid-column:1 / -1}.egl-l1,.egl-l2{flex-wrap:wrap}}
+/* v1242: حالة الطلب في عنصر واحد — مسار ملوّن بعلامة موقع */
+.egl-jr{--c:#0FA3A8;display:flex;align-items:center;gap:14px;flex:1 1 auto;min-width:0}
+.egl-trk{position:relative;display:inline-flex;gap:4px;flex:0 0 auto;padding-top:14px}
+.egl-trk i{position:relative;display:block;width:22px;height:7px;border-radius:4px;background:#E4E9F2}
+.egl-trk i.is-saffron{--sc:#F0A12B}.egl-trk i.is-blue{--sc:#3B74E8}.egl-trk i.is-violet{--sc:#7559F0}.egl-trk i.is-teal{--sc:#0FA3A8}.egl-trk i.is-green{--sc:#22A86B}
+.egl-trk i.is-ok{background:var(--sc)}
+.egl-trk i.is-now{background:color-mix(in srgb,var(--sc) 30%,#fff);box-shadow:0 0 0 1.5px var(--sc) inset}
+.egl-trk i.is-stop{background:#EB5A45}
+.egl-trk.is-done i{background:#22A86B;box-shadow:none}
+.egl-trk.is-dead i.is-ok{background:#AAB4C3}
+.egl-pin{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);display:inline-flex;color:var(--sc);line-height:0;filter:drop-shadow(0 2px 2px rgba(15,29,74,.25))}
+.egl-trk.is-done .egl-pin{color:#22A86B}.egl-trk.is-dead .egl-pin{color:#EB5A45}
+@media (prefers-reduced-motion:no-preference){.egl-trk i.is-now .egl-pin{animation:eglBob 1.8s ease-in-out infinite}}
+@keyframes eglBob{50%{transform:translate(-50%,-3px)}}
+.egl-jr-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.egl-jr-t b{font-size:12.5px;color:var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.egl-jr-t small{font-size:11.5px;color:var(--egl-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.egl-row2 .egl-l2{align-items:flex-end}
