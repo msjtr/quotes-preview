@@ -10604,3 +10604,15 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egn-b,.egn-go{grid-column:1}
 }
 .egn .egl-seg button{padding:7px 8px;line-height:1.35;white-space:normal}
+/* v1279: حقل البحث ينكمش داخل حدود الشاشة · رأس الإسناد في الجوال: العنوان والمؤقت سطر كامل، ثم «التفاصيل» والزر */
+.egl-q{min-width:0;max-width:100%;box-sizing:border-box}
+.egl-q-in{min-width:0;width:100%}
+@media (max-width:640px){
+.egl-q{flex:1 1 100%}
+.egl-asg-hd{row-gap:8px}
+.egl-asg-t{flex:1 1 calc(100% - 44px)}
+.egl-asg-ck{white-space:nowrap;max-width:100%}
+.egl-asg-hd>.egl-asg-lnk{margin-inline-start:40px}
+}
+/* v1279: أزرار رأس صفحة الطلب تلتف داخل الشاشة (كانت قائمة «المزيد» تخرج عند 320px) */
+@media (max-width:640px){.eg12-hd-a{flex-wrap:wrap;width:100%;min-width:0;gap:8px;align-items:center}.eg12-hd-a>.eg12-st{flex:0 1 auto;max-width:100%;white-space:normal}.eg12-hd-a>.eg13-cl{flex:1 1 auto;justify-content:center}}
