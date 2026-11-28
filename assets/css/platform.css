@@ -10448,3 +10448,12 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-pg-gap{color:var(--egl-mut,#66748C);padding:0 2px}
 .egl-pg-t{order:9;flex-basis:100%;text-align:center}
 @media (max-width:640px){.egl-asg-hd{flex-wrap:wrap}.egl-asg-go{margin-inline-start:auto}.egl-pager .eg9-btn{flex:0 1 auto}}
+/* v1259: سطر الإسناد على الجوال — النصوص تلتف داخل البطاقة، والزر بعرض السطر */
+.egl-trk4 .egl-stp-st{white-space:normal;overflow-wrap:anywhere;max-width:100%}
+.egl-asg-t{flex:1 1 0;min-width:0}
+@media (max-width:640px){
+.egl-asg-hd{flex-wrap:wrap;align-items:flex-start}
+.egl-asg-go{flex:1 1 100%;justify-content:center;margin:0}
+.egl-asg-log li{flex-direction:column;align-items:flex-start}
+.egl-asg-log li small{margin-inline-start:0}
+}

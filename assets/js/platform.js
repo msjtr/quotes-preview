@@ -29889,7 +29889,7 @@ if (rc) { S[3].st = 'is-ok'; S[3].t = R; } else { S[3].st = 'is-now'; S[3].t = '
 title = 'مسنَد إلى ' + (A.to_name || 'موظف'); tone = rc ? 'green' : 'blue';
 sub = (A.by_name ? 'أسنده ' + A.by_name : 'أُسند') + (A.at ? ' · ' + eg10Dt(A.at) : '') + ' · ' + (rc ? 'استلمه ' + eg10Dt(rc.at) : 'لم يستلمه بعد');
 } else if (last && last.k === 'withdraw') {
-S[0].st = 'is-skip'; S[0].t = '—'; S[1].st = 'is-skip'; S[1].t = '—'; S[2].st = 'is-stop'; S[2].t = 'سُحب من ' + (last.from || 'موظف');
+S[0].st = 'is-skip'; S[0].t = '—'; S[1].st = 'is-skip'; S[1].t = '—'; S[2].st = 'is-stop'; S[2].t = 'سُحب';
 if (rc) { S[3].st = 'is-ok'; S[3].t = R; }
 title = 'سُحب الإسناد من ' + (last.from || 'موظف'); sub = (last.by ? 'سحبه ' + last.by + ' · ' : '') + eg10Dt(last.at) + ' — الطلب الآن غير مسنَد'; tone = 'red';
 } else if (last && last.k === 'reject') {
