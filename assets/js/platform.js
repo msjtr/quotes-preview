@@ -29625,8 +29625,8 @@ return e('article', { class: 'egl-row is-' + tone + (x.status === 'submitted' ? 
 e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
 e('div', { class: 'egl-who' }, [e('b', {}, nm), e('small', {}, e('bdi', { dir: 'ltr' }, x.req_no || '—'))]),
 e('div', { class: 'egl-amt' + (less ? ' is-less' : '') }, [e('small', {}, el2 != null ? 'المؤهَّل' : 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(el2 != null ? el2 : req)))]),
-e('div', { class: 'egl-st' }, [e('div', { class: 'egl-st-r' }, [e('span', { class: 'egl-pill is-' + tone }, L[0]), segs]), !done && !dead && nx ? e('small', { class: 'egl-nx' }, 'التالي: ' + nx) : null]),
-e('div', { class: 'egl-meta' }, [e('span', { class: 'egl-as' + (un ? ' is-un' : '') }, [frag(ui('users', 13)), x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : un ? 'غير مسنَد' : '—']), e('small', {}, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])]),
+e('div', { class: 'egl-st' }, [e('span', { class: 'egl-pill is-' + tone, title: L[0] }, L[0]), e('div', { class: 'egl-st-r' }, [segs, e('small', { class: 'egl-nx', title: nx || '' }, done ? 'مكتمل' : dead ? 'مغلق' : nx ? 'التالي: ' + nx : '—')])]), /* v1240: سطران ثابتان */
+(function () { const an = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : un ? 'غير مسنَد' : 'غير مسنَد'; return e('div', { class: 'egl-meta' }, [e('span', { class: 'egl-as' + (!x.assigned_to ? ' is-un' : ''), title: an }, [frag(ui('users', 13)), e('span', {}, an)]), e('small', {}, [frag(ui('clock', 13)), e('span', {}, eg10Ago(eg10Upd(x, B)))])]); })(),
 e('div', { class: 'egl-go' }, [eg9Btn(done || dead ? 'عرض الطلب' : 'فتح الطلب', { cls: done || dead ? '' : 'is-pri', on: open })])]);
 };
 const tbl = e('div', { class: 'egl-list' }, R.length ? R.map(row)
