@@ -10511,3 +10511,8 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-alert.is-apr{background:#9333EA;color:#fff;box-shadow:0 3px 8px -4px #9333EA}
 .egl-alert.is-late{background:#DC2626;color:#fff;box-shadow:0 3px 8px -4px #DC2626}
 .egl-alert.is-recv{background:#EAB308;color:#3B2A02}
+/* v1272: شارة مصدر الطلب — بإطار (تختلف عن شارات الحالة المصمتة) */
+.egl-src{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;border-radius:8px;padding:2px 8px;background:#fff;border:1.5px solid currentColor;white-space:nowrap}
+.egl-src.is-client{color:#0F6F78}.egl-src.is-staff{color:#7C4A1E}.egl-src.is-auto{color:#1E293B;border-style:dashed}
+.eg12-chip.egl-src{font-size:13px;padding:4px 10px;border-radius:10px}.eg12-chip.egl-src b{color:inherit}
+@media (max-width:640px){.egl-src{white-space:normal}}
