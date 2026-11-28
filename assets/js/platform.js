@@ -29590,8 +29590,19 @@ function eg9Bar(x) { const i = eg9Idx(x), dead = x.status === 'cancelled' || x.s
 return e('div', { class: 'eg9-bar' + (dead ? ' is-dead' : ''), role: 'img', 'aria-label': i >= 6 ? 'مكتمل' : 'المرحلة ' + (i + 1) + ' من 6' }, EG9_SEG.map(function (s, k) { return e('i', { class: k < i ? 'is-done' : k === i ? 'is-now' : '' }); })); }
 function eg9Tone(st) { return st && st[1] ? st[1] : ''; }
 
-/* v1248: علامة الموقع فوق المرحلة الحالية — دبوس بلون المرحلة ودائرة بيضاء */
-const EGL_PIN = '<svg viewBox="0 0 24 30" width="24" height="30" aria-hidden="true"><path d="M12 29.2c-.5 0-.9-.2-1.2-.6C7.3 24.1 2 17.6 2 11.6 2 5.9 6.5 1.4 12 1.4s10 4.5 10 10.2c0 6-5.3 12.5-8.8 17-.3.4-.7.6-1.2.6Z" fill="currentColor" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="11.4" r="4.2" fill="#fff"/></svg>';
+/* v1251: علامة الموقع ثلاثية الأبعاد بطبقات (لون المرحلة) — تجاور اسم المرحلة على سطر الكتابة */
+const EGL_HEX = { saffron: '#F0A12B', orange: '#F07A2B', pink: '#E0508C', violet: '#7559F0', blue: '#3B74E8', teal: '#0FA3A8', emerald: '#13915C', green: '#22A86B', red: '#EB5A45', slate: '#7C8899' };
+const EGL_PC = { saffron: ['#B86F0A', '#FFC861', '#F0A12B'], orange: ['#B4561A', '#FFA66B', '#F07A2B'], pink: ['#A8336A', '#FF8DBE', '#E0508C'], violet: ['#5B3FD1', '#A18BFF', '#7559F0'], blue: ['#2457C5', '#6EA0FF', '#3B74E8'], teal: ['#06707A', '#3FD0D3', '#0FA3A8'], emerald: ['#0B6B45', '#43C98B', '#13915C'], green: ['#13804F', '#5EE0A0', '#22A86B'], red: ['#B93A2A', '#FF8A75', '#EB5A45'], slate: ['#4E5A6B', '#AAB4C3', '#7C8899'] };
+let EGL_PN = 0;
+function eglPin(c) {
+const P = EGL_PC[c] || EGL_PC.slate, id = 'eglp' + (++EGL_PN), d = 'M11 1.5C6.3 1.5 2.5 5.2 2.5 9.9c0 5.6 6.4 12.4 7.6 13.7.5.5 1.3.5 1.8 0 1.2-1.3 7.6-8.1 7.6-13.7 0-4.7-3.8-8.4-8.5-8.4Z';
+return '<svg viewBox="0 0 22 28" width="22" height="28" aria-hidden="true"><defs><linearGradient id="' + id + 'a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + P[1] + '"/><stop offset=".55" stop-color="' + P[2] + '"/><stop offset="1" stop-color="' + P[0] + '"/></linearGradient><radialGradient id="' + id + 'b" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E6ECF5"/></radialGradient></defs>'
++ '<ellipse cx="11" cy="26.2" rx="4.6" ry="1.3" fill="' + P[0] + '" opacity=".28"/>'
++ '<path d="' + d + '" fill="' + P[0] + '" transform="translate(.9 1.1)"/>'
++ '<path d="' + d + '" fill="url(#' + id + 'a)"/>'
++ '<circle cx="11" cy="10" r="3.9" fill="' + P[0] + '" opacity=".35" transform="translate(.4 .6)"/><circle cx="11" cy="10" r="3.9" fill="url(#' + id + 'b)"/>'
++ '<path d="M6.2 6.6c1-1.9 2.9-3.1 5-3.3" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".55"/></svg>';
+}
 /* ── القائمة ── */
 function eg9List(paint) {
 /* v922: القائمة الخارجية كما في التصميم المعتمد — الاسم الكامل · المنتج · المؤهَّل/المطلوب · المرحلة بثماني نقاط · الإجراء التالي · المسؤول · آخر تحديث */
@@ -29624,27 +29635,27 @@ const SC = ['saffron', 'saffron', 'saffron', 'saffron', 'blue', 'violet', 'teal'
 const segs = e('span', { class: 'egl-prog' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'img', 'aria-label': dead ? 'متوقف' : done ? 'مكتمل' : 'المرحلة ' + (k + 1) + ' من 8' }, SC.map(function (c, i) { return e('i', { class: 'is-' + c + (done || i < k ? ' is-ok' : i === k && !dead ? ' is-now' : dead && i === k ? ' is-stop' : '') }); }));
 const ini = String(nm || '؟').trim().charAt(0) || '؟';
 const an = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assigned_to)) : 'غير مسنَد';
-/* v1243: بطاقة بأربعة أسطر ثابتة — الهوية · المبالغ · المسار بعرض البطاقة (مرحلة بلونها وأيقونتها) · أين الطلب الآن */
-const ST8 = [['المراجعة', 'tray', '#F0A12B', 'saffron'], ['القرار', 'seal-check', '#F07A2B', 'orange'], ['العرض', 'receipt', '#E0508C', 'pink'], ['الإرسال', 'paper-plane-tilt', '#7559F0', 'violet'], ['موافقات العميل', 'handshake', '#3B74E8', 'blue'], ['الإدارة', 'briefcase', '#0FA3A8', 'teal'], ['التنفيذ', 'crown-simple', '#13915C', 'emerald'], ['الإغلاق', 'check-circle', '#22A86B', 'green']];
-const T3 = function (g, c) { const h = typeof window.__tqTile === 'function' ? window.__tqTile(g, c) : ''; return h ? frag(h) : frag(ui(g, 16)); }; /* v1247: أيقونات المسار ثلاثية الأبعاد */
+/* v1251: بطاقة بأربعة أسطر ثابتة — الهوية · المبالغ · مسار صفحة الطلب · أين الطلب الآن */
 const rej = dead && (x.status === 'rejected' || (B && B.rec === 'not_eligible'));
-/* v1248: موضع الطلب على المسار وحالته داخل المرحلة — «لم يُستلم» حتى يستلمه موظف، ثم «قيد المراجعة»، ثم القرار بحالاته */
-const fix = eg9Fix(x), hasRec = !!(B && B.rec);
-const at = done ? 7 : dead ? (x.status === 'rejected' ? 1 : B && B.dec ? Math.max(1, Math.min(6, eg10Reach(x, B, k))) : B && B.q ? 2 : hasRec ? 1 : 0)
-: k === 0 ? 0 : k === 1 ? (hasRec && !fix ? 1 : 0) : Math.max(0, Math.min(7, k));
-const REC = { eligible: 'مؤهَّل', partial: 'مؤهَّل جزئيًا', not_eligible: 'غير مؤهَّل' };
-const sub = done ? 'مكتمل' : dead ? (x.status === 'rejected' ? 'غير مؤهَّل' : B && B.dec ? 'اعتذر العميل' : 'ملغى')
-: k === 0 ? 'لم يُستلم' : k === 1 ? (fix ? 'بانتظار الاستكمال' : hasRec ? (REC[B.rec] || 'القرار') + ' · للاعتماد' : 'قيد المراجعة')
-: k === 2 ? (B && B.q && B.q.st === 'pending_approval' ? 'للاعتماد' : 'قيد الإعداد') : k === 3 ? 'جاهز للإرسال'
-: k === 4 ? 'بانتظار العميل' : k === 5 ? 'قيد الإجراء' : k === 6 ? 'للاعتماد' : '';
-const trk = e('div', { class: 'egl-trk8' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'list', 'aria-label': 'مسار الطلب' }, ST8.map(function (z, i) {
-const st = done || i < at ? 'is-ok' : i === at ? (dead ? 'is-stop' : 'is-now') : 'is-todo';
-return e('div', { class: 'egl-stp ' + st, role: 'listitem', style: '--sc:' + z[2], title: (EG10_ST[i] || z[0]) + ' — ' + (st === 'is-ok' ? 'تمت' : st === 'is-now' ? 'الطلب هنا الآن' : st === 'is-stop' ? 'توقف هنا' : 'متبقية') }, [
-e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [T3(st === 'is-stop' ? 'x-circle' : z[1], st === 'is-stop' ? 'red' : st === 'is-todo' || (dead && st === 'is-ok') ? 'slate' : done ? 'green' : z[3]), st === 'is-now' ? e('b', { class: 'egl-stp-pin' }, [frag(EGL_PIN)]) : null]), e('span', { class: 'egl-stp-n' }, z[0])]),
-e('span', { class: 'egl-stp-bar' }), i === at && sub ? e('span', { class: 'egl-stp-st' }, sub) : null]);
+/* v1251: مسار البطاقة هو مسار صفحة الطلب نفسه — المراحل السبع وحالاتها من eg12Dot/eg12Note */
+const C = { x: x, B: B, k: k, dead: dead, reach: eg10Reach(x, B, k) }, S7 = EG12_T.slice(0, EG12_NSTG);
+const COL = ['saffron', 'orange', 'pink', 'violet', 'blue', 'teal', 'emerald'];
+const dots = S7.map(function (t) { return eg12Dot(t[0], C); });
+let stop = -1; if (dead) { stop = x.status === 'rejected' ? 1 : B && B.dec ? 5 : dots.findIndex(function (d) { return d !== 'ok'; }); if (stop < 0) stop = EG12_NSTG - 1; }
+const sts = S7.map(function (t, i) { return done ? 'is-ok' : dead ? (i === stop ? 'is-stop' : i < stop && dots[i] === 'ok' ? 'is-ok' : 'is-todo') : dots[i] === 'ok' ? 'is-ok' : dots[i] === 'w' ? 'is-now' : 'is-todo'; });
+const pinAt = done ? EG12_NSTG - 1 : dead ? stop : sts.indexOf('is-now');
+const nOk = sts.filter(function (z) { return z === 'is-ok'; }).length;
+const T3 = function (g, c) { const h = typeof window.__tqTile === 'function' ? window.__tqTile(g, c) : ''; return h ? frag(h) : frag(ui(g, 16)); };
+const trk = e('div', { class: 'egl-trk8 egl-trk7' + (done ? ' is-done' : dead ? ' is-dead' : ''), role: 'list', 'aria-label': 'مراحل الطلب' }, S7.map(function (t, i) {
+const st = sts[i], cn = st === 'is-stop' ? 'red' : done ? 'green' : st === 'is-todo' || (dead && st === 'is-ok') ? 'slate' : COL[i];
+const nt = st === 'is-todo' ? '' : st === 'is-stop' && x.status === 'cancelled' ? 'ملغى' : eg12Note(t[0], C), nt2 = nt && nt !== '—' ? nt : (st === 'is-now' ? 'الآن' : '');
+return e('div', { class: 'egl-stp ' + st, role: 'listitem', style: '--sc:' + (EGL_HEX[cn] || '#7C8899'), title: t[1] + (nt2 ? ' — ' + nt2 : '') }, [
+e('span', { class: 'egl-stp-h' }, [e('span', { class: 'egl-stp-ic', 'aria-hidden': 'true' }, [T3(st === 'is-stop' ? 'x-circle' : t[2], cn)]),
+e('span', { class: 'egl-stp-t' }, [e('span', { class: 'egl-stp-n' }, t[1]), i === pinAt ? e('b', { class: 'egl-stp-pin', 'aria-label': 'الطلب هنا' }, [frag(eglPin(cn))]) : null])]),
+e('span', { class: 'egl-stp-bar' }), nt2 ? e('span', { class: 'egl-stp-st' + (st === 'is-ok' ? ' is-ok' : '') }, nt2) : null]);
 }));
-const nx2 = !dead && k === 1 && !fix && !hasRec ? 'مراجعة المستندات وإصدار القرار' : nx;
-const cap = done ? 'اكتملت المراحل الثماني — ' + L[0] : dead ? L[0] + ' — توقف عند «' + ST8[at][0] + '»' : 'تمت ' + fmtNum(at) + ' · متبقي ' + fmtNum(8 - at) + (nx2 ? ' · التالي: ' + nx2 : '');
+/* الحالة تُكتب مرة واحدة (L[0])، والسطر بجانبها للعدّ أو موضع التوقف فقط — بلا تكرار */
+const cap = done ? 'اكتملت المراحل السبع' : dead ? 'توقف عند «' + S7[stop][1] + '»' : 'تمت ' + fmtNum(nOk) + ' · متبقي ' + fmtNum(EG12_NSTG - nOk) + (nx ? ' · التالي: ' + nx : '');
 return e('article', { class: 'egl-row egl-row4 is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter') open(); } }, [
 e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
 e('div', { class: 'egl-body' }, [
@@ -29761,6 +29772,18 @@ try { if (B && B.q && B.q.cid && typeof ctAdmLoad === 'function' && !CTADM.busy 
 try { if (B && B.q && B.q.cid && B.sign && typeof cfFinLoad === 'function') cfFinLoad(B.q.cid); } catch (err) { void err; }
 }
 /* نقطة الحالة لكل تبويب: ok مكتمل · w الحالي · off لم يحن بعد */
+/* v1251: حالة كل مرحلة كما في رأس صفحة الطلب — المصدر الواحد للصفحة والبطاقة */
+function eg12Note(t, C) {
+const x = C.x, B = C.B, k = C.k, ch = (B && B.ch) || {}, q = B && B.q, cs = eg10Cs(B), a = B && B.acc;
+if (t === 'req') return x.status === 'submitted' ? 'جديد' : 'استُلم';
+if (t === 'dec') return B && EG10_REC[B.rec] ? EG10_REC[B.rec] : x.status === 'approved' ? 'مؤهَّل' : x.status === 'rejected' ? 'غير مؤهَّل' : 'لم يصدر';
+if (t === 'qt') return q ? ({ approved: 'معتمد', sent: 'معتمد', accepted: 'قبله العميل', declined: 'اعتذر', pending_approval: 'بانتظار الاعتماد' })[q.st] || 'قيد الإعداد' : '—';
+if (t === 'inv') { const c = ch.purchase; return c && c.d ? (c.d === 'accept' ? 'اعتمدها العميل' : 'اعتذر') : q ? 'صدرت' : '—'; }
+if (t === 'ct') { const c = ch.contract; return B && B.sign ? 'وقّعه العميل' : c && c.d === 'decline' ? 'اعتذر' : q ? 'صدر' : '—'; }
+if (t === 'lnk') return B && B.dec ? 'اعتذر' : B && B.link ? (cs ? fmtNum(cs) + ' من 4' : 'أُرسل') : 'لم يُرسل';
+if (t === 'adm') return k >= 7 ? 'مكتمل' : k === 6 ? (a && a.st === 'pending' ? 'النقاط' : 'نُفّذ') : '—';
+return '';
+}
 function eg12Dot(t, C) {
 const x = C.x, B = C.B, k = C.k, q = B && B.q, ch = (B && B.ch) || {}, cs = eg10Cs(B), qok = q && ['approved', 'sent', 'accepted'].indexOf(q.st) >= 0;
 if (t === 'req') return C.reach > 0 || x.status !== 'submitted' ? 'ok' : 'w';
@@ -29783,16 +29806,7 @@ const asg = x.assigned_to ? (x.assigned_to === me ? 'أنت' : srAsName(x.assign
 chips.push(e('div', { class: 'eg12-popw eg13-asw' }, [srAsOpen(x) ? e('button', { type: 'button', class: 'eg12-chip eg13-asg eg12-pop-t', 'aria-haspopup': 'listbox', 'aria-expanded': C.V.asg ? 'true' : 'false', 'data-live-ok': '', onClick: function () { C.V.asg = !C.V.asg; C.V.menu = false; EG12.open = C.V.asg ? { V: C.V, paint: C.paint } : null; C.paint(); } }, ['مسند إلى: ', e('b', {}, asg), eg12Ic('caret-down', 14)])
 : e('span', { class: 'eg12-chip' }, ['مسند إلى: ', e('b', {}, asg)]), C.V.asg ? eg12AsgPop(C) : null]));
 const ch = (B && B.ch) || {}, q = B && B.q, cs = eg10Cs(B), a = B && B.acc;
-const note = function (t) {
-if (t === 'req') return x.status === 'submitted' ? 'جديد' : 'استُلم';
-if (t === 'dec') return B && EG10_REC[B.rec] ? EG10_REC[B.rec] : x.status === 'approved' ? 'مؤهَّل' : x.status === 'rejected' ? 'غير مؤهَّل' : 'لم يصدر';
-if (t === 'qt') return q ? ({ approved: 'معتمد', sent: 'معتمد', accepted: 'قبله العميل', declined: 'اعتذر', pending_approval: 'بانتظار الاعتماد' })[q.st] || 'قيد الإعداد' : '—';
-if (t === 'inv') { const c = ch.purchase; return c && c.d ? (c.d === 'accept' ? 'اعتمدها العميل' : 'اعتذر') : q ? 'صدرت' : '—'; }
-if (t === 'ct') { const c = ch.contract; return B && B.sign ? 'وقّعه العميل' : c && c.d === 'decline' ? 'اعتذر' : q ? 'صدر' : '—'; }
-if (t === 'lnk') return B && B.dec ? 'اعتذر' : B && B.link ? (cs ? fmtNum(cs) + ' من 4' : 'أُرسل') : 'لم يُرسل';
-if (t === 'adm') return k >= 7 ? 'مكتمل' : k === 6 ? (a && a.st === 'pending' ? 'النقاط' : 'نُفّذ') : '—';
-return '';
-};
+const note = function (t) { return eg12Note(t, C); }; /* v1251: نص المرحلة من دالة واحدة تشترك فيها بطاقة القائمة */
 const path = e('nav', { class: 'eg13-path' + (dead ? ' is-dead' : ''), 'aria-label': 'مراحل الطلب وأقسامه' }, EG12_T.map(function (t, i) {
 const on = t[0] === C.tab;
 if (i >= EG12_NSTG) return [i === EG12_NSTG ? e('span', { class: 'eg13-sep', 'aria-hidden': 'true' }) : null, e('button', { type: 'button', class: 'eg13-tool' + (on ? ' is-on' : ''), 'aria-current': on ? 'page' : null, 'data-live-ok': '', onClick: function () { C.go(t[0], ''); } }, [e('span', { class: 'eg13-tic', 'aria-hidden': 'true' }, eg12Ic(t[2], 18)), e('b', {}, t[1]), e('small', {}, t[0] === 'tpl' ? 'لهذا الطلب' : 'المحادثة والأحداث')])];

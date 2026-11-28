@@ -10361,3 +10361,25 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 /* v1249: اسم المرحلة كاملًا (يلتف عند الحاجة) وحالة قصيرة */
 .egl-stp-n{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
 .egl-stp-st{white-space:nowrap}
+/* v1251: مسار البطاقة = مراحل صفحة الطلب السبع · علامة موقع ثلاثية الأبعاد على سطر اسم المرحلة · شبكة البطاقة صريحة */
+.egl-row.egl-row4>.egl-av{grid-area:auto;grid-column:1;grid-row:1}
+.egl-row.egl-row4>.egl-body{grid-area:auto;grid-column:2;grid-row:1}
+.egl-row.egl-row4>.egl-go4{grid-area:auto;grid-column:3;grid-row:1}
+.egl-trk8.egl-trk7{grid-template-columns:repeat(7,minmax(0,1fr));padding-top:2px;row-gap:12px}
+.egl-trk7 .egl-stp-h{align-items:center}
+.egl-stp-t{display:inline-flex;align-items:center;gap:3px;min-width:0}
+.egl-trk7 .egl-stp-pin{position:static;inset:auto;transform:none;display:inline-block;flex:0 0 auto;width:17px;height:22px;margin-top:-4px;filter:none;background:none;box-shadow:none;animation:none}
+.egl-trk7 .egl-stp-pin svg{width:17px;height:22px;display:block}
+@keyframes eglPinY{50%{transform:translateY(-2px)}}
+@media (prefers-reduced-motion:no-preference){.egl-trk7 .egl-stp.is-now .egl-stp-pin{animation:eglPinY 1.8s ease-in-out infinite}}
+.egl-stp-st.is-ok{background:none;border-color:transparent;padding:0;font-weight:600}
+.egl-trk8.is-dead .egl-stp.is-ok .egl-stp-st{color:#7C8899}
+@media (max-width:900px){.egl-trk8.egl-trk7{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:14px;column-gap:8px}}
+@media (max-width:640px){
+.egl-row.egl-row4>.egl-go4{grid-column:1 / -1;grid-row:2}
+.egl-trk7 .egl-stp-h{flex-direction:column;align-items:center}
+.egl-trk7 .egl-stp-t{justify-content:center;flex-wrap:nowrap;max-width:100%}
+.egl-trk7 .egl-stp-n{min-height:0;display:block}
+.egl-stp-st.is-ok{align-self:center}
+}
+@media (max-width:400px){.egl-row.egl-row4>.egl-body{grid-column:1}}
