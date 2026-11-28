@@ -29718,7 +29718,7 @@ const cap = done ? 'اكتملت المراحل ' + fmtNum(NS) + ' من ' + fmtN
 return e('article', { class: 'egl-row egl-row4 is-' + tone + (x.status === 'submitted' ? ' is-new' : ''), 'data-s': norm([x.req_no, nm].join(' ')), tabindex: '0', onClick: function (ev) { if (ev.target.closest('button, select, input, .egl-asg')) return; open(); }, onKeydown: function (ev) { if (ev.key === 'Enter' && !ev.target.closest('.egl-asg')) open(); } }, [
 e('span', { class: 'egl-av', 'aria-hidden': 'true' }, ini),
 e('div', { class: 'egl-body' }, [
-e('div', { class: 'egl-l1' }, [e('b', { class: 'egl-nm' }, nm), eglAlerts(x, B), e('span', { class: 'egl-tags' }, [egSrcTag(x), e('span', { class: 'egl-tag' }, e('bdi', { dir: 'ltr' }, x.req_no || '—')),
+e('div', { class: 'egl-l1 egl-l1v' }, [e('b', { class: 'egl-nm' }, nm), eglAlerts(x, B), e('span', { class: 'egl-tags' }, [egSrcTag(x), e('span', { class: 'egl-tag' }, e('bdi', { dir: 'ltr' }, x.req_no || '—')),
 e('span', { class: 'egl-tag is-dt', title: 'تاريخ تقديم الطلب ' + eg10Dt(x.created_at) }, [frag(ui('calendar-blank', 13)), 'قُدِّم ', e('bdi', { dir: 'ltr' }, eg10Dt(x.created_at) || '—')]),
 e('span', { class: 'egl-tag is-mut', title: 'آخر تحديث ' + eg10Dt(eg10Upd(x, B)) }, [frag(ui('clock', 13)), eg10Ago(eg10Upd(x, B))])])]),
 e('div', { class: 'egl-l2' }, [e('span', { class: 'egl-mny' }, [e('small', {}, 'المطلوب'), e('b', {}, e('bdi', { dir: 'ltr' }, eg10N(req)))]),

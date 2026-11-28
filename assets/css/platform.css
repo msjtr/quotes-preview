@@ -10516,3 +10516,11 @@ html:has(.cu-dr[data-r^="desk:"].is-on),html:has(.cu-dr[data-r^="desk:"].is-on) 
 .egl-src.is-client{color:#0F6F78}.egl-src.is-staff{color:#7C4A1E}.egl-src.is-auto{color:#1E293B;border-style:dashed}
 .eg12-chip.egl-src{font-size:13px;padding:4px 10px;border-radius:10px}.eg12-chip.egl-src b{color:inherit}
 @media (max-width:640px){.egl-src{white-space:normal}}
+/* v1273: رأس البطاقة بثلاثة أسطر آمنة — الاسم وحده · التنبيهات · الوسوم — وكل شارة تلتف داخل حدودها */
+.egl-row4 .egl-l1.egl-l1v{display:flex;flex-direction:column;align-items:flex-start;gap:6px;flex-wrap:nowrap;min-width:0}
+.egl-l1v > .egl-nm{display:block;width:100%;max-width:100%;font-size:15.5px;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+.egl-l1v > .egl-alerts,.egl-l1v > .egl-tags{display:flex;flex-wrap:wrap;gap:6px;width:100%;min-width:0}
+.egl-l1v .egl-alert,.egl-l1v .egl-src,.egl-l1v .egl-tag{max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+.egl-l1v .egl-tag bdi{white-space:nowrap}
+.egl-row4 .egl-l2{flex-wrap:wrap}
+.egl-mny{max-width:100%}
